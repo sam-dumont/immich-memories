@@ -1,18 +1,9 @@
-"""Every shot of a rules draft, put to the gates a model install can actually ask.
-
-The draft was built with no model at all: its standing answers come from the facts on a line and
-its look-alike from a cached preview hash. A model install can ask better questions of the same
-pictures, and a shot the gates refuse here leaves a slot the polish can refill, which is what a
-draft silently short of its target cannot offer.
-
-Nothing is reimplemented. The standing gate, the audience gate, the five-minute capture spacing
-and the cached-hash duplicate review are the production ones, asked in that order.
-"""
+"""Shared picture admission for draft selection, refinement and later replacements."""
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Collection, Mapping, Sequence
+from dataclasses import dataclass, field
 from operator import itemgetter
 from typing import Any, Protocol
 
@@ -20,8 +11,12 @@ from immich_memories.analysis.editorial_final_hash_review import (
     ScenePrint,
     review_cut_by_cached_hashes,
 )
+from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
 from immich_memories.analysis.editorial_shareability import allowed
+from immich_memories.analysis.editorial_story_replies import film_close_family
 from immich_memories.analysis.editorial_story_shortlist import capture_space_available
+from immich_memories.analysis.editorial_story_standing import StandingGate
+from immich_memories.analysis.editorial_structure_material import Material
 
 # What a worthiness tier means to the standing gate, which asks in weight words.
 WEIGHT_OF_TIER = {"remarkable": "major", "maybe": "minor", "background": "glimpse"}
@@ -35,6 +30,10 @@ class StandsAlone(Protocol):
     def needs(self, asset: str, weight: str, story_key: str = "") -> int: ...
 
     def stands(self, asset: str, weight: str, story_key: str = "") -> bool: ...
+
+    def rejected_motion(self, asset: str) -> bool: ...
+
+    def has_required_context(self, asset: str, weight: str, story_key: str) -> bool: ...
 
 
 class ShowsToTheAudience(Protocol):
@@ -57,12 +56,12 @@ class GateRefusal:
 
 
 @dataclass(frozen=True)
-class ThinGates:
-    """The four gates over a draft, in the order that spends the fewest model calls."""
+class PictureAdmission:
+    """Prepare a proposed picture and check its standing, audience, spacing and repetition."""
 
     standing: StandsAlone
-    audience: ShowsToTheAudience
-    thumbnail_hash: Callable[[str], str | None]
+    audience: ShowsToTheAudience | None
+    thumbnail_hash: Callable[[str], str | None] | None
     audience_name: str = "family"
     # Carriers asked the audience question per request; below two, one at a time.
     audience_batch: int = 0
@@ -70,6 +69,9 @@ class ThinGates:
     # final duplicate review would take it out later with nothing in its place.
     scene_print: ScenePrint | None = None
     prepare_candidates: Callable[[Sequence[Mapping[str, Any]]], None] | None = None
+    excluded: Mapping[str, str] = field(default_factory=dict)
+    close_family_of: Callable[[str], Collection[str]] = lambda _asset: ()
+    decisions: list[dict[str, str]] = field(default_factory=list)
 
     def admit(
         self,
@@ -91,7 +93,9 @@ class ThinGates:
             else:
                 refused.append(refusal)
         survivors, record = review_cut_by_cached_hashes(
-            kept, thumbnail_hash=self.thumbnail_hash, protected_asset_ids=protected
+            kept,
+            thumbnail_hash=self.thumbnail_hash or (lambda _asset: None),
+            protected_asset_ids=protected,
         )
         keeper_of = {row["asset_id"]: row["keeper"] for row in record["removals"]}
         refused.extend(
@@ -107,22 +111,37 @@ class ThinGates:
         *,
         cut: Sequence[Mapping[str, Any]],
         tier_of: Mapping[str, str],
+        recovering: bool = False,
     ) -> GateRefusal | None:
-        """One candidate, judged in the company of the cut it would join, or None when it passes.
+        """Check and record one candidate against the cut it would join; None means admitted."""
+        refusal = self._check(candidate, cut, tier_of, recovering=recovering)
+        self.decisions.append(
+            {
+                "asset_id": candidate["asset_id"],
+                "story": str(candidate.get("story_episode") or ""),
+                "rule": refusal.rule if refusal else "admitted",
+                "detail": refusal.detail if refusal else "passed candidate admission",
+            }
+        )
+        return refusal
 
-        The cut is protected, exactly as the draft pass protects what the film already holds, so
-        a newcomer that repeats a shot already in the film is the one that leaves.
-        """
+    def _check(self, candidate, cut, tier_of, *, recovering):
+        if self.prepare_candidates is not None:
+            self.prepare_candidates([candidate])
         self.settle([candidate], tier_of)
-        refusal = self._refusal(candidate, list(cut), tier_of)
+        refusal = self._refusal(candidate, list(cut), tier_of, recovering=recovering)
         if refusal is not None:
             return refusal
+        if self.thumbnail_hash is None:
+            return None
+        # Protect the actual company: replacing a shot never displaces a second shot.
         company: list[dict[str, Any]] = [dict(row) for row in cut]
         survivors, record = review_cut_by_cached_hashes(
             [*company, dict(candidate)],
             thumbnail_hash=self.thumbnail_hash,
             protected_asset_ids=[row["asset_id"] for row in cut],
             scene_print=self.scene_print,
+            close_family_of=self.close_family_of,
             # a newcomer's seconds are always spendable elsewhere: a repeat of it leaves
             content_floor=0.0,
         )
@@ -145,41 +164,56 @@ class ThinGates:
             needs[shot["asset_id"]] = (
                 0
                 if _owner_and_record(shot)
-                else self.standing.needs(shot["asset_id"], _weight(story, tier_of), story)
+                else self.standing.needs(shot["asset_id"], _weight(shot, tier_of), story)
             )
         self.standing.ensure(list(needs), needs)
 
     def prefetch_audience(self, shots: Sequence[Mapping[str, Any]]) -> None:
         """Put these shots to the audience gate together, when it is asked in batches."""
-        if self.audience_batch > 1 and shots:
+        if self.audience is not None and self.audience_batch > 1 and shots:
             self.audience.prefetch(shots, batch=self.audience_batch)
 
     def stands_alone(self, shot: Mapping[str, Any], tier_of: Mapping[str, str]) -> bool:
         """The standing gate's answer for this shot as its story's weight reads it."""
         story = str(shot.get("story_episode") or "")
-        stands = self.standing.stands(shot["asset_id"], _weight(story, tier_of), story)
+        stands = self.standing.stands(shot["asset_id"], _weight(shot, tier_of), story)
         return stands or _owner_and_record(shot)
 
-    def _refusal(self, shot, kept, tier_of) -> GateRefusal | None:
+    def _refusal(self, shot, kept, tier_of, *, recovering=False) -> GateRefusal | None:
         story = str(shot.get("story_episode") or "")
         moment = str(shot.get("moment") or "")
-        if not self.stands_alone(shot, tier_of):
-            weight = _weight(story, tier_of)
+        asset = shot["asset_id"]
+        if asset in self.excluded:
+            return GateRefusal(asset, story, "source", self.excluded[asset], moment)
+        stands = (
+            (
+                not self.standing.rejected_motion(asset)
+                and self.standing.has_required_context(asset, _weight(shot, tier_of), story)
+            )
+            if recovering
+            else self.stands_alone(shot, tier_of)
+        )
+        if not stands:
+            weight = _weight(shot, tier_of)
             return GateRefusal(
                 shot["asset_id"], story, "standing", f"as a {weight} story's shot", moment
             )
-        verdict = self.audience.verdict_of(shot)
+        verdict = self.audience.verdict_of(shot) if self.audience is not None else "share"
         if not allowed(verdict, self.audience_name):
             return GateRefusal(shot["asset_id"], story, "audience", verdict, moment)
-        if not capture_space_available(shot, kept):
+        # Depth has already proved a new view inside a shown moment. Replacements
+        # never inherit this exception from the picture whose slot they take.
+        if not shot.get("depth") and not capture_space_available(shot, kept):
             return GateRefusal(
                 shot["asset_id"], story, "capture spacing", "inside five minutes", moment
             )
         return None
 
 
-def _weight(story: str, tier_of: Mapping[str, str]) -> str:
-    return WEIGHT_OF_TIER.get(tier_of.get(story, "background"), "glimpse")
+def _weight(shot: Mapping[str, Any], tier_of: Mapping[str, str]) -> str:
+    return shot.get("story_weight") or WEIGHT_OF_TIER.get(
+        tier_of.get(str(shot.get("story_episode") or ""), "background"), "glimpse"
+    )
 
 
 def _repeat_refusal(shot: Mapping[str, Any], keeper: str) -> GateRefusal:
@@ -197,3 +231,40 @@ def _owner_and_record(shot: Mapping[str, Any]) -> bool:
     records something about is not refused on a standing answer read off its text alone.
     The audience gate still decides."""
     return bool(shot.get("favourite") and shot.get("notable_record"))
+
+
+def shows_life(material: Material, unit_of, asset_id: str) -> bool:
+    """Whether this picture's unit reads as people or life, not a lone object."""
+    u = unit_of.get(asset_id)
+    return bool(u) and material.text.shows_life(u) and not material.text.lone_object(u)
+
+
+def picture_admission(source, ports, material, selection, gate) -> PictureAdmission:
+    """Use the same fresh facts for every picture proposed after story allocation."""
+    unit_by_asset = {u["asset_id"]: (f, u) for f, units in material.units.items() for u in units}
+    unit_of = {asset: unit for asset, (_family, unit) in unit_by_asset.items()}
+    standing = StandingGate(
+        (ports.rules or RuleStructureReader(source)).standing,
+        line_of=lambda asset_id: selection.lines.get(asset_id, ""),
+        life=lambda asset_id: shows_life(material, unit_of, asset_id),
+        unit_by_asset=unit_by_asset,
+        pictures_of={s["key"]: s["seen"]["pictures"] for s in selection.story.stories},
+    )
+
+    def prepare_candidates(rows):
+        gate.prepare(rows)
+        standing.refresh([row["asset_id"] for row in rows])
+
+    close_of = film_close_family(source)
+
+    return PictureAdmission(
+        standing=standing,
+        audience=gate,
+        thumbnail_hash=ports.thumbnail_hash,
+        scene_print=ports.scene_print,
+        audience_name=source.audience,
+        audience_batch=16 if ports.laya else 0,
+        prepare_candidates=prepare_candidates,
+        excluded=material.document_sources,
+        close_family_of=lambda asset: close_of(selection.lines.get(asset, "")),
+    )

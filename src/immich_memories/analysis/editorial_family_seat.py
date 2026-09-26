@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from itertools import chain
 from typing import Any
 
+from immich_memories.analysis.editorial_picture_admission import PictureAdmission
 from immich_memories.analysis.editorial_rule_banked_facts import (
     BankedFacts,
     withheld_by_bank,
@@ -23,7 +24,6 @@ from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
 from immich_memories.analysis.editorial_shareability import SHAREABLE, owner_cleared_ids
 from immich_memories.analysis.editorial_shareability_audience import exposure_flagged
 from immich_memories.analysis.editorial_story_replies import close_family_on, film_close_family
-from immich_memories.analysis.editorial_story_standing import StandingGate
 from immich_memories.analysis.editorial_structure_budget import MIN_CARRIER_SECONDS
 from immich_memories.analysis.editorial_structure_contract import StructurePlanningInput
 from immich_memories.speech.cuts import minimum_duration
@@ -42,8 +42,8 @@ class FamilySeatPolicy:
         return pictures >= self.min_pictures or (scope > 0 and pictures / scope >= self.min_share)
 
 
-def _never(_asset_id: str) -> bool:
-    return False
+def _admit(_row: Mapping[str, Any], _cut: Sequence[Mapping[str, Any]]) -> bool:
+    return True
 
 
 @dataclass(frozen=True)
@@ -52,8 +52,8 @@ class FamilySeatInputs:
     row; `stands(asset, story)` is the story's standing bar, `score_of` the rule standing that
     ranks a person's frames, `refused` every hold that applies to this film, `has_room`
     whether the film can take one more carrier without dropping one, and `close_family` who on
-    a line counts as close family in this film. `held` is a costlier check (the audience
-    gate's own verdict), asked only of the frames about to be seated."""
+    a line counts as close family in this film. `admits` checks fresh candidate facts
+    against the cut the picture would join, before any existing frame gives up its seat."""
 
     stories: Sequence[Mapping[str, Any]]
     candidates_of: Callable[[str], list[dict]]
@@ -65,7 +65,7 @@ class FamilySeatInputs:
     has_room: Callable[[list[dict]], bool]
     policy: FamilySeatPolicy = FamilySeatPolicy()
     close_family: Callable[[str], Mapping[str, str]] = close_family_on
-    held: Callable[[str], bool] = _never
+    admits: Callable[[Mapping[str, Any], Sequence[Mapping[str, Any]]], bool] = _admit
 
 
 def seat_close_family(
@@ -143,23 +143,30 @@ def _seat_one(name, film: list[dict], on, inputs: FamilySeatInputs) -> dict[str,
             and inputs.stands(row["asset_id"], story)
         ]
         ranked = sorted(frames, key=lambda row: -inputs.score_of(row["asset_id"]))
-        best = next((row for row in ranked if not inputs.held(row["asset_id"])), None)
-        if best is None:
-            continue
-        seat = best | {"family_seat": True}
-        if inputs.has_room([*film, seat]):
+        for best in ranked:
+            placed = _place(key, best, film, inputs)
+            if placed is not None:
+                return placed
+    return {"placed": None, "reason": "no frame clears a story's bar with a seat to take"}
+
+
+def _place(key, best, film, inputs) -> dict | None:
+    seat = best | {"family_seat": True}
+    if inputs.has_room([*film, seat]):
+        if inputs.admits(seat, film):
             film.append(seat)
             return {"story": key, "asset_id": best["asset_id"], "placed": "appended"}
-        victim = _weakest_replaceable(key, film, inputs) or _weakest_anywhere(film, inputs)
-        if victim is not None:
-            film[film.index(victim)] = seat
-            return {
-                "story": key,
-                "asset_id": best["asset_id"],
-                "placed": "replaced",
-                "replaced": victim["asset_id"],
-            }
-    return {"placed": None, "reason": "no frame clears a story's bar with a seat to take"}
+        return None
+    victim = _weakest_replaceable(key, film, inputs) or _weakest_anywhere(film, inputs)
+    if victim is not None and inputs.admits(seat, [c for c in film if c is not victim]):
+        film[film.index(victim)] = seat
+        return {
+            "story": key,
+            "asset_id": best["asset_id"],
+            "placed": "replaced",
+            "replaced": victim["asset_id"],
+        }
+    return None
 
 
 def _weakest_anywhere(film: list[dict], inputs: FamilySeatInputs) -> dict | None:
@@ -231,15 +238,14 @@ def seat_in_film(
     film: FilmSeatSource,
     *,
     candidates_of: Callable[[str], list[dict]],
-    life: Callable[[str], bool],
+    admission: PictureAdmission,
     excluded: Mapping[str, str],
     record: Callable[[str, Mapping[str, Any]], None],
-    held: Callable[[str], bool] = _never,
 ) -> list[dict]:
     """Run the seat over a planned cut with the rules' own standing: no model is asked.
 
-    `held` refuses a frame the seat is about to take, for a film whose audience gate has
-    already run and will not see the seat."""
+    The shared admission checks every proposed seat, including seats added after the
+    audience and duplicate reviews."""
     source, selection = film.source, film.selection
     unit_by_asset = {u["asset_id"]: (f, u) for f, rows in film.units.items() for u in rows}
 
@@ -248,13 +254,7 @@ def seat_in_film(
 
     rules = film.rules if film.rules is not None else RuleStructureReader(source)
     standing = rules.standing
-    gate = StandingGate(
-        standing,
-        line_of=lambda asset: selection.lines.get(asset, ""),
-        life=life,
-        unit_by_asset=unit_by_asset,
-        pictures_of={s["key"]: s["seen"]["pictures"] for s in selection.story.stories},
-    )
+    gate = admission.standing
 
     def stands(asset: str, story: Mapping[str, Any]) -> bool:
         gate.ensure([asset])
@@ -284,7 +284,7 @@ def seat_in_film(
             has_room=has_room,
             policy=FamilySeatPolicy(policy.seat_min_pictures, policy.seat_min_share),
             close_family=film_close_family(source),
-            held=held,
+            admits=lambda row, cut: admission.admits(row, cut=cut, tier_of={}) is None,
         ),
     )
     record("family-seat", audit)

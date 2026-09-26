@@ -6,7 +6,7 @@ one run, and a seat chose a non-favourite over the favourite of the same moment.
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_thin_gates import ThinGates
+from immich_memories.analysis.editorial_picture_admission import PictureAdmission
 from immich_memories.analysis.editorial_thin_layer import ThinPolish
 from tests.test_editorial_thin_vote_relations import STORY, Audience, FitJudge, Standing
 
@@ -42,7 +42,7 @@ def polish_years(tmp_path, shots, *, era_of=year_of, record=lambda _n, _p: None)
     kept = polish.polish(
         cut,
         judge=FitJudge(),
-        gates=ThinGates(Standing(), Audience(), thumbnail_hash=lambda _a: None),
+        gates=PictureAdmission(Standing(), Audience(), thumbnail_hash=lambda _a: None),
         catalogue=polish.catalogue_of(STORY, {"m1": list(shots)}, drafted=cut),
         contract="contract",
         line_of=lines.get,

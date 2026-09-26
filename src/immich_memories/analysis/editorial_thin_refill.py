@@ -16,6 +16,7 @@ from datetime import datetime
 from operator import itemgetter
 from typing import Any
 
+from immich_memories.analysis.editorial_picture_admission import GateRefusal, PictureAdmission
 from immich_memories.analysis.editorial_shot_kinds import KindOf, lacking
 from immich_memories.analysis.editorial_story_lookalike import MOTION_KINDS
 from immich_memories.analysis.editorial_story_shortlist import DepictedChoice, pick_story_moments
@@ -24,7 +25,6 @@ from immich_memories.analysis.editorial_structure_budget import (
     MIN_MOTION_SECONDS,
 )
 from immich_memories.analysis.editorial_thin_catalogue import ThinCatalogue
-from immich_memories.analysis.editorial_thin_gates import GateRefusal, ThinGates
 from immich_memories.analysis.editorial_thin_pages import (
     favourite_of_its_moment,
     gate_refill_page,
@@ -328,7 +328,7 @@ class ThinRefill:
     """Fill the seats, one candidate at a time, through the production picker and the gates."""
 
     judge: Any
-    gates: ThinGates
+    gates: PictureAdmission
     contract: str
     line_of: Callable[[str], str]
     record: Callable[[str, Mapping[str, Any]], None]

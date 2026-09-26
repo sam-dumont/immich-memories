@@ -29,6 +29,7 @@ from immich_memories.analysis.editorial_exposure_chains import chain_holds_for
 from immich_memories.analysis.editorial_family_seat import FilmSeatSource, seat_in_film
 from immich_memories.analysis.editorial_home_radius import home_of, near_home_of
 from immich_memories.analysis.editorial_owner_required import admit_owner_required
+from immich_memories.analysis.editorial_picture_admission import picture_admission, shows_life
 from immich_memories.analysis.editorial_picture_ladders import depth_cap
 from immich_memories.analysis.editorial_review_list import write_for_cut
 from immich_memories.analysis.editorial_rule_banked_facts import (
@@ -69,7 +70,6 @@ from immich_memories.analysis.editorial_structure_finishing import (
     drop_filler_nothing_vouches_for,
     final_duplicate_review,
     frame_quality_of,
-    held_by_gate,
     replacement_offers,
     resolve_motion_and_timing,
     seat_again_after_review,
@@ -93,7 +93,7 @@ from immich_memories.analysis.editorial_structure_record import (
     provider_metrics,
     shave_content_duration,
 )
-from immich_memories.analysis.editorial_thin_step import polish_the_draft, shows_life
+from immich_memories.analysis.editorial_thin_step import polish_the_draft
 from immich_memories.analysis.editorial_unvouched_filler import (
     filler_evidence,
     owner_vouches_for,
@@ -428,7 +428,6 @@ def _select(
     if pool.record is not None:
         record_story("subject-pool", pool.record)
     # A no-model draft asks nothing, so it reads the model's answers through `banked` alone.
-    unit_of = {u["asset_id"]: u for units in material.units.values() for u in units}
     banked = _banked_facts(source, ports)
     if ports.rules is not None:
         record_story("banked-facts", banked.record())
@@ -448,6 +447,7 @@ def _select(
         looks_alike=hash_pair_relation(ports.thumbnail_hash),
     )
     run.carriers = list(selection.carriers)
+    gates = picture_admission(source, ports, material, selection, gate)
     if ports.draft is not None:
         run.cut_carriers.extend(deepcopy(ports.draft.removed))
     if ports.thin is not None:
@@ -463,12 +463,13 @@ def _select(
             run,
             contract=contract,
             record=record_story,
+            gates=gates,
         )
     seat = partial(
         seat_in_film,
         film=FilmSeatSource(source, ports.rules, selection, material.units, banked),
         candidates_of=story_candidates(selection, wall, pool, material.units),
-        life=lambda asset_id: shows_life(material, unit_of, asset_id),
+        admission=gates,
         excluded=material.document_sources,
     )
     run.carriers = seat(run.carriers, record=record_story)
@@ -503,7 +504,14 @@ def _select(
         "before_shareability": len(run.carriers),
     }
     announce_count(len(run.carriers), "going into the family-viewing check")
-    share_log = apply_audience_gate(run, gate, selection, material, wall)
+    share_log = apply_audience_gate(
+        run,
+        gate,
+        selection,
+        material,
+        wall,
+        admits=lambda row, cut: gates.admits(row, cut=cut, tier_of={}) is None,
+    )
     if required - {c["asset_id"] for c in run.carriers}:
         # The safety gate keeps its authority over an owner tick; say so where the owner can read it.
         record_story(
@@ -523,7 +531,7 @@ def _select(
         prior_assets=prior_assets,
         owner_required=source.owner_required_asset_ids,
         close_family_of=lambda asset_id: close_of(selection.lines.get(asset_id, "")),
-        gate=gate,
+        admits=lambda row, cut: gates.admits(row, cut=cut, tier_of={}) is None,
         frame_quality=frame_quality_of(source),
         requested_seconds=source.case.target_seconds,
     )
@@ -540,9 +548,9 @@ def _select(
         seat=lambda cut: seat(
             cut,
             record=lambda _name, audit: record_story("family-seat-after-review", audit),
-            held=held_by_gate(gate, unit_of),
         ),
     )
+    record_story("picture-admission", {"checks": gates.decisions})
     check_finished_cut(source, selection, material, run, gate, banked, share_log, record_story)
     return PlanOutcome(
         contract=contract,

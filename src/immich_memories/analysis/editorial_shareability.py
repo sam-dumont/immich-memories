@@ -637,6 +637,7 @@ def _first_shareable(
     verdict_of: Callable[[Mapping[str, Any]], str | None],
     audience: str,
     occupied: Sequence[Mapping[str, Any]],
+    admits: Callable[[Mapping[str, Any], Sequence[Mapping[str, Any]]], bool] | None,
 ) -> tuple[Mapping[str, Any] | None, int]:
     """The first unused pool unit that passes its own gate, and the checks it cost."""
     checked = 0
@@ -646,7 +647,9 @@ def _first_shareable(
         verdict = verdict_of(unit)
         if verdict is not None:
             checked += 1
-        if verdict is None or allowed(verdict, audience):
+        if (verdict is None or allowed(verdict, audience)) and (
+            admits is None or admits(unit, occupied)
+        ):
             return unit, checked
     return None, checked
 
@@ -664,6 +667,7 @@ def apply_gate(
     verdict_of: Callable[[Mapping[str, Any]], str | None],
     pool_for: Callable[[Mapping[str, Any]], Sequence[Mapping[str, Any]]],
     audience: str = "family",
+    admits: Callable[[Mapping[str, Any], Sequence[Mapping[str, Any]]], bool] | None = None,
 ) -> tuple[list[dict], dict[str, Any]]:
     """Keep, replace or drop each carrier by its shareability verdict.
 
@@ -693,7 +697,9 @@ def apply_gate(
         log["tightened"].append(
             {"asset_id": carrier.get("asset_id"), "event": carrier.get("event"), "verdict": verdict}
         )
-        replacement, checked = _first_shareable(pool_for(carrier), used, verdict_of, audience, kept)
+        replacement, checked = _first_shareable(
+            pool_for(carrier), used, verdict_of, audience, kept, admits
+        )
         log["checked"] += checked
         if replacement is None:
             log["dropped"].append(

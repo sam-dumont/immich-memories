@@ -28,6 +28,7 @@ from immich_memories.analysis.editorial_block_votes import (
     load_vote_bank,
     save_vote_bank,
 )
+from immich_memories.analysis.editorial_picture_admission import GateRefusal, PictureAdmission
 from immich_memories.analysis.editorial_shot_kinds import KindOf, kind_mix
 from immich_memories.analysis.editorial_story_replies import close_family_on
 from immich_memories.analysis.editorial_thin_catalogue import (
@@ -35,7 +36,6 @@ from immich_memories.analysis.editorial_thin_catalogue import (
     ThinCatalogue,
     banked_catalogue,
 )
-from immich_memories.analysis.editorial_thin_gates import GateRefusal, ThinGates
 from immich_memories.analysis.editorial_thin_refill import (
     REMOVALS,
     ThinRefill,
@@ -155,7 +155,7 @@ class ThinPolish:
         carriers: Sequence[dict[str, Any]],
         *,
         judge,
-        gates: ThinGates,
+        gates: PictureAdmission,
         catalogue: ThinCatalogue | None,
         contract: str,
         unread: str = "",

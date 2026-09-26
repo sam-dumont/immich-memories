@@ -15,17 +15,9 @@ from functools import partial
 from immich_memories.analysis.editorial_shot_kinds import shot_kind
 from immich_memories.analysis.editorial_story_candidates import story_candidates
 from immich_memories.analysis.editorial_story_replies import film_close_family
-from immich_memories.analysis.editorial_story_standing import StandingGate
 from immich_memories.analysis.editorial_structure_material import Material, Wall
-from immich_memories.analysis.editorial_thin_gates import ThinGates
 from immich_memories.analysis.editorial_thin_layer import PeriodUnread
 from immich_memories.analysis.editorial_unvouched_filler import filler_evidence, owner_vouches_for
-
-
-def shows_life(material: Material, unit_of, asset_id: str) -> bool:
-    """Whether this picture's unit reads as people or life, not a lone object."""
-    u = unit_of.get(asset_id)
-    return bool(u) and material.text.shows_life(u) and not material.text.lone_object(u)
 
 
 def polish_the_draft(
@@ -41,6 +33,7 @@ def polish_the_draft(
     *,
     contract,
     record,
+    gates,
 ):
     """The model's one read of the rules cut this run built; sets `run.polished`.
 
@@ -49,20 +42,6 @@ def polish_the_draft(
     """
     if ports.thin is None:
         return carriers
-    unit_by_asset = {u["asset_id"]: (f, u) for f, units in material.units.items() for u in units}
-    unit_of = {asset: unit for asset, (_family, unit) in unit_by_asset.items()}
-    standing = StandingGate(
-        ports.rules.standing,
-        line_of=lambda asset_id: selection.lines.get(asset_id, ""),
-        life=lambda asset_id: shows_life(material, unit_of, asset_id),
-        unit_by_asset=unit_by_asset,
-        pictures_of={s["key"]: s["seen"]["pictures"] for s in selection.story.stories},
-    )
-
-    def prepare_candidates(rows):
-        gate.prepare(rows)
-        standing.refresh([row["asset_id"] for row in rows])
-
     try:
         catalogue = ports.thin.catalogue_of(selection.story, pool.moment_assets, drafted=carriers)
         unread = ""
@@ -77,16 +56,7 @@ def polish_the_draft(
     polished = ports.thin.polish(
         carriers,
         judge=ports.judge,
-        gates=ThinGates(
-            standing=standing,
-            audience=gate,
-            thumbnail_hash=ports.thumbnail_hash,
-            scene_print=ports.scene_print,
-            audience_name=source.audience,
-            # Laya reads a draft's shots together; without it there is nothing to batch.
-            audience_batch=16 if ports.laya else 0,
-            prepare_candidates=prepare_candidates,
-        ),
+        gates=gates,
         catalogue=catalogue,
         unread=unread,
         contract=contract,

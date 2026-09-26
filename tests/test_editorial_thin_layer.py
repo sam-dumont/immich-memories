@@ -7,7 +7,7 @@ import re
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
-from immich_memories.analysis.editorial_thin_gates import ThinGates
+from immich_memories.analysis.editorial_picture_admission import PictureAdmission
 from immich_memories.analysis.editorial_thin_layer import ThinPolish, catalogued_period
 from immich_memories.config_models_llm import LLMConfig
 from immich_memories.timeperiod import DateRange
@@ -86,7 +86,7 @@ def run(polish, carriers, judge, lines, *, gates=None, record=lambda _n, _p: Non
     return polish.polish(
         carriers,
         judge=judge,
-        gates=gates or ThinGates(Standing(), Audience(), thumbnail_hash=lambda _a: None),
+        gates=gates or PictureAdmission(Standing(), Audience(), thumbnail_hash=lambda _a: None),
         catalogue=polish.catalogue_of(STORY, MOMENTS, drafted=carriers),
         contract="contract",
         line_of=lines.get,
@@ -136,7 +136,7 @@ def test_a_shot_the_gates_refuse_never_reaches_the_vote(tmp_path):
         cut,
         judge,
         {"a1": "the morning", "a2": "the afternoon"},
-        gates=ThinGates(Standing({"a1": 0}), Audience(), thumbnail_hash=lambda _a: None),
+        gates=PictureAdmission(Standing({"a1": 0}), Audience(), thumbnail_hash=lambda _a: None),
         record=lambda name, payload: written.__setitem__(name, dict(payload)),
     )
     assert [c["asset_id"] for c in kept] == ["a2"]

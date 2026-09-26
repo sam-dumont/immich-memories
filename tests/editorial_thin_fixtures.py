@@ -9,12 +9,12 @@ from datetime import datetime, timedelta
 from types import SimpleNamespace
 
 from immich_memories.analysis.editorial_laya_reader import LayaReader
+from immich_memories.analysis.editorial_picture_admission import PictureAdmission
 from immich_memories.analysis.editorial_shareability_tiers import audience_check_for
 from immich_memories.analysis.editorial_standing_facts import carries_nothing
 from immich_memories.analysis.editorial_story_standing import StandingGate
 from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
 from immich_memories.analysis.editorial_thin_catalogue import BankedCatalogue, ThinStory
-from immich_memories.analysis.editorial_thin_gates import ThinGates
 from immich_memories.analysis.editorial_thin_layer import ThinPolish
 from immich_memories.config_models_llm import LLMConfig
 
@@ -213,7 +213,7 @@ def polish(
     cut = ThinPolish(bank_dir=tmp_path, short=short).polish(
         film.draft,
         judge=judge,
-        gates=ThinGates(
+        gates=PictureAdmission(
             standing=standing,
             audience=audience,
             thumbnail_hash=lambda _a: None,
