@@ -129,7 +129,8 @@ def refine(reader, library, candidate, nomination, brief=None, sample_limit=40):
             assert all(type(i) is int and i in offered for i in answer[field])
         assert isinstance(answer['unsupported_claims'],list)
         assert all(isinstance(answer[k],str) for k in ('title','supported_scope','connection','why'))
-        if answer['decision']=='keep':
+        # Discovery looks for threads across years; an owner's sentence can be one trip.
+        if answer['decision']=='keep' and candidate['operator']!='owner_request':
             assert len({library.rows[i]['taken_at'][:4] for i in answer['evidence_refs']})>=2
     data = {'owner_brief':owner_brief,'hypothesis':nomination,'operator':candidate['operator'],
             'retrieval_counts':{k:candidate[k] for k in ('days','years','countries')},

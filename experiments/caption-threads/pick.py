@@ -19,10 +19,12 @@ from collections import Counter
 from experiment_data import ROOT, load_library, save
 from model_reader import Reader
 
-MIN_SOURCES, MIN_YEARS, MERGE_SIMILARITY, HEAT, ROUNDS = 5, 3, 0.35, 8, 2
+MIN_SOURCES, MIN_YEARS, MERGE_SIMILARITY, HEAT, ROUNDS, MIN_WINS = 5, 3, 0.35, 8, 5, 2
+MIN_DAYS, BURST_WINDOW, BURST_SHARE = 5, 14, 0.5
 
 HEAT_PROMPT = '''These are candidate threads found in one person's photo library. Each has
-a working title, the years it spans and captions of pictures spread across that span.
+a working title, the years it spans, where its pictures were taken and captions of
+pictures spread across that span.
 Which of them would make a short film this person would want to watch about their own
 life: something they did, made, cared for or kept going back to over the years?
 Pick AT MOST 2. Pick none if none qualifies. A thread whose captions only share a
@@ -53,8 +55,10 @@ def candidates(library):
         years = {library.rows[i]["taken_at"][:4] for i in refs}
         if r.get("operator") == "owner_request" or len(refs) < MIN_SOURCES or len(years) < MIN_YEARS:
             continue
+        if r.get("operator") != "geographic_variation" and is_burst(library, refs):
+            continue
         threads.append({"key": r["key"], "title": (r.get("judgment") or {}).get("title", r["anchor"]),
-                        "refs": refs, "years": sorted(years)})
+                        "refs": refs, "years": sorted(years), "operator": r.get("operator")})
     threads.sort(key=lambda t: -len(t["refs"]))
     # Two threads are one subject when their pictures are described in the same
     # words. Sampled sources rarely share pictures, so overlap of IDs misses this.
@@ -74,6 +78,17 @@ def candidates(library):
     return merged
 
 
+def is_burst(library, refs):
+    """Volume is a burst, continuity is a thread: the product's rule for people, applied to subjects."""
+    from datetime import date
+
+    days = sorted({date.fromisoformat(library.rows[i]["taken_at"][:10]) for i in refs})
+    if len(days) < MIN_DAYS:
+        return True
+    densest = max(sum(1 for d in days if 0 <= (d - start).days < BURST_WINDOW) for start in days)
+    return densest / len(days) > BURST_SHARE
+
+
 def cosine(a, b):
     dot = sum(v * b.get(w, 0) for w, v in a.items())
     return dot / (math.sqrt(sum(v * v for v in a.values())) * math.sqrt(sum(v * v for v in b.values())) or 1)
@@ -82,12 +97,25 @@ def cosine(a, b):
 def show(library, t, i):
     return {"id": i, "title": t["title"], "also": t["merged"][:3],
             "years": f'{t["years"][0]}-{t["years"][-1]} ({len(t["years"])} years)',
-            "pictures": len(t["refs"]), "captions": spread(library, t["refs"])}
+            "pictures": len(t["refs"]), "captions": spread(library, t["refs"]),
+            "places": places(library, t["refs"])}
+
+
+def places(library, refs):
+    """Where the thread was taken: a travel thread is invisible in captions alone."""
+    counts = Counter((library.rows[i].get("region") or library.rows[i].get("city"),
+                      library.rows[i].get("country")) for i in refs)
+    return [f"{c}, {k}" if c else k for (c, k), _ in counts.most_common(6) if k]
 
 
 def main():
     library, reader = load_library(), Reader()
     pool = candidates(library)
+    # Places are their own lane: a travel thread shares where, not what, so next to a
+    # subject it reads as a jumble and loses every heat. Metadata decides it.
+    travels = [t for t in pool if t["operator"] == "geographic_variation"
+               and len({library.rows[i].get("country") for i in t["refs"]} - {""}) >= 3]
+    pool = [t for t in pool if t["operator"] != "geographic_variation"]
     # Every thread runs in ROUNDS differently drawn heats, so one strong neighbour
     # cannot knock a good thread out on its own.
     winners = {}
@@ -104,8 +132,13 @@ def main():
                                 [show(library, t, i) for i, t in ids.items()], valid, 600)
             for p in (answer or {"picked": []})["picked"]:
                 t = ids[p["id"]]
-                winners.setdefault(t["key"], t | {"film_title": p["title"], "why": p["why"]})
-    winners = list(winners.values())
+                won = winners.setdefault(t["key"], t | {"film_title": p["title"], "why": p["why"], "wins": 0})
+                won["wins"] += 1
+    # A pick that holds across differently drawn heats is the model's view of the
+    # thread; one that shows up once is the draw.
+    winners = [t for t in winners.values() if t["wins"] >= MIN_WINS] + [
+        t | {"film_title": "Travels across the years",
+             "why": "Pictures in several countries, returned to across years."} for t in travels]
     ids = {i: t for i, t in enumerate(winners)}
 
     def valid_order(a):
@@ -115,14 +148,14 @@ def main():
                        [show(library, t, i) | {"film_title": t["film_title"]} for i, t in ids.items()],
                        valid_order, 400) if len(ids) > 1 else {"order": list(ids)}
     ranked = [ids[i] for i in (order or {"order": list(ids)})["order"]]
-    out = [{"film_title": t["film_title"], "why": t["why"], "found_as": t["title"],
+    out = [{"film_title": t["film_title"], "why": t["why"], "found_as": t["title"], "wins": t.get("wins", "-"),
             "merged": t["merged"], "years": t["years"], "pictures": len(t["refs"]),
             "asset_ids": [library.rows[i]["asset_id"] for i in sorted(t["refs"])]} for t in ranked]
     save(ROOT / "data/picked.json", {"considered": len(pool), "heat_winners": len(winners),
                                      "threads": out})
     print(json.dumps({"considered": len(pool), "winners": len(winners)}))
     for t in out:
-        print(f'{t["film_title"][:50]:50} {t["years"][0]}-{t["years"][-1]} {t["pictures"]:3} '
+        print(f'{t["wins"]}/{ROUNDS} {t["film_title"][:46]:46} {t["years"][0]}-{t["years"][-1]} {t["pictures"]:3} '
               f'(found as: {t["found_as"][:40]}; +{len(t["merged"])} merged)')
 
 

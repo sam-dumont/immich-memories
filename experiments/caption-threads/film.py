@@ -7,6 +7,7 @@ Nothing is written to Immich. Restricted to the test Immich while this is a prob
 """
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -30,7 +31,8 @@ def main():
            for c in candidates for e in (c["evidence"] if isinstance(c, dict) else c.evidence)]
     summary = {"brief": brief, "status": result["status"], "plan": result.get("plan"),
                "sources": len(ids)}
-    if not ids:
+    if len(ids) < 5:  # two stray matches are not a film
+        summary["status"] = "too_few_sources" if ids else summary["status"]
         print(json.dumps(summary, ensure_ascii=False))
         return
     title = result.get("judgment", {}).get("title") or result["plan"]["title"]
@@ -39,6 +41,8 @@ def main():
     spec.write_text(json.dumps({"name": title, "brief": brief, "asset_ids": ids}))
     summary |= {"title": title, "spec": str(spec)}
     print(json.dumps(summary, ensure_ascii=False), flush=True)
+    if os.environ.get("FILM_DRY"):
+        return
     wrapper = "/private/tmp/imm-threads/.venv/bin/immich-memories"
     # The thread is the curation: every checked source is owner-required, so the
     # editor dedupes and orders instead of re-judging the pool as a period.
