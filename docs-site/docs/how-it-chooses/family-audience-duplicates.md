@@ -53,7 +53,8 @@ end up in no shot. The seat fixes that on every tier (`editorial_family_seat.py`
   of your partner, their parents count, though to you they're in-laws. The same set drives big
   stories, the duplicate review and the model polish.
 - **Which frame.** Their best frame by standing, in the story that holds most of their pictures,
-  that clears the story's standing bar and that no hold refuses.
+  that clears the story's standing bar and that no hold refuses. Equal standing favours your
+  starred frame. If admission refuses it, the next eligible frame gets its chance.
 - **Whose place.** Added when the film has a slot and the time for one more shot. Otherwise it
   replaces the weakest shot of that story, or else the film's weakest shot in a story that keeps
   another one. A favourite, another seat, or someone's only close-family shot is never displaced.

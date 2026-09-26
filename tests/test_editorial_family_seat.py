@@ -6,6 +6,8 @@ favourite, and none of the favourites shows her, though she is on fifty of the m
 
 from __future__ import annotations
 
+import pytest
+
 from immich_memories.analysis.editorial_family_seat import (
     FamilySeatInputs,
     FamilySeatPolicy,
@@ -92,6 +94,53 @@ def test_a_film_with_room_takes_the_seat_without_giving_anything_up():
 
     assert seated[:-1] == film
     assert seated[-1]["asset_id"] == "p-12"
+
+
+@pytest.mark.parametrize("favourite_admitted", [True, False])
+def test_a_family_seat_prefers_the_favourite_when_the_same_moment_has_equal_standing(
+    favourite_admitted,
+):
+    from dataclasses import replace
+
+    from immich_memories.analysis.editorial_cut_invariants import FinishedCut, cut_violations
+
+    lines, rows, film = _month()
+    for group in rows.values():
+        for row in group:
+            row["taken"] = "2030-02-20T12:00:00+00:00"
+    for row in rows["S2"]:
+        if row["asset_id"] in {"p-12", "p-13"}:
+            row.update(moment="M1", favourite=row["asset_id"] == "p-13")
+    offered = []
+
+    def admits(row, _cut):
+        offered.append(row["asset_id"])
+        return favourite_admitted or row["asset_id"] != "p-13"
+
+    inputs = replace(
+        _inputs(lines, rows),
+        score_of=lambda asset: 2 if asset in {"p-12", "p-13"} else 1,
+        admits=admits,
+    )
+
+    seated, _ = seat_close_family(film, inputs)
+
+    assert _shows_partner(lines, seated) == ["p-13" if favourite_admitted else "p-12"]
+    assert offered == (["p-13"] if favourite_admitted else ["p-13", "p-12"])
+    assert len(seated) == len(film)
+    assert (
+        cut_violations(
+            FinishedCut(
+                carriers=seated,
+                units={row["asset_id"]: row for group in rows.values() for row in group},
+                close_family_of=lambda asset: close_family_on(lines[asset]),
+                verdict_of=lambda asset: (
+                    "share" if favourite_admitted or asset != "p-13" else "do_not_show"
+                ),
+            )
+        )
+        == []
+    )
 
 
 def test_a_story_of_favourites_only_gives_no_seat_when_the_film_is_full():
