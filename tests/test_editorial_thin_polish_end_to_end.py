@@ -8,9 +8,9 @@ from types import SimpleNamespace
 
 import pytest
 
+from immich_memories.analysis.editorial_picture_admission import PictureAdmission
 from immich_memories.analysis.editorial_standing_facts import carries_nothing
 from immich_memories.analysis.editorial_story_standing import StandingGate
-from immich_memories.analysis.editorial_thin_gates import ThinGates
 from immich_memories.analysis.editorial_thin_layer import ThinPolish
 from immich_memories.config_models_llm import LLMConfig
 
@@ -156,7 +156,9 @@ def polish_once(tmp_path, judge):
     return layer.polish(
         DRAFT,
         judge=judge,
-        gates=ThinGates(standing=standing, audience=Audience(), thumbnail_hash=lambda _a: None),
+        gates=PictureAdmission(
+            standing=standing, audience=Audience(), thumbnail_hash=lambda _a: None
+        ),
         catalogue=layer.catalogue_of(STORY, MOMENTS, {"n1": "the first of them"}, drafted=DRAFT),
         contract="contract",
         line_of=LINES.get,
@@ -247,7 +249,9 @@ def test_a_story_the_bank_records_something_about_is_seated_from_the_bank(tmp_pa
     cut = layer.polish(
         DRAFT,
         judge=judge,
-        gates=ThinGates(standing=standing, audience=Audience(), thumbnail_hash=lambda _a: None),
+        gates=PictureAdmission(
+            standing=standing, audience=Audience(), thumbnail_hash=lambda _a: None
+        ),
         catalogue=layer.catalogue_of(STORY, MOMENTS, drafted=DRAFT),
         contract="contract",
         line_of=LINES.get,

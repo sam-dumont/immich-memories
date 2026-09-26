@@ -243,11 +243,12 @@ def test_a_frame_the_audience_gate_holds_gives_the_seat_to_her_next_best():
     lines, rows, film = _month()
     asked = []
 
-    def held(asset):
+    def admits(row, _cut):
+        asset = row["asset_id"]
         asked.append(asset)
-        return asset == "p-12"
+        return asset != "p-12"
 
-    inputs = FamilySeatInputs(**{**_inputs(lines, rows).__dict__, "held": held})
+    inputs = FamilySeatInputs(**{**_inputs(lines, rows).__dict__, "admits": admits})
     seated, _ = seat_close_family(film, inputs)
 
     assert _shows_partner(lines, seated) == ["p-00"]

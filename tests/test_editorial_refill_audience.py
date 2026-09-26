@@ -5,6 +5,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from immich_memories.analysis.annotation_lines import AssetAnnotationLine
+from immich_memories.analysis.editorial_picture_admission import PictureAdmission
+from immich_memories.analysis.editorial_story_standing import StandingGate
 from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
 from immich_memories.analysis.editorial_structure_finishing import PlanRun, final_duplicate_review
 from tests.editorial_thin_fixtures import CountingJudge
@@ -63,9 +65,23 @@ def _review(tmp_path, offers: list[dict], *, exposed: set[str]) -> PlanRun:
         prior=None,
         prior_assets=set(),
         replacements_for=lambda _c: [("moment", o) for o in offers],
-        gate=_gate(tmp_path, exposed=exposed),
+        admits=_admission(tmp_path, exposed=exposed),
     )
     return run
+
+
+def _admission(tmp_path, *, exposed):
+    standing = StandingGate(
+        lambda _asset: 2,
+        line_of=lambda _asset: "people at a table",
+        life=lambda _asset: True,
+        unit_by_asset={a: ("family", _shot(a, 0)) for a in HASHES},
+        pictures_of={"S001": len(HASHES)},
+    )
+    admission = PictureAdmission(
+        standing, _gate(tmp_path, exposed=exposed), HASHES.get, audience_name="shareable"
+    )
+    return lambda row, cut: admission.admits(row, cut=cut, tier_of={}) is None
 
 
 def test_a_refill_the_exposure_head_holds_never_ships_and_the_next_one_does(tmp_path):
@@ -101,7 +117,7 @@ def test_a_refill_the_settled_length_cannot_hold_leaves_its_slot_empty(tmp_path)
         prior=None,
         prior_assets=set(),
         replacements_for=lambda _c: [("moment", spoken)],
-        gate=_gate(tmp_path, exposed=set()),
+        admits=_admission(tmp_path, exposed=set()),
     )
 
     assert sum(c["seconds"] for c in run.carriers) <= run.final_content_cap

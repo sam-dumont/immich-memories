@@ -10,8 +10,8 @@ import json
 import re
 from types import SimpleNamespace
 
+from immich_memories.analysis.editorial_picture_admission import PictureAdmission
 from immich_memories.analysis.editorial_story_replies import film_close_family
-from immich_memories.analysis.editorial_thin_gates import ThinGates
 from immich_memories.analysis.editorial_thin_layer import ThinPolish
 from immich_memories.config_models_llm import LLMConfig
 from tests.editorial_subject_family import film_of, subject_people
@@ -91,7 +91,7 @@ def polish_of(tmp_path, lines, *, standing=None, subject="", record=lambda _n, _
     kept = polish.polish(
         cut,
         judge=judge,
-        gates=ThinGates(standing or Standing(), Audience(), thumbnail_hash=lambda _a: None),
+        gates=PictureAdmission(standing or Standing(), Audience(), thumbnail_hash=lambda _a: None),
         catalogue=polish.catalogue_of(STORY, moments, drafted=cut),
         contract="contract",
         line_of=lines.get,

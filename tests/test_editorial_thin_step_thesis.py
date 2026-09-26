@@ -57,6 +57,7 @@ def _polish(story, catalogue):
         SimpleNamespace(final_content_cap=60.0, cut_carriers=[]),
         contract="",
         record=lambda name, value: records.__setitem__(name, value),
+        gates=None,
     )
     return records
 

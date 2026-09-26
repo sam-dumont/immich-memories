@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_thin_gates import ThinGates
+from immich_memories.analysis.editorial_picture_admission import PictureAdmission
 
 
 class Standing:
@@ -51,7 +51,7 @@ def shot(asset, *, story="S001", taken="2024-02-01T09:00:00", moment=None, favou
 
 
 def gates(standing=None, audience=None, hashes=None):
-    return ThinGates(
+    return PictureAdmission(
         standing=standing or Standing({}),
         audience=audience or Audience(),
         thumbnail_hash=(hashes or {}).get,

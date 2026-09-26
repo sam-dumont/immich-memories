@@ -69,6 +69,14 @@ no people at all (a view, a place) is not demoted, and a library that names nobo
 
 ## What a frame must pass
 
+Draft picks and replacements use the same admission rules. A replacement gets its own story
+weight and purpose, then passes standing, audience, spacing and repetition checks against the
+shots it would join. Newly acquired caption or motion facts are read before that decision.
+This also applies when replacing a duplicate or giving a missing family member a seat.
+The existing depth pass can add a distinct view inside an already shown moment; that exception
+does not transfer to a replacement. Candidate decisions are recorded in the run's private
+`derived-decisions/picture-admission.private.json` file.
+
 **Free.** Not already a shot, and not a picture the carrier rules keep as evidence only
 (`excluded_carrier_sources`): a document the detector names, a screen the `screen` head flags, a
 still at an exact phone-screen size, and, where there is a caption, a caption about a screen, a face

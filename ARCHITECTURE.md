@@ -181,6 +181,12 @@ the code named beside it; if the two disagree, the code wins and this entry is s
 - **Carrier**: the picture admitted to carry one chosen moment of a funded story, if it is free,
   in context and spaced from the shots already committed (`editorial_story_carriers.py`,
   `editorial_carrier_eligibility.py`). A carrier is a shot before it is rendered.
+- **Picture admission**: `PictureAdmission` (`editorial_picture_admission.py`) owns the shared
+  standing, audience, spacing and candidate repetition checks. Draft selection, thin swaps,
+  audience replacements, duplicate refills and family seats use it. Later candidates acquire
+  their bounded facts before standing is refreshed; the private admission record names each
+  result. `editorial_carrier.py` binds every candidate to its own story context. Story allocation
+  still owns depth and recovery; these are explicit exceptions, never inherited by a refill.
 - **Standing**: does a picture stand by itself, and may it serve as context inside its story.
   Answered on every tier from the facts, never asked of a model (`editorial_standing_facts.py`: two
   points tables, heads alone or heads plus the ingest caption; a caption naming an animal, or a
@@ -399,7 +405,8 @@ src/immich_memories/
 │   │                               # held to 4 calls per 12 draft shots + 4 per seat (thin_budget)
 │   ├── editorial_thin_step.py      # The planner's polish step; an unpolished draft (unread period) gets the no-model passes
 │   ├── editorial_thin_catalogue.py # What a polish may read of a catalogued period: account, stories, hints
-│   ├── editorial_thin_gates.py     # Every draft shot put to standing, audience, spacing and the hash review
+│   ├── editorial_picture_admission.py # Shared candidate preparation and standing, audience, spacing and repetition checks
+│   ├── editorial_carrier.py        # A playable picture bound to its own story context
 │   ├── editorial_thin_vote.py      # One closed thesis-fit vote over the whole cut, in balanced blocks,
 │   │                               # source order first, the hashed order only where it decides
 │   │                               # rows carry close family relations; a relative's only shot is held

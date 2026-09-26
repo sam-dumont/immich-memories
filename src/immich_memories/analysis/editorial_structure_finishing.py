@@ -20,7 +20,7 @@ from immich_memories.analysis.editorial_completion import (
     ACCEPTED_SHORTFALL_FRACTION,
     RetainedMotion,
 )
-from immich_memories.analysis.editorial_final_hash_review import review_cut_by_cached_hashes
+from immich_memories.analysis.editorial_final_hash_review import Admits, review_cut_by_cached_hashes
 from immich_memories.analysis.editorial_intent_validation import MIN_CARRIERS, MIN_CONTENT_SHARE
 from immich_memories.analysis.editorial_source_route import retire_unprojectable
 from immich_memories.analysis.editorial_story_planner import alternatives_pool
@@ -176,7 +176,7 @@ def final_duplicate_review(
     replacements_for: Callable[[Mapping[str, Any]], Sequence[tuple[str, Mapping[str, Any]]]]
     | None = None,
     close_family_of: Callable[[str], Collection[str]] = lambda _asset: (),
-    gate: AudienceGate | None = None,
+    admits: Admits,
     frame_quality: Callable[[str], tuple[int, float] | None] = lambda _asset: None,
     requested_seconds: float = 0.0,
 ) -> None:
@@ -184,9 +184,8 @@ def final_duplicate_review(
     resolved render kinds. Nothing may refill a removed duplicate afterward.
 
     A close family member's only shot never leaves: the review keeps it ahead of its
-    look-alike. A refill arrives after the audience gate ran, so `gate` judges it like any
-    other carrier: its banked verdict when there is one, a new question otherwise, and a
-    refused refill leaves the slot to the next offer or empty."""
+    look-alike. Every refill passes shared candidate admission against the actual cut,
+    including fresh standing and audience facts. A refusal leaves the next offer its turn."""
     protected = sorted(
         (prior_assets - set(prior.get("review_proposed_assets", [])) if prior else set())
         | set(owner_required)
@@ -202,7 +201,7 @@ def final_duplicate_review(
         replacements_for=replacements_for,
         scene_print=ports.scene_print,
         close_family_of=close_family_of,
-        admits=_admitted_by(gate),
+        admits=admits,
         frame_quality=frame_quality,
         # Folding starred twins never takes a film under the floor where it abstains.
         film_floor=(MIN_CARRIERS, MIN_CONTENT_SHARE * requested_seconds),
@@ -245,22 +244,6 @@ def frame_quality_of(source) -> Callable[[str], tuple[int, float] | None]:
         return faces, float(sharpness or 0.0)
 
     return quality
-
-
-def _admitted_by(gate: AudienceGate | None) -> Callable[[Mapping[str, Any]], bool]:
-    if gate is None:
-        return lambda _row: True
-    return lambda row: _share.allowed(gate.verdict_of(row), gate.audience)
-
-
-def held_by_gate(gate: AudienceGate, unit_of: Mapping[str, Mapping[str, Any]]):
-    """Whether the audience gate refuses a picture for this film, asked one picture at a time."""
-
-    def held(asset_id: str) -> bool:
-        verdict = gate.verdict_of(unit_of[asset_id])
-        return verdict is not None and not _share.allowed(verdict, gate.audience)
-
-    return held
 
 
 def seat_again_after_review(
@@ -309,7 +292,7 @@ def trim_to_timing(
 
 
 def apply_audience_gate(
-    run: PlanRun, gate: AudienceGate, selection, material: Material, wall: Wall
+    run: PlanRun, gate: AudienceGate, selection, material: Material, wall: Wall, *, admits: Admits
 ) -> dict:
     before_privacy = run.carriers.copy()
     run.carriers, share_log = _share.apply_gate(
@@ -321,6 +304,7 @@ def apply_audience_gate(
         # the only replacements a held carrier can have.
         pool_for=alternatives_pool(selection, material.units, wall.anchor_label),
         audience=gate.audience,
+        admits=admits,
     )
     open_share_log(share_log, funded_acquisition={})
     run.selection_stages["after_shareability"] = len(run.carriers)

@@ -46,7 +46,7 @@ flowchart TD
 flowchart TD
   draft["the no-model draft"] --> acc["the period's account<br/>ThinPolish.catalogue_of, _read_period"]
   acc -- "unread twice" --> ship["the draft ships as the no-model film<br/>_unpolished, a warning, ran: false"]
-  acc --> gates["every shot faces the gates<br/>ThinGates.admit: standing, audience,<br/>5-minute spacing, cached-hash look-alike"]
+  acc --> gates["every shot faces the gates<br/>PictureAdmission.admit: standing, audience,<br/>5-minute spacing, cached-hash look-alike"]
   gates --> vote["which shots add nothing?<br/>vote_thesis_fit: blocks of 12, reject-only"]
   vote --> cls["classify_fit<br/>named in either order: offered a replacement<br/>original stays until it passes"]
   cls --> seats["seats N, R, T, D<br/>plan_slots, ThinRefill.fill"]
