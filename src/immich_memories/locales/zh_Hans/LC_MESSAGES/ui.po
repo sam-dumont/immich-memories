@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 13:40+0200\n"
+"POT-Creation-Date: 2026-09-26 20:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -121,6 +121,10 @@ msgstr "添加人物"
 msgid "Add someone not in Immich"
 msgstr "添加 Immich 中没有的人物"
 
+#: pages/memory_storyboard.py:153
+msgid "Added for a moment the catalogue records as notable."
+msgstr "因目录记录为值得纪念的时刻而加入。"
+
 #: pages/settings_people.py:498
 #, python-brace-format
 msgid "Added {value}"
@@ -224,7 +228,7 @@ msgstr "自动使用往年今天的日期"
 msgid "Back to Generation Options"
 msgstr "返回生成选项"
 
-#: pages/memory_storyboard.py:153
+#: pages/memory_storyboard.py:160
 msgid "Back to pictures"
 msgstr "返回图片"
 
@@ -563,7 +567,7 @@ msgstr "已排除"
 msgid "Export"
 msgstr "导出"
 
-#: pages/memory_storyboard.py:149
+#: pages/memory_storyboard.py:156
 msgid "Export uses your selection. Cut again replans it."
 msgstr "导出使用当前选择。“重新剪辑”会创建新的剪辑方案。"
 
@@ -616,7 +620,7 @@ msgstr "最终时长：{value}"
 msgid "Find a name"
 msgstr "搜索姓名"
 
-#: pages/memory_storyboard.py:152
+#: pages/memory_storyboard.py:159
 msgid "Find alternatives in the pool"
 msgstr "在媒体库中查找备选项"
 
@@ -748,7 +752,7 @@ msgstr "包含照片"
 msgid "Include in compilation"
 msgstr "加入合辑"
 
-#: pages/memory_storyboard.py:148
+#: pages/memory_storyboard.py:155
 msgid "Include in export"
 msgstr "包含在导出中"
 
@@ -867,6 +871,10 @@ msgstr "回忆类型"
 msgid "Middle 5s"
 msgstr "中间 5 秒"
 
+#: pages/memory_storyboard.py:147
+msgid "Model polish"
+msgstr "模型润色"
+
 #: pages/memory_storyboard.py:143
 msgid "Model suggestion"
 msgstr "模型建议"
@@ -957,7 +965,7 @@ msgstr "未选择片段。请返回选择。"
 msgid "No eligible suggestions right now."
 msgstr "暂无符合条件的建议。"
 
-#: pages/memory_storyboard.py:147
+#: pages/memory_storyboard.py:154
 msgid "No outcome recorded."
 msgstr "未记录结果。"
 
@@ -1153,7 +1161,7 @@ msgstr "请先选择相册"
 msgid "Pick the seconds each video shows and preview it. Stills need no trimming."
 msgstr "选择每段视频展示的秒数并预览。静态照片无需裁剪。"
 
-#: pages/memory_storyboard.py:118 pages/memory_storyboard.py:151
+#: pages/memory_storyboard.py:118 pages/memory_storyboard.py:158
 msgid "Picture decisions"
 msgstr "此图片的处理决定"
 
@@ -1269,6 +1277,10 @@ msgstr "重新加载媒体"
 #: pages/settings_people.py:442
 msgid "Remove this relationship"
 msgstr "移除此关系"
+
+#: pages/memory_storyboard.py:150
+msgid "Replaced a picture the model doubted."
+msgstr "替换了一张模型存疑的图片。"
 
 #: pages/settings_people.py:165
 msgid "Rescan the library"
@@ -1541,6 +1553,10 @@ msgid ""
 " trim what was."
 msgstr "媒体库和片段编辑器有独立页面：排除绝不能出现的内容，并调整已选片段。"
 
+#: pages/memory_storyboard.py:148
+msgid "The picture it replaced"
+msgstr "被替换的图片"
+
 #: pages/step2_review.py:253
 #, python-brace-format
 msgid "The pool{value}"
@@ -1602,6 +1618,14 @@ msgstr "“同时出现”仅保留所有指定人物同框的时刻。“其中
 msgid "Too many failed attempts. Try again later."
 msgstr "失败次数过多，请稍后再试。"
 
+#: pages/memory_storyboard.py:152
+msgid "Took the seat of a picture a check refused."
+msgstr "接替了一张被检查拒绝的图片的位置。"
+
+#: pages/memory_storyboard.py:151
+msgid "Took the seat of a picture the model removed from this story."
+msgstr "接替了模型从这个故事中移除的一张图片的位置。"
+
 #: pages/clip_review.py:361
 msgid "Total Duration"
 msgstr "总时长"
@@ -1610,7 +1634,7 @@ msgstr "总时长"
 msgid "Transition Style"
 msgstr "转场样式"
 
-#: pages/clip_review.py:445 pages/memory_storyboard.py:150 pages/step2_review.py:147
+#: pages/clip_review.py:445 pages/memory_storyboard.py:157 pages/step2_review.py:147
 msgid "Trim the video clips"
 msgstr "裁剪视频片段"
 
@@ -1718,6 +1742,10 @@ msgstr "谁会观看"
 #: pages/suggestions.py:209
 msgid "Why other suggestions were skipped"
 msgstr "其他建议为何被跳过"
+
+#: pages/memory_storyboard.py:149
+msgid "Why the model replaced the other picture"
+msgstr "模型替换另一张图片的原因"
 
 #: pages/memory_storyboard.py:141
 msgid "Why this picture"

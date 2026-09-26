@@ -16,9 +16,12 @@ def test_protected_picture_keeps_the_model_objection_and_the_rule_that_overruled
                 "ran": True,
                 "verdicts": {
                     "original": {
+                        "state": "kept",
+                        "named_by": 2,
                         "why": "Another portrait from the same moment",
                         "protected": True,
-                        "rule": "The owner starred this picture",
+                        "held_by": "the owner starred it or the catalogue records it",
+                        "rule": "thesis-fit vote",
                     }
                 },
                 "slots": [],
@@ -29,7 +32,7 @@ def test_protected_picture_keeps_the_model_objection_and_the_rule_that_overruled
     review = read_cut_decisions(tmp_path)
 
     assert review["original"]["model_reason"] == "Another portrait from the same moment"
-    assert review["original"]["kept_reason"] == "The owner starred this picture"
+    assert review["original"]["kept_reason"] == "the owner starred it or the catalogue records it"
     assert review["original"]["proposed_asset_id"] == ""
 
 
@@ -70,3 +73,70 @@ def test_a_cut_is_reviewable_when_the_optional_model_record_is_missing_or_unread
         (folder / "thin-polish.private.json").write_text(payload)
 
     assert read_cut_decisions(tmp_path) == {}
+
+
+def _record(tmp_path, **record):
+    folder = tmp_path / "derived-decisions"
+    folder.mkdir()
+    (folder / "thin-polish.private.json").write_text(json.dumps({"ran": True} | record))
+
+
+def test_an_accepted_swap_is_explained_on_the_picture_that_took_the_seat(tmp_path):
+    _record(
+        tmp_path,
+        verdicts={"original": {"state": "weak", "named_by": 1, "why": "Repeated view"}},
+        slots=[
+            {
+                "rule": "vote-weak",
+                "story": "S1",
+                "replacing": "original",
+                "chosen": "newcomer",
+                "offered": "4",
+                "outcome": "seated",
+            }
+        ],
+        revoked_by_the_fit_check=[],
+    )
+
+    decision = read_cut_decisions(tmp_path)["newcomer"]
+
+    assert decision["replaced_asset_id"] == "original"
+    assert decision["model_reason"] == "Repeated view"
+    assert decision["offered_count"] == 4
+
+
+def test_a_newcomer_the_fit_check_revoked_leaves_the_original_explained_as_restored(tmp_path):
+    _record(
+        tmp_path,
+        verdicts={"original": {"state": "weak", "named_by": 1, "why": "Repeated view"}},
+        slots=[
+            {
+                "rule": "vote-weak",
+                "replacing": "original",
+                "chosen": "newcomer",
+                "offered": "3",
+                "outcome": "seated",
+            }
+        ],
+        revoked_by_the_fit_check=["newcomer"],
+    )
+
+    review = read_cut_decisions(tmp_path)
+
+    assert "newcomer" not in review
+    assert review["original"]["proposed_asset_id"] == "newcomer"
+    assert review["original"]["replacement_outcome"] == "taken back by the fit check"
+
+
+@pytest.mark.parametrize("seat", ["vote-bad", "gate-refused", "notable"])
+def test_a_picture_seated_without_a_named_predecessor_says_which_seat_it_took(tmp_path, seat):
+    _record(
+        tmp_path,
+        verdicts={},
+        slots=[{"rule": seat, "replacing": "", "chosen": "newcomer", "outcome": "seated"}],
+    )
+
+    decision = read_cut_decisions(tmp_path)["newcomer"]
+
+    assert decision["seat"] == seat
+    assert decision["replaced_asset_id"] == ""

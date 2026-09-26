@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 13:40+0200\n"
+"POT-Creation-Date: 2026-09-26 20:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -123,6 +123,10 @@ msgstr "Add someone"
 msgid "Add someone not in Immich"
 msgstr "Add someone not in Immich"
 
+#: pages/memory_storyboard.py:153
+msgid "Added for a moment the catalogue records as notable."
+msgstr "Added for a moment the catalogue records as notable."
+
 #: pages/settings_people.py:498
 #, python-brace-format
 msgid "Added {value}"
@@ -228,7 +232,7 @@ msgstr "Automatically uses today's date across previous years"
 msgid "Back to Generation Options"
 msgstr "Back to Generation Options"
 
-#: pages/memory_storyboard.py:153
+#: pages/memory_storyboard.py:160
 msgid "Back to pictures"
 msgstr "Back to pictures"
 
@@ -569,7 +573,7 @@ msgstr "Excluded"
 msgid "Export"
 msgstr "Export"
 
-#: pages/memory_storyboard.py:149
+#: pages/memory_storyboard.py:156
 msgid "Export uses your selection. Cut again replans it."
 msgstr "Export uses your selection. Cut again replans it."
 
@@ -624,7 +628,7 @@ msgstr "Final Duration: {value}"
 msgid "Find a name"
 msgstr "Find a name"
 
-#: pages/memory_storyboard.py:152
+#: pages/memory_storyboard.py:159
 msgid "Find alternatives in the pool"
 msgstr "Find alternatives in the pool"
 
@@ -756,7 +760,7 @@ msgstr "Include Photos"
 msgid "Include in compilation"
 msgstr "Include in compilation"
 
-#: pages/memory_storyboard.py:148
+#: pages/memory_storyboard.py:155
 msgid "Include in export"
 msgstr "Include in export"
 
@@ -875,6 +879,10 @@ msgstr "Memory type"
 msgid "Middle 5s"
 msgstr "Middle 5s"
 
+#: pages/memory_storyboard.py:147
+msgid "Model polish"
+msgstr "Model polish"
+
 #: pages/memory_storyboard.py:143
 msgid "Model suggestion"
 msgstr "Model suggestion"
@@ -965,7 +973,7 @@ msgstr "No clips selected. Go back to select clips."
 msgid "No eligible suggestions right now."
 msgstr "No eligible suggestions right now."
 
-#: pages/memory_storyboard.py:147
+#: pages/memory_storyboard.py:154
 msgid "No outcome recorded."
 msgstr "No outcome recorded."
 
@@ -1165,7 +1173,7 @@ msgstr "Pick an album first"
 msgid "Pick the seconds each video shows and preview it. Stills need no trimming."
 msgstr "Pick the seconds each video shows and preview it. Stills need no trimming."
 
-#: pages/memory_storyboard.py:118 pages/memory_storyboard.py:151
+#: pages/memory_storyboard.py:118 pages/memory_storyboard.py:158
 msgid "Picture decisions"
 msgstr "Picture decisions"
 
@@ -1281,6 +1289,10 @@ msgstr "Reload the pool"
 #: pages/settings_people.py:442
 msgid "Remove this relationship"
 msgstr "Remove this relationship"
+
+#: pages/memory_storyboard.py:150
+msgid "Replaced a picture the model doubted."
+msgstr "Replaced a picture the model doubted."
 
 #: pages/settings_people.py:165
 msgid "Rescan the library"
@@ -1555,6 +1567,10 @@ msgstr ""
 "The media pool and the excerpt editor have their own page: exclude what may never be cut, and"
 " trim what was."
 
+#: pages/memory_storyboard.py:148
+msgid "The picture it replaced"
+msgstr "The picture it replaced"
+
 #: pages/step2_review.py:253
 #, python-brace-format
 msgid "The pool{value}"
@@ -1618,6 +1634,14 @@ msgstr ""
 msgid "Too many failed attempts. Try again later."
 msgstr "Too many failed attempts. Try again later."
 
+#: pages/memory_storyboard.py:152
+msgid "Took the seat of a picture a check refused."
+msgstr "Took the seat of a picture a check refused."
+
+#: pages/memory_storyboard.py:151
+msgid "Took the seat of a picture the model removed from this story."
+msgstr "Took the seat of a picture the model removed from this story."
+
 #: pages/clip_review.py:361
 msgid "Total Duration"
 msgstr "Total Duration"
@@ -1626,7 +1650,7 @@ msgstr "Total Duration"
 msgid "Transition Style"
 msgstr "Transition Style"
 
-#: pages/clip_review.py:445 pages/memory_storyboard.py:150 pages/step2_review.py:147
+#: pages/clip_review.py:445 pages/memory_storyboard.py:157 pages/step2_review.py:147
 msgid "Trim the video clips"
 msgstr "Trim the video clips"
 
@@ -1742,6 +1766,10 @@ msgstr "Who will watch it"
 #: pages/suggestions.py:209
 msgid "Why other suggestions were skipped"
 msgstr "Why other suggestions were skipped"
+
+#: pages/memory_storyboard.py:149
+msgid "Why the model replaced the other picture"
+msgstr "Why the model replaced the other picture"
 
 #: pages/memory_storyboard.py:141
 msgid "Why this picture"

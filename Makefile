@@ -965,9 +965,14 @@ frontend-install:  ## Install the cut review frontend's pinned dependencies
 frontend-build:  ## Bundle the Svelte contact sheet into the Python package
 	cd frontend && npm run build
 
-frontend-check: frontend-install  ## Type-check and build the embedded review workspace
+# The bundle is committed so a runtime install needs no Node: a fresh build must match it.
+frontend-check: frontend-install  ## Type-check the review workspace and fail when the committed bundle is stale
 	cd frontend && npm run check
-	$(MAKE) frontend-build
+	@fresh=$$(mktemp -d); \
+	(cd frontend && npx vite build --logLevel error --outDir "$$fresh" --emptyOutDir) && \
+	diff -r "$$fresh" src/immich_memories/ui/static/review >/dev/null || { \
+		rm -rf "$$fresh"; echo "src/immich_memories/ui/static/review is stale: run make frontend-build"; exit 1; }; \
+	rm -rf "$$fresh"; echo "review bundle matches frontend/src"
 
 ui-catalogues:  ## Extract UI labels and update the per-language PO files
 	uv run python scripts/update-ui-catalogues.py

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 13:40+0200\n"
+"POT-Creation-Date: 2026-09-26 20:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -125,6 +125,10 @@ msgstr "Lägg till någon"
 msgid "Add someone not in Immich"
 msgstr "Lägg till någon som inte finns i Immich"
 
+#: pages/memory_storyboard.py:153
+msgid "Added for a moment the catalogue records as notable."
+msgstr "Tillagd för ett ögonblick som katalogen noterar som anmärkningsvärt."
+
 #: pages/settings_people.py:498
 #, python-brace-format
 msgid "Added {value}"
@@ -230,7 +234,7 @@ msgstr "Använder automatiskt dagens datum under tidigare år"
 msgid "Back to Generation Options"
 msgstr "Tillbaka till genereringsalternativ"
 
-#: pages/memory_storyboard.py:153
+#: pages/memory_storyboard.py:160
 msgid "Back to pictures"
 msgstr "Tillbaka till bilderna"
 
@@ -571,7 +575,7 @@ msgstr "Bortvald"
 msgid "Export"
 msgstr "Exportera"
 
-#: pages/memory_storyboard.py:149
+#: pages/memory_storyboard.py:156
 msgid "Export uses your selection. Cut again replans it."
 msgstr "Exporten använder ditt urval. Klipp igen skapar en ny klippning."
 
@@ -625,7 +629,7 @@ msgstr "Slutlig längd: {value}"
 msgid "Find a name"
 msgstr "Sök ett namn"
 
-#: pages/memory_storyboard.py:152
+#: pages/memory_storyboard.py:159
 msgid "Find alternatives in the pool"
 msgstr "Hitta alternativ bland medierna"
 
@@ -757,7 +761,7 @@ msgstr "Ta med foton"
 msgid "Include in compilation"
 msgstr "Ta med i sammanställningen"
 
-#: pages/memory_storyboard.py:148
+#: pages/memory_storyboard.py:155
 msgid "Include in export"
 msgstr "Ta med i exporten"
 
@@ -878,6 +882,10 @@ msgstr "Typ av minne"
 msgid "Middle 5s"
 msgstr "Mittersta 5 s"
 
+#: pages/memory_storyboard.py:147
+msgid "Model polish"
+msgstr "Modellens finputsning"
+
 #: pages/memory_storyboard.py:143
 msgid "Model suggestion"
 msgstr "Modellens förslag"
@@ -968,7 +976,7 @@ msgstr "Inga klipp valda. Gå tillbaka och välj klipp."
 msgid "No eligible suggestions right now."
 msgstr "Inga lämpliga förslag just nu."
 
-#: pages/memory_storyboard.py:147
+#: pages/memory_storyboard.py:154
 msgid "No outcome recorded."
 msgstr "Inget resultat sparat."
 
@@ -1168,7 +1176,7 @@ msgstr "Välj ett album först"
 msgid "Pick the seconds each video shows and preview it. Stills need no trimming."
 msgstr "Välj sekunderna för varje video och förhandsvisa. Stillbilder behöver inte trimmas."
 
-#: pages/memory_storyboard.py:118 pages/memory_storyboard.py:151
+#: pages/memory_storyboard.py:118 pages/memory_storyboard.py:158
 msgid "Picture decisions"
 msgstr "Beslut om bilden"
 
@@ -1284,6 +1292,10 @@ msgstr "Läs in medier igen"
 #: pages/settings_people.py:442
 msgid "Remove this relationship"
 msgstr "Ta bort den här relationen"
+
+#: pages/memory_storyboard.py:150
+msgid "Replaced a picture the model doubted."
+msgstr "Ersatte en bild som modellen tvivlade på."
 
 #: pages/settings_people.py:165
 msgid "Rescan the library"
@@ -1560,6 +1572,10 @@ msgstr ""
 "Medierna och klippredigeraren har en egen sida: uteslut det som aldrig får visas och justera "
 "valda utdrag."
 
+#: pages/memory_storyboard.py:148
+msgid "The picture it replaced"
+msgstr "Bilden den ersatte"
+
 #: pages/step2_review.py:253
 #, python-brace-format
 msgid "The pool{value}"
@@ -1623,6 +1639,14 @@ msgstr ""
 msgid "Too many failed attempts. Try again later."
 msgstr "För många misslyckade försök. Försök igen senare."
 
+#: pages/memory_storyboard.py:152
+msgid "Took the seat of a picture a check refused."
+msgstr "Tog platsen efter en bild som en kontroll avvisade."
+
+#: pages/memory_storyboard.py:151
+msgid "Took the seat of a picture the model removed from this story."
+msgstr "Tog platsen efter en bild som modellen tog bort ur den här berättelsen."
+
 #: pages/clip_review.py:361
 msgid "Total Duration"
 msgstr "Total längd"
@@ -1631,7 +1655,7 @@ msgstr "Total längd"
 msgid "Transition Style"
 msgstr "Övergångsstil"
 
-#: pages/clip_review.py:445 pages/memory_storyboard.py:150 pages/step2_review.py:147
+#: pages/clip_review.py:445 pages/memory_storyboard.py:157 pages/step2_review.py:147
 msgid "Trim the video clips"
 msgstr "Trimma videoklippen"
 
@@ -1744,6 +1768,10 @@ msgstr "Vem ska titta"
 #: pages/suggestions.py:209
 msgid "Why other suggestions were skipped"
 msgstr "Varför andra förslag hoppades över"
+
+#: pages/memory_storyboard.py:149
+msgid "Why the model replaced the other picture"
+msgstr "Varför modellen ersatte den andra bilden"
 
 #: pages/memory_storyboard.py:141
 msgid "Why this picture"

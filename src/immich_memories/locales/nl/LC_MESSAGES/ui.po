@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 13:40+0200\n"
+"POT-Creation-Date: 2026-09-26 20:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -125,6 +125,10 @@ msgstr "Iemand toevoegen"
 msgid "Add someone not in Immich"
 msgstr "Iemand toevoegen die niet in Immich staat"
 
+#: pages/memory_storyboard.py:153
+msgid "Added for a moment the catalogue records as notable."
+msgstr "Toegevoegd voor een moment dat de catalogus als opmerkelijk vastlegt."
+
 #: pages/settings_people.py:498
 #, python-brace-format
 msgid "Added {value}"
@@ -230,7 +234,7 @@ msgstr "Gebruikt automatisch de datum van vandaag in eerdere jaren"
 msgid "Back to Generation Options"
 msgstr "Terug naar generatieopties"
 
-#: pages/memory_storyboard.py:153
+#: pages/memory_storyboard.py:160
 msgid "Back to pictures"
 msgstr "Terug naar beelden"
 
@@ -571,7 +575,7 @@ msgstr "Uitgesloten"
 msgid "Export"
 msgstr "Exporteren"
 
-#: pages/memory_storyboard.py:149
+#: pages/memory_storyboard.py:156
 msgid "Export uses your selection. Cut again replans it."
 msgstr "De export gebruikt je selectie. Opnieuw monteren maakt een nieuw montageplan."
 
@@ -626,7 +630,7 @@ msgstr "Uiteindelijke duur: {value}"
 msgid "Find a name"
 msgstr "Een naam zoeken"
 
-#: pages/memory_storyboard.py:152
+#: pages/memory_storyboard.py:159
 msgid "Find alternatives in the pool"
 msgstr "Alternatieven zoeken in de media"
 
@@ -758,7 +762,7 @@ msgstr "Foto's opnemen"
 msgid "Include in compilation"
 msgstr "In compilatie opnemen"
 
-#: pages/memory_storyboard.py:148
+#: pages/memory_storyboard.py:155
 msgid "Include in export"
 msgstr "Opnemen in export"
 
@@ -881,6 +885,10 @@ msgstr "Type herinnering"
 msgid "Middle 5s"
 msgstr "Middelste 5 s"
 
+#: pages/memory_storyboard.py:147
+msgid "Model polish"
+msgstr "Afwerking door het model"
+
 #: pages/memory_storyboard.py:143
 msgid "Model suggestion"
 msgstr "Suggestie van het model"
@@ -971,7 +979,7 @@ msgstr "Geen clips geselecteerd. Ga terug om clips te kiezen."
 msgid "No eligible suggestions right now."
 msgstr "Momenteel geen geschikte suggesties."
 
-#: pages/memory_storyboard.py:147
+#: pages/memory_storyboard.py:154
 msgid "No outcome recorded."
 msgstr "Geen resultaat vastgelegd."
 
@@ -1171,7 +1179,7 @@ msgstr "Kies eerst een album"
 msgid "Pick the seconds each video shows and preview it. Stills need no trimming."
 msgstr "Kies en bekijk de seconden die elke video toont. Foto's hoeven niet bijgeknipt te worden."
 
-#: pages/memory_storyboard.py:118 pages/memory_storyboard.py:151
+#: pages/memory_storyboard.py:118 pages/memory_storyboard.py:158
 msgid "Picture decisions"
 msgstr "Beslissingen over dit beeld"
 
@@ -1287,6 +1295,10 @@ msgstr "Media opnieuw laden"
 #: pages/settings_people.py:442
 msgid "Remove this relationship"
 msgstr "Deze relatie verwijderen"
+
+#: pages/memory_storyboard.py:150
+msgid "Replaced a picture the model doubted."
+msgstr "Verving een beeld waaraan het model twijfelde."
 
 #: pages/settings_people.py:165
 msgid "Rescan the library"
@@ -1565,6 +1577,10 @@ msgstr ""
 "De media en clipbewerker hebben hun eigen pagina: sluit uit wat nooit in beeld mag komen en "
 "pas de gekozen fragmenten aan."
 
+#: pages/memory_storyboard.py:148
+msgid "The picture it replaced"
+msgstr "Het beeld dat het verving"
+
 #: pages/step2_review.py:253
 #, python-brace-format
 msgid "The pool{value}"
@@ -1630,6 +1646,14 @@ msgstr ""
 msgid "Too many failed attempts. Try again later."
 msgstr "Te veel mislukte pogingen. Probeer het later opnieuw."
 
+#: pages/memory_storyboard.py:152
+msgid "Took the seat of a picture a check refused."
+msgstr "Nam de plaats in van een beeld dat een controle weigerde."
+
+#: pages/memory_storyboard.py:151
+msgid "Took the seat of a picture the model removed from this story."
+msgstr "Nam de plaats in van een beeld dat het model uit dit verhaal haalde."
+
 #: pages/clip_review.py:361
 msgid "Total Duration"
 msgstr "Totale duur"
@@ -1638,7 +1662,7 @@ msgstr "Totale duur"
 msgid "Transition Style"
 msgstr "Overgangsstijl"
 
-#: pages/clip_review.py:445 pages/memory_storyboard.py:150 pages/step2_review.py:147
+#: pages/clip_review.py:445 pages/memory_storyboard.py:157 pages/step2_review.py:147
 msgid "Trim the video clips"
 msgstr "Videoclips bijsnijden"
 
@@ -1753,6 +1777,10 @@ msgstr "Wie gaat kijken"
 #: pages/suggestions.py:209
 msgid "Why other suggestions were skipped"
 msgstr "Waarom andere suggesties zijn overgeslagen"
+
+#: pages/memory_storyboard.py:149
+msgid "Why the model replaced the other picture"
+msgstr "Waarom het model het andere beeld verving"
 
 #: pages/memory_storyboard.py:141
 msgid "Why this picture"

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 13:40+0200\n"
+"POT-Creation-Date: 2026-09-26 20:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -121,6 +121,10 @@ msgstr "人物を追加"
 msgid "Add someone not in Immich"
 msgstr "Immich にいない人物を追加"
 
+#: pages/memory_storyboard.py:153
+msgid "Added for a moment the catalogue records as notable."
+msgstr "カタログで注目すべき瞬間として記録されているため追加されました。"
+
 #: pages/settings_people.py:498
 #, python-brace-format
 msgid "Added {value}"
@@ -224,7 +228,7 @@ msgstr "過去の年の今日の日付を自動的に使います"
 msgid "Back to Generation Options"
 msgstr "生成オプションに戻る"
 
-#: pages/memory_storyboard.py:153
+#: pages/memory_storyboard.py:160
 msgid "Back to pictures"
 msgstr "画像一覧に戻る"
 
@@ -563,7 +567,7 @@ msgstr "除外"
 msgid "Export"
 msgstr "書き出し"
 
-#: pages/memory_storyboard.py:149
+#: pages/memory_storyboard.py:156
 msgid "Export uses your selection. Cut again replans it."
 msgstr "書き出しには現在の選択が使われます。「再編集」で新しい編集プランを作成します。"
 
@@ -616,7 +620,7 @@ msgstr "最終的な長さ：{value}"
 msgid "Find a name"
 msgstr "名前を検索"
 
-#: pages/memory_storyboard.py:152
+#: pages/memory_storyboard.py:159
 msgid "Find alternatives in the pool"
 msgstr "メディア一覧で代替候補を探す"
 
@@ -748,7 +752,7 @@ msgstr "写真を含める"
 msgid "Include in compilation"
 msgstr "まとめ動画に含める"
 
-#: pages/memory_storyboard.py:148
+#: pages/memory_storyboard.py:155
 msgid "Include in export"
 msgstr "書き出しに含める"
 
@@ -867,6 +871,10 @@ msgstr "思い出の種類"
 msgid "Middle 5s"
 msgstr "中央の 5 秒"
 
+#: pages/memory_storyboard.py:147
+msgid "Model polish"
+msgstr "モデルによる仕上げ"
+
 #: pages/memory_storyboard.py:143
 msgid "Model suggestion"
 msgstr "モデルの提案"
@@ -957,7 +965,7 @@ msgstr "クリップが未選択です。戻って選んでください。"
 msgid "No eligible suggestions right now."
 msgstr "現在、対象となる提案はありません。"
 
-#: pages/memory_storyboard.py:147
+#: pages/memory_storyboard.py:154
 msgid "No outcome recorded."
 msgstr "結果の記録がありません。"
 
@@ -1153,7 +1161,7 @@ msgstr "先にアルバムを選んでください"
 msgid "Pick the seconds each video shows and preview it. Stills need no trimming."
 msgstr "各動画で使う秒数を選び、プレビューできます。静止画のトリミングは不要です。"
 
-#: pages/memory_storyboard.py:118 pages/memory_storyboard.py:151
+#: pages/memory_storyboard.py:118 pages/memory_storyboard.py:158
 msgid "Picture decisions"
 msgstr "この画像への判断"
 
@@ -1269,6 +1277,10 @@ msgstr "メディアを再読み込み"
 #: pages/settings_people.py:442
 msgid "Remove this relationship"
 msgstr "この関係を削除"
+
+#: pages/memory_storyboard.py:150
+msgid "Replaced a picture the model doubted."
+msgstr "モデルが疑問を持った画像を置き換えました。"
 
 #: pages/settings_people.py:165
 msgid "Rescan the library"
@@ -1541,6 +1553,10 @@ msgid ""
 " trim what was."
 msgstr "メディア一覧と部分編集には専用ページがあります。絶対に使わないものを除外し、採用した部分を調整できます。"
 
+#: pages/memory_storyboard.py:148
+msgid "The picture it replaced"
+msgstr "置き換えられた画像"
+
 #: pages/step2_review.py:253
 #, python-brace-format
 msgid "The pool{value}"
@@ -1602,6 +1618,14 @@ msgstr "「全員一緒」は指定した全員が写る場面のみを残しま
 msgid "Too many failed attempts. Try again later."
 msgstr "失敗回数が多すぎます。しばらくしてから再試行してください。"
 
+#: pages/memory_storyboard.py:152
+msgid "Took the seat of a picture a check refused."
+msgstr "チェックで除外された画像の枠に入りました。"
+
+#: pages/memory_storyboard.py:151
+msgid "Took the seat of a picture the model removed from this story."
+msgstr "モデルがこのストーリーから外した画像の枠に入りました。"
+
 #: pages/clip_review.py:361
 msgid "Total Duration"
 msgstr "合計時間"
@@ -1610,7 +1634,7 @@ msgstr "合計時間"
 msgid "Transition Style"
 msgstr "切り替えスタイル"
 
-#: pages/clip_review.py:445 pages/memory_storyboard.py:150 pages/step2_review.py:147
+#: pages/clip_review.py:445 pages/memory_storyboard.py:157 pages/step2_review.py:147
 msgid "Trim the video clips"
 msgstr "動画クリップをトリミング"
 
@@ -1720,6 +1744,10 @@ msgstr "誰が見るか"
 #: pages/suggestions.py:209
 msgid "Why other suggestions were skipped"
 msgstr "ほかの提案が除外された理由"
+
+#: pages/memory_storyboard.py:149
+msgid "Why the model replaced the other picture"
+msgstr "モデルがもう一方の画像を置き換えた理由"
 
 #: pages/memory_storyboard.py:141
 msgid "Why this picture"

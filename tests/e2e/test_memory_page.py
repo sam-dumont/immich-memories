@@ -330,7 +330,8 @@ def test_the_inspector_keeps_a_refused_model_alternative_distinct_from_the_cut(
     page.get_by_role("button", name="Cut", exact=True).click()
     expect(page.locator(".storyboard-shot")).to_have_count(len(CARRIERS), timeout=120_000)
     original = next(picture for picture in CARRIERS if picture.is_favorite)
-    alternative = next(picture for picture in LIBRARY if picture not in CARRIERS)
+    alternative, replaced = [picture for picture in LIBRARY if picture not in CARRIERS][:2]
+    newcomer = next(picture for picture in CARRIERS if picture is not original)
     folder = _newest_attempt(launch_workspace) / "derived-decisions"
     folder.mkdir(exist_ok=True)
     # WHY: the fixture replaces inference; the browser still reads the saved production format.
@@ -340,9 +341,12 @@ def test_the_inspector_keeps_a_refused_model_alternative_distinct_from_the_cut(
                 "ran": True,
                 "verdicts": {
                     original.asset_id: {
+                        "state": "kept",
+                        "named_by": 2,
                         "why": "Repeated viewpoint",
                         "protected": True,
-                        "rule": "The owner starred this picture",
+                        "held_by": "the owner starred it or the catalogue records it",
+                        "rule": "thesis-fit vote",
                     }
                 },
                 "slots": [
@@ -351,8 +355,16 @@ def test_the_inspector_keeps_a_refused_model_alternative_distinct_from_the_cut(
                         "chosen": alternative.asset_id,
                         "offered": "2",
                         "outcome": "refused by look-alike",
-                    }
+                    },
+                    {
+                        "rule": "vote-weak",
+                        "replacing": replaced.asset_id,
+                        "chosen": newcomer.asset_id,
+                        "offered": "3",
+                        "outcome": "seated",
+                    },
                 ],
+                "revoked_by_the_fit_check": [],
             }
         )
     )
@@ -360,12 +372,20 @@ def test_the_inspector_keeps_a_refused_model_alternative_distinct_from_the_cut(
     page.locator(".storyboard-shot").nth(CARRIERS.index(original)).click()
     inspector = page.get_by_role("complementary", name="Picture review")
     expect(inspector.get_by_text("Repeated viewpoint", exact=True)).to_be_visible()
-    expect(inspector.get_by_text("The owner starred this picture", exact=True)).to_be_visible()
+    expect(
+        inspector.get_by_text("the owner starred it or the catalogue records it", exact=True)
+    ).to_be_visible()
     expect(inspector.get_by_text("refused by look-alike", exact=True)).to_be_visible()
     expect(inspector.get_by_role("img", name="Recorded alternative")).to_have_attribute(
         "src", f"/media/thumb/{alternative.asset_id}"
     )
     expect(inspector.get_by_role("checkbox", name="Include in export")).to_be_checked()
+
+    page.locator(".storyboard-shot").nth(CARRIERS.index(newcomer)).click()
+    expect(inspector.get_by_text("Replaced a picture the model doubted.")).to_be_visible()
+    expect(inspector.get_by_role("img", name="The picture it replaced")).to_have_attribute(
+        "src", f"/media/thumb/{replaced.asset_id}"
+    )
 
 
 def test_a_reload_mid_cut_joins_the_running_cut_instead_of_starting_another(

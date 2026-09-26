@@ -7,7 +7,7 @@
     story_title: string; moment: string; reason: string; timecode: string;
     seconds: number; motion: boolean; included: boolean; kind_label: string;
     decision?: { model_reason: string; kept_reason: string; proposed_asset_id: string;
-      offered_count: number; replacement_outcome: string };
+      offered_count: number; replacement_outcome: string; replaced_asset_id: string; seat: string };
   };
   type Model = { shots: Shot[]; editable: boolean; labels: Record<string, string> };
   let { payload = '{"shots":[],"editable":false,"labels":{}}' }: { payload?: string } = $props();
@@ -69,8 +69,14 @@
           <h3>{shot.story_title}</h3>
           <h4>{labels.why}</h4>
           <p>{shot.reason || labels.noReason}</p>
+          {#if shot.decision?.seat}
+            <h4>{labels.modelPolish}</h4><p>{labels[`seat_${shot.decision.seat}`] ?? shot.decision.seat}</p>
+          {/if}
+          {#if shot.decision?.replaced_asset_id}
+            <img class="alternative-image" src={image(shot.decision.replaced_asset_id)} alt={labels.replaced} loading="lazy" />
+          {/if}
           {#if shot.decision?.model_reason}
-            <h4>{labels.modelSuggestion}</h4><p>{shot.decision.model_reason}</p>
+            <h4>{shot.decision.replaced_asset_id ? labels.replacedBecause : labels.modelSuggestion}</h4><p>{shot.decision.model_reason}</p>
           {/if}
           {#if shot.decision?.kept_reason}
             <h4>{labels.keptBecause}</h4><p>{shot.decision.kept_reason}</p>
