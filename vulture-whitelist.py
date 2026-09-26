@@ -122,8 +122,3 @@ _.cancel_run  # unused method (src/immich_memories/tracking/run_tracker.py:378)
 PACK_DIM  # unused variable (src/immich_memories/triage/encoder.py:23)
 reset_rate_limiter  # unused function (src/immich_memories/ui/auth.py:63)
 reset_oidc_client  # unused function (src/immich_memories/ui/auth_oidc.py:144)
-
-# The /api/v1 response models are read by the Svelte client (web/src), through the generated
-# TypeScript types; nothing in Python names these fields.
-preview_asset_ids  # unused variable (src/immich_memories/web/schemas.py)
-next_offset  # unused variable (src/immich_memories/web/schemas.py)

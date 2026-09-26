@@ -4,6 +4,9 @@ import type { components } from './api-types';
 export type RunSummary = components['schemas']['RunSummary'];
 export type RunPage = components['schemas']['RunPage'];
 export type Messages = components['schemas']['Messages'];
+export type RunDetail = components['schemas']['RunDetail'];
+export type Cut = components['schemas']['Cut'];
+export type CutShot = components['schemas']['CutShot'];
 
 export class ApiError extends Error {
   constructor(readonly status: number) {
@@ -23,3 +26,5 @@ export async function api<T>(path: string, fetcher: typeof fetch = fetch): Promi
 
 export const thumbnail = (assetId: string, size: 'thumbnail' | 'preview' = 'thumbnail') =>
   `/api/v1/assets/${encodeURIComponent(assetId)}/thumbnail${size === 'preview' ? '?size=preview' : ''}`;
+
+export const video = (assetId: string) => `/api/v1/assets/${encodeURIComponent(assetId)}/video`;

@@ -1,6 +1,171 @@
 {
   "components": {
     "schemas": {
+      "Cut": {
+        "properties": {
+          "content_seconds": {
+            "title": "Content Seconds",
+            "type": "number"
+          },
+          "film_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Film Seconds"
+          },
+          "model_polish": {
+            "title": "Model Polish",
+            "type": "boolean"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "shots": {
+            "items": {
+              "$ref": "#/components/schemas/CutShot"
+            },
+            "title": "Shots",
+            "type": "array"
+          },
+          "thesis": {
+            "title": "Thesis",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "thesis",
+          "content_seconds",
+          "film_seconds",
+          "model_polish",
+          "shots"
+        ],
+        "title": "Cut",
+        "type": "object"
+      },
+      "CutShot": {
+        "properties": {
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "chapter": {
+            "title": "Chapter",
+            "type": "string"
+          },
+          "day": {
+            "title": "Day",
+            "type": "string"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "moment": {
+            "title": "Moment",
+            "type": "string"
+          },
+          "motion": {
+            "title": "Motion",
+            "type": "boolean"
+          },
+          "new_day": {
+            "title": "New Day",
+            "type": "boolean"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "seconds": {
+            "title": "Seconds",
+            "type": "number"
+          },
+          "selection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SelectionPath"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_interval": {
+            "anyOf": [
+              {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Interval"
+          },
+          "start": {
+            "title": "Start",
+            "type": "number"
+          },
+          "story_key": {
+            "title": "Story Key",
+            "type": "string"
+          },
+          "story_title": {
+            "title": "Story Title",
+            "type": "string"
+          },
+          "taken": {
+            "title": "Taken",
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id",
+          "position",
+          "start",
+          "seconds",
+          "taken",
+          "day",
+          "new_day",
+          "chapter",
+          "story_key",
+          "story_title",
+          "moment",
+          "reason",
+          "motion",
+          "source_interval",
+          "selection",
+          "model"
+        ],
+        "title": "CutShot",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -33,6 +198,211 @@
           "messages"
         ],
         "title": "Messages",
+        "type": "object"
+      },
+      "ModelDecision": {
+        "description": "What the model polish recorded about a shot; absent when no model read the cut.",
+        "properties": {
+          "kept_reason": {
+            "title": "Kept Reason",
+            "type": "string"
+          },
+          "model_reason": {
+            "title": "Model Reason",
+            "type": "string"
+          },
+          "offered_count": {
+            "title": "Offered Count",
+            "type": "integer"
+          },
+          "proposed_asset_id": {
+            "title": "Proposed Asset Id",
+            "type": "string"
+          },
+          "replaced_asset_id": {
+            "title": "Replaced Asset Id",
+            "type": "string"
+          },
+          "replacement_outcome": {
+            "title": "Replacement Outcome",
+            "type": "string"
+          },
+          "seat": {
+            "title": "Seat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_reason",
+          "kept_reason",
+          "proposed_asset_id",
+          "offered_count",
+          "replacement_outcome",
+          "replaced_asset_id",
+          "seat"
+        ],
+        "title": "ModelDecision",
+        "type": "object"
+      },
+      "PhaseTiming": {
+        "properties": {
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "seconds": {
+            "title": "Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "seconds",
+          "errors"
+        ],
+        "title": "PhaseTiming",
+        "type": "object"
+      },
+      "RunDetail": {
+        "properties": {
+          "child_output": {
+            "title": "Child Output",
+            "type": "boolean"
+          },
+          "clips_selected": {
+            "title": "Clips Selected",
+            "type": "integer"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "date_range_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Range End"
+          },
+          "date_range_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Range Start"
+          },
+          "delivery_status": {
+            "title": "Delivery Status",
+            "type": "string"
+          },
+          "has_cut": {
+            "title": "Has Cut",
+            "type": "boolean"
+          },
+          "memory_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Type"
+          },
+          "output_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Path"
+          },
+          "phases": {
+            "items": {
+              "$ref": "#/components/schemas/PhaseTiming"
+            },
+            "title": "Phases",
+            "type": "array"
+          },
+          "preview_asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Preview Asset Ids",
+            "type": "array"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "run_id",
+          "status",
+          "source",
+          "created_at",
+          "memory_type",
+          "date_range_start",
+          "date_range_end",
+          "preview_asset_ids",
+          "completed_at",
+          "output_path",
+          "delivery_status",
+          "warnings",
+          "phases",
+          "clips_selected",
+          "has_cut",
+          "child_output"
+        ],
+        "title": "RunDetail",
         "type": "object"
       },
       "RunPage": {
@@ -137,6 +507,64 @@
         "title": "RunSummary",
         "type": "object"
       },
+      "SelectionPath": {
+        "description": "What the rules decided about a picture, in the words `runs why` prints.",
+        "properties": {
+          "facts": {
+            "title": "Facts",
+            "type": "string"
+          },
+          "kept_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kept At"
+          },
+          "left_out_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Out At"
+          },
+          "left_out_because": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Out Because"
+          },
+          "passed": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Passed",
+            "type": "array"
+          }
+        },
+        "required": [
+          "facts",
+          "passed",
+          "left_out_at",
+          "left_out_because",
+          "kept_at"
+        ],
+        "title": "SelectionPath",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -230,6 +658,58 @@
           }
         },
         "summary": "Thumbnail",
+        "tags": [
+          "media"
+        ]
+      }
+    },
+    "/api/v1/assets/{asset_id}/video": {
+      "get": {
+        "description": "The playback rendition, streamed by byte range so the preview can seek to the cut's interval.",
+        "operationId": "video_api_v1_assets__asset_id__video_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Range"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Video",
         "tags": [
           "media"
         ]
@@ -366,6 +846,128 @@
         "summary": "List Runs",
         "tags": [
           "runs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}": {
+      "get": {
+        "description": "One run as `runs show` reads it: outcome, output, delivery, warnings and phase timings.",
+        "operationId": "read_run_api_v1_runs__run_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Run",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/child-output": {
+      "get": {
+        "description": "The retained output of an automatic run, credentials already removed when it was kept.",
+        "operationId": "child_output_api_v1_runs__run_id__child_output_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Child Output",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/cut": {
+      "get": {
+        "description": "The cut in the order it plays, each shot with every reason the run recorded for it.",
+        "operationId": "read_cut_api_v1_runs__run_id__cut_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Cut",
+        "tags": [
+          "cut"
         ]
       }
     }

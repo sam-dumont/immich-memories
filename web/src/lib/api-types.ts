@@ -24,6 +24,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assets/{asset_id}/video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Video
+         * @description The playback rendition, streamed by byte range so the preview can seek to the cut's interval.
+         */
+        get: operations["video_api_v1_assets__asset_id__video_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/i18n": {
         parameters: {
             query?: never;
@@ -64,10 +84,121 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Run
+         * @description One run as `runs show` reads it: outcome, output, delivery, warnings and phase timings.
+         */
+        get: operations["read_run_api_v1_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runs/{run_id}/child-output": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Child Output
+         * @description The retained output of an automatic run, credentials already removed when it was kept.
+         */
+        get: operations["child_output_api_v1_runs__run_id__child_output_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runs/{run_id}/cut": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Cut
+         * @description The cut in the order it plays, each shot with every reason the run recorded for it.
+         */
+        get: operations["read_cut_api_v1_runs__run_id__cut_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Cut */
+        Cut: {
+            /** Content Seconds */
+            content_seconds: number;
+            /** Film Seconds */
+            film_seconds: number | null;
+            /** Model Polish */
+            model_polish: boolean;
+            /** Run Id */
+            run_id: string;
+            /** Shots */
+            shots: components["schemas"]["CutShot"][];
+            /** Thesis */
+            thesis: string;
+        };
+        /** CutShot */
+        CutShot: {
+            /** Asset Id */
+            asset_id: string;
+            /** Chapter */
+            chapter: string;
+            /** Day */
+            day: string;
+            model: components["schemas"]["ModelDecision"] | null;
+            /** Moment */
+            moment: string;
+            /** Motion */
+            motion: boolean;
+            /** New Day */
+            new_day: boolean;
+            /** Position */
+            position: number;
+            /** Reason */
+            reason: string;
+            /** Seconds */
+            seconds: number;
+            selection: components["schemas"]["SelectionPath"] | null;
+            /** Source Interval */
+            source_interval: [
+                number,
+                number
+            ] | null;
+            /** Start */
+            start: number;
+            /** Story Key */
+            story_key: string;
+            /** Story Title */
+            story_title: string;
+            /** Taken */
+            taken: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -81,6 +212,70 @@ export interface components {
             messages: {
                 [key: string]: string;
             };
+        };
+        /**
+         * ModelDecision
+         * @description What the model polish recorded about a shot; absent when no model read the cut.
+         */
+        ModelDecision: {
+            /** Kept Reason */
+            kept_reason: string;
+            /** Model Reason */
+            model_reason: string;
+            /** Offered Count */
+            offered_count: number;
+            /** Proposed Asset Id */
+            proposed_asset_id: string;
+            /** Replaced Asset Id */
+            replaced_asset_id: string;
+            /** Replacement Outcome */
+            replacement_outcome: string;
+            /** Seat */
+            seat: string;
+        };
+        /** PhaseTiming */
+        PhaseTiming: {
+            /** Errors */
+            errors: string[];
+            /** Name */
+            name: string;
+            /** Seconds */
+            seconds: number;
+        };
+        /** RunDetail */
+        RunDetail: {
+            /** Child Output */
+            child_output: boolean;
+            /** Clips Selected */
+            clips_selected: number;
+            /** Completed At */
+            completed_at: string | null;
+            /** Created At */
+            created_at: string;
+            /** Date Range End */
+            date_range_end: string | null;
+            /** Date Range Start */
+            date_range_start: string | null;
+            /** Delivery Status */
+            delivery_status: string;
+            /** Has Cut */
+            has_cut: boolean;
+            /** Memory Type */
+            memory_type: string | null;
+            /** Output Path */
+            output_path: string | null;
+            /** Phases */
+            phases: components["schemas"]["PhaseTiming"][];
+            /** Preview Asset Ids */
+            preview_asset_ids: string[];
+            /** Run Id */
+            run_id: string;
+            /** Source */
+            source: string;
+            /** Status */
+            status: string;
+            /** Warnings */
+            warnings: string[];
         };
         /** RunPage */
         RunPage: {
@@ -107,6 +302,22 @@ export interface components {
             source: string;
             /** Status */
             status: string;
+        };
+        /**
+         * SelectionPath
+         * @description What the rules decided about a picture, in the words `runs why` prints.
+         */
+        SelectionPath: {
+            /** Facts */
+            facts: string;
+            /** Kept At */
+            kept_at: string | null;
+            /** Left Out At */
+            left_out_at: string | null;
+            /** Left Out Because */
+            left_out_because: string | null;
+            /** Passed */
+            passed: string[];
         };
         /** ValidationError */
         ValidationError: {
@@ -136,6 +347,37 @@ export interface operations {
                 size?: "thumbnail" | "preview";
             };
             header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    video_api_v1_assets__asset_id__video_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                range?: string | null;
+            };
             path: {
                 asset_id: string;
             };
@@ -214,6 +456,97 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RunPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_run_api_v1_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    child_output_api_v1_runs__run_id__child_output_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_cut_api_v1_runs__run_id__cut_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Cut"];
                 };
             };
             /** @description Validation Error */

@@ -27,3 +27,70 @@ class RunSummary(BaseModel):
 class RunPage(BaseModel):
     runs: list[RunSummary]
     next_offset: int | None
+
+
+class SelectionPath(BaseModel):
+    """What the rules decided about a picture, in the words `runs why` prints."""
+
+    facts: str
+    passed: list[str]
+    left_out_at: str | None
+    left_out_because: str | None
+    kept_at: str | None
+
+
+class ModelDecision(BaseModel):
+    """What the model polish recorded about a shot; absent when no model read the cut."""
+
+    model_reason: str
+    kept_reason: str
+    proposed_asset_id: str
+    offered_count: int
+    replacement_outcome: str
+    replaced_asset_id: str
+    seat: str
+
+
+class CutShot(BaseModel):
+    asset_id: str
+    position: int
+    start: float
+    seconds: float
+    taken: str
+    day: str
+    new_day: bool
+    chapter: str
+    story_key: str
+    story_title: str
+    moment: str
+    reason: str
+    motion: bool
+    source_interval: tuple[float, float] | None
+    selection: SelectionPath | None
+    model: ModelDecision | None
+
+
+class Cut(BaseModel):
+    run_id: str
+    thesis: str
+    content_seconds: float
+    film_seconds: float | None
+    model_polish: bool
+    shots: list[CutShot]
+
+
+class PhaseTiming(BaseModel):
+    name: str
+    seconds: float
+    errors: list[str]
+
+
+class RunDetail(RunSummary):
+    completed_at: datetime | None
+    output_path: str | None
+    delivery_status: str
+    warnings: list[str]
+    phases: list[PhaseTiming]
+    clips_selected: int
+    has_cut: bool
+    child_output: bool

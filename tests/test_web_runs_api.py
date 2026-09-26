@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -11,69 +10,25 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from immich_memories.config_loader import Config
-from immich_memories.operations.run_index import record_run_attempt
-from immich_memories.operations.storyboard import PLAN_FILE
 from immich_memories.tracking import RunDatabase
 from immich_memories.tracking.models import RunMetadata
 from immich_memories.web import mount_web
-from immich_memories.web.dependencies import current_config, immich_preview
-
-_PLAN = {
-    "story": {
-        "thesis": "A month that ends by the lake.",
-        "episodes": [
-            {"episode": "garden", "title": "Lunch in the garden"},
-            {"episode": "lake", "title": "Two nights by the lake"},
-        ],
-    },
-    "carriers": [
-        {
-            "asset_id": "lake-1",
-            "taken": "2024-06-21T18:45:00",
-            "story_episode": "lake",
-            "kind": "video",
-            "seconds": 4.0,
-            "why": "Two nights by the lake: the tents on the slope",
-            "depicted_moment": "m-lake",
-        },
-        {
-            "asset_id": "garden-1",
-            "taken": "2024-06-08T12:15:00",
-            "story_episode": "garden",
-            "kind": "photo",
-            "seconds": 4.0,
-            "why": "Lunch in the garden: the table still out",
-            "depicted_moment": "m-garden",
-        },
-    ],
-}
+from immich_memories.web.dependencies import Playback, immich_playback, immich_preview
+from tests.web_api_fixtures import api_client, config_in, save_run
 
 
 @pytest.fixture
 def config(tmp_path: Path) -> Config:
-    config = Config()
-    config.cache.directory = str(tmp_path / "cache")
-    config.cache.database = str(tmp_path / "cache" / "runs.db")
-    return config
+    return config_in(tmp_path)
 
 
 @pytest.fixture
 def client(config: Config) -> TestClient:
-    app = FastAPI()
-    mount_web(app)
-    app.dependency_overrides[current_config] = lambda: config
-    return TestClient(app)
+    return api_client(config)
 
 
 def _run(config: Config, run_id: str, when: datetime, *, cut: bool) -> None:
-    RunDatabase(config.cache.database_path).save_run(
-        RunMetadata(run_id=run_id, created_at=when, status="completed", memory_type="monthly")
-    )
-    if cut:
-        attempt = config.cache.cache_path / "editorial-runs" / run_id / "attempts" / "a1"
-        attempt.mkdir(parents=True)
-        (attempt / PLAN_FILE).write_text(json.dumps(_PLAN))
-        record_run_attempt(config.cache.cache_path, run_id, attempt, attempt / "film.mp4")
+    save_run(config, run_id, when=when, cut=cut, memory_type="monthly")
 
 
 def test_runs_come_newest_first_with_the_pictures_their_cut_plays(client, config):
@@ -171,3 +126,27 @@ def test_runs_filter_by_status_and_page_forward(client, config):
     assert len(first["runs"]) == 2 and first["next_offset"] == 2
     assert [run["run_id"] for run in rest["runs"]] == ["20260901_080000_aaaa"]
     assert rest["next_offset"] is None
+
+
+def test_a_video_streams_the_range_the_browser_asked_immich_for(client):
+    asked: list[tuple[str, str | None]] = []
+
+    def playback(asset_id: str, byte_range: str | None) -> Playback:
+        asked.append((asset_id, byte_range))
+        return Playback(
+            status=206,
+            headers={"content-range": "bytes 100-199/5000", "content-length": "100"},
+            chunks=iter([b"x" * 100]),
+        )
+
+    # WHY: Immich is the external boundary; the unit tier has no Immich to stream from.
+    client.app.dependency_overrides[immich_playback] = lambda: playback
+    asset = "0b7a58b4-7f5e-4c3b-9d1e-1f2a3b4c5d6e"
+
+    response = client.get(f"/api/v1/assets/{asset}/video", headers={"Range": "bytes=100-199"})
+
+    assert asked == [(asset, "bytes=100-199")]
+    assert response.status_code == 206
+    assert response.headers["content-range"] == "bytes 100-199/5000"
+    assert response.headers["accept-ranges"] == "bytes"
+    assert response.content == b"x" * 100

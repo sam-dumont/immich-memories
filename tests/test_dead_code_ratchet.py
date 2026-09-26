@@ -92,10 +92,10 @@ WHITELIST = Path(__file__).resolve().parent.parent / "vulture-whitelist.py"
 # 55: NiceGUI's Client.build_response calls LocalizedPage.resolve_language.
 # Vulture scans our source, not NiceGUI's; the browser locale tests exercise
 # that framework callback and its per-browser HTML language.
-# 57, up from 55: the /api/v1 response models (web/schemas.py) have fields only the Svelte
-# client reads, through the TypeScript types generated from them. Python never names
-# preview_asset_ids or next_offset, and vulture cannot follow a JSON boundary.
-MAX_WHITELISTED_SYMBOLS = 57
+# 55 still: the /api/v1 response models (web/schemas.py) have fields only the Svelte client
+# reads. Rather than list them, `make dead-code` excludes that one contract module, which
+# `make web-check` holds to the generated TypeScript types.
+MAX_WHITELISTED_SYMBOLS = 55
 
 
 def test_the_dead_code_whitelist_never_grows() -> None:

@@ -24,6 +24,23 @@ def _blank() -> Decision:
     }
 
 
+def _polish_record(attempt_dir: Path) -> dict[str, Any] | None:
+    path = attempt_dir / "derived-decisions" / "thin-polish.private.json"
+    if not path.is_file():
+        return None
+    try:
+        record = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+    return record if isinstance(record, dict) else None
+
+
+def model_polish_ran(attempt_dir: Path) -> bool:
+    """Whether a model read this cut at all; a rules-only cut says so instead of looking empty."""
+    record = _polish_record(attempt_dir)
+    return bool(record and record.get("ran"))
+
+
 def read_cut_decisions(attempt_dir: Path) -> dict[str, Decision]:
     """Read saved model objections, protection reasons and seat outcomes, keyed by picture.
 
@@ -31,14 +48,8 @@ def read_cut_decisions(attempt_dir: Path) -> dict[str, Decision]:
     replaced is no longer in the film. An offer that did not survive is explained on the
     picture that stayed. An absent or unreadable pass adds nothing.
     """
-    path = attempt_dir / "derived-decisions" / "thin-polish.private.json"
-    if not path.is_file():
-        return {}
-    try:
-        record = json.loads(path.read_text())
-    except (OSError, ValueError):
-        return {}
-    if not isinstance(record, dict):
+    record = _polish_record(attempt_dir)
+    if record is None:
         return {}
     verdicts: dict[str, dict[str, Any]] = record.get("verdicts", {})
     decisions = {asset_id: _verdict(row) for asset_id, row in verdicts.items()}

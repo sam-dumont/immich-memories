@@ -255,9 +255,21 @@ it is built on Immich's own component library, and it reads the same JSON API
 ([#1395](https://github.com/sam-dumont/immich-video-memory-generator/issues/1395)). The old
 `/runs` address sends you here.
 
-Open a run to see its output path, upload status, warnings and phase timings. **Read the cut** shows
-the saved storyboard (`runs story` on the CLI). **Download child output** fetches the full output of
-an automatic run, with credentials removed.
+Open a run to review its cut. The pictures sit in a contact sheet in the order the film plays them,
+each with its number, day, timecode, screen time and the editor's reason. **Videos** and **Stills**
+filter the sheet, and the arrow keys walk it. The inspector beside it shows the picture large; a
+video plays exactly the stretch the film uses, on a loop. Under it:
+
+- **Why this picture**: the editor's reason, the same line `runs story` prints.
+- **How the rules got here**: the passes it went through and where it was kept, in the words
+  `runs why` uses.
+- **Model polish**: what the model said, which rule overruled it, the picture a swap replaced and
+  any alternative it offered with the outcome. A cut no model read says so: the rules chose every
+  picture, which is what the NAS tier does.
+
+Below the sheet sit the run's output path, upload status, warnings and phase timings.
+**Download child output** fetches the full output of an automatic run, with credentials removed.
+Old `/runs?run_id=...` links land on this page.
 
 <ThemedScreenshot name="run-details" alt="One run with its output path, phase timings and saved cut" />
 

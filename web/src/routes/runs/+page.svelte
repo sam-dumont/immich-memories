@@ -93,7 +93,7 @@
     <ul class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-x-5 gap-y-8">
       {#each runs as run (run.run_id)}
         <li>
-          <a href={`/runs?run_id=${encodeURIComponent(run.run_id)}`} class="group flex flex-col gap-2 rounded-2xl outline-offset-4 focus-visible:outline-2 focus-visible:outline-primary">
+          <a href={`/app/runs/${encodeURIComponent(run.run_id)}`} class="group flex flex-col gap-2 rounded-2xl outline-offset-4 focus-visible:outline-2 focus-visible:outline-primary">
             <div class="grid aspect-square grid-cols-2 grid-rows-2 gap-0.5 overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-900 transition group-hover:brightness-90">
               {#each run.preview_asset_ids.slice(0, 4) as asset, index (asset)}
                 <img src={thumbnail(asset)} alt="" loading="lazy" decoding="async"

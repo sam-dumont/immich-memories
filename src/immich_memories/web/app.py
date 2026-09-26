@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, Response
 
-from immich_memories.web import i18n, media, runs
+from immich_memories.web import cut, i18n, media, runs
 
 CLIENT_PREFIX = "/app"
 # `make web-build` writes the SvelteKit client here, so an install needs no Node.
@@ -17,6 +17,7 @@ BUILT_CLIENT = Path(__file__).parent / "client"
 def mount_web(app: FastAPI, *, client_dir: Path = BUILT_CLIENT) -> None:
     """Add the /api/v1 routes and serve the client under /app."""
     app.include_router(runs.router)
+    app.include_router(cut.router)
     app.include_router(media.router)
     app.include_router(i18n.router)
     root = client_dir.resolve()

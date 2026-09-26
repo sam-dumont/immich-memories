@@ -11,6 +11,7 @@ import socket
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
+from urllib.parse import quote
 
 if TYPE_CHECKING:
     from immich_memories.config_models_auth import AuthConfig
@@ -76,9 +77,6 @@ _NAVIGATION = [
     (N_("Settings"), "settings", "/settings/config"),
 ]
 
-# A run's details stay on /runs until the web client draws them; Runs is still where you are.
-_NAV_HOME = {"/runs": "/app/runs"}
-
 
 # ============================================================================
 # Shared UI Components
@@ -124,9 +122,7 @@ def _render_navigation() -> None:
     path = ui.context.client.page.path
     with ui.column().classes("gap-0 px-3 mt-2"):
         for name, icon, target in _NAVIGATION:
-            active = _NAV_HOME.get(path, path) == target or (
-                name == "Settings" and path.startswith("/settings/")
-            )
+            active = path == target or (name == "Settings" and path.startswith("/settings/"))
             classes = "im-nav-item" + (" im-nav-active" if active else "")
             with (
                 ui.link(target=target).classes(classes + " no-underline w-full"),
@@ -214,19 +210,11 @@ def step2_page() -> None:
         render_step2()
 
 
-@LocalizedPage("/runs")
-def runs_page(run_id: str | None = None) -> RedirectResponse | None:
-    """One run's details; the list itself moved to the web client (#1395)."""
-    from immich_memories.ui.pages.runs import render_run_details
-
-    if not run_id:
-        return RedirectResponse("/app/runs", status_code=307)
-    apply_theme()
-    drawer = render_sidebar()
-    with ui.column().classes("w-full px-8 py-5"):
-        page_header(tr("Runs"), drawer=drawer)
-        render_run_details(run_id)
-    return None
+@app.get("/runs", include_in_schema=False)
+def runs_page(run_id: str | None = None) -> RedirectResponse:
+    """Old run links, bookmarks and the CLI's printed URLs land on the web client (#1395)."""
+    target = f"/app/runs/{quote(run_id, safe='')}" if run_id else "/app/runs"
+    return RedirectResponse(target, status_code=307)
 
 
 @LocalizedPage("/suggestions")

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 21:53+0200\n"
+"POT-Creation-Date: 2026-09-26 22:42+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -125,7 +125,7 @@ msgstr "Iemand toevoegen"
 msgid "Add someone not in Immich"
 msgstr "Iemand toevoegen die niet in Immich staat"
 
-#: pages/memory_storyboard.py:153
+#: pages/memory_storyboard.py:153 web/lib/labels.ts:32
 msgid "Added for a moment the catalogue records as notable."
 msgstr "Toegevoegd voor een moment dat de catalogus als opmerkelijk vastlegt."
 
@@ -166,7 +166,7 @@ msgstr "Alle personen"
 msgid "All pictures"
 msgstr "Alle beelden"
 
-#: pages/memory_storyboard.py:146
+#: pages/memory_storyboard.py:146 web/lib/ShotInspector.svelte:84
 msgid "Alternatives considered"
 msgstr "Overwogen alternatieven"
 
@@ -238,11 +238,11 @@ msgstr "Gebruikt automatisch de datum van vandaag in eerdere jaren"
 msgid "Back to Generation Options"
 msgstr "Terug naar generatieopties"
 
-#: pages/memory_storyboard.py:160
+#: pages/memory_storyboard.py:160 web/routes/runs/[run_id]/+page.svelte:119
 msgid "Back to pictures"
 msgstr "Terug naar beelden"
 
-#: pages/runs.py:16
+#: web/routes/runs/[run_id]/+page.svelte:52
 msgid "Back to runs"
 msgstr "Terug naar uitvoeringen"
 
@@ -283,11 +283,11 @@ msgstr "Muzikale tijdlijn opbouwen..."
 msgid "Bundled"
 msgstr "Meegeleverd"
 
-#: app.py:141
+#: app.py:138
 msgid "Cache"
 msgstr "Cache"
 
-#: app.py:317 pages/step1_cache.py:76
+#: app.py:306 pages/step1_cache.py:76
 msgid "Cache Management"
 msgstr "Cachebeheer"
 
@@ -402,7 +402,7 @@ msgstr "Klaar!"
 msgid "Config file: {config_path}"
 msgstr "Configuratiebestand: {config_path}"
 
-#: app.py:139 app.py:281
+#: app.py:136 app.py:270
 msgid "Configuration"
 msgstr "Configuratie"
 
@@ -495,7 +495,7 @@ msgstr "Monteren"
 msgid "Cut again"
 msgstr "Opnieuw monteren"
 
-#: pages/memory_storyboard.py:138
+#: pages/memory_storyboard.py:138 web/routes/runs/[run_id]/+page.svelte:87
 msgid "Cut contact sheet"
 msgstr "Contactblad van de montage"
 
@@ -507,7 +507,7 @@ msgstr "Herinnering monteren..."
 msgid "Dark"
 msgstr "Donker"
 
-#: app.py:103
+#: app.py:102
 msgid "Demo mode"
 msgstr "Demomodus"
 
@@ -536,7 +536,7 @@ msgstr "Zoeken mislukt: {error}"
 msgid "Done"
 msgstr "Klaar"
 
-#: pages/runs.py:66
+#: web/routes/runs/[run_id]/+page.svelte:142
 msgid "Download child output"
 msgstr "Onderliggend resultaat downloaden"
 
@@ -691,7 +691,7 @@ msgstr "Gegenereerde muziek"
 msgid "Generating music..."
 msgstr "Muziek genereren..."
 
-#: app.py:252
+#: app.py:241
 msgid "Generation Options"
 msgstr "Generatieopties"
 
@@ -727,6 +727,10 @@ msgstr "Feestdag"
 msgid "How long"
 msgstr "Hoe lang"
 
+#: web/lib/ShotInspector.svelte:51
+msgid "How the rules got here"
+msgstr "Hoe de regels hier kwamen"
+
 #: pages/step1_config.py:39
 msgid "Immich Connection"
 msgstr "Verbinding met Immich"
@@ -745,7 +749,7 @@ msgstr "URL van Immich-server"
 msgid "Immich delivery: {delivery_label}"
 msgstr "Levering aan Immich: {delivery_label}"
 
-#: pages/runs.py:34
+#: web/routes/runs/[run_id]/+page.svelte:132
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Levering aan Immich: {value}"
@@ -803,7 +807,12 @@ msgstr "WhatsApp en andere ontvangen media voor deze herinnering behouden"
 msgid "Keep intermediate files"
 msgstr "Tussenbestanden bewaren"
 
-#: pages/memory_storyboard.py:144
+#: web/lib/ShotInspector.svelte:54
+#, python-brace-format
+msgid "Kept at {stage}"
+msgstr "Behouden bij {stage}"
+
+#: pages/memory_storyboard.py:144 web/lib/ShotInspector.svelte:75
 msgid "Kept because"
 msgstr "Behouden omdat"
 
@@ -867,7 +876,7 @@ msgstr "Kaart: {title_suggestion_map_mode}"
 msgid "Media Eligible"
 msgstr "Geschikte media"
 
-#: app.py:75 app.py:213 web/routes/+layout.svelte:15
+#: app.py:77 app.py:210 web/routes/+layout.svelte:15
 msgid "Media pool"
 msgstr "Media"
 
@@ -881,7 +890,7 @@ msgstr ""
 "De herinneringen die de automatisering hierna zou maken, volgens dezelfde regels als auto "
 "suggest."
 
-#: app.py:72 app.py:201 web/lib/labels.ts:18 web/routes/+layout.svelte:12
+#: app.py:74 app.py:198 web/lib/labels.ts:18 web/routes/+layout.svelte:12
 msgid "Memory"
 msgstr "Herinnering"
 
@@ -893,11 +902,11 @@ msgstr "Type herinnering"
 msgid "Middle 5s"
 msgstr "Middelste 5 s"
 
-#: pages/memory_storyboard.py:147
+#: pages/memory_storyboard.py:147 web/lib/ShotInspector.svelte:61
 msgid "Model polish"
 msgstr "Afwerking door het model"
 
-#: pages/memory_storyboard.py:143
+#: pages/memory_storyboard.py:143 web/lib/ShotInspector.svelte:72
 msgid "Model suggestion"
 msgstr "Suggestie van het model"
 
@@ -971,7 +980,7 @@ msgstr "Volgende: voorbeeld en export"
 msgid "No albums with any assets in them yet."
 msgstr "Er zijn nog geen albums met media."
 
-#: pages/runs.py:68
+#: web/routes/runs/[run_id]/+page.svelte:144
 msgid "No child output was retained for this run."
 msgstr "Er is geen onderliggend resultaat bewaard voor deze uitvoering."
 
@@ -983,7 +992,11 @@ msgstr "Geen clips geselecteerd. Ga terug om clips te kiezen."
 msgid "No eligible suggestions right now."
 msgstr "Momenteel geen geschikte suggesties."
 
-#: pages/memory_storyboard.py:154
+#: web/lib/ShotInspector.svelte:63
+msgid "No model read this cut: the rules chose every picture."
+msgstr "Geen model heeft deze montage gelezen: de regels kozen elk beeld."
+
+#: pages/memory_storyboard.py:154 web/lib/ShotInspector.svelte:80
 msgid "No outcome recorded."
 msgstr "Geen resultaat vastgelegd."
 
@@ -995,11 +1008,11 @@ msgstr ""
 "Nog geen personenbestand. Scan de bibliotheek opnieuw: dit leest aantallen en maandcurves van"
 " elke benoemde persoon, zonder beeldanalyse."
 
-#: pages/memory_storyboard.py:140
+#: pages/memory_storyboard.py:140 web/routes/runs/[run_id]/+page.svelte:111
 msgid "No pictures match this filter."
 msgstr "Geen beelden komen overeen met dit filter."
 
-#: pages/memory_storyboard.py:142
+#: pages/memory_storyboard.py:142 web/lib/ShotInspector.svelte:46
 msgid "No reason recorded for this picture."
 msgstr "Geen reden vastgelegd voor dit beeld."
 
@@ -1007,7 +1020,7 @@ msgstr "Geen reden vastgelegd voor dit beeld."
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "Geen uitvoeringen voor deze weergave. Maak een herinnering via Herinnering of Suggesties."
 
-#: pages/runs.py:57 web/routes/runs/+page.svelte:104
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:126
 msgid "No saved cut is available for this run."
 msgstr "Geen opgeslagen montage voor deze uitvoering."
 
@@ -1088,7 +1101,7 @@ msgstr "Media openen"
 msgid "Open {name} in Immich"
 msgstr "{name} openen in Immich"
 
-#: pages/memory_storyboard.py:132
+#: pages/memory_storyboard.py:132 web/routes/runs/[run_id]/+page.svelte:83
 msgid "Order and timecodes from the saved cut."
 msgstr "Volgorde en tijdcodes van de opgeslagen montage."
 
@@ -1117,11 +1130,16 @@ msgstr "Uitvoerbestandsnaam"
 msgid "Output: {name}"
 msgstr "Uitvoer: {name}"
 
+#: web/lib/ShotInspector.svelte:53
+#, python-brace-format
+msgid "Passed {stages}"
+msgstr "Geslaagd voor {stages}"
+
 #: pages/login.py:50
 msgid "Password"
 msgstr "Wachtwoord"
 
-#: app.py:140 app.py:300
+#: app.py:137 app.py:289
 msgid "People"
 msgstr "Personen"
 
@@ -1187,13 +1205,18 @@ msgstr "Kies en bekijk de seconden die elke video toont. Foto's hoeven niet bijg
 msgid "Picture decisions"
 msgstr "Beslissingen over dit beeld"
 
-#: pages/memory_storyboard.py:139
+#: pages/memory_storyboard.py:139 web/lib/ShotInspector.svelte:19
 msgid "Picture review"
 msgstr "Beeld beoordelen"
 
 #: pages/film_length.py:71
 msgid "Pictures & video"
 msgstr "Foto's en video's"
+
+#: web/routes/runs/[run_id]/+page.svelte:62
+#, python-brace-format
+msgid "Pictures: {count}"
+msgstr "Beelden: {count}"
 
 #: pages/clip_pipeline.py:56
 #, python-brace-format
@@ -1224,7 +1247,7 @@ msgstr "Montage voorbereiden"
 msgid "Preview"
 msgstr "Voorbeeld"
 
-#: app.py:264
+#: app.py:253
 msgid "Preview & Export"
 msgstr "Voorbeeld en export"
 
@@ -1240,10 +1263,6 @@ msgstr "Vorige"
 msgid "Re-load media to export"
 msgstr "Media opnieuw laden om te exporteren"
 
-#: pages/runs.py:50
-msgid "Read the cut"
-msgstr "Montage bekijken"
-
 #: pages/settings_people.py:153
 msgid "Reading the library…"
 msgstr "Bibliotheek lezen…"
@@ -1252,7 +1271,7 @@ msgstr "Bibliotheek lezen…"
 msgid "Reading the pictures"
 msgstr "Beelden lezen"
 
-#: pages/memory_storyboard.py:145
+#: pages/memory_storyboard.py:145 web/lib/ShotInspector.svelte:79
 msgid "Recorded alternative"
 msgstr "Vastgelegd alternatief"
 
@@ -1292,7 +1311,7 @@ msgstr "Media opnieuw laden"
 msgid "Remove this relationship"
 msgstr "Deze relatie verwijderen"
 
-#: pages/memory_storyboard.py:150
+#: pages/memory_storyboard.py:150 web/lib/labels.ts:29
 msgid "Replaced a picture the model doubted."
 msgstr "Verving een beeld waaraan het model twijfelde."
 
@@ -1320,9 +1339,9 @@ msgstr "Rol (suggesties of eigen tekst)"
 msgid "Rotation"
 msgstr "Rotatie"
 
-#: pages/runs.py:18
-msgid "Run not found. It may have been removed."
-msgstr "Uitvoering niet gevonden. Mogelijk is die verwijderd."
+#: web/routes/runs/[run_id]/+page.svelte:130
+msgid "Run details"
+msgstr "Details van de run"
 
 #: pages/suggestions.py:203
 msgid "Run this suggestion"
@@ -1337,8 +1356,8 @@ msgstr "Een suggestie uitvoeren maakt een video op de server. "
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "Actief op de server: {phase}. Dit gaat door als je deze pagina verlaat."
 
-#: app.py:74 app.py:227 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
-#: web/routes/runs/+page.svelte:80
+#: app.py:76 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
+#: web/routes/runs/+page.svelte:80 web/routes/runs/[run_id]/+page.svelte:46
 msgid "Runs"
 msgstr "Uitvoeringen"
 
@@ -1350,7 +1369,7 @@ msgstr "Configuratie opslaan"
 msgid "Saved - type a new key to replace it"
 msgstr "Opgeslagen: typ een nieuwe sleutel om te vervangen"
 
-#: pages/runs.py:33 pages/step4_export.py:34
+#: pages/step4_export.py:34 web/routes/runs/[run_id]/+page.svelte:131
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Opgeslagen in: {output_path}"
@@ -1411,7 +1430,7 @@ msgstr "Overal de eerste 5 s gebruiken"
 msgid "Set all to middle 5s"
 msgstr "Overal de middelste 5 s gebruiken"
 
-#: app.py:76 web/routes/+layout.svelte:16
+#: app.py:78 web/routes/+layout.svelte:16
 msgid "Settings"
 msgstr "Instellingen"
 
@@ -1423,7 +1442,7 @@ msgstr "Deelbaar"
 msgid "Sharing"
 msgstr "Delen"
 
-#: pages/memory_storyboard.py:133
+#: pages/memory_storyboard.py:133 web/routes/runs/[run_id]/+page.svelte:76
 msgid "Show"
 msgstr "Tonen"
 
@@ -1431,7 +1450,7 @@ msgstr "Tonen"
 msgid "Sign in"
 msgstr "Aanmelden"
 
-#: app.py:117
+#: app.py:116
 msgid "Sign out"
 msgstr "Afmelden"
 
@@ -1467,7 +1486,7 @@ msgstr "Starten..."
 msgid "Status"
 msgstr "Status"
 
-#: pages/memory_storyboard.py:64
+#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:39
 msgid "Still"
 msgstr "Stilstaand beeld"
 
@@ -1491,7 +1510,7 @@ msgstr "Storyboard"
 msgid "Subtitle"
 msgstr "Ondertitel"
 
-#: app.py:73 app.py:240 web/routes/+layout.svelte:13
+#: app.py:75 app.py:229 web/routes/+layout.svelte:13
 msgid "Suggestions"
 msgstr "Suggesties"
 
@@ -1578,7 +1597,11 @@ msgstr ""
 "De media en clipbewerker hebben hun eigen pagina: sluit uit wat nooit in beeld mag komen en "
 "pas de gekozen fragmenten aan."
 
-#: pages/memory_storyboard.py:148
+#: web/lib/ShotInspector.svelte:65
+msgid "The model had nothing to say about this picture."
+msgstr "Het model had niets te zeggen over dit beeld."
+
+#: pages/memory_storyboard.py:148 web/lib/ShotInspector.svelte:69
 msgid "The picture it replaced"
 msgstr "Het beeld dat het verving"
 
@@ -1651,11 +1674,11 @@ msgstr ""
 msgid "Too many failed attempts. Try again later."
 msgstr "Te veel mislukte pogingen. Probeer het later opnieuw."
 
-#: pages/memory_storyboard.py:152
+#: pages/memory_storyboard.py:152 web/lib/labels.ts:31
 msgid "Took the seat of a picture a check refused."
 msgstr "Nam de plaats in van een beeld dat een controle weigerde."
 
-#: pages/memory_storyboard.py:151
+#: pages/memory_storyboard.py:151 web/lib/labels.ts:30
 msgid "Took the seat of a picture the model removed from this story."
 msgstr "Nam de plaats in van een beeld dat het model uit dit verhaal haalde."
 
@@ -1750,7 +1773,8 @@ msgstr "Gebruikersnaam"
 msgid "Using {name}'s birthday: {value}"
 msgstr "Verjaardag van {name} gebruiken: {value}"
 
-#: pages/memory_storyboard.py:64
+#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:39
+#: web/routes/runs/[run_id]/+page.svelte:100
 msgid "Video"
 msgstr "Video"
 
@@ -1765,6 +1789,11 @@ msgstr "Video succesvol gegenereerd!"
 #: pages/memory_storyboard.py:135
 msgid "Videos"
 msgstr "Video’s"
+
+#: web/routes/runs/[run_id]/+page.svelte:63
+#, python-brace-format
+msgid "Videos: {count}"
+msgstr "Video's: {count}"
 
 #: pages/memory_brief.py:204
 msgid "What is it about"
@@ -1787,11 +1816,11 @@ msgstr "Wie gaat kijken"
 msgid "Why other suggestions were skipped"
 msgstr "Waarom andere suggesties zijn overgeslagen"
 
-#: pages/memory_storyboard.py:149
+#: pages/memory_storyboard.py:149 web/lib/ShotInspector.svelte:72
 msgid "Why the model replaced the other picture"
 msgstr "Waarom het model het andere beeld verving"
 
-#: pages/memory_storyboard.py:141
+#: pages/memory_storyboard.py:141 web/lib/ShotInspector.svelte:45
 msgid "Why this picture"
 msgstr "Waarom dit beeld"
 
@@ -1842,6 +1871,11 @@ msgstr "Je herinneringsvideo is klaar!"
 msgid "about 10 minutes per year of range, shorter if the media cannot fill it"
 msgstr "ongeveer 10 minuten per jaar in de periode, korter als er te weinig media zijn"
 
+#: web/routes/runs/[run_id]/+page.svelte:65
+#, python-brace-format
+msgid "about {film} of film"
+msgstr "ongeveer {film} film"
+
 #: pages/settings_people.py:433
 msgid "confirmed"
 msgstr "bevestigd"
@@ -1878,10 +1912,10 @@ msgstr "zuid"
 msgid "the type's default length, shorter if the media cannot fill it"
 msgstr "standaardlengte van het type, korter als er te weinig media zijn"
 
-#: pages/runs.py:27
+#: web/routes/runs/[run_id]/+page.svelte:64
 #, python-brace-format
-msgid "{clips_selected} pictures selected · {total_duration_seconds:.1f}s recorded run time"
-msgstr "{clips_selected} beelden geselecteerd · {total_duration_seconds:.1f}s opgenomen duur"
+msgid "{content} of pictures and video"
+msgstr "{content} aan beelden en video"
 
 #: pages/memory_story.py:109
 #, python-brace-format
@@ -1928,15 +1962,15 @@ msgstr "{photos_count} foto's beschikbaar (automatisch gekozen bij generatie)"
 msgid "{seconds:g} s"
 msgstr "{seconds:g} s"
 
+#: web/lib/ShotInspector.svelte:38
+#, python-brace-format
+msgid "{seconds} s on screen"
+msgstr "{seconds} s in beeld"
+
 #: pages/settings_config.py:147
 #, python-brace-format
 msgid "{title}  ({n_keys} keys)"
 msgstr "{title} ({n_keys} sleutels)"
-
-#: pages/runs.py:40
-#, python-brace-format
-msgid "{value}: {duration_seconds:.1f}s"
-msgstr "{value}: {duration_seconds:.1f}s"
 
 #~ msgid "Next runs"
 #~ msgstr "Volgende uitvoeringen"
@@ -1944,8 +1978,14 @@ msgstr "{value}: {duration_seconds:.1f}s"
 #~ msgid "Previous runs"
 #~ msgstr "Vorige uitvoeringen"
 
+#~ msgid "Read the cut"
+#~ msgstr "Montage bekijken"
+
 #~ msgid "Refresh runs"
 #~ msgstr "Uitvoeringen vernieuwen"
+
+#~ msgid "Run not found. It may have been removed."
+#~ msgstr "Uitvoering niet gevonden. Mogelijk is die verwijderd."
 
 #~ msgid "The storyboard"
 #~ msgstr "Het storyboard"
@@ -1967,4 +2007,10 @@ msgstr "{value}: {duration_seconds:.1f}s"
 
 #~ msgid "running"
 #~ msgstr "bezig"
+
+#~ msgid "{clips_selected} pictures selected · {total_duration_seconds:.1f}s recorded run time"
+#~ msgstr "{clips_selected} beelden geselecteerd · {total_duration_seconds:.1f}s opgenomen duur"
+
+#~ msgid "{value}: {duration_seconds:.1f}s"
+#~ msgstr "{value}: {duration_seconds:.1f}s"
 

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 21:53+0200\n"
+"POT-Creation-Date: 2026-09-26 22:42+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
@@ -126,7 +126,7 @@ msgstr "Dodaj kogoś"
 msgid "Add someone not in Immich"
 msgstr "Dodaj kogoś spoza Immich"
 
-#: pages/memory_storyboard.py:153
+#: pages/memory_storyboard.py:153 web/lib/labels.ts:32
 msgid "Added for a moment the catalogue records as notable."
 msgstr "Dodano dla chwili, którą katalog oznacza jako wyjątkową."
 
@@ -167,7 +167,7 @@ msgstr "Wszystkie osoby"
 msgid "All pictures"
 msgstr "Wszystkie obrazy"
 
-#: pages/memory_storyboard.py:146
+#: pages/memory_storyboard.py:146 web/lib/ShotInspector.svelte:84
 msgid "Alternatives considered"
 msgstr "Rozważone alternatywy"
 
@@ -239,11 +239,11 @@ msgstr "Automatycznie używa dzisiejszej daty z poprzednich lat"
 msgid "Back to Generation Options"
 msgstr "Wróć do opcji generowania"
 
-#: pages/memory_storyboard.py:160
+#: pages/memory_storyboard.py:160 web/routes/runs/[run_id]/+page.svelte:119
 msgid "Back to pictures"
 msgstr "Wróć do obrazów"
 
-#: pages/runs.py:16
+#: web/routes/runs/[run_id]/+page.svelte:52
 msgid "Back to runs"
 msgstr "Wróć do zadań"
 
@@ -284,11 +284,11 @@ msgstr "Przygotowywanie przebiegu muzyki..."
 msgid "Bundled"
 msgstr "Dołączona"
 
-#: app.py:141
+#: app.py:138
 msgid "Cache"
 msgstr "Pamięć podręczna"
 
-#: app.py:317 pages/step1_cache.py:76
+#: app.py:306 pages/step1_cache.py:76
 msgid "Cache Management"
 msgstr "Zarządzanie pamięcią podręczną"
 
@@ -403,7 +403,7 @@ msgstr "Gotowe!"
 msgid "Config file: {config_path}"
 msgstr "Plik konfiguracji: {config_path}"
 
-#: app.py:139 app.py:281
+#: app.py:136 app.py:270
 msgid "Configuration"
 msgstr "Konfiguracja"
 
@@ -496,7 +496,7 @@ msgstr "Montuj"
 msgid "Cut again"
 msgstr "Montuj ponownie"
 
-#: pages/memory_storyboard.py:138
+#: pages/memory_storyboard.py:138 web/routes/runs/[run_id]/+page.svelte:87
 msgid "Cut contact sheet"
 msgstr "Stykówka montażu"
 
@@ -508,7 +508,7 @@ msgstr "Montowanie wspomnienia..."
 msgid "Dark"
 msgstr "Ciemny"
 
-#: app.py:103
+#: app.py:102
 msgid "Demo mode"
 msgstr "Tryb demonstracyjny"
 
@@ -537,7 +537,7 @@ msgstr "Wyszukiwanie nieudane: {error}"
 msgid "Done"
 msgstr "Gotowe"
 
-#: pages/runs.py:66
+#: web/routes/runs/[run_id]/+page.svelte:142
 msgid "Download child output"
 msgstr "Pobierz powiązany wynik"
 
@@ -692,7 +692,7 @@ msgstr "Wygenerowana muzyka"
 msgid "Generating music..."
 msgstr "Generowanie muzyki..."
 
-#: app.py:252
+#: app.py:241
 msgid "Generation Options"
 msgstr "Opcje generowania"
 
@@ -728,6 +728,10 @@ msgstr "Święto"
 msgid "How long"
 msgstr "Jak długo"
 
+#: web/lib/ShotInspector.svelte:51
+msgid "How the rules got here"
+msgstr "Jak reguły do tego doszły"
+
 #: pages/step1_config.py:39
 msgid "Immich Connection"
 msgstr "Połączenie z Immich"
@@ -746,7 +750,7 @@ msgstr "Adres serwera Immich"
 msgid "Immich delivery: {delivery_label}"
 msgstr "Przesyłanie do Immich: {delivery_label}"
 
-#: pages/runs.py:34
+#: web/routes/runs/[run_id]/+page.svelte:132
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Przesyłanie do Immich: {value}"
@@ -804,7 +808,12 @@ msgstr "Zachowaj WhatsApp i inne otrzymane media dla tego wspomnienia"
 msgid "Keep intermediate files"
 msgstr "Zachowaj pliki pośrednie"
 
-#: pages/memory_storyboard.py:144
+#: web/lib/ShotInspector.svelte:54
+#, python-brace-format
+msgid "Kept at {stage}"
+msgstr "Zachowano na etapie {stage}"
+
+#: pages/memory_storyboard.py:144 web/lib/ShotInspector.svelte:75
 msgid "Kept because"
 msgstr "Zachowano, ponieważ"
 
@@ -866,7 +875,7 @@ msgstr "Mapa: {title_suggestion_map_mode}"
 msgid "Media Eligible"
 msgstr "Zakwalifikowane media"
 
-#: app.py:75 app.py:213 web/routes/+layout.svelte:15
+#: app.py:77 app.py:210 web/routes/+layout.svelte:15
 msgid "Media pool"
 msgstr "Media"
 
@@ -878,7 +887,7 @@ msgstr "Wspomnienia"
 msgid "Memories automation would make next, using the same rules as auto suggest."
 msgstr "Kolejne wspomnienia, które utworzyłaby automatyzacja według tych samych reguł co auto suggest."
 
-#: app.py:72 app.py:201 web/lib/labels.ts:18 web/routes/+layout.svelte:12
+#: app.py:74 app.py:198 web/lib/labels.ts:18 web/routes/+layout.svelte:12
 msgid "Memory"
 msgstr "Wspomnienie"
 
@@ -890,11 +899,11 @@ msgstr "Typ wspomnienia"
 msgid "Middle 5s"
 msgstr "Środkowe 5 s"
 
-#: pages/memory_storyboard.py:147
+#: pages/memory_storyboard.py:147 web/lib/ShotInspector.svelte:61
 msgid "Model polish"
 msgstr "Szlif modelu"
 
-#: pages/memory_storyboard.py:143
+#: pages/memory_storyboard.py:143 web/lib/ShotInspector.svelte:72
 msgid "Model suggestion"
 msgstr "Sugestia modelu"
 
@@ -968,7 +977,7 @@ msgstr "Dalej: podgląd i eksport"
 msgid "No albums with any assets in them yet."
 msgstr "Nie ma jeszcze albumów zawierających media."
 
-#: pages/runs.py:68
+#: web/routes/runs/[run_id]/+page.svelte:144
 msgid "No child output was retained for this run."
 msgstr "Nie zachowano powiązanego wyniku dla tego zadania."
 
@@ -980,7 +989,11 @@ msgstr "Nie wybrano klipów. Wróć, aby je wybrać."
 msgid "No eligible suggestions right now."
 msgstr "Obecnie brak odpowiednich propozycji."
 
-#: pages/memory_storyboard.py:154
+#: web/lib/ShotInspector.svelte:63
+msgid "No model read this cut: the rules chose every picture."
+msgstr "Żaden model nie czytał tego montażu: każdy obraz wybrały reguły."
+
+#: pages/memory_storyboard.py:154 web/lib/ShotInspector.svelte:80
 msgid "No outcome recorded."
 msgstr "Nie zapisano wyniku."
 
@@ -992,11 +1005,11 @@ msgstr ""
 "Brak pliku osób. Przeskanuj bibliotekę ponownie: odczyta liczby i miesięczne wykresy każdej "
 "nazwanej osoby, bez analizy obrazów."
 
-#: pages/memory_storyboard.py:140
+#: pages/memory_storyboard.py:140 web/routes/runs/[run_id]/+page.svelte:111
 msgid "No pictures match this filter."
 msgstr "Żaden obraz nie pasuje do tego filtra."
 
-#: pages/memory_storyboard.py:142
+#: pages/memory_storyboard.py:142 web/lib/ShotInspector.svelte:46
 msgid "No reason recorded for this picture."
 msgstr "Nie zapisano powodu wyboru tego obrazu."
 
@@ -1004,7 +1017,7 @@ msgstr "Nie zapisano powodu wyboru tego obrazu."
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "Brak zadań pasujących do tego widoku. Utwórz wspomnienie przez Wspomnienie lub Propozycje."
 
-#: pages/runs.py:57 web/routes/runs/+page.svelte:104
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:126
 msgid "No saved cut is available for this run."
 msgstr "Brak zapisanego montażu dla tego zadania."
 
@@ -1087,7 +1100,7 @@ msgstr "Otwórz media"
 msgid "Open {name} in Immich"
 msgstr "Otwórz {name} w Immich"
 
-#: pages/memory_storyboard.py:132
+#: pages/memory_storyboard.py:132 web/routes/runs/[run_id]/+page.svelte:83
 msgid "Order and timecodes from the saved cut."
 msgstr "Kolejność i kody czasowe zapisanego montażu."
 
@@ -1116,11 +1129,16 @@ msgstr "Nazwa pliku wyjściowego"
 msgid "Output: {name}"
 msgstr "Wynik: {name}"
 
+#: web/lib/ShotInspector.svelte:53
+#, python-brace-format
+msgid "Passed {stages}"
+msgstr "Przeszło {stages}"
+
 #: pages/login.py:50
 msgid "Password"
 msgstr "Hasło"
 
-#: app.py:140 app.py:300
+#: app.py:137 app.py:289
 msgid "People"
 msgstr "Osoby"
 
@@ -1186,13 +1204,18 @@ msgstr "Wybierz sekundy każdego filmu i obejrzyj podgląd. Zdjęcia nie wymagaj
 msgid "Picture decisions"
 msgstr "Decyzje dotyczące obrazu"
 
-#: pages/memory_storyboard.py:139
+#: pages/memory_storyboard.py:139 web/lib/ShotInspector.svelte:19
 msgid "Picture review"
 msgstr "Przegląd obrazu"
 
 #: pages/film_length.py:71
 msgid "Pictures & video"
 msgstr "Zdjęcia i filmy"
+
+#: web/routes/runs/[run_id]/+page.svelte:62
+#, python-brace-format
+msgid "Pictures: {count}"
+msgstr "Obrazy: {count}"
 
 #: pages/clip_pipeline.py:56
 #, python-brace-format
@@ -1225,7 +1248,7 @@ msgstr "Przygotowywanie montażu"
 msgid "Preview"
 msgstr "Podgląd"
 
-#: app.py:264
+#: app.py:253
 msgid "Preview & Export"
 msgstr "Podgląd i eksport"
 
@@ -1241,10 +1264,6 @@ msgstr "Wstecz"
 msgid "Re-load media to export"
 msgstr "Wczytaj media ponownie, aby eksportować"
 
-#: pages/runs.py:50
-msgid "Read the cut"
-msgstr "Obejrzyj montaż"
-
 #: pages/settings_people.py:153
 msgid "Reading the library…"
 msgstr "Odczytywanie biblioteki…"
@@ -1253,7 +1272,7 @@ msgstr "Odczytywanie biblioteki…"
 msgid "Reading the pictures"
 msgstr "Odczytywanie obrazów"
 
-#: pages/memory_storyboard.py:145
+#: pages/memory_storyboard.py:145 web/lib/ShotInspector.svelte:79
 msgid "Recorded alternative"
 msgstr "Zapisana alternatywa"
 
@@ -1293,7 +1312,7 @@ msgstr "Wczytaj media ponownie"
 msgid "Remove this relationship"
 msgstr "Usuń to powiązanie"
 
-#: pages/memory_storyboard.py:150
+#: pages/memory_storyboard.py:150 web/lib/labels.ts:29
 msgid "Replaced a picture the model doubted."
 msgstr "Zastąpił obraz, co do którego model miał wątpliwości."
 
@@ -1321,9 +1340,9 @@ msgstr "Rola (propozycje lub własny tekst)"
 msgid "Rotation"
 msgstr "Obrót"
 
-#: pages/runs.py:18
-msgid "Run not found. It may have been removed."
-msgstr "Nie znaleziono zadania. Mogło zostać usunięte."
+#: web/routes/runs/[run_id]/+page.svelte:130
+msgid "Run details"
+msgstr "Szczegóły uruchomienia"
 
 #: pages/suggestions.py:203
 msgid "Run this suggestion"
@@ -1338,8 +1357,8 @@ msgstr "Uruchomienie propozycji tworzy film na serwerze. "
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "Działa na serwerze: {phase}. Będzie kontynuowane po opuszczeniu strony."
 
-#: app.py:74 app.py:227 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
-#: web/routes/runs/+page.svelte:80
+#: app.py:76 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
+#: web/routes/runs/+page.svelte:80 web/routes/runs/[run_id]/+page.svelte:46
 msgid "Runs"
 msgstr "Zadania"
 
@@ -1351,7 +1370,7 @@ msgstr "Zapisz konfigurację"
 msgid "Saved - type a new key to replace it"
 msgstr "Zapisano: wpisz nowy klucz, aby zastąpić"
 
-#: pages/runs.py:33 pages/step4_export.py:34
+#: pages/step4_export.py:34 web/routes/runs/[run_id]/+page.svelte:131
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Zapisano w: {output_path}"
@@ -1410,7 +1429,7 @@ msgstr "Użyj pierwszych 5 s we wszystkich"
 msgid "Set all to middle 5s"
 msgstr "Użyj środkowych 5 s we wszystkich"
 
-#: app.py:76 web/routes/+layout.svelte:16
+#: app.py:78 web/routes/+layout.svelte:16
 msgid "Settings"
 msgstr "Ustawienia"
 
@@ -1422,7 +1441,7 @@ msgstr "Do udostępniania"
 msgid "Sharing"
 msgstr "Udostępnianie"
 
-#: pages/memory_storyboard.py:133
+#: pages/memory_storyboard.py:133 web/routes/runs/[run_id]/+page.svelte:76
 msgid "Show"
 msgstr "Pokaż"
 
@@ -1430,7 +1449,7 @@ msgstr "Pokaż"
 msgid "Sign in"
 msgstr "Zaloguj"
 
-#: app.py:117
+#: app.py:116
 msgid "Sign out"
 msgstr "Wyloguj"
 
@@ -1466,7 +1485,7 @@ msgstr "Uruchamianie..."
 msgid "Status"
 msgstr "Stan"
 
-#: pages/memory_storyboard.py:64
+#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:39
 msgid "Still"
 msgstr "Obraz nieruchomy"
 
@@ -1490,7 +1509,7 @@ msgstr "Scenopis"
 msgid "Subtitle"
 msgstr "Podtytuł"
 
-#: app.py:73 app.py:240 web/routes/+layout.svelte:13
+#: app.py:75 app.py:229 web/routes/+layout.svelte:13
 msgid "Suggestions"
 msgstr "Propozycje"
 
@@ -1575,7 +1594,11 @@ msgstr ""
 "Media i edytor fragmentów mają własną stronę: wyklucz to, co nigdy nie powinno się pojawić, i"
 " dopasuj wybrane fragmenty."
 
-#: pages/memory_storyboard.py:148
+#: web/lib/ShotInspector.svelte:65
+msgid "The model had nothing to say about this picture."
+msgstr "Model nie miał nic do powiedzenia o tym obrazie."
+
+#: pages/memory_storyboard.py:148 web/lib/ShotInspector.svelte:69
 msgid "The picture it replaced"
 msgstr "Obraz, który zastąpił"
 
@@ -1648,11 +1671,11 @@ msgstr ""
 msgid "Too many failed attempts. Try again later."
 msgstr "Zbyt wiele nieudanych prób. Spróbuj ponownie później."
 
-#: pages/memory_storyboard.py:152
+#: pages/memory_storyboard.py:152 web/lib/labels.ts:31
 msgid "Took the seat of a picture a check refused."
 msgstr "Zajął miejsce obrazu odrzuconego przez kontrolę."
 
-#: pages/memory_storyboard.py:151
+#: pages/memory_storyboard.py:151 web/lib/labels.ts:30
 msgid "Took the seat of a picture the model removed from this story."
 msgstr "Zajął miejsce obrazu, który model usunął z tej historii."
 
@@ -1745,7 +1768,8 @@ msgstr "Nazwa użytkownika"
 msgid "Using {name}'s birthday: {value}"
 msgstr "Użyto daty urodzin osoby {name}: {value}"
 
-#: pages/memory_storyboard.py:64
+#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:39
+#: web/routes/runs/[run_id]/+page.svelte:100
 msgid "Video"
 msgstr "Wideo"
 
@@ -1760,6 +1784,11 @@ msgstr "Film wygenerowany pomyślnie!"
 #: pages/memory_storyboard.py:135
 msgid "Videos"
 msgstr "Wideo"
+
+#: web/routes/runs/[run_id]/+page.svelte:63
+#, python-brace-format
+msgid "Videos: {count}"
+msgstr "Filmy: {count}"
 
 #: pages/memory_brief.py:204
 msgid "What is it about"
@@ -1782,11 +1811,11 @@ msgstr "Kto obejrzy"
 msgid "Why other suggestions were skipped"
 msgstr "Dlaczego pominięto inne propozycje"
 
-#: pages/memory_storyboard.py:149
+#: pages/memory_storyboard.py:149 web/lib/ShotInspector.svelte:72
 msgid "Why the model replaced the other picture"
 msgstr "Dlaczego model zastąpił inny obraz"
 
-#: pages/memory_storyboard.py:141
+#: pages/memory_storyboard.py:141 web/lib/ShotInspector.svelte:45
 msgid "Why this picture"
 msgstr "Dlaczego ten obraz"
 
@@ -1837,6 +1866,11 @@ msgstr "Twój film ze wspomnieniami jest gotowy!"
 msgid "about 10 minutes per year of range, shorter if the media cannot fill it"
 msgstr "około 10 minut na rok okresu, krócej, jeśli zabraknie mediów"
 
+#: web/routes/runs/[run_id]/+page.svelte:65
+#, python-brace-format
+msgid "about {film} of film"
+msgstr "około {film} filmu"
+
 #: pages/settings_people.py:433
 msgid "confirmed"
 msgstr "potwierdzone"
@@ -1873,10 +1907,10 @@ msgstr "południe"
 msgid "the type's default length, shorter if the media cannot fill it"
 msgstr "domyślna długość typu, skrócona przy zbyt małej ilości mediów"
 
-#: pages/runs.py:27
+#: web/routes/runs/[run_id]/+page.svelte:64
 #, python-brace-format
-msgid "{clips_selected} pictures selected · {total_duration_seconds:.1f}s recorded run time"
-msgstr "Wybrano {clips_selected} obrazów · {total_duration_seconds:.1f}s nagranego materiału"
+msgid "{content} of pictures and video"
+msgstr "{content} obrazów i wideo"
 
 #: pages/memory_story.py:109
 #, python-brace-format
@@ -1923,15 +1957,15 @@ msgstr "Dostępne zdjęcia: {photos_count} (wybierane automatycznie przy generow
 msgid "{seconds:g} s"
 msgstr "{seconds:g} s"
 
+#: web/lib/ShotInspector.svelte:38
+#, python-brace-format
+msgid "{seconds} s on screen"
+msgstr "{seconds} s na ekranie"
+
 #: pages/settings_config.py:147
 #, python-brace-format
 msgid "{title}  ({n_keys} keys)"
 msgstr "{title} (klucze: {n_keys})"
-
-#: pages/runs.py:40
-#, python-brace-format
-msgid "{value}: {duration_seconds:.1f}s"
-msgstr "{value}: {duration_seconds:.1f}s"
 
 #~ msgid "Next runs"
 #~ msgstr "Następne zadania"
@@ -1939,8 +1973,14 @@ msgstr "{value}: {duration_seconds:.1f}s"
 #~ msgid "Previous runs"
 #~ msgstr "Poprzednie zadania"
 
+#~ msgid "Read the cut"
+#~ msgstr "Obejrzyj montaż"
+
 #~ msgid "Refresh runs"
 #~ msgstr "Odśwież zadania"
+
+#~ msgid "Run not found. It may have been removed."
+#~ msgstr "Nie znaleziono zadania. Mogło zostać usunięte."
 
 #~ msgid "The storyboard"
 #~ msgstr "Scenopis"
@@ -1962,4 +2002,10 @@ msgstr "{value}: {duration_seconds:.1f}s"
 
 #~ msgid "running"
 #~ msgstr "w toku"
+
+#~ msgid "{clips_selected} pictures selected · {total_duration_seconds:.1f}s recorded run time"
+#~ msgstr "Wybrano {clips_selected} obrazów · {total_duration_seconds:.1f}s nagranego materiału"
+
+#~ msgid "{value}: {duration_seconds:.1f}s"
+#~ msgstr "{value}: {duration_seconds:.1f}s"
 

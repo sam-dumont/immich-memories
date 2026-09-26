@@ -11,16 +11,18 @@ import pytest
 from playwright.sync_api import Page, expect
 
 from immich_memories.operations.run_index import record_run_attempt
-from immich_memories.operations.storyboard import PLAN_FILE
+from immich_memories.operations.storyboard import PLAN_FILE, PROJECTION_FILE
 from immich_memories.tracking import RunDatabase
 from immich_memories.tracking.models import RunMetadata
-from tests.e2e.fake_library import CARRIERS
+from tests.e2e.fake_library import CARRIERS, LIBRARY
 
 pytestmark = pytest.mark.e2e
 
 
 def _seed(workspace) -> None:
     db = RunDatabase(workspace.database_path)
+    if db.get_run("20240630_web_cut"):
+        return  # the launch workspace lives for the whole session
     now = datetime.now(UTC)
     db.save_run(
         RunMetadata(
@@ -40,7 +42,8 @@ def _seed(workspace) -> None:
     )
     attempt = workspace.cache_dir / "editorial-runs" / "web-cut" / "attempts" / "a1"
     attempt.mkdir(parents=True, exist_ok=True)
-    shots = CARRIERS[:4]
+    stills = [picture for picture in CARRIERS if not picture.is_video][:4]
+    shots = [*stills, next(picture for picture in LIBRARY if picture.is_video)]
     plan = {
         "story": {"thesis": "June.", "episodes": [{"episode": "june", "title": "June"}]},
         "carriers": [
@@ -48,7 +51,7 @@ def _seed(workspace) -> None:
                 "asset_id": shot.asset_id,
                 "taken": f"2024-06-{index + 1:02d}T12:00:00",
                 "story_episode": "june",
-                "kind": "photo",
+                "kind": "video" if shot.is_video else "photo",
                 "seconds": 3.0,
                 "why": "June: a day",
                 "depicted_moment": f"m{index}",
@@ -57,6 +60,9 @@ def _seed(workspace) -> None:
         ],
     }
     (attempt / PLAN_FILE).write_text(json.dumps(plan))
+    (attempt / PROJECTION_FILE).write_text(
+        json.dumps({"intervals": {shots[-1].asset_id: [1.0, 2.5]}})
+    )
     record_run_attempt(workspace.cache_dir, "20240630_web_cut", attempt, attempt / "film.mp4")
 
 
@@ -111,3 +117,34 @@ def test_a_saved_dark_theme_is_applied_when_the_page_loads(page: Page, launch_ap
     expect(page.locator("html")).to_have_class("dark")
     background = page.evaluate("getComputedStyle(document.body).backgroundColor")
     assert background != "rgb(255, 255, 255)"
+
+
+def test_a_cut_opens_as_a_contact_sheet_that_explains_and_plays_each_shot(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    _seed(launch_workspace)
+    page.goto(f"{launch_app_url}/app/runs")
+    page.get_by_role("link").filter(has_text="20240630_web_cut").click()
+
+    sheet = page.get_by_role("list", name="Cut contact sheet")
+    shots = sheet.get_by_role("button")
+    expect(shots).to_have_count(5)
+    inspector = page.get_by_role("article", name="Picture review")
+    expect(inspector.get_by_text("a day", exact=True)).to_be_visible()
+    expect(inspector.get_by_text("No model read this cut", exact=False)).to_be_visible()
+
+    shots.first.focus()
+    page.keyboard.press("ArrowRight")
+    expect(shots.nth(1)).to_have_attribute("aria-pressed", "true")
+
+    page.get_by_role("radio", name="Videos").click()
+    expect(shots).to_have_count(1)
+    shots.first.click()
+    player = inspector.locator("video")
+    expect(player).to_be_visible()
+    page.wait_for_function(
+        "video => video.readyState >= 2 && video.currentTime >= 1.0 && video.currentTime <= 2.6",
+        arg=player.element_handle(),
+        timeout=30_000,
+    )
+    _shoot(page, "web-review")

@@ -639,8 +639,9 @@ src/immich_memories/
 │
 ├── web/                        # The Svelte client's server side; replaces ui/ page by page (#1395)
 │   ├── app.py                  # mount_web(): the /api/v1 routers + the built client under /app
-│   ├── runs.py                 # GET /api/v1/runs: RunDatabase + the cut's first pictures
-│   ├── media.py                # GET /api/v1/assets/{id}/thumbnail: shared cache, Immich on a miss
+│   ├── runs.py                 # GET /api/v1/runs[/{id}[/child-output]]: RunDatabase, run index, transcripts
+│   ├── cut.py                  # GET /api/v1/runs/{id}/cut: storyboard + trace (runs why) + model polish
+│   ├── media.py                # /api/v1/assets/{id}/thumbnail (shared cache) and /video (Range-streamed)
 │   ├── i18n.py                 # GET /api/v1/i18n: the browser's ui.po as JSON
 │   ├── schemas.py              # Pydantic response models = the contract (openapi.json)
 │   ├── dependencies.py         # Config, thumbnail cache, Immich fetch; overridable in tests
@@ -957,9 +958,9 @@ version and capabilities first); deployment files are `services/render-worker/co
 - **Pre-commit**: Run `make ci` before committing
 
 The web sidebar links Memory, Suggestions, Runs, Media pool and Settings.
-`ui/pages/suggestions.py` uses `AutoRunner`; the Runs list (`web/runs.py`, drawn by
-`web/src/routes/runs`) and one run's details (`ui/pages/runs.py`) read `RunDatabase`
-and the shared run index/storyboard. Neither owns a separate job store.
+`ui/pages/suggestions.py` uses `AutoRunner`; runs and their review page live in the web client
+(`web/runs.py`, `web/cut.py`, drawn by `web/src/routes/runs`) and read `RunDatabase` and the
+shared run index/storyboard/trace. Neither owns a separate job store. `/runs` redirects there.
 
 The storyboard embeds `frontend/src/CutReview.svelte` as a custom element in the existing
 NiceGUI session. `make frontend-check` checks and bundles it into `ui/static/review`, shipped

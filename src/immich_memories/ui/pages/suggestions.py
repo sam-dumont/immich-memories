@@ -143,7 +143,7 @@ class SuggestionsPage:
         self.attempt_id = None
         if run_id := await run.io_bound(_run_id_for, self.config, attempt):
             with self.result_actions:
-                ui.link(tr("Open run"), f"/runs?run_id={run_id}")
+                ui.link(tr("Open run"), f"/app/runs/{run_id}")
         self._settle(_finished_text(attempt))
 
     async def _load(self) -> None:

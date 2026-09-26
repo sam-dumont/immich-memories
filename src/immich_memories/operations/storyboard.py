@@ -236,9 +236,22 @@ def read_storyboard(attempt_dir: Path) -> Storyboard | None:
     plan_path = Path(attempt_dir) / PLAN_FILE
     if not plan_path.is_file():
         return None
-    projection_path = Path(attempt_dir) / PROJECTION_FILE
-    projection = json.loads(projection_path.read_text()) if projection_path.is_file() else None
-    return storyboard_from_plan(json.loads(plan_path.read_text()), projection)
+    return storyboard_from_plan(json.loads(plan_path.read_text()), _read_projection(attempt_dir))
+
+
+def _read_projection(attempt_dir: Path) -> dict[str, Any] | None:
+    path = Path(attempt_dir) / PROJECTION_FILE
+    return json.loads(path.read_text()) if path.is_file() else None
+
+
+def source_intervals(attempt_dir: Path) -> dict[str, tuple[float, float]]:
+    """The stretch of each source the render plays, in the source's own seconds."""
+    intervals = (_read_projection(attempt_dir) or {}).get("intervals") or {}
+    return {
+        str(asset_id): (float(bounds[0]), float(bounds[1]))
+        for asset_id, bounds in intervals.items()
+        if isinstance(bounds, list | tuple) and len(bounds) == 2
+    }
 
 
 def storyboard_lines(board: Storyboard, *, limit: int | None = None) -> list[str]:

@@ -55,7 +55,7 @@ def test_a_failed_generation_still_offers_the_run_it_started(
     expect(page.get_by_text("the fixture provider refused", exact=False)).to_be_visible()
     page.get_by_role("link", name="Open run", exact=True).click()
     expect(page.get_by_text("The fixture provider refused the render", exact=True)).to_be_visible()
-    expect(page.get_by_role("button", name="Download child output")).to_be_visible()
+    expect(page.get_by_role("link", name="Download child output")).to_be_visible()
 
 
 def test_choose_generate_and_read_the_same_automatic_run(page, launch_app_url, launch_workspace):
@@ -94,16 +94,13 @@ def test_choose_generate_and_read_the_same_automatic_run(page, launch_app_url, l
     assert live.reason == SUGGESTION_REASON
     expect(page.get_by_role("link", name="Open run", exact=True)).to_be_visible(timeout=660_000)
     page.get_by_role("link", name="Open run", exact=True).click()
-    disclosure = page.get_by_text("Read the cut", exact=True)
-    # The run-details page reads the saved plan after navigating; every other
-    # wait on this page is 60 s, and the 5 s default lost the race on CI.
-    expect(disclosure).to_be_visible(timeout=60_000)
-    disclosure.click()
-    expect(page.get_by_text(THESIS, exact=True)).to_be_hidden()
-    disclosure.click()
-    expect(page.get_by_text(THESIS, exact=True)).to_be_visible()
+    # The review page reads the saved plan after navigating; every other wait on
+    # this page is 60 s, and the 5 s default lost the race on CI.
+    expect(page.get_by_text(THESIS, exact=True)).to_be_visible(timeout=60_000)
+    sheet = page.get_by_role("list", name="Cut contact sheet")
+    expect(sheet.get_by_role("button")).to_have_count(len(CARRIERS))
     with page.expect_download() as download:
-        page.get_by_role("button", name="Download child output").click()
+        page.get_by_role("link", name="Download child output").click()
     transcript = Path(download.value.path()).read_text()
     assert f"Selected {len(CARRIERS)} clips" in transcript
     rows = RunDatabase(launch_workspace.database_path).list_runs(status="completed", source="auto")

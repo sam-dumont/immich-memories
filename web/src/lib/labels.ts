@@ -23,3 +23,19 @@ export type RunStatus = (typeof RUN_STATUSES)[number];
 const SOURCES: Record<string, string> = { manual: N_('Manual'), scheduled: N_('Scheduled'), auto: N_('Automatic') };
 
 export const sourceLabel = (value: string) => t(SOURCES[value] ?? value);
+
+// What a seat the model polish filled means; the same msgids as the server pages.
+const SEATS: Record<string, string> = {
+  'vote-weak': N_('Replaced a picture the model doubted.'),
+  'vote-bad': N_('Took the seat of a picture the model removed from this story.'),
+  'gate-refused': N_('Took the seat of a picture a check refused.'),
+  notable: N_('Added for a moment the catalogue records as notable.'),
+};
+
+export const seatLabel = (seat: string) => (SEATS[seat] ? t(SEATS[seat]) : seat);
+
+/** 0:56 style clock for a position or a length in the film. */
+export const clock = (seconds: number) => {
+  const whole = Math.round(seconds);
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
+};

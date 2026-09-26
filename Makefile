@@ -499,7 +499,10 @@ dead-code:
 	#                             pydantic runs these off the schema, never by name
 	# --ignore-names model_config: pydantic reads the ConfigDict class attribute
 	# off the model; nothing in src/ is meant to name it.
+	# --exclude web/schemas.py: the /api/v1 response models are read by the Svelte client across
+	# JSON, which vulture cannot follow; `make web-check` holds them to the generated types instead.
 	uvx vulture src/ $(SERVICE_TREES) vulture-whitelist.py --min-confidence 60 \
+		--exclude "src/immich_memories/web/schemas.py" \
 		--ignore-names "model_config" \
 		--ignore-decorators "@register_preset,@*.command,@*.group,@ui.page,@LocalizedPage,@app.middleware,@app.get,@app.post,@router.get,@router.post,@field_validator,@model_validator,@field_serializer"
 
