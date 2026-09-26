@@ -9,7 +9,9 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
 
+from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
 from immich_memories.analysis.subject_framing import FaceBox
+from immich_memories.store.caption_selection import selected_captions
 
 _FACES_FROM = (
     " FROM face_boxes b JOIN _annotation_wanted w ON w.asset_id = b.asset_id "
@@ -157,8 +159,15 @@ class AssetAnnotationFactRepository:
         )
         self._read_people(connection, records)
         self._read_faces(connection, records)
-        self._read_descriptions(connection, records)
-        self._read_description_fields(connection, records)
+        if self._description_model.startswith(LLM_CAPTION_PREFIX):
+            for asset_id, caption in selected_captions(
+                connection, asset_ids, self._description_model
+            ).items():
+                records[asset_id].description = caption.envelope.description
+                records[asset_id].setting = caption.envelope.setting
+        else:
+            self._read_descriptions(connection, records)
+            self._read_description_fields(connection, records)
         self._read_flags(connection, records)
         self._read_heads(connection, records)
         self._read_pixels(connection, records)

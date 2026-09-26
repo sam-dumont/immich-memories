@@ -8,6 +8,9 @@ from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from urllib.parse import urlsplit
 
+from immich_memories.analysis.editorial_description_contract import DESCRIPTION_MODEL
+from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
+from immich_memories.store.caption_selection import selected_captions
 from immich_memories.store.editorial_preparation import stage_wanted
 
 # Measured on ggml-org/llama.cpp:server build b10920: /v1/models answers
@@ -129,13 +132,18 @@ def origins_for(
     # Same staging table the missing-facts pass uses, holding the same ids: a
     # second copy of it on the same connection would be the only difference.
     stage_wanted(connection, wanted)
-    recorded = dict(
-        connection.execute(
-            "SELECT d.asset_id,p.origin FROM descriptions d "
-            "JOIN preparation_wanted w ON d.asset_id=w.asset_id "
-            "LEFT JOIN caption_provenance p ON d.asset_id=p.asset_id AND d.model=p.model "
-            "WHERE d.model=?",
-            (model,),
-        )
+    llm = model.startswith(LLM_CAPTION_PREFIX)
+    chosen = (
+        {a: caption.model for a, caption in selected_captions(connection, wanted, model).items()}
+        if llm
+        else dict.fromkeys(wanted, model)
     )
+    rows = connection.execute(
+        "SELECT d.asset_id,d.model,p.origin FROM descriptions d "
+        "JOIN preparation_wanted w ON d.asset_id=w.asset_id "
+        "LEFT JOIN caption_provenance p ON d.asset_id=p.asset_id AND d.model=p.model "
+        "WHERE d.model IN (?,?)",
+        (model, DESCRIPTION_MODEL if llm else model),
+    )
+    recorded = {asset: origin for asset, producer, origin in rows if chosen.get(asset) == producer}
     return group_origins(wanted, recorded)

@@ -16,8 +16,10 @@ from immich_memories.analysis.editorial_description_contract import (
     validate_envelope,
 )
 from immich_memories.analysis.editorial_description_outcomes import unavailable_for
+from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
 from immich_memories.analysis.subject_framing import FaceBox
 from immich_memories.api.models import Asset
+from immich_memories.store.caption_selection import selected_captions
 
 ASSET_COLUMNS = {
     "taken_at": "TEXT",
@@ -191,7 +193,11 @@ def missing_facts(
     """Report all missing or malformed producers, plus proven terminal caption failures."""
     wanted = tuple(dict.fromkeys(asset_ids))
     stage_wanted(connection, wanted)
-    complete = _complete_captions(connection, description_model)
+    complete = (
+        set(selected_captions(connection, wanted, description_model))
+        if description_model.startswith(LLM_CAPTION_PREFIX)
+        else _complete_captions(connection, description_model)
+    )
     unavailable: set[str] = set()
     if description_model == DESCRIPTION_MODEL:
         unavailable, damaged = _terminal_caption_failures(connection, wanted, preview_for)

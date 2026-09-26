@@ -50,6 +50,10 @@ alias, so a hosted captioner means your own server behind a URL.
 `caption_api_key` goes out as `Authorization: Bearer <key>`; blank sends no header. The reader's
 `llm.api_key` is never borrowed for it.
 
+Caption reports name the producer of the caption actually reused, which can differ from the
+currently configured model. Older captions without provenance stay marked unknown. A description
+and its setting are read as one complete pair from the same producer.
+
 ## Accepted artifacts
 
 | Format | Repository | Revision | Runs on |

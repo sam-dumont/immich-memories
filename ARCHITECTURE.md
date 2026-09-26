@@ -136,6 +136,10 @@ the code named beside it; if the two disagree, the code wins and this entry is s
 
 **Preparation**
 
+`store/caption_selection.py` chooses complete description/setting pairs for an explicitly
+selected LLM caption identity, preferring valid banked SmolVLM pairs. Fact reads, missing-fact
+checks and provenance use the same choice. Default SmolVLM reads retain their exact producer.
+
 - **Producer**: anything that writes a fact about a picture: the caption server, the heads, the
   detectors, the motion and pixel readers (`editorial_preparation*.py`). Film preparation runs
   cheap picture facts before the NAS draft, then captions and clip inspection for that draft
