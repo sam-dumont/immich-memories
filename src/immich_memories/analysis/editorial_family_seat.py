@@ -142,7 +142,10 @@ def _seat_one(name, film: list[dict], on, inputs: FamilySeatInputs) -> dict[str,
             and not inputs.refused(row["asset_id"])
             and inputs.stands(row["asset_id"], story)
         ]
-        ranked = sorted(frames, key=lambda row: -inputs.score_of(row["asset_id"]))
+        ranked = sorted(
+            frames,
+            key=lambda row: (-inputs.score_of(row["asset_id"]), not row.get("favourite")),
+        )
         for best in ranked:
             placed = _place(key, best, film, inputs)
             if placed is not None:
