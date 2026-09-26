@@ -16,10 +16,13 @@ import math
 import random
 from collections import Counter
 
+from nltk.stem import PorterStemmer
+
+from discovery import words
 from experiment_data import ROOT, load_library, save
 from model_reader import Reader
 
-MIN_SOURCES, MIN_YEARS, MERGE_SIMILARITY, HEAT, ROUNDS, MIN_WINS = 5, 3, 0.35, 8, 5, 2
+MIN_SOURCES, MIN_YEARS, MERGE_SIMILARITY, HEAT, ROUNDS, MIN_WINS = 5, 3, 0.3, 8, 5, 2
 MIN_DAYS, BURST_WINDOW, BURST_SHARE = 5, 14, 0.5
 
 HEAT_PROMPT = '''These are candidate threads found in one person's photo library. Each has
@@ -58,17 +61,21 @@ def candidates(library):
         if r.get("operator") != "geographic_variation" and is_burst(library, refs):
             continue
         threads.append({"key": r["key"], "title": (r.get("judgment") or {}).get("title", r["anchor"]),
-                        "refs": refs, "years": sorted(years), "operator": r.get("operator")})
+                        "refs": refs, "years": sorted(years), "operator": r.get("operator"),
+                        "anchor_term": r.get("anchor", "")})
     threads.sort(key=lambda t: -len(t["refs"]))
-    # Two threads are one subject when their pictures are described in the same
-    # words. Sampled sources rarely share pictures, so overlap of IDs misses this.
-    n = len(library.rows)
+    # Two threads are one subject when each one's subject word turns up in the other's
+    # captions. Shared background words (grass, field) do not count: dogs are photographed
+    # on grass, which does not make the grass thread a dog thread.
+    stem = PorterStemmer().stem
+    stems = [{stem(w) for w in tokens} for tokens in library.tokens]
     for t in threads:
-        counts = Counter(w for i in t["refs"] for w in library.tokens[i])
-        t["vector"] = {w: c * math.log(n / len(library.posts[w])) for w, c in counts.items()}
+        t["anchor"] = {stem(w) for w in words(t["anchor_term"])}
+        t["stems"] = stems
     merged = []
     for t in threads:
-        home = next((m for m in merged if cosine(t["vector"], m["vector"]) >= MERGE_SIMILARITY), None)
+        home = next((m for m in merged if talks_about(library, t, m) >= MERGE_SIMILARITY
+                     and talks_about(library, m, t) >= MERGE_SIMILARITY / 2), None)
         if home:
             home["refs"] |= t["refs"]
             home["merged"].append(t["title"])
@@ -89,9 +96,11 @@ def is_burst(library, refs):
     return densest / len(days) > BURST_SHARE
 
 
-def cosine(a, b):
-    dot = sum(v * b.get(w, 0) for w, v in a.items())
-    return dot / (math.sqrt(sum(v * v for v in a.values())) * math.sqrt(sum(v * v for v in b.values())) or 1)
+def talks_about(library, t, other):
+    """Share of t's captions that mention other's subject word."""
+    if not other["anchor"] or not t["refs"]:
+        return 0.0
+    return sum(1 for i in t["refs"] if t["stems"][i] & other["anchor"]) / len(t["refs"])
 
 
 def show(library, t, i):
