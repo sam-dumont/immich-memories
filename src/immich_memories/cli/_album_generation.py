@@ -73,22 +73,42 @@ def handle_album_generation(
     from immich_memories.processing.encoding_plan import resolve_output_selection
 
     task = progress.add_task(f"Resolving album: {album_ref}...", total=None)
-    try:
-        resolved = client.resolve_album(album_ref)
-    except (AlbumNotFoundError, AmbiguousAlbumError) as exc:
-        progress.update(task, completed=True)
-        progress.stop()
-        raise click.ClickException(str(exc)) from exc
-    progress.update(task, completed=True)
-    print_success(f"Album: {resolved.name} ({resolved.asset_count} assets)")
+    if album_ref.startswith("file:"):
+        # PROBE (caption threads): an in-memory album of exact asset IDs, read-only.
+        import hashlib
+        import json
+        from pathlib import Path
 
-    media = fetch_album_media(
-        client,
-        resolved,
-        config=config,
-        use_live_photos=use_live_photos,
-        use_photos=use_photos,
-    )
+        from immich_memories.analysis.album_source import split_album_assets
+        from immich_memories.api.album_service import AlbumRef
+
+        spec = json.loads(Path(album_ref[5:]).read_text())
+        ids = list(dict.fromkeys(spec["asset_ids"]))
+        digest = hashlib.sha256("\n".join(sorted(ids)).encode()).hexdigest()[:16]
+        resolved = AlbumRef(id=f"assets-{digest}", name=spec["name"], asset_count=len(ids))
+        progress.update(task, completed=True)
+        media = split_album_assets(
+            [client.get_asset(i) for i in ids],
+            config=config,
+            use_live_photos=use_live_photos,
+            use_photos=use_photos,
+        )
+    else:
+        try:
+            resolved = client.resolve_album(album_ref)
+        except (AlbumNotFoundError, AmbiguousAlbumError) as exc:
+            progress.update(task, completed=True)
+            progress.stop()
+            raise click.ClickException(str(exc)) from exc
+        progress.update(task, completed=True)
+        media = fetch_album_media(
+            client,
+            resolved,
+            config=config,
+            use_live_photos=use_live_photos,
+            use_photos=use_photos,
+        )
+    print_success(f"Album: {resolved.name} ({resolved.asset_count} assets)")
     if media.truncated:
         print_info(
             f"Album exceeds {config.analysis.max_album_assets} assets per type, "
