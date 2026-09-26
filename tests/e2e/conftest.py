@@ -344,7 +344,15 @@ def screenshot_dir() -> Path:
 
 
 def set_theme(page: Page, theme: str) -> None:
-    """Switch the NiceGUI app to the given theme ('light' or 'dark')."""
+    """Switch the NiceGUI app or the web client to the given theme ('light' or 'dark')."""
+    if "/app/" in page.url:
+        # @immich/ui keeps the choice in localStorage, JSON-encoded.
+        page.evaluate(
+            "theme => localStorage.setItem('immich-ui-theme', JSON.stringify(theme))", theme
+        )
+        page.reload(wait_until="networkidle")
+        page.mouse.move(640, 450)
+        return
     icon = "light_mode" if theme == "light" else "dark_mode"
     btn = page.locator(f'button:has(i:text("{icon}"))')
     if btn.is_visible(timeout=3000):

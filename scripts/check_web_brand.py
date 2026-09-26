@@ -1,0 +1,47 @@
+"""Fail when the web client uses or ships Immich's logos or store badges.
+
+@immich/ui is MIT, but the Immich name and logos are trademarks outside that grant. Vite inlines
+small SVGs into JavaScript, so a bundle scan alone misses them: the source imports are checked
+first, the emitted asset files second.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SOURCE = ROOT / "web" / "src"
+BUNDLE = ROOT / "src" / "immich_memories" / "web" / "client"
+
+# Every brand export of @immich/ui 0.90: the logos, the Logo component and the store badges.
+BRAND_EXPORTS = re.compile(
+    r"\b(immichLogo\w*|immichFuto\w*|Logo|appStoreBadge|fdroidBadge|playStoreBadge|obtainiumBadge)\b"
+)
+IMMICH_UI_IMPORT = re.compile(r"import\s*\{([^}]*)\}\s*from\s*['\"]@immich/ui['\"]", re.S)
+BRAND_FILES = re.compile(
+    r"(immich-logo|appstore-badge|fdroid-badge|playstore-badge|obtainium-badge)"
+)
+
+
+def main() -> int:
+    problems = [
+        f"{path.relative_to(ROOT)} imports {name} from @immich/ui"
+        for path in SOURCE.rglob("*")
+        if path.suffix in {".svelte", ".ts", ".js"}
+        for block in IMMICH_UI_IMPORT.findall(path.read_text())
+        for name in BRAND_EXPORTS.findall(block)
+    ]
+    problems += [
+        f"{path.relative_to(ROOT)} is an Immich brand asset"
+        for path in BUNDLE.rglob("*")
+        if BRAND_FILES.search(path.name)
+    ]
+    for problem in problems:
+        print(problem)
+    if problems:
+        print("Immich's logos and badges are trademarks, not part of @immich/ui's MIT grant.")
+    return 1 if problems else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

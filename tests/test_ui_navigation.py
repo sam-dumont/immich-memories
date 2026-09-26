@@ -16,7 +16,7 @@ from immich_memories.ui.state import remove_session
         ("/step4", memory_app.step4_page, None),
         ("/settings/config", memory_app.config_page, "/settings/config"),
         ("/settings/cache", memory_app.cache_page, "/settings/config"),
-        ("/runs", memory_app.runs_page, "/runs"),
+        ("/runs", lambda: memory_app.runs_page(run_id="unknown"), "/app/runs"),
         ("/suggestions", memory_app.suggestions_page, "/suggestions"),
         ("/settings/people", memory_app.people_page, "/settings/config"),
     ],
@@ -36,7 +36,7 @@ def test_page_navigation_preserves_destinations_and_current_location(
         assert [link.props["href"] for link in main] == [
             "/",
             "/suggestions",
-            "/runs",
+            "/app/runs",
             "/step2",
             "/settings/config",
         ]
@@ -60,7 +60,7 @@ def test_a_run_row_with_a_hand_typed_attempt_id_still_opens(monkeypatch, tmp_pat
     from immich_memories.config_loader import Config, get_config, set_config
     from immich_memories.tracking import RunDatabase
     from immich_memories.tracking.models import RunMetadata
-    from immich_memories.ui.pages.runs import render_runs
+    from immich_memories.ui.pages.runs import render_run_details
 
     config = Config(
         cache={"database": str(tmp_path / "runs.db"), "directory": str(tmp_path / "cache")}
@@ -80,7 +80,7 @@ def test_a_run_row_with_a_hand_typed_attempt_id_still_opens(monkeypatch, tmp_pat
     client = Client(ui.page("/runs"))
     try:
         with client:
-            render_runs(run_id="hand-typed")
+            render_run_details("hand-typed")
         texts = [
             element.text for element in client.elements.values() if isinstance(element, ui.label)
         ]

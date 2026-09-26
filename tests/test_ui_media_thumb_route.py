@@ -17,12 +17,9 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
+from immich_memories.cache.thumbnail_sizes import GRID_THUMBNAIL_PX
 from immich_memories.ui.auth import is_bypass_path
-from immich_memories.ui.media_route import (
-    GRID_THUMBNAIL_PX,
-    register_media_route,
-    thumbnail_url,
-)
+from immich_memories.ui.media_route import register_media_route, thumbnail_url
 
 
 def _jpeg(width: int, height: int) -> bytes:

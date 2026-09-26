@@ -374,6 +374,7 @@ playwright-install:  ## Install Playwright browsers for E2E tests
 e2e:  ## Run required fake-service contracts and real hermetic browser render
 	uv run pytest tests/e2e/test_fake_immich.py tests/e2e/test_launch_smoke.py \
 		tests/e2e/test_memory_page.py tests/e2e/test_picture_decisions.py tests/e2e/test_sharing_levels.py \
+		tests/e2e/test_web_client.py \
 		tests/e2e/test_people_page.py tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py -v \
 		-m "e2e and not visual" --log-cli-level=INFO --tb=short \
 		--junitxml=tests/e2e-junit.xml
@@ -500,7 +501,7 @@ dead-code:
 	# off the model; nothing in src/ is meant to name it.
 	uvx vulture src/ $(SERVICE_TREES) vulture-whitelist.py --min-confidence 60 \
 		--ignore-names "model_config" \
-		--ignore-decorators "@register_preset,@*.command,@*.group,@ui.page,@LocalizedPage,@app.middleware,@app.get,@app.post,@field_validator,@model_validator,@field_serializer"
+		--ignore-decorators "@register_preset,@*.command,@*.group,@ui.page,@LocalizedPage,@app.middleware,@app.get,@app.post,@router.get,@router.post,@field_validator,@model_validator,@field_serializer"
 
 # Security lint (Bandit)
 security-lint:
@@ -723,7 +724,7 @@ launch-check-ci: ensure-dev e2e
 	@echo "Hermetic launch check passed!"
 
 # Full CI-equivalent pipeline (locally)
-ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check docs-voice notices-check compose-check frontend-check test
+ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check docs-voice notices-check compose-check frontend-check web-check test
 	@echo "Full CI pipeline passed!"
 
 # Self-critique for AI code smells
@@ -977,6 +978,39 @@ frontend-check: frontend-install  ## Type-check the review workspace and fail wh
 
 ui-catalogues:  ## Extract UI labels and update the per-language PO files
 	uv run python scripts/update-ui-catalogues.py
+
+.PHONY: web-install web-build web-api web-check
+web-install:  ## Install the Svelte web client's pinned dependencies
+	cd web && npm ci
+
+web-api:  ## Regenerate the /api/v1 OpenAPI document and the client's TypeScript types from it
+	uv run python scripts/export-web-openapi.py
+	cd web && npm run -s api-types
+
+web-build:  ## Build the Svelte web client into the Python package (served at /app)
+	cd web && npm run build
+
+# The client is committed so an install needs no Node: a fresh build, the OpenAPI document and
+# the generated types must all match what is committed. The Immich logos in @immich/ui are
+# trademarks, not part of its MIT grant, and must never reach the bundle.
+web-check: web-install  ## Type-check the web client and fail on a stale bundle, contract or Immich logo
+	cd web && npm run -s check
+	@fresh=$$(mktemp -d); \
+	uv run python scripts/export-web-openapi.py --out "$$fresh/openapi.json" && \
+	diff -q "$$fresh/openapi.json" src/immich_memories/web/openapi.json >/dev/null || { \
+		rm -rf "$$fresh"; echo "web/openapi.json is stale: run make web-api"; exit 1; }; \
+	(cd web && npx openapi-typescript "$$fresh/openapi.json" -o "$$fresh/api-types.ts" >/dev/null) && \
+	diff -q "$$fresh/api-types.ts" web/src/lib/api-types.ts >/dev/null || { \
+		rm -rf "$$fresh"; echo "web/src/lib/api-types.ts is stale: run make web-api"; exit 1; }; \
+	rm -rf "$$fresh"
+	@fresh=$$(mktemp -d); cp -R src/immich_memories/web/client "$$fresh/committed"; \
+	(cd web && npm run -s build >/dev/null 2>&1) && \
+	diff -r "$$fresh/committed" src/immich_memories/web/client >/dev/null || { \
+		rm -rf src/immich_memories/web/client; cp -R "$$fresh/committed" src/immich_memories/web/client; \
+		rm -rf "$$fresh"; echo "src/immich_memories/web/client is stale: run make web-build"; exit 1; }; \
+	rm -rf "$$fresh"
+	uv run python scripts/check_web_brand.py
+	@echo "web client matches web/src, the contract and the types; no Immich logo shipped"
 
 docs-dev:
 	cd docs-site && npm start

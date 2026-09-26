@@ -32,8 +32,8 @@ def test_runs_page_reads_the_existing_database(page, launch_app_url, launch_work
         )
     )
     page.goto(f"{launch_app_url}/runs")
-    expect(page.get_by_text("fixture-history", exact=True)).to_be_visible()
-    page.get_by_role("link", name="fixture-history", exact=True).click()
+    page.wait_for_url(f"{launch_app_url}/app/runs")
+    page.get_by_role("link").filter(has_text="fixture-history").click()
     expect(page.get_by_text("Fixture provider stopped answering", exact=True)).to_be_visible()
 
 
@@ -116,7 +116,7 @@ def test_choose_generate_and_read_the_same_automatic_run(page, launch_app_url, l
     _save(page, evidence, "dark-run-details")
     set_theme(page, "light")
     page.get_by_role("link", name="Back to runs").click()
-    expect(page.get_by_role("link", name=rows[0].run_id, exact=True)).to_be_visible()
+    expect(page.get_by_role("link").filter(has_text=rows[0].run_id)).to_be_visible()
     _save(page, evidence, "runs")
     set_theme(page, "dark")
     _save(page, evidence, "dark-runs")
@@ -159,10 +159,10 @@ def test_variety_rejections_and_all_sidebar_destinations(page, launch_app_url, l
     sidebar = page.locator(".q-drawer")
     for label, path in [
         ("Memory", "/"),
-        ("Runs", "/runs"),
         ("Media pool", "/step2"),
         ("Settings", "/settings/config"),
         ("Suggestions", "/suggestions"),
+        ("Runs", "/app/runs"),
     ]:
         sidebar.get_by_role("link", name=label, exact=True).click()
         page.wait_for_url(launch_app_url + path)
@@ -176,12 +176,11 @@ def test_variety_rejections_and_all_sidebar_destinations(page, launch_app_url, l
                 page.wait_for_url(f"{launch_app_url}/settings/{target}")
 
 
-def test_run_history_filters_and_replaces_pages(page, launch_app_url, launch_workspace):
+def test_run_history_filters_and_loads_every_page(page, launch_app_url, launch_workspace):
     from datetime import datetime, timedelta
 
     from immich_memories.tracking import RunDatabase
     from immich_memories.tracking.models import RunMetadata
-    from tests.e2e.test_launch_smoke import _choose
 
     db = RunDatabase(launch_workspace.database_path)
     for index in range(25):
@@ -192,13 +191,12 @@ def test_run_history_filters_and_replaces_pages(page, launch_app_url, launch_wor
                 status="failed",
             )
         )
-    page.goto(f"{launch_app_url}/runs")
-    _choose(page, "Status", "failed")
-    expect(page.locator(".run-row")).to_have_count(20)
-    page.get_by_role("button", name="Next runs").click()
-    expect(page.get_by_role("button", name="Next runs")).to_be_disabled()
-    assert 0 < page.locator(".run-row").count() < 20
-    page.get_by_role("button", name="Previous runs").click()
-    expect(page.locator(".run-row")).to_have_count(20)
-    page.get_by_role("button", name="Refresh runs").click()
-    expect(page.locator(".run-row")).to_have_count(20)
+    page.goto(f"{launch_app_url}/app/runs")
+    page.get_by_role("radio", name="Failed").click()
+    cards = page.get_by_role("link").filter(has_text="history-")
+    expect(cards.first).to_be_visible()
+    # The client pages in 24 at a time as the list scrolls; the 25th arrives with the next page.
+    cards.last.scroll_into_view_if_needed()
+    expect(cards).to_have_count(25)
+    page.get_by_role("radio", name="Completed").click()
+    expect(cards).to_have_count(0)

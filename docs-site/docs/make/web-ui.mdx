@@ -242,12 +242,22 @@ first. **Why other suggestions were skipped** names the rule behind each rejecti
 
 ## Runs
 
-<ThemedScreenshot name="runs" alt="Run history with status, dates and links to each run" />
+<ThemedScreenshot name="runs" alt="Run history as cards, each with the first pictures of its cut, its status and when it ran" />
 
 **Runs** lists manual and automatic renders from the same database as `immich-memories runs list`,
-failures included. A run shows its output path, upload status, warnings and phase timings. **Read the
-cut** shows the saved storyboard (`runs story` on the CLI). **Download child output** fetches the full
-output of an automatic run, with credentials removed.
+failures included, newest first. Each card shows the first four pictures its saved cut plays, the
+memory type, its status and how long ago it ran. The status buttons filter the list, and older runs
+load as you scroll.
+
+This is the first page of the new web client, at `/app`. It looks and behaves like Immich because
+it is built on Immich's own component library, and it reads the same JSON API
+(`/api/v1`) that the rest of the pages are moving to, one at a time
+([#1395](https://github.com/sam-dumont/immich-video-memory-generator/issues/1395)). The old
+`/runs` address sends you here.
+
+Open a run to see its output path, upload status, warnings and phase timings. **Read the cut** shows
+the saved storyboard (`runs story` on the CLI). **Download child output** fetches the full output of
+an automatic run, with credentials removed.
 
 <ThemedScreenshot name="run-details" alt="One run with its output path, phase timings and saved cut" />
 

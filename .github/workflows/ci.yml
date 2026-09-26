@@ -107,10 +107,15 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: |
+            frontend/package-lock.json
+            web/package-lock.json
       - name: Cut review frontend
         if: '!cancelled()'
         run: make frontend-check
+      - name: Web client (types, stale bundle or contract, Immich brand assets)
+        if: '!cancelled()'
+        run: make web-check
       - name: AI Smell Audit
         if: '!cancelled()'
         run: make critique

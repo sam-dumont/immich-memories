@@ -45,6 +45,7 @@ from immich_memories.ui.reverse_proxy import reverse_proxy_run_kwargs
 from immich_memories.ui.state import ensure_config, get_app_state, peek_app_state
 from immich_memories.ui.theme import apply_theme, render_theme_toggle
 from immich_memories.ui.trigger_api import register_trigger_routes
+from immich_memories.web import mount_web
 
 logger = logging.getLogger(__name__)
 
@@ -70,10 +71,13 @@ def _get_storage_secret() -> str:
 _NAVIGATION = [
     (N_("Memory"), "auto_awesome", "/"),
     (N_("Suggestions"), "lightbulb", "/suggestions"),
-    (N_("Runs"), "history", "/runs"),
+    (N_("Runs"), "history", "/app/runs"),
     (N_("Media pool"), "video_library", "/step2"),
     (N_("Settings"), "settings", "/settings/config"),
 ]
+
+# A run's details stay on /runs until the web client draws them; Runs is still where you are.
+_NAV_HOME = {"/runs": "/app/runs"}
 
 
 # ============================================================================
@@ -120,7 +124,9 @@ def _render_navigation() -> None:
     path = ui.context.client.page.path
     with ui.column().classes("gap-0 px-3 mt-2"):
         for name, icon, target in _NAVIGATION:
-            active = path == target or (name == "Settings" and path.startswith("/settings/"))
+            active = _NAV_HOME.get(path, path) == target or (
+                name == "Settings" and path.startswith("/settings/")
+            )
             classes = "im-nav-item" + (" im-nav-active" if active else "")
             with (
                 ui.link(target=target).classes(classes + " no-underline w-full"),
@@ -209,15 +215,18 @@ def step2_page() -> None:
 
 
 @LocalizedPage("/runs")
-def runs_page(run_id: str | None = None, status: str = "all", offset: int = 0) -> None:
-    """Durable history for manual and automatic generation."""
-    from immich_memories.ui.pages.runs import render_runs
+def runs_page(run_id: str | None = None) -> RedirectResponse | None:
+    """One run's details; the list itself moved to the web client (#1395)."""
+    from immich_memories.ui.pages.runs import render_run_details
 
+    if not run_id:
+        return RedirectResponse("/app/runs", status_code=307)
     apply_theme()
     drawer = render_sidebar()
     with ui.column().classes("w-full px-8 py-5"):
         page_header(tr("Runs"), drawer=drawer)
-        render_runs(run_id, status, offset)
+        render_run_details(run_id)
+    return None
 
 
 @LocalizedPage("/suggestions")
@@ -322,6 +331,9 @@ register_health_routes(app)
 # or `server.trigger_token` is configured — see ui/trigger_api.py.
 register_trigger_routes(app)
 
+# /api/v1 and the Svelte client at /app: the pages move there one at a time (#1395).
+mount_web(app)
+
 
 def _session_thumbnail_cache():
     session = peek_app_state()
@@ -400,7 +412,7 @@ def _check_session_ttl(ttl_hours: int) -> RedirectResponse | None:
 
 def _unauthenticated_response(path: str) -> Response:
     """Send an API caller a status it can act on, and a browser to the login page."""
-    if is_trigger_path(path):
+    if is_trigger_path(path) or path.startswith("/api/v1/"):
         return JSONResponse({"detail": "authentication required"}, status_code=401)
     return RedirectResponse("/login", status_code=307)
 

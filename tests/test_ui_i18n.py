@@ -1,6 +1,6 @@
 """UI language selection uses the browser, independently of film settings."""
 
-from immich_memories.ui.i18n import resolve_ui_locale
+from immich_memories.i18n import resolve_ui_locale
 
 
 def test_browser_language_respects_quality_and_supported_regional_variants():

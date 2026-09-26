@@ -637,7 +637,17 @@ src/immich_memories/
 │   ├── _generate_display.py    # Params table + result printing for `generate`
 │   └── _live_display.py        # Rich Live interactive progress display
 │
-├── ui/                         # NiceGUI web interface
+├── web/                        # The Svelte client's server side; replaces ui/ page by page (#1395)
+│   ├── app.py                  # mount_web(): the /api/v1 routers + the built client under /app
+│   ├── runs.py                 # GET /api/v1/runs: RunDatabase + the cut's first pictures
+│   ├── media.py                # GET /api/v1/assets/{id}/thumbnail: shared cache, Immich on a miss
+│   ├── i18n.py                 # GET /api/v1/i18n: the browser's ui.po as JSON
+│   ├── schemas.py              # Pydantic response models = the contract (openapi.json)
+│   ├── dependencies.py         # Config, thumbnail cache, Immich fetch; overridable in tests
+│   ├── openapi.json            # Generated (make web-api); web/src/lib/api-types.ts comes from it
+│   └── client/                 # Generated SvelteKit build (make web-build), committed: no Node at runtime
+│
+├── ui/                         # NiceGUI web interface (being replaced by web/, see #1395)
 │   ├── app.py                  # App setup & routing
 │   ├── i18n.py                 # Per-browser UI locale, translated labels, Quasar language
 │   ├── auth.py                 # Auth middleware, credential verification, session helpers
@@ -947,8 +957,9 @@ version and capabilities first); deployment files are `services/render-worker/co
 - **Pre-commit**: Run `make ci` before committing
 
 The web sidebar links Memory, Suggestions, Runs, Media pool and Settings.
-`ui/pages/suggestions.py` uses `AutoRunner`; `ui/pages/runs.py` reads `RunDatabase`
-and the shared run index/storyboard. Neither page owns a separate job store.
+`ui/pages/suggestions.py` uses `AutoRunner`; the Runs list (`web/runs.py`, drawn by
+`web/src/routes/runs`) and one run's details (`ui/pages/runs.py`) read `RunDatabase`
+and the shared run index/storyboard. Neither owns a separate job store.
 
 The storyboard embeds `frontend/src/CutReview.svelte` as a custom element in the existing
 NiceGUI session. `make frontend-check` checks and bundles it into `ui/static/review`, shipped
@@ -956,3 +967,12 @@ inside the Python package. The browser owns focus and filtering; Python validate
 and applies export exclusions to the existing selection. `operations/cut_review.py` reads saved
 model objections, protection rules and replacement outcomes without running inference. Media
 still uses the authenticated thumbnail route, and hold decisions use the shared owner store.
+
+**Web client (`web/` at the repo root, served from `src/immich_memories/web/client`).** SvelteKit
+static SPA with `@immich/ui` (MIT; its logos and store badges are Immich trademarks, stripped at
+build time and gated by `scripts/check_web_brand.py`). It talks only to `/api/v1`. Pages move from
+NiceGUI one slice at a time; a moved page's old route redirects to `/app/...`. `make web-check`
+fails on a stale bundle, a stale OpenAPI contract or TS types, or a shipped Immich brand asset.
+Import-linter keeps `immich_memories.web` free of `ui`, `cli` and `nicegui`, so NiceGUI can be
+deleted without touching it. Labels are `t('...')`/`N_('...')` in Svelte and land in the same
+`ui.po` catalogues (`make ui-catalogues`).

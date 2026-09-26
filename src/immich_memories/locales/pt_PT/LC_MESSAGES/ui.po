@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 20:20+0200\n"
+"POT-Creation-Date: 2026-09-26 21:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pt_PT\n"
@@ -146,7 +146,7 @@ msgstr "Opções avançadas"
 msgid "Advanced people condition"
 msgstr "Condição avançada de pessoas"
 
-#: pages/memory_brief.py:37 pages/step1_presets.py:290
+#: pages/memory_brief.py:37 pages/step1_presets.py:290 web/lib/labels.ts:11
 msgid "Album"
 msgstr "Álbum"
 
@@ -214,7 +214,11 @@ msgstr "Automático (igual aos clips)"
 msgid "Auto duration"
 msgstr "Duração automática"
 
-#: i18n.py:102
+#: web/lib/labels.ts:23
+msgid "Automatic"
+msgstr "Automática"
+
+#: i18n.py:74
 msgid "Automatic (browser)"
 msgstr "Automático (navegador)"
 
@@ -238,7 +242,7 @@ msgstr "Voltar às opções de geração"
 msgid "Back to pictures"
 msgstr "Voltar às imagens"
 
-#: pages/runs.py:21
+#: pages/runs.py:16
 msgid "Back to runs"
 msgstr "Voltar às execuções"
 
@@ -279,11 +283,11 @@ msgstr "A preparar a sequência musical..."
 msgid "Bundled"
 msgstr "Incluída"
 
-#: app.py:135
+#: app.py:141
 msgid "Cache"
 msgstr "Cache"
 
-#: app.py:308 pages/step1_cache.py:76
+#: app.py:317 pages/step1_cache.py:76
 msgid "Cache Management"
 msgstr "Gestão da cache"
 
@@ -398,7 +402,7 @@ msgstr "Concluído!"
 msgid "Config file: {config_path}"
 msgstr "Ficheiro de configuração: {config_path}"
 
-#: app.py:133 app.py:272
+#: app.py:139 app.py:281
 msgid "Configuration"
 msgstr "Configuração"
 
@@ -477,7 +481,7 @@ msgstr "Organização"
 msgid "Custom Range"
 msgstr "Período personalizado"
 
-#: pages/memory_brief.py:47
+#: pages/memory_brief.py:47 web/lib/labels.ts:15
 msgid "Custom date range"
 msgstr "Período personalizado"
 
@@ -505,7 +509,7 @@ msgstr "A montar a memória..."
 msgid "Dark"
 msgstr "Escuro"
 
-#: app.py:99
+#: app.py:103
 msgid "Demo mode"
 msgstr "Modo de demonstração"
 
@@ -534,7 +538,7 @@ msgstr "Falha na pesquisa: {error}"
 msgid "Done"
 msgstr "Concluído"
 
-#: pages/runs.py:71
+#: pages/runs.py:66
 msgid "Download child output"
 msgstr "Transferir resultado associado"
 
@@ -689,7 +693,7 @@ msgstr "Música gerada"
 msgid "Generating music..."
 msgstr "A gerar música..."
 
-#: app.py:243
+#: app.py:252
 msgid "Generation Options"
 msgstr "Opções de geração"
 
@@ -717,7 +721,7 @@ msgstr "Hemisfério"
 msgid "Hold cleared. The next cut may use it."
 msgstr "Restrição removida. A próxima montagem poderá usar a imagem."
 
-#: pages/memory_brief.py:39 pages/step1_presets.py:82
+#: pages/memory_brief.py:39 pages/step1_presets.py:82 web/lib/labels.ts:13
 msgid "Holiday"
 msgstr "Festividade"
 
@@ -743,7 +747,7 @@ msgstr "URL do servidor Immich"
 msgid "Immich delivery: {delivery_label}"
 msgstr "Envio para o Immich: {delivery_label}"
 
-#: pages/runs.py:39
+#: pages/runs.py:34
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Envio para o Immich: {value}"
@@ -768,7 +772,7 @@ msgstr "Incluir na compilação"
 msgid "Include in export"
 msgstr "Incluir na exportação"
 
-#: i18n.py:110
+#: i18n.py:82
 msgid "Interface language"
 msgstr "Idioma da interface"
 
@@ -842,11 +846,15 @@ msgstr "A carregar vídeos..."
 msgid "Looking through the library…"
 msgstr "A percorrer a biblioteca…"
 
-#: pages/memory_duration.py:30
+#: web/routes/+layout.svelte:32 web/routes/+layout.svelte:43
+msgid "Main navigation"
+msgstr "Navegação principal"
+
+#: pages/memory_duration.py:30 web/lib/labels.ts:23
 msgid "Manual"
 msgstr "Manual"
 
-#: pages/runs.py:83
+#: web/routes/runs/+page.svelte:81
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr ""
 "Execuções manuais e automáticas, incluindo falhas. Abre uma execução para ver a montagem e os"
@@ -861,7 +869,7 @@ msgstr "Mapa: {title_suggestion_map_mode}"
 msgid "Media Eligible"
 msgstr "Conteúdos elegíveis"
 
-#: app.py:74 app.py:207
+#: app.py:75 app.py:213 web/routes/+layout.svelte:15
 msgid "Media pool"
 msgstr "Conteúdos"
 
@@ -873,7 +881,7 @@ msgstr "Memórias"
 msgid "Memories automation would make next, using the same rules as auto suggest."
 msgstr "As próximas memórias que a automatização criaria, com as mesmas regras de auto suggest."
 
-#: app.py:71 app.py:195
+#: app.py:72 app.py:201 web/lib/labels.ts:18 web/routes/+layout.svelte:12
 msgid "Memory"
 msgstr "Memória"
 
@@ -897,7 +905,7 @@ msgstr "Sugestão do modelo"
 msgid "Month"
 msgstr "Mês"
 
-#: pages/memory_brief.py:35
+#: pages/memory_brief.py:35 web/lib/labels.ts:9
 msgid "Monthly Highlights"
 msgstr "Destaques do mês"
 
@@ -914,7 +922,7 @@ msgstr "Ambiente: {mood_text}"
 msgid "Most recent year"
 msgstr "Ano mais recente"
 
-#: pages/memory_brief.py:34
+#: pages/memory_brief.py:34 web/lib/labels.ts:8
 msgid "Multi-Person"
 msgstr "Várias pessoas"
 
@@ -951,10 +959,6 @@ msgstr "Nunca usar"
 msgid "Next"
 msgstr "Seguinte"
 
-#: pages/runs.py:127
-msgid "Next runs"
-msgstr "Próximas execuções"
-
 #: pages/clip_review.py:433
 msgid "Next: Generation Options"
 msgstr "Seguinte: opções de geração"
@@ -967,7 +971,7 @@ msgstr "Seguinte: pré-visualização e exportação"
 msgid "No albums with any assets in them yet."
 msgstr "Ainda não há álbuns com conteúdos."
 
-#: pages/runs.py:73
+#: pages/runs.py:68
 msgid "No child output was retained for this run."
 msgstr "Nenhum resultado associado foi guardado para esta execução."
 
@@ -999,11 +1003,11 @@ msgstr "Nenhuma imagem corresponde a este filtro."
 msgid "No reason recorded for this picture."
 msgstr "Nenhum motivo registado para esta imagem."
 
-#: pages/runs.py:105
+#: web/routes/runs/+page.svelte:121
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "Nenhuma execução corresponde a esta vista. Cria uma memória em Memória ou Sugestões."
 
-#: pages/runs.py:62
+#: pages/runs.py:57 web/routes/runs/+page.svelte:104
 msgid "No saved cut is available for this run."
 msgstr "Não existe montagem guardada para esta execução."
 
@@ -1043,7 +1047,7 @@ msgstr "Ainda não há nada registado."
 msgid "Nothing to curate — no twins and no split records."
 msgstr "Nada a organizar: sem duplicados nem registos separados."
 
-#: pages/memory_brief.py:36
+#: pages/memory_brief.py:36 web/lib/labels.ts:10
 msgid "On This Day"
 msgstr "Neste dia"
 
@@ -1117,7 +1121,7 @@ msgstr "Resultado: {name}"
 msgid "Password"
 msgstr "Palavra-passe"
 
-#: app.py:134 app.py:291
+#: app.py:140 app.py:300
 msgid "People"
 msgstr "Pessoas"
 
@@ -1133,7 +1137,7 @@ msgstr "Pessoa"
 msgid "Person Filter"
 msgstr "Filtro de pessoas"
 
-#: pages/memory_brief.py:33
+#: pages/memory_brief.py:33 web/lib/labels.ts:7
 msgid "Person Spotlight"
 msgstr "Uma pessoa em destaque"
 
@@ -1222,7 +1226,7 @@ msgstr "A preparar a montagem"
 msgid "Preview"
 msgstr "Pré-visualização"
 
-#: app.py:255
+#: app.py:264
 msgid "Preview & Export"
 msgstr "Pré-visualização e exportação"
 
@@ -1234,15 +1238,11 @@ msgstr "Cache de pré-visualizações"
 msgid "Previous"
 msgstr "Anterior"
 
-#: pages/runs.py:121
-msgid "Previous runs"
-msgstr "Execuções anteriores"
-
 #: pages/memory_run.py:467
 msgid "Re-load media to export"
 msgstr "Recarregar conteúdos para exportar"
 
-#: pages/runs.py:55
+#: pages/runs.py:50
 msgid "Read the cut"
 msgstr "Ver a montagem"
 
@@ -1257,10 +1257,6 @@ msgstr "A ler as imagens"
 #: pages/memory_storyboard.py:145
 msgid "Recorded alternative"
 msgstr "Alternativa registada"
-
-#: pages/runs.py:132
-msgid "Refresh runs"
-msgstr "Atualizar execuções"
 
 #: pages/suggestions.py:95
 msgid "Refresh suggestions"
@@ -1326,7 +1322,7 @@ msgstr "Papel (sugestões ou texto livre)"
 msgid "Rotation"
 msgstr "Rotação"
 
-#: pages/runs.py:23
+#: pages/runs.py:18
 msgid "Run not found. It may have been removed."
 msgstr "Execução não encontrada. Pode ter sido removida."
 
@@ -1343,7 +1339,8 @@ msgstr "Executar uma sugestão cria um vídeo no servidor. "
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "Em curso no servidor: {phase}. Continua mesmo que saias desta página."
 
-#: app.py:73 app.py:219
+#: app.py:74 app.py:227 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
+#: web/routes/runs/+page.svelte:80
 msgid "Runs"
 msgstr "Execuções"
 
@@ -1355,7 +1352,7 @@ msgstr "Guardar configuração"
 msgid "Saved - type a new key to replace it"
 msgstr "Guardada: introduz uma nova chave para a substituir"
 
-#: pages/runs.py:38 pages/step4_export.py:34
+#: pages/runs.py:33 pages/step4_export.py:34
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Guardado em: {output_path}"
@@ -1369,7 +1366,11 @@ msgstr "Guardado em: {result_path} ({file_size})"
 msgid "Scaling Mode"
 msgstr "Modo de escala"
 
-#: pages/memory_brief.py:32 pages/step1_presets.py:165
+#: web/lib/labels.ts:23
+msgid "Scheduled"
+msgstr "Agendada"
+
+#: pages/memory_brief.py:32 pages/step1_presets.py:165 web/lib/labels.ts:6
 msgid "Season"
 msgstr "Estação"
 
@@ -1410,7 +1411,7 @@ msgstr "Usar os primeiros 5 s em todos"
 msgid "Set all to middle 5s"
 msgstr "Usar os 5 s centrais em todos"
 
-#: app.py:75
+#: app.py:76 web/routes/+layout.svelte:16
 msgid "Settings"
 msgstr "Definições"
 
@@ -1430,7 +1431,7 @@ msgstr "Mostrar"
 msgid "Sign in"
 msgstr "Iniciar sessão"
 
-#: app.py:113
+#: app.py:117
 msgid "Sign out"
 msgstr "Terminar sessão"
 
@@ -1462,7 +1463,7 @@ msgstr "A partir de"
 msgid "Starting..."
 msgstr "A iniciar..."
 
-#: pages/runs.py:98
+#: web/routes/runs/+page.svelte:84
 msgid "Status"
 msgstr "Estado"
 
@@ -1490,7 +1491,7 @@ msgstr "Guião visual"
 msgid "Subtitle"
 msgstr "Subtítulo"
 
-#: app.py:72 app.py:231
+#: app.py:73 app.py:240 web/routes/+layout.svelte:13
 msgid "Suggestions"
 msgstr "Sugestões"
 
@@ -1498,7 +1499,7 @@ msgstr "Sugestões"
 msgid "Summary"
 msgstr "Resumo"
 
-#: pages/memory_brief.py:40
+#: pages/memory_brief.py:40 web/lib/labels.ts:14
 msgid "Surprise me"
 msgstr "Surpreende-me"
 
@@ -1588,6 +1589,10 @@ msgstr "Os conteúdos{value}"
 msgid "The roster"
 msgstr "A lista de pessoas"
 
+#: web/routes/runs/+page.svelte:126
+msgid "The runs could not be loaded."
+msgstr "Não foi possível carregar as execuções."
+
 #: pages/settings_people.py:158
 #, python-brace-format
 msgid "The scan could not finish: {exc}"
@@ -1662,7 +1667,7 @@ msgstr "Estilo de transição"
 msgid "Trim the video clips"
 msgstr "Aparar os clips de vídeo"
 
-#: pages/memory_brief.py:38
+#: pages/memory_brief.py:38 web/lib/labels.ts:12
 msgid "Trip"
 msgstr "Viagem"
 
@@ -1675,6 +1680,10 @@ msgstr "Falha na deteção de viagens: {exc}"
 #, python-brace-format
 msgid "Trip: {title_suggestion_trip_type}"
 msgstr "Viagem: {title_suggestion_trip_type}"
+
+#: web/routes/runs/+page.svelte:127
+msgid "Try again"
+msgstr "Tentar novamente"
 
 #: pages/login.py:35
 msgid "Turn your photo library into video memories"
@@ -1791,7 +1800,7 @@ msgstr "Será guardado em: {value}"
 msgid "Year"
 msgstr "Ano"
 
-#: pages/memory_brief.py:31
+#: pages/memory_brief.py:31 web/lib/labels.ts:5
 msgid "Year in Review"
 msgstr "Resumo do ano"
 
@@ -1827,18 +1836,6 @@ msgstr "O teu vídeo de memórias está pronto!"
 msgid "about 10 minutes per year of range, shorter if the media cannot fill it"
 msgstr "cerca de 10 minutos por ano do período, menos se os conteúdos não chegarem"
 
-#: pages/runs.py:87
-msgid "all"
-msgstr "todas"
-
-#: pages/runs.py:91
-msgid "cancelled"
-msgstr "cancelada"
-
-#: pages/runs.py:88
-msgid "completed"
-msgstr "concluída"
-
 #: pages/settings_people.py:433
 msgid "confirmed"
 msgstr "confirmado"
@@ -1859,14 +1856,6 @@ msgstr "por ex. Verão na Saxónia"
 msgid "edit in Immich"
 msgstr "editar no Immich"
 
-#: pages/runs.py:89
-msgid "failed"
-msgstr "falhou"
-
-#: pages/runs.py:92
-msgid "interrupted"
-msgstr "interrompida"
-
 #: pages/settings_people.py:527
 msgid "is…"
 msgstr "é…"
@@ -1874,10 +1863,6 @@ msgstr "é…"
 #: pages/step1_presets.py:177
 msgid "north"
 msgstr "norte"
-
-#: pages/runs.py:90
-msgid "running"
-msgstr "em curso"
 
 #: pages/step1_presets.py:177
 msgid "south"
@@ -1887,7 +1872,7 @@ msgstr "sul"
 msgid "the type's default length, shorter if the media cannot fill it"
 msgstr "duração predefinida do tipo, reduzida se os conteúdos não chegarem"
 
-#: pages/runs.py:32
+#: pages/runs.py:27
 #, python-brace-format
 msgid "{clips_selected} pictures selected · {total_duration_seconds:.1f}s recorded run time"
 msgstr "{clips_selected} imagens selecionadas · {total_duration_seconds:.1f}s de duração gravada"
@@ -1897,7 +1882,7 @@ msgstr "{clips_selected} imagens selecionadas · {total_duration_seconds:.1f}s d
 msgid "{count} stories, {carrier_count} pictures"
 msgstr "{count} histórias, {carrier_count} imagens"
 
-#: pages/runs.py:114
+#: web/routes/runs/+page.svelte:72
 #, python-brace-format
 msgid "{date_range_start} to {date_range_end}"
 msgstr "{date_range_start} a {date_range_end}"
@@ -1942,11 +1927,38 @@ msgstr "{seconds:g} s"
 msgid "{title}  ({n_keys} keys)"
 msgstr "{title} ({n_keys} chaves)"
 
-#: pages/runs.py:45
+#: pages/runs.py:40
 #, python-brace-format
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}: {duration_seconds:.1f}s"
 
+#~ msgid "Next runs"
+#~ msgstr "Próximas execuções"
+
+#~ msgid "Previous runs"
+#~ msgstr "Execuções anteriores"
+
+#~ msgid "Refresh runs"
+#~ msgstr "Atualizar execuções"
+
 #~ msgid "The storyboard"
 #~ msgstr "O guião visual"
+
+#~ msgid "all"
+#~ msgstr "todas"
+
+#~ msgid "cancelled"
+#~ msgstr "cancelada"
+
+#~ msgid "completed"
+#~ msgstr "concluída"
+
+#~ msgid "failed"
+#~ msgstr "falhou"
+
+#~ msgid "interrupted"
+#~ msgstr "interrompida"
+
+#~ msgid "running"
+#~ msgstr "em curso"
 

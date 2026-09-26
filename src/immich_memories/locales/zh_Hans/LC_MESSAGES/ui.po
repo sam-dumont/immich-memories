@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 20:20+0200\n"
+"POT-Creation-Date: 2026-09-26 21:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -142,7 +142,7 @@ msgstr "高级选项"
 msgid "Advanced people condition"
 msgstr "高级人物条件"
 
-#: pages/memory_brief.py:37 pages/step1_presets.py:290
+#: pages/memory_brief.py:37 pages/step1_presets.py:290 web/lib/labels.ts:11
 msgid "Album"
 msgstr "相册"
 
@@ -208,7 +208,11 @@ msgstr "自动（与片段一致）"
 msgid "Auto duration"
 msgstr "自动时长"
 
-#: i18n.py:102
+#: web/lib/labels.ts:23
+msgid "Automatic"
+msgstr "自动"
+
+#: i18n.py:74
 msgid "Automatic (browser)"
 msgstr "自动（浏览器）"
 
@@ -232,7 +236,7 @@ msgstr "返回生成选项"
 msgid "Back to pictures"
 msgstr "返回图片"
 
-#: pages/runs.py:21
+#: pages/runs.py:16
 msgid "Back to runs"
 msgstr "返回任务列表"
 
@@ -273,11 +277,11 @@ msgstr "正在构建音乐时间线..."
 msgid "Bundled"
 msgstr "内置"
 
-#: app.py:135
+#: app.py:141
 msgid "Cache"
 msgstr "缓存"
 
-#: app.py:308 pages/step1_cache.py:76
+#: app.py:317 pages/step1_cache.py:76
 msgid "Cache Management"
 msgstr "缓存管理"
 
@@ -392,7 +396,7 @@ msgstr "已完成！"
 msgid "Config file: {config_path}"
 msgstr "配置文件：{config_path}"
 
-#: app.py:133 app.py:272
+#: app.py:139 app.py:281
 msgid "Configuration"
 msgstr "配置"
 
@@ -467,7 +471,7 @@ msgstr "整理"
 msgid "Custom Range"
 msgstr "自定义时间范围"
 
-#: pages/memory_brief.py:47
+#: pages/memory_brief.py:47 web/lib/labels.ts:15
 msgid "Custom date range"
 msgstr "自定义时间范围"
 
@@ -495,7 +499,7 @@ msgstr "正在剪辑回忆..."
 msgid "Dark"
 msgstr "深色"
 
-#: app.py:99
+#: app.py:103
 msgid "Demo mode"
 msgstr "演示模式"
 
@@ -524,7 +528,7 @@ msgstr "搜索失败：{error}"
 msgid "Done"
 msgstr "完成"
 
-#: pages/runs.py:71
+#: pages/runs.py:66
 msgid "Download child output"
 msgstr "下载关联输出"
 
@@ -677,7 +681,7 @@ msgstr "已生成的音乐"
 msgid "Generating music..."
 msgstr "正在生成音乐..."
 
-#: app.py:243
+#: app.py:252
 msgid "Generation Options"
 msgstr "生成选项"
 
@@ -705,7 +709,7 @@ msgstr "半球"
 msgid "Hold cleared. The next cut may use it."
 msgstr "限制已解除。下次剪辑可以使用此图片。"
 
-#: pages/memory_brief.py:39 pages/step1_presets.py:82
+#: pages/memory_brief.py:39 pages/step1_presets.py:82 web/lib/labels.ts:13
 msgid "Holiday"
 msgstr "节日"
 
@@ -731,7 +735,7 @@ msgstr "Immich 服务器地址"
 msgid "Immich delivery: {delivery_label}"
 msgstr "上传到 Immich：{delivery_label}"
 
-#: pages/runs.py:39
+#: pages/runs.py:34
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "上传到 Immich：{value}"
@@ -756,7 +760,7 @@ msgstr "加入合辑"
 msgid "Include in export"
 msgstr "包含在导出中"
 
-#: i18n.py:110
+#: i18n.py:82
 msgid "Interface language"
 msgstr "界面语言"
 
@@ -830,11 +834,15 @@ msgstr "正在加载视频..."
 msgid "Looking through the library…"
 msgstr "正在浏览媒体库…"
 
-#: pages/memory_duration.py:30
+#: web/routes/+layout.svelte:32 web/routes/+layout.svelte:43
+msgid "Main navigation"
+msgstr "主导航"
+
+#: pages/memory_duration.py:30 web/lib/labels.ts:23
 msgid "Manual"
 msgstr "手动"
 
-#: pages/runs.py:83
+#: web/routes/runs/+page.svelte:81
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr "手动和自动任务，包括失败任务。打开任务可查看剪辑和耗时。"
 
@@ -847,7 +855,7 @@ msgstr "地图：{title_suggestion_map_mode}"
 msgid "Media Eligible"
 msgstr "符合条件的媒体"
 
-#: app.py:74 app.py:207
+#: app.py:75 app.py:213 web/routes/+layout.svelte:15
 msgid "Media pool"
 msgstr "媒体库"
 
@@ -859,7 +867,7 @@ msgstr "回忆"
 msgid "Memories automation would make next, using the same rules as auto suggest."
 msgstr "自动化接下来会创建的回忆，规则与 auto suggest 相同。"
 
-#: app.py:71 app.py:195
+#: app.py:72 app.py:201 web/lib/labels.ts:18 web/routes/+layout.svelte:12
 msgid "Memory"
 msgstr "回忆"
 
@@ -883,7 +891,7 @@ msgstr "模型建议"
 msgid "Month"
 msgstr "月份"
 
-#: pages/memory_brief.py:35
+#: pages/memory_brief.py:35 web/lib/labels.ts:9
 msgid "Monthly Highlights"
 msgstr "月度精选"
 
@@ -900,7 +908,7 @@ msgstr "氛围：{mood_text}"
 msgid "Most recent year"
 msgstr "最近年份"
 
-#: pages/memory_brief.py:34
+#: pages/memory_brief.py:34 web/lib/labels.ts:8
 msgid "Multi-Person"
 msgstr "多人"
 
@@ -937,10 +945,6 @@ msgstr "永不使用"
 msgid "Next"
 msgstr "下一页"
 
-#: pages/runs.py:127
-msgid "Next runs"
-msgstr "后续任务"
-
 #: pages/clip_review.py:433
 msgid "Next: Generation Options"
 msgstr "下一步：生成选项"
@@ -953,7 +957,7 @@ msgstr "下一步：预览与导出"
 msgid "No albums with any assets in them yet."
 msgstr "还没有包含媒体的相册。"
 
-#: pages/runs.py:73
+#: pages/runs.py:68
 msgid "No child output was retained for this run."
 msgstr "此任务未保留关联输出。"
 
@@ -983,11 +987,11 @@ msgstr "没有符合此筛选条件的图片。"
 msgid "No reason recorded for this picture."
 msgstr "未记录选择此图片的原因。"
 
-#: pages/runs.py:105
+#: web/routes/runs/+page.svelte:121
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "没有符合筛选条件的任务。请从“回忆”或“建议”创建回忆。"
 
-#: pages/runs.py:62
+#: pages/runs.py:57 web/routes/runs/+page.svelte:104
 msgid "No saved cut is available for this run."
 msgstr "此任务没有已保存的剪辑。"
 
@@ -1027,7 +1031,7 @@ msgstr "尚无记录。"
 msgid "Nothing to curate — no twins and no split records."
 msgstr "无需整理：没有重复项或分散记录。"
 
-#: pages/memory_brief.py:36
+#: pages/memory_brief.py:36 web/lib/labels.ts:10
 msgid "On This Day"
 msgstr "历史上的今天"
 
@@ -1099,7 +1103,7 @@ msgstr "输出：{name}"
 msgid "Password"
 msgstr "密码"
 
-#: app.py:134 app.py:291
+#: app.py:140 app.py:300
 msgid "People"
 msgstr "人物"
 
@@ -1115,7 +1119,7 @@ msgstr "人物"
 msgid "Person Filter"
 msgstr "人物筛选"
 
-#: pages/memory_brief.py:33
+#: pages/memory_brief.py:33 web/lib/labels.ts:7
 msgid "Person Spotlight"
 msgstr "人物特辑"
 
@@ -1202,7 +1206,7 @@ msgstr "正在准备剪辑"
 msgid "Preview"
 msgstr "预览"
 
-#: app.py:255
+#: app.py:264
 msgid "Preview & Export"
 msgstr "预览与导出"
 
@@ -1214,15 +1218,11 @@ msgstr "预览缓存"
 msgid "Previous"
 msgstr "上一页"
 
-#: pages/runs.py:121
-msgid "Previous runs"
-msgstr "先前任务"
-
 #: pages/memory_run.py:467
 msgid "Re-load media to export"
 msgstr "重新加载媒体以导出"
 
-#: pages/runs.py:55
+#: pages/runs.py:50
 msgid "Read the cut"
 msgstr "查看剪辑"
 
@@ -1237,10 +1237,6 @@ msgstr "正在读取图片"
 #: pages/memory_storyboard.py:145
 msgid "Recorded alternative"
 msgstr "已记录的备选项"
-
-#: pages/runs.py:132
-msgid "Refresh runs"
-msgstr "刷新任务"
 
 #: pages/suggestions.py:95
 msgid "Refresh suggestions"
@@ -1306,7 +1302,7 @@ msgstr "角色（可选建议或自行输入）"
 msgid "Rotation"
 msgstr "旋转"
 
-#: pages/runs.py:23
+#: pages/runs.py:18
 msgid "Run not found. It may have been removed."
 msgstr "未找到任务，可能已被移除。"
 
@@ -1323,7 +1319,8 @@ msgstr "运行建议会在服务器上创建视频。"
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "正在服务器上运行：{phase}。离开此页面后仍会继续。"
 
-#: app.py:73 app.py:219
+#: app.py:74 app.py:227 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
+#: web/routes/runs/+page.svelte:80
 msgid "Runs"
 msgstr "任务"
 
@@ -1335,7 +1332,7 @@ msgstr "保存配置"
 msgid "Saved - type a new key to replace it"
 msgstr "已保存，输入新密钥可替换"
 
-#: pages/runs.py:38 pages/step4_export.py:34
+#: pages/runs.py:33 pages/step4_export.py:34
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "已保存至：{output_path}"
@@ -1349,7 +1346,11 @@ msgstr "已保存至：{result_path}（{file_size}）"
 msgid "Scaling Mode"
 msgstr "缩放模式"
 
-#: pages/memory_brief.py:32 pages/step1_presets.py:165
+#: web/lib/labels.ts:23
+msgid "Scheduled"
+msgstr "已计划"
+
+#: pages/memory_brief.py:32 pages/step1_presets.py:165 web/lib/labels.ts:6
 msgid "Season"
 msgstr "季节"
 
@@ -1390,7 +1391,7 @@ msgstr "全部使用前 5 秒"
 msgid "Set all to middle 5s"
 msgstr "全部使用中间 5 秒"
 
-#: app.py:75
+#: app.py:76 web/routes/+layout.svelte:16
 msgid "Settings"
 msgstr "设置"
 
@@ -1410,7 +1411,7 @@ msgstr "显示"
 msgid "Sign in"
 msgstr "登录"
 
-#: app.py:113
+#: app.py:117
 msgid "Sign out"
 msgstr "退出登录"
 
@@ -1442,7 +1443,7 @@ msgstr "从此日期开始"
 msgid "Starting..."
 msgstr "正在启动..."
 
-#: pages/runs.py:98
+#: web/routes/runs/+page.svelte:84
 msgid "Status"
 msgstr "状态"
 
@@ -1470,7 +1471,7 @@ msgstr "分镜"
 msgid "Subtitle"
 msgstr "副标题"
 
-#: app.py:72 app.py:231
+#: app.py:73 app.py:240 web/routes/+layout.svelte:13
 msgid "Suggestions"
 msgstr "建议"
 
@@ -1478,7 +1479,7 @@ msgstr "建议"
 msgid "Summary"
 msgstr "摘要"
 
-#: pages/memory_brief.py:40
+#: pages/memory_brief.py:40 web/lib/labels.ts:14
 msgid "Surprise me"
 msgstr "给我惊喜"
 
@@ -1566,6 +1567,10 @@ msgstr "媒体库{value}"
 msgid "The roster"
 msgstr "人物列表"
 
+#: web/routes/runs/+page.svelte:126
+msgid "The runs could not be loaded."
+msgstr "无法加载运行记录。"
+
 #: pages/settings_people.py:158
 #, python-brace-format
 msgid "The scan could not finish: {exc}"
@@ -1638,7 +1643,7 @@ msgstr "转场样式"
 msgid "Trim the video clips"
 msgstr "裁剪视频片段"
 
-#: pages/memory_brief.py:38
+#: pages/memory_brief.py:38 web/lib/labels.ts:12
 msgid "Trip"
 msgstr "旅行"
 
@@ -1651,6 +1656,10 @@ msgstr "旅行检测失败：{exc}"
 #, python-brace-format
 msgid "Trip: {title_suggestion_trip_type}"
 msgstr "旅行：{title_suggestion_trip_type}"
+
+#: web/routes/runs/+page.svelte:127
+msgid "Try again"
+msgstr "重试"
 
 #: pages/login.py:35
 msgid "Turn your photo library into video memories"
@@ -1762,7 +1771,7 @@ msgstr "将保存至：{value}"
 msgid "Year"
 msgstr "年份"
 
-#: pages/memory_brief.py:31
+#: pages/memory_brief.py:31 web/lib/labels.ts:5
 msgid "Year in Review"
 msgstr "年度回顾"
 
@@ -1798,18 +1807,6 @@ msgstr "你的回忆视频已就绪！"
 msgid "about 10 minutes per year of range, shorter if the media cannot fill it"
 msgstr "每年约 10 分钟，媒体不足时缩短"
 
-#: pages/runs.py:87
-msgid "all"
-msgstr "全部"
-
-#: pages/runs.py:91
-msgid "cancelled"
-msgstr "已取消"
-
-#: pages/runs.py:88
-msgid "completed"
-msgstr "已完成"
-
 #: pages/settings_people.py:433
 msgid "confirmed"
 msgstr "已确认"
@@ -1830,14 +1827,6 @@ msgstr "例如：萨克森的夏天"
 msgid "edit in Immich"
 msgstr "在 Immich 中编辑"
 
-#: pages/runs.py:89
-msgid "failed"
-msgstr "失败"
-
-#: pages/runs.py:92
-msgid "interrupted"
-msgstr "已中断"
-
 #: pages/settings_people.py:527
 msgid "is…"
 msgstr "是…"
@@ -1845,10 +1834,6 @@ msgstr "是…"
 #: pages/step1_presets.py:177
 msgid "north"
 msgstr "北半球"
-
-#: pages/runs.py:90
-msgid "running"
-msgstr "运行中"
 
 #: pages/step1_presets.py:177
 msgid "south"
@@ -1858,7 +1843,7 @@ msgstr "南半球"
 msgid "the type's default length, shorter if the media cannot fill it"
 msgstr "此类型的默认时长，媒体不足时缩短"
 
-#: pages/runs.py:32
+#: pages/runs.py:27
 #, python-brace-format
 msgid "{clips_selected} pictures selected · {total_duration_seconds:.1f}s recorded run time"
 msgstr "已选择 {clips_selected} 张画面 · 录制时长 {total_duration_seconds:.1f} 秒"
@@ -1868,7 +1853,7 @@ msgstr "已选择 {clips_selected} 张画面 · 录制时长 {total_duration_sec
 msgid "{count} stories, {carrier_count} pictures"
 msgstr "{count} 个故事，{carrier_count} 张画面"
 
-#: pages/runs.py:114
+#: web/routes/runs/+page.svelte:72
 #, python-brace-format
 msgid "{date_range_start} to {date_range_end}"
 msgstr "{date_range_start} 至 {date_range_end}"
@@ -1913,11 +1898,38 @@ msgstr "{seconds:g} 秒"
 msgid "{title}  ({n_keys} keys)"
 msgstr "{title}（{n_keys} 个配置项）"
 
-#: pages/runs.py:45
+#: pages/runs.py:40
 #, python-brace-format
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}：{duration_seconds:.1f} 秒"
 
+#~ msgid "Next runs"
+#~ msgstr "后续任务"
+
+#~ msgid "Previous runs"
+#~ msgstr "先前任务"
+
+#~ msgid "Refresh runs"
+#~ msgstr "刷新任务"
+
 #~ msgid "The storyboard"
 #~ msgstr "分镜"
+
+#~ msgid "all"
+#~ msgstr "全部"
+
+#~ msgid "cancelled"
+#~ msgstr "已取消"
+
+#~ msgid "completed"
+#~ msgstr "已完成"
+
+#~ msgid "failed"
+#~ msgstr "失败"
+
+#~ msgid "interrupted"
+#~ msgstr "已中断"
+
+#~ msgid "running"
+#~ msgstr "运行中"
 

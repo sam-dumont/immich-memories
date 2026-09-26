@@ -33,6 +33,7 @@ dependencies = [
     "pydantic>=2.0",
     "pydantic-settings>=2.14.2",
     "nicegui>=3.16.0",  # 3.16 fixes GHSA-46f2 (unauth memory exhaustion) + GHSA-955g (XSS)
+    "fastapi>=0.135",  # the /api/v1 server the web client talks to; it outlives NiceGUI (#1395)
     "opencv-python>=5,<6",  # photo rendering, thumbnail hashing, motion facts; YuNet freed the 4.x pin (#557)
     "pyyaml>=6.0",
     "click>=8.3.3",
@@ -201,6 +202,12 @@ include = [
     "/frontend/package-lock.json",
     "/frontend/tsconfig.json",
     "/frontend/vite.config.ts",
+    "/web/src",
+    "/web/package.json",
+    "/web/package-lock.json",
+    "/web/svelte.config.js",
+    "/web/tsconfig.json",
+    "/web/vite.config.ts",
 ]
 
 # Semantic Release Configuration
@@ -616,6 +623,26 @@ source_modules = [
     "immich_memories.operations",
 ]
 forbidden_modules = ["immich_memories.cli"]
+
+[[tool.importlinter.contracts]]
+id = "web-outlives-nicegui"
+name = "The web client's server must not import the NiceGUI pages or the CLI"
+type = "forbidden"
+source_modules = ["immich_memories.web"]
+forbidden_modules = ["immich_memories.ui", "immich_memories.cli", "nicegui"]
+
+[[tool.importlinter.contracts]]
+id = "no-web-in-core"
+name = "Core must not import the web server"
+type = "forbidden"
+source_modules = [
+    "immich_memories.analysis",
+    "immich_memories.processing",
+    "immich_memories.operations",
+    "immich_memories.cache",
+    "immich_memories.tracking",
+]
+forbidden_modules = ["immich_memories.web"]
 
 [tool.refurb]
 # FURB184 (chained assignments) is a style preference — config + result = func(config)

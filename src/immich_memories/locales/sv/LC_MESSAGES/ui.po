@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 20:20+0200\n"
+"POT-Creation-Date: 2026-09-26 21:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -146,7 +146,7 @@ msgstr "Avancerade alternativ"
 msgid "Advanced people condition"
 msgstr "Avancerat personvillkor"
 
-#: pages/memory_brief.py:37 pages/step1_presets.py:290
+#: pages/memory_brief.py:37 pages/step1_presets.py:290 web/lib/labels.ts:11
 msgid "Album"
 msgstr "Album"
 
@@ -214,7 +214,11 @@ msgstr "Automatiskt (som klippen)"
 msgid "Auto duration"
 msgstr "Automatisk längd"
 
-#: i18n.py:102
+#: web/lib/labels.ts:23
+msgid "Automatic"
+msgstr "Automatisk"
+
+#: i18n.py:74
 msgid "Automatic (browser)"
 msgstr "Automatiskt (webbläsare)"
 
@@ -238,7 +242,7 @@ msgstr "Tillbaka till genereringsalternativ"
 msgid "Back to pictures"
 msgstr "Tillbaka till bilderna"
 
-#: pages/runs.py:21
+#: pages/runs.py:16
 msgid "Back to runs"
 msgstr "Tillbaka till körningar"
 
@@ -279,11 +283,11 @@ msgstr "Bygger musikens tidslinje..."
 msgid "Bundled"
 msgstr "Medföljande"
 
-#: app.py:135
+#: app.py:141
 msgid "Cache"
 msgstr "Cache"
 
-#: app.py:308 pages/step1_cache.py:76
+#: app.py:317 pages/step1_cache.py:76
 msgid "Cache Management"
 msgstr "Cachehantering"
 
@@ -398,7 +402,7 @@ msgstr "Klart!"
 msgid "Config file: {config_path}"
 msgstr "Konfigurationsfil: {config_path}"
 
-#: app.py:133 app.py:272
+#: app.py:139 app.py:281
 msgid "Configuration"
 msgstr "Konfiguration"
 
@@ -475,7 +479,7 @@ msgstr "Ordna"
 msgid "Custom Range"
 msgstr "Egen period"
 
-#: pages/memory_brief.py:47
+#: pages/memory_brief.py:47 web/lib/labels.ts:15
 msgid "Custom date range"
 msgstr "Egen period"
 
@@ -503,7 +507,7 @@ msgstr "Klipper minnet..."
 msgid "Dark"
 msgstr "Mörkt"
 
-#: app.py:99
+#: app.py:103
 msgid "Demo mode"
 msgstr "Demoläge"
 
@@ -532,7 +536,7 @@ msgstr "Sökningen misslyckades: {error}"
 msgid "Done"
 msgstr "Klart"
 
-#: pages/runs.py:71
+#: pages/runs.py:66
 msgid "Download child output"
 msgstr "Ladda ned tillhörande resultat"
 
@@ -686,7 +690,7 @@ msgstr "Genererad musik"
 msgid "Generating music..."
 msgstr "Genererar musik..."
 
-#: app.py:243
+#: app.py:252
 msgid "Generation Options"
 msgstr "Genereringsalternativ"
 
@@ -714,7 +718,7 @@ msgstr "Halvklot"
 msgid "Hold cleared. The next cut may use it."
 msgstr "Spärren har tagits bort. Nästa klippning får använda bilden."
 
-#: pages/memory_brief.py:39 pages/step1_presets.py:82
+#: pages/memory_brief.py:39 pages/step1_presets.py:82 web/lib/labels.ts:13
 msgid "Holiday"
 msgstr "Högtid"
 
@@ -740,7 +744,7 @@ msgstr "Immich-serverns URL"
 msgid "Immich delivery: {delivery_label}"
 msgstr "Överföring till Immich: {delivery_label}"
 
-#: pages/runs.py:39
+#: pages/runs.py:34
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Överföring till Immich: {value}"
@@ -765,7 +769,7 @@ msgstr "Ta med i sammanställningen"
 msgid "Include in export"
 msgstr "Ta med i exporten"
 
-#: i18n.py:110
+#: i18n.py:82
 msgid "Interface language"
 msgstr "Gränssnittets språk"
 
@@ -839,11 +843,15 @@ msgstr "Läser in videor..."
 msgid "Looking through the library…"
 msgstr "Går igenom biblioteket…"
 
-#: pages/memory_duration.py:30
+#: web/routes/+layout.svelte:32 web/routes/+layout.svelte:43
+msgid "Main navigation"
+msgstr "Huvudnavigering"
+
+#: pages/memory_duration.py:30 web/lib/labels.ts:23
 msgid "Manual"
 msgstr "Manuellt"
 
-#: pages/runs.py:83
+#: web/routes/runs/+page.svelte:81
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr ""
 "Manuella och automatiska körningar, även misslyckade. Öppna en körning för att se klippning "
@@ -858,7 +866,7 @@ msgstr "Karta: {title_suggestion_map_mode}"
 msgid "Media Eligible"
 msgstr "Lämpliga medier"
 
-#: app.py:74 app.py:207
+#: app.py:75 app.py:213 web/routes/+layout.svelte:15
 msgid "Media pool"
 msgstr "Medier"
 
@@ -870,7 +878,7 @@ msgstr "Minnen"
 msgid "Memories automation would make next, using the same rules as auto suggest."
 msgstr "De minnen som automatiseringen skulle skapa härnäst, med samma regler som auto suggest."
 
-#: app.py:71 app.py:195
+#: app.py:72 app.py:201 web/lib/labels.ts:18 web/routes/+layout.svelte:12
 msgid "Memory"
 msgstr "Minne"
 
@@ -894,7 +902,7 @@ msgstr "Modellens förslag"
 msgid "Month"
 msgstr "Månad"
 
-#: pages/memory_brief.py:35
+#: pages/memory_brief.py:35 web/lib/labels.ts:9
 msgid "Monthly Highlights"
 msgstr "Månadens höjdpunkter"
 
@@ -911,7 +919,7 @@ msgstr "Stämning: {mood_text}"
 msgid "Most recent year"
 msgstr "Senaste året"
 
-#: pages/memory_brief.py:34
+#: pages/memory_brief.py:34 web/lib/labels.ts:8
 msgid "Multi-Person"
 msgstr "Flera personer"
 
@@ -948,10 +956,6 @@ msgstr "Använd aldrig"
 msgid "Next"
 msgstr "Nästa"
 
-#: pages/runs.py:127
-msgid "Next runs"
-msgstr "Nästa körningar"
-
 #: pages/clip_review.py:433
 msgid "Next: Generation Options"
 msgstr "Nästa: genereringsalternativ"
@@ -964,7 +968,7 @@ msgstr "Nästa: förhandsvisning och export"
 msgid "No albums with any assets in them yet."
 msgstr "Det finns ännu inga album med medier."
 
-#: pages/runs.py:73
+#: pages/runs.py:68
 msgid "No child output was retained for this run."
 msgstr "Inget tillhörande resultat sparades för den här körningen."
 
@@ -996,11 +1000,11 @@ msgstr "Inga bilder matchar det här filtret."
 msgid "No reason recorded for this picture."
 msgstr "Ingen motivering sparad för den här bilden."
 
-#: pages/runs.py:105
+#: web/routes/runs/+page.svelte:121
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "Inga körningar matchar den här vyn. Skapa ett minne från Minne eller Förslag."
 
-#: pages/runs.py:62
+#: pages/runs.py:57 web/routes/runs/+page.svelte:104
 msgid "No saved cut is available for this run."
 msgstr "Ingen sparad klippning finns för den här körningen."
 
@@ -1040,7 +1044,7 @@ msgstr "Inget registrerat ännu."
 msgid "Nothing to curate — no twins and no split records."
 msgstr "Inget att ordna: inga dubbletter eller delade poster."
 
-#: pages/memory_brief.py:36
+#: pages/memory_brief.py:36 web/lib/labels.ts:10
 msgid "On This Day"
 msgstr "Den här dagen"
 
@@ -1114,7 +1118,7 @@ msgstr "Resultat: {name}"
 msgid "Password"
 msgstr "Lösenord"
 
-#: app.py:134 app.py:291
+#: app.py:140 app.py:300
 msgid "People"
 msgstr "Personer"
 
@@ -1130,7 +1134,7 @@ msgstr "Person"
 msgid "Person Filter"
 msgstr "Personfilter"
 
-#: pages/memory_brief.py:33
+#: pages/memory_brief.py:33 web/lib/labels.ts:7
 msgid "Person Spotlight"
 msgstr "En person i fokus"
 
@@ -1217,7 +1221,7 @@ msgstr "Förbereder klippningen"
 msgid "Preview"
 msgstr "Förhandsvisning"
 
-#: app.py:255
+#: app.py:264
 msgid "Preview & Export"
 msgstr "Förhandsvisning och export"
 
@@ -1229,15 +1233,11 @@ msgstr "Förhandsvisningscache"
 msgid "Previous"
 msgstr "Föregående"
 
-#: pages/runs.py:121
-msgid "Previous runs"
-msgstr "Föregående körningar"
-
 #: pages/memory_run.py:467
 msgid "Re-load media to export"
 msgstr "Läs in medier igen för export"
 
-#: pages/runs.py:55
+#: pages/runs.py:50
 msgid "Read the cut"
 msgstr "Se klippningen"
 
@@ -1252,10 +1252,6 @@ msgstr "Läser bilderna"
 #: pages/memory_storyboard.py:145
 msgid "Recorded alternative"
 msgstr "Sparat alternativ"
-
-#: pages/runs.py:132
-msgid "Refresh runs"
-msgstr "Uppdatera körningar"
 
 #: pages/suggestions.py:95
 msgid "Refresh suggestions"
@@ -1321,7 +1317,7 @@ msgstr "Roll (förslag eller egen text)"
 msgid "Rotation"
 msgstr "Rotation"
 
-#: pages/runs.py:23
+#: pages/runs.py:18
 msgid "Run not found. It may have been removed."
 msgstr "Körningen hittades inte. Den kan ha tagits bort."
 
@@ -1338,7 +1334,8 @@ msgstr "Att köra ett förslag skapar en video på servern. "
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "Körs på servern: {phase}. Fortsätter om du lämnar sidan."
 
-#: app.py:73 app.py:219
+#: app.py:74 app.py:227 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
+#: web/routes/runs/+page.svelte:80
 msgid "Runs"
 msgstr "Körningar"
 
@@ -1350,7 +1347,7 @@ msgstr "Spara konfiguration"
 msgid "Saved - type a new key to replace it"
 msgstr "Sparad: skriv en ny nyckel för att ersätta"
 
-#: pages/runs.py:38 pages/step4_export.py:34
+#: pages/runs.py:33 pages/step4_export.py:34
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Sparad till: {output_path}"
@@ -1364,7 +1361,11 @@ msgstr "Sparad till: {result_path} ({file_size})"
 msgid "Scaling Mode"
 msgstr "Skalningsläge"
 
-#: pages/memory_brief.py:32 pages/step1_presets.py:165
+#: web/lib/labels.ts:23
+msgid "Scheduled"
+msgstr "Schemalagd"
+
+#: pages/memory_brief.py:32 pages/step1_presets.py:165 web/lib/labels.ts:6
 msgid "Season"
 msgstr "Årstid"
 
@@ -1405,7 +1406,7 @@ msgstr "Använd första 5 s för alla"
 msgid "Set all to middle 5s"
 msgstr "Använd mittersta 5 s för alla"
 
-#: app.py:75
+#: app.py:76 web/routes/+layout.svelte:16
 msgid "Settings"
 msgstr "Inställningar"
 
@@ -1425,7 +1426,7 @@ msgstr "Visa"
 msgid "Sign in"
 msgstr "Logga in"
 
-#: app.py:113
+#: app.py:117
 msgid "Sign out"
 msgstr "Logga ut"
 
@@ -1457,7 +1458,7 @@ msgstr "Från"
 msgid "Starting..."
 msgstr "Startar..."
 
-#: pages/runs.py:98
+#: web/routes/runs/+page.svelte:84
 msgid "Status"
 msgstr "Status"
 
@@ -1485,7 +1486,7 @@ msgstr "Bildmanus"
 msgid "Subtitle"
 msgstr "Undertitel"
 
-#: app.py:72 app.py:231
+#: app.py:73 app.py:240 web/routes/+layout.svelte:13
 msgid "Suggestions"
 msgstr "Förslag"
 
@@ -1493,7 +1494,7 @@ msgstr "Förslag"
 msgid "Summary"
 msgstr "Sammanfattning"
 
-#: pages/memory_brief.py:40
+#: pages/memory_brief.py:40 web/lib/labels.ts:14
 msgid "Surprise me"
 msgstr "Överraska mig"
 
@@ -1585,6 +1586,10 @@ msgstr "Medierna{value}"
 msgid "The roster"
 msgstr "Personlistan"
 
+#: web/routes/runs/+page.svelte:126
+msgid "The runs could not be loaded."
+msgstr "Körningarna kunde inte läsas in."
+
 #: pages/settings_people.py:158
 #, python-brace-format
 msgid "The scan could not finish: {exc}"
@@ -1659,7 +1664,7 @@ msgstr "Övergångsstil"
 msgid "Trim the video clips"
 msgstr "Trimma videoklippen"
 
-#: pages/memory_brief.py:38
+#: pages/memory_brief.py:38 web/lib/labels.ts:12
 msgid "Trip"
 msgstr "Resa"
 
@@ -1672,6 +1677,10 @@ msgstr "Resesökningen misslyckades: {exc}"
 #, python-brace-format
 msgid "Trip: {title_suggestion_trip_type}"
 msgstr "Resa: {title_suggestion_trip_type}"
+
+#: web/routes/runs/+page.svelte:127
+msgid "Try again"
+msgstr "Försök igen"
 
 #: pages/login.py:35
 msgid "Turn your photo library into video memories"
@@ -1788,7 +1797,7 @@ msgstr "Sparas till: {value}"
 msgid "Year"
 msgstr "År"
 
-#: pages/memory_brief.py:31
+#: pages/memory_brief.py:31 web/lib/labels.ts:5
 msgid "Year in Review"
 msgstr "Året i backspegeln"
 
@@ -1824,18 +1833,6 @@ msgstr "Din minnesvideo är klar!"
 msgid "about 10 minutes per year of range, shorter if the media cannot fill it"
 msgstr "ungefär 10 minuter per år i perioden, kortare om medierna inte räcker"
 
-#: pages/runs.py:87
-msgid "all"
-msgstr "alla"
-
-#: pages/runs.py:91
-msgid "cancelled"
-msgstr "avbruten"
-
-#: pages/runs.py:88
-msgid "completed"
-msgstr "slutförd"
-
 #: pages/settings_people.py:433
 msgid "confirmed"
 msgstr "bekräftad"
@@ -1856,14 +1853,6 @@ msgstr "t.ex. Sommar i Sachsen"
 msgid "edit in Immich"
 msgstr "redigera i Immich"
 
-#: pages/runs.py:89
-msgid "failed"
-msgstr "misslyckad"
-
-#: pages/runs.py:92
-msgid "interrupted"
-msgstr "avbruten av systemet"
-
 #: pages/settings_people.py:527
 msgid "is…"
 msgstr "är…"
@@ -1871,10 +1860,6 @@ msgstr "är…"
 #: pages/step1_presets.py:177
 msgid "north"
 msgstr "norr"
-
-#: pages/runs.py:90
-msgid "running"
-msgstr "pågår"
 
 #: pages/step1_presets.py:177
 msgid "south"
@@ -1884,7 +1869,7 @@ msgstr "söder"
 msgid "the type's default length, shorter if the media cannot fill it"
 msgstr "typens standardlängd, kortare om medierna inte räcker"
 
-#: pages/runs.py:32
+#: pages/runs.py:27
 #, python-brace-format
 msgid "{clips_selected} pictures selected · {total_duration_seconds:.1f}s recorded run time"
 msgstr "{clips_selected} bilder valda · {total_duration_seconds:.1f}s inspelad längd"
@@ -1894,7 +1879,7 @@ msgstr "{clips_selected} bilder valda · {total_duration_seconds:.1f}s inspelad 
 msgid "{count} stories, {carrier_count} pictures"
 msgstr "{count} berättelser, {carrier_count} bilder"
 
-#: pages/runs.py:114
+#: web/routes/runs/+page.svelte:72
 #, python-brace-format
 msgid "{date_range_start} to {date_range_end}"
 msgstr "{date_range_start} till {date_range_end}"
@@ -1939,11 +1924,38 @@ msgstr "{seconds:g} s"
 msgid "{title}  ({n_keys} keys)"
 msgstr "{title} ({n_keys} nycklar)"
 
-#: pages/runs.py:45
+#: pages/runs.py:40
 #, python-brace-format
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}: {duration_seconds:.1f}s"
 
+#~ msgid "Next runs"
+#~ msgstr "Nästa körningar"
+
+#~ msgid "Previous runs"
+#~ msgstr "Föregående körningar"
+
+#~ msgid "Refresh runs"
+#~ msgstr "Uppdatera körningar"
+
 #~ msgid "The storyboard"
 #~ msgstr "Bildmanuset"
+
+#~ msgid "all"
+#~ msgstr "alla"
+
+#~ msgid "cancelled"
+#~ msgstr "avbruten"
+
+#~ msgid "completed"
+#~ msgstr "slutförd"
+
+#~ msgid "failed"
+#~ msgstr "misslyckad"
+
+#~ msgid "interrupted"
+#~ msgstr "avbruten av systemet"
+
+#~ msgid "running"
+#~ msgstr "pågår"
 

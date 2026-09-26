@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 20:20+0200\n"
+"POT-Creation-Date: 2026-09-26 21:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -142,7 +142,7 @@ msgstr "고급 옵션"
 msgid "Advanced people condition"
 msgstr "고급 인물 조건"
 
-#: pages/memory_brief.py:37 pages/step1_presets.py:290
+#: pages/memory_brief.py:37 pages/step1_presets.py:290 web/lib/labels.ts:11
 msgid "Album"
 msgstr "앨범"
 
@@ -208,7 +208,11 @@ msgstr "자동(클립과 동일)"
 msgid "Auto duration"
 msgstr "자동 길이"
 
-#: i18n.py:102
+#: web/lib/labels.ts:23
+msgid "Automatic"
+msgstr "자동"
+
+#: i18n.py:74
 msgid "Automatic (browser)"
 msgstr "자동(브라우저)"
 
@@ -232,7 +236,7 @@ msgstr "생성 옵션으로 돌아가기"
 msgid "Back to pictures"
 msgstr "이미지로 돌아가기"
 
-#: pages/runs.py:21
+#: pages/runs.py:16
 msgid "Back to runs"
 msgstr "작업 목록으로 돌아가기"
 
@@ -273,11 +277,11 @@ msgstr "음악 타임라인 구성 중..."
 msgid "Bundled"
 msgstr "기본 제공"
 
-#: app.py:135
+#: app.py:141
 msgid "Cache"
 msgstr "캐시"
 
-#: app.py:308 pages/step1_cache.py:76
+#: app.py:317 pages/step1_cache.py:76
 msgid "Cache Management"
 msgstr "캐시 관리"
 
@@ -392,7 +396,7 @@ msgstr "완료!"
 msgid "Config file: {config_path}"
 msgstr "설정 파일: {config_path}"
 
-#: app.py:133 app.py:272
+#: app.py:139 app.py:281
 msgid "Configuration"
 msgstr "설정"
 
@@ -467,7 +471,7 @@ msgstr "정리"
 msgid "Custom Range"
 msgstr "직접 지정한 기간"
 
-#: pages/memory_brief.py:47
+#: pages/memory_brief.py:47 web/lib/labels.ts:15
 msgid "Custom date range"
 msgstr "직접 지정한 기간"
 
@@ -495,7 +499,7 @@ msgstr "추억을 편집하는 중..."
 msgid "Dark"
 msgstr "어둡게"
 
-#: app.py:99
+#: app.py:103
 msgid "Demo mode"
 msgstr "데모 모드"
 
@@ -524,7 +528,7 @@ msgstr "검색 실패: {error}"
 msgid "Done"
 msgstr "완료"
 
-#: pages/runs.py:71
+#: pages/runs.py:66
 msgid "Download child output"
 msgstr "연결된 결과 다운로드"
 
@@ -677,7 +681,7 @@ msgstr "생성된 음악"
 msgid "Generating music..."
 msgstr "음악 생성 중..."
 
-#: app.py:243
+#: app.py:252
 msgid "Generation Options"
 msgstr "생성 옵션"
 
@@ -705,7 +709,7 @@ msgstr "반구"
 msgid "Hold cleared. The next cut may use it."
 msgstr "제한을 해제했습니다. 다음 편집부터 사용할 수 있습니다."
 
-#: pages/memory_brief.py:39 pages/step1_presets.py:82
+#: pages/memory_brief.py:39 pages/step1_presets.py:82 web/lib/labels.ts:13
 msgid "Holiday"
 msgstr "명절·기념일"
 
@@ -731,7 +735,7 @@ msgstr "Immich 서버 URL"
 msgid "Immich delivery: {delivery_label}"
 msgstr "Immich 전송: {delivery_label}"
 
-#: pages/runs.py:39
+#: pages/runs.py:34
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Immich 전송: {value}"
@@ -756,7 +760,7 @@ msgstr "모음 영상에 포함"
 msgid "Include in export"
 msgstr "내보내기에 포함"
 
-#: i18n.py:110
+#: i18n.py:82
 msgid "Interface language"
 msgstr "화면 언어"
 
@@ -830,11 +834,15 @@ msgstr "영상 불러오는 중..."
 msgid "Looking through the library…"
 msgstr "라이브러리 살펴보는 중…"
 
-#: pages/memory_duration.py:30
+#: web/routes/+layout.svelte:32 web/routes/+layout.svelte:43
+msgid "Main navigation"
+msgstr "주 메뉴"
+
+#: pages/memory_duration.py:30 web/lib/labels.ts:23
 msgid "Manual"
 msgstr "수동"
 
-#: pages/runs.py:83
+#: web/routes/runs/+page.svelte:81
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr "실패한 작업을 포함한 수동·자동 작업입니다. 작업을 열어 편집 결과와 소요 시간을 확인하세요."
 
@@ -847,7 +855,7 @@ msgstr "지도: {title_suggestion_map_mode}"
 msgid "Media Eligible"
 msgstr "사용 가능한 미디어"
 
-#: app.py:74 app.py:207
+#: app.py:75 app.py:213 web/routes/+layout.svelte:15
 msgid "Media pool"
 msgstr "미디어 목록"
 
@@ -859,7 +867,7 @@ msgstr "추억"
 msgid "Memories automation would make next, using the same rules as auto suggest."
 msgstr "auto suggest와 같은 규칙에 따라 자동화가 다음에 만들 추억입니다."
 
-#: app.py:71 app.py:195
+#: app.py:72 app.py:201 web/lib/labels.ts:18 web/routes/+layout.svelte:12
 msgid "Memory"
 msgstr "추억"
 
@@ -883,7 +891,7 @@ msgstr "모델의 제안"
 msgid "Month"
 msgstr "월"
 
-#: pages/memory_brief.py:35
+#: pages/memory_brief.py:35 web/lib/labels.ts:9
 msgid "Monthly Highlights"
 msgstr "이달의 하이라이트"
 
@@ -900,7 +908,7 @@ msgstr "분위기: {mood_text}"
 msgid "Most recent year"
 msgstr "가장 최근 연도"
 
-#: pages/memory_brief.py:34
+#: pages/memory_brief.py:34 web/lib/labels.ts:8
 msgid "Multi-Person"
 msgstr "여러 인물"
 
@@ -937,10 +945,6 @@ msgstr "사용하지 않기"
 msgid "Next"
 msgstr "다음"
 
-#: pages/runs.py:127
-msgid "Next runs"
-msgstr "다음 작업"
-
 #: pages/clip_review.py:433
 msgid "Next: Generation Options"
 msgstr "다음: 생성 옵션"
@@ -953,7 +957,7 @@ msgstr "다음: 미리 보기 및 내보내기"
 msgid "No albums with any assets in them yet."
 msgstr "아직 미디어가 들어 있는 앨범이 없습니다."
 
-#: pages/runs.py:73
+#: pages/runs.py:68
 msgid "No child output was retained for this run."
 msgstr "이 작업에 연결된 결과가 저장되지 않았습니다."
 
@@ -983,11 +987,11 @@ msgstr "이 필터에 맞는 이미지가 없습니다."
 msgid "No reason recorded for this picture."
 msgstr "이 이미지를 선택한 이유가 기록되지 않았습니다."
 
-#: pages/runs.py:105
+#: web/routes/runs/+page.svelte:121
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "이 보기에 해당하는 작업이 없습니다. 추억 또는 제안에서 추억을 만드세요."
 
-#: pages/runs.py:62
+#: pages/runs.py:57 web/routes/runs/+page.svelte:104
 msgid "No saved cut is available for this run."
 msgstr "이 작업에는 저장된 편집 결과가 없습니다."
 
@@ -1027,7 +1031,7 @@ msgstr "아직 기록이 없습니다."
 msgid "Nothing to curate — no twins and no split records."
 msgstr "정리할 것이 없습니다. 중복 항목이나 분리된 기록이 없습니다."
 
-#: pages/memory_brief.py:36
+#: pages/memory_brief.py:36 web/lib/labels.ts:10
 msgid "On This Day"
 msgstr "이날"
 
@@ -1099,7 +1103,7 @@ msgstr "출력: {name}"
 msgid "Password"
 msgstr "비밀번호"
 
-#: app.py:134 app.py:291
+#: app.py:140 app.py:300
 msgid "People"
 msgstr "인물"
 
@@ -1115,7 +1119,7 @@ msgstr "인물"
 msgid "Person Filter"
 msgstr "인물 필터"
 
-#: pages/memory_brief.py:33
+#: pages/memory_brief.py:33 web/lib/labels.ts:7
 msgid "Person Spotlight"
 msgstr "한 인물 집중"
 
@@ -1202,7 +1206,7 @@ msgstr "편집 준비 중"
 msgid "Preview"
 msgstr "미리 보기"
 
-#: app.py:255
+#: app.py:264
 msgid "Preview & Export"
 msgstr "미리 보기 및 내보내기"
 
@@ -1214,15 +1218,11 @@ msgstr "미리 보기 캐시"
 msgid "Previous"
 msgstr "이전"
 
-#: pages/runs.py:121
-msgid "Previous runs"
-msgstr "이전 작업"
-
 #: pages/memory_run.py:467
 msgid "Re-load media to export"
 msgstr "내보내려면 미디어 다시 불러오기"
 
-#: pages/runs.py:55
+#: pages/runs.py:50
 msgid "Read the cut"
 msgstr "편집 결과 보기"
 
@@ -1237,10 +1237,6 @@ msgstr "이미지 읽는 중"
 #: pages/memory_storyboard.py:145
 msgid "Recorded alternative"
 msgstr "기록된 대안"
-
-#: pages/runs.py:132
-msgid "Refresh runs"
-msgstr "작업 새로고침"
 
 #: pages/suggestions.py:95
 msgid "Refresh suggestions"
@@ -1306,7 +1302,7 @@ msgstr "역할(제안 선택 또는 직접 입력)"
 msgid "Rotation"
 msgstr "회전"
 
-#: pages/runs.py:23
+#: pages/runs.py:18
 msgid "Run not found. It may have been removed."
 msgstr "작업을 찾을 수 없습니다. 삭제되었을 수 있습니다."
 
@@ -1323,7 +1319,8 @@ msgstr "제안을 실행하면 서버에서 영상을 만듭니다."
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "서버에서 실행 중: {phase}. 이 페이지를 떠나도 계속됩니다."
 
-#: app.py:73 app.py:219
+#: app.py:74 app.py:227 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
+#: web/routes/runs/+page.svelte:80
 msgid "Runs"
 msgstr "작업 내역"
 
@@ -1335,7 +1332,7 @@ msgstr "설정 저장"
 msgid "Saved - type a new key to replace it"
 msgstr "저장됨: 바꾸려면 새 키를 입력하세요"
 
-#: pages/runs.py:38 pages/step4_export.py:34
+#: pages/runs.py:33 pages/step4_export.py:34
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "저장 위치: {output_path}"
@@ -1349,7 +1346,11 @@ msgstr "저장 위치: {result_path} ({file_size})"
 msgid "Scaling Mode"
 msgstr "크기 조절 방식"
 
-#: pages/memory_brief.py:32 pages/step1_presets.py:165
+#: web/lib/labels.ts:23
+msgid "Scheduled"
+msgstr "예약됨"
+
+#: pages/memory_brief.py:32 pages/step1_presets.py:165 web/lib/labels.ts:6
 msgid "Season"
 msgstr "계절"
 
@@ -1390,7 +1391,7 @@ msgstr "모두 처음 5초로 설정"
 msgid "Set all to middle 5s"
 msgstr "모두 가운데 5초로 설정"
 
-#: app.py:75
+#: app.py:76 web/routes/+layout.svelte:16
 msgid "Settings"
 msgstr "설정"
 
@@ -1410,7 +1411,7 @@ msgstr "표시"
 msgid "Sign in"
 msgstr "로그인"
 
-#: app.py:113
+#: app.py:117
 msgid "Sign out"
 msgstr "로그아웃"
 
@@ -1442,7 +1443,7 @@ msgstr "시작 날짜"
 msgid "Starting..."
 msgstr "시작 중..."
 
-#: pages/runs.py:98
+#: web/routes/runs/+page.svelte:84
 msgid "Status"
 msgstr "상태"
 
@@ -1470,7 +1471,7 @@ msgstr "스토리보드"
 msgid "Subtitle"
 msgstr "부제목"
 
-#: app.py:72 app.py:231
+#: app.py:73 app.py:240 web/routes/+layout.svelte:13
 msgid "Suggestions"
 msgstr "제안"
 
@@ -1478,7 +1479,7 @@ msgstr "제안"
 msgid "Summary"
 msgstr "요약"
 
-#: pages/memory_brief.py:40
+#: pages/memory_brief.py:40 web/lib/labels.ts:14
 msgid "Surprise me"
 msgstr "알아서 골라주세요"
 
@@ -1566,6 +1567,10 @@ msgstr "미디어 목록{value}"
 msgid "The roster"
 msgstr "인물 목록"
 
+#: web/routes/runs/+page.svelte:126
+msgid "The runs could not be loaded."
+msgstr "실행 기록을 불러오지 못했습니다."
+
 #: pages/settings_people.py:158
 #, python-brace-format
 msgid "The scan could not finish: {exc}"
@@ -1638,7 +1643,7 @@ msgstr "전환 스타일"
 msgid "Trim the video clips"
 msgstr "영상 클립 자르기"
 
-#: pages/memory_brief.py:38
+#: pages/memory_brief.py:38 web/lib/labels.ts:12
 msgid "Trip"
 msgstr "여행"
 
@@ -1651,6 +1656,10 @@ msgstr "여행 감지 실패: {exc}"
 #, python-brace-format
 msgid "Trip: {title_suggestion_trip_type}"
 msgstr "여행: {title_suggestion_trip_type}"
+
+#: web/routes/runs/+page.svelte:127
+msgid "Try again"
+msgstr "다시 시도"
 
 #: pages/login.py:35
 msgid "Turn your photo library into video memories"
@@ -1764,7 +1773,7 @@ msgstr "저장될 위치: {value}"
 msgid "Year"
 msgstr "연도"
 
-#: pages/memory_brief.py:31
+#: pages/memory_brief.py:31 web/lib/labels.ts:5
 msgid "Year in Review"
 msgstr "한 해 돌아보기"
 
@@ -1800,18 +1809,6 @@ msgstr "추억 영상이 준비되었습니다!"
 msgid "about 10 minutes per year of range, shorter if the media cannot fill it"
 msgstr "기간의 1년마다 약 10분, 미디어가 부족하면 더 짧게"
 
-#: pages/runs.py:87
-msgid "all"
-msgstr "전체"
-
-#: pages/runs.py:91
-msgid "cancelled"
-msgstr "취소됨"
-
-#: pages/runs.py:88
-msgid "completed"
-msgstr "완료됨"
-
 #: pages/settings_people.py:433
 msgid "confirmed"
 msgstr "확인됨"
@@ -1832,14 +1829,6 @@ msgstr "예: 작센의 여름"
 msgid "edit in Immich"
 msgstr "Immich에서 편집"
 
-#: pages/runs.py:89
-msgid "failed"
-msgstr "실패"
-
-#: pages/runs.py:92
-msgid "interrupted"
-msgstr "중단됨"
-
 #: pages/settings_people.py:527
 msgid "is…"
 msgstr "관계는…"
@@ -1847,10 +1836,6 @@ msgstr "관계는…"
 #: pages/step1_presets.py:177
 msgid "north"
 msgstr "북반구"
-
-#: pages/runs.py:90
-msgid "running"
-msgstr "실행 중"
 
 #: pages/step1_presets.py:177
 msgid "south"
@@ -1860,7 +1845,7 @@ msgstr "남반구"
 msgid "the type's default length, shorter if the media cannot fill it"
 msgstr "유형의 기본 길이, 미디어가 부족하면 더 짧게"
 
-#: pages/runs.py:32
+#: pages/runs.py:27
 #, python-brace-format
 msgid "{clips_selected} pictures selected · {total_duration_seconds:.1f}s recorded run time"
 msgstr "이미지 {clips_selected}개 선택 · 기록된 길이 {total_duration_seconds:.1f}초"
@@ -1870,7 +1855,7 @@ msgstr "이미지 {clips_selected}개 선택 · 기록된 길이 {total_duration
 msgid "{count} stories, {carrier_count} pictures"
 msgstr "이야기 {count}개, 이미지 {carrier_count}개"
 
-#: pages/runs.py:114
+#: web/routes/runs/+page.svelte:72
 #, python-brace-format
 msgid "{date_range_start} to {date_range_end}"
 msgstr "{date_range_start}부터 {date_range_end}까지"
@@ -1915,11 +1900,38 @@ msgstr "{seconds:g}초"
 msgid "{title}  ({n_keys} keys)"
 msgstr "{title} (설정 항목 {n_keys}개)"
 
-#: pages/runs.py:45
+#: pages/runs.py:40
 #, python-brace-format
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}: {duration_seconds:.1f}초"
 
+#~ msgid "Next runs"
+#~ msgstr "다음 작업"
+
+#~ msgid "Previous runs"
+#~ msgstr "이전 작업"
+
+#~ msgid "Refresh runs"
+#~ msgstr "작업 새로고침"
+
 #~ msgid "The storyboard"
 #~ msgstr "스토리보드"
+
+#~ msgid "all"
+#~ msgstr "전체"
+
+#~ msgid "cancelled"
+#~ msgstr "취소됨"
+
+#~ msgid "completed"
+#~ msgstr "완료됨"
+
+#~ msgid "failed"
+#~ msgstr "실패"
+
+#~ msgid "interrupted"
+#~ msgstr "중단됨"
+
+#~ msgid "running"
+#~ msgstr "실행 중"
 

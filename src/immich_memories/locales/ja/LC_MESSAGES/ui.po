@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 20:20+0200\n"
+"POT-Creation-Date: 2026-09-26 21:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -142,7 +142,7 @@ msgstr "詳細オプション"
 msgid "Advanced people condition"
 msgstr "高度な人物条件"
 
-#: pages/memory_brief.py:37 pages/step1_presets.py:290
+#: pages/memory_brief.py:37 pages/step1_presets.py:290 web/lib/labels.ts:11
 msgid "Album"
 msgstr "アルバム"
 
@@ -208,7 +208,11 @@ msgstr "自動（クリップに合わせる）"
 msgid "Auto duration"
 msgstr "長さを自動設定"
 
-#: i18n.py:102
+#: web/lib/labels.ts:23
+msgid "Automatic"
+msgstr "自動"
+
+#: i18n.py:74
 msgid "Automatic (browser)"
 msgstr "自動（ブラウザー）"
 
@@ -232,7 +236,7 @@ msgstr "生成オプションに戻る"
 msgid "Back to pictures"
 msgstr "画像一覧に戻る"
 
-#: pages/runs.py:21
+#: pages/runs.py:16
 msgid "Back to runs"
 msgstr "実行一覧に戻る"
 
@@ -273,11 +277,11 @@ msgstr "音楽のタイムラインを作成中..."
 msgid "Bundled"
 msgstr "付属の音楽"
 
-#: app.py:135
+#: app.py:141
 msgid "Cache"
 msgstr "キャッシュ"
 
-#: app.py:308 pages/step1_cache.py:76
+#: app.py:317 pages/step1_cache.py:76
 msgid "Cache Management"
 msgstr "キャッシュ管理"
 
@@ -392,7 +396,7 @@ msgstr "完了！"
 msgid "Config file: {config_path}"
 msgstr "設定ファイル：{config_path}"
 
-#: app.py:133 app.py:272
+#: app.py:139 app.py:281
 msgid "Configuration"
 msgstr "設定"
 
@@ -467,7 +471,7 @@ msgstr "整理"
 msgid "Custom Range"
 msgstr "日付範囲を指定"
 
-#: pages/memory_brief.py:47
+#: pages/memory_brief.py:47 web/lib/labels.ts:15
 msgid "Custom date range"
 msgstr "日付範囲を指定"
 
@@ -495,7 +499,7 @@ msgstr "思い出を編集中..."
 msgid "Dark"
 msgstr "ダーク"
 
-#: app.py:99
+#: app.py:103
 msgid "Demo mode"
 msgstr "デモモード"
 
@@ -524,7 +528,7 @@ msgstr "検索に失敗しました：{error}"
 msgid "Done"
 msgstr "完了"
 
-#: pages/runs.py:71
+#: pages/runs.py:66
 msgid "Download child output"
 msgstr "関連する出力をダウンロード"
 
@@ -677,7 +681,7 @@ msgstr "生成した音楽"
 msgid "Generating music..."
 msgstr "音楽を生成中..."
 
-#: app.py:243
+#: app.py:252
 msgid "Generation Options"
 msgstr "生成オプション"
 
@@ -705,7 +709,7 @@ msgstr "半球"
 msgid "Hold cleared. The next cut may use it."
 msgstr "制限を解除しました。次回の編集から使えます。"
 
-#: pages/memory_brief.py:39 pages/step1_presets.py:82
+#: pages/memory_brief.py:39 pages/step1_presets.py:82 web/lib/labels.ts:13
 msgid "Holiday"
 msgstr "祝日・行事"
 
@@ -731,7 +735,7 @@ msgstr "Immich サーバー URL"
 msgid "Immich delivery: {delivery_label}"
 msgstr "Immich への送信：{delivery_label}"
 
-#: pages/runs.py:39
+#: pages/runs.py:34
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Immich への送信：{value}"
@@ -756,7 +760,7 @@ msgstr "まとめ動画に含める"
 msgid "Include in export"
 msgstr "書き出しに含める"
 
-#: i18n.py:110
+#: i18n.py:82
 msgid "Interface language"
 msgstr "画面の言語"
 
@@ -830,11 +834,15 @@ msgstr "動画を読み込み中..."
 msgid "Looking through the library…"
 msgstr "ライブラリを確認中…"
 
-#: pages/memory_duration.py:30
+#: web/routes/+layout.svelte:32 web/routes/+layout.svelte:43
+msgid "Main navigation"
+msgstr "メインナビゲーション"
+
+#: pages/memory_duration.py:30 web/lib/labels.ts:23
 msgid "Manual"
 msgstr "手動"
 
-#: pages/runs.py:83
+#: web/routes/runs/+page.svelte:81
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr "手動・自動の実行履歴です。失敗も含みます。実行を開くと編集結果と所要時間を確認できます。"
 
@@ -847,7 +855,7 @@ msgstr "地図：{title_suggestion_map_mode}"
 msgid "Media Eligible"
 msgstr "対象メディア"
 
-#: app.py:74 app.py:207
+#: app.py:75 app.py:213 web/routes/+layout.svelte:15
 msgid "Media pool"
 msgstr "メディア一覧"
 
@@ -859,7 +867,7 @@ msgstr "思い出"
 msgid "Memories automation would make next, using the same rules as auto suggest."
 msgstr "auto suggest と同じルールで、自動処理が次に作成する思い出です。"
 
-#: app.py:71 app.py:195
+#: app.py:72 app.py:201 web/lib/labels.ts:18 web/routes/+layout.svelte:12
 msgid "Memory"
 msgstr "思い出"
 
@@ -883,7 +891,7 @@ msgstr "モデルの提案"
 msgid "Month"
 msgstr "月"
 
-#: pages/memory_brief.py:35
+#: pages/memory_brief.py:35 web/lib/labels.ts:9
 msgid "Monthly Highlights"
 msgstr "月のハイライト"
 
@@ -900,7 +908,7 @@ msgstr "雰囲気：{mood_text}"
 msgid "Most recent year"
 msgstr "最新の年"
 
-#: pages/memory_brief.py:34
+#: pages/memory_brief.py:34 web/lib/labels.ts:8
 msgid "Multi-Person"
 msgstr "複数の人物"
 
@@ -937,10 +945,6 @@ msgstr "今後使わない"
 msgid "Next"
 msgstr "次へ"
 
-#: pages/runs.py:127
-msgid "Next runs"
-msgstr "次の実行"
-
 #: pages/clip_review.py:433
 msgid "Next: Generation Options"
 msgstr "次へ：生成オプション"
@@ -953,7 +957,7 @@ msgstr "次へ：プレビューと書き出し"
 msgid "No albums with any assets in them yet."
 msgstr "メディアが入ったアルバムはまだありません。"
 
-#: pages/runs.py:73
+#: pages/runs.py:68
 msgid "No child output was retained for this run."
 msgstr "この実行には関連する出力が保存されていません。"
 
@@ -983,11 +987,11 @@ msgstr "このフィルターに一致する画像はありません。"
 msgid "No reason recorded for this picture."
 msgstr "この画像を選んだ理由の記録がありません。"
 
-#: pages/runs.py:105
+#: web/routes/runs/+page.svelte:121
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "この表示に一致する実行はありません。「思い出」か「提案」から作成してください。"
 
-#: pages/runs.py:62
+#: pages/runs.py:57 web/routes/runs/+page.svelte:104
 msgid "No saved cut is available for this run."
 msgstr "この実行に保存された編集結果はありません。"
 
@@ -1027,7 +1031,7 @@ msgstr "まだ記録がありません。"
 msgid "Nothing to curate — no twins and no split records."
 msgstr "整理するものはありません。重複や分かれた記録はありません。"
 
-#: pages/memory_brief.py:36
+#: pages/memory_brief.py:36 web/lib/labels.ts:10
 msgid "On This Day"
 msgstr "この日"
 
@@ -1099,7 +1103,7 @@ msgstr "出力：{name}"
 msgid "Password"
 msgstr "パスワード"
 
-#: app.py:134 app.py:291
+#: app.py:140 app.py:300
 msgid "People"
 msgstr "人物"
 
@@ -1115,7 +1119,7 @@ msgstr "人物"
 msgid "Person Filter"
 msgstr "人物フィルター"
 
-#: pages/memory_brief.py:33
+#: pages/memory_brief.py:33 web/lib/labels.ts:7
 msgid "Person Spotlight"
 msgstr "一人の人物に注目"
 
@@ -1202,7 +1206,7 @@ msgstr "編集を準備中"
 msgid "Preview"
 msgstr "プレビュー"
 
-#: app.py:255
+#: app.py:264
 msgid "Preview & Export"
 msgstr "プレビューと書き出し"
 
@@ -1214,15 +1218,11 @@ msgstr "プレビューキャッシュ"
 msgid "Previous"
 msgstr "前へ"
 
-#: pages/runs.py:121
-msgid "Previous runs"
-msgstr "前の実行"
-
 #: pages/memory_run.py:467
 msgid "Re-load media to export"
 msgstr "書き出すためメディアを再読み込み"
 
-#: pages/runs.py:55
+#: pages/runs.py:50
 msgid "Read the cut"
 msgstr "編集結果を見る"
 
@@ -1237,10 +1237,6 @@ msgstr "画像を読み取り中"
 #: pages/memory_storyboard.py:145
 msgid "Recorded alternative"
 msgstr "記録された代替候補"
-
-#: pages/runs.py:132
-msgid "Refresh runs"
-msgstr "実行一覧を更新"
 
 #: pages/suggestions.py:95
 msgid "Refresh suggestions"
@@ -1306,7 +1302,7 @@ msgstr "役割（候補から選ぶか自由入力）"
 msgid "Rotation"
 msgstr "回転"
 
-#: pages/runs.py:23
+#: pages/runs.py:18
 msgid "Run not found. It may have been removed."
 msgstr "実行が見つかりません。削除された可能性があります。"
 
@@ -1323,7 +1319,8 @@ msgstr "提案を実行するとサーバー上に動画を作成します。"
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "サーバーで実行中：{phase}。このページを離れても続行します。"
 
-#: app.py:73 app.py:219
+#: app.py:74 app.py:227 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
+#: web/routes/runs/+page.svelte:80
 msgid "Runs"
 msgstr "実行履歴"
 
@@ -1335,7 +1332,7 @@ msgstr "設定を保存"
 msgid "Saved - type a new key to replace it"
 msgstr "保存済み：新しいキーを入力すると置き換えます"
 
-#: pages/runs.py:38 pages/step4_export.py:34
+#: pages/runs.py:33 pages/step4_export.py:34
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "保存先：{output_path}"
@@ -1349,7 +1346,11 @@ msgstr "保存先：{result_path}（{file_size}）"
 msgid "Scaling Mode"
 msgstr "拡大縮小の方法"
 
-#: pages/memory_brief.py:32 pages/step1_presets.py:165
+#: web/lib/labels.ts:23
+msgid "Scheduled"
+msgstr "スケジュール"
+
+#: pages/memory_brief.py:32 pages/step1_presets.py:165 web/lib/labels.ts:6
 msgid "Season"
 msgstr "季節"
 
@@ -1390,7 +1391,7 @@ msgstr "すべて最初の 5 秒にする"
 msgid "Set all to middle 5s"
 msgstr "すべて中央の 5 秒にする"
 
-#: app.py:75
+#: app.py:76 web/routes/+layout.svelte:16
 msgid "Settings"
 msgstr "設定"
 
@@ -1410,7 +1411,7 @@ msgstr "表示"
 msgid "Sign in"
 msgstr "ログイン"
 
-#: app.py:113
+#: app.py:117
 msgid "Sign out"
 msgstr "ログアウト"
 
@@ -1442,7 +1443,7 @@ msgstr "開始日"
 msgid "Starting..."
 msgstr "開始中..."
 
-#: pages/runs.py:98
+#: web/routes/runs/+page.svelte:84
 msgid "Status"
 msgstr "状態"
 
@@ -1470,7 +1471,7 @@ msgstr "絵コンテ"
 msgid "Subtitle"
 msgstr "サブタイトル"
 
-#: app.py:72 app.py:231
+#: app.py:73 app.py:240 web/routes/+layout.svelte:13
 msgid "Suggestions"
 msgstr "提案"
 
@@ -1478,7 +1479,7 @@ msgstr "提案"
 msgid "Summary"
 msgstr "概要"
 
-#: pages/memory_brief.py:40
+#: pages/memory_brief.py:40 web/lib/labels.ts:14
 msgid "Surprise me"
 msgstr "おまかせ"
 
@@ -1566,6 +1567,10 @@ msgstr "メディア一覧{value}"
 msgid "The roster"
 msgstr "人物一覧"
 
+#: web/routes/runs/+page.svelte:126
+msgid "The runs could not be loaded."
+msgstr "実行履歴を読み込めませんでした。"
+
 #: pages/settings_people.py:158
 #, python-brace-format
 msgid "The scan could not finish: {exc}"
@@ -1638,7 +1643,7 @@ msgstr "切り替えスタイル"
 msgid "Trim the video clips"
 msgstr "動画クリップをトリミング"
 
-#: pages/memory_brief.py:38
+#: pages/memory_brief.py:38 web/lib/labels.ts:12
 msgid "Trip"
 msgstr "旅行"
 
@@ -1651,6 +1656,10 @@ msgstr "旅行の検出に失敗しました：{exc}"
 #, python-brace-format
 msgid "Trip: {title_suggestion_trip_type}"
 msgstr "旅行：{title_suggestion_trip_type}"
+
+#: web/routes/runs/+page.svelte:127
+msgid "Try again"
+msgstr "再試行"
 
 #: pages/login.py:35
 msgid "Turn your photo library into video memories"
@@ -1764,7 +1773,7 @@ msgstr "保存予定先：{value}"
 msgid "Year"
 msgstr "年"
 
-#: pages/memory_brief.py:31
+#: pages/memory_brief.py:31 web/lib/labels.ts:5
 msgid "Year in Review"
 msgstr "一年の振り返り"
 
@@ -1800,18 +1809,6 @@ msgstr "思い出の動画ができました！"
 msgid "about 10 minutes per year of range, shorter if the media cannot fill it"
 msgstr "期間の 1 年ごとに約 10 分。メディアが少なければ短くします"
 
-#: pages/runs.py:87
-msgid "all"
-msgstr "すべて"
-
-#: pages/runs.py:91
-msgid "cancelled"
-msgstr "キャンセル済み"
-
-#: pages/runs.py:88
-msgid "completed"
-msgstr "完了"
-
 #: pages/settings_people.py:433
 msgid "confirmed"
 msgstr "確定済み"
@@ -1832,14 +1829,6 @@ msgstr "例：ザクセンの夏"
 msgid "edit in Immich"
 msgstr "Immich で編集"
 
-#: pages/runs.py:89
-msgid "failed"
-msgstr "失敗"
-
-#: pages/runs.py:92
-msgid "interrupted"
-msgstr "中断"
-
 #: pages/settings_people.py:527
 msgid "is…"
 msgstr "は…"
@@ -1847,10 +1836,6 @@ msgstr "は…"
 #: pages/step1_presets.py:177
 msgid "north"
 msgstr "北半球"
-
-#: pages/runs.py:90
-msgid "running"
-msgstr "実行中"
 
 #: pages/step1_presets.py:177
 msgid "south"
@@ -1860,7 +1845,7 @@ msgstr "南半球"
 msgid "the type's default length, shorter if the media cannot fill it"
 msgstr "この種類の標準の長さ。メディアが少なければ短くします"
 
-#: pages/runs.py:32
+#: pages/runs.py:27
 #, python-brace-format
 msgid "{clips_selected} pictures selected · {total_duration_seconds:.1f}s recorded run time"
 msgstr "{clips_selected} 枚を選択 · 記録時間 {total_duration_seconds:.1f} 秒"
@@ -1870,7 +1855,7 @@ msgstr "{clips_selected} 枚を選択 · 記録時間 {total_duration_seconds:.1
 msgid "{count} stories, {carrier_count} pictures"
 msgstr "{count} 個のストーリー、{carrier_count} 枚の画像"
 
-#: pages/runs.py:114
+#: web/routes/runs/+page.svelte:72
 #, python-brace-format
 msgid "{date_range_start} to {date_range_end}"
 msgstr "{date_range_start} から {date_range_end}"
@@ -1915,11 +1900,38 @@ msgstr "{seconds:g} 秒"
 msgid "{title}  ({n_keys} keys)"
 msgstr "{title}（{n_keys} 項目）"
 
-#: pages/runs.py:45
+#: pages/runs.py:40
 #, python-brace-format
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}：{duration_seconds:.1f} 秒"
 
+#~ msgid "Next runs"
+#~ msgstr "次の実行"
+
+#~ msgid "Previous runs"
+#~ msgstr "前の実行"
+
+#~ msgid "Refresh runs"
+#~ msgstr "実行一覧を更新"
+
 #~ msgid "The storyboard"
 #~ msgstr "絵コンテ"
+
+#~ msgid "all"
+#~ msgstr "すべて"
+
+#~ msgid "cancelled"
+#~ msgstr "キャンセル済み"
+
+#~ msgid "completed"
+#~ msgstr "完了"
+
+#~ msgid "failed"
+#~ msgstr "失敗"
+
+#~ msgid "interrupted"
+#~ msgstr "中断"
+
+#~ msgid "running"
+#~ msgstr "実行中"
 

@@ -119,6 +119,8 @@ ENV/
 error_log.log
 htmlcov/
 lib/
+# SvelteKit's $lib is source, not a Python build directory.
+!web/src/lib/
 lib64/
 mutants/
 nosetests.xml

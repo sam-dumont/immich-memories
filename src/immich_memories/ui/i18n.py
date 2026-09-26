@@ -2,45 +2,17 @@
 
 from __future__ import annotations
 
-from operator import itemgetter
 from typing import cast
 
 from nicegui import ui
 from nicegui.language import Language
 
-from immich_memories.i18n import DEFAULT_LOCALE, SUPPORTED_LOCALES, get_translator
-
-
-def _supported_language(value: str) -> str | None:
-    tag = value.strip().lower().replace("_", "-")
-    supported = {code.lower(): code for code in SUPPORTED_LOCALES}
-    if tag in supported:
-        return supported[tag]
-    if tag in {"zh", "zh-cn", "zh-sg"}:
-        return "zh-Hans"
-    if tag == "pt":
-        return "pt-PT"
-    return supported.get(tag.split("-")[0])
-
-
-def resolve_ui_locale(accept_language: str, *, preference: str = "auto") -> str:
-    """Use the saved UI choice, or the supported browser language, else English."""
-    if chosen := _supported_language(preference):
-        return chosen
-    candidates: list[tuple[float, str]] = []
-    for item in accept_language.split(","):
-        tag, *parameters = item.strip().split(";")
-        quality = 1.0
-        try:
-            for parameter in parameters:
-                if parameter.strip().startswith("q="):
-                    quality = float(parameter.strip()[2:])
-        except ValueError:
-            continue
-        if 0 < quality <= 1 and (code := _supported_language(tag)):
-            candidates.append((quality, code))
-    candidates.sort(key=itemgetter(0), reverse=True)
-    return candidates[0][1] if candidates else DEFAULT_LOCALE
+from immich_memories.i18n import (
+    DEFAULT_LOCALE,
+    SUPPORTED_LOCALES,
+    get_translator,
+    resolve_ui_locale,
+)
 
 
 def current_ui_locale() -> str:

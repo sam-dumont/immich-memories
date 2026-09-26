@@ -201,6 +201,25 @@ Material Icons (Remotion demo: docs-site/remotion/public/MaterialIcons-Regular.w
   URL: https://github.com/google/material-design-icons
 
 
+Web client (bundled JavaScript, src/immich_memories/web/client)
+--------------------------------------------------------------
+The browser client is built from web/ and shipped as static files. Every package
+compiled into it is listed, with its full licence text, in
+src/immich_memories/web/client/licenses.md, which the build writes next to the
+bundle (`make web-build`). All are MIT, except @mdi/js (Apache-2.0, see the
+Apache-2.0 notice above).
+
+@immich/ui        Immich's Svelte component library
+  License: MIT, Copyright 2025 Immich
+  URL: https://github.com/immich-app/static-pages/tree/main/packages/ui
+  Note: only the components are used. The Immich name and logos are Immich's
+    trademarks, are not covered by the MIT grant, and are not shipped:
+    `make web-check` fails if a logo from the package reaches the bundle.
+Svelte, SvelteKit  MIT, https://svelte.dev
+bits-ui            MIT, https://bits-ui.com
+@mdi/js            Apache-2.0, Pictogrammers, https://pictogrammers.com/library/mdi/
+
+
 Demo and documentation tooling
 ------------------------------
 
