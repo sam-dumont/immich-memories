@@ -10,8 +10,9 @@ Reader: power user.
 The NAS makes the film without one. A reader is a text model that writes the prose (what happened
 in each episode, an account of the period, the film's title, the music's mood) and then polishes the
 rules draft: it names the shots that add nothing, and a better shot from the same story takes the
-seat. It never plans a one-window film from scratch, and it never sees a picture: a model looks at
-each picture once, at ingest, and the reader works from the text ingest banked. What exactly it
+seat. It starts from the NAS draft and never sees a picture. The captioner reads selected shots
+and replacement candidates; existing captions are reused. The reader can read a selected shot's
+whole episode for context, without asking the captioner to fill every neighbour first. What exactly it
 changes, with diagrams: [What a model adds](../how-it-chooses/what-a-model-adds.md).
 
 ## What you need
@@ -108,9 +109,10 @@ immich-memories preflight
 ```
 
 The `LLM` row checks that the endpoint answers for your model (Ollama's tag list, a minimal chat
-call on an OpenAI-compatible host, the model list or a one-token ask on an Anthropic one). On the
-rules reader it reads `SKIPPED`. A blank `llm.model` means rules (`advanced.editorial.reader: auto`,
-the default); `reader: model` with a blank model stops with
+call on an OpenAI-compatible host, the model list or a one-token ask on an Anthropic one). It
+checks a configured LLM on NAS and GPU too, because titles and music mood can use it even when
+selection uses rules. With no model configured it reads `SKIPPED`. A model reader with a blank
+model stops with
 `editorial runtime needs a nonblank LLM model`.
 
 A reader that fails mid-film does not fail the film. The period account is asked twice; after the

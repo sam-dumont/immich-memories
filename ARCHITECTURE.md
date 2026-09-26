@@ -137,23 +137,30 @@ the code named beside it; if the two disagree, the code wins and this entry is s
 **Preparation**
 
 - **Producer**: anything that writes a fact about a picture: the caption server, the heads, the
-  detectors, the motion and pixel readers (`editorial_preparation*.py`). Preparation runs the
-  producers a film still owes before selection starts (`editorial_runtime_evidence.py`).
+  detectors, the motion and pixel readers (`editorial_preparation*.py`). Film preparation runs
+  cheap picture facts before the NAS draft, then captions and clip inspection for that draft
+  and actual replacement candidates (`editorial_film_preparation.py`). Bulk `prepare` keeps its
+  explicit whole-source scope. Deferred video exposure is never banked as a completed frame check.
 - **Heads**: eight small linear classifiers over one pinned DINOv2 ONNX embedding: location,
   people, children, activity, venue, frame_kind, screen, uncovered_person
   (`triage/bundled_heads/public-8heads-v4.npz`, `editorial_preparation_heads.py`). Beside them sit
   two detectors, `nsfw_marqo` (exposure) and `doc_docling` (documents)
   (`editorial_preparation_detectors.py`).
-- **Tiers**: `tier` selects `nas` (CPU heads and detectors), `gpu` (adds captions and Laya),
+- **Tiers**: `tier: auto` resolves `nas` (CPU heads and detectors), `gpu` (adds captions and Laya),
   or `full` (adds an explicitly configured prose LLM). NAS and GPU always use the rules reader.
-  Advanced preparation can be reduced to `no_captions` (heads and detectors) or `metadata_only`
-  (nothing looks at pixels, so every shot is held to the family). Sharing never asks the prose
+  Text-only titles and music mood may use a configured LLM on every tier; they neither enable
+  model selection nor image captioning. LLM preflight checks those configured text services too.
+  Preparation follows that same product tier; legacy overrides no longer win. `config_compute.py`
+  checks inference-service health and local CUDA/MLX capability without loading weights.
+  Explicit tiers remain available for comparisons. Sharing never asks the prose
   LLM (`config_tiers.py`, `config_models_editorial*.py`, `editorial_shareability_tiers.py`).
   `laya_checkpoints.py` selects platform-matched archive, path and threshold defaults;
   `pinned_models.py` owns the SHA-256 pins used by `models fetch`.
 - **Reach**: the pictures a film can actually select (for a person film, the ones that person is
-  in), plus their Live Photo siblings and capture runs. Only those get prepared; the rest of the
-  window is read as Immich metadata (`editorial_film_reach.py`).
+  in), plus their Live Photo siblings and capture runs. This bounds cheap preparation; captions
+  and playback have the narrower selected/candidate scope. The rest of the window is read as
+  Immich metadata (`editorial_film_reach.py`). Each acquisition is recorded under the attempt's
+  `refinement/<sequence>/preparation.private.json`, with requested IDs and producer timings.
 - **Fill on demand**: a film reads only the episodes its shots sit in, and banks them; reading a
   whole scope ahead is optional (`prepare --overviews`). A model-tier film left short by S seconds
   reads at most 2 * ceil(S / 3.5) more unread episodes (`episode_demand.py`,
@@ -185,9 +192,10 @@ the code named beside it; if the two disagree, the code wins and this entry is s
   framing (`editorial_final_hash_review.py`, `editorial_scene_prints.py`).
 - **Block vote**: the shape of every model yes/no. At most 12 rows, asked twice, in source order
   and in a hashed order; picked both times is firm, once is a maybe (`editorial_block_votes.py`).
-- **Thin layer / thin polish**: model mode's editing for every one-window film (month, year,
-  season, trip, lifetime) when `thin_model_layer` is on (the default). The model reads the finished rules draft once, names
-  the shots that add nothing, and the freed seats are refilled through the same gates. Budget: 4
+- **Thin layer / thin polish**: model mode's editing when `thin_model_layer` is on (the default).
+  Separate date windows also draft from rules and demand episode context afterwards. The model
+  reads the finished rules draft once and proposes replacements through the same gates. A vote-named
+  shot stays until a replacement passes its final fit check; gate-refused shots stay excluded. Budget: 4
   calls per 12 draft shots plus 4 per seat (`editorial_thin_layer.py`, `editorial_thin_*.py`).
 - **Thesis-fit vote**: the thin layer's one question, "which of these shots adds nothing to this
   film?", asked reject-only as a block vote under the period thesis. Named by both orders is bad,
@@ -372,6 +380,7 @@ src/immich_memories/
 │   ├── smart_pipeline.py       # SmartPipeline: run_editorial_source() is the production entry
 │   ├── editorial_runtime.py    # RuntimeEditorialPlanner + build_smart_pipeline(); _ports.py, _backend.py beside it
 │   ├── editorial_runtime_evidence.py # The film-time preparation a cut waits on, and the annotation store it reads
+│   ├── editorial_film_preparation.py # NAS-first acquisition and live fact views for selected/candidate refinement
 │   ├── annotation_line_fields.py # Which parts of a picture's line are its content and which we wrote; content rules read only the first
 │   ├── editorial_film_reach.py # What a film prepares: its demanded pictures, their Live families and capture runs
 │   ├── editorial_orchestration.py  # TextEditorialPlanner: episodes -> cards -> edit
@@ -766,7 +775,8 @@ src/immich_memories/
 ├── config.py                   # YAML configuration management (re-exports)
 ├── config_loader.py            # Config loading logic
 ├── config_presets.py           # Named presets (`preset: fast`) that fill several knobs at once
-├── config_tiers.py             # The product tier (nas/gpu/full): reader, preparation tier, Laya
+├── config_tiers.py             # One resolved product tier: reader, preparation producers, Laya
+├── config_compute.py           # Inference capability discovery, separate from video encoding
 ├── config_models.py            # Resources a run uses: Immich server, cache, hardware (+ expand_env_vars)
 ├── config_models_analysis.py   # Source admission and the expected seconds per clip
 ├── config_models_auth.py       # Authentication config model (basic, OIDC, header)
@@ -891,9 +901,11 @@ Both flat and nested YAML formats are accepted.
 
 These YAML tiers are not the product `tier` (`config_tiers.py`): `nas` (inexpensive CPU classifiers), `gpu`
 (every light model, no LLM) or `full` (plus an LLM, whose endpoint it requires). The product
-tier sets defaults for `editorial.reader`, `editorial.preparation.tier` and `editorial.laya_audience`.
-Explicit preparation choices win, but NAS and GPU always force the rules reader. `save_yaml`
-omits unchanged tier defaults and preserves choices edited after loading.
+tier owns `editorial.reader`, `editorial.preparation.tier` and `editorial.laya_audience`.
+`auto` resolves from inference capability and the configured LLM; conflicting legacy preparation
+settings are ignored with a notice. `save_yaml` omits derived settings and does not turn an
+automatic config into a machine-specific pin. Internal metadata-only component fixtures remain
+available without exposing a fourth product tier. The real-Immich gate uses NAS with pinned CPU models.
 
 The tiers are a YAML layout, not a code layout. The section models are grouped by
 domain across the `config_models*.py` modules (resources, analysis, render,
