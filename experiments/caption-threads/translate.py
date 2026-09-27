@@ -31,6 +31,8 @@ from immich_memories.analysis.llm_wire import openai_headers
 from immich_memories.api.models import Asset, ExifInfo
 from immich_memories.config import Config
 from model_reader import Reader
+from discovery import words
+from filters_loop import revise
 from query import companion_terms, retrieve_plan, vocabulary
 from workflow import choose_sources
 
@@ -709,6 +711,11 @@ def main():
         # and caption-less ones (forwarded) that the visual check will judge.
         subject = (subject & members) | anchors | uncaptioned if subject else members | anchors
     pool = (subject if (plan["subject"] or plan["read_text"]) else pool_scope) & pool_scope
+    if plan["subject"] and not plan.get("firsts"):
+        # Gemma sees what its filters found and revises them; code only runs and grounds them.
+        within = (members | anchors) & pool_scope if plan["read_text"] else pool_scope
+        pool, plan["revisions"] = revise(reader, key, brief, library, plan["subject_phrases"], within,
+                                         (anchors | uncaptioned) & pool_scope)
 
     # Relevance to the ask: its own specific words weigh most, then their companions, then the subject.
     own_set, comp_set = set(plan.get("_own") or []), set(plan.get("_companions") or [])
@@ -720,45 +727,49 @@ def main():
                 + sum(1 for p in subj if p <= library.tokens[i]) for i in pool}
     # The cascade: a cheap text verdict on (nearly) every caption, the photo only where text
     # cannot decide. Text "yes" is provisional: the regular flow's thesis-fit vote judges again.
-    text_budget = int(os.environ.get("TEXT_BUDGET", 3000))
-    offered = spread_budget(library, pool, text_budget, score)
-    offered = [i for i in offered if not library.rows[i].get("uncaptioned")]
-    if plan.get("firsts") and plan.get("_per_item_questions"):
-        # Being a first was decided by comparison over dates; a caption cannot show first-ness,
-        # so each first goes straight to its own photo question.
-        decisions = [{"ref": i, "decision": "unknown"} for i in sorted(pool)]
-    else:
-        decisions = choose_compact(reader, library, key, brief,
-                                   sorted(set(offered) | {i for i in anchors & pool if not library.rows[i].get("uncaptioned")}))
-    plan["budgets"] = {"text": len(decisions)}
-    kept = sorted((d["ref"] for d in decisions if d["decision"] == "match"),
-                  key=lambda i: library.rows[i]["taken_at"])
-    unsure = [d["ref"] for d in decisions if d["decision"] == "unknown"]
-    looked = []
-    if not os.environ.get("NO_LOOK"):
-        # Only what text could not settle: unsure captions, forwarded photos without one, and
-        # OCR anchors (whose letters, not captions, put them here).
-        seen, looked = look(reader, config, library, plan, set(unsure) | (uncaptioned & pool) | (anchors & pool),
-                            anchors, score)
-        # Calibrate the text "yes" on a random sample it produced (the cascade pattern): trusted
-        # when the photos agree; otherwise the yeses are looked at too, best-ranked first within
-        # the budget, and only what the photo confirms stays (text yes kept 36 bad cars, 09-27).
-        import random as _random
-
-        text_yes = sorted(kept)
-        sample = _random.Random(11).sample(text_yes, min(CALIBRATION, len(text_yes)))
-        confirmed, sample_log = look(reader, config, library, plan, set(sample), set(), score)
-        agree = len(confirmed) / max(1, len(sample))
-        plan["text_yes_agreement"] = round(agree, 2)
-        looked += sample_log
-        if agree >= TRUST_TEXT or len(text_yes) <= len(sample):
-            kept = (set(text_yes) - set(sample)) | set(confirmed) if agree >= TRUST_TEXT else set(confirmed)
+    # The owner's flow (09-27): prompt -> filters -> pool -> thesis -> the regular engine. The
+    # engine's thesis-fit vote and story selection do the choosing; no second selector here.
+    decisions, unsure, looked, kept = [], [], [], sorted(pool, key=lambda i: library.rows[i]["taken_at"])
+    if not os.environ.get("SIMPLE"):
+        text_budget = int(os.environ.get("TEXT_BUDGET", 3000))
+        offered = spread_budget(library, pool, text_budget, score)
+        offered = [i for i in offered if not library.rows[i].get("uncaptioned")]
+        if plan.get("firsts") and plan.get("_per_item_questions"):
+            # Being a first was decided by comparison over dates; a caption cannot show first-ness,
+            # so each first goes straight to its own photo question.
+            decisions = [{"ref": i, "decision": "unknown"} for i in sorted(pool)]
         else:
-            rest = [i for i in text_yes if i not in sample]
-            more, more_log = look(reader, config, library, plan, set(rest), set(), score)
-            looked += more_log
-            kept = set(confirmed) | set(more)
-        kept = sorted(set(kept) | set(seen), key=lambda i: library.rows[i]["taken_at"])
+            decisions = choose_compact(reader, library, key, brief,
+                                       sorted(set(offered) | {i for i in anchors & pool if not library.rows[i].get("uncaptioned")}))
+        plan["budgets"] = {"text": len(decisions)}
+        kept = sorted((d["ref"] for d in decisions if d["decision"] == "match"),
+                      key=lambda i: library.rows[i]["taken_at"])
+        unsure = [d["ref"] for d in decisions if d["decision"] == "unknown"]
+        looked = []
+        if not os.environ.get("NO_LOOK"):
+            # Only what text could not settle: unsure captions, forwarded photos without one, and
+            # OCR anchors (whose letters, not captions, put them here).
+            seen, looked = look(reader, config, library, plan, set(unsure) | (uncaptioned & pool) | (anchors & pool),
+                                anchors, score)
+            # Calibrate the text "yes" on a random sample it produced (the cascade pattern): trusted
+            # when the photos agree; otherwise the yeses are looked at too, best-ranked first within
+            # the budget, and only what the photo confirms stays (text yes kept 36 bad cars, 09-27).
+            import random as _random
+
+            text_yes = sorted(kept)
+            sample = _random.Random(11).sample(text_yes, min(CALIBRATION, len(text_yes)))
+            confirmed, sample_log = look(reader, config, library, plan, set(sample), set(), score)
+            agree = len(confirmed) / max(1, len(sample))
+            plan["text_yes_agreement"] = round(agree, 2)
+            looked += sample_log
+            if agree >= TRUST_TEXT or len(text_yes) <= len(sample):
+                kept = (set(text_yes) - set(sample)) | set(confirmed) if agree >= TRUST_TEXT else set(confirmed)
+            else:
+                rest = [i for i in text_yes if i not in sample]
+                more, more_log = look(reader, config, library, plan, set(rest), set(), score)
+                looked += more_log
+                kept = set(confirmed) | set(more)
+            kept = sorted(set(kept) | set(seen), key=lambda i: library.rows[i]["taken_at"])
     timeline = [f'{library.rows[i]["taken_at"][:10]}: {library.rows[i]["caption"][:110]}'
                 for i in kept[:: max(1, len(kept) // 24)]]
     thesis = reader.ask("translate_thesis", key, THESIS, {"owner_request": brief, "timeline": timeline},
@@ -786,7 +797,8 @@ def main():
     first, last = library.rows[kept[0]]["taken_at"][:10], library.rows[kept[-1]]["taken_at"][:10]
     # Owner ruling: free-text films keep forwarded pictures (a club's photos arrive by chat).
     subprocess.run(["/private/tmp/imm-threads/.venv/bin/immich-memories", "generate", "--start", first,
-                    "--end", last, "--title", plan.get("title") or brief[:60], "--accept-any-provenance"],
+                    "--end", last, "--title", plan.get("title") or brief[:60], "--accept-any-provenance",
+                    "--no-render", "--trace-selection", str(intent.with_suffix(".trace.json"))],
                    env=os.environ | {"IMMICH_MEMORIES_INTENT": str(intent)}, check=False)
 
 

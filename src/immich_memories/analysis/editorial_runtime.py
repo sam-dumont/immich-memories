@@ -430,10 +430,21 @@ class RuntimeEditorialPlanner:
             trace=Trace(), include_previews=False, group=False
         )
         reach = film_reach(preliminary.candidates, demanded)
+        intent = _intent_pool()
+        if intent is not None:
+            # PROBE (semantic translation): the request's pool is the film's whole reach; the
+            # days around its pictures are not read, and nothing outside it can be chosen.
+            reach = reach & intent
         logger.info(
             "preparing %d of %d pictures in the window", len(reach), len(preliminary.candidates)
         )
         exclusions = self._prepare_annotations(preliminary, on_stage, reach)
+        if intent is not None:
+            exclusions = dict(exclusions) | {
+                c.asset_id: "outside the request"
+                for c in preliminary.candidates
+                if c.asset_id not in intent
+            }
         # No preview bytes: nothing reads them, and over a long window they were gigabytes.
         final = self._planner.prepare_source(
             trace=trace, evidence_exclusions=exclusions, include_previews=False
@@ -443,6 +454,13 @@ class RuntimeEditorialPlanner:
     def close(self) -> None:
         """Release every thread-owned SQLite connection; later reads reopen safely."""
         self._episode_store.close()
+
+
+def _intent_pool() -> frozenset[str] | None:
+    import os
+
+    path = os.environ.get("IMMICH_MEMORIES_INTENT")
+    return frozenset(json.loads(Path(path).read_text())["asset_ids"]) if path else None
 
 
 def _recorded(requester, stage: str, directory: Callable[[], Path]):
