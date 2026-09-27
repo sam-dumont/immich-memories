@@ -108,8 +108,59 @@ def scoped(library, config, scope, assets):
     return set(range(len(library.rows))), "whole library"
 
 
+def immich(config):
+    return httpx.Client(base_url=config.immich.url, headers={"x-api-key": config.immich.api_key}, timeout=60)
+
+
+def add_uncaptioned(library, items):
+    """Pictures the caption bank never saw (forwarded, not prepared) join as caption-less rows:
+    the visual check judges them, and the film captions them on demand."""
+    known = {r["asset_id"]: i for i, r in enumerate(library.rows)}
+    added = set()
+    for a in items:
+        if a["id"] in known:
+            continue
+        library.rows.append({"asset_id": a["id"], "taken_at": a["fileCreatedAt"], "caption": "",
+                             "media_kind": a.get("type", "IMAGE").lower(), "city": "", "country": "",
+                             "person_refs": [], "uncaptioned": True})
+        library.tokens.append(set())
+        known[a["id"]] = len(library.rows) - 1
+        added.add(known[a["id"]])
+    return {known[a["id"]] for a in items}, added
+
+
+def search_all(config, body, cap=4000):
+    items, page = [], 1
+    with immich(config) as c:
+        while page and len(items) < cap:
+            d = c.post("/api/search/metadata", json=body | {"size": 1000, "page": page}).json()
+            items += d.get("assets", {}).get("items", [])
+            page = d.get("assets", {}).get("nextPage")
+            page = int(page) if page else None
+    return items
+
+
 def read_in_photos(config, texts):
-    """Immich OCR: letters really in the photo."""
+    """Immich OCR: letters really in the photo, forwarded pictures included."""
+    return [a for t in texts for a in search_all(config, {"ocr": t})]
+
+
+def event_members(config, library, anchors):
+    """Everything Immich holds within an anchor's episode, forwarded batches included."""
+    when = sorted(datetime.fromisoformat(library.rows[i]["taken_at"].replace("Z", "+00:00")) for i in anchors)
+    windows = []
+    for t in when:
+        if windows and t - EPISODE <= windows[-1][1]:
+            windows[-1][1] = t + EPISODE
+        else:
+            windows.append([t - EPISODE, t + EPISODE])
+    items = []
+    for a, b in windows[:200]:
+        items += search_all(config, {"takenAfter": a.isoformat(), "takenBefore": b.isoformat()}, cap=500)
+    return items
+
+
+def _unused_read_in_photos(config, texts):
     found = set()
     with httpx.Client(base_url=config.immich.url, headers={"x-api-key": config.immich.api_key},
                       timeout=60) as c:
@@ -161,10 +212,14 @@ def look(reader, config, library, plan, candidates, anchors):
     OCR anchor) or, for one thing followed over time, the earliest photo that passes. Only an
     explicit "different" drops a picture; "cannot tell" stays (a room is not its facade).
     """
-    general = plan.get("visual_questions") or []
+    # A question about the picture's subject is about a photograph of it, not a painting or a screen.
+    # Letters are OCR's job: a rider seen from behind cannot show them, the reference can.
+    texts = [t.lower() for t in plan.get("read_text") or []]
+    general = [q.rstrip("?") + " (in a real photograph, not a painting, poster or screen)?"
+               for q in plan.get("visual_questions") or [] if not any(t in q.lower() for t in texts)]
     per_item = plan.get("_per_item_questions") or {}
     thing = plan.get("same_thing")
-    if not general and not thing and not per_item:
+    if not general and not thing and not per_item and not anchors:
         return candidates, []
     cache = ROOT / "looks"
     cache.mkdir(exist_ok=True)
@@ -184,7 +239,8 @@ def look(reader, config, library, plan, candidates, anchors):
         questions = per_item.get(i) or general
         use_ref = ref_image is not None and aid != reference
         text = LOOK.format(ref=" (the first image is the reference, the second is the photo to judge)" if use_ref else "",
-                           same=f', and whether the {thing or "subject"} is the same one as in the reference' if use_ref else "",
+                           same=(f', and whether it shows the same {thing or " / ".join(plan.get("subject") or ["subject"])} '
+                                 "as the reference (the same place, people, clothing or object)") if use_ref else "",
                            same_values='"same|different|cannot_tell"' if use_ref else "null",
                            questions=json.dumps(questions))
         key = hashlib.sha256((text + aid + (reference or "")).encode()).hexdigest()[:20]
@@ -298,6 +354,11 @@ def main():
     if plan is None:
         raise SystemExit("E4B returned no valid plan")
     plan |= {"since": since, "until": until}
+    # A scope narrows only when the sentence states it, like dates: "club rides" is not a trip.
+    stated = {"trips": r"\b(holiday|holidays|vacation|trip|trips|travel|travels|abroad|journey)\b",
+              "home": r"\b(home|house|flat|apartment|our place|garden)\b"}
+    if plan["scope"] in stated and not re.search(stated[plan["scope"]], brief, re.I):
+        plan["scope_dropped"], plan["scope"] = plan["scope"], "any"
     bank = os.environ.get("BANK") or config.editorial.resolve_annotation_database(config.cache.cache_path)
     assets = bank_assets(library, bank)
     in_window = {i for i, r in enumerate(library.rows)
@@ -325,26 +386,31 @@ def main():
         phrases = plan["subject"] + own + [f"{a} {b}" for k, a in enumerate(companions) for b in companions[k + 1:]]
         plan["subject_phrases"] = phrases
         subject = set(retrieve_plan(library, {"queries": phrases, "places": [], "since": since, "until": until}))
-    anchors = set()
+    anchors, uncaptioned = set(), set()
     if plan["read_text"]:
-        ids = read_in_photos(config, plan["read_text"])
-        anchors = {i for i, r in enumerate(library.rows) if r["asset_id"] in ids}
-        events = around(library, anchors) & pool_scope
-        # A letter read in one photo vouches for its event, but only for pictures of the subject.
-        subject = (subject & events) | anchors if subject else events
+        anchors, new = add_uncaptioned(library, read_in_photos(config, plan["read_text"]))
+        anchors = {i for i in anchors if (since or 1) <= int(library.rows[i]["taken_at"][:4]) <= (until or 9999)}
+        members, more = add_uncaptioned(library, event_members(config, library, anchors))
+        uncaptioned = {i for i in (new | more) if i in members | anchors}
+        pool_scope |= anchors | members  # the event decides here, not the trip/home scope
+        # A letter read in one photo vouches for its event: captioned pictures of the subject,
+        # and caption-less ones (forwarded) that the visual check will judge.
+        subject = (subject & members) | anchors | uncaptioned if subject else members | anchors
     pool = (subject if (plan["subject"] or plan["read_text"]) else pool_scope) & pool_scope
 
     by_year = defaultdict(list)
     for i in sorted(pool, key=lambda i: library.rows[i]["taken_at"]):
         by_year[library.rows[i]["taken_at"][:4]].append(i)
     offered = [i for refs in by_year.values() for i in refs[:: max(1, len(refs) // PER_YEAR)][:PER_YEAR]]
-    decisions = choose_sources(reader, library, key, brief, sorted(set(offered) | (anchors & pool)))
+    offered = [i for i in offered if not library.rows[i].get("uncaptioned")]
+    decisions = choose_sources(reader, library, key, brief,
+                               sorted(set(offered) | {i for i in anchors & pool if not library.rows[i].get("uncaptioned")}))
     kept = sorted((d["ref"] for d in decisions if d["decision"] == "match"),
                   key=lambda i: library.rows[i]["taken_at"])
     unsure = [d["ref"] for d in decisions if d["decision"] == "unknown"]
     looked = []
     if not os.environ.get("NO_LOOK"):
-        kept, looked = look(reader, config, library, plan, set(kept) | set(unsure), anchors)
+        kept, looked = look(reader, config, library, plan, set(kept) | set(unsure) | (uncaptioned & pool), anchors)
         kept.sort(key=lambda i: library.rows[i]["taken_at"])
     timeline = [f'{library.rows[i]["taken_at"][:10]}: {library.rows[i]["caption"][:110]}'
                 for i in kept[:: max(1, len(kept) // 24)]]
@@ -353,7 +419,7 @@ def main():
     plan.pop("_per_item_questions", None)
     record = {"brief": brief, "plan": plan, "scope": scope_note,
               "counts": {"window": len(in_window), "scope": len(pool_scope), "subject_matches": len(subject),
-                         "ocr_anchors": len(anchors), "pool": len(pool), "judged": len(decisions),
+                         "ocr_anchors": len(anchors), "uncaptioned": len(uncaptioned & pool), "pool": len(pool), "judged": len(decisions),
                          "looked": len(looked), "kept": len(kept)},
               "kept_by_year": dict(sorted(Counter(library.rows[i]["taken_at"][:4] for i in kept).items())),
               "thesis": (thesis or {}).get("thesis"),
@@ -368,8 +434,9 @@ def main():
     intent.write_text(json.dumps({"asset_ids": [library.rows[i]["asset_id"] for i in kept],
                                   "thesis": record["thesis"] or brief}))
     first, last = library.rows[kept[0]]["taken_at"][:10], library.rows[kept[-1]]["taken_at"][:10]
+    # Owner ruling: free-text films keep forwarded pictures (a club's photos arrive by chat).
     subprocess.run(["/private/tmp/imm-threads/.venv/bin/immich-memories", "generate", "--start", first,
-                    "--end", last, "--title", plan.get("title") or brief[:60]],
+                    "--end", last, "--title", plan.get("title") or brief[:60], "--accept-any-provenance"],
                    env=os.environ | {"IMMICH_MEMORIES_INTENT": str(intent)}, check=False)
 
 
