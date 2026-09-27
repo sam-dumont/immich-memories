@@ -6,37 +6,35 @@ title: What a model adds
 
 Reader: power user, with a newcomer summary first.
 
-Without a model, the editor cuts the whole film from facts: that draft is the film. With a model
-configured, the draft gets better. A text model reads what the period was about, looks at the finished
-draft as a list of lines, names the shots that add nothing to it, and fills the freed seats with
-moments the library records something about. With captions (the `full` tier) it also reads each
-shot's caption to catch private moments the heads can't see. It writes the title and picks the music's mood.
+NAS makes the whole film from metadata, pixels and inexpensive CPU classifiers. It is a good
+default. GPU adds captions and Laya for selected shots and candidates. Full adds a
+text model that reads the draft's annotation lines and proposes small refinements. It may replace
+a few pictures or keep the same cut. Compare the result before paying for more hardware or calls.
 
-What it never does: look at a picture. Pictures are read once, when they are prepared. The model
-gets text only (the captions and the facts ingest banked), on every route. What it costs to run and
-where to run it is on [Make it better](../better/overview.md).
+The prose model gets text only and never decides sharing. Rules, picture classifiers and Laya
+own that check. A configured LLM can also write titles and music mood on NAS or GPU without
+changing the selection tier. Costs and setup are on [What a model adds, what it costs](../better/overview.md).
 
 ## Which route a cut takes
 
 ```mermaid
 flowchart TD
-  cfg["EditorialConfig.resolve_reader"] -- "rules, or auto with no llm.model" --> A
-  cfg -- "model" --> thin{"thin_model_layer on and one window?<br/>ProductionPostCardBackend._thin_polish,<br/>editorial_thin_layer.catalogued_period"}
+  cfg["Automatic product tier"] -- "NAS or GPU" --> A
+  cfg -- "Full" --> thin{"Thin layer on?"}
   thin -- yes --> B
-  thin -- "no: several windows, or the layer off" --> C
-  A["Route A: the no-model film<br/>RuleStructureReader, NoModelJudge"] --> sel["plan_structure, _select"]
-  B["Route B: the draft, then the polish<br/>RuleStructureReader, ThinPolish"] --> sel
-  C["Route C: the model plans the whole film<br/>read_period_story, model picks"] --> sel
-  side["Config._settle_preparation_tier<br/>no llm.model: tier no_captions"] -.-> A
+  thin -- no --> C
+  A["A: rules selection"] --> sel["Shared picture admission"]
+  B["B: NAS draft,<br/>then model refinement"] --> sel
+  C["C: model plans<br/>the whole film"] --> sel
 ```
 
-- `advanced.editorial.reader` is `auto` by default: rules when `llm.model` is blank, the model
-  otherwise. `model` with no `llm.model` is an error that preflight reports.
-- **Route B** covers every film over one window: a month, a year, a season, a trip, a fortnight, a
-  special day, a person film from a birth date to today. That is almost every film.
-- **Route C** is for films over several windows (on this day across years, a holiday across years, a
-  birthday film), which have no single period to hold an account of, and for any film with
-  `advanced.editorial.thin_model_layer: false`. There the model reads the period's stories, weighs
+- `tier: auto` is the default. Without usable GPU inference it selects NAS, even with an LLM
+  configured. GPU inference selects GPU; adding a configured LLM selects Full. Preparation,
+  selection and Laya follow that one tier. Conflicting legacy switches are reported and ignored.
+- **Route B** covers months, years, seasons, trips, special days and person films. It also covers
+  separate date windows, such as the same day across years or a birthday with flashbacks.
+- **Route C** is selected with `advanced.editorial.thin_model_layer: false`.
+  There the model reads the period's stories, weighs
   them, folds trips and recurring activities, and picks the moments. Standing, spacing, the
   look-alike check and every pass after the draft stay the same facts.
 
@@ -44,16 +42,16 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  draft["the no-model draft"] --> acc["the period's account<br/>ThinPolish.catalogue_of, _read_period"]
-  acc -- "unread twice" --> ship["the draft ships as the no-model film<br/>_unpolished, a warning, ran: false"]
-  acc --> gates["every shot faces the gates<br/>PictureAdmission.admit: standing, audience,<br/>5-minute spacing, cached-hash look-alike"]
-  gates --> vote["which shots add nothing?<br/>vote_thesis_fit: blocks of 12, reject-only"]
-  vote --> cls["classify_fit<br/>named in either order: offered a replacement<br/>original stays until it passes"]
-  cls --> seats["seats N, R, T, D<br/>plan_slots, ThinRefill.fill"]
-  seats --> revote["each newcomer re-voted in its block<br/>ThinPolish._checked"]
+  draft["The NAS draft"] --> acc["Read the period's account"]
+  acc -- "unread twice" --> ship["Ship the rules draft<br/>with a warning"]
+  acc --> gates["Check every shot:<br/>standing, audience,<br/>spacing, look-alikes"]
+  gates --> vote["Which shots add nothing?<br/>Ask in blocks of 12"]
+  vote --> cls["Offer a replacement<br/>Keep the original<br/>until one passes"]
+  cls --> seats["Fill seats N, R, T, D"]
+  seats --> revote["Vote on each newcomer<br/>in its block"]
   revote --> short{"short by S seconds?"}
-  short -- yes --> reads["read up to 2 x ceil(S / 3.5) unread episodes<br/>editorial_thin_short"]
-  short -- no --> done["the polished cut, then the passes after the draft"]
+  short -- yes --> reads["Read a bounded number<br/>of unreached episodes"]
+  short -- no --> done["Finish and check the cut"]
   reads --> done
 ```
 
@@ -110,8 +108,8 @@ worthiness, close family, motion and standing), and opens at most ceil(S / 3.5) 
 stories whose reading records a moment. A story whose reading records nothing gets no seat, and the
 film stays short.
 
-**The budget.** 4 questions per 12 draft shots (the vote and the audience question, each in two
-orders), 4 per seat, and one per three episodes the short-film look reads. `thin-polish.private.json`
+**The budget.** Up to 4 questions per 12 draft shots, 4 per seat, and one per three episodes the
+short-film look reads. Sharing uses no prose-LLM calls. `thin-polish.private.json`
 records what it asked against that budget, and the run logs a warning when it goes over.
 
 **When the account can't be read**, it is asked once more. A second failure ships the no-model film
@@ -127,19 +125,19 @@ incomplete model pass, which the run evidence now makes visible.
 
 ## Reading on demand
 
-A model film pays for what it shows. Nothing is read in advance: the draft is built for free, then
-only the episodes its shots sit in are read, with a lean prompt that asks what happened, one
-representative and the moments worth a record. The period's account is written from those readings
-plus the free no-model cards of every other episode.
+A model film starts with the NAS draft. Missing captions and clip evidence are acquired for
+selected shots and actual candidates. The reader may expand a selected shot to its whole episode
+for context, using existing annotations without captioning every neighbour. It asks what happened,
+one representative and the moments worth a record. The period's account combines those readings
+with rules-based cards for the other episodes. Existing matching readings and captions are reused.
 
 ```mermaid
 flowchart TD
-  factory["demand_reader_factory<br/>episode_demand"] --> free["DemandEpisodeReadings.read<br/>free no-model cards"]
-  free --> draft["the draft"]
-  draft --> dem["ProductionPostCardBackend._demanded_period<br/>read the draft's episodes, banked"]
+  free["Rules-based event cards"] --> draft["The NAS draft"]
+  draft --> dem["Read the draft's episodes<br/>Reuse banked readings"]
   dem --> have{"account already banked?"}
   have -- yes --> use["read back, nothing asked"]
-  have -- no --> cat["catalogue_runtime.catalogue_banked_episodes<br/>one per month, per year, per span"]
+  have -- no --> cat["Write the account<br/>by month, year and span"]
   cat --> bank[("bank")]
   use --> polish["the polish"]
   bank --> polish
@@ -169,7 +167,7 @@ The captions under the pictures are dates and places from Immich metadata on eve
 
 | Key | Default | What it does |
 |---|---|---|
-| `advanced.editorial.reader` | `auto` | `rules`, `model`, or `auto` (rules when `llm.model` is blank) |
+| `tier` | `auto` | Resolves NAS, GPU or Full from inference capability and the configured LLM; controls preparation and selection together |
 | `advanced.editorial.thin_model_layer` | `true` | `false` makes the model plan every film whole (Route C) |
-| `advanced.editorial.laya_audience` | `false` | a local pre-screen for the audience question ([details](./family-audience-duplicates.md#the-family-viewing-gate)) |
+| Laya | follows the tier | Enabled on GPU and Full, off on NAS; not a separate preparation choice ([details](./family-audience-duplicates.md#the-family-viewing-gate)) |
 | `advanced.llm.reader_concurrency` | unset | requests in flight: 1 local, 4 hosted when unset |

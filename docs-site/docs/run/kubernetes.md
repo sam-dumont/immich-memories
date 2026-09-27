@@ -9,7 +9,7 @@ Kustomize manifests live in `deploy/kubernetes/`. The base boots on any cluster,
 scheduling is an overlay. Docker Compose is the primary path, and CI renders these manifests
 without applying them to a live cluster, so read the rendered output before you apply it.
 
-The base starts at `no_captions`, which needs no caption server. Releases attach an
+The base uses `tier: auto`; without GPU inference it selects NAS and needs no caption server. Releases attach an
 `immich-memories-deploy-X.Y.Z.tar.gz` bundle after the app and inference images finish
 publishing. Its three image pins match that release. Download it from the release page,
 extract it, then use the `deploy/kubernetes/` directory inside it.
@@ -21,7 +21,7 @@ deploy/kubernetes/
 │   └── ingress.yaml.example optional Ingress, only after enabling authentication
 ├── overlays/gpu/            the app on an NVIDIA node
 ├── overlays/inference/      the inference service alone (+ -cuda, + -lan for outside callers)
-└── overlays/captioner/      llama.cpp under the alias `tier: full` wants (+ -cuda)
+└── overlays/captioner/      the SmolVLM caption service (+ -cuda)
 ```
 
 ## Prerequisites
@@ -124,26 +124,31 @@ onto the `/models` claim, so there is nothing to run by hand. It exits without a
 three are there, so a restart costs nothing and a nightly CronJob never goes back to the network.
 `kubectl logs -n immich-memories deploy/immich-memories -c fetch-models` shows what it did.
 
-## Set the preparation tier
+## Automatic product tiers {#set-the-preparation-tier}
 
-:::caution The manifests pin `no_captions`
-The Deployment, the Job and both CronJobs set `IMMICH_MEMORIES_EDITORIAL__PREPARATION__TIER` to
-`no_captions`, so a first cut needs no caption server. An env var beats `config.yaml`, so a tier
-saved from the UI or written in the file changes nothing on these pods. For `full`, apply
-`overlays/captioner` and change the env on every pod you run:
+The Deployment, Job and CronJobs set `IMMICH_MEMORIES_TIER` to `auto`. Preparation follows the
+resolved product tier. A CPU-only base stays on NAS. For GPU selection, configure a GPU inference
+service and caption service on every pod you run, and install the Laya checkpoint:
 
 ```yaml
-            - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__TIER
-              value: "full"               # full | no_captions | metadata_only
+            - name: IMMICH_MEMORIES_TIER
+              value: "auto"
+            - name: IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL
+              value: "http://inference:8092"
             - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL
               value: "http://captioner:8092/v1"
 ```
 
-On a running Deployment, `kubectl -n immich-memories set env deployment/immich-memories` with the
-same two pairs does it.
+The inference service must report CUDA; a CPU inference service or caption URL alone does not
+select GPU. A usable local CUDA runtime also qualifies. Adding a configured LLM selects Full.
+Without GPU inference, an LLM still supplies text features such as titles.
+
+Use `kubectl -n immich-memories set env deployment/immich-memories` with these pairs for a running
+Deployment. Environment variables override config files, so remove the tier env var if you want
+`config.yaml` to select an explicit product tier. Check the services with
+`immich-memories preflight`; see [Laya setup](../better/reader.md#the-laya-audience-pre-screen).
 
 What each tier runs and gives up is on [Requirements and tiers](./requirements.md#the-preparation-tier).
-:::
 
 ## Check it from outside the pod
 

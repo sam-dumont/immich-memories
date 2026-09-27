@@ -57,6 +57,7 @@ const config: Config = {
   themeConfig: {
     mermaid: {
       theme: {light: 'neutral', dark: 'dark'},
+      options: {flowchart: {useMaxWidth: false}},
     },
     colorMode: {
       respectPrefersColorScheme: true,

@@ -128,11 +128,14 @@ Immich over the internal network. `immich-server` listens on 2283 in every Immic
 release. An unknown major version stops the run:
 [Immich API compatibility](./config-file.md#immich-api-compatibility).
 
-## The preparation tier in compose
+## The product tier in compose {#the-preparation-tier-in-compose}
 
-The compose file pins `IMMICH_MEMORIES_EDITORIAL__PREPARATION__TIER: "no_captions"`, and an
-environment variable beats `config.yaml`: editing `tier:` in the config file inside the container
-changes nothing until you edit the compose file too. What each tier runs is on
+The compose file sets `IMMICH_MEMORIES_TIER: "auto"`. Without GPU inference, that resolves to
+NAS. A usable GPU inference service selects GPU; adding a configured LLM selects Full.
+Caption and Laya services must also be ready. Preparation follows the same product tier.
+
+An environment variable beats `config.yaml`: remove the Compose tier variable if you want the
+file to control an explicit tier. Do not set a separate preparation tier. What each tier runs is on
 [Requirements and tiers](./requirements.md#the-preparation-tier).
 
 `IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` puts the document classifier on the

@@ -20,14 +20,15 @@ single-user, single-replica: do not scale the deployment beyond one pod.
 
 ## What it creates
 
-Namespace (optional), Secret, two `ReadWriteOnce` PVCs, Deployment, Service, Ingress (optional).
+Namespace (optional), Secret, three `ReadWriteOnce` PVCs, Deployment, Service, Ingress (optional).
 The image runs as `immich`, UID/GID 1000 (`run_as_user` / `fs_group` 1000, all capabilities
-dropped, `RuntimeDefault` seccomp, `read_only_root_filesystem = true`). Three writable mounts:
+dropped, `RuntimeDefault` seccomp, `read_only_root_filesystem = true`). Four writable mounts:
 
 | Mount | Backed by | Holds |
 |-------|-----------|-------|
 | `/home/immich/.immich-memories` | cache PVC | `config.yaml`, `cache/annotations.sqlite` (the editor's banks), `cache.db` (run history and automation state), video cache, projects |
 | `/app/output` | output PVC | generated videos (`IMMICH_MEMORIES_OUTPUT__DIRECTORY=/app/output`) |
+| `/models` | models PVC | pinned encoder and detector artifacts; `models_storage_size` defaults to `10Gi` |
 | `/tmp` | emptyDir (`tmp_size`, 4Gi) | FFmpeg intermediates: 8Gi for 4K |
 
 There is no ConfigMap. `immich_url` / `immich_api_key` (plus `llm_api_key`, `musicgen_api_key` and
@@ -36,23 +37,18 @@ setting is an `IMMICH_MEMORIES_<SECTION>__<KEY>` env var (`env`). Settings saved
 `config.yaml` on the PVC; env vars override them. Probes are `/health/live` for liveness and
 `/health/ready` for readiness, which stays `503` until config is present and Immich answers.
 
-:::caution The module has no models claim
-The Kustomize base has a third PVC (`immich-memories-models`) and a `fetch-models` init container;
-this module has neither, so on any tier but `metadata_only` the first cut stops at prepare with
-`public heads need the pinned DINOv2 ONNX export at ...`. Either run the fetch in the pod once,
-into the cache PVC:
+## Model preparation and tiers
+
+The `fetch-models` init container fills the models PVC before the app starts. It reuses the pinned
+artifacts already present. Inspect it with:
 
 ```bash
-kubectl exec -n immich-memories deploy/immich-memories -- immich-memories models fetch
+kubectl logs -n immich-memories deploy/immich-memories -c fetch-models
 ```
 
-with `env` pointing `IMMICH_MEMORIES_TRIAGE__ENCODER`,
-`IMMICH_MEMORIES_EDITORIAL__PREPARATION__MARQO_ONNX` and
-`IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` under
-`/home/immich/.immich-memories/models`, or use [Kubernetes](./kubernetes.md) instead, which does
-this for you
-([#928](https://github.com/sam-dumont/immich-video-memory-generator/issues/928)).
-:::
+The module defaults to `IMMICH_MEMORIES_TIER=auto`. Without GPU inference, selection stays on
+NAS. GPU or Full also need a caption provider and Laya ready; preparation follows the resolved
+product tier. See [Requirements and tiers](./requirements.md#which-tier-you-get).
 
 ## Prerequisites
 
