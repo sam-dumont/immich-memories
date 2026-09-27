@@ -1,18 +1,16 @@
 """Settings → People on the hermetic launch: the roster, the answers, and no reloads (#824, S7).
 
-The roster the page shows comes from the store under the launch workspace's
-HOME, never the developer's own: the test imports the roster into that store
-itself and checks the names it wrote are the names on the page.
+The roster the page shows comes from the store the launch workspace's config names,
+never the developer's own: the test imports the roster into that same store itself
+and checks the names it wrote are the names on the page.
 """
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 from playwright.sync_api import Page, expect
 
-from immich_memories.db import Store, StoreLocation, open_store
+from immich_memories.db import Store
 from immich_memories.people.companion import load_document
 from immich_memories.people.transfer import import_document
 
@@ -45,18 +43,16 @@ def _entry(index: int) -> dict:
     }
 
 
-def _seed_people(root: Path) -> Store:
-    """The launched app's default store (HOME is the workspace), holding the fixture roster."""
-    database = root / ".immich-memories" / "store.db"
-    database.parent.mkdir(parents=True, exist_ok=True)
-    store = open_store(location=StoreLocation(url=f"sqlite:///{database}"))
+def _seed_people(launch_workspace) -> Store:
+    """The launched app's store, holding the fixture roster."""
+    store = launch_workspace.store()
     roster = {"version": 1, "people": [_entry(index) for index in range(_ROSTER)]}
     import_document(store, roster, replace=True)
     return store
 
 
 def _open_people(page: Page, launch_app_url: str, launch_workspace) -> Store:
-    store = _seed_people(launch_workspace.root)
+    store = _seed_people(launch_workspace)
     page.goto(f"{launch_app_url}/settings/people", wait_until="domcontentloaded", timeout=30_000)
     expect(page.locator(".roster-pager")).to_be_visible(timeout=30_000)
     return store
