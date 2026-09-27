@@ -234,6 +234,15 @@ caption and reading the editor banked. Lose it and the next cut reads the librar
 moving host means copying that volume, and
 [the `cache` CLI commands will not do it for you](./maintenance/health-logs-cache.md#the-cli-cache-commands-are-not-for-the-banks).
 
+## The store: SQLite or PostgreSQL
+
+The compose file defaults to a SQLite file on the config volume, one host, one writer, which is
+right for the single container this file runs. The commented `postgres` service and
+`IMMICH_MEMORIES_DATABASE_URL` line switch the store to PostgreSQL instead: a separate service, a
+separate database on your own PostgreSQL instance, or a dedicated schema inside an instance you
+already run (Immich's, for example). See [Database and the store](./database.md) for the four
+modes and the SQL for the dedicated-schema one.
+
 ## Updating
 
 ```bash
