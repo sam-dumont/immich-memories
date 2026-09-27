@@ -48,8 +48,8 @@ immich-memories generate --memory-type monthly_highlights --year 2024 --month 6 
 
 `just-us` plays the household's private moments a caption names (a bath, a nappy change) as well,
 `family` keeps them out, and `shareable` plays only what nothing held back. The planned-run summary
-and `runs show` print the level. A shareable film needs the detectors, so on `metadata_only` it is
-refused before anything is fetched. The rules:
+and `runs show` print the level. Every product tier uses the picture detectors; GPU and Full add
+Laya over captions, and sharing never asks the prose LLM. The rules:
 [Sharing levels](../../how-it-chooses/family-audience-duplicates.md#sharing-levels).
 
 Two root options go before `generate`: `-v` (or `--log-level DEBUG`) for verbose logs, and

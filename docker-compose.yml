@@ -22,13 +22,13 @@
 # nothing outside this container. All ten standard memory types work; a custom
 # free-text subject needs a model.
 #
-# The preparation tier below is pinned to no_captions: run `models fetch` inside
-# the container once (about 130 MB of pinned ONNX) and a cut finishes with no
-# second service. Raise the tier to full for a caption under every picture,
-# which wants a caption server, or drop it to metadata_only, which fetches nothing.
+# The product tier defaults to auto. Without GPU inference it selects NAS:
+# run `models fetch` inside the container once, then no second service is needed.
+# GPU inference enables captions and Laya for selected shots and candidates;
+# their services and checkpoints must also be ready.
 #
-# A model is optional: point LLM__BASE_URL and LLM__MODEL at a vision model you
-# host and it polishes the draft this container already makes. See
+# An optional text LLM can supply titles on any tier. With GPU inference too,
+# it refines the NAS draft on Full. It needs no vision for that role. See
 # https://sam-dumont.github.io/immich-video-memory-generator/docs/better/overview
 services:
   immich-memories:
