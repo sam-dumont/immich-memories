@@ -55,15 +55,6 @@ FILLER_WORDS = set("a an the of in on at to for from with and or our my his her 
                    "everything nothing".split())
 
 
-ROLE_WORDS = {"son": {"son"}, "daughter": {"daughter"}, "sons": {"son"}, "daughters": {"daughter"},
-              "kids": {"son", "daughter"}, "children": {"son", "daughter"}, "child": {"son", "daughter"},
-              "baby": {"son", "daughter"}, "wife": {"wife", "partner", "spouse"},
-              "husband": {"husband", "partner", "spouse"}, "partner": {"partner", "wife", "husband", "spouse"},
-              "mother": {"mother", "mum", "mom"}, "mum": {"mother", "mum", "mom"}, "mom": {"mother", "mum", "mom"},
-              "father": {"father", "dad"}, "dad": {"father", "dad"}, "brother": {"brother"}, "sister": {"sister"},
-              "grandmother": {"grandmother"}, "grandfather": {"grandfather"}}
-
-
 def parse_structure(brief, people, library):
     """Everything a pattern can answer, answered by patterns (dates, people, text, shape)."""
     low = brief.lower()
@@ -72,12 +63,6 @@ def parse_structure(brief, people, library):
         first = full.split()[0].lower()
         if re.search(rf"\b{re.escape(first)}\b", low) or full.lower() in low:
             names[full] = True
-    # Roles resolve like names ("my son"): the people file's confirmed roles, value-linked.
-    for word, roles in ROLE_WORDS.items():
-        if re.search(rf"\b(?:my|our)\s+{word}\b", low):
-            for full, person in people.items():
-                if str(((person.get("confirmed") or {}).get("role") or "")).lower() in roles:
-                    names[full] = True
     words_in = re.findall(r"[a-zA-Z][a-zA-Z'\-]+", brief)
     known = set(library.posts)
     # Words no caption ever used and no dictionary would: candidates for letters in the photo.
@@ -97,9 +82,7 @@ def parse_structure(brief, people, library):
     stated = {"trips": r"\b(holiday|holidays|vacation|trip|trips|travel|travels|abroad|journey)\b",
               "home": r"\b(home|house|flat|apartment|our place|garden)\b"}
     scope = next((k for k, p in stated.items() if re.search(p, low)), "any")
-    # "the birth of my son": the person's recorded birth date is the window, not a word to search.
-    birth = bool(re.search(r"\bbirth\b|\bborn\b", low))
-    return {"people": list(names), "birth": birth, "read_text": odd, "firsts": bool(re.search(r"\bfirsts?\b", low)),
+    return {"people": list(names), "read_text": odd, "firsts": bool(re.search(r"\bfirsts?\b", low)),
             "same_thing": thing[1] if thing and thing[1] not in {"own", "first", "firsts"} else None,
             "exclusions": [e.strip() for e in excl], "scope": scope}
 
@@ -109,8 +92,32 @@ def wn_known(word):
     return bool(wn.synsets(word.lower()))
 
 
+PEOPLE = '''Which of these people is the owner's request about? Each has a name and, when
+known, a role relative to the owner. Pick only people the request names or clearly refers to;
+none when it is about no one in particular. Return JSON.'''
+
+
+def ask_people(reader, key, brief, people):
+    """Gemma links names and roles ("my son") to the people file; the enum forbids inventing one."""
+    listed = {n: str(((p.get("confirmed") or {}).get("role") or (p.get("inferred") or {}).get("role") or ""))
+              for n, p in people.items() if (p.get("inferred") or {}).get("tier") in {"inner", "recurring"}
+              or (p.get("confirmed") or {}).get("role")}
+    if not listed:
+        return []
+    schema = _schema(people={"type": "array", "items": {"type": "string", "enum": sorted(listed)}, "maxItems": 4})
+    import yaml
+
+    owner = (yaml.safe_load((Path.home() / ".immich-memories/people.yaml").read_text()) or {}).get("owner")
+    answer = reader.ask("plan_people", key, PEOPLE, {"owner_request": brief,
+                        "the_owner_who_says_my_and_our": (owner.get("name") if isinstance(owner, dict) else owner) or None,
+                        "people": [{"name": n, "role_relative_to_owner": r} for n, r in sorted(listed.items())]},
+                        lambda a: None, 200, schema=schema)
+    return (answer or {"people": []})["people"]
+
+
 def ask_plan(reader, key, brief, context, library, people):
     plan = parse_structure(brief, people, library)
+    plan["people"] = ask_people(reader, key, brief, people)
     answer = reader.ask("plan_subject", key, SUBJECT, {"owner_request": brief,
                         "caption_vocabulary": context["caption_vocabulary"]}, lambda a: None, 400,
                         schema=SUBJECT_SCHEMA)
@@ -516,13 +523,6 @@ def main():
     pool_scope = in_window & scope
 
     named = [people[p] | {"name": p} for p in plan.get("people") or [] if p in people]
-    if plan.get("birth") and named and named[0].get("birth_date"):
-        from datetime import date as _date
-
-        born = _date.fromisoformat(str(named[0]["birth_date"]))
-        lo, hi = str(born - timedelta(days=2)), str(born + timedelta(days=14))
-        plan["birth_window"] = [lo, hi]
-        pool_scope &= {i for i, r in enumerate(library.rows) if lo <= r["taken_at"][:10] <= hi}
     if named:
         # Who is in a picture is Immich's face data, never a caption word.
         pool_scope &= set().union(*(person_rows(library, p) for p in named))
@@ -537,7 +537,7 @@ def main():
         plan["_per_item_questions"] = {c["_ref"]: [f'Does this photo show {named[0]["name"].split()[0]} with or at: {c["label"]}?']
                                        for c in chosen}
     subject = set()
-    if plan["subject"] and not plan.get("birth_window"):
+    if plan["subject"]:
         own, companions = companion_terms(reader, library, brief, key)
         pairs = [f"{a} {b}" for k, a in enumerate(companions) for b in companions[k + 1:]]
         # The request's own specific word, when captions use it, defines the subject; the model's
