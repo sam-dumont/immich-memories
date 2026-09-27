@@ -47,7 +47,8 @@ On Full, the model does two things with the draft:
   whole period), says what happened in each, then writes an account of the period, a title and a
   mood for the music. Banked readings are reused when their inputs and producer still match.
 - **It polishes.** It reads the finished draft in blocks of 12 shots and names the ones that add
-  nothing. A named shot stays until a replacement passes the shared checks. Favourites,
+  nothing. A named shot stays until a replacement passes the shared checks and its final fit
+  vote. An ordinary replacement still marked weak leaves the original in place. Favourites,
   a close relative's only shot and a record the catalogue holds
   stay put. So does a year's only shot in a film that gives every year a voice, and a year whose
   every shot is named keeps one. A refill that picks a picture takes its moment's favourite instead
