@@ -33,9 +33,9 @@ locals {
   env = merge(
     local.model_env,
     {
-      IMMICH_MEMORIES_OUTPUT__DIRECTORY            = local.output_dir
-      IMMICH_MEMORIES_OUTPUT__RESOLUTION           = var.output_resolution
-      IMMICH_MEMORIES_TIER                        = "auto"
+      IMMICH_MEMORIES_OUTPUT__DIRECTORY  = local.output_dir
+      IMMICH_MEMORIES_OUTPUT__RESOLUTION = var.output_resolution
+      IMMICH_MEMORIES_TIER               = "auto"
     },
     var.llm_base_url != "" ? {
       IMMICH_MEMORIES_LLM__BASE_URL = var.llm_base_url
