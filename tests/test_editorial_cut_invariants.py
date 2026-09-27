@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from immich_memories.analysis.editorial_cut_invariants import (
     FinishedCut,
     broken_promises,
@@ -94,6 +96,26 @@ def test_a_favourite_collapsed_into_its_starred_twin_is_shown_by_the_twin():
     )
 
     assert cut_violations(cut) == []
+
+
+@pytest.mark.parametrize("end", ["shown", "missing", "cycle"])
+def test_a_collapsed_favourite_chain_must_end_in_a_shown_keeper(end):
+    cut = FinishedCut(
+        carriers=[_shot("plain", moment="M1", favourite=False)]
+        + ([_shot("keeper", moment="M2", favourite=True)] if end == "shown" else []),
+        units={
+            "star": _shot("star", moment="M1", favourite=True),
+            "plain": _shot("plain", moment="M1", favourite=False),
+        },
+        removed_by={"star": "final-duplicates"},
+        verdict_of=_shared,
+        collapsed_into={"star": "twin", "twin": "star" if end == "cycle" else "keeper"},
+    )
+
+    expected = (
+        [] if end == "shown" else [("favourite_wins_its_moment", "plain", "final-duplicates")]
+    )
+    assert _broken(cut) == expected
 
 
 def test_a_favourite_the_film_refuses_leaves_its_moment_to_another_picture():
