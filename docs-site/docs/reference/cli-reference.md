@@ -130,7 +130,7 @@ immich-memories cache backup [OPTIONS]
 
 ### `cache export`
 
-Export asset scores to JSON (safe, lock-aware).
+Export the banked asset scores to JSON.
 
 ```bash
 immich-memories cache export [OPTIONS]
@@ -186,7 +186,33 @@ immich-memories days-due [OPTIONS]
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
 | `--on` | datetime | - | The date to look around (default today) |
-| `--catalogue` | file | ~/.immich-memories/special-days.json |  |
+
+## `days-export`
+
+Write the special-days catalogue as JSON, for a backup or a hand edit.
+
+```bash
+immich-memories days-export [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--to` | file | - | Write to this file instead of standard output |
+
+## `days-import`
+
+Replace the special-days catalogue with a JSON file's.
+
+Every record is kept as written, so an edited export comes back exactly. A file
+whose records do not read as a catalogue changes nothing.
+
+```bash
+immich-memories days-import [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--from` | file | - | A JSON catalogue, as days-export writes it |
 
 ## `discover-days`
 
@@ -214,6 +240,8 @@ can be cleaned without editing JSON by hand. It says how many rows it
 will replace before it starts, and it never touches a year outside the
 period.
 
+The catalogue lives in the store; `days-export` writes it to a file.
+
 ```bash
 immich-memories discover-days [OPTIONS]
 ```
@@ -223,7 +251,6 @@ immich-memories discover-days [OPTIONS]
 | `--since` | integer | 2007 | First year to scan |
 | `--until` | integer | 2026 | Last year to scan |
 | `--also-skip` | text | - | A holiday name or MM-DD this library keeps that the defaults miss |
-| `--out` | file | ~/.immich-memories/special-days.json | Where to write the catalogue |
 | `--rescan` | boolean | false | Start over, ignoring and replacing the existing catalogue |
 | `--replace` | boolean | false | Re-scan --since..--until and replace every row those years already hold, dropping days that no longer qualify. Rows outside the period are kept. |
 

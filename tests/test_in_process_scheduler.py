@@ -145,7 +145,7 @@ class TestRestartCatchUp:
         config = _config(tmp_path, enabled=True, daily_at="09:00")
         # The durable attempt row is what a pre-restart fire (or `docker exec … auto run`)
         # leaves behind; started_at is "now" in UTC, i.e. today.
-        AutomationStateStore(config.cache.database_path).start_attempt(reason="daily wake")
+        AutomationStateStore().start_attempt(reason="daily wake")
         fired: list[Config] = []
         now = datetime.now().astimezone().replace(hour=23, minute=0, second=0, microsecond=0)
         clock = _FakeClock(now)

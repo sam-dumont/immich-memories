@@ -1,0 +1,154 @@
+"""Operations: what ran, what automation tried, what notifications did, and paid-for scores.
+
+Run history and automation attempts are what the nightly runner's cooldown and dedup read, so
+they are store rows rather than cache rows: dropping them would re-film a memory already made.
+The special-days catalogue is a list of heterogeneous records (judged days, unjudged days,
+year markers, canonical events) that people merge and edit by hand, so each record is kept
+verbatim as JSON at its position.
+"""
+
+from __future__ import annotations
+
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Table,
+    Text,
+)
+
+from immich_memories.db.metadata import metadata
+
+pipeline_runs = Table(
+    "pipeline_runs",
+    metadata,
+    Column("run_id", String(255), primary_key=True),
+    Column("created_at", DateTime, nullable=False, index=True),
+    Column("completed_at", DateTime, nullable=True),
+    Column("status", String(32), nullable=False, index=True),
+    Column("memory_type", String(64), nullable=True),
+    Column("memory_key", String(512), nullable=True, index=True),
+    Column("memory_category", String(64), nullable=True),
+    Column("memory_people", JSON, nullable=False),
+    Column("source", String(32), nullable=False),
+    Column("automation_attempt_id", String(64), nullable=True, index=True),
+    Column("last_phase", String(32), nullable=True),
+    Column("phase_events", JSON, nullable=False),
+    Column("person_name", Text, nullable=True),
+    Column("person_id", String(255), nullable=True),
+    # Calendar dates, ISO `YYYY-MM-DD`: a date has no instant to normalise.
+    Column("date_range_start", String(10), nullable=True),
+    Column("date_range_end", String(10), nullable=True),
+    Column("target_duration_seconds", Integer, nullable=True),
+    Column("output_path", Text, nullable=True),
+    Column("output_size_bytes", BigInteger, nullable=False),
+    Column("output_duration_seconds", Float, nullable=False),
+    Column("clips_analyzed", Integer, nullable=False),
+    Column("clips_selected", Integer, nullable=False),
+    Column("errors_count", Integer, nullable=False),
+    Column("system_info", JSON, nullable=True),
+    Column("delivery_status", String(32), nullable=False),
+    Column("delivery_attempts", Integer, nullable=False),
+    Column("delivery_error", Text, nullable=True),
+    Column("immich_asset_id", String(255), nullable=True),
+    Column("delivery_album", Text, nullable=True),
+    Column("warnings", JSON, nullable=False),
+    Column("llm_metrics", JSON, nullable=True),
+    Column("title_source", String(64), nullable=True),
+    Index(None, "delivery_status", "source", "status"),
+)
+
+phase_stats = Table(
+    "phase_stats",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column(
+        "run_id",
+        String(255),
+        ForeignKey(pipeline_runs.c.run_id, ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    ),
+    Column("phase_name", String(128), nullable=False),
+    Column("started_at", DateTime, nullable=False),
+    Column("completed_at", DateTime, nullable=True),
+    Column("duration_seconds", Float, nullable=False),
+    Column("items_processed", Integer, nullable=False),
+    Column("items_total", Integer, nullable=False),
+    Column("errors", JSON, nullable=True),
+    Column("extra_metrics", JSON, nullable=True),
+)
+
+automation_attempts = Table(
+    "automation_attempts",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    # Insertion order, the tie-break when two attempts share a start instant (SQLite's rowid did
+    # this before). Not unique: two PostgreSQL writers may draw the same number, which only
+    # leaves their relative order undecided, exactly like a shared timestamp.
+    Column("seq", Integer, nullable=False),
+    Column("started_at", DateTime, nullable=False, index=True),
+    Column("finished_at", DateTime, nullable=True),
+    Column("outcome", String(32), nullable=False),
+    Column("reason", Text, nullable=False),
+    Column("candidate_category", String(64), nullable=True),
+    Column("memory_type", String(64), nullable=True),
+    Column("memory_key", String(512), nullable=True),
+    Column("run_id", String(255), nullable=True),
+    Column("error", Text, nullable=True),
+    Column("last_phase", String(32), nullable=True),
+    Column("phase_events", JSON, nullable=False),
+)
+
+# One row, id 1: the health of the notification channel and its failure cooldown.
+notification_health = Table(
+    "notification_health",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=False),
+    Column("last_attempt_at", DateTime, nullable=True),
+    Column("last_success_at", DateTime, nullable=True),
+    Column("last_failure_at", DateTime, nullable=True),
+    Column("failure_category", String(64), nullable=True),
+    Column("failure_message", Text, nullable=True),
+)
+
+# One banked model look per asset per prompt version; `''` is the unversioned one.
+asset_scores = Table(
+    "asset_scores",
+    metadata,
+    Column("asset_id", String(255), primary_key=True),
+    Column("model_version", String(255), primary_key=True),
+    Column("asset_type", String(32), nullable=False, index=True),
+    Column("llm_interest", Float, nullable=True),
+    Column("llm_quality", Float, nullable=True),
+    Column("llm_emotion", Text, nullable=True),
+    Column("llm_description", Text, nullable=True),
+    Column("llm_category", String(64), nullable=True),
+    Column("metadata_score", Float, nullable=False),
+    Column("combined_score", Float, nullable=False),
+    Column("analyzed_at", DateTime, nullable=False),
+)
+
+# The run id to the attempt directory the run selected from (the attempt's own
+# `run.private.json` stays a file beside the attempt).
+run_attempts = Table(
+    "run_attempts",
+    metadata,
+    Column("run_id", String(255), primary_key=True),
+    Column("attempt_dir", Text, nullable=False),
+    Column("output_path", Text, nullable=False),
+    Column("recorded_at", DateTime, nullable=False),
+)
+
+special_days = Table(
+    "special_days",
+    metadata,
+    Column("position", Integer, primary_key=True, autoincrement=False),
+    Column("record", JSON, nullable=False),
+)

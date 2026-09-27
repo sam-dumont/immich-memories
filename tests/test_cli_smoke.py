@@ -792,7 +792,7 @@ class TestAutoRunOutput:
             immich={"url": "http://immich.test:2283", "api_key": "test-key"},
             cache={"database": str(tmp_path / "runs.db")},
         )
-        store = AutomationStateStore(tmp_path / "runs.db")
+        store = AutomationStateStore()
         for _ in range(2):
             attempt = store.start_attempt(reason="daily wake")
             store.finish_attempt(

@@ -59,7 +59,7 @@ Everything lives under `~/.immich-memories/cache/` (or `cache.directory`):
 | `thumbnails/` | one Immich preview per candidate a film can reach | `thumbnail_cache_max_size_mb`, 10 GB |
 | `video-cache/` | downloaded Immich clips | `video_cache_max_size_gb` 10 GB, `video_cache_max_age_days` 7 |
 | `preview-cache/`, `previews/` | clip previews for the web UI | `preview_cache_max_size_mb`, 2 GB |
-| `../cache.db` (one level up) | run history and automation state | none |
+| `../cache.db` (one level up) | derived video analysis; run history moved to the [store](../database.md) | none |
 
 ```yaml
 cache:
@@ -128,6 +128,7 @@ without it every fact about your library is prepared again.
 
 ### The CLI cache commands are not for the banks
 
-`immich-memories cache stats|backup|export|import` read and write `asset_scores`, the retired
-per-clip scorer's table, which nothing writes any more. They don't touch `annotations.sqlite`. To
+`immich-memories cache stats|export|import` read and write the banked asset scores (the retired
+per-clip scorer's answers, which nothing writes any more) in the [store](../database.md); `cache
+backup` copies `cache.db` only. None of them touch `annotations.sqlite` or the rest of the store. To
 move an install, copy `~/.immich-memories` (in Docker: the config volume).

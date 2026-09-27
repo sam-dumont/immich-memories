@@ -1,8 +1,13 @@
-"""Reading the catalogue `discover-days` writes.
+"""The special-days catalogue `discover-days` writes, kept in the store.
 
-More than one reader wants this file -- `days-due` prints from it and the
-wizard's Surprise me card offers from it -- and they have to agree on where it
-lives and on what a half-written entry means, so the reading happens once here.
+More than one reader wants it -- `days-due` prints from it and the wizard's
+Surprise me card offers from it -- and they have to agree on what a half-written
+entry means, so the reading happens once here.
+
+The catalogue is an ordered list of records of several shapes (judged days, unjudged
+days, `{"scanned": year}` markers, canonical events a person curated), each kept verbatim
+at its position. `days-export` and `days-import` move it to and from a JSON file for a
+hand edit.
 
 Legacy entries tolerate missing display fields. Exact event membership is a
 source boundary: incomplete or inconsistent event records must not widen to a day.
@@ -10,54 +15,65 @@ source boundary: incomplete or inconsistent event records must not widen to a da
 
 from __future__ import annotations
 
-import json
 import logging
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from pathlib import Path
 from typing import TYPE_CHECKING
+
+import sqlalchemy as sa
+
+from immich_memories.db import open_store
+from immich_memories.db.tables import special_days
 
 if TYPE_CHECKING:
     from collections.abc import Container
 
     from immich_memories.automation.special_day_scan import DiscoveredDay
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
-
-def default_catalogue_path() -> Path:
-    """Where the catalogue lives when nobody said otherwise.
-
-    Resolved per call rather than at import: the home directory is the one
-    thing a test, a container, or a service account changes underneath us.
-    """
-    return Path.home() / ".immich-memories" / "special-days.json"
+# What a canonical event's admission names as the evidence it was read from.
+CATALOGUE_REF = "store:special_days"
 
 
-def load_catalogue(path: Path) -> list[dict]:
-    """What an earlier run already found, or nothing readable.
+def load_catalogue(store: Store | None = None) -> list[dict]:
+    """What earlier scans found, in the order they wrote it.
 
     A scan runs for hours across twenty years. Starting from scratch every
     time is the difference between a command you can interrupt and one you
     have to babysit.
     """
-    if not path.exists():
-        return []
-    try:
-        loaded = json.loads(path.read_text())
-    except (OSError, json.JSONDecodeError):
-        logger.warning("%s is not readable as a catalogue; starting fresh", path)
-        return []
-    return loaded if isinstance(loaded, list) else []
+    with (store or open_store()).connect() as conn:
+        rows: list[dict] = list(
+            conn.execute(
+                sa.select(special_days.c.record).order_by(special_days.c.position)
+            ).scalars()
+        )
+    return rows
 
 
-def entries_from(path: Path) -> list[DiscoveredDay]:
+def save_catalogue(records: list[dict], store: Store | None = None) -> None:
+    """Replace the whole catalogue with `records`, in one transaction."""
+    with (store or open_store()).begin() as conn:
+        conn.execute(sa.delete(special_days))
+        if records:
+            conn.execute(
+                sa.insert(special_days),
+                [
+                    {"position": position, "record": record}
+                    for position, record in enumerate(records)
+                ],
+            )
+
+
+def entries_from(records: list[dict]) -> list[DiscoveredDay]:
     """Read legacy days and canonical events without discarding event identity."""
     entries = []
-    for raw in load_catalogue(path):
+    for raw in records:
         if not isinstance(raw, dict):
             continue
-        entry = _entry_from_record(raw, path)
+        entry = _entry_from_record(raw)
         if entry is not None:
             entries.append(entry)
     return entries
@@ -160,7 +176,7 @@ def scope_of(entry: DiscoveredDay, *, other_days: Container[date] = frozenset())
     `other_days` are the dates the rest of the catalogue already claims. A run
     is bounded by its own first and last picture rather than by whole dates, so
     two occasions sharing a date cannot in practice reach into each other; the
-    check is here because a catalogue is a file people merge and hand-edit, and
+    check is here because a catalogue is something people merge and hand-edit, and
     two occasions must not silently become one.
     """
     window = scope_window(entry)
@@ -238,7 +254,7 @@ def _event_run(
     return start, end, (start, end)
 
 
-def _entry_from_record(raw: dict, path: Path) -> DiscoveredDay | None:
+def _entry_from_record(raw: dict) -> DiscoveredDay | None:
     """One catalogue record; a legacy day without any date is skipped, not an error."""
     from immich_memories.analysis.special_event_scope import (
         SpecialEventAdmission,
@@ -269,7 +285,7 @@ def _entry_from_record(raw: dict, path: Path) -> DiscoveredDay | None:
         run_end=end if event_id else _moment_in(raw.get("run_end")),
         event_id=event_id,
         asset_ids=members,
-        event_admission=SpecialEventAdmission.from_catalogue_record(raw, evidence_ref=str(path))
+        event_admission=SpecialEventAdmission.from_catalogue_record(raw, evidence_ref=CATALOGUE_REF)
         if event_id is not None
         else None,
         window_photos=raw.get("window_photos", 0),

@@ -105,48 +105,44 @@
       {
         "name": "AutoRunner::_run_one_under_lease",
         "complexity": 19,
-        "line_start": 584,
-        "line_end": 701,
+        "line_start": 585,
+        "line_end": 702,
         "line_complexities": [
           {
-            "line": 595,
+            "line": 596,
             "complexity": 0
           },
           {
-            "line": 599,
+            "line": 600,
             "complexity": 0
-          },
-          {
-            "line": 602,
-            "complexity": 2
           },
           {
             "line": 603,
+            "complexity": 2
+          },
+          {
+            "line": 604,
             "complexity": 0
           },
           {
-            "line": 605,
+            "line": 606,
             "complexity": 0
-          },
-          {
-            "line": 609,
-            "complexity": 3
           },
           {
             "line": 610,
-            "complexity": 0
+            "complexity": 3
           },
           {
-            "line": 612,
+            "line": 611,
             "complexity": 0
           },
           {
             "line": 613,
-            "complexity": 2
+            "complexity": 0
           },
           {
             "line": 614,
-            "complexity": 0
+            "complexity": 2
           },
           {
             "line": 615,
@@ -154,43 +150,43 @@
           },
           {
             "line": 616,
-            "complexity": 1
+            "complexity": 0
           },
           {
             "line": 617,
+            "complexity": 1
+          },
+          {
+            "line": 618,
             "complexity": 0
           },
           {
-            "line": 625,
+            "line": 626,
             "complexity": 2
           },
           {
-            "line": 627,
-            "complexity": 0
-          },
-          {
-            "line": 637,
+            "line": 628,
             "complexity": 0
           },
           {
             "line": 638,
-            "complexity": 1
+            "complexity": 0
           },
           {
-            "line": 640,
-            "complexity": 0
+            "line": 639,
+            "complexity": 1
           },
           {
             "line": 641,
             "complexity": 0
           },
           {
-            "line": 645,
+            "line": 642,
             "complexity": 0
           },
           {
-            "line": 651,
-            "complexity": 1
+            "line": 646,
+            "complexity": 0
           },
           {
             "line": 652,
@@ -198,70 +194,74 @@
           },
           {
             "line": 653,
+            "complexity": 1
+          },
+          {
+            "line": 654,
             "complexity": 0
           },
           {
-            "line": 655,
+            "line": 656,
             "complexity": 0
-          },
-          {
-            "line": 664,
-            "complexity": 2
           },
           {
             "line": 665,
-            "complexity": 0
+            "complexity": 2
           },
           {
             "line": 666,
             "complexity": 0
           },
           {
-            "line": 668,
+            "line": 667,
             "complexity": 0
           },
           {
-            "line": 675,
+            "line": 669,
             "complexity": 0
           },
           {
             "line": 676,
-            "complexity": 2
+            "complexity": 0
           },
           {
             "line": 677,
-            "complexity": 0
+            "complexity": 2
           },
           {
             "line": 678,
             "complexity": 0
           },
           {
-            "line": 681,
+            "line": 679,
             "complexity": 0
           },
           {
-            "line": 689,
-            "complexity": 1
+            "line": 682,
+            "complexity": 0
           },
           {
             "line": 690,
-            "complexity": 0
-          },
-          {
-            "line": 691,
             "complexity": 1
           },
           {
-            "line": 693,
+            "line": 691,
             "complexity": 0
           },
           {
-            "line": 700,
+            "line": 692,
+            "complexity": 1
+          },
+          {
+            "line": 694,
             "complexity": 0
           },
           {
             "line": 701,
+            "complexity": 0
+          },
+          {
+            "line": 702,
             "complexity": 0
           }
         ]
@@ -1084,64 +1084,56 @@
       {
         "name": "register_runs_commands",
         "complexity": 36,
-        "line_start": 207,
-        "line_end": 420,
+        "line_start": 209,
+        "line_end": 422,
         "line_complexities": [
           {
-            "line": 246,
+            "line": 248,
             "complexity": 0
           },
           {
-            "line": 250,
+            "line": 252,
             "complexity": 2
           },
           {
-            "line": 254,
+            "line": 256,
             "complexity": 0
           },
           {
-            "line": 262,
-            "complexity": 0
-          },
-          {
-            "line": 270,
-            "complexity": 2
-          },
-          {
-            "line": 271,
+            "line": 264,
             "complexity": 0
           },
           {
             "line": 272,
-            "complexity": 0
+            "complexity": 2
           },
           {
             "line": 273,
-            "complexity": 3
-          },
-          {
-            "line": 298,
             "complexity": 0
           },
           {
-            "line": 299,
+            "line": 274,
+            "complexity": 0
+          },
+          {
+            "line": 275,
+            "complexity": 3
+          },
+          {
+            "line": 300,
             "complexity": 0
           },
           {
             "line": 301,
-            "complexity": 2
+            "complexity": 0
           },
           {
             "line": 303,
-            "complexity": 0
-          },
-          {
-            "line": 304,
-            "complexity": 0
+            "complexity": 2
           },
           {
             "line": 305,
-            "complexity": 3
+            "complexity": 0
           },
           {
             "line": 306,
@@ -1149,51 +1141,51 @@
           },
           {
             "line": 307,
+            "complexity": 3
+          },
+          {
+            "line": 308,
+            "complexity": 0
+          },
+          {
+            "line": 309,
             "complexity": 1
           },
           {
-            "line": 310,
+            "line": 312,
             "complexity": 1
           },
           {
-            "line": 323,
+            "line": 325,
             "complexity": 2
           },
           {
-            "line": 327,
+            "line": 329,
             "complexity": 2
           },
           {
-            "line": 338,
+            "line": 340,
             "complexity": 0
           },
           {
-            "line": 344,
+            "line": 346,
             "complexity": 0
           },
           {
-            "line": 387,
-            "complexity": 0
-          },
-          {
-            "line": 388,
+            "line": 389,
             "complexity": 0
           },
           {
             "line": 390,
-            "complexity": 2
+            "complexity": 0
           },
           {
             "line": 392,
-            "complexity": 0
-          },
-          {
-            "line": 393,
-            "complexity": 0
+            "complexity": 2
           },
           {
             "line": 394,
-            "complexity": 3
+            "complexity": 0
           },
           {
             "line": 395,
@@ -1201,34 +1193,42 @@
           },
           {
             "line": 396,
-            "complexity": 1
-          },
-          {
-            "line": 399,
-            "complexity": 1
-          },
-          {
-            "line": 404,
             "complexity": 3
           },
           {
-            "line": 405,
+            "line": 397,
             "complexity": 0
+          },
+          {
+            "line": 398,
+            "complexity": 1
+          },
+          {
+            "line": 401,
+            "complexity": 1
+          },
+          {
+            "line": 406,
+            "complexity": 3
           },
           {
             "line": 407,
-            "complexity": 3
-          },
-          {
-            "line": 409,
             "complexity": 0
           },
           {
-            "line": 410,
+            "line": 409,
+            "complexity": 3
+          },
+          {
+            "line": 411,
+            "complexity": 0
+          },
+          {
+            "line": 412,
             "complexity": 4
           },
           {
-            "line": 413,
+            "line": 415,
             "complexity": 1
           }
         ]
@@ -1244,7 +1244,7 @@
         "name": "register_scheduler_commands",
         "complexity": 23,
         "line_start": 21,
-        "line_end": 132,
+        "line_end": 133,
         "line_complexities": [
           {
             "line": 33,
@@ -1347,11 +1347,11 @@
             "complexity": 2
           },
           {
-            "line": 125,
+            "line": 126,
             "complexity": 2
           },
           {
-            "line": 131,
+            "line": 132,
             "complexity": 1
           }
         ]
@@ -3187,132 +3187,5 @@
       }
     ],
     "complexity": 33
-  },
-  {
-    "path": "src/immich_memories/tracking/run_database.py",
-    "file_name": "run_database.py",
-    "functions": [
-      {
-        "name": "RunDatabase::update_run_status",
-        "complexity": 18,
-        "line_start": 227,
-        "line_end": 288,
-        "line_complexities": [
-          {
-            "line": 242,
-            "complexity": 0
-          },
-          {
-            "line": 243,
-            "complexity": 0
-          },
-          {
-            "line": 244,
-            "complexity": 0
-          },
-          {
-            "line": 246,
-            "complexity": 2
-          },
-          {
-            "line": 250,
-            "complexity": 2
-          },
-          {
-            "line": 254,
-            "complexity": 2
-          },
-          {
-            "line": 258,
-            "complexity": 2
-          },
-          {
-            "line": 262,
-            "complexity": 2
-          },
-          {
-            "line": 266,
-            "complexity": 2
-          },
-          {
-            "line": 270,
-            "complexity": 2
-          },
-          {
-            "line": 274,
-            "complexity": 2
-          },
-          {
-            "line": 278,
-            "complexity": 2
-          }
-        ]
-      },
-      {
-        "name": "RunDatabase::update_operational_phase",
-        "complexity": 21,
-        "line_start": 134,
-        "line_end": 170,
-        "line_complexities": [
-          {
-            "line": 136,
-            "complexity": 0
-          },
-          {
-            "line": 137,
-            "complexity": 0
-          },
-          {
-            "line": 141,
-            "complexity": 2
-          },
-          {
-            "line": 142,
-            "complexity": 0
-          },
-          {
-            "line": 143,
-            "complexity": 2
-          },
-          {
-            "line": 144,
-            "complexity": 3
-          },
-          {
-            "line": 145,
-            "complexity": 0
-          },
-          {
-            "line": 151,
-            "complexity": 0
-          },
-          {
-            "line": 152,
-            "complexity": 2
-          },
-          {
-            "line": 153,
-            "complexity": 0
-          },
-          {
-            "line": 156,
-            "complexity": 3
-          },
-          {
-            "line": 157,
-            "complexity": 4
-          },
-          {
-            "line": 162,
-            "complexity": 5
-          },
-          {
-            "line": 170,
-            "complexity": 0
-          }
-        ]
-      }
-    ],
-    "complexity": 100
   }
 ]

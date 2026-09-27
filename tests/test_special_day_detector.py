@@ -17,7 +17,7 @@ from immich_memories.automation.candidates import (
     MemoryCandidate,
     make_memory_key,
 )
-from immich_memories.automation.catalogue import entries_from
+from immich_memories.automation.catalogue import entries_from, load_catalogue
 from immich_memories.automation.generation_request import GenerationRequest
 from immich_memories.automation.special_day_detector import SpecialDayDetector
 from immich_memories.automation.special_day_scan import DiscoveredDay
@@ -241,12 +241,9 @@ class TestNoCatalogue:
     def test_an_empty_catalogue_yields_nothing(self):
         assert _detect([], date(2026, 6, 12)) == []
 
-    def test_an_unreadable_file_reads_as_an_empty_catalogue(self, tmp_path):
-        unreadable = tmp_path / "special-days.json"
-        unreadable.write_text("{ this was half-written when the scan was killed")
-
-        assert entries_from(unreadable) == []
-        assert _detect(entries_from(unreadable), date(2026, 6, 12)) == []
+    def test_a_store_with_no_catalogue_yields_nothing(self):
+        assert entries_from(load_catalogue()) == []
+        assert _detect(entries_from(load_catalogue()), date(2026, 6, 12)) == []
 
     def test_discovery_still_runs_the_other_detectors(self):
         """A missing catalogue costs the emergent day and nothing else."""

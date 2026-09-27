@@ -88,15 +88,6 @@ class SystemInfo:
             gpu_kernels_available=data.get("gpu_kernels_available", False),
         )
 
-    def to_json(self) -> str:
-        """Convert to JSON string."""
-        return json.dumps(self.to_dict())
-
-    @classmethod
-    def from_json(cls, json_str: str) -> SystemInfo:
-        """Create from JSON string."""
-        return cls.from_dict(json.loads(json_str))
-
 
 @dataclass
 class PhaseStats:
@@ -300,8 +291,3 @@ class RunMetadata:
     def to_json(self) -> str:
         """Convert to JSON string (for run_metadata.json file)."""
         return json.dumps(self.to_dict(), indent=2)
-
-    @classmethod
-    def from_json(cls, json_str: str) -> RunMetadata:
-        """Create from JSON string."""
-        return cls.from_dict(json.loads(json_str))

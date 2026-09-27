@@ -292,7 +292,8 @@ favourites, it is mostly video, or it ran long (20 pictures over 6 hours or more
 in it. Each year keeps its strongest `automation.special_days_per_year` (6), away days first. The
 title comes from the day's own place.
 
-The catalogue is `~/.immich-memories/special-days.json`. A film covers the day's **run**, the stretch
+The catalogue lives in the [store](../run/database.md); `days-export` writes it to a JSON file you can
+edit and `days-import` reads it back. A film covers the day's **run**, the stretch
 of pictures the occasion left, split at five hours of silence rather than at midnight, so a long
 night out is not cut at 00:00. It never reaches past its own first and last picture, and a run longer
 than 48 hours is not one occasion. `window_origin` in the run record says what bounded the film.

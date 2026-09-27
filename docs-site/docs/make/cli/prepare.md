@@ -122,8 +122,8 @@ sees. Setting it up is on [Teach it your family](../../get-started/who-is-who.md
 
 ## `discover-days`
 
-Finds the days something happened on and writes them to `~/.immich-memories/special-days.json`, so a film can
-arrive years later without you asking ("five years ago today"). Run it once, then now and then. Films from it
+Finds the days something happened on and keeps them in the special-days catalogue in the
+[store](../../run/database.md), so a film can arrive years later without you asking ("five years ago today"). Run it once, then now and then. Films from it
 are the **Surprise me** type on [Memory types](../memory-types.mdx#special-day-surprise-me).
 
 ```bash
@@ -158,6 +158,18 @@ ever adds to the catalogue.
 immich-memories days-due              # anniversaries within three days, roundest first
 immich-memories days-due --on 2026-12-24
 ```
+
+The catalogue is yours to edit: a day the scan missed, a title it got wrong, two occasions to merge.
+`days-export` writes it as JSON, `days-import` puts an edited file back whole. Every record keeps
+exactly what you wrote; a file that is not a list of records changes nothing.
+
+```bash
+immich-memories days-export --to days.json
+immich-memories days-import --from days.json
+```
+
+An install upgraded from before the store keeps its `~/.immich-memories/special-days.json`: the
+upgrade copies it into the store once and never touches the file again.
 
 ## Small questions
 

@@ -7,7 +7,6 @@ as a success.
 
 from __future__ import annotations
 
-import json
 from datetime import UTC, date, datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -17,7 +16,7 @@ import pytest
 
 from immich_memories.analysis.special_day import SpecialDay
 from immich_memories.api.models import AssetType
-from immich_memories.automation.catalogue import entries_from, load_catalogue
+from immich_memories.automation.catalogue import entries_from, load_catalogue, save_catalogue
 from immich_memories.automation.special_day_scan import (
     DiscoveredDay,
     anniversaries_due,
@@ -282,7 +281,7 @@ def test_a_run_that_crossed_midnight_is_measured_as_the_one_night_it_was(monkeyp
     assert found[0].run_end == datetime(2021, 4, 14, 2, 45, tzinfo=UTC)
 
 
-def _days_due(catalogue: Path, on: str) -> str:
+def _days_due(on: str) -> str:
     from click.testing import CliRunner
 
     from immich_memories.cli import main
@@ -295,7 +294,7 @@ def _days_due(catalogue: Path, on: str) -> str:
     ):
         result = CliRunner().invoke(
             main,
-            ["days-due", "--on", on, "--catalogue", str(catalogue)],
+            ["days-due", "--on", on],
             catch_exceptions=False,
         )
     return result.output
@@ -303,24 +302,21 @@ def _days_due(catalogue: Path, on: str) -> str:
 
 def test_the_hours_survive_the_trip_through_the_catalogue(tmp_path) -> None:
     """A number the scan measured and only the scan can see is not a catalogue."""
-    catalogue = tmp_path / "special-days.json"
-    catalogue.write_text(
-        json.dumps(
-            [
-                {
-                    "day": "2015-06-12",
-                    "title": "A long evening out",
-                    "subtitle": "",
-                    "what": "out",
-                    "photos": 133,
-                    "window": None,
-                    "active_hours": 6,
-                }
-            ]
-        )
+    save_catalogue(
+        [
+            {
+                "day": "2015-06-12",
+                "title": "A long evening out",
+                "subtitle": "",
+                "what": "out",
+                "photos": 133,
+                "window": None,
+                "active_hours": 6,
+            }
+        ]
     )
 
-    assert "6h" in _days_due(catalogue, "2025-06-12")
+    assert "6h" in _days_due("2025-06-12")
 
 
 def test_the_night_a_run_ended_survives_the_trip_through_the_catalogue(tmp_path) -> None:
@@ -329,23 +325,20 @@ def test_the_night_a_run_ended_survives_the_trip_through_the_catalogue(tmp_path)
     Written and never read back is the same as never having measured it, and
     what will scope a memory to this night is the pair, timezone included.
     """
-    catalogue = tmp_path / "special-days.json"
-    catalogue.write_text(
-        json.dumps(
-            [
-                {
-                    "day": "2015-06-12",
-                    "title": "A long evening out",
-                    "photos": 133,
-                    "active_hours": 6,
-                    "run_start": "2015-06-12T21:00:00+00:00",
-                    "run_end": "2015-06-13T02:45:00+00:00",
-                }
-            ]
-        )
+    save_catalogue(
+        [
+            {
+                "day": "2015-06-12",
+                "title": "A long evening out",
+                "photos": 133,
+                "active_hours": 6,
+                "run_start": "2015-06-12T21:00:00+00:00",
+                "run_end": "2015-06-13T02:45:00+00:00",
+            }
+        ]
     )
 
-    entry = entries_from(catalogue)[0]
+    entry = entries_from(load_catalogue())[0]
 
     assert (entry.run_start, entry.run_end) == (
         datetime(2015, 6, 12, 21, 0, tzinfo=UTC),
@@ -360,15 +353,12 @@ def test_a_catalogue_written_before_the_hours_existed_still_loads(tmp_path) -> N
     has to go on printing those days rather than reporting an empty
     catalogue.
     """
-    catalogue = tmp_path / "special-days.json"
-    catalogue.write_text(
-        json.dumps([{"day": "2015-06-12", "title": "A long evening out", "photos": 133}])
-    )
+    save_catalogue([{"day": "2015-06-12", "title": "A long evening out", "photos": 133}])
 
-    entry = entries_from(catalogue)[0]
+    entry = entries_from(load_catalogue())[0]
 
     assert (entry.active_hours, entry.run_start, entry.run_end) == (0, None, None)
-    printed = _days_due(catalogue, "2025-06-12")
+    printed = _days_due("2025-06-12")
     assert "A long evening out" in printed
     assert "0h" not in printed, "a day nobody measured must not claim it lasted no time"
 
@@ -481,30 +471,33 @@ def test_a_scan_that_found_nothing_leaves_a_good_catalogue_alone(tmp_path) -> No
     Immich unreachable plus twelve swallowed errors put [] over twenty years
     of scanning, and reported success doing it.
     """
-    catalogue = tmp_path / "special-days.json"
-    catalogue.write_text(json.dumps([{"day": "2014-12-31", "title": "A day"}]))
+    save_catalogue([{"day": "2014-12-31", "title": "A day"}])
 
-    _write_catalogue(catalogue, [], rescan=False)
+    _write_catalogue([], rescan=False)
 
-    assert json.loads(catalogue.read_text()) == [{"day": "2014-12-31", "title": "A day"}]
+    assert load_catalogue() == [{"day": "2014-12-31", "title": "A day"}]
 
 
 def test_an_explicit_rescan_may_empty_the_catalogue(tmp_path) -> None:
     """Refusing to write is a guard against accidents, not a lock."""
-    catalogue = tmp_path / "special-days.json"
-    catalogue.write_text(json.dumps([{"day": "2014-12-31", "title": "A day"}]))
+    save_catalogue([{"day": "2014-12-31", "title": "A day"}])
 
-    _write_catalogue(catalogue, [], rescan=True)
+    _write_catalogue([], rescan=True)
 
-    assert json.loads(catalogue.read_text()) == []
+    assert load_catalogue() == []
 
 
 def test_a_catalogue_nobody_can_read_is_not_a_catalogue(tmp_path) -> None:
-    """Half a file from an interrupted write must not stop the next run."""
-    catalogue = tmp_path / "special-days.json"
-    catalogue.write_text('[{"day": "2014-12-31"')
+    """Half a file from an interrupted write must not stop the upgrade into the store."""
+    from immich_memories.db import open_store
+    from immich_memories.operations.store_import import import_legacy
 
-    assert load_catalogue(catalogue) == []
+    (tmp_path / "special-days.json").write_text('[{"day": "2014-12-31"')
+
+    outcome = import_legacy(open_store(), tmp_path)
+
+    assert load_catalogue() == []
+    assert any("special-days.json not readable" in note for note in outcome.notes)
 
 
 def test_media_the_camera_never_shot_is_gone_before_the_day_is_counted(monkeypatch) -> None:
@@ -581,7 +574,6 @@ def test_a_year_is_done_only_when_it_was_scanned_through(tmp_path) -> None:
 def test_the_catalogue_never_defaults_into_the_working_directory():
     """Real event titles are private data; a CWD default plants them wherever
     the command happens to run — including an untracked file in a checkout."""
-    from pathlib import Path
 
     import click
 

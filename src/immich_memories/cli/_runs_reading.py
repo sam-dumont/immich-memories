@@ -17,6 +17,7 @@ import click
 from immich_memories.analysis.editorial_review_list import review_note
 from immich_memories.analysis.selection_trace import ClipStory
 from immich_memories.cli._helpers import console, print_error
+from immich_memories.db import open_store
 from immich_memories.operations.candidate_fates import read_trace
 from immich_memories.operations.caption_origins import caption_origin_note
 from immich_memories.operations.editorial_attempt import window_origin_note
@@ -33,7 +34,7 @@ class RunNotFound(LookupError):
     """The run id names nothing this cache can read."""
 
 
-def resolve_attempt(cache_dir: Path, db, run_id: str | None) -> tuple[str, Path]:
+def resolve_attempt(db, run_id: str | None) -> tuple[str, Path]:
     """The run id and attempt directory to read, from an id, a prefix, a path, or the latest run.
 
     `db` is the run database (`RunDatabase`); it is only asked when the argument
@@ -42,7 +43,7 @@ def resolve_attempt(cache_dir: Path, db, run_id: str | None) -> tuple[str, Path]
     if run_id and Path(run_id).is_dir():
         return Path(run_id).name, Path(run_id)
     resolved = _resolve_run_id(db, run_id)
-    attempt = attempt_dir_for_run(cache_dir, resolved)
+    attempt = attempt_dir_for_run(resolved, store=db.store)
     if attempt is None:
         raise RunNotFound(
             f"Run {resolved} left no cut to read: it was made before this version, "
@@ -147,9 +148,9 @@ def register_reading_commands(runs: click.Group) -> None:
         from immich_memories.tracking import RunDatabase
 
         config = get_config()
-        db = RunDatabase(db_path=config.cache.database_path)
+        db = RunDatabase(open_store(config))
         try:
-            resolved, attempt = resolve_attempt(config.cache.cache_path, db, run_id)
+            resolved, attempt = resolve_attempt(db, run_id)
         except RunNotFound as exc:
             print_error(str(exc))
             sys.exit(1)
@@ -165,9 +166,9 @@ def register_reading_commands(runs: click.Group) -> None:
         from immich_memories.tracking import RunDatabase
 
         config = get_config()
-        db = RunDatabase(db_path=config.cache.database_path)
+        db = RunDatabase(open_store(config))
         try:
-            resolved, attempt = resolve_attempt(config.cache.cache_path, db, run_id)
+            resolved, attempt = resolve_attempt(db, run_id)
         except RunNotFound as exc:
             print_error(str(exc))
             sys.exit(1)

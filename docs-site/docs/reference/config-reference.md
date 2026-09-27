@@ -766,8 +766,8 @@ The other two budgets are not library-sized: `preview_cache_max_size_mb` holds t
 
 ## Store database
 
-Where the store lives: owner decisions, the people registry, model answers, run history and the
-settings you edit in the UI, as they move out of loose files ([#871](https://github.com/sam-dumont/immich-video-memory-generator/issues/871)).
+Where the store lives: owner decisions, the people registry, model answers, run history, automation
+state, the special-days catalogue and the settings you edit in the UI, as they move out of loose files ([#871](https://github.com/sam-dumont/immich-video-memory-generator/issues/871)).
 The cache stays in `cache.database`.
 
 ```yaml

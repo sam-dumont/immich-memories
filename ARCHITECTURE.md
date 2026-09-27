@@ -646,7 +646,7 @@ src/immich_memories/
 │   ├── prepare_cmd.py          # `prepare`
 │   ├── scheduler_cmd.py        # `scheduler list/status/start`
 │   ├── auto_cmd.py             # `auto suggest/run/history/status/install/test-notification`
-│   ├── special_days_cmd.py     # `discover-days` and `days-due`: the days worth a memory of their own
+│   ├── special_days_cmd.py     # `discover-days`, `days-due`, `days-export`/`days-import`: the days worth a memory
 │   ├── cache_cmd.py            # `cache stats/export/import/backup`
 │   ├── titles.py               # `titles test`, `titles fonts`
 │   ├── runs.py                 # `runs list/show/story/why/stats/storage/delete`
@@ -716,8 +716,9 @@ src/immich_memories/
 │       └── settings_people.py      # The companion editor: confirm who's who, flag twins
 │
 ├── tracking/                   # Run history & telemetry
-│   ├── run_database.py         # SQLite run storage
-│   ├── run_database_rows.py    # SQLite row <-> model conversion
+│   ├── run_database.py         # RunDatabase: run history in the store (pipeline_runs, phase_stats)
+│   ├── run_database_rows.py    # Store row <-> RunMetadata/PhaseStats conversion
+│   ├── phase_rows.py           # advance_phase(): forward-only phase log on a run or attempt row
 │   ├── run_lifecycle_errors.py # Refused lifecycle transitions and their diagnosis
 │   ├── run_tracker.py          # Pipeline run tracking
 │   ├── run_id.py               # Run ID generation
@@ -735,7 +736,10 @@ src/immich_memories/
 │   │                           # fcntl + BEGIN IMMEDIATE; pending_changes, migration_schema
 │   ├── migrations/             # env.py, script.py.mako, versions/ (shipped in the wheel; alembic.ini is dev only)
 │   ├── metadata.py             # The shared MetaData(schema="immich_memories") and naming convention
-│   ├── tables/                 # One module per domain's Table objects (store_meta so far)
+│   ├── tables/                 # One module per domain's Table objects: store_meta; operations.py
+│   │                           # (pipeline_runs, phase_stats, automation_attempts, notification_health,
+│   │                           # asset_scores, run_attempts, special_days; revision 0005_operations)
+│   ├── legacy_import.py        # ImportOutcome: what one domain's import_legacy(store, home) did
 │   ├── sqlite_files.py         # connect_sqlite: the one raw sqlite3 factory (WAL, busy_timeout 30 s,
 │   │                           # synchronous NORMAL, foreign keys), private_database_path (0600)
 │   ├── network_guard.py        # Refuses a SQLite file on NFS/SMB/CIFS unless IMMICH_MEMORIES_ALLOW_NETWORK_SQLITE=1
@@ -749,7 +753,7 @@ src/immich_memories/
 │   ├── versions.py             # SCHEMA_VERSION / ANALYSIS_VERSION (independent)
 │   ├── migration_sql.py        # Transactional migration helpers
 │   ├── migration_v11.py … v23.py # One module per schema migration (no v18, no v20)
-│   ├── asset_score_cache.py    # The legacy photo scorer's table, still read by `cache stats/export/import`
+│   ├── asset_score_cache.py    # Banked asset scores in the store, read by `cache stats/export/import`
 │   ├── judgment_cache.py       # Reasoning-mode LLM verdicts, keyed by the exact prompt asked
 │   ├── thumbnail_cache.py      # File-based thumbnail storage
 │   ├── disk_budget.py          # LRU-by-mtime eviction that holds a cache directory to a size cap
@@ -797,10 +801,11 @@ src/immich_memories/
 │   ├── failure_backoff.py      # Keep a candidate that keeps failing out of the nightly slot
 │   ├── models.py               # Typed values returned/persisted by automation
 │   ├── generation_request.py   # Typed boundary from candidates to the `generate` CLI
-│   ├── state_store.py          # SQLite persistence for automation attempts
+│   ├── state_store.py          # Automation attempts in the store; failure streaks for backoff
 │   ├── status.py               # Cooldown gate + read-only AutomationStatus contract
 │   ├── delivery_retry.py       # Durable state for one pending delivery retry
-│   ├── notification_state.py   # Durable, sanitized notification delivery health
+│   ├── notification_state.py   # Durable, sanitized notification delivery health (store row id 1)
+│   ├── catalogue.py            # The special-days catalogue in the store: load/save, entries, scope
 │   ├── trip_input_cache.py     # Durable, identity-checked inputs for auto trip discovery
 │   ├── notifications.py        # Apprise notification integration
 │   ├── runner.py               # Auto-run orchestrator (lease, subprocess, attempt record)
@@ -812,7 +817,9 @@ src/immich_memories/
 │   ├── auto_output.py           # Private complete child transcripts, addressed by automation attempt
 │   ├── call_families.py        # family_of()/calls_by_family(): model calls grouped by stage family
 │   ├── cut_progress.py         # Where a run is, as one record the page and the terminal both read
-│   ├── run_index.py            # A run id resolved to its attempt directory, for both surfaces
+│   ├── run_index.py            # A run id resolved to its attempt directory (store table run_attempts)
+│   ├── store_import.py         # import_legacy(): cache.db run/automation/score tables, the by-run
+│   │                           # index and special-days.json into the store, read-only, idempotent
 │   ├── candidate_fates.py       # Saved pool outcomes + decision-log reader shared with runs why
 │   ├── picture_holds.py         # What holds a picture + the owner's decision, for the pool, storyboard and CLI
 │   ├── caption_origins.py      # One picture's caption origin, and the run's distinct-origin line

@@ -22,6 +22,7 @@ import pytest
 import yaml
 from playwright.sync_api import Page
 
+from immich_memories.db import Store, StoreLocation, open_store
 from tests.e2e.fake_immich import FakeImmichServer
 
 _BASE_PORT = 8099
@@ -43,9 +44,14 @@ def pytest_configure(config: pytest.Config) -> None:
 class LaunchWorkspace:
     """All disposable state owned by the required launch smoke."""
 
+    def store(self) -> Store:
+        """The store the launched server records runs in, opened from the test process."""
+        return open_store(location=StoreLocation(url=self.store_url))
+
     root: Path
     config_path: Path
     database_path: Path
+    store_url: str
     cache_dir: Path
     output_dir: Path
     log_path: Path
@@ -62,6 +68,7 @@ def launch_workspace(
 
 def _launch_workspace(root: Path, fake_immich_server: FakeImmichServer) -> LaunchWorkspace:
     database_path = root / "cache" / "launch.db"
+    store_url = f"sqlite:///{root / 'store.db'}"
     cache_dir = root / "cache"
     output_dir = root / "output"
     config_path = root / "config.yaml"
@@ -91,6 +98,7 @@ def _launch_workspace(root: Path, fake_immich_server: FakeImmichServer) -> Launc
                     "video_cache_max_size_gb": 1,
                     "video_cache_max_age_days": 1,
                 },
+                "database": {"url": store_url},
                 "upload": {"enabled": False},
                 "photos": {"enabled": True},
                 # The fixture home is a public landmark; the week by the lake
@@ -113,6 +121,7 @@ def _launch_workspace(root: Path, fake_immich_server: FakeImmichServer) -> Launc
         root=root,
         config_path=config_path,
         database_path=database_path,
+        store_url=store_url,
         cache_dir=cache_dir,
         output_dir=output_dir,
         log_path=log_path,

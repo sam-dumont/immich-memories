@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Literal
 
+from immich_memories.db import open_store
 from immich_memories.tracking import RunDatabase
 from immich_memories.ui.pages._step4_generate import _restore_completed_ui_state
 
@@ -40,7 +41,7 @@ def recover_active_run(state, db: RunDatabase | None = None) -> RecoveredRun | N
     run_id = state.active_run_id
     if not run_id:
         return None
-    database = db or RunDatabase(state.config.cache.database_path)
+    database = db or RunDatabase(open_store(state.config))
     run = database.get_run(run_id)
     if run is None:
         return RecoveredRun("running", None)

@@ -524,9 +524,10 @@ dead-code:
 	# --ignore-names model_config: pydantic reads the ConfigDict class attribute
 	# off the model; nothing in src/ is meant to name it. down_revision,
 	# branch_labels, depends_on: Alembic reads them off every revision module it
-	# loads by path from db/migrations/versions/.
+	# loads by path from db/migrations/versions/. import_legacy: each #871 slice
+	# ships one per domain, for the later `store import` slice to call.
 	uvx vulture src/ $(SERVICE_TREES) vulture-whitelist.py --min-confidence 60 \
-		--ignore-names "model_config,down_revision,branch_labels,depends_on" \
+		--ignore-names "model_config,down_revision,branch_labels,depends_on,import_legacy" \
 		--ignore-decorators "@register_preset,@*.command,@*.group,@ui.page,@LocalizedPage,@app.middleware,@app.get,@app.post,@field_validator,@model_validator,@field_serializer"
 
 # Security lint (Bandit)

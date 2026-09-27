@@ -150,8 +150,9 @@ class InProcessScheduler:
 
 def _last_attempt_local_date(config: Config, now: datetime) -> date | None:
     from immich_memories.automation.state_store import AutomationStateStore
+    from immich_memories.db import open_store
 
-    last = AutomationStateStore(config.cache.database_path).get_last_attempt()
+    last = AutomationStateStore(open_store(config)).get_last_attempt()
     if last is None:
         return None
     return last.started_at.astimezone(now.tzinfo).date()

@@ -8,13 +8,14 @@ from typing import Any, Protocol
 
 from immich_memories.automation.candidate_scorer import score_and_rank
 from immich_memories.automation.candidates import MemoryCandidate
-from immich_memories.automation.catalogue import default_catalogue_path, entries_from
+from immich_memories.automation.catalogue import entries_from, load_catalogue
 from immich_memories.automation.failure_backoff import drop_backed_off
 from immich_memories.automation.state_store import FailureStreak
 from immich_memories.automation.trip_input_cache import load_or_fetch_trip_assets
 from immich_memories.automation.variety import VarietyDecision, apply_variety_rules
 from immich_memories.config_loader import Config
 from immich_memories.config_models_automation import AutomationConfig
+from immich_memories.db import open_store
 from immich_memories.timeperiod import DateRange, same_day_in_year
 from immich_memories.tracking.models import RunMetadata
 
@@ -275,8 +276,8 @@ class CandidateDiscovery:
             snapshot.person_asset_counts,
             snapshot.gps_assets,
             # Read here rather than in _LibrarySnapshot: that exists to bundle
-            # the live Immich reads into one session, and this is a local file.
-            entries_from(default_catalogue_path()),
+            # the live Immich reads into one session, and this is the store.
+            entries_from(load_catalogue(open_store(self._config))),
         )
 
         all_candidates, backoff_skips = drop_backed_off(

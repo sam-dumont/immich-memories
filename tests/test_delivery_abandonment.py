@@ -20,7 +20,7 @@ from immich_memories.tracking.run_database import RunDatabase
 
 @pytest.fixture
 def db(tmp_path: Path) -> RunDatabase:
-    return RunDatabase(tmp_path / "runs.db")
+    return RunDatabase()
 
 
 def _completed_run(db: RunDatabase, tmp_path: Path, run_id: str) -> None:

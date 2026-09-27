@@ -127,7 +127,7 @@ def cut(tmp_path: Path) -> tuple[Config, Path]:
     config = Config()
     config.cache.directory = str(cache)
     config.cache.database = str(cache / "runs.db")
-    db = RunDatabase(db_path=config.cache.database_path)
+    db = RunDatabase()
     db.save_run(
         RunMetadata(
             run_id=RUN_ID,
@@ -137,7 +137,7 @@ def cut(tmp_path: Path) -> tuple[Config, Path]:
             output_path=str(tmp_path / "june.mp4"),
         )
     )
-    record_run_attempt(config.cache.cache_path, RUN_ID, attempt, tmp_path / "june.mp4")
+    record_run_attempt(RUN_ID, attempt, tmp_path / "june.mp4")
     return config, attempt
 
 
@@ -154,14 +154,14 @@ def _invoke(config: Config, args: list[str]):
 class TestRunIndex:
     def test_a_finished_run_is_found_from_its_id_and_the_attempt_knows_its_run(self, cut):
         config, attempt = cut
-        assert attempt_dir_for_run(config.cache.cache_path, RUN_ID) == attempt
+        assert attempt_dir_for_run(RUN_ID) == attempt
         assert run_id_for_attempt(attempt) == RUN_ID
 
     def test_an_unknown_run_or_a_run_without_an_attempt_resolves_to_nothing(self, cut, tmp_path):
         config, _ = cut
-        assert attempt_dir_for_run(config.cache.cache_path, "nope") is None
-        record_run_attempt(config.cache.cache_path, "gone", None, tmp_path / "x.mp4")
-        assert attempt_dir_for_run(config.cache.cache_path, "gone") is None
+        assert attempt_dir_for_run("nope") is None
+        record_run_attempt("gone", None, tmp_path / "x.mp4")
+        assert attempt_dir_for_run("gone") is None
 
 
 class TestRunsStory:

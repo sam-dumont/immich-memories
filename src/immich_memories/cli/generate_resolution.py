@@ -50,8 +50,8 @@ def resolve_special_day(
     """
     from immich_memories.automation.catalogue import (
         SCOPE_UNCATALOGUED,
-        default_catalogue_path,
         entries_from,
+        load_catalogue,
     )
 
     if event_id is not None and (day is None or memory_type != "special_day"):
@@ -67,7 +67,7 @@ def resolve_special_day(
     if memory_type != "special_day":
         raise click.UsageError("--day requires --memory-type special_day or on_this_day")
 
-    catalogue = entries_from(default_catalogue_path())
+    catalogue = entries_from(load_catalogue())
     entry = _catalogued_event(catalogue, day, event_id)
     if entry is None:
         return {

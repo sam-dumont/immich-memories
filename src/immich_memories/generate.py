@@ -393,6 +393,7 @@ def _generate_memory_inner(
     from immich_memories.processing.editorial_timing import prepare_certified_timeline
 
     prepare_certified_timeline(params)
+    from immich_memories.db import open_store
     from immich_memories.security import sanitize_filename
     from immich_memories.tracking import RunTracker, generate_run_id
 
@@ -404,7 +405,7 @@ def _generate_memory_inner(
     set_current_run_id(run_id)
 
     if run_tracker is None:
-        run_tracker = RunTracker(run_id, db_path=params.config.cache.database_path)
+        run_tracker = RunTracker(run_id, store=open_store(params.config))
 
     # Create output directory structure
     dir_slug = params.output_path.stem
@@ -492,7 +493,7 @@ def _generate_memory_inner(
             clips_selected=len(assembly_clips),
         )
         record_run_attempt(
-            params.config.cache.cache_path, run_id, params.editorial_attempt_dir, result_path
+            run_id, params.editorial_attempt_dir, result_path, store=run_tracker.db.store
         )
 
         # Phase 4: Upload (if requested)

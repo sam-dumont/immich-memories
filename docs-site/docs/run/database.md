@@ -112,6 +112,21 @@ restore Immich from a backup taken before a memory run, that run's decisions and
 back with it. `pg_dump -n immich_memories` backs up only this schema, independent of Immich's own
 backup schedule, if you want the two to have separate retention.
 
+## Run history and automation
+
+Every run (its phases, delivery state and what it spent on the model), every nightly automation
+attempt, the notification cooldown, the special-days catalogue, and the link from a run id to the
+attempt directory it was cut from are store rows. That is what automation's cooldown and "already
+made this memory" checks read, so wiping `cache.db` no longer re-films a memory you already have.
+The attempt directories themselves, and the `run_metadata.json` beside each film, stay files.
+
+Two things still coordinate through lock files beside `cache.db` rather than through the store: a
+render takes `.lock`, and a nightly automation pass takes `.auto.lock`, so the scheduler inside the
+web UI and a CLI run on the same host never start the same work twice. That holds on PostgreSQL
+too. It does not stretch across hosts: two machines running automation against one PostgreSQL store
+is not supported, which is also why the Kubernetes CronJobs trigger the running pod instead of
+running their own.
+
 ## Backups
 
 `store backup` works the same way on either backend: `VACUUM INTO` for SQLite, `pg_dump -n

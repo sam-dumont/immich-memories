@@ -39,6 +39,7 @@ from immich_memories.automation.status import (
 )
 from immich_memories.automation.variety import VarietyDecision
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.operations.auto_output import NOTHING_WORTH_A_FILM, retain_output
 from immich_memories.operations.bounded_process import run_bounded_process
 from immich_memories.security import configured_secret_values, sanitize_error_message
@@ -201,9 +202,9 @@ class AutoRunner:
         config_path: Path | None = None,
     ):
         self.config = config
-        self.db = RunDatabase(db_path=config.cache.database_path)
-        self.state = AutomationStateStore(config.cache.database_path)
-        self.notification_state = NotificationStateStore(config.cache.database_path)
+        self.db = RunDatabase(open_store(config))
+        self.state = AutomationStateStore(open_store(config))
+        self.notification_state = NotificationStateStore(open_store(config))
         self.execute = execute or _execute_generate
         self.config_path = config_path
         self.last_variety_decision = VarietyDecision(eligible=[], rejected=[])

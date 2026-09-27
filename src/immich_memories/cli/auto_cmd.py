@@ -13,6 +13,7 @@ from rich.table import Table
 from immich_memories.automation.models import AutoOutcome, AutoRunResult
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 
 logger = logging.getLogger(__name__)
 
@@ -273,7 +274,7 @@ def history(ctx: click.Context, limit: int) -> None:
     from immich_memories.tracking.run_database import RunDatabase
 
     config: Config = ctx.obj["config"]
-    db = RunDatabase(db_path=config.cache.database_path)
+    db = RunDatabase(open_store(config))
     auto_runs = db.list_runs(limit=limit, status="completed", source="auto")
 
     if not auto_runs:
@@ -433,7 +434,10 @@ def install(
 @click.pass_context
 def test_notification(ctx: click.Context) -> None:
     """Send a test notification to verify Apprise URL configuration."""
-    from immich_memories.automation.notifications import send_test_notification
+    from immich_memories.automation.notifications import (
+        notification_store,
+        send_test_notification,
+    )
 
     config: Config = ctx.obj["config"]
     notif = config.notifications
@@ -447,7 +451,7 @@ def test_notification(ctx: click.Context) -> None:
 
     if send_test_notification(
         notif.urls,
-        db_path=config.cache.database_path,
+        store=notification_store(config),
         attach_thumbnail=notif.attach_thumbnail,
         cooldown_hours=notif.cooldown_hours,
     ):
@@ -473,7 +477,7 @@ def _print_last_run_model_spend(config: Config, last_run: dict | None) -> None:
     from immich_memories.cli._run_summary import render_llm_totals
     from immich_memories.tracking import RunDatabase
 
-    run = RunDatabase(config.cache.database_path).get_run(last_run["run_id"])
+    run = RunDatabase(open_store(config)).get_run(last_run["run_id"])
     line = render_llm_totals(getattr(run, "llm_metrics", None) or {}) if run else ""
     if line:
         print_info(line.replace("\n", " — ").strip())

@@ -77,7 +77,7 @@ def test_storage_report_classifies_exact_output_joins_without_mutation(tmp_path:
     _write(cache_root / "video-cache", "asset.mp4", 29)
     _write(cache_root / "thumbnails", "asset.jpg", 31)
 
-    db = RunDatabase(config.cache.database_path)
+    db = RunDatabase()
     _save_run(db, "completed", completed, "completed")
     _save_run(db, "failed", failed, "failed")
     _save_run(db, "running", running, "running")
@@ -107,7 +107,7 @@ def test_storage_report_classifies_exact_output_joins_without_mutation(tmp_path:
 
 def test_storage_report_does_not_create_missing_configured_roots(tmp_path: Path) -> None:
     config = _config(tmp_path)
-    db = RunDatabase(config.cache.database_path)
+    db = RunDatabase()
 
     report = build_storage_report(config, db)
 
@@ -132,7 +132,7 @@ def test_storage_report_rejects_symlinked_configured_roots(tmp_path: Path) -> No
         cache={"directory": str(cache_link), "database": str(tmp_path / "state.db")},
     )
 
-    report = build_storage_report(config, RunDatabase(config.cache.database_path))
+    report = build_storage_report(config, RunDatabase())
 
     assert report.directories == ()
     assert report.total_files == 0
@@ -142,7 +142,7 @@ def test_storage_report_rejects_symlinked_configured_roots(tmp_path: Path) -> No
 def test_runs_storage_json_is_one_read_only_document(tmp_path: Path) -> None:
     config = _config(tmp_path)
     _write(config.output.output_path / "orphan", "junk.bin", 7)
-    RunDatabase(config.cache.database_path)
+    RunDatabase()
 
     with (
         patch("immich_memories.cli.init_config_dir"),
@@ -174,15 +174,12 @@ def test_runs_storage_does_not_create_a_missing_database(tmp_path: Path) -> None
     assert not config.cache.database_path.exists()
 
 
-def test_runs_storage_does_not_change_existing_database_bytes_or_mtime(tmp_path: Path) -> None:
+def test_runs_storage_does_not_change_the_run_history(tmp_path: Path) -> None:
     config = _config(tmp_path)
-    db = RunDatabase(config.cache.database_path)
+    db = RunDatabase()
     _write(config.output.output_path / "known", "memory.mp4", 5)
     _save_run(db, "known", config.output.output_path / "known" / "memory.mp4", "completed")
-    before = (
-        config.cache.database_path.read_bytes(),
-        config.cache.database_path.stat().st_mtime_ns,
-    )
+    before = (db.get_run("known"), db.get_aggregate_stats())
 
     with (
         patch("immich_memories.cli.init_config_dir"),
@@ -191,6 +188,6 @@ def test_runs_storage_does_not_change_existing_database_bytes_or_mtime(tmp_path:
     ):
         result = CliRunner().invoke(main, ["runs", "storage", "--json"])
 
-    after = (config.cache.database_path.read_bytes(), config.cache.database_path.stat().st_mtime_ns)
+    after = (db.get_run("known"), db.get_aggregate_stats())
     assert result.exit_code == 0
     assert after == before
