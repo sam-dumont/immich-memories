@@ -44,10 +44,12 @@ def _schema(**props):
     return {"type": "object", "additionalProperties": False, "properties": props, "required": list(props)}
 
 
-SUBJECT_SCHEMA = _schema(subject=_list("what must be visible, with any colour, size or kind the request states", 4))
+# No minItems: the enforced grammar stalls when the model wants to stop early (measured again 09-27).
+SUBJECT_SCHEMA = _schema(subject=_list("what must be visible, and the other words captions use for it", 8))
 SUBJECT = '''What must be visible in the photos this request asks for? Use plain words a photo
 caption would use (caption_vocabulary), keeping any colour, size or kind the request states
-("black cat", not "cat"). Return JSON.'''
+("black cat", not "cat"), then add the other words captions use for the same thing: its kinds,
+common names or makes. Return JSON.'''
 COLOURS = set("black white grey gray brown red orange yellow green blue purple pink ginger golden silver".split())
 FILLER_WORDS = set("a an the of in on at to for from with and or our my his her their your we i "
                    "me us it its this that these those pictures picture photos photo memory memories "
@@ -108,6 +110,10 @@ def ask_people(reader, key, brief, people):
     import yaml
 
     owner = (yaml.safe_load((Path.home() / ".immich-memories/people.yaml").read_text()) or {}).get("owner")
+    owner_name = owner.get("name") if isinstance(owner, dict) else owner
+    if owner_name in listed:
+        # "I", "me", "my" are the owner: say so, as the other roles say who someone is.
+        listed[owner_name] = "the owner themself (I, me, my)"
     answer = reader.ask("plan_people", key, PEOPLE, {"owner_request": brief,
                         "the_owner_who_says_my_and_our": (owner.get("name") if isinstance(owner, dict) else owner) or None,
                         "people": [{"name": n, "role_relative_to_owner": r} for n, r in sorted(listed.items())]},
@@ -137,7 +143,9 @@ def ask_filters(reader, key, brief, named, years):
 
 PHOTO_QUESTION = '''The owner asked for a photo film. Write the one yes/no question to ask of a
 single photo to decide whether it belongs: about what is visible in that one photo, not about
-time spans, dates or who someone is (a photo cannot show "across the years" or a name). Return JSON.'''
+time spans, dates or who someone is (a photo cannot show "across the years" or a name). Keep what
+the request says is being done (driving, riding, cooking, feeding), not only the object.
+Return JSON.'''
 
 
 def ask_photo_question(reader, key, brief):
