@@ -88,6 +88,9 @@ keep the cache volume, prepare ahead with [`prepare`](../make/cli/prepare.md) ov
 faster box with [the inference service](../better/inference.md). Numbers per host are on
 [Measured](../better/measured.md).
 
+During preparation, the CLI and saved progress advance by batches of new work, even when a detector ends
+with a partial batch. Stage changes, counter resets and completion appear immediately.
+
 ## Waiting for a model server
 
 Only with a reader or caption server configured. The run names the endpoint and retries three times, two then
