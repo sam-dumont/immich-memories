@@ -534,16 +534,15 @@ def main():
         plan["firsts_offered"] = len(offered)
         # A first is checked for itself: does the photo show that thing, not "is it a first".
         plan["visual_questions"], plan["same_thing"] = [], None
-        plan["_per_item_questions"] = {c["_ref"]: [f'Does this photo show {named[0]["name"].split()[0]} with or at: {c["label"]}?']
-                                       for c in chosen}
+        # Ask what can be seen ("a carrot"), not who or whether it was a first.
+        plan["_per_item_questions"] = {c["_ref"]: [f'Does this photo show {c["word"]}?'] for c in chosen}
     subject = set()
     if plan["subject"]:
         own, companions = companion_terms(reader, library, brief, key)
         pairs = [f"{a} {b}" for k, a in enumerate(companions) for b in companions[k + 1:]]
-        # The request's own specific word, when captions use it, defines the subject; the model's
-        # generic words ("woman, baby") would only widen it to everything.
-        phrases = (own + pairs) if own else plan["subject"] + pairs
-        plan["subject_from"] = "request words" if own else "model"
+        # Reverted 09-27: letting the request's rarest words define the subject was tuned to one
+        # control and broke the rest (landscapes 131 -> 21, cat -> 0). Gemma's subject leads.
+        phrases = plan["subject"] + own + pairs
         plan["subject_phrases"] = phrases
         subject = set(retrieve_plan(library, {"queries": phrases, "places": [], "since": since, "until": until}))
     anchors, uncaptioned = set(), set()
