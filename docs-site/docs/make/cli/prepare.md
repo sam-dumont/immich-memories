@@ -82,7 +82,7 @@ registry, and never overwrites an answer you gave it. It reads counts and dates 
 immich-memories people scan                    # build or refresh the registry
 immich-memories people show                    # read it back, --tier narrows it
 immich-memories people export --to people.yaml # write it out as YAML to edit or keep
-immich-memories people import --from people.yaml
+immich-memories people import --from people.yaml --replace
 ```
 
 The one rule doing most of the work: volume is a burst, continuity is a relationship. 160 pictures over four
@@ -121,7 +121,9 @@ people:
 
 `people import --from FILE` replaces the registry with an edited export. It checks the whole file first: a
 person without a list of `ids`, or an id listed twice, is refused with its position, and nothing changes. Ids
-come back exactly as written, `manual:` ids included. A scan never reads the file; only an import does.
+come back exactly as written, `manual:` ids included. A registry that already holds people is only overwritten
+with `--replace`, so an old export can't silently undo newer answers. A scan never reads the file; only an
+import does.
 
 The scan also writes its measurements (every person's counts and the pairs seen together) to
 `~/.immich-memories/people-graph.json`. That one stays a file: each scan recomputes all of it from Immich and

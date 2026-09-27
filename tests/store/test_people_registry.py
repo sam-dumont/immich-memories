@@ -198,11 +198,21 @@ def test_an_import_naming_one_id_twice_is_refused_and_writes_nothing(store):
 def test_an_import_replaces_the_registry_and_keeps_its_ids(store):
     save_graph(store, _scan_of("id-other"))
 
-    count = import_document(store, copy.deepcopy(LEGACY_DOCUMENT))
+    count = import_document(store, copy.deepcopy(LEGACY_DOCUMENT), replace=True)
 
     ids = [entry["ids"] for entry in people_entries(load_document(store))]
     assert count == 4
     assert ids == [entry["ids"] for entry in LEGACY_DOCUMENT["people"]]
+
+
+def test_an_import_over_a_registry_without_replace_changes_nothing(store):
+    save_graph(store, _scan_of("id-other"))
+    before = load_document(store)
+
+    with pytest.raises(PeopleImportError, match="--replace"):
+        import_document(store, copy.deepcopy(LEGACY_DOCUMENT))
+
+    assert load_document(store) == before
 
 
 def test_unquoted_yaml_dates_come_in_as_the_same_iso_text(store):

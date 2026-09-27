@@ -433,7 +433,8 @@ immich-memories people export [OPTIONS]
 Replace the people registry with a YAML file, keeping every id as written.
 
 The whole file is checked first; if any person in it is malformed,
-nothing is written and every problem is listed.
+nothing is written and every problem is listed. A registry that already
+holds people is only overwritten with --replace.
 
 ```bash
 immich-memories people import [OPTIONS]
@@ -442,6 +443,7 @@ immich-memories people import [OPTIONS]
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
 | `--from` | file | - | A YAML file written by `people export` (or an old people.yaml) |
+| `--replace` | boolean | false | Overwrite a registry that already holds people |
 
 ### `people scan`
 

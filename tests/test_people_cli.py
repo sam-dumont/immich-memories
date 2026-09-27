@@ -243,10 +243,24 @@ class TestExportAndImport:
         document["people"][0]["confirmed"]["role"] = "partner"
         target.write_text(yaml.dump(document, sort_keys=False))
 
-        output = _run(["people", "import", "--from", str(target)])
+        output = _run(["people", "import", "--from", str(target), "--replace"])
 
         assert "3 people imported" in output
         assert load_document() == document
+
+    def test_an_import_over_a_registry_needs_replace(self, tmp_path):
+        _run(["people", "scan"])
+        target = tmp_path / "people.yaml"
+        _run(["people", "export", "--to", str(target)])
+        document = yaml.safe_load(target.read_text())
+        document["people"][0]["confirmed"]["role"] = "partner"
+        target.write_text(yaml.dump(document, sort_keys=False))
+        before = load_document()
+
+        output = _run(["people", "import", "--from", str(target)], exit_code=1)
+
+        assert "--replace" in output
+        assert load_document() == before
 
     def test_a_broken_file_is_refused_and_changes_nothing(self, tmp_path):
         _run(["people", "scan"])

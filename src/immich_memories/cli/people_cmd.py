@@ -190,11 +190,17 @@ def _register_transfer(people: click.Group) -> None:
         required=True,
         help="A YAML file written by `people export` (or an old people.yaml)",
     )
-    def import_(source: Path) -> None:
+    @click.option(
+        "--replace",
+        is_flag=True,
+        help="Overwrite a registry that already holds people",
+    )
+    def import_(source: Path, replace: bool) -> None:
         """Replace the people registry with a YAML file, keeping every id as written.
 
         The whole file is checked first; if any person in it is malformed,
-        nothing is written and every problem is listed.
+        nothing is written and every problem is listed. A registry that already
+        holds people is only overwritten with --replace.
         """
         import sys
 
@@ -205,7 +211,7 @@ def _register_transfer(people: click.Group) -> None:
         )
 
         try:
-            count = import_document(open_store(), parse_yaml(source.read_text()))
+            count = import_document(open_store(), parse_yaml(source.read_text()), replace=replace)
         except PeopleImportError as exc:
             print_error(f"{source} was not imported; nothing changed:")
             for problem in exc.problems:

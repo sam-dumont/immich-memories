@@ -50,7 +50,8 @@ def _seed_people(root: Path) -> Store:
     database = root / ".immich-memories" / "store.db"
     database.parent.mkdir(parents=True, exist_ok=True)
     store = open_store(location=StoreLocation(url=f"sqlite:///{database}"))
-    import_document(store, {"version": 1, "people": [_entry(index) for index in range(_ROSTER)]})
+    roster = {"version": 1, "people": [_entry(index) for index in range(_ROSTER)]}
+    import_document(store, roster, replace=True)
     return store
 
 

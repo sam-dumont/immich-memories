@@ -13,5 +13,6 @@ from immich_memories.people.transfer import import_document
 def seed_people(document: dict[str, Any] | str) -> Store:
     """The default store holding `document` (a mapping or YAML text) as its registry."""
     store = open_store()
-    import_document(store, yaml.safe_load(document) if isinstance(document, str) else document)
+    parsed = yaml.safe_load(document) if isinstance(document, str) else document
+    import_document(store, parsed, replace=True)
     return store

@@ -63,17 +63,23 @@ def parse_yaml(text: str) -> object:
         raise PeopleImportError([f"not valid YAML: {exc}"]) from None
 
 
-def import_document(store: Store, document: object) -> int:
+def import_document(store: Store, document: object, *, replace: bool = False) -> int:
     """Replace the registry with `document` and return how many people it holds.
 
     Nothing is written unless every entry is valid: ids are kept exactly, and an id may
-    belong to one person only.
+    belong to one person only. A registry that already holds people is only replaced
+    when `replace` says so, because an old export would overwrite newer answers.
     """
     checked = _check(document)
     if checked.problems:
         raise PeopleImportError(checked.problems)
     with store.begin() as connection:
         lock_registry(connection)
+        held = len(read_document(connection).get("people", []))
+        if held and not replace:
+            raise PeopleImportError(
+                [f"the registry already holds {held} people; pass --replace to overwrite them"]
+            )
         write_document(connection, checked.document)
     return len(checked.document.get("people", []))
 
