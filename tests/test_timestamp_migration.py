@@ -19,7 +19,9 @@ from immich_memories.automation.state_store import AutomationStateStore
 from immich_memories.automation.status import cooldown_status
 from immich_memories.cache import database as cache_database
 from immich_memories.cache.database import VideoAnalysisCache
-from immich_memories.config_loader import Config
+from immich_memories.config_loader import Config, set_config
+from immich_memories.db import open_store
+from immich_memories.operations.store_import import import_legacy
 from immich_memories.tracking.run_database import RunDatabase
 
 
@@ -84,8 +86,14 @@ def _create_minimal_v10_database(db_path: Path) -> None:
         )
 
 
-def test_future_automation_attempt_timestamps_are_aware_utc(tmp_path: Path) -> None:
-    store = AutomationStateStore(tmp_path / "attempts.db")
+def _import_into_the_store(db_path: Path, home: Path) -> None:
+    """The one-time upgrade: a legacy cache.db's history moves into this test's store."""
+    set_config(Config(cache={"database": str(db_path), "directory": str(home / "cache")}))
+    import_legacy(open_store(), home)
+
+
+def test_future_automation_attempt_timestamps_are_aware_utc() -> None:
+    store = AutomationStateStore()
     attempt = store.start_attempt(reason="daily wake")
 
     finished = store.finish_attempt(attempt.id, AutoOutcome.SKIPPED, reason="no candidates")
@@ -186,10 +194,10 @@ def test_v11_canonical_utc_keeps_completion_order_and_cooldown_chronological(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Different explicit offsets cannot invert completion history after migration."""
+    """Different explicit offsets cannot invert completion history after the import."""
     db_path = tmp_path / "offset-order-v10.db"
     monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 10)
-    RunDatabase(db_path)
+    VideoAnalysisCache(db_path)
     with sqlite3.connect(db_path) as conn:
         conn.executemany(
             """
@@ -236,8 +244,9 @@ def test_v11_canonical_utc_keeps_completion_order_and_cooldown_chronological(
         )
 
     monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 11)
-    migrated = RunDatabase(db_path)
-    runs = migrated.list_runs(
+    VideoAnalysisCache(db_path)
+    _import_into_the_store(db_path, tmp_path)
+    runs = RunDatabase().list_runs(
         status="completed",
         source="auto",
         order_by_completion=True,
@@ -252,7 +261,7 @@ def test_v11_canonical_utc_keeps_completion_order_and_cooldown_chronological(
         24,
         now=datetime(2026, 8, 11, 7, 0, tzinfo=UTC),
     ).active
-    last_attempt = AutomationStateStore(db_path).get_last_attempt()
+    last_attempt = AutomationStateStore().get_last_attempt()
     assert last_attempt is not None
     assert last_attempt.id == "newer-utc"
     assert last_attempt.started_at == datetime(2026, 8, 10, 8, 5, tzinfo=UTC)
@@ -322,11 +331,13 @@ def test_brussels_daily_auto_run_is_not_inside_24_hour_cooldown(
     monkeypatch: pytest.MonkeyPatch,
     brussels_machine_timezone: None,
 ) -> None:
-    """Local 09:00 on consecutive summer days is exactly 24 hours apart."""
+    """Local 09:00 on consecutive summer days is exactly 24 hours apart.
+
+    A pre-v11 row holds local wall time; the import reads it the way v11 would have.
+    """
     db_path = tmp_path / "cooldown-v10.db"
-    current_schema_version = cache_database.SCHEMA_VERSION
     monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 10)
-    RunDatabase(db_path)
+    VideoAnalysisCache(db_path)
     with sqlite3.connect(db_path) as conn:
         conn.execute(
             """
@@ -336,7 +347,7 @@ def test_brussels_daily_auto_run_is_not_inside_24_hour_cooldown(
                       'completed', 'auto', '[]')
             """
         )
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", current_schema_version)
+    _import_into_the_store(db_path, tmp_path)
     config = Config(
         immich={"url": "http://immich.test:2283", "api_key": "test-key"},
         cache={"database": str(db_path), "directory": str(tmp_path / "cache")},

@@ -112,6 +112,25 @@ restore Immich from a backup taken before a memory run, that run's decisions and
 back with it. `pg_dump -n immich_memories` backs up only this schema, independent of Immich's own
 backup schedule, if you want the two to have separate retention.
 
+## Run history and automation
+
+Every run (its phases, delivery state and what it spent on the model), every nightly automation
+attempt, the notification cooldown, the special-days catalogue, and the link from a run id to the
+attempt directory it was cut from are store rows. That is what automation's cooldown and "already
+made this memory" checks read, so wiping `cache.db` no longer re-films a memory you already have.
+The attempt directories themselves, and the `run_metadata.json` beside each film, stay files.
+
+Three kinds of work must never run twice at once: a nightly automation pass, an assembly, and a
+film attempt. Each takes a lease first, and the store decides what a lease is:
+
+- **SQLite:** a lock file beside `cache.db` (`.auto.lock`, `.lock`) or in the attempt directory
+  (`.lease`). The operating system drops it when the process dies. One host, as SQLite always is.
+- **PostgreSQL:** an advisory lock in the database, held on a connection the holder keeps open.
+  The server drops it the moment that connection closes, a crash included. So several app
+  instances, on as many machines as you like, can share one PostgreSQL store: whichever takes the
+  lease runs, and the others say another run holds it. Two stores in one database (two schemas)
+  never block each other.
+
 ## Backups
 
 `store backup` works the same way on either backend: `VACUUM INTO` for SQLite, `pg_dump -n

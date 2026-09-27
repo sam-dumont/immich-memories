@@ -172,8 +172,8 @@ path that is missing here, so a copied config fails up front instead of hours in
 |---|---|
 | `output.directory` | where finished films are written |
 | `cache.directory` | previews, thumbnails, downloaded clips |
-| `cache.database` | run history and automation state |
-| `database.url` | the store, when it is a SQLite file (`sqlite:///~/.immich-memories/store.db`) |
+| `cache.database` | derived analysis (safe to lose; it is rebuilt) |
+| `database.url` | the store (banked facts and readings, your picture decisions, people, settings, run history, automation state, special days), when it is a SQLite file (`sqlite:///~/.immich-memories/store.db`) |
 | `advanced.editorial.annotation_database` | deprecated: a legacy `annotations.sqlite` the store imports once; its directory still holds `structure-banks/` |
 | `advanced.triage.encoder` | the pinned DINOv2 ONNX export |
 | `advanced.triage.bundle` | a head bundle of your own |

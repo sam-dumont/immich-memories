@@ -46,36 +46,9 @@ def _make_mock_db(
         mock_db.get_cache_stats.return_value = stats
 
     if rows is not None:
-        # _get_connection returns a context manager yielding a mock conn
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        # Each dict acts like a sqlite3.Row (supports dict())
-        mock_cursor.fetchall.return_value = [FakeRow(r) for r in rows]
-        mock_conn.execute.return_value = mock_cursor
-
-        @contextmanager
-        def fake_get_connection():
-            yield mock_conn
-
-        mock_db._get_connection = fake_get_connection
+        mock_db.all_scores.return_value = rows
 
     return mock_db
-
-
-class FakeRow:
-    """Mimics sqlite3.Row — iterating keys() for dict() conversion."""
-
-    def __init__(self, data: dict):
-        self._data = data
-
-    def keys(self):
-        return self._data.keys()
-
-    def __getitem__(self, key):
-        return self._data[key]
-
-    def __iter__(self):
-        return iter(self._data.values())
 
 
 class TestCacheStats:
@@ -192,6 +165,7 @@ class TestCacheImport:
             llm_quality=0.8,
             llm_emotion="joy",
             llm_description="Birthday party",
+            llm_category=None,
             model_version="v1",
         )
 
@@ -206,6 +180,7 @@ class TestCacheImport:
             llm_quality=None,
             llm_emotion=None,
             llm_description=None,
+            llm_category=None,
             model_version=None,
         )
 

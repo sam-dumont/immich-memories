@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sqlite3
 from datetime import timedelta
 from pathlib import Path
 
@@ -15,10 +14,9 @@ from immich_memories.automation.state_store import (
 )
 
 
-def test_automation_attempt_round_trip_preserves_start_row(tmp_path: Path) -> None:
+def test_automation_attempt_round_trip_preserves_start_row() -> None:
     """Finishing an attempt updates the original row instead of replacing it."""
-    db_path = tmp_path / "cache.db"
-    store = AutomationStateStore(db_path)
+    store = AutomationStateStore()
     attempt = store.start_attempt(reason="daily wake")
 
     store.finish_attempt(
@@ -45,14 +43,10 @@ def test_automation_attempt_round_trip_preserves_start_row(tmp_path: Path) -> No
     assert saved.run_id == "run-123"
     assert saved.error == "not generated"
 
-    with sqlite3.connect(db_path) as conn:
-        count = conn.execute("SELECT COUNT(*) FROM automation_attempts").fetchone()[0]
-    assert count == 1
-
 
 def test_running_attempt_round_trips_enum_and_optional_fields(tmp_path: Path) -> None:
     """A newly-started attempt is immediately observable as running."""
-    store = AutomationStateStore(tmp_path / "cache.db")
+    store = AutomationStateStore()
 
     attempt = store.start_attempt(
         reason="daily wake",
@@ -68,7 +62,7 @@ def test_running_attempt_round_trips_enum_and_optional_fields(tmp_path: Path) ->
 
 
 def test_finished_attempt_uses_aware_utc_timestamp(tmp_path: Path) -> None:
-    store = AutomationStateStore(tmp_path / "cache.db")
+    store = AutomationStateStore()
     attempt = store.start_attempt(reason="daily wake")
 
     finished = store.finish_attempt(attempt.id, AutoOutcome.SKIPPED, reason="no candidates")
@@ -79,7 +73,7 @@ def test_finished_attempt_uses_aware_utc_timestamp(tmp_path: Path) -> None:
 
 def test_finish_attempt_rejects_running_without_changing_start_row(tmp_path: Path) -> None:
     """A rejected non-terminal transition leaves durable state untouched."""
-    store = AutomationStateStore(tmp_path / "cache.db")
+    store = AutomationStateStore()
     attempt = store.start_attempt(reason="daily wake")
 
     with pytest.raises(ValueError, match="RUNNING is not a terminal automation outcome"):
@@ -90,7 +84,7 @@ def test_finish_attempt_rejects_running_without_changing_start_row(tmp_path: Pat
 
 def test_finish_attempt_cannot_overwrite_a_terminal_attempt(tmp_path: Path) -> None:
     """The first terminal result is immutable, including its completion timestamp."""
-    store = AutomationStateStore(tmp_path / "cache.db")
+    store = AutomationStateStore()
     attempt = store.start_attempt(reason="daily wake", memory_key="trip:first")
     first = store.finish_attempt(
         attempt.id,
@@ -119,7 +113,7 @@ def test_finish_attempt_cannot_overwrite_a_terminal_attempt(tmp_path: Path) -> N
 
 def test_finish_attempt_reports_unknown_id_separately(tmp_path: Path) -> None:
     """Missing rows remain a lookup error, not a duplicate-terminal transition."""
-    store = AutomationStateStore(tmp_path / "cache.db")
+    store = AutomationStateStore()
 
     with pytest.raises(KeyError, match="Unknown automation attempt: missing"):
         store.finish_attempt("missing", AutoOutcome.FAILED, reason="not found")
@@ -139,7 +133,7 @@ class TestConsecutiveFailuresByKey:
         store.finish_attempt(attempt.id, outcome, reason="test", memory_key=key)
 
     def test_counts_failures_per_key(self, tmp_path: Path) -> None:
-        store = AutomationStateStore(tmp_path / "cache.db")
+        store = AutomationStateStore()
         self._attempt(store, "monthly:2026-06", AutoOutcome.FAILED)
         self._attempt(store, "monthly:2026-06", AutoOutcome.FAILED)
         self._attempt(store, "trip:alps", AutoOutcome.FAILED)
@@ -151,7 +145,7 @@ class TestConsecutiveFailuresByKey:
 
     def test_a_success_clears_the_streak(self, tmp_path: Path) -> None:
         """Backoff must not punish a key that has since worked."""
-        store = AutomationStateStore(tmp_path / "cache.db")
+        store = AutomationStateStore()
         self._attempt(store, "monthly:2026-06", AutoOutcome.FAILED)
         self._attempt(store, "monthly:2026-06", AutoOutcome.FAILED)
         self._attempt(store, "monthly:2026-06", AutoOutcome.COMPLETED)
@@ -159,7 +153,7 @@ class TestConsecutiveFailuresByKey:
         assert "monthly:2026-06" not in store.consecutive_failures_by_key()
 
     def test_a_failure_after_a_success_starts_a_new_streak(self, tmp_path: Path) -> None:
-        store = AutomationStateStore(tmp_path / "cache.db")
+        store = AutomationStateStore()
         self._attempt(store, "monthly:2026-06", AutoOutcome.FAILED)
         self._attempt(store, "monthly:2026-06", AutoOutcome.COMPLETED)
         self._attempt(store, "monthly:2026-06", AutoOutcome.FAILED)
@@ -168,13 +162,13 @@ class TestConsecutiveFailuresByKey:
 
     def test_skipped_attempts_are_not_failures(self, tmp_path: Path) -> None:
         """A cooldown skip says nothing about whether the candidate can render."""
-        store = AutomationStateStore(tmp_path / "cache.db")
+        store = AutomationStateStore()
         self._attempt(store, "monthly:2026-06", AutoOutcome.SKIPPED)
 
         assert "monthly:2026-06" not in store.consecutive_failures_by_key()
 
     def test_reports_when_the_last_failure_happened(self, tmp_path: Path) -> None:
-        store = AutomationStateStore(tmp_path / "cache.db")
+        store = AutomationStateStore()
         self._attempt(store, "monthly:2026-06", AutoOutcome.FAILED)
 
         entry = store.consecutive_failures_by_key()["monthly:2026-06"]

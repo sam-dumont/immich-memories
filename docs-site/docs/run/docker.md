@@ -229,8 +229,9 @@ docker inspect --format='{{.State.Health.Status}}' immich-memories
 ## What to keep
 
 `/home/immich/.immich-memories/store.db` is the expensive file: every fact, caption and reading
-the editor banked, and every picture you cleared or ruled out. Lose it and the next cut reads the
-library again. `cache.db` beside it holds run history and automation state. Both sit on the config volume, so
+the editor banked, every picture you cleared or ruled out, your people, run history, automation
+state and the special-days catalogue. Lose it and the next cut reads the library again. `cache.db`
+beside it holds derived analysis only and is rebuilt when lost. Both sit on the config volume, so
 moving host means copying that volume, and
 [the `cache` CLI commands will not do it for you](./maintenance/health-logs-cache.md#the-cli-cache-commands-are-not-for-the-banks).
 

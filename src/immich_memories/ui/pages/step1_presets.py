@@ -26,8 +26,6 @@ from immich_memories.ui.pages.step1_people import (
 from immich_memories.ui.state import AppState, get_app_state
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from immich_memories.automation.special_day_scan import DiscoveredDay
 
 logger = logging.getLogger(__name__)
@@ -510,10 +508,10 @@ def _special_day_options(
     return rows + [(entry, f"{entry.day} — {_day_name(entry)}") for entry in rest]
 
 
-def _empty_catalogue_message(path: Path) -> str:
+def _empty_catalogue_message() -> str:
     """What to say when no day has been found yet."""
     return (
-        f"No catalogue at {path}. Run  immich-memories discover-days  to build one: it "
+        "No special days found yet. Run  immich-memories discover-days  to build them: it "
         "walks the library a year at a time and asks the local model which days stood "
         "out. Surprise me offers those days and nothing else."
     )
@@ -559,17 +557,16 @@ def _render_special_day_params(state: AppState) -> None:
     container = ui.column().classes("w-full mt-2")
 
     def _offer_the_catalogue() -> None:
-        from immich_memories.automation.catalogue import default_catalogue_path, entries_from
+        from immich_memories.automation.catalogue import entries_from, load_catalogue
 
-        path = default_catalogue_path()
-        catalogue = entries_from(path)
+        catalogue = entries_from(load_catalogue())
         rows = _special_day_options(catalogue, date.today())
         container.clear()
         with container:
             if not rows:
                 # Refuse over fake: with no catalogue there is no day to offer,
                 # and a random one would be the tool inventing an occasion.
-                ui.label(_empty_catalogue_message(path)).style(
+                ui.label(_empty_catalogue_message()).style(
                     "color: var(--im-text-secondary)"
                 ).classes("text-sm italic")
                 return

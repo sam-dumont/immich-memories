@@ -79,9 +79,11 @@ warning listing each one. Delete them to silence it; nothing reads them.
 
 ## Data compatibility
 
-`cache.db` and the store migrate forward when opened, so an upgrade never loses run history or
-banked facts. An `annotations.sqlite` or `judgments.db` from before the store is imported into it
-once and then left alone, so a rollback still finds it. The video cache is safe to delete at any time; it costs a re-download.
+The store migrates forward when opened, so an upgrade never loses run history or banked facts. An
+install from before the store keeps everything it had: its `annotations.sqlite`, `judgments.db`, run
+history, automation attempts, notification health, banked asset scores and special days are read
+once, read-only, into the store, and a second pass imports nothing. The old files are left alone, so
+a rollback still finds them. The video cache is safe to delete at any time; it costs a re-download.
 Finished MP4s depend on nothing.
 
 ## Rollback

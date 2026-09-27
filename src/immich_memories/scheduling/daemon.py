@@ -14,12 +14,16 @@ import subprocess
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from immich_memories.operations.bounded_process import ProcessCancelled, run_bounded_process
 from immich_memories.scheduling.engine import PendingJob, Scheduler
 from immich_memories.scheduling.executor import resolve_schedule_params
 from immich_memories.scheduling.models import DEFAULT_JOB_TIMEOUT_MINUTES, SchedulerConfig
 from immich_memories.security import sanitize_filename
+
+if TYPE_CHECKING:
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +41,7 @@ def _handle_signal(signum, frame):
 def run_daemon_loop(
     config: SchedulerConfig,
     *,
-    db_path: Path,
+    store: Store | None = None,
     config_path: Path | None = None,
 ) -> None:
     """Run the scheduler daemon in the foreground.
@@ -53,7 +57,7 @@ def run_daemon_loop(
     # Clean up any runs left in 'running' state from a previous crash
     from immich_memories.tracking.run_database import RunDatabase
 
-    db = RunDatabase(db_path=db_path)
+    db = RunDatabase(store)
     db.mark_stale_runs_as_interrupted()
 
     scheduler = Scheduler(config)
@@ -318,7 +322,7 @@ def _notify_if_configured(
     if (success and not notif.on_success) or (not success and not notif.on_failure):
         return
 
-    from immich_memories.automation.notifications import notify_job_complete
+    from immich_memories.automation.notifications import notification_store, notify_job_complete
 
     notify_job_complete(
         memory_type=memory_type,
@@ -326,7 +330,7 @@ def _notify_if_configured(
         duration_seconds=duration_seconds,
         error=error,
         urls=notif.urls,
-        db_path=config.cache.database_path,
+        store=notification_store(config),
         attach_thumbnail=notif.attach_thumbnail,
         cooldown_hours=notif.cooldown_hours,
     )

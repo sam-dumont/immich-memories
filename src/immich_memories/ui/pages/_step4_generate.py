@@ -414,10 +414,11 @@ async def run_generation(
         params.phase_callback = on_phase
         params.frame_preview_callback = on_frame_preview
 
+        from immich_memories.db import open_store
         from immich_memories.tracking import RunTracker, generate_run_id
 
         run_id = generate_run_id()
-        run_tracker = RunTracker(run_id, db_path=params.config.cache.database_path)
+        run_tracker = RunTracker(run_id, store=open_store(params.config))
         state.active_run_id = run_id
         prepared = await execute_ui_generation(
             state,

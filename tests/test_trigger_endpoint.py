@@ -169,7 +169,7 @@ class TestPostEnqueuesOneDecision:
         assert body["status_url"] == f"/api/trigger/{body['attempt_id']}"
         assert [started.attempt.id for started in worker.submitted] == [body["attempt_id"]]
 
-        stored = AutomationStateStore(config.cache.database_path).get_attempt(body["attempt_id"])
+        stored = AutomationStateStore().get_attempt(body["attempt_id"])
         assert stored is not None
         assert stored.outcome is AutoOutcome.RUNNING
         assert stored.reason == "http trigger"
@@ -234,7 +234,7 @@ class TestStatusReportsWhatTheRunIsDoing:
         from immich_memories.operations.phases import OperationalPhase, PhaseEvent
 
         config = _config(tmp_path)
-        store = AutomationStateStore(config.cache.database_path)
+        store = AutomationStateStore()
         attempt = store.start_attempt(reason="http trigger")
         store.update_phase(attempt.id, PhaseEvent(OperationalPhase.ANALYSIS, 3, 10, "scoring", 0.3))
 
@@ -255,7 +255,7 @@ class TestStatusReportsWhatTheRunIsDoing:
         from immich_memories.tracking.run_database import RunDatabase
 
         config = _config(tmp_path)
-        RunDatabase(db_path=config.cache.database_path).save_run(
+        RunDatabase().save_run(
             RunMetadata(
                 run_id="20260824_120000_abcd",
                 created_at=datetime.now(tz=UTC),
@@ -265,7 +265,7 @@ class TestStatusReportsWhatTheRunIsDoing:
                 output_duration_seconds=182.5,
             )
         )
-        store = AutomationStateStore(config.cache.database_path)
+        store = AutomationStateStore()
         attempt = store.start_attempt(reason="http trigger")
         store.finish_attempt(
             attempt.id,

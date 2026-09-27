@@ -14,6 +14,7 @@ from immich_memories.automation.notification_state import (
 from immich_memories.automation.notifications import notify_job_complete
 from immich_memories.cache import database as cache_database
 from immich_memories.cache.database import VideoAnalysisCache
+from immich_memories.db import open_store
 
 
 def test_v15_adds_singleton_notification_health_to_existing_database(
@@ -46,7 +47,7 @@ def test_v15_adds_singleton_notification_health_to_existing_database(
 
 
 def test_failed_delivery_opens_cooldown_and_success_closes_it(tmp_path: Path) -> None:
-    state = NotificationStateStore(tmp_path / "health.db")
+    state = NotificationStateStore()
     failed_at = datetime(2026, 8, 13, 9, 0, tzinfo=UTC)
 
     state.record_failure(NotificationFailureCategory.QUOTA, now=failed_at)
@@ -68,7 +69,6 @@ def test_failed_delivery_opens_cooldown_and_success_closes_it(tmp_path: Path) ->
 
 
 def test_failure_state_never_persists_provider_exception_text(tmp_path: Path) -> None:
-    db_path = tmp_path / "health.db"
     credential_url = "https://user:notification-secret@example.test/raw-body"
     apprise = MagicMock()
     apprise.Apprise.return_value.notify.side_effect = RuntimeError(
@@ -80,11 +80,11 @@ def test_failure_state_never_persists_provider_exception_text(tmp_path: Path) ->
             memory_type="trip",
             status="completed",
             urls=[credential_url],
-            db_path=db_path,
+            store=open_store(),
         )
 
     assert result is False
-    health = NotificationStateStore(db_path).get()
+    health = NotificationStateStore().get()
     assert health is not None
     assert health.failure_category is NotificationFailureCategory.QUOTA
     serialized = str(health.to_dict(cooldown_hours=24))
@@ -93,8 +93,7 @@ def test_failure_state_never_persists_provider_exception_text(tmp_path: Path) ->
 
 
 def test_cooldown_suppresses_normal_delivery_but_test_bypasses(tmp_path: Path) -> None:
-    db_path = tmp_path / "health.db"
-    state = NotificationStateStore(db_path)
+    state = NotificationStateStore()
     state.record_failure(NotificationFailureCategory.TRANSPORT)
     apprise = MagicMock()
     apprise.Apprise.return_value.notify.return_value = True
@@ -104,13 +103,13 @@ def test_cooldown_suppresses_normal_delivery_but_test_bypasses(tmp_path: Path) -
             memory_type="monthly",
             status="completed",
             urls=["ntfy://topic"],
-            db_path=db_path,
+            store=open_store(),
         )
         test_result = notify_job_complete(
             memory_type="test",
             status="completed",
             urls=["ntfy://topic"],
-            db_path=db_path,
+            store=open_store(),
             bypass_cooldown=True,
         )
 

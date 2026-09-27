@@ -7,15 +7,14 @@ and a window a minute wide is not an event at all.
 
 from __future__ import annotations
 
-import json
 from datetime import UTC, date, datetime, timedelta
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
 
 from immich_memories.analysis.special_day import SpecialDay, ask_if_special, event_window
+from immich_memories.automation.catalogue import save_catalogue
 
 # Two synthetic places, far enough apart to be different clusters.
 _CIRCUIT = (50.31, 4.66)
@@ -187,7 +186,7 @@ def test_the_catalogue_takes_the_models_window_over_the_geometric_one(monkeypatc
     assert [(d.day, d.window) for d in found] == [(date(2021, 6, 12), judged)]
 
 
-def _days_due(catalogue: Path, on: str) -> str:
+def _days_due(on: str) -> str:
     from click.testing import CliRunner
 
     from immich_memories.cli import main
@@ -200,7 +199,7 @@ def _days_due(catalogue: Path, on: str) -> str:
     ):
         result = CliRunner().invoke(
             main,
-            ["days-due", "--on", on, "--catalogue", str(catalogue)],
+            ["days-due", "--on", on],
             catch_exceptions=False,
         )
     return result.output
@@ -212,31 +211,27 @@ def test_the_window_survives_the_trip_through_the_catalogue(tmp_path) -> None:
     Nothing downstream could ever have read it, which is the same as never
     having found it.
     """
-    catalogue = tmp_path / "special-days.json"
-    catalogue.write_text(
-        json.dumps(
-            [
-                {
-                    "day": "2015-06-12",
-                    "title": "A day out",
-                    "subtitle": "",
-                    "what": "out",
-                    "photos": 133,
-                    "window": ["2015-06-12T12:22:00", "2015-06-12T20:00:00"],
-                }
-            ]
-        )
+    save_catalogue(
+        [
+            {
+                "day": "2015-06-12",
+                "title": "A day out",
+                "subtitle": "",
+                "what": "out",
+                "photos": 133,
+                "window": ["2015-06-12T12:22:00", "2015-06-12T20:00:00"],
+            }
+        ]
     )
 
-    assert "12:22" in _days_due(catalogue, "2025-06-12")
+    assert "12:22" in _days_due("2025-06-12")
 
 
 def test_an_entry_from_before_windows_existed_still_reads(tmp_path) -> None:
     """Catalogues predate this field, and a scan of twenty years is not cheap."""
-    catalogue = tmp_path / "special-days.json"
-    catalogue.write_text(json.dumps([{"day": "2015-06-12", "title": "A day out"}]))
+    save_catalogue([{"day": "2015-06-12", "title": "A day out"}])
 
-    assert "10 years ago" in _days_due(catalogue, "2025-06-12")
+    assert "10 years ago" in _days_due("2025-06-12")
 
 
 # Which runs the sequence reader names is not these tests' subject (#1093).

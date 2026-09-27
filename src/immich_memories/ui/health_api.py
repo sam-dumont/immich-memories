@@ -22,6 +22,7 @@ from starlette.responses import JSONResponse
 from immich_memories import __version__
 from immich_memories.automation.in_process_scheduler import automation_scheduler
 from immich_memories.config import get_config
+from immich_memories.db import open_store
 from immich_memories.security import configured_secret_values, sanitize_error_message
 from immich_memories.ui.auth import is_auth_enabled
 
@@ -82,7 +83,7 @@ def _get_last_successful_run(config) -> str | None:
     """Return ISO timestamp of last completed run, or None."""
     from immich_memories.tracking.run_database import RunDatabase
 
-    db = RunDatabase(db_path=config.cache.database_path)
+    db = RunDatabase(open_store(config))
     runs = db.list_runs(limit=1, status="completed")
     if runs and runs[0].completed_at:
         return runs[0].completed_at.isoformat()

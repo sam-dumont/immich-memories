@@ -95,13 +95,9 @@ def test_incomplete_or_changed_membership_cannot_become_a_day(identity, members)
         validate_special_event_scope(identity, members)
 
 
-def test_catalogue_rejects_missing_exact_window_instead_of_using_day(tmp_path):
-    path = tmp_path / "catalogue.json"
-    path.write_text(
-        json.dumps([{"day": "2020-06-14", "event_id": event_id(("a",)), "asset_ids": ["a"]}])
-    )
+def test_catalogue_rejects_missing_exact_window_instead_of_using_day():
     with pytest.raises(ValueError, match="exact start and end"):
-        entries_from(path)
+        entries_from([{"day": "2020-06-14", "event_id": event_id(("a",)), "asset_ids": ["a"]}])
 
 
 def test_exact_source_filters_overreturn_before_annotation_and_keeps_live_link():

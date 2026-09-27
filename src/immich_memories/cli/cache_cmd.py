@@ -10,6 +10,8 @@ import click
 from rich.console import Console
 from rich.table import Table
 
+from immich_memories.db import open_store
+
 console = Console()
 
 
@@ -30,8 +32,7 @@ def register_cache_commands(cli_group: click.Group) -> None:
         """Show cache statistics."""
         from immich_memories.cache.asset_score_cache import AssetScoreCache
 
-        score_cache = AssetScoreCache(db_path=ctx.obj["config"].cache.database_path)
-        s = score_cache.get_cache_stats()
+        s = AssetScoreCache(open_store(ctx.obj["config"])).get_cache_stats()
 
         table = Table(title="Cache Statistics")
         table.add_column("Metric", style="cyan")
@@ -51,13 +52,10 @@ def register_cache_commands(cli_group: click.Group) -> None:
     @click.argument("output_path", type=click.Path())
     @click.pass_context
     def export(ctx: click.Context, output_path: str) -> None:
-        """Export asset scores to JSON (safe, lock-aware)."""
+        """Export the banked asset scores to JSON."""
         from immich_memories.cache.asset_score_cache import AssetScoreCache
 
-        score_cache = AssetScoreCache(db_path=ctx.obj["config"].cache.database_path)
-        with score_cache._get_connection() as conn:
-            rows = conn.execute("SELECT * FROM asset_scores").fetchall()
-            data = [dict(row) for row in rows]
+        data = AssetScoreCache(open_store(ctx.obj["config"])).all_scores()
 
         Path(output_path).write_text(json.dumps(data, indent=2, default=str))
         console.print(f"Exported {len(data)} asset scores to {output_path}")
@@ -70,7 +68,7 @@ def register_cache_commands(cli_group: click.Group) -> None:
         from immich_memories.cache.asset_score_cache import AssetScoreCache
 
         data = json.loads(Path(input_path).read_text())
-        score_cache = AssetScoreCache(db_path=ctx.obj["config"].cache.database_path)
+        score_cache = AssetScoreCache(open_store(ctx.obj["config"]))
 
         imported = 0
         for row in data:
@@ -83,6 +81,7 @@ def register_cache_commands(cli_group: click.Group) -> None:
                 llm_quality=row.get("llm_quality"),
                 llm_emotion=row.get("llm_emotion"),
                 llm_description=row.get("llm_description"),
+                llm_category=row.get("llm_category"),
                 model_version=row.get("model_version"),
             )
             imported += 1

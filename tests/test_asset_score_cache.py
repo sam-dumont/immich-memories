@@ -1,37 +1,22 @@
-"""Tests for AssetScoreCache — extracted from VideoAnalysisCache."""
+"""Tests for AssetScoreCache: banked model looks, one per asset per prompt version."""
 
 from __future__ import annotations
-
-from pathlib import Path
 
 import pytest
 
 from immich_memories.cache.asset_score_cache import AssetScoreCache
-from immich_memories.cache.database import VideoAnalysisCache
 
 
 @pytest.fixture
-def cache(tmp_path: Path) -> AssetScoreCache:
-    """A cache on the migrated schema, rather than a hand-copy of it.
-
-    The hand-written CREATE TABLE this replaced had drifted from the real one
-    and pinned the primary key that #698 is about, so it could not have shown
-    the bug.
-    """
-    db_path = tmp_path / "test.db"
-    VideoAnalysisCache(db_path)
-    return AssetScoreCache(db_path)
+def cache() -> AssetScoreCache:
+    """The scores in this test's own store."""
+    return AssetScoreCache()
 
 
 def _read_row(cache: AssetScoreCache, asset_id: str) -> dict | None:
-    """Read a banked row back the way `cache export` does — a raw SELECT."""
-    with cache._get_connection() as conn:
-        row = conn.execute(
-            "SELECT * FROM asset_scores WHERE asset_id = ?"
-            " ORDER BY analyzed_at DESC, rowid DESC LIMIT 1",
-            (asset_id,),
-        ).fetchone()
-    return dict(row) if row else None
+    """Read a banked row back the way `cache export` does."""
+    rows = [row for row in cache.all_scores() if row["asset_id"] == asset_id]
+    return rows[-1] if rows else None
 
 
 class TestAssetScoreCache:

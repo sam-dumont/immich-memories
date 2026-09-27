@@ -241,6 +241,7 @@ def test_a_run_records_what_it_broke_and_runs_show_counts_it(tmp_path, caplog):
 def test_runs_show_says_how_many_promises_the_cut_broke(tmp_path):
     from immich_memories.cli._helpers import console
     from immich_memories.cli.runs import _print_cut_checks
+    from immich_memories.db import open_store
     from immich_memories.operations.run_index import record_run_attempt
 
     attempt = tmp_path / "editorial-runs" / "film" / "attempts" / "one"
@@ -251,9 +252,9 @@ def test_runs_show_says_how_many_promises_the_cut_broke(tmp_path):
             json.dumps(payload)
         ),
     )
-    record_run_attempt(tmp_path, "20260924_100000_abcd", attempt, tmp_path / "film.mp4")
+    record_run_attempt("20260924_100000_abcd", attempt, tmp_path / "film.mp4")
 
     with console.capture() as captured:
-        _print_cut_checks(tmp_path, "20260924_100000_abcd")
+        _print_cut_checks(open_store(), "20260924_100000_abcd")
 
     assert "Cut checks: 1 broken promise(s)" in captured.get()

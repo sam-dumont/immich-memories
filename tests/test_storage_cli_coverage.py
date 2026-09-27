@@ -140,7 +140,7 @@ class TestRunDatabaseCRUD:
 
     @pytest.fixture
     def db(self, tmp_path):
-        return RunDatabase(tmp_path / "runs.db")
+        return RunDatabase()
 
     def test_save_and_get_run(self, db):
         """A saved run can be retrieved by ID with all fields."""
@@ -175,7 +175,7 @@ class TestRunDatabaseUpdateStatus:
 
     @pytest.fixture
     def db(self, tmp_path):
-        return RunDatabase(tmp_path / "runs.db")
+        return RunDatabase()
 
     def test_update_status_only(self, db):
         """Updating just status leaves other fields unchanged."""
@@ -217,7 +217,7 @@ class TestRunDatabaseListRuns:
 
     @pytest.fixture
     def db(self, tmp_path):
-        return RunDatabase(tmp_path / "runs.db")
+        return RunDatabase()
 
     def test_list_returns_all_runs(self, db):
         """list_runs returns all saved runs ordered by created_at DESC."""
@@ -261,7 +261,7 @@ class TestRunDatabasePhaseStats:
 
     @pytest.fixture
     def db(self, tmp_path):
-        return RunDatabase(tmp_path / "runs.db")
+        return RunDatabase()
 
     def test_save_and_retrieve_phases(self, db):
         """Phase stats are persisted and loaded with the run."""
@@ -293,7 +293,7 @@ class TestRunDatabaseStaleRuns:
 
     @pytest.fixture
     def db(self, tmp_path):
-        return RunDatabase(tmp_path / "runs.db")
+        return RunDatabase()
 
     def test_marks_running_as_interrupted(self, db):
         """All 'running' runs become 'interrupted'."""
@@ -317,7 +317,7 @@ class TestRunDatabaseAggregateStats:
 
     @pytest.fixture
     def db(self, tmp_path):
-        return RunDatabase(tmp_path / "runs.db")
+        return RunDatabase()
 
     def test_aggregate_empty(self, db):
         """Aggregate stats on empty database return zeros."""
@@ -357,7 +357,7 @@ class TestRunDatabaseDedup:
 
     @pytest.fixture
     def db(self, tmp_path):
-        return RunDatabase(tmp_path / "runs.db")
+        return RunDatabase()
 
     def test_get_last_run_of_type(self, db):
         """Returns the most recent completed run of a given type."""
@@ -389,7 +389,7 @@ class TestRunDatabaseWithSystemInfo:
 
     @pytest.fixture
     def db(self, tmp_path):
-        return RunDatabase(tmp_path / "runs.db")
+        return RunDatabase()
 
     def test_system_info_persisted(self, db):
         """SystemInfo is serialized as JSON and restored on load."""
@@ -424,7 +424,7 @@ class TestRunDatabaseDateRange:
 
     @pytest.fixture
     def db(self, tmp_path):
-        return RunDatabase(tmp_path / "runs.db")
+        return RunDatabase()
 
     def test_date_range_persisted(self, db):
         """Date range start/end are stored and restored as date objects."""
@@ -450,7 +450,7 @@ class TestRunTrackerCompleteRun:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_complete_run_no_output(self, mock_db_cls):
         """complete_run without output_path still finalizes the run."""
-        tracker = RunTracker(db_path=Path("/tmp/t.db"))
+        tracker = RunTracker()
         tracker.start_run()
         tracker.db.get_run.return_value = _make_run(status="completed")
         result = tracker.complete_run(clips_analyzed=10, clips_selected=5)
@@ -461,7 +461,7 @@ class TestRunTrackerCompleteRun:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_complete_run_closes_active_phase(self, mock_db_cls):
         """complete_run completes any active phase before finalizing."""
-        tracker = RunTracker(db_path=Path("/tmp/t.db"))
+        tracker = RunTracker()
         tracker.start_run()
         tracker.db.get_run.return_value = _make_run(status="completed")
         tracker.start_phase("encoding", total_items=5)
@@ -473,7 +473,7 @@ class TestRunTrackerCompleteRun:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_complete_run_with_output_file(self, mock_db_cls, tmp_path):
         """complete_run reads output file size when path exists."""
-        tracker = RunTracker(db_path=Path("/tmp/t.db"))
+        tracker = RunTracker()
         tracker.start_run()
         tracker.db.get_run.return_value = _make_run(status="completed")
         output = tmp_path / "video.mp4"
@@ -490,7 +490,7 @@ class TestRunTrackerCompleteRun:
     def test_complete_run_saves_metadata_json(self, mock_db_cls, tmp_path):
         """complete_run writes run_metadata.json alongside the output."""
         run = _make_run(status="completed")
-        tracker = RunTracker(db_path=Path("/tmp/t.db"))
+        tracker = RunTracker()
         tracker.start_run()
         tracker.db.get_run.return_value = run
         output = tmp_path / "out" / "video.mp4"
@@ -511,7 +511,7 @@ class TestRunTrackerCancelWithPhase:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_cancel_completes_active_phase(self, mock_db_cls):
         """cancel_run completes any active phase before cancelling."""
-        tracker = RunTracker(db_path=Path("/tmp/t.db"))
+        tracker = RunTracker()
         tracker.start_run()
         tracker.start_phase("export", total_items=3)
         tracker.cancel_run()
@@ -540,7 +540,7 @@ class TestRunsListCommand:
         """'runs list' shows run data when runs exist."""
         config = Config()
         config.cache.database = str(tmp_path / "test.db")
-        db = RunDatabase(tmp_path / "test.db")
+        db = RunDatabase()
         run = _make_run(run_id="20260101_120000_abcd", person_name="Alice", status="completed")
         run.output_path = "/out/video.mp4"
         db.save_run(run)
@@ -552,7 +552,7 @@ class TestRunsListCommand:
         """'runs list --person X' filters by person."""
         config = Config()
         config.cache.database = str(tmp_path / "test.db")
-        db = RunDatabase(tmp_path / "test.db")
+        db = RunDatabase()
         db.save_run(_make_run(run_id="r1", person_name="Alice"))
         db.save_run(_make_run(run_id="r2", person_name="Bob"))
         result = _invoke(["runs", "list", "--person", "Alice"], config=config)
@@ -567,7 +567,7 @@ class TestRunsShowCommand:
         config = Config()
         config.cache.database = str(tmp_path / "test.db")
         # Create the database tables
-        RunDatabase(tmp_path / "test.db")
+        RunDatabase()
         result = _invoke(["runs", "show", "nonexistent"], config=config)
         assert result.exit_code == 0  # click doesn't exit 1 for print_error
         assert "not found" in result.output.lower() or "No" in result.output
@@ -576,7 +576,7 @@ class TestRunsShowCommand:
         """'runs show' displays run details including phases."""
         config = Config()
         config.cache.database = str(tmp_path / "test.db")
-        db = RunDatabase(tmp_path / "test.db")
+        db = RunDatabase()
         run = _make_run(run_id="20260101_120000_abcd", status="completed", person_name="Alice")
         run.completed_at = datetime(2026, 1, 1, 12, 30)
         run.clips_analyzed = 100
@@ -605,7 +605,7 @@ class TestRunsShowCommand:
         """'runs show' with partial ID matches a single run."""
         config = Config()
         config.cache.database = str(tmp_path / "test.db")
-        db = RunDatabase(tmp_path / "test.db")
+        db = RunDatabase()
         db.save_run(_make_run(run_id="20260101_120000_abcd"))
         result = _invoke(["runs", "show", "20260101_1200"], config=config)
         assert result.exit_code == 0
@@ -614,7 +614,7 @@ class TestRunsShowCommand:
         """'runs show' displays system info when present."""
         config = Config()
         config.cache.database = str(tmp_path / "test.db")
-        db = RunDatabase(tmp_path / "test.db")
+        db = RunDatabase()
         run = _make_run(run_id="20260101_120000_abcd")
         run.system_info = SystemInfo(
             platform="darwin",
@@ -635,7 +635,7 @@ class TestRunsShowCommand:
         """The scope, the error count, the phase that errored and the card it ran on."""
         config = Config()
         config.cache.database = str(tmp_path / "test.db")
-        db = RunDatabase(tmp_path / "test.db")
+        db = RunDatabase()
         run = _make_run(run_id="20260101_120000_abcd", status="failed")
         run.date_range_start = date(2025, 1, 1)
         run.date_range_end = date(2025, 12, 31)
@@ -680,7 +680,7 @@ class TestRunsStatsCommand:
         config = Config()
         config.cache.database = str(tmp_path / "test.db")
         # Ensure tables exist
-        RunDatabase(tmp_path / "test.db")
+        RunDatabase()
         result = _invoke(["runs", "stats"], config=config)
         assert result.exit_code == 0
         assert "0" in result.output
@@ -689,7 +689,7 @@ class TestRunsStatsCommand:
         """'runs stats' shows aggregate data."""
         config = Config()
         config.cache.database = str(tmp_path / "test.db")
-        db = RunDatabase(tmp_path / "test.db")
+        db = RunDatabase()
         run = _make_run(run_id="r1", status="completed", clips_selected=10)
         run.output_duration_seconds = 120.0
         db.save_run(run)
@@ -705,7 +705,7 @@ class TestRunsDeleteCommand:
         """'runs delete' on nonexistent run prints error."""
         config = Config()
         config.cache.database = str(tmp_path / "test.db")
-        RunDatabase(tmp_path / "test.db")
+        RunDatabase()
         result = _invoke(["runs", "delete", "nonexistent", "--yes"], config=config)
         assert "not found" in result.output.lower() or "error" in result.output.lower()
 
@@ -1058,7 +1058,7 @@ class TestRunsDatabaseRunWithDateRange:
 
     @pytest.fixture
     def db(self, tmp_path):
-        return RunDatabase(tmp_path / "runs.db")
+        return RunDatabase()
 
     def test_run_target_duration_roundtrip(self, db):
         """target_duration_seconds survives DB round-trip (stored as minutes)."""

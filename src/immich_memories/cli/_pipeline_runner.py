@@ -32,6 +32,7 @@ from immich_memories.cli._helpers import (
 from immich_memories.cli._run_inputs import ResolvedRunInputs
 from immich_memories.cli._run_summary import render_run_summary
 from immich_memories.cli._run_timeline import configure_timeline, final_timeline
+from immich_memories.db import open_store
 from immich_memories.operations.auto_output import NOTHING_WORTH_A_FILM
 from immich_memories.operations.run_index import run_id_for_attempt
 from immich_memories.operations.storyboard import read_storyboard
@@ -228,7 +229,7 @@ class _AttemptPhaseReporter:
         from immich_memories.automation.state_store import AutomationStateStore
 
         self._attempt_id = attempt_id
-        self._store = AutomationStateStore(config.cache.database_path) if attempt_id else None
+        self._store = AutomationStateStore(open_store(config)) if attempt_id else None
         self._progress = progress
         self._task = task
         self._started = time.monotonic()
@@ -722,7 +723,10 @@ def _send_notification(
     ):
         return
     try:
-        from immich_memories.automation.notifications import notify_job_complete
+        from immich_memories.automation.notifications import (
+            notification_store,
+            notify_job_complete,
+        )
 
         notify_job_complete(
             memory_type=memory_type or "unknown",
@@ -731,7 +735,7 @@ def _send_notification(
             output_path=output_path,
             error=error,
             urls=notif.urls,
-            db_path=config.cache.database_path,
+            store=notification_store(config),
             attach_thumbnail=notif.attach_thumbnail,
             cooldown_hours=notif.cooldown_hours,
         )
