@@ -32,8 +32,10 @@ def _tokens(caption):
 def phrases(library, pool, heads, shown):
     """What the captions call the subject: the words just before each subject word ('toy car',
     'race car'), plus the pool's most over-represented words. Counted once per caption."""
+    # Deterministic order: a set's order changes per process, which changed the prompt, missed
+    # the call cache and let Gemma answer afresh (birth pool 535 one run, 10372 the next; 09-28).
     around, found = Counter(), Counter()
-    for i in pool:
+    for i in sorted(pool):
         toks = _tokens(library.rows[i]["caption"])
         seen = set()
         for k, t in enumerate(toks):
@@ -51,8 +53,8 @@ def phrases(library, pool, heads, shown):
     total = len(library.tokens)
     lift = {w: c / len(pool) / (len(library.posts.get(w, ())) / total or 1)
             for w, c in found.items() if c >= 3 and w not in heads}
-    rare = sorted(lift, key=lift.get, reverse=True)[:15]
-    candidates = [p for p, c in around.most_common(40) if c >= 2] + rare
+    rare = sorted(lift, key=lambda w: (-lift[w], w))[:15]
+    candidates = [p for p, c in sorted(around.items(), key=lambda x: (-x[1], x[0]))[:40] if c >= 2] + rare
     return [p for p in dict.fromkeys(candidates) if p not in shown][:40], around
 
 

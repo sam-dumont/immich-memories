@@ -235,7 +235,8 @@ def subject_kinds(library, subject):
                     word = lemma.name().lower()
                     if "_" not in word and word in library.posts and word not in found and word != head:
                         found.append(word)
-    return found[:40]
+    # WordNet's closure order follows set hashing: sort, most-used first, so a run repeats itself.
+    return sorted(found, key=lambda w: (-len(library.posts[w]), w))[:40]
 
 
 def spread_budget(library, refs, budget, score=None):
