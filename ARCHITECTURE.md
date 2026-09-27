@@ -148,6 +148,9 @@ unchanged sources retain their existing bank entries.
   cheap picture facts before the NAS draft, then captions and clip inspection for that draft
   and actual replacement candidates (`editorial_film_preparation.py`). Bulk `prepare` keeps its
   explicit whole-source scope. Deferred video exposure is never banked as a completed frame check.
+  The first draft and its source gate use a caption-free annotation view, even when descriptions
+  are already banked. That view has a distinct evidence contract. Refinement and demanded episode
+  context retain the original caption producer; the bank is never erased to build the draft.
 - **Heads**: eight small linear classifiers over one pinned DINOv2 ONNX embedding: location,
   people, children, activity, venue, frame_kind, screen, uncovered_person
   (`triage/bundled_heads/public-8heads-v4.npz`, `editorial_preparation_heads.py`). Beside them sit
@@ -249,9 +252,10 @@ unchanged sources retain their existing bank entries.
   further review, and an unanswered caption stays with the family. Answer banks distinguish
   Laya from the rules check. `editorial_shareability_tiers.py` selects this policy independently
   of whether the film uses prose or polish.
-- **Pictures are read once**: a model looks at a picture only at ingest (the caption server, the
-  heads, the detectors). No film-time stage sends a picture to any model, on any tier; the reader
-  is text only, and so is music: the mood comes from the cut's thesis, story titles and ingest
+- **Picture evidence is banked**: heads and detectors prepare cheap facts before the NAS draft.
+  Caption and clip producers acquire missing evidence for selected shots and actual candidates;
+  matching banked evidence is reused. A wider preparation scope requires an explicit `prepare`
+  job. The prose reader is text only, and so is music: its mood comes from the cut's thesis, story titles and
   captions (`audio/text_mood.py`), else the clips' own mood, else `calm`. `refuse_pictures` in
   `tests/no_pictures.py` wraps the one dispatch every model request passes through and fails on
   any request carrying a picture; `tests/test_editorial_demanded_previews.py` holds the production

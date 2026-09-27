@@ -12,8 +12,8 @@ leaves and another frame of the same moment takes its place. Two near-identical 
 sunset, or the same hiking trail filmed twice twenty minutes apart, become one. Then the finished
 cut is checked against everything the passes promised.
 
-All of it runs on a plain NAS, and no model is asked anything to do it. A model tier adds one
-reading: the audience check over the ingest caption.
+NAS runs these passes with rules and inexpensive picture classifiers. GPU and Full add Laya
+over the selected shots' captions. No tier asks the prose LLM to decide sharing.
 
 ## After the draft
 
@@ -21,7 +21,7 @@ The order, as `_select` in `editorial_structure_planner.py` runs it:
 
 ```mermaid
 flowchart TD
-  draft["the draft<br/>select_story_first"] --> polish["model polish, when a model is set<br/>polish_the_draft"]
+  draft["the draft<br/>select_story_first"] --> polish["model polish on Full<br/>polish_the_draft"]
   polish --> seat["family seat<br/>seat_in_film"]
   seat --> ticks["your ticks go in<br/>admit_owner_required"]
   ticks --> trim["fit the length<br/>trim_to_timing"]
@@ -105,13 +105,11 @@ flowchart TD
   rule -- no --> owner{"you cleared it?<br/>owner_verdict"}
   owner -- "for just us, family, anyone" --> ov["just_us, family_only or share,<br/>nothing asked"]
   owner -- no --> floor["detector holds<br/>floors_under: nsfw_marqo on the still, its frames,<br/>its Live clip; uncovered_person; exposure chain"]
-  floor --> tier{"preparation tier<br/>editorial_shareability_tiers.audience_check_for"}
-  tier -- "no_captions" --> ra["rule_audience<br/>share only on clean evidence, in a shareable film"]
-  tier -- "metadata_only" --> wa["withheld_audience<br/>family_only for all"]
-  tier -- "full, with captions" --> laya["Laya, no prose LLM<br/>editorial_laya_reader"]
+  floor --> tier{"resolved product tier<br/>editorial_shareability_tiers.audience_check_for"}
+  tier -- "NAS" --> ra["rule_audience<br/>share only on clean evidence, in a shareable film"]
+  tier -- "GPU or Full, with captions" --> laya["Laya, no prose LLM<br/>editorial_laya_reader"]
   laya --> ca["activity question over the caption<br/>check_audience, audience-evidence-v17;<br/>a household moment is just_us"]
   ra --> strict["strictest wins<br/>tighten, with banked holds"]
-  wa --> strict
   ca --> strict
   strict --> allowed{"allowed at this film's level?<br/>allowed(verdict, level)"}
   allowed -- yes --> keep["plays"]
@@ -126,7 +124,7 @@ Nothing a later reading says lifts a detector's hold. Only you do, one picture a
 looking at it (see [Your word on a picture](#your-word-on-a-picture)). A false positive costs a shot
 in a wider film; a false negative puts the wrong picture in front of the wrong people.
 
-**Without captions** (`no_captions`), the answer is `family_only` for every
+**On NAS**, the answer is `family_only` for every
 shot, with the finding that holds it: the heads can't see the private moments only a written
 description names. So a just-us and a family film on a NAS are the same film, and what leaves them
 is what the carrier rules catch. A shareable film is the one exception, under `strict_sharing` (on by
@@ -140,10 +138,11 @@ default): a shot is `share` when its evidence is clean, which means all of these
 
 Anything else stays `family_only` and leaves the shareable film (`clean_evidence` in
 `editorial_shareability_tiers.py`). A private moment that no detector sees and no caption names can
-still pass. That is the price of a shareable film without captions, and a caption tier closes it.
+still pass. Captions and Laya add an activity check, but cannot guarantee that every private
+moment is recognised.
 
-**With captions** (`full` preparation), Laya answers the activity question from each shot's
-ingest caption. This works with either reader: a prose LLM is never asked about sharing.
+**On GPU and Full**, Laya answers the activity question from each shot's caption, acquired when
+needed and then banked. This works with either reader: a prose LLM is never asked about sharing.
 - Four findings are a household's private moments and give `just_us`: breastfeeding, bathing,
   toileting or changing, and intimate hygiene. They play in a just-us film automatically.
 - Four give `do_not_show` and never play at any level: a graphic medical procedure, an identifying
@@ -154,10 +153,10 @@ the caption states the activity: a pool or the sea is never a bath, a race bib n
 record. A detector or exposure flag holds the shot without a further model question. A missing
 caption or missing Laya answer stays `family_only`; nothing falls back to the prose reader.
 
-**Laya** is a 0.4B local text classifier reading the compact ingest caption. On Apple silicon,
-turn it on with `advanced.editorial.laya_audience` after `pip install laya-mlx` and
-`immich-memories models fetch --laya`. It runs on the rules route too, without a polish step.
-Detector and owner holds still apply.
+**Laya** is a 0.4B local text classifier reading the compact caption. GPU and Full enable it
+automatically. `immich-memories models fetch --laya` downloads the pinned checkpoint for the
+platform; see [Laya setup](../better/reader.md#the-laya-audience-pre-screen) for the runtime.
+It runs on the GPU rules route too, without a polish step. Detector and owner holds still apply.
 
 Cached Laya answers belong to the checkpoint's file contents, runtime and threshold. Changing
 any of those makes the next cut read the captions again. Existing detector, owner and private

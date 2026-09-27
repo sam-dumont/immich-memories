@@ -6,7 +6,7 @@ title: Add captions
 
 Reader: power user.
 
-The NAS tier, `no_captions`, runs without them. GPU and full start with the NAS selection,
+The `nas` product tier runs without them by default. GPU and Full start with the NAS selection,
 then caption those shots with a 500M vision model. A replacement candidate gets its caption
 before it is judged. Each caption is banked and reused by later films:
 
@@ -20,17 +20,19 @@ also wait until a shot is selected or considered as a replacement.
 
 What that buys:
 
-- **The family-viewing check reads what only a sentence names.** Eight findings (a bath, a nappy
-  change, an identifying record and the rest) exist only in a caption. Without one, a shareable
-  film clears what every detector read as clean, and a private moment no detector sees can pass;
-  with captions, the bath goes to just-us films and the record out of every film.
+- **The family-viewing check reads activities described in the caption.** Laya checks eight
+  findings, including bathing, changing and identifying records. A supported bathing finding
+  keeps the picture in just-us films; an identifying record is held from every sharing level.
+  This adds evidence beyond the picture detectors, but a missed or incorrect caption can still
+  miss the activity. Review the pictures before sharing them.
 - **A [reader](./reader.md) reads them**, and the [Laya pre-screen](./reader.md#the-laya-audience-pre-screen)
   answers from them.
 
-What it costs: a server nothing in this project ships, which you run yourself (below), and time.
-A caption takes about 31 s on four Celeron cores and well under a second on a Mac or a GPU, which
-is why a NAS stays on `no_captions` or sends its captions to another box. Nothing leaves your
-network but a 400 px tile of each picture, to the server you name, once.
+What it costs: a caption service and time. Compose includes a captioner profile; you can also
+run a separate server as described below.
+CPU captioning can be slow, so automatic selection stays on NAS without GPU inference capability.
+The caption server receives a 400 px tile of each requested picture, once per caption generation.
+Those pixels leave your network only if the server you configure is outside it.
 
 ## Explicit LLM captions
 
@@ -74,9 +76,9 @@ error stays outstanding and the next run picks it up.
 
 The alias is a promise about behaviour, not a name lookup: any endpoint can claim it. It means the
 descriptions under that name came from SmolVLM2-500M with this prompt and this schema, so a bank
-filled last month and one filled today are comparable. Alias a 30B vision model and the app will
-believe you, and the bank then holds two things under one name. No commercial API advertises this
-alias, so the default SmolVLM provider needs your own server behind a URL. The explicit LLM
+filled last month and one filled today are comparable. Alias an unrelated vision model and the app will
+believe you, and the bank then holds two things under one name. The default SmolVLM provider
+expects this alias from your server. The explicit LLM
 option above uses the configured model's own identity instead.
 
 `caption_api_key` goes out as `Authorization: Bearer <key>`; blank sends no header. The reader's
@@ -105,7 +107,7 @@ slower for no gain.
 
 ## Apple Silicon, with mlxcel
 
-The setup the project is developed against, and where the numbers below came from.
+The Apple Silicon caption server used for this project's controls.
 
 ```bash
 brew install lablup/tap/mlxcel
@@ -123,17 +125,20 @@ it on your LAN.
 config:
 
 ```yaml
-editorial:
-  preparation:
-    tier: full
-    caption_base_url: http://localhost:8092/v1
+tier: auto
+advanced:
+  editorial:
+    preparation:
+      caption_base_url: http://localhost:8092/v1
 ```
 
-That is the default value of `caption_base_url`, so on a Mac running the app locally there is
-nothing to set but the tier. From the app in Docker Desktop on the same Mac, the address is
-`http://host.docker.internal:8092/v1`; from a NAS, the Mac's LAN name or IP. oMLX cannot load
-SmolVLM2 at all: if you already run oMLX for the reader, the captioner still needs its own process
-on its own port.
+That is the default value of `caption_base_url`. With a usable local MLX runtime, automatic
+selection chooses GPU, or Full when an LLM is also configured. Install the
+[Laya checkpoint](./reader.md#the-laya-audience-pre-screen) too. From the app in Docker Desktop on the same Mac, the address is
+`http://host.docker.internal:8092/v1`; from a NAS, the Mac's LAN name or IP. If you run oMLX
+for the reader, use the separate SmolVLM caption server with its own process
+on its own port. A container does not inherit the Mac's MLX runtime: configure a
+[GPU inference service](./inference.md) as well. A caption URL alone does not select the GPU tier.
 
 ## Docker and Linux, with llama.cpp
 
@@ -150,12 +155,16 @@ The first `up` pulls 546 MB; re-running it is cheap, the digest check short-circ
 Compose publishes captions on host port **8094** and inference on **8092**, so both
 profiles can run together. Inside the Compose network both services still use port 8092.
 
-Then raise the tier and point the app at the service by name, both in `docker-compose.yml`:
+Point the app at the captioner and a GPU inference service in `docker-compose.yml`:
 
 ```yaml
-IMMICH_MEMORIES_EDITORIAL__PREPARATION__TIER: "full"
+IMMICH_MEMORIES_TIER: "auto"
+IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL: "http://immich-memories-inference:8092"
 IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL: "http://immich-memories-captioner:8092/v1"
 ```
+
+The inference service must report CUDA for automatic GPU selection. A CPU service alone keeps
+selection on NAS. Preparation follows the product tier; do not set a separate preparation tier.
 
 Running `ghcr.io/ggml-org/llama.cpp:server` by hand works the same way, with the weights
 bind-mounted at `/models` and `--host 0.0.0.0 --ctx-size 8192 --threads 4`. Three of its flags
@@ -214,23 +223,10 @@ IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_CONCURRENCY: "4"
 
 ### Speed, and what to set `caption_concurrency` to
 
-Measured on 136 pictures, warm:
-
-| Server | `caption_concurrency` | Per picture |
-|---|---|---|
-| llama.cpp Q8_0, CPU, 4 threads (Apple Silicon in Docker) | 1, the default | 0.27 s |
-| llama.cpp Q8_0, CPU, 4 threads (Apple Silicon in Docker) | 4 | 3.39 s |
-| mlxcel, MLX, same Mac, on the GPU | 1 | 0.08 to 0.23 s |
-| llama.cpp Q8_0, CPU, 2-CPU Kubernetes pod | 1 | 3.5 s |
-| llama.cpp Q8_0, CPU, Celeron J4125 NAS | 1 | 30.9 s |
-
-It defaults to 1 because of the second row: four concurrent requests are twelve times slower on a
-CPU captioner, and `--parallel 4` on the server side does not recover it, because four image
-encodes share the threads of one. Raise it to 4 on a GPU, where it is worth about 1.5x.
-
-The cluster row is what pays for a card: 133 pictures is 8 minutes on two cores, under 30 seconds
-on a GPU, same weights. The NAS row is why the Synology and Celeron pages recommend `no_captions`:
-thirteen thousand pictures at 30.9 s each is four days, against 32 minutes on a Mac with MLX.
+Start with the default of 1. More concurrent requests can make a CPU server slower because
+they compete for the same threads. On a GPU, try 4 and measure with the other services you run.
+Report new captions separately from cache hits: a selection run that reuses captions does not
+measure caption throughput. Dated measurements belong on [Measured](./measured.md).
 
 ## Kubernetes
 
@@ -243,26 +239,29 @@ kubectl apply -k deploy/kubernetes/overlays/captioner-cuda   # NVIDIA nodes
 A Deployment, a ClusterIP Service on 8092, a NetworkPolicy and a 2 Gi PVC an init container fills
 and digest-checks before the server starts. Neither overlay includes `base`, so both apply without
 the Immich secret: the captioner holds no credential. It does receive a 400 px tile of every
-picture in the library, so the Service stays ClusterIP and the NetworkPolicy allows ingress on 8092
+picture it is asked to caption, so the Service stays ClusterIP and the NetworkPolicy allows ingress on 8092
 only.
 
 Point the app at it:
 
 ```yaml
-editorial:
-  preparation:
-    tier: full
-    caption_base_url: http://captioner:8092/v1
+tier: auto
+advanced:
+  inference:
+    facts_base_url: http://inference:8092
+  editorial:
+    preparation:
+      caption_base_url: http://captioner:8092/v1
 ```
 
 Across namespaces that is `captioner.immich-memories.svc.cluster.local:8092`.
 
-The app's base manifest pins `no_captions`. Override that environment setting when
-enabling this service; a config-file value cannot override it:
+The app's base manifest uses `tier: auto`. Point it at the GPU inference and caption services;
+the resolved product tier sets preparation too:
 
 ```bash
 kubectl -n immich-memories set env deployment/immich-memories \
-  IMMICH_MEMORIES_EDITORIAL__PREPARATION__TIER=full \
+  IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL=http://inference:8092 \
   IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL=http://captioner:8092/v1
 ```
 
@@ -297,13 +296,15 @@ build: pinning means `server-bNNNNN` and `server-cuda-bNNNNN`, both or neither.
 | `Caption endpoint serves another model` | a server answered and advertised something else |
 | `Caption endpoint refused the request` | 401 or 403, so set `caption_api_key` |
 
-On `no_captions` and `metadata_only` the row reads `SKIPPED`, and no endpoint is contacted.
+On NAS with the default caption provider the row reads `SKIPPED`. An explicit LLM-caption
+opt-in checks the configured LLM's vision responses instead.
 
 ## What a missing captioner costs
 
-On `full`, prepare stops: the description producer stays outstanding and the failure names
-`caption_base_url`. On the other two tiers nothing happens, because a missing description is not a
-missing fact there. What each tier runs: [Requirements and tiers](../run/requirements.md#the-preparation-tier).
+On GPU and Full with SmolVLM, prepare stops: the description producer stays outstanding and the
+failure names `caption_base_url`. Default NAS does not require that endpoint. With explicit LLM
+captions, a failed image request stays outstanding under that provider's identity.
+What each tier runs: [Requirements and tiers](../run/requirements.md#the-preparation-tier).
 
 ## Knowing which build wrote a caption
 
