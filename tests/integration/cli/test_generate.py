@@ -901,13 +901,14 @@ class TestPipelineRunner:
         assert len(assets) == 2
 
     def test_fetch_videos_person_filter(self, tmp_path):
-        """fetch with single person_id calls person-specific API."""
+        """One person reads the window whole, once, to find the episodes they are in."""
         from immich_memories.cli._asset_fetch import fetch_videos
         from immich_memories.timeperiod import DateRange
 
         mock_client = MagicMock()
         mock_progress = MagicMock()
-        mock_client.get_videos_for_person_and_date_range.return_value = []
+        mock_client.get_videos_for_date_range.return_value = []
+        mock_client.get_photos_for_date_range.return_value = []
 
         dr = DateRange(
             start=datetime(2025, 1, 1),
@@ -919,16 +920,19 @@ class TestPipelineRunner:
             date_ranges=[dr],
             person_ids=["person-123"],
         )
-        mock_client.get_videos_for_person_and_date_range.assert_called_once()
+        mock_client.get_videos_for_date_range.assert_called_once_with(dr)
+        mock_client.get_photos_for_date_range.assert_called_once_with(dr)
+        mock_client.get_videos_for_person_and_date_range.assert_not_called()
 
     def test_fetch_videos_multi_person(self, tmp_path):
-        """fetch with multiple person_ids asks for the videos holding all of them."""
+        """Several people read the same two window reads; no frame must hold them all."""
         from immich_memories.cli._asset_fetch import fetch_videos
         from immich_memories.timeperiod import DateRange
 
         mock_client = MagicMock()
         mock_progress = MagicMock()
-        mock_client.get_videos_for_all_persons.return_value = []
+        mock_client.get_videos_for_date_range.return_value = []
+        mock_client.get_photos_for_date_range.return_value = []
 
         dr = DateRange(
             start=datetime(2025, 1, 1),
@@ -940,7 +944,9 @@ class TestPipelineRunner:
             date_ranges=[dr],
             person_ids=["p1", "p2"],
         )
-        mock_client.get_videos_for_all_persons.assert_called_once()
+        mock_client.get_videos_for_date_range.assert_called_once_with(dr)
+        mock_client.get_photos_for_date_range.assert_called_once_with(dr)
+        mock_client.get_videos_for_all_persons.assert_not_called()
 
     def test_run_pipeline_wires_config_and_calls_generate(self, tmp_path, fixture_mp4):
         """run_pipeline_and_generate builds correct GenerationParams and calls generate_memory."""
