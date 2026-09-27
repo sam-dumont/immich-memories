@@ -4,6 +4,8 @@ import json
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from immich_memories.analysis.editorial_description_contract import validate_envelope
 from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
 from immich_memories.analysis.editorial_preparation_captions import _remember_caption
@@ -138,6 +140,26 @@ def test_full_refinement_reuses_gpu_captions_instead_of_recaptioning(tmp_path):
     assert full == gpu
     assert [ids for producer, ids in calls if producer == "effects-tier"] == [("nas",), ("full",)]
     assert any(producer == "period-context" for producer, _ in calls)
+    assert not any(producer == "captions" for producer, _ in calls)
+
+
+@pytest.mark.parametrize("tier", ["nas", "gpu", "full"])
+def test_banked_captions_do_not_change_the_initial_nas_draft(tmp_path, tier):
+    first = datetime(2024, 2, 1, 12, tzinfo=UTC)
+    sources = [photo(f"picture-{n:02}", at=first + timedelta(days=n)) for n in range(24)]
+    for asset in sources:
+        asset.is_favorite = True
+    _film(tmp_path, sources, tier="gpu")
+    drafts = set((tmp_path / "artifacts").glob("**/nas-draft/plan.private.json"))
+    assert len(drafts) == 1
+    cold = json.loads(next(iter(drafts)).read_text())["carriers"]
+
+    _, calls = _film(tmp_path, sources, tier=tier)
+
+    new_drafts = set((tmp_path / "artifacts").glob("**/nas-draft/plan.private.json")) - drafts
+    assert len(new_drafts) == 1
+    warm = json.loads(new_drafts.pop().read_text())["carriers"]
+    assert [(c["asset_id"], c["line"]) for c in warm] == [(c["asset_id"], c["line"]) for c in cold]
     assert not any(producer == "captions" for producer, _ in calls)
 
 

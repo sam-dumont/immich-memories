@@ -514,9 +514,9 @@ def test_post_card_runtime_projects_selected_wall_rows_in_chronological_order(
         assert source.motion_outcome_replay is reference
         assert source.annotations == {
             "earlier": "2026-08-20 09:00+00:00 | VIDEO 5s raw | "
-            "A family starts a race together. | resolution:1920x1080 | duration:5.000s | motion:available",
+            "resolution:1920x1080 | duration:5.000s | motion:available",
             "later": "2026-08-20 10:00+00:00 | VIDEO 5s raw | "
-            "The same family celebrates at the finish. | resolution:1920x1080 | duration:5.000s | motion:available",
+            "resolution:1920x1080 | duration:5.000s | motion:available",
         }
         assert tuple(source.assets) == ("earlier", "later")
         assert {asset for ids in source.moment_asset_ids.values() for asset in ids} == {
@@ -526,7 +526,8 @@ def test_post_card_runtime_projects_selected_wall_rows_in_chronological_order(
         assert source.lineage["episode_readings"]
         assert all(row["evidence_key"] for row in source.lineage["episode_readings"])
         assert source.period_evidence == ()
-        assert b"A family starts a race together." in source.wall_bytes
+        assert b"A family starts a race together." not in source.wall_bytes
+        assert b"The same family celebrates at the finish." not in source.wall_bytes
         assert source.case.target_seconds == 60
         assert source.intent.product == "special_day"
         return StructurePlanningResult(
