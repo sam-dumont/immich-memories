@@ -149,6 +149,16 @@ class ProductionPostCardBackend:
             result.plan["reader"] = "rules-v1"
             result.plan.setdefault("lineage", {})["reader"] = "rules-v1"
             result.plan["semantic_reuse"] = "none; rules are recomputed from captured facts"
+        if self._episode_demand is not None:
+            health = self._episode_demand.reading_health()
+            result.plan["episode_reading_health"] = health
+            if health["unavailable_episodes"]:
+                warning = (
+                    f"!! {health['unavailable_episodes']} demanded episode(s) unread; "
+                    "using factual fallback"
+                )
+                trace.warnings.append(warning)
+                logger.warning(warning)
         return self._adopt(result, source.artifact_dir, allowed_ids)
 
     def _effects(self, source, resources):

@@ -444,6 +444,8 @@ src/immich_memories/
 │   │                           # over a month, year or window the library has no account of yet
 │   ├── episode_demand.py      # The draft reads the period from facts; only the episodes its shots
 │   │                          # sit in are read by the model, when the polish layer asks for the account
+│   │                          # Latest demanded-reading availability reaches the final private plan;
+│   │                          # unresolved readings also warn in the trace, recovered ones stay banked
 │   ├── editorial_home_radius.py    # Where home is, and whether captures sit inside its radius
 │   ├── editorial_shareability_tiers.py  # Audience evidence policy for reduced preparation tiers
 │   ├── editorial_review_list.py    # The finished cut's shots in the detector's 0.2-0.5 grey zone that
