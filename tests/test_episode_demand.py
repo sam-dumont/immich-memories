@@ -66,9 +66,9 @@ def answer(prompt: str) -> str:
     )
 
 
-def demand_for(tmp_path, asked):
-    prepared = prepared_month()
-    lines = Lines({asset: f"{asset} | one complete line" for asset in ASSETS})
+def demand_for(tmp_path, asked, *, respond=answer, prepared=None):
+    prepared = prepared or prepared_month()
+    lines = Lines({asset: f"{asset} | one complete line" for asset in prepared.candidate_ids})
     producer = EpisodeReadingProducer(
         model_id="a-model",
         prompt_version="episode-prompt-v3",
@@ -83,7 +83,7 @@ def demand_for(tmp_path, asked):
             store=store,
             producer=producer,
             annotations=lines,
-            requester=lambda prompt: (asked.append(prompt), answer(prompt))[1],
+            requester=lambda prompt: (asked.append(prompt), respond(prompt))[1],
         )
 
     demand = DemandEpisodeReadings(
@@ -129,6 +129,57 @@ def test_a_second_demand_for_the_same_story_is_free(tmp_path):
 
     assert len(asked) == paid
     assert list(again)
+
+
+def test_a_failed_demand_preserves_its_fallback_and_identity(tmp_path):
+    from immich_memories.analysis.llm_wire import LLMIncompleteResponse
+
+    # WHY: replace the model HTTP boundary with a provider-confirmed truncated reply.
+    def incomplete(_prompt):
+        raise LLMIncompleteResponse('{"episodes":[')
+
+    asked = []
+    demand, prepared = demand_for(tmp_path, asked, respond=incomplete)
+    chosen = project_episode_groups(prepared, ("day-two",))[0].group.group_id
+
+    readings = demand.readings_for(["day-two"])
+
+    assert readings == {}
+    health = demand.reading_health()
+    assert health["status"] == "degraded"
+    assert health["unavailable_episodes"] == 1
+    assert len(health["episodes"]) == 1
+    episode = health["episodes"][0]
+    assert episode["group_id"] == chosen
+    assert episode["status"] == "unavailable"
+    assert episode["producer_key"] and episode["evidence_key"]
+    assert "LLMIncompleteResponse" in episode["reason"]
+    assert len(asked) == 1
+
+
+def test_a_recovered_demand_keeps_its_history_without_remaining_degraded(tmp_path):
+    from immich_memories.analysis.llm_wire import LLMIncompleteResponse
+
+    asked = []
+
+    # WHY: the provider fails once, then answers; the real store owns subsequent reuse.
+    def transient(prompt):
+        if len(asked) == 1:
+            raise LLMIncompleteResponse('{"episodes":[')
+        return answer(prompt)
+
+    demand, _prepared = demand_for(tmp_path, asked, respond=transient)
+    assert demand.readings_for(["day-two"]) == {}
+    assert demand.readings_for(["day-two"])
+    assert demand.readings_for(["day-two"])
+
+    health = demand.reading_health()
+    assert health["status"] == "complete"
+    assert health["unavailable_episodes"] == 0
+    assert health["episodes"][0]["status"] == "recovered"
+    assert health["episodes"][0]["reason"] is None
+    assert health["episodes"][0]["cache_hit"]
+    assert len(asked) == 2
 
 
 def test_the_unread_episodes_are_the_ones_no_demand_has_read_and_asking_is_free(tmp_path):
