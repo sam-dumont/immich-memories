@@ -31,11 +31,9 @@ from immich_memories.analysis.editorial_preparation_model_facts import (
     deferred_exposure,
 )
 from immich_memories.analysis.editorial_preparation_motion import (
-    MOTION_PRODUCER,
+    MotionScope,
     MotionSource,
-    banked_residuals,
-    missing_motion,
-    motion_sources,
+    motion_producer,
     playback_sampler,
     prepare_motion_lines,
     seat_asker,
@@ -646,10 +644,14 @@ def prepare_editorial_annotations(
             _acquire_captions(
                 stage, connection, pending(f"description:{description_model}"), description_model
             )
-        motion = _MotionScope(
-            source, store_path, read_playback, demanded=preparation_config.demands_captions
+        motion = MotionScope(
+            source,
+            store_path,
+            read_playback,
+            demanded=preparation_config.demands_captions,
+            producer=motion_producer(description_model),
         )
-        motion.acquire(stage, connection, before)
+        motion.acquire(stage.motion, connection, before)
         stage.check()
         after, _unavailable = outstanding()
         motion.report(connection, after)
@@ -662,40 +664,6 @@ def prepare_editorial_annotations(
             if preparation_config.demands_captions
             else {},
         )
-
-
-class _MotionScope:
-    """The videos this pass owes a motion line: true videos, and Live Photos that play.
-
-    Nothing is owed without a playback reader, or when the tier has no caption seat.
-    """
-
-    key = f"motion:{MOTION_PRODUCER}"
-
-    def __init__(
-        self,
-        assets: Sequence[Asset],
-        store_path: Path,
-        read_playback: Callable[[str, int, int], tuple[bytes, int]] | None,
-        *,
-        demanded: bool,
-    ) -> None:
-        self._read_playback = read_playback
-        self._sources = (
-            motion_sources(assets, residual_of=banked_residuals(store_path))
-            if read_playback and demanded
-            else ()
-        )
-
-    def acquire(self, stage: _Acquisition, connection: sqlite3.Connection, before: dict) -> None:
-        owed = missing_motion(connection, self._sources) if self._sources else ()
-        if owed and self._read_playback is not None:
-            before[self.key] = tuple(source.asset_id for source in owed)
-            stage.motion(connection, owed, self._read_playback)
-
-    def report(self, connection: sqlite3.Connection, after: dict) -> None:
-        if self._sources and (owed := missing_motion(connection, self._sources)):
-            after[self.key] = tuple(source.asset_id for source in owed)
 
 
 def _without(

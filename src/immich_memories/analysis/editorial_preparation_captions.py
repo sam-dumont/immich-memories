@@ -44,7 +44,7 @@ from immich_memories.analysis.llm_caption_identity import (
     LLM_DESCRIPTION_SOURCE,
     llm_caption_identity,
 )
-from immich_memories.analysis.llm_metrics import recording_stage
+from immich_memories.analysis.llm_metrics import record_reply, recording_stage
 from immich_memories.analysis.llm_preparation_usage import record_preparation_attempt
 from immich_memories.analysis.llm_providers import resolved_llm_config
 from immich_memories.analysis.llm_query import query_llm
@@ -238,6 +238,8 @@ def ask_llm_image(
                 )
             )
         except httpx.HTTPStatusError as exc:
+            # The shared transport records completed replies after this HTTP check.
+            record_reply(stage=stage, usage_known=False)
             if exc.response.status_code not in REFUSED_CODES:
                 raise
             raise PermissionError(
