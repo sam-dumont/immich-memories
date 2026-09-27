@@ -73,6 +73,7 @@ def handle_album_generation(
     from immich_memories.processing.encoding_plan import resolve_output_selection
 
     task = progress.add_task(f"Resolving album: {album_ref}...", total=None)
+    thesis = None
     if album_ref.startswith("file:"):
         # PROBE (caption threads): an in-memory album of exact asset IDs, read-only.
         import hashlib
@@ -83,6 +84,7 @@ def handle_album_generation(
         from immich_memories.api.album_service import AlbumRef
 
         spec = json.loads(Path(album_ref[5:]).read_text())
+        thesis = spec.get("thesis")
         ids = list(dict.fromkeys(spec["asset_ids"]))
         digest = hashlib.sha256("\n".join(sorted(ids)).encode()).hexdigest()[:16]
         resolved = AlbumRef(id=f"assets-{digest}", name=spec["name"], asset_count=len(ids))
@@ -160,7 +162,8 @@ def handle_album_generation(
         date_ranges=(),
         upload_to_immich=upload_to_immich,
         album=album,
-        memory_preset_params={"album_name": resolved.name, "album_id": resolved.id},
+        memory_preset_params={"album_name": resolved.name, "album_id": resolved.id}
+        | ({"thesis": thesis} if thesis else {}),
         source=source,
         memory_key=memory_key,
         memory_category=memory_category,

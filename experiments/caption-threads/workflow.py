@@ -39,7 +39,9 @@ The proposed scope is explanatory; it cannot impose extra requirements such as a
 outfit, prop or place absent from the owner_brief. Follow explicit exclusions.
 Literal words may be background, toys, statues, signs, screenshots, or another meaning.
 Choose match only when the source itself supports the requested content. Choose reject for
-clear nonmembers; unknown for missing evidence, uncertain identity, ownership or progression.
+clear nonmembers; unknown for missing evidence. The captions come from a small vision model
+that never knows names, breeds, ages, who a person is or whose something is: judge only
+what a caption could show, and never withhold a match for those.
 For broad recurring subjects, identity or measurable improvement need not be proven unless requested.
 Do not reject an explicit activity just because incidental gear differs.
 Return JSON {"decisions":[{"ref":integer,"decision":"match|reject|unknown","reason":short factual reason}]}.
@@ -155,9 +157,13 @@ def refine(reader, library, candidate, nomination, brief=None, sample_limit=40):
     elif candidate['operator']=='returning_geography':
         judgment['title']=candidate['anchor']+' across the years'
     all_refs = candidate.get('retrieval_refs',candidate['refs'])
-    selected = [s['ref'] for s in library.witnesses(all_refs,sample_limit)]
-    # Include the evidence cited by the judge and important challenges within the budget.
-    selected = list(dict.fromkeys(judgment['evidence_refs']+challenge+selected))[:sample_limit]
+    if candidate.get('ranked_refs'):
+        # An owner's sentence: check the strongest matches, not a spread plus challenges.
+        selected = list(dict.fromkeys(judgment['evidence_refs']+candidate['ranked_refs']))[:sample_limit]
+    else:
+        selected = [s['ref'] for s in library.witnesses(all_refs,sample_limit)]
+        # Include the evidence cited by the judge and important challenges within the budget.
+        selected = list(dict.fromkeys(judgment['evidence_refs']+challenge+selected))[:sample_limit]
     decisions = choose_sources(reader,library,key,owner_brief,selected)
     admitted = [d['ref'] for d in decisions if d['decision']=='match']
     accepted_facts = library.facts(admitted)

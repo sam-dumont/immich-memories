@@ -1,5 +1,6 @@
 """Unconstrained owner language is interpreted once, then checked against evidence."""
 import hashlib
+import re
 from collections import defaultdict
 
 from nltk.stem import PorterStemmer
@@ -63,6 +64,53 @@ def retrieve_plan(library, plan):
     return sorted(i for i in refs if (plan['since'] or 1) <= int(library.rows[i]['taken_at'][:4]) <= (plan['until'] or 9999))
 
 
+MIN_RETRIEVAL = 20
+FILLER = set("since until after before about over again ever still just also very really some any every each all our ours we us you your it its they them their this that these those there here when where what which who whom how why want wants wanted like would could should will shall please make made get got bought buy one two".split())
+VISIBLE = '''A photo library's captions describe only what is visible. List 6 to 10 short
+phrases (one or two words each) for what would be visible in pictures of the activity or
+change the owner asks for: the tools, materials, actions and work in progress, not the
+ordinary setting around it. Use words from caption_vocabulary. Return JSON {"phrases":[strings]}.'''
+
+
+COMPANIONS = '''Words that appear unusually often in this library's captions next to the
+owner's request. Which of them are visible signs of what the owner asks for (not the
+ordinary setting, not something else)? Return JSON {"terms":[terms from the list]}.'''
+
+
+def companion_terms(reader, library, brief, key, rare=0.05, min_lift=8, specific=0.01):
+    """Lift over the captions that use the request's own uncommon words; E4B keeps the signs."""
+    n = len(library.rows)
+    stem = PorterStemmer().stem
+    by_stem = defaultdict(set)
+    for term, refs in library.posts.items():
+        by_stem[stem(term)] |= refs
+    # The request's most specific words: present, uncommon, and within 10x of the rarest.
+    counted = {w: len(by_stem.get(stem(w), ())) for w in words(brief) if w not in FILLER}
+    usable = {w: c for w, c in counted.items() if 3 <= c <= rare * n}
+    if not usable:
+        return [], []
+    rarest = min(usable.values())
+    own = [w for w, c in usable.items() if c <= 10 * rarest]
+    seed = set().union(*(by_stem[stem(w)] for w in own))
+    counts = defaultdict(int)
+    for i in seed:
+        for t in library.tokens[i]:
+            counts[t] += 1
+    said = {stem(w) for w in words(brief)}
+    lifted = sorted(((c / len(seed)) / (len(library.posts[t]) / n), t) for t, c in counts.items()
+                    if c >= 3 and len(library.posts[t]) <= specific * n and stem(t) not in said)
+    candidates = [t for l, t in reversed(lifted) if l >= min_lift][:30]
+    if not candidates:
+        return own, []
+
+    def valid(a):
+        assert set(a['terms']) <= set(candidates)
+
+    answer = reader.ask('companions', key, COMPANIONS,
+                        {'owner_brief': brief, 'terms': candidates}, valid, 300)
+    return own, (answer or {'terms': []})['terms']
+
+
 def resolve_places(reader, named, available):
     """A named place is kept when the library records it; anything else (a continent, a
     park) is one short question: which recorded places lie inside it."""
@@ -100,6 +148,9 @@ def find(reader, library, brief, sample_limit=48):
     def validate(plan):
         # A missing title or flag is filled in; only the search itself must be well formed.
         plan['title'] = plan.get('title') or brief.strip()[:60]
+        # A year named as an event ("the facade we redid in 2022") is not an end date.
+        if plan.get('until') and not re.search(r"\b(until|till|through|up to)\b|\b(to|before) \d{4}|\d{4}\s*-\s*\d{4}", brief, re.I):
+            plan['until'] = None
         plan['people_request'] = bool(plan.get('people_request'))
         plan['places'] = [p for p in plan.get('places') or [] if isinstance(p, str) and p.strip()]
         plan['interpretation'] = plan.get('interpretation') or ''
@@ -120,6 +171,10 @@ def find(reader, library, brief, sample_limit=48):
     plan['named_places'] = [p for p in plan['places'] if p.casefold() in brief.casefold()]
     plan['places'] = resolve_places(reader, plan['named_places'], available)
     if plan['places']:
+        # "The desert" resolved to the towns in it: the place now carries that word, so
+        # also requiring it in captions would only empty the search.
+        named = {w for p in plan['named_places'] for w in words(p)}
+        plan['queries'] = [q for q in plan['queries'] if not words(q) <= named]
         # With the place resolved, a subject phrase sharing no word with the sentence is
         # the model's own guess at what the place looks like: it would only narrow it.
         said = {PorterStemmer().stem(w) for w in words(brief)}
@@ -127,6 +182,40 @@ def find(reader, library, brief, sample_limit=48):
                                    if not {PorterStemmer().stem(w) for w in words(p)} & said]
         plan['queries'] = [p for p in plan['queries'] if p not in plan['dropped_queries']]
     refs = retrieve_plan(library,plan)
+    if not plan['people_request']:
+        # The owner's words are rarely the captioner's ("renovation" vs "peeling paint,
+        # exposed brick"). Let the library say which words travel with the request's own
+        # rare words, and have E4B judge only those.
+        own, companions = companion_terms(reader, library, brief, key)
+        named = {w for p in plan['named_places'] for w in words(p)} if plan['places'] else set()
+        own = [w for w in own if w not in named]
+        extra = own
+        if len(companions) >= 2:
+            # One companion word is a room; two together ("peeling paint", "exposed
+            # brick") are the work. Their captions join the search as pairs.
+            extra = own + [f"{a} {b}" for k, a in enumerate(companions) for b in companions[k + 1:]]
+        stem_ = PorterStemmer().stem
+        known = {stem_(t) for t in library.posts}
+        unseen = [w for w in words(brief) if w not in FILLER and w not in named and stem_(w) not in known]
+        if unseen and not companions:
+            # The request's key word never appears in this library ("birthday" when the
+            # captioner writes "cake with candles"): search for what it looks like instead
+            # of the generic words the plan fell back on.
+            plan['queries'] = []
+        if (len(refs) < MIN_RETRIEVAL or unseen) and not companions and not own:
+            seen = set(library.posts)
+
+            def valid_visible(a):
+                assert isinstance(a['phrases'], list) and a['phrases']
+
+            visible = reader.ask('visible', key, VISIBLE, {'owner_brief': brief,
+                                 'caption_vocabulary': vocabulary(300)}, valid_visible, 400)
+            extra = [p for p in (visible or {'phrases': []})['phrases']
+                     if isinstance(p, str) and words(p) and words(p) <= seen]
+        if extra:
+            plan['expanded_queries'] = extra
+            plan['queries'] = list(dict.fromkeys(plan['queries'] + extra))
+            refs = retrieve_plan(library, plan)
     save(ROOT/'requests'/f'{key[8:]}-plan.json',{'owner_brief':brief,'plan':plan,'retrieval':library.facts(refs)})
     if not refs and plan['people_request']:
         # Who is in a picture is Immich's face data, not a caption: a person film's job.
@@ -134,7 +223,12 @@ def find(reader, library, brief, sample_limit=48):
     elif not refs:
         result = {'key':key,'owner_brief':brief,'plan':plan,'status':'no_caption_matches','sources':[]}
     else:
-        candidate = {'key':key,'anchor':plan['title'],'operator':'owner_request',
+        stem_ = PorterStemmer().stem
+        phrases = [{stem_(w) for w in words(p)} for p in plan['queries']]
+        stems = {i: {stem_(t) for t in library.tokens[i]} for i in refs}
+        strength = lambda i: sum(1 for p in phrases if p and p <= stems[i])
+        candidate = {'ranked_refs': sorted(refs, key=lambda i: (-strength(i), library.rows[i]['taken_at'])),
+                     'key':key,'anchor':plan['title'],'operator':'owner_request',
                      **library.facts(refs),'context':library.context(refs),
                      'witnesses':library.witnesses(refs,12)}
         result = refine(reader,library,candidate,{'title':plan['title'],'hypothesis':plan['interpretation'],

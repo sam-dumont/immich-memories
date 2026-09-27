@@ -18,18 +18,24 @@ import random
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+from nltk.stem import PorterStemmer
+
+from discovery import words
 from experiment_data import ROOT, candidate_pool, load_library, save
 from model_reader import Reader
 from pick import HEAT, HEAT_PROMPT, ROUNDS, is_burst, places, spread
 from workflow import refine
 
 MIN_DAYS_YEARS = 3
+STEM = PorterStemmer().stem
 KEEP_WINS, MAX_THREADS = 3, 12
 GROUP_PROMPT = '''These are threads found in one person's photo library, each a possible film.
 Group together threads that are the same part of this person's life seen from different
 angles (one hobby, one animal, one place). Keep different subjects apart. Order the groups
-from the film this person would most want to watch to the least, and give each group a
-warm, specific title. Return JSON {"groups":[{"title":string,"ids":[ids]}]}.'''
+from the film this person would most want to watch to the least. Give each group, and
+separately each thread, the short name this person would give the album: everyday words
+naming the subject, not a list of keywords, no adjectives such as sweet, joyful or cozy,
+no puns. Return JSON {"groups":[{"title":string,"ids":[ids]}],"titles":{"id":string}}.'''
 CONTAINED = 0.6  # share of the smaller subject's pictures that sit inside the bigger one
 # Lexical classes that describe any picture: they may be absorbed, never absorb.
 NEVER_ABSORB = {"noun.person", "noun.attribute", "noun.shape", "noun.body", "noun.location",
@@ -106,6 +112,31 @@ def checked(reader, library, w):
     return refine(reader, library, candidate, nomination)
 
 
+def related(a, b):
+    """Evidence the model's grouping is more than a shared theme: the same pictures, each
+    other's subject word, or the same days (horse and horseback; not a dog and a newborn)."""
+    shared = len(a["_pics"] & b["_pics"]) / max(1, min(len(a["_pics"]), len(b["_pics"])))
+    same_days = len(a["_days"] & b["_days"]) / max(1, min(len(a["_days"]), len(b["_days"])))
+    mutual = bool(a["_anchors"] & b["_stems"]) and bool(b["_anchors"] & a["_stems"])
+    return shared >= 0.2 or mutual or same_days >= 0.5
+
+
+def connected(members, ids):
+    parts, left = [], list(members)
+    while left:
+        part = [left.pop(0)]
+        grew = True
+        while grew:
+            grew = False
+            for i in left[:]:
+                if any(related(ids[i], ids[j]) for j in part):
+                    part.append(i)
+                    left.remove(i)
+                    grew = True
+        parts.append(part)
+    return parts
+
+
 def main():
     started = time.monotonic()
     library, reader = load_library(), Reader()
@@ -129,7 +160,12 @@ def main():
                       "matched": len(w["unit"]["pics"]), "checked": len(sources),
                       "years": sorted({s["date"][:4] for s in sources}),
                       "asset_ids": [s["asset_id"] for s in sources],
-                      "sample": [s["caption"][:120] for s in sources[:: max(1, len(sources) // 3)]][:3]})
+                      "sample": [s["caption"][:120] for s in sources[:: max(1, len(sources) // 3)]][:3],
+                      "_pics": w["unit"]["pics"],
+                      "_days": {library.rows[i]["taken_at"][:10] for i in w["unit"]["pics"]},
+                      "_stems": {STEM(t) for i in w["unit"]["pics"] for t in library.tokens[i]},
+                      "_anchors": {STEM(t) for a in [w["unit"]["anchor"], *w["unit"]["merged"]]
+                                   for t in words(a)}})
     travels = [f for f in films if f["wins"] == "-"]
     ids = dict(enumerate(f for f in films if f["wins"] != "-"))
 
@@ -148,7 +184,16 @@ def main():
     grouped = {i for g in groups for i in g["ids"]}
     groups += [{"title": f["film_title"], "ids": [i]} for i, f in ids.items() if i not in grouped]
     ranked = []
+    # The model groups by theme and will pair a dog with a newborn. A join stands only
+    # when the threads share pictures, or one's subject word runs through the other's
+    # captions; otherwise the group splits back into the pieces that do connect.
+    checked_groups = []
     for g in groups:
+        for part in connected([i for i in g["ids"] if i in ids], ids):
+            own = (answer or {}).get("titles", {}) if isinstance((answer or {}).get("titles"), dict) else {}
+            title = g.get("title") if len(part) == len(g["ids"]) else own.get(str(part[0])) or ids[part[0]]["film_title"]
+            checked_groups.append({"title": title, "ids": part})
+    for g in checked_groups:
         members = [ids[i] for i in g["ids"]]
         if not members:
             continue
@@ -158,6 +203,7 @@ def main():
                                     "checked": len(assets), "asset_ids": assets,
                                     "years": sorted({y for m in members for y in m["years"]})})
     ranked += [t | {"members": [t["film_title"]]} for t in travels]
+    ranked = [{k: v for k, v in f.items() if not k.startswith("_")} for f in ranked]
     save(ROOT / "data/threads-v2.json", {"pool": len(pool), "units": len(units),
                                          "winners": len(winners), "films": ranked,
                                          "seconds": round(time.monotonic() - started),

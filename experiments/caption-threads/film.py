@@ -20,12 +20,35 @@ from query import find
 TEST_IMMICH = "http://10.2.254.58:2283"
 
 
+THESIS = '''Write the thesis of a short film from the owner's request and the pictures
+found for it (dates and captions, in order). Two to four plain sentences: what the film is
+about and how it moves through time. Use only the owner's words and what the captions show;
+do not invent names, events or feelings. Return JSON {"thesis":string}.'''
+
+
+def write_thesis(result, brief):
+    """The lens the regular selection reads the pool through: the owner's words plus the timeline."""
+    evidence = result.get("handoff", {}).get("candidates", [{}])[0].get("evidence", [])
+    step = max(1, len(evidence) // 24)
+    timeline = [f'{e["taken_at"][:10]}: {e["caption"][:110]}' for e in evidence[::step]]
+
+    def valid(a):
+        assert isinstance(a["thesis"], str) and 20 < len(a["thesis"]) < 900
+
+    answer = READER.ask("thesis", result["key"], THESIS,
+                        {"owner_request": brief, "timeline": timeline}, valid, 400)
+    return (answer or {}).get("thesis") or brief
+
+
 def main():
     brief = sys.argv[1]
     config = Config.from_yaml(Path.home() / ".immich-memories/config.yaml")
-    if config.immich.url.rstrip("/") != TEST_IMMICH:
+    # The owner's own library only on explicit request; reads only, nothing written back.
+    if config.immich.url.rstrip("/") != TEST_IMMICH and not os.environ.get("OWNER_OK"):
         raise SystemExit("film.py only writes albums to the test Immich")
-    result = find(Reader(), load_library(), brief, 48)
+    global READER
+    READER = Reader()
+    result = find(READER, load_library(), brief, int(os.environ.get("SAMPLES", 48)))
     candidates = result.get("handoff", {}).get("candidates", [])
     ids = [e["asset_id"] if isinstance(e, dict) else e.asset_id
            for c in candidates for e in (c["evidence"] if isinstance(c, dict) else c.evidence)]
@@ -38,17 +61,17 @@ def main():
     title = result.get("judgment", {}).get("title") or result["plan"]["title"]
     spec = ROOT / "films" / f"{result['key'][8:]}.json"
     spec.parent.mkdir(parents=True, exist_ok=True)
-    spec.write_text(json.dumps({"name": title, "brief": brief, "asset_ids": ids}))
-    summary |= {"title": title, "spec": str(spec)}
+    thesis = write_thesis(result, brief)
+    spec.write_text(json.dumps({"name": title, "brief": brief, "thesis": thesis, "asset_ids": ids}))
+    summary |= {"title": title, "thesis": thesis, "spec": str(spec)}
     print(json.dumps(summary, ensure_ascii=False), flush=True)
     if os.environ.get("FILM_DRY"):
         return
     wrapper = "/private/tmp/imm-threads/.venv/bin/immich-memories"
-    # The thread is the curation: every checked source is owner-required, so the
-    # editor dedupes and orders instead of re-judging the pool as a period.
-    includes = [arg for i in ids for arg in ("--include", i)]
-    subprocess.run([wrapper, "generate", "--from-album", f"file:{spec}", "--title", title,
-                    *includes], check=False)
+    # The pool goes to the regular flow with the thesis as its written subject: the
+    # editor selects through that lens and every eligibility check still applies.
+    subprocess.run([wrapper, "generate", "--from-album", f"file:{spec}", "--title", title],
+                   check=False)
 
 
 if __name__ == "__main__":

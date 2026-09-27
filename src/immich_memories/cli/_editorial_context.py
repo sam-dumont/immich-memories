@@ -110,6 +110,8 @@ def build_editorial_context(
         accept_any_provenance=accept_any_provenance,
         owner_required_asset_ids=owner_required_asset_ids,
         owner_excluded_asset_ids=owner_excluded_asset_ids,
+        # PROBE (caption threads): the intent layer's thesis is the film's written subject.
+        base_brief=resolved.preset_params.get("thesis"),
         trip=product == "trip",
         album_ref=album_ref,
         album_sources=album_sources,
