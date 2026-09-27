@@ -314,3 +314,49 @@ def test_ui_factory_rejects_invalid_edit_before_creating_client(tmp_path):
         _build_generation_params(state, params.clips, params.output_path)
     client.assert_not_called()
     assert not list(tmp_path.glob("*.owner-edits-*.private.json"))
+
+
+def swap_project(params, sibling, *, siblings=None, selected_ids=None, segments=None):
+    return project_editorial_owner_edits(
+        original_clips=params.clips,
+        original_selections=params.editorial_selections,
+        original_binding=params.editorial_render_timing,
+        selected_ids=[c.asset.id for c in params.clips] if selected_ids is None else selected_ids,
+        requested_segments=params.clip_segments if segments is None else segments,
+        policy=timing_policy_for_params(params),
+        replacements={"chosen-0": sibling},
+        moment_siblings={"chosen-0": ["sibling-0"]} if siblings is None else siblings,
+    )
+
+
+def test_a_recorded_sibling_takes_the_shot_s_place_and_passes_the_render_guards(tmp_path):
+    params = original_params(tmp_path)
+    before = deepcopy(params)
+    sibling = make_clip("sibling-0", duration=12, file_created_at=datetime(2020, 1, 2, tzinfo=UTC))
+    sibling.asset.type = AssetType.IMAGE
+
+    result = swap_project(params, sibling)
+
+    assert [c.asset.id for c in result.clips] == ["sibling-0", "chosen-1", "chosen-2", "chosen-3"]
+    assert result.binding["source_ids"] == ["sibling-0", "chosen-1", "chosen-2", "chosen-3"]
+    assert result.segments["sibling-0"] == (0.0, 4.0)
+    assert result.record["replacements"] == [{"original": "chosen-0", "replacement": "sibling-0"}]
+    assert params == before
+    updated = rendered_params(params, result)
+    prepare_certified_timeline(updated)
+    directive = _validated_render_directives(updated)["sibling-0"]
+    assert directive.render_mode == "still"
+
+
+@pytest.mark.parametrize(
+    ("replacement", "siblings"),
+    [("a-stranger", {"chosen-0": ["sibling-0"]}), ("chosen-3", {"chosen-0": ["chosen-3"]})],
+)
+def test_a_swap_to_anything_but_a_new_recorded_sibling_is_refused(tmp_path, replacement, siblings):
+    params = original_params(tmp_path)
+    clip = next((c for c in params.clips if c.asset.id == replacement), None) or make_clip(
+        replacement, duration=12, file_created_at=datetime(2020, 1, 2, tzinfo=UTC)
+    )
+
+    with pytest.raises(ValueError, match="moment"):
+        swap_project(params, clip, siblings=siblings)
