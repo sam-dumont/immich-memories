@@ -182,10 +182,12 @@ unchanged sources retain their existing bank entries.
 - **Bank / banked**: an answer stored under its exact inputs and producer identity, so the next
   run asks nothing and a changed asset invalidates only its own rows. The main ones:
   the store's annotation tables (`store/`), episode readings, accounts, cut measurements
-  (`store/cut_measurements.py`), judgments (`cache/judgment_cache.py`) and the `structure-banks/*.private.json` files (thesis-fit
-  votes, audience verdicts). No row means nobody asked, never "measured nothing". Two runs write them at
-  once (the pipeline lock covers assembly only): store banks write in short transactions, and every JSON
-  bank merges what is on disk under `locked_file.file_lock` before its atomic replace.
+  (`store/cut_measurements.py`), judgments (`cache/judgment_cache.py`), the thesis-fit and
+  memory-worthy vote banks (`store/vote_banks.py`) and the audience bank (`store/audience_bank.py`).
+  No row means nobody asked, never "measured nothing". Two runs write them at once (the pipeline
+  lock covers assembly only): every bank writes in short store transactions, and audience holds
+  reach the store in batches of up to 500 pictures, each merged with the store's copy in one
+  transaction under locks taken in sorted order, so the stricter hold always stands.
   Private database creation is exclusive. Existing files are chmodded without opening and
   closing an extra descriptor, which would release live SQLite connections' POSIX locks.
 
@@ -746,7 +748,8 @@ src/immich_memories/
 │   │                           # model_answers.py (judgments, Cull verdicts, episode readings/refusals,
 │   │                           # library overviews; 0004_annotations); operations.py (pipeline_runs,
 │   │                           # phase_stats, automation_attempts, notification_health, asset_scores,
-│   │                           # run_attempts, special_days; 0005_operations)
+│   │                           # run_attempts, special_days; 0005_operations); banks.py (audience answers
+│   │                           # and holds, block vote entries, owner review edits; 0006_banks)
 │   ├── legacy_import.py        # ImportOutcome: what one domain's import_legacy(store, home) did; the
 │   │                           # `legacy_import` records in store_meta (read_/write_import_record)
 │   ├── inventory.py            # row_counts, present_counts, recorded_revisions, digests: order-free,
@@ -798,11 +801,20 @@ src/immich_memories/
 │                               # "measured as nothing")
 │   ├── legacy_annotations.py   # import_legacy(store, home): annotations.sqlite + judgments.db, read-only,
 │   │                           # keys kept, idempotent; the only reader of those files; verify_legacy
-│   ├── legacy_imports.py       # The import registry (people -> annotations -> operations; one line per domain):
+│   ├── legacy_imports.py       # The import registry (people -> annotations -> operations -> banks; one per domain):
 │   │                           # run_import (resumable, per-importer fingerprint records), verify_import,
 │   │                           # import_on_first_open (the CLI/UI enable it after the config loads; a lease
 │   │                           # makes concurrent starts import once)
 │   ├── legacy_verify.py        # verify_rows: every legacy key in the store with equal values
+│   ├── audience_bank.py        # The audience bank's rows: answers by answerer + evidence key, hold slots
+│   │                           # (permanent / text) per picture, merged a batch per transaction
+│   ├── vote_banks.py           # VoteBank: a block vote bank (memory-worthy, thesis-fit) per case key;
+│   │                           # save() writes only the entries changed since the last save
+│   ├── owner_edits.py          # The owner's review edits before a render, kept whole per edit id and
+│   │                           # read back by attempt (`runs why`)
+│   ├── legacy_banks.py         # import_legacy(store, home): the structure-banks/ JSON files and
+│   │                           # <film>.owner-edits-<id>.private.json, read-only, idempotent;
+│   │                           # verify_legacy (owner edits exact, holds at least as strict)
 │   └── batches.py              # id_in/in_chunks (one array parameter on PostgreSQL, IN slices under
 │                               # SQLite's bind limit); bank_rows/upsert_rows: one transaction per batch.
 │                               # Producers bank in batches (PendingHeadFacts, PendingMeasurements,
@@ -896,7 +908,8 @@ src/immich_memories/
 ├── filename_builder.py         # Output filename generation
 ├── timeperiod.py               # Date range utilities
 ├── security.py                 # Input sanitization, secret files, credential fingerprints
-├── locked_file.py              # file_lock(): one writer at a time on a bank file several runs rewrite
+├── locked_file.py              # file_lock(): one writer at a time on a file several processes rewrite
+│                               # (the SQLite migration lock, the place-name cache)
 ├── i18n.py                     # Internationalization
 ├── i18n_places.py              # Country names in the film's language (CLDR, offline)
 ├── place_names.py              # Offline island boxes and short island/region names

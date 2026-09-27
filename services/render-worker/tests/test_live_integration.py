@@ -102,6 +102,7 @@ def _through_app(body, directory, *, fallback):
     from conftest import WORKER_TOKEN, running_worker
     from immich_memories.api.sync_client import SyncImmichClient
     from immich_memories.config_models_render import RenderWorkerConfig
+    from immich_memories.db import open_store
     from immich_memories.generate import generate_memory
     from immich_memories.tracking import RunTracker
 
@@ -115,9 +116,7 @@ def _through_app(body, directory, *, fallback):
             RenderRequest.model_validate(body), directory, client, lambda *_: None
         )
         params.clips[0].audio_categories = ["speech", "music"]
-        tracker = RunTracker(
-            "app-live-test", db_path=params.config.cache.database_path, capture_system=False
-        )
+        tracker = RunTracker("app-live-test", store=open_store(params.config), capture_system=False)
         with worker as url:
             params.config.render = RenderWorkerConfig(
                 worker_base_url=url, worker_token=WORKER_TOKEN, fallback_to_local=fallback

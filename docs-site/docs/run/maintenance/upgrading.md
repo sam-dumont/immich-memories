@@ -83,7 +83,8 @@ The store migrates forward when it opens, so an upgrade never loses run history 
 
 **The first start after the store arrived** imports what the install kept in files: `people.yaml`,
 `special-days.json`, the run history, automation attempts, notification health and asset scores in
-`cache.db`, the run index, `annotations.sqlite` (owner decisions included) and `judgments.db`. It
+`cache.db`, the run index, `annotations.sqlite` (owner decisions included), `judgments.db`, the `structure-banks/` audience
+and vote banks, and the owner edits saved beside reviewed films. It
 happens once, the first time a process opens a store that has no import record while those files
 exist, and the log says what it brought in:
 

@@ -11,8 +11,9 @@ because the first real Mac run shared one and `mac-rules` published `mac-local`'
 verdicts as its own losses; seeding a reader's answers into a cell that exists to
 compare readers would be that failure with extra steps. So the copy is followed
 by a delete: every table in the cell's store (`store.db`, which `cache_pins` puts
-in the cache directory) that holds a model's answer is emptied, as is any legacy
-`annotations.sqlite`, and the separate judgment database beside it is removed outright.
+in the cache directory) that holds a model's answer is emptied, a text-reading audience
+hold with them, and the legacy files a pre-store bank kept beside it (`annotations.sqlite`,
+`judgments.db`) are removed outright: nothing reads them but the one-time import.
 
     uv run python scripts/setup_matrix_seed.py <source cache> <destination cache>
 """
@@ -36,15 +37,20 @@ VERDICT_TABLES = (
     "editorial_episode_readings",
     "editorial_period_insights",
     "editorial_verdicts",
+    "editorial_episode_refusals",
+    "audience_answers",
+    "vote_bank_entries",
 )
 
-# The judgment cache can also live in a file of its own beside the bank
-# (`verdicts_beside`), and a file is easier to delete than to empty.
-VERDICT_FILES = ("judgments.db", "judgments.db-wal", "judgments.db-shm")
+# Pre-store banks, and their sidecars: a copy would hand them to the cell's first-open import.
+LEGACY_FILES = tuple(
+    f"{name}{suffix}"
+    for name in ("judgments.db", "annotations.sqlite")
+    for suffix in ("", "-wal", "-shm")
+)
 
-# Each cell's store lives in its cache directory (`setup_matrix_plan.cache_pins`); a legacy
-# annotation file is still emptied in case the importer reads it again.
-STORE_FILES = ("store.db", "annotations.sqlite")
+# Each cell's store lives in its cache directory (`setup_matrix_plan.cache_pins`).
+STORE_FILES = ("store.db",)
 
 
 def strip_judgements(store: Path) -> list[str]:
@@ -64,6 +70,10 @@ def strip_judgements(store: Path) -> list[str]:
             if table in present:
                 conn.execute(f"DELETE FROM {table}")  # noqa: S608 - a name from VERDICT_TABLES
                 emptied.append(table)
+        if "audience_holds" in present:
+            # A detector's hold is a fact about the picture; a text model's is a reading.
+            conn.execute("DELETE FROM audience_holds WHERE slot = 'text'")
+            emptied.append("audience_holds (text)")
         conn.commit()
     return emptied
 
@@ -85,7 +95,7 @@ def seed_cache(source: Path, destination: Path) -> list[str]:
     if destination.exists():
         shutil.rmtree(destination)
     shutil.copytree(source, destination)
-    for name in VERDICT_FILES:
+    for name in LEGACY_FILES:
         (destination / name).unlink(missing_ok=True)
     return [table for name in STORE_FILES for table in strip_judgements(destination / name)]
 

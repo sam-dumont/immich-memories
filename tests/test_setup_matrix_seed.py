@@ -107,3 +107,53 @@ def test_a_bank_that_is_not_there_is_named_rather_than_half_copied(tmp_path: Pat
     with pytest.raises(SystemExit) as refused:
         seed_cache(tmp_path / "never-prepared" / "cache", tmp_path / "target")
     assert "never-prepared" in str(refused.value)
+
+
+def test_bank_answers_and_text_holds_stay_behind_and_detector_holds_cross(tmp_path: Path) -> None:
+    import sqlalchemy as sa
+
+    from immich_memories.db.tables import audience_answers, audience_holds, vote_bank_entries
+
+    source = _prepared_bank(tmp_path / "mac-local" / "cache")
+    store = _open(source)
+    with store.begin() as connection:
+        connection.execute(
+            sa.insert(audience_answers),
+            {"answerer": "full|laya", "evidence_key": "k", "record": {"verdict": "share"}},
+        )
+        connection.execute(
+            sa.insert(vote_bank_entries),
+            {"bank": "memory-worthy", "scope": "m", "section": "", "entry_key": "e", "value": {}},
+        )
+        connection.execute(
+            sa.insert(audience_holds),
+            [
+                {"asset_id": "asset-1", "slot": "permanent", "hold": {"verdict": "do_not_show"}},
+                {"asset_id": "asset-1", "slot": "text", "hold": {"verdict": "family_only"}},
+            ],
+        )
+    close_stores()
+    destination = tmp_path / "mac-rules" / "cache"
+
+    seed_cache(source.parent, destination)
+
+    seeded = destination / STORE_FILE
+    assert _rows(seeded, "audience_answers") == _rows(seeded, "vote_bank_entries") == 0
+    store = _open(seeded)
+    with store.connect() as connection:
+        slots = connection.execute(sa.select(audience_holds.c.slot)).scalars().all()
+    close_stores()
+    assert slots == ["permanent"]
+
+
+def test_legacy_bank_files_never_reach_a_cell(tmp_path: Path) -> None:
+    """The cell's first-open import would read them; the seed hands over the store only."""
+    source = _prepared_bank(tmp_path / "mac-local" / "cache").parent
+    (source / "annotations.sqlite").write_bytes(b"legacy")
+    (source / "annotations.sqlite-wal").write_bytes(b"legacy")
+    destination = tmp_path / "mac-rules" / "cache"
+
+    seed_cache(source, destination)
+
+    assert not (destination / "annotations.sqlite").exists()
+    assert not (destination / "annotations.sqlite-wal").exists()

@@ -105,12 +105,39 @@ def write_legacy_home(home: Path, *, extra_descriptions: int = 0) -> Path:
     write_operations_home(home, attempt_dir)
     annotations = write_annotations(home / "cache" / "annotations.sqlite")
     write_judgments(home / "cache" / "judgments.db")
+    _write_banks(home)
     with closing(sqlite3.connect(annotations)) as legacy, legacy:
         legacy.executemany(
             "INSERT INTO descriptions VALUES (?, 'smolvlm', ?, 'compact', ?)",
             [(f"pad-{n:05d}", f"Picture {n}.", WRITTEN) for n in range(extra_descriptions)],
         )
     return home
+
+
+HOLD = {"verdict": "family_only", "finding": "private_activity", "text_version": "prompt-v1"}
+
+
+def _write_banks(home: Path) -> None:
+    banks = home / "cache" / "structure-banks"
+    banks.mkdir(parents=True, exist_ok=True)
+    (banks / "audience-verdicts.private.json").write_text(
+        json.dumps(
+            {
+                "answers": {"full|rules": {"key-1": {"parsed": True, "verdict": "share"}}},
+                "holds": {"still-1": {"text": HOLD}},
+            }
+        )
+    )
+    case = banks / "month-2025-06"
+    case.mkdir()
+    (case / "memory-worthy.private.json").write_text(
+        json.dumps({"c" * 64: {"source": {"P01": "a picnic"}}, "rows": {"r1": {"vote": 1}}})
+    )
+    films = home.parent / "Videos" / "Memories"
+    films.mkdir(parents=True, exist_ok=True)
+    (films / "june.owner-edits-1234abcd.private.json").write_text(
+        json.dumps({"version": "editorial-owner-edits-v1", "removed_asset_ids": ["still-1"]})
+    )
 
 
 def snapshot(home: Path) -> dict[str, tuple[bytes, int]]:

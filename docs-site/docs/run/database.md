@@ -206,19 +206,21 @@ was; it is your way back. The same command works the other way, PostgreSQL to SQ
 ### `store import [--from DIR] [--verify]`
 
 Brings the files an install from before the store kept (`people.yaml`, `special-days.json`,
-`cache.db`'s run history and asset scores, the run index, `annotations.sqlite`, `judgments.db`) into
-the store. It runs by itself once, the first time a new version opens a store with no import record
+`cache.db`'s run history and asset scores, the run index, `annotations.sqlite`, `judgments.db`, the
+`structure-banks/` audience and vote banks, the owner edits beside reviewed films) into the store. It runs by itself once, the first time a new version opens a store with no import record
 while those files exist ([upgrading](./maintenance/upgrading.md#data-compatibility)); this command is
 for running it by hand, from another directory, or again.
 
 - The files are opened read-only and never changed or deleted.
 - A record the store already holds is never replaced by an older one from a file.
-- After each domain (people, then annotations and owner decisions, then run history) completes, its
+- After each domain (people, then annotations and owner decisions, then run history, then the
+  banks) completes, its
   files' path, size, mtime and SHA-256 are recorded in the store. A rerun skips a domain whose files
   have not changed, and an interrupted import finishes where it stopped.
 - `--verify` reads the files again and checks that every legacy record is in the store with the
-  same values: exactly for owner decisions, people and special days, to within float rounding for
-  model answers. Any difference is listed (table and key, never the values) and the command exits 1.
+  same values: exactly for owner decisions, owner edits, people and special days, to within float
+  rounding for model answers. An audience hold passes when the store's is the same or stricter: the
+  import may tighten a hold, never loosen one. Any difference is listed (table and key, never the values) and the command exits 1.
 
 `--from` defaults to `IMMICH_MEMORIES_IMPORT_FROM`, then `database.import_from` in `config.yaml`, then
 `~/.immich-memories`.

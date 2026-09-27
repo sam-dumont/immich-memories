@@ -42,7 +42,7 @@ def _model_effects(source, calls):
         judge=PolishJudge(),
         rules=RuleStructureReader(source),
         thumbnail_hash=lambda _asset: None,
-        thin=ThinPolish(bank_dir=source.bank_dir, read_period=context),
+        thin=ThinPolish(store=source.bank_store, bank_scope=source.case.key, read_period=context),
     )
 
 

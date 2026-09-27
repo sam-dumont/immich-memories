@@ -59,11 +59,12 @@ class LegacyImporter:
         return importlib.import_module(self.module)
 
 
-# Dependency order: people first, since annotations and runs name people.
+# Dependency order: people first, since annotations, runs and banks name people.
 IMPORTERS: tuple[LegacyImporter, ...] = (
     LegacyImporter("people", "immich_memories.people.transfer"),
     LegacyImporter("annotations", "immich_memories.store.legacy_annotations"),
     LegacyImporter("operations", "immich_memories.operations.store_import"),
+    LegacyImporter("banks", "immich_memories.store.legacy_banks"),
 )
 
 

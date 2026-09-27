@@ -17,6 +17,7 @@ from immich_memories.analysis.editorial_structure_audience import AudienceBank, 
 from immich_memories.analysis.editorial_thin_catalogue import BankedCatalogue, ThinStory
 from immich_memories.analysis.editorial_thin_layer import ThinPolish
 from immich_memories.config_models_llm import LLMConfig
+from immich_memories.db import open_store
 
 JUNK = "an empty worktop"
 DOUBTFUL = "a plain corridor"
@@ -204,13 +205,13 @@ def polish(
         flag_rows={},
         lines=film.lines,
         bank_path=tmp_path / "shareability.private.json",
-        library=AudienceBank(tmp_path / "audience-verdicts.private.json", answerer="full|laya"),
+        library=AudienceBank(open_store(), answerer="full|laya"),
         # The sharing question never reaches the judge: Laya reads the caption instead.
         check_audience=audience_check_for("full", local_reader=True),
         activity_reader=laya.activity_answers,
     )
     drafted = {row["asset_id"] for row in film.draft}
-    cut = ThinPolish(bank_dir=tmp_path, short=short).polish(
+    cut = ThinPolish(store=open_store(), bank_scope="case", short=short).polish(
         film.draft,
         judge=judge,
         gates=PictureAdmission(

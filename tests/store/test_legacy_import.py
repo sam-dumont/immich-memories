@@ -30,7 +30,9 @@ from immich_memories.store.legacy_imports import (
 )
 
 from .backends import drop_schema, pg_url
-from .legacy_home import snapshot, write_legacy_home
+from .legacy_home import HOLD, snapshot, write_legacy_home
+
+CLEAN = {"people": [], "annotations": [], "operations": [], "banks": []}
 
 
 def _default_cache_config() -> None:
@@ -77,12 +79,12 @@ def test_the_import_brings_every_domain_in_and_records_it(store, home):
 
     outcomes = run_import(store, home)
 
-    assert [outcome.imported > 0 for outcome in outcomes] == [True, True, True]
-    assert verify_import(store, home) == {"people": [], "annotations": [], "operations": []}
+    assert [outcome.imported > 0 for outcome in outcomes] == [True, True, True, True]
+    assert verify_import(store, home) == CLEAN
     with store.connect() as connection:
         record = read_import_record(connection)
     assert record["home"] == str(home)
-    assert set(record["importers"]) == {"people", "annotations", "operations"}
+    assert set(record["importers"]) == set(CLEAN)
     assert snapshot(home) == before
 
 
@@ -103,11 +105,10 @@ def test_a_changed_file_reruns_its_importer_only(store, home):
     document["people"].append({"ids": ["id-new"], "name": "New Example"})
     (home / "people.yaml").write_text(yaml.dump(document, sort_keys=False))
 
-    people, annotations, operations = run_import(store, home)
+    people, *others = run_import(store, home)
 
     assert people.imported == 1
-    assert annotations.notes[0].startswith("unchanged since")
-    assert operations.notes[0].startswith("unchanged since")
+    assert all(outcome.notes[0].startswith("unchanged since") for outcome in others)
 
 
 def test_verify_names_an_owner_decision_the_store_holds_differently(store, home):
@@ -122,7 +123,7 @@ def test_verify_names_an_owner_decision_the_store_holds_differently(store, home)
     problems = verify_import(store, home)
 
     assert problems["annotations"] == ["asset_flags still-1/cleared_family/owner: evidence differ"]
-    assert problems["people"] == problems["operations"] == []
+    assert problems["people"] == problems["operations"] == problems["banks"] == []
 
 
 def _import_and_die(url: str, schema: str, home: str, die_at: int) -> None:
@@ -165,7 +166,7 @@ def test_an_interrupted_import_finishes_on_rerun_and_matches_a_clean_one(
     run_import(clean, home)
 
     assert _content(interrupted) == _content(clean)
-    assert verify_import(interrupted, home) == {"people": [], "annotations": [], "operations": []}
+    assert verify_import(interrupted, home) == CLEAN
     set_config(None)
 
 
@@ -183,7 +184,7 @@ def test_the_first_open_imports_once_and_later_opens_only_read_the_record(
 
     started = [r for r in caplog.records if r.getMessage().startswith("Importing the legacy")]
     assert len(started) == 1
-    assert verify_import(store, home) == {"people": [], "annotations": [], "operations": []}
+    assert verify_import(store, home) == CLEAN
     assert snapshot(home) == before
 
 
@@ -224,7 +225,7 @@ def test_two_processes_starting_together_import_once(location, home):
 
     assert sorted(ran) == [False, True]
     store = open_store(location=location)
-    assert verify_import(store, home) == {"people": [], "annotations": [], "operations": []}
+    assert verify_import(store, home) == CLEAN
 
 
 def test_the_cli_imports_verifies_and_fails_on_a_difference(location, home, monkeypatch):
@@ -259,3 +260,74 @@ def test_the_config_names_where_the_import_looks_when_the_environment_does_not(
         assert legacy_home() == tmp_path / "mounted"
     finally:
         set_config(None)
+
+
+def test_verify_accepts_a_stricter_hold_and_names_a_looser_one(store, home):
+    from immich_memories.db.tables import audience_holds
+
+    run_import(store, home)
+
+    def hold(verdict: str) -> None:
+        with store.begin() as connection:
+            connection.execute(sa.update(audience_holds).values(hold={**HOLD, "verdict": verdict}))
+
+    hold("do_not_show")
+    assert verify_import(store, home)["banks"] == []
+    hold("share")
+    assert verify_import(store, home)["banks"] == [
+        "audience_holds still-1/text: looser than the legacy hold"
+    ]
+
+
+def test_verify_names_an_owner_edit_the_store_holds_differently(store, home):
+    from immich_memories.db.tables import owner_edits
+
+    run_import(store, home)
+    with store.begin() as connection:
+        connection.execute(sa.update(owner_edits).values(record={"version": "changed"}))
+
+    assert verify_import(store, home)["banks"] == ["owner_edits 1234abcd: record differ"]
+
+
+def test_the_replay_harness_fingerprints_the_imported_banks_in_the_store(
+    store, location, home, monkeypatch
+):
+    """The parity harness reads the store the replayed CLI reads, on either backend: what
+    the legacy judgment files and vote banks held is what it counts after the import."""
+    import importlib.util
+    import sys
+
+    script = Path(__file__).resolve().parents[2] / "scripts" / "replay_editorial_routes.py"
+    spec = importlib.util.spec_from_file_location("replay_editorial_routes", script)
+    harness = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = harness
+    spec.loader.exec_module(harness)
+    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", location.url)
+    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_SCHEMA", location.schema)
+    assert harness.bank_rows() == 0
+
+    run_import(store, home)
+
+    fingerprint = harness.store_fingerprint()
+    # question-a, question-b (judgments.db; annotations.sqlite repeats question-a),
+    # one Cull verdict, one episode reading, one block vote and one row vote.
+    assert {name: rows for name, (rows, _) in fingerprint.items() if rows} == {
+        "judgments": 2,
+        "editorial_verdicts": 1,
+        "editorial_episode_readings": 1,
+        "vote_bank_entries": 2,
+    }
+
+
+def test_a_key_two_files_hold_is_verified_against_the_one_the_import_kept(store, home):
+    import sqlite3
+    from contextlib import closing
+
+    # annotations.sqlite and judgments.db both answered question-a, at different times.
+    with closing(sqlite3.connect(home / "cache" / "judgments.db")) as legacy, legacy:
+        legacy.execute(
+            "UPDATE judgments SET answered_at = '2020-01-01 00:00:00' WHERE key = 'question-a'"
+        )
+    run_import(store, home)
+
+    assert verify_import(store, home)["annotations"] == []

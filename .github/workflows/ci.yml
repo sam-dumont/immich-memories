@@ -400,6 +400,19 @@ jobs:
           prune-cache: false
       - run: uv python install ${{ env.PYTHON_VERSION }}
       - run: make dev-ci
+      # The backup drill runs pg_dump/pg_restore against the postgres:16 service above: install
+      # exactly that major from PGDG instead of trusting whatever the runner image ships.
+      - name: PostgreSQL 16 client
+        run: |
+          sudo apt-get install -y --no-install-recommends postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y --no-install-recommends postgresql-client-16
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+      - name: The client is 16
+        run: |
+          pg_dump --version
+          pg_dump --version | grep -Eq ' 16\.' || { echo "pg_dump is not 16"; exit 1; }
+          pg_restore --version | grep -Eq ' 16\.' || { echo "pg_restore is not 16"; exit 1; }
       - run: make test-store
         env:
           IMMICH_MEMORIES_TEST_DATABASE_URL: postgresql://postgres:store-test@127.0.0.1:5432/postgres

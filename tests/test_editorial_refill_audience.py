@@ -9,6 +9,7 @@ from immich_memories.analysis.editorial_picture_admission import PictureAdmissio
 from immich_memories.analysis.editorial_story_standing import StandingGate
 from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
 from immich_memories.analysis.editorial_structure_finishing import PlanRun, final_duplicate_review
+from immich_memories.db import open_store
 from tests.editorial_thin_fixtures import CountingJudge
 
 DAY = "2024-02-04"
@@ -47,7 +48,7 @@ def _gate(tmp_path, *, exposed: set[str]) -> AudienceGate:
         flag_rows={},
         lines=lines,
         bank_path=tmp_path / "shareability.private.json",
-        library=AudienceBank(tmp_path / "audience.private.json", answerer="full|model-a"),
+        library=AudienceBank(open_store(), answerer="full|model-a"),
     )
 
 

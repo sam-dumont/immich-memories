@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import sqlite3
 import subprocess
 from pathlib import Path
 
@@ -11,6 +10,8 @@ import pytest
 from playwright.sync_api import Page, expect
 
 from immich_memories.config_loader import Config
+from immich_memories.db import Store, upsert
+from immich_memories.db.tables import head_facts
 from immich_memories.store import owner_decisions
 from tests.e2e.conftest import _build_launch_environment
 from tests.e2e.fake_library import CARRIERS, LIBRARY
@@ -22,20 +23,16 @@ pytestmark = pytest.mark.e2e
 _ROOT = Path(__file__).resolve().parents[2]
 
 
-def store_of(launch_workspace) -> Path:
-    return launch_workspace.cache_dir / "annotations.sqlite"
+def store_of(launch_workspace) -> Store:
+    return launch_workspace.store()
 
 
-def flag_by_the_detector(store: Path, asset_id: str) -> None:
+def flag_by_the_detector(store: Store, asset_id: str) -> None:
     """Bank a nudity-detector `yes` for one stock picture, as ingest would."""
-    owner_decisions.forget(store, "nobody")  # the store and its schema
     version = Config().editorial.head_versions["nsfw_marqo"]
-    with sqlite3.connect(store) as connection:
-        connection.execute(
-            "INSERT OR REPLACE INTO head_facts (asset_id, head, version, label) "
-            "VALUES (?, 'nsfw_marqo', ?, 'yes')",
-            (asset_id, version),
-        )
+    row = {"asset_id": asset_id, "head": "nsfw_marqo", "version": version, "label": "yes"}
+    with store.begin() as connection:
+        upsert(connection, head_facts, [row], keys=["asset_id", "head", "version"])
 
 
 def _frame(locator, name: str) -> None:

@@ -36,7 +36,6 @@ import argparse
 import hashlib
 import json
 import os
-import sqlite3
 import subprocess
 import sys
 import time
@@ -132,80 +131,68 @@ BANK_TABLE_MARKERS = ("judg", "request", "verdict", "gateway", "reading", "insig
 EVIDENCE_HASHES = "evidence-hashes.json"
 
 
-def _table_shape(connection: sqlite3.Connection, table: str) -> list[int]:
-    """How many rows the table holds, and how far its rowids have run.
+def store_location(config_path: Path | None = None):
+    """The store the replayed CLI reads: the environment, then config.yaml, then the default."""
+    from immich_memories.config_loader import Config
+    from immich_memories.db import resolve_location
+
+    config = Config.from_yaml(config_path) if config_path is not None else Config()
+    return resolve_location(config)
+
+
+def _table_shape(connection, table) -> list[int]:
+    """How many rows the table holds, and how far its writes have run.
 
     The high-water mark is the half that survives churn: a run that inserts a row
     and deletes another leaves the count alone, and the replay would read a store
-    it cannot tell apart from the banked one.
+    it cannot tell apart from the banked one. SQLite's rowid and PostgreSQL's row
+    transaction id (`xmin`) both only grow.
     """
-    count = connection.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
-    try:
-        top = connection.execute(f"select coalesce(max(rowid), 0) from {table}").fetchone()[  # noqa: S608
-            0
-        ]
-    except sqlite3.OperationalError:  # a WITHOUT ROWID table has no such column
-        top = 0
+    import sqlalchemy as sa
+
+    mark = "rowid" if connection.dialect.name == "sqlite" else "xmin::text::bigint"
+    count, top = connection.execute(
+        sa.select(
+            sa.func.count(), sa.func.coalesce(sa.func.max(sa.literal_column(mark)), 0)
+        ).select_from(table)
+    ).one()
     return [int(count), int(top)]
 
 
-def _shapes_in(path: Path) -> dict[str, list[int]]:
-    with sqlite3.connect(f"file:{path}?mode=ro", uri=True) as connection:
-        return {
-            row[0]: _table_shape(connection, row[0])
-            for row in connection.execute("select name from sqlite_master where type='table'")
-            if any(marker in row[0] for marker in BANK_TABLE_MARKERS)
-        }
-
-
-def bank_paths(cache_root: Path, config_path: Path | None = None) -> list[Path]:
-    """Every judgment bank a warm replay reads and must leave untouched.
-
-    The store holds the banks now; a replay fingerprints it when it is a SQLite file (the
-    environment's URL, then config.yaml's `database.url`, then the default). A legacy
-    `judgments.db` or annotation file is still counted while it is around.
-    """
-    paths = [cache_root / "judgments.db"]
-    url = os.environ.get("IMMICH_MEMORIES_DATABASE_URL", "")
-    if config_path is not None:
-        import yaml
-
-        document = yaml.safe_load(config_path.read_text()) or {}
-        advanced = document.get("advanced") or {}
-        editorial = document.get("editorial") or advanced.get("editorial") or {}
-        if editorial.get("annotation_database"):
-            paths.append(
-                Path(os.path.expandvars(str(editorial["annotation_database"]))).expanduser()
-            )
-        url = url or str((document.get("database") or {}).get("url") or "")
-    url = url or "sqlite:///~/.immich-memories/store.db"
-    if url.startswith("sqlite:///"):
-        paths.append(Path(url.removeprefix("sqlite:///")).expanduser())
-    return [path for path in paths if path.exists()]
-
-
-def store_fingerprint(cache_root: Path, config_path: Path | None = None) -> dict[str, list[int]]:
-    """What the banks looked like, by table name: `{table: [rows, highest rowid]}`.
+def store_fingerprint(config_path: Path | None = None) -> dict[str, list[int]]:
+    """What the store's banks looked like, by table name: `{table: [rows, high-water]}`.
 
     Banked beside a baseline so a later replay can separate the two ways a cut can
     move. Table names are schema, so the fingerprint is safe to print and to diff;
     nothing it carries comes from the library. Counts are cheap enough to take on
-    every route — a digest of the rows themselves would cost minutes per run and
-    answer the same question.
+    every route; a digest of the rows themselves would cost minutes per run and
+    answer the same question. The store is read as it is (never migrated or created),
+    on SQLite or PostgreSQL; legacy bank files are the import's business, not the replay's.
     """
-    fingerprint: dict[str, list[int]] = {}
-    for path in bank_paths(cache_root, config_path):
-        for table, shape in _shapes_in(path).items():
-            # Two banks may name a table alike; the sum is still the honest total.
-            previous = fingerprint.get(table)
-            fingerprint[table] = (
-                shape if previous is None else [previous[0] + shape[0], max(previous[1], shape[1])]
-            )
-    return fingerprint
+    import sqlalchemy as sa
+
+    from immich_memories.db.store import unmigrated_store
+    from immich_memories.db.tables import metadata
+
+    location = store_location(config_path)
+    path = location.sqlite_path
+    if location.dialect_name == "sqlite" and (path is None or not path.exists()):
+        return {}
+    store = unmigrated_store(location)
+    try:
+        with store.connect() as connection:
+            present = set(sa.inspect(connection).get_table_names(schema=store.schema))
+            return {
+                table.name: _table_shape(connection, table)
+                for table in metadata.sorted_tables
+                if table.name in present and any(m in table.name for m in BANK_TABLE_MARKERS)
+            }
+    finally:
+        store.engine.dispose()
 
 
-def bank_rows(cache_root: Path, config_path: Path | None = None) -> int:
-    return sum(shape[0] for shape in store_fingerprint(cache_root, config_path).values())
+def bank_rows(config_path: Path | None = None) -> int:
+    return sum(shape[0] for shape in store_fingerprint(config_path).values())
 
 
 def store_drift(banked: dict[str, list[int]], current: dict[str, list[int]]) -> str:
@@ -452,7 +439,7 @@ def run_route(
         "PYTHONHASHSEED": seed,
         "IMMICH_MEMORIES_PARITY_BLOCK_HOSTS": ",".join(sorted(hosts)),
     }
-    store_before = store_fingerprint(cache_root, config_path)
+    store_before = store_fingerprint(config_path)
     rows_before = sum(shape[0] for shape in store_before.values())
     started = time.time()
     log = out / f"{key}-seed{seed}.log"
@@ -477,7 +464,7 @@ def run_route(
     seconds = round(time.time() - started, 1)
     text = log.read_text(errors="replace")
     blocked = text.count("PARITY_BLOCKED_HTTP")
-    added = bank_rows(cache_root, config_path) - rows_before
+    added = bank_rows(config_path) - rows_before
     attempt = newest_attempt(cache_root, started - 1)
     if blocked:
         return RouteOutcome(
@@ -564,9 +551,7 @@ def banked_baseline(route: dict, outcome: RouteOutcome) -> dict:
         "plan_sha256": sha256_bytes(raw),
         "provider_calls": outcome.blocked_calls,
         "seconds": outcome.seconds,
-        "store_fingerprint": store_fingerprint(
-            Path(route["cache_root"]).expanduser(), Path(route["config_path"]).expanduser()
-        ),
+        "store_fingerprint": store_fingerprint(Path(route["config_path"]).expanduser()),
     }
 
 

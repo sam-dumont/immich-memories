@@ -119,7 +119,7 @@ def test_flags_are_read_for_a_lifetime_of_pictures(store):
     assert len(load_flags(store, [f"p{n}" for n in range(1000)])) == 1000
 
 
-def test_a_reading_is_banked_once_and_found_by_its_identity(store, tmp_path):
+def test_a_reading_is_banked_once_and_found_by_its_identity(store):
     identity = EpisodeReadingIdentity("group", "producer", "evidence")
     reading = BankedEpisodeReading(
         identity=identity,
@@ -137,7 +137,6 @@ def test_a_reading_is_banked_once_and_found_by_its_identity(store, tmp_path):
         "other": "too long"
     }
     banked = open_banked_facts(
-        bank_dir=tmp_path / "structure-banks" / "case",
         attempts_dir=None,
         store=store,
         audience="family",

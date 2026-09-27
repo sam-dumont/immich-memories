@@ -154,11 +154,23 @@ test:
 STORE_TEST_POSTGRES_IMAGE := docker.io/library/postgres:16@sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54
 STORE_TEST_PYTEST = uv run pytest tests/store/ -v -rs -p no:cacheprovider
 
-.PHONY: test-store test-store-sqlite
+.PHONY: test-store test-store-sqlite test-store-pg-client
 test-store-sqlite:  ## Run the store suite on SQLite only (fast, no Docker)
 	env -u IMMICH_MEMORIES_TEST_DATABASE_URL $(STORE_TEST_PYTEST)
 
-test-store:  ## Run the store suite on SQLite and PostgreSQL (starts postgres:16 in Docker unless IMMICH_MEMORIES_TEST_DATABASE_URL is set)
+# The backup drill runs pg_dump/pg_restore against that server: the client must be at least
+# its major. CI installs exactly 16 and says so; a Mac gets a new enough one from Homebrew.
+STORE_TEST_PG_MAJOR := 16
+test-store-pg-client:
+	@version=$$(pg_dump --version 2>/dev/null | sed -E 's/[^0-9]*([0-9]+).*/\1/'); \
+	if [ -z "$$version" ] || [ "$$version" -lt $(STORE_TEST_PG_MAJOR) ]; then \
+		echo "test-store needs pg_dump $(STORE_TEST_PG_MAJOR)+ on PATH for the backup drill (found: $${version:-none})."; \
+		echo "On a Mac: brew install libpq, then run: PATH=\"\$$(brew --prefix libpq)/bin:\$$PATH\" make test-store"; \
+		echo "On Debian/Ubuntu: install postgresql-client-$(STORE_TEST_PG_MAJOR) and put /usr/lib/postgresql/$(STORE_TEST_PG_MAJOR)/bin first on PATH."; \
+		exit 1; \
+	fi
+
+test-store: test-store-pg-client  ## Run the store suite on SQLite and PostgreSQL (starts postgres:16 in Docker unless IMMICH_MEMORIES_TEST_DATABASE_URL is set)
 	@if [ -n "$$IMMICH_MEMORIES_TEST_DATABASE_URL" ]; then exec $(STORE_TEST_PYTEST); fi; \
 	name=immich-memories-store-test-$$$$; \
 	docker run -d --rm --name $$name --tmpfs /var/lib/postgresql/data \

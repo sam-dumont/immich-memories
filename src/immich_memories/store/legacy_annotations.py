@@ -243,22 +243,29 @@ def _legacy_boxes(legacy: sqlite3.Connection) -> dict[str, list[dict[str, Any]]]
 def verify_legacy(store: Store, home: Path) -> list[str]:
     """Every legacy row whose key the store lacks or holds with other values.
 
-    Owner decisions compare exactly; model answers compare floats to within rounding.
+    Owner decisions compare exactly; model answers compare floats to within rounding. A key
+    two files both hold is checked against the first, the one the import kept.
     """
     annotations, judgment_files = legacy_files(home)
     sources = [(path, _ANNOTATION_TABLES) for path in annotations] + [
         (path, _JUDGMENT_TABLES) for path in judgment_files
     ]
     problems: list[str] = []
+    seen: dict[str, set[tuple[Any, ...]]] = {}
     for path, tables in sources:
         try:
-            problems.extend(_verify_file(store, path, tables))
+            problems.extend(_verify_file(store, path, tables, seen))
         except sqlite3.Error as exc:
             problems.append(unreadable(path, exc))
     return problems
 
 
-def _verify_file(store: Store, path: Path, tables: Sequence[tuple[str, Table]]) -> list[str]:
+def _verify_file(
+    store: Store,
+    path: Path,
+    tables: Sequence[tuple[str, Table]],
+    seen: dict[str, set[tuple[Any, ...]]],
+) -> list[str]:
     problems: list[str] = []
     with closing(_read_only(path)) as legacy, store.connect() as connection:
         present = {
@@ -272,7 +279,11 @@ def _verify_file(store: Store, path: Path, tables: Sequence[tuple[str, Table]]) 
                 continue
             wanted = [column.name for column in table.columns if column.name in have]
             for batch in _batches(legacy, name, wanted):
-                rows = _unique([_comparable(table, row) for row in batch], keys)
+                rows = _first_seen(
+                    _unique([_comparable(table, row) for row in batch], keys),
+                    keys,
+                    seen.setdefault(table.name, set()),
+                )
                 decided = [r for r in rows if table is asset_flags and r["source"] == OWNER_SOURCE]
                 answers = [
                     r for r in rows if not (table is asset_flags and r["source"] == OWNER_SOURCE)
@@ -283,6 +294,14 @@ def _verify_file(store: Store, path: Path, tables: Sequence[tuple[str, Table]]) 
             boxes = list(chain.from_iterable(_legacy_boxes(legacy).values()))
             problems += verify_rows(connection, face_boxes, ("asset_id", "ordinal"), boxes)
     return problems
+
+
+def _first_seen(
+    rows: list[dict[str, Any]], keys: Sequence[str], seen: set[tuple[Any, ...]]
+) -> list[dict[str, Any]]:
+    fresh = [row for row in rows if tuple(row[name] for name in keys) not in seen]
+    seen.update(tuple(row[name] for name in keys) for row in fresh)
+    return fresh
 
 
 def _comparable(table: Table, row: Mapping[str, Any]) -> dict[str, Any]:

@@ -82,8 +82,8 @@ prompt is a different key, never a stale answer:
 - `judgments`, `visual_judgments` and their `*_completion_failures` twins — banked text and
   visual answers, with the memory of an answer that could not be completed so the same
   exhausted ask is not repeated;
-- `<cache>/structure-banks/<case>/memory-worthy.private.json` and
-  `picture-stands.private.json` — the two vote banks of the structure planner;
+- the structure planner's vote banks (once `<cache>/structure-banks/<case>/*.private.json`, now the
+  store's `vote_bank_entries`, see `2026-09-27-the-store.md`);
   `thumbnail-hashes.sqlite` and `demanded-motion.sqlite` beside them.
 
 ## The six stages

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable, Mapping, Sequence
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -17,18 +18,11 @@ from immich_memories.analysis import editorial_shareability as _share
 from immich_memories.analysis.editorial_carrier_eligibility import excluded_carrier_sources
 from immich_memories.analysis.editorial_clip_frames import unusable_video
 from immich_memories.analysis.editorial_exposure_chains import ChainHold
-from immich_memories.locked_file import file_lock
+from immich_memories.db import Store
 from immich_memories.security import write_secret_file
-
-AUDIENCE_BANK_NAME = "audience-verdicts.private.json"
+from immich_memories.store import audience_bank
 
 CARRIER_RULE_SOURCE = "carrier-rule-on-observations"
-
-
-def library_bank_path(bank_root: Path) -> Path:
-    """The library's audience bank, under the directory every film of it keeps its banks in."""
-    return Path(bank_root) / "structure-banks" / AUDIENCE_BANK_NAME
-
 
 # Holds that say nothing was looked at, not that something was seen. Kept, they would hold a
 # picture forever for want of a reader the install may add later.
@@ -51,72 +45,101 @@ class AudienceBank:
     text (a private activity) is stamped with the audience prompt and check policy it was
     given under. Under that same prompt a later read never lifts it either; once the prompt
     changes it is not applied, the picture is asked again, and the new answer replaces it.
+
+    The bank lives in `store`; without one it lasts as long as this object.
     """
 
-    def __init__(self, path: Path | None, *, answerer: str) -> None:
-        self._path = path
+    def __init__(self, store: Store | None, *, answerer: str) -> None:
+        self._store = store
         self._answerer = answerer
-        self._load(_read_bank(path))
-
-    def _load(self, stored: dict[str, Any]) -> None:
-        answers = _section(stored, "answers")
-        self._stored = {"answers": answers, "holds": _section(stored, "holds")}
-        self._answers = answers[self._answerer] = _section(answers, self._answerer)
-        self._holds = self._stored["holds"]
+        self._answers = {} if store is None else audience_bank.load_answers(store, answerer)
+        self._holds = {} if store is None else audience_bank.load_holds(store)
+        # Refusals cast since the last flush, per picture, in the order they were cast.
+        self._pending: dict[str, list[dict[str, Any]]] = {}
 
     def answer(self, key: str) -> dict[str, Any] | None:
         banked = self._answers.get(key)
         return banked if isinstance(banked, dict) and "verdict" in banked else None
 
     def keep(self, key: str, record: dict[str, Any]) -> None:
-        if record.get("parsed") is True:
-            self._update(lambda: self._answer(key, record))
-
-    def _answer(self, key: str, record: dict[str, Any]) -> bool:
+        if record.get("parsed") is not True:
+            return
         self._answers[key] = record
-        return True
+        if self._store is not None:
+            audience_bank.keep_answer(self._store, self._answerer, key, record)
 
     def held(self, asset_id: str) -> dict[str, Any] | None:
         return standing_hold(self._holds.get(asset_id))
 
     def hold(self, asset_id: str, record: dict[str, Any]) -> None:
-        """Keep a refusal that something seen caused, in its source's slot; stricter wins."""
-        self._update(lambda: self._hold(asset_id, record))
+        """Keep a refusal that something seen caused, in its source's slot; stricter wins.
 
-    def _hold(self, asset_id: str, record: dict[str, Any]) -> bool:
-        slots = dict(self._holds.get(asset_id) or {})
-        changed = _stale(slots.get("text")) and _answers_current_prompt(record)
-        if changed:
-            del slots["text"]
-        if _keepable(record):
-            kind = "text" if record.get("finding") == _TEXT_FINDING else "permanent"
-            existing = (
-                _current_text(slots)
-                if kind == "text"
-                else standing_hold({"permanent": slots.get("permanent")})
-            )
-            if existing is None or (
-                _share.tighten(existing["verdict"], record["verdict"]) != existing["verdict"]
-            ):
-                slots[kind] = {
-                    "verdict": record["verdict"],
-                    "finding": record.get("finding"),
-                    "policy": record.get("policy") or record.get("source"),
-                } | ({"text_version": _text_version()} if kind == "text" else {})
-                changed = True
-        if changed:
-            self._holds[asset_id] = slots
-        return changed
-
-    def _update(self, change: Callable[[], bool]) -> None:
-        """Apply one change to the bank as it stands on disk now, so another run's rows stay."""
-        if self._path is None:
-            change()
+        It stands in this bank at once. It reaches the store with the batch it is part of: at
+        `flush`, or when `HOLD_BATCH` pictures wait. A refusal that changes nothing this bank
+        can see is not written at all.
+        """
+        merged = _merged_hold(dict(self._holds.get(asset_id) or {}), record)
+        if merged is None:
             return
-        with file_lock(self._path):
-            self._load(_read_bank(self._path))
-            if change():
-                write_secret_file(self._path, json.dumps(self._stored, indent=1))
+        self._holds[asset_id] = merged
+        if self._store is not None:
+            self._pending.setdefault(asset_id, []).append(record)
+            if len(self._pending) >= HOLD_BATCH:
+                self.flush()
+
+    def flush(self) -> None:
+        """Merge every waiting refusal with the store's holds, in one transaction.
+
+        Another cut may have tightened a picture since this bank read it, so each is merged
+        again with the store's copy, and what stands after is what this bank keeps.
+        """
+        if self._store is None or not self._pending:
+            return
+        pending, self._pending = self._pending, {}
+        self._holds |= audience_bank.change_holds(
+            self._store,
+            {
+                asset_id: partial(_merged_all, records=records)
+                for asset_id, records in pending.items()
+            },
+        )
+
+
+# Pictures whose refusals wait for one write; a crash costs at most this many.
+HOLD_BATCH = 500
+
+
+def _merged_all(slots: dict[str, Any], *, records: list[dict[str, Any]]) -> dict[str, Any] | None:
+    changed = False
+    for record in records:
+        merged = _merged_hold(slots, record)
+        if merged is not None:
+            slots, changed = merged, True
+    return slots if changed else None
+
+
+def _merged_hold(slots: dict[str, Any], record: dict[str, Any]) -> dict[str, Any] | None:
+    """The picture's slots with this refusal kept, or None when they stay as they are."""
+    changed = _stale(slots.get("text")) and _answers_current_prompt(record)
+    if changed:
+        del slots["text"]
+    if _keepable(record):
+        kind = "text" if record.get("finding") == _TEXT_FINDING else "permanent"
+        existing = (
+            _current_text(slots)
+            if kind == "text"
+            else standing_hold({"permanent": slots.get("permanent")})
+        )
+        if existing is None or (
+            _share.tighten(existing["verdict"], record["verdict"]) != existing["verdict"]
+        ):
+            slots[kind] = {
+                "verdict": record["verdict"],
+                "finding": record.get("finding"),
+                "policy": record.get("policy") or record.get("source"),
+            } | ({"text_version": _text_version()} if kind == "text" else {})
+            changed = True
+    return slots if changed else None
 
 
 _TEXT_FINDING = "private_activity"
@@ -165,27 +188,14 @@ def standing_hold(slots: Any) -> dict[str, Any] | None:
     return max(holds, key=lambda hold: _share.VERDICTS.index(hold["verdict"]), default=None)
 
 
-def library_refusals(path: Path, audience: str) -> frozenset[str]:
+def library_refusals(store: Store, audience: str) -> frozenset[str]:
     """Every picture the library's audience bank still holds back from this audience."""
     return frozenset(
         asset_id
-        for asset_id, slots in _section(_read_bank(path), "holds").items()
+        for asset_id, slots in audience_bank.load_holds(store).items()
         if (hold := standing_hold(slots)) is not None
         and not _share.allowed(str(hold["verdict"]), audience)
     )
-
-
-def _section(stored: dict[str, Any], name: str) -> dict[str, Any]:
-    section = stored.get(name)
-    return section if isinstance(section, dict) else {}
-
-
-def _read_bank(path: Path | None) -> dict[str, Any]:
-    try:
-        stored = json.loads(path.read_text()) if path is not None else {}
-    except (OSError, ValueError):
-        return {}
-    return stored if isinstance(stored, dict) else {}
 
 
 class AudienceGate:
