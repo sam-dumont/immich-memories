@@ -270,6 +270,20 @@ video plays exactly the stretch the film uses, on a loop. Under it:
   any alternative it offered with the outcome. A cut no model read says so: the rules chose every
   picture, which is what the NAS tier does.
 
+### Refining the cut
+
+Every shot in the inspector can be edited. **Remove from this cut** takes it out (**Put it back**
+undoes that). A video trims with **Start here** and **End here** at the player's position; a still
+takes a **Screen time**. **Use this picture instead**, on another picture of the moment, swaps it
+in. The sheet marks removed and swapped shots, and a bar counts the changes and adds up the
+seconds against what the titles leave; **Undo** (or Ctrl/Cmd+Z) walks back one change.
+
+**Save revision** checks the edits the way the renderer would and keeps them as a numbered
+revision beside the run. A refused save says which edit and why. Earlier revisions stay in the
+**Revisions** list; **Open** loads one back into the editor. None of this selects: the rules and
+the model are not asked again, and a **Never use** decision on a picture is still the separate,
+library-wide choice.
+
 Below the sheet sit the run's output path, upload status, warnings and phase timings.
 **Download child output** fetches the full output of an automatic run, with credentials removed.
 Old `/runs?run_id=...` links land on this page.

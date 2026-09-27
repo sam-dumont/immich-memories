@@ -1,14 +1,57 @@
 <script lang="ts">
   import { Alert, Badge, Button, Heading, Text } from '@immich/ui';
-  import { mdiArrowLeft, mdiDownload, mdiPlay } from '@mdi/js';
-  import { thumbnail, type CutShot } from '$lib/api';
-  import { t } from '$lib/i18n.svelte';
+  import { mdiArrowLeft, mdiContentSaveOutline, mdiDownload, mdiPlay, mdiUndo } from '@mdi/js';
+  import { api, ApiError, thumbnail, type CutShot } from '$lib/api';
+  import type { components } from '$lib/api-types';
+  import { CutEditor } from '$lib/cut-edits.svelte';
+  import { locale, t } from '$lib/i18n.svelte';
   import { clock, memoryTypeLabel, sourceLabel } from '$lib/labels';
   import ShotInspector from '$lib/ShotInspector.svelte';
 
   let { data } = $props();
   const run = $derived(data.run);
   const cut = $derived(data.cut);
+
+  type Revision = components['schemas']['Revision'];
+
+  // A fresh editor per loaded run: moving from one run's page to another reuses this component.
+  const editor = $derived(data.cut ? new CutEditor(data.cut) : null);
+  let revisions = $state<Revision[]>([]);
+  let saving = $state(false);
+  let refusal = $state('');
+  let saved = $state<{ number: number; edits: string } | null>(null);
+  // The edits the last save wrote: saving them again would only duplicate that revision.
+  const unsaved = $derived(!!editor && JSON.stringify(editor.edits) !== saved?.edits);
+
+  $effect(() => {
+    const id = data.run.run_id;
+    const hasCut = !!data.cut;
+    revisions = [];
+    saved = null;
+    refusal = '';
+    if (hasCut) void api<Revision[]>(`/runs/${encodeURIComponent(id)}/revisions`).then((found) => (revisions = found));
+  });
+
+  async function save() {
+    if (!editor) return;
+    saving = true;
+    refusal = '';
+    try {
+      const response = await fetch(`/api/v1/runs/${encodeURIComponent(run.run_id)}/revisions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(editor.edits),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new ApiError(response.status, body.detail);
+      revisions = [...revisions, body as Revision];
+      saved = { number: body.number, edits: JSON.stringify(editor.edits) };
+    } catch (reason) {
+      refusal = reason instanceof ApiError && reason.detail ? reason.detail : t('The revision could not be saved.');
+    } finally {
+      saving = false;
+    }
+  }
 
   let filter = $state<'all' | 'videos' | 'stills'>('all');
   let selectedId = $state<string | null>(null);
@@ -27,6 +70,11 @@
 
   // Left and right walk the sheet in playback order, the way a contact sheet is read.
   function walk(event: KeyboardEvent) {
+    if (editor && event.key === 'z' && (event.metaKey || event.ctrlKey)) {
+      editor.undo();
+      event.preventDefault();
+      return;
+    }
     if (!selected || (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft')) return;
     if ((event.target as HTMLElement).closest('input, select, textarea, video')) return;
     const index = shots.indexOf(selected) + (event.key === 'ArrowRight' ? 1 : -1);
@@ -94,11 +142,17 @@
               class={['group flex w-full flex-col gap-1.5 rounded-xl p-1 text-left outline-offset-2 focus-visible:outline-2 focus-visible:outline-primary',
                 selected?.asset_id === shot.asset_id ? 'bg-primary/10 ring-2 ring-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-900']}>
               <span class="relative block aspect-[4/3] overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-900">
-                <img src={thumbnail(shot.asset_id)} alt={shot.reason || shot.story_title} loading="lazy" decoding="async" class="size-full object-contain" />
+                <img src={thumbnail(editor?.playing(shot) ?? shot.asset_id)} alt={shot.reason || shot.story_title} loading="lazy" decoding="async"
+                  class={['size-full object-contain', editor?.isRemoved(shot) && 'opacity-30 grayscale']} />
+                {#if editor?.isRemoved(shot)}
+                  <span class="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-xs font-semibold">{t('Removed')}</span>
+                {:else if editor && editor.playing(shot) !== shot.asset_id}
+                  <span class="absolute top-1 right-1 rounded bg-primary px-1.5 text-[11px] font-semibold text-light">{t('Swapped')}</span>
+                {/if}
                 <span class="absolute top-1 left-1 rounded bg-black/60 px-1.5 text-[11px] font-semibold text-white tabular-nums">{shot.position}</span>
                 <span class="absolute right-1 bottom-1 flex items-center gap-0.5 rounded bg-black/60 px-1.5 text-[11px] text-white tabular-nums">
                   {#if shot.motion}<svg viewBox="0 0 24 24" class="size-3 fill-current" aria-label={t('Video')}><path d={mdiPlay} /></svg>{/if}
-                  {shot.seconds.toFixed(1)} s
+                  {(editor?.seconds(shot) ?? shot.seconds).toFixed(1)} s
                 </span>
               </span>
               <span class="flex justify-between gap-2 px-0.5 text-[11px] text-gray-600 tabular-nums dark:text-gray-400">
@@ -118,10 +172,46 @@
           <div class="mb-3 lg:hidden">
             <Button size="small" variant="ghost" leadingIcon={mdiArrowLeft} onclick={() => (inspecting = false)}>{t('Back to pictures')}</Button>
           </div>
-          <ShotInspector shot={selected} modelPolish={cut.model_polish} />
+          {#if editor}<ShotInspector shot={selected} modelPolish={cut.model_polish} {editor} />{/if}
         </div>
       {/if}
     </div>
+    {#if editor && (editor.count || editor.history.length)}
+      <div class="sticky bottom-20 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 bg-light/95 p-3 shadow-lg backdrop-blur md:bottom-4 dark:border-gray-800">
+        <p class="text-sm tabular-nums">
+          {t('Changes: {count}', { count: editor.count })} ·
+          <span class={editor.fits ? '' : 'font-semibold text-danger'}>
+            {cut.content_budget_seconds != null
+              ? t('{content} of {budget} the titles leave', { content: clock(editor.contentSeconds), budget: clock(cut.content_budget_seconds) })
+              : clock(editor.contentSeconds)}
+          </span>
+        </p>
+        <div class="ml-auto flex gap-2">
+          <Button size="small" variant="ghost" leadingIcon={mdiUndo} disabled={!editor.history.length} onclick={() => editor.undo()}>{t('Undo')}</Button>
+          <Button size="small" variant="ghost" disabled={!editor.count} onclick={() => editor.discard()}>{t('Discard changes')}</Button>
+          <Button size="small" leadingIcon={mdiContentSaveOutline} loading={saving} disabled={!editor.count || !editor.fits || !unsaved}
+            onclick={save}>{t('Save revision')}</Button>
+        </div>
+        {#if refusal}<p class="w-full text-sm text-danger" role="alert">{refusal}</p>{/if}
+        {#if saved && !unsaved}<p class="w-full text-sm text-success" role="status">{t('Saved as revision {number}.', { number: saved.number })}</p>{/if}
+      </div>
+    {/if}
+
+    {#if revisions.length}
+      <section class="flex flex-col gap-2">
+        <Heading size="tiny" tag="h2">{t('Revisions')}</Heading>
+        <ul class="flex flex-col gap-1 text-sm tabular-nums">
+          {#each revisions as revision (revision.number)}
+            <li class="flex flex-wrap items-center gap-3">
+              <span class="font-medium">{t('Revision {number}', { number: revision.number })}</span>
+              <span class="text-gray-600 dark:text-gray-400">{new Intl.DateTimeFormat(locale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(revision.created_at))}</span>
+              <span>{clock(revision.content_seconds)}</span>
+              <Button size="tiny" variant="ghost" onclick={() => editor?.load(revision)}>{t('Open')}</Button>
+            </li>
+          {/each}
+        </ul>
+      </section>
+    {/if}
   {:else}
     <Text color="muted">{t('No saved cut is available for this run.')}</Text>
   {/if}

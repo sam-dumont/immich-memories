@@ -30,7 +30,8 @@ class EditorialOwnerEditProjection:
     record: dict | None
 
 
-def _interval(value: Sequence[float]) -> tuple[float, float]:
+def review_interval(value: Sequence[float]) -> tuple[float, float]:
+    """An owner's trim as the renderer accepts it: two finite times, a nonnegative start, a length."""
     if (
         not isinstance(value, (tuple, list))
         or len(value) != 2
@@ -59,7 +60,7 @@ def _original_selections(clips, selections, binding):
         raise ValueError("Original editorial review material does not match its timing binding")
     for asset_id in ids:
         clip, decision = by_id[asset_id], decisions[asset_id]
-        _interval((decision.start_time, decision.end_time))
+        review_interval((decision.start_time, decision.end_time))
         if clip.editorial_live_manifest is not None:
             validate_editorial_live_clip(clip)
             if decision.render_mode != "motion" or (
@@ -90,7 +91,7 @@ def _reviewed_row(
 ) -> tuple[VideoClipInfo, EditorialSelection, tuple[float, float]]:
     """Apply one owner interval, keeping a still's hold and a Live certificate honest."""
     before = (decision.start_time, decision.end_time)
-    interval = _interval(requested)
+    interval = review_interval(requested)
     if decision.render_mode == "still":
         # A still range controls its hold, never a new frame or source interval.
         interval = (0.0, interval[1] - interval[0])

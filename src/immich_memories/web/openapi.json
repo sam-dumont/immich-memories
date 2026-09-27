@@ -27,6 +27,17 @@
       },
       "Cut": {
         "properties": {
+          "content_budget_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Budget Seconds"
+          },
           "content_seconds": {
             "title": "Content Seconds",
             "type": "number"
@@ -66,6 +77,7 @@
           "run_id",
           "thesis",
           "content_seconds",
+          "content_budget_seconds",
           "film_seconds",
           "model_polish",
           "shots"
@@ -300,6 +312,104 @@
           "errors"
         ],
         "title": "PhaseTiming",
+        "type": "object"
+      },
+      "Revision": {
+        "properties": {
+          "content_seconds": {
+            "title": "Content Seconds",
+            "type": "number"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "removed": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Removed",
+            "type": "array"
+          },
+          "segments": {
+            "additionalProperties": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            "default": {},
+            "title": "Segments",
+            "type": "object"
+          },
+          "swaps": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Swaps",
+            "type": "object"
+          }
+        },
+        "required": [
+          "number",
+          "created_at",
+          "content_seconds"
+        ],
+        "title": "Revision",
+        "type": "object"
+      },
+      "RevisionEdits": {
+        "description": "What the owner changed; every id must be in the cut, or a recorded sibling for a swap.",
+        "properties": {
+          "removed": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Removed",
+            "type": "array"
+          },
+          "segments": {
+            "additionalProperties": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            "default": {},
+            "title": "Segments",
+            "type": "object"
+          },
+          "swaps": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Swaps",
+            "type": "object"
+          }
+        },
+        "title": "RevisionEdits",
         "type": "object"
       },
       "RunDetail": {
@@ -998,6 +1108,104 @@
           }
         },
         "summary": "Read Cut",
+        "tags": [
+          "cut"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/revisions": {
+      "get": {
+        "description": "Every saved revision of this cut, oldest first.",
+        "operationId": "list_revisions_api_v1_runs__run_id__revisions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Revision"
+                  },
+                  "title": "Response List Revisions Api V1 Runs  Run Id  Revisions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Revisions",
+        "tags": [
+          "cut"
+        ]
+      },
+      "post": {
+        "description": "Keep the owner's edits as the next revision; 422 names the edit that would not render.",
+        "operationId": "create_revision_api_v1_runs__run_id__revisions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisionEdits"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Revision"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Revision",
         "tags": [
           "cut"
         ]

@@ -74,6 +74,8 @@ class Storyboard:
     thesis: str
     shots: tuple[Shot, ...]
     film_seconds: float | None = None
+    # The seconds of pictures and video the titles leave room for; an edit may not exceed it.
+    content_budget_seconds: float | None = None
 
     @property
     def total_seconds(self) -> float:
@@ -227,7 +229,10 @@ def storyboard_from_plan(
         start += held
         previous_day, previous_month = day, month
     return Storyboard(
-        thesis=str(story.get("thesis") or ""), shots=tuple(shots), film_seconds=film_seconds
+        thesis=str(story.get("thesis") or ""),
+        shots=tuple(shots),
+        film_seconds=film_seconds,
+        content_budget_seconds=_content_budget(plan, _recorded_timeline(plan)),
     )
 
 

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-27 07:44+0200\n"
+"POT-Creation-Date: 2026-09-27 08:07+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -162,7 +162,7 @@ msgstr "모든 인물"
 msgid "All pictures"
 msgstr "모든 이미지"
 
-#: pages/memory_storyboard.py:146 web/lib/ShotInspector.svelte:117
+#: pages/memory_storyboard.py:146 web/lib/ShotInspector.svelte:155
 msgid "Alternatives considered"
 msgstr "검토한 대안"
 
@@ -232,11 +232,11 @@ msgstr "지난 여러 해의 오늘 날짜를 자동으로 사용합니다"
 msgid "Back to Generation Options"
 msgstr "생성 옵션으로 돌아가기"
 
-#: pages/memory_storyboard.py:160 web/routes/runs/[run_id]/+page.svelte:119
+#: pages/memory_storyboard.py:160 web/routes/runs/[run_id]/+page.svelte:173
 msgid "Back to pictures"
 msgstr "이미지로 돌아가기"
 
-#: web/routes/runs/[run_id]/+page.svelte:52
+#: web/routes/runs/[run_id]/+page.svelte:100
 msgid "Back to runs"
 msgstr "작업 목록으로 돌아가기"
 
@@ -269,7 +269,7 @@ msgstr "생일부터 다음 생일까지"
 msgid "Blur background"
 msgstr "배경 흐리게"
 
-#: web/lib/ShotInspector.svelte:89
+#: web/lib/ShotInspector.svelte:127
 msgid "Browse the whole pool"
 msgstr "전체 후보 보기"
 
@@ -321,6 +321,11 @@ msgstr "클립에 장소 표시"
 #: pages/memory.py:113
 msgid "Change the brief"
 msgstr "구성 변경"
+
+#: web/routes/runs/[run_id]/+page.svelte:182
+#, python-brace-format
+msgid "Changes: {count}"
+msgstr "변경: {count}"
 
 #: pages/suggestions.py:199
 msgid "Check eligibility"
@@ -444,7 +449,7 @@ msgstr "Immich에 연결 중..."
 msgid "Connection failed: {value}"
 msgstr "연결 실패: {value}"
 
-#: web/lib/ShotInspector.svelte:112
+#: web/lib/ShotInspector.svelte:150
 msgid "Considered by the model"
 msgstr "모델이 검토함"
 
@@ -495,7 +500,7 @@ msgstr "편집하기"
 msgid "Cut again"
 msgstr "다시 편집"
 
-#: pages/memory_storyboard.py:138 web/routes/runs/[run_id]/+page.svelte:87
+#: pages/memory_storyboard.py:138 web/routes/runs/[run_id]/+page.svelte:135
 msgid "Cut contact sheet"
 msgstr "편집본 이미지 모음"
 
@@ -527,6 +532,10 @@ msgstr "GPS 데이터에서 여행을 찾는 중..."
 msgid "Difference"
 msgstr "차이"
 
+#: web/routes/runs/[run_id]/+page.svelte:191
+msgid "Discard changes"
+msgstr "변경 취소"
+
 #: pages/suggestions.py:165
 #, python-brace-format
 msgid "Discovery failed: {error}"
@@ -536,7 +545,7 @@ msgstr "검색 실패: {error}"
 msgid "Done"
 msgstr "완료"
 
-#: web/routes/runs/[run_id]/+page.svelte:142
+#: web/routes/runs/[run_id]/+page.svelte:232
 msgid "Download child output"
 msgstr "연결된 결과 다운로드"
 
@@ -548,6 +557,10 @@ msgstr "SDR 영상 제외"
 msgid "Duration"
 msgstr "길이"
 
+#: web/lib/ShotInspector.svelte:47
+msgid "Edit this shot"
+msgstr "이 장면 편집"
+
 #: pages/memory_run.py:65
 msgid "Editing"
 msgstr "편집"
@@ -557,13 +570,17 @@ msgstr "편집"
 msgid "Elapsed: {value}"
 msgstr "경과 시간: {value}"
 
-#: web/lib/ShotInspector.svelte:65
+#: web/lib/ShotInspector.svelte:100
 msgid "Eligible when this shot was chosen. Open one to compare."
 msgstr "이 장면이 선택될 때 후보였습니다. 열어서 비교하세요."
 
 #: pages/step1_tabs.py:182
 msgid "End date"
 msgstr "종료일"
+
+#: web/lib/ShotInspector.svelte:58
+msgid "End here"
+msgstr "여기서 끝"
 
 #: pages/step1_config.py:132
 #, python-brace-format
@@ -729,7 +746,7 @@ msgstr "명절·기념일"
 msgid "How long"
 msgstr "얼마나 길게"
 
-#: web/lib/ShotInspector.svelte:53
+#: web/lib/ShotInspector.svelte:88
 msgid "How the rules got here"
 msgstr "규칙이 여기까지 온 과정"
 
@@ -751,12 +768,12 @@ msgstr "Immich 서버 URL"
 msgid "Immich delivery: {delivery_label}"
 msgstr "Immich 전송: {delivery_label}"
 
-#: web/routes/runs/[run_id]/+page.svelte:132
+#: web/routes/runs/[run_id]/+page.svelte:222
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Immich 전송: {value}"
 
-#: web/lib/ShotInspector.svelte:81
+#: web/lib/ShotInspector.svelte:116
 msgid "In the cut"
 msgstr "편집에 포함"
 
@@ -813,12 +830,16 @@ msgstr "이 추억에는 WhatsApp 등으로 받은 미디어도 유지"
 msgid "Keep intermediate files"
 msgstr "중간 파일 유지"
 
-#: web/lib/ShotInspector.svelte:56
+#: web/lib/ShotInspector.svelte:52
+msgid "Keep the original"
+msgstr "원본 유지"
+
+#: web/lib/ShotInspector.svelte:91
 #, python-brace-format
 msgid "Kept at {stage}"
 msgstr "{stage}에서 유지됨"
 
-#: pages/memory_storyboard.py:144 web/lib/ShotInspector.svelte:108
+#: pages/memory_storyboard.py:144 web/lib/ShotInspector.svelte:146
 msgid "Kept because"
 msgstr "유지한 이유"
 
@@ -904,11 +925,11 @@ msgstr "추억 유형"
 msgid "Middle 5s"
 msgstr "가운데 5초"
 
-#: pages/memory_storyboard.py:147 web/lib/ShotInspector.svelte:94
+#: pages/memory_storyboard.py:147 web/lib/ShotInspector.svelte:132
 msgid "Model polish"
 msgstr "모델의 다듬기"
 
-#: pages/memory_storyboard.py:143 web/lib/ShotInspector.svelte:105
+#: pages/memory_storyboard.py:143 web/lib/ShotInspector.svelte:143
 msgid "Model suggestion"
 msgstr "모델의 제안"
 
@@ -982,7 +1003,7 @@ msgstr "다음: 미리 보기 및 내보내기"
 msgid "No albums with any assets in them yet."
 msgstr "아직 미디어가 들어 있는 앨범이 없습니다."
 
-#: web/routes/runs/[run_id]/+page.svelte:144
+#: web/routes/runs/[run_id]/+page.svelte:234
 msgid "No child output was retained for this run."
 msgstr "이 작업에 연결된 결과가 저장되지 않았습니다."
 
@@ -994,11 +1015,11 @@ msgstr "선택한 클립이 없습니다. 돌아가서 클립을 선택하세요
 msgid "No eligible suggestions right now."
 msgstr "현재 사용 가능한 제안이 없습니다."
 
-#: web/lib/ShotInspector.svelte:96
+#: web/lib/ShotInspector.svelte:134
 msgid "No model read this cut: the rules chose every picture."
 msgstr "이 편집은 모델이 읽지 않았습니다. 모든 이미지를 규칙이 골랐습니다."
 
-#: pages/memory_storyboard.py:154 web/lib/ShotInspector.svelte:113
+#: pages/memory_storyboard.py:154 web/lib/ShotInspector.svelte:151
 msgid "No outcome recorded."
 msgstr "기록된 결과가 없습니다."
 
@@ -1008,11 +1029,11 @@ msgid ""
 " month curve, and looks at no pixels."
 msgstr "아직 인물 파일이 없습니다. 라이브러리를 다시 스캔하세요. 이름이 있는 각 인물의 수량과 월별 추이를 읽으며, 이미지 자체는 분석하지 않습니다."
 
-#: pages/memory_storyboard.py:140 web/routes/runs/[run_id]/+page.svelte:111
+#: pages/memory_storyboard.py:140 web/routes/runs/[run_id]/+page.svelte:165
 msgid "No pictures match this filter."
 msgstr "이 필터에 맞는 이미지가 없습니다."
 
-#: pages/memory_storyboard.py:142 web/lib/ShotInspector.svelte:48
+#: pages/memory_storyboard.py:142 web/lib/ShotInspector.svelte:83
 msgid "No reason recorded for this picture."
 msgstr "이 이미지를 선택한 이유가 기록되지 않았습니다."
 
@@ -1020,7 +1041,7 @@ msgstr "이 이미지를 선택한 이유가 기록되지 않았습니다."
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "이 보기에 해당하는 작업이 없습니다. 추억 또는 제안에서 추억을 만드세요."
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:126
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:216
 msgid "No saved cut is available for this run."
 msgstr "이 작업에는 저장된 편집 결과가 없습니다."
 
@@ -1082,6 +1103,10 @@ msgstr "매년 해당 기념일 전후의 기간을 최근 연도부터 보여�
 msgid "Only with (optional)"
 msgstr "이 인물이 있는 것만(선택 사항)"
 
+#: web/routes/runs/[run_id]/+page.svelte:209
+msgid "Open"
+msgstr "열기"
+
 #: pages/picture_decisions.py:165
 msgid "Open it in Immich first if you haven't looked at it yourself."
 msgstr "아직 직접 보지 않았다면 먼저 Immich에서 이미지를 열어보세요."
@@ -1099,7 +1124,7 @@ msgstr "미디어 목록 열기"
 msgid "Open {name} in Immich"
 msgstr "Immich에서 {name} 열기"
 
-#: pages/memory_storyboard.py:132 web/routes/runs/[run_id]/+page.svelte:83
+#: pages/memory_storyboard.py:132 web/routes/runs/[run_id]/+page.svelte:131
 msgid "Order and timecodes from the saved cut."
 msgstr "저장된 편집본의 순서와 타임코드입니다."
 
@@ -1107,11 +1132,11 @@ msgstr "저장된 편집본의 순서와 타임코드입니다."
 msgid "Orientation"
 msgstr "방향"
 
-#: web/lib/ShotInspector.svelte:72 web/lib/ShotInspector.svelte:84
+#: web/lib/ShotInspector.svelte:107 web/lib/ShotInspector.svelte:119
 msgid "Other picture of this moment"
 msgstr "이 순간의 다른 이미지"
 
-#: web/lib/ShotInspector.svelte:64 web/lib/ShotInspector.svelte:66
+#: web/lib/ShotInspector.svelte:99 web/lib/ShotInspector.svelte:101
 msgid "Other pictures of this moment"
 msgstr "이 순간의 다른 이미지"
 
@@ -1136,7 +1161,7 @@ msgstr "출력 파일 이름"
 msgid "Output: {name}"
 msgstr "출력: {name}"
 
-#: web/lib/ShotInspector.svelte:55
+#: web/lib/ShotInspector.svelte:90
 #, python-brace-format
 msgid "Passed {stages}"
 msgstr "{stages} 통과"
@@ -1211,7 +1236,7 @@ msgstr "각 영상에서 보여줄 초를 선택하고 미리 보세요. 사진�
 msgid "Picture decisions"
 msgstr "이 이미지에 대한 결정"
 
-#: pages/memory_storyboard.py:139 web/lib/ShotInspector.svelte:21
+#: pages/memory_storyboard.py:139 web/lib/ShotInspector.svelte:33
 msgid "Picture review"
 msgstr "이미지 검토"
 
@@ -1219,7 +1244,7 @@ msgstr "이미지 검토"
 msgid "Pictures & video"
 msgstr "사진 및 영상"
 
-#: web/routes/runs/[run_id]/+page.svelte:62
+#: web/routes/runs/[run_id]/+page.svelte:110
 #, python-brace-format
 msgid "Pictures: {count}"
 msgstr "이미지: {count}"
@@ -1265,6 +1290,10 @@ msgstr "미리 보기 캐시"
 msgid "Previous"
 msgstr "이전"
 
+#: web/lib/ShotInspector.svelte:50
+msgid "Put it back"
+msgstr "되돌리기"
+
 #: pages/memory_run.py:467
 msgid "Re-load media to export"
 msgstr "내보내려면 미디어 다시 불러오기"
@@ -1277,7 +1306,7 @@ msgstr "라이브러리 읽는 중…"
 msgid "Reading the pictures"
 msgstr "이미지 읽는 중"
 
-#: pages/memory_storyboard.py:145 web/lib/ShotInspector.svelte:112
+#: pages/memory_storyboard.py:145 web/lib/ShotInspector.svelte:150
 msgid "Recorded alternative"
 msgstr "기록된 대안"
 
@@ -1313,9 +1342,17 @@ msgstr "디스크에서 다시 불러오기"
 msgid "Reload the pool"
 msgstr "미디어 다시 불러오기"
 
+#: web/lib/ShotInspector.svelte:50
+msgid "Remove from this cut"
+msgstr "이 편집에서 빼기"
+
 #: pages/settings_people.py:442
 msgid "Remove this relationship"
 msgstr "이 관계 삭제"
+
+#: web/routes/runs/[run_id]/+page.svelte:148
+msgid "Removed"
+msgstr "뺌"
 
 #: pages/memory_storyboard.py:150 web/lib/labels.ts:29
 msgid "Replaced a picture the model doubted."
@@ -1337,6 +1374,15 @@ msgstr "결과"
 msgid "Review the pool"
 msgstr "미디어 검토"
 
+#: web/routes/runs/[run_id]/+page.svelte:206
+#, python-brace-format
+msgid "Revision {number}"
+msgstr "리비전 {number}"
+
+#: web/routes/runs/[run_id]/+page.svelte:202
+msgid "Revisions"
+msgstr "리비전"
+
 #: pages/settings_people.py:378
 msgid "Role (suggestions; type your own)"
 msgstr "역할(제안 선택 또는 직접 입력)"
@@ -1345,7 +1391,7 @@ msgstr "역할(제안 선택 또는 직접 입력)"
 msgid "Rotation"
 msgstr "회전"
 
-#: web/routes/runs/[run_id]/+page.svelte:130
+#: web/routes/runs/[run_id]/+page.svelte:220
 msgid "Run details"
 msgstr "실행 세부 정보"
 
@@ -1363,7 +1409,7 @@ msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "서버에서 실행 중: {phase}. 이 페이지를 떠나도 계속됩니다."
 
 #: app.py:75 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
-#: web/routes/runs/+page.svelte:80 web/routes/runs/[run_id]/+page.svelte:46
+#: web/routes/runs/+page.svelte:80 web/routes/runs/[run_id]/+page.svelte:94
 msgid "Runs"
 msgstr "작업 내역"
 
@@ -1371,11 +1417,20 @@ msgstr "작업 내역"
 msgid "Save Config"
 msgstr "설정 저장"
 
+#: web/routes/runs/[run_id]/+page.svelte:193
+msgid "Save revision"
+msgstr "리비전 저장"
+
 #: pages/step1_config.py:72
 msgid "Saved - type a new key to replace it"
 msgstr "저장됨: 바꾸려면 새 키를 입력하세요"
 
-#: pages/step4_export.py:34 web/routes/runs/[run_id]/+page.svelte:131
+#: web/routes/runs/[run_id]/+page.svelte:196
+#, python-brace-format
+msgid "Saved as revision {number}."
+msgstr "리비전 {number}(으)로 저장했습니다."
+
+#: pages/step4_export.py:34 web/routes/runs/[run_id]/+page.svelte:221
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "저장 위치: {output_path}"
@@ -1392,6 +1447,10 @@ msgstr "크기 조절 방식"
 #: web/lib/labels.ts:23
 msgid "Scheduled"
 msgstr "예약됨"
+
+#: web/lib/ShotInspector.svelte:62
+msgid "Screen time (seconds)"
+msgstr "화면 표시 시간(초)"
 
 #: pages/memory_brief.py:32 pages/step1_presets.py:165 web/lib/labels.ts:6
 msgid "Season"
@@ -1446,7 +1505,7 @@ msgstr "공유 가능"
 msgid "Sharing"
 msgstr "공유 범위"
 
-#: pages/memory_storyboard.py:133 web/routes/runs/[run_id]/+page.svelte:76
+#: pages/memory_storyboard.py:133 web/routes/runs/[run_id]/+page.svelte:124
 msgid "Show"
 msgstr "표시"
 
@@ -1474,6 +1533,10 @@ msgstr "새 프로젝트"
 msgid "Start date"
 msgstr "시작일"
 
+#: web/lib/ShotInspector.svelte:57
+msgid "Start here"
+msgstr "여기서 시작"
+
 #: pages/step2_review.py:152
 msgid "Start over"
 msgstr "처음부터 다시"
@@ -1490,7 +1553,7 @@ msgstr "시작 중..."
 msgid "Status"
 msgstr "상태"
 
-#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:41
+#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:76
 msgid "Still"
 msgstr "정지 이미지"
 
@@ -1525,6 +1588,10 @@ msgstr "요약"
 #: pages/memory_brief.py:40 web/lib/labels.ts:14
 msgid "Surprise me"
 msgstr "알아서 골라주세요"
+
+#: web/routes/runs/[run_id]/+page.svelte:150
+msgid "Swapped"
+msgstr "교체됨"
 
 #: theme.py:321
 msgid "System"
@@ -1597,11 +1664,11 @@ msgid ""
 " trim what was."
 msgstr "미디어 목록과 구간 편집기는 별도 페이지에 있습니다. 절대 쓰면 안 되는 내용을 제외하고 선택한 구간을 조정하세요."
 
-#: web/lib/ShotInspector.svelte:98
+#: web/lib/ShotInspector.svelte:136
 msgid "The model had nothing to say about this picture."
 msgstr "모델이 이 이미지에 대해 남긴 말이 없습니다."
 
-#: pages/memory_storyboard.py:148 web/lib/ShotInspector.svelte:102
+#: pages/memory_storyboard.py:148 web/lib/ShotInspector.svelte:140
 msgid "The picture it replaced"
 msgstr "대체된 이미지"
 
@@ -1609,6 +1676,10 @@ msgstr "대체된 이미지"
 #, python-brace-format
 msgid "The pool{value}"
 msgstr "미디어 목록{value}"
+
+#: web/routes/runs/[run_id]/+page.svelte:50
+msgid "The revision could not be saved."
+msgstr "리비전을 저장하지 못했습니다."
 
 #: pages/settings_people.py:142
 msgid "The roster"
@@ -1712,7 +1783,7 @@ msgstr "다시 시도"
 msgid "Turn your photo library into video memories"
 msgstr "사진 라이브러리를 추억 영상으로 만드세요"
 
-#: pages/picture_decisions.py:138
+#: pages/picture_decisions.py:138 web/routes/runs/[run_id]/+page.svelte:190
 msgid "Undo"
 msgstr "되돌리기"
 
@@ -1757,6 +1828,10 @@ msgid ""
 "immediately afterwards."
 msgstr "Immich에 얼굴이 표시되지 않은 인물용입니다. 추가 직후 가족 관계를 연결할 수 있습니다."
 
+#: web/lib/ShotInspector.svelte:124
+msgid "Use this picture instead"
+msgstr "대신 이 이미지 사용"
+
 #: pages/login.py:48
 msgid "Username"
 msgstr "사용자 이름"
@@ -1766,8 +1841,8 @@ msgstr "사용자 이름"
 msgid "Using {name}'s birthday: {value}"
 msgstr "{name}의 생일 사용: {value}"
 
-#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:41
-#: web/routes/runs/[run_id]/+page.svelte:100
+#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:76
+#: web/routes/runs/[run_id]/+page.svelte:154
 msgid "Video"
 msgstr "동영상"
 
@@ -1783,7 +1858,7 @@ msgstr "영상을 성공적으로 생성했습니다!"
 msgid "Videos"
 msgstr "동영상"
 
-#: web/routes/runs/[run_id]/+page.svelte:63
+#: web/routes/runs/[run_id]/+page.svelte:111
 #, python-brace-format
 msgid "Videos: {count}"
 msgstr "동영상: {count}"
@@ -1807,11 +1882,11 @@ msgstr "누가 보나요"
 msgid "Why other suggestions were skipped"
 msgstr "다른 제안이 제외된 이유"
 
-#: pages/memory_storyboard.py:149 web/lib/ShotInspector.svelte:105
+#: pages/memory_storyboard.py:149 web/lib/ShotInspector.svelte:143
 msgid "Why the model replaced the other picture"
 msgstr "모델이 다른 이미지를 대체한 이유"
 
-#: pages/memory_storyboard.py:141 web/lib/ShotInspector.svelte:47
+#: pages/memory_storyboard.py:141 web/lib/ShotInspector.svelte:82
 msgid "Why this picture"
 msgstr "이 이미지를 선택한 이유"
 
@@ -1862,7 +1937,7 @@ msgstr "추억 영상이 준비되었습니다!"
 msgid "about 10 minutes per year of range, shorter if the media cannot fill it"
 msgstr "기간의 1년마다 약 10분, 미디어가 부족하면 더 짧게"
 
-#: web/routes/runs/[run_id]/+page.svelte:65
+#: web/routes/runs/[run_id]/+page.svelte:113
 #, python-brace-format
 msgid "about {film} of film"
 msgstr "영상 약 {film}"
@@ -1903,10 +1978,15 @@ msgstr "남반구"
 msgid "the type's default length, shorter if the media cannot fill it"
 msgstr "유형의 기본 길이, 미디어가 부족하면 더 짧게"
 
-#: web/routes/runs/[run_id]/+page.svelte:64
+#: web/routes/runs/[run_id]/+page.svelte:112
 #, python-brace-format
 msgid "{content} of pictures and video"
 msgstr "이미지와 동영상 {content}"
+
+#: web/routes/runs/[run_id]/+page.svelte:185
+#, python-brace-format
+msgid "{content} of {budget} the titles leave"
+msgstr "제목이 남긴 {budget} 중 {content}"
 
 #: pages/memory_story.py:109
 #, python-brace-format
@@ -1953,7 +2033,7 @@ msgstr "사진 {photos_count}장 사용 가능(생성 시 자동 선택)"
 msgid "{seconds:g} s"
 msgstr "{seconds:g}초"
 
-#: web/lib/ShotInspector.svelte:40
+#: web/lib/ShotInspector.svelte:75
 #, python-brace-format
 msgid "{seconds} s on screen"
 msgstr "화면에 {seconds}초"

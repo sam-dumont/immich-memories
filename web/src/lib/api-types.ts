@@ -144,6 +144,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/runs/{run_id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Revisions
+         * @description Every saved revision of this cut, oldest first.
+         */
+        get: operations["list_revisions_api_v1_runs__run_id__revisions_get"];
+        put?: never;
+        /**
+         * Create Revision
+         * @description Keep the owner's edits as the next revision; 422 names the edit that would not render.
+         */
+        post: operations["create_revision_api_v1_runs__run_id__revisions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -162,6 +186,8 @@ export interface components {
         };
         /** Cut */
         Cut: {
+            /** Content Budget Seconds */
+            content_budget_seconds: number | null;
             /** Content Seconds */
             content_seconds: number;
             /** Film Seconds */
@@ -255,6 +281,65 @@ export interface components {
             name: string;
             /** Seconds */
             seconds: number;
+        };
+        /** Revision */
+        Revision: {
+            /** Content Seconds */
+            content_seconds: number;
+            /** Created At */
+            created_at: string;
+            /** Number */
+            number: number;
+            /**
+             * Removed
+             * @default []
+             */
+            removed: string[];
+            /**
+             * Segments
+             * @default {}
+             */
+            segments: {
+                [key: string]: [
+                    number,
+                    number
+                ];
+            };
+            /**
+             * Swaps
+             * @default {}
+             */
+            swaps: {
+                [key: string]: string;
+            };
+        };
+        /**
+         * RevisionEdits
+         * @description What the owner changed; every id must be in the cut, or a recorded sibling for a swap.
+         */
+        RevisionEdits: {
+            /**
+             * Removed
+             * @default []
+             */
+            removed: string[];
+            /**
+             * Segments
+             * @default {}
+             */
+            segments: {
+                [key: string]: [
+                    number,
+                    number
+                ];
+            };
+            /**
+             * Swaps
+             * @default {}
+             */
+            swaps: {
+                [key: string]: string;
+            };
         };
         /** RunDetail */
         RunDetail: {
@@ -561,6 +646,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Cut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_revisions_api_v1_runs__run_id__revisions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Revision"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_revision_api_v1_runs__run_id__revisions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevisionEdits"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Revision"];
                 };
             };
             /** @description Validation Error */

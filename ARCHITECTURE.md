@@ -640,7 +640,7 @@ src/immich_memories/
 ├── web/                        # The Svelte client's server side; replaces ui/ page by page (#1395)
 │   ├── app.py                  # mount_web(): the /api/v1 routers + the built client under /app
 │   ├── runs.py                 # GET /api/v1/runs[/{id}[/child-output]]: RunDatabase, run index, transcripts
-│   ├── cut.py                  # GET /api/v1/runs/{id}/cut: storyboard + trace (runs why) + model polish
+│   ├── cut.py                  # /api/v1/runs/{id}/cut (storyboard + trace + polish + siblings) and /revisions
 │   ├── media.py                # /api/v1/assets/{id}/thumbnail (shared cache) and /video (Range-streamed)
 │   ├── i18n.py                 # GET /api/v1/i18n: the browser's ui.po as JSON
 │   ├── schemas.py              # Pydantic response models = the contract (openapi.json)
@@ -775,6 +775,8 @@ src/immich_memories/
 │   ├── cut_progress.py         # Where a run is, as one record the page and the terminal both read
 │   ├── run_index.py            # A run id resolved to its attempt directory, for both surfaces
 │   ├── candidate_fates.py       # Saved pool outcomes + decision-log reader shared with runs why
+│   ├── cut_review.py           # The model polish record per shot (swaps, protections, refused offers)
+│   ├── cut_revisions.py        # Owner edits to a saved cut as numbered revisions, checked like the renderer
 │   ├── picture_holds.py         # What holds a picture + the owner's decision, for the pool, storyboard and CLI
 │   ├── caption_origins.py      # One picture's caption origin, and the run's distinct-origin line
 │   ├── phases.py               # OperationalPhase / PhaseEvent: stable outer lifecycle

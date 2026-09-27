@@ -126,3 +126,19 @@ def test_a_shot_offers_the_rest_of_its_moment_with_what_became_of_each(client, c
     assert "a near duplicate of the path shot" in woods["fate"]
     assert other["asset_id"] == "garden-3"
     assert other["fate"] == "Not in this cut's pool"
+
+
+def test_edits_save_as_revisions_and_a_refused_one_says_why(client, config):
+    save_run(config, RUN)
+
+    saved = client.post(f"/api/v1/runs/{RUN}/revisions", json={"removed": ["garden-1"]})
+    refused = client.post(
+        f"/api/v1/runs/{RUN}/revisions", json={"swaps": {"garden-1": "somebody-else"}}
+    )
+    history = client.get(f"/api/v1/runs/{RUN}/revisions").json()
+
+    assert saved.status_code == 201
+    assert saved.json()["number"] == 1 and saved.json()["removed"] == ["garden-1"]
+    assert refused.status_code == 422
+    assert "not another picture of that moment" in refused.json()["detail"]
+    assert [revision["number"] for revision in history] == [1]

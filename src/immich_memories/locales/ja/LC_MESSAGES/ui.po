@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-27 07:44+0200\n"
+"POT-Creation-Date: 2026-09-27 08:07+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -162,7 +162,7 @@ msgstr "すべての人物"
 msgid "All pictures"
 msgstr "すべての画像"
 
-#: pages/memory_storyboard.py:146 web/lib/ShotInspector.svelte:117
+#: pages/memory_storyboard.py:146 web/lib/ShotInspector.svelte:155
 msgid "Alternatives considered"
 msgstr "検討された代替候補"
 
@@ -232,11 +232,11 @@ msgstr "過去の年の今日の日付を自動的に使います"
 msgid "Back to Generation Options"
 msgstr "生成オプションに戻る"
 
-#: pages/memory_storyboard.py:160 web/routes/runs/[run_id]/+page.svelte:119
+#: pages/memory_storyboard.py:160 web/routes/runs/[run_id]/+page.svelte:173
 msgid "Back to pictures"
 msgstr "画像一覧に戻る"
 
-#: web/routes/runs/[run_id]/+page.svelte:52
+#: web/routes/runs/[run_id]/+page.svelte:100
 msgid "Back to runs"
 msgstr "実行一覧に戻る"
 
@@ -269,7 +269,7 @@ msgstr "誕生日から次の誕生日まで"
 msgid "Blur background"
 msgstr "背景をぼかす"
 
-#: web/lib/ShotInspector.svelte:89
+#: web/lib/ShotInspector.svelte:127
 msgid "Browse the whole pool"
 msgstr "候補全体を見る"
 
@@ -321,6 +321,11 @@ msgstr "クリップに場所を表示"
 #: pages/memory.py:113
 msgid "Change the brief"
 msgstr "作成設定を変更"
+
+#: web/routes/runs/[run_id]/+page.svelte:182
+#, python-brace-format
+msgid "Changes: {count}"
+msgstr "変更: {count}"
 
 #: pages/suggestions.py:199
 msgid "Check eligibility"
@@ -444,7 +449,7 @@ msgstr "Immich に接続中..."
 msgid "Connection failed: {value}"
 msgstr "接続に失敗しました：{value}"
 
-#: web/lib/ShotInspector.svelte:112
+#: web/lib/ShotInspector.svelte:150
 msgid "Considered by the model"
 msgstr "モデルが検討"
 
@@ -495,7 +500,7 @@ msgstr "編集する"
 msgid "Cut again"
 msgstr "再編集"
 
-#: pages/memory_storyboard.py:138 web/routes/runs/[run_id]/+page.svelte:87
+#: pages/memory_storyboard.py:138 web/routes/runs/[run_id]/+page.svelte:135
 msgid "Cut contact sheet"
 msgstr "編集内容のコンタクトシート"
 
@@ -527,6 +532,10 @@ msgstr "GPS データから旅行を検出中..."
 msgid "Difference"
 msgstr "差分"
 
+#: web/routes/runs/[run_id]/+page.svelte:191
+msgid "Discard changes"
+msgstr "変更を破棄"
+
 #: pages/suggestions.py:165
 #, python-brace-format
 msgid "Discovery failed: {error}"
@@ -536,7 +545,7 @@ msgstr "検索に失敗しました：{error}"
 msgid "Done"
 msgstr "完了"
 
-#: web/routes/runs/[run_id]/+page.svelte:142
+#: web/routes/runs/[run_id]/+page.svelte:232
 msgid "Download child output"
 msgstr "関連する出力をダウンロード"
 
@@ -548,6 +557,10 @@ msgstr "SDR 動画を除外"
 msgid "Duration"
 msgstr "長さ"
 
+#: web/lib/ShotInspector.svelte:47
+msgid "Edit this shot"
+msgstr "このショットを編集"
+
 #: pages/memory_run.py:65
 msgid "Editing"
 msgstr "編集"
@@ -557,13 +570,17 @@ msgstr "編集"
 msgid "Elapsed: {value}"
 msgstr "経過時間：{value}"
 
-#: web/lib/ShotInspector.svelte:65
+#: web/lib/ShotInspector.svelte:100
 msgid "Eligible when this shot was chosen. Open one to compare."
 msgstr "このショットが選ばれた時点で候補でした。開いて比較できます。"
 
 #: pages/step1_tabs.py:182
 msgid "End date"
 msgstr "終了日"
+
+#: web/lib/ShotInspector.svelte:58
+msgid "End here"
+msgstr "ここで終了"
 
 #: pages/step1_config.py:132
 #, python-brace-format
@@ -729,7 +746,7 @@ msgstr "祝日・行事"
 msgid "How long"
 msgstr "どのくらいの長さにするか"
 
-#: web/lib/ShotInspector.svelte:53
+#: web/lib/ShotInspector.svelte:88
 msgid "How the rules got here"
 msgstr "ルールがここに至った経緯"
 
@@ -751,12 +768,12 @@ msgstr "Immich サーバー URL"
 msgid "Immich delivery: {delivery_label}"
 msgstr "Immich への送信：{delivery_label}"
 
-#: web/routes/runs/[run_id]/+page.svelte:132
+#: web/routes/runs/[run_id]/+page.svelte:222
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Immich への送信：{value}"
 
-#: web/lib/ShotInspector.svelte:81
+#: web/lib/ShotInspector.svelte:116
 msgid "In the cut"
 msgstr "編集に使用"
 
@@ -813,12 +830,16 @@ msgstr "この思い出では WhatsApp などで受け取ったメディアも�
 msgid "Keep intermediate files"
 msgstr "中間ファイルを残す"
 
-#: web/lib/ShotInspector.svelte:56
+#: web/lib/ShotInspector.svelte:52
+msgid "Keep the original"
+msgstr "元のままにする"
+
+#: web/lib/ShotInspector.svelte:91
 #, python-brace-format
 msgid "Kept at {stage}"
 msgstr "{stage}で残されました"
 
-#: pages/memory_storyboard.py:144 web/lib/ShotInspector.svelte:108
+#: pages/memory_storyboard.py:144 web/lib/ShotInspector.svelte:146
 msgid "Kept because"
 msgstr "残された理由"
 
@@ -904,11 +925,11 @@ msgstr "思い出の種類"
 msgid "Middle 5s"
 msgstr "中央の 5 秒"
 
-#: pages/memory_storyboard.py:147 web/lib/ShotInspector.svelte:94
+#: pages/memory_storyboard.py:147 web/lib/ShotInspector.svelte:132
 msgid "Model polish"
 msgstr "モデルによる仕上げ"
 
-#: pages/memory_storyboard.py:143 web/lib/ShotInspector.svelte:105
+#: pages/memory_storyboard.py:143 web/lib/ShotInspector.svelte:143
 msgid "Model suggestion"
 msgstr "モデルの提案"
 
@@ -982,7 +1003,7 @@ msgstr "次へ：プレビューと書き出し"
 msgid "No albums with any assets in them yet."
 msgstr "メディアが入ったアルバムはまだありません。"
 
-#: web/routes/runs/[run_id]/+page.svelte:144
+#: web/routes/runs/[run_id]/+page.svelte:234
 msgid "No child output was retained for this run."
 msgstr "この実行には関連する出力が保存されていません。"
 
@@ -994,11 +1015,11 @@ msgstr "クリップが未選択です。戻って選んでください。"
 msgid "No eligible suggestions right now."
 msgstr "現在、対象となる提案はありません。"
 
-#: web/lib/ShotInspector.svelte:96
+#: web/lib/ShotInspector.svelte:134
 msgid "No model read this cut: the rules chose every picture."
 msgstr "この編集はモデルが読んでいません。すべての画像をルールが選びました。"
 
-#: pages/memory_storyboard.py:154 web/lib/ShotInspector.svelte:113
+#: pages/memory_storyboard.py:154 web/lib/ShotInspector.svelte:151
 msgid "No outcome recorded."
 msgstr "結果の記録がありません。"
 
@@ -1008,11 +1029,11 @@ msgid ""
 " month curve, and looks at no pixels."
 msgstr "人物ファイルがまだありません。ライブラリを再スキャンしてください。名前のある人物ごとの件数と月別推移を読み取り、画像自体は分析しません。"
 
-#: pages/memory_storyboard.py:140 web/routes/runs/[run_id]/+page.svelte:111
+#: pages/memory_storyboard.py:140 web/routes/runs/[run_id]/+page.svelte:165
 msgid "No pictures match this filter."
 msgstr "このフィルターに一致する画像はありません。"
 
-#: pages/memory_storyboard.py:142 web/lib/ShotInspector.svelte:48
+#: pages/memory_storyboard.py:142 web/lib/ShotInspector.svelte:83
 msgid "No reason recorded for this picture."
 msgstr "この画像を選んだ理由の記録がありません。"
 
@@ -1020,7 +1041,7 @@ msgstr "この画像を選んだ理由の記録がありません。"
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "この表示に一致する実行はありません。「思い出」か「提案」から作成してください。"
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:126
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:216
 msgid "No saved cut is available for this run."
 msgstr "この実行に保存された編集結果はありません。"
 
@@ -1082,6 +1103,10 @@ msgstr "各年の行事の前後を、新しい年から順に使います。"
 msgid "Only with (optional)"
 msgstr "この人物を含むものだけ（任意）"
 
+#: web/routes/runs/[run_id]/+page.svelte:209
+msgid "Open"
+msgstr "開く"
+
 #: pages/picture_decisions.py:165
 msgid "Open it in Immich first if you haven't looked at it yourself."
 msgstr "自分でまだ見ていなければ、先に Immich で画像を開いてください。"
@@ -1099,7 +1124,7 @@ msgstr "メディア一覧を開く"
 msgid "Open {name} in Immich"
 msgstr "{name} を Immich で開く"
 
-#: pages/memory_storyboard.py:132 web/routes/runs/[run_id]/+page.svelte:83
+#: pages/memory_storyboard.py:132 web/routes/runs/[run_id]/+page.svelte:131
 msgid "Order and timecodes from the saved cut."
 msgstr "保存済みの編集内容の順序とタイムコードです。"
 
@@ -1107,11 +1132,11 @@ msgstr "保存済みの編集内容の順序とタイムコードです。"
 msgid "Orientation"
 msgstr "向き"
 
-#: web/lib/ShotInspector.svelte:72 web/lib/ShotInspector.svelte:84
+#: web/lib/ShotInspector.svelte:107 web/lib/ShotInspector.svelte:119
 msgid "Other picture of this moment"
 msgstr "この瞬間のほかの画像"
 
-#: web/lib/ShotInspector.svelte:64 web/lib/ShotInspector.svelte:66
+#: web/lib/ShotInspector.svelte:99 web/lib/ShotInspector.svelte:101
 msgid "Other pictures of this moment"
 msgstr "この瞬間のほかの画像"
 
@@ -1136,7 +1161,7 @@ msgstr "出力ファイル名"
 msgid "Output: {name}"
 msgstr "出力：{name}"
 
-#: web/lib/ShotInspector.svelte:55
+#: web/lib/ShotInspector.svelte:90
 #, python-brace-format
 msgid "Passed {stages}"
 msgstr "{stages}を通過"
@@ -1211,7 +1236,7 @@ msgstr "各動画で使う秒数を選び、プレビューできます。静止
 msgid "Picture decisions"
 msgstr "この画像への判断"
 
-#: pages/memory_storyboard.py:139 web/lib/ShotInspector.svelte:21
+#: pages/memory_storyboard.py:139 web/lib/ShotInspector.svelte:33
 msgid "Picture review"
 msgstr "画像の確認"
 
@@ -1219,7 +1244,7 @@ msgstr "画像の確認"
 msgid "Pictures & video"
 msgstr "写真と動画"
 
-#: web/routes/runs/[run_id]/+page.svelte:62
+#: web/routes/runs/[run_id]/+page.svelte:110
 #, python-brace-format
 msgid "Pictures: {count}"
 msgstr "画像: {count}"
@@ -1265,6 +1290,10 @@ msgstr "プレビューキャッシュ"
 msgid "Previous"
 msgstr "前へ"
 
+#: web/lib/ShotInspector.svelte:50
+msgid "Put it back"
+msgstr "元に戻す"
+
 #: pages/memory_run.py:467
 msgid "Re-load media to export"
 msgstr "書き出すためメディアを再読み込み"
@@ -1277,7 +1306,7 @@ msgstr "ライブラリを読み取り中…"
 msgid "Reading the pictures"
 msgstr "画像を読み取り中"
 
-#: pages/memory_storyboard.py:145 web/lib/ShotInspector.svelte:112
+#: pages/memory_storyboard.py:145 web/lib/ShotInspector.svelte:150
 msgid "Recorded alternative"
 msgstr "記録された代替候補"
 
@@ -1313,9 +1342,17 @@ msgstr "ディスクから再読み込み"
 msgid "Reload the pool"
 msgstr "メディアを再読み込み"
 
+#: web/lib/ShotInspector.svelte:50
+msgid "Remove from this cut"
+msgstr "この編集から外す"
+
 #: pages/settings_people.py:442
 msgid "Remove this relationship"
 msgstr "この関係を削除"
+
+#: web/routes/runs/[run_id]/+page.svelte:148
+msgid "Removed"
+msgstr "外しました"
 
 #: pages/memory_storyboard.py:150 web/lib/labels.ts:29
 msgid "Replaced a picture the model doubted."
@@ -1337,6 +1374,15 @@ msgstr "結果"
 msgid "Review the pool"
 msgstr "メディアを確認"
 
+#: web/routes/runs/[run_id]/+page.svelte:206
+#, python-brace-format
+msgid "Revision {number}"
+msgstr "リビジョン {number}"
+
+#: web/routes/runs/[run_id]/+page.svelte:202
+msgid "Revisions"
+msgstr "リビジョン"
+
 #: pages/settings_people.py:378
 msgid "Role (suggestions; type your own)"
 msgstr "役割（候補から選ぶか自由入力）"
@@ -1345,7 +1391,7 @@ msgstr "役割（候補から選ぶか自由入力）"
 msgid "Rotation"
 msgstr "回転"
 
-#: web/routes/runs/[run_id]/+page.svelte:130
+#: web/routes/runs/[run_id]/+page.svelte:220
 msgid "Run details"
 msgstr "実行の詳細"
 
@@ -1363,7 +1409,7 @@ msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "サーバーで実行中：{phase}。このページを離れても続行します。"
 
 #: app.py:75 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
-#: web/routes/runs/+page.svelte:80 web/routes/runs/[run_id]/+page.svelte:46
+#: web/routes/runs/+page.svelte:80 web/routes/runs/[run_id]/+page.svelte:94
 msgid "Runs"
 msgstr "実行履歴"
 
@@ -1371,11 +1417,20 @@ msgstr "実行履歴"
 msgid "Save Config"
 msgstr "設定を保存"
 
+#: web/routes/runs/[run_id]/+page.svelte:193
+msgid "Save revision"
+msgstr "リビジョンを保存"
+
 #: pages/step1_config.py:72
 msgid "Saved - type a new key to replace it"
 msgstr "保存済み：新しいキーを入力すると置き換えます"
 
-#: pages/step4_export.py:34 web/routes/runs/[run_id]/+page.svelte:131
+#: web/routes/runs/[run_id]/+page.svelte:196
+#, python-brace-format
+msgid "Saved as revision {number}."
+msgstr "リビジョン {number} として保存しました。"
+
+#: pages/step4_export.py:34 web/routes/runs/[run_id]/+page.svelte:221
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "保存先：{output_path}"
@@ -1392,6 +1447,10 @@ msgstr "拡大縮小の方法"
 #: web/lib/labels.ts:23
 msgid "Scheduled"
 msgstr "スケジュール"
+
+#: web/lib/ShotInspector.svelte:62
+msgid "Screen time (seconds)"
+msgstr "表示時間（秒）"
 
 #: pages/memory_brief.py:32 pages/step1_presets.py:165 web/lib/labels.ts:6
 msgid "Season"
@@ -1446,7 +1505,7 @@ msgstr "共有可能"
 msgid "Sharing"
 msgstr "共有範囲"
 
-#: pages/memory_storyboard.py:133 web/routes/runs/[run_id]/+page.svelte:76
+#: pages/memory_storyboard.py:133 web/routes/runs/[run_id]/+page.svelte:124
 msgid "Show"
 msgstr "表示"
 
@@ -1474,6 +1533,10 @@ msgstr "新しいプロジェクト"
 msgid "Start date"
 msgstr "開始日"
 
+#: web/lib/ShotInspector.svelte:57
+msgid "Start here"
+msgstr "ここから開始"
+
 #: pages/step2_review.py:152
 msgid "Start over"
 msgstr "最初からやり直す"
@@ -1490,7 +1553,7 @@ msgstr "開始中..."
 msgid "Status"
 msgstr "状態"
 
-#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:41
+#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:76
 msgid "Still"
 msgstr "静止画"
 
@@ -1525,6 +1588,10 @@ msgstr "概要"
 #: pages/memory_brief.py:40 web/lib/labels.ts:14
 msgid "Surprise me"
 msgstr "おまかせ"
+
+#: web/routes/runs/[run_id]/+page.svelte:150
+msgid "Swapped"
+msgstr "差し替え"
 
 #: theme.py:321
 msgid "System"
@@ -1597,11 +1664,11 @@ msgid ""
 " trim what was."
 msgstr "メディア一覧と部分編集には専用ページがあります。絶対に使わないものを除外し、採用した部分を調整できます。"
 
-#: web/lib/ShotInspector.svelte:98
+#: web/lib/ShotInspector.svelte:136
 msgid "The model had nothing to say about this picture."
 msgstr "モデルはこの画像について何も記録していません。"
 
-#: pages/memory_storyboard.py:148 web/lib/ShotInspector.svelte:102
+#: pages/memory_storyboard.py:148 web/lib/ShotInspector.svelte:140
 msgid "The picture it replaced"
 msgstr "置き換えられた画像"
 
@@ -1609,6 +1676,10 @@ msgstr "置き換えられた画像"
 #, python-brace-format
 msgid "The pool{value}"
 msgstr "メディア一覧{value}"
+
+#: web/routes/runs/[run_id]/+page.svelte:50
+msgid "The revision could not be saved."
+msgstr "リビジョンを保存できませんでした。"
 
 #: pages/settings_people.py:142
 msgid "The roster"
@@ -1712,7 +1783,7 @@ msgstr "再試行"
 msgid "Turn your photo library into video memories"
 msgstr "写真ライブラリを思い出の動画に"
 
-#: pages/picture_decisions.py:138
+#: pages/picture_decisions.py:138 web/routes/runs/[run_id]/+page.svelte:190
 msgid "Undo"
 msgstr "元に戻す"
 
@@ -1757,6 +1828,10 @@ msgid ""
 "immediately afterwards."
 msgstr "Immich で顔が識別されていない人物向けです。追加後すぐに家族との関係を設定できます。"
 
+#: web/lib/ShotInspector.svelte:124
+msgid "Use this picture instead"
+msgstr "代わりにこの画像を使う"
+
 #: pages/login.py:48
 msgid "Username"
 msgstr "ユーザー名"
@@ -1766,8 +1841,8 @@ msgstr "ユーザー名"
 msgid "Using {name}'s birthday: {value}"
 msgstr "{name} の誕生日を使用：{value}"
 
-#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:41
-#: web/routes/runs/[run_id]/+page.svelte:100
+#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:76
+#: web/routes/runs/[run_id]/+page.svelte:154
 msgid "Video"
 msgstr "動画"
 
@@ -1783,7 +1858,7 @@ msgstr "動画を生成できました！"
 msgid "Videos"
 msgstr "動画"
 
-#: web/routes/runs/[run_id]/+page.svelte:63
+#: web/routes/runs/[run_id]/+page.svelte:111
 #, python-brace-format
 msgid "Videos: {count}"
 msgstr "動画: {count}"
@@ -1807,11 +1882,11 @@ msgstr "誰が見るか"
 msgid "Why other suggestions were skipped"
 msgstr "ほかの提案が除外された理由"
 
-#: pages/memory_storyboard.py:149 web/lib/ShotInspector.svelte:105
+#: pages/memory_storyboard.py:149 web/lib/ShotInspector.svelte:143
 msgid "Why the model replaced the other picture"
 msgstr "モデルがもう一方の画像を置き換えた理由"
 
-#: pages/memory_storyboard.py:141 web/lib/ShotInspector.svelte:47
+#: pages/memory_storyboard.py:141 web/lib/ShotInspector.svelte:82
 msgid "Why this picture"
 msgstr "この画像が選ばれた理由"
 
@@ -1862,7 +1937,7 @@ msgstr "思い出の動画ができました！"
 msgid "about 10 minutes per year of range, shorter if the media cannot fill it"
 msgstr "期間の 1 年ごとに約 10 分。メディアが少なければ短くします"
 
-#: web/routes/runs/[run_id]/+page.svelte:65
+#: web/routes/runs/[run_id]/+page.svelte:113
 #, python-brace-format
 msgid "about {film} of film"
 msgstr "映像は約{film}"
@@ -1903,10 +1978,15 @@ msgstr "南半球"
 msgid "the type's default length, shorter if the media cannot fill it"
 msgstr "この種類の標準の長さ。メディアが少なければ短くします"
 
-#: web/routes/runs/[run_id]/+page.svelte:64
+#: web/routes/runs/[run_id]/+page.svelte:112
 #, python-brace-format
 msgid "{content} of pictures and video"
 msgstr "画像と動画で{content}"
+
+#: web/routes/runs/[run_id]/+page.svelte:185
+#, python-brace-format
+msgid "{content} of {budget} the titles leave"
+msgstr "タイトルが残す {budget} のうち {content}"
 
 #: pages/memory_story.py:109
 #, python-brace-format
@@ -1953,7 +2033,7 @@ msgstr "{photos_count} 枚の写真が利用可能（生成時に自動選択）
 msgid "{seconds:g} s"
 msgstr "{seconds:g} 秒"
 
-#: web/lib/ShotInspector.svelte:40
+#: web/lib/ShotInspector.svelte:75
 #, python-brace-format
 msgid "{seconds} s on screen"
 msgstr "画面に{seconds}秒"

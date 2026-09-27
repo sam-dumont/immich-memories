@@ -9,8 +9,11 @@ export type Cut = components['schemas']['Cut'];
 export type CutShot = components['schemas']['CutShot'];
 
 export class ApiError extends Error {
-  constructor(readonly status: number) {
-    super(`API answered ${status}`);
+  constructor(
+    readonly status: number,
+    readonly detail = '',
+  ) {
+    super(detail || `API answered ${status}`);
   }
 }
 

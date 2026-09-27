@@ -1,15 +1,27 @@
 <script lang="ts">
-  import { Badge, Heading } from '@immich/ui';
+  import { Badge, Button, Heading } from '@immich/ui';
+  import { mdiArrowULeftTop, mdiContentCut, mdiDeleteOutline, mdiSwapHorizontal } from '@mdi/js';
   import { thumbnail, video, type CutShot } from './api';
+  import type { CutEditor } from './cut-edits.svelte';
   import { t } from './i18n.svelte';
   import { clock, seatLabel } from './labels';
 
-  let { shot, modelPolish }: { shot: CutShot; modelPolish: boolean } = $props();
+  let { shot, modelPolish, editor }: { shot: CutShot; modelPolish: boolean; editor: CutEditor } = $props();
 
   let player = $state<HTMLVideoElement>();
   let comparing = $state<string | null>(null);
   const compared = $derived(shot.alternatives.find((alternative) => alternative.asset_id === comparing));
-  const interval = $derived(shot.source_interval);
+  const playing = $derived(editor.playing(shot));
+  const swapped = $derived(playing !== shot.asset_id);
+  const interval = $derived(swapped ? null : editor.interval(shot));
+  const removed = $derived(editor.isRemoved(shot));
+
+  function mark(edge: 0 | 1) {
+    if (!player || !interval) return;
+    const next: [number, number] = [...interval];
+    next[edge] = player.currentTime;
+    if (next[1] > next[0]) editor.trim(shot, next);
+  }
 
   // The preview plays the stretch the film plays, and loops it: the rest of the clip is not the cut.
   function hold() {
@@ -28,9 +40,32 @@
           ontimeupdate={hold} onloadedmetadata={hold}></video>
       {/key}
     {:else}
-      <img class="aspect-[4/3] w-full object-contain" src={thumbnail(shot.asset_id, 'preview')} alt={shot.reason || shot.story_title} />
+      <img class={['aspect-[4/3] w-full object-contain', removed && 'opacity-40']} src={thumbnail(playing, 'preview')} alt={shot.reason || shot.story_title} />
     {/if}
   </div>
+
+  <section class="flex flex-col gap-2" aria-label={t('Edit this shot')}>
+    <div class="flex flex-wrap gap-2">
+      <Button size="small" variant="outline" color={removed ? 'primary' : 'danger'} leadingIcon={removed ? mdiArrowULeftTop : mdiDeleteOutline}
+        onclick={() => editor.toggleRemoved(shot)}>{removed ? t('Put it back') : t('Remove from this cut')}</Button>
+      {#if swapped}
+        <Button size="small" variant="outline" leadingIcon={mdiArrowULeftTop} onclick={() => editor.swap(shot, null)}>{t('Keep the original')}</Button>
+      {/if}
+    </div>
+    {#if !removed && interval && shot.motion && !swapped}
+      <div class="flex flex-wrap items-center gap-2 text-sm tabular-nums">
+        <Button size="small" variant="ghost" leadingIcon={mdiContentCut} onclick={() => mark(0)}>{t('Start here')}</Button>
+        <Button size="small" variant="ghost" leadingIcon={mdiContentCut} onclick={() => mark(1)}>{t('End here')}</Button>
+        <span>{interval[0].toFixed(1)}–{interval[1].toFixed(1)} s</span>
+      </div>
+    {:else if !removed && !shot.motion}
+      <label class="flex items-center gap-2 text-sm">{t('Screen time (seconds)')}
+        <input type="number" min="0.5" step="0.5" value={editor.seconds(shot).toFixed(1)}
+          class="w-20 rounded-md border border-gray-300 bg-light px-2 py-1 tabular-nums dark:border-gray-700"
+          onchange={(event) => { const value = Number(event.currentTarget.value); if (value > 0) editor.hold(shot, value); }} />
+      </label>
+    {/if}
+  </section>
 
   <div class="flex flex-col gap-1">
     <p class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600 tabular-nums dark:text-gray-400">
@@ -85,6 +120,9 @@
             <figcaption class="text-xs"><span class="font-medium">{compared.facts}</span> {compared.fate}</figcaption>
           </figure>
         </div>
+        {#if playing !== compared.asset_id}
+          <Button size="small" variant="outline" leadingIcon={mdiSwapHorizontal} class="w-fit" onclick={() => editor.swap(shot, compared.asset_id)}>{t('Use this picture instead')}</Button>
+        {/if}
       {/if}
       <a class="w-fit text-sm text-primary hover:underline" href="/step2">{t('Browse the whole pool')}</a>
     </section>

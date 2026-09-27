@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -11,6 +12,13 @@ from immich_memories.analysis.selection_trace import Trace
 from immich_memories.config_loader import Config
 from immich_memories.operations.candidate_fates import CandidateFates
 from immich_memories.operations.cut_review import model_polish_ran, read_cut_decisions
+from immich_memories.operations.cut_revisions import (
+    CutEdits,
+    CutRevision,
+    RevisionRefused,
+    read_revisions,
+    save_revision,
+)
 from immich_memories.operations.reader_words import stage_words
 from immich_memories.operations.run_index import attempt_dir_for_run
 from immich_memories.operations.storyboard import (
@@ -20,7 +28,15 @@ from immich_memories.operations.storyboard import (
     source_intervals,
 )
 from immich_memories.web.dependencies import current_config
-from immich_memories.web.schemas import Alternative, Cut, CutShot, ModelDecision, SelectionPath
+from immich_memories.web.schemas import (
+    Alternative,
+    Cut,
+    CutShot,
+    ModelDecision,
+    Revision,
+    RevisionEdits,
+    SelectionPath,
+)
 
 router = APIRouter(prefix="/api/v1/runs", tags=["cut"])
 
@@ -96,7 +112,49 @@ def read_cut(run_id: str, config: Annotated[Config, Depends(current_config)]) ->
         run_id=run_id,
         thesis=board.thesis,
         content_seconds=board.total_seconds,
+        content_budget_seconds=board.content_budget_seconds,
         film_seconds=board.film_seconds,
         model_polish=model_polish_ran(attempt),
         shots=[_shot(index, shot, evidence) for index, shot in enumerate(board.shots, 1)],
     )
+
+
+def _attempt(config: Config, run_id: str) -> Path:
+    attempt = attempt_dir_for_run(config.cache.cache_path, run_id)
+    if attempt is None:
+        raise HTTPException(404, "This run left no saved cut.")
+    return attempt
+
+
+def _revision(revision: CutRevision) -> Revision:
+    return Revision(
+        number=revision.number,
+        created_at=revision.created_at,
+        content_seconds=revision.content_seconds,
+        removed=list(revision.edits.removed),
+        segments=dict(revision.edits.segments),
+        swaps=dict(revision.edits.swaps),
+    )
+
+
+@router.get("/{run_id}/revisions", response_model=list[Revision])
+def list_revisions(
+    run_id: str, config: Annotated[Config, Depends(current_config)]
+) -> list[Revision]:
+    """Every saved revision of this cut, oldest first."""
+    return [_revision(revision) for revision in read_revisions(_attempt(config, run_id))]
+
+
+@router.post("/{run_id}/revisions", response_model=Revision, status_code=201)
+def create_revision(
+    run_id: str, edits: RevisionEdits, config: Annotated[Config, Depends(current_config)]
+) -> Revision:
+    """Keep the owner's edits as the next revision; 422 names the edit that would not render."""
+    try:
+        revision = save_revision(
+            _attempt(config, run_id),
+            CutEdits(removed=tuple(edits.removed), segments=edits.segments, swaps=edits.swaps),
+        )
+    except RevisionRefused as refusal:
+        raise HTTPException(422, str(refusal)) from refusal
+    return _revision(revision)

@@ -159,3 +159,38 @@ def test_a_cut_opens_as_a_contact_sheet_that_explains_and_plays_each_shot(
         timeout=30_000,
     )
     _shoot(page, "web-review")
+
+
+def test_edits_undo_save_as_a_revision_and_reopen_after_a_reload(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    _seed(launch_workspace)
+    page.goto(f"{launch_app_url}/app/runs")
+    page.get_by_role("link").filter(has_text="20240630_web_cut").click()
+    shots = page.get_by_role("list", name="Cut contact sheet").get_by_role("button")
+    inspector = page.get_by_role("article", name="Picture review")
+    expect(shots).to_have_count(5)
+
+    inspector.get_by_role("button", name="Remove from this cut").click()
+    expect(shots.first.get_by_text("Removed")).to_be_visible()
+    page.get_by_role("button", name="Undo").click()
+    expect(shots.first.get_by_text("Removed")).to_have_count(0)
+
+    siblings = inspector.get_by_role("list", name="Other pictures of this moment").get_by_role(
+        "button"
+    )
+    siblings.first.click()
+    inspector.get_by_role("button", name="Use this picture instead").click()
+    expect(shots.first.get_by_text("Swapped")).to_be_visible()
+    shots.nth(1).click()
+    inspector.get_by_role("button", name="Remove from this cut").click()
+    page.get_by_role("button", name="Save revision").click()
+    expect(page.get_by_role("status")).to_have_text("Saved as revision 1.")
+    expect(page.get_by_role("button", name="Save revision")).to_be_disabled()
+    _shoot(page, "web-revision")
+
+    page.reload()
+    expect(shots.nth(1).get_by_text("Removed")).to_have_count(0)
+    page.get_by_role("button", name="Open", exact=True).click()
+    expect(shots.first.get_by_text("Swapped")).to_be_visible()
+    expect(shots.nth(1).get_by_text("Removed")).to_be_visible()

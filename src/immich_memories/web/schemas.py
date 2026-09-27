@@ -83,6 +83,7 @@ class Cut(BaseModel):
     run_id: str
     thesis: str
     content_seconds: float
+    content_budget_seconds: float | None
     film_seconds: float | None
     model_polish: bool
     shots: list[CutShot]
@@ -103,3 +104,17 @@ class RunDetail(RunSummary):
     clips_selected: int
     has_cut: bool
     child_output: bool
+
+
+class RevisionEdits(BaseModel):
+    """What the owner changed; every id must be in the cut, or a recorded sibling for a swap."""
+
+    removed: list[str] = []
+    segments: dict[str, tuple[float, float]] = {}
+    swaps: dict[str, str] = {}
+
+
+class Revision(RevisionEdits):
+    number: int
+    created_at: str
+    content_seconds: float
