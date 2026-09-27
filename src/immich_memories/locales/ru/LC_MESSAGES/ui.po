@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 19:10+0200\n"
+"POT-Creation-Date: 2026-09-27 20:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -203,7 +203,7 @@ msgstr "Автоматически (как в клипах)"
 msgid "Auto duration"
 msgstr "Автоматическая длительность"
 
-#: i18n.py:101
+#: i18n.py:102
 msgid "Automatic (browser)"
 msgstr "Автоматически (браузер)"
 
@@ -711,7 +711,7 @@ msgstr "Передача в Immich: {delivery_label}"
 msgid "Immich delivery: {value}"
 msgstr "Передача в Immich: {value}"
 
-#: pages/clip_grid.py:170 pages/clip_grid.py:224
+#: pages/clip_grid.py:177 pages/clip_grid.py:232
 msgid "Include"
 msgstr "Включить"
 
@@ -727,7 +727,7 @@ msgstr "Включить фотографии"
 msgid "Include in compilation"
 msgstr "Включить в подборку"
 
-#: i18n.py:109
+#: i18n.py:110
 msgid "Interface language"
 msgstr "Язык интерфейса"
 
@@ -1072,7 +1072,7 @@ msgstr "Фильтр людей"
 msgid "Person Spotlight"
 msgstr "Один человек в центре внимания"
 
-#: pages/clip_grid.py:193
+#: pages/clip_grid.py:200
 msgid "Photo"
 msgstr "Фото"
 
@@ -1265,6 +1265,10 @@ msgstr "Выполняется на сервере: {phase}. Продолжит�
 #: app.py:73 app.py:219
 msgid "Runs"
 msgstr "Запуски"
+
+#: pages/clip_grid.py:108 pages/clip_grid.py:320 pages/clip_grid.py:356
+msgid "Same episode"
+msgstr "Тот же эпизод"
 
 #: pages/step1_config.py:140
 msgid "Save Config"

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 19:10+0200\n"
+"POT-Creation-Date: 2026-09-27 20:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -202,7 +202,7 @@ msgstr "Automatiskt (som klippen)"
 msgid "Auto duration"
 msgstr "Automatisk längd"
 
-#: i18n.py:101
+#: i18n.py:102
 msgid "Automatic (browser)"
 msgstr "Automatiskt (webbläsare)"
 
@@ -709,7 +709,7 @@ msgstr "Överföring till Immich: {delivery_label}"
 msgid "Immich delivery: {value}"
 msgstr "Överföring till Immich: {value}"
 
-#: pages/clip_grid.py:170 pages/clip_grid.py:224
+#: pages/clip_grid.py:177 pages/clip_grid.py:232
 msgid "Include"
 msgstr "Ta med"
 
@@ -725,7 +725,7 @@ msgstr "Ta med foton"
 msgid "Include in compilation"
 msgstr "Ta med i sammanställningen"
 
-#: i18n.py:109
+#: i18n.py:110
 msgid "Interface language"
 msgstr "Gränssnittets språk"
 
@@ -1066,7 +1066,7 @@ msgstr "Personfilter"
 msgid "Person Spotlight"
 msgstr "En person i fokus"
 
-#: pages/clip_grid.py:193
+#: pages/clip_grid.py:200
 msgid "Photo"
 msgstr "Foto"
 
@@ -1257,6 +1257,10 @@ msgstr "Körs på servern: {phase}. Fortsätter om du lämnar sidan."
 #: app.py:73 app.py:219
 msgid "Runs"
 msgstr "Körningar"
+
+#: pages/clip_grid.py:108 pages/clip_grid.py:320 pages/clip_grid.py:356
+msgid "Same episode"
+msgstr "Samma episod"
 
 #: pages/step1_config.py:140
 msgid "Save Config"

@@ -249,7 +249,6 @@ class RuntimeEditorialPlanner:
         asset_ids: tuple[str, ...] | None = None,
         config: Config | None = None,
         backend: ProductionPostCardBackend | None = None,
-        person_expression: PersonExpression | None = None,
         presence: PersonExpression | None = None,
     ) -> None:
         self._planner = planner
@@ -257,7 +256,6 @@ class RuntimeEditorialPlanner:
         self._backend = backend
         self._episode_store = episode_store
         self._asset_ids = frozenset(asset_ids) if asset_ids is not None else None
-        self._person_expression = person_expression
         self._presence = presence
         self.last_attempt_directory: Path | None = None
         self._prepare_annotations: Callable[..., Any] | None = None
@@ -278,20 +276,10 @@ class RuntimeEditorialPlanner:
     def _narrowed(
         self, rows: Sequence[_Row], asset_of: Callable[[_Row], Asset]
     ) -> tuple[_Row, ...]:
-        """Apply the run's people condition and explicit membership to any source shape."""
-        if self._person_expression is not None:
-            from immich_memories.analysis.editorial_source import filter_named_expression
-
-            allowed = {
-                asset.id
-                for asset in filter_named_expression(
-                    [asset_of(row) for row in rows], self._person_expression
-                )
-            }
-            rows = [row for row in rows if asset_of(row).id in allowed]
-        if self._asset_ids is not None:
-            rows = [row for row in rows if asset_of(row).id in self._asset_ids]
-        return tuple(rows)
+        """Apply the run's explicit membership to any source shape."""
+        if self._asset_ids is None:
+            return tuple(rows)
+        return tuple(row for row in rows if asset_of(row).id in self._asset_ids)
 
     def plan_source(
         self,
@@ -370,9 +358,10 @@ class RuntimeEditorialPlanner:
             # The readers and the structure planner announce through the
             # context, since the callback never reaches that deep.
             with announcing_stages(on_stage):
-                prepared, reach, sources = self._prepared_source(
-                    trace=trace, on_stage=on_stage, sources=sources
+                prepared, reach = self._prepared_source(
+                    trace=trace, on_stage=on_stage, demanded=[_asset(s).id for s in sources]
                 )
+                sources = self._present(prepared, sources)
                 candidates = metadata_demand(
                     prepared,
                     sources,
@@ -422,19 +411,17 @@ class RuntimeEditorialPlanner:
         *,
         trace: Trace,
         on_stage: Callable[[StageUpdate], None] | None,
-        sources: Sequence[Asset | VideoClipInfo],
-    ) -> tuple[Any, frozenset[str] | None, tuple[Asset | VideoClipInfo, ...]]:
+        demanded: Sequence[str],
+    ) -> tuple[Any, frozenset[str] | None]:
         if self._prepare_annotations is None:
-            prepared = self._planner.prepare_source(trace=trace)
-            return prepared, None, self._with_present(prepared.candidates, sources)
+            return self._planner.prepare_source(trace=trace), None
         # Preparation covers what the film can reach; the rest of the window is read
         # as metadata for the grouping (#1181). The preliminary pass only admits, so
         # it cuts no groups, and only the final pass belongs to the plan trace.
         preliminary = self._planner.prepare_source(
             trace=Trace(), include_previews=False, group=False
         )
-        sources = self._with_present(preliminary.candidates, sources)
-        reach = film_reach(preliminary.candidates, [_asset(source).id for source in sources])
+        reach = film_reach(preliminary.candidates, demanded)
         logger.info(
             "preparing %d of %d pictures in the window", len(reach), len(preliminary.candidates)
         )
@@ -443,26 +430,29 @@ class RuntimeEditorialPlanner:
         final = self._planner.prepare_source(
             trace=trace, evidence_exclusions=exclusions, include_previews=False
         )
-        return final, reach, sources
+        return final, reach
 
-    def _with_present(
-        self, candidates: Sequence[Any], sources: Sequence[Asset | VideoClipInfo]
+    def _present(
+        self, prepared: Any, sources: Sequence[Asset | VideoClipInfo]
     ) -> tuple[Asset | VideoClipInfo, ...]:
-        """Add every picture whose episode holds the film's people to what Immich matched."""
+        """Keep the sources whose episode, as this cut groups it, holds the film's people.
+
+        The fetch already read presence over the raw window; an evidence exclusion can
+        split one of those episodes, and the cut's own episodes are the ones that count.
+        """
         if self._presence is None:
             return tuple(sources)
         present = present_in_episodes(
-            [candidate.source for candidate in candidates], self._presence
+            (
+                [candidate.source for candidate in group.candidates]
+                for group in prepared.episode_groups
+            ),
+            self._presence,
         )
-        requested = {_asset(source).id for source in sources}
-        added = tuple(
-            candidate.source
-            for candidate in candidates
-            if candidate.asset_id in present and candidate.asset_id not in requested
-        )
-        if added:
-            logger.info("%d picture(s) join the film from episodes its people are in", len(added))
-        return (*sources, *added)
+        kept = tuple(source for source in sources if _asset(source).id in present)
+        if dropped := len(sources) - len(kept):
+            logger.info("%d picture(s) sit in episodes this cut's people are not in", dropped)
+        return kept
 
     def close(self) -> None:
         """Release every thread-owned SQLite connection; later reads reopen safely."""
@@ -644,7 +634,6 @@ def build_editorial_planner(
         asset_ids=scope.asset_ids,
         config=config,
         backend=backend,
-        person_expression=context.person_expression,
         presence=people_condition(context.people, context.person_match, context.person_expression),
     )
 

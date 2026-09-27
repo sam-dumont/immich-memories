@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 19:10+0200\n"
+"POT-Creation-Date: 2026-09-27 20:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -196,7 +196,7 @@ msgstr "自動（クリップに合わせる）"
 msgid "Auto duration"
 msgstr "長さを自動設定"
 
-#: i18n.py:101
+#: i18n.py:102
 msgid "Automatic (browser)"
 msgstr "自動（ブラウザー）"
 
@@ -700,7 +700,7 @@ msgstr "Immich への送信：{delivery_label}"
 msgid "Immich delivery: {value}"
 msgstr "Immich への送信：{value}"
 
-#: pages/clip_grid.py:170 pages/clip_grid.py:224
+#: pages/clip_grid.py:177 pages/clip_grid.py:232
 msgid "Include"
 msgstr "含める"
 
@@ -716,7 +716,7 @@ msgstr "写真を含める"
 msgid "Include in compilation"
 msgstr "まとめ動画に含める"
 
-#: i18n.py:109
+#: i18n.py:110
 msgid "Interface language"
 msgstr "画面の言語"
 
@@ -1051,7 +1051,7 @@ msgstr "人物フィルター"
 msgid "Person Spotlight"
 msgstr "一人の人物に注目"
 
-#: pages/clip_grid.py:193
+#: pages/clip_grid.py:200
 msgid "Photo"
 msgstr "写真"
 
@@ -1242,6 +1242,10 @@ msgstr "サーバーで実行中：{phase}。このページを離れても続�
 #: app.py:73 app.py:219
 msgid "Runs"
 msgstr "実行履歴"
+
+#: pages/clip_grid.py:108 pages/clip_grid.py:320 pages/clip_grid.py:356
+msgid "Same episode"
+msgstr "同じエピソード"
 
 #: pages/step1_config.py:140
 msgid "Save Config"

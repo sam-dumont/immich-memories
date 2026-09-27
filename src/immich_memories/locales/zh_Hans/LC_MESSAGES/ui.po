@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 19:10+0200\n"
+"POT-Creation-Date: 2026-09-27 20:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -196,7 +196,7 @@ msgstr "自动（与片段一致）"
 msgid "Auto duration"
 msgstr "自动时长"
 
-#: i18n.py:101
+#: i18n.py:102
 msgid "Automatic (browser)"
 msgstr "自动（浏览器）"
 
@@ -700,7 +700,7 @@ msgstr "上传到 Immich：{delivery_label}"
 msgid "Immich delivery: {value}"
 msgstr "上传到 Immich：{value}"
 
-#: pages/clip_grid.py:170 pages/clip_grid.py:224
+#: pages/clip_grid.py:177 pages/clip_grid.py:232
 msgid "Include"
 msgstr "包含"
 
@@ -716,7 +716,7 @@ msgstr "包含照片"
 msgid "Include in compilation"
 msgstr "加入合辑"
 
-#: i18n.py:109
+#: i18n.py:110
 msgid "Interface language"
 msgstr "界面语言"
 
@@ -1051,7 +1051,7 @@ msgstr "人物筛选"
 msgid "Person Spotlight"
 msgstr "人物特辑"
 
-#: pages/clip_grid.py:193
+#: pages/clip_grid.py:200
 msgid "Photo"
 msgstr "照片"
 
@@ -1242,6 +1242,10 @@ msgstr "正在服务器上运行：{phase}。离开此页面后仍会继续。"
 #: app.py:73 app.py:219
 msgid "Runs"
 msgstr "任务"
+
+#: pages/clip_grid.py:108 pages/clip_grid.py:320 pages/clip_grid.py:356
+msgid "Same episode"
+msgstr "同一片段"
 
 #: pages/step1_config.py:140
 msgid "Save Config"

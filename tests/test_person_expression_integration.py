@@ -14,9 +14,6 @@ import pytest
 
 from immich_memories.analysis.editorial_case import Case
 from immich_memories.analysis.editorial_runtime import EditorialRunContext
-from immich_memories.analysis.editorial_source import (
-    filter_named_expression,
-)
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.api.models import AssetType, Person
 from immich_memories.api.person_expression import PersonExpression
@@ -115,11 +112,6 @@ def test_case_and_context_reject_inconsistent_names_and_untyped_expression(tmp_p
             )
 
 
-def test_named_filter_requires_cooccurrence_in_one_asset_not_across_the_window():
-    sources = [_asset("adult", [_person("a", "Adult A")]), _asset("child", [_person("c", "Child")])]
-    assert filter_named_expression(sources, EXPRESSION) == ()
-
-
 @pytest.mark.parametrize("matching", [True, False])
 def test_actual_runtime_reads_the_condition_per_episode_and_keeps_full_canonical_context(
     tmp_path, monkeypatch, matching
@@ -138,8 +130,7 @@ def test_actual_runtime_reads_the_condition_per_episode_and_keeps_full_canonical
     sources[3].people = [_person("a-alone", "Adult A")]
     sources[4].people = [_person("child", "Child")] if matching else []
     source_bytes = [a.model_dump(mode="json") for a in sources]
-    fetched = [a for a in sources if a.people]
-    result = build().plan_source(fetched, trace=Trace(), include_live_photos=False)
+    result = build().plan_source(sources, trace=Trace(), include_live_photos=False)
     expected = {a.id for a in sources} if matching else set()
     assert {row.clip.asset.id for row in result.candidates} == expected
     assert set(result.plan.selected_asset_ids).issubset(expected)

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 19:10+0200\n"
+"POT-Creation-Date: 2026-09-27 20:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pt_BR\n"
@@ -202,7 +202,7 @@ msgstr "Automático (igual aos clipes)"
 msgid "Auto duration"
 msgstr "Duração automática"
 
-#: i18n.py:101
+#: i18n.py:102
 msgid "Automatic (browser)"
 msgstr "Automático (navegador)"
 
@@ -712,7 +712,7 @@ msgstr "Envio para o Immich: {delivery_label}"
 msgid "Immich delivery: {value}"
 msgstr "Envio para o Immich: {value}"
 
-#: pages/clip_grid.py:170 pages/clip_grid.py:224
+#: pages/clip_grid.py:177 pages/clip_grid.py:232
 msgid "Include"
 msgstr "Incluir"
 
@@ -728,7 +728,7 @@ msgstr "Incluir fotos"
 msgid "Include in compilation"
 msgstr "Incluir na compilação"
 
-#: i18n.py:109
+#: i18n.py:110
 msgid "Interface language"
 msgstr "Idioma da interface"
 
@@ -1069,7 +1069,7 @@ msgstr "Filtro de pessoas"
 msgid "Person Spotlight"
 msgstr "Uma pessoa em destaque"
 
-#: pages/clip_grid.py:193
+#: pages/clip_grid.py:200
 msgid "Photo"
 msgstr "Foto"
 
@@ -1262,6 +1262,10 @@ msgstr "Em andamento no servidor: {phase}. Continua mesmo se você sair desta p�
 #: app.py:73 app.py:219
 msgid "Runs"
 msgstr "Execuções"
+
+#: pages/clip_grid.py:108 pages/clip_grid.py:320 pages/clip_grid.py:356
+msgid "Same episode"
+msgstr "Mesmo episódio"
 
 #: pages/step1_config.py:140
 msgid "Save Config"

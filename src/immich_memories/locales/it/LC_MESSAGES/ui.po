@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 19:10+0200\n"
+"POT-Creation-Date: 2026-09-27 20:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: it\n"
@@ -202,7 +202,7 @@ msgstr "Automatico (come le clip)"
 msgid "Auto duration"
 msgstr "Durata automatica"
 
-#: i18n.py:101
+#: i18n.py:102
 msgid "Automatic (browser)"
 msgstr "Automatico (browser)"
 
@@ -710,7 +710,7 @@ msgstr "Invio a Immich: {delivery_label}"
 msgid "Immich delivery: {value}"
 msgstr "Invio a Immich: {value}"
 
-#: pages/clip_grid.py:170 pages/clip_grid.py:224
+#: pages/clip_grid.py:177 pages/clip_grid.py:232
 msgid "Include"
 msgstr "Includi"
 
@@ -726,7 +726,7 @@ msgstr "Includi foto"
 msgid "Include in compilation"
 msgstr "Includi nella raccolta"
 
-#: i18n.py:109
+#: i18n.py:110
 msgid "Interface language"
 msgstr "Lingua dell’interfaccia"
 
@@ -1067,7 +1067,7 @@ msgstr "Filtro persone"
 msgid "Person Spotlight"
 msgstr "Una persona protagonista"
 
-#: pages/clip_grid.py:193
+#: pages/clip_grid.py:200
 msgid "Photo"
 msgstr "Foto"
 
@@ -1258,6 +1258,10 @@ msgstr "In esecuzione sul server: {phase}. Continua anche se lasci questa pagina
 #: app.py:73 app.py:219
 msgid "Runs"
 msgstr "Esecuzioni"
+
+#: pages/clip_grid.py:108 pages/clip_grid.py:320 pages/clip_grid.py:356
+msgid "Same episode"
+msgstr "Stesso episodio"
 
 #: pages/step1_config.py:140
 msgid "Save Config"

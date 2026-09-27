@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -138,42 +139,38 @@ def test_birthday_mode_and_malformed_stored_tree_cannot_fall_back_to_flat_names(
 
 
 @pytest.mark.parametrize("photos", [False, True])
-def test_real_scoped_fetch_intersects_assets_not_members_of_the_same_event(photos):
+def test_real_scoped_fetch_reads_each_episode_by_every_face_of_a_name(photos):
     value = state()
     full_roster = value.people.copy()
     full_roster[1] = full_roster[1].model_copy(update={"is_hidden": True})
     value.people = [person for person in full_roster if not person.is_hidden]
     step1_people._set_grouped_condition(value, EXPRESSION)
-    when = value.date_ranges[0].start
-    assets = {
-        key: Asset(
+    by_id = {person.id: person for person in full_roster}
+    faces = {
+        "a-and-c": ("face-a1", "face-c"),
+        "a2-and-c": ("face-a2", "face-c"),
+        "b-and-c": ("face-b", "face-c"),
+        "a-alone": ("face-a1",),
+        "c-alone": ("face-c",),
+    }
+    # Hours apart, so each picture is its own episode.
+    assets = [
+        Asset(
             id=key,
             type=AssetType.IMAGE if photos else AssetType.VIDEO,
-            fileCreatedAt=when,
-            fileModifiedAt=when,
-            updatedAt=when,
+            fileCreatedAt=value.date_ranges[0].start + timedelta(hours=3 * index),
+            fileModifiedAt=value.date_ranges[0].start,
+            updatedAt=value.date_ranges[0].start,
+            people=[by_id[face] for face in keys],
         )
-        for key in ("a-and-c", "a2-and-c", "b-and-c", "a-alone", "c-alone")
-    }
-    by_face = {
-        "face-a1": [assets["a-and-c"], assets["a-alone"]],
-        "face-a2": [assets["a2-and-c"]],
-        "face-b": [assets["b-and-c"]],
-        "face-c": [assets[k] for k in ("a-and-c", "a2-and-c", "b-and-c", "c-alone")],
-    }
-    calls = []
-
-    def fetch(face, window):
-        calls.append((face, window))
-        return by_face[face]
-
+        for index, (key, keys) in enumerate(faces.items())
+    ]
     client = MagicMock()
     client.get_all_people.return_value = full_roster
-    client.get_videos_for_person_and_date_range.side_effect = fetch
-    client.get_photos_for_date_range.side_effect = lambda window, *, person_id: fetch(
-        person_id, window
-    )
-    client.get_videos_for_date_range.side_effect = AssertionError("unfiltered query")
+    # WHY: Immich is the read boundary: one unfiltered read per media kind and window.
+    client.get_videos_for_date_range.return_value = [a for a in assets if not photos]
+    client.get_photos_for_date_range.return_value = [a for a in assets if photos]
+    client.get_videos_for_person_and_date_range.side_effect = AssertionError("per-face read")
     client.get_videos_for_all_persons.side_effect = AssertionError("flattened AND query")
     with patch.object(step2_loading, "SyncImmichClient") as factory:
         factory.return_value.__enter__.return_value = client
@@ -181,7 +178,7 @@ def test_real_scoped_fetch_intersects_assets_not_members_of_the_same_event(photo
             step2_loading._fetch_photos(value) if photos else step2_loading._fetch_assets(value)
         )
     assert {a.id for a in actual} == {"a-and-c", "a2-and-c", "b-and-c"}
-    assert [face for face, _ in calls] == ["face-a1", "face-a2", "face-b", "face-c"]
+    assert all(not call.kwargs for call in client.get_photos_for_date_range.call_args_list)
     client.get_all_people.assert_called_once_with(with_hidden=True)
 
 

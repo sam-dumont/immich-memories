@@ -111,8 +111,11 @@ the code named beside it; if the two disagree, the code wins and this entry is s
   90-minute gap (`EPISODE_WINDOW_MINUTES`, `selection_source_groups.py`).
 - **Person presence**: in a film about people, a person is present in every picture of an episode
   where Immich recognised their face at least once; `AND` asks for every named person somewhere in
-  the episode, not in one frame. It widens the selectable pool past Immich's per-frame match and
-  never past the episode (`person_presence.py`, applied in `editorial_runtime.py`).
+  the episode, not in one frame. Read twice: the fetch reads it by face ID over the whole window
+  (`api/person_scope.py`), so the pool the owner reviews holds those pictures (marked
+  "Same episode", `AppState.found_by_episode`); the cut reads it by name over its own episodes,
+  after evidence exclusions (`editorial_runtime.py`), so the two never disagree. Never past the
+  episode (`person_presence.py`).
 - **Episode reading**: a model's answer about one episode: what happened, its representatives,
   its cull decisions and its notable moments, banked by exact membership and producer
   (`store/episode_readings.py`, `text_episode_reader.py`). The rules reader writes factual

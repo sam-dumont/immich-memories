@@ -1,12 +1,14 @@
-"""A person film counts someone present wherever their face is recognised in the episode.
+"""The cut reads person presence over the episodes it actually cuts.
 
 Faces go unrecognised for people who are really there: the back of a head, a baby
-feeding against a chest, a child across the garden. Immich's person query answers
-per frame, so a person film used to lose every one of those pictures. The pool is
-the episode now: one recognised face puts the person in every picture of the same
-90-minute episode, and no further.
+feeding against a chest, a child across the garden. One recognised face puts the person
+in every picture of the same 90-minute episode, and no further. The fetch reads that
+over the raw window (`test_person_window_fetch.py`); the cut reads it again over its own
+episodes, after evidence exclusions, so the two can never disagree about who is there.
 """
 
+import sqlite3
+from dataclasses import replace
 from datetime import timedelta
 
 from immich_memories.analysis.editorial_planner import EditorialPlan
@@ -30,8 +32,8 @@ def shot(key, *, hour, minute=0, people=()):
     return asset
 
 
-def selectable(tmp_path, monkeypatch, *, window, fetched, **context):
-    """The pictures the editor may choose from, given what Immich's face query returned."""
+def selectable(tmp_path, monkeypatch, *, window, fetched=None, providers=None, **context):
+    """The pictures the editor may choose from, given the pool the fetch handed over."""
     config = Config(
         llm={"model": "offline-editor"},
         cache={"directory": str(tmp_path / "cache")},
@@ -51,7 +53,7 @@ def selectable(tmp_path, monkeypatch, *, window, fetched, **context):
             fetch_preview=lambda _client, _asset_id: preview(),
             fetch_faces=lambda _client, _asset_id: (),
             prepare_annotations=lambda **kwargs: prepare_editorial_annotations(
-                **kwargs, ports=successful_ports([])
+                **kwargs, ports=providers or successful_ports([])
             ),
         ),
     )
@@ -63,11 +65,11 @@ def selectable(tmp_path, monkeypatch, *, window, fetched, **context):
 
     # WHY: the editor is the next stage's boundary; this test is about the pool it is handed.
     monkeypatch.setattr(planner._planner, "plan_prepared", editor)
-    planner.plan_source(fetched, trace=Trace())
+    planner.plan_source(window if fetched is None else fetched, trace=Trace())
     return set(seen)
 
 
-def test_one_recognised_face_puts_the_person_in_every_picture_of_that_episode(
+def test_the_cut_keeps_every_picture_of_an_episode_the_person_is_recognised_in(
     tmp_path, monkeypatch
 ):
     face = shot("face", hour=9, people=("Ada",))
@@ -75,11 +77,7 @@ def test_one_recognised_face_puts_the_person_in_every_picture_of_that_episode(
     elsewhere = shot("afternoon", hour=15)
 
     pool = selectable(
-        tmp_path,
-        monkeypatch,
-        window=[face, back_of_head, elsewhere],
-        fetched=[face],
-        people=("Ada",),
+        tmp_path, monkeypatch, window=[face, back_of_head, elsewhere], people=("Ada",)
     )
 
     assert pool == {"face", "back-of-head"}
@@ -100,7 +98,6 @@ def test_and_asks_for_everyone_somewhere_in_the_episode_not_in_one_frame(tmp_pat
         tmp_path,
         monkeypatch,
         window=[*morning, *only_ada_later],
-        fetched=[],
         people=("Ada", "Ben"),
         person_match="and",
     )
@@ -121,7 +118,6 @@ def test_a_grouped_condition_is_read_per_episode_too(tmp_path, monkeypatch):
         tmp_path,
         monkeypatch,
         window=window,
-        fetched=[],
         person_expression=PersonExpression.parse('("Ada" AND "Ben") OR "Cy"'),
     )
 
@@ -135,3 +131,34 @@ def test_a_film_about_nobody_keeps_the_pictures_it_asked_for(tmp_path, monkeypat
     pool = selectable(tmp_path, monkeypatch, window=[asked, neighbour], fetched=[asked])
 
     assert pool == {"asked"}
+
+
+def test_an_excluded_picture_that_held_an_episode_together_splits_presence_with_it(
+    tmp_path, monkeypatch
+):
+    """Before the fix, presence was read over the window before exclusions.
+
+    The screen photo bridged two 80-minute gaps, so the raw window held one episode and
+    the later picture counted as with the person; the cut, without that photo, holds two.
+    """
+    face = shot("face", hour=9, people=("Ada",))
+    bridge = shot("screen", hour=10, minute=20)
+    later = shot("later", hour=11, minute=40)
+    providers = successful_ports([])
+
+    def heads(**kwargs):
+        providers.heads(**kwargs)
+        with sqlite3.connect(kwargs["store_path"]) as connection:
+            connection.execute(
+                "UPDATE head_facts SET label='yes' WHERE asset_id='screen' AND head='screen'"
+            )
+
+    pool = selectable(
+        tmp_path,
+        monkeypatch,
+        window=[face, bridge, later],
+        people=("Ada",),
+        providers=replace(providers, heads=heads),
+    )
+
+    assert pool == {"face"}

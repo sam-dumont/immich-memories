@@ -85,9 +85,9 @@ def _check_companions(companion_assets: Mapping[str, Asset], assets: Mapping[str
 
 def _check_case_scope(case: Case, assets: Mapping[str, Asset], members: list[str]) -> None:
     if case.person_expression is not None:
-        from immich_memories.analysis.person_presence import present_in_episodes
+        from immich_memories.analysis.person_presence import episodes_of, present_in_episodes
 
-        matching = present_in_episodes(tuple(assets.values()), case.person_expression)
+        matching = present_in_episodes(episodes_of(tuple(assets.values())), case.person_expression)
         if not set(members).issubset(matching):
             raise ValueError("captured wall selects outside the grouped people condition")
     if case.special_event_id is not None and not set(assets).issubset(case.event_asset_ids):
