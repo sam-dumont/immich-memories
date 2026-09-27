@@ -6,7 +6,6 @@ import json
 import logging
 import multiprocessing
 import sqlite3
-import threading
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -14,15 +13,14 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.cache import database as cache_database
 from immich_memories.cache.database import VideoAnalysisCache
-from immich_memories.cache.schema_migrator import SchemaMigrator
 from immich_memories.config_loader import Config, set_config
 from immich_memories.db import open_store
 from immich_memories.operations.store_import import import_legacy
 from immich_memories.tracking.models import PhaseStats, RunMetadata
 from immich_memories.tracking.run_database import RunDatabase
 from immich_memories.tracking.run_tracker import RunTracker
+from tests.legacy_cache_db import write_legacy_cache_db
 
 
 def _initialize_database_process(db_path: str, start_event: Any, result_queue: Any) -> None:
@@ -134,13 +132,9 @@ def _make_completed_run(
     )
 
 
-def test_v10_migrates_populated_v9_database_without_losing_rows(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The additive v10 migration keeps production-era v9 run records intact."""
-    db_path = tmp_path / "v9.db"
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 9)
-    VideoAnalysisCache(db_path)
+def test_a_populated_v9_database_imports_without_losing_rows(tmp_path: Path) -> None:
+    """Production-era v9 run records reach the store intact."""
+    db_path = write_legacy_cache_db(tmp_path / "v9.db", version=9)
     with sqlite3.connect(db_path) as conn:
         conn.execute(
             """
@@ -160,8 +154,6 @@ def test_v10_migrates_populated_v9_database_without_losing_rows(
             ),
         )
 
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 10)
-    VideoAnalysisCache(db_path)
     _import_into_the_store(db_path, tmp_path)
     loaded = RunDatabase().get_run("existing-v9")
 
@@ -172,82 +164,9 @@ def test_v10_migrates_populated_v9_database_without_losing_rows(
     assert loaded.memory_people == ()
 
 
-def test_concurrent_connections_upgrade_v9_database_once(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """A second initializer cannot pass version discovery during a v10 migration."""
-    db_path = tmp_path / "concurrent-v9.db"
-    current_version = cache_database.SCHEMA_VERSION
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 9)
-    VideoAnalysisCache(db_path)
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", current_version)
-
-    original = SchemaMigrator._migration_v10_automation_state
-    first_entered = threading.Event()
-    second_entered = threading.Event()
-    release_first = threading.Event()
-    call_lock = threading.Lock()
-    errors: list[BaseException] = []
-    calls = 0
-
-    def controlled_migration(self: SchemaMigrator, conn: sqlite3.Connection) -> None:
-        nonlocal calls
-        with call_lock:
-            calls += 1
-            call_number = calls
-        if call_number == 1:
-            first_entered.set()
-            if not release_first.wait(timeout=5):
-                raise TimeoutError("migration test did not release first initializer")
-        else:
-            second_entered.set()
-        original(self, conn)
-
-    monkeypatch.setattr(
-        SchemaMigrator,
-        "_migration_v10_automation_state",
-        controlled_migration,
-    )
-
-    def initialize() -> None:
-        try:
-            VideoAnalysisCache(db_path)
-        except BaseException as exc:  # pragma: no cover - asserted below
-            errors.append(exc)
-
-    first = threading.Thread(target=initialize)
-    second = threading.Thread(target=initialize)
-    try:
-        first.start()
-        assert first_entered.wait(timeout=5)
-        second.start()
-        assert not second_entered.wait(timeout=0.25)
-    finally:
-        release_first.set()
-        first.join(timeout=5)
-        second.join(timeout=5)
-
-    assert not first.is_alive()
-    assert not second.is_alive()
-    assert errors == []
-    assert calls == 1
-    with sqlite3.connect(db_path) as conn:
-        version = conn.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
-        columns = [row[1] for row in conn.execute("PRAGMA table_info(pipeline_runs)")]
-    assert version == current_version
-    assert columns.count("memory_category") == 1
-
-
-def test_concurrent_processes_upgrade_v9_database_once(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Four real initializers must re-read the version after acquiring the write guard."""
-    db_path = tmp_path / "multiprocess-v9.db"
-    current_version = cache_database.SCHEMA_VERSION
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 9)
-    VideoAnalysisCache(db_path)
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", current_version)
-
+def test_concurrent_processes_build_a_fresh_cache_once(tmp_path: Path) -> None:
+    """Four real initializers race on an empty file and all find one finished cache."""
+    db_path = tmp_path / "multiprocess.db"
     context = multiprocessing.get_context("spawn")
     start_event = context.Event()
     result_queue = context.Queue()
@@ -274,56 +193,13 @@ def test_concurrent_processes_upgrade_v9_database_once(
     assert [process.exitcode for process in processes] == [0, 0, 0, 0]
     assert messages == [None, None, None, None]
     with sqlite3.connect(db_path) as conn:
-        version = conn.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
-        columns = [row[1] for row in conn.execute("PRAGMA table_info(pipeline_runs)")]
-    assert version == current_version
-    assert columns.count("memory_category") == 1
+        columns = [row[1] for row in conn.execute("PRAGMA table_info(video_segments)")]
+    assert columns.count("safe_cut_gaps") == 1
 
 
-def test_fresh_database_has_exact_automation_run_identity_and_phase(tmp_path: Path) -> None:
-    """A fresh database correlates one run/attempt and persists their outer phase."""
-    db_path = tmp_path / "fresh.db"
-    VideoAnalysisCache(db_path)
-
-    with sqlite3.connect(db_path) as conn:
-        version = conn.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
-        attempt_columns = {
-            row[1] for row in conn.execute("PRAGMA table_info(automation_attempts)").fetchall()
-        }
-        run_columns = {row[1] for row in conn.execute("PRAGMA table_info(pipeline_runs)")}
-        run_indexes = {row[1] for row in conn.execute("PRAGMA index_list(pipeline_runs)")}
-
-    # The subject here is the columns and indexes, not the version number. Assert
-    # against the constant so a schema bump does not break an unrelated test.
-    assert version == cache_database.SCHEMA_VERSION
-    assert attempt_columns == {
-        "id",
-        "started_at",
-        "finished_at",
-        "outcome",
-        "reason",
-        "candidate_category",
-        "memory_type",
-        "memory_key",
-        "run_id",
-        "error",
-        "last_phase",
-        "phase_events",
-    }
-    assert "automation_attempt_id" in run_columns
-    assert "last_phase" in run_columns
-    assert "phase_events" in run_columns
-    assert "last_phase" in attempt_columns
-    assert "idx_runs_automation_attempt" in run_indexes
-
-
-def test_v12_migrates_populated_v11_database_without_losing_runs(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The additive v12 column leaves existing manual and automation rows intact."""
-    db_path = tmp_path / "v11.db"
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 11)
-    VideoAnalysisCache(db_path)
+def test_a_populated_v11_database_imports_without_losing_runs(tmp_path: Path) -> None:
+    """Rows written before automation attempts had ids keep their identity in the store."""
+    db_path = write_legacy_cache_db(tmp_path / "v11.db", version=11)
     with sqlite3.connect(db_path) as conn:
         conn.execute(
             """
@@ -346,8 +222,6 @@ def test_v12_migrates_populated_v11_database_without_losing_runs(
         )
         conn.commit()
 
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 12)
-    VideoAnalysisCache(db_path)
     _import_into_the_store(db_path, tmp_path)
     loaded = RunDatabase().get_run("existing-v11")
 
@@ -555,43 +429,15 @@ class TestTargetDurationSurvivesTheRoundTrip:
         assert loaded.target_duration_seconds == 25
 
     def test_a_pre_migration_row_backfills_from_minutes(self, tmp_path: Path) -> None:
-        import sqlite3
+        db_path = write_legacy_cache_db(tmp_path / "old.db", version=18)
+        with sqlite3.connect(db_path) as conn:
+            conn.execute(
+                "INSERT INTO pipeline_runs (run_id, created_at, status, target_duration_minutes)"
+                " VALUES ('r-old', '2026-08-01', 'completed', 10)"
+            )
 
-        from immich_memories.cache import database as cache_database
-
-        db_path = tmp_path / "old.db"
-        current = cache_database.SCHEMA_VERSION
-        try:
-            cache_database.SCHEMA_VERSION = 18
-            VideoAnalysisCache(db_path)
-            with sqlite3.connect(db_path) as conn:
-                conn.execute(
-                    "INSERT INTO pipeline_runs (run_id, created_at, status, target_duration_minutes)"
-                    " VALUES ('r-old', '2026-08-01', 'completed', 10)"
-                )
-        finally:
-            cache_database.SCHEMA_VERSION = current
-
-        VideoAnalysisCache(db_path)  # migrates
         _import_into_the_store(db_path, tmp_path)
         loaded = RunDatabase().get_run("r-old")
 
         assert loaded is not None
         assert loaded.target_duration_seconds == 600
-
-    def test_v19_tolerates_a_missing_table_and_reruns(self, tmp_path: Path) -> None:
-        """A migration must be a no-op on a db without the table, and re-entrant
-        when the column already exists (interrupted upgrade, restarted)."""
-        import sqlite3
-
-        from immich_memories.cache.migration_v19 import migrate_target_duration_seconds
-
-        with sqlite3.connect(tmp_path / "no-table.db") as conn:
-            migrate_target_duration_seconds(conn)  # no pipeline_runs — no-op
-
-        VideoAnalysisCache(tmp_path / "t.db")  # fully migrated
-        with sqlite3.connect(tmp_path / "t.db") as conn:
-            migrate_target_duration_seconds(conn)  # column exists — no-op
-            cols = [r[1] for r in conn.execute("PRAGMA table_info(pipeline_runs)")]
-
-        assert cols.count("target_duration_seconds") == 1

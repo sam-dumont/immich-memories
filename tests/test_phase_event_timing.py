@@ -3,8 +3,6 @@
 import sqlite3
 
 from immich_memories.automation.state_store import AutomationStateStore
-from immich_memories.cache import database as cache_database
-from immich_memories.cache.database import VideoAnalysisCache
 from immich_memories.config_loader import Config, set_config
 from immich_memories.db import close_stores, open_store
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
@@ -12,6 +10,7 @@ from immich_memories.operations.store_import import import_legacy
 from immich_memories.tracking.models import RunMetadata
 from immich_memories.tracking.run_database import RunDatabase
 from immich_memories.tracking.run_tracker import RunTracker
+from tests.legacy_cache_db import write_legacy_cache_db
 
 
 def test_elapsed_samples_survive_reopen_and_mirror_only_the_linked_attempt(tmp_path):
@@ -44,9 +43,7 @@ def test_elapsed_samples_survive_reopen_and_mirror_only_the_linked_attempt(tmp_p
 
 def test_import_preserves_old_rows_without_inventing_elapsed_samples(tmp_path, monkeypatch):
     path = tmp_path / "v23.db"
-    with monkeypatch.context() as legacy:
-        legacy.setattr(cache_database, "SCHEMA_VERSION", 23)
-        VideoAnalysisCache(path)
+    write_legacy_cache_db(path, version=23)
     with sqlite3.connect(path) as conn:
         conn.execute("""INSERT INTO pipeline_runs (run_id, created_at, status, last_phase)
                         VALUES ('old-run', '2026-08-12T08:00:00+00:00', 'failed', 'render')""")

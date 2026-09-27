@@ -235,6 +235,16 @@ beside it holds derived analysis only and is rebuilt when lost. Both sit on the 
 moving host means copying that volume, and
 [the `cache` CLI commands will not do it for you](./maintenance/health-logs-cache.md#the-cli-cache-commands-are-not-for-the-banks).
 
+Back the store up without stopping anything:
+
+```bash
+docker compose exec immich-memories immich-memories store backup
+```
+
+It lands in `/home/immich/.immich-memories/backups/` with a manifest beside it. The image ships the
+PostgreSQL client tools, so the same command works when the store is on PostgreSQL
+([backup and restore](./database.md#managing-the-store)).
+
 ## The store: SQLite or PostgreSQL
 
 The compose file defaults to a SQLite file on the config volume, one host, one writer, which is

@@ -7,8 +7,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-from immich_memories.cache.schema_migrator import SchemaMigrator
-from immich_memories.cache.versions import SCHEMA_VERSION
+from immich_memories.cache.analysis_schema import ensure_cache_schema
 from immich_memories.db.sqlite_files import connect_sqlite
 
 
@@ -18,7 +17,8 @@ class VideoAnalysisCache:
     def __init__(self, db_path: Path):
         self.db_path = Path(db_path)
         self._ensure_db_exists()
-        SchemaMigrator(self._get_connection).migrate_to(SCHEMA_VERSION)
+        with self._get_connection() as conn:
+            ensure_cache_schema(conn)
 
     def _ensure_db_exists(self) -> None:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import threading
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -61,6 +61,21 @@ class Store:
 
 _stores: dict[tuple[str, str], Store] = {}  # (url, real schema)
 _lock = threading.Lock()
+FirstOpenHook = Callable[[Store], None]
+_hooks: list[FirstOpenHook] = []
+_hooked: set[tuple[tuple[str, str], FirstOpenHook]] = set()
+
+
+def on_first_open(hook: FirstOpenHook) -> None:
+    """Run `hook(store)` once per store per process, the first time `open_store` returns it.
+
+    A hook runs after the migration lock is released and outside the open lock, so it may
+    open the store again (it gets the cached one) and take its own locks. A store already
+    open when the hook is registered gets it on its next `open_store`.
+    """
+    with _lock:
+        if hook not in _hooks:
+            _hooks.append(hook)
 
 
 def open_store(config: Config | None = None, *, location: StoreLocation | None = None) -> Store:
@@ -71,6 +86,16 @@ def open_store(config: Config | None = None, *, location: StoreLocation | None =
     """
     location = location or resolve_location(config)
     key = (location.url, effective_schema(location) or "")
+    store = _open(location, key)
+    with _lock:
+        due = [hook for hook in _hooks if (key, hook) not in _hooked]
+        _hooked.update((key, hook) for hook in due)
+    for hook in due:
+        hook(store)
+    return store
+
+
+def _open(location: StoreLocation, key: tuple[str, str]) -> Store:
     with _lock:
         if (cached := _stores.get(key)) is not None:
             return cached
@@ -87,11 +112,21 @@ def open_store(config: Config | None = None, *, location: StoreLocation | None =
         return store
 
 
+def unmigrated_store(location: StoreLocation) -> Store:
+    """A store on an engine of its own, neither migrated nor cached nor hooked.
+
+    For the commands that report on or copy the database exactly as it is (`store status`,
+    `store backup`). The caller disposes `store.engine`.
+    """
+    return Store(location=location, engine=create_store_engine(location))
+
+
 def close_stores() -> None:
     """Dispose every engine this process opened; the next `open_store` starts over."""
     with _lock:
         stores = list(_stores.values())
         _stores.clear()
+        _hooked.clear()
     for store in stores:
         store.engine.dispose()
 
@@ -103,6 +138,7 @@ def _forget_parent_stores() -> None:
     for store in _stores.values():
         store.engine.dispose(close=False)
     _stores.clear()
+    _hooked.clear()
 
 
 if hasattr(os, "register_at_fork"):

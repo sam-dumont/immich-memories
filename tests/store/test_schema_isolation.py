@@ -21,46 +21,54 @@ from .backends import drop_schema, pg_url, requires_postgres
 pytestmark = requires_postgres
 
 
-def _their_tables(public_table: str, other: str) -> tuple[sa.Table, sa.Table, sa.Table]:
+def _their_tables(public_table: str, other: str) -> list[sa.Table]:
+    """One table in `public`, then a namesake of every store table and of the version table."""
     theirs = sa.MetaData()
-    return (
+    names = [table.name for table in metadata.sorted_tables] + ["alembic_version"]
+    return [
         sa.Table(
             public_table, theirs, sa.Column("id", sa.Integer, primary_key=True), schema="public"
         ),
-        sa.Table("store_meta", theirs, sa.Column("id", sa.Integer, primary_key=True), schema=other),
-        sa.Table("alembic_version", theirs, sa.Column("v", sa.Text), schema=other),
-    )
+        *(
+            sa.Table(name, theirs, sa.Column("id", sa.Integer, primary_key=True), schema=other)
+            for name in names
+        ),
+    ]
 
 
 @pytest.fixture
 def neighbours():
-    """Someone else's tables: one in `public`, and ours' namesakes in another schema."""
+    """Someone else's tables, each holding a row: one in `public`, and ours' namesakes in
+    another schema."""
     url = pg_url()
     tag = uuid.uuid4().hex[:8]
     other = f"immich_{tag}"
     tables = _their_tables(f"assets_{tag}", other)
-    public, _, version = tables
     engine = sa.create_engine(url)
     with engine.begin() as connection:
         connection.execute(sa.schema.CreateSchema(other))
         tables[0].metadata.create_all(connection)
-        connection.execute(public.insert(), {"id": 1})
-        connection.execute(version.insert(), {"v": "theirs"})
+        for table in tables:
+            connection.execute(table.insert(), {"id": 1})
     yield engine, tables
-    public.drop(engine, checkfirst=True)
+    tables[0].drop(engine, checkfirst=True)
     engine.dispose()
     drop_schema(url, other)
 
 
 def _snapshot(engine, tables):
-    public, meta, version = tables
+    other = tables[1].schema
     with engine.connect() as connection:
         inspector = sa.inspect(connection)
         return (
-            sorted(inspector.get_table_names(schema=meta.schema)),
-            [c["name"] for c in inspector.get_columns("store_meta", schema=meta.schema)],
-            connection.execute(sa.select(version.c.v)).all(),
-            connection.execute(sa.select(public.c.id)).all(),
+            sorted(inspector.get_table_names(schema=other)),
+            {
+                (table.schema, table.name): (
+                    [c["name"] for c in inspector.get_columns(table.name, schema=table.schema)],
+                    connection.execute(sa.select(table)).all(),
+                )
+                for table in tables
+            },
         )
 
 

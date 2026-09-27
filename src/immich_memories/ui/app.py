@@ -633,6 +633,12 @@ def main(
     except SettingsUnavailable as unavailable:
         logger.error("Not starting the UI: %s", unavailable)
         sys.exit(1)
+    from immich_memories.db import open_store
+    from immich_memories.store.legacy_imports import enable_first_open_import
+
+    enable_first_open_import()
+    # Open the store now, so a first-open import runs at startup and not inside a request.
+    open_store(config)
     if not _is_port_free(host, port):
         logger.error(
             f"Port {port} is already in use. "

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from contextlib import contextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, call, patch
@@ -199,30 +198,30 @@ class TestCacheImport:
 
 
 class TestCacheBackup:
-    def test_backs_up_via_sqlite_api(self, tmp_path):
+    def test_backs_up_the_analysis_cache_into_a_readable_file(self, tmp_path):
+        from immich_memories.cache.database import VideoAnalysisCache
+
+        cache_db = tmp_path / "cache.db"
+        VideoAnalysisCache(cache_db)
+        with sqlite3.connect(cache_db) as conn:
+            conn.execute(
+                "INSERT INTO video_analysis (asset_id, analysis_timestamp)"
+                " VALUES ('video-1', '2026-01-01T00:00:00+00:00')"
+            )
         out_file = tmp_path / "backup.db"
 
-        mock_conn = MagicMock()
-
-        @contextmanager
-        def fake_get_connection():
-            yield mock_conn
-
-        mock_db = MagicMock()
-        mock_db._get_connection = fake_get_connection
-
-        mock_dst = MagicMock(spec=sqlite3.Connection)
-
+        # WHY: the CLI root makes ~/.immich-memories and loads the user's config; this test
+        # names its own cache file instead.
         with (
-            patch(_CACHE_CLS, return_value=mock_db),
+            patch("immich_memories.cli.init_config_dir"),
             patch(
-                "immich_memories.cli.cache_cmd.sqlite3.connect", return_value=mock_dst
-            ) as mock_sqlite_connect,
+                "immich_memories.cli.get_config",
+                return_value=Config(cache={"database": str(cache_db)}),
+            ),
         ):
-            result = _invoke(["cache", "backup", str(out_file)])
+            result = CliRunner().invoke(main, ["cache", "backup", str(out_file)])
 
-        assert result.exit_code == 0
-        mock_sqlite_connect.assert_called_once_with(str(out_file))
-        mock_conn.backup.assert_called_once_with(mock_dst)
-        mock_dst.close.assert_called_once()
+        assert result.exit_code == 0, result.output
         assert "backed up" in result.output
+        with sqlite3.connect(out_file) as conn:
+            assert conn.execute("SELECT asset_id FROM video_analysis").fetchall() == [("video-1",)]

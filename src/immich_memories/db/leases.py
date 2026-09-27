@@ -27,7 +27,9 @@ if TYPE_CHECKING:
     from immich_memories.db.store import Store
 
 _LEASE_CLASS = 871_0002
-_KEY = "hashtext(:scope || ':' || :name)"
+_TAKE = sa.text("SELECT pg_advisory_lock(:lock_class, hashtext(:scope || ':' || :name))")
+_TRY = sa.text("SELECT pg_try_advisory_lock(:lock_class, hashtext(:scope || ':' || :name))")
+_DROP = sa.text("SELECT pg_advisory_unlock(:lock_class, hashtext(:scope || ':' || :name))")
 
 
 class LeaseHeldError(RuntimeError):
@@ -65,10 +67,7 @@ class Lease:
             return
         connection = store.engine.connect()
         try:
-            function = "pg_advisory_lock" if wait else "pg_try_advisory_lock"
-            taken = connection.execute(
-                sa.text(f"SELECT {function}(:lock_class, {_KEY})"), self._params(store)
-            ).scalar()
+            taken = connection.execute(_TAKE if wait else _TRY, self._params(store)).scalar()
             connection.commit()
         except BaseException:
             connection.invalidate()
@@ -90,10 +89,7 @@ class Lease:
             try:
                 store = self._backend()
                 assert store is not None
-                connection.execute(
-                    sa.text(f"SELECT pg_advisory_unlock(:lock_class, {_KEY})"),
-                    self._params(store),
-                )
+                connection.execute(_DROP, self._params(store))
                 connection.commit()
             except BaseException:
                 # A connection that may still hold the lock must never go back to the pool.

@@ -832,6 +832,89 @@ Show scheduler status.
 immich-memories scheduler status [OPTIONS]
 ```
 
+## `store`
+
+The database that holds your decisions, model answers, run history and settings.
+
+SQLite at ~/.immich-memories/store.db unless IMMICH_MEMORIES_DATABASE_URL (or
+`database.url`) names another one. Stop the app before `restore`.
+
+```bash
+immich-memories store [OPTIONS]
+```
+
+### `store backup`
+
+Write a consistent backup while the app runs, with a manifest beside it.
+
+SQLite: VACUUM INTO. PostgreSQL: pg_dump of the schema in custom format, which needs
+the PostgreSQL client tools on PATH.
+
+```bash
+immich-memories store backup [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--to` | file | - | The backup file (default: ~/.immich-memories/backups/store-UTCTIME.db, .dump on PostgreSQL) |
+
+### `store copy`
+
+Copy every table into another store: SQLite to PostgreSQL, or back.
+
+The target is migrated first, and every table's row count and content digest are
+compared afterwards. Point IMMICH_MEMORIES_DATABASE_URL at the target to switch.
+
+```bash
+immich-memories store copy [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--to` | text | - | The database URL to copy into |
+| `--schema` | text | - | The PostgreSQL schema to copy into (default: the configured one) |
+| `--force` | boolean | false | Empty a target that already holds rows |
+
+### `store import`
+
+Bring the files the app used before the store into it.
+
+Safe to run again: a record the store holds is never replaced, and an importer
+whose files have not changed since it last completed is skipped. An interrupted
+import finishes where it stopped.
+
+```bash
+immich-memories store import [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--from` | directory | - | The directory holding the legacy files (default: IMMICH_MEMORIES_IMPORT_FROM, then database.import_from, then ~/.immich-memories). They are only read, never changed |
+| `--verify` | boolean | false | Afterwards, check that every legacy record is in the store with equal values; exit 1 on any difference |
+
+### `store restore`
+
+Replace the store with a backup, migrate it to head and check its row counts.
+
+Stop the app first: a restore cannot reach another process's connections.
+
+```bash
+immich-memories store restore [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--from` | file | - | A file `store backup` wrote; its manifest must sit beside it |
+| `--force` | boolean | false | Replace a store that already holds rows |
+
+### `store status`
+
+Backend, URL, schema, revision, import record, row counts and size.
+
+```bash
+immich-memories store status [OPTIONS]
+```
+
 ## `titles`
 
 Title screen generation and testing commands.

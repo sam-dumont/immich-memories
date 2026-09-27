@@ -92,3 +92,49 @@ def test_a_table_rebuild_finds_the_table_in_the_real_schema(store):
     with store.connect() as connection:
         columns = sa.inspect(connection).get_columns("store_meta", schema=store.schema)
     assert "note" in {column["name"] for column in columns}
+
+
+def test_a_populated_store_rolls_back_revision_by_revision_and_up_again(store, tmp_path):
+    """Each downgrade drops the tables its revision created, with their rows, and nothing else.
+
+    Every table that survives a step keeps its rows exactly; going back up rebuilds the
+    dropped tables empty. This is the rollback contract docs/designs/2026-09-27-the-store.md
+    states.
+    """
+    from immich_memories.config_loader import Config, set_config
+    from immich_memories.db import upgrade
+    from immich_memories.db.inventory import digests, table_digest
+
+    from .legacy_home import fill_every_table, write_legacy_home
+
+    config = Config()
+    config.cache.database = "~/.immich-memories/cache.db"
+    config.cache.directory = "~/.immich-memories/cache"
+    set_config(config)
+    try:
+        fill_every_table(store, write_legacy_home(tmp_path / "home"))
+    finally:
+        set_config(None)
+    with store.connect() as connection:
+        before = digests(connection)
+    (head,) = heads()
+    remaining = set(before)
+
+    for target in [*revision_lineage(head)[1:], "base"]:
+        downgrade(store, target)
+        surviving = _tables(store) & set(before)
+        with store.connect() as connection:
+            kept = {name: table_digest(connection, _table(name)) for name in surviving}
+
+        assert surviving < remaining
+        assert kept == {name: before[name] for name in surviving}
+        remaining = surviving
+
+    assert remaining == set()
+    upgrade(store)
+    with store.connect() as connection:
+        assert all(rows == 0 for rows, _ in digests(connection).values())
+
+
+def _table(name: str) -> sa.Table:
+    return next(table for table in metadata.sorted_tables if table.name == name)

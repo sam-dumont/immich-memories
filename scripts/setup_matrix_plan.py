@@ -477,11 +477,14 @@ def cache_pins(cache_dir: str) -> dict[str, str]:
     The cell's store is a SQLite file in that directory, so each cell reads and writes only
     its own answers. `editorial.annotation_database` is pinned blank on purpose: an
     operator's own absolute override would quietly import one legacy bank into every cell.
+    `database.import_from` points the first-open import at the cell's own directory, which
+    holds no pre-store files, so the operator's `~/.immich-memories` never seeds a cell.
     """
     return {
         "cache.directory": cache_dir,
         "cache.database": f"{cache_dir}/cache.db",
         "database.url": f"sqlite:///{cache_dir}/store.db",
+        "database.import_from": cache_dir,
         "editorial.annotation_database": "",
     }
 

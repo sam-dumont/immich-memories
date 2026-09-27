@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sqlite3
 from pathlib import Path
 
 import click
@@ -94,10 +93,11 @@ def register_cache_commands(cli_group: click.Group) -> None:
     def backup(ctx: click.Context, output_path: str) -> None:
         """Backup the entire cache DB (safe SQLite backup API)."""
         from immich_memories.cache.database import VideoAnalysisCache
+        from immich_memories.db import connect_sqlite
 
         db = VideoAnalysisCache(db_path=ctx.obj["config"].cache.database_path)
         with db._get_connection() as src_conn:
-            dst = sqlite3.connect(output_path)
+            dst = connect_sqlite(Path(output_path), private=False)
             src_conn.backup(dst)
             dst.close()
 

@@ -12,6 +12,7 @@ import logging
 import sqlite3
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import closing
+from itertools import chain
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +48,7 @@ from immich_memories.db.tables import (
     text_completion_failures,
 )
 from immich_memories.store.batches import id_in, in_chunks, upsert_rows
+from immich_memories.store.legacy_verify import unreadable, verify_rows
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +112,18 @@ def _existing(paths: Sequence[Path]) -> list[Path]:
         if path.is_file():
             seen.setdefault(path.resolve(), path)
     return list(seen.values())
+
+
+def legacy_sources(home: Path) -> list[Path]:
+    """Every file `import_legacy` reads under `home`, with the WAL beside it when there is one."""
+    annotations, judgment_files = legacy_files(home)
+    found: list[Path] = []
+    for path in (*annotations, *judgment_files):
+        found.append(path)
+        wal = Path(f"{path}-wal")
+        if wal.is_file():
+            found.append(wal)
+    return found
 
 
 def import_legacy(store: Store, home: Path) -> ImportOutcome:
@@ -197,6 +211,23 @@ def _copy_face_boxes(store: Store, legacy: sqlite3.Connection) -> tuple[int, int
 
     A picture the store already holds boxes for keeps the store's read whole.
     """
+    boxes = _legacy_boxes(legacy)
+    held = _assets_with_boxes(store, list(boxes))
+    fresh = [rows for asset_id, rows in boxes.items() if asset_id not in held]
+    skipped = sum(len(rows) for asset_id, rows in boxes.items() if asset_id in held)
+    # A picture's boxes commit together: an interrupted import must not leave half a read,
+    # which the rerun would then keep whole.
+    batch: list[dict[str, Any]] = []
+    for rows in (*fresh, []):
+        if batch and (not rows or len(batch) + len(rows) > _BATCH):
+            with store.begin() as connection:
+                upsert_rows(connection, face_boxes, batch, keys=("asset_id", "ordinal"), update=())
+            batch = []
+        batch.extend(rows)
+    return sum(len(rows) for rows in fresh), skipped
+
+
+def _legacy_boxes(legacy: sqlite3.Connection) -> dict[str, list[dict[str, Any]]]:
     have = _legacy_columns(legacy, "face_boxes")
     columns = [c for c in ("asset_id", "named", "x1", "y1", "x2", "y2", "person_id") if c in have]
     boxes: dict[str, list[dict[str, Any]]] = {}
@@ -206,19 +237,65 @@ def _copy_face_boxes(store: Store, legacy: sqlite3.Connection) -> tuple[int, int
             asset_id = converted["asset_id"]
             converted["ordinal"] = len(boxes.setdefault(asset_id, []))
             boxes[asset_id].append(converted)
-    held = _assets_with_boxes(store, list(boxes))
-    rows = [row for asset_id, rows in boxes.items() if asset_id not in held for row in rows]
-    skipped = sum(len(rows) for asset_id, rows in boxes.items() if asset_id in held)
-    for start in range(0, len(rows), _BATCH):
-        with store.begin() as connection:
-            upsert_rows(
-                connection,
-                face_boxes,
-                rows[start : start + _BATCH],
-                keys=("asset_id", "ordinal"),
-                update=(),
-            )
-    return len(rows), skipped
+    return boxes
+
+
+def verify_legacy(store: Store, home: Path) -> list[str]:
+    """Every legacy row whose key the store lacks or holds with other values.
+
+    Owner decisions compare exactly; model answers compare floats to within rounding.
+    """
+    annotations, judgment_files = legacy_files(home)
+    sources = [(path, _ANNOTATION_TABLES) for path in annotations] + [
+        (path, _JUDGMENT_TABLES) for path in judgment_files
+    ]
+    problems: list[str] = []
+    for path, tables in sources:
+        try:
+            problems.extend(_verify_file(store, path, tables))
+        except sqlite3.Error as exc:
+            problems.append(unreadable(path, exc))
+    return problems
+
+
+def _verify_file(store: Store, path: Path, tables: Sequence[tuple[str, Table]]) -> list[str]:
+    problems: list[str] = []
+    with closing(_read_only(path)) as legacy, store.connect() as connection:
+        present = {
+            str(row[0])
+            for row in legacy.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        for name, table in tables:
+            keys = [column.name for column in table.primary_key.columns]
+            have = _legacy_columns(legacy, name) if name in present else set()
+            if not set(keys) <= have:
+                continue
+            wanted = [column.name for column in table.columns if column.name in have]
+            for batch in _batches(legacy, name, wanted):
+                rows = _unique([_comparable(table, row) for row in batch], keys)
+                decided = [r for r in rows if table is asset_flags and r["source"] == OWNER_SOURCE]
+                answers = [
+                    r for r in rows if not (table is asset_flags and r["source"] == OWNER_SOURCE)
+                ]
+                problems += verify_rows(connection, table, keys, answers)
+                problems += verify_rows(connection, table, keys, decided, exact=True)
+        if "face_boxes" in present:
+            boxes = list(chain.from_iterable(_legacy_boxes(legacy).values()))
+            problems += verify_rows(connection, face_boxes, ("asset_id", "ordinal"), boxes)
+    return problems
+
+
+def _comparable(table: Table, row: Mapping[str, Any]) -> dict[str, Any]:
+    """The row as the import stored it, less the timestamps it had to invent."""
+    converted = _converted(table, row)
+    for column in table.columns:
+        if (
+            isinstance(column.type, DateTime)
+            and not column.nullable
+            and row.get(column.name) is None
+        ):
+            converted.pop(column.name, None)
+    return converted
 
 
 def _without_decided(store: Store, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:

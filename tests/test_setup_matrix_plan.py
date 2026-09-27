@@ -414,6 +414,8 @@ def test_no_two_cells_write_into_the_same_editorial_cache(manifest: dict, tmp_pa
         # Blank is what resolves the annotation bank under the cache directory;
         # an operator's own override would put every cell back in one bank.
         assert item.pins["editorial.annotation_database"] == ""
+        # The first-open import reads the cell's own directory, never the operator's home.
+        assert item.pins["database.import_from"] == cache
     # The remote lanes reach their own cache at one container path, so it is the
     # mount behind it that has to differ; each lane's own test asserts that.
     mac = [item.pins["cache.directory"] for item in plan.cells if item.cell.lane == "mac"]

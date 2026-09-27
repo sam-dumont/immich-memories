@@ -107,6 +107,38 @@ def import_legacy(store: Store, home: Path) -> ImportOutcome:
     return ImportOutcome(str(path), imported, skipped + checked.dropped, tuple(checked.problems))
 
 
+def legacy_sources(home: Path) -> list[Path]:
+    """The legacy file `import_legacy` reads under `home`, when it exists."""
+    path = home / LEGACY_FILE
+    return [path] if path.is_file() else []
+
+
+def verify_legacy(store: Store, home: Path) -> list[str]:
+    """Every person of `home/people.yaml` the store lacks or holds differently (exactly)."""
+    path = home / LEGACY_FILE
+    if not path.is_file():
+        return []
+    try:
+        checked = _check(parse_yaml(path.read_text()))
+    except (OSError, PeopleImportError) as exc:
+        return [f"{path}: not readable ({exc})"]
+    with store.connect() as connection:
+        standing = read_document(connection)
+    by_id = {pid: entry for entry in standing.get("people", []) for pid in entry["ids"]}
+    problems = []
+    for entry in checked.document.get("people", []):
+        first = entry["ids"][0]
+        held = by_id.get(first)
+        if held is None:
+            problems.append(f"person {first}: missing")
+        elif held != entry:
+            differ = sorted(
+                key for key in entry.keys() | held.keys() if entry.get(key) != held.get(key)
+            )
+            problems.append(f"person {first}: {', '.join(differ)} differ")
+    return problems
+
+
 def _merge(standing: dict[str, Any], legacy: dict[str, Any]) -> tuple[int, int]:
     if not standing.get("people"):
         standing.clear()

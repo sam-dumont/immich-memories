@@ -32,6 +32,8 @@ _TEST_ENV_KEYS = {
     # there. No test reads a model it did not put in place itself.
     "IMMICH_MEMORIES_TRIAGE__ENCODER": "models/triage/dinov2-small.onnx",
     "IMMICH_MEMORIES_EDITORIAL__LAYA_CHECKPOINT": "models/laya/checkpoint",
+    # The first-open import reads legacy files from here, never from the developer's home.
+    "IMMICH_MEMORIES_IMPORT_FROM": "legacy",
 }
 _STORE_URL_ENV = "IMMICH_MEMORIES_DATABASE_URL"
 _ORIGINAL_TEST_ENV: dict[str, str | None] = {}

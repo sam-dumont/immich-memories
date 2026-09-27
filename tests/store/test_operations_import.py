@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import sqlite3
 from contextlib import closing
 from datetime import UTC, datetime
@@ -17,17 +16,14 @@ from immich_memories.automation.notification_state import (
 )
 from immich_memories.automation.state_store import AutomationStateStore
 from immich_memories.cache.asset_score_cache import AssetScoreCache
-from immich_memories.cache.database import VideoAnalysisCache
 from immich_memories.config_loader import Config, set_config
 from immich_memories.operations.run_index import attempt_dir_for_run
 from immich_memories.operations.store_import import import_legacy
 from immich_memories.tracking.models import DeliveryStatus, RunMetadata
 from immich_memories.tracking.run_database import RunDatabase
+from tests.legacy_cache_db import write_legacy_cache_db
 
-CATALOGUE = [
-    {"day": "2018-04-21", "title": "A garden party", "photos": 88, "prompt_version": "v3"},
-    {"scanned": 2018},
-]
+from .legacy_home import CATALOGUE, write_history_cache_db, write_operations_home
 
 
 @pytest.fixture
@@ -41,76 +37,10 @@ def home(tmp_path) -> Path:
     set_config(None)
 
 
-def _legacy_cache_db(path: Path) -> None:
-    """A cache.db the pre-store app wrote: its own migration ladder, then synthetic rows."""
-    VideoAnalysisCache(path)
-    with closing(sqlite3.connect(path)) as conn:
-        conn.execute(
-            """INSERT INTO pipeline_runs (run_id, created_at, completed_at, status, memory_type,
-               memory_key, memory_people_json, source, automation_attempt_id, person_name,
-               date_range_start, date_range_end, target_duration_seconds, output_path,
-               output_size_bytes, delivery_status, delivery_attempts, immich_asset_id,
-               warnings_json, llm_metrics, system_info, phase_events, last_phase)
-               VALUES ('20240301_080000_ab12', '2024-03-01T08:00:00+01:00',
-               '2024-03-01T08:20:00+00:00', 'completed', 'trip', 'trip:2024-02:coast',
-               '["sam example"]', 'auto', 'attempt-1', 'Sam Example', '2024-02-01',
-               '2024-02-10', 120, '/films/coast.mp4', 1234, 'delivered', 1, 'asset-9',
-               '["music fell back"]', '{"calls": 3}', '{"platform": "linux"}',
-               '[{"phase": "render"}]', 'render')"""
-        )
-        conn.execute(
-            """INSERT INTO pipeline_runs (run_id, created_at, status)
-               VALUES ('20240302_080000_cd34', '2024-03-02T08:00:00', 'failed')"""
-        )
-        conn.execute(
-            """INSERT INTO phase_stats (run_id, phase_name, started_at, duration_seconds, errors)
-               VALUES ('20240301_080000_ab12', 'assembly', '2024-03-01T07:05:00+00:00', 42.5,
-               '["one"]')"""
-        )
-        conn.executemany(
-            """INSERT INTO automation_attempts (id, started_at, finished_at, outcome, reason,
-               memory_key, run_id) VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            [
-                ("attempt-0", "2024-02-28T06:00:00+00:00", "2024-02-28T06:01:00+00:00",
-                 "failed", "render failed", "trip:2024-02:coast", None),
-                ("attempt-1", "2024-03-01T07:00:00+00:00", "2024-03-01T08:21:00+00:00",
-                 "completed", "generated", "trip:2024-02:coast", "20240301_080000_ab12"),
-            ],
-        )  # fmt: skip
-        conn.execute(
-            """INSERT INTO notification_health (id, last_attempt_at, last_failure_at,
-               failure_category, failure_message) VALUES (1, '2024-03-01T09:00:00+00:00',
-               '2024-03-01T09:00:00+00:00', 'quota', 'quota reached')"""
-        )
-        conn.execute(
-            """INSERT INTO asset_scores (asset_id, asset_type, metadata_score, combined_score,
-               llm_interest, analyzed_at, model_version)
-               VALUES ('asset-1', 'video', 0.3, 0.6, 0.8, '2024-03-01 07:30:00', 'v2')"""
-        )
-        conn.commit()
-
-
-def _legacy_home(home: Path, attempt_dir: Path) -> None:
-    _legacy_cache_db(home / "cache.db")
-    index = home / "cache" / "editorial-runs" / "by-run"
-    index.mkdir(parents=True)
-    (index / "20240301_080000_ab12.json").write_text(
-        json.dumps(
-            {
-                "run_id": "20240301_080000_ab12",
-                "attempt_dir": str(attempt_dir),
-                "output_path": "/films/coast.mp4",
-            }
-        )
-    )
-    (index / "broken.json").write_text("{")
-    (home / "special-days.json").write_text(json.dumps(CATALOGUE))
-
-
 def test_the_import_carries_every_record_and_identity_exactly(store, home, tmp_path):
     attempt_dir = tmp_path / "attempt"
     attempt_dir.mkdir()
-    _legacy_home(home, attempt_dir)
+    write_operations_home(home, attempt_dir)
     before = (home / "cache.db").read_bytes()
 
     outcome = import_legacy(store, home)
@@ -151,7 +81,7 @@ def test_the_import_carries_every_record_and_identity_exactly(store, home, tmp_p
 
 
 def test_a_second_import_changes_nothing(store, home, tmp_path):
-    _legacy_home(home, tmp_path)
+    write_operations_home(home, tmp_path)
     import_legacy(store, home)
 
     again = import_legacy(store, home)
@@ -162,7 +92,7 @@ def test_a_second_import_changes_nothing(store, home, tmp_path):
 
 
 def test_a_legacy_row_never_replaces_what_the_store_holds(store, home, tmp_path):
-    _legacy_home(home, tmp_path)
+    write_operations_home(home, tmp_path)
     RunDatabase(store).save_run(
         RunMetadata(
             run_id="20240301_080000_ab12",
@@ -182,7 +112,7 @@ def test_a_legacy_row_never_replaces_what_the_store_holds(store, home, tmp_path)
 def test_a_relocated_cache_db_is_read_where_the_config_puts_it(store, home, tmp_path):
     elsewhere = tmp_path / "elsewhere" / "analysis.db"
     elsewhere.parent.mkdir()
-    _legacy_cache_db(elsewhere)
+    write_history_cache_db(elsewhere)
     config = Config()
     config.cache.database = str(elsewhere)
     config.cache.directory = "~/.immich-memories/cache"
@@ -199,3 +129,22 @@ def test_nothing_to_import_is_not_an_error(store, home):
 
     assert (outcome.imported, outcome.skipped) == (0, 0)
     assert set(outcome.notes) == {"no cache.db", "no run index", "no special-days.json"}
+
+
+def test_a_score_banked_before_versions_is_found_under_the_empty_version(store, home):
+    legacy = write_legacy_cache_db(home / "cache.db", version=21)
+    with closing(sqlite3.connect(legacy)) as conn:
+        conn.executemany(
+            "INSERT INTO asset_scores (asset_id, asset_type, metadata_score, combined_score,"
+            " model_version) VALUES (?, 'photo', 0.5, ?, ?)",
+            [("current", 0.81, "qwen#look2"), ("unversioned", 0.43, None)],
+        )
+        conn.commit()
+
+    import_legacy(store, home)
+
+    served = {
+        (s["asset_id"], s["model_version"]): s["combined_score"]
+        for s in AssetScoreCache(store).all_scores()
+    }
+    assert served == {("current", "qwen#look2"): 0.81, ("unversioned", ""): 0.43}

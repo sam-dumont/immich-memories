@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -12,38 +11,7 @@ from immich_memories.automation.notification_state import (
     NotificationStateStore,
 )
 from immich_memories.automation.notifications import notify_job_complete
-from immich_memories.cache import database as cache_database
-from immich_memories.cache.database import VideoAnalysisCache
 from immich_memories.db import open_store
-
-
-def test_v15_adds_singleton_notification_health_to_existing_database(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    db_path = tmp_path / "v14.db"
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 14)
-    VideoAnalysisCache(db_path)
-
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 15)
-    VideoAnalysisCache(db_path)
-    VideoAnalysisCache(db_path)
-
-    with sqlite3.connect(db_path) as conn:
-        columns = {
-            row[1] for row in conn.execute("PRAGMA table_info(notification_health)").fetchall()
-        }
-        version = conn.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
-
-    assert columns == {
-        "id",
-        "last_attempt_at",
-        "last_success_at",
-        "last_failure_at",
-        "failure_category",
-        "failure_message",
-    }
-    assert version == 15
 
 
 def test_failed_delivery_opens_cooldown_and_success_closes_it(tmp_path: Path) -> None:

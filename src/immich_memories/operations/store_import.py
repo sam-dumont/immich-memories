@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import operator
 import sqlite3
+from collections import Counter
 from collections.abc import Callable, Iterable, Sequence
 from contextlib import closing
 from datetime import UTC, datetime
@@ -33,10 +34,19 @@ from immich_memories.db.tables import (
     run_attempts,
     special_days,
 )
+from immich_memories.store.legacy_verify import unreadable, verify_rows
 
 _DEFAULT_CACHE_DB = "~/.immich-memories/cache.db"
 _DEFAULT_CACHE_DIR = "~/.immich-memories/cache"
 _CHUNK = 900
+# The tables cache.db held that are the store's now.
+_HISTORY_TABLES = (
+    "pipeline_runs",
+    "phase_stats",
+    "automation_attempts",
+    "notification_health",
+    "asset_scores",
+)
 
 Row = dict[str, Any]
 
@@ -64,6 +74,112 @@ def import_legacy(store: Store, home: Path) -> ImportOutcome:
     _import_run_index(store, cache_dir / "editorial-runs" / "by-run", tally)
     _import_special_days(store, catalogue, tally)
     return tally.outcome(f"{cache_db}, {cache_dir}, {catalogue}")
+
+
+def legacy_sources(home: Path) -> list[Path]:
+    """Every file `import_legacy` reads under `home` (and where config moved them)."""
+    cache_db, cache_dir = _legacy_locations(home)
+    # The cache still lives in cache.db: only a file with history in it is a legacy source.
+    found = [
+        p for p in (cache_db, Path(f"{cache_db}-wal")) if _holds_history(cache_db) and p.is_file()
+    ]
+    index = cache_dir / "editorial-runs" / "by-run"
+    found += sorted(index.glob("*.json")) if index.is_dir() else []
+    catalogue = home / "special-days.json"
+    return [*found, catalogue] if catalogue.is_file() else found
+
+
+def _holds_history(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    try:
+        with closing(sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)) as conn:
+            names = {name for (name,) in conn.execute("SELECT name FROM sqlite_master")}
+    except sqlite3.Error:
+        return True  # unreadable: let the import say so
+    return bool(names & set(_HISTORY_TABLES))
+
+
+def verify_legacy(store: Store, home: Path) -> list[str]:
+    """Every legacy run, attempt, score, index entry and special day the store lacks or holds
+    with other values. Special days compare exactly."""
+    cache_db, cache_dir = _legacy_locations(home)
+    problems: list[str] = []
+    with store.connect() as conn:
+        if cache_db.is_file():
+            try:
+                problems += _verify_cache_db(conn, _read_cache_db(cache_db))
+            except sqlite3.Error as exc:
+                problems.append(unreadable(cache_db, exc))
+        index = cache_dir / "editorial-runs" / "by-run"
+        if index.is_dir():
+            problems += verify_rows(
+                conn, run_attempts, ["run_id"], list(_index_records(index, _Tally()))
+            )
+        problems += _verify_special_days(conn, home / "special-days.json")
+    return problems
+
+
+def _verify_cache_db(conn: Connection, legacy: dict[str, list[Row]]) -> list[str]:
+    runs = [_run(r) for r in legacy["pipeline_runs"]]
+    if _schema_version(legacy) < 11:
+        runs = [_v11_identity(run) for run in runs]
+    invented = {"created_at", "started_at", "analyzed_at"}  # a missing time became "now"
+    problems = verify_rows(
+        conn, pipeline_runs, ["run_id"], _known(runs, legacy["pipeline_runs"], invented)
+    )
+    attempts = _known(
+        [_attempt(r) for r in legacy["automation_attempts"]],
+        legacy["automation_attempts"],
+        invented,
+    )
+    problems += verify_rows(conn, automation_attempts, ["id"], attempts)
+    health = [_health(r) for r in legacy["notification_health"] if r.get("id") == 1]
+    problems += verify_rows(conn, notification_health, ["id"], health)
+    scores = _known([_score(r) for r in legacy["asset_scores"]], legacy["asset_scores"], invented)
+    problems += verify_rows(
+        conn, asset_scores, ["asset_id", "model_version"], _dedup_scores(scores)
+    )
+    return problems + _verify_phases(conn, legacy["phase_stats"])
+
+
+def _known(rows: list[Row], raw: list[Row], invented: set[str]) -> list[Row]:
+    """The converted rows less the timestamps the import had to invent for them."""
+    return [
+        {key: value for key, value in row.items() if key not in invented or source.get(key)}
+        for row, source in zip(rows, raw, strict=True)
+    ]
+
+
+def _verify_phases(conn: Connection, legacy: list[Row]) -> list[str]:
+    """Phase timings have no key of their own: each legacy one must match a stored one."""
+    identity = operator.itemgetter("run_id", "phase_name", "started_at", "duration_seconds")
+    wanted = Counter(identity(_phase(r)) for r in legacy if r.get("run_id") and r.get("started_at"))
+    run_ids = sorted({key[0] for key in wanted})
+    held: Counter[tuple[Any, ...]] = Counter()
+    for start in range(0, len(run_ids), _CHUNK):
+        query = sa.select(phase_stats).where(
+            phase_stats.c.run_id.in_(run_ids[start : start + _CHUNK])
+        )
+        held.update(identity(dict(row)) for row in conn.execute(query).mappings())
+    return [
+        f"phase_stats {key[0]}/{key[1]}: {count - held[key]} missing"
+        for key, count in wanted.items()
+        if held[key] < count
+    ]
+
+
+def _verify_special_days(conn: Connection, path: Path) -> list[str]:
+    if not path.is_file():
+        return []
+    try:
+        records = json.loads(path.read_text())
+    except (OSError, ValueError) as exc:
+        return [unreadable(path, exc)]
+    stored: list[Any] = list(
+        conn.execute(sa.select(special_days.c.record).order_by(special_days.c.position)).scalars()
+    )
+    return [] if stored == records else [f"special_days: the catalogue differs from {path.name}"]
 
 
 def _legacy_locations(home: Path) -> tuple[Path, Path]:
@@ -122,14 +238,7 @@ def _read_cache_db(path: Path) -> dict[str, list[Row]]:
             "automation_attempts": "rowid",
             "schema_migrations": "version",
         }
-        tables = (
-            "schema_migrations",
-            "pipeline_runs",
-            "phase_stats",
-            "automation_attempts",
-            "notification_health",
-            "asset_scores",
-        )
+        tables = ("schema_migrations", *_HISTORY_TABLES)
         return {
             table: (
                 [

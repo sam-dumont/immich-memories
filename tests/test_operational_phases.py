@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sqlite3
 from datetime import datetime
 from pathlib import Path
 
@@ -11,8 +10,6 @@ from sqlalchemy.exc import OperationalError
 
 from immich_memories.analysis.smart_pipeline import ClipWithSegment, PipelineResult
 from immich_memories.automation.state_store import AutomationStateStore
-from immich_memories.cache import database as cache_database
-from immich_memories.cache.database import VideoAnalysisCache
 from immich_memories.config_loader import Config
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
 from immich_memories.tracking.run_tracker import RunTracker
@@ -52,46 +49,6 @@ def test_zero_work_phase_is_still_a_named_event() -> None:
         "message": "Downloads already cached",
         "elapsed_seconds": 0.0,
     }
-
-
-def test_v14_adds_last_phase_without_rewriting_v13_rows(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    db_path = tmp_path / "v13.db"
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 13)
-    VideoAnalysisCache(db_path)
-    with sqlite3.connect(db_path) as conn:
-        conn.execute(
-            """
-            INSERT INTO pipeline_runs (run_id, created_at, status)
-            VALUES ('existing-run', '2026-08-12T08:00:00+00:00', 'running')
-            """
-        )
-        conn.execute(
-            """
-            INSERT INTO automation_attempts (id, started_at, outcome, reason)
-            VALUES ('existing-attempt', '2026-08-12T08:00:00+00:00', 'running', 'daily wake')
-            """
-        )
-        conn.commit()
-
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 14)
-    VideoAnalysisCache(db_path)
-    VideoAnalysisCache(db_path)
-
-    with sqlite3.connect(db_path) as conn:
-        run = conn.execute(
-            "SELECT run_id, last_phase FROM pipeline_runs WHERE run_id = 'existing-run'"
-        ).fetchone()
-        attempt = conn.execute(
-            "SELECT id, last_phase FROM automation_attempts WHERE id = 'existing-attempt'"
-        ).fetchone()
-        version = conn.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
-
-    assert run == ("existing-run", None)
-    assert attempt == ("existing-attempt", None)
-    assert version == 14
 
 
 def _event(phase: OperationalPhase, message: str | None = None) -> PhaseEvent:
@@ -214,7 +171,7 @@ def test_editorial_continues_when_attempt_phase_write_fails(tmp_path: Path) -> N
         patch.object(
             AutomationStateStore,
             "update_phase",
-            side_effect=sqlite3.OperationalError("database is busy"),
+            side_effect=OperationalError("UPDATE automation_attempts", {}, Exception("busy")),
         ) as update_phase,
     ):
         candidate = ClipWithSegment(clip=clip, start_time=0.0, end_time=4.0, score=0.5)

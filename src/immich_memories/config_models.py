@@ -106,6 +106,11 @@ class DatabaseConfig(BaseModel):
         min_length=1,
         description="PostgreSQL schema holding every store table; ignored on SQLite",
     )
+    import_from: str = Field(
+        default="",
+        description="Directory the one-time import of pre-store files reads; blank = "
+        "~/.immich-memories",
+    )
 
     @field_validator("url", mode="before")
     @classmethod

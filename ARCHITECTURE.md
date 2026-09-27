@@ -648,6 +648,7 @@ src/immich_memories/
 │   ├── auto_cmd.py             # `auto suggest/run/history/status/install/test-notification`
 │   ├── special_days_cmd.py     # `discover-days`, `days-due`, `days-export`/`days-import`: the days worth a memory
 │   ├── cache_cmd.py            # `cache stats/export/import/backup`
+│   ├── store_cmd.py            # `store status/import/copy/backup/restore`
 │   ├── titles.py               # `titles test`, `titles fonts`
 │   ├── runs.py                 # `runs list/show/story/why/stats/storage/delete`
 │   ├── pictures_cmd.py         # `pictures show/clear-hold/never-use/undo/list`: the owner's word on one picture
@@ -731,7 +732,9 @@ src/immich_memories/
 │   │                           # redact_url (a URL is never logged with its password)
 │   ├── engine.py               # create_store_engine: SQLite pragmas + explicit BEGIN, psycopg 3 pool,
 │   │                           # schema_translate_map (symbolic `immich_memories` -> None / the PG schema)
-│   ├── store.py                # Store (.begin/.connect/.schema), open_store: one engine per location, upgraded on open
+│   ├── store.py                # Store (.begin/.connect/.schema), open_store: one engine per location, upgraded on open;
+│   │                           # on_first_open hooks (run once per store per process, outside every lock);
+│   │                           # unmigrated_store for status/backup
 │   ├── migrate.py              # Alembic driven in code: upgrade/downgrade under pg_advisory_lock or
 │   │                           # fcntl + BEGIN IMMEDIATE; pending_changes, migration_schema
 │   ├── migrations/             # env.py, script.py.mako, versions/ (shipped in the wheel; alembic.ini is dev only)
@@ -744,7 +747,15 @@ src/immich_memories/
 │   │                           # library overviews; 0004_annotations); operations.py (pipeline_runs,
 │   │                           # phase_stats, automation_attempts, notification_health, asset_scores,
 │   │                           # run_attempts, special_days; 0005_operations)
-│   ├── legacy_import.py        # ImportOutcome: what one domain's import_legacy(store, home) did
+│   ├── legacy_import.py        # ImportOutcome: what one domain's import_legacy(store, home) did; the
+│   │                           # `legacy_import` records in store_meta (read_/write_import_record)
+│   ├── inventory.py            # row_counts, present_counts, recorded_revisions, digests: order-free,
+│   │                           # backend-neutral per-table content digests (copy checks, restore drill)
+│   ├── copy.py                 # copy_store: every table into another store (SQLite <-> PostgreSQL),
+│   │                           # batched, one target transaction, serial sequences advanced, digests compared
+│   ├── backup.py               # backup_store / restore_store + Manifest: VACUUM INTO / pg_dump -Fc -n on one
+│   │                           # snapshot; restore swaps the file or pg_restores the schema, migrates, checks counts
+│   ├── status.py               # store_status: revision, head, import record, counts, size; never migrates
 │   ├── sqlite_files.py         # connect_sqlite: the one raw sqlite3 factory (WAL, busy_timeout 30 s,
 │   │                           # synchronous NORMAL, foreign keys), private_database_path (0600)
 │   ├── network_guard.py        # Refuses a SQLite file on NFS/SMB/CIFS unless IMMICH_MEMORIES_ALLOW_NETWORK_SQLITE=1
@@ -755,11 +766,10 @@ src/immich_memories/
 │
 ├── cache/                      # Analysis caching system
 │   ├── __init__.py             # Re-exports public API
-│   ├── database.py             # VideoAnalysisCache: owns cache.db's schema; the legacy segment tables it still reads
-│   ├── schema_migrator.py      # SchemaMigrator: schema ladder v1..vN, DDL
-│   ├── versions.py             # SCHEMA_VERSION / ANALYSIS_VERSION (independent)
-│   ├── migration_sql.py        # Transactional migration helpers
-│   ├── migration_v11.py … v23.py # One module per schema migration (no v18, no v20)
+│   ├── database.py             # VideoAnalysisCache over cache.db (derived analysis only)
+│   ├── analysis_schema.py      # The cache's tables and PRAGMA user_version stamp: never migrated; a finished
+│   │                           # v25 ladder is adopted as is, any other layout rebuilt empty; the store's old
+│   │                           # tables in an old cache.db are left for the legacy import
 │   ├── asset_score_cache.py    # Banked asset scores (store table `asset_scores`), read by `cache stats/export/import`
 │   ├── judgment_cache.py       # Reasoning-mode LLM verdicts, keyed by the exact prompt asked (store table `judgments`)
 │   ├── editorial_verdicts.py   # Cull's standing per-picture verdicts (store table `editorial_verdicts`)
@@ -787,7 +797,12 @@ src/immich_memories/
 │                               # keyed the same way (a missing row is "not measured", never
 │                               # "measured as nothing")
 │   ├── legacy_annotations.py   # import_legacy(store, home): annotations.sqlite + judgments.db, read-only,
-│   │                           # keys kept, idempotent; the only reader of those files
+│   │                           # keys kept, idempotent; the only reader of those files; verify_legacy
+│   ├── legacy_imports.py       # The import registry (people -> annotations -> operations; one line per domain):
+│   │                           # run_import (resumable, per-importer fingerprint records), verify_import,
+│   │                           # import_on_first_open (the CLI/UI enable it after the config loads; a lease
+│   │                           # makes concurrent starts import once)
+│   ├── legacy_verify.py        # verify_rows: every legacy key in the store with equal values
 │   └── batches.py              # id_in/in_chunks (one array parameter on PostgreSQL, IN slices under
 │                               # SQLite's bind limit); bank_rows/upsert_rows: one transaction per batch.
 │                               # Producers bank in batches (PendingHeadFacts, PendingMeasurements,

@@ -777,9 +777,12 @@ The cache stays in `cache.database`.
 database:
   url: "sqlite:///~/.immich-memories/store.db"  # or postgresql://user:${PGPASSWORD}@host/db
   schema: "immich_memories"                     # PostgreSQL only: the schema holding every table
+  import_from: ""                               # where the one-time import of pre-store files looks;
+                                                # blank = ~/.immich-memories
 ```
 
-`IMMICH_MEMORIES_DATABASE_URL` and `IMMICH_MEMORIES_DATABASE_SCHEMA` beat the file. Both are read
+`IMMICH_MEMORIES_DATABASE_URL`, `IMMICH_MEMORIES_DATABASE_SCHEMA` and `IMMICH_MEMORIES_IMPORT_FROM`
+beat the file. Both are read
 before the store opens, so the UI can never change them. SQLite on local disk is the default and
 fits a single-host install; point `url` at PostgreSQL 14+ (no extensions) to share a server,
 including Immich's own, in a schema of its own. A SQLite file on NFS, SMB or CIFS is refused:

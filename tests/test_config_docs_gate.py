@@ -119,7 +119,7 @@ def test_sections_come_from_config_itself_not_a_hand_kept_list() -> None:
 
 
 def test_a_field_is_checked_under_the_name_yaml_uses() -> None:
-    assert sections_fields("database") == frozenset({"url", "schema"})
+    assert sections_fields("database") == frozenset({"url", "schema", "import_from"})
 
 
 def sections_fields(section: str) -> frozenset[str]:

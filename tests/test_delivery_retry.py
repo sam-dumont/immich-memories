@@ -14,14 +14,13 @@ from unittest.mock import MagicMock
 import pytest
 
 from immich_memories import generate_render as generate_render_module
-from immich_memories.cache import database as cache_database
-from immich_memories.cache.database import VideoAnalysisCache
 from immich_memories.config_loader import Config, set_config
 from immich_memories.db import open_store
 from immich_memories.operations.store_import import import_legacy
 from immich_memories.processing.output_contract import OutputProbe
 from immich_memories.tracking import DeliveryStatus, RunDatabase, RunMetadata, RunTracker
 from tests.conftest import make_clip
+from tests.legacy_cache_db import write_legacy_cache_db
 from tests.output_tools_fake import is_decode_check, output_tools
 
 
@@ -67,33 +66,6 @@ def test_legacy_run_metadata_treats_null_delivery_fields_as_defaults() -> None:
     assert loaded.immich_asset_id is None
     assert loaded.delivery_album is None
     assert loaded.warnings == []
-
-
-def test_fresh_database_has_delivery_state_defaults(tmp_path: Path) -> None:
-    """Fresh runs begin not requested and retain empty delivery diagnostics."""
-    db_path = tmp_path / "fresh-v13.db"
-    VideoAnalysisCache(db_path)
-
-    with sqlite3.connect(db_path) as conn:
-        conn.execute(
-            """
-            INSERT INTO pipeline_runs (run_id, created_at, status)
-            VALUES ('fresh-run', '2026-08-11T10:00:00+00:00', 'running')
-            """
-        )
-        row = conn.execute(
-            """
-            SELECT delivery_status, delivery_attempts, delivery_error,
-                   immich_asset_id, delivery_album, warnings_json
-            FROM pipeline_runs WHERE run_id = 'fresh-run'
-            """
-        ).fetchone()
-        schema_version = conn.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
-
-    assert row == ("not_requested", 0, None, None, None, "[]")
-    # The subject here is the delivery defaults, not the version number. Assert
-    # against the constant so a schema bump does not break an unrelated test.
-    assert schema_version == cache_database.SCHEMA_VERSION
 
 
 def test_database_round_trip_preserves_delivery_and_automation_identity(tmp_path: Path) -> None:
@@ -263,16 +235,9 @@ def test_duplicate_tracker_cannot_claim_or_mutate_existing_run(
     assert [phase.phase_name for phase in after.phases] == ["assembly"]
 
 
-def test_populated_v12_migrates_additively_without_changing_attempt_identity(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The v13 migration preserves populated v12 rows and their parent attempt IDs."""
-    from immich_memories.cache import database as cache_database
-
-    db_path = tmp_path / "populated-v12.db"
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 12)
-    VideoAnalysisCache(db_path)
+def test_populated_v12_imports_without_changing_attempt_identity(tmp_path: Path) -> None:
+    """A populated v12 cache.db imports with its parent attempt IDs and delivery defaults."""
+    db_path = write_legacy_cache_db(tmp_path / "populated-v12.db", version=12)
     with sqlite3.connect(db_path) as conn:
         conn.execute(
             """
@@ -293,8 +258,6 @@ def test_populated_v12_migrates_additively_without_changing_attempt_identity(
         )
         conn.commit()
 
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 13)
-    VideoAnalysisCache(db_path)
     set_config(Config(cache={"database": str(db_path), "directory": str(tmp_path / "cache")}))
     import_legacy(open_store(), tmp_path)
     migrated = RunDatabase().get_run("existing-v12")

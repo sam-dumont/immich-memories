@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import calendar
 import logging
-import sqlite3
 import sys
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.analysis import llm_metrics
 from immich_memories.analysis.editorial_duration_advisory import editorial_duration_warning
@@ -243,7 +244,7 @@ class _AttemptPhaseReporter:
         if self._store is not None and self._attempt_id is not None:
             try:
                 self._store.update_phase(self._attempt_id, event)
-            except (KeyError, OSError, RuntimeError, sqlite3.Error):
+            except (KeyError, OSError, RuntimeError, SQLAlchemyError):
                 logging.getLogger(__name__).warning(
                     "Could not persist operational phase %s", phase.value
                 )
