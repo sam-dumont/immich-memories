@@ -94,6 +94,21 @@ TIMELINE_ASSETS = tuple(_asset_payload(picture) for picture in _VIDEOS) + tuple(
     _asset_payload(picture) for picture in _PHOTOS
 )
 
+# One album, the lake week as a family would file it: every picture taken at the lake.
+ALBUM_ID = "album-lake-week"
+ALBUM_ASSETS = frozenset(
+    asset["id"] for asset in TIMELINE_ASSETS if asset["exifInfo"]["city"] == "Annecy"
+)
+ALBUMS = (
+    {
+        "id": ALBUM_ID,
+        "albumName": "The lake week",
+        "assetCount": len(ALBUM_ASSETS),
+        "startDate": "2024-06-21T00:00:00.000Z",
+        "endDate": "2024-06-27T00:00:00.000Z",
+    },
+)
+
 
 def _month_of(taken_at: str) -> str:
     """The MONTH bucket an asset falls in, in the form Immich returns."""
@@ -133,6 +148,7 @@ def _assets_for_search(payload: dict[str, Any]) -> list[dict[str, Any]]:
     taken_after = payload.get("takenAfter")
     taken_before = payload.get("takenBefore")
     wanted_people = set(payload.get("personIds") or ())
+    wanted_albums = payload.get("albumIds") or ()
     return [
         asset
         for asset in TIMELINE_ASSETS
@@ -140,6 +156,7 @@ def _assets_for_search(payload: dict[str, Any]) -> list[dict[str, Any]]:
         and (taken_after is None or asset["fileCreatedAt"] >= taken_after)
         and (taken_before is None or asset["fileCreatedAt"] <= taken_before)
         and wanted_people <= {person["id"] for person in asset["people"]}
+        and (not wanted_albums or (ALBUM_ID in wanted_albums and asset["id"] in ALBUM_ASSETS))
     ]
 
 
@@ -391,8 +408,9 @@ def _handler_type(
                 )
                 return
             if path == "/api/albums":
-                # The fixture library keeps no albums; the brief's album picker reads an empty list.
-                self._send_json(200, [])
+                holding = query.get("assetId", [None])[0]
+                albums = [a for a in ALBUMS if holding is None or holding in ALBUM_ASSETS]
+                self._send_json(200, albums)
                 return
             if path == "/api/people":
                 self._send_json(
@@ -420,6 +438,12 @@ def _handler_type(
                 self._send_json(200, _assets_for_query(query))
                 return
             parts = path.removeprefix("/api/assets/").split("/")
+            if path.startswith("/api/assets/") and len(parts) == 1:
+                # One asset by id, as Immich serves it: a revision's swap fetches its sibling so.
+                found = next((a for a in TIMELINE_ASSETS if a["id"] == parts[0]), None)
+                if found is not None:
+                    self._send_json(200, found)
+                    return
             if len(parts) == 2 and parts[0] in media and parts[1] == "original":
                 content_type = "video/mp4" if media[parts[0]].suffix == ".mp4" else "image/jpeg"
                 self._send_file(media[parts[0]], content_type)

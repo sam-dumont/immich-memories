@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any
 
 from immich_memories.security import write_secret_file
-from tests.e2e.fake_library import BY_ID, CARRIERS, DROPPED, STORIES, STORY_OF, THESIS
+from tests.e2e.fake_library import BY_ID, CARRIERS, DROPPED, LIBRARY, STORIES, STORY_OF, THESIS
 
 # The per-asset pass the real route runs before its named stages, and the one a
 # first cut over a big library sits inside for a long time. It is scripted here
@@ -109,9 +109,22 @@ def _carrier_rows(candidates: Sequence[Any]) -> list[dict[str, Any]]:
                 "standing": "remarkable" if picture.is_favorite else "maybe",
                 "start_time": row.start_time,
                 "end_time": row.end_time,
+                "moment_alternatives": _siblings(picture),
             }
         )
     return rows
+
+
+def _siblings(picture: Any) -> list[str]:
+    """The other stills of the same scene the cut left out: the moment's recorded alternatives."""
+    return [
+        other.asset_id
+        for other in LIBRARY
+        if other.scene == picture.scene
+        and other.asset_id != picture.asset_id
+        and not other.shipped
+        and not other.is_video
+    ][:3]
 
 
 def _story_for(asset_id: str) -> Any:

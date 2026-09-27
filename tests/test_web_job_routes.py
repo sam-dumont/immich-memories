@@ -192,3 +192,36 @@ def test_music_is_previewed_by_music_preview_uploaded_and_played_back(client):
     _finished(client, render.json()["id"])
     argv = json.loads(client.recorded.read_text())
     assert any(flag.startswith("--music=") and flag.endswith(".mp3") for flag in argv)
+
+
+def test_a_cut_s_progress_carries_the_stage_s_own_time_left(client, tmp_path):
+    from immich_memories.operations.cut_progress import StageUpdate
+    from immich_memories.operations.editorial_attempt import EditorialAttempt
+
+    started = client.post("/api/v1/cuts", json={"memory_type": "year_in_review", "year": 2023})
+    job_id = started.json()["id"]
+    root = tmp_path / "cache" / "editorial-runs" / f"web-{job_id}"
+    with EditorialAttempt(root, request={"key": "k"}) as attempt:
+        # The estimate is measured from this stage's own work, so it needs two samples.
+        attempt.stage(StageUpdate("previews", done=30, total=120))
+        time.sleep(0.2)
+        attempt.stage(StageUpdate("previews", done=60, total=120))
+        progress = client.get(f"/api/v1/jobs/{job_id}").json()["progress"]
+
+    assert (progress["done"], progress["total"], progress["fraction"]) == (60, 120, 0.5)
+    # 30 pictures took ~0.2 s, so the 60 left are ~0.4 s away.
+    assert 0.2 < progress["remaining_seconds"] < 5
+
+
+def test_a_stage_that_counts_nothing_offers_no_time_left(client, tmp_path):
+    from immich_memories.operations.cut_progress import StageUpdate
+    from immich_memories.operations.editorial_attempt import EditorialAttempt
+
+    started = client.post("/api/v1/cuts", json={"memory_type": "year_in_review", "year": 2023})
+    job_id = started.json()["id"]
+    root = tmp_path / "cache" / "editorial-runs" / f"web-{job_id}"
+    with EditorialAttempt(root, request={"key": "k"}) as attempt:
+        attempt.stage(StageUpdate("Reading the period account", remaining_seconds=9.0))
+        progress = client.get(f"/api/v1/jobs/{job_id}").json()["progress"]
+
+    assert progress["remaining_seconds"] is None

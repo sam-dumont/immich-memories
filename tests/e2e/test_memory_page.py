@@ -416,3 +416,25 @@ def test_two_names_ask_together_or_any_of_them(
     requested = set(_request_of_the_cut_after(launch_workspace, before)["requested_assets"])
     assert requested == _EITHER_ASSETS
     assert requested > _CONDITION_ASSETS
+
+
+def test_an_album_is_cut_from_its_own_pictures_only(page: Page, launch_app_url: str) -> None:
+    from tests.e2e.fake_immich import ALBUM_ASSETS, ALBUM_ID
+
+    page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
+    page.get_by_text("Album", exact=True).click()
+    album = page.get_by_role("combobox", name="Album")
+    expect(album.locator("option", has_text="The lake week")).to_have_count(1, timeout=30_000)
+    album.select_option(ALBUM_ID)
+    # The id, not the name: two albums may share one, and --from-album takes either.
+    expect(page.get_by_label("Command")).to_contain_text(f"--from-album={ALBUM_ID}")
+
+    page.get_by_role("button", name="Cut", exact=True).click()
+
+    page.wait_for_url("**/app/runs/**", timeout=240_000)
+    shots = contact_sheet(page)
+    expect(shots.first).to_be_visible(timeout=30_000)
+    played = shots.locator("img").evaluate_all(
+        "images => images.map(i => decodeURIComponent(i.src.split('/assets/')[1].split('/')[0]))"
+    )
+    assert played and set(played) <= ALBUM_ASSETS

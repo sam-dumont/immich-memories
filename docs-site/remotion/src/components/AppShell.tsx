@@ -1,7 +1,6 @@
 import React from "react";
 import {
   mdiCogOutline,
-  mdiEyeOutline,
   mdiHistory,
   mdiLightbulbOutline,
   mdiMovieOpenStarOutline,
@@ -86,9 +85,6 @@ export const AppShell: React.FC<Props> = ({ active, children, scroll = 0 }) => (
           >
             <path d="M7,10L12,15L17,10H7Z" />
           </svg>
-        </div>
-        <div style={{ padding: 8, color: UI.primary, display: "flex" }}>
-          <Mdi path={mdiEyeOutline} size={20} />
         </div>
         <div style={{ padding: 8, color: UI.primary, display: "flex" }}>
           <Mdi path={mdiWeatherSunny} size={22} />
