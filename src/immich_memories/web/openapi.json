@@ -1,6 +1,30 @@
 {
   "components": {
     "schemas": {
+      "Alternative": {
+        "description": "Another picture of the shot's moment, eligible when the shot was chosen.",
+        "properties": {
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "facts": {
+            "title": "Facts",
+            "type": "string"
+          },
+          "fate": {
+            "title": "Fate",
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id",
+          "facts",
+          "fate"
+        ],
+        "title": "Alternative",
+        "type": "object"
+      },
       "Cut": {
         "properties": {
           "content_seconds": {
@@ -51,6 +75,13 @@
       },
       "CutShot": {
         "properties": {
+          "alternatives": {
+            "items": {
+              "$ref": "#/components/schemas/Alternative"
+            },
+            "title": "Alternatives",
+            "type": "array"
+          },
           "asset_id": {
             "title": "Asset Id",
             "type": "string"
@@ -161,7 +192,8 @@
           "motion",
           "source_interval",
           "selection",
-          "model"
+          "model",
+          "alternatives"
         ],
         "title": "CutShot",
         "type": "object"

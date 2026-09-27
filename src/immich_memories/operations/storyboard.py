@@ -244,6 +244,17 @@ def _read_projection(attempt_dir: Path) -> dict[str, Any] | None:
     return json.loads(path.read_text()) if path.is_file() else None
 
 
+def moment_alternatives(attempt_dir: Path) -> dict[str, list[str]]:
+    """Each carrier's other pictures of its moment, as the planner kept them for a later swap."""
+    path = Path(attempt_dir) / PLAN_FILE
+    if not path.is_file():
+        return {}
+    return {
+        str(row.get("asset_id")): [str(asset) for asset in row.get("moment_alternatives") or ()]
+        for row in json.loads(path.read_text()).get("carriers") or ()
+    }
+
+
 def source_intervals(attempt_dir: Path) -> dict[str, tuple[float, float]]:
     """The stretch of each source the render plays, in the source's own seconds."""
     intervals = (_read_projection(attempt_dir) or {}).get("intervals") or {}

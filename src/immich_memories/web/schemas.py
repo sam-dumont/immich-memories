@@ -51,6 +51,14 @@ class ModelDecision(BaseModel):
     seat: str
 
 
+class Alternative(BaseModel):
+    """Another picture of the shot's moment, eligible when the shot was chosen."""
+
+    asset_id: str
+    facts: str
+    fate: str
+
+
 class CutShot(BaseModel):
     asset_id: str
     position: int
@@ -68,6 +76,7 @@ class CutShot(BaseModel):
     source_interval: tuple[float, float] | None
     selection: SelectionPath | None
     model: ModelDecision | None
+    alternatives: list[Alternative]
 
 
 class Cut(BaseModel):

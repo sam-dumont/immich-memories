@@ -113,3 +113,16 @@ def test_a_hand_typed_attempt_id_has_no_child_output_instead_of_failing(client, 
 
     assert client.get(f"/api/v1/runs/{RUN}").json()["child_output"] is False
     assert client.get(f"/api/v1/runs/{RUN}/child-output").status_code == 404
+
+
+def test_a_shot_offers_the_rest_of_its_moment_with_what_became_of_each(client, config):
+    save_run(config, RUN, trace=selection_trace())
+
+    garden = client.get(f"/api/v1/runs/{RUN}/cut").json()["shots"][0]
+
+    woods, other = garden["alternatives"]
+    assert woods["asset_id"] == "woods-9"
+    assert woods["facts"] == "photo, 2024-06-15"
+    assert "a near duplicate of the path shot" in woods["fate"]
+    assert other["asset_id"] == "garden-3"
+    assert other["fate"] == "Not in this cut's pool"

@@ -44,6 +44,7 @@ def _seed(workspace) -> None:
     attempt.mkdir(parents=True, exist_ok=True)
     stills = [picture for picture in CARRIERS if not picture.is_video][:4]
     shots = [*stills, next(picture for picture in LIBRARY if picture.is_video)]
+    spare = [picture for picture in LIBRARY if picture not in CARRIERS and not picture.is_video][:2]
     plan = {
         "story": {"thesis": "June.", "episodes": [{"episode": "june", "title": "June"}]},
         "carriers": [
@@ -55,6 +56,7 @@ def _seed(workspace) -> None:
                 "seconds": 3.0,
                 "why": "June: a day",
                 "depicted_moment": f"m{index}",
+                "moment_alternatives": [p.asset_id for p in spare] if index == 0 else [],
             }
             for index, shot in enumerate(shots)
         ],
@@ -132,6 +134,15 @@ def test_a_cut_opens_as_a_contact_sheet_that_explains_and_plays_each_shot(
     inspector = page.get_by_role("article", name="Picture review")
     expect(inspector.get_by_text("a day", exact=True)).to_be_visible()
     expect(inspector.get_by_text("No model read this cut", exact=False)).to_be_visible()
+
+    siblings = inspector.get_by_role("list", name="Other pictures of this moment").get_by_role(
+        "button"
+    )
+    expect(siblings).to_have_count(2)
+    siblings.first.click()
+    expect(inspector.get_by_text("In the cut", exact=True)).to_be_visible()
+    # This run kept no selection trace, and the page says so rather than inventing a fate.
+    expect(inspector.get_by_text("Outcome not recorded for this cut", exact=False)).to_be_visible()
 
     shots.first.focus()
     page.keyboard.press("ArrowRight")

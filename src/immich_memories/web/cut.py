@@ -2,20 +2,25 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.config_loader import Config
-from immich_memories.operations.candidate_fates import read_trace
+from immich_memories.operations.candidate_fates import CandidateFates
 from immich_memories.operations.cut_review import model_polish_ran, read_cut_decisions
 from immich_memories.operations.reader_words import stage_words
 from immich_memories.operations.run_index import attempt_dir_for_run
-from immich_memories.operations.storyboard import Shot, read_storyboard, source_intervals
+from immich_memories.operations.storyboard import (
+    Shot,
+    moment_alternatives,
+    read_storyboard,
+    source_intervals,
+)
 from immich_memories.web.dependencies import current_config
-from immich_memories.web.schemas import Cut, CutShot, ModelDecision, SelectionPath
+from immich_memories.web.schemas import Alternative, Cut, CutShot, ModelDecision, SelectionPath
 
 router = APIRouter(prefix="/api/v1/runs", tags=["cut"])
 
@@ -33,8 +38,21 @@ def _selection(trace: Trace | None, asset_id: str) -> SelectionPath | None:
     )
 
 
-def _shot(position: int, shot: Shot, attempt: Path, context: dict) -> CutShot:
-    decision = context["decisions"].get(shot.asset_id)
+@dataclass(frozen=True)
+class _Evidence:
+    """Everything the attempt recorded that the review explains a shot with."""
+
+    decisions: dict[str, dict[str, str | int]]
+    intervals: dict[str, tuple[float, float]]
+    fates: CandidateFates
+    siblings: dict[str, list[str]]
+
+    def facts(self, asset_id: str) -> str:
+        return self.fates.trace.clips.get(asset_id, "") if self.fates.trace else ""
+
+
+def _shot(position: int, shot: Shot, evidence: _Evidence) -> CutShot:
+    decision = evidence.decisions.get(shot.asset_id)
     return CutShot(
         asset_id=shot.asset_id,
         position=position,
@@ -49,9 +67,15 @@ def _shot(position: int, shot: Shot, attempt: Path, context: dict) -> CutShot:
         moment=shot.moment,
         reason=shot.reason,
         motion=shot.motion,
-        source_interval=context["intervals"].get(shot.asset_id) if shot.motion else None,
-        selection=_selection(context["trace"], shot.asset_id),
+        source_interval=evidence.intervals.get(shot.asset_id) if shot.motion else None,
+        selection=_selection(evidence.fates.trace, shot.asset_id),
         model=ModelDecision.model_validate(decision) if decision else None,
+        alternatives=[
+            Alternative(
+                asset_id=asset, facts=evidence.facts(asset), fate=evidence.fates.describe(asset)
+            )
+            for asset in evidence.siblings.get(shot.asset_id, ())
+        ],
     )
 
 
@@ -62,16 +86,17 @@ def read_cut(run_id: str, config: Annotated[Config, Depends(current_config)]) ->
     board = read_storyboard(attempt) if attempt else None
     if attempt is None or board is None:
         raise HTTPException(404, "This run left no saved cut.")
-    context = {
-        "decisions": read_cut_decisions(attempt),
-        "intervals": source_intervals(attempt),
-        "trace": read_trace(attempt),
-    }
+    evidence = _Evidence(
+        decisions=read_cut_decisions(attempt),
+        intervals=source_intervals(attempt),
+        fates=CandidateFates.read(attempt),
+        siblings=moment_alternatives(attempt),
+    )
     return Cut(
         run_id=run_id,
         thesis=board.thesis,
         content_seconds=board.total_seconds,
         film_seconds=board.film_seconds,
         model_polish=model_polish_ran(attempt),
-        shots=[_shot(index, shot, attempt, context) for index, shot in enumerate(board.shots, 1)],
+        shots=[_shot(index, shot, evidence) for index, shot in enumerate(board.shots, 1)],
     )

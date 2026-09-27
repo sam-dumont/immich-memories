@@ -148,6 +148,18 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * Alternative
+         * @description Another picture of the shot's moment, eligible when the shot was chosen.
+         */
+        Alternative: {
+            /** Asset Id */
+            asset_id: string;
+            /** Facts */
+            facts: string;
+            /** Fate */
+            fate: string;
+        };
         /** Cut */
         Cut: {
             /** Content Seconds */
@@ -165,6 +177,8 @@ export interface components {
         };
         /** CutShot */
         CutShot: {
+            /** Alternatives */
+            alternatives: components["schemas"]["Alternative"][];
             /** Asset Id */
             asset_id: string;
             /** Chapter */

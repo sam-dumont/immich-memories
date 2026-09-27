@@ -50,6 +50,7 @@ PLAN: dict[str, Any] = {
             "seconds": 4.0,
             "why": "Lunch in the garden: the table still out",
             "depicted_moment": "m-garden",
+            "moment_alternatives": ["woods-9", "garden-3"],
         },
     ],
 }

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  immich-memories\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 22:42+0200\n"
+"POT-Creation-Date: 2026-09-27 07:44+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -166,7 +166,7 @@ msgstr "Alle Personen"
 msgid "All pictures"
 msgstr "Alle Bilder"
 
-#: pages/memory_storyboard.py:146 web/lib/ShotInspector.svelte:84
+#: pages/memory_storyboard.py:146 web/lib/ShotInspector.svelte:117
 msgid "Alternatives considered"
 msgstr "Berücksichtigte Alternativen"
 
@@ -275,6 +275,10 @@ msgstr "Von Geburtstag zu Geburtstag"
 msgid "Blur background"
 msgstr "Hintergrund weichzeichnen"
 
+#: web/lib/ShotInspector.svelte:89
+msgid "Browse the whole pool"
+msgstr "Den ganzen Pool durchsuchen"
+
 #: pages/_step3_music_preview.py:67
 msgid "Building mood timeline..."
 msgstr "Musikalischen Verlauf aufbauen..."
@@ -283,11 +287,11 @@ msgstr "Musikalischen Verlauf aufbauen..."
 msgid "Bundled"
 msgstr "Mitgeliefert"
 
-#: app.py:138
+#: app.py:137
 msgid "Cache"
 msgstr "Cache"
 
-#: app.py:306 pages/step1_cache.py:76
+#: app.py:305 pages/step1_cache.py:76
 msgid "Cache Management"
 msgstr "Cache-Verwaltung"
 
@@ -402,7 +406,7 @@ msgstr "Fertig!"
 msgid "Config file: {config_path}"
 msgstr "Konfigurationsdatei: {config_path}"
 
-#: app.py:136 app.py:270
+#: app.py:135 app.py:269
 msgid "Configuration"
 msgstr "Konfiguration"
 
@@ -447,6 +451,10 @@ msgstr "Verbindung mit Immich wird hergestellt..."
 #, python-brace-format
 msgid "Connection failed: {value}"
 msgstr "Verbindung fehlgeschlagen: {value}"
+
+#: web/lib/ShotInspector.svelte:112
+msgid "Considered by the model"
+msgstr "Vom Modell erwogen"
 
 #: pages/step1_presets.py:268
 #, python-brace-format
@@ -507,7 +515,7 @@ msgstr "Erinnerung wird geschnitten..."
 msgid "Dark"
 msgstr "Dunkel"
 
-#: app.py:102
+#: app.py:101
 msgid "Demo mode"
 msgstr "Demomodus"
 
@@ -556,6 +564,10 @@ msgstr "Schnitt"
 #, python-brace-format
 msgid "Elapsed: {value}"
 msgstr "Verstrichen: {value}"
+
+#: web/lib/ShotInspector.svelte:65
+msgid "Eligible when this shot was chosen. Open one to compare."
+msgstr "Wählbar, als diese Aufnahme gewählt wurde. Öffne eines zum Vergleichen."
 
 #: pages/step1_tabs.py:182
 msgid "End date"
@@ -691,7 +703,7 @@ msgstr "Erstellte Musik"
 msgid "Generating music..."
 msgstr "Musik wird erstellt..."
 
-#: app.py:241
+#: app.py:240
 msgid "Generation Options"
 msgstr "Erstellungsoptionen"
 
@@ -727,7 +739,7 @@ msgstr "Feiertag"
 msgid "How long"
 msgstr "Wie lang"
 
-#: web/lib/ShotInspector.svelte:51
+#: web/lib/ShotInspector.svelte:53
 msgid "How the rules got here"
 msgstr "Wie die Regeln hierher kamen"
 
@@ -753,6 +765,10 @@ msgstr "Übertragung zu Immich: {delivery_label}"
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Übertragung zu Immich: {value}"
+
+#: web/lib/ShotInspector.svelte:81
+msgid "In the cut"
+msgstr "Im Schnitt"
 
 #: pages/clip_grid.py:170 pages/clip_grid.py:224
 msgid "Include"
@@ -807,12 +823,12 @@ msgstr "WhatsApp und andere empfangene Medien für diese Erinnerung behalten"
 msgid "Keep intermediate files"
 msgstr "Zwischendateien behalten"
 
-#: web/lib/ShotInspector.svelte:54
+#: web/lib/ShotInspector.svelte:56
 #, python-brace-format
 msgid "Kept at {stage}"
 msgstr "Behalten bei {stage}"
 
-#: pages/memory_storyboard.py:144 web/lib/ShotInspector.svelte:75
+#: pages/memory_storyboard.py:144 web/lib/ShotInspector.svelte:108
 msgid "Kept because"
 msgstr "Beibehalten, weil"
 
@@ -876,7 +892,7 @@ msgstr "Karte: {title_suggestion_map_mode}"
 msgid "Media Eligible"
 msgstr "Geeignete Medien"
 
-#: app.py:77 app.py:210 web/routes/+layout.svelte:15
+#: app.py:76 app.py:209 web/routes/+layout.svelte:15
 msgid "Media pool"
 msgstr "Medien"
 
@@ -890,7 +906,7 @@ msgstr ""
 "Die Erinnerungen, die die Automatisierung als Nächstes erstellen würde, nach denselben Regeln"
 " wie auto suggest."
 
-#: app.py:74 app.py:198 web/lib/labels.ts:18 web/routes/+layout.svelte:12
+#: app.py:73 app.py:197 web/lib/labels.ts:18 web/routes/+layout.svelte:12
 msgid "Memory"
 msgstr "Erinnerung"
 
@@ -902,11 +918,11 @@ msgstr "Erinnerungstyp"
 msgid "Middle 5s"
 msgstr "Mittlere 5 s"
 
-#: pages/memory_storyboard.py:147 web/lib/ShotInspector.svelte:61
+#: pages/memory_storyboard.py:147 web/lib/ShotInspector.svelte:94
 msgid "Model polish"
 msgstr "Feinschliff des Modells"
 
-#: pages/memory_storyboard.py:143 web/lib/ShotInspector.svelte:72
+#: pages/memory_storyboard.py:143 web/lib/ShotInspector.svelte:105
 msgid "Model suggestion"
 msgstr "Vorschlag des Modells"
 
@@ -992,11 +1008,11 @@ msgstr "Keine Clips ausgewählt. Gehe zurück und wähle Clips aus."
 msgid "No eligible suggestions right now."
 msgstr "Zurzeit keine geeigneten Vorschläge."
 
-#: web/lib/ShotInspector.svelte:63
+#: web/lib/ShotInspector.svelte:96
 msgid "No model read this cut: the rules chose every picture."
 msgstr "Kein Modell hat diesen Schnitt gelesen: Die Regeln haben jedes Bild gewählt."
 
-#: pages/memory_storyboard.py:154 web/lib/ShotInspector.svelte:80
+#: pages/memory_storyboard.py:154 web/lib/ShotInspector.svelte:113
 msgid "No outcome recorded."
 msgstr "Kein Ergebnis aufgezeichnet."
 
@@ -1012,7 +1028,7 @@ msgstr ""
 msgid "No pictures match this filter."
 msgstr "Keine Bilder entsprechen diesem Filter."
 
-#: pages/memory_storyboard.py:142 web/lib/ShotInspector.svelte:46
+#: pages/memory_storyboard.py:142 web/lib/ShotInspector.svelte:48
 msgid "No reason recorded for this picture."
 msgstr "Für dieses Bild wurde kein Grund aufgezeichnet."
 
@@ -1111,6 +1127,14 @@ msgstr "Reihenfolge und Zeitcodes des gespeicherten Schnitts."
 msgid "Orientation"
 msgstr "Ausrichtung"
 
+#: web/lib/ShotInspector.svelte:72 web/lib/ShotInspector.svelte:84
+msgid "Other picture of this moment"
+msgstr "Weiteres Bild dieses Moments"
+
+#: web/lib/ShotInspector.svelte:64 web/lib/ShotInspector.svelte:66
+msgid "Other pictures of this moment"
+msgstr "Weitere Bilder dieses Moments"
+
 #: pages/step4_export.py:165
 msgid "Output"
 msgstr "Ausgabe"
@@ -1132,7 +1156,7 @@ msgstr "Ausgabedateiname"
 msgid "Output: {name}"
 msgstr "Ausgabe: {name}"
 
-#: web/lib/ShotInspector.svelte:53
+#: web/lib/ShotInspector.svelte:55
 #, python-brace-format
 msgid "Passed {stages}"
 msgstr "Bestanden: {stages}"
@@ -1141,7 +1165,7 @@ msgstr "Bestanden: {stages}"
 msgid "Password"
 msgstr "Passwort"
 
-#: app.py:137 app.py:289
+#: app.py:136 app.py:288
 msgid "People"
 msgstr "Personen"
 
@@ -1209,7 +1233,7 @@ msgstr ""
 msgid "Picture decisions"
 msgstr "Entscheidungen zu diesem Bild"
 
-#: pages/memory_storyboard.py:139 web/lib/ShotInspector.svelte:19
+#: pages/memory_storyboard.py:139 web/lib/ShotInspector.svelte:21
 msgid "Picture review"
 msgstr "Bildprüfung"
 
@@ -1253,7 +1277,7 @@ msgstr "Schnitt vorbereiten"
 msgid "Preview"
 msgstr "Vorschau"
 
-#: app.py:253
+#: app.py:252
 msgid "Preview & Export"
 msgstr "Vorschau und Export"
 
@@ -1277,7 +1301,7 @@ msgstr "Mediathek lesen…"
 msgid "Reading the pictures"
 msgstr "Bilder lesen"
 
-#: pages/memory_storyboard.py:145 web/lib/ShotInspector.svelte:79
+#: pages/memory_storyboard.py:145 web/lib/ShotInspector.svelte:112
 msgid "Recorded alternative"
 msgstr "Aufgezeichnete Alternative"
 
@@ -1362,7 +1386,7 @@ msgstr "Ein Vorschlag erstellt ein Video auf dem Server. "
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "Läuft auf dem Server: {phase}. Geht weiter, wenn du diese Seite verlässt."
 
-#: app.py:76 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
+#: app.py:75 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
 #: web/routes/runs/+page.svelte:80 web/routes/runs/[run_id]/+page.svelte:46
 msgid "Runs"
 msgstr "Läufe"
@@ -1436,7 +1460,7 @@ msgstr "Überall die ersten 5 s verwenden"
 msgid "Set all to middle 5s"
 msgstr "Überall die mittleren 5 s verwenden"
 
-#: app.py:78 web/routes/+layout.svelte:16
+#: app.py:77 web/routes/+layout.svelte:16
 msgid "Settings"
 msgstr "Einstellungen"
 
@@ -1456,7 +1480,7 @@ msgstr "Anzeigen"
 msgid "Sign in"
 msgstr "Anmelden"
 
-#: app.py:116
+#: app.py:115
 msgid "Sign out"
 msgstr "Abmelden"
 
@@ -1492,7 +1516,7 @@ msgstr "Starten..."
 msgid "Status"
 msgstr "Status"
 
-#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:39
+#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:41
 msgid "Still"
 msgstr "Standbild"
 
@@ -1516,7 +1540,7 @@ msgstr "Storyboard"
 msgid "Subtitle"
 msgstr "Untertitel"
 
-#: app.py:75 app.py:229 web/routes/+layout.svelte:13
+#: app.py:74 app.py:228 web/routes/+layout.svelte:13
 msgid "Suggestions"
 msgstr "Vorschläge"
 
@@ -1605,11 +1629,11 @@ msgstr ""
 "Medien und Clipeditor haben eine eigene Seite: Schließe aus, was nie erscheinen darf, und "
 "passe die gewählten Ausschnitte an."
 
-#: web/lib/ShotInspector.svelte:65
+#: web/lib/ShotInspector.svelte:98
 msgid "The model had nothing to say about this picture."
 msgstr "Das Modell hatte zu diesem Bild nichts zu sagen."
 
-#: pages/memory_storyboard.py:148 web/lib/ShotInspector.svelte:69
+#: pages/memory_storyboard.py:148 web/lib/ShotInspector.svelte:102
 msgid "The picture it replaced"
 msgstr "Das ersetzte Bild"
 
@@ -1779,7 +1803,7 @@ msgstr "Benutzername"
 msgid "Using {name}'s birthday: {value}"
 msgstr "Geburtstag von {name} wird verwendet: {value}"
 
-#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:39
+#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:41
 #: web/routes/runs/[run_id]/+page.svelte:100
 msgid "Video"
 msgstr "Video"
@@ -1822,11 +1846,11 @@ msgstr "Wer wird zuschauen"
 msgid "Why other suggestions were skipped"
 msgstr "Warum andere Vorschläge übersprungen wurden"
 
-#: pages/memory_storyboard.py:149 web/lib/ShotInspector.svelte:72
+#: pages/memory_storyboard.py:149 web/lib/ShotInspector.svelte:105
 msgid "Why the model replaced the other picture"
 msgstr "Warum das Modell das andere Bild ersetzt hat"
 
-#: pages/memory_storyboard.py:141 web/lib/ShotInspector.svelte:45
+#: pages/memory_storyboard.py:141 web/lib/ShotInspector.svelte:47
 msgid "Why this picture"
 msgstr "Warum dieses Bild"
 
@@ -1968,7 +1992,7 @@ msgstr "{photos_count} Fotos verfügbar (bei Erstellung automatisch ausgewählt)
 msgid "{seconds:g} s"
 msgstr "{seconds:g} s"
 
-#: web/lib/ShotInspector.svelte:38
+#: web/lib/ShotInspector.svelte:40
 #, python-brace-format
 msgid "{seconds} s on screen"
 msgstr "{seconds} s im Bild"

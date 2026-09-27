@@ -7,6 +7,8 @@
   let { shot, modelPolish }: { shot: CutShot; modelPolish: boolean } = $props();
 
   let player = $state<HTMLVideoElement>();
+  let comparing = $state<string | null>(null);
+  const compared = $derived(shot.alternatives.find((alternative) => alternative.asset_id === comparing));
   const interval = $derived(shot.source_interval);
 
   // The preview plays the stretch the film plays, and loops it: the rest of the clip is not the cut.
@@ -57,6 +59,37 @@
     </section>
   {/if}
 
+  {#if shot.alternatives.length}
+    <section class="flex flex-col gap-2">
+      <h3 class="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">{t('Other pictures of this moment')}</h3>
+      <p class="text-xs text-gray-600 dark:text-gray-400">{t('Eligible when this shot was chosen. Open one to compare.')}</p>
+      <ul class="flex gap-2 overflow-x-auto pb-1" aria-label={t('Other pictures of this moment')}>
+        {#each shot.alternatives as alternative (alternative.asset_id)}
+          <li class="shrink-0">
+            <button type="button" aria-pressed={comparing === alternative.asset_id}
+              onclick={() => (comparing = comparing === alternative.asset_id ? null : alternative.asset_id)}
+              class={['block rounded-lg outline-offset-2 focus-visible:outline-2 focus-visible:outline-primary', comparing === alternative.asset_id && 'ring-2 ring-primary']}>
+              <img class="h-20 w-24 rounded-lg bg-gray-100 object-contain dark:bg-gray-900" src={thumbnail(alternative.asset_id)} alt={alternative.facts || t('Other picture of this moment')} loading="lazy" />
+            </button>
+          </li>
+        {/each}
+      </ul>
+      {#if compared}
+        <div class="grid grid-cols-2 gap-2">
+          <figure class="flex flex-col gap-1">
+            <img class="aspect-[4/3] w-full rounded-lg bg-gray-100 object-contain dark:bg-gray-900" src={thumbnail(shot.asset_id, 'preview')} alt={shot.reason || shot.story_title} />
+            <figcaption class="text-xs font-medium">{t('In the cut')}</figcaption>
+          </figure>
+          <figure class="flex flex-col gap-1">
+            <img class="aspect-[4/3] w-full rounded-lg bg-gray-100 object-contain dark:bg-gray-900" src={thumbnail(compared.asset_id, 'preview')} alt={compared.facts || t('Other picture of this moment')} />
+            <figcaption class="text-xs"><span class="font-medium">{compared.facts}</span> {compared.fate}</figcaption>
+          </figure>
+        </div>
+      {/if}
+      <a class="w-fit text-sm text-primary hover:underline" href="/step2">{t('Browse the whole pool')}</a>
+    </section>
+  {/if}
+
   <section class="flex flex-col gap-2">
     <h3 class="text-xs font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">{t('Model polish')}</h3>
     {#if !modelPolish}
@@ -76,7 +109,7 @@
       {/if}
       {#if shot.model.proposed_asset_id}
         <div class="flex items-center gap-3">
-          <img class="h-20 w-fit rounded-lg object-contain" src={thumbnail(shot.model.proposed_asset_id)} alt={t('Recorded alternative')} loading="lazy" />
+          <img class="h-20 w-fit rounded-lg object-contain" src={thumbnail(shot.model.proposed_asset_id)} alt={t('Recorded alternative')} title={t('Considered by the model')} loading="lazy" />
           <p class="text-sm">{shot.model.replacement_outcome || t('No outcome recorded.')}</p>
         </div>
       {/if}

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 22:42+0200\n"
+"POT-Creation-Date: 2026-09-27 07:44+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -162,7 +162,7 @@ msgstr "所有人物"
 msgid "All pictures"
 msgstr "所有图片"
 
-#: pages/memory_storyboard.py:146 web/lib/ShotInspector.svelte:84
+#: pages/memory_storyboard.py:146 web/lib/ShotInspector.svelte:117
 msgid "Alternatives considered"
 msgstr "已考虑的备选项"
 
@@ -269,6 +269,10 @@ msgstr "从生日到生日"
 msgid "Blur background"
 msgstr "模糊背景"
 
+#: web/lib/ShotInspector.svelte:89
+msgid "Browse the whole pool"
+msgstr "浏览全部素材"
+
 #: pages/_step3_music_preview.py:67
 msgid "Building mood timeline..."
 msgstr "正在构建音乐时间线..."
@@ -277,11 +281,11 @@ msgstr "正在构建音乐时间线..."
 msgid "Bundled"
 msgstr "内置"
 
-#: app.py:138
+#: app.py:137
 msgid "Cache"
 msgstr "缓存"
 
-#: app.py:306 pages/step1_cache.py:76
+#: app.py:305 pages/step1_cache.py:76
 msgid "Cache Management"
 msgstr "缓存管理"
 
@@ -396,7 +400,7 @@ msgstr "已完成！"
 msgid "Config file: {config_path}"
 msgstr "配置文件：{config_path}"
 
-#: app.py:136 app.py:270
+#: app.py:135 app.py:269
 msgid "Configuration"
 msgstr "配置"
 
@@ -439,6 +443,10 @@ msgstr "正在连接 Immich..."
 #, python-brace-format
 msgid "Connection failed: {value}"
 msgstr "连接失败：{value}"
+
+#: web/lib/ShotInspector.svelte:112
+msgid "Considered by the model"
+msgstr "模型曾考虑"
 
 #: pages/step1_presets.py:268
 #, python-brace-format
@@ -499,7 +507,7 @@ msgstr "正在剪辑回忆..."
 msgid "Dark"
 msgstr "深色"
 
-#: app.py:102
+#: app.py:101
 msgid "Demo mode"
 msgstr "演示模式"
 
@@ -548,6 +556,10 @@ msgstr "剪辑"
 #, python-brace-format
 msgid "Elapsed: {value}"
 msgstr "已用时间：{value}"
+
+#: web/lib/ShotInspector.svelte:65
+msgid "Eligible when this shot was chosen. Open one to compare."
+msgstr "选中此镜头时它们也符合条件。打开一张进行比较。"
 
 #: pages/step1_tabs.py:182
 msgid "End date"
@@ -681,7 +693,7 @@ msgstr "已生成的音乐"
 msgid "Generating music..."
 msgstr "正在生成音乐..."
 
-#: app.py:241
+#: app.py:240
 msgid "Generation Options"
 msgstr "生成选项"
 
@@ -717,7 +729,7 @@ msgstr "节日"
 msgid "How long"
 msgstr "多长时间"
 
-#: web/lib/ShotInspector.svelte:51
+#: web/lib/ShotInspector.svelte:53
 msgid "How the rules got here"
 msgstr "规则如何得出这一结果"
 
@@ -743,6 +755,10 @@ msgstr "上传到 Immich：{delivery_label}"
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "上传到 Immich：{value}"
+
+#: web/lib/ShotInspector.svelte:81
+msgid "In the cut"
+msgstr "在剪辑中"
 
 #: pages/clip_grid.py:170 pages/clip_grid.py:224
 msgid "Include"
@@ -797,12 +813,12 @@ msgstr "为本次回忆保留 WhatsApp 和其他收到的媒体"
 msgid "Keep intermediate files"
 msgstr "保留中间文件"
 
-#: web/lib/ShotInspector.svelte:54
+#: web/lib/ShotInspector.svelte:56
 #, python-brace-format
 msgid "Kept at {stage}"
 msgstr "在{stage}被保留"
 
-#: pages/memory_storyboard.py:144 web/lib/ShotInspector.svelte:75
+#: pages/memory_storyboard.py:144 web/lib/ShotInspector.svelte:108
 msgid "Kept because"
 msgstr "保留原因"
 
@@ -864,7 +880,7 @@ msgstr "地图：{title_suggestion_map_mode}"
 msgid "Media Eligible"
 msgstr "符合条件的媒体"
 
-#: app.py:77 app.py:210 web/routes/+layout.svelte:15
+#: app.py:76 app.py:209 web/routes/+layout.svelte:15
 msgid "Media pool"
 msgstr "媒体库"
 
@@ -876,7 +892,7 @@ msgstr "回忆"
 msgid "Memories automation would make next, using the same rules as auto suggest."
 msgstr "自动化接下来会创建的回忆，规则与 auto suggest 相同。"
 
-#: app.py:74 app.py:198 web/lib/labels.ts:18 web/routes/+layout.svelte:12
+#: app.py:73 app.py:197 web/lib/labels.ts:18 web/routes/+layout.svelte:12
 msgid "Memory"
 msgstr "回忆"
 
@@ -888,11 +904,11 @@ msgstr "回忆类型"
 msgid "Middle 5s"
 msgstr "中间 5 秒"
 
-#: pages/memory_storyboard.py:147 web/lib/ShotInspector.svelte:61
+#: pages/memory_storyboard.py:147 web/lib/ShotInspector.svelte:94
 msgid "Model polish"
 msgstr "模型润色"
 
-#: pages/memory_storyboard.py:143 web/lib/ShotInspector.svelte:72
+#: pages/memory_storyboard.py:143 web/lib/ShotInspector.svelte:105
 msgid "Model suggestion"
 msgstr "模型建议"
 
@@ -978,11 +994,11 @@ msgstr "未选择片段。请返回选择。"
 msgid "No eligible suggestions right now."
 msgstr "暂无符合条件的建议。"
 
-#: web/lib/ShotInspector.svelte:63
+#: web/lib/ShotInspector.svelte:96
 msgid "No model read this cut: the rules chose every picture."
 msgstr "没有模型阅读此剪辑：每张图片都由规则选出。"
 
-#: pages/memory_storyboard.py:154 web/lib/ShotInspector.svelte:80
+#: pages/memory_storyboard.py:154 web/lib/ShotInspector.svelte:113
 msgid "No outcome recorded."
 msgstr "未记录结果。"
 
@@ -996,7 +1012,7 @@ msgstr "尚无人物文件。请重新扫描媒体库：读取每位已命名人
 msgid "No pictures match this filter."
 msgstr "没有符合此筛选条件的图片。"
 
-#: pages/memory_storyboard.py:142 web/lib/ShotInspector.svelte:46
+#: pages/memory_storyboard.py:142 web/lib/ShotInspector.svelte:48
 msgid "No reason recorded for this picture."
 msgstr "未记录选择此图片的原因。"
 
@@ -1091,6 +1107,14 @@ msgstr "已保存剪辑的顺序和时间码。"
 msgid "Orientation"
 msgstr "方向"
 
+#: web/lib/ShotInspector.svelte:72 web/lib/ShotInspector.svelte:84
+msgid "Other picture of this moment"
+msgstr "这一时刻的其他图片"
+
+#: web/lib/ShotInspector.svelte:64 web/lib/ShotInspector.svelte:66
+msgid "Other pictures of this moment"
+msgstr "这一时刻的其他图片"
+
 #: pages/step4_export.py:165
 msgid "Output"
 msgstr "输出"
@@ -1112,7 +1136,7 @@ msgstr "输出文件名"
 msgid "Output: {name}"
 msgstr "输出：{name}"
 
-#: web/lib/ShotInspector.svelte:53
+#: web/lib/ShotInspector.svelte:55
 #, python-brace-format
 msgid "Passed {stages}"
 msgstr "通过了{stages}"
@@ -1121,7 +1145,7 @@ msgstr "通过了{stages}"
 msgid "Password"
 msgstr "密码"
 
-#: app.py:137 app.py:289
+#: app.py:136 app.py:288
 msgid "People"
 msgstr "人物"
 
@@ -1187,7 +1211,7 @@ msgstr "选择每段视频展示的秒数并预览。静态照片无需裁剪。
 msgid "Picture decisions"
 msgstr "此图片的处理决定"
 
-#: pages/memory_storyboard.py:139 web/lib/ShotInspector.svelte:19
+#: pages/memory_storyboard.py:139 web/lib/ShotInspector.svelte:21
 msgid "Picture review"
 msgstr "图片审阅"
 
@@ -1229,7 +1253,7 @@ msgstr "正在准备剪辑"
 msgid "Preview"
 msgstr "预览"
 
-#: app.py:253
+#: app.py:252
 msgid "Preview & Export"
 msgstr "预览与导出"
 
@@ -1253,7 +1277,7 @@ msgstr "正在读取媒体库…"
 msgid "Reading the pictures"
 msgstr "正在读取图片"
 
-#: pages/memory_storyboard.py:145 web/lib/ShotInspector.svelte:79
+#: pages/memory_storyboard.py:145 web/lib/ShotInspector.svelte:112
 msgid "Recorded alternative"
 msgstr "已记录的备选项"
 
@@ -1338,7 +1362,7 @@ msgstr "运行建议会在服务器上创建视频。"
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "正在服务器上运行：{phase}。离开此页面后仍会继续。"
 
-#: app.py:76 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
+#: app.py:75 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
 #: web/routes/runs/+page.svelte:80 web/routes/runs/[run_id]/+page.svelte:46
 msgid "Runs"
 msgstr "任务"
@@ -1410,7 +1434,7 @@ msgstr "全部使用前 5 秒"
 msgid "Set all to middle 5s"
 msgstr "全部使用中间 5 秒"
 
-#: app.py:78 web/routes/+layout.svelte:16
+#: app.py:77 web/routes/+layout.svelte:16
 msgid "Settings"
 msgstr "设置"
 
@@ -1430,7 +1454,7 @@ msgstr "显示"
 msgid "Sign in"
 msgstr "登录"
 
-#: app.py:116
+#: app.py:115
 msgid "Sign out"
 msgstr "退出登录"
 
@@ -1466,7 +1490,7 @@ msgstr "正在启动..."
 msgid "Status"
 msgstr "状态"
 
-#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:39
+#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:41
 msgid "Still"
 msgstr "静态图片"
 
@@ -1490,7 +1514,7 @@ msgstr "分镜"
 msgid "Subtitle"
 msgstr "副标题"
 
-#: app.py:75 app.py:229 web/routes/+layout.svelte:13
+#: app.py:74 app.py:228 web/routes/+layout.svelte:13
 msgid "Suggestions"
 msgstr "建议"
 
@@ -1573,11 +1597,11 @@ msgid ""
 " trim what was."
 msgstr "媒体库和片段编辑器有独立页面：排除绝不能出现的内容，并调整已选片段。"
 
-#: web/lib/ShotInspector.svelte:65
+#: web/lib/ShotInspector.svelte:98
 msgid "The model had nothing to say about this picture."
 msgstr "模型对这张图片没有任何记录。"
 
-#: pages/memory_storyboard.py:148 web/lib/ShotInspector.svelte:69
+#: pages/memory_storyboard.py:148 web/lib/ShotInspector.svelte:102
 msgid "The picture it replaced"
 msgstr "被替换的图片"
 
@@ -1740,7 +1764,7 @@ msgstr "用户名"
 msgid "Using {name}'s birthday: {value}"
 msgstr "使用 {name} 的生日：{value}"
 
-#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:39
+#: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:41
 #: web/routes/runs/[run_id]/+page.svelte:100
 msgid "Video"
 msgstr "视频"
@@ -1781,11 +1805,11 @@ msgstr "谁会观看"
 msgid "Why other suggestions were skipped"
 msgstr "其他建议为何被跳过"
 
-#: pages/memory_storyboard.py:149 web/lib/ShotInspector.svelte:72
+#: pages/memory_storyboard.py:149 web/lib/ShotInspector.svelte:105
 msgid "Why the model replaced the other picture"
 msgstr "模型替换另一张图片的原因"
 
-#: pages/memory_storyboard.py:141 web/lib/ShotInspector.svelte:45
+#: pages/memory_storyboard.py:141 web/lib/ShotInspector.svelte:47
 msgid "Why this picture"
 msgstr "为什么选择此图片"
 
@@ -1927,7 +1951,7 @@ msgstr "{photos_count} 张可用照片（生成时自动选择）"
 msgid "{seconds:g} s"
 msgstr "{seconds:g} 秒"
 
-#: web/lib/ShotInspector.svelte:38
+#: web/lib/ShotInspector.svelte:40
 #, python-brace-format
 msgid "{seconds} s on screen"
 msgstr "在屏幕上 {seconds} 秒"
