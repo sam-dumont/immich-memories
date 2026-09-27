@@ -33,6 +33,7 @@ _P = ParamSpec("_P")
 _T = TypeVar("_T")
 
 _active: ContextVar[tuple[LLMCounters, ...]] = ContextVar("llm_counters", default=())
+_stage: ContextVar[str] = ContextVar("llm_stage", default="reader")
 
 __all__ = [
     "LLMCounters",
@@ -43,6 +44,7 @@ __all__ = [
     "record_cache_hit",
     "record_reply",
     "record_wall",
+    "recording_stage",
 ]
 
 
@@ -179,7 +181,7 @@ def record_reply(
     completion_tokens: int = 0,
     reasoning_tokens: int = 0,
     model: str | None = None,
-    stage: str = "reader",
+    stage: str | None = None,
     usage_known: bool = True,
 ) -> None:
     """Account for one completion attempt. Retries count separately, as they cost.
@@ -188,6 +190,7 @@ def record_reply(
     asked for: a route that silently serves something else bills for what it
     served.
     """
+    stage = stage or _stage.get()
     for counters in _active.get():
         with counters._lock:
             counters.calls += 1
@@ -267,6 +270,16 @@ def active() -> LLMCounters | None:
     """
     stack = _active.get()
     return stack[0] if stack else None
+
+
+@contextmanager
+def recording_stage(stage: str) -> Iterator[None]:
+    """Attribute shared transport calls to their actual producer, including worker threads."""
+    token = _stage.set(stage)
+    try:
+        yield
+    finally:
+        _stage.reset(token)
 
 
 @contextmanager
