@@ -115,33 +115,22 @@ def ask_people(reader, key, brief, people):
     return (answer or {"people": []})["people"]
 
 
-WHEN = '''Is the owner's request about one moment of a person's early life that is dated
-from their birth? Pick the person and the moment: "birth" (the birth and the days around it),
-"first_weeks", "first_months", "first_year". A request that follows something across years, or
-asks about things rather than one moment of life, is "none". Return JSON.'''
-# The plan's vocabulary for life moments: the model names one, code knows its span (days before, after).
-LIFE_MOMENTS = {"birth": (2, 10), "first_weeks": (0, 42), "first_months": (0, 120), "first_year": (0, 365)}
+FILTERS = '''Turn the owner's request into filters over their photo library. Use the facts given
+(people with their roles and birth dates, today's date, years found in the request) to decide:
+the date range the photos were taken in (YYYY-MM-DD, or null for no bound), and whether the listed
+people's faces must be recognised in every photo. Return JSON.'''
 
 
-def ask_when(reader, key, brief, named):
-    """Meaning into a computable window: Gemma picks a moment from a small vocabulary."""
-    if not named:
-        return None
-    schema = _schema(moment={"type": "string", "enum": ["none", *LIFE_MOMENTS]},
-                     person={"type": "string", "enum": [p["name"] for p in named]})
-    answer = reader.ask("plan_when", key, WHEN, {"owner_request": brief,
-                        "people": [p["name"] for p in named]}, lambda a: None, 150, schema=schema)
-    if not answer or answer["moment"] == "none":
-        return None
-    person = next(p for p in named if p["name"] == answer["person"])
-    if not person.get("birth_date"):
-        return None
-    from datetime import date as _date
-
-    born = _date.fromisoformat(str(person["birth_date"]))
-    before, after = LIFE_MOMENTS[answer["moment"]]
-    return {"person": person["name"], "moment": answer["moment"],
-            "from": str(born - timedelta(days=before)), "to": str(born + timedelta(days=after))}
+def ask_filters(reader, key, brief, named, years):
+    """Filters, not operators: Gemma derives a date range and a face requirement from real facts."""
+    date = {"type": ["string", "null"], "pattern": "^[12][0-9]{3}-[01][0-9]-[0-3][0-9]$"}
+    schema = _schema(date_from=date, date_to=date, faces_required={"type": "boolean"})
+    answer = reader.ask("plan_filters", key, FILTERS, {
+        "owner_request": brief, "today": datetime.now(UTC).date().isoformat(), "years_in_request": years,
+        "people": [{"name": p["name"], "role": str((p.get("confirmed") or {}).get("role") or ""),
+                    "born": str(p.get("birth_date") or "unknown")} for p in named]},
+        lambda a: None, 200, schema=schema)
+    return answer or {"date_from": None, "date_to": None, "faces_required": bool(named)}
 
 
 def ask_plan(reader, key, brief, context, library, people):
@@ -564,12 +553,11 @@ def main():
     pool_scope = in_window & scope
 
     named = [people[p] | {"name": p} for p in plan.get("people") or [] if p in people]
-    when = ask_when(reader, key, brief, named)
-    plan["life_window"] = when
-    if when:
-        # The window is the anchor: a newborn's face is rarely recognised, so the face is not required.
-        pool_scope &= {i for i, r in enumerate(library.rows) if when["from"] <= r["taken_at"][:10] <= when["to"]}
-    elif named:
+    filters = ask_filters(reader, key, brief, named, [y for y in (since, until) if y])
+    plan["filters"] = filters
+    lo, hi = filters.get("date_from") or "0000", filters.get("date_to") or "9999"
+    pool_scope &= {i for i, r in enumerate(library.rows) if lo <= r["taken_at"][:10] <= hi + "z"}
+    if named and filters.get("faces_required"):
         # Who is in a picture is Immich's face data, never a caption word.
         pool_scope &= set().union(*(person_rows(library, p) for p in named))
     if plan.get("firsts") and named:
