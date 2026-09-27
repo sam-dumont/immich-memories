@@ -203,6 +203,9 @@ unchanged sources retain their existing bank entries.
   their bounded facts before standing is refreshed; the private admission record names each
   result. `editorial_carrier.py` binds every candidate to its own story context. Story allocation
   still owns depth and recovery; these are explicit exceptions, never inherited by a refill.
+  Batch readmission seats representatives before accepted depth, then restores chronological
+  order. An earlier depth picture cannot consume the spacing slot of the representative it
+  supplements; standing, audience and duplicate checks still apply to both.
 - **Standing**: does a picture stand by itself, and may it serve as context inside its story.
   Answered on every tier from the facts, never asked of a model (`editorial_standing_facts.py`: two
   points tables, heads alone or heads plus the ingest caption; a caption naming an animal, or a
@@ -212,6 +215,9 @@ unchanged sources retain their existing bank entries.
   kept (`editorial_story_lookalike.py`). The final review drops repeats by perceptual hash and by
   scene print, the pooled DINOv2 vector of a preview, which catches the same scene in another
   framing (`editorial_final_hash_review.py`, `editorial_scene_prints.py`).
+  The rules draft carries its explicit starred-twin collapses into refinement. Final invariant
+  checks follow that history only to a keeper still in the film; missing keepers and cycles
+  remain violations.
 - **Block vote**: the shape of every model yes/no. At most 12 rows, asked twice, in source order
   and in a hashed order; picked both times is firm, once is a maybe (`editorial_block_votes.py`).
 - **Thin layer / thin polish**: model mode's editing when `thin_model_layer` is on (the default).

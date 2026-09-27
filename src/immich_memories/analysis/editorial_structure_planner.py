@@ -348,6 +348,7 @@ def _plan_structure(
             outcome.cut_carriers,
             outcome.tier,
             outcome.worth_reason,
+            tuple(deepcopy(outcome.final_duplicates.get("collapsed_favourites", ()))),
         ),
     )
 
@@ -450,6 +451,7 @@ def _select(
     gates = picture_admission(source, ports, material, selection, gate)
     if ports.draft is not None:
         run.cut_carriers.extend(deepcopy(ports.draft.removed))
+        run.final_duplicates["collapsed_favourites"] = deepcopy(ports.draft.collapsed_favourites)
     if ports.thin is not None:
         run.carriers = polish_the_draft(
             source,

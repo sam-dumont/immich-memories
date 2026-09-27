@@ -191,6 +191,7 @@ def final_duplicate_review(
         | set(owner_required)
     )
     before_duplicates = run.carriers.copy()
+    earlier_collapses = run.final_duplicates.get("collapsed_favourites", ())
     # The preview hashes the burst pass already cached and the scene prints ingest banked ask
     # the repetition question over the whole finished cut, whatever the reader is. No tier
     # sends the pair's pixels to a model: pictures are read once, at ingest.
@@ -211,6 +212,12 @@ def final_duplicate_review(
         if run.final_content_cap > 0
         else math.inf,
     )
+    # Refinement must retain the draft's explicit starred-twin history. The
+    # invariant checker still requires its keeper to survive in the final cut.
+    run.final_duplicates["collapsed_favourites"] = [
+        *earlier_collapses,
+        *run.final_duplicates["collapsed_favourites"],
+    ]
     known = {carrier["asset_id"] for carrier in before_duplicates}
     refilled = [c for c in run.carriers if c["asset_id"] not in known]
     run.final_duplicates["status"] = (
