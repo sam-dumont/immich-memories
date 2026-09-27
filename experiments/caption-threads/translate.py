@@ -115,6 +115,35 @@ def ask_people(reader, key, brief, people):
     return (answer or {"people": []})["people"]
 
 
+WHEN = '''Is the owner's request about one moment of a person's early life that is dated
+from their birth? Pick the person and the moment: "birth" (the birth and the days around it),
+"first_weeks", "first_months", "first_year". A request that follows something across years, or
+asks about things rather than one moment of life, is "none". Return JSON.'''
+# The plan's vocabulary for life moments: the model names one, code knows its span (days before, after).
+LIFE_MOMENTS = {"birth": (2, 10), "first_weeks": (0, 42), "first_months": (0, 120), "first_year": (0, 365)}
+
+
+def ask_when(reader, key, brief, named):
+    """Meaning into a computable window: Gemma picks a moment from a small vocabulary."""
+    if not named:
+        return None
+    schema = _schema(moment={"type": "string", "enum": ["none", *LIFE_MOMENTS]},
+                     person={"type": "string", "enum": [p["name"] for p in named]})
+    answer = reader.ask("plan_when", key, WHEN, {"owner_request": brief,
+                        "people": [p["name"] for p in named]}, lambda a: None, 150, schema=schema)
+    if not answer or answer["moment"] == "none":
+        return None
+    person = next(p for p in named if p["name"] == answer["person"])
+    if not person.get("birth_date"):
+        return None
+    from datetime import date as _date
+
+    born = _date.fromisoformat(str(person["birth_date"]))
+    before, after = LIFE_MOMENTS[answer["moment"]]
+    return {"person": person["name"], "moment": answer["moment"],
+            "from": str(born - timedelta(days=before)), "to": str(born + timedelta(days=after))}
+
+
 def ask_plan(reader, key, brief, context, library, people):
     plan = parse_structure(brief, people, library)
     plan["people"] = ask_people(reader, key, brief, people)
@@ -162,7 +191,23 @@ it moves through time. Use only the owner's words and what the captions show; in
 events or feelings. Return JSON {"thesis":string}.'''
 
 EPISODE = timedelta(minutes=90)  # the product's episode gap (selection_source_groups)
-PER_YEAR = 24                    # judge budget per year of a long window
+JUDGE_BUDGET = 220               # caption checks per request, spread over the pool's time scale
+
+
+def spread_budget(library, refs, budget):
+    """An even sample over the pool's own time scale: days for a birth, months for a season,
+    years for "along the years"."""
+    refs = sorted(refs, key=lambda i: library.rows[i]["taken_at"])
+    if not refs:
+        return []
+    first, last = library.rows[refs[0]]["taken_at"][:10], library.rows[refs[-1]]["taken_at"][:10]
+    span = (datetime.fromisoformat(last) - datetime.fromisoformat(first)).days
+    width = 4 if span > 730 else 7 if span > 62 else 10  # year, month or day buckets
+    buckets = defaultdict(list)
+    for i in refs:
+        buckets[library.rows[i]["taken_at"][:width]].append(i)
+    share = max(1, budget // len(buckets))
+    return [i for b in buckets.values() for i in b[:: max(1, len(b) // share)][:share]]
 
 
 def years_of(brief):
@@ -343,12 +388,8 @@ def look(reader, config, library, plan, candidates, anchors):
         return candidates, []
     cache = ROOT / "looks"
     cache.mkdir(exist_ok=True)
-    # The budget is spread across years, anchors first: a date-ordered cut drops every late year.
-    years = defaultdict(list)
-    for i in sorted(candidates, key=lambda i: library.rows[i]["taken_at"]):
-        years[library.rows[i]["taken_at"][:4]].append(i)
-    share = max(1, LOOK_BUDGET // max(1, len(years)))
-    spread = [i for refs in years.values() for i in refs[:: max(1, len(refs) // share)][:share]]
+    # Spread over the pool's own time scale, anchors first: a date-ordered cut drops every late period.
+    spread = spread_budget(library, candidates, LOOK_BUDGET)
     ordered = sorted(set(spread) | (set(candidates) & anchors),
                      key=lambda i: (i not in anchors, library.rows[i]["taken_at"]))[:LOOK_BUDGET + len(anchors)]
     reference = None
@@ -523,7 +564,12 @@ def main():
     pool_scope = in_window & scope
 
     named = [people[p] | {"name": p} for p in plan.get("people") or [] if p in people]
-    if named:
+    when = ask_when(reader, key, brief, named)
+    plan["life_window"] = when
+    if when:
+        # The window is the anchor: a newborn's face is rarely recognised, so the face is not required.
+        pool_scope &= {i for i, r in enumerate(library.rows) if when["from"] <= r["taken_at"][:10] <= when["to"]}
+    elif named:
         # Who is in a picture is Immich's face data, never a caption word.
         pool_scope &= set().union(*(person_rows(library, p) for p in named))
     if plan.get("firsts") and named:
@@ -557,10 +603,7 @@ def main():
         subject = (subject & members) | anchors | uncaptioned if subject else members | anchors
     pool = (subject if (plan["subject"] or plan["read_text"]) else pool_scope) & pool_scope
 
-    by_year = defaultdict(list)
-    for i in sorted(pool, key=lambda i: library.rows[i]["taken_at"]):
-        by_year[library.rows[i]["taken_at"][:4]].append(i)
-    offered = [i for refs in by_year.values() for i in refs[:: max(1, len(refs) // PER_YEAR)][:PER_YEAR]]
+    offered = spread_budget(library, pool, JUDGE_BUDGET)
     offered = [i for i in offered if not library.rows[i].get("uncaptioned")]
     decisions = choose_sources(reader, library, key, brief,
                                sorted(set(offered) | {i for i in anchors & pool if not library.rows[i].get("uncaptioned")}))
