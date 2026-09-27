@@ -86,12 +86,15 @@ class PictureAdmission:
         self.prefetch_audience([shot for shot in shots if self.stands_alone(shot, tier_of)])
         kept: list[dict[str, Any]] = []
         refused: list[GateRefusal] = []
-        for shot in shots:
+        # Accepted depth supplements a representative, even when captured earlier.
+        # Seat representatives first so depth cannot consume their spacing slot.
+        for shot in sorted(shots, key=lambda row: bool(row.get("depth"))):
             refusal = self._refusal(shot, kept, tier_of)
             if refusal is None:
                 kept.append(shot)
             else:
                 refused.append(refusal)
+        kept.sort(key=itemgetter("taken", "asset_id"))
         survivors, record = review_cut_by_cached_hashes(
             kept,
             thumbnail_hash=self.thumbnail_hash or (lambda _asset: None),

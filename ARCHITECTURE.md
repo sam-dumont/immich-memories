@@ -201,6 +201,9 @@ unchanged sources retain their existing bank entries.
   their bounded facts before standing is refreshed; the private admission record names each
   result. `editorial_carrier.py` binds every candidate to its own story context. Story allocation
   still owns depth and recovery; these are explicit exceptions, never inherited by a refill.
+  Batch readmission seats representatives before accepted depth, then restores chronological
+  order. An earlier depth picture cannot consume the spacing slot of the representative it
+  supplements; standing, audience and duplicate checks still apply to both.
 - **Standing**: does a picture stand by itself, and may it serve as context inside its story.
   Answered on every tier from the facts, never asked of a model (`editorial_standing_facts.py`: two
   points tables, heads alone or heads plus the ingest caption; a caption naming an animal, or a
