@@ -155,6 +155,17 @@ def ask_photo_question(reader, key, brief):
     return (answer or {}).get("question") or f'Does this photo show what "{brief.strip()}" asks for?'
 
 
+ENGLISH = '''Give the owner's request in English. If it is already English, return it unchanged.
+Translate every ordinary word (animals, objects, activities, relatives); keep only proper names of
+people, places and organisations as written. Return JSON.'''
+
+
+def to_english(reader, key, text):
+    answer = reader.ask("to_english", key, ENGLISH, {"owner_request": text}, lambda a: None, 200,
+                        schema=_schema(english={"type": "string", "maxLength": 400}))
+    return ((answer or {}).get("english") or text).strip()
+
+
 def ask_plan(reader, key, brief, context, library, people):
     plan = parse_structure(brief, people, library)
     plan["people"] = ask_people(reader, key, brief, people)
@@ -205,6 +216,23 @@ events or feelings. Return JSON {"thesis":string}.'''
 
 EPISODE = timedelta(minutes=90)  # the product's episode gap (selection_source_groups)
 JUDGE_BUDGET = 220               # caption checks per request, spread over the pool's time scale
+
+
+def subject_kinds(library, subject):
+    """The kinds of each subject noun that captions actually use (WordNet hyponyms): "car" also
+    finds "convertible", "sedan", "suv". Wrong senses are left to the caption and photo checks."""
+    from nltk.corpus import wordnet as wn
+
+    found = []
+    for phrase in subject:
+        head = phrase.split()[-1]
+        for synset in wn.synsets(head, pos=wn.NOUN)[:1]:
+            for kind in synset.closure(lambda s: s.hyponyms()):
+                for lemma in kind.lemmas():
+                    word = lemma.name().lower()
+                    if "_" not in word and word in library.posts and word not in found and word != head:
+                        found.append(word)
+    return found[:40]
 
 
 def spread_budget(library, refs, budget, score=None):
@@ -405,9 +433,11 @@ def look(reader, config, library, plan, candidates, anchors, score=None):
     cache = ROOT / "looks"
     cache.mkdir(exist_ok=True)
     # Spread over the pool's own time scale, anchors first: a date-ordered cut drops every late period.
-    spread = spread_budget(library, candidates, LOOK_BUDGET, score)
+    budget = min(320, max(LOOK_BUDGET, len(candidates) // 3))
+    plan.setdefault("budgets", {})["look"] = budget
+    spread = spread_budget(library, candidates, budget, score)
     ordered = sorted(set(spread) | (set(candidates) & anchors),
-                     key=lambda i: (i not in anchors, library.rows[i]["taken_at"]))[:LOOK_BUDGET + len(anchors)]
+                     key=lambda i: (i not in anchors, library.rows[i]["taken_at"]))[:budget + len(anchors)]
     reference = None
     subject_words = " / ".join(plan.get("subject") or [])
     for i in [i for i in ordered if i in anchors][:12]:
@@ -559,9 +589,11 @@ def firsts(reader, library, key, name, person, rows):
 
 
 def main():
-    brief = sys.argv[1]
-    key = "translate:" + hashlib.sha256(brief.encode()).hexdigest()[:16]
+    original = sys.argv[1]
+    key = "translate:" + hashlib.sha256(original.encode()).hexdigest()[:16]
     library, reader = load_library(), Reader()
+    # Captions are English: every later step reads the English request; the original is kept.
+    brief = to_english(reader, key, original)
     config = Config.from_yaml(Path.home() / ".immich-memories/config.yaml")
     since, until = years_of(brief)
 
@@ -627,7 +659,9 @@ def main():
         pairs = [f"{a} {b}" for k, a in enumerate(companions) for b in companions[k + 1:]]
         # Reverted 09-27: letting the request's rarest words define the subject was tuned to one
         # control and broke the rest (landscapes 131 -> 21, cat -> 0). Gemma's subject leads.
-        phrases = plan["subject"] + own + pairs
+        kinds = subject_kinds(library, plan["subject"])
+        plan["subject_kinds"] = kinds
+        phrases = plan["subject"] + own + pairs + kinds
         plan["subject_phrases"] = phrases
         subject = set(retrieve_plan(library, {"queries": phrases, "places": [], "since": since, "until": until}))
     anchors, uncaptioned = set(), set()
@@ -649,7 +683,10 @@ def main():
     # hits ("mother", "woman", "baby" tied with "breastfeeding" at 3 and buried it, 09-27).
     score = {i: 10000 * len(own_set & library.tokens[i]) + 100 * len(comp_set & library.tokens[i])
                 + sum(1 for p in subj if p <= library.tokens[i]) for i in pool}
-    offered = spread_budget(library, pool, JUDGE_BUDGET, score)
+    # Broad requests (twenty years of cars) get more checks; a narrow one keeps the floor.
+    judge_budget = min(450, max(JUDGE_BUDGET, len(pool) // 6))
+    plan["budgets"] = {"judge": judge_budget}
+    offered = spread_budget(library, pool, judge_budget, score)
     offered = [i for i in offered if not library.rows[i].get("uncaptioned")]
     decisions = choose_sources(reader, library, key, brief,
                                sorted(set(offered) | {i for i in anchors & pool if not library.rows[i].get("uncaptioned")}))
@@ -667,7 +704,7 @@ def main():
                         lambda a: isinstance(a["thesis"], str), 400) if kept else None
     for k in ("_per_item_questions", "_own", "_companions"):
         plan.pop(k, None)
-    record = {"brief": brief, "plan": plan, "scope": scope_note,
+    record = {"brief": original, "english": brief, "plan": plan, "scope": scope_note,
               "counts": {"window": len(in_window), "scope": len(pool_scope), "subject_matches": len(subject),
                          "ocr_anchors": len(anchors), "uncaptioned": len(uncaptioned & pool), "pool": len(pool), "judged": len(decisions),
                          "looked": len(looked), "kept": len(kept)},
