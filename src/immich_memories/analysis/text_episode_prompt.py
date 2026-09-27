@@ -53,7 +53,8 @@ _LEAN_PROMPT_NAME = "episode-prompt-v4-lean"
 # representative a reading needs to be bankable. The full prompt's other asks (up to three
 # representatives with reasons, every Cull reject) were 62 % of the reader's output on the
 # measured cold year, and nothing a film reads on demand uses them.
-_LEAN_PROMPT = """Read these episodes from one family's photo library. Every asset line contains
+_LEAN_PROMPT = (
+    """Read these episodes from one family's photo library. Every asset line contains
 all banked annotations for that asset. Use only those lines; do not invent names, places,
 relationships, or events.
 
@@ -85,6 +86,9 @@ Return JSON only:
 "notable_moments":[{{"asset":1,"reason":"what this is a record of"}}]}}]}}
 
 {episodes}"""
+    "\n\nReturn the complete JSON object now. After the final episode, close the episodes "
+    "array and the outer object with ]}}. Do not leave trailing whitespace."
+)
 
 # A banked answer is ground truth for the question that was asked. Hashing the prompt into the
 # producer expires every reading the moment its wording changes, whether or not the name above
