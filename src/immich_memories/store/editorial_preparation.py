@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import math
-import os
 import sqlite3
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import suppress
 from datetime import UTC, datetime
-from pathlib import Path
 
 from immich_memories.analysis.editorial_description_contract import (
     DESCRIPTION_MODEL,
@@ -72,26 +70,6 @@ CREATE TABLE IF NOT EXISTS motion_bursts (
 
 def now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
-
-
-def private_database_path(path: Path) -> Path:
-    """Create at 0600 before SQLite opens it; keep existing sidecars private too."""
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    # Closing any separate descriptor for an existing database releases this
-    # process's POSIX locks, including those held by live SQLite connections.
-    try:
-        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-    except FileExistsError:
-        pass
-    else:
-        os.close(descriptor)
-    path.chmod(0o600)
-    for suffix in ("-journal", "-wal", "-shm"):
-        sidecar = Path(str(path) + suffix)
-        with suppress(FileNotFoundError):
-            sidecar.chmod(0o600)
-    return path
 
 
 def initialize(connection: sqlite3.Connection) -> None:

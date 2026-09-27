@@ -56,6 +56,9 @@ whether the shipped compose file already passes it.
 | Variable | Config key | Default | Tier | Compose | What it does |
 |---|---|---|---|---|---|
 | `IMMICH_MEMORIES_AUTH_USERNAME`, `IMMICH_MEMORIES_AUTH_PASSWORD` | `auth.username`, `auth.password` | empty | advanced | yes, `.env` | Set both to turn on basic auth. Either alone is ignored |
+| `IMMICH_MEMORIES_DATABASE_URL` | The store's database, beating `database.url`: `sqlite:////data/store.db` or `postgresql://user:pass@host/db`. Read before the store opens, so never from the store |
+| `IMMICH_MEMORIES_DATABASE_SCHEMA` | The PostgreSQL schema for the store, beating `database.schema` (default `immich_memories`) |
+| `IMMICH_MEMORIES_ALLOW_NETWORK_SQLITE` | `1` opens a SQLite file on NFS, SMB or CIFS with a warning instead of refusing. WAL needs shared memory those filesystems cannot give two hosts, so set it only when one host ever opens the file |
 | `IMMICH_MEMORIES_STORAGE_SECRET` | none | generated | none | commented | Session secret. Generated once onto the config volume, so sessions survive a recreate without it |
 | `IMMICH_MEMORIES_AUTOMATION__ENABLED` | `automation.enabled` | `false` | advanced | commented | The daily memory, inside the UI process |
 | `IMMICH_MEMORIES_AUTOMATION__DAILY_AT` | `automation.daily_at` | `09:00` | advanced | commented | When, in the `TZ` zone |

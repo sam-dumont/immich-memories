@@ -75,7 +75,7 @@ llm:
 ## Everyday keys and advanced keys
 
 Everyday sections sit at the top level: `immich`, `defaults`, `output`, `audio`, `title_screens`,
-`cache`, `upload`, `trips`, `network`, `photos`, `render`, `scheduler`, `title_llm`. Tuning sections
+`cache`, `database`, `upload`, `trips`, `network`, `photos`, `render`, `scheduler`, `title_llm`. Tuning sections
 go under `advanced:`: `analysis`, `speech`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`, `automation`,
 `notifications`, `triage`, `editorial`, `inference`. The app writes them that way. On read both
 placements work and merge key by key at every depth, and the top-level value wins a tie, so a
@@ -100,6 +100,7 @@ path that is missing here, so a copied config fails up front instead of hours in
 | `output.directory` | where finished films are written |
 | `cache.directory` | previews, thumbnails, downloaded clips |
 | `cache.database` | run history and automation state |
+| `database.url` | the store, when it is a SQLite file (`sqlite:///~/.immich-memories/store.db`) |
 | `advanced.editorial.annotation_database` | every banked fact and reading |
 | `advanced.triage.encoder` | the pinned DINOv2 ONNX export |
 | `advanced.triage.bundle` | a head bundle of your own |

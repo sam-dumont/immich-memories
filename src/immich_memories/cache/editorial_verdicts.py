@@ -21,8 +21,11 @@ from __future__ import annotations
 
 import logging
 import sqlite3
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Iterator, Sequence
+from contextlib import closing, contextmanager
 from pathlib import Path
+
+from immich_memories.db.sqlite_files import connect_sqlite
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +51,6 @@ class EditorialVerdicts:
 
     def __init__(self, path: Path) -> None:
         self.path = path
-        self.path.parent.mkdir(parents=True, exist_ok=True)
         with self._open() as connection:
             connection.execute(_SCHEMA)
 
@@ -90,5 +92,9 @@ class EditorialVerdicts:
                 )
         return recalled
 
-    def _open(self) -> sqlite3.Connection:
-        return sqlite3.connect(self.path)
+    @contextmanager
+    def _open(self) -> Iterator[sqlite3.Connection]:
+        # One transaction per call, and the connection closed after it: the bare
+        # `with connect()` this replaces committed but leaked every connection.
+        with closing(connect_sqlite(self.path)) as connection, connection:
+            yield connection

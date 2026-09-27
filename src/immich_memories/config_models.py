@@ -13,7 +13,7 @@ import re
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 from immich_memories.api.compatibility import ApiVersionPolicy
 
@@ -83,6 +83,34 @@ class ImmichConfig(BaseModel):
     @classmethod
     def expand_env(cls, v: str) -> str:
         """Expand environment variables in config values."""
+        if isinstance(v, str):
+            return expand_env_vars(v)
+        return v
+
+
+class DatabaseConfig(BaseModel):
+    """Where the store lives. Read before the store opens, so never kept in it."""
+
+    # YAML says `schema`, which BaseModel already owns as a method name.
+    model_config = ConfigDict(
+        validate_by_name=True, validate_by_alias=True, serialize_by_alias=True
+    )
+
+    url: str = Field(
+        default="sqlite:///~/.immich-memories/store.db",
+        description="SQLAlchemy URL of the store: a local SQLite file or postgresql://",
+    )
+    schema_name: str = Field(
+        default="immich_memories",
+        alias="schema",
+        min_length=1,
+        description="PostgreSQL schema holding every store table; ignored on SQLite",
+    )
+
+    @field_validator("url", mode="before")
+    @classmethod
+    def expand_env(cls, v: str) -> str:
+        """Expand `${VAR}` so a password can stay out of the file."""
         if isinstance(v, str):
             return expand_env_vars(v)
         return v

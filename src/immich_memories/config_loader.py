@@ -21,6 +21,7 @@ from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, Settings
 
 from immich_memories.config_models import (
     CacheConfig,
+    DatabaseConfig,
     HardwareAccelConfig,
     ImmichConfig,
     has_unresolved_env_reference,
@@ -319,7 +320,7 @@ class Config(BaseSettings):
 
     Config tiers (YAML layout; not the product `tier`, which picks nas, gpu or full):
       Tier 1 (top level): tier, immich, defaults, output, audio, title_screens,
-                           cache, upload, trips, photos
+                           cache, database, upload, trips, photos
       Tier 2 (advanced:):  analysis, hardware, llm, musicgen, ace_step,
                            server, auth, automation, notifications, triage, editorial, inference
       Tier 3 (internal):   scheduler, title_llm
@@ -355,6 +356,7 @@ class Config(BaseSettings):
     output: OutputConfig = Field(default_factory=OutputConfig)
     render: RenderWorkerConfig = Field(default_factory=RenderWorkerConfig)
     cache: CacheConfig = Field(default_factory=CacheConfig)
+    database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     hardware: HardwareAccelConfig = Field(default_factory=HardwareAccelConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
     title_llm: LLMConfig | None = Field(

@@ -16,7 +16,8 @@ from contextlib import closing
 from pathlib import Path
 from typing import Any, TypeVar
 
-from immich_memories.store.editorial_preparation import now, private_database_path
+from immich_memories.db.sqlite_files import connect_sqlite
+from immich_memories.store.editorial_preparation import now
 
 MOTION_RESIDUALS = "motion_residuals"
 SPEECH_REGIONS = "speech_regions"
@@ -44,8 +45,7 @@ def initialize_cut_measurements(connection: sqlite3.Connection) -> None:
 
 def open_cut_measurements(path: Path) -> sqlite3.Connection:
     """A writable bank at this path, created private to the owner if it is not there yet."""
-    connection = sqlite3.connect(private_database_path(path))
-    connection.execute("PRAGMA journal_mode=WAL")
+    connection = connect_sqlite(path)
     initialize_cut_measurements(connection)
     return connection
 

@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from immich_memories.cache.database import VideoAnalysisCache
+from immich_memories.db.sqlite_files import connect_sqlite
 
 
 class NotificationFailureCategory(StrEnum):
@@ -99,7 +100,7 @@ class NotificationStateStore:
 
     @contextmanager
     def _get_connection(self) -> Iterator[sqlite3.Connection]:
-        conn = sqlite3.connect(self.db_path, timeout=5.0)
+        conn = connect_sqlite(self.db_path, private=False)
         conn.row_factory = sqlite3.Row
         try:
             yield conn

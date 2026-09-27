@@ -27,12 +27,13 @@ from immich_memories.analysis.llm_metrics import collecting
 from immich_memories.analysis.llm_usage_record import USAGE_FILE, write_llm_usage
 from immich_memories.api.models import Asset, AssetType
 from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+from immich_memories.db.sqlite_files import private_database_path
 from immich_memories.processing.playback_keyframes import SampledKeyframes
 from immich_memories.store.cut_measurements import (
     open_cut_measurements,
     remember_motion_residual,
 )
-from immich_memories.store.editorial_preparation import initialize, private_database_path
+from immich_memories.store.editorial_preparation import initialize
 from tests.test_editorial_preparation_captions import _CaptionServer
 
 

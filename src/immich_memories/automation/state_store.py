@@ -14,6 +14,7 @@ from uuid import uuid4
 
 from immich_memories.automation.models import AutomationAttempt, AutoOutcome
 from immich_memories.cache.database import VideoAnalysisCache
+from immich_memories.db.sqlite_files import connect_sqlite
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
 
 logger = logging.getLogger(__name__)
@@ -66,9 +67,8 @@ class AutomationStateStore:
 
     @contextmanager
     def _get_connection(self) -> Iterator[sqlite3.Connection]:
-        conn = sqlite3.connect(self.db_path, timeout=5.0)
+        conn = connect_sqlite(self.db_path, private=False)
         conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON")
         try:
             yield conn
         finally:

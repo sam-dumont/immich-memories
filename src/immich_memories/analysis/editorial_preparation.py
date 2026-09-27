@@ -60,6 +60,7 @@ from immich_memories.config_models_editorial_preparation import EditorialPrepara
 from immich_memories.config_models_inference import InferenceConfig
 from immich_memories.config_models_llm import LLMConfig
 from immich_memories.config_models_triage import TriageConfig
+from immich_memories.db.sqlite_files import connect_sqlite
 from immich_memories.operations.cancellation import check_cancelled as current_check_cancelled
 from immich_memories.store.caption_provenance import CaptionOrigin, origins_for
 from immich_memories.store.caption_selection import conflicting_caption_rows
@@ -68,7 +69,6 @@ from immich_memories.store.editorial_preparation import (
     heads_missing_for,
     initialize,
     missing_facts,
-    private_database_path,
     remember_assets,
     remember_faces,
 )
@@ -626,7 +626,7 @@ def prepare_editorial_annotations(
     enforce_budget = getattr(thumbnail_cache, "enforce_budget", None)
     if callable(enforce_budget):
         enforce_budget()
-    with closing(sqlite3.connect(private_database_path(store_path), timeout=60)) as connection:
+    with closing(connect_sqlite(store_path)) as connection:
 
         def outstanding() -> tuple[dict[str, tuple[str, ...]], tuple[str, ...]]:
             missing, unavailable = missing_facts(

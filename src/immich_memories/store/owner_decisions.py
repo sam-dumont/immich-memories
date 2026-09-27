@@ -25,7 +25,8 @@ from immich_memories.analysis.editorial_shareability import (
     OWNER_CLEARED,
     OWNER_SOURCE,
 )
-from immich_memories.store.editorial_preparation import initialize, now, private_database_path
+from immich_memories.db.sqlite_files import connect_sqlite
+from immich_memories.store.editorial_preparation import initialize, now
 
 CLEAR_HOLD = OWNER_CLEARED  # fine for anyone
 NEVER_USE = NEVER_AUTO
@@ -47,7 +48,7 @@ def is_clearance(decision: str | None) -> bool:
 
 
 def _open(store_path: Path | str) -> sqlite3.Connection:
-    connection = sqlite3.connect(private_database_path(Path(store_path)), timeout=60)
+    connection = connect_sqlite(Path(store_path))
     initialize(connection)
     return connection
 

@@ -1,0 +1,97 @@
+"""A PostgreSQL store shares its database: it touches its own schema and nothing else."""
+
+from __future__ import annotations
+
+import uuid
+
+import pytest
+import sqlalchemy as sa
+
+from immich_memories.db import (
+    StoreLocation,
+    close_stores,
+    downgrade,
+    open_store,
+    pending_changes,
+)
+
+from .backends import drop_schema, pg_url, requires_postgres
+
+pytestmark = requires_postgres
+
+
+def _their_tables(public_table: str, other: str) -> tuple[sa.Table, sa.Table, sa.Table]:
+    theirs = sa.MetaData()
+    return (
+        sa.Table(
+            public_table, theirs, sa.Column("id", sa.Integer, primary_key=True), schema="public"
+        ),
+        sa.Table("store_meta", theirs, sa.Column("id", sa.Integer, primary_key=True), schema=other),
+        sa.Table("alembic_version", theirs, sa.Column("v", sa.Text), schema=other),
+    )
+
+
+@pytest.fixture
+def neighbours():
+    """Someone else's tables: one in `public`, and ours' namesakes in another schema."""
+    url = pg_url()
+    tag = uuid.uuid4().hex[:8]
+    other = f"immich_{tag}"
+    tables = _their_tables(f"assets_{tag}", other)
+    public, _, version = tables
+    engine = sa.create_engine(url)
+    with engine.begin() as connection:
+        connection.execute(sa.schema.CreateSchema(other))
+        tables[0].metadata.create_all(connection)
+        connection.execute(public.insert(), {"id": 1})
+        connection.execute(version.insert(), {"v": "theirs"})
+    yield engine, tables
+    public.drop(engine, checkfirst=True)
+    engine.dispose()
+    drop_schema(url, other)
+
+
+def _snapshot(engine, tables):
+    public, meta, version = tables
+    with engine.connect() as connection:
+        inspector = sa.inspect(connection)
+        return (
+            sorted(inspector.get_table_names(schema=meta.schema)),
+            [c["name"] for c in inspector.get_columns("store_meta", schema=meta.schema)],
+            connection.execute(sa.select(version.c.v)).all(),
+            connection.execute(sa.select(public.c.id)).all(),
+        )
+
+
+def test_migrating_up_and_down_leaves_every_other_schema_alone(neighbours):
+    engine, tables = neighbours
+    before = _snapshot(engine, tables)
+    schema = f"test_{uuid.uuid4().hex[:12]}"
+    try:
+        store = open_store(location=StoreLocation(url=pg_url(), schema=schema))
+        with store.connect() as connection:
+            ours = set(sa.inspect(connection).get_table_names(schema=schema))
+
+        assert ours == {"store_meta", "alembic_version"}
+        assert pending_changes(store) == []
+        assert _snapshot(engine, tables) == before
+
+        downgrade(store, "base")
+
+        assert _snapshot(engine, tables) == before
+    finally:
+        close_stores()
+        drop_schema(pg_url(), schema)
+
+
+def test_a_schema_name_is_quoted_never_interpolated(neighbours):
+    engine, tables = neighbours
+    schema = f'odd"; DROP TABLE public."{tables[0].name}"; --'
+    try:
+        open_store(location=StoreLocation(url=pg_url(), schema=schema))
+        with engine.connect() as connection:
+            assert connection.execute(sa.select(tables[0].c.id)).all() == [(1,)]
+            assert schema in sa.inspect(connection).get_schema_names()
+    finally:
+        close_stores()
+        drop_schema(pg_url(), schema)

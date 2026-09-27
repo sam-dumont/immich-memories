@@ -372,6 +372,38 @@ jobs:
 
       - run: make test-extras
 
+  # The store suite on PostgreSQL as well as SQLite (#871). Only tests/store/: the
+  # repositories are what has to behave the same on both backends.
+  test-store:
+    name: Test Store (SQLite + PostgreSQL)
+    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    needs: [quality, security]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: docker.io/library/postgres:16@sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54
+        env:
+          POSTGRES_PASSWORD: store-test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -h 127.0.0.1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          enable-cache: true
+          prune-cache: false
+      - run: uv python install ${{ env.PYTHON_VERSION }}
+      - run: make dev-ci
+      - run: make test-store
+        env:
+          IMMICH_MEMORIES_TEST_DATABASE_URL: postgresql://postgres:store-test@127.0.0.1:5432/postgres
+
   # Integration tests run LOCALLY via pre-commit hook (not in CI — too slow).
   # Triggered by changes to src/immich_memories/(processing|titles)/ or tests/integration/.
   # Run manually: make test-integration
@@ -506,7 +538,7 @@ jobs:
   # ── Summary gate ──────────────────────────────────────────────────────────
   ci-success:
     name: CI Success
-    needs: [setup, quality, security, test, test-extras, build, docker, docs, launch-check]
+    needs: [setup, quality, security, test, test-extras, test-store, build, docker, docs, launch-check]
     runs-on: ubuntu-latest
     if: always() && github.repository == 'sam-dumont/immich-video-memory-generator'
     steps:
@@ -525,6 +557,7 @@ jobs:
             "${{ needs.security.result }}"
             "${{ needs.test.result }}"
             "${{ needs.test-extras.result }}"
+            "${{ needs.test-store.result }}"
             "${{ needs.build.result }}"
             "${{ needs.docker.result }}"
             "${{ needs.docs.result }}"

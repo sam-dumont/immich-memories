@@ -724,6 +724,24 @@ src/immich_memories/
 │   ├── models.py               # Run/phase data models
 │   └── system_info.py          # System info collection
 │
+├── db/                         # The store (#871): one versioned database on SQLite or PostgreSQL
+│   ├── __init__.py             # Public API: open_store, Store, upsert, to_db/from_db, migrations
+│   ├── bootstrap.py            # StoreLocation: env > config.yaml `database:` > sqlite:///~/.immich-memories/store.db;
+│   │                           # redact_url (a URL is never logged with its password)
+│   ├── engine.py               # create_store_engine: SQLite pragmas + explicit BEGIN, psycopg 3 pool,
+│   │                           # schema_translate_map (symbolic `immich_memories` -> None / the PG schema)
+│   ├── store.py                # Store (.begin/.connect/.schema), open_store: one engine per location, upgraded on open
+│   ├── migrate.py              # Alembic driven in code: upgrade/downgrade under pg_advisory_lock or
+│   │                           # fcntl + BEGIN IMMEDIATE; pending_changes, migration_schema
+│   ├── migrations/             # env.py, script.py.mako, versions/ (shipped in the wheel; alembic.ini is dev only)
+│   ├── metadata.py             # The shared MetaData(schema="immich_memories") and naming convention
+│   ├── tables/                 # One module per domain's Table objects (store_meta so far)
+│   ├── sqlite_files.py         # connect_sqlite: the one raw sqlite3 factory (WAL, busy_timeout 30 s,
+│   │                           # synchronous NORMAL, foreign keys), private_database_path (0600)
+│   ├── network_guard.py        # Refuses a SQLite file on NFS/SMB/CIFS unless IMMICH_MEMORIES_ALLOW_NETWORK_SQLITE=1
+│   ├── upsert.py               # upsert(): dialect insert().on_conflict_do_update / do_nothing
+│   └── time.py                 # to_db / from_db: naive UTC in the store, aware UTC at the edge
+│
 ├── cache/                      # Analysis caching system
 │   ├── __init__.py             # Re-exports public API
 │   ├── database.py             # VideoAnalysisCache: owns cache.db's schema; the legacy segment tables it still reads

@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import logging
-import sqlite3
 from collections.abc import Callable, Mapping
 from contextlib import closing
 from dataclasses import asdict, dataclass
@@ -47,9 +46,10 @@ class EditorialInputsRequired(RuntimeError):
 def ensure_annotation_store(store_path: Path) -> None:
     if store_path.is_file():
         return
-    from immich_memories.store.editorial_preparation import initialize, private_database_path
+    from immich_memories.db.sqlite_files import connect_sqlite
+    from immich_memories.store.editorial_preparation import initialize
 
-    with closing(sqlite3.connect(private_database_path(store_path))) as connection:
+    with closing(connect_sqlite(store_path)) as connection:
         initialize(connection)
 
 

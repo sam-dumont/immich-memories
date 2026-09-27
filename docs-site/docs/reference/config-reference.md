@@ -764,6 +764,24 @@ If the run's working set does not fit, nothing is lost mid-run: previews still i
 
 The other two budgets are not library-sized: `preview_cache_max_size_mb` holds the video renditions the wizard's player streams, and the video cache holds the originals being assembled. Both are tens of files per run, however big your library is.
 
+## Store database
+
+Where the store lives: owner decisions, the people registry, model answers, run history and the
+settings you edit in the UI, as they move out of loose files ([#871](https://github.com/sam-dumont/immich-video-memory-generator/issues/871)).
+The cache stays in `cache.database`.
+
+```yaml
+database:
+  url: "sqlite:///~/.immich-memories/store.db"  # or postgresql://user:${PGPASSWORD}@host/db
+  schema: "immich_memories"                     # PostgreSQL only: the schema holding every table
+```
+
+`IMMICH_MEMORIES_DATABASE_URL` and `IMMICH_MEMORIES_DATABASE_SCHEMA` beat the file. Both are read
+before the store opens, so the UI can never change them. SQLite on local disk is the default and
+fits a single-host install; point `url` at PostgreSQL 14+ (no extensions) to share a server,
+including Immich's own, in a schema of its own. A SQLite file on NFS, SMB or CIFS is refused:
+see [Environment variables](../run/environment-variables.md#not-config-keys).
+
 ## Server (UI)
 
 ```yaml

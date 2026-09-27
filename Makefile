@@ -147,6 +147,31 @@ preflight:
 test:
 	uv run pytest -v
 
+# The store suite (tests/store/) on each backend it supports. `make test` runs it on SQLite
+# already; these run it alone, and `test-store` adds PostgreSQL. With
+# IMMICH_MEMORIES_TEST_DATABASE_URL unset it starts a throwaway postgres:16 on a free port
+# (data on tmpfs) and removes it however the run ends. Each test uses its own schema.
+STORE_TEST_POSTGRES_IMAGE := docker.io/library/postgres:16@sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54
+STORE_TEST_PYTEST = uv run pytest tests/store/ -v -rs -p no:cacheprovider
+
+.PHONY: test-store test-store-sqlite
+test-store-sqlite:  ## Run the store suite on SQLite only (fast, no Docker)
+	env -u IMMICH_MEMORIES_TEST_DATABASE_URL $(STORE_TEST_PYTEST)
+
+test-store:  ## Run the store suite on SQLite and PostgreSQL (starts postgres:16 in Docker unless IMMICH_MEMORIES_TEST_DATABASE_URL is set)
+	@if [ -n "$$IMMICH_MEMORIES_TEST_DATABASE_URL" ]; then exec $(STORE_TEST_PYTEST); fi; \
+	name=immich-memories-store-test-$$$$; \
+	docker run -d --rm --name $$name --tmpfs /var/lib/postgresql/data \
+		-e POSTGRES_PASSWORD=store-test -p 127.0.0.1::5432 $(STORE_TEST_POSTGRES_IMAGE) >/dev/null || exit 1; \
+	trap 'docker rm -f '$$name' >/dev/null 2>&1' EXIT INT TERM; \
+	ready=0; for i in $$(seq 1 60); do \
+		docker exec $$name pg_isready -U postgres -h 127.0.0.1 >/dev/null 2>&1 && ready=1 && break; sleep 1; \
+	done; \
+	if [ $$ready -ne 1 ]; then echo "postgres did not become ready"; docker logs $$name; exit 1; fi; \
+	port=$$(docker port $$name 5432/tcp | head -n 1 | sed 's/.*://'); \
+	IMMICH_MEMORIES_TEST_DATABASE_URL=postgresql://postgres:store-test@127.0.0.1:$$port/postgres \
+		$(STORE_TEST_PYTEST)
+
 # Only what the torch-family extras unlock. The plain `test` matrix already
 # runs the whole suite on three Pythons and two OSes; running it again here
 # is what exhausted the runner. A CLI -m replaces addopts, so the integration
@@ -497,9 +522,11 @@ dead-code:
 	#   @field_validator, @model_validator, @field_serializer
 	#                             pydantic runs these off the schema, never by name
 	# --ignore-names model_config: pydantic reads the ConfigDict class attribute
-	# off the model; nothing in src/ is meant to name it.
+	# off the model; nothing in src/ is meant to name it. down_revision,
+	# branch_labels, depends_on: Alembic reads them off every revision module it
+	# loads by path from db/migrations/versions/.
 	uvx vulture src/ $(SERVICE_TREES) vulture-whitelist.py --min-confidence 60 \
-		--ignore-names "model_config" \
+		--ignore-names "model_config,down_revision,branch_labels,depends_on" \
 		--ignore-decorators "@register_preset,@*.command,@*.group,@ui.page,@LocalizedPage,@app.middleware,@app.get,@app.post,@field_validator,@model_validator,@field_serializer"
 
 # Security lint (Bandit)

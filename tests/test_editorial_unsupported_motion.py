@@ -21,7 +21,8 @@ from immich_memories.analysis.editorial_preparation_motion import (
 )
 from immich_memories.analysis.editorial_structure_budget import RESIDUAL_MIN
 from immich_memories.analysis.editorial_structure_lines import UnitLines
-from immich_memories.store.editorial_preparation import initialize, private_database_path
+from immich_memories.db.sqlite_files import private_database_path
+from immich_memories.store.editorial_preparation import initialize
 from immich_memories.store.motion_lines import (
     DESCRIBED,
     MotionLine,

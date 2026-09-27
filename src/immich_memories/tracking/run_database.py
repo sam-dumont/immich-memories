@@ -14,6 +14,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
+from immich_memories.db.sqlite_files import connect_sqlite
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
 from immich_memories.tracking.models import (
     DeliveryStatus,
@@ -64,13 +65,12 @@ class RunDatabase:
     @contextmanager
     def _get_connection(self) -> Iterator[sqlite3.Connection]:
         """Get a database connection with proper settings."""
-        conn = sqlite3.connect(
+        conn = connect_sqlite(
             self.db_path,
-            timeout=5.0,  # busy_timeout=5000ms — retry on concurrent access
+            private=False,
             detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
         )
         conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON")
         try:
             yield conn
         finally:

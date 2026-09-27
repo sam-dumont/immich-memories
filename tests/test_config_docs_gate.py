@@ -118,6 +118,14 @@ def test_sections_come_from_config_itself_not_a_hand_kept_list() -> None:
     assert sections["preset"].fields == frozenset()
 
 
+def test_a_field_is_checked_under_the_name_yaml_uses() -> None:
+    assert sections_fields("database") == frozenset({"url", "schema"})
+
+
+def sections_fields(section: str) -> frozenset[str]:
+    return schema_sections()[section].fields
+
+
 def test_the_published_page_lists_exactly_the_keys_the_schema_accepts() -> None:
     page = (Path(__file__).resolve().parents[1] / PAGE).read_text()
 

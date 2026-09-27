@@ -7,7 +7,7 @@ import subprocess
 import sys
 from contextlib import closing
 
-from immich_memories.store.editorial_preparation import private_database_path
+from immich_memories.db.sqlite_files import private_database_path
 
 
 def test_private_permissions_keep_subprocess_facts_visible_to_an_open_reader(tmp_path):

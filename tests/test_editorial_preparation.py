@@ -273,7 +273,7 @@ def test_cancellation_closes_database_and_retains_committed_pixel_facts(monkeypa
 
 
 def test_database_and_existing_sidecars_are_private(tmp_path):
-    from immich_memories.store.editorial_preparation import private_database_path
+    from immich_memories.db.sqlite_files import private_database_path
 
     path = tmp_path / "store.sqlite"
     paths = [path, *(tmp_path / f"store.sqlite{suffix}" for suffix in ("-wal", "-shm", "-journal"))]

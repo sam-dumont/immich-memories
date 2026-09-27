@@ -13,6 +13,8 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
+from immich_memories.db.sqlite_files import connect_sqlite
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,9 +26,9 @@ class AssetScoreCache:
 
     @contextmanager
     def _get_connection(self) -> Iterator[sqlite3.Connection]:
-        conn = sqlite3.connect(
+        conn = connect_sqlite(
             self.db_path,
-            timeout=5.0,  # busy_timeout=5000ms — retry on concurrent access
+            private=False,
             detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
         )
         conn.row_factory = sqlite3.Row

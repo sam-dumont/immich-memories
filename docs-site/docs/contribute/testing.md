@@ -12,6 +12,7 @@ services. `uv run pytest tests/ --collect-only -q` prints the current split.
 | Unit | `make test` | FFmpeg on the `PATH`: a handful of unit tests encode real media |
 | Extras | `make test-extras` | The torch-family extras (demucs/editorial). CI's extras job installs neither, so a green CI run does not prove the torch paths ran |
 | Integration | `make test-integration` | FFmpeg, an Immich server in `~/.immich-memories/config.yaml`, and at least two clips under 30s in that library |
+| Store | `make test-store-sqlite`, `make test-store` | `tests/store/` on SQLite, then on PostgreSQL too. `make test-store` starts a throwaway `postgres:16` in Docker unless `IMMICH_MEMORIES_TEST_DATABASE_URL` names one; each test gets its own schema. `make test` runs the SQLite half |
 | Real-Immich gate | `make test-immich-gate IMMICH_GATE_VERSION=v2` (or `v3`) | Docker and FFmpeg. It starts its own Immich and fixture library, and fails when Immich does not come up |
 | E2E | `make e2e` (`make e2e-full` for the generation flow) | `make playwright-install`; no Immich, it runs against a fake server |
 
