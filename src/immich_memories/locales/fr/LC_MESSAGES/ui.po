@@ -1830,3 +1830,33 @@ msgstr "{title} ({n_keys} clés)"
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value} : {duration_seconds:.1f}s"
 
+
+msgid "Default"
+msgstr "Par défaut"
+
+msgid "Nothing to save"
+msgstr "Rien à enregistrer"
+
+msgid "Save"
+msgstr "Enregistrer"
+
+msgid "Saved here"
+msgstr "Enregistré ici"
+
+msgid "Saved to the database"
+msgstr "Enregistré dans la base de données"
+
+msgid "Set by {name} (environment)"
+msgstr "Défini par {name} (environnement)"
+
+msgid "Set in config.yaml as {key}"
+msgstr "Défini dans config.yaml comme {key}"
+
+msgid "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
+msgstr "Les réglages viennent de quatre endroits, du plus fort au plus faible : variables d'environnement, config.yaml, ce que vous enregistrez ici (gardé dans la base de données), puis les valeurs par défaut. Un réglage grisé est défini par l'environnement ou config.yaml ; modifiez-le là."
+
+msgid "{count} set outside this page"
+msgstr "{count} définis hors de cette page"
+
+msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
+msgstr "{name} n'est pas défini, donc les clés API et mots de passe ne peuvent pas être enregistrés ici. Définissez-le, ou mettez ces secrets dans l'environnement ou config.yaml."

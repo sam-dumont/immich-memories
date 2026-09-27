@@ -735,7 +735,7 @@ src/immich_memories/
 │   │                           # fcntl + BEGIN IMMEDIATE; pending_changes, migration_schema
 │   ├── migrations/             # env.py, script.py.mako, versions/ (shipped in the wheel; alembic.ini is dev only)
 │   ├── metadata.py             # The shared MetaData(schema="immich_memories") and naming convention
-│   ├── tables/                 # One module per domain's Table objects (store_meta so far)
+│   ├── tables/                 # One module per domain's Table objects (store_meta, settings)
 │   ├── sqlite_files.py         # connect_sqlite: the one raw sqlite3 factory (WAL, busy_timeout 30 s,
 │   │                           # synchronous NORMAL, foreign keys), private_database_path (0600)
 │   ├── network_guard.py        # Refuses a SQLite file on NFS/SMB/CIFS unless IMMICH_MEMORIES_ALLOW_NETWORK_SQLITE=1
@@ -823,7 +823,11 @@ src/immich_memories/
 │   └── auto_duration.py        # decide_memory_duration(): Auto length fitted to discovered media, CLI and UI
 │
 ├── config.py                   # YAML configuration management (re-exports)
-├── config_loader.py            # Config loading logic
+├── config_loader.py            # Config loading: env > config.yaml > database > default (pydantic-settings sources)
+├── config_sources.py           # describe_settings(): every leaf key's value (secrets masked), source and exact override
+├── settings_store.py           # SettingsStore: the `settings` table, Fernet secrets under IMMICH_MEMORIES_SECRET_KEY;
+│                               # load_stored_settings (bootstrap-safe, never via get_config)
+├── settings_edit.py            # save_settings (the UI/CLI write path, database only), move_to_database (`config move-to-db`)
 ├── config_presets.py           # Named presets (`preset: fast`) that fill several knobs at once
 ├── config_tiers.py             # One resolved product tier: reader, preparation producers, Laya
 ├── config_compute.py           # Inference capability discovery, separate from video encoding
@@ -926,7 +930,13 @@ VideoAssembler.assemble_with_titles()
 
 ## Configuration
 
-- `Config` (config_loader.py): loaded from `~/.immich-memories/config.yaml`, tiered YAML (see above)
+- `Config` (config_loader.py): env > `~/.immich-memories/config.yaml` (tiered YAML, see above) > the
+  store's `settings` table > defaults. `config.yaml` is operator-owned: the app writes it only for
+  `config move-to-db`. The UI and `immich-memories config` save through `settings_edit.save_settings`,
+  which refuses keys env or the file override and bootstrap keys (`database.*`). The database source
+  is opened from env + the file's `database:` block only, so it never recurses into `get_config()`.
+  `config_sources.describe_settings` is the per-key source report the settings page and
+  `config show` render.
 - `AssemblySettings` (assembly_config.py): video assembly parameters
 - `PipelineConfig` (smart_pipeline.py): the per-run switches the editorial route reads
 
@@ -953,8 +963,8 @@ These YAML tiers are not the product `tier` (`config_tiers.py`): `nas` (inexpens
 (every light model, no LLM) or `full` (plus an LLM, whose endpoint it requires). The product
 tier owns `editorial.reader`, `editorial.preparation.tier` and `editorial.laya_audience`.
 `auto` resolves from inference capability and the configured LLM; conflicting legacy preparation
-settings are ignored with a notice. `save_yaml` omits derived settings and does not turn an
-automatic config into a machine-specific pin. Internal metadata-only component fixtures remain
+settings are ignored with a notice. A save stores only the keys that changed, so an automatic
+config never becomes a machine-specific pin. Internal metadata-only component fixtures remain
 available without exposing a fourth product tier. The real-Immich gate uses NAS with pinned CPU models.
 
 The tiers are a YAML layout, not a code layout. The section models are grouped by

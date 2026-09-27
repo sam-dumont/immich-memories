@@ -32,6 +32,7 @@ _TEST_ENV_KEYS = {
     "IMMICH_MEMORIES_TRIAGE__ENCODER": "models/triage/dinov2-small.onnx",
     "IMMICH_MEMORIES_EDITORIAL__LAYA_CHECKPOINT": "models/laya/checkpoint",
 }
+_STORE_URL_ENV = "IMMICH_MEMORIES_DATABASE_URL"
 _ORIGINAL_TEST_ENV: dict[str, str | None] = {}
 
 # The width every CLI render is pinned to. Wide enough that a sentence with a
@@ -49,6 +50,10 @@ def pytest_configure(config: pytest.Config) -> None:
     for key, relative in _TEST_ENV_KEYS.items():
         _ORIGINAL_TEST_ENV[key] = os.environ.get(key)
         os.environ[key] = str(_TEST_ROOT / relative)
+    # Every config load reads the settings saved in the store. Without this a developer's
+    # ~/.immich-memories/store.db would feed its saved settings into the unit suite.
+    _ORIGINAL_TEST_ENV[_STORE_URL_ENV] = os.environ.get(_STORE_URL_ENV)
+    os.environ[_STORE_URL_ENV] = f"sqlite:///{_TEST_ROOT / 'store.db'}"
 
     _pin_the_cli_width()
 

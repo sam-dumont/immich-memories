@@ -2,24 +2,20 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
 import click
+from rich.markup import escape
 from rich.table import Table
 
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
 from immich_memories.config import Config
 
 
-def _config_write_path(ctx: click.Context) -> Path:
-    """Where `config` saves: the file it was told to use.
-
-    The values being edited came from --config when it was given, so the write
-    has to go back to the same file. Saving to the default path regardless meant
-    `--config other.yaml config` silently replaced ~/.immich-memories/config.yaml
-    with the other file's contents.
-    """
+def _config_file(ctx: click.Context) -> Path:
+    """The config.yaml this run reads: `--config PATH` when given, else the default path."""
     return ctx.obj.get("config_path") or Config.get_default_path()
 
 
@@ -38,99 +34,160 @@ def _prompt_for_api_key(existing: str) -> str:
     return entered or existing
 
 
+def _save(ctx: click.Context, changes: dict[str, str]) -> bool:
+    """Save to the database; print why not when env or config.yaml overrides a key."""
+    from immich_memories.settings_edit import SettingRefused, save_settings
+
+    cfg = ctx.obj["config"]
+    changed = {key: value for key, value in changes.items() if _current(cfg, key) != value}
+    if not changed:
+        print_info("Nothing changed.")
+        return True
+    try:
+        ctx.obj["config"] = save_settings(changed, path=_config_file(ctx))
+    except SettingRefused as refusal:
+        print_error(str(refusal))
+        return False
+    print_success(f"Saved to the database: {', '.join(sorted(changed))}")
+    return True
+
+
+def _current(cfg: Config, key: str) -> object:
+    section, field = key.split(".")
+    return getattr(getattr(cfg, section), field)
+
+
+def _shown(value: object) -> str:
+    if value == "":
+        return "(not set)"
+    return value if isinstance(value, str) else json.dumps(value)
+
+
+def _show(ctx: click.Context, prefixes: tuple[str, ...]) -> None:
+    from immich_memories.config_sources import describe_settings
+    from immich_memories.settings_store import SECRET_KEY_ENV, secret_key_from_env
+
+    config_path = _config_file(ctx)
+    table = Table(title="Settings (env > config.yaml > database > default)")
+    table.add_column("Setting", style="cyan")
+    table.add_column("Value", style="green", overflow="fold")
+    table.add_column("Source")
+    table.add_column("Set by", style="dim", overflow="fold")
+    for entry in describe_settings(ctx.obj["config"], path=config_path):
+        if prefixes and not any(
+            entry.key == prefix or entry.key.startswith(f"{prefix}.") for prefix in prefixes
+        ):
+            continue
+        table.add_row(entry.key, escape(_shown(entry.value)), entry.source, entry.override or "")
+    console.print(f"Config file: {config_path}")
+    console.print(
+        f"{SECRET_KEY_ENV}: {'set' if secret_key_from_env() else 'not set (secrets cannot be saved)'}"
+    )
+    console.print(table)
+
+
+def _configure(ctx: click.Context, url: str | None, api_key: str | None) -> None:
+    cfg = ctx.obj["config"]
+    if url or api_key:
+        changes = {"immich.url": url, "immich.api_key": api_key}
+        if not _save(ctx, {key: value for key, value in changes.items() if value}):
+            ctx.exit(1)
+        return
+
+    console.print("[bold]Immich Memories Configuration[/bold]")
+    console.print()
+    new_url = click.prompt(
+        "Immich server URL",
+        default=cfg.immich.url or "https://photos.example.com",
+    )
+    new_api_key = _prompt_for_api_key(cfg.immich.api_key)
+    if not _save(ctx, {"immich.url": new_url, "immich.api_key": new_api_key}):
+        ctx.exit(1)
+
+    if click.confirm("Test connection now?", default=True):
+        from immich_memories.api.immich import ImmichAPIError, SyncImmichClient
+
+        try:
+            with SyncImmichClient(
+                base_url=new_url,
+                api_key=new_api_key,
+                api_version=cfg.immich.api_version,
+            ) as client:
+                user = client.get_current_user()
+                print_success(f"Connected! Logged in as: {user.name or user.email}")
+        except ImmichAPIError as e:
+            print_error(f"Connection failed: {e}")
+
+
 def register_config_commands(main: click.Group) -> None:
     """Register config, people, years, and preflight commands on the main CLI group."""
 
-    @main.command()
+    @main.group(invoke_without_command=True)
     @click.option("--url", "-u", type=str, help="Immich server URL")
     @click.option("--api-key", "-k", type=str, help="Immich API key")
-    @click.option("--show", "-s", is_flag=True, help="Show current configuration")
-    @click.argument("action", required=False, type=click.Choice(["test"]))
+    @click.option("--show", "-s", is_flag=True, help="Same as `config show`")
     @click.pass_context
-    def config(
-        ctx: click.Context,
-        url: str | None,
-        api_key: str | None,
-        show: bool,
-        action: str | None,
-    ) -> None:
-        """Configure Immich connection settings."""
-        cfg = ctx.obj["config"]
-        config_path = _config_write_path(ctx)
+    def config(ctx: click.Context, url: str | None, api_key: str | None, show: bool) -> None:
+        """Configure the Immich connection, or inspect where each setting comes from.
 
-        if action == "test":
-            from immich_memories.preflight import CheckStatus, check_immich
-
-            result = check_immich(cfg)
-            details = f": {result.details}" if result.details else ""
-            if result.status is CheckStatus.OK:
-                print_success(f"{result.message}{details}")
-                return
-            print_error(f"{result.message}{details}")
-            ctx.exit(1)
-
-        if show:
-            # Display current config
-            table = Table(title="Current Configuration")
-            table.add_column("Setting", style="cyan")
-            table.add_column("Value", style="green")
-
-            table.add_row("Config file", str(config_path))
-            table.add_row("Immich URL", cfg.immich.url or "(not set)")
-            table.add_row("API Key", "****" if cfg.immich.api_key else "(not set)")
-            table.add_row("Output directory", str(cfg.output.output_path))
-            table.add_row("Default scale mode", cfg.defaults.scale_mode)
-            table.add_row("Preset", cfg.preset or "(none)")
-            editorial = cfg.editorial
-            table.add_row(
-                "Tier",
-                f"{cfg.tier} (reader {editorial.reader}, captions "
-                f"{'on' if editorial.preparation.demands_captions else 'off'}, "
-                f"Laya {'on' if editorial.laya_audience else 'off'})",
-            )
-
-            console.print(table)
+        Without a subcommand this sets the Immich URL and API key, prompting for
+        them when no option is given. Settings saved here go to the database, below
+        environment variables and config.yaml, which this never writes. The API key
+        is a secret: saving it needs IMMICH_MEMORIES_SECRET_KEY.
+        """
+        if ctx.invoked_subcommand:
             return
+        if show:
+            _show(ctx, ())
+            return
+        _configure(ctx, url, api_key)
 
-        if url:
-            cfg.immich.url = url
-        if api_key:
-            cfg.immich.api_key = api_key
+    @config.command("test")
+    @click.pass_context
+    def config_test(ctx: click.Context) -> None:
+        """Check the Immich connection and the API version it resolves (read-only)."""
+        from immich_memories.preflight import CheckStatus, check_immich
 
-        if url or api_key:
-            cfg.save_yaml(config_path)
-            print_success(f"Configuration saved to {config_path}")
-        else:
-            # Interactive configuration
-            console.print("[bold]Immich Memories Configuration[/bold]")
-            console.print()
+        result = check_immich(ctx.obj["config"])
+        details = f": {result.details}" if result.details else ""
+        if result.status is CheckStatus.OK:
+            print_success(f"{result.message}{details}")
+            return
+        print_error(f"{result.message}{details}")
+        ctx.exit(1)
 
-            new_url = click.prompt(
-                "Immich server URL",
-                default=cfg.immich.url or "https://photos.example.com",
-            )
-            new_api_key = _prompt_for_api_key(cfg.immich.api_key)
+    @config.command("show")
+    @click.argument("prefixes", nargs=-1)
+    @click.pass_context
+    def config_show(ctx: click.Context, prefixes: tuple[str, ...]) -> None:
+        """Every setting with its value and source: env, file, database or default.
 
-            cfg.immich.url = new_url
-            cfg.immich.api_key = new_api_key
-            cfg.save_yaml(config_path)
+        Secrets are masked. An env or file source names the variable or the
+        config.yaml key that sets it. Give key prefixes (`llm`, `immich.url`) to
+        show only those.
+        """
+        _show(ctx, prefixes)
 
-            print_success(f"Configuration saved to {config_path}")
+    @config.command("move-to-db")
+    @click.argument("keys", nargs=-1, required=True)
+    @click.pass_context
+    def config_move_to_db(ctx: click.Context, keys: tuple[str, ...]) -> None:
+        """Move settings out of config.yaml into the database.
 
-            # Test connection
-            if click.confirm("Test connection now?", default=True):
-                from immich_memories.api.immich import ImmichAPIError, SyncImmichClient
+        KEYS are runtime paths such as `llm.model` (no `advanced.` prefix). Each
+        value is saved to the database, then its line is removed from config.yaml,
+        so the UI can edit it. The rest of the file keeps its values and `${VAR}`
+        references but loses its comments; the old file is kept as config.yaml.bak.
+        Nothing moves without this command.
+        """
+        from immich_memories.settings_edit import SettingRefused, move_to_database
 
-                try:
-                    with SyncImmichClient(
-                        base_url=new_url,
-                        api_key=new_api_key,
-                        api_version=cfg.immich.api_version,
-                    ) as client:
-                        user = client.get_current_user()
-                        print_success(f"Connected! Logged in as: {user.name or user.email}")
-                except ImmichAPIError as e:
-                    print_error(f"Connection failed: {e}")
+        try:
+            backup = move_to_database(list(keys), path=_config_file(ctx))
+        except SettingRefused as refusal:
+            print_error(str(refusal))
+            ctx.exit(1)
+        print_success(f"Moved to the database: {', '.join(keys)} (previous file: {backup})")
 
     @main.command()
     @click.pass_context

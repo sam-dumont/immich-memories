@@ -71,12 +71,14 @@ class TestTriggerTokenIsASecret:
 
         assert "workflow-token-secret" in configured_secret_values(config)
 
-    def test_the_config_viewer_masks_it_like_every_other_secret(self) -> None:
-        from immich_memories.ui.pages.settings_config import redact_config
+    def test_the_settings_report_masks_it_like_every_other_secret(self, tmp_path) -> None:
+        from immich_memories.config_sources import describe_settings
 
-        redacted = redact_config({"server": {"trigger_token": "workflow-token-secret"}})
+        config = Config(server={"trigger_token": "workflow-token-secret"})
+        entries = describe_settings(config, path=tmp_path / "absent.yaml", stored_keys=set())
 
-        assert redacted["server"]["trigger_token"] == "***"  # noqa: S105
+        token = next(entry for entry in entries if entry.key == "server.trigger_token")
+        assert token.value == "***"  # noqa: S105
 
 
 class TestTriggerIsOffUntilSomethingAuthenticatesIt:

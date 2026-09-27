@@ -5,6 +5,7 @@ creating what it declares; `tests/store/test_migrations.py` fails until the two 
 """
 
 from immich_memories.db.metadata import SCHEMA, metadata
+from immich_memories.db.tables.settings import settings
 from immich_memories.db.tables.store_meta import store_meta
 
-__all__ = ["SCHEMA", "metadata", "store_meta"]
+__all__ = ["SCHEMA", "metadata", "settings", "store_meta"]

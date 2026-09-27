@@ -5,12 +5,15 @@ sidebar_label: Config Reference
 
 # Config Reference
 
-Every key with its built-in default. Add the ones you want to `~/.immich-memories/config.yaml`.
+Every key with its built-in default. Set one in `~/.immich-memories/config.yaml`, as an environment
+variable, or from the web UI's settings page (saved to the database). Environment beats the file,
+the file beats the database, the database beats these defaults; `immich-memories config show` says
+which one set each key ([where a setting comes from](../run/config-file.md#where-a-setting-comes-from)).
 
 :::tip Config tiers
 Tier 2 sections (`analysis`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`,
-`automation`, `notifications`, `triage`, `editorial`, `inference`) go under an `advanced:` key when
-the app saves the file:
+`automation`, `notifications`, `triage`, `editorial`, `inference`) go under an `advanced:` key in
+the file:
 
 ```yaml
 advanced:

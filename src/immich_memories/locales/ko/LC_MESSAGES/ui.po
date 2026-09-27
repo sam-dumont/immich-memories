@@ -1800,3 +1800,33 @@ msgstr "{title} (설정 항목 {n_keys}개)"
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}: {duration_seconds:.1f}초"
 
+
+msgid "Default"
+msgstr "기본값"
+
+msgid "Nothing to save"
+msgstr "저장할 내용이 없습니다"
+
+msgid "Save"
+msgstr "저장"
+
+msgid "Saved here"
+msgstr "여기에 저장됨"
+
+msgid "Saved to the database"
+msgstr "데이터베이스에 저장했습니다"
+
+msgid "Set by {name} (environment)"
+msgstr "{name}(환경 변수)로 설정됨"
+
+msgid "Set in config.yaml as {key}"
+msgstr "config.yaml의 {key}로 설정됨"
+
+msgid "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
+msgstr "설정은 강한 순서대로 네 곳에서 옵니다: 환경 변수, config.yaml, 여기서 저장한 값(데이터베이스), 기본값. 회색 설정은 환경 변수나 config.yaml이 정한 것이니 그곳에서 바꾸세요."
+
+msgid "{count} set outside this page"
+msgstr "{count}개는 이 페이지 밖에서 설정됨"
+
+msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
+msgstr "{name}이(가) 설정되지 않아 API 키와 비밀번호를 여기에 저장할 수 없습니다. 설정하거나 이 비밀을 환경 변수나 config.yaml에 두세요."

@@ -415,10 +415,10 @@ class TestAutoRunOutput:
         """The root option remains provenance after Click loads the config object."""
         config_path = tmp_path / "Config dir" / "family & photos.yaml"
         config_path.parent.mkdir()
-        Config(
-            immich={"url": "http://immich.test", "api_key": "test-key"},
-            cache={"database": str(tmp_path / "cache.db")},
-        ).save_yaml(config_path)
+        config_path.write_text(
+            "immich:\n  url: http://immich.test\n  api_key: test-key\n"
+            f"cache:\n  database: {tmp_path / 'cache.db'}\n"
+        )
         auto_runner = MagicMock()
         auto_runner.run_one.return_value = AutoRunResult(
             outcome=AutoOutcome.SKIPPED,
@@ -440,7 +440,7 @@ class TestAutoRunOutput:
         """Installed daily jobs must retain the config selected during installation."""
         config_path = tmp_path / "Config dir" / "family & photos.yaml"
         config_path.parent.mkdir()
-        Config().save_yaml(config_path)
+        config_path.write_text("")
 
         # WHY: show_scheduler_config renders the real launchd/systemd/crontab definition text.
         with patch(
