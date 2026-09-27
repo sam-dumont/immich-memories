@@ -23,7 +23,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.create_table(
         "store_meta",
-        sa.Column("key", sa.String(length=200), nullable=False),
+        sa.Column("key", sa.String(), nullable=False),
         sa.Column("value", sa.JSON(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("key", name=op.f("pk_store_meta")),

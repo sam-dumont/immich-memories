@@ -138,3 +138,16 @@ def test_a_populated_store_rolls_back_revision_by_revision_and_up_again(store, t
 
 def _table(name: str) -> sa.Table:
     return next(table for table in metadata.sorted_tables if table.name == name)
+
+
+def test_no_store_column_declares_a_length():
+    # SQLite ignores VARCHAR(n), so a length is a constraint only PostgreSQL enforces and no
+    # SQLite test can catch; PostgreSQL stores unbounded varchar exactly as fast.
+    bounded = [
+        f"{table.name}.{column.name}"
+        for table in metadata.sorted_tables
+        for column in table.columns
+        if isinstance(column.type, sa.String) and column.type.length is not None
+    ]
+
+    assert bounded == []

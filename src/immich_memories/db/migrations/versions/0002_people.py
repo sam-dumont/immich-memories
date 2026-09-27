@@ -35,7 +35,7 @@ def upgrade() -> None:
     schema = migration_schema()
     op.create_table(
         "people_registry",
-        sa.Column("registry", sa.String(length=64), nullable=False),
+        sa.Column("registry", sa.String(), nullable=False),
         sa.Column("header", sa.JSON(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint("registry", name=op.f("pk_people_registry")),
@@ -43,11 +43,11 @@ def upgrade() -> None:
     )
     op.create_table(
         "people",
-        sa.Column("person_id", sa.String(length=255), nullable=False),
+        sa.Column("person_id", sa.String(), nullable=False),
         sa.Column("position", sa.Integer(), nullable=False),
         sa.Column("name", sa.Text(), nullable=True),
-        sa.Column("birth_date", sa.String(length=32), nullable=True),
-        sa.Column("origin", sa.String(length=32), nullable=True),
+        sa.Column("birth_date", sa.String(), nullable=True),
+        sa.Column("origin", sa.String(), nullable=True),
         sa.Column("inferred", sa.JSON(), nullable=True),
         sa.Column("confirmed", sa.JSON(), nullable=True),
         sa.Column("extra", sa.JSON(), nullable=True),
@@ -56,8 +56,8 @@ def upgrade() -> None:
     )
     op.create_table(
         "people_aliases",
-        sa.Column("alias_id", sa.String(length=255), nullable=False),
-        sa.Column("person_id", sa.String(length=255), nullable=False),
+        sa.Column("alias_id", sa.String(), nullable=False),
+        sa.Column("person_id", sa.String(), nullable=False),
         sa.Column("position", sa.Integer(), nullable=False),
         _person_fk("people_aliases"),
         sa.PrimaryKeyConstraint("alias_id", name=op.f("pk_people_aliases")),
@@ -72,12 +72,12 @@ def upgrade() -> None:
     )
     op.create_table(
         "people_relationships",
-        sa.Column("person_id", sa.String(length=255), nullable=False),
+        sa.Column("person_id", sa.String(), nullable=False),
         sa.Column("position", sa.Integer(), nullable=False),
-        sa.Column("kind", sa.String(length=64), nullable=True),
-        sa.Column("target_id", sa.String(length=255), nullable=True),
-        sa.Column("reverse", sa.String(length=64), nullable=True),
-        sa.Column("decision", sa.String(length=32), nullable=True),
+        sa.Column("kind", sa.String(), nullable=True),
+        sa.Column("target_id", sa.String(), nullable=True),
+        sa.Column("reverse", sa.String(), nullable=True),
+        sa.Column("decision", sa.String(), nullable=True),
         sa.Column("extra", sa.JSON(), nullable=True),
         _person_fk("people_relationships"),
         sa.PrimaryKeyConstraint("person_id", "position", name=op.f("pk_people_relationships")),

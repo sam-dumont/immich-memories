@@ -80,8 +80,11 @@ def legacy_sources(home: Path) -> list[Path]:
     """Every file `import_legacy` reads under `home` (and where config moved them)."""
     cache_db, cache_dir = _legacy_locations(home)
     # The cache still lives in cache.db: only a file with history in it is a legacy source.
+    # An empty WAL carries nothing, and SQLite creates and removes one around every reader.
     found = [
-        p for p in (cache_db, Path(f"{cache_db}-wal")) if _holds_history(cache_db) and p.is_file()
+        p
+        for p in (cache_db, Path(f"{cache_db}-wal"))
+        if _holds_history(cache_db) and p.is_file() and p.stat().st_size > 0
     ]
     index = cache_dir / "editorial-runs" / "by-run"
     found += sorted(index.glob("*.json")) if index.is_dir() else []

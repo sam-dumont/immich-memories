@@ -9,7 +9,7 @@ from immich_memories.db.metadata import metadata
 store_meta = Table(
     "store_meta",
     metadata,
-    Column("key", String(200), primary_key=True),
+    Column("key", String(), primary_key=True),
     Column("value", JSON, nullable=False),
     Column("updated_at", DateTime, nullable=False),
 )

@@ -23,7 +23,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.create_table(
         "settings",
-        sa.Column("key", sa.String(length=200), nullable=False),
+        sa.Column("key", sa.String(), nullable=False),
         sa.Column("value", sa.JSON(), nullable=True),
         sa.Column("secret", sa.Boolean(), nullable=False),
         sa.Column("ciphertext", sa.LargeBinary(), nullable=True),

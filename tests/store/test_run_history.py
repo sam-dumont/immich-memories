@@ -211,3 +211,17 @@ def test_the_run_index_resolves_a_run_to_its_attempt(store, tmp_path):
     assert attempt_dir_for_run("run-a", store=store) == attempt
     assert attempt_dir_for_run("run-b", store=store) is None
     assert (attempt / "run.private.json").is_file()
+
+
+def test_a_free_form_run_label_of_any_length_is_kept(store):
+    # A real history held a 43-character `source` label; SQLite never enforced the old
+    # VARCHAR(32), so only PostgreSQL refused it, halfway through an import.
+    db = RunDatabase(store)
+    label = "owner-reviewed-" + "matrix-render-corrected-gift-" * 8
+
+    db.save_run(_run("run-long", source=label, memory_key="k:" + "x" * 900))
+
+    run = db.get_run("run-long")
+    assert run is not None
+    assert run.source == label
+    assert run.memory_key == "k:" + "x" * 900

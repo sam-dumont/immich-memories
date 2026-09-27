@@ -6,6 +6,7 @@ import logging
 import multiprocessing
 import os
 import signal
+import sqlite3
 import uuid
 from collections.abc import Iterator
 from pathlib import Path
@@ -95,6 +96,22 @@ def test_a_second_import_skips_every_importer_whose_files_are_unchanged(store, h
     again = run_import(store, home)
 
     assert all(outcome.imported == 0 for outcome in again)
+    assert all(outcome.notes[0].startswith("unchanged since") for outcome in again)
+    assert _content(store) == first
+
+
+def test_a_wal_mode_legacy_file_is_skipped_as_unchanged_on_the_next_import(store, home):
+    # Real annotation files are in WAL mode. A reader makes SQLite create an empty -wal beside
+    # them and drop it again, so a fingerprint that counted it never matched twice: every start
+    # re-read the whole file (64 s on a real library).
+    legacy = home / "cache" / "annotations.sqlite"
+    with sqlite3.connect(legacy) as connection:
+        connection.execute("PRAGMA journal_mode=WAL")
+    run_import(store, home)
+    first = _content(store)
+
+    again = run_import(store, home)
+
     assert all(outcome.notes[0].startswith("unchanged since") for outcome in again)
     assert _content(store) == first
 

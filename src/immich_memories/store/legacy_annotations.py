@@ -115,13 +115,17 @@ def _existing(paths: Sequence[Path]) -> list[Path]:
 
 
 def legacy_sources(home: Path) -> list[Path]:
-    """Every file `import_legacy` reads under `home`, with the WAL beside it when there is one."""
+    """Every file `import_legacy` reads under `home`, with the WAL beside it when it holds data.
+
+    An empty WAL carries nothing, and SQLite creates and removes one around every reader of a
+    WAL-mode file: counting it would make the fingerprint differ on each start.
+    """
     annotations, judgment_files = legacy_files(home)
     found: list[Path] = []
     for path in (*annotations, *judgment_files):
         found.append(path)
         wal = Path(f"{path}-wal")
-        if wal.is_file():
+        if wal.is_file() and wal.stat().st_size > 0:
             found.append(wal)
     return found
 

@@ -11,7 +11,7 @@ from immich_memories.db.metadata import metadata
 settings = Table(
     "settings",
     metadata,
-    Column("key", String(200), primary_key=True),
+    Column("key", String(), primary_key=True),
     Column("value", JSON, nullable=True),
     Column("secret", Boolean, nullable=False),
     Column("ciphertext", LargeBinary, nullable=True),
