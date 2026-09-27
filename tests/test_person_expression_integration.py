@@ -1,4 +1,4 @@
-"""Grouped people conditions survive production boundaries without widening demand.
+"""Grouped people conditions survive production boundaries, read per episode.
 
 The matrix replays stay on the probe branch.
 
@@ -121,10 +121,12 @@ def test_named_filter_requires_cooccurrence_in_one_asset_not_across_the_window()
 
 
 @pytest.mark.parametrize("matching", [True, False])
-def test_actual_runtime_filters_demand_but_keeps_full_canonical_context(
+def test_actual_runtime_reads_the_condition_per_episode_and_keeps_full_canonical_context(
     tmp_path, monkeypatch, matching
 ):
+    """Nobody shares a frame here: an adult and the child each appear alone in one afternoon."""
     real_context = source_fixture.EditorialRunContext
+    # WHY: the shared runtime fixture builds a month film; this adds the grouped condition to it.
     monkeypatch.setattr(
         source_fixture,
         "EditorialRunContext",
@@ -133,15 +135,12 @@ def test_actual_runtime_filters_demand_but_keeps_full_canonical_context(
     sources, _config, build, calls, captures, _images, _warm = source_fixture.setup_runtime(
         tmp_path, monkeypatch
     )
-    child = _person("child", "Child")
-    sources[0].people = [_person("a-old", "Adult A"), child] if matching else []
-    sources[1].people = [_person("a-new", "Adult A"), child] if matching else []
-    sources[2].people = [_person("b", "Adult B"), child] if matching else []
     sources[3].people = [_person("a-alone", "Adult A")]
-    sources[4].people = [child]
+    sources[4].people = [_person("child", "Child")] if matching else []
     source_bytes = [a.model_dump(mode="json") for a in sources]
-    result = build().plan_source(sources, trace=Trace(), include_live_photos=False)
-    expected = {a.id for a in sources[:3]} if matching else set()
+    fetched = [a for a in sources if a.people]
+    result = build().plan_source(fetched, trace=Trace(), include_live_photos=False)
+    expected = {a.id for a in sources} if matching else set()
     assert {row.clip.asset.id for row in result.candidates} == expected
     assert set(result.plan.selected_asset_ids).issubset(expected)
     assert len(calls["acquire"]) == 1
@@ -156,19 +155,23 @@ def test_actual_runtime_filters_demand_but_keeps_full_canonical_context(
     assert [a.model_dump(mode="json") for a in sources] == source_bytes
 
 
-def test_structure_input_rejects_unmatching_selected_asset_but_allows_context(tmp_path):
+def test_structure_input_reads_the_condition_per_episode(tmp_path):
     captured = captured_source(tmp_path, seconds=60, pictures=2)
     first, second = captured.assets.values()
-    first = first.model_copy(update={"people": [_person("a", "Adult A"), _person("c", "Child")]})
-    second = second.model_copy(update={"people": [_person("a", "Adult A")]})
     case = replace(captured.case, person_expression=EXPRESSION)
-    assets = {first.id: first, second.id: second}
-    with pytest.raises(ValueError, match="outside the grouped people condition"):
-        replace(captured, case=case, assets=assets)
     alias = next(iter(captured.moment_asset_ids))
-    narrowed = replace(captured, case=case, assets=assets, moment_asset_ids={alias: (first.id,)})
-    assert set(narrowed.assets) == {first.id, second.id}
-    assert narrowed.moment_asset_ids == {alias: (first.id,)}
+
+    def with_people(first_people, second_people, members):
+        assets = {
+            first.id: first.model_copy(update={"people": first_people}),
+            second.id: second.model_copy(update={"people": second_people}),
+        }
+        return replace(captured, case=case, assets=assets, moment_asset_ids={alias: members})
+
+    together = with_people([_person("a", "Adult A"), _person("c", "Child")], [], (second.id,))
+    assert together.moment_asset_ids == {alias: (second.id,)}
+    with pytest.raises(ValueError, match="outside the grouped people condition"):
+        with_people([_person("a", "Adult A")], [], (first.id,))
 
 
 def test_flat_preset_filters_keep_existing_and_or_behavior():

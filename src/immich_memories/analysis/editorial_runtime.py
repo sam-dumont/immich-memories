@@ -44,6 +44,7 @@ from immich_memories.analysis.editorial_text_gateway import (
     semantic_text_model_identity,
 )
 from immich_memories.analysis.episode_demand import demand_reader_factory
+from immich_memories.analysis.person_presence import people_condition, present_in_episodes
 from immich_memories.analysis.selection_source import (
     EditorialDependencies,
     EditorialSelectionRequest,
@@ -249,6 +250,7 @@ class RuntimeEditorialPlanner:
         config: Config | None = None,
         backend: ProductionPostCardBackend | None = None,
         person_expression: PersonExpression | None = None,
+        presence: PersonExpression | None = None,
     ) -> None:
         self._planner = planner
         self._config = config
@@ -256,6 +258,7 @@ class RuntimeEditorialPlanner:
         self._episode_store = episode_store
         self._asset_ids = frozenset(asset_ids) if asset_ids is not None else None
         self._person_expression = person_expression
+        self._presence = presence
         self.last_attempt_directory: Path | None = None
         self._prepare_annotations: Callable[..., Any] | None = None
 
@@ -367,8 +370,8 @@ class RuntimeEditorialPlanner:
             # The readers and the structure planner announce through the
             # context, since the callback never reaches that deep.
             with announcing_stages(on_stage):
-                prepared, reach = self._prepared_source(
-                    trace=trace, on_stage=on_stage, demanded=[_asset(s).id for s in sources]
+                prepared, reach, sources = self._prepared_source(
+                    trace=trace, on_stage=on_stage, sources=sources
                 )
                 candidates = metadata_demand(
                     prepared,
@@ -419,17 +422,19 @@ class RuntimeEditorialPlanner:
         *,
         trace: Trace,
         on_stage: Callable[[StageUpdate], None] | None,
-        demanded: Sequence[str],
-    ) -> tuple[Any, frozenset[str] | None]:
+        sources: Sequence[Asset | VideoClipInfo],
+    ) -> tuple[Any, frozenset[str] | None, tuple[Asset | VideoClipInfo, ...]]:
         if self._prepare_annotations is None:
-            return self._planner.prepare_source(trace=trace), None
+            prepared = self._planner.prepare_source(trace=trace)
+            return prepared, None, self._with_present(prepared.candidates, sources)
         # Preparation covers what the film can reach; the rest of the window is read
         # as metadata for the grouping (#1181). The preliminary pass only admits, so
         # it cuts no groups, and only the final pass belongs to the plan trace.
         preliminary = self._planner.prepare_source(
             trace=Trace(), include_previews=False, group=False
         )
-        reach = film_reach(preliminary.candidates, demanded)
+        sources = self._with_present(preliminary.candidates, sources)
+        reach = film_reach(preliminary.candidates, [_asset(source).id for source in sources])
         logger.info(
             "preparing %d of %d pictures in the window", len(reach), len(preliminary.candidates)
         )
@@ -438,7 +443,26 @@ class RuntimeEditorialPlanner:
         final = self._planner.prepare_source(
             trace=trace, evidence_exclusions=exclusions, include_previews=False
         )
-        return final, reach
+        return final, reach, sources
+
+    def _with_present(
+        self, candidates: Sequence[Any], sources: Sequence[Asset | VideoClipInfo]
+    ) -> tuple[Asset | VideoClipInfo, ...]:
+        """Add every picture whose episode holds the film's people to what Immich matched."""
+        if self._presence is None:
+            return tuple(sources)
+        present = present_in_episodes(
+            [candidate.source for candidate in candidates], self._presence
+        )
+        requested = {_asset(source).id for source in sources}
+        added = tuple(
+            candidate.source
+            for candidate in candidates
+            if candidate.asset_id in present and candidate.asset_id not in requested
+        )
+        if added:
+            logger.info("%d picture(s) join the film from episodes its people are in", len(added))
+        return (*sources, *added)
 
     def close(self) -> None:
         """Release every thread-owned SQLite connection; later reads reopen safely."""
@@ -621,6 +645,7 @@ def build_editorial_planner(
         config=config,
         backend=backend,
         person_expression=context.person_expression,
+        presence=people_condition(context.people, context.person_match, context.person_expression),
     )
 
     runtime._prepare_annotations = refinement or evidence

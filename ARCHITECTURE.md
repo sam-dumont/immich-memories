@@ -109,6 +109,10 @@ the code named beside it; if the two disagree, the code wins and this entry is s
   (`MOMENT_WINDOW_MINUTES`, `moment_grouping.py`). One moment is what one shot of the film shows.
 - **Episode**: the block a moment sits in (an afternoon at a circuit, a party), cut at a
   90-minute gap (`EPISODE_WINDOW_MINUTES`, `selection_source_groups.py`).
+- **Person presence**: in a film about people, a person is present in every picture of an episode
+  where Immich recognised their face at least once; `AND` asks for every named person somewhere in
+  the episode, not in one frame. It widens the selectable pool past Immich's per-frame match and
+  never past the episode (`person_presence.py`, applied in `editorial_runtime.py`).
 - **Episode reading**: a model's answer about one episode: what happened, its representatives,
   its cull decisions and its notable moments, banked by exact membership and producer
   (`store/episode_readings.py`, `text_episode_reader.py`). The rules reader writes factual
@@ -170,8 +174,8 @@ unchanged sources retain their existing bank entries.
   LLM (`config_tiers.py`, `config_models_editorial*.py`, `editorial_shareability_tiers.py`).
   `laya_checkpoints.py` selects platform-matched archive, path and threshold defaults;
   `pinned_models.py` owns the SHA-256 pins used by `models fetch`.
-- **Reach**: the pictures a film can actually select (for a person film, the ones that person is
-  in), plus their Live Photo siblings and capture runs. This bounds cheap preparation; captions
+- **Reach**: the pictures a film can actually select (for a person film, its person presence),
+  plus their Live Photo siblings and capture runs. This bounds cheap preparation; captions
   and playback have the narrower selected/candidate scope. The rest of the window is read as
   Immich metadata (`editorial_film_reach.py`). Each acquisition is recorded under the attempt's
   `refinement/<sequence>/preparation.private.json`, with requested IDs and producer timings.
@@ -412,6 +416,7 @@ src/immich_memories/
 │   ├── editorial_film_preparation.py # NAS-first acquisition and live fact views for selected/candidate refinement
 │   ├── annotation_line_fields.py # Which parts of a picture's line are its content and which we wrote; content rules read only the first
 │   ├── editorial_film_reach.py # What a film prepares: its demanded pictures, their Live families and capture runs
+│   ├── person_presence.py      # Who a person film may select: every picture of an episode its people are recognised in
 │   ├── editorial_orchestration.py  # TextEditorialPlanner: episodes -> cards -> edit
 │   ├── editorial_rule_episodes.py  # Factual episode cards / omitted thesis; no semantic-bank writes
 │   ├── editorial_rule_reader.py    # Rules for worthiness, grouping and standing; shared allocation
