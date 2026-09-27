@@ -39,8 +39,8 @@ def _complete_rows(
     connection: sqlite3.Connection, model: str, source: str
 ) -> dict[str, SelectedCaption]:
     rows = connection.execute(
-        "SELECT d.asset_id,d.text,f.field,f.value FROM descriptions d "
-        "JOIN _caption_wanted w ON d.asset_id=w.asset_id "
+        "SELECT d.asset_id,d.text,f.field,f.value FROM _caption_wanted w "
+        "CROSS JOIN descriptions d ON d.asset_id=w.asset_id "
         "LEFT JOIN description_fields f ON d.asset_id=f.asset_id AND d.model=f.model "
         "WHERE d.model=? AND d.source=?",
         (model, source),

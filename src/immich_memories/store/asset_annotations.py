@@ -14,7 +14,7 @@ from immich_memories.analysis.subject_framing import FaceBox
 from immich_memories.store.caption_selection import selected_captions
 
 _FACES_FROM = (
-    " FROM face_boxes b JOIN _annotation_wanted w ON w.asset_id = b.asset_id "
+    " FROM _annotation_wanted w CROSS JOIN face_boxes b ON w.asset_id = b.asset_id "
     "ORDER BY b.asset_id, b.x1, b.y1, b.x2, b.y2"
 )
 _FACES_WITH_PERSON = "SELECT b.asset_id, b.named, b.x1, b.y1, b.x2, b.y2, b.person_id" + _FACES_FROM
@@ -179,8 +179,8 @@ class AssetAnnotationFactRepository:
     ) -> None:
         rows = connection.execute(
             "SELECT p.asset_id, p.person_name, p.person_id, p.birth_date "
-            "FROM asset_people p "
-            "JOIN _annotation_wanted w ON w.asset_id = p.asset_id "
+            "FROM _annotation_wanted w "
+            "CROSS JOIN asset_people p ON w.asset_id = p.asset_id "
             "ORDER BY p.asset_id, lower(trim(p.person_name)), p.person_name, "
             "p.person_id, p.birth_date"
         )
@@ -223,8 +223,8 @@ class AssetAnnotationFactRepository:
         self, connection: sqlite3.Connection, records: dict[str, _MutableAssetFacts]
     ) -> None:
         rows = connection.execute(
-            "SELECT d.asset_id, d.text FROM descriptions d "
-            "JOIN _annotation_wanted w ON w.asset_id = d.asset_id "
+            "SELECT d.asset_id, d.text FROM _annotation_wanted w "
+            "CROSS JOIN descriptions d ON w.asset_id = d.asset_id "
             "WHERE d.model = ? ORDER BY d.asset_id, d.text",
             (self._description_model,),
         )
@@ -235,8 +235,8 @@ class AssetAnnotationFactRepository:
         self, connection: sqlite3.Connection, records: dict[str, _MutableAssetFacts]
     ) -> None:
         rows = connection.execute(
-            "SELECT d.asset_id, d.field, d.value FROM description_fields d "
-            "JOIN _annotation_wanted w ON w.asset_id = d.asset_id "
+            "SELECT d.asset_id, d.field, d.value FROM _annotation_wanted w "
+            "CROSS JOIN description_fields d ON w.asset_id = d.asset_id "
             "WHERE d.model = ? ORDER BY d.asset_id, d.field, d.value",
             (self._description_model,),
         )
@@ -252,8 +252,8 @@ class AssetAnnotationFactRepository:
         self, connection: sqlite3.Connection, records: dict[str, _MutableAssetFacts]
     ) -> None:
         rows = connection.execute(
-            "SELECT f.asset_id, f.flag, f.evidence, f.source FROM flags f "
-            "JOIN _annotation_wanted w ON w.asset_id = f.asset_id "
+            "SELECT f.asset_id, f.flag, f.evidence, f.source FROM _annotation_wanted w "
+            "CROSS JOIN flags f ON w.asset_id = f.asset_id "
             "ORDER BY f.asset_id, f.flag, f.evidence, f.source"
         )
         for asset_id, flag, evidence, source in rows:
@@ -274,8 +274,8 @@ class AssetAnnotationFactRepository:
         self, connection: sqlite3.Connection, records: dict[str, _MutableAssetFacts]
     ) -> None:
         rows = connection.execute(
-            "SELECT h.asset_id, h.head, h.version, h.label FROM head_facts h "
-            "JOIN _annotation_wanted w ON w.asset_id = h.asset_id "
+            "SELECT h.asset_id, h.head, h.version, h.label FROM _annotation_wanted w "
+            "CROSS JOIN head_facts h ON w.asset_id = h.asset_id "
             "ORDER BY h.asset_id, h.head, h.version, h.label"
         )
         for asset_id, head, version, label in rows:
@@ -300,8 +300,8 @@ class AssetAnnotationFactRepository:
         rows = connection.execute(
             "SELECT p.asset_id, p.sharpness, p.brightness, p.contrast, "
             "p.dark_fraction, p.bright_fraction, p.needs_rotation "
-            "FROM pixel_facts p "
-            "JOIN _annotation_wanted w ON w.asset_id = p.asset_id "
+            "FROM _annotation_wanted w "
+            "CROSS JOIN pixel_facts p ON w.asset_id = p.asset_id "
             "WHERE p.producer_key = ? "
             "ORDER BY p.asset_id, p.sharpness, p.brightness, p.contrast, "
             "p.dark_fraction, p.bright_fraction, p.needs_rotation",
@@ -324,8 +324,8 @@ class AssetAnnotationFactRepository:
         try:
             rows = connection.execute(
                 "SELECT m.asset_id, m.burst_id, m.still_ids, "
-                "m.duration_seconds, m.beats_a_still FROM motion_bursts m "
-                "JOIN _annotation_wanted w ON w.asset_id = m.asset_id "
+                "m.duration_seconds, m.beats_a_still FROM _annotation_wanted w "
+                "CROSS JOIN motion_bursts m ON w.asset_id = m.asset_id "
                 "ORDER BY m.asset_id, m.burst_id, m.still_ids, "
                 "m.duration_seconds, m.beats_a_still"
             )
