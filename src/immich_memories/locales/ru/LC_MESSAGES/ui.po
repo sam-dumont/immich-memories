@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-27 20:20+0200\n"
+"POT-Creation-Date: 2026-09-27 22:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -416,7 +416,7 @@ msgstr ""
 msgid "Connected as: {name}"
 msgstr "Подключено как: {name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:454 pages/step2_loading.py:307
 msgid "Connecting to Immich..."
 msgstr "Подключение к Immich..."
 
@@ -505,7 +505,7 @@ msgstr "Разница"
 msgid "Discovery failed: {error}"
 msgstr "Поиск не удался: {error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:66 pages/step2_loading.py:366
 msgid "Done"
 msgstr "Готово"
 
@@ -548,7 +548,7 @@ msgstr "Ошибки ({error_count})"
 msgid "Export"
 msgstr "Экспорт"
 
-#: pages/step2_loading.py:336
+#: pages/step2_loading.py:324
 #, python-brace-format
 msgid "Failed to load videos: {value}"
 msgstr "Не удалось загрузить видео: {value}"
@@ -577,10 +577,6 @@ msgstr ""
 "анализа речи, меньше фото, избранное анализируется первым. Задаётся через `preset: fast` в "
 "config.yaml или IMMICH_MEMORIES_PRESET=fast; параметры ниже имеют приоритет для этого "
 "запуска."
-
-#: pages/step2_loading.py:252
-msgid "Fetching photos..."
-msgstr "Получение фотографий..."
 
 #: pages/_step3_music_preview.py:232
 msgid "Film language"
@@ -789,7 +785,7 @@ msgstr "Загрузка альбомов..."
 msgid "Loading thumbnails"
 msgstr "Загрузка миниатюр"
 
-#: pages/step2_loading.py:313
+#: pages/step2_loading.py:301
 msgid "Loading videos..."
 msgstr "Загрузка видео..."
 
@@ -1084,7 +1080,7 @@ msgstr "Доступные фотографии"
 msgid "Photo duration (seconds)"
 msgstr "Длительность фото (секунды)"
 
-#: pages/step2_loading.py:461
+#: pages/step2_loading.py:449
 #, python-brace-format
 msgid "Photo thumbnails: {value}/{count}"
 msgstr "Миниатюры фото: {value}/{count}"
@@ -1520,7 +1516,7 @@ msgstr "Монтаж завершился, пока страница была з
 msgid "Thumbnail cache"
 msgstr "Кэш миниатюр"
 
-#: pages/step2_loading.py:415
+#: pages/step2_loading.py:403
 #, python-brace-format
 msgid "Thumbnails: {value}/{count}"
 msgstr "Миниатюры: {value}/{count}"
@@ -1543,11 +1539,11 @@ msgstr "Вместе"
 
 #: pages/step1_people.py:181
 msgid ""
-"Together keeps only the moments holding everyone named. Any of these people keeps a moment "
-"holding any one of them."
+"Together keeps the times everyone named was there, even if never in the same photo. Any of "
+"these people keeps the times any one of them was there."
 msgstr ""
-"«Вместе» оставляет только моменты со всеми указанными людьми. «Любой из этих людей» оставляет"
-" моменты хотя бы с одним из них."
+"«Вместе» оставляет время, когда рядом были все названные, даже если они ни разу не попали в "
+"один кадр. «Любой из них» оставляет время, когда был хотя бы один из них."
 
 #: pages/login.py:64
 msgid "Too many failed attempts. Try again later."

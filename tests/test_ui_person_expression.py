@@ -100,7 +100,7 @@ def test_invalid_edit_blocks_loading_even_with_an_older_valid_expression(text):
         patch.object(step2_loading, "SyncImmichClient", side_effect=AssertionError("fetch")),
         pytest.raises(ValueError),
     ):
-        step2_loading._fetch_assets(value)
+        step2_loading._fetch_media(value)
     # A complete corrected edit releases the block, without carrying face IDs in the name AST.
     step1_people._set_grouped_condition(value, EXPRESSION)
     assert value.person_expression_error is None
@@ -114,9 +114,7 @@ def test_unsupported_product_is_rejected_before_any_media_fetch(product):
     value.memory_preset_params["person_expression"] = PersonExpression.parse(EXPRESSION).to_dict()
     with patch.object(step2_loading, "SyncImmichClient", side_effect=AssertionError("fetch")):
         with pytest.raises(ValueError, match="not supported"):
-            step2_loading._fetch_assets(value)
-        with pytest.raises(ValueError, match="not supported"):
-            step2_loading._fetch_photos(value)
+            step2_loading._fetch_media(value)
         if product == "album":
             with pytest.raises(ValueError, match="not supported"):
                 step2_loading._fetch_album(value)
@@ -135,7 +133,7 @@ def test_birthday_mode_and_malformed_stored_tree_cannot_fall_back_to_flat_names(
         patch.object(step2_loading, "SyncImmichClient", side_effect=AssertionError("fetch")),
         pytest.raises(ValueError),
     ):
-        step2_loading._fetch_assets(value)
+        step2_loading._fetch_media(value)
 
 
 @pytest.mark.parametrize("photos", [False, True])
@@ -145,6 +143,7 @@ def test_real_scoped_fetch_reads_each_episode_by_every_face_of_a_name(photos):
     full_roster[1] = full_roster[1].model_copy(update={"is_hidden": True})
     value.people = [person for person in full_roster if not person.is_hidden]
     step1_people._set_grouped_condition(value, EXPRESSION)
+    value.include_photos = photos
     by_id = {person.id: person for person in full_roster}
     faces = {
         "a-and-c": ("face-a1", "face-c"),
@@ -174,9 +173,8 @@ def test_real_scoped_fetch_reads_each_episode_by_every_face_of_a_name(photos):
     client.get_videos_for_all_persons.side_effect = AssertionError("flattened AND query")
     with patch.object(step2_loading, "SyncImmichClient") as factory:
         factory.return_value.__enter__.return_value = client
-        actual = (
-            step2_loading._fetch_photos(value) if photos else step2_loading._fetch_assets(value)
-        )
+        videos, stills = step2_loading._fetch_media(value)
+    actual = stills if photos else videos
     assert {a.id for a in actual} == {"a-and-c", "a2-and-c", "b-and-c"}
     assert all(not call.kwargs for call in client.get_photos_for_date_range.call_args_list)
     client.get_all_people.assert_called_once_with(with_hidden=True)
@@ -190,7 +188,7 @@ def test_authoritative_fetch_roster_missing_a_named_person_fails_without_media_q
     with patch.object(step2_loading, "SyncImmichClient") as factory:
         factory.return_value.__enter__.return_value = client
         with pytest.raises(ValueError, match="Person C"):
-            step2_loading._fetch_assets(value)
+            step2_loading._fetch_media(value)
     client.get_videos_for_person_and_date_range.assert_not_called()
     client.get_videos_for_date_range.assert_not_called()
 

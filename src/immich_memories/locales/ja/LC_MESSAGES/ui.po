@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-27 20:20+0200\n"
+"POT-Creation-Date: 2026-09-27 22:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -407,7 +407,7 @@ msgstr "続けるには Immich サーバーに接続してください。上に�
 msgid "Connected as: {name}"
 msgstr "接続中のユーザー：{name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:454 pages/step2_loading.py:307
 msgid "Connecting to Immich..."
 msgstr "Immich に接続中..."
 
@@ -496,7 +496,7 @@ msgstr "差分"
 msgid "Discovery failed: {error}"
 msgstr "検索に失敗しました：{error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:66 pages/step2_loading.py:366
 msgid "Done"
 msgstr "完了"
 
@@ -539,7 +539,7 @@ msgstr "エラー（{error_count} 件）"
 msgid "Export"
 msgstr "書き出し"
 
-#: pages/step2_loading.py:336
+#: pages/step2_loading.py:324
 #, python-brace-format
 msgid "Failed to load videos: {value}"
 msgstr "動画を読み込めませんでした：{value}"
@@ -566,10 +566,6 @@ msgid ""
 msgstr ""
 "高速 NAS プリセットが有効です。1080p H.264、高速エンコード、静止したタイトル背景、音声分析なし、写真少なめ、お気に入りを優先して分析します。config.yaml の "
 "`preset: fast` または IMMICH_MEMORIES_PRESET=fast で設定します。今回の実行では下の選択を優先します。"
-
-#: pages/step2_loading.py:252
-msgid "Fetching photos..."
-msgstr "写真を取得中..."
 
 #: pages/_step3_music_preview.py:232
 msgid "Film language"
@@ -778,7 +774,7 @@ msgstr "アルバムを読み込み中..."
 msgid "Loading thumbnails"
 msgstr "サムネイルを読み込み中"
 
-#: pages/step2_loading.py:313
+#: pages/step2_loading.py:301
 msgid "Loading videos..."
 msgstr "動画を読み込み中..."
 
@@ -1063,7 +1059,7 @@ msgstr "利用可能な写真"
 msgid "Photo duration (seconds)"
 msgstr "写真の表示時間（秒）"
 
-#: pages/step2_loading.py:461
+#: pages/step2_loading.py:449
 #, python-brace-format
 msgid "Photo thumbnails: {value}/{count}"
 msgstr "写真のサムネイル：{value}/{count}"
@@ -1495,7 +1491,7 @@ msgstr "ページを離れている間に編集が完了しました。書き出
 msgid "Thumbnail cache"
 msgstr "サムネイルキャッシュ"
 
-#: pages/step2_loading.py:415
+#: pages/step2_loading.py:403
 #, python-brace-format
 msgid "Thumbnails: {value}/{count}"
 msgstr "サムネイル：{value}/{count}"
@@ -1518,9 +1514,9 @@ msgstr "全員一緒"
 
 #: pages/step1_people.py:181
 msgid ""
-"Together keeps only the moments holding everyone named. Any of these people keeps a moment "
-"holding any one of them."
-msgstr "「全員一緒」は指定した全員が写る場面のみを残します。「いずれかの人物」はそのうち一人以上が写る場面を残します。"
+"Together keeps the times everyone named was there, even if never in the same photo. Any of "
+"these people keeps the times any one of them was there."
+msgstr "「一緒」は、名前を挙げた全員がその場にいた時間を残します。同じ写真に写っていなくてもかまいません。「このうちの誰か」は、誰か一人でもいた時間を残します。"
 
 #: pages/login.py:64
 msgid "Too many failed attempts. Try again later."

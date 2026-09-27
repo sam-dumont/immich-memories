@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-27 20:20+0200\n"
+"POT-Creation-Date: 2026-09-27 22:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -415,7 +415,7 @@ msgstr ""
 msgid "Connected as: {name}"
 msgstr "Verbonden als: {name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:454 pages/step2_loading.py:307
 msgid "Connecting to Immich..."
 msgstr "Verbinden met Immich..."
 
@@ -504,7 +504,7 @@ msgstr "Verschil"
 msgid "Discovery failed: {error}"
 msgstr "Zoeken mislukt: {error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:66 pages/step2_loading.py:366
 msgid "Done"
 msgstr "Klaar"
 
@@ -547,7 +547,7 @@ msgstr "Fouten ({error_count})"
 msgid "Export"
 msgstr "Exporteren"
 
-#: pages/step2_loading.py:336
+#: pages/step2_loading.py:324
 #, python-brace-format
 msgid "Failed to load videos: {value}"
 msgstr "Video's laden mislukt: {value}"
@@ -576,10 +576,6 @@ msgstr ""
 "titelachtergronden, geen spraakanalyse, minder foto's, favorieten eerst. Ingesteld met "
 "`preset: fast` in config.yaml of IMMICH_MEMORIES_PRESET=fast; onderstaande keuzes blijven "
 "voor deze uitvoering leidend."
-
-#: pages/step2_loading.py:252
-msgid "Fetching photos..."
-msgstr "Foto's ophalen..."
 
 #: pages/_step3_music_preview.py:232
 msgid "Film language"
@@ -788,7 +784,7 @@ msgstr "Albums laden..."
 msgid "Loading thumbnails"
 msgstr "Miniaturen laden"
 
-#: pages/step2_loading.py:313
+#: pages/step2_loading.py:301
 msgid "Loading videos..."
 msgstr "Video's laden..."
 
@@ -1081,7 +1077,7 @@ msgstr "Beschikbare foto's"
 msgid "Photo duration (seconds)"
 msgstr "Fotoduur (seconden)"
 
-#: pages/step2_loading.py:461
+#: pages/step2_loading.py:449
 #, python-brace-format
 msgid "Photo thumbnails: {value}/{count}"
 msgstr "Fotominiaturen: {value}/{count}"
@@ -1521,7 +1517,7 @@ msgstr ""
 msgid "Thumbnail cache"
 msgstr "Miniaturencache"
 
-#: pages/step2_loading.py:415
+#: pages/step2_loading.py:403
 #, python-brace-format
 msgid "Thumbnails: {value}/{count}"
 msgstr "Miniaturen: {value}/{count}"
@@ -1544,11 +1540,11 @@ msgstr "Samen"
 
 #: pages/step1_people.py:181
 msgid ""
-"Together keeps only the moments holding everyone named. Any of these people keeps a moment "
-"holding any one of them."
+"Together keeps the times everyone named was there, even if never in the same photo. Any of "
+"these people keeps the times any one of them was there."
 msgstr ""
-"Samen bewaart alleen momenten met alle genoemde personen. Een van deze personen bewaart "
-"momenten waar minstens één van hen in voorkomt."
+"Samen houdt de momenten waarop iedereen die je noemt erbij was, ook als ze nooit op dezelfde "
+"foto staan. Een van deze mensen houdt de momenten waarop een van hen erbij was."
 
 #: pages/login.py:64
 msgid "Too many failed attempts. Try again later."

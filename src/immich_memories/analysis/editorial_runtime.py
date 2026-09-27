@@ -44,7 +44,6 @@ from immich_memories.analysis.editorial_text_gateway import (
     semantic_text_model_identity,
 )
 from immich_memories.analysis.episode_demand import demand_reader_factory
-from immich_memories.analysis.person_presence import people_condition, present_in_episodes
 from immich_memories.analysis.selection_source import (
     EditorialDependencies,
     EditorialSelectionRequest,
@@ -249,14 +248,12 @@ class RuntimeEditorialPlanner:
         asset_ids: tuple[str, ...] | None = None,
         config: Config | None = None,
         backend: ProductionPostCardBackend | None = None,
-        presence: PersonExpression | None = None,
     ) -> None:
         self._planner = planner
         self._config = config
         self._backend = backend
         self._episode_store = episode_store
         self._asset_ids = frozenset(asset_ids) if asset_ids is not None else None
-        self._presence = presence
         self.last_attempt_directory: Path | None = None
         self._prepare_annotations: Callable[..., Any] | None = None
 
@@ -361,7 +358,6 @@ class RuntimeEditorialPlanner:
                 prepared, reach = self._prepared_source(
                     trace=trace, on_stage=on_stage, demanded=[_asset(s).id for s in sources]
                 )
-                sources = self._present(prepared, sources)
                 candidates = metadata_demand(
                     prepared,
                     sources,
@@ -431,28 +427,6 @@ class RuntimeEditorialPlanner:
             trace=trace, evidence_exclusions=exclusions, include_previews=False
         )
         return final, reach
-
-    def _present(
-        self, prepared: Any, sources: Sequence[Asset | VideoClipInfo]
-    ) -> tuple[Asset | VideoClipInfo, ...]:
-        """Keep the sources whose episode, as this cut groups it, holds the film's people.
-
-        The fetch already read presence over the raw window; an evidence exclusion can
-        split one of those episodes, and the cut's own episodes are the ones that count.
-        """
-        if self._presence is None:
-            return tuple(sources)
-        present = present_in_episodes(
-            (
-                [candidate.source for candidate in group.candidates]
-                for group in prepared.episode_groups
-            ),
-            self._presence,
-        )
-        kept = tuple(source for source in sources if _asset(source).id in present)
-        if dropped := len(sources) - len(kept):
-            logger.info("%d picture(s) sit in episodes this cut's people are not in", dropped)
-        return kept
 
     def close(self) -> None:
         """Release every thread-owned SQLite connection; later reads reopen safely."""
@@ -634,7 +608,6 @@ def build_editorial_planner(
         asset_ids=scope.asset_ids,
         config=config,
         backend=backend,
-        presence=people_condition(context.people, context.person_match, context.person_expression),
     )
 
     runtime._prepare_annotations = refinement or evidence

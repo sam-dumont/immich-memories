@@ -301,8 +301,8 @@ class TestCLIGenerate:
             patch("immich_memories.cli.get_config", return_value=config),
             patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
             patch(
-                "immich_memories.cli.generate.fetch_videos",
-                return_value=[asset],
+                "immich_memories.cli.generate.fetch_media",
+                return_value=([asset], []),
             ),
             patch(
                 "immich_memories.cli.generate.run_pipeline_and_generate",
@@ -337,8 +337,8 @@ class TestCLIGenerate:
             patch("immich_memories.cli.get_config", return_value=config),
             patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
             patch(
-                "immich_memories.cli.generate.fetch_videos",
-                return_value=[asset],
+                "immich_memories.cli.generate.fetch_media",
+                return_value=([asset], []),
             ),
             patch(
                 "immich_memories.cli.generate.run_pipeline_and_generate",
@@ -380,8 +380,8 @@ class TestCLIGenerate:
             patch("immich_memories.cli.get_config", return_value=config),
             patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
             patch(
-                "immich_memories.cli.generate.fetch_videos",
-                return_value=[asset],
+                "immich_memories.cli.generate.fetch_media",
+                return_value=([asset], []),
             ),
             patch(
                 "immich_memories.cli.generate.run_pipeline_and_generate",
@@ -427,8 +427,8 @@ class TestCLIGenerate:
                 return_value=(output, False, None),
             ),
             patch(
-                "immich_memories.cli.generate.fetch_videos",
-                return_value=[],
+                "immich_memories.cli.generate.fetch_media",
+                return_value=([], []),
             ),
         ):
             # Create a fake output so the CLI doesn't complain
@@ -479,8 +479,8 @@ class TestCLIGenerate:
             patch("immich_memories.cli.get_config", return_value=config),
             patch("immich_memories.api.immich.SyncImmichClient", return_value=mock_client),
             patch(
-                "immich_memories.cli.generate.fetch_videos",
-                return_value=[asset],
+                "immich_memories.cli.generate.fetch_media",
+                return_value=([asset], []),
             ),
             patch(
                 "immich_memories.cli.generate.run_pipeline_and_generate",
@@ -528,8 +528,8 @@ class TestCLIGenerate:
             patch("immich_memories.cli.get_config", return_value=config),
             patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
             patch(
-                "immich_memories.cli.generate.fetch_videos",
-                return_value=[asset],
+                "immich_memories.cli.generate.fetch_media",
+                return_value=([asset], []),
             ) as fetch,
             patch(
                 "immich_memories.cli.generate.run_pipeline_and_generate",
@@ -724,8 +724,8 @@ class TestCLIGenerate:
             patch("immich_memories.cli.get_config", return_value=config),
             patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
             patch(
-                "immich_memories.cli.generate.fetch_videos",
-                return_value=[asset],
+                "immich_memories.cli.generate.fetch_media",
+                return_value=([asset], []),
             ),
             patch(
                 "immich_memories.cli.generate.run_pipeline_and_generate",
@@ -1593,8 +1593,8 @@ def _combined_mock(tmp_path, mock_client=None):
                 return_value=(output, False, None),
             ),
             patch(
-                "immich_memories.cli.generate.fetch_videos",
-                return_value=[],
+                "immich_memories.cli.generate.fetch_media",
+                return_value=([], []),
             ),
         ):
             yield

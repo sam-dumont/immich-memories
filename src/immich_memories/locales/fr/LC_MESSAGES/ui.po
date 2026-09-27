@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  immich-memories\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-27 20:20+0200\n"
+"POT-Creation-Date: 2026-09-27 22:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -415,7 +415,7 @@ msgstr ""
 msgid "Connected as: {name}"
 msgstr "Connecté en tant que : {name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:454 pages/step2_loading.py:307
 msgid "Connecting to Immich..."
 msgstr "Connexion à Immich..."
 
@@ -504,7 +504,7 @@ msgstr "Différence"
 msgid "Discovery failed: {error}"
 msgstr "Échec de la recherche : {error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:66 pages/step2_loading.py:366
 msgid "Done"
 msgstr "Terminé"
 
@@ -547,7 +547,7 @@ msgstr "Erreurs ({error_count})"
 msgid "Export"
 msgstr "Exporter"
 
-#: pages/step2_loading.py:336
+#: pages/step2_loading.py:324
 #, python-brace-format
 msgid "Failed to load videos: {value}"
 msgstr "Impossible de charger les vidéos : {value}"
@@ -576,10 +576,6 @@ msgstr ""
 "fixes, sans analyse vocale, moins de photos, favoris analysés en premier. Défini par `preset:"
 " fast` dans config.yaml ou IMMICH_MEMORIES_PRESET=fast ; vos choix ci-dessous restent "
 "prioritaires pour cette exécution."
-
-#: pages/step2_loading.py:252
-msgid "Fetching photos..."
-msgstr "Récupération des photos..."
 
 #: pages/_step3_music_preview.py:232
 msgid "Film language"
@@ -788,7 +784,7 @@ msgstr "Chargement des albums..."
 msgid "Loading thumbnails"
 msgstr "Chargement des miniatures"
 
-#: pages/step2_loading.py:313
+#: pages/step2_loading.py:301
 msgid "Loading videos..."
 msgstr "Chargement des vidéos..."
 
@@ -1083,7 +1079,7 @@ msgstr "Photos disponibles"
 msgid "Photo duration (seconds)"
 msgstr "Durée des photos (secondes)"
 
-#: pages/step2_loading.py:461
+#: pages/step2_loading.py:449
 #, python-brace-format
 msgid "Photo thumbnails: {value}/{count}"
 msgstr "Miniatures des photos : {value}/{count}"
@@ -1519,7 +1515,7 @@ msgstr "Ce montage s’est terminé pendant votre absence. Rechargez ses médias
 msgid "Thumbnail cache"
 msgstr "Cache des miniatures"
 
-#: pages/step2_loading.py:415
+#: pages/step2_loading.py:403
 #, python-brace-format
 msgid "Thumbnails: {value}/{count}"
 msgstr "Miniatures : {value}/{count}"
@@ -1542,11 +1538,11 @@ msgstr "Ensemble"
 
 #: pages/step1_people.py:181
 msgid ""
-"Together keeps only the moments holding everyone named. Any of these people keeps a moment "
-"holding any one of them."
+"Together keeps the times everyone named was there, even if never in the same photo. Any of "
+"these people keeps the times any one of them was there."
 msgstr ""
-"Ensemble garde uniquement les moments avec toutes les personnes nommées. Au moins une de ces "
-"personnes garde les moments où l’une d’elles apparaît."
+"Ensemble garde les moments où toutes les personnes nommées étaient là, même jamais sur la "
+"même photo. N'importe laquelle de ces personnes garde les moments où l'une d'elles était là."
 
 #: pages/login.py:64
 msgid "Too many failed attempts. Try again later."

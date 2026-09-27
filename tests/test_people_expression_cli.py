@@ -127,8 +127,8 @@ def test_public_cli_reads_the_window_whatever_the_faces_and_passes_the_name_tree
     assert kwargs["memory_preset_params"]["person_expression"] == EXPRESSION.to_dict()
     assert kwargs["person_names"] == list(EXPRESSION.leaf_values)
     assert client.roster_reads == [True]
-    # Videos and photos each read the window whole: four reads however many faces are named.
-    assert sorted(client.calls) == ["IMAGE", "IMAGE", "VIDEO", "VIDEO"]
+    # One read per kind for the window, however many faces are named.
+    assert client.calls == ["VIDEO", "IMAGE"]
 
 
 @pytest.mark.parametrize("explicit_type", [False, True])

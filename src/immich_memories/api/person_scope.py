@@ -80,7 +80,7 @@ def people_in_window(
     """
     videos = client.get_videos_for_date_range(date_range)
     photos = list(client.get_photos_for_date_range(date_range))
-    present = present_in_episodes(episodes_of([*videos, *photos]), condition, by_id=True)
+    present = present_in_episodes(episodes_of([*videos, *photos]), condition)
     return _in_order(videos, present), _in_order(photos, present)
 
 

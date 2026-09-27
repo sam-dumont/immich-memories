@@ -1,10 +1,10 @@
-"""The cut reads person presence over the episodes it actually cuts.
+"""From the fetch to the cut, a person is present across the episode they are recognised in.
 
 Faces go unrecognised for people who are really there: the back of a head, a baby
 feeding against a chest, a child across the garden. One recognised face puts the person
-in every picture of the same 90-minute episode, and no further. The fetch reads that
-over the raw window (`test_person_window_fetch.py`); the cut reads it again over its own
-episodes, after evidence exclusions, so the two can never disagree about who is there.
+in every picture of the same 90-minute episode, and no further. The fetch decides that
+once, over the window Immich returns; the pool the owner reviews and the cut both use
+that one answer, so the cut never refuses a pool picture for who is in it.
 """
 
 import sqlite3
@@ -18,6 +18,7 @@ from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePor
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.api.models import Person
 from immich_memories.api.person_expression import PersonExpression
+from immich_memories.api.person_scope import people_in_window, window_condition
 from immich_memories.config_loader import Config
 from tests.test_editorial_preparation import preview, successful_ports
 from tests.test_editorial_runtime import _window
@@ -32,8 +33,38 @@ def shot(key, *, hour, minute=0, people=()):
     return asset
 
 
+class _Library:
+    """WHY: Immich is the read boundary; the window holds these pictures and nothing else."""
+
+    def __init__(self, window):
+        self.window = window
+
+    def get_videos_for_date_range(self, _window):
+        return []
+
+    def get_photos_for_date_range(self, _window):
+        return list(self.window)
+
+
+def _face(name: str) -> str:
+    return f"face-{name.lower()}"
+
+
+def fetched_pool(window, *, people=(), person_match="and", person_expression=None):
+    """The pool the fetch hands the cut: the same call the CLI and the wizard make."""
+    condition = window_condition(
+        [_face(name) for name in people] if person_expression is None else [],
+        person_match=person_match,
+        person_expression=person_expression.map_leaves(_face) if person_expression else None,
+    )
+    if condition is None:
+        return list(window)
+    _videos, photos = people_in_window(_Library(window), WINDOW, condition)
+    return photos
+
+
 def selectable(tmp_path, monkeypatch, *, window, fetched=None, providers=None, **context):
-    """The pictures the editor may choose from, given the pool the fetch handed over."""
+    """The pictures the editor may choose from, after the fetch and the cut."""
     config = Config(
         llm={"model": "offline-editor"},
         cache={"directory": str(tmp_path / "cache")},
@@ -65,7 +96,8 @@ def selectable(tmp_path, monkeypatch, *, window, fetched=None, providers=None, *
 
     # WHY: the editor is the next stage's boundary; this test is about the pool it is handed.
     monkeypatch.setattr(planner._planner, "plan_prepared", editor)
-    planner.plan_source(window if fetched is None else fetched, trace=Trace())
+    pool = fetched_pool(window, **context) if fetched is None else fetched
+    planner.plan_source(pool, trace=Trace())
     return set(seen)
 
 
@@ -133,13 +165,11 @@ def test_a_film_about_nobody_keeps_the_pictures_it_asked_for(tmp_path, monkeypat
     assert pool == {"asked"}
 
 
-def test_an_excluded_picture_that_held_an_episode_together_splits_presence_with_it(
-    tmp_path, monkeypatch
-):
-    """Before the fix, presence was read over the window before exclusions.
+def test_the_cut_keeps_a_pool_picture_after_an_exclusion_splits_its_episode(tmp_path, monkeypatch):
+    """The owner saw "later" in the pool, so the cut may not refuse it for who is in it.
 
-    The screen photo bridged two 80-minute gaps, so the raw window held one episode and
-    the later picture counted as with the person; the cut, without that photo, holds two.
+    The screen photo bridged two 80-minute gaps. The evidence gate removes it for being a
+    screen, which is its own reason; it does not take the later picture's presence with it.
     """
     face = shot("face", hour=9, people=("Ada",))
     bridge = shot("screen", hour=10, minute=20)
@@ -161,4 +191,4 @@ def test_an_excluded_picture_that_held_an_episode_together_splits_presence_with_
         providers=replace(providers, heads=heads),
     )
 
-    assert pool == {"face"}
+    assert pool == {"face", "later"}

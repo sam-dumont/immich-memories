@@ -82,3 +82,34 @@ def test_one_person_brings_the_unrecognised_pictures_of_their_episodes_only():
     photos = photos_in_window(library, ["face-b"], WINDOW)
 
     assert [p.id for p in photos] == ["b-photo", "unrecognised-photo"]
+
+
+class _Progress:
+    """WHY: the Rich live display needs a terminal; the fetch only calls these two."""
+
+    def add_task(self, *_args, **_kwargs):
+        return 0
+
+    def update(self, *_args, **_kwargs):
+        return None
+
+
+NEXT_DAY = DateRange(WINDOW.start + timedelta(days=1), WINDOW.end + timedelta(days=1))
+
+
+def test_a_multi_person_cli_fetch_reads_each_window_once_per_kind():
+    from immich_memories.cli._asset_fetch import fetch_media
+
+    library = Library([*AFTERNOON, *EVENING_A_ALONE])
+
+    videos, photos = fetch_media(
+        client=library,
+        progress=_Progress(),
+        date_ranges=[WINDOW, NEXT_DAY],
+        person_ids=["face-a", "face-b"],
+        include_photos=True,
+    )
+
+    assert library.reads == ["videos", "photos", "videos", "photos"]
+    assert [v.id for v in videos] == ["a-video", "unrecognised-video"]
+    assert [p.id for p in photos] == ["b-photo", "unrecognised-photo"]

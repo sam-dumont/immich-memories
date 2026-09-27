@@ -7,13 +7,14 @@ The wall-source and period-card probe replays stay on the probe branch.
 
 from __future__ import annotations
 
-from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
 
 from immich_memories.analysis.editorial_case import Case
 from immich_memories.analysis.editorial_runtime import EditorialRunContext
+from immich_memories.analysis.editorial_source import resolve_named_expression
+from immich_memories.analysis.person_presence import episodes_of, present_in_episodes
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.api.models import AssetType, Person
 from immich_memories.api.person_expression import PersonExpression
@@ -23,7 +24,6 @@ from immich_memories.memory_types.registry import MemoryType
 from immich_memories.timeperiod import DateRange
 from tests import test_editorial_source_route_integration as source_fixture
 from tests.conftest import make_asset
-from tests.test_editorial_duration_planner_integration import source as captured_source
 
 EXPRESSION = PersonExpression.parse('("Adult A" OR "Adult B") AND "Child"')
 WINDOW = DateRange(datetime(2024, 1, 1, tzinfo=UTC), datetime(2024, 12, 31, tzinfo=UTC))
@@ -130,7 +130,15 @@ def test_actual_runtime_reads_the_condition_per_episode_and_keeps_full_canonical
     sources[3].people = [_person("a-alone", "Adult A")]
     sources[4].people = [_person("child", "Child")] if matching else []
     source_bytes = [a.model_dump(mode="json") for a in sources]
-    result = build().plan_source(sources, trace=Trace(), include_live_photos=False)
+    # The pool the fetch hands over: the episodes the condition holds in, every name
+    # resolved to all of its faces the way the fetch resolves it.
+    roster = [_person("a", "Adult A"), _person("b", "Adult B"), _person("child", "Child")]
+    roster += [person for asset in sources for person in asset.people]
+    present = present_in_episodes(
+        episodes_of(sources), resolve_named_expression(EXPRESSION, roster)
+    )
+    pool = [asset for asset in sources if asset.id in present]
+    result = build().plan_source(pool, trace=Trace(), include_live_photos=False)
     expected = {a.id for a in sources} if matching else set()
     assert {row.clip.asset.id for row in result.candidates} == expected
     assert set(result.plan.selected_asset_ids).issubset(expected)
@@ -144,25 +152,6 @@ def test_actual_runtime_reads_the_condition_per_episode_and_keeps_full_canonical
     else:
         assert not result.plan.selections
     assert [a.model_dump(mode="json") for a in sources] == source_bytes
-
-
-def test_structure_input_reads_the_condition_per_episode(tmp_path):
-    captured = captured_source(tmp_path, seconds=60, pictures=2)
-    first, second = captured.assets.values()
-    case = replace(captured.case, person_expression=EXPRESSION)
-    alias = next(iter(captured.moment_asset_ids))
-
-    def with_people(first_people, second_people, members):
-        assets = {
-            first.id: first.model_copy(update={"people": first_people}),
-            second.id: second.model_copy(update={"people": second_people}),
-        }
-        return replace(captured, case=case, assets=assets, moment_asset_ids={alias: members})
-
-    together = with_people([_person("a", "Adult A"), _person("c", "Child")], [], (second.id,))
-    assert together.moment_asset_ids == {alias: (second.id,)}
-    with pytest.raises(ValueError, match="outside the grouped people condition"):
-        with_people([_person("a", "Adult A")], [], (first.id,))
 
 
 def test_flat_preset_filters_keep_existing_and_or_behavior():

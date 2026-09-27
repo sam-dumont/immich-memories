@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-27 20:20+0200\n"
+"POT-Creation-Date: 2026-09-27 22:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -407,7 +407,7 @@ msgstr "계속하려면 Immich 서버에 연결하세요. 위에 서버 URL과 A
 msgid "Connected as: {name}"
 msgstr "연결된 사용자: {name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:454 pages/step2_loading.py:307
 msgid "Connecting to Immich..."
 msgstr "Immich에 연결 중..."
 
@@ -496,7 +496,7 @@ msgstr "차이"
 msgid "Discovery failed: {error}"
 msgstr "검색 실패: {error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:66 pages/step2_loading.py:366
 msgid "Done"
 msgstr "완료"
 
@@ -539,7 +539,7 @@ msgstr "오류({error_count}개)"
 msgid "Export"
 msgstr "내보내기"
 
-#: pages/step2_loading.py:336
+#: pages/step2_loading.py:324
 #, python-brace-format
 msgid "Failed to load videos: {value}"
 msgstr "영상을 불러오지 못했습니다: {value}"
@@ -566,10 +566,6 @@ msgid ""
 msgstr ""
 "빠른 NAS 프리셋이 활성화되어 있습니다. 1080p H.264, 빠른 인코딩, 정적인 제목 배경, 음성 분석 없음, 적은 사진, 즐겨찾기 우선 분석을 사용합니다. "
 "config.yaml의 `preset: fast` 또는 IMMICH_MEMORIES_PRESET=fast로 설정하며, 이번 작업에서는 아래 선택이 우선합니다."
-
-#: pages/step2_loading.py:252
-msgid "Fetching photos..."
-msgstr "사진 가져오는 중..."
 
 #: pages/_step3_music_preview.py:232
 msgid "Film language"
@@ -778,7 +774,7 @@ msgstr "앨범 불러오는 중..."
 msgid "Loading thumbnails"
 msgstr "미리 보기 이미지 불러오는 중"
 
-#: pages/step2_loading.py:313
+#: pages/step2_loading.py:301
 msgid "Loading videos..."
 msgstr "영상 불러오는 중..."
 
@@ -1063,7 +1059,7 @@ msgstr "사용 가능한 사진"
 msgid "Photo duration (seconds)"
 msgstr "사진 표시 시간(초)"
 
-#: pages/step2_loading.py:461
+#: pages/step2_loading.py:449
 #, python-brace-format
 msgid "Photo thumbnails: {value}/{count}"
 msgstr "사진 미리 보기: {value}/{count}"
@@ -1495,7 +1491,7 @@ msgstr "페이지를 떠나 있는 동안 편집이 끝났습니다. 내보내�
 msgid "Thumbnail cache"
 msgstr "썸네일 캐시"
 
-#: pages/step2_loading.py:415
+#: pages/step2_loading.py:403
 #, python-brace-format
 msgid "Thumbnails: {value}/{count}"
 msgstr "미리 보기 이미지: {value}/{count}"
@@ -1518,9 +1514,9 @@ msgstr "함께"
 
 #: pages/step1_people.py:181
 msgid ""
-"Together keeps only the moments holding everyone named. Any of these people keeps a moment "
-"holding any one of them."
-msgstr "함께는 지정한 인물이 모두 나오는 순간만 남깁니다. 이 중 누구나는 그중 한 명 이상이 나오는 순간을 남깁니다."
+"Together keeps the times everyone named was there, even if never in the same photo. Any of "
+"these people keeps the times any one of them was there."
+msgstr "함께는 이름을 넣은 모두가 그 자리에 있던 시간을 남깁니다. 같은 사진에 함께 찍히지 않았어도 됩니다. 이 중 누구든은 그중 한 명이라도 있던 시간을 남깁니다."
 
 #: pages/login.py:64
 msgid "Too many failed attempts. Try again later."

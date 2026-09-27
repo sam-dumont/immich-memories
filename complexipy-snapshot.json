@@ -609,9 +609,9 @@
     "functions": [
       {
         "name": "register_generate_commands",
-        "complexity": 140,
+        "complexity": 134,
         "line_start": 78,
-        "line_end": 734,
+        "line_end": 720,
         "line_complexities": [
           {
             "line": 176,
@@ -906,77 +906,65 @@
             "complexity": 0
           },
           {
-            "line": 615,
-            "complexity": 0
-          },
-          {
-            "line": 616,
+            "line": 614,
             "complexity": 5
           },
           {
-            "line": 617,
+            "line": 619,
+            "complexity": 0
+          },
+          {
+            "line": 621,
+            "complexity": 6
+          },
+          {
+            "line": 626,
             "complexity": 0
           },
           {
             "line": 628,
-            "complexity": 6
+            "complexity": 5
           },
           {
-            "line": 633,
-            "complexity": 0
+            "line": 632,
+            "complexity": 5
           },
           {
             "line": 635,
-            "complexity": 6
-          },
-          {
-            "line": 640,
-            "complexity": 0
-          },
-          {
-            "line": 642,
-            "complexity": 5
-          },
-          {
-            "line": 646,
-            "complexity": 5
-          },
-          {
-            "line": 649,
             "complexity": 1
           },
           {
-            "line": 651,
+            "line": 637,
             "complexity": 0
           },
           {
-            "line": 653,
+            "line": 639,
             "complexity": 0
           },
           {
-            "line": 717,
+            "line": 703,
             "complexity": 1
           },
           {
-            "line": 720,
+            "line": 706,
             "complexity": 1
           },
           {
-            "line": 723,
+            "line": 709,
             "complexity": 1
           },
           {
-            "line": 724,
+            "line": 710,
             "complexity": 0
           },
           {
-            "line": 725,
+            "line": 711,
             "complexity": 1
           }
         ]
       }
     ],
-    "complexity": 142
+    "complexity": 136
   },
   {
     "path": "src/immich_memories/cli/music_cmd.py",

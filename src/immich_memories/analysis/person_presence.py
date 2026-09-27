@@ -6,9 +6,9 @@ the garden. So a person counts as present in every picture of an episode (the 90
 grouping every film is cut from) where their face is recognised at least once, and in no
 picture outside it.
 
-The rule is read twice. The fetch reads it over the whole window by person ID, so the
-pool the owner reviews already holds those pictures. The cut reads it again, by name,
-over the episodes it actually cuts, so presence and the cut can never disagree.
+The rule is read once, by the fetch (`api/person_scope.py`), over the window Immich
+returns. The pool the owner reviews is that answer, and the cut keeps it: an evidence
+exclusion removes a picture for its own reason, never the presence of its neighbours.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from immich_memories.analysis.moment_grouping import (
     EPISODE_WINDOW_MINUTES,
     group_by_time_and_place,
 )
-from immich_memories.api.models import Asset, Person
+from immich_memories.api.models import Asset
 from immich_memories.api.person_expression import PersonExpression
 
 
@@ -46,28 +46,18 @@ def episodes_of(assets: Sequence[Asset]) -> tuple[tuple[Asset, ...], ...]:
 
 
 def present_in_episodes(
-    episodes: Iterable[Sequence[Asset]],
-    condition: PersonExpression,
-    *,
-    by_id: bool = False,
+    episodes: Iterable[Sequence[Asset]], condition: PersonExpression
 ) -> frozenset[str]:
-    """Every picture whose episode satisfies ``condition``.
+    """Every picture whose episode satisfies ``condition``, whose leaves are face IDs.
 
-    A leaf holds in an episode when that person is recognised on any of its pictures, so
-    ``all`` asks for every named person somewhere in the episode, not in one frame. Leaves
-    are person IDs with ``by_id``, otherwise names compared without case, as the CLI's
-    person lookup does.
+    A leaf holds in an episode when that face is recognised on any of its pictures, so
+    ``all`` asks for every named person somewhere in the episode, not in one frame.
     """
     episodes = tuple(episodes)
-    held_by_key: dict[str, set[int]] = {}
+    held_by_face: dict[str, set[int]] = {}
     for index, episode in enumerate(episodes):
         for asset in episode:
             for person in asset.people:
-                if key := _key(person, by_id=by_id):
-                    held_by_key.setdefault(key, set()).add(index)
-    held = condition.evaluate(lambda leaf: held_by_key.get(leaf if by_id else leaf.casefold(), ()))
+                held_by_face.setdefault(person.id, set()).add(index)
+    held = condition.evaluate(lambda face: held_by_face.get(face, ()))
     return frozenset(asset.id for index in held for asset in episodes[index])
-
-
-def _key(person: Person, *, by_id: bool) -> str:
-    return person.id if by_id else person.name.casefold()

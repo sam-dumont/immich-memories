@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-27 20:20+0200\n"
+"POT-Creation-Date: 2026-09-27 22:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -415,7 +415,7 @@ msgstr ""
 msgid "Connected as: {name}"
 msgstr "Ansluten som: {name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:454 pages/step2_loading.py:307
 msgid "Connecting to Immich..."
 msgstr "Ansluter till Immich..."
 
@@ -504,7 +504,7 @@ msgstr "Skillnad"
 msgid "Discovery failed: {error}"
 msgstr "Sökningen misslyckades: {error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:66 pages/step2_loading.py:366
 msgid "Done"
 msgstr "Klart"
 
@@ -547,7 +547,7 @@ msgstr "Fel ({error_count})"
 msgid "Export"
 msgstr "Exportera"
 
-#: pages/step2_loading.py:336
+#: pages/step2_loading.py:324
 #, python-brace-format
 msgid "Failed to load videos: {value}"
 msgstr "Kunde inte läsa in videor: {value}"
@@ -575,10 +575,6 @@ msgstr ""
 "Det snabba NAS-förvalet är aktivt: 1080p H.264 med snabb kodning, stilla titelbakgrunder, "
 "ingen talanalys, färre foton och favoriter först. Anges med `preset: fast` i config.yaml "
 "eller IMMICH_MEMORIES_PRESET=fast; valen nedan gäller före förvalet för den här körningen."
-
-#: pages/step2_loading.py:252
-msgid "Fetching photos..."
-msgstr "Hämtar foton..."
 
 #: pages/_step3_music_preview.py:232
 msgid "Film language"
@@ -787,7 +783,7 @@ msgstr "Läser in album..."
 msgid "Loading thumbnails"
 msgstr "Läser in miniatyrer"
 
-#: pages/step2_loading.py:313
+#: pages/step2_loading.py:301
 msgid "Loading videos..."
 msgstr "Läser in videor..."
 
@@ -1078,7 +1074,7 @@ msgstr "Tillgängliga foton"
 msgid "Photo duration (seconds)"
 msgstr "Fotolängd (sekunder)"
 
-#: pages/step2_loading.py:461
+#: pages/step2_loading.py:449
 #, python-brace-format
 msgid "Photo thumbnails: {value}/{count}"
 msgstr "Fotominiatyrer: {value}/{count}"
@@ -1514,7 +1510,7 @@ msgstr "Klippningen blev klar medan sidan var stängd. Läs in medierna igen fö
 msgid "Thumbnail cache"
 msgstr "Miniatyrcache"
 
-#: pages/step2_loading.py:415
+#: pages/step2_loading.py:403
 #, python-brace-format
 msgid "Thumbnails: {value}/{count}"
 msgstr "Miniatyrer: {value}/{count}"
@@ -1537,11 +1533,11 @@ msgstr "Tillsammans"
 
 #: pages/step1_people.py:181
 msgid ""
-"Together keeps only the moments holding everyone named. Any of these people keeps a moment "
-"holding any one of them."
+"Together keeps the times everyone named was there, even if never in the same photo. Any of "
+"these people keeps the times any one of them was there."
 msgstr ""
-"Tillsammans behåller bara ögonblick med alla namngivna personer. Någon av dessa personer "
-"behåller ögonblick med minst en av dem."
+"Tillsammans behåller stunderna då alla du nämnt var där, även om de aldrig är på samma foto. "
+"Någon av dessa personer behåller stunderna då någon av dem var där."
 
 #: pages/login.py:64
 msgid "Too many failed attempts. Try again later."
