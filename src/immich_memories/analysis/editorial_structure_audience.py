@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable, Mapping, Sequence
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -53,6 +54,8 @@ class AudienceBank:
         self._answerer = answerer
         self._answers = {} if store is None else audience_bank.load_answers(store, answerer)
         self._holds = {} if store is None else audience_bank.load_holds(store)
+        # Refusals cast since the last flush, per picture, in the order they were cast.
+        self._pending: dict[str, list[dict[str, Any]]] = {}
 
     def answer(self, key: str) -> dict[str, Any] | None:
         banked = self._answers.get(key)
@@ -71,17 +74,48 @@ class AudienceBank:
     def hold(self, asset_id: str, record: dict[str, Any]) -> None:
         """Keep a refusal that something seen caused, in its source's slot; stricter wins.
 
-        What this bank last saw decides whether anything could change; only then is the hold
-        merged again with the store's copy, which another cut may have tightened since.
+        It stands in this bank at once. It reaches the store with the batch it is part of: at
+        `flush`, or when `HOLD_BATCH` pictures wait. A refusal that changes nothing this bank
+        can see is not written at all.
         """
         merged = _merged_hold(dict(self._holds.get(asset_id) or {}), record)
         if merged is None:
             return
-        if self._store is not None:
-            merged = audience_bank.change_hold(
-                self._store, asset_id, lambda slots: _merged_hold(slots, record)
-            )
         self._holds[asset_id] = merged
+        if self._store is not None:
+            self._pending.setdefault(asset_id, []).append(record)
+            if len(self._pending) >= HOLD_BATCH:
+                self.flush()
+
+    def flush(self) -> None:
+        """Merge every waiting refusal with the store's holds, in one transaction.
+
+        Another cut may have tightened a picture since this bank read it, so each is merged
+        again with the store's copy, and what stands after is what this bank keeps.
+        """
+        if self._store is None or not self._pending:
+            return
+        pending, self._pending = self._pending, {}
+        self._holds |= audience_bank.change_holds(
+            self._store,
+            {
+                asset_id: partial(_merged_all, records=records)
+                for asset_id, records in pending.items()
+            },
+        )
+
+
+# Pictures whose refusals wait for one write; a crash costs at most this many.
+HOLD_BATCH = 500
+
+
+def _merged_all(slots: dict[str, Any], *, records: list[dict[str, Any]]) -> dict[str, Any] | None:
+    changed = False
+    for record in records:
+        merged = _merged_hold(slots, record)
+        if merged is not None:
+            slots, changed = merged, True
+    return slots if changed else None
 
 
 def _merged_hold(slots: dict[str, Any], record: dict[str, Any]) -> dict[str, Any] | None:

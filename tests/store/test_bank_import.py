@@ -127,7 +127,9 @@ def test_every_bank_entry_arrives_once_and_the_files_stay_as_they_were(store, ro
 def test_the_store_keeps_its_own_answer_but_a_stricter_legacy_hold_tightens(store, root):
     home = _legacy_home(root)
     AudienceBank(store, answerer="full|laya").keep("key-1", {"parsed": True, "verdict": "no"})
-    AudienceBank(store, answerer="r").hold("asset-1", {**HOLD, "verdict": "family_only"})
+    banked = AudienceBank(store, answerer="r")
+    banked.hold("asset-1", {**HOLD, "verdict": "family_only"})
+    banked.flush()
 
     outcome = import_legacy(store, home)
 

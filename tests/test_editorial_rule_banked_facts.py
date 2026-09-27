@@ -210,6 +210,7 @@ def test_a_picture_the_library_holds_is_refused_in_any_case_of_it(tmp_path, monk
     library = AudienceBank(open_store(), answerer="full|reader-a")
     library.hold("body", {"verdict": "family_only", "finding": "nudity_shirtless_or_underwear"})
     library.hold("bath", {"verdict": "do_not_show", "finding": "private_activity"})
+    library.flush()
     case = {"store": open_store(), "audience": "shareable"}
 
     assert _open(tmp_path, **case).refused_for_audience("bath")

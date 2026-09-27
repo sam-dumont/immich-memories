@@ -173,9 +173,11 @@ def test_the_no_model_draft_does_not_carry_a_banked_refusal_past_the_owner(tmp_p
     from immich_memories.analysis.editorial_rule_banked_facts import open_banked_facts
 
     store = empty_store(tmp_path)
-    AudienceBank(store, answerer="full|reader").hold(
+    banked = AudienceBank(store, answerer="full|reader")
+    banked.hold(
         "held", {"verdict": "do_not_show", "finding": "exposure_evidence", "policy": "heads"}
     )
+    banked.flush()
 
     def refused():
         return open_banked_facts(

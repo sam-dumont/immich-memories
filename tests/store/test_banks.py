@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import httpx
 import pytest
+import sqlalchemy as sa
 
 from immich_memories.analysis import editorial_shareability as share
 from immich_memories.analysis.editorial_block_votes import vote_blocks
@@ -29,18 +30,35 @@ def _text_hold(verdict: str) -> dict:
     }
 
 
+def _hold(store, asset_id: str, record: dict, *, answerer: str = "full|reader") -> None:
+    bank = AudienceBank(store, answerer=answerer)
+    bank.hold(asset_id, record)
+    bank.flush()
+
+
 def test_a_hold_outlives_the_bank_that_cast_it(store):
-    AudienceBank(store, answerer="full|reader").hold("pic", DETECTOR_HOLD)
+    _hold(store, "pic", DETECTOR_HOLD)
 
     assert AudienceBank(store, answerer="another|reader").held("pic")["verdict"] == "do_not_show"
 
 
+def test_a_hold_stands_in_its_bank_before_the_batch_is_written(store):
+    bank = AudienceBank(store, answerer="r")
+    bank.hold("pic", DETECTOR_HOLD)
+
+    assert bank.held("pic")["verdict"] == "do_not_show"
+    assert AudienceBank(store, answerer="r").held("pic") is None
+    bank.flush()
+    assert AudienceBank(store, answerer="r").held("pic")["verdict"] == "do_not_show"
+
+
 def test_a_detector_hold_is_never_cleared_by_a_later_read(store):
-    AudienceBank(store, answerer="full|reader").hold("pic", DETECTOR_HOLD)
+    _hold(store, "pic", DETECTOR_HOLD)
 
     later = AudienceBank(store, answerer="full|reader")
     later.hold("pic", {"verdict": "share", "finding": "clear", "policy": "v9", "parsed": True})
     later.hold("pic", _text_hold("family_only") | {"activity": None})
+    later.flush()
 
     assert AudienceBank(store, answerer="x").held("pic")["verdict"] == "do_not_show"
 
@@ -49,14 +67,14 @@ def test_holds_are_kept_per_source_and_a_new_prompt_replaces_only_the_text_one(s
     bank = AudienceBank(store, answerer="full|reader")
     bank.hold("pic", _text_hold("family_only"))
     bank.hold("pic", {**DETECTOR_HOLD, "verdict": "family_only"})
+    bank.flush()
 
-    with (
-        patch.object(share, "AUDIENCE_PROMPT_VERSION", "audience-next"),
-    ):
+    with patch.object(share, "AUDIENCE_PROMPT_VERSION", "audience-next"):
         fresh = AudienceBank(store, answerer="full|reader")
         # The old text hold no longer applies; the detector's still does.
         assert fresh.held("pic")["finding"] == "exposure_evidence"
         fresh.hold("pic", _text_hold("do_not_show") | {"policy": "audience-next"})
+        fresh.flush()
         assert AudienceBank(store, answerer="x").held("pic")["verdict"] == "do_not_show"
 
     # Back under the old prompt, the new text hold is stale and the detector's stands alone.
@@ -68,10 +86,8 @@ def test_holds_are_kept_per_source_and_a_new_prompt_replaces_only_the_text_one(s
 
 
 def test_a_refusal_the_bank_holds_reaches_the_draft_that_asks_nothing(store):
-    AudienceBank(store, answerer="full|reader").hold("held", DETECTOR_HOLD)
-    AudienceBank(store, answerer="full|reader").hold(
-        "family", {**DETECTOR_HOLD, "verdict": "family_only"}
-    )
+    _hold(store, "held", DETECTOR_HOLD)
+    _hold(store, "family", {**DETECTOR_HOLD, "verdict": "family_only"})
 
     shareable = open_banked_facts(
         attempts_dir=None, store=store, audience="shareable", episode_cards={}
@@ -101,6 +117,7 @@ def test_two_runs_keep_each_others_audience_answers_and_holds(store):
     second = AudienceBank(store, answerer="reader")
 
     first.hold("held-picture", DETECTOR_HOLD)
+    first.flush()
     first.keep("first-key", {"parsed": True, "verdict": "share"})
     second.keep("second-key", {"parsed": True, "verdict": "family_only"})
 
@@ -110,19 +127,63 @@ def test_two_runs_keep_each_others_audience_answers_and_holds(store):
     assert reread.held("held-picture")["verdict"] == "do_not_show"
 
 
-def test_two_cuts_holding_one_picture_at_once_keep_the_stricter_hold(store):
-    banks = [AudienceBank(store, answerer="r") for _ in range(8)]
-    verdicts = ["family_only", "do_not_show"] * 4
+def _writes(store):
+    """The data-changing statements the store runs while the list is open."""
+    seen: list[str] = []
 
-    with ThreadPoolExecutor(8) as pool:
-        list(
-            pool.map(
-                lambda pair: pair[0].hold("pic", {**DETECTOR_HOLD, "verdict": pair[1]}),
-                zip(banks, verdicts, strict=True),
+    def note(_conn, _cursor, statement, *_args):
+        if statement.lstrip().split(" ", 1)[0].upper() in {"INSERT", "UPDATE", "DELETE"}:
+            seen.append(statement)
+
+    sa.event.listen(store.engine, "before_cursor_execute", note)
+    return seen, lambda: sa.event.remove(store.engine, "before_cursor_execute", note)
+
+
+def test_a_batch_of_holds_is_one_transaction_and_an_unchanged_hold_costs_no_write(store):
+    bank = AudienceBank(store, answerer="r")
+    for n in range(40):
+        bank.hold(f"pic-{n:02d}", DETECTOR_HOLD)
+    bank.flush()
+    seen, stop = _writes(store)
+    try:
+        again = AudienceBank(store, answerer="r")
+        for n in range(40):
+            again.hold(f"pic-{n:02d}", {**DETECTOR_HOLD, "verdict": "family_only"})
+            again.hold(f"pic-{n:02d}", DETECTOR_HOLD)
+        again.flush()
+    finally:
+        stop()
+
+    assert seen == []
+    assert all(again.held(f"pic-{n:02d}")["verdict"] == "do_not_show" for n in range(40))
+
+
+def test_overlapping_batches_written_at_once_never_loosen_a_hold_or_deadlock(store):
+    pictures = [f"pic-{n:03d}" for n in range(120)]
+
+    def cut(writer: int) -> None:
+        bank = AudienceBank(store, answerer=f"r{writer}")
+        # Each writer walks the pictures in its own order and casts its own verdicts.
+        order = pictures[writer * 17 :] + pictures[: writer * 17]
+        for index, asset_id in enumerate(order):
+            strict = (index + writer) % 3 == 0
+            bank.hold(
+                asset_id, {**DETECTOR_HOLD, "verdict": "do_not_show" if strict else "family_only"}
             )
-        )
+        bank.flush()
 
-    assert AudienceBank(store, answerer="r").held("pic")["verdict"] == "do_not_show"
+    with ThreadPoolExecutor(6) as pool:
+        list(pool.map(cut, range(6)))
+
+    reread = AudienceBank(store, answerer="x")
+    strict = {
+        asset_id
+        for writer in range(6)
+        for index, asset_id in enumerate(pictures[writer * 17 :] + pictures[: writer * 17])
+        if (index + writer) % 3 == 0
+    }
+    assert {p for p in pictures if reread.held(p)["verdict"] == "do_not_show"} == strict
+    assert all(reread.held(p) is not None for p in pictures)
 
 
 class _Judge:

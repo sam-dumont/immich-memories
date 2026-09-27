@@ -87,7 +87,8 @@ def test_a_detector_floor_under_a_household_moment_still_holds_it(tmp_path):
 
 
 def test_a_household_hold_banked_before_levels_existed_plays_in_a_just_us_film(tmp_path):
-    AudienceBank(open_store(), answerer="full|reader").hold(
+    banked = AudienceBank(open_store(), answerer="full|reader")
+    banked.hold(
         "solo",
         {
             "verdict": "do_not_show",
@@ -95,12 +96,14 @@ def test_a_household_hold_banked_before_levels_existed_plays_in_a_just_us_film(t
             "policy": share.AUDIENCE_PROMPT_VERSION,
         },
     )
+    banked.flush()
 
     assert gate(tmp_path, BATH, "bathing", "just_us").verdict_of(UNIT) == "just_us"
 
 
 def test_an_older_refusal_the_current_reading_cannot_place_stays_refused(tmp_path):
-    AudienceBank(open_store(), answerer="full|reader").hold(
+    banked = AudienceBank(open_store(), answerer="full|reader")
+    banked.hold(
         "solo",
         {
             "verdict": "do_not_show",
@@ -108,6 +111,7 @@ def test_an_older_refusal_the_current_reading_cannot_place_stays_refused(tmp_pat
             "policy": share.AUDIENCE_PROMPT_VERSION,
         },
     )
+    banked.flush()
 
     assert gate(tmp_path, BATH, "none", "just_us").verdict_of(UNIT) == "do_not_show"
 
@@ -404,9 +408,11 @@ def test_the_no_model_draft_lifts_a_banked_refusal_only_where_the_clearance_reac
     from immich_memories.analysis.editorial_rule_banked_facts import open_banked_facts
 
     store = annotation_store()
-    AudienceBank(store, answerer="full|reader").hold(
+    banked = AudienceBank(store, answerer="full|reader")
+    banked.hold(
         "held", {"verdict": "family_only", "finding": "exposure_evidence", "policy": "heads"}
     )
+    banked.flush()
     owner.decide(store, "held", owner.clearance_for("family"), via="cli")
 
     def refused(level):

@@ -185,8 +185,9 @@ unchanged sources retain their existing bank entries.
   (`store/cut_measurements.py`), judgments (`cache/judgment_cache.py`), the thesis-fit and
   memory-worthy vote banks (`store/vote_banks.py`) and the audience bank (`store/audience_bank.py`).
   No row means nobody asked, never "measured nothing". Two runs write them at once (the pipeline
-  lock covers assembly only): every bank writes in short store transactions, and an audience hold
-  is merged with the store's copy under a lock on its picture, so the stricter hold always stands.
+  lock covers assembly only): every bank writes in short store transactions, and audience holds
+  reach the store in batches of up to 500 pictures, each merged with the store's copy in one
+  transaction under locks taken in sorted order, so the stricter hold always stands.
   Private database creation is exclusive. Existing files are chmodded without opening and
   closing an extra descriptor, which would release live SQLite connections' POSIX locks.
 
@@ -786,7 +787,7 @@ src/immich_memories/
 │   ├── legacy_annotations.py   # import_legacy(store, home): annotations.sqlite + judgments.db, read-only,
 │   │                           # keys kept, idempotent; the only reader of those files
 │   ├── audience_bank.py        # The audience bank's rows: answers by answerer + evidence key, hold slots
-│   │                           # (permanent / text) per picture, changed under a per-picture lock
+│   │                           # (permanent / text) per picture, merged a batch per transaction
 │   ├── vote_banks.py           # VoteBank: a block vote bank (memory-worthy, thesis-fit) per case key;
 │   │                           # save() writes only the entries changed since the last save
 │   ├── owner_edits.py          # The owner's review edits before a render, kept whole per edit id and

@@ -226,7 +226,8 @@ def test_a_body_hold_an_older_library_banked_stays(tmp_path, monkeypatch):
     from immich_memories.analysis.editorial_structure_audience import AudienceBank
 
     held = replace(source(tmp_path, seconds=60), audience="shareable")
-    AudienceBank(open_store(), answerer="older").hold(
+    banked = AudienceBank(open_store(), answerer="older")
+    banked.hold(
         "picture-000",
         {
             "verdict": "family_only",
@@ -235,6 +236,7 @@ def test_a_body_hold_an_older_library_banked_stays(tmp_path, monkeypatch):
             "policy": "audience-evidence-v16",
         },
     )
+    banked.flush()
     bump_audience_prompt(monkeypatch)
 
     later = cut(held, ControlledStoryJudge(), "second-cut")
@@ -284,7 +286,9 @@ def test_a_detector_hold_is_permanent_across_audience_prompts(tmp_path, monkeypa
     from tests.test_editorial_shareability_tiers import ClearingReader
 
     held = share.check_audience(ClearingReader(), _head_flagged_still(), "unit-1")
-    AudienceBank(open_store(), answerer="reader").hold("still", held)
+    banked = AudienceBank(open_store(), answerer="reader")
+    banked.hold("still", held)
+    banked.flush()
     bump_audience_prompt(monkeypatch)
 
     standing = AudienceBank(open_store(), answerer="reader").held("still")

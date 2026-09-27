@@ -58,9 +58,9 @@ def test_a_live_photo_is_held_by_its_clip_too(tmp_path):
 
 def test_a_hold_an_earlier_cut_banked_is_named(tmp_path):
     config = config_at(tmp_path)
-    AudienceBank(open_store(), answerer="full|reader").hold(
-        "bath", {"verdict": "do_not_show", "finding": "private_activity", "policy": "v17"}
-    )
+    banked = AudienceBank(open_store(), answerer="full|reader")
+    banked.hold("bath", {"verdict": "do_not_show", "finding": "private_activity", "policy": "v17"})
+    banked.flush()
 
     hold = holds.read(config, ["bath"])["bath"]
 

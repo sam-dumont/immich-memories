@@ -94,3 +94,16 @@ def test_sqlite_path_is_a_path_object(tmp_path):
     location = StoreLocation(url=f"sqlite:///{tmp_path}/s.db", schema="immich_memories")
 
     assert isinstance(location.sqlite_path, Path)
+
+
+def test_a_sqlite_url_in_the_environment_needs_no_config_file(monkeypatch, tmp_path):
+    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", f"sqlite:///{tmp_path / 'store.db'}")
+    monkeypatch.delenv("IMMICH_MEMORIES_DATABASE_SCHEMA", raising=False)
+
+    def unreadable():
+        raise AssertionError("the environment names the store; config.yaml is not read")
+
+    # WHY: get_config reads config.yaml from the home directory; the environment decides here.
+    monkeypatch.setattr("immich_memories.config_loader.get_config", unreadable)
+
+    assert resolve_location().url == f"sqlite:///{tmp_path / 'store.db'}"

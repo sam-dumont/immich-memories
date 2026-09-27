@@ -295,20 +295,29 @@ def _plan_structure(
         final_content_cap=source.case.target_seconds - CONTENT_RESERVE_SECONDS,
         bind_stitch=material.builder.measured_stitch,
     )
+    reader = ports.laya.cache_identity if ports.laya else "rules"
+    library = AudienceBank(
+        source.bank_store, answerer=f"{source.config.editorial.preparation.tier}|{reader}"
+    )
     with llm_metrics.collecting() as counters:
-        outcome = _select(
-            source,
-            ports,
-            wall,
-            material,
-            run,
-            audit_dir=audit_dir,
-            contract=contract,
-            admission=admission,
-            admission_key=admission_key,
-            partition_limit=partition_limit,
-            prior_assets=prior_assets,
-        )
+        try:
+            outcome = _select(
+                source,
+                ports,
+                wall,
+                material,
+                run,
+                library,
+                audit_dir=audit_dir,
+                contract=contract,
+                admission=admission,
+                admission_key=admission_key,
+                partition_limit=partition_limit,
+                prior_assets=prior_assets,
+            )
+        finally:
+            # The holds this cut cast reach the store in one batch, even when the cut fails.
+            library.flush()
     metrics = provider_metrics(counters)
     if run.render_timeline is None:
         run.shaved += shave_content_duration(run.carriers, run.final_content_cap)
@@ -371,6 +380,7 @@ def _select(
     wall: Wall,
     material: Material,
     run: PlanRun,
+    library: AudienceBank,
     *,
     audit_dir,
     contract: str,
@@ -397,10 +407,7 @@ def _select(
         flag_rows=source.shareability_flags,
         lines=source.annotations,
         bank_path=audit_dir / "shareability.private.json",
-        library=AudienceBank(
-            source.bank_store,
-            answerer=f"{audience_tier}|" + (ports.laya.cache_identity if ports.laya else "rules"),
-        ),
+        library=library,
         check_audience=audience_check_for(
             audience_tier,
             strict_sharing=source.config.editorial.strict_sharing and source.audience == SHAREABLE,
