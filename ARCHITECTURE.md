@@ -246,9 +246,10 @@ unchanged sources retain their existing bank entries.
   further review, and an unanswered caption stays with the family. Answer banks distinguish
   Laya from the rules check. `editorial_shareability_tiers.py` selects this policy independently
   of whether the film uses prose or polish.
-- **Pictures are read once**: a model looks at a picture only at ingest (the caption server, the
-  heads, the detectors). No film-time stage sends a picture to any model, on any tier; the reader
-  is text only, and so is music: the mood comes from the cut's thesis, story titles and ingest
+- **Picture evidence is banked**: heads and detectors prepare cheap facts before the NAS draft.
+  Caption and clip producers acquire missing evidence for selected shots and actual candidates;
+  matching banked evidence is reused. A wider preparation scope requires an explicit `prepare`
+  job. The prose reader is text only, and so is music: its mood comes from the cut's thesis, story titles and
   captions (`audio/text_mood.py`), else the clips' own mood, else `calm`. `refuse_pictures` in
   `tests/no_pictures.py` wraps the one dispatch every model request passes through and fails on
   any request carrying a picture; `tests/test_editorial_demanded_previews.py` holds the production
