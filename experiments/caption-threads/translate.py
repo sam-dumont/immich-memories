@@ -261,9 +261,23 @@ def around(library, anchors):
 
 
 LOOK = '''Look at the photo{ref}. Answer each question with true or false from what is
-visible{same}. Return JSON {{"answers":[booleans, one per question],"same":{same_values},"why":short}}.
+visible{same}. Return JSON {{"why":short,"answers":[booleans, one per question],"same":{same_values}}}.
 Questions: {questions}'''
 LOOK_BUDGET = int(os.environ.get("LOOK_BUDGET", 160))
+
+
+def look_schema(n_questions, with_ref):
+    # The free-text reason first: a free field last is where the enforced grammar stalls.
+    props = {"why": {"type": "string", "maxLength": 200},
+             "answers": {"type": "array", "items": {"type": "boolean"},
+                         "minItems": n_questions, "maxItems": n_questions}}
+    if with_ref:
+        props["same"] = {"type": "string", "enum": ["same", "different", "cannot_tell"]}
+    return {"type": "object", "additionalProperties": False, "properties": props, "required": list(props)}
+
+
+def truthy(value):
+    return value is True or (isinstance(value, str) and value.strip().lower() == "true")
 
 
 def preview(config, asset_id):
@@ -273,10 +287,13 @@ def preview(config, asset_id):
     return "data:image/jpeg;base64," + base64.b64encode(r.content).decode()
 
 
-def ask_images(llm, text, images):
+def ask_images(llm, text, images, schema=None):
     content = [{"type": "text", "text": text}] + [{"type": "image_url", "image_url": {"url": u}} for u in images]
     body = {"model": llm.model, "messages": [{"role": "user", "content": content}],
-            "max_tokens": 200, "temperature": 0, **llm.extra_params, **llm.no_thinking_params}
+            "max_tokens": 300, "temperature": 0, **llm.extra_params, **llm.no_thinking_params}
+    if schema:
+        # Enforced: an answer of the string "false" once counted as a yes (09-27).
+        body["response_format"] = {"type": "json_schema", "json_schema": {"name": "look", "schema": schema, "strict": True}}
     r = httpx.post(llm.base_url.rstrip("/") + "/chat/completions", json=body, timeout=180,
                    headers=openai_headers(llm), trust_env=False)
     r.raise_for_status()
@@ -315,11 +332,14 @@ def look(reader, config, library, plan, candidates, anchors):
     for i in [i for i in ordered if i in anchors][:12]:
         # The reference must show the subject: the first OCR hit can be a sticker on a device.
         try:
-            probe = ask_images(reader.llm, f'Does this photo show {subject_words or "the subject"}? '
-                               'Return JSON {"answer":boolean}.', [preview(config, library.rows[i]["asset_id"])])
+            probe = ask_images(reader.llm, f'Does this photo show {subject_words or "the subject"} '
+                               '(a real photograph, not a screenshot or a screen)? Return JSON.',
+                               [preview(config, library.rows[i]["asset_id"])],
+                               schema={"type": "object", "additionalProperties": False,
+                                       "properties": {"answer": {"type": "boolean"}}, "required": ["answer"]})
         except (httpx.HTTPError, ValueError, KeyError):
             continue
-        if probe.get("answer") is True:
+        if truthy(probe.get("answer")):
             reference = library.rows[i]["asset_id"]
             break
     ref_image = preview(config, reference) if reference else None
@@ -339,11 +359,12 @@ def look(reader, config, library, plan, candidates, anchors):
             answer = json.loads(path.read_text())
         else:
             try:
-                answer = ask_images(reader.llm, text, ([ref_image] if use_ref else []) + [preview(config, aid)])
+                answer = ask_images(reader.llm, text, ([ref_image] if use_ref else []) + [preview(config, aid)],
+                                    schema=look_schema(len(questions), use_ref))
             except (httpx.HTTPError, ValueError, KeyError) as exc:
                 answer = {"answers": [], "same": None, "why": f"error: {exc}"}
             save(path, answer)
-        ok = all(answer.get("answers") or [False]) if questions else True
+        ok = all(truthy(x) for x in (answer.get("answers") or [False])) if questions else True
         ok = ok and answer.get("same") != "different"
         log.append({"date": library.rows[i]["taken_at"][:10], "caption": library.rows[i]["caption"][:80],
                     "answers": answer.get("answers"), "same": answer.get("same"), "why": answer.get("why", "")[:120],
@@ -398,7 +419,8 @@ def firsts(reader, library, key, name, person, rows):
 
     for t, i in seen.items():
         # Things and actions only: an adjective or a function word is not a first.
-        if t in FILLER_WORDS or not (wn.synsets(t, pos=wn.NOUN) or wn.synsets(t, pos=wn.VERB)) or wn.synsets(t, pos=wn.ADJ):
+        # Things only (a place, a food, an animal, an object, an event), and never a verb form.
+        if t in FILLER_WORDS or not wn.synsets(t, pos=wn.NOUN) or wn.synsets(t, pos=wn.ADJ) or t.endswith(("ing", "ed", "es")) and wn.synsets(t, pos=wn.VERB):
             continue
         first = date.fromisoformat(library.rows[i]["taken_at"][:10])
         later = sorted(days_of[t])
@@ -427,6 +449,15 @@ def firsts(reader, library, key, name, person, rows):
                             schema=schema)
         by_id = {o["id"]: o for o in part}
         chosen += [by_id[i] | {"label": "first " + by_id[i]["word"]} for i in (answer or {"picked": []})["picked"]]
+    # Every batch fills its three slots, junk batches too: one final comparison keeps the best.
+    if len(chosen) > 12:
+        ids = {j: c for j, c in enumerate(chosen)}
+        schema = _schema(picked={"type": "array", "items": {"type": "integer", "enum": list(ids)}, "maxItems": 12})
+        final = reader.ask("firsts_final", f"{key}:final", FIRSTS.replace("(at most three)", "(at most twelve)").format(
+                           who=name.split()[0]), [{"id": j, "word": c["word"], "date": c["date"], "age": c["age"],
+                           "first_caption": c["first_caption"]} for j, c in ids.items()], lambda a: None, 400,
+                           schema=schema)
+        chosen = sorted((ids[j] for j in (final or {"picked": list(ids)})["picked"]), key=lambda c: c["date"])
     return chosen, offered
 
 
