@@ -9,6 +9,7 @@ from immich_memories.analysis.strict_json import named_keys
 JSON_RECOVERY_POLICY = "complete-final-json-v2-format-repair"
 JSON_FIELDS_POLICY = "exact-fields-v2-complete-sequence"
 JSON_EMPTY_ARRAY_POLICY = "explicit-empty-array-pairs-v1"
+JSON_OPTIONAL_FIELDS_POLICY = "optional-fields-v1"
 
 
 class JSONDecisionError(ValueError):
@@ -62,6 +63,7 @@ def complete_final_json(
     *,
     fields: tuple[str, ...] = (),
     empty_array_pairs: tuple[tuple[str, str], ...] = (),
+    optional_fields: tuple[str, ...] = (),
 ) -> str:
     """Return the final whole object, rejecting an unfinished object at any depth.
 
@@ -73,13 +75,14 @@ def complete_final_json(
     pair may add a missing empty array only beside an explicitly empty string.
     """
     validate_empty_array_pairs(fields, empty_array_pairs)
+    validate_optional_fields(fields, optional_fields)
     decoder = json.JSONDecoder(object_pairs_hook=_unique_object) if fields else json.JSONDecoder()
     pieces, found, cursor, sequence_start = _scan_object_sequence(raw, decoder)
     if found is None or "}" in raw[cursor:]:
         raise ValueError("no complete final JSON decision")
     if fields:
         return _declared_fields_object(
-            raw, pieces, found, cursor, sequence_start, fields, empty_array_pairs
+            raw, pieces, found, cursor, sequence_start, fields, empty_array_pairs, optional_fields
         )
     return found
 
@@ -115,8 +118,19 @@ def _merged_sequence(
     return _unique_object([item for piece in pieces for item in piece.items()])
 
 
-def _require_exact_fields(value: dict[str, object], fields: tuple[str, ...]) -> None:
-    missing, unexpected = set(fields) - set(value), set(value) - set(fields)
+def validate_optional_fields(fields: tuple[str, ...], optional_fields: tuple[str, ...]) -> None:
+    """Only declared fields may be optional; the complete-object checks still apply."""
+    if not isinstance(optional_fields, tuple) or any(
+        not isinstance(field, str) or field not in fields for field in optional_fields
+    ):
+        raise ValueError("optional JSON fields must be declared fields")
+
+
+def _require_exact_fields(
+    value: dict[str, object], fields: tuple[str, ...], optional_fields: tuple[str, ...] = ()
+) -> None:
+    missing = set(fields) - set(optional_fields) - set(value)
+    unexpected = set(value) - set(fields)
     if missing or unexpected:
         named = [
             f"{label} {named_keys(keys)}"
@@ -151,6 +165,7 @@ def _declared_fields_object(
     sequence_start: int,
     fields: tuple[str, ...],
     empty_array_pairs: tuple[tuple[str, str], ...],
+    optional_fields: tuple[str, ...],
 ) -> str:
     value = pieces[-1]
     if len(pieces) > 1:
@@ -158,7 +173,7 @@ def _declared_fields_object(
     added = False
     if empty_array_pairs:
         added = _fill_empty_arrays(value, fields, empty_array_pairs)
-    _require_exact_fields(value, fields)
+    _require_exact_fields(value, fields, optional_fields)
     if len(pieces) > 1 or added:
         return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
     return found
