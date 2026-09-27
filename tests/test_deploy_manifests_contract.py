@@ -355,19 +355,14 @@ def test_service_file_ships_no_ingress() -> None:
 def test_batch_jobs_use_realistic_durations_and_current_flags() -> None:
     """`--duration` is seconds: 10 produced a ten-second video.
 
-    `--cooldown` used to be asserted here because the scheduled CronJob ran
-    `immich-memories auto run --cooldown 24` directly. #871 replaced that with
-    a curl to the trigger route, which resolves its own cooldown from
-    `config.automation.cooldown_hours` (below) with no CLI flag to drift.
+    The scheduled CronJobs no longer pass `--cooldown`: they call the trigger
+    route, which takes its cooldown from `automation.cooldown_hours` (#871).
     """
-    from immich_memories.config_models_automation import AutomationConfig
-
     text = (K8S_DIR / "job.yaml").read_text()
 
     for match in re.finditer(r"--duration\s+\"?(\d+)", text):
         assert int(match.group(1)) >= 60, match.group(0)
     assert "--cooldown" not in text
-    assert AutomationConfig().cooldown_hours == 24
     assert "/output/" not in text.replace(OUTPUT_DIR, "")
 
 
