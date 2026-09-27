@@ -15,16 +15,16 @@ from immich_memories.analysis.editorial_text_failures import (
     TextCompletionFailure,
 )
 from immich_memories.analysis.editorial_text_gateway import QueryTextRequester
+from immich_memories.db import Store, open_store
 from immich_memories.security import write_secret_file
 
 
 class StructureTextJudge:
-    def __init__(self, config, out: Path, *, cache_path: Path | None = None) -> None:
+    def __init__(self, config, out: Path, *, judgments: Store | None = None) -> None:
         self.config = config
         self.out = out
-        self.cache_path = (
-            cache_path if cache_path is not None else out.parent / "text-judgments.sqlite"
-        )
+        # Without a named store the answers go to the one the configuration names.
+        self.judgments = judgments if judgments is not None else open_store(config)
         self.calls: list[dict] = []
         self.requester = QueryTextRequester(
             json_failure_observer=self._record_json_failure,
@@ -109,7 +109,7 @@ class StructureTextJudge:
         request = TextRequest(
             prompt=prompt,
             llm_config=self.config.llm,
-            cache_path=self.cache_path,
+            judgments=self.judgments,
             max_tokens=max_tokens,
             timeout_seconds=int(self.config.llm.timeout_seconds),
             thinking=False,

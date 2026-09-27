@@ -1,7 +1,6 @@
 """Motion providers reuse existing captions without confusing their bank identities."""
 
 import json
-import sqlite3
 from contextlib import nullcontext
 from types import SimpleNamespace
 
@@ -21,50 +20,46 @@ from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
 from immich_memories.analysis.llm_metrics import collecting
 from immich_memories.config_loader import Config
 from immich_memories.config_models_llm import LLMConfig
-from immich_memories.store.editorial_preparation import initialize
+from tests.annotation_rows import annotation_store
 from tests.test_editorial_preparation_motion import frame, sampled, video
 
 
-def test_explicit_motion_producer_reuses_smolvlm_without_overwriting_its_bank(tmp_path):
+def test_explicit_motion_producer_reuses_smolvlm_without_overwriting_its_bank():
     model = LLM_CAPTION_PREFIX + "fixture-vision-model"
     config = Config(tier="gpu", editorial={"description_model": model})
     assets = {name: video(name) for name in ("old", "new")}
     sources = motion_sources(tuple(assets.values()), residual_of=lambda _: None)
-    database = tmp_path / "annotations.sqlite"
-    reader = production_story_motion(
-        SimpleNamespace(config=config, assets=assets), cache_path=database
-    )
+    store = annotation_store()
+    reader = production_story_motion(SimpleNamespace(config=config, assets=assets), store=store)
     assert reader.producer != MOTION_PRODUCER
-    with sqlite3.connect(database) as connection:
-        initialize(connection)
-        common = {
-            "connection": connection,
-            # WHY: synthetic frames stand in for the external Immich playback boundary.
-            "sample": sampled,
-            "concurrency": 1,
-            "check_cancelled": lambda: None,
-            "progress": lambda *_: None,
-        }
-        # WHY: fixed completions replace external inference while exercising the real writer.
-        prepare_motion_lines(
-            **common, sources=sources[:1], ask=lambda _: '{"description":"A child runs."}'
-        )
-        pending = missing_motion(connection, sources, producer=reader.producer)
-        assert [s.asset_id for s in pending] == ["new"]
-        result = prepare_motion_lines(
-            **common,
-            sources=pending,
-            ask=lambda _: '{"description":"A dog jumps."}',
-            producer=reader.producer,
-        )
-        assert result.described == 1
-        assert missing_motion(connection, sources, producer=reader.producer) == ()
+    common = {
+        "store": store,
+        # WHY: synthetic frames stand in for the external Immich playback boundary.
+        "sample": sampled,
+        "concurrency": 1,
+        "check_cancelled": lambda: None,
+        "progress": lambda *_: None,
+    }
+    # WHY: fixed completions replace external inference while exercising the real writer.
+    prepare_motion_lines(
+        **common, sources=sources[:1], ask=lambda _: '{"description":"A child runs."}'
+    )
+    pending = missing_motion(store, sources, producer=reader.producer)
+    assert [s.asset_id for s in pending] == ["new"]
+    result = prepare_motion_lines(
+        **common,
+        sources=pending,
+        ask=lambda _: '{"description":"A dog jumps."}',
+        producer=reader.producer,
+    )
+    assert result.described == 1
+    assert missing_motion(store, sources, producer=reader.producer) == ()
 
     for asset, text in (("old", "A child runs."), ("new", "A dog jumps.")):
         assert reader.observe({"asset_id": asset, "kind": "video", "raw_seconds": 8.0}).startswith(
             text
         )
-    default = BankedMotionLines(store_path=database, assets=assets, described=True)
+    default = BankedMotionLines(store=store, assets=assets, described=True)
     assert "A dog jumps." not in default.observe(
         {"asset_id": "new", "kind": "video", "raw_seconds": 8.0}
     )

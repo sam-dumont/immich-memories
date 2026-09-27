@@ -3,22 +3,32 @@
 from __future__ import annotations
 
 import json
-import sqlite3
-from collections.abc import Mapping
+import string
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
-from pathlib import Path
+from typing import Any
+
+import sqlalchemy as sa
+from sqlalchemy.engine import Connection
+from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
 from immich_memories.analysis.subject_framing import FaceBox
-from immich_memories.store.caption_selection import selected_captions
-
-_FACES_FROM = (
-    " FROM face_boxes b JOIN _annotation_wanted w ON w.asset_id = b.asset_id "
-    "ORDER BY b.asset_id, b.x1, b.y1, b.x2, b.y2"
+from immich_memories.db import Store
+from immich_memories.db.tables import (
+    asset_flags,
+    asset_people,
+    description_fields,
+    descriptions,
+    face_boxes,
+    head_facts,
+    motion_bursts,
+    pixel_facts,
+    pixel_facts_thresholds,
 )
-_FACES_WITH_PERSON = "SELECT b.asset_id, b.named, b.x1, b.y1, b.x2, b.y2, b.person_id" + _FACES_FROM
-_FACES_WITHOUT_PERSON = "SELECT b.asset_id, b.named, b.x1, b.y1, b.x2, b.y2, NULL" + _FACES_FROM
+from immich_memories.store.batches import id_in, in_chunks
+from immich_memories.store.caption_selection import selected_captions
 
 
 @dataclass(frozen=True)
@@ -110,13 +120,13 @@ class AssetAnnotationFactRepository:
 
     def __init__(
         self,
-        store_path: Path,
+        store: Store,
         *,
         description_model: str | None,
         head_versions: Mapping[str, str],
         pixel_producer_key: str,
     ) -> None:
-        self._store_path = Path(store_path)
+        self._store = store
         self._description_model = description_model
         self._head_versions = dict(head_versions)
         self._pixel_producer_key = pixel_producer_key
@@ -128,10 +138,9 @@ class AssetAnnotationFactRepository:
             raise ValueError("annotation fact read needs at least one asset ID")
         records = {asset_id: _MutableAssetFacts() for asset_id in ordered_ids}
         try:
-            uri = f"{self._store_path.resolve().as_uri()}?mode=ro"
-            with sqlite3.connect(uri, uri=True) as connection:
+            with self._store.connect() as connection:
                 self._read_facts(connection, ordered_ids, records)
-        except (OSError, sqlite3.Error):
+        except (OSError, SQLAlchemyError):
             return AssetAnnotationFactBatch(
                 requested_asset_ids=ordered_ids,
                 facts=(),
@@ -146,19 +155,12 @@ class AssetAnnotationFactRepository:
 
     def _read_facts(
         self,
-        connection: sqlite3.Connection,
+        connection: Connection,
         asset_ids: tuple[str, ...],
         records: dict[str, _MutableAssetFacts],
     ) -> None:
-        connection.execute(
-            "CREATE TEMP TABLE IF NOT EXISTS _annotation_wanted (asset_id TEXT PRIMARY KEY)"
-        )
-        connection.executemany(
-            "INSERT OR IGNORE INTO _annotation_wanted VALUES (?)",
-            ((asset_id,) for asset_id in asset_ids),
-        )
-        self._read_people(connection, records)
-        self._read_faces(connection, records)
+        self._read_people(connection, asset_ids, records)
+        self._read_faces(connection, asset_ids, records)
         if self._description_model is not None:
             if self._description_model.startswith(LLM_CAPTION_PREFIX):
                 for asset_id, caption in selected_captions(
@@ -167,22 +169,33 @@ class AssetAnnotationFactRepository:
                     records[asset_id].description = caption.envelope.description
                     records[asset_id].setting = caption.envelope.setting
             else:
-                self._read_descriptions(connection, records)
-                self._read_description_fields(connection, records)
-        self._read_flags(connection, records)
-        self._read_heads(connection, records)
-        self._read_pixels(connection, records)
-        self._read_motion(connection, records)
+                self._read_descriptions(connection, asset_ids, records)
+                self._read_description_fields(connection, asset_ids, records)
+        self._read_flags(connection, asset_ids, records)
+        self._read_heads(connection, asset_ids, records)
+        self._read_pixels(connection, asset_ids, records)
+        self._read_motion(connection, asset_ids, records)
 
     def _read_people(
-        self, connection: sqlite3.Connection, records: dict[str, _MutableAssetFacts]
+        self,
+        connection: Connection,
+        asset_ids: Sequence[str],
+        records: dict[str, _MutableAssetFacts],
     ) -> None:
-        rows = connection.execute(
-            "SELECT p.asset_id, p.person_name, p.person_id, p.birth_date "
-            "FROM asset_people p "
-            "JOIN _annotation_wanted w ON w.asset_id = p.asset_id "
-            "ORDER BY p.asset_id, lower(trim(p.person_name)), p.person_name, "
-            "p.person_id, p.birth_date"
+        p = asset_people
+        rows = _rows(
+            connection,
+            sa.select(p.c.asset_id, p.c.person_name, p.c.person_id, p.c.birth_date),
+            p.c.asset_id,
+            asset_ids,
+        )
+        # The order the file's SQL gave: SQLite's lower() and trim() touch ASCII and spaces only.
+        rows.sort(
+            key=lambda r: (
+                r[0],
+                _nulls_first(_ascii_lower(r[1].strip(" ")) if r[1] is not None else None),
+                *(_nulls_first(value) for value in r[1:]),
+            )
         )
         for asset_id, name, person_id, born in rows:
             records[str(asset_id)].people.append(
@@ -194,51 +207,61 @@ class AssetAnnotationFactRepository:
             )
 
     def _read_faces(
-        self, connection: sqlite3.Connection, records: dict[str, _MutableAssetFacts]
+        self,
+        connection: Connection,
+        asset_ids: Sequence[str],
+        records: dict[str, _MutableAssetFacts],
     ) -> None:
-        columns = {row[1] for row in connection.execute("PRAGMA table_info(face_boxes)")}
-        # A store no preparation has opened since identities were banked has no
-        # person column; its boxes read as named by nobody in particular.
-        try:
-            rows = connection.execute(
-                _FACES_WITH_PERSON if "person_id" in columns else _FACES_WITHOUT_PERSON
-            )
-            for asset_id, named, x1, y1, x2, y2, person_id in rows:
-                records[str(asset_id)].faces.append(
-                    FaceBox(
-                        x1=float(x1),
-                        y1=float(y1),
-                        x2=float(x2),
-                        y2=float(y2),
-                        named=bool(named),
-                        person_id=_clean(person_id) or None,
-                    )
+        b = face_boxes
+        rows = _rows(
+            connection,
+            sa.select(b.c.asset_id, b.c.named, b.c.x1, b.c.y1, b.c.x2, b.c.y2, b.c.person_id),
+            b.c.asset_id,
+            asset_ids,
+        )
+        rows.sort(key=lambda r: (r[0], *(_nulls_first(value) for value in r[2:6])))
+        for asset_id, named, x1, y1, x2, y2, person_id in rows:
+            records[str(asset_id)].faces.append(
+                FaceBox(
+                    x1=float(x1),
+                    y1=float(y1),
+                    x2=float(x2),
+                    y2=float(y2),
+                    named=bool(named),
+                    person_id=_clean(person_id) or None,
                 )
-        except sqlite3.OperationalError as exc:
-            # A store written before faces were banked reads complete without them.
-            if not _is_missing_table(exc, "face_boxes"):
-                raise
+            )
 
     def _read_descriptions(
-        self, connection: sqlite3.Connection, records: dict[str, _MutableAssetFacts]
+        self,
+        connection: Connection,
+        asset_ids: Sequence[str],
+        records: dict[str, _MutableAssetFacts],
     ) -> None:
-        rows = connection.execute(
-            "SELECT d.asset_id, d.text FROM descriptions d "
-            "JOIN _annotation_wanted w ON w.asset_id = d.asset_id "
-            "WHERE d.model = ? ORDER BY d.asset_id, d.text",
-            (self._description_model,),
+        d = descriptions
+        rows = _rows(
+            connection,
+            sa.select(d.c.asset_id, d.c.text).where(d.c.model == self._description_model),
+            d.c.asset_id,
+            asset_ids,
         )
         for asset_id, text in rows:
             records[str(asset_id)].description = _clean(text) or None
 
     def _read_description_fields(
-        self, connection: sqlite3.Connection, records: dict[str, _MutableAssetFacts]
+        self,
+        connection: Connection,
+        asset_ids: Sequence[str],
+        records: dict[str, _MutableAssetFacts],
     ) -> None:
-        rows = connection.execute(
-            "SELECT d.asset_id, d.field, d.value FROM description_fields d "
-            "JOIN _annotation_wanted w ON w.asset_id = d.asset_id "
-            "WHERE d.model = ? ORDER BY d.asset_id, d.field, d.value",
-            (self._description_model,),
+        d = description_fields
+        rows = _rows(
+            connection,
+            sa.select(d.c.asset_id, d.c.field, d.c.value).where(
+                d.c.model == self._description_model
+            ),
+            d.c.asset_id,
+            asset_ids,
         )
         for asset_id, name, value in rows:
             record = records[str(asset_id)]
@@ -249,13 +272,19 @@ class AssetAnnotationFactRepository:
                 record.exposure = cleaned
 
     def _read_flags(
-        self, connection: sqlite3.Connection, records: dict[str, _MutableAssetFacts]
+        self,
+        connection: Connection,
+        asset_ids: Sequence[str],
+        records: dict[str, _MutableAssetFacts],
     ) -> None:
-        rows = connection.execute(
-            "SELECT f.asset_id, f.flag, f.evidence, f.source FROM flags f "
-            "JOIN _annotation_wanted w ON w.asset_id = f.asset_id "
-            "ORDER BY f.asset_id, f.flag, f.evidence, f.source"
+        f = asset_flags
+        rows = _rows(
+            connection,
+            sa.select(f.c.asset_id, f.c.flag, f.c.evidence, f.c.source),
+            f.c.asset_id,
+            asset_ids,
         )
+        rows.sort(key=lambda r: tuple(_nulls_first(value) for value in r))
         for asset_id, flag, evidence, source in rows:
             cleaned_source = _clean(source)
             # The owner's clear-hold and never-use act on the gate and the material, never on
@@ -271,12 +300,17 @@ class AssetAnnotationFactRepository:
             )
 
     def _read_heads(
-        self, connection: sqlite3.Connection, records: dict[str, _MutableAssetFacts]
+        self,
+        connection: Connection,
+        asset_ids: Sequence[str],
+        records: dict[str, _MutableAssetFacts],
     ) -> None:
-        rows = connection.execute(
-            "SELECT h.asset_id, h.head, h.version, h.label FROM head_facts h "
-            "JOIN _annotation_wanted w ON w.asset_id = h.asset_id "
-            "ORDER BY h.asset_id, h.head, h.version, h.label"
+        h = head_facts
+        rows = _rows(
+            connection,
+            sa.select(h.c.asset_id, h.c.head, h.c.version, h.c.label),
+            h.c.asset_id,
+            asset_ids,
         )
         for asset_id, head, version, label in rows:
             head_name = str(head)
@@ -284,28 +318,33 @@ class AssetAnnotationFactRepository:
                 records[str(asset_id)].heads[head_name] = _clean(label)
 
     def _read_pixels(
-        self, connection: sqlite3.Connection, records: dict[str, _MutableAssetFacts]
+        self,
+        connection: Connection,
+        asset_ids: Sequence[str],
+        records: dict[str, _MutableAssetFacts],
     ) -> None:
-        threshold_row = connection.execute(
-            "SELECT value FROM pixel_facts_thresholds "
-            "WHERE name = 'sharpness_p10' AND producer_key = ? "
-            "ORDER BY value LIMIT 1",
-            (self._pixel_producer_key,),
-        ).fetchone()
-        soft_below = (
-            float(threshold_row[0])
-            if threshold_row is not None and threshold_row[0] is not None
-            else None
+        t = pixel_facts_thresholds
+        soft_below = _as_float(
+            connection.execute(
+                sa.select(sa.func.min(t.c.value)).where(
+                    t.c.name == "sharpness_p10", t.c.producer_key == self._pixel_producer_key
+                )
+            ).scalar()
         )
-        rows = connection.execute(
-            "SELECT p.asset_id, p.sharpness, p.brightness, p.contrast, "
-            "p.dark_fraction, p.bright_fraction, p.needs_rotation "
-            "FROM pixel_facts p "
-            "JOIN _annotation_wanted w ON w.asset_id = p.asset_id "
-            "WHERE p.producer_key = ? "
-            "ORDER BY p.asset_id, p.sharpness, p.brightness, p.contrast, "
-            "p.dark_fraction, p.bright_fraction, p.needs_rotation",
-            (self._pixel_producer_key,),
+        p = pixel_facts
+        rows = _rows(
+            connection,
+            sa.select(
+                p.c.asset_id,
+                p.c.sharpness,
+                p.c.brightness,
+                p.c.contrast,
+                p.c.dark_fraction,
+                p.c.bright_fraction,
+                p.c.needs_rotation,
+            ).where(p.c.producer_key == self._pixel_producer_key),
+            p.c.asset_id,
+            asset_ids,
         )
         for asset_id, sharpness, brightness, contrast, dark, bright, rotated in rows:
             records[str(asset_id)].pixel = StoredPixelFacts(
@@ -319,26 +358,48 @@ class AssetAnnotationFactRepository:
             )
 
     def _read_motion(
-        self, connection: sqlite3.Connection, records: dict[str, _MutableAssetFacts]
+        self,
+        connection: Connection,
+        asset_ids: Sequence[str],
+        records: dict[str, _MutableAssetFacts],
     ) -> None:
-        try:
-            rows = connection.execute(
-                "SELECT m.asset_id, m.burst_id, m.still_ids, "
-                "m.duration_seconds, m.beats_a_still FROM motion_bursts m "
-                "JOIN _annotation_wanted w ON w.asset_id = m.asset_id "
-                "ORDER BY m.asset_id, m.burst_id, m.still_ids, "
-                "m.duration_seconds, m.beats_a_still"
+        m = motion_bursts
+        rows = _rows(
+            connection,
+            sa.select(
+                m.c.asset_id, m.c.burst_id, m.c.still_ids, m.c.duration_seconds, m.c.beats_a_still
+            ),
+            m.c.asset_id,
+            asset_ids,
+        )
+        for asset_id, burst_id, still_ids, duration, beats in rows:
+            records[str(asset_id)].motion = StoredMotionBurstFact(
+                burst_id=_clean(burst_id),
+                still_ids=_json_strings(still_ids),
+                duration_seconds=_as_float(duration),
+                beats_a_still=bool(beats),
             )
-            for asset_id, burst_id, still_ids, duration, beats in rows:
-                records[str(asset_id)].motion = StoredMotionBurstFact(
-                    burst_id=_clean(burst_id),
-                    still_ids=_json_strings(still_ids),
-                    duration_seconds=_as_float(duration),
-                    beats_a_still=bool(beats),
-                )
-        except sqlite3.OperationalError as exc:
-            if not _is_missing_table(exc, "motion_bursts"):
-                raise
+
+
+def _rows(
+    connection: Connection, query: sa.Select, key: sa.ColumnElement, asset_ids: Sequence[str]
+) -> list[Any]:
+    rows: list[Any] = []
+    for chunk in in_chunks(connection, asset_ids):
+        rows.extend(connection.execute(query.where(id_in(connection, key, chunk))))
+    return rows
+
+
+def _nulls_first(value: object) -> tuple[bool, object]:
+    # SQLite orders NULL before every value; a missing value never compares with a present one.
+    return (value is not None, value if value is not None else 0)
+
+
+def _ascii_lower(value: str) -> str:
+    return value.translate(_ASCII_LOWER)
+
+
+_ASCII_LOWER = str.maketrans(string.ascii_uppercase, string.ascii_lowercase)
 
 
 def _freeze(asset_id: str, record: _MutableAssetFacts) -> StoredAssetAnnotationFacts:
@@ -387,11 +448,6 @@ def _as_date(value: object) -> date | None:
 
 def _as_float(value: object) -> float | None:
     return float(value) if isinstance(value, (int, float, str)) else None
-
-
-def _is_missing_table(exc: sqlite3.OperationalError, table: str) -> bool:
-    message = str(exc).casefold()
-    return "no such table" in message and table in message
 
 
 def _clean(value: object) -> str:

@@ -112,6 +112,8 @@ render_trip_map_frame  # unused function (src/immich_memories/titles/map_rendere
 #                    clear module-global state so tests do not leak into each
 #                    other; production never resets either
 #   PACK_DIM         one consumer, tests/test_triage_engine.py:15
+#   import_legacy    the annotations slice's legacy importer (#871); `store import` and the
+#                    first-open import call it once the slices are integrated
 response_sha256  # unused variable (src/immich_memories/analysis/text_episode_answers.py:48)
 unreadable_or_omitted_pages  # unused variable (src/immich_memories/analysis/text_episode_answers.py:49)
 get_active_display  # unused function (src/immich_memories/cli/_helpers.py:38)
@@ -122,3 +124,4 @@ _.cancel_run  # unused method (src/immich_memories/tracking/run_tracker.py:378)
 PACK_DIM  # unused variable (src/immich_memories/triage/encoder.py:23)
 reset_rate_limiter  # unused function (src/immich_memories/ui/auth.py:63)
 reset_oidc_client  # unused function (src/immich_memories/ui/auth_oidc.py:144)
+import_legacy  # unused function (src/immich_memories/store/legacy_annotations.py)

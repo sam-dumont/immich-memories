@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import json
-import sqlite3
 from dataclasses import replace
 from datetime import UTC, date, datetime
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import sqlalchemy as sa
 
 from immich_memories.analysis.editorial_planner import EditorialPlan, EditorialSelection
 from immich_memories.analysis.editorial_rule_reader import NoModelJudge
@@ -33,9 +32,10 @@ from immich_memories.analysis.selection_trace import Trace
 from immich_memories.analysis.smart_pipeline import ClipWithSegment
 from immich_memories.analysis.text_episode_paging import TEXT_EPISODE_MAX_OUTPUT_TOKENS
 from immich_memories.config_loader import Config
+from immich_memories.db import resolve_location
 from immich_memories.memory_types.date_builders import build_birthday_windows
-from immich_memories.store.episode_readings import EpisodeReadingStore
 from immich_memories.timeperiod import DateRange
+from tests.annotation_rows import add_rows, annotation_store
 from tests.conftest import make_asset, make_clip
 
 
@@ -44,52 +44,22 @@ def _window(year: int, month: int, day: int) -> DateRange:
     return DateRange(start, start.replace(hour=23, minute=59, second=59))
 
 
-def _create_annotation_store(path: Path, descriptions: dict[str, str]) -> None:
-    with sqlite3.connect(path) as connection:
-        connection.executescript(
-            """
-            CREATE TABLE asset_people (
-                asset_id TEXT, person_name TEXT, person_id TEXT, birth_date TEXT
-            );
-            CREATE TABLE descriptions (asset_id TEXT, model TEXT, text TEXT);
-            CREATE TABLE description_fields (
-                asset_id TEXT, model TEXT, field TEXT, value TEXT
-            );
-            CREATE TABLE flags (asset_id TEXT, flag TEXT, evidence TEXT, source TEXT);
-            CREATE TABLE head_facts (
-                asset_id TEXT, head TEXT, version TEXT, label TEXT
-            );
-            CREATE TABLE pixel_facts (
-                asset_id TEXT, producer_key TEXT, sharpness REAL, brightness REAL,
-                contrast REAL, dark_fraction REAL, bright_fraction REAL,
-                needs_rotation INTEGER
-            );
-            CREATE TABLE pixel_facts_thresholds (
-                name TEXT, value REAL, producer_key TEXT
-            );
-            CREATE TABLE motion_bursts (
-                asset_id TEXT, burst_id TEXT, still_ids TEXT,
-                duration_seconds REAL, beats_a_still INTEGER
-            );
-            """
-        )
-        connection.executemany(
-            "INSERT INTO descriptions VALUES (?, ?, ?)",
-            (
-                (asset_id, "student-v1", description)
-                for asset_id, description in descriptions.items()
-            ),
-        )
+def _seed_descriptions(descriptions: dict[str, str]) -> None:
+    add_rows(
+        annotation_store(),
+        "descriptions",
+        *(
+            {"asset_id": asset_id, "model": "student-v1", "text": description}
+            for asset_id, description in descriptions.items()
+        ),
+    )
 
 
-class _ClosingEpisodeStore(EpisodeReadingStore):
-    def __init__(self, path: Path) -> None:
-        super().__init__(path)
-        self.close_calls = 0
-
-    def close(self) -> None:
-        self.close_calls += 1
-        super().close()
+def _make_facts_unreadable() -> None:
+    """A store that cannot answer a fact read, as a damaged annotation store could not."""
+    store = annotation_store()
+    with store.begin() as connection:
+        connection.execute(sa.text("DROP TABLE asset_people"))
 
 
 def test_run_context_sorts_exact_windows_without_collapsing_the_gaps(
@@ -171,17 +141,16 @@ def test_missing_store_is_initialized_and_old_flag_cannot_bypass_preparation(tmp
         target_seconds=60,
         artifact_dir=tmp_path / "artifacts",
     )
-    store = tmp_path / "annotations.sqlite"
 
     disabled = Config(
         tier="full",
         llm={"model": "text-model", "base_url": "http://llm.test/v1"},
-        editorial={"enabled": False, "annotation_database": str(store)},
+        editorial={"enabled": False},
     )
     enabled = Config(
         tier="full",
         llm={"model": "text-model", "base_url": "http://llm.test/v1"},
-        editorial={"enabled": True, "annotation_database": str(store)},
+        editorial={"enabled": True},
     )
 
     planner = build_editorial_planner(
@@ -192,8 +161,9 @@ def test_missing_store_is_initialized_and_old_flag_cannot_bypass_preparation(tmp
         ports=EditorialRuntimePorts(load_people=lambda: {}),
     )
     assert planner._prepare_annotations is not None
-    assert store.is_file()
-    planner.close()
+    store_file = resolve_location().sqlite_path
+    assert store_file is not None
+    assert store_file.is_file()
     with pytest.raises(ValueError, match="Dry-run"):
         build_editorial_planner(
             client=object(),
@@ -202,7 +172,7 @@ def test_missing_store_is_initialized_and_old_flag_cannot_bypass_preparation(tmp
             context=context,
             dry_run=True,
         )
-    assert store.is_file()
+    assert store_file.is_file()
 
 
 def test_smart_pipeline_factory_preserves_the_existing_constructor_seam(tmp_path) -> None:
@@ -243,41 +213,13 @@ def test_smart_pipeline_factory_preserves_the_existing_constructor_seam(tmp_path
     smart_pipeline.assert_called_once_with(config="pipeline-config", planner=planner)
 
 
-def test_default_store_is_initialized_in_the_library_cache(tmp_path):
-    config = Config(
-        tier="full",
-        llm={"model": "text-model", "base_url": "http://llm.test/v1"},
-        cache={"directory": str(tmp_path / "cache")},
-    )
-    context = EditorialRunContext(
-        "month",
-        "A month",
-        "monthly_highlights",
-        (_window(2026, 8, 1),),
-        60,
-        tmp_path / "artifacts",
-    )
-    planner = build_editorial_planner(
-        client=object(),
-        config=config,
-        thumbnail_cache=object(),
-        context=context,
-        ports=EditorialRuntimePorts(load_people=lambda: {}),
-    )
-    with sqlite3.connect(tmp_path / "cache" / "annotations.sqlite") as connection:
-        assert connection.execute("SELECT count(*) FROM descriptions").fetchone() == (0,)
-    assert planner._prepare_annotations is not None
-    planner.close()
-
-
 def test_explicit_model_runtime_rejects_blank_model_before_opening_the_store(
     tmp_path,
 ) -> None:
-    store = tmp_path / "annotations.sqlite"
     config = Config(
         tier="full",
         llm={"base_url": "http://llm.test/v1", "model": "reader"},
-        editorial={"reader": "model", "annotation_database": str(store)},
+        editorial={"reader": "model"},
     )
     config.llm.model = ""
     context = EditorialRunContext(
@@ -297,7 +239,9 @@ def test_explicit_model_runtime_rejects_blank_model_before_opening_the_store(
             context=context,
         )
 
-    assert not store.exists()
+    store_file = resolve_location().sqlite_path
+    assert store_file is not None
+    assert not store_file.exists()
 
 
 def test_album_context_keeps_acquisition_windows_empty_and_derives_only_case_span(
@@ -323,12 +267,11 @@ def test_album_context_keeps_acquisition_windows_empty_and_derives_only_case_spa
 
 
 def test_runtime_acquires_each_exact_window_through_the_real_text_lane(tmp_path) -> None:
-    store = tmp_path / "annotations.sqlite"
-    sqlite3.connect(store).close()
+    _make_facts_unreadable()
     config = Config(
         tier="full",
         llm={"model": "text-model", "base_url": "http://llm.test/v1"},
-        editorial={"enabled": True, "annotation_database": str(store)},
+        editorial={"enabled": True},
     )
     earlier = _window(2015, 8, 20)
     later = _window(2025, 8, 20)
@@ -391,12 +334,11 @@ def test_default_people_port_reads_the_people_scan_authority_with_derived_edges(
 
 
 def test_album_runtime_uses_only_the_captured_album_corpus(tmp_path) -> None:
-    store = tmp_path / "annotations.sqlite"
-    sqlite3.connect(store).close()
+    _make_facts_unreadable()
     config = Config(
         tier="full",
         llm={"model": "text-model", "base_url": "http://llm.test/v1"},
-        editorial={"enabled": True, "annotation_database": str(store)},
+        editorial={"enabled": True},
     )
     clip = make_clip("album-demanded", file_created_at=datetime(2026, 7, 1, tzinfo=UTC))
     context = EditorialRunContext(
@@ -437,20 +379,17 @@ def test_post_card_runtime_projects_selected_wall_rows_in_chronological_order(
     tmp_path,
     monkeypatch,
 ) -> None:
-    store = tmp_path / "annotations.sqlite"
-    _create_annotation_store(
-        store,
+    _seed_descriptions(
         {
             "earlier": "A family starts a race together.",
             "later": "The same family celebrates at the finish.",
-        },
+        }
     )
     config = Config(
         tier="full",
         llm={"model": "text-model", "base_url": "http://llm.test/v1"},
         editorial={
             "enabled": True,
-            "annotation_database": str(store),
             "description_model": "student-v1",
             # A disabled polish still starts from the facts-only draft.
             "thin_model_layer": False,
@@ -472,12 +411,6 @@ def test_post_card_runtime_projects_selected_wall_rows_in_chronological_order(
     earlier = make_clip("earlier", file_created_at=window.start.replace(hour=9))
     later = make_clip("later", file_created_at=window.start.replace(hour=10))
     people_loads = 0
-    episode_stores: list[_ClosingEpisodeStore] = []
-
-    def episode_store(path: Path) -> _ClosingEpisodeStore:
-        created = _ClosingEpisodeStore(path)
-        episode_stores.append(created)
-        return created
 
     def load_people():
         nonlocal people_loads
@@ -559,7 +492,6 @@ def test_post_card_runtime_projects_selected_wall_rows_in_chronological_order(
             load_people=load_people,
             fetch_full_source=lambda _client, _scope: (later, earlier),
             episode_requester_factory=episode_requester,
-            episode_store_factory=episode_store,
             structure_planner=structure_planner,
             structure_ports_factory=lambda _source: StructurePlannerPorts(
                 judge=NoModelJudge(),
@@ -598,7 +530,6 @@ def test_post_card_runtime_projects_selected_wall_rows_in_chronological_order(
     with pytest.raises(ValueError, match="contract disagree"):
         replace(captured[0], case=replace(captured[0].case, product="trip"))
     assert (context.artifact_dir / "plan.private.json").is_file()
-    assert episode_stores[0].close_calls == 1
     assert not trace.requests
 
 

@@ -5,10 +5,12 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import sqlite3
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
+
+import sqlalchemy as sa
+from sqlalchemy.engine import Connection
 
 from immich_memories.analysis.editorial_description_contract import (
     DESCRIPTION_MODEL,
@@ -18,9 +20,11 @@ from immich_memories.analysis.editorial_description_contract import (
     validate_envelope,
 )
 from immich_memories.analysis.editorial_description_wire import request_bytes, tile_preview
+from immich_memories.db import Store, iso_from_db, to_db
+from immich_memories.db.tables import description_fields, description_unavailable, descriptions
+from immich_memories.store.batches import id_in, in_chunks
 
 VERSION = "caption-unavailable-v1"
-TABLE = "description_unavailable"
 COLUMNS = (
     "asset_id",
     "model",
@@ -200,57 +204,51 @@ def validate_unavailable(row: Mapping[str, Any], preview: bytes) -> None:
         raise ValueError("actual failed model requests differ from recorded input")
 
 
-def remember_unavailable(
-    connection: sqlite3.Connection, row: Mapping[str, Any], preview: bytes
-) -> None:
+def remember_unavailable(store: Store, row: Mapping[str, Any], preview: bytes) -> None:
     validate_unavailable(row, preview)
-    connection.execute(
-        f"CREATE TABLE IF NOT EXISTS {TABLE} ("
-        + ", ".join(f"{key} TEXT NOT NULL" for key in COLUMNS)
-        + ", PRIMARY KEY (asset_id, model))"
-    )
     # This is an outcome insertion, not replacement of older attempted evidence.
-    connection.execute(
-        "INSERT INTO description_unavailable (asset_id,model,source,version,producer_key,preview_sha256,image_sha256,request_sha256,request_json,attempts_json,written_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-        tuple(row[key] for key in COLUMNS),
-    )
-    connection.commit()
+    with store.begin() as connection:
+        connection.execute(
+            sa.insert(description_unavailable).values(
+                {**row, "written_at": to_db(row["written_at"])}
+            )
+        )
 
 
 def unavailable_for(
-    connection: sqlite3.Connection,
+    connection: Connection,
     asset_ids: Sequence[str],
     *,
     preview_for: Callable[[str], bytes] | None = None,
 ) -> dict[str, dict[str, Any]]:
-    if not connection.execute(
-        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (TABLE,)
-    ).fetchone():
-        return {}
-    if {r[1] for r in connection.execute(f"PRAGMA table_info({TABLE})")} != set(COLUMNS):
-        raise ValueError("unavailable caption table schema differs")
     wanted = sorted(set(asset_ids))
-    found = {}
-    # Bound parameters and payload reads to this scope, including on query_only connections.
-    for offset in range(0, len(wanted), 500):
-        chunk = wanted[offset : offset + 500]
-        placeholders = ",".join("?" for _ in chunk)
+    found: dict[str, dict[str, Any]] = {}
+    table = description_unavailable
+    for chunk in in_chunks(connection, wanted):
         for values in connection.execute(
-            "SELECT asset_id,model,source,version,producer_key,preview_sha256,image_sha256,request_sha256,request_json,attempts_json,written_at "  # noqa: S608 — only parameter placeholder marks are interpolated
-            f"FROM description_unavailable WHERE model=? AND asset_id IN ({placeholders})",
-            (DESCRIPTION_MODEL, *chunk),
+            sa.select(*(table.c[key] for key in COLUMNS)).where(
+                table.c.model == DESCRIPTION_MODEL, id_in(connection, table.c.asset_id, chunk)
+            )
         ):
-            row = dict(zip(COLUMNS, values, strict=True))
-            asset_id = row["asset_id"]
+            row: dict[str, Any] = dict(zip(COLUMNS, values, strict=True))
+            row["written_at"] = iso_from_db(row["written_at"])
+            asset_id = str(row["asset_id"])
             if asset_id in found or preview_for is None:
                 raise ValueError("unavailable caption needs unique evidence and current preview")
             validate_unavailable(row, preview_for(asset_id))
-            conflicts = connection.execute(
-                "SELECT 1 FROM descriptions WHERE asset_id=? AND model=? "
-                "UNION ALL SELECT 1 FROM description_fields WHERE asset_id=? AND model=?",
-                (asset_id, DESCRIPTION_MODEL, asset_id, DESCRIPTION_MODEL),
-            ).fetchone()
-            if conflicts:
-                raise ValueError("caption success/partial rows conflict with unavailable outcome")
             found[asset_id] = row
+    if _caption_rows_exist(connection, list(found)):
+        raise ValueError("caption success/partial rows conflict with unavailable outcome")
     return found
+
+
+def _caption_rows_exist(connection: Connection, asset_ids: list[str]) -> bool:
+    return any(
+        connection.execute(
+            sa.select(sa.literal(1)).where(
+                id_in(connection, table.c.asset_id, chunk), table.c.model == DESCRIPTION_MODEL
+            )
+        ).first()
+        for table in (descriptions, description_fields)
+        for chunk in in_chunks(connection, asset_ids)
+    )

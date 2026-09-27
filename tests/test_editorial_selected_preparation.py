@@ -1,6 +1,7 @@
 """Film-time enrichment belongs to the NAS draft, not its whole source pool (#1397)."""
 
 import json
+import os
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
@@ -8,7 +9,7 @@ import pytest
 
 from immich_memories.analysis.editorial_description_contract import validate_envelope
 from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
-from immich_memories.analysis.editorial_preparation_captions import _remember_caption
+from immich_memories.analysis.editorial_preparation_captions import _remember_captions
 from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
 from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
 from immich_memories.analysis.smart_pipeline import SmartPipeline
@@ -56,6 +57,11 @@ def _film(
     frame_reader=None,
 ):
     calls = []
+    # A distinct store per `directory`, so two calls with different directories in the same
+    # test see two annotation banks -- as two real runs with separate cache directories
+    # would -- while calls that reuse the same directory keep sharing warm facts.
+    directory.mkdir(parents=True, exist_ok=True)
+    os.environ["IMMICH_MEMORIES_DATABASE_URL"] = f"sqlite:///{(directory / 'store.db').resolve()}"
     # WHY: local model providers are external boundaries. Keep acquisition, SQLite,
     # annotation reading and the complete production selector real.
     providers = successful_ports(calls)
@@ -65,17 +71,18 @@ def _film(
 
         def captions(**kwargs):
             calls.append(("captions", tuple(kwargs["asset_ids"])))
-            for asset_id in kwargs["asset_ids"]:
-                _remember_caption(
-                    kwargs["connection"],
-                    asset_id,
-                    validate_envelope(
+            _remember_captions(
+                kwargs["store"],
+                {
+                    asset_id: validate_envelope(
                         {
                             "description": descriptions.get(asset_id, "People sit together."),
                             "setting": "a room",
                         }
-                    ),
-                )
+                    )
+                    for asset_id in kwargs["asset_ids"]
+                },
+            )
             return {}
 
         providers = replace(providers, captions=captions)
@@ -282,14 +289,11 @@ def test_fresh_video_frame_facts_are_applied_before_the_nas_cut_ships(tmp_path):
         # WHY: the frame classifier is external; real acquisition and FFmpeg supply
         # its sampled frames, and the stored facts must affect the actual finished cut.
         def read(**kwargs):
-            store = HeadFactStore(kwargs["store_path"])
-            try:
-                for asset_id in kwargs["frame_paths"]:
-                    store.remember_facts(
-                        asset_id, [clip_frames_fact([kind] * 8)], encoder_key="test"
-                    )
-            finally:
-                store.close()
+            store = HeadFactStore(kwargs["store"])
+            store.remember_facts(
+                {asset_id: [clip_frames_fact([kind] * 8)] for asset_id in kwargs["frame_paths"]},
+                encoder_key="test",
+            )
             return {}
 
         return read

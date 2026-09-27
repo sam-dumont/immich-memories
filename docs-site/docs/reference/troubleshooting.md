@@ -23,7 +23,7 @@ one go. In Docker, prefix both with `docker compose exec immich-memories`.
 | `public heads need the pinned DINOv2 ONNX export at …` | Run `immich-memories models fetch` once. It puts the encoder and detectors on the models volume |
 | `nsfw_marqo has no model: …` or `doc_docling has no model: …` | Same: `models fetch` |
 | `Output directory is not writable` | In Docker the container runs as uid 1000: `mkdir output` before `up`, or `sudo chown 1000:1000 output` |
-| `Story-first selection needs prepared annotations at …` | The annotation store moved. Point `editorial.annotation_database` at it |
+| `Story-first selection needs prepared annotations in the store at …` | The store this run opened has no prepared facts for these pictures: check `IMMICH_MEMORIES_DATABASE_URL` / `database.url` names the store you prepared into, or run `prepare` |
 | `editorial runtime needs a nonblank LLM model` | `reader: model` with an empty `llm.model`. Set the model, or go back to `reader: auto` |
 | `Waiting for the reader at host:port` | A configured model server stopped answering. See [below](#waiting-for-a-model-server) |
 | `caption endpoint must advertise smolvlm2-500m-base-public` | Right weights, wrong name: alias it. See [Add captions](../better/captions.md) |

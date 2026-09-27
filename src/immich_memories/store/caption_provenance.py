@@ -3,15 +3,20 @@
 from __future__ import annotations
 
 import json
-import sqlite3
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
+from typing import Any
 from urllib.parse import urlsplit
+
+import sqlalchemy as sa
+from sqlalchemy.engine import Connection
 
 from immich_memories.analysis.editorial_description_contract import DESCRIPTION_MODEL
 from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
+from immich_memories.db import Store
+from immich_memories.db.tables import caption_provenance, descriptions
+from immich_memories.store.batches import id_in, in_chunks, insert_rows
 from immich_memories.store.caption_selection import selected_captions
-from immich_memories.store.editorial_preparation import stage_wanted
 
 # Measured on ggml-org/llama.cpp:server build b10920: /v1/models answers
 # `created` from the current clock, so it ticks on every probe. Keeping it would
@@ -80,13 +85,15 @@ UNRECORDED = {"status": "unknown"}
 UNCAPTIONED = {"status": "none"}
 
 
-def remember_origin(
-    connection: sqlite3.Connection, asset_id: str, model: str, origin: CaptionOrigin
+def remember_origins(
+    connection: Connection, asset_ids: Sequence[str], model: str, origin: CaptionOrigin
 ) -> None:
-    """Join the caller's caption transaction; never commit one half independently."""
-    connection.execute(
-        "INSERT INTO caption_provenance (asset_id,model,origin) VALUES (?,?,?)",
-        (asset_id, model, origin.key()),
+    """One origin for a batch of captions, in the caller's transaction."""
+    key = origin.key()
+    insert_rows(
+        connection,
+        caption_provenance,
+        [{"asset_id": asset_id, "model": model, "origin": key} for asset_id in asset_ids],
     )
 
 
@@ -124,26 +131,35 @@ def group_origins(
     }
 
 
-def origins_for(
-    connection: sqlite3.Connection, asset_ids: Sequence[str], model: str
-) -> dict[str, object]:
+def origins_for(store: Store, asset_ids: Sequence[str], model: str) -> dict[str, object]:
     """Group this run's assets by what produced their caption; old rows stay unknown."""
     wanted = tuple(dict.fromkeys(asset_ids))
-    # Same staging table the missing-facts pass uses, holding the same ids: a
-    # second copy of it on the same connection would be the only difference.
-    stage_wanted(connection, wanted)
     llm = model.startswith(LLM_CAPTION_PREFIX)
-    chosen = (
-        {a: caption.model for a, caption in selected_captions(connection, wanted, model).items()}
-        if llm
-        else dict.fromkeys(wanted, model)
-    )
-    rows = connection.execute(
-        "SELECT d.asset_id,d.model,p.origin FROM descriptions d "
-        "JOIN preparation_wanted w ON d.asset_id=w.asset_id "
-        "LEFT JOIN caption_provenance p ON d.asset_id=p.asset_id AND d.model=p.model "
-        "WHERE d.model IN (?,?)",
-        (model, DESCRIPTION_MODEL if llm else model),
-    )
-    recorded = {asset: origin for asset, producer, origin in rows if chosen.get(asset) == producer}
+    d, p = descriptions, caption_provenance
+    recorded: dict[str, Any] = {}
+    with store.connect() as connection:
+        chosen = (
+            {
+                a: caption.model
+                for a, caption in selected_captions(connection, wanted, model).items()
+            }
+            if llm
+            else dict.fromkeys(wanted, model)
+        )
+        for chunk in in_chunks(connection, wanted):
+            rows = connection.execute(
+                sa.select(d.c.asset_id, d.c.model, p.c.origin)
+                .select_from(
+                    d.outerjoin(p, sa.and_(d.c.asset_id == p.c.asset_id, d.c.model == p.c.model))
+                )
+                .where(
+                    d.c.model.in_((model, DESCRIPTION_MODEL if llm else model)),
+                    id_in(connection, d.c.asset_id, chunk),
+                )
+            )
+            recorded.update(
+                (str(asset), origin)
+                for asset, producer, origin in rows
+                if chosen.get(str(asset)) == producer
+            )
     return group_origins(wanted, recorded)

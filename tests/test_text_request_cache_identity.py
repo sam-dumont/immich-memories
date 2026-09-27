@@ -12,6 +12,7 @@ from immich_memories.analysis.editorial_case import TextRequest
 from immich_memories.analysis.editorial_text_gateway import QueryTextRequester
 from immich_memories.analysis.llm_query import query_llm
 from immich_memories.config_models_llm import LLMConfig
+from tests.annotation_rows import annotation_store
 
 
 def _config():
@@ -29,7 +30,7 @@ def _config():
         {"require_complete": True},
     ],
 )
-async def test_answer_changing_request_settings_miss_the_transport_cache(tmp_path, changed):
+async def test_answer_changing_request_settings_miss_the_transport_cache(changed):
     calls = []
 
     async def dispatch(*args):
@@ -39,7 +40,7 @@ async def test_answer_changing_request_settings_miss_the_transport_cache(tmp_pat
     request = {
         "prompt": "same evidence",
         "llm_config": _config(),
-        "cache_path": tmp_path / "text.db",
+        "judgments": annotation_store(),
     }
     # WHY: the HTTP dispatch is the external boundary; replies are scripted so cache identity is what varies
     with patch("immich_memories.analysis.llm_query._dispatch", dispatch):
@@ -53,7 +54,7 @@ async def test_answer_changing_request_settings_miss_the_transport_cache(tmp_pat
 
 
 @pytest.mark.asyncio
-async def test_recovered_gateway_answer_replays_without_repeating_the_failed_budget(tmp_path):
+async def test_recovered_gateway_answer_replays_without_repeating_the_failed_budget():
     calls = []
 
     async def dispatch(*args):
@@ -62,7 +63,7 @@ async def test_recovered_gateway_answer_replays_without_repeating_the_failed_bud
             raise ValueError("LLM returned incomplete content")
         return "complete answer"
 
-    request = TextRequest("same evidence", _config(), tmp_path / "text.db", 100, 30)
+    request = TextRequest("same evidence", _config(), annotation_store(), 100, 30)
     # WHY: the HTTP dispatch is the external boundary; replies are scripted so cache identity is what varies
     with patch("immich_memories.analysis.llm_query._dispatch", dispatch):
         first = await QueryTextRequester().request(request)

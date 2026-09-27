@@ -200,19 +200,15 @@ def _finish_preparation(
     import click
 
     from immich_memories.cli._generation_preview import music_policy
+    from immich_memories.db import resolve_location
 
-    store = config.editorial.resolve_annotation_database(config.cache.cache_path)
+    store = resolve_location(config)
     click.echo("Dry-run preparation (selection was not run; no video will be created)")
     click.echo(f"Memory: {context.product}")
     click.echo(f"Date range: {context.label}")
     click.echo(f"Candidates: {len(assets)} video, {len(photos)} photo")
     click.echo(f"Target duration: {context.target_seconds:.1f}s")
-    readiness = (
-        "store available; coverage checked at selection"
-        if store.is_file()
-        else "preparation required"
-    )
-    click.echo(f"Annotations: {readiness}")
+    click.echo(f"Annotations: in the store at {store}; coverage checked at selection")
     click.echo("Selection: pending (use --no-render to run story-first selection)")
     click.echo(
         f"Canvas: {output_canvas.width}x{output_canvas.height} ({output_canvas.orientation})"

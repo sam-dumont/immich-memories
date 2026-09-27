@@ -29,8 +29,9 @@ clips and it raises rather than going to find some.
 The editorial route has Protocol-typed ports rather than services: the providers and the people
 loader, the structure planner, the judges it calls out to, and `EditorialAttempt` in `operations/`
 for the durable attempt tree and its OS lease. On disk each attempt is
-`<cache>/editorial-runs/<key>/attempts/<id>/`, and the annotation store is
-`<cache>/annotations.sqlite`.
+`<cache>/editorial-runs/<key>/attempts/<id>/`, and the banked facts and
+answers live in the store (`immich_memories.db`, tables in `db/tables/annotations.py` and
+`db/tables/model_answers.py`).
 [ARCHITECTURE.md](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/ARCHITECTURE.md)
 names every port and the file it lives in, with the full module map.
 

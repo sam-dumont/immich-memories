@@ -92,9 +92,8 @@ def _live_photo(asset_id, clip_id):
 @requires_ffmpeg
 def test_a_live_photos_clip_is_read_on_frames_and_banked_under_its_own_id(tmp_path):
     """The clip is not a candidate, so nothing prepared it and nothing had ever read it."""
-    import sqlite3
-
     from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+    from tests.annotation_rows import annotation_store, read_rows
     from tests.test_editorial_preparation import asset, preview, run, successful_ports
     from tests.test_playback_keyframes import encode
 
@@ -116,16 +115,11 @@ def test_a_live_photos_clip_is_read_on_frames_and_banked_under_its_own_id(tmp_pa
     detector_calls = [tuple(sorted(pending)) for name, pending in calls if name == "detectors"]
     # The clip's pass asks for the exposure head alone: no caption, no context head.
     assert detector_calls[-1] == ("nsfw_marqo",)
-    with sqlite3.connect(tmp_path / "annotations.sqlite") as connection:
-        banked = {
-            row[0]
-            for row in connection.execute("SELECT asset_id FROM head_facts WHERE head='nsfw_marqo'")
-        }
+    rows = read_rows(annotation_store(), "head_facts")
+    banked = {row["asset_id"] for row in rows if row["head"] == "nsfw_marqo"}
     assert "cc3" in banked
     # The clip is not a candidate: nothing else is owed for it.
-    assert not connection.execute(
-        "SELECT 1 FROM head_facts WHERE asset_id='cc3' AND head!='nsfw_marqo'"
-    ).fetchone()
+    assert not any(row["asset_id"] == "cc3" and row["head"] != "nsfw_marqo" for row in rows)
     assert result.pictures_by_stage["detector_frames"] == 1
 
 
@@ -192,11 +186,10 @@ def test_a_clip_immich_will_not_serve_leaves_its_still_in_the_film(tmp_path):
 @requires_ffmpeg
 def test_a_clip_with_no_preview_is_still_read_on_its_frames(tmp_path):
     """Immich keeps no preview for many Live Photo clips, and plays every one of them."""
-    import sqlite3
-
     import httpx
 
     from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+    from tests.annotation_rows import annotation_store, read_rows
     from tests.test_editorial_preparation import asset, preview, run, successful_ports
     from tests.test_playback_keyframes import encode
 
@@ -224,23 +217,21 @@ def test_a_clip_with_no_preview_is_still_read_on_its_frames(tmp_path):
 
     assert result.complete
     assert "clip_companion:cc3" not in result.failures
-    with sqlite3.connect(tmp_path / "annotations.sqlite") as connection:
-        banked = connection.execute(
-            "SELECT 1 FROM head_facts WHERE asset_id='cc3' AND head='nsfw_marqo'"
-        ).fetchone()
-    connection.close()
+    banked = any(
+        row["asset_id"] == "cc3" and row["head"] == "nsfw_marqo"
+        for row in read_rows(annotation_store(), "head_facts")
+    )
     assert banked
 
 
 @requires_ffmpeg
 def test_a_videos_frames_are_sampled_once_for_the_exposure_head_and_its_frame_reading(tmp_path):
-    import sqlite3
-
     from immich_memories.analysis.editorial_clip_frames import (
         CLIP_FRAMES_HEAD,
         CLIP_FRAMES_VERSION,
     )
     from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
+    from immich_memories.store.editorial_preparation import remember_head_rows
     from tests.test_editorial_preparation import asset, preview, run, successful_ports
     from tests.test_editorial_preparation_motion import prepared_video
     from tests.test_playback_keyframes import encode
@@ -250,20 +241,20 @@ def test_a_videos_frames_are_sampled_once_for_the_exposure_head_and_its_frame_re
 
     def clip_frames(**kwargs):
         read.append({key: len(paths) for key, paths in kwargs["frame_paths"].items()})
-        with sqlite3.connect(kwargs["store_path"]) as connection:
-            for asset_id in kwargs["frame_paths"]:
-                connection.execute(
-                    "INSERT OR REPLACE INTO head_facts VALUES (?,?,?,?,?,?,?)",
-                    (
-                        asset_id,
-                        CLIP_FRAMES_HEAD,
-                        CLIP_FRAMES_VERSION,
-                        "shows_its_moment",
-                        1.0,
-                        "t",
-                        "now",
-                    ),
-                )
+        remember_head_rows(
+            kwargs["store"],
+            [
+                {
+                    "asset_id": asset_id,
+                    "head": CLIP_FRAMES_HEAD,
+                    "version": CLIP_FRAMES_VERSION,
+                    "label": "shows_its_moment",
+                    "confidence": 1.0,
+                    "encoder_key": "t",
+                }
+                for asset_id in kwargs["frame_paths"]
+            ],
+        )
         return {}
 
     def once():

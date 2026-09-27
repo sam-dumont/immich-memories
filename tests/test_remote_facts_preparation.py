@@ -5,7 +5,6 @@ import io
 import json
 import logging
 import re
-import sqlite3
 import threading
 import time
 
@@ -20,6 +19,7 @@ from immich_memories.config_models_editorial import EditorialConfig
 from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
 from immich_memories.config_models_inference import InferenceConfig
 from immich_memories.operations.cancellation import PipelineCancelled
+from tests.annotation_rows import annotation_store, read_rows
 from tests.test_editorial_preparation import (
     preview,
     refusing_ports,
@@ -65,9 +65,11 @@ def transport(monkeypatch, handler):
     )
 
 
-def banked_rows(tmp_path):
-    with sqlite3.connect(tmp_path / "annotations.sqlite") as connection:
-        return connection.execute("SELECT head, version, encoder_key FROM head_facts").fetchall()
+def banked_rows():
+    return [
+        (row["head"], row["version"], row["encoder_key"])
+        for row in read_rows(annotation_store(), "head_facts")
+    ]
 
 
 def test_cold_offload_then_warm_reuses_all_facts_without_network(monkeypatch, tmp_path):
@@ -85,7 +87,7 @@ def test_cold_offload_then_warm_reuses_all_facts_without_network(monkeypatch, tm
     assert remote_run(tmp_path).complete
     assert len(calls) == 2
     assert all(set(names) == {"heads", "nsfw_marqo", "doc_docling"} for names in calls)
-    rows = banked_rows(tmp_path)
+    rows = banked_rows()
     assert len(rows) == 20
     for head, version, key in rows:
         assert version == EditorialConfig().head_versions[head]
@@ -164,7 +166,7 @@ def test_a_malformed_answer_banks_nothing(monkeypatch, tmp_path):
         tmp_path, inference=InferenceConfig(facts_base_url=ENDPOINT, fallback_to_local=False)
     )
     assert result.complete is False
-    assert banked_rows(tmp_path) == []
+    assert banked_rows() == []
     assert "incompatible" in result.failures["remote_facts"]
 
 
@@ -224,9 +226,10 @@ def fake_server(handler, **settings) -> RemoteFactsClient:
 
 
 def bank_pass(tmp_path, client, ids, *, concurrency, previews, banked):
+    del tmp_path  # kept for call-site symmetry; the store is the one this test's env names
     prepare_remote_facts(
         pending={asset_id: dict(EditorialConfig().head_versions) for asset_id in ids},
-        store_path=tmp_path / "annotations.sqlite",
+        store=annotation_store(),
         client=client,
         concurrency=concurrency,
         preview_for=lambda asset_id: previews[asset_id],
@@ -277,7 +280,7 @@ def test_answers_that_come_back_out_of_order_are_banked_in_the_pending_order(tmp
         bank_pass(tmp_path, client, ids, concurrency=8, previews=previews, banked=banked)
 
     assert tuple(banked) == ids
-    assert {row[0] for row in banked_rows(tmp_path)} == set(EditorialConfig().head_versions)
+    assert {row[0] for row in banked_rows()} == set(EditorialConfig().head_versions)
 
 
 def test_the_pass_says_how_many_requests_it_is_about_to_keep_in_flight(tmp_path, caplog):
@@ -358,7 +361,7 @@ def test_a_stop_mid_pass_keeps_what_was_banked_and_asks_for_nothing_more(tmp_pat
     with fake_server(handle) as client, pytest.raises(PipelineCancelled):
         prepare_remote_facts(
             pending={asset_id: dict(EditorialConfig().head_versions) for asset_id in ids},
-            store_path=tmp_path / "annotations.sqlite",
+            store=annotation_store(),
             client=client,
             concurrency=4,
             preview_for=lambda asset_id: previews[asset_id],

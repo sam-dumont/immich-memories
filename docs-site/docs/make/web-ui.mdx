@@ -308,7 +308,7 @@ URL and key to the database, only the ones you changed. A URL or key that the en
 | **Thumbnail** | Immich previews, read back for pixel facts, heads, contact sheets and the grid | re-fetched on demand |
 | **Preview** | the `.mp4` previews the review page plays | regenerated on the next preview |
 
-The expensive thing on disk is not behind those buttons. The editor's bank, `annotations.sqlite`
-under the cache directory, holds every fact it read about your pictures. **Clear all caches** leaves
-it alone. Delete it and the next cut reads your library from scratch. More on
+The expensive thing on disk is not behind those buttons. The editor's bank lives in the store
+(`store.db`), not under the cache directory, and holds every fact it read about your pictures.
+**Clear all caches** leaves it alone. Delete it and the next cut reads your library from scratch. More on
 [Health, logs and caches](../run/maintenance/health-logs-cache.md).

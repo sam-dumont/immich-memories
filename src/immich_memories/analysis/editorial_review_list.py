@@ -18,14 +18,21 @@ from __future__ import annotations
 
 import json
 import math
-import sqlite3
 from collections.abc import Mapping, Sequence
-from contextlib import closing, suppress
+from contextlib import suppress
 from pathlib import Path
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
+
+import sqlalchemy as sa
+from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.analysis.editorial_preparation_detectors import MARQO_HEAD
+from immich_memories.db.tables import head_facts
 from immich_memories.security import write_secret_file
+from immich_memories.store.batches import id_in, in_chunks
+
+if TYPE_CHECKING:
+    from immich_memories.db import Store
 
 FILENAME = "review-before-sharing.private.json"
 POLICY = "review-before-sharing-v1"
@@ -54,7 +61,7 @@ _ALREADY_HELD = frozenset(
 
 
 def exposure_probabilities(
-    store_path: Path | str | None, asset_ids: Sequence[str], version: str
+    store: Store | None, asset_ids: Sequence[str], version: str
 ) -> dict[str, float]:
     """The exposure head's own probability per source, from the bank it already wrote.
 
@@ -62,20 +69,18 @@ def exposure_probabilities(
     nothing new is stored. A source the head never decided is absent.
     """
     ids = list(dict.fromkeys(asset_ids))
-    if not store_path or not ids or not Path(store_path).is_file():
+    if store is None or not ids:
         return {}
+    h = head_facts
     found: dict[str, float] = {}
-    with (
-        suppress(sqlite3.Error),
-        closing(sqlite3.connect(f"file:{store_path}?mode=ro", uri=True)) as connection,
-    ):
-        for start in range(0, len(ids), 500):
-            chunk = ids[start : start + 500]
-            marks = ",".join("?" * len(chunk))
+    with suppress(SQLAlchemyError), store.connect() as connection:
+        for chunk in in_chunks(connection, ids):
             rows = connection.execute(
-                "SELECT asset_id, confidence FROM head_facts "  # noqa: S608
-                f"WHERE head=? AND version=? AND asset_id IN ({marks})",
-                (MARQO_HEAD, version, *chunk),
+                sa.select(h.c.asset_id, h.c.confidence).where(
+                    h.c.head == MARQO_HEAD,
+                    h.c.version == version,
+                    id_in(connection, h.c.asset_id, chunk),
+                )
             )
             for asset_id, confidence in rows:
                 if isinstance(confidence, (int, float)) and math.isfinite(confidence):
@@ -131,7 +136,7 @@ class CutSource(Protocol):
     """Where a finished cut's list is written and which bank it reads."""
 
     @property
-    def store_path(self) -> Path | None: ...
+    def store(self) -> Store | None: ...
 
     @property
     def artifact_dir(self) -> Path: ...
@@ -147,7 +152,7 @@ def write_for_cut(
 ) -> int:
     """Name the finished cut's shots in the exposure head's grey zone. It changes no shot."""
     probabilities = exposure_probabilities(
-        source.store_path,
+        source.store,
         [str(carrier.get("asset_id")) for carrier in carriers],
         source.config.editorial.head_versions.get(MARQO_HEAD, ""),
     )

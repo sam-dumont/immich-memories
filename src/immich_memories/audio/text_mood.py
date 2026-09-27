@@ -18,7 +18,7 @@ from immich_memories.audio.mood_analyzer import (
     VALID_TEMPOS,
     VideoMood,
 )
-from immich_memories.cache.judgment_cache import verdicts_beside
+from immich_memories.cache.judgment_cache import judgment_bank
 from immich_memories.config_loader import Config
 from immich_memories.operations.storyboard import read_storyboard
 from immich_memories.security import write_secret_file
@@ -134,7 +134,7 @@ async def mood_for_cut(
         request = TextRequest(
             prompt=prompt,
             llm_config=config.llm,
-            cache_path=verdicts_beside(config.cache.cache_path),
+            judgments=judgment_bank(config),
             max_tokens=500,
             timeout_seconds=config.llm.timeout_seconds,
             json_object=True,

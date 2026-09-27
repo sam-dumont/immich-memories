@@ -1,8 +1,11 @@
 """Reuse a complete SmolVLM caption before an explicitly chosen LLM's description."""
 
-import sqlite3
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
+
+import sqlalchemy as sa
+from sqlalchemy.engine import Connection
 
 from immich_memories.analysis.editorial_description_contract import (
     DESCRIPTION_MODEL,
@@ -11,6 +14,9 @@ from immich_memories.analysis.editorial_description_contract import (
     validate_envelope,
 )
 from immich_memories.analysis.llm_caption_identity import LLM_DESCRIPTION_SOURCE
+from immich_memories.db import Store
+from immich_memories.db.tables import description_fields, description_unavailable, descriptions
+from immich_memories.store.batches import id_in, in_chunks
 
 
 @dataclass(frozen=True)
@@ -20,36 +26,32 @@ class SelectedCaption:
 
 
 def selected_captions(
-    connection: sqlite3.Connection, asset_ids: Sequence[str], model: str
+    connection: Connection, asset_ids: Sequence[str], model: str
 ) -> dict[str, SelectedCaption]:
     """Choose one complete row pair per picture; never mix fields between producers."""
-    connection.execute(
-        "CREATE TEMP TABLE IF NOT EXISTS _caption_wanted (asset_id TEXT PRIMARY KEY)"
-    )
-    connection.execute("DELETE FROM _caption_wanted")
-    connection.executemany(
-        "INSERT OR IGNORE INTO _caption_wanted VALUES (?)", ((a,) for a in asset_ids)
-    )
-    return _complete_rows(connection, model, LLM_DESCRIPTION_SOURCE) | _complete_rows(
-        connection, DESCRIPTION_MODEL, DESCRIPTION_SOURCE
+    wanted = list(dict.fromkeys(asset_ids))
+    return _complete_rows(connection, wanted, model, LLM_DESCRIPTION_SOURCE) | _complete_rows(
+        connection, wanted, DESCRIPTION_MODEL, DESCRIPTION_SOURCE
     )
 
 
 def _complete_rows(
-    connection: sqlite3.Connection, model: str, source: str
+    connection: Connection, wanted: Sequence[str], model: str, source: str
 ) -> dict[str, SelectedCaption]:
-    rows = connection.execute(
-        "SELECT d.asset_id,d.text,f.field,f.value FROM descriptions d "
-        "JOIN _caption_wanted w ON d.asset_id=w.asset_id "
-        "LEFT JOIN description_fields f ON d.asset_id=f.asset_id AND d.model=f.model "
-        "WHERE d.model=? AND d.source=?",
-        (model, source),
-    )
-    texts: dict[str, str] = {}
-    fields: dict[str, dict[str, str]] = {}
-    for asset_id, text, field, value in rows:
-        texts[asset_id] = text
-        fields.setdefault(asset_id, {})[field] = value
+    d, f = descriptions, description_fields
+    texts: dict[str, Any] = {}
+    fields: dict[str, dict[str, Any]] = {}
+    for chunk in in_chunks(connection, wanted):
+        rows = connection.execute(
+            sa.select(d.c.asset_id, d.c.text, f.c.field, f.c.value)
+            .select_from(
+                d.outerjoin(f, sa.and_(d.c.asset_id == f.c.asset_id, d.c.model == f.c.model))
+            )
+            .where(d.c.model == model, d.c.source == source, id_in(connection, d.c.asset_id, chunk))
+        )
+        for asset_id, text, field, value in rows:
+            texts[str(asset_id)] = text
+            fields.setdefault(str(asset_id), {})[str(field)] = value
     selected = {}
     for asset_id, text in texts.items():
         if set(fields[asset_id]) != {"setting"}:
@@ -62,21 +64,18 @@ def _complete_rows(
     return selected
 
 
-def conflicting_caption_rows(connection: sqlite3.Connection, asset_id: str, model: str) -> bool:
+def conflicting_caption_ids(store: Store, asset_ids: Sequence[str], model: str) -> set[str]:
     """Refuse partial or terminal rows before paying for a caption that cannot be inserted."""
-    touched = connection.execute(
-        "SELECT 1 FROM descriptions WHERE asset_id=? AND model=? UNION ALL "
-        "SELECT 1 FROM description_fields WHERE asset_id=? AND model=?",
-        (asset_id, model, asset_id, model),
-    ).fetchone()
-    outcome_table = connection.execute(
-        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='description_unavailable'"
-    ).fetchone()
-    stale = (
-        outcome_table
-        and connection.execute(
-            "SELECT 1 FROM description_unavailable WHERE asset_id=? AND model=?",
-            (asset_id, model),
-        ).fetchone()
-    )
-    return bool(touched or stale)
+    wanted = list(dict.fromkeys(asset_ids))
+    touched: set[str] = set()
+    with store.connect() as connection:
+        for chunk in in_chunks(connection, wanted):
+            for table in (descriptions, description_fields, description_unavailable):
+                touched.update(
+                    connection.execute(
+                        sa.select(table.c.asset_id).where(
+                            table.c.model == model, id_in(connection, table.c.asset_id, chunk)
+                        )
+                    ).scalars()
+                )
+    return touched

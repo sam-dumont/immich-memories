@@ -55,11 +55,16 @@ Everything lives under `~/.immich-memories/cache/` (or `cache.directory`):
 
 | Directory or file | What it holds | Cap |
 |---|---|---|
-| `annotations.sqlite` | every fact the app banked: head answers, detector verdicts, measurements, and captions and readings when a model is used, each keyed by producer and exact input | none; this is the file to keep |
 | `thumbnails/` | one Immich preview per candidate a film can reach | `thumbnail_cache_max_size_mb`, 10 GB |
 | `video-cache/` | downloaded Immich clips | `video_cache_max_size_gb` 10 GB, `video_cache_max_age_days` 7 |
 | `preview-cache/`, `previews/` | clip previews for the web UI | `preview_cache_max_size_mb`, 2 GB |
 | `../cache.db` (one level up) | run history and automation state | none |
+
+The facts the app banked (head answers, detector verdicts, measurements, and captions and
+readings when a model is used, each keyed by producer and exact input) and your own picture
+decisions are not a cache: they live in [the store](../database.md), `~/.immich-memories/store.db`
+by default. An `annotations.sqlite` from an older install is imported into it once and then left
+alone.
 
 ```yaml
 cache:
@@ -74,7 +79,7 @@ cache:
 
 ### What a second cut asks again
 
-Nothing in `annotations.sqlite` is keyed to a run, so a second cut over the same pictures reuses
+Nothing in the store's banked facts is keyed to a run, so a second cut over the same pictures reuses
 every fact the first one banked. Standing is read from each picture's facts and asks nothing at all.
 With a model, the period reading is banked one calendar month at a time, so a monthly cut after a
 yearly one asks nothing again for that month. A warm cut spends its time on video work. When a
@@ -83,7 +88,7 @@ answers and detector verdicts are keyed by their own producers and stay warm.
 
 ### The facts a cut measures
 
-Three facts are measured only once a cut has chosen a picture, and banked in `annotations.sqlite`:
+Three facts are measured only once a cut has chosen a picture, and banked in the store:
 
 | Table | What it holds | Written when |
 |---|---|---|
@@ -123,11 +128,12 @@ rm -rf ~/.immich-memories/cache/video-cache
 rm -rf ~/.immich-memories/cache/thumbnails
 ```
 
-Don't point `rm -rf` at `~/.immich-memories/cache` itself: `annotations.sqlite` is inside, and
-without it every fact about your library is prepared again.
+Deleting `~/.immich-memories/cache` costs previews and clips, not facts: those are in the store.
+Don't delete `store.db`: without it every fact about your library is prepared again, and every
+picture you cleared or ruled out is held again.
 
 ### The CLI cache commands are not for the banks
 
 `immich-memories cache stats|backup|export|import` read and write `asset_scores`, the retired
-per-clip scorer's table, which nothing writes any more. They don't touch `annotations.sqlite`. To
+per-clip scorer's table, which nothing writes any more. They don't touch the store. To
 move an install, copy `~/.immich-memories` (in Docker: the config volume).

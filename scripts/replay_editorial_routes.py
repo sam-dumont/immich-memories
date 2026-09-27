@@ -159,8 +159,14 @@ def _shapes_in(path: Path) -> dict[str, list[int]]:
 
 
 def bank_paths(cache_root: Path, config_path: Path | None = None) -> list[Path]:
-    """Every judgment bank a warm replay reads and must leave untouched."""
+    """Every judgment bank a warm replay reads and must leave untouched.
+
+    The store holds the banks now; a replay fingerprints it when it is a SQLite file (the
+    environment's URL, then config.yaml's `database.url`, then the default). A legacy
+    `judgments.db` or annotation file is still counted while it is around.
+    """
     paths = [cache_root / "judgments.db"]
+    url = os.environ.get("IMMICH_MEMORIES_DATABASE_URL", "")
     if config_path is not None:
         import yaml
 
@@ -171,6 +177,10 @@ def bank_paths(cache_root: Path, config_path: Path | None = None) -> list[Path]:
             paths.append(
                 Path(os.path.expandvars(str(editorial["annotation_database"]))).expanduser()
             )
+        url = url or str((document.get("database") or {}).get("url") or "")
+    url = url or "sqlite:///~/.immich-memories/store.db"
+    if url.startswith("sqlite:///"):
+        paths.append(Path(url.removeprefix("sqlite:///")).expanduser())
     return [path for path in paths if path.exists()]
 
 

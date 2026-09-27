@@ -22,11 +22,11 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-import sqlite3
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+import sqlalchemy as sa
 
 from immich_memories.analysis.annotation_line_fields import content_of
 from immich_memories.analysis.editorial_exposure_chains import ChainHold
@@ -43,6 +43,11 @@ from immich_memories.analysis.editorial_shareability_audience import (
 )
 from immich_memories.analysis.editorial_story_shortlist import capture_space_available
 from immich_memories.analysis.editorial_text_failures import TextCompletionFailure
+from immich_memories.db.tables import asset_flags, head_facts
+from immich_memories.store.batches import id_in, in_chunks
+
+if TYPE_CHECKING:
+    from immich_memories.db import Store
 
 NEVER_AUTO = "never_auto"
 REVIEW = "review"
@@ -89,37 +94,39 @@ class FlagRow:
     source: str
 
 
-def load_flags(store_path: Path | str, asset_ids: Iterable[str]) -> dict[str, tuple[FlagRow, ...]]:
+def load_flags(store: Store, asset_ids: Iterable[str]) -> dict[str, tuple[FlagRow, ...]]:
     """Every flag row for the given assets, exposure sources included.
 
     The production line renderer hides exposure-source flags on purpose (they are noisy on
     landscapes); the shareability check must see them, so this reads the table directly.
     """
     ids = list(dict.fromkeys(asset_ids))
-    out: dict[str, list[FlagRow]] = {}
-    if not ids:
-        return {}
-    con = sqlite3.connect(f"file:{store_path}?mode=ro", uri=True)
-    try:
-        for start in range(0, len(ids), 500):
-            chunk = ids[start : start + 500]
-            marks = ",".join("?" * len(chunk))
-            rows = con.execute(
-                f"select asset_id, flag, evidence, source from flags where asset_id in ({marks}) "  # noqa: S608
-                "order by asset_id, flag, source",
-                chunk,
-            )
-            for asset_id, flag, evidence, source in rows:
-                out.setdefault(str(asset_id), []).append(
-                    FlagRow(str(asset_id), _clean(flag), _reason(evidence), _clean(source))
+    f = asset_flags
+    rows: list[Any] = []
+    with store.connect() as connection:
+        for chunk in in_chunks(connection, ids):
+            rows.extend(
+                connection.execute(
+                    sa.select(f.c.asset_id, f.c.flag, f.c.evidence, f.c.source).where(
+                        id_in(connection, f.c.asset_id, chunk)
+                    )
                 )
-    finally:
-        con.close()
+            )
+    out: dict[str, list[FlagRow]] = {}
+    for asset_id, flag, evidence, source in sorted(rows, key=_flag_order):
+        out.setdefault(str(asset_id), []).append(
+            FlagRow(str(asset_id), _clean(flag), _reason(evidence), _clean(source))
+        )
     return {k: tuple(v) for k, v in out.items()}
 
 
+def _flag_order(row: tuple) -> tuple:
+    asset_id, flag, _evidence, source = row
+    return (str(asset_id), str(flag or ""), str(source or ""))
+
+
 def load_detector_heads(
-    store_path: Path | str, asset_ids: Iterable[str], head_versions: Mapping[str, str]
+    store: Store, asset_ids: Iterable[str], head_versions: Mapping[str, str]
 ) -> dict[str, dict[str, str]]:
     """The audience heads banked for these sources, at the versions this run reads.
 
@@ -132,21 +139,17 @@ def load_detector_heads(
     out: dict[str, dict[str, str]] = {}
     if not ids or not wanted:
         return out
-    con = sqlite3.connect(f"file:{store_path}?mode=ro", uri=True)
-    try:
-        for start in range(0, len(ids), 500):
-            chunk = ids[start : start + 500]
-            marks = ",".join("?" * len(chunk))
-            rows = con.execute(
-                f"select asset_id, head, version, label from head_facts where asset_id in ({marks}) "  # noqa: S608
-                "order by asset_id, head, version",
-                chunk,
+    h = head_facts
+    with store.connect() as connection:
+        for chunk in in_chunks(connection, ids):
+            rows = connection.execute(
+                sa.select(h.c.asset_id, h.c.head, h.c.version, h.c.label).where(
+                    id_in(connection, h.c.asset_id, chunk), h.c.head.in_(list(wanted))
+                )
             )
             for asset_id, head, version, label in rows:
                 if wanted.get(str(head)) == str(version) and _clean(label):
                     out.setdefault(str(asset_id), {})[str(head)] = _clean(label)
-    finally:
-        con.close()
     return out
 
 

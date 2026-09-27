@@ -472,15 +472,16 @@ def library_pins_immich(library: dict) -> bool:
 
 
 def cache_pins(cache_dir: str) -> dict[str, str]:
-    """The three settings that decide where a cell banks, pointed at one directory.
+    """The settings that decide where a cell banks, pointed at one directory.
 
-    `editorial.annotation_database` is pinned blank on purpose: blank is what
-    resolves the bank under the cache directory, and an operator's own absolute
-    override would quietly put every cell back in one bank.
+    The cell's store is a SQLite file in that directory, so each cell reads and writes only
+    its own answers. `editorial.annotation_database` is pinned blank on purpose: an
+    operator's own absolute override would quietly import one legacy bank into every cell.
     """
     return {
         "cache.directory": cache_dir,
         "cache.database": f"{cache_dir}/cache.db",
+        "database.url": f"sqlite:///{cache_dir}/store.db",
         "editorial.annotation_database": "",
     }
 

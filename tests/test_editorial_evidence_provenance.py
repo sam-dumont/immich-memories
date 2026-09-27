@@ -67,6 +67,7 @@ def test_the_reader_records_the_evidence_behind_every_keyed_episode(tmp_path: Pa
         EpisodeReadingProducer,
         EpisodeReadingStore,
     )
+    from tests.annotation_rows import annotation_store
     from tests.conftest import make_asset
     from tests.test_text_episode_reader import _AnnotationLines
 
@@ -91,7 +92,7 @@ def test_the_reader_records_the_evidence_behind_every_keyed_episode(tmp_path: Pa
     )
     recorded: list[tuple[EpisodeEvidenceLines, ...]] = []
     CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(annotation_store()),
         producer=producer,
         annotations=_AnnotationLines(rendered),
         requester=lambda _prompt: '{"schema_version":"episode-reading-text-v1","episodes":[]}',
@@ -168,4 +169,3 @@ def test_the_runtime_records_evidence_into_the_attempt_that_is_running(
     )
     assert (attempt / EVIDENCE_LINES_NAME).exists()
     assert not (context.artifact_dir / EVIDENCE_HASHES_NAME).exists()
-    planner.close()

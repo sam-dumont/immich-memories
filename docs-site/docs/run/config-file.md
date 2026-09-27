@@ -174,7 +174,7 @@ path that is missing here, so a copied config fails up front instead of hours in
 | `cache.directory` | previews, thumbnails, downloaded clips |
 | `cache.database` | run history and automation state |
 | `database.url` | the store, when it is a SQLite file (`sqlite:///~/.immich-memories/store.db`) |
-| `advanced.editorial.annotation_database` | every banked fact and reading |
+| `advanced.editorial.annotation_database` | deprecated: a legacy `annotations.sqlite` the store imports once; its directory still holds `structure-banks/` |
 | `advanced.triage.encoder` | the pinned DINOv2 ONNX export |
 | `advanced.triage.bundle` | a head bundle of your own |
 | `advanced.editorial.preparation.head_bundle` | the same, for the eight context heads |

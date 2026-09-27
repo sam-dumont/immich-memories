@@ -14,6 +14,7 @@ from immich_memories.api.models import AssetType
 from immich_memories.config_loader import Config
 from immich_memories.config_tiers import nas_draft_config
 from immich_memories.preflight import CheckStatus, check_caption_endpoint
+from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 
 LLM = {"base_url": "http://localhost:43210/v1", "model": "fixture-vision-model"}
@@ -35,7 +36,7 @@ def test_configuring_a_text_llm_never_opts_nas_into_image_requests(monkeypatch, 
 
     result = prepare_editorial_annotations(
         assets=[make_asset("one").model_copy(update={"type": AssetType.IMAGE, "duration": None})],
-        store_path=tmp_path / "annotations.sqlite",
+        store=annotation_store(),
         thumbnail_cache=tmp_path / "previews",
         preparation_config=config.editorial.preparation,
         triage_config=config.triage,
@@ -108,14 +109,10 @@ def test_opted_in_acquisition_uses_the_llm_once_then_reuses_its_caption(
     monkeypatch.setattr(
         httpx, "AsyncClient", lambda **kw: client(transport=httpx.MockTransport(reply), **kw)
     )
-    database = tmp_path / "annotations.sqlite"
     config = Config(
         tier="nas",
         llm=LLM,
-        editorial={
-            "annotation_database": str(database),
-            "preparation": {"caption_provider": "llm"},
-        },
+        editorial={"preparation": {"caption_provider": "llm"}},
     )
     image = io.BytesIO()
     Image.new("RGB", (80, 60), (123, 83, 66)).save(image, "JPEG")
@@ -123,7 +120,7 @@ def test_opted_in_acquisition_uses_the_llm_once_then_reuses_its_caption(
         "assets": [
             make_asset("new").model_copy(update={"type": AssetType.IMAGE, "duration": None})
         ],
-        "store_path": database,
+        "store": annotation_store(),
         "thumbnail_cache": tmp_path / "previews",
         "preparation_config": config.editorial.preparation,
         "triage_config": config.triage,

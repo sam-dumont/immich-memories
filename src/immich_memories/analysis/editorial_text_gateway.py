@@ -112,21 +112,16 @@ class QueryTextRequester:
         """
         check_cancelled()
         started = self._monotonic()
-        cache = JudgmentCache(request.cache_path)
-        try:
-            banked = self._usable_banked_answer(cache, request, accepts)
-            if banked is None:
-                # Overlapping readers can carry the same question. Only one of them
-                # pays for it; the rest wait here and read what it banked.
-                with TEXT_JUDGMENTS.key(request.judgment_key):
-                    banked = self._usable_banked_answer(cache, request, accepts)
-                    raw = (
-                        banked if banked is not None else await self._paid(cache, request, accepts)
-                    )
-            else:
-                raw = banked
-        finally:
-            cache.close()
+        cache = JudgmentCache(request.judgments)
+        banked = self._usable_banked_answer(cache, request, accepts)
+        if banked is None:
+            # Overlapping readers can carry the same question. Only one of them
+            # pays for it; the rest wait here and read what it banked.
+            with TEXT_JUDGMENTS.key(request.judgment_key):
+                banked = self._usable_banked_answer(cache, request, accepts)
+                raw = banked if banked is not None else await self._paid(cache, request, accepts)
+        else:
+            raw = banked
         return TextCall(
             prompt=request.prompt,
             raw=raw,
@@ -228,7 +223,7 @@ class QueryTextRequester:
                     max_tokens=max_tokens,
                     timeout_seconds=request.timeout_seconds,
                     thinking=request.thinking,
-                    cache_path=None,  # The gateway banks the complete bounded-recovery request.
+                    judgments=None,  # The gateway banks the complete bounded-recovery request.
                     transport_observer=watch,
                     require_complete=not request.json_object,
                 )
@@ -432,7 +427,7 @@ class SyncTextPromptRequester:
                 max_tokens=max_tokens,
                 timeout_seconds=self.timeout_seconds,
                 thinking=self.thinking,
-                cache_path=None,
+                judgments=None,
                 transport_observer=billed.watching(watch_provider("reader", self.llm_config)),
                 require_complete=True,
                 response_format=shape,

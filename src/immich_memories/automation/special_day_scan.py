@@ -15,7 +15,6 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import date, datetime
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 from immich_memories.analysis.special_day import (
@@ -45,6 +44,8 @@ from immich_memories.memory_types.date_builders import KNOWN_HOLIDAYS, resolve_h
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
+
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +177,7 @@ def scan_year(
     analysis_config: Any = None,
     trips_config: TripsConfig | None = None,
     captions: dict[str, str] | None = None,
-    judgment_cache_path: Path | None = None,
+    judgments: Store | None = None,
     still_seconds: float | None = None,
     reader: Literal["model", "rules"] = "model",
     close_family: Mapping[str, str] | None = None,
@@ -242,7 +243,7 @@ def scan_year(
         away_km=trips.min_distance_km,
         captions=captions,
         llm_config=llm_config,
-        cache_path=judgment_cache_path,
+        judgments=judgments,
         family=close_family or {},
     )
     logger.info(
@@ -275,7 +276,7 @@ def scan_year(
                 items,
                 llm_config,
                 captions={a.id: captions[a.id] for a in items if captions and captions.get(a.id)},
-                judgment_cache_path=judgment_cache_path,
+                judgments=judgments,
             )
         )
         outcome = _day_from(day, items, verdict, what)
@@ -293,14 +294,14 @@ def _occasions(
     away_km: float,
     captions: dict[str, str] | None,
     llm_config: Any,
-    cache_path: Path | None,
+    judgments: Store | None,
     family: Mapping[str, str],
 ) -> dict[date, str]:
     """The occasions among these runs and what each was: read by the model, or by the facts."""
     if reader == "rules":
         return ranked_occasions(candidates, home=home, away_km=away_km, family=family)
     reading = read_in_sequence(
-        candidates, captions=captions, llm_config=llm_config, cache_path=cache_path, family=family
+        candidates, captions=captions, llm_config=llm_config, judgments=judgments, family=family
     )
     logger.info(
         "%d: %d runs read, %d with nothing recorded beyond the clock",
