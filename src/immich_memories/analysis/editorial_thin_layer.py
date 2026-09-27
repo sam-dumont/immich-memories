@@ -357,8 +357,9 @@ class ThinPolish:
         joins the block its capture time falls in, so a few newcomers re-ask a few blocks and
         not the whole cut. Only the newcomers' verdicts are read. Banked by the block, never by
         the row, so a second run replays it, and a newcomer is never the only row left to ask.
-        A revoked newcomer does not take the shot it replaced with it: that shot comes back and
-        the film is where it started.
+        A newcomer must be kept, not merely avoid a two-order rejection: a weak candidate has
+        not earned a weak draft shot's place. A revoked newcomer does not take the shot it
+        replaced with it: that shot comes back and the film is where it started.
         """
         held = {row["asset_id"] for row in before}
         fresh = [row for row in filled if row["asset_id"] not in held]
@@ -373,7 +374,7 @@ class ThinPolish:
             block_votes, _rounds = self._ask(block, fit, family | eras | textures, moving=newcomers)
             votes.update(block_votes)
         verdicts = classify_fit(fresh, votes, family, eras, textures)
-        revoked = {row["asset_id"] for row in fresh if verdicts[row["asset_id"]]["state"] == "bad"}
+        revoked = {row["asset_id"] for row in fresh if verdicts[row["asset_id"]]["state"] != "kept"}
         if not revoked:
             return filled, set()
         snapshot = {row["asset_id"]: dict(row) for row in before}

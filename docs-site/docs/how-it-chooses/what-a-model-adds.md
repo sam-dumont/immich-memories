@@ -96,8 +96,10 @@ another moment: the vote judged the moment, and a frame taken seconds apart adds
 newcomer that repeats a scene the cut already holds (the same scene prints the final duplicate review
 reads) is refused on the spot; the outgoing shot is excluded from this comparison. `thin-polish.private.json` records the shot-kind mix of
 the draft and of the polished cut. Every newcomer is voted
-on again inside the block it joined, and one the vote refuses brings back the shot it replaced; an
-R or T seat whose newcomer the vote refuses picks once more.
+on again inside the block it joined. An ordinary candidate named weak in either order is
+revoked: trading one weak picture for another has not improved the draft. Its original comes
+back; an R or T seat can try once more within the existing budget. Protected pictures keep
+the protections described above.
 
 ### A short film gets one more look
 

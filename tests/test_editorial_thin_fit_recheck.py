@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from tests.editorial_thin_fixtures import JUNK, START, Film, polish
+from tests.editorial_thin_fixtures import DOUBTFUL, JUNK, START, Film, polish
 
 
 def draft(film: Film, size: int, *, junk=(40,), empty=(), seat_caption="the family together"):
@@ -52,6 +52,43 @@ def test_a_newcomer_both_orders_name_is_still_revoked(tmp_path):
     assert payload["removed_by_the_vote"] == []
     assert payload["retained_without_replacement"] == ["d040"]
     assert all(slot["outcome"] != "seated" for slot in payload["slots"])
+
+
+def test_a_weak_replacement_cannot_displace_a_weak_draft_shot(tmp_path):
+    film = Film()
+    draft(film, 12, junk=(4,), seat_caption=DOUBTFUL)
+    original = film.draft[4]
+    original["line"] = original["line"].replace(JUNK, DOUBTFUL)
+    film.lines[original["asset_id"]] = original["line"]
+
+    _judge, payload, cut, newcomers = polish(tmp_path, film)
+
+    assert payload["verdicts"]["d004"]["state"] == "weak"
+    assert cut == film.draft
+    assert not newcomers
+    assert payload["revoked_by_the_fit_check"]
+    assert payload["retained_without_replacement"] == ["d004"]
+
+    warm_judge, warm_payload, warm_cut, warm_newcomers = polish(tmp_path, film)
+    assert warm_cut == cut and not warm_newcomers
+    assert warm_payload["retained_without_replacement"] == ["d004"]
+    assert not [stage for stage in warm_judge.calls if stage.startswith("thesis-fit-")]
+
+
+def test_a_refused_weak_candidate_can_be_replaced_by_a_kept_candidate(tmp_path):
+    film = Film()
+    draft(film, 12, junk=(4,), seat_caption=DOUBTFUL)
+    candidate = film.pool["S04"][1]
+    candidate["line"] = candidate["line"].replace(DOUBTFUL, "the family together")
+    film.lines[candidate["asset_id"]] = candidate["line"]
+
+    _judge, payload, cut, newcomers = polish(tmp_path, film)
+
+    assert newcomers == [candidate["asset_id"]]
+    assert len(cut) == len(film.draft)
+    assert "d004" not in {row["asset_id"] for row in cut}
+    assert payload["revoked_by_the_fit_check"] == ["S04-c0000"]
+    assert not payload["retained_without_replacement"]
 
 
 def test_a_swap_takes_its_shots_block_and_an_append_joins_the_block_its_time_falls_in():
