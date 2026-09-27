@@ -285,6 +285,31 @@ def test_database_and_existing_sidecars_are_private(tmp_path):
     assert all(entry.read_bytes() == b"existing" for entry in paths)
 
 
+def test_securing_an_open_store_keeps_another_process_from_losing_our_writes(tmp_path):
+    # Closing any descriptor on a SQLite file drops every POSIX lock this process holds on
+    # it; the detector worker then believed it was the last connection, checkpointed and
+    # deleted the WAL under ours, and our next read was stale and our next commit lost.
+    import subprocess
+    import sys
+    from contextlib import closing
+
+    from immich_memories.store.editorial_preparation import private_database_path
+
+    path = tmp_path / "store.sqlite"
+    ours = sqlite3.connect(private_database_path(path))
+    ours.execute("PRAGMA journal_mode=WAL")
+    ours.execute("CREATE TABLE t(x)")
+    ours.commit()
+    ours.execute("SELECT count(*) FROM t").fetchone()
+    private_database_path(path)
+    worker = "import sqlite3,sys;c=sqlite3.connect(sys.argv[1]);c.execute('INSERT INTO t VALUES(1)');c.commit();c.close()"
+    subprocess.run([sys.executable, "-c", worker, str(path)], check=True)  # noqa: S603
+    ours.execute("INSERT INTO t VALUES(2)")
+    ours.commit()
+    with closing(ours), closing(sqlite3.connect(path)) as fresh:
+        assert sorted(row[0] for row in fresh.execute("SELECT x FROM t")) == [1, 2]
+
+
 def test_fresh_prepared_store_is_readable_by_the_real_annotation_reader(tmp_path):
     from immich_memories.analysis.annotation_lines import StoredAnnotationLineReader
     from immich_memories.analysis.editorial_contracts import EditorialCandidate
