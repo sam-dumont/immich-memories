@@ -27,7 +27,6 @@ if TYPE_CHECKING:
     from immich_memories.db.store import Store
 
 _LEASE_CLASS = 871_0002
-_KEY = "hashtext(:scope || ':' || :name)"
 
 
 class LeaseHeldError(RuntimeError):
@@ -54,8 +53,9 @@ class Lease:
             self._store = open_store()
         return self._store if self._store.dialect_name == "postgresql" else None
 
-    def _params(self, store: Store) -> dict[str, object]:
-        return {"lock_class": _LEASE_CLASS, "scope": store.location.schema, "name": self.name}
+    def _key(self, store: Store) -> tuple[sa.ColumnElement[int], sa.ColumnElement[int]]:
+        scoped_name = f"{store.location.schema}:{self.name}"
+        return sa.literal(_LEASE_CLASS), sa.func.hashtext(scoped_name)
 
     def acquire(self, *, wait: bool = False) -> None:
         """Take the lease, waiting for it when `wait`; otherwise refuse if it is held."""
@@ -65,10 +65,8 @@ class Lease:
             return
         connection = store.engine.connect()
         try:
-            function = "pg_advisory_lock" if wait else "pg_try_advisory_lock"
-            taken = connection.execute(
-                sa.text(f"SELECT {function}(:lock_class, {_KEY})"), self._params(store)
-            ).scalar()
+            lock = sa.func.pg_advisory_lock if wait else sa.func.pg_try_advisory_lock
+            taken = connection.execute(sa.select(lock(*self._key(store)))).scalar()
             connection.commit()
         except BaseException:
             connection.invalidate()
@@ -90,10 +88,7 @@ class Lease:
             try:
                 store = self._backend()
                 assert store is not None
-                connection.execute(
-                    sa.text(f"SELECT pg_advisory_unlock(:lock_class, {_KEY})"),
-                    self._params(store),
-                )
+                connection.execute(sa.select(sa.func.pg_advisory_unlock(*self._key(store))))
                 connection.commit()
             except BaseException:
                 # A connection that may still hold the lock must never go back to the pool.
