@@ -13,6 +13,7 @@ from immich_memories.analysis.editorial_laya_reader import LayaReader
 from immich_memories.analysis.editorial_structure_audience import AudienceBank
 from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
 from immich_memories.analysis.editorial_structure_planner import plan_structure
+from immich_memories.db import StoreLocation, open_store
 from tests.editorial_story_fixtures import ControlledStoryJudge
 from tests.editorial_thin_fixtures import caption_laya
 from tests.test_editorial_duration_planner_integration import source
@@ -148,7 +149,8 @@ def test_a_banked_hold_is_not_lifted_by_a_later_cut_that_would_clear_it(tmp_path
     # picture as ordinary furniture moving: new evidence, a new reading, and a clear answer.
     held = replace(source(tmp_path, seconds=60, private_opening=True), audience="shareable")
     cleared = replace(source(tmp_path, seconds=60), audience="shareable")
-    elsewhere = replace(cleared, bank_dir=tmp_path / "other-library" / "banks")
+    other_library = StoreLocation(url=f"sqlite:///{tmp_path / 'other-library.db'}")
+    elsewhere = replace(cleared, store=open_store(location=other_library))
 
     assert "picture-000" not in carried(
         cut(held, ControlledStoryJudge(), "first-cut", laya=caption_laya())
@@ -172,13 +174,12 @@ def test_an_answer_another_reader_gave_is_asked_again(tmp_path):
         {"picture-000": "2020-05-02T08:00:00 | A person is bathing in a bathtub."},
     )
     key = share.audience_check_key(evidence)
-    path = tmp_path / "bank.json"
-    laya_bank = AudienceBank(path, answerer="full|laya")
+    laya_bank = AudienceBank(open_store(), answerer="full|laya")
     laya_bank.keep(
         key, {"parsed": True, "verdict": "just_us", "finding": "private_activity", "activity": {}}
     )
 
-    rules_bank = AudienceBank(path, answerer="full|rules")
+    rules_bank = AudienceBank(open_store(), answerer="full|rules")
 
     assert rules_bank.answer(key) is None, "a bank written for one reader answers only for that one"
 
@@ -222,13 +223,10 @@ def test_a_text_hold_from_an_older_audience_prompt_is_asked_again_and_can_clear(
 def test_a_body_hold_an_older_library_banked_stays(tmp_path, monkeypatch):
     """A film-time body observation once cast permanent holds. Pictures are no longer read at
     film time, so nothing casts a new one, and nothing lifts the ones already banked."""
-    from immich_memories.analysis.editorial_structure_audience import (
-        AUDIENCE_BANK_NAME,
-        AudienceBank,
-    )
+    from immich_memories.analysis.editorial_structure_audience import AudienceBank
 
     held = replace(source(tmp_path, seconds=60), audience="shareable")
-    AudienceBank(held.bank_dir.parent / AUDIENCE_BANK_NAME, answerer="older").hold(
+    AudienceBank(open_store(), answerer="older").hold(
         "picture-000",
         {
             "verdict": "family_only",
@@ -262,7 +260,7 @@ def test_a_banked_clearance_of_a_detector_hold_is_not_served(tmp_path):
     from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
 
     evidence = _head_flagged_still()
-    library = AudienceBank(tmp_path / "bank.json", answerer="reader")
+    library = AudienceBank(open_store(), answerer="reader")
     library.keep(
         share.audience_check_key(evidence), {"parsed": True, "verdict": "share", "finding": "none"}
     )
@@ -286,10 +284,10 @@ def test_a_detector_hold_is_permanent_across_audience_prompts(tmp_path, monkeypa
     from tests.test_editorial_shareability_tiers import ClearingReader
 
     held = share.check_audience(ClearingReader(), _head_flagged_still(), "unit-1")
-    AudienceBank(tmp_path / "bank.json", answerer="reader").hold("still", held)
+    AudienceBank(open_store(), answerer="reader").hold("still", held)
     bump_audience_prompt(monkeypatch)
 
-    standing = AudienceBank(tmp_path / "bank.json", answerer="reader").held("still")
+    standing = AudienceBank(open_store(), answerer="reader").held("still")
 
     assert standing is not None and standing["verdict"] == "family_only"
     assert standing["finding"] == "exposure_evidence"

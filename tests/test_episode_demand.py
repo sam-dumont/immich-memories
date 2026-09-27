@@ -14,6 +14,7 @@ from immich_memories.analysis.selection_source import (
 )
 from immich_memories.analysis.selection_source_groups import project_episode_groups
 from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+from immich_memories.db import open_store
 from immich_memories.store.episode_readings import EpisodeReadingProducer, EpisodeReadingStore
 from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
@@ -226,7 +227,7 @@ def polish_reading_through(demand, tmp_path):
         demand.readings_for([asset for assets in chosen.values() for asset in assets])
         return "the month", {}
 
-    return ThinPolish(bank_dir=tmp_path, read_period=read_period)
+    return ThinPolish(store=open_store(), bank_scope="case", read_period=read_period)
 
 
 def test_a_cold_cut_reads_only_the_episodes_its_draft_put_a_shot_in(tmp_path):

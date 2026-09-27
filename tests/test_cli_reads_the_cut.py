@@ -297,6 +297,28 @@ class TestRunsWhy:
         assert result.exit_code == 0, result.output
         assert "Your word on it now: You'll never use this picture." in result.output
 
+    def test_what_the_owner_s_review_did_before_rendering_is_said(self, cut, tmp_path):
+        from immich_memories.db import open_store
+        from immich_memories.store.owner_edits import keep_owner_edits
+
+        config, attempt = cut
+        keep_owner_edits(
+            open_store(config),
+            {
+                "edit_id": "e1",
+                "removed_asset_ids": ["garden-1"],
+                "interval_edits": [{"asset_id": "garden-2", "selected_interval": [1, 3.5]}],
+            },
+            film=tmp_path / "june.mp4",
+            attempt=attempt,
+        )
+
+        trimmed = _invoke(config, ["runs", "why", "garden-2"])
+        removed = _invoke(config, ["runs", "why", "garden-1"])
+
+        assert "Your review: you trimmed it to 1-3.5 s." in trimmed.output
+        assert "Your review: you removed it before rendering." in removed.output
+
 
 class TestRunsShow:
     def test_it_names_the_sharing_level_the_cut_was_made_for(self, cut):

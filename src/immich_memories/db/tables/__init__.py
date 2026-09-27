@@ -24,6 +24,12 @@ from immich_memories.db.tables.annotations import (
     pixel_facts_thresholds,
     speech_regions,
 )
+from immich_memories.db.tables.banks import (
+    audience_answers,
+    audience_holds,
+    owner_edits,
+    vote_bank_entries,
+)
 from immich_memories.db.tables.model_answers import (
     editorial_episode_readings,
     editorial_episode_refusals,
@@ -46,6 +52,8 @@ __all__ = [
     "annotation_assets",
     "asset_flags",
     "asset_people",
+    "audience_answers",
+    "audience_holds",
     "caption_provenance",
     "description_fields",
     "description_unavailable",
@@ -63,6 +71,7 @@ __all__ = [
     "motion_bursts",
     "motion_lines",
     "motion_residuals",
+    "owner_edits",
     "people",
     "people_aliases",
     "people_registry",
@@ -73,4 +82,5 @@ __all__ = [
     "speech_regions",
     "store_meta",
     "text_completion_failures",
+    "vote_bank_entries",
 ]

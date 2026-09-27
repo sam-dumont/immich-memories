@@ -20,7 +20,8 @@ from immich_memories.analysis.editorial_rule_banked_facts import (
 )
 from immich_memories.analysis.editorial_rule_quality import rule_representative_rank
 from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
-from immich_memories.analysis.editorial_structure_audience import AUDIENCE_BANK_NAME, AudienceBank
+from immich_memories.analysis.editorial_structure_audience import AudienceBank
+from immich_memories.db import open_store
 from tests.annotation_rows import add_rows, annotation_store
 
 
@@ -157,7 +158,6 @@ def test_a_banked_reading_s_representative_leads_its_episode():
 def _open(tmp_path, **overrides):
     return open_banked_facts(
         **{
-            "bank_dir": tmp_path / "this-case",
             "attempts_dir": None,
             "store": None,
             "audience": "family",
@@ -207,10 +207,10 @@ def test_a_refusal_cast_for_another_audience_is_not_carried_over(tmp_path):
 
 
 def test_a_picture_the_library_holds_is_refused_in_any_case_of_it(tmp_path, monkeypatch):
-    library = AudienceBank(tmp_path / AUDIENCE_BANK_NAME, answerer="full|reader-a")
+    library = AudienceBank(open_store(), answerer="full|reader-a")
     library.hold("body", {"verdict": "family_only", "finding": "nudity_shirtless_or_underwear"})
     library.hold("bath", {"verdict": "do_not_show", "finding": "private_activity"})
-    case = {"bank_dir": tmp_path / "some-other-case", "audience": "shareable"}
+    case = {"store": open_store(), "audience": "shareable"}
 
     assert _open(tmp_path, **case).refused_for_audience("bath")
     # WHY: a release that rewrites the audience prompt retires the text model's holds.

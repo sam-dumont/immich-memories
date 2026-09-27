@@ -5,7 +5,7 @@ gate and the material builder already read (`editorial_shareability.load_flags`)
 is their only writer. A picture carries at most one owner decision: a new one replaces the old
 in the same transaction, so two writers (the web page and the CLI) can't leave a picture both
 cleared and never used. Each write is a single store transaction, which is why no file lock is
-needed here, unlike the JSON banks (#1266).
+needed here (#1266).
 
 A Live Photo is one picture to its owner, so a decision on its still covers its motion clip
 too, when the store knows the clip.

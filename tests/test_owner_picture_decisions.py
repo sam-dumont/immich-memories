@@ -4,6 +4,7 @@ annotation store, one decision per picture, and read by every tier."""
 from __future__ import annotations
 
 from immich_memories.analysis import editorial_shareability as share
+from immich_memories.db import open_store
 from immich_memories.store import owner_decisions as owner
 from tests.annotation_rows import add_rows, annotation_store
 
@@ -90,7 +91,7 @@ def gate(tmp_path, store, *, tier="full", audience="shareable"):
         flag_rows=share.load_flags(store, ["solo"]),
         lines={"solo": "A person on a beach."},
         bank_path=tmp_path / "shareability.private.json",
-        library=AudienceBank(tmp_path / "audience.private.json", answerer=f"{tier}|reader"),
+        library=AudienceBank(open_store(), answerer=f"{tier}|reader"),
         check_audience=audience_check_for(tier),
     )
 
@@ -170,17 +171,14 @@ def test_a_picture_the_owner_will_never_use_leaves_every_cut(tmp_path, rules):
 
 def test_the_no_model_draft_does_not_carry_a_banked_refusal_past_the_owner(tmp_path):
     from immich_memories.analysis.editorial_rule_banked_facts import open_banked_facts
-    from immich_memories.analysis.editorial_structure_audience import AUDIENCE_BANK_NAME
 
     store = empty_store(tmp_path)
-    bank_dir = tmp_path / "structure-banks" / "case"
-    AudienceBank(bank_dir.parent / AUDIENCE_BANK_NAME, answerer="full|reader").hold(
+    AudienceBank(store, answerer="full|reader").hold(
         "held", {"verdict": "do_not_show", "finding": "exposure_evidence", "policy": "heads"}
     )
 
     def refused():
         return open_banked_facts(
-            bank_dir=bank_dir,
             attempts_dir=None,
             store=store,
             audience="family",

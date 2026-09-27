@@ -13,6 +13,7 @@ from immich_memories.analysis.editorial_standing_facts import carries_nothing
 from immich_memories.analysis.editorial_story_standing import StandingGate
 from immich_memories.analysis.editorial_thin_layer import ThinPolish
 from immich_memories.config_models_llm import LLMConfig
+from immich_memories.db import open_store
 
 ACCOUNT = "The month a family found its feet."
 JUNK = "an empty worktop"
@@ -152,7 +153,9 @@ def standing_gate():
 
 def polish_once(tmp_path, judge):
     standing = standing_gate()
-    layer = ThinPolish(bank_dir=tmp_path, read_period=lambda _stories: (ACCOUNT, {}))
+    layer = ThinPolish(
+        store=open_store(), bank_scope="case", read_period=lambda _stories: (ACCOUNT, {})
+    )
     return layer.polish(
         DRAFT,
         judge=judge,
@@ -191,7 +194,9 @@ def test_polish_keeps_a_representative_and_its_accepted_depth_in_either_capture_
     representative = unit("g2", "S2", moment="q1")
     depth = dict(unit("g3", "S2", moment="q1"), depth=True, taken=f"2024-02-05T{depth_time}")
     draft = [representative, depth]
-    layer = ThinPolish(bank_dir=tmp_path, read_period=lambda _stories: (ACCOUNT, {}))
+    layer = ThinPolish(
+        store=open_store(), bank_scope="case", read_period=lambda _stories: (ACCOUNT, {})
+    )
     records = {}
 
     cut = layer.polish(
@@ -272,7 +277,9 @@ def test_a_story_the_bank_records_something_about_is_seated_from_the_bank(tmp_pa
     judge = PolishJudge()
     standing = standing_gate()
     records = banked_records(tmp_path)
-    layer = ThinPolish(bank_dir=tmp_path, read_period=lambda _stories: (ACCOUNT, records))
+    layer = ThinPolish(
+        store=open_store(), bank_scope="case", read_period=lambda _stories: (ACCOUNT, records)
+    )
 
     cut = layer.polish(
         DRAFT,
@@ -295,7 +302,7 @@ def test_every_vote_including_the_newcomers_re_check_is_banked_for_the_next_run(
     """The re-check over a refilled cut is a paid answer like any other, so it is read back.
 
     Both runs get their own judge with an empty bank of its own, so the only thing that can
-    keep the second one from voting again is the layer's own `thesis-fit.private.json`. The
+    keep the second one from voting again is the layer's own thesis-fit vote bank. The
     picks that remain are the judgment cache's to answer, which production keeps in SQLite and
     this fixture's judge stands in for.
     """

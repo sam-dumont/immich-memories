@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 from immich_memories.analysis.editorial_shareability import (
@@ -23,7 +22,6 @@ from immich_memories.analysis.editorial_shareability_audience import exposure_fl
 from immich_memories.analysis.editorial_structure_audience import (
     CARRIER_RULE_SOURCE,
     AudienceBank,
-    library_bank_path,
 )
 from immich_memories.db import Store, open_store
 from immich_memories.store import owner_decisions
@@ -77,10 +75,6 @@ def store_of(config: Any) -> Store:
     return open_store(config)
 
 
-def audience_bank_of(config: Any) -> Path:
-    return library_bank_path(config.editorial.resolve_bank_root(config.cache.cache_path))
-
-
 def read(
     config: Any, asset_ids: Iterable[str], *, clips: Mapping[str, str | None] | None = None
 ) -> dict[str, PictureHold]:
@@ -95,7 +89,7 @@ def read(
     decided = owner_decisions.decisions(store, ids)
     heads = load_detector_heads(store, [*ids, *clips.values()], config.editorial.head_versions)
     flags = _producer_never_auto(store, ids)
-    bank = AudienceBank(audience_bank_of(config), answerer="")
+    bank = AudienceBank(store, answerer="")
     out = {}
     for asset_id in ids:
         reasons, detector = _reasons(asset_id, clips.get(asset_id), heads, bank)

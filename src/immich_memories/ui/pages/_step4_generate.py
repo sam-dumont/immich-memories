@@ -280,11 +280,8 @@ def _build_generation_params(state, selected_clips, output_path):
         upload_album=state.upload_album_name,
     )
     if params.editorial_render_timing is not None:
-        import json
-
         from immich_memories.processing.editorial_owner_edits import project_editorial_owner_edits
         from immich_memories.processing.editorial_timing import timing_policy_for_params
-        from immich_memories.security import write_secret_file
 
         projection = project_editorial_owner_edits(
             original_clips=state.pipeline_selected_clips,
@@ -303,16 +300,15 @@ def _build_generation_params(state, selected_clips, output_path):
         if projection.record is not None:
             from uuid import uuid4
 
-            edit_path = output_path.with_name(
-                f"{output_path.stem}.owner-edits-{uuid4().hex}.private.json"
-            )
-            params.editorial_owner_edits = {
-                **projection.record,
-                "artifact_name": edit_path.name,
-            }
-            write_secret_file(
-                edit_path,
-                json.dumps(params.editorial_owner_edits, indent=2),
+            from immich_memories.db import open_store
+            from immich_memories.store.owner_edits import keep_owner_edits
+
+            params.editorial_owner_edits = {**projection.record, "edit_id": uuid4().hex}
+            keep_owner_edits(
+                open_store(state.config),
+                params.editorial_owner_edits,
+                film=output_path,
+                attempt=state.editorial_attempt_dir,
             )
     params.client = SyncImmichClient(
         base_url=state.immich_url,

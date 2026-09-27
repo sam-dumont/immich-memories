@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from immich_memories.analysis.editorial_structure_audience import AudienceBank
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.operations import picture_holds as holds
 from tests.annotation_rows import add_rows
 
@@ -57,7 +58,7 @@ def test_a_live_photo_is_held_by_its_clip_too(tmp_path):
 
 def test_a_hold_an_earlier_cut_banked_is_named(tmp_path):
     config = config_at(tmp_path)
-    AudienceBank(holds.audience_bank_of(config), answerer="full|reader").hold(
+    AudienceBank(open_store(), answerer="full|reader").hold(
         "bath", {"verdict": "do_not_show", "finding": "private_activity", "policy": "v17"}
     )
 

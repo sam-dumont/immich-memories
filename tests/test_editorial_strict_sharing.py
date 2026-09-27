@@ -6,6 +6,7 @@ from __future__ import annotations
 from immich_memories.analysis import editorial_shareability as share
 from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
 from immich_memories.config_models_editorial import EditorialConfig
+from immich_memories.db import open_store
 from tests.test_editorial_shareability_tiers import Annotation, ClearingReader
 
 UNIT = {"asset_id": "solo", "members": ["solo"]}
@@ -26,7 +27,7 @@ def gate(tmp_path, audience, *, strict=None):
         flag_rows=FLAGGED,
         lines={"solo": "A family waves in a garden."},
         bank_path=tmp_path / "shareability.private.json",
-        library=AudienceBank(tmp_path / "audience.private.json", answerer="full|model-a"),
+        library=AudienceBank(open_store(), answerer="full|model-a"),
         **options,
     )
 
@@ -68,7 +69,7 @@ def test_an_unflagged_picture_is_shared_either_way(tmp_path):
         flag_rows={},
         lines={"solo": "A landscape at sunset."},
         bank_path=tmp_path / "shareability.private.json",
-        library=AudienceBank(tmp_path / "audience.private.json", answerer="full|model-a"),
+        library=AudienceBank(open_store(), answerer="full|model-a"),
     )
 
     assert clean.verdict_of(UNIT) == "share"

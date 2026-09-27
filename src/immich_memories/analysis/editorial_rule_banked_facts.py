@@ -46,7 +46,6 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.analysis.editorial_shareability import OWNER_CLEARANCES, allowed
 from immich_memories.analysis.editorial_structure_audience import (
-    AUDIENCE_BANK_NAME,
     library_refusals,
 )
 from immich_memories.db.tables import editorial_episode_readings
@@ -121,7 +120,6 @@ NO_BANKED_FACTS = BankedAnswers(frozenset(), {}, frozenset())
 
 def open_banked_facts(
     *,
-    bank_dir: Path,
     attempts_dir: Path | None,
     store: Store | None,
     audience: str,
@@ -137,8 +135,8 @@ def open_banked_facts(
     the cold draft, which is always a valid film.
     """
     representatives, culls = _banked_readings(store, episode_cards, own_producers)
-    refused = _refused_before(attempts_dir, audience=audience) | library_refusals(
-        bank_dir.parent / AUDIENCE_BANK_NAME, audience
+    refused = _refused_before(attempts_dir, audience=audience) | (
+        library_refusals(store, audience) if store is not None else frozenset()
     )
     answers = BankedAnswers(
         refused=refused - _owner_cleared(store, audience),

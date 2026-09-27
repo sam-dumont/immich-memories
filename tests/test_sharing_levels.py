@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from immich_memories.analysis import editorial_shareability as share
+from immich_memories.db import open_store
 from tests.annotation_rows import annotation_store
 
 
@@ -57,7 +58,7 @@ def gate(tmp_path, caption, finding, level, *, heads=(("nsfw_marqo", "no"),)):
         flag_rows={},
         lines={"solo": caption},
         bank_path=tmp_path / "shareability.private.json",
-        library=AudienceBank(tmp_path / "audience.private.json", answerer="full|reader"),
+        library=AudienceBank(open_store(), answerer="full|reader"),
     )
 
 
@@ -86,7 +87,7 @@ def test_a_detector_floor_under_a_household_moment_still_holds_it(tmp_path):
 
 
 def test_a_household_hold_banked_before_levels_existed_plays_in_a_just_us_film(tmp_path):
-    AudienceBank(tmp_path / "audience.private.json", answerer="full|reader").hold(
+    AudienceBank(open_store(), answerer="full|reader").hold(
         "solo",
         {
             "verdict": "do_not_show",
@@ -99,7 +100,7 @@ def test_a_household_hold_banked_before_levels_existed_plays_in_a_just_us_film(t
 
 
 def test_an_older_refusal_the_current_reading_cannot_place_stays_refused(tmp_path):
-    AudienceBank(tmp_path / "audience.private.json", answerer="full|reader").hold(
+    AudienceBank(open_store(), answerer="full|reader").hold(
         "solo",
         {
             "verdict": "do_not_show",
@@ -358,7 +359,7 @@ def owner_gate(tmp_path, store, level, caption="A person on a beach.", finding="
         flag_rows=share.load_flags(store, ["solo"]),
         lines={"solo": caption},
         bank_path=tmp_path / f"{level}-shareability.private.json",
-        library=AudienceBank(tmp_path / "audience.private.json", answerer="full|reader"),
+        library=AudienceBank(open_store(), answerer="full|reader"),
     )
 
 
@@ -401,18 +402,15 @@ def test_a_burst_the_owner_cleared_at_two_levels_takes_the_stricter(tmp_path):
 
 def test_the_no_model_draft_lifts_a_banked_refusal_only_where_the_clearance_reaches(tmp_path):
     from immich_memories.analysis.editorial_rule_banked_facts import open_banked_facts
-    from immich_memories.analysis.editorial_structure_audience import AUDIENCE_BANK_NAME
 
     store = annotation_store()
-    bank_dir = tmp_path / "structure-banks" / "case"
-    AudienceBank(bank_dir.parent / AUDIENCE_BANK_NAME, answerer="full|reader").hold(
+    AudienceBank(store, answerer="full|reader").hold(
         "held", {"verdict": "family_only", "finding": "exposure_evidence", "policy": "heads"}
     )
     owner.decide(store, "held", owner.clearance_for("family"), via="cli")
 
     def refused(level):
         return open_banked_facts(
-            bank_dir=bank_dir,
             attempts_dir=None,
             store=store,
             audience=level,
