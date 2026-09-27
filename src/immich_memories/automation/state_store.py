@@ -79,13 +79,11 @@ class AutomationStateStore:
             memory_key=memory_key,
         )
         with self.store.begin() as conn:
-            seq = conn.execute(sa.select(sa.func.coalesce(sa.func.max(_ATTEMPTS.seq), 0))).scalar()
             conn.execute(
                 sa.insert(automation_attempts),
                 [
                     {
                         "id": attempt.id,
-                        "seq": int(seq or 0) + 1,
                         "started_at": to_db(attempt.started_at),
                         "finished_at": None,
                         "outcome": attempt.outcome.value,

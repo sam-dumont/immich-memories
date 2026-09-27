@@ -109,8 +109,8 @@ def _create_run_tables(schema: str | None) -> None:
 def _create_automation_tables(schema: str | None) -> None:
     op.create_table(
         "automation_attempts",
+        sa.Column("seq", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("id", sa.String(length=64), nullable=False),
-        sa.Column("seq", sa.Integer(), nullable=False),
         sa.Column("started_at", sa.DateTime(), nullable=False),
         sa.Column("finished_at", sa.DateTime(), nullable=True),
         sa.Column("outcome", sa.String(length=32), nullable=False),
@@ -122,7 +122,8 @@ def _create_automation_tables(schema: str | None) -> None:
         sa.Column("error", sa.Text(), nullable=True),
         sa.Column("last_phase", sa.String(length=32), nullable=True),
         sa.Column("phase_events", sa.JSON(), nullable=False),
-        sa.PrimaryKeyConstraint("id", name=op.f("pk_automation_attempts")),
+        sa.PrimaryKeyConstraint("seq", name=op.f("pk_automation_attempts")),
+        sa.UniqueConstraint("id", name=op.f("uq_automation_attempts_id")),
         schema=schema,
     )
     op.create_table(

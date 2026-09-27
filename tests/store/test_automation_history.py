@@ -100,3 +100,38 @@ def test_notification_health_cools_down_after_a_failure_until_a_success(store):
     assert healed.failure_category is NotificationFailureCategory.QUOTA
     assert state.is_cooling_down(24, now=failed_at + timedelta(hours=2)) is False
     assert healed.to_dict(cooldown_hours=24)["last_success_at"] == "2026-05-01T13:00:00+00:00"
+
+
+def test_concurrent_writers_get_distinct_increasing_positions(store):
+    import threading
+
+    import sqlalchemy as sa
+
+    from immich_memories.db.tables import automation_attempts
+
+    attempts = AutomationStateStore(store)
+    started: dict[int, list[str]] = {}
+    barrier = threading.Barrier(8)
+
+    def writer(index: int) -> None:
+        barrier.wait()
+        started[index] = [attempts.start_attempt(f"wake {index}").id for _ in range(5)]
+
+    threads = [threading.Thread(target=writer, args=(i,)) for i in range(8)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    order = sa.select(automation_attempts.c.id, automation_attempts.c.seq).order_by(
+        automation_attempts.c.started_at, automation_attempts.c.seq
+    )
+    with store.connect() as conn:
+        first = conn.execute(order).all()
+        second = conn.execute(order).all()
+    seq_of = {row.id: row.seq for row in first}
+    assert len(first) == 40
+    assert len(set(seq_of.values())) == 40
+    assert first == second
+    for ids in started.values():
+        assert [seq_of[i] for i in ids] == sorted(seq_of[i] for i in ids)

@@ -119,7 +119,7 @@ def _read_cache_db(path: Path) -> dict[str, list[Row]]:
         }
         order = {
             "phase_stats": "id",
-            "automation_attempts": "started_at, rowid",
+            "automation_attempts": "rowid",
             "schema_migrations": "version",
         }
         tables = (
@@ -218,11 +218,17 @@ def _held_keys(conn: Connection, table: sa.Table, keys: Sequence[str], wanted: l
 
 
 def _import_attempts(conn: Connection, legacy: list[Row], tally: _Tally) -> None:
-    base = conn.execute(
-        sa.select(sa.func.coalesce(sa.func.max(automation_attempts.c.seq), 0))
-    ).scalar()
-    rows = [_attempt(row, int(base or 0) + index + 1) for index, row in enumerate(legacy)]
-    _insert_new(conn, automation_attempts, ["id"], rows, tally)
+    """Legacy attempts in rowid order, one INSERT each, so the database numbers them in that
+    order and its own counter stays in step (no explicit `seq` is ever written)."""
+    rows = [_attempt(row) for row in legacy]
+    held = _held_keys(conn, automation_attempts, ["id"], [row["id"] for row in rows])
+    for row in rows:
+        if row["id"] in held:
+            tally.skipped += 1
+            continue
+        conn.execute(sa.insert(automation_attempts), row)
+        held.add(row["id"])
+        tally.imported += 1
 
 
 def _dedup_scores(rows: list[Row]) -> list[Row]:
@@ -317,10 +323,9 @@ def _phase(row: Row) -> Row:
     }
 
 
-def _attempt(row: Row, seq: int) -> Row:
+def _attempt(row: Row) -> Row:
     return {
         "id": row["id"],
-        "seq": seq,
         "started_at": _when(row.get("started_at")) or now_db(),
         "finished_at": _when(row.get("finished_at")),
         "outcome": row.get("outcome") or "failed",
