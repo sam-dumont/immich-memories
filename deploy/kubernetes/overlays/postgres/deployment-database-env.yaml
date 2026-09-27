@@ -1,0 +1,18 @@
+# Strategic-merge patch: adds the second Secret's keys to the app container's
+# env. envFrom has no merge key, so both secretRefs are listed here in full —
+# a partial list would drop base/secret.yaml's Immich credentials.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-memories
+  namespace: immich-memories
+spec:
+  template:
+    spec:
+      containers:
+        - name: immich-memories
+          envFrom:
+            - secretRef:
+                name: immich-memories-secrets
+            - secretRef:
+                name: immich-memories-database

@@ -49,6 +49,10 @@ locals {
       NVIDIA_VISIBLE_DEVICES     = "all"
       NVIDIA_DRIVER_CAPABILITIES = "compute,video,utility"
     } : {},
+    # The schema only matters once the store is on PostgreSQL; unset stays SQLite.
+    var.database_url != "" ? {
+      IMMICH_MEMORIES_DATABASE_SCHEMA = var.database_schema
+    } : {},
     var.env,
   )
 
@@ -59,6 +63,7 @@ locals {
     },
     var.llm_api_key != "" ? { IMMICH_MEMORIES_LLM__API_KEY = var.llm_api_key } : {},
     var.musicgen_api_key != "" ? { IMMICH_MEMORIES_MUSICGEN__API_KEY = var.musicgen_api_key } : {},
+    var.database_url != "" ? { IMMICH_MEMORIES_DATABASE_URL = var.database_url } : {},
     var.secret_env,
   )
 }
