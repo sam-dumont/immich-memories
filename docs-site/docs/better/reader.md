@@ -8,9 +8,9 @@ sidebar_label: "Add a reader (local or hosted)"
 Reader: power user.
 
 The NAS makes the film without one. A reader is a text model that writes the prose (what happened
-in each episode, an account of the period, the film's title, the music's mood) and then polishes the
-rules draft: it names the shots that add nothing, and a better shot from the same story takes the
-seat. It starts from the NAS draft and never sees a picture. The captioner reads selected shots
+in each episode, an account of the period, the film's title, the music's mood). On Full it can
+refine the rules draft: a proposed replacement must pass the shared checks before taking a shot's
+seat. It can also keep the existing cut. It starts from the NAS draft and never sees a picture. The captioner reads selected shots
 and replacement candidates; existing captions are reused. The reader can read a selected shot's
 whole episode for context, without asking the captioner to fill every neighbour first. What exactly it
 changes, with diagrams: [What a model adds](../how-it-chooses/what-a-model-adds.md).
@@ -26,37 +26,19 @@ and can cost much more, especially hosted. The selection reader still receives t
   Ollama's own.
 - For a local model, a machine that holds it for as long as its server is up. The default is
   **Gemma 4 E4B** (`mlx-community/gemma-4-e4b-it-6bit` on a Mac, `google/gemma-4-E4B-it` under vLLM
-  or Ollama; Apache 2.0): 5.7 GB of weights and 6.7 GB at its peak on an 8k-token read, so it fits
-  a 16 GB Mac beside the 500M caption server (2.4 GB).
+  or Ollama; Apache 2.0). Allow room for the context cache and caption server as well as the
+  weights. Context length and concurrent requests affect memory use; see [Measured](./measured.md).
 
-It is the one graded model. A bigger one (a 30B, about 17 GB) was measured against it and did not
-make better cuts, so it is not worth the memory. Anything else that holds 32k and returns valid JSON is expected to work, and its
-quality is your own measurement.
+Gemma 4 E4B is the default. Another model needs the context window and valid JSON responses,
+but that alone does not establish the quality of its choices. Compare the finished pictures
+against NAS on the same inputs and settings. A larger model is not an automatic upgrade.
+Current measurements belong on [Measured](./measured.md); older whole-period-reader timings
+do not describe the bounded refinement path.
 
-### How the default was chosen
-
-Gemma 4 E4B against a 30B (Qwen3-VL-30B-A3B) on the same four months and one year, with the same prepared store and
-the same rules draft: every episode reading, account and title written by Gemma, the polish vote
-left with the 30B in both.
-
-| | Gemma 4 E4B | the 30B |
-|---|---|---|
-| episode readings read on the first try (public test set, 243 episodes) | 100 % | 97 to 100 % |
-| names or places in the prose that the input does not carry (owner year) | 0 of 591 | 0 of 230 |
-| prose seconds, one year cold | 929 | 763 |
-| the finished cut's overlap with the 30B's (months; year) | 0.80 to 1.00; 0.99 | 1.00 (February, asked twice) |
-| finished-cut invariant violations | 0 | 0 |
-
-Known gaps, measured and left as they are: Gemma names fewer moments as records (58 against 146 on
-the year, most of the 30B's extra ones infer a "first" the prompt forbids); its episode sentences
-read more like a list than a story; the special-day scan (`discover-days`) finds a different set of
-days than the 30B does, and neither set was judged better. Gemma 4 E2B (the 2B one) parses well but
-leaves the polish vote with nothing to remove, names the prompt's own example city in a quarter of
-its titles (the title check then falls back to the template), and writes music moods outside the
-allowed list, so it is not recommended.
-
-The `full` tier (a [caption server](./captions.md)) is worth adding with a reader: the reader reads
-the captions, and the family-viewing check's activity question needs them.
+With `tier: auto`, a configured reader and GPU inference select Full. The caption service and
+Laya must also be ready. Without GPU inference, selection stays on NAS and the app explains what
+is missing; the LLM can still supply titles and music mood. It is never used automatically as a
+captioner. See [Requirements and tiers](../run/requirements.md#which-tier-you-get).
 
 ## Local, on a Mac
 
@@ -146,11 +128,8 @@ its calibrated default threshold is
 archive's filename. When configuring a checkpoint for a different backend manually, set its
 threshold explicitly too.
 
-```yaml
-advanced:
-  editorial:
-    laya_audience: true
-```
+The GPU and Full product tiers enable Laya automatically. A legacy `laya_audience` setting cannot
+override the resolved tier. Fetch the checkpoint and check the services with `immich-memories preflight`.
 
 It only adds holds. The detector holds (the sensitive-content detector and the uncovered-person
 head) apply first and are never lifted, its findings go through the same support checks as the

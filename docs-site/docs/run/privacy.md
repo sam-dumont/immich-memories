@@ -7,7 +7,7 @@ title: "Privacy: what leaves your network"
 
 Reader: newcomer and power user.
 
-**A default run talks to your Immich server and nothing else.** No telemetry, no update check, no
+**A NAS run with no optional services talks to your Immich server only.** No telemetry, no update check, no
 analytics, no font or model download while a film renders. Every other host on this page is a
 switch you turn on, and each one says below what it sends. The list comes from a sweep of the
 source and is kept by hand: if you find a call that is not here,
@@ -67,7 +67,7 @@ touches nothing.
 | `llm.base_url` (titles) | a people or occasion film's opening title, whenever a reader is configured; trips only with `--llm-title` | text only: first names, birth dates and ages, the relationships your people file records, the span, place names, the album the cut mostly sits in | `--no-llm-title` or `--title` |
 | `llm.base_url` (music, special days) | music selection and special-day scans, with a model | text only: the cut's story labels and captions; for a day, capture times, places, coordinates and recognised names | no model: no call |
 | `api.openai.com`, `api.anthropic.com`, `api.z.ai` | `llm.provider` is `openai`, `anthropic` or `zai` and `base_url` is left at its default | the reader rows above, to that vendor | set `base_url` yourself |
-| `caption_base_url` | GPU and Full with the default SmolVLM provider, for selected shots and actual candidates | a 400 px JPEG per picture; a strip of three keyframes per video and per playing Live Photo; `caption_api_key` as a bearer token if set | `localhost:8092`; NAS does not call it |
+| `caption_base_url` | GPU and Full with the default SmolVLM provider, for selected shots and actual candidates; a wider scope only with an explicit `prepare` job | a 400 px JPEG per picture; a strip of three keyframes per video and per playing Live Photo; `caption_api_key` as a bearer token if set | `localhost:8092`; NAS does not call it |
 | `llm.base_url` (caption provider) | explicit `advanced.editorial.preparation.caption_provider: llm`, on any tier | synthetic schema controls, then missing picture tiles and candidate video frame strips; configured LLM credentials | off; existing valid SmolVLM captions are reused first |
 | `inference.facts_base_url` | preparation, when set | each picture's preview, for the heads and detectors | unset: the app runs them itself |
 | `render.worker_base_url` | rendering on another box | the chosen cut, plus your Immich URL and API key so the worker can fetch the clips | unset: renders here |
@@ -92,11 +92,12 @@ prints none.
 The LLM caption option is less efficient and can be much more expensive, especially on hosted
 infrastructure. Configuring a prose reader alone never enables it.
 
-Picture facts and captions are banked under their producer. Later films reuse valid entries;
-missing facts or a changed producer can require another read. Film generation captions selected
-shots and actual candidates, while `prepare` can explicitly cover a wider scope. The heads and
-detectors run in the app or on `advanced.inference.facts_base_url`. The rules editor and the
-optional prose reader use the resulting text and facts.
+The heads and detectors run locally or on `advanced.inference.facts_base_url` and bank their facts.
+The rules editor builds the NAS draft first. GPU and Full then acquire missing captions and clip
+evidence for selected shots and actual candidates. An explicit LLM-caption opt-in permits those
+image requests on NAS too. Later films reuse valid entries under their actual producer;
+missing facts or a changed producer can require another read. `prepare` can explicitly cover a
+wider scope. The selection reader uses the resulting text and never decides sharing.
 A film you share outside the family also leaves out every picture a detector or an exposure flag
 marked, whatever the reader says about it (`advanced.editorial.strict_sharing`, on by default).
 

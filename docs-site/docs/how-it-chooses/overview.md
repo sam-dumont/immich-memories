@@ -15,12 +15,11 @@ pictures into moments and the moments into stories, decides which stories earn a
 of that length, picks the best frame of each moment it funds, and checks the finished cut against
 a list of promises before anything renders.
 
-On a plain NAS that is the whole editor. No model is asked anything, and the cut is the real film,
-the one most installs ship. With a model configured it gets better: a text model reads what the
-period was about, drops the shots that add nothing and fills the freed seats
-([What a model adds](./what-a-model-adds.md)). That model only ever reads text. Pictures are looked
-at once, when they are prepared, by small local models (eight classifier heads, two detectors, and
-on the `full` tier a caption model). Nothing looks at a picture after that, on any tier.
+On a plain NAS that is the whole editor: metadata, pixels and inexpensive CPU classifiers make
+the film. GPU adds captions and Laya for selected shots and candidates. Full also lets a text
+model propose refinements to the draft. It may replace a few pictures or keep the same cut
+([What a model adds](./what-a-model-adds.md)). Existing facts and captions are reused; missing
+ones are acquired when needed. The prose model only reads text and never decides sharing.
 
 ## The house rules
 
@@ -71,30 +70,31 @@ other pages of this section describe happens inside it.
 
 ## Preparation: what gets read, and when
 
-A film prepares only its **reach**: the pictures it could select (for a person film, the ones that
+A film acquires cheap facts for its **reach**: the pictures it could select (for a person film, the ones that
 person is in), the other stills of their Live Photo bursts, and every picture of the same
 five-minute capture run, because the exposure rule reads the whole run. The rest of the window is
 read as Immich metadata only, since moments and episodes are cut from all of it. A cut that selects
-a picture it never prepared stops rather than ship it. `immich-memories prepare` reads a whole scope
-ahead of time if you'd rather pay once, up front.
+a picture it never prepared stops rather than ship it. Captions and clip checks wait until after
+the NAS draft, for selected shots and actual candidates. A reader may use the selected shot's
+whole episode for context without captioning every neighbour. `immich-memories prepare` reads a
+whole scope ahead of time when explicitly requested.
 
 ```mermaid
 flowchart TD
-  src["prepare_source<br/>admission"] --> reach["film_reach<br/>demanded pictures, Live families, capture runs"]
-  reach --> ev["EvidencePreparation"]
-  ev --> ann["prepare_editorial_annotations"]
+  src["Admit source pictures"] --> reach["Find the film's reach<br/>pictures, Live families,<br/>capture runs"]
+  reach --> ev["Prepare evidence"]
+  ev --> ann["Acquire missing facts"]
   ann --> previews["previews"] --> pixels["pixel facts"] --> faces["Immich face boxes"]
-  faces --> tier{"tier full or<br/>no_captions?"}
-  tier -- yes --> heads["DINOv2 and eight heads<br/>editorial_preparation_heads"]
-  heads --> det["nsfw_marqo on up to 8 frames, doc_docling<br/>editorial_preparation_detectors"]
-  det --> clip["clip_frames, video_motion"]
-  clip --> comp["acquire_clip_companions<br/>Live Photo clips, exposure only"]
-  comp --> cap{"tier full?"}
-  cap -- yes --> captions["a caption per picture, a motion line per video<br/>SmolVLM2 500M on the caption server"]
-  tier -- "no: metadata_only" --> store
+  faces --> heads["DINOv2 and eight heads"]
+  heads --> det["Picture detectors"]
+  det --> draft["NAS draft from banked facts"]
+  draft --> demand["selected shots and actual candidates"]
+  demand --> clip["clip and Live Photo checks<br/>only where needed"]
+  clip --> cap{"Captions enabled?"}
+  cap -- yes --> captions["Missing captions and motion lines<br/>from the chosen provider"]
   cap -- no --> store[("annotations.sqlite")]
   captions --> store
-  ev -.->|"facts still missing"| stop["EditorialInputsRequired<br/>the run stops, no silent downgrade"]
+  ev -.->|"facts still missing"| stop["Stop and report<br/>the missing inputs"]
 ```
 
 Admission refuses a few things before anything is read: a video over five minutes
@@ -109,15 +109,17 @@ The eight heads are small classifiers over one pinned DINOv2 encoder: `location`
 `nsfw_marqo` (exposure) and `doc_docling` (documents). Every fact is banked in `annotations.sqlite`
 under its producer's version, so the next cut asks nothing twice.
 
-The three preparation tiers (`advanced.editorial.preparation.tier`):
+Preparation follows the resolved product tier (`tier: auto` by default):
 
 | Tier | What reads the pixels | When you get it |
 |---|---|---|
-| `no_captions` | previews, pixel facts, face boxes, the eight heads, the two detectors | the default with no `llm.model` set |
-| `full` | the same, plus a caption per picture and a motion line per video from a caption server | with a model reader, or set by hand |
-| `metadata_only` | previews, pixel facts, face boxes; no heads | set by hand; every shot is held to the family |
+| `nas` | previews, pixel facts, face boxes, the eight heads, the two detectors | no usable local GPU or GPU inference service |
+| `gpu` | NAS facts, plus missing captions and clip evidence for selected shots and candidates; Laya reads their captions | GPU inference without a configured prose LLM |
+| `full` | the same pixel producers as GPU; a prose LLM reads annotation text to refine selection | GPU inference and a configured prose LLM |
 
-`no_captions` needs `immich-memories models fetch` once. Captions are an add-on:
+NAS needs `immich-memories models fetch` once. A configured LLM alone does not change selection
+from NAS, but can still write titles and music mood. GPU and Full enable captions by default;
+NAS can use a vision-capable LLM only with explicit caption-provider opt-in. Captions are an add-on:
 [Add captions](../better/captions.md).
 
 ## What a run leaves behind
