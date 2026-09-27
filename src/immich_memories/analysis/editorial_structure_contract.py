@@ -206,6 +206,7 @@ class RulesDraft:
     removed: list[dict[str, Any]]
     tiers: dict[str, int]
     reasons: dict[str, str]
+    collapsed_favourites: tuple[dict[str, Any], ...] = ()
 
 
 @dataclass(frozen=True)
