@@ -1833,3 +1833,46 @@ msgstr "{title} ({n_keys} sleutels)"
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}: {duration_seconds:.1f}s"
 
+
+msgid "Default"
+msgstr "Standaard"
+
+msgid "Nothing to save"
+msgstr "Niets om op te slaan"
+
+msgid "Save"
+msgstr "Opslaan"
+
+msgid "Saved here"
+msgstr "Hier opgeslagen"
+
+msgid "Saved to the database"
+msgstr "Opgeslagen in de database"
+
+msgid "Set by {name} (environment)"
+msgstr "Ingesteld door {name} (omgeving)"
+
+msgid "Set in config.yaml as {key}"
+msgstr "Ingesteld in config.yaml als {key}"
+
+msgid "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
+msgstr "Instellingen komen uit vier bronnen, sterkste eerst: omgevingsvariabelen, config.yaml, wat je hier opslaat (in de database), daarna de standaardwaarden. Een grijze instelling komt uit de omgeving of config.yaml; wijzig hem daar."
+
+msgid "{count} set outside this page"
+msgstr "{count} buiten deze pagina ingesteld"
+
+msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
+msgstr "{name} is niet ingesteld, dus API-sleutels en wachtwoorden kunnen hier niet worden opgeslagen. Stel hem in, of zet die geheimen in de omgeving of config.yaml."
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  ({n} sleutel)"
+msgstr[1] "{title}  ({n} sleutels)"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} buiten deze pagina ingesteld"
+msgstr[1] "{n} buiten deze pagina ingesteld"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Hier opgeslagen, maar {name} kan het niet ontsleutelen: de standaardwaarde geldt"

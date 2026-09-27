@@ -50,9 +50,15 @@ def test_configuring_a_text_llm_never_opts_nas_into_image_requests(monkeypatch, 
 
 
 def test_opted_in_nas_captions_wait_for_refinement_and_warn_about_cost(caplog, tmp_path):
-    config = Config(tier="nas", llm=LLM, editorial={"preparation": {"caption_provider": "llm"}})
     path = tmp_path / "config.yaml"
-    config.save_yaml(path)
+    path.write_text(
+        json.dumps(
+            {
+                "tier": "nas",
+                "advanced": {"llm": LLM, "editorial": {"preparation": {"caption_provider": "llm"}}},
+            }
+        )
+    )
     reloaded = Config.from_yaml(path)
 
     assert reloaded.editorial.preparation.demands_captions

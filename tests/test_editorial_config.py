@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-import yaml
 from pydantic import ValidationError
 
 from immich_memories.config import EditorialConfig as PublicEditorialConfig
@@ -97,7 +96,7 @@ def test_editorial_producer_contract_rejects_blank_or_missing_versions(
         EditorialConfig(**kwargs)  # type: ignore[arg-type]
 
 
-def test_config_loads_and_saves_editorial_as_an_advanced_section(tmp_path: Path) -> None:
+def test_config_loads_editorial_as_an_advanced_section(tmp_path: Path) -> None:
     source = tmp_path / "config.yaml"
     source.write_text(
         "advanced:\n"
@@ -110,17 +109,8 @@ def test_config_loads_and_saves_editorial_as_an_advanced_section(tmp_path: Path)
     assert "enabled" not in config.editorial.model_dump()
     assert config.editorial.annotation_database_path == Path("/library/annotations.sqlite")
 
-    saved = tmp_path / "saved.yaml"
-    config.save_yaml(saved)
-    payload = yaml.safe_load(saved.read_text())
-    assert "editorial" not in payload
-    assert "enabled" not in payload["advanced"]["editorial"]
-    assert payload["advanced"]["editorial"]["annotation_database"] == (
-        "/library/annotations.sqlite"
-    )
 
-
-def test_saved_legacy_detector_versions_upgrade_without_changing_custom_heads(tmp_path):
+def test_legacy_detector_versions_upgrade_without_changing_custom_heads(tmp_path):
     source = tmp_path / "old-config.yaml"
     source.write_text(
         "advanced:\n"
@@ -132,10 +122,8 @@ def test_saved_legacy_detector_versions_upgrade_without_changing_custom_heads(tm
     )
 
     config = Config.from_yaml(source)
-    saved = tmp_path / "saved-config.yaml"
-    config.save_yaml(saved)
 
-    assert yaml.safe_load(saved.read_text())["advanced"]["editorial"]["head_versions"] == {
+    assert config.editorial.head_versions == {
         "doc_docling": "det-v2",
         "nsfw_marqo": "det-v3",
         "activity": "custom-v3",

@@ -11,57 +11,46 @@ from immich_memories.config_models_auth import AuthConfig
 
 class TestS5ConfigViewerEscapesValues:
     """immich.url is editable from the browser and persisted; rendering it into
-    ui.html with an f-string makes it stored XSS for the next admin visit."""
+    ui.html with an f-string made it stored XSS for the next admin visit. The
+    settings page now puts every value in an input widget, which renders text."""
 
-    def test_a_script_in_a_value_is_escaped(self):
-        from immich_memories.ui.pages.settings_config import build_config_table_html
+    def test_the_settings_page_renders_no_raw_html(self):
+        import inspect
 
-        html = build_config_table_html({"immich": {"url": "<script>alert(1)</script>"}})
+        from immich_memories.ui.pages import settings_config
 
-        assert "<script>" not in html
-        assert "&lt;script&gt;" in html
+        assert "ui.html" not in inspect.getsource(settings_config)
 
-    def test_a_script_in_a_key_is_escaped(self):
-        from immich_memories.ui.pages.settings_config import build_config_table_html
 
-        html = build_config_table_html({"<img src=x onerror=alert(1)>": "v"})
+def _described(config, tmp_path) -> dict:
+    from immich_memories.config_sources import describe_settings
 
-        assert "<img" not in html
-
-    def test_ordinary_values_still_render(self):
-        from immich_memories.ui.pages.settings_config import build_config_table_html
-
-        html = build_config_table_html({"immich": {"url": "http://immich:2283"}})
-
-        assert "http://immich:2283" in html
+    entries = describe_settings(config, path=tmp_path / "absent.yaml", stored_keys=set())
+    return {entry.key: entry.value for entry in entries}
 
 
 class TestS16SecretsAreFullyMasked:
     """abc***yz leaks five characters of every secret, auth.password included."""
 
-    def test_no_characters_of_the_secret_survive(self):
-        from immich_memories.ui.pages.settings_config import redact_config
-
-        redacted = redact_config({"immich": {"api_key": "abcdefghijklmnop"}})
-
-        assert redacted["immich"]["api_key"] == "***"
-        assert "abc" not in redacted["immich"]["api_key"]
-
-    def test_an_empty_secret_stays_empty(self):
-        from immich_memories.ui.pages.settings_config import redact_config
-
-        assert redact_config({"immich": {"api_key": ""}})["immich"]["api_key"] == ""
-
-    def test_no_configured_secret_reaches_the_settings_page(self):
-        """The viewer renders the whole model, so a new secret field is masked by name."""
+    def test_no_characters_of_the_secret_survive(self, tmp_path):
         from immich_memories.config_loader import Config
-        from immich_memories.ui.pages.settings_config import redact_config
+
+        values = _described(Config(immich={"api_key": "abcdefghijklmnop"}), tmp_path)
+
+        assert values["immich.api_key"] == "***"
+
+    def test_an_empty_secret_stays_empty(self, tmp_path):
+        from immich_memories.config_loader import Config
+
+        assert _described(Config(immich={"api_key": ""}), tmp_path)["immich.api_key"] == ""
+
+    def test_no_configured_secret_reaches_the_settings_page(self, tmp_path):
+        """The page describes the whole model, so a new secret field is masked by name."""
+        from immich_memories.config_loader import Config
 
         config = Config(editorial={"preparation": {"caption_api_key": "caption-credential"}})
 
-        redacted = redact_config(config.model_dump())
-
-        assert "caption-credential" not in repr(redacted)
+        assert "caption-credential" not in repr(_described(config, tmp_path))
 
 
 class TestS3RateLimiterSeesTheRealClient:

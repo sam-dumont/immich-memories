@@ -551,7 +551,6 @@ DEP002 = [
     "oidc-provider-mock",                               # auth: used in upcoming OIDC tests task
     "demucs",                                           # optional: local stem separation
     "psycopg",                                          # loaded by SQLAlchemy's postgresql+psycopg dialect
-    "cryptography",                                     # store: Fernet for settings secrets (next slice)
     "onnxruntime-gpu",                                  # editorial-cuda: the CUDA variant of the ONNX seats
 ]
 DEP001 = [

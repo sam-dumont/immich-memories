@@ -723,16 +723,17 @@ class TestConfigShowCommand:
         # Exact table cells, not a substring probe: a bare URL literal inside a
         # string reads as URL sanitization to CodeQL (and tests less precisely).
         cells = {cell.strip() for line in result.output.splitlines() for cell in line.split("│")}
-        assert "Immich URL" in cells
+        assert "immich.url" in cells
         assert "http://photos.test:2283" in cells
-        assert "****" in result.output  # API key masked
+        assert "***" in cells  # API key masked
+        assert "secret-key" not in result.output
 
     def test_config_show_no_key(self):
-        """'config --show' with no API key shows '(not set)'."""
+        """'config show' with no API key shows '(not set)'."""
         config = Config()
         config.immich.url = ""
         config.immich.api_key = ""
-        result = _invoke(["config", "--show"], config=config)
+        result = _invoke(["config", "show", "immich"], config=config)
         assert result.exit_code == 0
         assert "(not set)" in result.output
 
@@ -786,17 +787,18 @@ class TestConfigShowCommand:
 class TestConfigUrlUpdate:
     """config --url and --api-key update behavior."""
 
-    def test_config_url_saves(self, tmp_path):
-        """'config --url X' updates and saves config."""
+    def test_config_url_saves_to_the_database(self, tmp_path):
+        """'config --url X' saves the URL as a database setting, never to config.yaml."""
         config = Config()
-        # WHY: Config.save_yaml writes to disk — mock to avoid side effects
+        # WHY: save_settings writes the store; the write itself is covered in tests/store.
         with (
-            patch.object(Config, "save_yaml") as mock_save,
+            patch("immich_memories.settings_edit.save_settings", return_value=config) as save,
             patch.object(Config, "get_default_path", return_value=tmp_path / "config.yml"),
         ):
             result = _invoke(["config", "--url", "http://new:2283"], config=config)
-        assert result.exit_code == 0
-        mock_save.assert_called_once()
+        assert result.exit_code == 0, result.output
+        assert save.call_args.args[0] == {"immich.url": "http://new:2283"}
+        assert not (tmp_path / "config.yml").exists()
 
 
 class TestGenerateValidation:

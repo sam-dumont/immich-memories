@@ -160,7 +160,12 @@ immich-memories cache stats [OPTIONS]
 
 ## `config`
 
-Configure Immich connection settings.
+Configure the Immich connection, or inspect where each setting comes from.
+
+Without a subcommand this sets the Immich URL and API key, prompting for
+them when no option is given. Settings saved here go to the database, below
+environment variables and config.yaml, which this never writes. The API key
+is a secret: saving it needs IMMICH_MEMORIES_SECRET_KEY.
 
 ```bash
 immich-memories config [OPTIONS]
@@ -170,10 +175,47 @@ immich-memories config [OPTIONS]
 | --- | --- | --- | --- |
 | `--url`, `-u` | text | - | Immich server URL |
 | `--api-key`, `-k` | text | - | Immich API key |
-| `--show`, `-s` | boolean | false | Show current configuration |
+| `--show`, `-s` | boolean | false | Same as `config show` |
+
+### `config move-to-db`
+
+Move settings out of config.yaml into the database.
+
+KEYS are runtime paths such as `llm.model` (no `advanced.` prefix). Each
+value is saved to the database, then its line is removed from config.yaml,
+so the UI can edit it. The rest of the file keeps its values and `${VAR}`
+references but loses its comments; the old file is kept as config.yaml.bak.
+Nothing moves without this command.
+
+```bash
+immich-memories config move-to-db [OPTIONS]
+```
 
 **Arguments:**
-- `action` (choice)
+- `keys` (text)
+
+### `config show`
+
+Every setting with its value and source: env, file, database or default.
+
+Secrets are masked. An env or file source names the variable or the
+config.yaml key that sets it. Give key prefixes (`llm`, `immich.url`) to
+show only those.
+
+```bash
+immich-memories config show [OPTIONS]
+```
+
+**Arguments:**
+- `prefixes` (text)
+
+### `config test`
+
+Check the Immich connection and the API version it resolves (read-only).
+
+```bash
+immich-memories config test [OPTIONS]
+```
 
 ## `days-due`
 

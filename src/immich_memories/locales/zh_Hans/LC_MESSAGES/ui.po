@@ -1798,3 +1798,44 @@ msgstr "{title}（{n_keys} 个配置项）"
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}：{duration_seconds:.1f} 秒"
 
+
+msgid "Default"
+msgstr "默认"
+
+msgid "Nothing to save"
+msgstr "没有需要保存的内容"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Saved here"
+msgstr "在此保存"
+
+msgid "Saved to the database"
+msgstr "已保存到数据库"
+
+msgid "Set by {name} (environment)"
+msgstr "由 {name} 设置（环境变量）"
+
+msgid "Set in config.yaml as {key}"
+msgstr "在 config.yaml 中设为 {key}"
+
+msgid "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
+msgstr "设置来自四处，优先级从高到低：环境变量、config.yaml、你在这里保存的值（存于数据库）、默认值。灰色的设置由环境变量或 config.yaml 决定，请在那里修改。"
+
+msgid "{count} set outside this page"
+msgstr "{count} 项在此页面之外设置"
+
+msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
+msgstr "{name} 未设置，因此无法在此保存 API 密钥和密码。请设置它，或把这些密钥放在环境变量或 config.yaml 中。"
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  （{n} 项）"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} 项在此页面之外设置"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "已在此保存，但 {name} 无法解密：正在使用默认值"

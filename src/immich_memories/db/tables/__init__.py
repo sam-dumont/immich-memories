@@ -11,6 +11,7 @@ from immich_memories.db.tables.people import (
     people_registry,
     people_relationships,
 )
+from immich_memories.db.tables.settings import settings
 from immich_memories.db.tables.store_meta import store_meta
 
 __all__ = [
@@ -20,5 +21,6 @@ __all__ = [
     "people_aliases",
     "people_registry",
     "people_relationships",
+    "settings",
     "store_meta",
 ]

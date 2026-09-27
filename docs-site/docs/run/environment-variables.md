@@ -7,7 +7,9 @@ title: Environment variables
 
 Reader: power user.
 
-Every config key has an environment variable, and an environment variable beats the config file.
+Every config key has an environment variable, and an environment variable beats the config file
+and whatever the web UI saved to the database. The UI greys out a setting a variable sets and names
+the variable; `immich-memories config show` lists them all ([where a setting comes from](./config-file.md#where-a-setting-comes-from)).
 On Docker, the ones you set live in `.env` beside `docker-compose.yml`.
 
 ## `.env` and `example.env`
@@ -157,6 +159,8 @@ replace a key that is in the file, use `IMMICH_MEMORIES_LLM__API_KEY`.
 | Variable | Effect |
 |----------|--------|
 | `IMMICH_MEMORIES_STORAGE_SECRET` | Secret for the web UI session store. Priority: this variable, then `~/.immich-memories/.storage_secret`, then generated on first start |
+| `IMMICH_MEMORIES_SKIP_STORED_SETTINGS` | `1` starts without the settings saved in the database (env, `config.yaml` and defaults only). Without it, a store that is configured but unreadable stops the app ([where a setting comes from](./config-file.md#where-a-setting-comes-from)) |
+| `IMMICH_MEMORIES_SECRET_KEY` | Encrypts the secrets saved to the database from the UI or CLI (API keys, passwords). Any string of 32+ characters, e.g. `openssl rand -base64 32`. Unset: secrets cannot be saved there, only in env or `config.yaml`. Read from the environment only, never from the store ([secrets in the database](./config-file.md#secrets-in-the-database)) |
 | `IMMICH_MEMORIES_LOG_FORMAT` | `text` (default) or `json` |
 | `IMMICH_MEMORIES_LOG_LEVEL` | `INFO` (default), `DEBUG`, `WARNING` or `ERROR`. The CLI's `-v` and `--log-level` win for one run |
 | `IMMICH_MEMORIES_LOG_FILE` | Also write logs to this file |
