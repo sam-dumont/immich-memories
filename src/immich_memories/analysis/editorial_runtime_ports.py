@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.catalogue_runtime import catalogue_requester
-from immich_memories.analysis.editorial_preparation_motion import BankedMotionLines
+from immich_memories.analysis.editorial_preparation_motion import BankedMotionLines, motion_producer
 from immich_memories.analysis.editorial_source import (
     FullEditorialSource,
     fetch_full_window_source,
@@ -86,6 +86,7 @@ def production_story_motion(source, *, cache_path):
         store_path=cache_path,
         assets=source.assets,
         described=source.config.editorial.preparation.demands_captions,
+        producer=motion_producer(source.config.editorial.description_model),
     )
 
 

@@ -37,14 +37,17 @@ from immich_memories.analysis.editorial_numbers import exact_number
 from immich_memories.analysis.editorial_preparation_captions import (
     CAPTION_KEY_HINT,
     REFUSED_CODES,
+    ask_llm_image,
     bearer_headers,
     open_caption_url,
 )
 from immich_memories.analysis.editorial_story_pick_contract import measured_motion
 from immich_memories.analysis.editorial_structure_budget import RESIDUAL_MIN
 from immich_memories.analysis.editorial_video_motion import VIDEO_RESIDUAL_PRODUCER
+from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
 from immich_memories.analysis.llm_preparation_usage import record_preparation_attempt
 from immich_memories.api.models import Asset
+from immich_memories.config_models_llm import LLMConfig
 from immich_memories.processing.playback_keyframes import SampledKeyframes, sample_keyframes
 from immich_memories.store.cut_measurements import (
     banked_motion_residuals,
@@ -145,13 +148,31 @@ def read_motion_residuals(store_path: Path, assets: Iterable[Asset]) -> dict[str
     )
 
 
+def motion_producer(description_model: str) -> str:
+    """Give opt-in LLM motion its own identity; keep the established SmolVLM bank readable."""
+    if description_model.startswith(LLM_CAPTION_PREFIX):
+        return f"motion-line-v1@{description_model}/{FRAMES}-keyframes-{TILE}px"
+    return MOTION_PRODUCER
+
+
+def _settled_motion(connection, digests, producer):
+    settled = settled_motion_lines(connection, digests, producer)
+    if LLM_CAPTION_PREFIX in producer:
+        existing = settled_motion_lines(connection, digests, MOTION_PRODUCER)
+        settled.update(
+            {asset: line for asset, line in existing.items() if line.status == DESCRIBED}
+        )
+    return settled
+
+
 def missing_motion(
-    connection: sqlite3.Connection, sources: Sequence[MotionSource]
+    connection: sqlite3.Connection,
+    sources: Sequence[MotionSource],
+    *,
+    producer: str = MOTION_PRODUCER,
 ) -> tuple[MotionSource, ...]:
     initialize_motion_lines(connection)
-    settled = settled_motion_lines(
-        connection, {s.asset_id: s.digest for s in sources}, MOTION_PRODUCER
-    )
+    settled = _settled_motion(connection, {s.asset_id: s.digest for s in sources}, producer)
     return tuple(s for s in sources if s.asset_id not in settled)
 
 
@@ -168,6 +189,61 @@ def filmstrip(frames: Sequence[bytes]) -> bytes:
     return buffer.getvalue()
 
 
+class MotionScope:
+    """The videos this pass owes a motion line: true videos, and Live Photos that play.
+
+    Nothing is owed without a playback reader, or when the tier has no caption seat.
+    """
+
+    def __init__(
+        self,
+        assets: Sequence[Asset],
+        store_path: Path,
+        read_playback: Callable[[str, int, int], tuple[bytes, int]] | None,
+        *,
+        demanded: bool,
+        producer: str = MOTION_PRODUCER,
+    ) -> None:
+        self.producer = producer
+        self.key = f"motion:{producer}"
+        self._read_playback = read_playback
+        self._sources = (
+            motion_sources(assets, residual_of=banked_residuals(store_path))
+            if read_playback and demanded
+            else ()
+        )
+
+    def acquire(
+        self,
+        prepare: Callable[
+            [
+                sqlite3.Connection,
+                Sequence[MotionSource],
+                Callable[[str, int, int], tuple[bytes, int]],
+            ],
+            None,
+        ],
+        connection: sqlite3.Connection,
+        before: dict,
+    ) -> None:
+        """Acquire only missing lines and record their exact requested producer."""
+        owed = (
+            missing_motion(connection, self._sources, producer=self.producer)
+            if self._sources
+            else ()
+        )
+        if owed and self._read_playback is not None:
+            before[self.key] = tuple(source.asset_id for source in owed)
+            prepare(connection, owed, self._read_playback)
+
+    def report(self, connection: sqlite3.Connection, after: dict) -> None:
+        """Keep unfinished motion lines visible in the preparation completeness report."""
+        if self._sources and (
+            owed := missing_motion(connection, self._sources, producer=self.producer)
+        ):
+            after[self.key] = tuple(source.asset_id for source in owed)
+
+
 def motion_text(raw: str) -> str:
     """One plain sentence from the seat's answer, or ValueError."""
     answer = json.loads(raw)
@@ -182,10 +258,28 @@ def motion_text(raw: str) -> str:
     return text
 
 
-def seat_asker(base_url: str, *, api_key: str, timeout: float) -> Callable[[bytes], str]:
+def seat_asker(
+    base_url: str, *, api_key: str, timeout: float, llm_config: LLMConfig | None = None
+) -> Callable[[bytes], str]:
     """Ask the caption seat about one filmstrip; its raw content, or the transport's error."""
 
     def ask(strip: bytes) -> str:
+        if llm_config is not None:
+            return ask_llm_image(
+                llm_config,
+                strip,
+                prompt=PROMPT,
+                timeout=timeout,
+                stage="motion",
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "video_motion",
+                        "strict": True,
+                        "schema": SCHEMA,
+                    },
+                },
+            )
         payload = {
             "model": API_MODEL,
             "messages": [
@@ -332,6 +426,7 @@ def prepare_motion_lines(
     concurrency: int,
     check_cancelled: Callable[[], None],
     progress: Callable[[str, int, int], None],
+    producer: str = MOTION_PRODUCER,
 ) -> MotionPreparation:
     """Bank a line, or a settled refusal, for each source; transport failures stay undone.
 
@@ -350,7 +445,7 @@ def prepare_motion_lines(
                 for source in batch
             ]
             for source, future in zip(batch, futures, strict=True):
-                _settle(connection, source, future.result(), outcome)
+                _settle(connection, source, future.result(), outcome, producer)
             progress("motion", start + len(batch), len(sources))
     return outcome
 
@@ -360,6 +455,7 @@ def _settle(
     source: MotionSource,
     result: _Outcome,
     outcome: MotionPreparation,
+    producer: str,
 ) -> None:
     outcome.bytes_read += result.bytes_read
     outcome.requests += result.requests
@@ -370,7 +466,7 @@ def _settle(
     remember_motion_line(
         connection,
         asset_id=source.asset_id,
-        producer=MOTION_PRODUCER,
+        producer=producer,
         source_digest=source.digest,
         line=result.line,
         bytes_read=result.bytes_read,
@@ -419,7 +515,15 @@ class BankedMotionLines:
 
     producer = MOTION_PRODUCER
 
-    def __init__(self, *, store_path: Path, assets: Mapping[str, Asset], described: bool) -> None:
+    def __init__(
+        self,
+        *,
+        store_path: Path,
+        assets: Mapping[str, Asset],
+        described: bool,
+        producer: str = MOTION_PRODUCER,
+    ) -> None:
+        self.producer = producer
         self._store_path = store_path
         self._assets = assets
         self._described = described
@@ -458,7 +562,7 @@ class BankedMotionLines:
         uri = f"file:{self._store_path}?mode=ro"
         try:
             with closing(sqlite3.connect(uri, uri=True)) as connection:
-                settled = settled_motion_lines(connection, digests, MOTION_PRODUCER)
+                settled = _settled_motion(connection, digests, self.producer)
         except sqlite3.Error:
             return None
         return next(

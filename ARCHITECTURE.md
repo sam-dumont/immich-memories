@@ -139,6 +139,9 @@ the code named beside it; if the two disagree, the code wins and this entry is s
 `store/caption_selection.py` chooses complete description/setting pairs for an explicitly
 selected LLM caption identity, preferring valid banked SmolVLM pairs. Fact reads, missing-fact
 checks and provenance use the same choice. Default SmolVLM reads retain their exact producer.
+`editorial_preparation_motion.py` owns `MotionScope`, motion acquisition and bank reads. Its
+producer-specific reads reuse described SmolVLM motion lines before requesting a new LLM line;
+unchanged sources retain their existing bank entries.
 
 - **Producer**: anything that writes a fact about a picture: the caption server, the heads, the
   detectors, the motion and pixel readers (`editorial_preparation*.py`). Film preparation runs
