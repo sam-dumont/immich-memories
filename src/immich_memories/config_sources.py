@@ -39,7 +39,8 @@ class SettingSource:
 
     `override` is the environment variable or the config.yaml key path (as written in the
     file, `advanced.` included) that sets the value; None when the source is the database
-    or the default.
+    or the default. `unreadable` marks a saved secret the current IMMICH_MEMORIES_SECRET_KEY
+    cannot decrypt: the default is in use until it is saved again.
     """
 
     key: str
@@ -47,6 +48,7 @@ class SettingSource:
     source: Source
     override: str | None
     secret: bool
+    unreadable: bool = False
 
     @property
     def editable(self) -> bool:
@@ -104,9 +106,12 @@ def _raw_yaml(path: Path) -> dict:
     return data if isinstance(data, dict) else {}
 
 
-def _stored_keys(config: Config) -> set[str]:
+def _stored_keys(config: Config) -> tuple[set[str], set[str]]:
+    """Saved keys, and the saved secrets the current secret key cannot open."""
     store = settings_store(config, create=False)
-    return store.stored_keys() if store is not None else set()
+    if store is None:
+        return set(), set()
+    return store.stored_keys(), store.unreadable_keys()
 
 
 def _display(key: str, value: Any, secret: bool) -> Any:
@@ -134,7 +139,7 @@ def describe_settings(
     raw = _raw_yaml(path)
     env_names = {name.upper(): name for name, value in os.environ.items() if value}
     aliases = env_alias_overrides(config)
-    stored = _stored_keys(config) if stored_keys is None else stored_keys
+    stored, unreadable = _stored_keys(config) if stored_keys is None else (stored_keys, set())
 
     report = []
     for key, value in leaf_values(config):
@@ -147,5 +152,10 @@ def describe_settings(
             source = "file"
         elif key in stored:
             source = "database"
-        report.append(SettingSource(key, _display(key, value, secret), source, override, secret))
+        shown = _display(key, value, secret)
+        report.append(
+            SettingSource(
+                key, shown, source, override, secret, source == "database" and key in unreadable
+            )
+        )
     return report

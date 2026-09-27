@@ -18,7 +18,7 @@ from immich_memories.config_sources import SettingSource, describe_settings
 from immich_memories.settings_edit import SettingRefused, save_settings
 from immich_memories.settings_store import SECRET_KEY_ENV, secret_key_from_env
 from immich_memories.ui.components import im_button, im_info_card, im_section_header
-from immich_memories.ui.i18n import tr
+from immich_memories.ui.i18n import tr, tr_plural
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +75,10 @@ def _origin(entry: SettingSource) -> str:
         return tr("Set by {name} (environment)", name=entry.override)
     if entry.source == "file":
         return tr("Set in config.yaml as {key}", key=entry.override)
+    if entry.unreadable:
+        return tr(
+            "Saved here, but {name} cannot decrypt it: the default is in use", name=SECRET_KEY_ENV
+        )
     if entry.source == "database":
         return tr("Saved here")
     return tr("Default")
@@ -110,19 +114,23 @@ def _render_row(entry: SettingSource, prefix: str, values: dict[str, Any], can_s
             "min-width: 16rem; color: var(--im-text-secondary); font-family: monospace"
         )
         _widget(entry, values, locked)
-        ui.label(_origin(entry)).classes("text-xs").style(
-            "min-width: 16rem; color: var(--im-text-muted)"
-        )
+        colour = "var(--im-warning)" if entry.unreadable else "var(--im-text-muted)"
+        ui.label(_origin(entry)).classes("text-xs").style(f"min-width: 16rem; color: {colour}")
 
 
 def _render_section(section: str, entries: list[SettingSource], can_seal: bool) -> None:
     values: dict[str, Any] = {}
     overridden = sum(entry.source in ("env", "file") for entry in entries)
-    title = tr(
-        "{title}  ({n_keys} keys)", title=section.replace("_", " ").title(), n_keys=len(entries)
+    title = tr_plural(
+        "{title}  ({n} key)",
+        "{title}  ({n} keys)",
+        len(entries),
+        title=section.replace("_", " ").title(),
     )
     if overridden:
-        title += "  · " + tr("{count} set outside this page", count=overridden)
+        title += "  · " + tr_plural(
+            "{n} set outside this page", "{n} set outside this page", overridden
+        )
     with (
         ui.expansion(title, icon="tune", value=section in _OPEN_SECTIONS)
         .classes("w-full mt-1")

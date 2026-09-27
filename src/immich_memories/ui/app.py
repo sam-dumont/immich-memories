@@ -625,8 +625,14 @@ def main(
 ) -> None:
     """Run the NiceGUI application."""
     from immich_memories.logging_config import configure_logging
+    from immich_memories.settings_store import SettingsUnavailable
 
     configure_logging(level=log_level)
+    try:
+        config = get_config()
+    except SettingsUnavailable as unavailable:
+        logger.error("Not starting the UI: %s", unavailable)
+        sys.exit(1)
     if not _is_port_free(host, port):
         logger.error(
             f"Port {port} is already in use. "
@@ -642,7 +648,7 @@ def main(
         "reload": reload,
         "storage_secret": _get_storage_secret(),
     }
-    kwargs.update(reverse_proxy_run_kwargs(get_config(), os.environ))
+    kwargs.update(reverse_proxy_run_kwargs(config, os.environ))
     if reload:
         kwargs["uvicorn_reload_includes"] = "*.py"
         kwargs["uvicorn_reload_excludes"] = ".*, *.log, *.db, *.db-journal"

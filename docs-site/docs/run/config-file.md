@@ -34,6 +34,14 @@ flowchart LR
    row, so a new default still reaches you after an upgrade.
 4. **Default**: the value in the [config reference](../reference/config-reference.md).
 
+If a store is configured (a PostgreSQL URL, or a SQLite file that exists) and its settings cannot
+be read, the app does not start: the CLI exits with the error and the web UI refuses to start.
+The message names the store (password masked) and the cause, such as a refused connection or a
+corrupt file. Starting anyway on half the settings could send an automated run somewhere you did
+not mean. Fix the database or its URL, or set `IMMICH_MEMORIES_SKIP_STORED_SETTINGS=1` to start on
+env, `config.yaml` and defaults only. A SQLite store that does not exist yet is a fresh install and
+starts silently.
+
 The first source that sets a key wins, key by key: `advanced.llm.model` in the file and `llm.base_url`
 in the database work together. The web UI greys out every setting the environment or the file sets
 and names the variable or the file key; saving under it would do nothing.
@@ -74,8 +82,8 @@ openssl rand -base64 32
 
 and keep it with your other secrets. Without it the UI and the CLI refuse to store a secret and say
 so; put the secret in the environment or `config.yaml` instead. Change or lose the key and the
-stored secrets stop opening: the app logs which ones, falls back to their defaults, and you save
-them again. Logs never print a secret, whichever source it came from.
+stored secrets stop opening: the app logs which ones and falls back to their defaults, `config show`
+and the settings page mark each one, and you save them again. Logs never print a secret, whichever source it came from.
 
 ## Compute tier
 

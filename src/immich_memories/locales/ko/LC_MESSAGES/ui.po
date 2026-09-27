@@ -1830,3 +1830,14 @@ msgstr "{count}개는 이 페이지 밖에서 설정됨"
 
 msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
 msgstr "{name}이(가) 설정되지 않아 API 키와 비밀번호를 여기에 저장할 수 없습니다. 설정하거나 이 비밀을 환경 변수나 config.yaml에 두세요."
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  ({n}개)"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n}개는 이 페이지 밖에서 설정됨"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "여기에 저장되어 있지만 {name}(으)로 복호화할 수 없어 기본값을 사용 중입니다"

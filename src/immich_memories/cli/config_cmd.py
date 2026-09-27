@@ -78,7 +78,10 @@ def _show(ctx: click.Context, prefixes: tuple[str, ...]) -> None:
             entry.key == prefix or entry.key.startswith(f"{prefix}.") for prefix in prefixes
         ):
             continue
-        table.add_row(entry.key, escape(_shown(entry.value)), entry.source, entry.override or "")
+        set_by = entry.override or ""
+        if entry.unreadable:
+            set_by = f"cannot decrypt with {SECRET_KEY_ENV}; default in use"
+        table.add_row(entry.key, escape(_shown(entry.value)), entry.source, set_by)
     console.print(f"Config file: {config_path}")
     console.print(
         f"{SECRET_KEY_ENV}: {'set' if secret_key_from_env() else 'not set (secrets cannot be saved)'}"

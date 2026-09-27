@@ -1830,3 +1830,14 @@ msgstr "{count} 件はこのページの外で設定"
 
 msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
 msgstr "{name} が設定されていないため、API キーとパスワードはここに保存できません。設定するか、これらの秘密は環境変数か config.yaml に置いてください。"
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  （{n} 件）"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} 件はこのページの外で設定"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "ここに保存されていますが、{name} で復号できません。既定値を使用中です"

@@ -1859,3 +1859,18 @@ msgstr "{count} задано вне этой страницы"
 
 msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
 msgstr "{name} не задан, поэтому API-ключи и пароли нельзя сохранить здесь. Задайте его или укажите эти секреты в окружении или config.yaml."
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  ({n} ключ)"
+msgstr[1] "{title}  ({n} ключа)"
+msgstr[2] "{title}  ({n} ключей)"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} задан вне этой страницы"
+msgstr[1] "{n} задано вне этой страницы"
+msgstr[2] "{n} задано вне этой страницы"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Сохранено здесь, но {name} не может это расшифровать: используется значение по умолчанию"

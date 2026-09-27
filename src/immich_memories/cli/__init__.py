@@ -97,6 +97,7 @@ def main(
     from pydantic import ValidationError
 
     from immich_memories.cli._config_errors import format_validation_error, format_yaml_error
+    from immich_memories.settings_store import SettingsUnavailable
 
     try:
         if config:
@@ -116,6 +117,9 @@ def main(
         sys.exit(1)
     except yaml.YAMLError as e:
         print_error(format_yaml_error(e))
+        sys.exit(1)
+    except SettingsUnavailable as e:
+        print_error(str(e))
         sys.exit(1)
 
 

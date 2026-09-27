@@ -23,7 +23,6 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from immich_memories.db import (
-    NetworkFilesystemError,
     Store,
     StoreLocation,
     now_db,
@@ -41,11 +40,16 @@ logger = logging.getLogger(__name__)
 
 SECRET_KEY_ENV = "IMMICH_MEMORIES_SECRET_KEY"  # noqa: S105 — a variable name, not a secret
 MIN_SECRET_KEY_LENGTH = 32
+SKIP_STORED_SETTINGS_ENV = "IMMICH_MEMORIES_SKIP_STORED_SETTINGS"
 
 # Beyond the credential fields: notification URLs embed tokens (apprise://user:pass@host).
 _SECRET_FIELD_NAMES = CREDENTIAL_FIELD_NAMES | {"api_keys", "secret", "token", "urls"}
 # Fixed on purpose: the same IMMICH_MEMORIES_SECRET_KEY must open the same rows next run.
 _HKDF_SALT = b"immich-memories/settings/v1"
+
+
+class SettingsUnavailable(RuntimeError):
+    """A store is configured or present, but its saved settings cannot be read."""
 
 
 class SecretKeyError(RuntimeError):
@@ -148,6 +152,19 @@ class SettingsStore:
                 values[row["key"]] = opened
         return values
 
+    def unreadable_keys(self) -> set[str]:
+        """Stored secrets the current IMMICH_MEMORIES_SECRET_KEY cannot open."""
+        with self._store.connect() as conn:
+            rows = conn.execute(sa.select(settings).where(settings.c.secret)).mappings().all()
+        return {str(row["key"]) for row in rows if not self._opens(row["ciphertext"])}
+
+    def _opens(self, token: bytes | None) -> bool:
+        try:
+            _fernet(self._secret_key).decrypt(token or b"")
+        except (SecretKeyError, InvalidToken):
+            return False
+        return True
+
     def _row(self, key: str, value: Any, now: Any) -> dict[str, Any]:
         if is_bootstrap_key(key):
             raise ValueError(f"{key} is read before the store opens; set it in env or config.yaml")
@@ -195,12 +212,34 @@ def _settings_at(location: StoreLocation, *, create: bool) -> SettingsStore | No
 def load_stored_settings(config: Config) -> dict[str, Any]:
     """The saved settings as runtime key paths, for the config loader's database source.
 
-    `config` only has to carry the bootstrap `database` section. An unreachable store is
-    logged and read as empty: the app starts on env, config.yaml and defaults.
+    `config` only has to carry the bootstrap `database` section. A SQLite store that does
+    not exist yet is a fresh install and reads as empty. Any other store that cannot be
+    read raises `SettingsUnavailable`: starting on the wrong settings is worse than not
+    starting, unless the operator sets IMMICH_MEMORIES_SKIP_STORED_SETTINGS=1.
     """
-    try:
-        store = settings_store(config, create=False)
-        return store.values() if store is not None else {}
-    except (sa.exc.SQLAlchemyError, NetworkFilesystemError, OSError, ValueError) as error:
-        logger.warning("Settings saved in the database were not read: %s", error)
+    if os.environ.get(SKIP_STORED_SETTINGS_ENV) == "1":
+        logger.warning("%s=1: settings saved in the database are ignored", SKIP_STORED_SETTINGS_ENV)
         return {}
+    location: StoreLocation | None = None
+    try:
+        location = resolve_location(config)
+        store = _settings_at(location, create=False)
+        return store.values() if store is not None else {}
+    except Exception as error:  # noqa: BLE001 -- every cause is re-raised, named
+        raise SettingsUnavailable(_unavailable(location, error)) from error
+
+
+def _unavailable(location: StoreLocation | None, error: BaseException) -> str:
+    cause = str(getattr(error, "orig", None) or error).strip().splitlines()
+    text = cause[0] if cause else type(error).__name__
+    where = "the configured store"
+    if location is not None:
+        where = f"the store at {location}"
+        if password := location.sa_url.password:
+            text = text.replace(str(password), "***")
+    return (
+        f"The settings saved in {where} could not be read: {text}. Start or repair the "
+        "database, or fix IMMICH_MEMORIES_DATABASE_URL / database.url in config.yaml. To "
+        f"start without the saved settings (env, config.yaml and defaults only), set "
+        f"{SKIP_STORED_SETTINGS_ENV}=1."
+    )

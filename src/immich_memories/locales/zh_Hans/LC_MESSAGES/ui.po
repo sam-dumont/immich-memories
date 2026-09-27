@@ -1828,3 +1828,14 @@ msgstr "{count} 项在此页面之外设置"
 
 msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
 msgstr "{name} 未设置，因此无法在此保存 API 密钥和密码。请设置它，或把这些密钥放在环境变量或 config.yaml 中。"
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  （{n} 项）"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} 项在此页面之外设置"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "已在此保存，但 {name} 无法解密：正在使用默认值"

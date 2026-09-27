@@ -21,8 +21,10 @@ from immich_memories.logging_config import SecretRedactionFilter
 from immich_memories.settings_edit import SettingRefused, move_to_database, save_settings
 from immich_memories.settings_store import (
     SECRET_KEY_ENV,
+    SKIP_STORED_SETTINGS_ENV,
     SecretKeyError,
     SettingsStore,
+    SettingsUnavailable,
 )
 
 SECRET_KEY = "test-only-secret-key-0123456789abcdef"  # noqa: S105 — synthetic
@@ -246,3 +248,68 @@ def test_moving_a_key_that_reads_the_environment_is_refused(config_path, monkeyp
 
     with pytest.raises(SettingRefused, match="environment variable"):
         move_to_database(["immich.api_key"])
+
+
+def test_a_store_that_cannot_be_reached_stops_the_config_load(tmp_path, monkeypatch):
+    # Port 1 refuses at once; the password must never reach the message.
+    url = "postgresql://settings:hunter2-synthetic@127.0.0.1:1/immich_memories"
+    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", url)
+    path = tmp_path / "config.yaml"
+    path.write_text("")
+
+    with pytest.raises(SettingsUnavailable) as raised:
+        load_config(path)
+
+    message = str(raised.value)
+    assert "127.0.0.1:1" in message
+    assert "hunter2-synthetic" not in message
+    assert "IMMICH_MEMORIES_DATABASE_URL" in message
+    assert SKIP_STORED_SETTINGS_ENV in message
+    set_config(None)
+
+
+def test_a_corrupt_store_file_stops_the_config_load(tmp_path, monkeypatch):
+    database = tmp_path / "store.db"
+    database.write_bytes(b"this is not a SQLite database" * 64)
+    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", f"sqlite:///{database}")
+    path = tmp_path / "config.yaml"
+    path.write_text("")
+
+    with pytest.raises(SettingsUnavailable, match="store.db"):
+        load_config(path)
+    set_config(None)
+
+
+def test_a_store_that_does_not_exist_yet_is_a_fresh_install(tmp_path, monkeypatch, caplog):
+    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", f"sqlite:///{tmp_path / 'store.db'}")
+    path = tmp_path / "config.yaml"
+    path.write_text("")
+
+    with caplog.at_level(logging.WARNING, logger="immich_memories.settings_store"):
+        config = load_config(path)
+    set_config(None)
+
+    assert config.llm.model == type(config.llm)().model
+    assert caplog.records == []
+    assert not (tmp_path / "store.db").exists()
+
+
+def test_the_bypass_starts_without_saved_settings(tmp_path, monkeypatch):
+    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", "postgresql://u:p@127.0.0.1:1/db")
+    monkeypatch.setenv(SKIP_STORED_SETTINGS_ENV, "1")
+    path = tmp_path / "config.yaml"
+    path.write_text("advanced:\n  llm:\n    model: file-model\n")
+
+    assert load_config(path).llm.model == "file-model"
+    set_config(None)
+
+
+def test_an_unreadable_secret_is_flagged_in_the_report(config_path, monkeypatch):
+    save_settings({"immich.api_key": API_KEY})
+    monkeypatch.setenv(SECRET_KEY_ENV, "a-different-secret-key-9876543210fedcba")
+    load_config(config_path)
+
+    entry = _source("immich.api_key")
+
+    assert (entry.source, entry.unreadable) == ("database", True)
+    assert not _source("llm.model").unreadable

@@ -411,63 +411,59 @@
       {
         "name": "register_config_commands",
         "complexity": 29,
-        "line_start": 122,
-        "line_end": 288,
+        "line_start": 125,
+        "line_end": 291,
         "line_complexities": [
           {
-            "line": 138,
+            "line": 141,
             "complexity": 2
           },
           {
-            "line": 140,
+            "line": 143,
             "complexity": 2
           },
           {
-            "line": 151,
+            "line": 154,
             "complexity": 0
           },
           {
-            "line": 152,
+            "line": 155,
             "complexity": 2
           },
           {
-            "line": 153,
+            "line": 156,
             "complexity": 2
           },
           {
-            "line": 186,
+            "line": 189,
             "complexity": 0
           },
           {
-            "line": 187,
+            "line": 190,
             "complexity": 1
           },
           {
-            "line": 196,
+            "line": 199,
             "complexity": 0
           },
           {
-            "line": 198,
+            "line": 201,
             "complexity": 3
           },
           {
-            "line": 204,
-            "complexity": 0
-          },
-          {
-            "line": 209,
+            "line": 207,
             "complexity": 0
           },
           {
             "line": 212,
-            "complexity": 3
-          },
-          {
-            "line": 233,
             "complexity": 0
           },
           {
-            "line": 238,
+            "line": 215,
+            "complexity": 3
+          },
+          {
+            "line": 236,
             "complexity": 0
           },
           {
@@ -475,39 +471,35 @@
             "complexity": 0
           },
           {
-            "line": 245,
-            "complexity": 2
+            "line": 244,
+            "complexity": 0
           },
           {
             "line": 248,
-            "complexity": 0
-          },
-          {
-            "line": 255,
             "complexity": 2
           },
           {
-            "line": 256,
+            "line": 251,
             "complexity": 0
           },
           {
-            "line": 261,
+            "line": 258,
+            "complexity": 2
+          },
+          {
+            "line": 259,
+            "complexity": 0
+          },
+          {
+            "line": 264,
             "complexity": 3
           },
           {
-            "line": 269,
-            "complexity": 0
-          },
-          {
-            "line": 270,
-            "complexity": 0
-          },
-          {
-            "line": 271,
-            "complexity": 0
-          },
-          {
             "line": 272,
+            "complexity": 0
+          },
+          {
+            "line": 273,
             "complexity": 0
           },
           {
@@ -520,24 +512,32 @@
           },
           {
             "line": 277,
-            "complexity": 2
+            "complexity": 0
           },
           {
             "line": 278,
+            "complexity": 0
+          },
+          {
+            "line": 280,
+            "complexity": 2
+          },
+          {
+            "line": 281,
             "complexity": 3
           },
           {
-            "line": 282,
+            "line": 285,
             "complexity": 1
           },
           {
-            "line": 284,
+            "line": 287,
             "complexity": 1
           }
         ]
       }
     ],
-    "complexity": 47
+    "complexity": 50
   },
   {
     "path": "src/immich_memories/cli/generate.py",

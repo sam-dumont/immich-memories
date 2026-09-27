@@ -1854,3 +1854,16 @@ msgstr "{count} satta utanför den här sidan"
 
 msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
 msgstr "{name} är inte satt, så API-nycklar och lösenord kan inte sparas här. Sätt den, eller lägg hemligheterna i miljön eller config.yaml."
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  ({n} nyckel)"
+msgstr[1] "{title}  ({n} nycklar)"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} satt utanför den här sidan"
+msgstr[1] "{n} satta utanför den här sidan"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Sparad här, men {name} kan inte dekryptera den: standardvärdet används"

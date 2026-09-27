@@ -5,6 +5,7 @@ They go through the same store as the app, on both backends; no browser is invol
 
 from __future__ import annotations
 
+import socket
 from collections.abc import Iterator
 from pathlib import Path
 from types import SimpleNamespace
@@ -104,3 +105,35 @@ def test_config_show_names_every_source(config_path, monkeypatch):
     assert result.exit_code == 0, result.output
     assert "advanced.llm.model" in result.output
     assert "IMMICH_MEMORIES_OUTPUT__RESOLUTION" in result.output
+
+
+def test_the_cli_stops_with_the_reason_when_the_store_cannot_be_read(tmp_path, monkeypatch):
+    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", "postgresql://u:synthetic-pw@127.0.0.1:1/db")
+    path = tmp_path / "config.yaml"
+    path.write_text("")
+
+    result = CliRunner().invoke(main, ["--config", str(path), "config", "show"])
+    set_config(None)
+
+    assert result.exit_code == 1
+    assert "127.0.0.1:1" in result.output
+    assert "synthetic-pw" not in result.output
+
+
+def test_the_ui_server_refuses_to_start_when_the_store_cannot_be_read(tmp_path, monkeypatch):
+    from immich_memories.ui import app
+
+    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", "postgresql://u:synthetic-pw@127.0.0.1:1/db")
+    monkeypatch.setattr(Path, "home", classmethod(lambda _cls: tmp_path))
+    set_config(None)
+
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        free_port = probe.getsockname()[1]
+    # WHY: ui.run would start a real server; it must never be reached here.
+    monkeypatch.setattr(app.ui, "run", lambda **_kwargs: pytest.fail("the server started"))
+
+    with pytest.raises(SystemExit) as stopped:
+        app.main(port=free_port, host="127.0.0.1")
+
+    assert stopped.value.code == 1

@@ -1858,3 +1858,16 @@ msgstr "{count} definidos fora desta página"
 
 msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
 msgstr "{name} não está definida, então chaves de API e senhas não podem ser salvas aqui. Defina-a, ou coloque esses segredos no ambiente ou no config.yaml."
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  ({n} chave)"
+msgstr[1] "{title}  ({n} chaves)"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} definida fora desta página"
+msgstr[1] "{n} definidas fora desta página"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Salvo aqui, mas {name} não consegue decifrá-lo: o padrão está em uso"
