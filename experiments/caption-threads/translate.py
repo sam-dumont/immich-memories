@@ -133,6 +133,18 @@ def ask_filters(reader, key, brief, named, years):
     return answer or {"date_from": None, "date_to": None, "faces_required": bool(named)}
 
 
+PHOTO_QUESTION = '''The owner asked for a photo film. Write the one yes/no question to ask of a
+single photo to decide whether it belongs: about what is visible in that one photo, not about
+time spans, dates or who someone is (a photo cannot show "across the years" or a name). Return JSON.'''
+
+
+def ask_photo_question(reader, key, brief):
+    """The refinement question is Gemma's: what one photo must visibly show for this request."""
+    answer = reader.ask("photo_question", key, PHOTO_QUESTION, {"owner_request": brief}, lambda a: None, 150,
+                        schema=_schema(question={"type": "string", "maxLength": 160}))
+    return (answer or {}).get("question") or f'Does this photo show what "{brief.strip()}" asks for?'
+
+
 def ask_plan(reader, key, brief, context, library, people):
     plan = parse_structure(brief, people, library)
     plan["people"] = ask_people(reader, key, brief, people)
@@ -149,7 +161,9 @@ def ask_plan(reader, key, brief, context, library, people):
                          if w in stated and w in known and (w in COLOURS or len(s.split()) > 1)} - set(
                              w for s in subject for w in s.split()[-1:]))
     plan |= {"subject": subject, "qualifiers": qualifiers, "title": brief[:60], "unverifiable": [], "unmapped": []}
-    plan["visual_questions"] = [f"Does the photo show {s}?" for s in subject[:2]]
+    # Refine against the ask, not the search words: the pool may come from "woman, baby"; the
+    # film is about what the owner wrote.
+    plan["visual_questions"] = [ask_photo_question(reader, key, brief)]
     return plan
 
 
@@ -183,7 +197,7 @@ EPISODE = timedelta(minutes=90)  # the product's episode gap (selection_source_g
 JUDGE_BUDGET = 220               # caption checks per request, spread over the pool's time scale
 
 
-def spread_budget(library, refs, budget):
+def spread_budget(library, refs, budget, score=None):
     """An even sample over the pool's own time scale: days for a birth, months for a season,
     years for "along the years"."""
     refs = sorted(refs, key=lambda i: library.rows[i]["taken_at"])
@@ -196,6 +210,9 @@ def spread_budget(library, refs, budget):
     for i in refs:
         buckets[library.rows[i]["taken_at"][:width]].append(i)
     share = max(1, budget // len(buckets))
+    if score:
+        # The best matches of each period first; time spread still keeps every period present.
+        return [i for b in buckets.values() for i in sorted(b, key=lambda i: -score.get(i, 0))[:share]]
     return [i for b in buckets.values() for i in b[:: max(1, len(b) // share)][:share]]
 
 
@@ -359,7 +376,7 @@ def ask_images(llm, text, images, schema=None):
     return json.loads(raw[raw.find("{"): raw.rfind("}") + 1])
 
 
-def look(reader, config, library, plan, candidates, anchors):
+def look(reader, config, library, plan, candidates, anchors, score=None):
     """The one place pictures are shown to a model: this feature only (owner ruling 09-27).
 
     Questions come from the sentence alone. A reference is a photo the letters vouch for (an
@@ -378,7 +395,7 @@ def look(reader, config, library, plan, candidates, anchors):
     cache = ROOT / "looks"
     cache.mkdir(exist_ok=True)
     # Spread over the pool's own time scale, anchors first: a date-ordered cut drops every late period.
-    spread = spread_budget(library, candidates, LOOK_BUDGET)
+    spread = spread_budget(library, candidates, LOOK_BUDGET, score)
     ordered = sorted(set(spread) | (set(candidates) & anchors),
                      key=lambda i: (i not in anchors, library.rows[i]["taken_at"]))[:LOOK_BUDGET + len(anchors)]
     reference = None
@@ -449,6 +466,22 @@ def known_people():
 def person_rows(library, person):
     refs = {"P" + hashlib.sha256(str(i).encode()).hexdigest()[:10] for i in person.get("ids") or []}
     return {i for i, r in enumerate(library.rows) if refs & set(r.get("person_refs") or [])}
+
+
+def present_rows(library, person):
+    """A person is present in a photo when their face is recognised anywhere in its episode:
+    a baby feeding against a chest or a child seen from behind has no recognised face."""
+    import bisect
+
+    face = person_rows(library, person)
+    when = [datetime.fromisoformat(r["taken_at"].replace("Z", "+00:00")) for r in library.rows]
+    times = sorted(when[i] for i in face)
+    out = set(face)
+    for i, t in enumerate(when):
+        k = bisect.bisect_left(times, t - EPISODE)
+        if k < len(times) and times[k] <= t + EPISODE:
+            out.add(i)
+    return out
 
 
 def firsts(reader, library, key, name, person, rows):
@@ -558,8 +591,8 @@ def main():
     lo, hi = filters.get("date_from") or "0000", filters.get("date_to") or "9999"
     pool_scope &= {i for i, r in enumerate(library.rows) if lo <= r["taken_at"][:10] <= hi + "z"}
     if named and filters.get("faces_required"):
-        # Who is in a picture is Immich's face data, never a caption word.
-        pool_scope &= set().union(*(person_rows(library, p) for p in named))
+        # Who is in a picture is Immich's face data, never a caption word, read per episode.
+        pool_scope &= set().union(*(present_rows(library, p) for p in named))
     if plan.get("firsts") and named:
         chosen, offered = firsts(reader, library, key, named[0]["name"], named[0], pool_scope)
         plan["subject"], plan["read_text"] = [], []
@@ -573,6 +606,9 @@ def main():
     subject = set()
     if plan["subject"]:
         own, companions = companion_terms(reader, library, brief, key)
+        first_names = {n.split()[0].lower() for n in people}
+        own = [w for w in own if w not in FILLER_WORDS and w not in first_names]
+        plan["_own"], plan["_companions"] = own, companions
         pairs = [f"{a} {b}" for k, a in enumerate(companions) for b in companions[k + 1:]]
         # Reverted 09-27: letting the request's rarest words define the subject was tuned to one
         # control and broke the rest (landscapes 131 -> 21, cat -> 0). Gemma's subject leads.
@@ -591,7 +627,14 @@ def main():
         subject = (subject & members) | anchors | uncaptioned if subject else members | anchors
     pool = (subject if (plan["subject"] or plan["read_text"]) else pool_scope) & pool_scope
 
-    offered = spread_budget(library, pool, JUDGE_BUDGET)
+    # Relevance to the ask: its own specific words weigh most, then their companions, then the subject.
+    own_set, comp_set = set(plan.get("_own") or []), set(plan.get("_companions") or [])
+    subj = [set(p.split()) for p in plan.get("subject") or []]
+    # Lexicographic: one hit on the request's own specific word outranks any number of generic
+    # hits ("mother", "woman", "baby" tied with "breastfeeding" at 3 and buried it, 09-27).
+    score = {i: 10000 * len(own_set & library.tokens[i]) + 100 * len(comp_set & library.tokens[i])
+                + sum(1 for p in subj if p <= library.tokens[i]) for i in pool}
+    offered = spread_budget(library, pool, JUDGE_BUDGET, score)
     offered = [i for i in offered if not library.rows[i].get("uncaptioned")]
     decisions = choose_sources(reader, library, key, brief,
                                sorted(set(offered) | {i for i in anchors & pool if not library.rows[i].get("uncaptioned")}))
@@ -600,13 +643,15 @@ def main():
     unsure = [d["ref"] for d in decisions if d["decision"] == "unknown"]
     looked = []
     if not os.environ.get("NO_LOOK"):
-        kept, looked = look(reader, config, library, plan, set(kept) | set(unsure) | (uncaptioned & pool), anchors)
+        kept, looked = look(reader, config, library, plan, set(kept) | set(unsure) | (uncaptioned & pool), anchors,
+                            score)
         kept.sort(key=lambda i: library.rows[i]["taken_at"])
     timeline = [f'{library.rows[i]["taken_at"][:10]}: {library.rows[i]["caption"][:110]}'
                 for i in kept[:: max(1, len(kept) // 24)]]
     thesis = reader.ask("translate_thesis", key, THESIS, {"owner_request": brief, "timeline": timeline},
                         lambda a: isinstance(a["thesis"], str), 400) if kept else None
-    plan.pop("_per_item_questions", None)
+    for k in ("_per_item_questions", "_own", "_companions"):
+        plan.pop(k, None)
     record = {"brief": brief, "plan": plan, "scope": scope_note,
               "counts": {"window": len(in_window), "scope": len(pool_scope), "subject_matches": len(subject),
                          "ocr_anchors": len(anchors), "uncaptioned": len(uncaptioned & pool), "pool": len(pool), "judged": len(decisions),
