@@ -19,8 +19,8 @@ sudo apt install ffmpeg    # Debian, Ubuntu
 
 ## Install
 
-Always with an extra. A bare install has no ONNX Runtime, and the first cut refuses to start on
-every tier but `metadata_only`.
+Always with an extra. A bare install has no ONNX Runtime, which even NAS needs for its inexpensive
+picture classifiers.
 
 ```bash
 uv tool install "immich-memories[all]"       # or [all-mac] on Apple Silicon

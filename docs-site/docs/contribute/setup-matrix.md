@@ -5,6 +5,15 @@ title: Setup matrix
 
 # Running the setup matrix
 
+:::caution Historical evaluation runner
+The profiles below predate automatic product tiers and include retired reader comparisons.
+Their preparation-tier and reader overrides do not define a current NAS/GPU/Full comparison.
+Do not use this recipe as a current install guide or model recommendation. Before another run,
+update its profiles and verify the resolved product tier and matched inputs for every cell.
+The current local default is Gemma 4 E4B; setup and capability checks are on
+[Requirements and tiers](../run/requirements.md#which-tier-you-get).
+:::
+
 The setup matrix varies the machine rather than the request: twenty-one setups, one memory each, the
 same month of the same library. It answers "how do the same pictures come out under each mode, and
 what does each mode tax", and the answer is a table of preparation, selection and render seconds,
