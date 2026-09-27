@@ -55,13 +55,6 @@ class TestRunTrackerInit:
         tracker = RunTracker(run_id="20250101_000000_abcd", db_path=_TEST_DB_PATH)
         assert tracker.run_id == "20250101_000000_abcd"
 
-    # WHY: RunDatabase opens a SQLite connection — isolate tracker logic from disk I/O
-    @patch("immich_memories.tracking.run_tracker.RunDatabase")
-    def test_current_run_is_none_initially(self, mock_db_cls: MagicMock):
-        """current_run is None before start_run."""
-        tracker = RunTracker(db_path=_TEST_DB_PATH)
-        assert tracker.current_run is None
-
 
 class TestRunTrackerPhases:
     """Tests for phase tracking logic."""

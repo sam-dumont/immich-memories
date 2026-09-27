@@ -1,6 +1,6 @@
 """Standalone video generation orchestrator.
 
-Decoupled from NiceGUI — usable from CLI, scheduler, or UI.
+Usable from the CLI, the scheduler, or the web server.
 All UI interaction is replaced by a progress callback.
 """
 
@@ -122,9 +122,6 @@ class GenerationParams:
     editorial_attempt_dir: Path | None = None
     # Explicit review changes; the original editorial plan remains unchanged.
     editorial_owner_edits: dict | None = None
-
-    # Pre-selected photo IDs from UI (skip re-scoring when set)
-    selected_photo_ids: set[str] | None = None
 
     # Progress callback: (phase, progress_fraction, status_message)
     progress_callback: Callable[[str, float, str], None] | None = None

@@ -1,14 +1,14 @@
 """A hermetic stand-in for the story-first editorial route.
 
-The launch smoke runs the real NiceGUI app against the fake Immich service in
+The launch smoke runs the real web server against the fake Immich service in
 ``fake_immich.py``. The sole production selector needs two things a hermetic
 launch cannot have: a text model to read the period with, and an annotation
 store already prepared for this library. This module supplies exactly what
 those two boundaries produce -- a durable attempt tree on disk, written through
 the real ``EditorialAttempt`` so its lease and status file behave as they do in
 production, and one ``(candidates, PipelineResult)`` pair -- so everything
-downstream of selection (the Memory page's polling, the story view, the pool
-page, Step 4 and the real FFmpeg render) runs against unmodified production code.
+downstream of selection (the cut job's progress, the review page, the pool
+page, and the real FFmpeg render) runs against unmodified production code.
 
 The one editorial decision is scripted in ``fake_library``: a picture ships when
 the library hangs it on a story, every other picture is left out with the reason

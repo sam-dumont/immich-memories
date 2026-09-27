@@ -124,3 +124,26 @@ def immich_face(config: Annotated[Config, Depends(current_config)]) -> PreviewFe
             return None
 
     return fetch
+
+
+# Who an Immich server says a key belongs to: (url, key, api version policy) -> display name.
+Greeter = Callable[[str, str, str], str]
+
+
+def immich_greeter() -> Greeter:
+    """Ask a server who the key belongs to; raises ImmichAPIError when it will not say."""
+
+    def greet(url: str, key: str, version: str) -> str:
+        from immich_memories.api.sync_client import SyncImmichClient
+
+        with SyncImmichClient(base_url=url, api_key=key, api_version=version) as client:
+            user = client.get_current_user()
+        return user.name or user.email
+
+    return greet
+
+
+def config_file() -> Path:
+    from immich_memories.config import get_config_path
+
+    return get_config_path()

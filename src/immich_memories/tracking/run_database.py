@@ -662,12 +662,17 @@ class RunDatabase:
             return row_to_run(row) if row else None
 
     def get_generated_memory_keys(self) -> set[str]:
-        """Get all memory_keys that have been successfully generated."""
+        """Get all memory_keys a finished film exists for.
+
+        A cut recorded without rendering (`generate --no-render`, the web client's review) has
+        no output yet: the memory is not made until a render of it is.
+        """
         with self._get_connection() as conn:
             rows = conn.execute(
                 """
                 SELECT DISTINCT memory_key FROM pipeline_runs
                 WHERE status = 'completed' AND memory_key IS NOT NULL
+                  AND output_path IS NOT NULL AND output_path != ''
                 """
             ).fetchall()
             return {row["memory_key"] for row in rows}

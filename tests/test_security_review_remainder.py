@@ -1,39 +1,13 @@
 """The security findings left open from docs/reviews/2026-08-18-security-perf-review.md.
 
-S3 (rate limiter behind a proxy), S5 (stored XSS in the config viewer),
-S10 (unbounded music upload), S16 (secrets partly shown).
+S3 (rate limiter behind a proxy), S10 (music upload), S16 (secrets partly shown).
+S5 (stored XSS in the config viewer) went with the NiceGUI viewer: the Svelte client
+escapes every value it renders.
 """
 
 from __future__ import annotations
 
 from immich_memories.config_models_auth import AuthConfig
-
-
-class TestS5ConfigViewerEscapesValues:
-    """immich.url is editable from the browser and persisted; rendering it into
-    ui.html with an f-string makes it stored XSS for the next admin visit."""
-
-    def test_a_script_in_a_value_is_escaped(self):
-        from immich_memories.ui.pages.settings_config import build_config_table_html
-
-        html = build_config_table_html({"immich": {"url": "<script>alert(1)</script>"}})
-
-        assert "<script>" not in html
-        assert "&lt;script&gt;" in html
-
-    def test_a_script_in_a_key_is_escaped(self):
-        from immich_memories.ui.pages.settings_config import build_config_table_html
-
-        html = build_config_table_html({"<img src=x onerror=alert(1)>": "v"})
-
-        assert "<img" not in html
-
-    def test_ordinary_values_still_render(self):
-        from immich_memories.ui.pages.settings_config import build_config_table_html
-
-        html = build_config_table_html({"immich": {"url": "http://immich:2283"}})
-
-        assert "http://immich:2283" in html
 
 
 class TestS16SecretsAreFullyMasked:
@@ -69,7 +43,7 @@ class TestS3RateLimiterSeesTheRealClient:
     actor locks out everyone. Trust X-Forwarded-For only from a trusted peer."""
 
     def test_the_forwarded_client_is_used_when_the_peer_is_trusted(self):
-        from immich_memories.ui.auth import client_ip_for_rate_limit
+        from immich_memories.web.auth import client_ip_for_rate_limit
 
         ip = client_ip_for_rate_limit(
             peer_ip="10.0.0.5",
@@ -80,7 +54,7 @@ class TestS3RateLimiterSeesTheRealClient:
         assert ip == "203.0.113.9"
 
     def test_an_untrusted_peer_cannot_spoof_its_bucket(self):
-        from immich_memories.ui.auth import client_ip_for_rate_limit
+        from immich_memories.web.auth import client_ip_for_rate_limit
 
         ip = client_ip_for_rate_limit(
             peer_ip="198.51.100.7",
@@ -91,7 +65,7 @@ class TestS3RateLimiterSeesTheRealClient:
         assert ip == "198.51.100.7"
 
     def test_no_header_means_the_peer(self):
-        from immich_memories.ui.auth import client_ip_for_rate_limit
+        from immich_memories.web.auth import client_ip_for_rate_limit
 
         ip = client_ip_for_rate_limit(
             peer_ip="10.0.0.5",
@@ -102,19 +76,26 @@ class TestS3RateLimiterSeesTheRealClient:
         assert ip == "10.0.0.5"
 
 
-class TestS10MusicUploadIsBounded:
-    def test_the_upload_declares_a_size_cap(self):
-        import inspect
+class TestS10MusicUploadIsChecked:
+    """An upload is kept on disk and later handed to FFmpeg: it has to be audio."""
 
-        from immich_memories.ui.pages import step3_options
+    def _upload(self, tmp_path, name: str, payload: bytes) -> int:
+        from tests.web_api_fixtures import api_client, config_in
 
-        source = inspect.getsource(step3_options)
+        client = api_client(config_in(tmp_path))
+        return client.post("/api/v1/music", files={"file": (name, payload)}).status_code
 
-        assert "max_file_size" in source
+    def test_an_audio_file_is_kept(self, tmp_path):
+        assert self._upload(tmp_path, "track.mp3", b"ID3\x04\x00\x00\x00") == 201
 
-    def test_a_non_audio_payload_is_rejected(self):
-        from immich_memories.ui.pages.step3_options import is_supported_audio
+    def test_a_non_audio_name_is_rejected(self, tmp_path):
+        assert self._upload(tmp_path, "evil.exe", b"ID3\x04\x00\x00\x00") == 422
 
-        assert is_supported_audio("track.mp3", b"ID3\x04\x00\x00\x00")
-        assert not is_supported_audio("evil.mp3", b"MZ\x90\x00\x03\x00\x00\x00")
-        assert not is_supported_audio("evil.exe", b"ID3\x04\x00\x00\x00")
+    def test_a_non_audio_payload_is_rejected(self, tmp_path):
+        assert self._upload(tmp_path, "evil.mp3", b"MZ\x90\x00\x03\x00\x00\x00") == 422
+
+    def test_an_upload_past_the_cap_is_refused(self, tmp_path, monkeypatch):
+        from immich_memories.web import job_routes
+
+        monkeypatch.setattr(job_routes, "MAX_MUSIC_UPLOAD_BYTES", 16)
+        assert self._upload(tmp_path, "long.mp3", b"ID3" + b"\x00" * 64) == 413

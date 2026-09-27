@@ -55,7 +55,7 @@ def test_runs_render_takes_the_chosen_revision_and_generate_s_output_flags(tmp_p
             "--title",
             "June",
             "--format",
-            "mov",
+            "prores",
         ],
         rendered,
     )
@@ -67,7 +67,7 @@ def test_runs_render_takes_the_chosen_revision_and_generate_s_output_flags(tmp_p
     assert call["revision"].edits.removed == ("garden-1",)
     assert call["request"].no_music is True
     assert call["request"].title == "June"
-    assert call["request"].output_format == "mov"
+    assert call["request"].output_format == "prores"
     assert "/films/june.mp4" in result.output
 
 
@@ -113,3 +113,14 @@ def test_runs_render_writes_the_engine_s_progress_where_a_watcher_can_read_it(tm
     assert seen[0]["phase"] == "assembly" and seen[0]["fraction"] == 0.4
     assert seen[0]["message"] == "Joining clips"
     assert json.loads(progress_file.read_text())["done"] is True
+
+
+def test_a_progress_file_in_a_folder_not_made_yet_is_still_written(tmp_path):
+    import json
+
+    from immich_memories.cli.progress_file import write_progress
+
+    target = tmp_path / "progress" / "job.json"
+    write_progress(target, {"done": True})
+
+    assert json.loads(target.read_text())["done"] is True

@@ -75,7 +75,8 @@
       <span>{t('{seconds} s on screen', { seconds: shot.seconds.toFixed(1) })}</span>
       <Badge size="tiny" color={shot.motion ? 'info' : 'secondary'}>{shot.motion ? t('Video') : t('Still')}</Badge>
     </p>
-    <Heading size="small" tag="h2">{shot.story_title}</Heading>
+    <!-- A rules-made story title can list every place of the week: two lines, the rest on hover. -->
+    <Heading size="tiny" tag="h2" class="line-clamp-2" title={shot.story_title}>{shot.story_title}</Heading>
   </div>
 
   <section class="flex flex-col gap-1">

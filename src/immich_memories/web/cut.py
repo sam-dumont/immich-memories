@@ -21,6 +21,7 @@ from immich_memories.operations.cut_revisions import (
 )
 from immich_memories.operations.reader_words import stage_words
 from immich_memories.operations.run_index import attempt_dir_for_run
+from immich_memories.operations.story_view import StoryEntry, read_story_view
 from immich_memories.operations.storyboard import (
     Shot,
     moment_alternatives,
@@ -36,6 +37,10 @@ from immich_memories.web.schemas import (
     Revision,
     RevisionEdits,
     SelectionPath,
+    Story,
+    StoryCarrier,
+    StoryLength,
+    StoryPart,
 )
 
 router = APIRouter(prefix="/api/v1/runs", tags=["cut"])
@@ -121,6 +126,42 @@ def read_cut(run_id: str, config: Annotated[Config, Depends(current_config)]) ->
         film_seconds=board.film_seconds,
         model_polish=model_polish_ran(attempt),
         shots=[_shot(index, shot, evidence) for index, shot in enumerate(board.shots, 1)],
+    )
+
+
+def _story_part(entry: StoryEntry) -> StoryPart:
+    return StoryPart(
+        key=entry.key,
+        title=entry.title,
+        weight=entry.weight,
+        purpose=entry.purpose,
+        granted=entry.granted,
+        day=entry.day,
+        carriers=[
+            StoryCarrier(
+                asset_id=carrier.asset_id,
+                seconds=carrier.seconds,
+                taken=carrier.taken,
+                reason=carrier.reason,
+                motion=carrier.motion,
+            )
+            for carrier in entry.carriers
+        ],
+    )
+
+
+@router.get("/{run_id}/story", response_model=Story)
+def read_story(run_id: str, config: Annotated[Config, Depends(current_config)]) -> Story:
+    """The stories the cut tells, heaviest first, each with the pictures that carry it."""
+    view = read_story_view(_attempt(config, run_id))
+    if view is None:
+        raise HTTPException(404, "This run left no saved cut.")
+    length = view.duration
+    return Story(
+        thesis=view.thesis,
+        preparation=view.preparation,
+        duration=StoryLength(**vars(length)) if length else None,
+        stories=[_story_part(entry) for entry in view.stories],
     )
 
 

@@ -47,3 +47,32 @@ def test_never_use_is_the_owner_s_word_across_runs_and_undo_forgets_it(tmp_path)
     assert decided.status_code == 200 and decided.json()["decision"] == "never_use"
     assert next(i for i in pool if i["asset_id"] == "woods-9")["hold"]["decision"] == "never_use"
     assert forgotten.json()["decision"] is None
+
+
+def test_a_picture_the_editor_never_received_cannot_be_ticked_into_the_next_cut(tmp_path):
+    config = config_in(tmp_path)
+    trace = selection_trace()
+    # The first pass saw it; the editor, given only this memory's material, never did.
+    trace.editorial_passes[0] = trace.editorial_passes[0].__class__(
+        **{
+            **vars(trace.editorial_passes[0]),
+            "input_ids": ("garden-1", "lake-1", "woods-9", "attic-2"),
+        }
+    )
+    attempt = save_run(config, RUN, trace=trace)
+    pool = [
+        make_asset("garden-1", file_created_at=datetime(2024, 6, 8, tzinfo=UTC)),
+        make_asset("attic-2", file_created_at=datetime(2024, 6, 9, tzinfo=UTC)),
+    ]
+    (attempt / SNAPSHOT_NAME).write_text(json.dumps(source_payload(pool), default=str))
+
+    client = api_client(config)
+    garden, attic = client.get(f"/api/v1/runs/{RUN}/pool").json()["items"]
+
+    assert garden["reachable"] is True
+    assert attic["reachable"] is False
+    assert attic["fate"].startswith("Outside this memory")
+    # The page opens on this memory's own pictures, and says how many it left aside.
+    mine = client.get(f"/api/v1/runs/{RUN}/pool", params={"reachable_only": True}).json()
+    assert [item["asset_id"] for item in mine["items"]] == ["garden-1"]
+    assert (mine["total"], mine["outside"]) == (1, 1)

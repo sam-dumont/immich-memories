@@ -21,6 +21,7 @@ from immich_memories.generate import GenerationParams, generate_memory
 from immich_memories.operations.phases import OperationalPhase
 from immich_memories.operations.revision_render import RenderUnavailable, project_revision
 from immich_memories.processing.editorial_timing import timing_policy_for_params
+from immich_memories.processing.encoding_plan import resolve_output_selection
 from immich_memories.processing.output_canvas import resolve_output_canvas
 from immich_memories.processing.render_inputs import read_render_inputs
 from immich_memories.security import write_secret_file
@@ -48,6 +49,7 @@ class CutRenderRequest:
     output_orientation: str | None = None
     scale_mode: str | None = None
     output_format: str | None = None
+    quality: str | None = None
     add_date_overlay: bool = False
     add_place_overlay: bool = False
     privacy_mode: bool = False
@@ -115,6 +117,12 @@ def _apply_request(
     params.output_orientation = request.output_orientation
     params.scale_mode = request.scale_mode
     params.output_format = request.output_format
+    if request.quality:
+        # As generate does: the flag overrides the config, and the preset decides the CRF. Validated,
+        # so a retired word (`medium`, `low`) lands on the preset it now means.
+        config.output = config.output.model_validate(
+            config.output.model_dump() | {"quality": request.quality, "crf": None}
+        )
     params.add_date_overlay = request.add_date_overlay
     params.add_place_overlay = request.add_place_overlay
     params.privacy_mode = request.privacy_mode
@@ -180,7 +188,11 @@ def render_saved_cut(
             person_names=list(run.memory_people),
             memory_type=run.memory_type,
             date_range=date_range,
-            container=request.output_format or config.output.format,
+            container=resolve_output_selection(
+                config_codec=config.output.codec,
+                config_container=config.output.format,
+                format_override=request.output_format,
+            ).container,
         ),
         selected_clips=params.clips,
         clip_segments=params.clip_segments,

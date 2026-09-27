@@ -54,8 +54,8 @@ still apply.
 
 ## Tick and untick
 
-On the Memory page, **Open the media pool** shows every picture with an **Include** checkbox and,
-after a cut, what the cut did with it ([The web UI](../make/web-ui.mdx#the-media-pool)).
+On a cut's review page, **Pool** shows every picture the cut saw, what the cut did with it, and an
+**In the next cut** checkbox ([The web UI](../make/web-ui.mdx#the-pool)).
 
 - **Untick** a picture and it is never a source: the next cut can't use it anywhere.
 - **Tick** a picture the cut left out and **Cut again** keeps it, in its own story at its capture
@@ -64,14 +64,15 @@ after a cut, what the cut did with it ([The web UI](../make/web-ui.mdx#the-media
 - The family-viewing gate still judges it. A ticked picture the gate refuses is named in
   `derived-decisions/owner-required-after-audience.private.json`.
 
-The CLI does the same with `generate --include ASSET_ID` and `--exclude ASSET_ID`, both repeatable.
-The web pool's ticks live in your session; **Start over** forgets them.
+**Cut again with these choices** runs `generate` with them as `--include ASSET_ID` and
+`--exclude ASSET_ID`, both repeatable, which is how the CLI does the same. Ticks belong to that
+one cut; the next cut's pool starts from what it kept.
 
 ## Pick who it's for
 
-<ThemedScreenshot name="memory-brief-sharing" alt="The brief's Sharing select on Just us" />
+<ThemedScreenshot name="memory-brief-sharing" alt="The brief's Who may see it select on Just us" />
 
-Each film is cut for one sharing level: **Who will watch it** in the brief, `generate --sharing`, and
+Each film is cut for one sharing level: **Who may see it** in the brief, `generate --sharing`, and
 `defaults.sharing` for the rest (`family` unless you change it).
 
 - **Just us**: the household. A bath or a nappy change the caption names plays too.
@@ -87,7 +88,7 @@ Some pictures are held by the family-viewing gate: a nudity detector flagged the
 clip, or an earlier cut read a private moment in its caption. Detectors miss both ways, and a swim
 in a lake looks a lot like what they're trained to catch. Holds only ever lean cautious, so a held
 picture you know is fine is yours to clear. And some pictures you just never want in a film. Both
-are on each pool picture, or under **Picture decisions** in the storyboard's inspector.
+are on each picture in a cut's pool.
 
 A held picture says why, in plain words, with **Clear hold** under it:
 
@@ -97,19 +98,16 @@ A held picture says why, in plain words, with **Clear hold** under it:
 may go: **Just us** (only films for the household), **Family** (the default: family films too) or
 **Anyone** (shareable films too). The app never clears a hold on its own, and there's no bulk clear.
 
-<ThemedScreenshot name="pictures-clear-dialog" alt="The dialog: 'Clear this picture's hold?', the picture, the reason, Fine for Just us, Family or Anyone, and Cancel or Clear hold" />
+<ThemedScreenshot name="pictures-clear-dialog" alt="The dialog: 'Clear this hold?', the picture, the reason, which films may use it, and Cancel or Clear hold" />
 
 Once cleared, the card says so, and **Undo** is there if you change your mind:
 
-<ThemedScreenshot name="pictures-pool-cleared" alt="The same card after clearing for anyone: 'You cleared its hold for anyone (a nudity detector flagged it).', Never use and Undo" />
+<ThemedScreenshot name="pictures-pool-cleared" alt="The same card after clearing: 'You cleared its hold for family.', and Undo" />
 
-**Never use** keeps a picture out of every film from the next cut on. In the pool it also unticks
-it; in the storyboard it also excludes the picture from the current export. **Undo** forgets the
-persistent decision. Tick **Include in export** again if you want it back in this cut.
+**Never use** keeps a picture out of every film from the next cut on. **Undo** forgets the decision.
+To take a picture out of one film only, remove it from that cut in the review instead.
 
-<ThemedScreenshot name="pictures-pool-never-use" alt="A pool card after Never use: 'You'll never use this picture.', Undo, and Include unticked" />
-
-<ThemedScreenshot name="pictures-storyboard-never-use" alt="The inspector's Picture decisions dialog after Never use, with Undo" />
+<ThemedScreenshot name="pictures-pool-never-use" alt="A pool card after Never use: 'You'll never use this picture.' and Undo" />
 
 What each answer does, film by film:
 

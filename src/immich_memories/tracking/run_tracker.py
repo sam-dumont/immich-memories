@@ -447,11 +447,6 @@ class RunTracker:
         except (OSError, ValueError):
             logger.warning("Failed to refresh run metadata sidecar")
 
-    @property
-    def current_run(self) -> RunMetadata | None:
-        """Get the current run metadata."""
-        return self._run
-
 
 def format_duration(seconds: float) -> str:
     """Format duration in human-readable form.

@@ -3,7 +3,6 @@
 from copy import deepcopy
 from dataclasses import replace
 from datetime import UTC, datetime
-from unittest.mock import patch
 
 import pytest
 
@@ -228,92 +227,6 @@ def test_excess_hold_or_title_budget_is_rejected_without_shortening_other_clips(
     with pytest.raises(ValueError, match="current titles leave"):
         project(params, policy=tighter)
     assert params == before
-
-
-def ui_state(params):
-    from immich_memories.ui.state import AppState
-
-    return AppState(
-        config=params.config,
-        immich_url="https://immich.example.com",
-        immich_api_key="test-key",
-        memory_type=params.memory_type,
-        target_duration=1,
-        pipeline_selected_clips=params.clips,
-        editorial_selections=params.editorial_selections,
-        selected_clip_ids={c.asset.id for c in params.clips},
-        clip_segments=params.clip_segments,
-        editorial_render_timing=params.editorial_render_timing,
-        timeline_plan=params.timeline_plan,
-    )
-
-
-def test_ui_factory_keeps_original_plan_and_writes_private_output_specific_edit_record(tmp_path):
-    import json
-
-    from immich_memories.ui.pages._step4_generate import _build_generation_params
-
-    params = original_params(tmp_path)
-    state = ui_state(params)
-    binding = deepcopy(state.editorial_render_timing)
-    state.selected_clip_ids.remove("chosen-0")
-    state.clip_segments = {**state.clip_segments, "chosen-2": (1, 3)}
-    # WHY: avoids opening a real Immich connection; this test checks the edit record.
-    with patch("immich_memories.api.immich.SyncImmichClient"):
-        generated = _build_generation_params(state, params.clips[1:], params.output_path)
-    prepare_certified_timeline(generated)
-    _validated_render_directives(generated)
-    assert state.editorial_render_timing == binding
-    assert state.editorial_selections == params.editorial_selections
-    assert state.pipeline_selected_clips[2].editorial_live_manifest["selected_interval"] == [0, 4]
-    path = tmp_path / generated.editorial_owner_edits["artifact_name"]
-    assert path.name.startswith("memory.owner-edits-")
-    assert json.loads(path.read_text()) == generated.editorial_owner_edits
-    assert path.stat().st_mode & 0o777 == 0o600
-    assert generated.editorial_owner_edits["removed_asset_ids"] == ["chosen-0"]
-
-
-def test_ui_factory_no_op_preserves_binding_and_does_not_write_an_edit(tmp_path):
-    from immich_memories.ui.pages._step4_generate import _build_generation_params
-
-    params = original_params(tmp_path)
-    state = ui_state(params)
-    # WHY: avoids opening a real Immich connection; the test never touches params.client.
-    with patch("immich_memories.api.immich.SyncImmichClient"):
-        generated = _build_generation_params(state, params.clips, params.output_path)
-    assert generated.editorial_render_timing is state.editorial_render_timing
-    assert generated.editorial_owner_edits is None
-    assert not list(tmp_path.glob("*.owner-edits-*.private.json"))
-
-
-def test_ui_factory_rebinds_explicit_transition_settings(tmp_path):
-    from immich_memories.ui.pages._step4_generate import _build_generation_params
-
-    params = original_params(tmp_path)
-    state = ui_state(params)
-    state.generation_options = {"transition": "Cut (no transition)"}
-    # WHY: avoids opening a real Immich connection while asserting on the rebinding.
-    with patch("immich_memories.api.immich.SyncImmichClient"):
-        generated = _build_generation_params(state, params.clips, params.output_path)
-    assert generated.editorial_owner_edits["timing_policy_changed"]
-    prepare_certified_timeline(generated)
-
-
-def test_ui_factory_rejects_invalid_edit_before_creating_client(tmp_path):
-    from immich_memories.ui.pages._step4_generate import _build_generation_params
-
-    params = original_params(tmp_path)
-    state = ui_state(params)
-    state.clip_segments = {**state.clip_segments, "chosen-2": None}
-    # WHY: guards that no real Immich client is built when validation fails first.
-    with (
-        # WHY: captures the constructor call so assert_not_called can confirm it never ran.
-        patch("immich_memories.api.immich.SyncImmichClient") as client,
-        pytest.raises(ValueError, match="Review trim"),
-    ):
-        _build_generation_params(state, params.clips, params.output_path)
-    client.assert_not_called()
-    assert not list(tmp_path.glob("*.owner-edits-*.private.json"))
 
 
 def swap_project(params, sibling, *, siblings=None, selected_ids=None, segments=None):

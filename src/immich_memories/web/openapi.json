@@ -126,6 +126,20 @@
         "title": "AttemptView",
         "type": "object"
       },
+      "Body_upload_music_api_v1_music_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_music_api_v1_music_post",
+        "type": "object"
+      },
       "CacheStats": {
         "properties": {
           "bytes": {
@@ -197,6 +211,42 @@
         "title": "Cleared",
         "type": "object"
       },
+      "Connection": {
+        "properties": {
+          "has_key": {
+            "title": "Has Key",
+            "type": "boolean"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "has_key"
+        ],
+        "title": "Connection",
+        "type": "object"
+      },
+      "ConnectionEntry": {
+        "properties": {
+          "api_key": {
+            "default": "",
+            "title": "Api Key",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "ConnectionEntry",
+        "type": "object"
+      },
       "Cut": {
         "properties": {
           "content_budget_seconds": {
@@ -260,6 +310,11 @@
       "CutBrief": {
         "description": "What to cut; None leaves a flag out, so the CLI's own default applies.",
         "properties": {
+          "accept_any_provenance": {
+            "default": false,
+            "title": "Accept Any Provenance",
+            "type": "boolean"
+          },
           "all_trips": {
             "default": false,
             "title": "All Trips",
@@ -475,6 +530,17 @@
               }
             ],
             "title": "Person Match"
+          },
+          "photo_duration": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Duration"
           },
           "season": {
             "anyOf": [
@@ -717,6 +783,19 @@
         "title": "Decision",
         "type": "object"
       },
+      "Greeting": {
+        "properties": {
+          "user": {
+            "title": "User",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user"
+        ],
+        "title": "Greeting",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -764,6 +843,24 @@
         "title": "Hold",
         "type": "object"
       },
+      "HolidayChoice": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name"
+        ],
+        "title": "HolidayChoice",
+        "type": "object"
+      },
       "JobProgress": {
         "properties": {
           "done": {
@@ -805,6 +902,17 @@
             },
             "title": "Recent Asset Ids",
             "type": "array"
+          },
+          "remaining_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remaining Seconds"
           },
           "total": {
             "anyOf": [
@@ -869,7 +977,8 @@
             "enum": [
               "cut",
               "render",
-              "scan"
+              "scan",
+              "music"
             ],
             "title": "Kind",
             "type": "string"
@@ -945,6 +1054,24 @@
         "title": "JobView",
         "type": "object"
       },
+      "Language": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "Language",
+        "type": "object"
+      },
       "LinkAnswer": {
         "properties": {
           "decision": {
@@ -981,6 +1108,13 @@
       },
       "Messages": {
         "properties": {
+          "languages": {
+            "items": {
+              "$ref": "#/components/schemas/Language"
+            },
+            "title": "Languages",
+            "type": "array"
+          },
           "locale": {
             "title": "Locale",
             "type": "string"
@@ -995,7 +1129,8 @@
         },
         "required": [
           "locale",
-          "messages"
+          "messages",
+          "languages"
         ],
         "title": "Messages",
         "type": "object"
@@ -1042,6 +1177,24 @@
           "seat"
         ],
         "title": "ModelDecision",
+        "type": "object"
+      },
+      "MusicTrack": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "MusicTrack",
         "type": "object"
       },
       "NamedPerson": {
@@ -1146,6 +1299,11 @@
             "title": "Items",
             "type": "array"
           },
+          "outside": {
+            "default": 0,
+            "title": "Outside",
+            "type": "integer"
+          },
           "total": {
             "title": "Total",
             "type": "integer"
@@ -1188,6 +1346,10 @@
             "title": "Kind",
             "type": "string"
           },
+          "reachable": {
+            "title": "Reachable",
+            "type": "boolean"
+          },
           "taken": {
             "title": "Taken",
             "type": "string"
@@ -1199,6 +1361,7 @@
           "kind",
           "favourite",
           "in_cut",
+          "reachable",
           "fate",
           "hold"
         ],
@@ -1281,6 +1444,22 @@
             ],
             "title": "Format"
           },
+          "llm_title": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Title"
+          },
+          "music": {
+            "default": "auto",
+            "title": "Music",
+            "type": "string"
+          },
           "music_volume": {
             "anyOf": [
               {
@@ -1291,11 +1470,6 @@
               }
             ],
             "title": "Music Volume"
-          },
-          "no_music": {
-            "default": false,
-            "title": "No Music",
-            "type": "boolean"
           },
           "orientation": {
             "anyOf": [
@@ -1312,6 +1486,17 @@
             "default": false,
             "title": "Privacy Mode",
             "type": "boolean"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
           },
           "resolution": {
             "anyOf": [
@@ -1334,6 +1519,17 @@
               }
             ],
             "title": "Revision"
+          },
+          "scale_mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scale Mode"
           },
           "subtitle": {
             "anyOf": [
@@ -2012,6 +2208,75 @@
         "title": "SelectionPath",
         "type": "object"
       },
+      "SessionView": {
+        "properties": {
+          "auth_enabled": {
+            "title": "Auth Enabled",
+            "type": "boolean"
+          },
+          "auto_launch": {
+            "title": "Auto Launch",
+            "type": "boolean"
+          },
+          "button_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Button Text"
+          },
+          "demo_mode_offered": {
+            "default": false,
+            "title": "Demo Mode Offered",
+            "type": "boolean"
+          },
+          "music_preview_offered": {
+            "default": false,
+            "title": "Music Preview Offered",
+            "type": "boolean"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "signed_in": {
+            "title": "Signed In",
+            "type": "boolean"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          }
+        },
+        "required": [
+          "auth_enabled",
+          "provider",
+          "signed_in",
+          "username",
+          "button_text",
+          "auto_launch"
+        ],
+        "title": "SessionView",
+        "type": "object"
+      },
       "ShownCommand": {
         "properties": {
           "command": {
@@ -2041,6 +2306,193 @@
           "rule"
         ],
         "title": "Skipped",
+        "type": "object"
+      },
+      "SpecialDay": {
+        "properties": {
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "years_ago": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Years Ago"
+          }
+        },
+        "required": [
+          "day",
+          "event_id",
+          "name",
+          "years_ago"
+        ],
+        "title": "SpecialDay",
+        "type": "object"
+      },
+      "Story": {
+        "properties": {
+          "duration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoryLength"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "preparation": {
+            "title": "Preparation",
+            "type": "string"
+          },
+          "stories": {
+            "items": {
+              "$ref": "#/components/schemas/StoryPart"
+            },
+            "title": "Stories",
+            "type": "array"
+          },
+          "thesis": {
+            "title": "Thesis",
+            "type": "string"
+          }
+        },
+        "required": [
+          "thesis",
+          "preparation",
+          "duration",
+          "stories"
+        ],
+        "title": "Story",
+        "type": "object"
+      },
+      "StoryCarrier": {
+        "properties": {
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "motion": {
+            "title": "Motion",
+            "type": "boolean"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "seconds": {
+            "title": "Seconds",
+            "type": "number"
+          },
+          "taken": {
+            "title": "Taken",
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id",
+          "seconds",
+          "taken",
+          "reason",
+          "motion"
+        ],
+        "title": "StoryCarrier",
+        "type": "object"
+      },
+      "StoryLength": {
+        "properties": {
+          "content_budget_seconds": {
+            "title": "Content Budget Seconds",
+            "type": "number"
+          },
+          "requested_seconds": {
+            "title": "Requested Seconds",
+            "type": "number"
+          },
+          "selected_content_seconds": {
+            "title": "Selected Content Seconds",
+            "type": "number"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requested_seconds",
+          "content_budget_seconds",
+          "selected_content_seconds",
+          "status"
+        ],
+        "title": "StoryLength",
+        "type": "object"
+      },
+      "StoryPart": {
+        "properties": {
+          "carriers": {
+            "items": {
+              "$ref": "#/components/schemas/StoryCarrier"
+            },
+            "title": "Carriers",
+            "type": "array"
+          },
+          "day": {
+            "title": "Day",
+            "type": "string"
+          },
+          "granted": {
+            "title": "Granted",
+            "type": "integer"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "weight",
+          "purpose",
+          "granted",
+          "day",
+          "carriers"
+        ],
+        "title": "StoryPart",
         "type": "object"
       },
       "Suggestion": {
@@ -2130,6 +2582,46 @@
         "title": "Suggestions",
         "type": "object"
       },
+      "TripChoice": {
+        "properties": {
+          "days": {
+            "title": "Days",
+            "type": "integer"
+          },
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "pictures": {
+            "title": "Pictures",
+            "type": "integer"
+          },
+          "place": {
+            "title": "Place",
+            "type": "string"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "place",
+          "start",
+          "end",
+          "days",
+          "pictures"
+        ],
+        "title": "TripChoice",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -2180,7 +2672,7 @@
   "paths": {
     "/api/v1/albums": {
       "get": {
-        "description": "The albums a film can be made from, the names `--from-album` takes.",
+        "description": "The albums a film can be made from, largest first; `--from-album` takes the id.",
         "operationId": "albums_api_v1_albums_get",
         "responses": {
           "200": {
@@ -2446,6 +2938,110 @@
         ]
       }
     },
+    "/api/v1/connection": {
+      "get": {
+        "description": "The server this install reads, and whether a key is stored for it.",
+        "operationId": "read_connection_api_v1_connection_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Connection",
+        "tags": [
+          "settings"
+        ]
+      },
+      "put": {
+        "description": "Keep the server and key in the config file the process reads.",
+        "operationId": "save_connection_api_v1_connection_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectionEntry"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Connection",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/api/v1/connection/test": {
+      "post": {
+        "description": "Ask the server who the key belongs to, without saving anything.",
+        "operationId": "test_connection_api_v1_connection_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectionEntry"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Greeting"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Test Connection",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
     "/api/v1/cuts": {
       "post": {
         "description": "Cut this brief with `generate --no-render`; the job ends with the run the cut became.",
@@ -2530,6 +3126,54 @@
         "summary": "Cut Command",
         "tags": [
           "jobs"
+        ]
+      }
+    },
+    "/api/v1/holidays": {
+      "get": {
+        "description": "The holidays the pipeline resolves, named in the page's language; any MM-DD works too.",
+        "operationId": "holidays_api_v1_holidays_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "default": "en",
+              "title": "Lang",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HolidayChoice"
+                  },
+                  "title": "Response Holidays Api V1 Holidays Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Holidays",
+        "tags": [
+          "library"
         ]
       }
     },
@@ -2780,6 +3424,84 @@
           }
         },
         "summary": "Job Output",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/music": {
+      "post": {
+        "description": "Keep an uploaded MP3, M4A or WAV for renders to use.",
+        "operationId": "upload_music_api_v1_music_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_music_api_v1_music_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MusicTrack"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Music",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/music/{music_id}": {
+      "get": {
+        "description": "A previewed or uploaded track, for the player.",
+        "operationId": "music_api_v1_music__music_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "music_id",
+            "required": true,
+            "schema": {
+              "title": "Music Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Music",
         "tags": [
           "jobs"
         ]
@@ -3382,6 +4104,52 @@
         ]
       }
     },
+    "/api/v1/runs/{run_id}/music-preview": {
+      "post": {
+        "description": "Generate the music this cut would get with `music preview`, to hear before rendering.",
+        "operationId": "start_music_preview_api_v1_runs__run_id__music_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Music Preview",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
     "/api/v1/runs/{run_id}/pool": {
       "get": {
         "description": "Every picture the cut saw, in capture order, with its fate and whatever holds it.",
@@ -3417,6 +4185,16 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reachable_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Reachable Only",
+              "type": "boolean"
             }
           }
         ],
@@ -3658,6 +4436,97 @@
         ]
       }
     },
+    "/api/v1/runs/{run_id}/story": {
+      "get": {
+        "description": "The stories the cut tells, heaviest first, each with the pictures that carry it.",
+        "operationId": "read_story_api_v1_runs__run_id__story_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Story"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Story",
+        "tags": [
+          "cut"
+        ]
+      }
+    },
+    "/api/v1/session": {
+      "get": {
+        "description": "The provider the sign-in page offers and whether this browser is signed in.",
+        "operationId": "session_view_api_v1_session_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Session View",
+        "tags": [
+          "session"
+        ]
+      }
+    },
+    "/api/v1/special-days": {
+      "get": {
+        "description": "The days `discover-days` catalogued, anniversaries due first, then the rest.\n\nA scheduled run only proposes a day on its anniversary; someone at the brief wants a memory\nnow, so every catalogued day is offered below the due ones. A day the model could not name\nis left out: there is nothing truthful to put on its title card.",
+        "operationId": "special_days_api_v1_special_days_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SpecialDay"
+                  },
+                  "title": "Response Special Days Api V1 Special Days Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Special Days",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/api/v1/suggestions": {
       "get": {
         "description": "Up to twenty candidates, and why the others were set aside.",
@@ -3722,6 +4591,72 @@
         "summary": "Run Suggestion",
         "tags": [
           "suggestions"
+        ]
+      }
+    },
+    "/api/v1/trips": {
+      "get": {
+        "description": "The trips that overlap a year, as `generate` lists them before it cuts one.",
+        "operationId": "trips_api_v1_trips_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "year",
+            "required": true,
+            "schema": {
+              "title": "Year",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "person",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Person"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TripChoice"
+                  },
+                  "title": "Response Trips Api V1 Trips Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trips",
+        "tags": [
+          "library"
         ]
       }
     }

@@ -1,14 +1,13 @@
-"""Capture the Memory page walkthrough for the docs, in light and dark.
+"""Capture the web client for the docs, in light and dark.
 
-Every frame comes from the hermetic launch -- the fake Immich service and the
-scripted editorial route -- so nothing personal can reach a screenshot. Each
-theme is one pass through the flow: the brief, Advanced, the cut in progress,
-the story it produced, Export and the options page behind it. The files land
-in docs-site/static/img/screenshots/ under the names the docs embed.
+Every frame comes from the hermetic launch -- the fake Immich service and the scripted
+editorial route -- so nothing personal can reach a screenshot. Each theme is one pass through
+the flow: the brief, the cut in progress, the review, an edit, the render, the pool, and the
+pages around them. The files land in docs-site/static/img/screenshots/ under the names the docs
+embed (a `dark-` prefix for the dark theme).
 
 Usage:
     make screenshots          # light + dark, saves to docs-site/
-    make e2e                  # required hermetic launch gate (no screenshots)
 """
 
 from __future__ import annotations
@@ -20,279 +19,251 @@ import pytest
 from playwright.sync_api import Page, expect
 
 from tests.e2e.conftest import set_theme
-from tests.e2e.fake_editorial import STAGES
-from tests.e2e.fake_library import THESIS, summary_line
-from tests.e2e.redaction import assert_no_real_address, redact_page
-from tests.e2e.test_launch_smoke import _choose
+from tests.e2e.fake_library import CARRIERS, LIBRARY, THESIS
+from tests.e2e.redaction import redact_page
+from tests.e2e.web_flow import contact_sheet, cut_june, render, the_film
 
 pytestmark = [pytest.mark.e2e, pytest.mark.visual]
 
 _THEMES = ("light", "dark")
-_THESIS = THESIS
-# Any editing stage the fixture announces after preparation: the active phase row
-# shows it, which is the frame the cutting screenshot wants.
-_EDITING_STAGE = re.compile("^(" + "|".join(re.escape(stage) for stage in STAGES[1:]) + ")$")
+# The stock library's swim picture, as a nudity detector that misread it would bank it: the
+# false positive the owner clears by hand. Seeded by the recipe, never placed by hand.
+_HELD = "trip-swim-02"
 
 
 def _name(base: str, theme: str) -> str:
     return f"dark-{base}" if theme == "dark" else base
 
 
-def _save(page: Page, directory: Path, name: str) -> None:
-    """Park the pointer, drop leftover tooltips, redact temp paths, then shoot."""
+def _settle(page: Page) -> None:
+    """Park the pointer, wait for every visible picture, redact temp paths."""
     page.mouse.move(0, 0)
-    page.evaluate("""() => {
-        document.querySelectorAll('.q-tooltip, .q-menu').forEach(
-            el => el.style.display = 'none'
-        );
-    }""")
-    # WHY: the hermetic launch writes under a pytest temp root that carries the
-    # developer's user name in its path; the redaction rewrites those lines.
+    # A default install has no Demo mode switch (`server.enable_demo_mode`); neither do the docs.
+    page.evaluate(
+        "document.querySelectorAll('[aria-label=\"Demo mode\"]').forEach(b => b.style.display = 'none')"
+    )
+    page.wait_for_function(
+        # Only what the frame shows: a lazy thumbnail below the fold is never fetched.
+        "() => [...document.images].filter(i => { const r = i.getBoundingClientRect();"
+        " return r.height > 0 && r.bottom > 0 && r.top < innerHeight; }).every(i => i.complete)",
+        timeout=30_000,
+    )
+    # WHY: the hermetic launch writes under a pytest temp root that carries the developer's
+    # user name in its path; the redaction rewrites those lines and refuses a leaked address.
     redact_page(page)
-    assert_no_real_address(page)
     page.wait_for_timeout(300)
-    page.screenshot(path=str(directory / f"{name}.png"))
 
 
-def _hide_sidebar(page: Page) -> None:
-    page.evaluate("document.querySelector('.q-drawer')?.style.setProperty('display','none')")
-    # WHY: Quasar positions the page with an inline padding-left; remember it so
-    # _show_sidebar can restore it -- removeProperty() would leave the drawer
-    # overlaying the content and intercepting clicks.
-    page.evaluate("""() => {
-        const c = document.querySelector('.q-page-container');
-        if (!c) return;
-        c.dataset.imPrevPaddingLeft = c.style.paddingLeft;
-        c.style.setProperty('padding-left', '0');
-    }""")
-    page.wait_for_timeout(200)
+def _save(page: Page, directory: Path, name: str, *, full: bool = False) -> None:
+    _settle(page)
+    page.screenshot(path=str(directory / f"{name}.png"), full_page=full)
 
 
-def _show_sidebar(page: Page) -> None:
-    page.evaluate("document.querySelector('.q-drawer')?.style.removeProperty('display')")
-    page.evaluate("""() => {
-        const c = document.querySelector('.q-page-container');
-        if (!c) return;
-        const prev = c.dataset.imPrevPaddingLeft;
-        if (prev) c.style.setProperty('padding-left', prev);
-        else c.style.removeProperty('padding-left');
-    }""")
-    page.wait_for_timeout(200)
+def _save_part(page: Page, locator, directory: Path, name: str) -> None:
+    locator.scroll_into_view_if_needed()
+    _settle(page)
+    locator.screenshot(path=str(directory / f"{name}.png"))
 
 
-def _open_brief(page: Page, launch_app_url: str) -> None:
-    page.goto(launch_app_url, wait_until="domcontentloaded", timeout=30_000)
-    expect(page.get_by_role("combobox", name="Memory type")).to_be_visible(timeout=30_000)
-
-
-@pytest.mark.parametrize("theme", _THEMES)
-def test_trip_walkthrough(
-    page: Page, launch_app_url: str, screenshot_dir: Path, theme: str
-) -> None:
-    _open_brief(page, launch_app_url)
+def _open(page: Page, url: str, theme: str) -> None:
+    page.set_viewport_size({"width": 1440, "height": 900})
+    page.goto(url, wait_until="domcontentloaded", timeout=30_000)
     set_theme(page, theme)
-    _open_brief(page, launch_app_url)
-    _choose(page, "Memory type", "Trip")
-    trip = page.get_by_role("combobox", name="Select a trip")
-    expect(trip).to_be_visible(timeout=30_000)
-    trip.click()
-    page.get_by_role("option", name=re.compile(r"2024-06-21 to 2024-06-27")).click()
-    _save(page, screenshot_dir, _name("memory-trip-brief", theme))
-    page.get_by_role("button", name="Cut", exact=True).click()
-    export = page.get_by_role("button", name="Export", exact=True)
-    expect(export).to_be_visible(timeout=120_000)
-    _save(page, screenshot_dir, _name("memory-trip-story", theme))
-    page.get_by_role("tab", name="Story", exact=True).click()
-    # The story title also appears behind the hidden storyboard tab.
-    expect(page.get_by_text("The story", exact=True)).to_be_visible()
-    export.click()
-    page.wait_for_url("**/step4", timeout=30_000)
-    expect(page.get_by_role("button", name="Generate Video")).to_be_visible(timeout=30_000)
-    _save(page, screenshot_dir, _name("memory-trip-export", theme))
+
+
+def _brief_for_june(page: Page) -> None:
+    page.get_by_text("Monthly Highlights", exact=True).click()
+    page.get_by_label("Year", exact=True).fill("2024")
+    page.get_by_label("Month", exact=True).fill("6")
+    page.get_by_text("Length and pictures").click()
+    page.get_by_label("Length in minutes", exact=False).fill("2")
 
 
 @pytest.mark.parametrize("theme", _THEMES)
 def test_capture_memory_walkthrough(
     page: Page, launch_app_url: str, screenshot_dir: Path, theme: str
 ) -> None:
-    """One pass through the Memory page for one theme, saving every frame the docs embed."""
+    """The brief, the cut, the review, an edit, the render: every frame the docs embed."""
     d = screenshot_dir
-
-    _open_brief(page, launch_app_url)
-    # WHY: the toggle reloads the page; the brief has to be back before the select is used.
-    set_theme(page, theme)
-    _open_brief(page, launch_app_url)
-    _choose(page, "Memory type", "Monthly Highlights")
-    _choose(page, "Month", "June")
-    expect(page.get_by_text("Auto · 1m 00s", exact=True)).to_be_visible()
+    _open(page, f"{launch_app_url}/app/create", theme)
+    _brief_for_june(page)
     _save(page, d, _name("memory-brief", theme))
-
-    advanced = page.get_by_text("Advanced", exact=True)
-    advanced.click()
-    expect(page.get_by_role("button", name="Open the media pool")).to_be_visible()
-    # WHY: the expansion animates open; scrolling before it settles lands short of the pool.
-    page.wait_for_timeout(600)
-    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-    page.wait_for_timeout(400)
-    _save(page, d, _name("memory-brief-advanced", theme))
-    advanced.click()
-    page.wait_for_timeout(400)
-    page.evaluate("window.scrollTo(0, 0)")
+    page.get_by_label("Who may see it").select_option("just-us")
+    _save(page, d, _name("memory-brief-sharing", theme))
+    page.get_by_label("Who may see it").select_option("")
 
     page.get_by_role("button", name="Cut", exact=True).click()
-    expect(page.get_by_text(re.compile("left in this stage$"))).to_be_visible(timeout=60_000)
-    _save(page, d, _name("memory-cutting-estimate", theme))
-    # WHY .cut-phase-rows: the detail panel echoes the same stage string, and an
-    # unscoped match is two elements the moment that panel has caught up.
-    active_stage = page.locator(".cut-phase-rows").get_by_text(_EDITING_STAGE)
-    expect(active_stage).to_be_visible(timeout=60_000)
+    progress = page.get_by_role("region", name="Progress")
+    expect(progress.get_by_text(re.compile(r"\d+ of \d+"))).to_be_visible(timeout=60_000)
+    expect(
+        progress.get_by_role("list", name="Pictures just read").locator("img").first
+    ).to_be_visible()
     _save(page, d, _name("memory-cutting", theme))
 
-    expect(page.get_by_text(_THESIS)).to_be_visible(timeout=120_000)
-    export = page.get_by_role("button", name="Export", exact=True)
-    expect(export).to_be_visible()
+    page.wait_for_url("**/app/runs/**", timeout=240_000)
+    expect(page.get_by_text(THESIS)).to_be_visible()
+    expect(contact_sheet(page)).to_have_count(len(CARRIERS))
     _save(page, d, _name("memory-story", theme))
-    _hide_sidebar(page)
-    _save(page, d, _name("hero-memory", theme))
-    _show_sidebar(page)
-    page.get_by_role("tab", name="Story", exact=True).click()
-    expect(page.get_by_text(summary_line(), exact=True)).to_be_visible()
+    page.get_by_role("radio", name="Stories").click()
     _save(page, d, _name("memory-story-ranked", theme))
+    page.get_by_role("radio", name="Contact sheet").click()
 
-    export.click()
-    page.wait_for_url("**/step4", timeout=30_000)
-    expect(page.get_by_role("button", name="Generate Video")).to_be_visible(timeout=30_000)
-    _save(page, d, _name("memory-export", theme))
+    # An edit: one picture out, one swapped for another of its moment, then kept as a revision.
+    inspector = page.get_by_role("article", name="Picture review")
+    contact_sheet(page).nth(1).click()
+    inspector.get_by_role("button", name="Remove from this cut").click()
+    swappable = next(
+        (i for i in range(len(CARRIERS)) if i != 1 and _has_alternatives(page, i)), None
+    )
+    if swappable is not None:
+        inspector.get_by_role("list", name="Other pictures of this moment").get_by_role(
+            "button"
+        ).first.click()
+        inspector.get_by_role("button", name="Use this picture instead").click()
+    _save(page, d, _name("memory-review-edit", theme))
+    page.get_by_role("button", name="Save revision").click()
+    expect(page.get_by_role("status").filter(has_text="Saved as revision")).to_be_visible()
 
-    page.get_by_role("button", name="Back to Generation Options").click()
-    page.wait_for_url("**/step3", timeout=30_000)
-    expect(page.get_by_role("button", name="Next: Preview & Export")).to_be_visible(timeout=30_000)
-    _save(page, d, _name("memory-options", theme))
+    panel = page.get_by_role("region", name="Render")
+    panel.scroll_into_view_if_needed()
+    panel.get_by_label("What to render").select_option(label="Revision 1")
+    _save_part(page, panel, d, _name("memory-options", theme))
+    render(page, resolution="720p")
+    expect(panel.get_by_role("progressbar")).to_be_visible(timeout=30_000)
+    _save_part(page, panel, d, _name("memory-rendering", theme))
+    expect(the_film(page)).to_be_visible(timeout=600_000)
+    page.wait_for_function(
+        "video => video.readyState >= 2", arg=the_film(page).element_handle(), timeout=60_000
+    )
+    _save_part(page, panel, d, _name("memory-export", theme))
 
-
-@pytest.mark.parametrize("theme", _THEMES)
-def test_capture_pool_outcomes(page: Page, launch_app_url: str, screenshot_dir: Path, theme: str):
-    _open_brief(page, launch_app_url)
-    set_theme(page, theme)
-    _open_brief(page, launch_app_url)
-    _choose(page, "Memory type", "Monthly Highlights")
-    _choose(page, "Month", "June")
-    page.get_by_role("button", name="Cut", exact=True).click()
-    expect(page.get_by_text(_THESIS)).to_be_visible(timeout=120_000)
-    page.get_by_role("button", name="Review the pool", exact=True).click()
-    expect(page.locator(".pool-outcome").first).to_contain_text("In the cut")
-    _save(page, screenshot_dir, _name("memory-pool-outcomes", theme))
-    page.locator("button").filter(has=page.locator("i:has-text('grid_view')")).click()
-    expect(page.locator(".pool-outcome").first).to_contain_text("In the cut")
-    _save(page, screenshot_dir, _name("memory-pool-outcomes-grid", theme))
-
-
-def test_capture_automation_walkthrough(page: Page, launch_app_url: str, launch_workspace):
-    from tests.e2e.test_automation_pages import test_choose_generate_and_read_the_same_automatic_run
-
-    test_choose_generate_and_read_the_same_automatic_run(page, launch_app_url, launch_workspace)
-
-
-# The stock library's swim picture, as a nudity detector that misread it would bank it: the
-# false positive the owner clears by hand. Seeded by the recipe, never placed by hand.
-_HELD = "trip-swim-02"
+    page.evaluate("window.scrollTo(0, 0)")
+    page.get_by_role("navigation", name="Main navigation").first.evaluate(
+        "nav => nav.style.display = 'none'"
+    )
+    _save(page, d, _name("hero-memory", theme))
 
 
-def _save_part(page: Page, locator, directory: Path, name: str) -> None:
-    """One element of the page (a card, a dialog), redacted like every full frame."""
-    locator.scroll_into_view_if_needed()
-    # The thumbnail loads lazily: shoot the picture, not its spinner.
-    expect(locator.locator(".q-img__loading")).to_have_count(0, timeout=30_000)
-    page.mouse.move(0, 0)
-    redact_page(page)
-    assert_no_real_address(page)
-    page.wait_for_timeout(300)
-    locator.screenshot(path=str(directory / f"{name}.png"))
-
-
-def _pool_card(page: Page, asset_id: str):
-    """Page the pool to this picture's card; the pool lists the library in capture order."""
-    from immich_memories.ui.pages.clip_grid import CLIPS_PER_PAGE
-    from tests.e2e.fake_library import BY_ID, LIBRARY
-
-    expect(page.locator(".picture-decision").first).to_be_visible(timeout=60_000)
-    index = [picture.asset_id for picture in LIBRARY].index(asset_id)
-    for number in range(index // CLIPS_PER_PAGE):
-        page.get_by_role("button", name="Next page").click()
-        first = (number + 1) * CLIPS_PER_PAGE + 1
-        expect(page.get_by_text(re.compile(f"^{first}–"))).to_be_visible()
-    card = page.locator(".q-card").filter(has_text=BY_ID[asset_id].filename).first
-    expect(card).to_be_visible()
-    return card
+def _has_alternatives(page: Page, index: int) -> bool:
+    contact_sheet(page).nth(index).click()
+    return (
+        page.get_by_role("article", name="Picture review")
+        .get_by_role("list", name="Other pictures of this moment")
+        .count()
+        > 0
+    )
 
 
 @pytest.mark.parametrize("theme", _THEMES)
-def test_capture_picture_decisions(
+def test_capture_trip_brief(
+    page: Page, launch_app_url: str, screenshot_dir: Path, theme: str
+) -> None:
+    _open(page, f"{launch_app_url}/app/create", theme)
+    page.get_by_text("Trip", exact=True).click()
+    page.get_by_label("Year", exact=True).fill("2024")
+    trips = page.get_by_role("list", name="Trips").get_by_role("listitem")
+    trips.filter(has_text="2024-06-21").click(timeout=60_000)
+    _save(page, screenshot_dir, _name("memory-trip-brief", theme))
+
+
+@pytest.mark.parametrize("theme", _THEMES)
+def test_capture_the_pool_and_picture_decisions(
     page: Page, launch_app_url: str, launch_workspace, screenshot_dir: Path, theme: str
 ) -> None:
-    """Clear hold and Never use, on the storyboard and in the pool (#1324)."""
-    from tests.e2e.fake_library import CARRIERS
+    """The pool's outcomes, a held picture and its clear dialog, and Never use (#1324)."""
+    from immich_memories.store import owner_decisions
     from tests.e2e.test_picture_decisions import flag_by_the_detector, store_of
 
     store = store_of(launch_workspace)
     flag_by_the_detector(store, _HELD)
-    shot, ticked = CARRIERS[1].asset_id, CARRIERS[2].asset_id
+    ticked = next(p.asset_id for p in LIBRARY if p not in CARRIERS and p.asset_id != _HELD)
     d = screenshot_dir
     try:
-        _open_brief(page, launch_app_url)
-        set_theme(page, theme)
-        _open_brief(page, launch_app_url)
-        _choose(page, "Memory type", "Monthly Highlights")
-        _choose(page, "Month", "June")
-        page.get_by_role("button", name="Cut", exact=True).click()
-        shots = page.locator(".storyboard-shot")
-        expect(shots.nth(1)).to_be_visible(timeout=120_000)
-        shots.nth(1).click()
-        page.get_by_role("button", name="Picture decisions", exact=True).click()
-        decisions = page.get_by_role("dialog")
-        decisions.get_by_role("button", name="Never use").click()
-        expect(decisions.get_by_text("You'll never use this picture.")).to_be_visible()
-        page.wait_for_timeout(3500)  # the toast fades
-        _save_part(page, decisions, d, _name("pictures-storyboard-never-use", theme))
-        decisions.get_by_role("button", name="Close", exact=True).click()
+        _open(page, f"{launch_app_url}/app/create", theme)
+        cut_june(page, launch_app_url)
+        page.get_by_role("link", name="Pool", exact=True).click()
+        tiles = page.get_by_role("list", name="Pool").get_by_role("listitem")
+        expect(tiles.first).to_be_visible(timeout=30_000)
+        _save(page, d, _name("memory-pool-outcomes", theme))
 
-        page.get_by_role("button", name="Review the pool", exact=True).click()
-        card = _pool_card(page, _HELD)
-        expect(card.get_by_text("Held: a nudity detector flagged it.")).to_be_visible()
-        _save_part(page, card, d, _name("pictures-pool-held", theme))
-        card.get_by_role("button", name="Clear hold").click()
-        dialog = page.locator(".clear-hold-dialog")
-        expect(dialog.locator("img")).to_be_visible()
-        page.wait_for_timeout(600)
+        order = [picture.asset_id for picture in LIBRARY]
+        held = tiles.nth(order.index(_HELD))
+        expect(held.get_by_text(re.compile("^Held: "))).to_be_visible()
+        _save_part(page, held, d, _name("pictures-pool-held", theme))
+        held.get_by_role("button", name="Clear hold").click()
+        dialog = page.get_by_role("dialog")
+        expect(dialog).to_be_visible()
+        page.wait_for_timeout(400)
         _save_part(page, dialog, d, _name("pictures-clear-dialog", theme))
-        dialog.get_by_role("radio", name="Anyone: shareable films too").click()
         dialog.get_by_role("button", name="Clear hold").click()
-        expect(card.get_by_text(re.compile("^You cleared its hold"))).to_be_visible()
-        page.wait_for_timeout(3500)
-        _save_part(page, card, d, _name("pictures-pool-cleared", theme))
+        expect(held.get_by_text(re.compile("^You cleared its hold"))).to_be_visible()
+        _save_part(page, held, d, _name("pictures-pool-cleared", theme))
 
-        page.get_by_role("button", name="Back to the cut").click()
-        page.get_by_role("button", name="Review the pool", exact=True).click()
-        other = _pool_card(page, ticked)
+        other = tiles.nth(order.index(ticked))
         other.get_by_role("button", name="Never use").click()
-        expect(other.get_by_role("checkbox", name="Include")).not_to_be_checked()
-        page.wait_for_timeout(3500)
+        expect(other.get_by_text("You'll never use this picture.")).to_be_visible()
         _save_part(page, other, d, _name("pictures-pool-never-use", theme))
     finally:
-        from immich_memories.store import owner_decisions
-
-        for asset_id in (_HELD, shot, ticked):
+        for asset_id in (_HELD, ticked):
             owner_decisions.forget(store, asset_id)
 
 
 @pytest.mark.parametrize("theme", _THEMES)
-def test_capture_sharing_levels(page: Page, launch_app_url: str, screenshot_dir: Path, theme: str):
-    """Who will watch it: the brief's sharing level, open on its three choices (#1325)."""
-    _open_brief(page, launch_app_url)
-    set_theme(page, theme)
-    _open_brief(page, launch_app_url)
-    _choose(page, "Memory type", "Monthly Highlights")
-    _choose(page, "Month", "June")
-    _choose(page, "Sharing", "Just us")
-    expect(page.get_by_text("The household.", exact=False)).to_be_visible()
-    _save(page, screenshot_dir, _name("memory-brief-sharing", theme))
+def test_capture_the_pages_around_the_film(
+    page: Page, launch_app_url: str, screenshot_dir: Path, theme: str
+) -> None:
+    """Runs, one run's details, suggestions, settings and people, as a first visit sees them."""
+    d = screenshot_dir
+    _open(page, f"{launch_app_url}/app/runs", theme)
+    cards = page.get_by_role("list", name="Runs").get_by_role("listitem")
+    expect(cards.first).to_be_visible(timeout=30_000)
+    _save(page, d, _name("runs", theme))
+    cards.first.get_by_role("link").first.click()
+    page.wait_for_url("**/app/runs/**")
+    page.get_by_role("heading", name="Run details").scroll_into_view_if_needed()
+    _save(page, d, _name("run-details", theme))
+
+    page.goto(f"{launch_app_url}/app/suggestions")
+    expect(page.get_by_role("heading", level=1)).to_be_visible()
+    page.wait_for_load_state("networkidle")
+    _save(page, d, _name("suggestions", theme))
+
+    page.goto(f"{launch_app_url}/app/settings")
+    expect(page.get_by_role("heading", name="Immich Connection")).to_be_visible()
+    page.wait_for_load_state("networkidle")
+    _save(page, d, _name("settings-config", theme))
+
+    page.goto(f"{launch_app_url}/app/settings/people")
+    page.wait_for_load_state("networkidle")
+    _save(page, d, _name("settings-people", theme))
+
+
+@pytest.mark.parametrize("theme", _THEMES)
+def test_capture_the_sign_in_page(
+    page: Page,
+    tmp_path_factory,
+    unused_tcp_port_factory,
+    fake_immich_server,
+    screenshot_dir: Path,
+    theme: str,
+) -> None:
+    """The sign-in page a `basic` install opens on."""
+    from tests.e2e.conftest import _build_launch_environment
+    from tests.e2e.web_flow import served_ui
+
+    root = tmp_path_factory.mktemp("sign-in")
+    env = _build_launch_environment(root)
+    env |= {
+        "IMMICH_URL": fake_immich_server.base_url,
+        "IMMICH_API_KEY": fake_immich_server.api_key,
+        "IMMICH_MEMORIES_AUTH__ENABLED": "true",
+        "IMMICH_MEMORIES_AUTH__PROVIDER": "basic",
+        "IMMICH_MEMORIES_AUTH__USERNAME": "owner",
+        "IMMICH_MEMORIES_AUTH__PASSWORD": "screenshot-only",  # noqa: S105 - a throwaway fixture
+    }
+    with served_ui(env, unused_tcp_port_factory(), root / "server.log") as url:
+        page.set_viewport_size({"width": 1440, "height": 900})
+        page.goto(f"{url}/app/login")
+        set_theme(page, theme)
+        expect(page.get_by_role("button", name="Sign in")).to_be_visible()
+        _save(page, screenshot_dir, _name("login", theme))

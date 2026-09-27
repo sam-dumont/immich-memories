@@ -86,11 +86,6 @@ class Person(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    @property
-    def display_name(self) -> str:
-        """Get display name, falling back to ID if no name set."""
-        return self.name or f"Person {self.id[:8]}"
-
 
 class AssetFace(BaseModel):
     """Face detected in an asset."""
@@ -345,15 +340,6 @@ class VideoClipInfo(BaseModel):
     llm_quality: float | None = None  # Score 0-1 for visual quality
 
     @property
-    def video_asset_id(self) -> str:
-        """Get the asset ID for the actual video content.
-
-        For regular videos, this is the asset ID. For Live Photos, the video
-        component lives at a different ID (live_photo_video_id).
-        """
-        return self.asset.live_photo_video_id or self.asset.id
-
-    @property
     def resolution(self) -> tuple[int, int]:
         """Get resolution as (width, height) tuple."""
         return (self.width, self.height)
@@ -382,14 +368,3 @@ class VideoClipInfo(BaseModel):
         """Check if video is HDR based on color transfer function."""
         hdr_transfers = {"smpte2084", "arib-std-b67", "smpte428"}  # HDR10, HLG, DCI-P3
         return self.color_transfer in hdr_transfers if self.color_transfer else False
-
-    @property
-    def hdr_format(self) -> str:
-        """Get the HDR format name if HDR, otherwise SDR."""
-        if not self.color_transfer:
-            return "SDR"
-        return {
-            "smpte2084": "HDR10",
-            "arib-std-b67": "HLG",
-            "smpte428": "DCI-P3",
-        }.get(self.color_transfer, "SDR")

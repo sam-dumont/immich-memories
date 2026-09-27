@@ -543,6 +543,7 @@ src/immich_memories/
 │   ├── mixer_helpers.py        # Mixing helper functions
 │   ├── mood_analyzer.py        # Music mood vocabulary + VideoMood (no picture reads; mood is text_mood's)
 │   ├── music_generator.py      # AI music generation orchestrator
+│   ├── cut_music_preview.py    # The track a saved cut would get, before rendering it (`music preview`)
 │   ├── music_generator_client.py # Music generation client
 │   ├── music_generator_models.py # Music generation data models
 │   ├── music_sources.py        # Music source providers (local library)
@@ -640,67 +641,35 @@ src/immich_memories/
 │   ├── _generate_display.py    # Params table + result printing for `generate`
 │   └── _live_display.py        # Rich Live interactive progress display
 │
-├── web/                        # The Svelte client's server side; replaces ui/ page by page (#1395)
+├── web/                        # The web server: the Svelte client, its /api/v1, health, trigger, sign-in (#1395)
+│   ├── server.py               # create_app(): FastAPI + session cookie + auth middleware; `immich-memories ui` runs it
 │   ├── app.py                  # mount_web(): the /api/v1 routers + the built client under /app
+│   ├── session.py              # GET /api/v1/session: who is signed in, and which sign-in the login page offers
+│   ├── auth.py                 # Who gets in: credential check, rate limiter, bypass paths, session helpers
+│   ├── auth_oidc.py            # OIDC client (authlib starlette integration, singleton)
+│   ├── health.py               # GET /health, /health/live, /health/ready: probe payloads + snapshot cache
+│   ├── trigger.py              # POST /api/trigger: runs what `auto run` decides, 202 + status URL
+│   ├── reverse_proxy.py        # Secure cookie + trusted X-Forwarded-* settings for uvicorn
 │   ├── runs.py                 # GET /api/v1/runs[/{id}[/child-output]]: RunDatabase, run index, transcripts
-│   ├── cut.py                  # /api/v1/runs/{id}/cut (storyboard + trace + polish + siblings) and /revisions
-│   ├── media.py                # /api/v1/assets/{id}/thumbnail (shared cache) and /video (Range-streamed)
-│   ├── i18n.py                 # GET /api/v1/i18n: the browser's ui.po as JSON
+│   ├── cut.py                  # /runs/{id}/cut (storyboard + trace + polish + siblings), /story, /revisions
+│   ├── pool.py                 # /runs/{id}/pool and /pictures/{id}/decision (Never use, Clear hold)
+│   ├── media.py                # /assets/{id}/thumbnail (shared cache), /video (Range-streamed), /people/{id}/face
+│   ├── i18n.py                 # GET /api/v1/i18n: the browser's ui.po as JSON, and the languages offered
 │   ├── brief.py                # CutBrief: generate's flags 1:1 → argv, and the command shown to copy
 │   ├── jobs.py                 # JobRunner: the CLI as a child process; records/logs under cache/web-jobs
 │   ├── job_routes.py           # POST /cuts (generate --no-render), /runs/{id}/renders (runs render),
+│   │                           #   /runs/{id}/music-preview, /music uploads, /roster/scan,
 │   │                           #   /jobs/{id}[/events|/cancel|/output] (SSE progress), /runs/{id}/film
-│   ├── library.py              # GET /people, /albums from Immich for the brief's pickers
+│   ├── library.py              # GET /people, /albums, /trips, /special-days for the brief's pickers
+│   ├── connection.py           # /connection: the Immich URL + key; the stored key never follows a new URL
+│   ├── suggestions.py          # /suggestions: what `auto suggest` offers, generate one as `auto run` would
+│   ├── roster.py               # /roster: the people file (roles, relationships) for the People page
+│   ├── settings.py             # /config (masked), /caches and clearing them
 │   ├── schemas.py              # Pydantic response models = the contract (openapi.json)
-│   ├── dependencies.py         # Config, thumbnail cache, Immich fetch; overridable in tests
+│   ├── dependencies.py         # Config, thumbnail cache, Immich fetches; overridable in tests
 │   ├── openapi.json            # Generated (make web-api); web/src/lib/api-types.ts comes from it
+│   ├── static/fonts/           # The title fonts the client previews with
 │   └── client/                 # Generated SvelteKit build (make web-build), committed: no Node at runtime
-│
-├── ui/                         # NiceGUI web interface (being replaced by web/, see #1395)
-│   ├── app.py                  # App setup & routing
-│   ├── i18n.py                 # Per-browser UI locale, translated labels, Quasar language
-│   ├── auth.py                 # Auth middleware, credential verification, session helpers
-│   ├── auth_oidc.py            # OIDC client (authlib starlette integration, singleton)
-│   ├── health_api.py           # GET /health, /health/live, /health/ready — probe payloads + snapshot cache
-│   ├── trigger_api.py          # POST /api/trigger — runs what `auto run` decides, 202 + status URL
-│   ├── reverse_proxy.py        # Secure cookie + trusted X-Forwarded-* kwargs for ui.run
-│   ├── state.py                # Shared UI state
-│   ├── session_storage.py      # Expire the storage-user-*.json files NiceGUI writes but never cleans
-│   ├── theme.py                # UI theme
-│   ├── components.py           # Shared UI components
-│   ├── nicegui_compat.py       # Compatibility helpers for NiceGUI background work
-│   └── pages/
-│       ├── login.py                # Login page (basic form + OIDC SSO button)
-│       ├── memory.py               # The Memory page router: brief, cut in progress, result
-│       ├── memory_brief.py         # The brief: type select, its params, Advanced, Cut
-│       ├── memory_duration.py      # The duration line: the type's answer or an override
-│       ├── memory_run.py           # The cut that outlives its page: install check, arm, poll, cancel, recover;
-│       │                           # a refused or failed cut lands in AppState.cut_failure, the brief's red card
-│       ├── memory_storyboard.py    # Svelte contact-sheet binding: session selection + existing hold/trim controls
-│       ├── picture_decisions.py    # Clear hold / Never use / Undo under a pool picture or a storyboard shot
-│       ├── cut_progress_view.py    # A cut in progress: its pictures, the bar, the stage lines
-│       ├── memory_story.py         # The story view: thesis, stories, carriers with reasons
-│       ├── memory_story_data.py    # The only UI reader of plan.private.json -> frozen StoryView
-│       ├── step1_config.py         # Immich connection panel + custom date range
-│       ├── step1_cache.py          # Cache management UI
-│       ├── step1_presets.py        # The parameters each memory type asks for
-│       ├── step1_tabs.py           # Step 1 tab layout
-│       ├── step2_review.py         # Clip review orchestration
-│       ├── step2_loading.py        # Loading state UI
-│       ├── step2_helpers.py        # Shared step2 utilities
-│       ├── clip_grid.py            # Clip card grid display
-│       ├── clip_review.py          # Clip refinement controls
-│       ├── clip_pipeline.py        # The blocking cut worker and its editorial context
-│       ├── pipeline_title.py       # Pipeline title display
-│       ├── step3_options.py        # Assembly options
-│       ├── film_length.py         # The length card: estimated before the render, measured after
-│       ├── _step3_music_preview.py # Music preview controls
-│       ├── step4_export.py         # Export & download
-│       ├── _step4_generate.py      # Generation logic
-│       ├── step4_recovery.py       # Reload recovers a run that outlived the page
-│       ├── _step4_upload.py        # Upload-back to Immich
-│       ├── settings_config.py      # Settings page
-│       └── settings_people.py      # The companion editor: confirm who's who, flag twins
 │
 ├── tracking/                   # Run history & telemetry
 │   ├── run_database.py         # SQLite run storage
@@ -721,6 +690,7 @@ src/immich_memories/
 │   ├── asset_score_cache.py    # The legacy photo scorer's table, still read by `cache stats/export/import`
 │   ├── judgment_cache.py       # Reasoning-mode LLM verdicts, keyed by the exact prompt asked
 │   ├── thumbnail_cache.py      # File-based thumbnail storage
+│   ├── thumbnail_sizes.py      # The sizes the grid and avatars ask for, and the downscale to them
 │   ├── disk_budget.py          # LRU-by-mtime eviction that holds a cache directory to a size cap
 │   └── video_cache.py          # Downloaded video file cache
 │
@@ -787,6 +757,9 @@ src/immich_memories/
 │   ├── candidate_fates.py       # Saved pool outcomes + decision-log reader shared with runs why
 │   ├── cut_review.py           # The model polish record per shot (swaps, protections, refused offers)
 │   ├── cut_revisions.py        # Owner edits to a saved cut as numbered revisions, checked like the renderer
+│   ├── revision_render.py      # A revision projected onto the cut's render inputs, as the render reads it
+│   ├── storyboard.py           # A saved cut as shots in playback order, their intervals and moment siblings
+│   ├── story_view.py           # The stories a cut tells, heaviest first, from plan.private.json
 │   ├── picture_holds.py         # What holds a picture + the owner's decision, for the pool, storyboard and CLI
 │   ├── caption_origins.py      # One picture's caption origin, and the run's distinct-origin line
 │   ├── phases.py               # OperationalPhase / PhaseEvent: stable outer lifecycle
@@ -969,23 +942,20 @@ version and capabilities first); deployment files are `services/render-worker/co
 - **Real-Immich gate**: `make test-immich-gate` (`tests/integration/immich_gate/`: compose file, `seed.py`, `media.py`) runs on every PR against Immich v2 and v3 in Docker (`.github/workflows/immich-gate.yml`, required check `Immich Gate`); the pinned images ride in the Actions cache per version (`scripts/immich_gate_images.sh`, `make immich-gate-fetch`/`immich-gate-save`).
 - **Pre-commit**: Run `make ci` before committing
 
-The web sidebar links Memory, Suggestions, Runs, Media pool and Settings.
-`ui/pages/suggestions.py` uses `AutoRunner`; runs and their review page live in the web client
-(`web/runs.py`, `web/cut.py`, drawn by `web/src/routes/runs`) and read `RunDatabase` and the
-shared run index/storyboard/trace. Neither owns a separate job store. `/runs` redirects there.
-
-The storyboard embeds `frontend/src/CutReview.svelte` as a custom element in the existing
-NiceGUI session. `make frontend-check` checks and bundles it into `ui/static/review`, shipped
-inside the Python package. The browser owns focus and filtering; Python validates asset IDs
-and applies export exclusions to the existing selection. `operations/cut_review.py` reads saved
-model objections, protection rules and replacement outcomes without running inference. Media
-still uses the authenticated thumbnail route, and hold decisions use the shared owner store.
+The web sidebar links Memory, Suggestions, Runs and Settings. Every action in the client is the
+CLI: a cut is `generate --no-render`, a render is `runs render [--revision N]`, a people scan is
+`people scan`, a music preview is `music preview`, each run by `web/jobs.py` as a child process
+whose progress the page follows over SSE. The review page (`web/src/routes/runs/[run_id]`) reads
+the saved cut (`operations/storyboard.py`, `cut_review.py`, `story_view.py`), keeps the owner's
+edits as numbered revisions in the attempt directory (`operations/cut_revisions.py`), and renders
+one through the same projection the CLI uses (`operations/revision_render.py`,
+`generate_saved_cut.py`). Suggestions use `AutoRunner`; nothing owns a separate job store.
 
 **Web client (`web/` at the repo root, served from `src/immich_memories/web/client`).** SvelteKit
 static SPA with `@immich/ui` (MIT; its logos and store badges are Immich trademarks, stripped at
-build time and gated by `scripts/check_web_brand.py`). It talks only to `/api/v1`. Pages move from
-NiceGUI one slice at a time; a moved page's old route redirects to `/app/...`. `make web-check`
-fails on a stale bundle, a stale OpenAPI contract or TS types, or a shipped Immich brand asset.
-Import-linter keeps `immich_memories.web` free of `ui`, `cli` and `nicegui`, so NiceGUI can be
-deleted without touching it. Labels are `t('...')`/`N_('...')` in Svelte and land in the same
-`ui.po` catalogues (`make ui-catalogues`).
+build time and gated by `scripts/check_web_brand.py`). It talks only to `/api/v1`; the server
+pages it replaced redirect to `/app/...`. `make web-check` fails on a stale bundle, a stale
+OpenAPI contract or TS types, or a shipped Immich brand asset. Import-linter keeps
+`immich_memories.web` from importing the CLI, and the core packages from importing the web
+server. Labels are `t('...')`/`N_('...')` in Svelte and land in the `ui.po` catalogues
+(`make ui-catalogues`).

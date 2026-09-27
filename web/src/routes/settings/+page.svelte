@@ -1,29 +1,70 @@
 <script lang="ts">
   import { Button, Heading, LoadingSpinner, Text } from '@immich/ui';
-  import { mdiAccountGroupOutline, mdiDeleteOutline, mdiRefresh } from '@mdi/js';
+  import { mdiAccountGroupOutline, mdiCheckCircleOutline, mdiContentSaveOutline, mdiDeleteOutline, mdiRefresh, mdiWifi } from '@mdi/js';
   import { onMount } from 'svelte';
   import { api, post } from '$lib/api';
   import type { components } from '$lib/api-types';
-  import { t } from '$lib/i18n.svelte';
+  import { N_, t } from '$lib/i18n.svelte';
 
   type ActiveConfig = components['schemas']['ActiveConfig'];
   type CacheStats = components['schemas']['CacheStats'];
+  type Connection = components['schemas']['Connection'];
 
   let config = $state<ActiveConfig | null>(null);
   let caches = $state<CacheStats[]>([]);
   let note = $state('');
 
+  let connection = $state<Connection | null>(null);
+  let url = $state('');
+  let key = $state('');
+  let greeting = $state('');
+  let refusal = $state('');
+  let checking = $state(false);
+
   const CACHE_LABELS: Record<string, string> = {
-    analysis: 'Analysis cache',
-    video: 'Video cache',
-    thumbnail: 'Thumbnail cache',
-    preview: 'Preview cache',
+    analysis: N_('Analysis cache'),
+    video: N_('Video cache'),
+    thumbnail: N_('Thumbnail cache'),
+    preview: N_('Preview cache'),
   };
 
   async function load() {
     [config, caches] = await Promise.all([api<ActiveConfig>('/config'), api<CacheStats[]>('/caches')]);
   }
-  onMount(() => void load());
+  onMount(() => {
+    void load();
+    void api<Connection>('/connection').then((found) => {
+      connection = found;
+      // Someone who started typing before the answer came keeps what they typed.
+      if (!url) url = found.url;
+    });
+  });
+
+  // The key field always loads empty: the stored key never comes to the browser. Empty means keep it.
+  async function send(method: 'POST' | 'PUT') {
+    checking = true;
+    greeting = '';
+    refusal = '';
+    const response = await fetch(method === 'POST' ? '/api/v1/connection/test' : '/api/v1/connection', {
+      method,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url, api_key: key }),
+    });
+    const body = await response.json().catch(() => ({}));
+    checking = false;
+    if (!response.ok) {
+      refusal = typeof body.detail === 'string' ? t(body.detail) : t('The connection could not be checked.');
+      return;
+    }
+    if (method === 'POST') {
+      greeting = t('Connected as: {name}', { name: body.user });
+      return;
+    }
+    connection = body;
+    key = '';
+    greeting = t('Configuration saved!');
+    await load();
+  }
 
   async function clear(name: string) {
     const { body } = await post<{ removed: number }>(`/caches/${name}/clear`, {});
@@ -44,6 +85,25 @@
     <Heading size="large" tag="h1">{t('Settings')}</Heading>
     <Text color="muted">{t('What this server runs with. The file is the source; environment overrides apply; secrets are masked.')}</Text>
   </div>
+
+  <section class="flex max-w-3xl flex-col gap-3" aria-label={t('Immich Connection')}>
+    <Heading size="small" tag="h2">{t('Immich Connection')}</Heading>
+    <form class="grid gap-3 sm:grid-cols-2" onsubmit={(event) => { event.preventDefault(); void send('POST'); }}>
+      <label class="flex flex-col gap-1 text-sm font-medium">{t('Immich Server URL')}
+        <input class="rounded-lg border border-gray-300 bg-light px-3 py-2 dark:border-gray-700" type="url" bind:value={url} placeholder="https://photos.example.com" autocomplete="url" />
+      </label>
+      <label class="flex flex-col gap-1 text-sm font-medium">{t('API Key')}
+        <input class="rounded-lg border border-gray-300 bg-light px-3 py-2 dark:border-gray-700" type="password" bind:value={key} autocomplete="off"
+          placeholder={connection?.has_key ? t('Saved - type a new key to replace it') : ''} />
+      </label>
+      <div class="flex flex-wrap items-center gap-2 sm:col-span-2">
+        <Button type="submit" size="small" variant="outline" leadingIcon={mdiWifi} loading={checking}>{t('Test Connection')}</Button>
+        <Button size="small" leadingIcon={mdiContentSaveOutline} disabled={checking} onclick={() => send('PUT')}>{t('Save Config')}</Button>
+        {#if greeting}<span class="flex items-center gap-1 text-sm text-success" role="status"><svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true"><path d={mdiCheckCircleOutline} /></svg>{greeting}</span>{/if}
+        {#if refusal}<span class="text-sm text-danger" role="alert">{refusal}</span>{/if}
+      </div>
+    </form>
+  </section>
 
   <a href="/app/settings/people" class="flex w-fit items-center gap-3 rounded-2xl border border-gray-200 px-4 py-3 hover:border-primary dark:border-gray-800">
     <svg viewBox="0 0 24 24" class="size-6 fill-current text-primary" aria-hidden="true"><path d={mdiAccountGroupOutline} /></svg>

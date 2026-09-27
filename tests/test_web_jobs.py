@@ -52,3 +52,16 @@ def test_only_one_job_runs_at_a_time_and_a_cancel_stops_it(tmp_path):
 
     assert _wait(runner, job.id).status == "cancelled"
     assert runner.active() is None
+
+
+def test_a_job_s_progress_file_is_never_read_as_a_job(tmp_path):
+    runner = JobRunner(tmp_path)
+    job = runner.start("render", [sys.executable, "-c", "print('rendered')"])
+    runner.progress_path(job.id).parent.mkdir(parents=True, exist_ok=True)
+    runner.progress_path(job.id).write_text('{"done": true, "fraction": 1.0}')
+    _wait(runner, job.id)
+
+    assert runner.active() is None
+    assert [listed.id for listed in runner.jobs()] == [job.id]
+    # The next job starts: a render's progress beside the records once blocked every later job.
+    runner.start("cut", [sys.executable, "-c", "pass"])

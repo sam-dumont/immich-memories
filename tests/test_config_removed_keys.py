@@ -88,3 +88,13 @@ def test_the_description_llm_section_is_named_and_ignored(tmp_path: Path, caplog
         Config.from_yaml(path)
 
     assert "description_llm" in "\n".join(r.getMessage() for r in caplog.records)
+
+
+def test_the_old_player_s_preview_budget_is_named_and_ignored(tmp_path: Path, caplog) -> None:
+    path = _write(tmp_path, {"cache": {"preview_cache_max_size_mb": 2000}})
+
+    with caplog.at_level(logging.WARNING):
+        config = Config.from_yaml(path)
+
+    assert "cache.preview_cache_max_size_mb" in "\n".join(r.getMessage() for r in caplog.records)
+    assert not hasattr(config.cache, "preview_cache_max_size_mb")

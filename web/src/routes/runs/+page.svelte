@@ -90,7 +90,7 @@
   </div>
 
   {#if runs.length}
-    <ul class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-x-5 gap-y-8">
+    <ul class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-x-5 gap-y-8" aria-label={t('Runs')}>
       {#each runs as run (run.run_id)}
         <li>
           <a href={`/app/runs/${encodeURIComponent(run.run_id)}`} class="group flex flex-col gap-2 rounded-2xl outline-offset-4 focus-visible:outline-2 focus-visible:outline-primary">

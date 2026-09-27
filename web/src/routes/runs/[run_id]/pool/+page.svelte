@@ -2,10 +2,10 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import { Button, Heading, LoadingSpinner, Modal, ModalBody, ModalFooter, Text } from '@immich/ui';
-  import { mdiArrowLeft, mdiRefresh } from '@mdi/js';
+  import { mdiArrowLeft, mdiRefresh, mdiShieldCheckOutline } from '@mdi/js';
   import { api, ApiError, post, thumbnail, type JobView } from '$lib/api';
   import type { components } from '$lib/api-types';
-  import { t } from '$lib/i18n.svelte';
+  import { N_, t } from '$lib/i18n.svelte';
   import { followJob } from '$lib/job.svelte';
   import JobPanel from '$lib/JobPanel.svelte';
 
@@ -16,6 +16,9 @@
   const runId = $derived(page.params.run_id ?? '');
   let items = $state<Item[]>([]);
   let total = $state<number | null>(null);
+  let outside = $state(0);
+  // This memory's own pictures by default: the others can't be ticked into its next cut.
+  let showOutside = $state(false);
   let loading = $state(false);
   let missing = $state(false);
   let ticks = $state<Record<string, boolean>>({});
@@ -28,9 +31,10 @@
     if (loading || (total !== null && items.length >= total)) return;
     loading = true;
     try {
-      const pool = await api<Pool>(`/runs/${encodeURIComponent(runId)}/pool?offset=${items.length}&limit=120`);
+      const pool = await api<Pool>(`/runs/${encodeURIComponent(runId)}/pool?offset=${items.length}&limit=120&reachable_only=${!showOutside}`);
       items = [...items, ...pool.items];
       total = pool.total;
+      if (!showOutside) outside = pool.outside ?? 0;
     } catch (reason) {
       // A run from before cuts recorded their pool has none to show; that is an answer, not a crash.
       if (reason instanceof ApiError && reason.status === 404) {
@@ -40,6 +44,13 @@
     } finally {
       loading = false;
     }
+  }
+
+  function toggleOutside() {
+    showOutside = !showOutside;
+    items = [];
+    total = null;
+    void more();
   }
 
   $effect(() => {
@@ -75,11 +86,13 @@
     if (job) job = (await post<JobView>(`/jobs/${encodeURIComponent(job.id)}/cancel`, {})).body;
   }
 
+  const LEVELS: Record<string, string> = { 'just-us': N_('Just us'), family: N_('Family'), anyone: N_('Anyone') };
+
   const holdLine = (hold: Hold) =>
     hold.decision === 'never_use'
       ? t("You'll never use this picture.")
       : hold.decision?.startsWith('cleared:')
-        ? t('You cleared its hold.')
+        ? t('You cleared its hold for {level}.', { level: t(LEVELS[hold.decision.slice('cleared:'.length)] ?? 'Family').toLowerCase() })
         : hold.reasons.length
           ? t('Held: {reasons}.', { reasons: hold.reasons.join('; ') })
           : '';
@@ -96,6 +109,13 @@
     <Text color="muted">{t('Every picture this cut saw, in the order they were taken. Tick or untick, then cut again: the ticks become the next cut’s must-keeps and leave-outs. Never use and Clear hold last across every run.')}</Text>
   </div>
 
+  {#if outside}
+    <label class="flex w-fit items-center gap-2 text-sm">
+      <input type="checkbox" checked={showOutside} onchange={toggleOutside} />
+      {t('Also show the {count} pictures outside this memory', { count: outside })}
+    </label>
+  {/if}
+
   {#if missing}
     <Text color="muted">{t('This run kept no record of its pool. Cut again to see one.')}</Text>
   {:else if job && job.status === 'running'}
@@ -104,9 +124,10 @@
     <ul class="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-x-3 gap-y-5" aria-label={t('Pool')}>
       {#each items as item (item.asset_id)}
         <li class="flex flex-col gap-1.5">
-          <label class={['relative block cursor-pointer overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-900', ticked(item) ? 'ring-2 ring-primary' : 'opacity-70']}>
+          <label class={['relative block overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-900', item.reachable ? 'cursor-pointer' : 'cursor-not-allowed opacity-40', ticked(item) ? 'ring-2 ring-primary' : 'opacity-70']}
+            title={item.reachable ? undefined : t('The editor never received this picture, so a tick cannot bring it into the next cut.')}>
             <img src={thumbnail(item.asset_id)} alt={item.fate} loading="lazy" decoding="async" class="aspect-[4/3] w-full object-contain" />
-            <input type="checkbox" class="absolute top-2 left-2 size-5 accent-[var(--color-primary)]" checked={ticked(item)}
+            <input type="checkbox" class="absolute top-2 left-2 size-5 accent-[var(--color-primary)]" checked={ticked(item)} disabled={!item.reachable}
               aria-label={t('In the next cut')} onchange={(event) => (ticks = { ...ticks, [item.asset_id]: event.currentTarget.checked })} />
             {#if item.kind !== 'photo'}<span class="absolute right-1 bottom-1 rounded bg-black/60 px-1.5 text-[11px] text-white">{item.kind === 'video' ? t('Video') : t('Live')}</span>{/if}
           </label>
@@ -136,7 +157,7 @@
 </div>
 
 {#if clearing}
-  <Modal title={t('Clear this hold?')} onClose={() => (clearing = null)}>
+  <Modal title={t('Clear this hold?')} icon={mdiShieldCheckOutline} onClose={() => (clearing = null)}>
     <ModalBody>
       <div class="flex flex-col gap-3">
         <img src={thumbnail(clearing.asset_id, 'preview')} alt="" class="max-h-80 w-full rounded-lg object-contain" />

@@ -113,4 +113,6 @@ def test_a_saved_revision_renders_through_generate_memory_with_the_run_s_own_req
     assert request.editorial_attempt_dir == attempt
     assert request.editorial_owner_edits["removed_asset_ids"] == ["chosen-1"]
     assert path.parent == tmp_path / "films"
-    assert (path.parent / request.editorial_owner_edits["artifact_name"]).is_file()
+    record = path.parent / request.editorial_owner_edits["artifact_name"]
+    assert record.name.startswith(f"{path.stem}.owner-edits-")
+    assert record.stat().st_mode & 0o777 == 0o600

@@ -16,12 +16,12 @@ from starlette.routing import Route
 from starlette.testclient import TestClient
 
 from immich_memories.config_models_auth import AuthConfig
-from immich_memories.ui.auth import (
+from immich_memories.web.auth import (
     is_bypass_path,
     set_session,
     verify_credentials,
 )
-from immich_memories.ui.auth_oidc import (
+from immich_memories.web.auth_oidc import (
     create_oidc_client,
     extract_user_from_token,
     reset_oidc_client,
@@ -38,8 +38,8 @@ logger = logging.getLogger(__name__)
 def _create_test_auth_middleware(auth_config: AuthConfig) -> type[BaseHTTPMiddleware]:
     """Starlette middleware for integration tests (NOT used in production).
 
-    WHY: production uses @app.middleware('http') with app.storage.user (NiceGUI).
-    Tests use pure Starlette with request.session. Same logic, different session store.
+    WHY: production's middleware (web/server.py) also reads config and the trigger token;
+    this keeps only the session check so the OIDC flow can run against a mock provider.
     """
 
     class TestAuthMiddleware(BaseHTTPMiddleware):

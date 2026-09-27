@@ -1,13 +1,16 @@
-"""Mount the web client and its API on a FastAPI app: NiceGUI's today, a plain one later."""
+"""Mount the web client and its API on the FastAPI app web/server.py builds."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI
-from fastapi.responses import FileResponse, Response
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, JSONResponse, Response
 
+from immich_memories.api.immich import ImmichAPIError
+from immich_memories.security import sanitize_error_message
 from immich_memories.web import (
+    connection,
     cut,
     i18n,
     job_routes,
@@ -16,6 +19,7 @@ from immich_memories.web import (
     pool,
     roster,
     runs,
+    session,
     settings,
     suggestions,
 )
@@ -23,6 +27,11 @@ from immich_memories.web import (
 CLIENT_PREFIX = "/app"
 # `make web-build` writes the SvelteKit client here, so an install needs no Node.
 BUILT_CLIENT = Path(__file__).parent / "client"
+
+
+async def _immich_refused(_request: Request, error: Exception) -> JSONResponse:
+    # Immich down or refusing is the gateway's failure, not ours: say so, without a traceback.
+    return JSONResponse({"detail": sanitize_error_message(str(error))}, status_code=502)
 
 
 def mount_web(app: FastAPI, *, client_dir: Path = BUILT_CLIENT) -> None:
@@ -35,8 +44,11 @@ def mount_web(app: FastAPI, *, client_dir: Path = BUILT_CLIENT) -> None:
     app.include_router(suggestions.router)
     app.include_router(roster.router)
     app.include_router(settings.router)
+    app.include_router(connection.router)
+    app.include_router(session.router)
     app.include_router(media.router)
     app.include_router(i18n.router)
+    app.add_exception_handler(ImmichAPIError, _immich_refused)
     root = client_dir.resolve()
 
     async def client(path: str = "") -> Response:

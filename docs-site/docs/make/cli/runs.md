@@ -55,7 +55,7 @@ most of the model budget, so a per-phase total would understate the bill.
 
 The cut of a run in the order it plays: one line per shot with its timecode, capture day, kind
 (photo or video), length, the story it was granted to and the reason the editor wrote. A month
-change prints as a chapter line. It is the same record the web UI's Storyboard tab draws.
+change prints as a chapter line. It is the same record the web UI's contact sheet draws.
 
 Timecodes and lengths are the film's, not the plan's: the renderer fits the selected seconds into the
 timeline's content budget and the opening card plays before the first picture, and both are applied here. The
@@ -113,12 +113,17 @@ It lands in your output folder and shows up in `runs list` as a new run.
 
 It takes `generate`'s output flags under the same names: `--title`, `--subtitle`,
 `--llm-title/--no-llm-title`, `--transition`, `--resolution`, `--orientation`, `--scale-mode`,
-`--format`, `--music`, `--no-music`, `--music-volume`, `--add-date`, `--add-place`,
+`--format`, `--quality`, `--music`, `--no-music`, `--music-volume`, `--add-date`, `--add-place`,
 `--privacy-mode`, `--upload-to-immich`, `--album`. The length is the cut's: a revision can only
 shorten it or keep it within what the titles leave.
 
 `generate --no-render` and then `runs render` is a cut and its film in two steps. A cut made
 before this version kept no render inputs; `runs render` says so, and `generate` cuts it again.
+
+To hear the music before rendering, `immich-memories music preview RUN` generates the track this
+cut would get, from its own timeline and the mood its text reads as, and prints where it wrote
+it; `runs render RUN --music PATH` then uses exactly that track. It needs a music generator
+(`advanced.musicgen` or `advanced.ace_step`) and says so when there is none.
 
 ## runs stats
 

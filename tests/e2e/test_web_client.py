@@ -89,18 +89,21 @@ def test_runs_open_as_cards_with_their_cut_and_filter_by_status(
     page.goto(f"{launch_app_url}/app/runs")
 
     expect(page.get_by_role("heading", name="Runs", level=1)).to_be_visible()
-    cut = page.get_by_role("listitem").filter(has_text="Monthly Highlights")
+    # The workspace is shared by the session, so other tests' runs are here too: find the seeded one.
+    cut = page.get_by_role("listitem").filter(has=page.locator("a[href$='/20240630_web_cut']"))
     pictures = cut.locator("img")
     expect(pictures).to_have_count(4)
     for index in range(4):
         expect(pictures.nth(index)).to_have_js_property("complete", True)
         assert pictures.nth(index).evaluate("image => image.naturalWidth") > 0
-    expect(page.get_by_role("listitem").filter(has_text="Trip")).to_be_visible()
+    failed = page.get_by_role("listitem").filter(has=page.locator("a[href$='/20240701_web_fail']"))
+    expect(failed).to_be_visible()
     _shoot(page, "web-runs")
 
     page.get_by_role("radio", name="Failed").click()
-    expect(page.get_by_role("listitem")).to_have_count(1)
-    expect(page.get_by_role("listitem").filter(has_text="Trip")).to_be_visible()
+    expect(failed).to_be_visible()
+    expect(cut).to_have_count(0)
+    expect(page.get_by_role("listitem").filter(has_text="Completed")).to_have_count(0)
 
 
 def test_the_client_opens_in_the_browser_language(page: Page, launch_app_url: str) -> None:
@@ -230,7 +233,7 @@ def test_a_memory_made_in_the_browser_is_cut_reviewed_revised_rendered_and_playe
 
     render = page.get_by_role("region", name="Render")
     render.get_by_label("What to render").select_option(label="Revision 1")
-    render.get_by_label("Music").uncheck()
+    render.get_by_label("No music").check()
     render.get_by_role("button", name="Render", exact=True).click()
     film = render.locator("video")
     expect(film).to_be_visible(timeout=600_000)

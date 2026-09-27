@@ -30,7 +30,7 @@ def _config(tmp_path: Path, **server: object) -> Config:
 def _serving(config: Config) -> Iterator[None]:
     """Answer requests from *config* rather than from whatever this machine has."""
     # WHY: replaces the on-disk config file the server reads on every request.
-    with patch("immich_memories.ui.trigger_api.get_config", return_value=config):
+    with patch("immich_memories.web.trigger.get_config", return_value=config):
         yield
 
 
@@ -57,7 +57,7 @@ def worker() -> _RecordingWorker:
 @pytest.fixture
 def client(worker: _RecordingWorker) -> TestClient:
     """A bare app carrying only the trigger routes, wired to the fake worker."""
-    from immich_memories.ui.trigger_api import register_trigger_routes
+    from immich_memories.web.trigger import register_trigger_routes
 
     app = FastAPI()
     register_trigger_routes(app, submit=worker)
@@ -98,7 +98,7 @@ class TestTriggerIsOffUntilSomethingAuthenticatesIt:
     def test_endpoint_requires_auth_or_a_token(
         self, auth: dict, server: dict, expected: bool
     ) -> None:
-        from immich_memories.ui.trigger_api import trigger_enabled
+        from immich_memories.web.trigger import trigger_enabled
 
         assert trigger_enabled(Config(auth=auth, server=server)) is expected
 
@@ -117,7 +117,7 @@ class TestTokenPresentation:
         """Immich's own API speaks x-api-key; everything else speaks Bearer."""
         from starlette.datastructures import Headers
 
-        from immich_memories.ui.auth import presented_trigger_token
+        from immich_memories.web.auth import presented_trigger_token
 
         assert presented_trigger_token(Headers(headers)) == "workflow-token"
 
@@ -127,7 +127,7 @@ class TestTokenPresentation:
     def test_nothing_else_counts_as_an_offer(self, headers: dict) -> None:
         from starlette.datastructures import Headers
 
-        from immich_memories.ui.auth import presented_trigger_token
+        from immich_memories.web.auth import presented_trigger_token
 
         assert presented_trigger_token(Headers(headers)) == ""
 
@@ -144,7 +144,7 @@ class TestTokenPresentation:
         self, presented: str, configured: str, expected: bool
     ) -> None:
         """A blank config value must not turn a blank header into a valid caller."""
-        from immich_memories.ui.auth import trigger_token_matches
+        from immich_memories.web.auth import trigger_token_matches
 
         assert trigger_token_matches(presented, configured) is expected
 
@@ -292,12 +292,12 @@ class TestStatusReportsWhatTheRunIsDoing:
 class TestTheAuthMiddlewareKnowsAboutHeadlessCallers:
     @pytest.mark.asyncio
     async def test_a_valid_token_is_not_sent_to_the_login_page(self, tmp_path: Path) -> None:
-        """A workflow has no session cookie; reading NiceGUI's user storage for it fails."""
+        """A workflow has no session cookie; a valid token is all it needs."""
         from unittest.mock import AsyncMock, MagicMock
 
         from starlette.datastructures import Headers
 
-        from immich_memories.ui.app import _auth_middleware
+        from immich_memories.web.server import _auth_middleware
 
         config = _config(tmp_path)
         config.auth.enabled = True
@@ -310,35 +310,32 @@ class TestTheAuthMiddlewareKnowsAboutHeadlessCallers:
         call_next = AsyncMock(return_value=response)
 
         # WHY: replaces the on-disk config the middleware loads for every request.
-        with patch("immich_memories.ui.app.get_config", return_value=config):
+        with patch("immich_memories.web.server.get_config", return_value=config):
             actual = await _auth_middleware(request, call_next)
 
         assert actual is response
 
     def test_an_api_caller_without_credentials_gets_a_status_it_can_act_on(self) -> None:
-        from immich_memories.ui.app import _unauthenticated_response
+        from immich_memories.web.server import unauthenticated_response
 
-        assert _unauthenticated_response("/api/trigger").status_code == 401
+        assert unauthenticated_response("/api/trigger").status_code == 401
 
     def test_a_browser_still_goes_to_the_login_page(self) -> None:
-        from immich_memories.ui.app import _unauthenticated_response
+        from immich_memories.web.server import unauthenticated_response
 
-        response = _unauthenticated_response("/step2")
+        response = unauthenticated_response("/app/runs")
 
         assert response.status_code == 307
-        assert response.headers["location"] == "/login"
+        assert response.headers["location"] == "/app/login"
 
-    def test_the_server_users_actually_run_serves_the_trigger_route(self, tmp_path: Path) -> None:
+    def test_the_server_users_actually_run_serves_the_trigger_route(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """A disabled trigger says so; a route that was never registered would not."""
-        from immich_memories.ui.app import app as server
+        from tests.web_server_fixtures import server_client
 
         config = _config(tmp_path, trigger_token="")
-        # WHY: the same on-disk config boundary, reached by middleware and route alike.
-        with (
-            patch("immich_memories.ui.app.get_config", return_value=config),
-            patch("immich_memories.ui.trigger_api.get_config", return_value=config),
-        ):
-            response = TestClient(server, raise_server_exceptions=False).post("/api/trigger")
+        response = server_client(monkeypatch, config).post("/api/trigger")
 
         assert response.status_code == 404
         assert response.json()["detail"] == "trigger API is not enabled"

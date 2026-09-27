@@ -5,42 +5,52 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { COLORS } from "../theme";
-import { fontFamily } from "../fonts";
-import { WindowFrame } from "../components/WindowFrame";
-import { Sidebar } from "../components/Sidebar";
-import { PageHeader } from "../components/PageHeader";
-import { ImButton } from "../components/ImButton";
-import { MaterialIcon } from "../components/MaterialIcon";
+import { mdiPlayOutline, mdiRefresh } from "@mdi/js";
+import { COLORS, UI } from "../theme";
+import { WindowFrame, onScreen } from "../components/WindowFrame";
+import { AppShell, MAIN_X, MAIN_Y } from "../components/AppShell";
+import { AnimatedCursor } from "../components/AnimatedCursor";
+import { Button, Heading } from "../components/ui";
 import { POOL_TOTAL } from "../fixture";
 
 /**
- * The Suggestions page as the app draws it: what automation would make next,
- * by the same rules the scheduled run uses. The first candidate is the month
- * the demo just cut by hand, which is the point of the scene. The cast (Robin,
- * Charlie, Kit) is the fixture library's, not anybody's.
+ * web/src/routes/suggestions/+page.svelte: what automation would make next, by
+ * the rules `auto suggest` uses. The first candidate is the month the demo
+ * just cut by hand; checking it runs the rules without rendering anything.
+ * The cast (Kit, Robin) is the fixture library's.
  */
 
 const CANDIDATES = [
   {
     reason: `${POOL_TOTAL} assets, most recent month`,
     people: "",
-    meta: `2024-06-01 to 2024-06-30 · ${POOL_TOTAL} pictures · monthly review`,
-    key: "monthly_highlights:2024-06-01:2024-06-30:",
+    meta: `Monthly Highlights · 2024-06-01 – 2024-06-30 · Pictures: ${POOL_TOTAL}`,
   },
   {
     reason: "1st most featured person, 18 assets",
     people: "Kit",
-    meta: "2023-01-01 to 2023-12-31 · 18 pictures · person spotlight",
-    key: "",
+    meta: "Person Spotlight · 2023-01-01 – 2023-12-31 · Pictures: 18",
   },
   {
     reason: "2nd most featured person, 14 assets",
     people: "Robin",
-    meta: "2023-01-01 to 2023-12-31 · 14 pictures · person spotlight",
-    key: "",
+    meta: "Person Spotlight · 2023-01-01 – 2023-12-31 · Pictures: 14",
+  },
+  {
+    reason: `${POOL_TOTAL} assets across the year, never generated`,
+    people: "",
+    meta: `Year in Review · 2024-01-01 – 2024-12-31 · Pictures: ${POOL_TOTAL}`,
   },
 ];
+
+const CHECK = 40;
+const SETTLED = CHECK + 14;
+// The first card's "Check eligibility", before the attempt's own box pushes the cards down:
+// the heading block (64), the gap, then the card's padding, reason, meta and key lines.
+const CHECK_XY = onScreen(
+  MAIN_X + 87,
+  MAIN_Y + 64 + 24 + 16 + 28 + 8 + 20 + 8 + 16 + 8 + 18,
+);
 
 const Card: React.FC<{
   candidate: (typeof CANDIDATES)[number];
@@ -48,62 +58,58 @@ const Card: React.FC<{
 }> = ({ candidate, reveal }) => (
   <div
     style={{
-      backgroundColor: COLORS.elevated,
-      border: `1px solid ${COLORS.borderLight}`,
-      borderRadius: 8,
-      padding: "16px 18px",
-      marginBottom: 14,
+      border: `1px solid ${UI.gray200}`,
+      borderRadius: 16,
+      padding: 16,
+      display: "flex",
+      flexDirection: "column",
+      gap: 8,
       opacity: reveal,
       transform: `translateY(${(1 - reveal) * 12}px)`,
     }}
   >
-    <div style={{ fontSize: 18, fontWeight: 600, color: COLORS.text }}>
+    <div style={{ fontSize: 18, lineHeight: "28px", fontWeight: 600 }}>
       {candidate.reason}
     </div>
     {candidate.people && (
-      <div style={{ fontSize: 14, fontWeight: 500, color: COLORS.text, marginTop: 6 }}>
-        {candidate.people}
-      </div>
+      <div style={{ fontWeight: 500 }}>{candidate.people}</div>
     )}
-    <div style={{ fontSize: 14, color: COLORS.text, marginTop: 6 }}>
+    <div
+      style={{
+        fontSize: 14,
+        lineHeight: "20px",
+        color: UI.gray600,
+        fontVariantNumeric: "tabular-nums",
+      }}
+    >
       {candidate.meta}
     </div>
-
     <div
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10,
-        marginTop: 12,
-        paddingRight: 4,
+        gap: 6,
+        fontSize: 12,
+        lineHeight: "16px",
       }}
     >
-      <span style={{ fontSize: 14, color: COLORS.text, flex: 1 }}>
-        Candidate key
-      </span>
-      <MaterialIcon
-        name={candidate.key ? "keyboard_arrow_up" : "keyboard_arrow_down"}
-        size={22}
-        color={COLORS.textSecondary}
-      />
-    </div>
-    {candidate.key && (
-      <div
-        style={{
-          fontSize: 12,
-          fontFamily: "ui-monospace, Menlo, monospace",
-          color: COLORS.textSecondary,
-          marginTop: 8,
-          marginBottom: 4,
-        }}
+      <svg
+        viewBox="0 0 24 24"
+        width={10}
+        height={10}
+        style={{ fill: "currentColor" }}
       >
-        {candidate.key}
-      </div>
-    )}
-
-    <div style={{ display: "flex", gap: 12, marginTop: 14 }}>
-      <ImButton text="Check eligibility" variant="primary" />
-      <ImButton text="Run this suggestion" variant="primary" />
+        <path d="M8,5V19L19,12L8,5Z" />
+      </svg>
+      Candidate key
+    </div>
+    <div style={{ display: "flex", gap: 8 }}>
+      <Button size="small" variant="outline">
+        Check eligibility
+      </Button>
+      <Button size="small" icon={mdiPlayOutline}>
+        Run this suggestion
+      </Button>
     </div>
   </div>
 );
@@ -115,53 +121,81 @@ export const SuggestionsScene: React.FC<Props> = ({ bassIntensity }) => {
   const { fps } = useVideoConfig();
   const reveal = (delay: number) =>
     spring({ frame, fps, config: { damping: 20, stiffness: 140 }, delay });
+  const checked = frame >= CHECK;
 
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
-      <WindowFrame bassIntensity={bassIntensity}>
-        <Sidebar active="Suggestions" />
-        <div
-          style={{
-            flex: 1,
-            padding: "20px 32px",
-            overflow: "hidden",
-            fontFamily,
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <PageHeader title="Suggestions" />
-
-          <div style={{ fontSize: 15, color: COLORS.text, opacity: reveal(2) }}>
-            Memories automation would make next, using the same rules as auto suggest.
+      <WindowFrame
+        path="/app/suggestions"
+        bassIntensity={bassIntensity}
+        enter={false}
+      >
+        <AppShell active="Suggestions">
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-end",
+                justifyContent: "space-between",
+                gap: 12,
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <Heading size="large">Suggestions</Heading>
+                <div
+                  style={{
+                    fontSize: 16,
+                    lineHeight: "24px",
+                    color: UI.gray600,
+                  }}
+                >
+                  What automation would make next, the same list `auto suggest`
+                  prints. Run one as `auto run` would, or check it first without
+                  rendering.
+                </div>
+              </div>
+              <Button size="small" variant="outline" icon={mdiRefresh}>
+                Refresh suggestions
+              </Button>
+            </div>
+            {checked && (
+              <div
+                style={{
+                  border: `1px solid ${UI.gray200}`,
+                  borderRadius: 16,
+                  padding: 16,
+                  fontSize: 16,
+                }}
+              >
+                {frame < SETTLED
+                  ? "Running on the server: starting. It continues if you leave this page."
+                  : "Eligible. No video was generated."}
+              </div>
+            )}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 16,
+              }}
+            >
+              {CANDIDATES.map((candidate, i) => (
+                <Card
+                  key={candidate.reason}
+                  candidate={candidate}
+                  reveal={reveal(6 + i * 5)}
+                />
+              ))}
+            </div>
           </div>
-          <div
-            style={{
-              fontSize: 14,
-              color: COLORS.text,
-              marginTop: 10,
-              opacity: reveal(4),
-            }}
-          >
-            Running a suggestion creates a video on the server. Automatic upload to
-            Immich is off.
-          </div>
-
-          <div style={{ marginTop: 16, opacity: reveal(8) }}>
-            <ImButton text="Refresh suggestions" variant="primary" />
-          </div>
-
-          <div style={{ marginTop: 22 }}>
-            {CANDIDATES.map((candidate, i) => (
-              <Card
-                key={candidate.reason}
-                candidate={candidate}
-                reveal={reveal(14 + i * 8)}
-              />
-            ))}
-          </div>
-        </div>
+        </AppShell>
       </WindowFrame>
+      <AnimatedCursor
+        steps={[
+          { frame: 28, ...CHECK_XY },
+          { frame: CHECK, ...CHECK_XY, click: true },
+        ]}
+      />
     </AbsoluteFill>
   );
 };

@@ -19,6 +19,7 @@ def register_music_commands(main: click.Group) -> None:
         pass
 
     main.add_command(music)
+    _register_preview(music)
 
     @music.command("search")
     @click.option("--mood", "-m", type=str, help="Mood (happy, calm, energetic, etc.)")
@@ -162,3 +163,61 @@ def register_music_commands(main: click.Group) -> None:
                 return
 
         print_success(f"Video saved to: {result}")
+
+
+def _register_preview(music: click.Group) -> None:
+    @music.command("preview")
+    @click.argument("run_id", required=False)
+    @click.option(
+        "--out",
+        "out_dir",
+        type=click.Path(file_okay=False, path_type=Path),
+        default=None,
+        help="Where to write the track (default: the cache, beside the run)",
+    )
+    @click.option(
+        "--progress-file",
+        type=click.Path(dir_okay=False, path_type=Path),
+        default=None,
+        help="Keep generation progress in this JSON file, for a watcher such as the web client",
+    )
+    def music_preview(run_id: str | None, out_dir: Path | None, progress_file: Path | None) -> None:
+        """Generate the music this cut would get, from its own timeline and mood, before rendering.
+
+        The track it prints renders with `runs render RUN --music PATH`.
+        """
+        import asyncio
+        import sys
+
+        from immich_memories.audio.cut_music_preview import (
+            PreviewUnavailable,
+            preview_music_for_cut,
+        )
+        from immich_memories.cli._runs_reading import RunNotFound, resolve_attempt
+        from immich_memories.cli.progress_file import write_progress
+        from immich_memories.config import get_config
+        from immich_memories.tracking import RunDatabase
+
+        config = get_config()
+        try:
+            resolved, attempt = resolve_attempt(
+                config.cache.cache_path, RunDatabase(db_path=config.cache.database_path), run_id
+            )
+        except RunNotFound as exc:
+            print_error(str(exc))
+            sys.exit(1)
+
+        def progress(_version: int, status: str, percent: float, _detail: str) -> None:
+            write_progress(
+                progress_file,
+                {"done": False, "phase": "music", "fraction": percent / 100, "message": status},
+            )
+
+        target = out_dir or config.cache.cache_path / "music-previews" / resolved
+        try:
+            track = asyncio.run(preview_music_for_cut(config, attempt, target, progress))
+        except PreviewUnavailable as exc:
+            print_error(str(exc))
+            sys.exit(1)
+        write_progress(progress_file, {"done": True, "fraction": 1.0, "output_path": str(track)})
+        print_success(f"Music preview: {track}")

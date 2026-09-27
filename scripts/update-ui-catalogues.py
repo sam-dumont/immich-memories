@@ -1,4 +1,4 @@
-"""Extract interface labels and update the shipped UI catalogues without guessing translations."""
+"""Extract the web client's labels and update the shipped UI catalogues without guessing translations."""
 
 import re
 from collections.abc import Iterator
@@ -6,12 +6,10 @@ from copy import deepcopy
 from pathlib import Path
 
 from babel.messages.catalog import Catalog
-from babel.messages.extract import extract_from_dir
 from babel.messages.pofile import read_po, write_po
 
 from immich_memories.i18n import LOCALES_DIR, SUPPORTED_LOCALES
 
-UI_ROOT = Path(__file__).resolve().parents[1] / "src/immich_memories/ui"
 WEB_ROOT = Path(__file__).resolve().parents[1] / "web/src"
 # The Svelte client marks labels as t('...') or N_('...'); only literal first arguments count.
 _WEB_LABEL = re.compile(r"""\b(?:t|N_)\(\s*(['"])((?:\\.|(?!\1).)+)\1""")
@@ -33,10 +31,6 @@ def _web_labels() -> Iterator[tuple[str, int, str]]:
 def main() -> None:
     """Keep existing drafts, add new labels, and record where each label is rendered."""
     template = Catalog(project="Immich Memories UI", charset="utf-8")
-    for filename, line, message, comments, _ in extract_from_dir(
-        str(UI_ROOT), keywords={"tr": (1,), "N_": (1,)}
-    ):
-        template.add(message, locations=[(filename, line)], auto_comments=comments)
     for filename, line, message in _web_labels():
         template.add(message, locations=[(filename, line)])
     for code in SUPPORTED_LOCALES:
@@ -58,7 +52,7 @@ def main() -> None:
                 if entry.id:
                     entry.string = entry.id
         with path.open("wb") as handle:
-            write_po(handle, catalogue, sort_output=True, width=96)
+            write_po(handle, catalogue, sort_output=True, width=96, ignore_obsolete=True)
 
 
 if __name__ == "__main__":

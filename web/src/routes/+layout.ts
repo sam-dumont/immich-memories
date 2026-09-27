@@ -5,5 +5,9 @@ export const ssr = false;
 export const prerender = false;
 
 export const load = async ({ fetch }) => {
-  await loadMessages(fetch);
+  const [, session] = await Promise.all([
+    loadMessages(fetch),
+    fetch('/api/v1/session').then((response) => response.json()),
+  ]);
+  return { session };
 };

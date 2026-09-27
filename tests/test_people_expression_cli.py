@@ -14,7 +14,7 @@ from immich_memories.automation.candidates import (
     make_memory_key,
 )
 from immich_memories.automation.generation_request import GenerationRequest
-from immich_memories.filename_builder import build_memory_output_path, build_output_filename
+from immich_memories.filename_builder import build_memory_output_path
 from immich_memories.timeperiod import DateRange
 from tests.conftest import make_asset
 
@@ -318,17 +318,6 @@ def test_different_groupings_cannot_collide_in_names_or_automation_keys(tmp_path
     ) != make_memory_key(
         "multi_person", window.start.date(), window.end.date(), names, person_expression=other
     )
-    filenames = [
-        build_output_filename(
-            "multi_person",
-            {"person_names": names, "person_expression": expr.to_dict()},
-            None,
-            window.start.date(),
-            window.end.date(),
-        )
-        for expr in (EXPRESSION, other)
-    ]
-    assert filenames[0] != filenames[1]
 
 
 def test_a_dateless_people_memory_starts_where_its_people_could_first_be_photographed(tmp_path):

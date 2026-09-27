@@ -1,18 +1,18 @@
 <script lang="ts">
   import { Alert, Badge, Button, Heading, Text } from '@immich/ui';
   import { mdiArrowLeft, mdiContentSaveOutline, mdiDownload, mdiPlay, mdiUndo } from '@mdi/js';
-  import { api, ApiError, post, thumbnail, type CutShot, type JobView } from '$lib/api';
-  import { followJob } from '$lib/job.svelte';
-  import JobPanel from '$lib/JobPanel.svelte';
+  import { api, ApiError, thumbnail, type CutShot } from '$lib/api';
+  import RenderPanel from '$lib/RenderPanel.svelte';
   import type { components } from '$lib/api-types';
   import { CutEditor } from '$lib/cut-edits.svelte';
   import { locale, t } from '$lib/i18n.svelte';
-  import { clock, memoryTypeLabel, sourceLabel } from '$lib/labels';
+  import { clock, memoryTypeLabel, sourceLabel, weightLabel } from '$lib/labels';
   import ShotInspector from '$lib/ShotInspector.svelte';
 
   let { data } = $props();
   const run = $derived(data.run);
   const cut = $derived(data.cut);
+  const story = $derived(data.story);
 
   type Revision = components['schemas']['Revision'];
 
@@ -55,39 +55,7 @@
     }
   }
 
-  // Rendering: the cut as chosen, or one saved revision of it, through `runs render`.
-  let renderFrom = $state<number | null>(null);
-  let renderTitle = $state('');
-  let renderSubtitle = $state('');
-  let renderMusic = $state(true);
-  let renderOrientation = $state('auto');
-  let renderUpload = $state(false);
-  let renderJob = $state<JobView | null>(null);
-  let renderProblem = $state('');
-
-  async function render() {
-    renderProblem = '';
-    const { status, body } = await post<JobView>(`/runs/${encodeURIComponent(run.run_id)}/renders`, {
-      revision: renderFrom,
-      title: renderTitle || null,
-      subtitle: renderSubtitle || null,
-      no_music: !renderMusic,
-      orientation: renderOrientation === 'auto' ? null : renderOrientation,
-      upload_to_immich: renderUpload,
-    });
-    const started = status === 202 ? body : status === 409 ? body.job : null;
-    if (!started) {
-      renderProblem = body.detail ?? t('The render could not start.');
-      return;
-    }
-    renderJob = started;
-    followJob(started.id, (update) => (renderJob = update));
-  }
-
-  async function cancelRender() {
-    if (renderJob) renderJob = (await post<JobView>(`/jobs/${encodeURIComponent(renderJob.id)}/cancel`, {})).body;
-  }
-
+  let view = $state<'sheet' | 'stories'>('sheet');
   let filter = $state<'all' | 'videos' | 'stills'>('all');
   let selectedId = $state<string | null>(null);
   let inspecting = $state(false);
@@ -97,6 +65,12 @@
   );
   const selected = $derived(shots.find((shot) => shot.asset_id === selectedId) ?? shots[0]);
   const videos = $derived((cut?.shots ?? []).filter((shot) => shot.motion).length);
+
+  function chooseCarrier(assetId: string) {
+    filter = 'all';
+    selectedId = assetId;
+    inspecting = true;
+  }
 
   function choose(shot: CutShot) {
     selectedId = shot.asset_id;
@@ -118,6 +92,11 @@
     document.getElementById(`shot-${next.asset_id}`)?.focus();
     event.preventDefault();
   }
+
+  const VIEWS = [
+    ['sheet', 'Contact sheet'],
+    ['stories', 'Stories'],
+  ] as const;
 
   const FILTERS = [
     ['all', 'All pictures'],
@@ -154,6 +133,7 @@
         src={`/api/v1/runs/${encodeURIComponent(run.run_id)}/film`}></video>
     {/if}
     {#if cut?.thesis}<p class="max-w-4xl text-lg">{cut.thesis}</p>{/if}
+    {#if story?.preparation}<Text size="small" color="muted">{t(story.preparation)}</Text>{/if}
     {#each run.warnings as warning, index (index)}
       <Alert color="warning" size="small">{warning}</Alert>
     {/each}
@@ -161,12 +141,24 @@
 
   {#if cut}
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex flex-wrap gap-2" role="radiogroup" aria-label={t('Show')}>
-        {#each FILTERS as [value, label] (value)}
-          <Button size="small" shape="round" role="radio" aria-checked={filter === value}
-            variant={filter === value ? 'filled' : 'outline'} color={filter === value ? 'primary' : 'secondary'}
-            onclick={() => (filter = value)}>{t(label)}</Button>
-        {/each}
+      <div class="flex flex-wrap items-center gap-4">
+        {#if story?.stories.length}
+          <div class="flex rounded-full border border-gray-200 p-0.5 dark:border-gray-800" role="radiogroup" aria-label={t('View')}>
+            {#each VIEWS as [value, label] (value)}
+              <button type="button" role="radio" aria-checked={view === value} onclick={() => (view = value)}
+                class={['rounded-full px-3 py-1 text-sm', view === value ? 'bg-primary text-light' : 'text-gray-600 hover:text-primary dark:text-gray-400']}>{t(label)}</button>
+            {/each}
+          </div>
+        {/if}
+        {#if view === 'sheet'}
+          <div class="flex flex-wrap gap-2" role="radiogroup" aria-label={t('Show')}>
+            {#each FILTERS as [value, label] (value)}
+              <Button size="small" shape="round" role="radio" aria-checked={filter === value}
+                variant={filter === value ? 'filled' : 'outline'} color={filter === value ? 'primary' : 'secondary'}
+                onclick={() => (filter = value)}>{t(label)}</Button>
+            {/each}
+          </div>
+        {/if}
       </div>
       <div class="flex items-center gap-3">
         <Text size="small" color="muted">{t('Order and timecodes from the saved cut.')}</Text>
@@ -175,6 +167,35 @@
     </div>
 
     <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
+      {#if view === 'stories' && story}
+        <ol class="flex flex-col gap-4" aria-label={t('Stories')}>
+          {#each story.stories as part (part.key)}
+            <li class="flex flex-col gap-3 rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
+              <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <Heading size="tiny" tag="h3" class="line-clamp-2 min-w-0" title={part.title}>{part.title}</Heading>
+                {#if weightLabel(part.weight)}<Badge size="small" color={part.weight === 'dominant' ? 'primary' : 'secondary'}>{weightLabel(part.weight)}</Badge>{/if}
+                <span class="text-sm text-gray-600 tabular-nums dark:text-gray-400">{part.day}</span>
+                <span class="text-sm text-gray-600 dark:text-gray-400">{t('Pictures: {count}', { count: part.carriers.length })}</span>
+              </div>
+              {#if part.purpose}<p class="text-sm">{part.purpose}</p>{/if}
+              <ul class="grid grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] gap-2">
+                {#each part.carriers as carrier (carrier.asset_id)}
+                  <li>
+                    <button type="button" onclick={() => chooseCarrier(carrier.asset_id)} aria-pressed={selected?.asset_id === carrier.asset_id}
+                      class={['flex w-full flex-col gap-1 rounded-lg p-1 text-left', selected?.asset_id === carrier.asset_id ? 'bg-primary/10 ring-2 ring-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-900']}>
+                      <span class="relative block aspect-[4/3] overflow-hidden rounded-md bg-gray-100 dark:bg-gray-900">
+                        <img src={thumbnail(carrier.asset_id)} alt={carrier.reason || part.title} loading="lazy" decoding="async" class="size-full object-contain" />
+                        {#if carrier.motion}<span class="absolute right-1 bottom-1 rounded bg-black/60 p-0.5 text-white"><svg viewBox="0 0 24 24" class="size-3 fill-current" aria-label={t('Video')}><path d={mdiPlay} /></svg></span>{/if}
+                      </span>
+                      <span class="line-clamp-2 text-[11px]">{carrier.reason}</span>
+                    </button>
+                  </li>
+                {/each}
+              </ul>
+            </li>
+          {/each}
+        </ol>
+      {:else}
       <ol class="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-x-3 gap-y-4" aria-label={t('Cut contact sheet')}>
         {#each shots as shot (shot.asset_id)}
           {#if shot.chapter}
@@ -208,6 +229,7 @@
           <li class="col-span-full"><Text color="muted">{t('No pictures match this filter.')}</Text></li>
         {/each}
       </ol>
+      {/if}
 
       {#if selected}
         <!-- Beside the sheet on a wide screen; over it, closable, on a phone. -->
@@ -259,46 +281,7 @@
     <Text color="muted">{t('No saved cut is available for this run.')}</Text>
   {/if}
 
-  {#if cut}
-    <section class="flex flex-col gap-4 border-t border-gray-200 pt-6 dark:border-gray-800" aria-label={t('Render')}>
-      <Heading size="tiny" tag="h2">{t('Render')}</Heading>
-      {#if renderJob}
-        <JobPanel job={renderJob} onCancel={cancelRender} />
-        {#if renderJob.status === 'succeeded' && renderJob.result_run_id}
-          <!-- svelte-ignore a11y_media_has_caption -->
-          <video class="w-full max-w-3xl rounded-2xl bg-black" controls preload="metadata"
-            src={`/api/v1/runs/${encodeURIComponent(renderJob.result_run_id)}/film`}></video>
-          <a class="w-fit text-sm text-primary hover:underline" href={`/app/runs/${encodeURIComponent(renderJob.result_run_id)}`}>{t('Open the film run')}</a>
-        {/if}
-      {/if}
-      {#if !renderJob || renderJob.status !== 'running'}
-        <form class="grid max-w-3xl gap-4 sm:grid-cols-2" onsubmit={(event) => { event.preventDefault(); void render(); }}>
-          <label class="flex flex-col gap-1 text-sm font-medium">{t('What to render')}
-            <select class="rounded-lg border border-gray-300 bg-light px-3 py-2 dark:border-gray-700" bind:value={renderFrom}>
-              <option value={null}>{t('The cut as chosen')}</option>
-              {#each revisions as revision (revision.number)}<option value={revision.number}>{t('Revision {number}', { number: revision.number })}</option>{/each}
-            </select>
-          </label>
-          <label class="flex flex-col gap-1 text-sm font-medium">{t('Orientation')}
-            <select class="rounded-lg border border-gray-300 bg-light px-3 py-2 dark:border-gray-700" bind:value={renderOrientation}>
-              <option value="auto">{t('Automatic')}</option><option value="landscape">{t('Landscape')}</option>
-              <option value="portrait">{t('Portrait')}</option><option value="square">{t('Square')}</option>
-            </select>
-          </label>
-          <label class="flex flex-col gap-1 text-sm font-medium">{t('Title (decided as generate decides when empty)')}
-            <input class="rounded-lg border border-gray-300 bg-light px-3 py-2 dark:border-gray-700" bind:value={renderTitle} />
-          </label>
-          <label class="flex flex-col gap-1 text-sm font-medium">{t('Subtitle')}
-            <input class="rounded-lg border border-gray-300 bg-light px-3 py-2 dark:border-gray-700" bind:value={renderSubtitle} />
-          </label>
-          <label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={renderMusic} />{t('Music')}</label>
-          <label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={renderUpload} />{t('Upload the film to Immich')}</label>
-          {#if renderProblem}<p class="text-sm text-danger sm:col-span-2" role="alert">{renderProblem}</p>{/if}
-          <Button type="submit" class="w-fit">{t('Render')}</Button>
-        </form>
-      {/if}
-    </section>
-  {/if}
+  {#if cut}<RenderPanel runId={run.run_id} {revisions} />{/if}
 
   <section class="flex flex-col gap-3 border-t border-gray-200 pt-6 dark:border-gray-800">
     <Heading size="tiny" tag="h2">{t('Run details')}</Heading>

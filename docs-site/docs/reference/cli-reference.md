@@ -386,6 +386,24 @@ immich-memories music add [OPTIONS]
 - `video_path` (path)
 - `output_path` (path)
 
+### `music preview`
+
+Generate the music this cut would get, from its own timeline and mood, before rendering.
+
+The track it prints renders with `runs render RUN --music PATH`.
+
+```bash
+immich-memories music preview [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--out` | directory | - | Where to write the track (default: the cache, beside the run) |
+| `--progress-file` | file | - | Keep generation progress in this JSON file, for a watcher such as the web client |
+
+**Arguments:**
+- `run_id` (text)
+
 ### `music search`
 
 Search for music in local library.
@@ -655,8 +673,9 @@ immich-memories runs render [OPTIONS]
 | `--resolution` | text | - | Output resolution, as generate takes it |
 | `--orientation` | text | - | landscape, portrait, square or auto |
 | `--scale-mode` | text | - | How sources fit the canvas |
-| `--format` | choice: `mp4` \| `mov` | - |  |
-| `--music` | path | - |  |
+| `--format` | choice: `mp4` \| `h265` \| `prores` | - | Output format override, as generate takes it (default: config value) |
+| `--quality` | choice: `high` \| `medium` \| `low` | - | Output quality (default: from config) |
+| `--music` | text | - | A track to use, or 'auto' to choose as configured |
 | `--no-music` | boolean | false |  |
 | `--music-volume` | float | 0.5 |  |
 | `--add-date` | boolean | false | Date overlay on each clip |
@@ -664,6 +683,7 @@ immich-memories runs render [OPTIONS]
 | `--privacy-mode` | boolean | false |  |
 | `--upload-to-immich` | boolean | false |  |
 | `--album` | text | - | Immich album for the upload |
+| `--progress-file` | file | - | Keep the render's progress in this JSON file, for a watcher such as the web client |
 
 **Arguments:**
 - `run_id` (text)
@@ -847,7 +867,7 @@ immich-memories titles test [OPTIONS]
 
 ## `ui`
 
-Launch the interactive NiceGUI UI.
+Launch the web client: make, review, refine and render memories in the browser.
 
 ```bash
 immich-memories ui [OPTIONS]

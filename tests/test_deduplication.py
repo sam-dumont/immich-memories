@@ -21,8 +21,10 @@ def _make_run(
     source: str = "manual",
     date_start: date | None = None,
     date_end: date | None = None,
+    output_path: str | None = "/films/memory.mp4",
 ) -> RunMetadata:
     return RunMetadata(
+        output_path=output_path,
         run_id=run_id,
         created_at=datetime(2026, 3, 1, 10, 0),
         completed_at=datetime(2026, 3, 1, 10, 30),
@@ -86,6 +88,14 @@ class TestGetGeneratedMemoryKeys:
         db.save_run(_make_run(run_id="r3", memory_key="key3", status="failed"))
         keys = db.get_generated_memory_keys()
         assert keys == {"key1", "key2"}
+
+    def test_a_cut_reviewed_but_never_rendered_is_not_a_memory_made(self, db):
+        # `generate --no-render` and the web client record a cut as a run with no film yet;
+        # automation must still offer that memory until a film exists.
+        db.save_run(_make_run(run_id="cut", memory_key="key1", output_path=None))
+        assert db.get_generated_memory_keys() == set()
+        db.save_run(_make_run(run_id="film", memory_key="key1"))
+        assert db.get_generated_memory_keys() == {"key1"}
 
     def test_excludes_null_keys(self, db):
         db.save_run(_make_run(run_id="r1", memory_key=None))

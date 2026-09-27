@@ -50,6 +50,7 @@ def read_pool(
     config: Annotated[Config, Depends(current_config)],
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=500)] = 120,
+    reachable_only: bool = False,
 ) -> Pool:
     """Every picture the cut saw, in capture order, with its fate and whatever holds it."""
     attempt = attempt_dir_for_run(config.cache.cache_path, run_id)
@@ -60,12 +61,16 @@ def read_pool(
         (_asset(source) for source in load_sources(snapshot)),
         key=lambda asset: (asset.file_created_at, asset.id),
     )
-    page = assets[offset : offset + limit]
     fates = CandidateFates.read(attempt)
+    everything = len(assets)
+    if reachable_only:
+        assets = [asset for asset in assets if fates.reachable(asset.id)]
+    page = assets[offset : offset + limit]
     in_cut = {shot.asset_id for shot in (fates.board.shots if fates.board else ())}
     holds = picture_holds.read(config, [asset.id for asset in page])
     return Pool(
         total=len(assets),
+        outside=everything - len(assets),
         items=[
             PoolItem(
                 asset_id=asset.id,
@@ -73,6 +78,7 @@ def read_pool(
                 kind=_kind(asset),
                 favourite=asset.is_favorite,
                 in_cut=asset.id in in_cut,
+                reachable=fates.reachable(asset.id),
                 fate=fates.describe(asset.id),
                 hold=_hold(holds[asset.id]),
             )

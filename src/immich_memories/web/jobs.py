@@ -57,6 +57,10 @@ class JobRunner:
     def _log(self, job_id: str) -> Path:
         return self._dir / f"{job_id}.log"
 
+    def progress_path(self, job_id: str) -> Path:
+        """Where a job's child keeps its `--progress-file`: apart from the records, never one."""
+        return self._dir / "progress" / f"{job_id}.json"
+
     def _save(self, job: Job) -> None:
         self._dir.mkdir(parents=True, exist_ok=True)
         write_secret_file(self._record(job.id), job.model_dump_json(indent=2))

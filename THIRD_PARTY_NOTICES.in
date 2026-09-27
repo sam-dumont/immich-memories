@@ -195,10 +195,10 @@ docs-site/static/fonts/)
   Copyright: 2016 The Inter Project Authors (Rasmus Andersson)
   URL: https://github.com/rsms/inter
 
-Material Icons (Remotion demo: docs-site/remotion/public/MaterialIcons-Regular.woff2)
+Material Design Icons (@mdi/js; web client and Remotion demo: docs-site/remotion)
   License: Apache-2.0
-  Copyright: Google LLC
-  URL: https://github.com/google/material-design-icons
+  Copyright: Pictogrammers
+  URL: https://pictogrammers.com/library/mdi/
 
 
 Web client (bundled JavaScript, src/immich_memories/web/client)

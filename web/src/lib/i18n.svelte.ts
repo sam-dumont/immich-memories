@@ -2,7 +2,7 @@ import { api, type Messages } from './api';
 
 const PREFERENCE_KEY = 'immich-memories.ui-language';
 
-let current = $state<Messages>({ locale: 'en', messages: {} });
+let current = $state<Messages>({ locale: 'en', messages: {}, languages: [] });
 
 function preference(): string {
   try {
@@ -18,6 +18,18 @@ export async function loadMessages(fetcher: typeof fetch): Promise<void> {
 }
 
 export const locale = () => current.locale;
+export const languages = () => current.languages;
+export const chosenLanguage = () => preference();
+
+/** Keep this browser's interface language ("auto" follows the browser) and load its words. */
+export async function chooseLanguage(code: string): Promise<void> {
+  try {
+    localStorage.setItem(PREFERENCE_KEY, code);
+  } catch {
+    // A browser that keeps nothing still switches for this page.
+  }
+  await loadMessages(fetch);
+}
 
 /** Translate an interface template from the shared `ui.po`; `{name}` placeholders are filled in. */
 export function t(message: string, values: Record<string, string | number> = {}): string {

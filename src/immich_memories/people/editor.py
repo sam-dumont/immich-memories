@@ -1,7 +1,7 @@
 """The companion editor's model — the people file as a page can show it.
 
 The settings page renders these and writes them back; none of it knows about
-NiceGUI, which is what lets the confirm flow be tested on a real file rather
+the web server, which is what lets the confirm flow be tested on a real file rather
 than through a browser. The rule the whole module exists to serve is the file's
 own: the user's answer is the answer, so nothing here ever discards a
 `confirmed:` field it did not understand.

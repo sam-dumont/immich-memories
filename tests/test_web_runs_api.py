@@ -99,10 +99,10 @@ def test_a_deep_link_into_the_client_loads_the_app_and_assets_load_as_files(tmp_
 
 
 def test_the_client_api_answers_401_while_the_client_page_goes_to_login():
-    from immich_memories.ui.app import _unauthenticated_response
+    from immich_memories.web.server import unauthenticated_response
 
-    assert _unauthenticated_response("/api/v1/runs").status_code == 401
-    assert _unauthenticated_response("/app/runs").status_code == 307
+    assert unauthenticated_response("/api/v1/runs").status_code == 401
+    assert unauthenticated_response("/app/runs").status_code == 307
 
 
 def test_runs_filter_by_status_and_page_forward(client, config):
@@ -150,3 +150,10 @@ def test_a_video_streams_the_range_the_browser_asked_immich_for(client):
     assert response.headers["content-range"] == "bytes 100-199/5000"
     assert response.headers["accept-ranges"] == "bytes"
     assert response.content == b"x" * 100
+
+
+def test_the_picker_offers_every_interface_language_in_its_own_name(client):
+    languages = client.get("/api/v1/i18n").json()["languages"]
+
+    assert {"code": "fr", "name": "Français"} in languages
+    assert {"code": "de", "name": "Deutsch"} in languages

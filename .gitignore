@@ -1,5 +1,4 @@
 
-.nicegui/
 .python-version
 .superpowers/
 __pycache__/
@@ -136,7 +135,6 @@ venv.bak/
 venv/
 wheels/
 .superpowers/
-.nicegui/
 
 # Demo video artifacts (generated, not tracked)
 docs-site/static/demo/raw/

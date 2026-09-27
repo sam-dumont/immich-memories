@@ -7,16 +7,11 @@ from typing import Annotated
 
 from babel.messages.pofile import read_po
 from fastapi import APIRouter, Header, Query
-from pydantic import BaseModel
 
-from immich_memories.i18n import LOCALES_DIR, resolve_ui_locale
+from immich_memories.i18n import LOCALES_DIR, SUPPORTED_LOCALES, babel_locale, resolve_ui_locale
+from immich_memories.web.schemas import Language, Messages
 
 router = APIRouter(prefix="/api/v1/i18n", tags=["i18n"])
-
-
-class Messages(BaseModel):
-    locale: str
-    messages: dict[str, str]
 
 
 @lru_cache(maxsize=16)
@@ -36,4 +31,13 @@ def messages(
 ) -> Messages:
     """The browser's language, or the one the viewer chose; a missing string falls back to English."""
     locale = resolve_ui_locale(accept_language, preference=preference)
-    return Messages(locale=locale, messages=_catalogue(locale))
+    return Messages(locale=locale, messages=_catalogue(locale), languages=_languages())
+
+
+@lru_cache(maxsize=1)
+def _languages() -> list[Language]:
+    named = []
+    for code in SUPPORTED_LOCALES:
+        name = babel_locale(code).get_display_name(code.replace("-", "_")) or code
+        named.append(Language(code=code, name=name[:1].upper() + name[1:]))
+    return named

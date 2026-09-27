@@ -1,4 +1,4 @@
-"""The owner's word on one picture, from the storyboard, the pool and the terminal (#1324)."""
+"""The owner's word on one picture, from the pool and the terminal (#1324)."""
 
 from __future__ import annotations
 
@@ -12,10 +12,10 @@ from playwright.sync_api import Page, expect
 
 from immich_memories.config_loader import Config
 from immich_memories.store import owner_decisions
+from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 from tests.e2e.conftest import _build_launch_environment
 from tests.e2e.fake_library import CARRIERS, LIBRARY
-from tests.e2e.test_demo_assets import _TRIP_CLI_BOOTSTRAP
-from tests.e2e.test_memory_page import _brief_for_june
+from tests.e2e.web_flow import cut_june
 
 pytestmark = pytest.mark.e2e
 
@@ -51,7 +51,7 @@ def _cli(launch_workspace, *args: str) -> str:
         [
             str(_ROOT / ".venv/bin/python"),
             "-c",
-            _TRIP_CLI_BOOTSTRAP,
+            CLI_BOOTSTRAP,
             str(launch_workspace.config_path),
             str(launch_workspace.root / "state"),
             "pictures",
@@ -67,65 +67,64 @@ def _cli(launch_workspace, *args: str) -> str:
     return f"$ immich-memories pictures {' '.join(args)}\n{result.stdout}"
 
 
-def test_never_use_from_the_storyboard_and_clear_a_hold_from_the_pool(
+def _tile(page: Page, asset_id: str):
+    """The pool tile of one picture, loading further pages of the pool until it arrives."""
+    pool = page.get_by_role("list", name="Pool")
+    expect(pool.get_by_role("listitem").first).to_be_visible(timeout=60_000)
+    tile = pool.get_by_role("listitem").filter(has=page.locator(f'img[src*="/{asset_id}/"]'))
+    for _ in range(10):
+        if tile.count():
+            break
+        pool.get_by_role("listitem").last.scroll_into_view_if_needed()
+        page.wait_for_timeout(500)
+    return tile
+
+
+def test_never_use_and_clear_a_hold_from_the_pool(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
     store = store_of(launch_workspace)
-    shot = CARRIERS[0].asset_id
-    left_out = next(picture for picture in LIBRARY if picture not in CARRIERS)
-    held = left_out.asset_id
+    kept = CARRIERS[1].asset_id
+    held = next(picture for picture in LIBRARY if picture not in CARRIERS).asset_id
     flag_by_the_detector(store, held)
     try:
-        _brief_for_june(page, launch_app_url)
-        page.get_by_role("button", name="Cut", exact=True).click()
-        shots = page.locator(".storyboard-shot")
-        expect(shots).to_have_count(len(CARRIERS), timeout=120_000)
+        cut_june(page, launch_app_url)
+        page.get_by_role("link", name="Pool", exact=True).click()
 
-        page.get_by_role("button", name="Picture decisions", exact=True).click()
-        decisions = page.get_by_role("dialog")
-        decisions.get_by_role("button", name="Never use").click()
-        expect(decisions.get_by_text("You'll never use this picture.")).to_be_visible()
-        expect(decisions.get_by_role("button", name="Undo")).to_be_visible()
-        assert owner_decisions.decisions(store, [shot]) == {shot: owner_decisions.NEVER_USE}
-        _frame(decisions, "1324-storyboard-never-use")
-        decisions.get_by_role("button", name="Close", exact=True).click()
-
-        page.get_by_role("button", name="Review the pool", exact=True).click()
-        card = page.locator(".q-card").filter(has_text=left_out.filename[:17]).first
-        expect(card.get_by_text("Held: a nudity detector flagged it.")).to_be_visible(
-            timeout=60_000
-        )
+        card = _tile(page, held)
+        expect(card.get_by_text("Held: a nudity detector flagged it.")).to_be_visible()
         card.get_by_role("button", name="Clear hold").click()
-        dialog = page.locator(".clear-hold-dialog")
-        expect(dialog.get_by_text("Clear this picture's hold?")).to_be_visible()
+        dialog = page.get_by_role("dialog")
+        expect(dialog.get_by_text("Clear this hold?")).to_be_visible()
         _frame(card, "1324-pool-held")
         _frame(dialog, "1324-pool-clear-hold-dialog")
 
         dialog.get_by_role("button", name="Cancel").click()
+        expect(dialog).to_have_count(0)
         assert owner_decisions.decisions(store, [held]) == {}, "cancel writes nothing"
 
         card.get_by_role("button", name="Clear hold").click()
         # The dialog asks how far it may go, the family by default (#1325).
-        expect(dialog.get_by_role("radio", name="Family: family films too")).to_be_checked()
-        dialog.get_by_role("radio", name="Just us: only films for the household").click()
+        films = dialog.get_by_label("Films that may use it")
+        expect(films).to_have_value("family")
+        films.select_option("just-us")
         dialog.get_by_role("button", name="Clear hold").click()
-        expect(
-            card.get_by_text("You cleared its hold for just us (a nudity detector flagged it).")
-        ).to_be_visible()
+        expect(card.get_by_text("You cleared its hold for just us", exact=False)).to_be_visible()
         expect(card.get_by_role("button", name="Clear hold")).to_have_count(0)
         assert owner_decisions.decisions(store, [held]) == {held: "cleared_just_us"}
         _frame(card, "1324-pool-cleared")
 
         # Ruling out a ticked picture unticks it: the pool never says both.
-        ticked = page.locator(".q-card").filter(has_text=CARRIERS[1].filename[:17]).first
-        expect(ticked.get_by_role("checkbox", name="Include")).to_be_checked()
+        ticked = _tile(page, kept)
+        expect(ticked.get_by_role("checkbox", name="In the next cut")).to_be_checked()
         ticked.get_by_role("button", name="Never use").click()
         expect(ticked.get_by_text("You'll never use this picture.")).to_be_visible()
-        expect(ticked.get_by_role("checkbox", name="Include")).not_to_be_checked()
+        expect(ticked.get_by_role("checkbox", name="In the next cut")).not_to_be_checked()
+        assert owner_decisions.decisions(store, [kept]) == {kept: owner_decisions.NEVER_USE}
         _frame(ticked, "1324-pool-never-use-unticks")
         ticked.get_by_role("button", name="Undo").click()
         expect(ticked.get_by_role("button", name="Never use")).to_be_visible()
-        assert owner_decisions.decisions(store, [CARRIERS[1].asset_id]) == {}
+        assert owner_decisions.decisions(store, [kept]) == {}
 
         transcript = [
             _cli(launch_workspace, "list"),
@@ -146,5 +145,5 @@ def test_never_use_from_the_storyboard_and_clear_a_hold_from_the_pool(
             "\n".join(transcript).replace(str(launch_workspace.root), "<fixture-workspace>")
         )
     finally:
-        for asset_id in (held, shot, CARRIERS[1].asset_id):
+        for asset_id in (held, kept):
             owner_decisions.forget(store, asset_id)

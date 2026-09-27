@@ -40,7 +40,7 @@ says what set the length:
 
 | What set it | When |
 |---|---|
-| `--duration` | you passed a number (or turned **Auto duration** off on the [Memory page](./web-ui.mdx)) |
+| `--duration` | you passed a number (or typed a length under **Length and pictures** in the [web UI](./web-ui.mdx)) |
 | `--short-form` | you picked a short-form preset and passed no `--duration` |
 | the material | neither flag, and the period holds pictures |
 | the preset floor | neither flag, and the period holds nothing to measure |
@@ -268,7 +268,7 @@ immich-memories generate --from-album 59080965-22f0-46a4-be67-135692a9f584
 
 `--from-album` makes it an album memory, and cannot be combined with `--year`, `--start`/`--end`,
 `--period`, `--birthday`, `--season`, `--month`, `--person` or another `--memory-type`. The film is
-titled after the album and named `album_<slug>.mp4`. Two albums with one name stop the CLI with the
+titled after the album and named `album_<slug>.mp4` unless `--output` names the file. Two albums with one name stop the CLI with the
 candidates and their IDs; the web UI lists albums largest first and stores the choice by ID.
 
 Smart albums like *Recents* can hold tens of thousands of assets. Album mode reads at most

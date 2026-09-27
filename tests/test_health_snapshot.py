@@ -11,9 +11,9 @@ from tests.e2e.fake_immich import FakeImmichServer, _handler_type
 
 
 @pytest.fixture(params=[True, False], ids=["authenticated", "rejected-key"])
-def health_client(tmp_path, request):
-    from immich_memories.ui import health_api
-    from immich_memories.ui.app import app
+def health_client(tmp_path, request, monkeypatch):
+    from immich_memories.web import health as health_api
+    from immich_memories.web.server import create_app
 
     # Reuse the hermetic Immich HTTP routes; health needs no generated media.
     server = ThreadingHTTPServer(("127.0.0.1", 0), _handler_type({}, {}, [], 0.0))
@@ -29,7 +29,8 @@ def health_client(tmp_path, request):
         )
     )
     health_api._health_snapshot_cache = None
-    client = TestClient(app, raise_server_exceptions=False)
+    monkeypatch.setenv("IMMICH_MEMORIES_STORAGE_SECRET", "test-secret")
+    client = TestClient(create_app(), raise_server_exceptions=False)
     try:
         yield client, request.param
     finally:

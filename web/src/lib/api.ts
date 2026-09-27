@@ -7,11 +7,14 @@ export type Messages = components['schemas']['Messages'];
 export type RunDetail = components['schemas']['RunDetail'];
 export type Cut = components['schemas']['Cut'];
 export type CutShot = components['schemas']['CutShot'];
+export type Story = components['schemas']['Story'];
 export type JobView = components['schemas']['JobView'];
 export type CutBrief = components['schemas']['CutBrief'];
 export type RenderOptions = components['schemas']['RenderOptions'];
 export type NamedPerson = components['schemas']['NamedPerson'];
 export type AlbumChoice = components['schemas']['AlbumChoice'];
+export type TripChoice = components['schemas']['TripChoice'];
+export type SpecialDay = components['schemas']['SpecialDay'];
 
 export class ApiError extends Error {
   constructor(
@@ -26,7 +29,7 @@ export class ApiError extends Error {
 export async function api<T>(path: string, fetcher: typeof fetch = fetch): Promise<T> {
   const response = await fetcher(`/api/v1${path}`, { headers: { accept: 'application/json' } });
   if (response.status === 401) {
-    await goto('/login', { replaceState: true });
+    await goto('/app/login', { replaceState: true });
   }
   if (!response.ok) throw new ApiError(response.status);
   return (await response.json()) as T;
@@ -44,6 +47,8 @@ export async function post<T>(path: string, body: unknown): Promise<{ status: nu
     headers: { 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify(body),
   });
-  if (response.status === 401) await goto('/login', { replaceState: true });
-  return { status: response.status, body: await response.json() };
+  if (response.status === 401) await goto('/app/login', { replaceState: true });
+  // A proxy's error page or a crashed handler is not JSON; the caller still gets a status and a line.
+  const answer = await response.json().catch(() => ({ detail: `${response.status} ${response.statusText}` }));
+  return { status: response.status, body: answer };
 }

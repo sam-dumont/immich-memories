@@ -1,33 +1,22 @@
-"""Auto duration after discovery: the same pool gets the same length on both surfaces.
+"""Auto duration after discovery: the length a film runs is fitted to the pool it found.
 
-``test_surface_parity.py`` compares what each surface asks for before it has
-seen a single picture. The length a film actually runs is decided later, from
-the material discovery found (#1087, #1094), so this file hands both surfaces
-the same discovered media and compares the length each one settles on.
+``test_surface_parity.py`` covers what the CLI asks for before it has seen a single
+picture. The length a film actually runs is decided later, from the material discovery
+found (#1087, #1094). The web client runs the CLI itself, so this is the one surface.
 """
 
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from unittest.mock import patch
-
-import pytest
 
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
 from immich_memories.cli._pipeline_runner import _decide_duration
 from immich_memories.config import Config
-from immich_memories.memory_types.factory import create_preset
 from immich_memories.memory_types.registry import MemoryType
 from immich_memories.planning.auto_duration import (
     DURATION_FROM_DURATION_FLAG,
     DURATION_FROM_MATERIAL,
 )
-from immich_memories.ui.pages._step4_generate import _build_generation_params
-from immich_memories.ui.pages.clip_pipeline import (
-    _build_ui_editorial_context,
-    _resolve_auto_duration_for_selection,
-)
-from immich_memories.ui.state import AppState
 from tests.test_surface_parity import SPECS, cli_duration
 
 
@@ -69,7 +58,6 @@ MARCH = datetime(2024, 3, 1, tzinfo=UTC)
 DENSE_MONTH = _pool(MARCH, 31, clips_a_day=2, photos_a_day=6)
 # Three stills on three days: nowhere near a minute of varied footage.
 THIN_MONTH = _pool(MARCH, 3, clips_a_day=0, photos_a_day=1)
-TRIP = _pool(datetime(2024, 7, 1, tzinfo=UTC), 10, clips_a_day=3, photos_a_day=4)
 
 
 def cli_auto_seconds(
@@ -95,87 +83,23 @@ def cli_auto_seconds(
     return decision.seconds
 
 
-def ui_state(memory_type: MemoryType, *, config: Config) -> AppState:
-    """The wizard once a card has been filled in, as step1_presets leaves it."""
-    state = AppState(config=config, include_photos=True)
-    state.choose_memory_type(str(memory_type))
-    state.apply_preset(create_preset(memory_type, **SPECS[memory_type].as_preset_params()))
-    return state
-
-
-def ui_auto_seconds(state: AppState, pool: tuple[list[VideoClipInfo], list[Asset]]) -> float:
-    """The length the Memory page hands the cut for this reviewed pool."""
-    clips, photos = pool
-    _resolve_auto_duration_for_selection(state, clips, photos)
-    return state.target_duration_seconds
-
-
 class TestAutoDurationAfterDiscovery:
-    """Auto means the same thing whichever surface started the run."""
+    def test_a_thin_month_is_shortened(self) -> None:
+        """A card's minute is not kept for a pool that cannot fill it."""
+        assert cli_auto_seconds(MemoryType.MONTHLY_HIGHLIGHTS, THIN_MONTH, config=Config()) < 60.0
 
-    @pytest.mark.parametrize(
-        ("memory_type", "pool"),
-        [
-            pytest.param(MemoryType.MONTHLY_HIGHLIGHTS, DENSE_MONTH, id="dense-month"),
-            pytest.param(MemoryType.MONTHLY_HIGHLIGHTS, THIN_MONTH, id="thin-month"),
-            pytest.param(MemoryType.TRIP, TRIP, id="trip"),
-        ],
-    )
-    def test_the_same_pool_gets_the_same_length(self, memory_type, pool) -> None:
-        config = Config()
-
-        cli = cli_auto_seconds(memory_type, pool, config=config)
-        ui = ui_auto_seconds(ui_state(memory_type, config=config), pool)
-
-        assert cli == ui
-
-    def test_a_thin_month_is_shortened_on_both_surfaces(self) -> None:
-        """The case the wizard used to miss: it kept asking for the card's minute."""
-        config = Config()
-
-        ui = ui_auto_seconds(ui_state(MemoryType.MONTHLY_HIGHLIGHTS, config=config), THIN_MONTH)
-
-        assert ui < 60.0
-        assert ui == cli_auto_seconds(MemoryType.MONTHLY_HIGHLIGHTS, THIN_MONTH, config=config)
-
-    def test_an_explicit_target_wins_on_both_surfaces(self) -> None:
-        """Manual on the Memory page is ``--duration`` on the CLI: the pool does not move it."""
-        config = Config()
-        state = ui_state(MemoryType.MONTHLY_HIGHLIGHTS, config=config)
-        state.duration_mode = "manual"
-        state.target_duration = 2.5
-
-        ui = ui_auto_seconds(state, THIN_MONTH)
+    def test_an_explicit_target_wins(self) -> None:
+        """``--duration`` is the owner's ask: the pool does not move it."""
         cli = cli_auto_seconds(
-            MemoryType.MONTHLY_HIGHLIGHTS, THIN_MONTH, config=config, duration=150.0
+            MemoryType.MONTHLY_HIGHLIGHTS, THIN_MONTH, config=Config(), duration=150.0
         )
 
-        assert ui == cli == 150.0
+        assert cli == 150.0
 
-    def test_a_fuller_pool_grows_back_to_the_cards_length(self) -> None:
-        """A second cut is fitted from the card's ask, not from the last shortened answer."""
+    def test_a_fuller_pool_gets_a_longer_film(self) -> None:
         config = Config()
-        state = ui_state(MemoryType.MONTHLY_HIGHLIGHTS, config=config)
 
-        ui_auto_seconds(state, THIN_MONTH)
-        again = ui_auto_seconds(state, DENSE_MONTH)
+        thin = cli_auto_seconds(MemoryType.MONTHLY_HIGHLIGHTS, THIN_MONTH, config=config)
+        dense = cli_auto_seconds(MemoryType.MONTHLY_HIGHLIGHTS, DENSE_MONTH, config=config)
 
-        assert again == cli_auto_seconds(MemoryType.MONTHLY_HIGHLIGHTS, DENSE_MONTH, config=config)
-
-
-def test_the_fitted_length_reaches_the_cut_and_the_render(tmp_path) -> None:
-    """The story-first editor, the run record and the final render all read the fit."""
-    config = Config(cache={"directory": str(tmp_path / "cache")})
-    state = ui_state(MemoryType.MONTHLY_HIGHLIGHTS, config=config)
-    clips, photos = THIN_MONTH
-    fitted = ui_auto_seconds(state, THIN_MONTH)
-
-    context = _build_ui_editorial_context(state, config, clips, photos)
-    # WHY: the builder imports the Immich client; nothing here may reach a server.
-    with patch("immich_memories.api.immich.SyncImmichClient"):
-        params = _build_generation_params(state, [], tmp_path / "memory.mp4")
-
-    assert context.target_seconds == fitted
-    assert context.duration_source == DURATION_FROM_MATERIAL
-    assert context.render_timing.target_seconds == fitted
-    assert params.target_duration_seconds == fitted
+        assert dense > thin

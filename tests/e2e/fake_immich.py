@@ -390,6 +390,10 @@ def _handler_type(
                     },
                 )
                 return
+            if path == "/api/albums":
+                # The fixture library keeps no albums; the brief's album picker reads an empty list.
+                self._send_json(200, [])
+                return
             if path == "/api/people":
                 self._send_json(
                     200,

@@ -264,7 +264,7 @@ stems, vocals duck most and drums keep their rhythm. None of the ducking constan
 | Where | Switch |
 |---|---|
 | CLI | `--music PATH`, `--no-music`, `--music-volume` |
-| Web UI, Generation Options | **Background music**: None, Upload file, Bundled, AI Generated, and the volume slider |
+| Web UI, Render | **Music**: Automatic (as configured), No music, a previewed track, an uploaded one, and **Music volume** |
 | Config | `advanced.ace_step.enabled`, `advanced.musicgen.enabled` |
 
 ### Generated music {#install-locally-on-a-mac}

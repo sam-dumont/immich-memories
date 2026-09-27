@@ -34,6 +34,7 @@ _VALUED = (
     "near_date",
     "event_id",
     "duration",
+    "photo_duration",
     "sharing",
 )
 _REPEATED = (("person", "--person"), ("include_asset", "--include"), ("exclude_asset", "--exclude"))
@@ -65,6 +66,8 @@ class CutBrief(BaseModel):
     duration: int | None = None
     include_photos: bool | None = None
     include_live_photos: bool | None = None
+    photo_duration: float | None = None
+    accept_any_provenance: bool = False
     sharing: Literal["just-us", "family", "shareable"] | None = None
     include_asset: list[str] = []
     exclude_asset: list[str] = []
@@ -79,6 +82,8 @@ class CutBrief(BaseModel):
             flags.extend(f"{flag}={value}" for value in getattr(self, name))
         if self.all_trips:
             flags.append("--all-trips")
+        if self.accept_any_provenance:
+            flags.append("--accept-any-provenance")
         if self.include_photos is not None:
             flags.append("--include-photos" if self.include_photos else "--no-photos")
         if self.include_live_photos is not None:

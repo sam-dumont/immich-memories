@@ -88,8 +88,8 @@ class TestReadingAThumbnailKeepsItAlive:
         cache.get("kept", "preview")
         cache.enforce_budget()
 
-        assert cache.has("kept", "preview")
-        assert not cache.has("dropped", "preview")
+        assert cache.get("kept", "preview") is not None
+        assert cache.get("dropped", "preview") is None
 
 
 class TestSelfEvictionIsAnnounced:
@@ -121,7 +121,7 @@ def test_finite_cache_still_evicts_at_the_automatic_check(tmp_path):
     for number in range(199):
         cache.put(f"new-{number}", "preview", b"x" * 600)
 
-    assert not cache.has("existing", "preview")
+    assert cache.get("existing", "preview") is None
     assert 0 < cache.get_stats()["total_size_bytes"] <= 1000
 
 
@@ -149,7 +149,7 @@ class TestAWorkingSetLargerThanTheBudget:
 
         cache.enforce_budget()
 
-        assert all(cache.has(f"asset-{i}", "preview") for i in range(4))
+        assert all(cache.get(f"asset-{i}", "preview") is not None for i in range(4))
 
     def test_an_earlier_run_s_previews_are_reclaimed_first(self, tmp_path):
         cache = self._cache(tmp_path, max_size_mb=0.001)
@@ -158,8 +158,8 @@ class TestAWorkingSetLargerThanTheBudget:
 
         cache.enforce_budget()
 
-        assert not cache.has("last-run", "preview")
-        assert cache.has("this-run", "preview")
+        assert cache.get("last-run", "preview") is None
+        assert cache.get("this-run", "preview") is not None
 
     def test_a_clock_ahead_of_the_filesystem_still_spares_this_run(self, tmp_path, monkeypatch):
         """The run boundary and the mtimes it is compared against must come from
@@ -179,7 +179,7 @@ class TestAWorkingSetLargerThanTheBudget:
 
         cache.enforce_budget()
 
-        assert all(cache.has(f"asset-{i}", "preview") for i in range(4))
+        assert all(cache.get(f"asset-{i}", "preview") is not None for i in range(4))
 
     def test_the_overflow_is_announced_once_and_names_the_setting(self, tmp_path, caplog):
         cache = self._cache(tmp_path, max_size_mb=0.001)

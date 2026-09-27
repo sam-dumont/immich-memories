@@ -10,338 +10,276 @@ import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
 
 Reader: newcomer. Every page and button, in the order you meet them.
 
-`/` is one page with three states: the **brief**, the **cut** in progress, and the **storyboard**
-the cut produced. The GUI and CLI use the same editor. Both can make a film; the GUI also gives you
-a visual workspace to review and refine the cut. The sidebar holds **Memory**, **Suggestions**, **Runs**, **Media pool**
-and **Settings**. Options and Export open from the cut itself.
+`immich-memories ui` serves the web client at `/app`. It looks like Immich because it is built on
+Immich's own component library, and it does nothing the CLI cannot: every button runs the same
+command you could type, and the page shows you that command. What the browser adds is the review.
+You see the cut as a contact sheet, read why each picture is in it, change it, and only then render.
 
-Screenshots on this page come from a hermetic run over the CC0 fixture library
-(`tests/e2e/fixtures/library`, credits in its `CREDITS.md`), never a real library.
+The sidebar holds **Memory**, **Suggestions**, **Runs** and **Settings**. Screenshots on this page
+come from a hermetic run over the CC0 fixture library (`tests/e2e/fixtures/library`, credits in its
+`CREDITS.md`), never a real library.
 
-## Interface and film languages
+## Signing in and languages
 
-The interface follows your browser's preferred supported language. **Interface language** in
-the sidebar, or on the sign-in page, overrides it for that browser. Choose **Automatic (browser)**
-to return to detection. Another browser keeps its own choice.
+With `auth` configured the client opens on a sign-in page: a username and password for `basic`, a
+button to your identity provider for `oidc`, nothing at all behind a proxy that signs you in with a
+header. **Sign out** is at the top right. Setup: [Authentication](../run/authentication.mdx).
 
-The interface supports English, French, Dutch, German, Spanish, Italian, Brazilian Portuguese,
-European Portuguese, Polish, Swedish, Russian, Japanese, Simplified Chinese and Korean. Missing
-translations fall back to English. The translations are AI-drafted and welcome corrections.
+The interface follows your browser's language. The **Interface language** select at the top
+overrides it for that browser only; **Automatic (browser)** goes back to detection. It speaks
+English, French, Dutch, German, Spanish, Italian, Brazilian and European Portuguese, Polish,
+Swedish, Russian, Japanese, Simplified Chinese and Korean, with English wherever a translation is
+missing. The translations are AI-drafted and corrections are welcome.
 
-Immich keeps its language choice in its own browser storage; its user-preferences API does not
-expose that choice. This app therefore uses the browser's language preference rather than
-reading an Immich setting it cannot access.
+The interface language never changes the film's. Titles and captions follow `title_screens.locale`
+([Titles, maps and music](./titles-maps-music.md)).
 
-**Film language**, under **Generation Options > Title**, is separate. Changing the interface
-does not change your film's titles or captions. Saved prose, library names, configuration keys
-and technical logs keep their original text.
+With `server.enable_demo_mode: true`, an eye button next to it is **Demo mode**: it blurs every
+picture on screen, for a screen share ([Privacy](../run/privacy.md)).
 
-<ThemedScreenshot name="memory-brief" alt="The brief: memory type, its parameters and the duration line" />
+## Make a memory
 
-## The brief
+<ThemedScreenshot name="memory-brief" alt="The brief: memory type, its parameters, and the command it will run" />
 
-The brief appears once Immich answers. With credentials in `config.yaml` or the environment the page
-connects on its own; otherwise only the connection panel shows until **Test Connection** succeeds.
+**Memory** is the brief. Pick a type, fill in what it asks, and press **Cut**. The grey line above
+the button is the exact `generate` command the server is about to run, updated as you type. Copy it
+into a terminal and you get the same cut.
 
-The API key field always loads empty: the saved key stays on the server, and an empty field keeps
-it. Change the server URL and you type the key again, because a saved key only goes to the server it
-was saved for.
-
-**Memory type** offers what `generate --memory-type` accepts, plus **Custom date range**
-(`--start`/`--end` on the CLI). **Duration** is one line: with **Auto duration** on it shows the
-type's answer ("Auto · 1m 00s" for a month); off, you type an exact target. The target is the whole
-video, titles included.
-
-The cut fits Auto to the pool when it starts, with the same rule as `generate` without
-`--duration`: a film never runs longer than its days can fill. A month with three photographed days
-gets about 20 s. After the cut the line says what set the length ("Duration 20s, set by the
-material: 3 photographed days"). The rule: [How long a film runs](./memory-types.mdx#how-long-a-film-runs).
-
-<ThemedScreenshot name="memory-brief-sharing" alt="Who will watch it: the Sharing select on Just us, and the line that says the household's private moments play too" />
-
-**Who will watch it** picks the film's sharing level: **Just us** (the household; private moments a
-caption names, like a bath, play too), **Family** (the default, from `defaults.sharing`) or
-**Shareable** (anyone: only what nothing held back). The line under it says what the level lets in.
-The rules: [Sharing levels](../how-it-chooses/family-audience-duplicates.md#sharing-levels).
-
-| Type | Parameters shown | Default target |
-|------|------------------|----------------|
+| Type | Asks for | Default length |
+|------|----------|----------------|
+| Monthly Highlights | Year, Month, Only with | 1 min |
 | Year in Review | Year, Only with | 10 min |
 | Season | Year, Season, Hemisphere, Only with | 2 min 15 s |
-| Person Spotlight | Year (or "All Time"), Person, **Birthday to birthday** | 10 min |
-| Multi-Person | Year, People (2 or more), Together / Any of these people | 10 min |
-| Monthly Highlights | Year, Month, Only with | 1 min |
-| On This Day | Only with | 45 s |
-| Album | Album, from your Immich albums | 30 s + 10 s an active day, 60 to 300 s |
-| Trip | Year, then **Select a trip** from the trips found in your GPS | 30 s + 10 s an active day, 60 to 300 s |
-| Holiday | Holiday, Most recent year, Years to span (2 to 10), Only with | 1 min |
-| Surprise me | **Pick a day** from the `discover-days` catalogue | 30 s + 6 s an active hour, 60 to 180 s |
-| Custom date range | date range tabs, person filter | about 10 min per year of range |
+| Person Spotlight | Year, Person, Birthday to birthday | 10 min |
+| Multi-Person | Year, People (two or more) | 10 min |
+| On This Day | Day, Years back, Only with | 45 s |
+| Album | One of your Immich albums | 30 s + 10 s an active day, 60 to 300 s |
+| Trip | Year, then one of the trips found in your GPS, or every trip | 30 s + 10 s an active day, 60 to 300 s |
+| Holiday | Year, Holiday, Years to span, Only with | 1 min |
+| Special day | A day from the `discover-days` catalogue, or any date | 30 s + 6 s an active hour, 60 to 180 s |
+| Custom date range | From, then a date or a period (`6m`, `1y`), Only with | about 10 min per year of range |
 
-What each type covers is on [Memory types](./memory-types.mdx). Three carry no person filter: Album
-(the album decides), Trip (its window is taken whole) and Surprise me (the occasion, not its guest
-list). **Surprise me** offers only days in `~/.immich-memories/special-days.json`, anniversaries
-first; with no catalogue it says which command builds one rather than offering a random day.
+What each type covers: [Memory types](./memory-types.mdx). The length is fitted to what the pictures
+can fill, the same rule as `generate` without `--duration`: a month with three photographed days gets
+about 20 s. **Length and pictures** takes an exact length in minutes instead (titles included), and
+holds the pool switches: photos, Live Photos, the seconds a photo stays on screen, and whether
+forwarded and downloaded media count. The rule: [How long a film runs](./memory-types.mdx#how-long-a-film-runs).
 
-**Custom date range** has three tabs: **Year** (then **Calendar Year** or **From Birthday**),
-**Duration** (1 to 24 months or years from a start date) and **Custom Range**.
+<ThemedScreenshot name="memory-brief-sharing" alt="Who may see it, set to Just us" />
+
+**Who may see it** is the sharing level: **Just us** (the household; private moments a caption names,
+like a bath, play too), **Family** (the default, from `defaults.sharing`) or **Shareable** (only what
+nothing held back). The rules: [Sharing levels](../how-it-chooses/family-audience-duplicates.md#sharing-levels).
 
 ### People
 
-Every person picker is filled from Immich's face recognition, so only named faces appear. **Person
-Spotlight** takes one, **Multi-Person** two or more, and every other dated type has an optional
-**Only with** picker.
+The names come from Immich's face recognition, so only named faces appear. **Person Spotlight** takes
+one, **Multi-Person** two or more, and every other dated type has **Only with (optional)**. With two
+names, **Pictures with** asks whether you mean **all of them together** (`--person` repeated) or **any
+of them** (`--person-match or`).
 
-With two names or more, **Together** keeps pictures holding everyone (repeating `--person`) and **Any
-of these people** keeps pictures holding one of them (`--person-match or`). **Advanced people
-condition** takes quoted names with AND, OR and parentheses, like `--people-expression`. It opens by
-itself when a condition is set, so a filter never narrows a memory with nothing on screen saying so.
+**Grouped condition** takes quoted names with AND, OR and parentheses, like `--people-expression`:
+`("Robin" OR "Kit") AND "Charlie"`. It replaces the names above rather than adding to them, and the
+command line shows which one the cut will use.
 
-## Advanced
+### Trips and special days
 
-<ThemedScreenshot name="memory-brief-advanced" alt="Advanced: the Immich connection panel, the pool switches and the media pool button" />
+<ThemedScreenshot name="memory-trip-brief" alt="The trip picker: the trips found in 2024, one chosen" />
 
-**Advanced**, at the bottom of the brief, holds the **Immich connection** panel, four pool switches
-(**Include Photos**, **Include Live Photos**, **Accept Forwarded Media**, **HDR clips only**) and
-**Open the media pool**. Read [Saving config](#saving-config-from-the-memory-page) before pressing
-**Save Config**: it writes the whole configuration.
+A **Trip** lists the trips found in the year's GPS, with their dates, length and picture count, the
+same list `generate --memory-type trip` prints. Pick one, or **Every trip of the year**. **Cut** stays
+greyed out until you do, because a trip brief without one only lists them.
 
-### The media pool
+A **Special day** lists the days in `~/.immich-memories/special-days.json`, anniversaries due first. A
+scheduled run only proposes a day on its anniversary; here you can pick any day the catalogue holds,
+or type any date into **Day**. With no catalogue yet, the page says to run `immich-memories discover-days`.
 
-The pool is everything the brief found, in one chronological grid with an **Include** checkbox on
-each, twenty to a page. Everything starts checked. Untick what may never be used: the pocket
-recording, the forwarded screenshot. Twins and bursts are the editor's call; nothing is pre-unticked.
+## The cut in progress
 
-After a cut the same checkboxes show the cut. Untick a picture the editor kept and **Cut again**
-leaves it out. Tick one it dropped and **Cut again** keeps it, in its own story, at its capture time,
-without re-arguing the rest. The only thing that outranks your tick is the family-viewing gate, and
-the run's `owner-required-after-audience` record names what it refused. **Start over** forgets the
-cut. More ways to overrule the editor: [Overrule it](../how-it-chooses/overrule-it.md).
+<ThemedScreenshot name="memory-cutting" alt="The cut in progress: the stage, a bar, the count and the pictures just read" />
 
-<ThemedScreenshot name="memory-pool-outcomes" alt="The pool shows the last cut's outcome and reason below each picture" />
-
-Each picture also shows its outcome from the last cut: **In the cut at** a timecode with the reason,
-or **Left out at** the named pass with the reason. `immich-memories runs why ASSET_ID --run RUN_ID`
-reads the same evidence in a terminal.
-
-<ThemedScreenshot name="memory-pool-outcomes-grid" alt="The compact grid: the same outcome line under every thumbnail" />
-
-Under the outcome, **Never use** keeps the picture out of every film from the next cut on (and
-unticks it). Where something holds the picture (a nudity detector, or a caption an earlier cut read
-as private) the line says what, and **Clear hold** lifts it after showing you the picture and asking how far it may go (Just us,
-Family or Anyone).
-**Undo** forgets either. They last across runs, unlike ticks.
-
-<ThemedScreenshot name="pictures-pool-held" alt="A held picture in the pool: the reason, Clear hold and Never use" />
-
-<ThemedScreenshot name="pictures-clear-dialog" alt="Clear hold asks first and shows the picture" />
-
-The walkthrough: [Your word on a picture](../how-it-chooses/overrule-it.md#your-word-on-a-picture).
-
-**Trim the video clips**, after a cut, opens the excerpt editor: one row per video, with **Include in
-compilation**, a **Select range** slider (plus **First 5s**, **Middle 5s**, **Last 5s**, **Full
-clip**, **Preview**) and **Rotation**. Edits go back into the cut and the length updates as you trim.
-
-## Cut
-
-**Cut** loads the pool for the brief and runs the editor over it. There is no review step in between:
-everything the brief found is eligible. To keep something out first, open the media pool, untick it,
-and cut from there.
-
-<ThemedScreenshot name="memory-cutting" alt="The cut in progress: one row per phase, the editor's current stage under the active one" />
-
-Five rows (**Finding media**, **Loading thumbnails**, **Reading the pictures**, **Editing**, **Done**)
-show the current stage, the elapsed time and **Cancel**, which stops after the stage in progress. On
-a library that has never been read, *Reading dates, places and people* is the long one; a later cut
-over the same pictures reuses what it banked. The stages are explained on
+**Cut** runs `generate --no-render` on the server. The panel shows the stage, a bar and a count for a
+stage that counts its work, an estimate of the time left in that stage measured from its own finished
+work, and the last pictures it read. On a library that has never been read, *Reading dates, places
+and people* is the long one; a later cut over the same pictures reuses what it banked. The stages:
 [From library to film](../how-it-chooses/overview.md).
 
-<ThemedScreenshot name="memory-cutting-estimate" alt="A preparation pass showing its count and estimated time left in this stage" />
+The cut runs on the server, not in the tab. Reload, close the laptop, come back: the page finds the
+running cut and follows it again. **Cancel** stops it. A cut that fails shows the command's own last
+lines, and keeps showing them after a reload, because they usually name the command that fixes it
+(`immich-memories models fetch` on a fresh install). One job runs at a time.
 
-A stage that counts its work shows a bar and an estimate measured from its own finished work.
+When the cut is done the page opens its review.
 
-One session runs one cut at a time, and the run belongs to the session, not the tab. Reload mid-cut
-and you land on the same rows. A cut that was cancelled, failed or interrupted offers **Cut again**.
+## Review the cut
 
-With a reader configured ([optional](../better/overview.md)), a reader that stops answering shows on
-the Editing row at once (*Waiting for the reader at omlx.local:9999: connection dropped, retry 1 of
-3*): a server that is restarting survives, one that is off is named within seconds.
+<ThemedScreenshot name="memory-story" alt="The contact sheet in playback order, with one picture open in the inspector" />
 
-## The storyboard, then the story
+The review opens as a **Contact sheet**: every picture in the order the film plays it, uncropped, with
+its number, day, timecode, screen time and the editor's one-line reason. **Videos** and **Stills**
+filter it, and the arrow keys walk it. The thesis the editor wrote sits above.
 
-<ThemedScreenshot name="memory-story" alt="The cut contact sheet, with an uncropped picture and its recorded reason in the inspector" />
+Open a picture and the inspector shows it large; a video plays exactly the stretch the film uses, on
+a loop. Under it:
 
-The **Storyboard** is a contact sheet in playback order. Each uncropped thumbnail shows its
-number, timecode, capture day, screen time and story. **Show** filters it to videos, stills or your
-exclusions. Open a picture to read **Why this picture** beside a larger preview.
+- **Why this picture**: the editor's reason, the line `runs story` prints.
+- **How the rules got here**: the passes it went through and where it was kept, in the words
+  `runs why` uses.
+- **Other pictures of this moment**: the rest of the moment, with what became of each in this run.
+  Open one to see it beside the picture in the cut.
+- **Model polish**: what the model said, which rule overruled it, the picture a swap replaced and any
+  alternative it offered, with the outcome. A cut no model read says so: the rules chose every
+  picture, which is what the NAS tier does.
 
-When the saved cut records them, the inspector also shows the **Model suggestion**, the rule that
-kept the picture, and a **Recorded alternative** with its actual outcome. A refused replacement
-stays labelled as refused. Cuts without those records show only the evidence they have.
+<ThemedScreenshot name="memory-story-ranked" alt="The Stories view: each story with its weight, its purpose and the pictures that carry it" />
 
-Untick **Include in export** to leave a picture out of this export; tick it again to restore it.
-The contact sheet keeps the saved cut's order and timecodes. **Cut again** creates a new plan from
-your selection. **Find alternatives in the pool** opens the existing pool, where you can tick a
-different picture and cut again. **Trim the video clips** opens the excerpt editor.
+**Stories** shows the same cut the way the editor weighed it: stories heaviest first (**Main story**,
+**Important**, **Supporting**, **Small moment**), each with its purpose and the pictures that carry
+it. Click a picture to open it in the inspector. A cut made on a reduced preparation tier says so
+under the thesis. The words: [Glossary](../how-it-chooses/glossary.md).
 
-**Picture decisions** opens the existing **Never use**, **Clear hold** and **Undo** controls.
-These decisions apply across runs; an export exclusion only changes the current session.
+### Change it
 
-<ThemedScreenshot name="pictures-storyboard-never-use" alt="Picture decisions opened from the inspector, with Never use saved and Undo available" />
+<ThemedScreenshot name="memory-review-edit" alt="One picture removed, one swapped, and the bar counting the changes against the budget" />
 
-<ThemedScreenshot name="memory-story-ranked" alt="The story tab: stories in weight order, each with its pictures and their reasons" />
+Every shot can be edited from the inspector:
 
-The **Story** tab is the same cut the way the editor weighed it. A duration line first (seconds
-selected, seconds available, near target or short), then the stories heaviest first (**Main story**,
-**Important**, **Supporting**, **Small moment**). **Details** shows the editor's own words: the
-weight (`dominant`, `major`, `minor`, `glimpse`) and each picture's standing (`remarkable`, `maybe`).
-The [Glossary](../how-it-chooses/glossary.md) defines them.
+- **Remove from this cut** takes it out; **Put it back** undoes that.
+- A video trims with **Start here** and **End here** at the player's position. A still takes a
+  **Screen time**.
+- **Use this picture instead**, on another picture of the same moment, swaps it in.
 
-Four buttons below: **Export**, **Review the pool**, **Cut again** and **Change the brief**.
+The sheet marks removed and swapped shots. A bar at the bottom counts the changes and adds up the
+seconds against what the titles leave; it turns red when the cut no longer fits. **Undo** (or
+Ctrl/Cmd+Z) walks back one change.
 
-## Export
+**Save revision** checks the edits the way the renderer will and keeps them as a numbered revision
+beside the run (`revisions/0001.private.json` in its attempt folder). A refused save says which edit
+and why. **Revisions** lists every saved one; **Open** loads it back into the editor.
 
-<ThemedScreenshot name="memory-export" alt="Export: summary, output filename, upload switch" />
+None of this reruns the editor. For that, use the pool.
 
-**Preview & Export** shows the **Film length** (titles included, with `≈` until the file exists), the
-**Output filename** (`everyone_jan-apr_2025_memories.mp4`), the folder (`output.directory`,
-`~/Videos/Memories` by default, one subfolder per run) and **Upload after generation** with an
-**Album name**, off by default. Upload is the one write this app makes to Immich: the film, tagged
-`immich-memories/generated`, into that album.
+### The pool
 
-**Generate Video** starts the render, which keeps going on the server if the tab reloads. There is no
-download button: open the path shown, or find the film in the album.
+<ThemedScreenshot name="memory-pool-outcomes" alt="The pool: every picture the cut saw, with its outcome and a checkbox" />
 
-<ThemedScreenshot name="memory-options" alt="Generation Options: output settings, title, music" />
+**Pool** shows every picture the cut saw, in capture order, each with what became of it (**In the cut**
+with its reason, or where and why it was left out; `runs why` reads the same line) and an **In the next
+cut** checkbox. Untick a picture the cut kept and it is left out; tick one it dropped and it is kept,
+in its own story at its capture time. **Cut again with these choices** runs a new cut with those
+ticks as `--include` and `--exclude`, and opens its review. The only thing that outranks a tick is the
+family-viewing gate.
 
-**Back to Generation Options** changes how the cut is rendered, never the cut. **Resolution** and
-**Output Format** default to `output.codec` and `output.format`. **Advanced options** adds
-**Orientation** (Auto follows the majority of the kept clips), **Scaling Mode**, **Transition Style**,
-the date and place captions, **Keep intermediate files** and **Photo duration**. Clips are never
-cropped: a mismatched aspect gets a blurred backdrop or bars
-([Ken Burns and framing](./photos-and-live-photos.md#ken-burns-and-where-the-pan-lands)).
+The pool opens on this memory's own pictures: the ones the editor was given. A spotlight's editor
+only gets the pictures its person is in, so the rest of the year stays out of the list. **Also show
+the pictures outside this memory** brings them back, greyed out and without a checkbox, because a
+tick cannot bring a picture into a memory it is not part of.
 
-**Title** and **Subtitle** come pre-filled, with a **Language** select and **Regenerate**.
-**Background music** offers **None** and **Upload file**; **Bundled** appears when the music package
-is installed, **AI Generated** only when a music generator is enabled. See
-[Titles, maps and music](./titles-maps-music.md).
+<ThemedScreenshot name="pictures-pool-held" alt="A held picture: the reason, Clear hold and Never use" />
 
-Hardware acceleration is not shown here: the app picks it at encode time, and `immich-memories hardware`
-says what your machine offers.
+Two buttons last across every run, unlike ticks. **Never use** keeps a picture out of every film from
+now on. Where something holds a picture (a nudity detector, or a caption an earlier cut read as
+private) the tile says what, and **Clear hold** lifts it, after showing you the picture and asking how
+far it may go: **Just us**, **Family** or **Anyone**. **Undo** forgets either.
 
-## Suggestions
+<ThemedScreenshot name="pictures-clear-dialog" alt="Clear hold shows the picture and asks who may see it" />
 
-<ThemedScreenshot name="suggestions" alt="Suggested memories with their dates, reasons and actions" />
+More ways to overrule the editor: [Overrule it](../how-it-chooses/overrule-it.md).
 
-**Suggestions** shows what automation would make next, with the same ranking as
-`immich-memories auto suggest`: reason, dates, picture count and category per card. **Candidate key**
-shows the key `auto run --candidate` accepts, **Check eligibility** runs the checks without a render,
-and **Run this suggestion** renders on the server. Running re-checks cooldown and repetition rules
-first. **Why other suggestions were skipped** names the rule behind each rejection. More on
-[Automate it](./automate.md).
+## Render
+
+<ThemedScreenshot name="memory-options" alt="The Render panel: what to render, output settings, title and music" />
+
+**Render** runs `runs render` on the cut, or on one of its revisions (**What to render**). Nothing is
+selected again: the film plays exactly the reviewed cut. Every option defaults to your configuration
+(**As configured**):
+
+- **Resolution**, **Format** (H.264 or H.265 MP4, ProRes MOV), **Quality**, **Orientation** (Automatic
+  follows most of the kept clips; Portrait with a short length is a vertical short) and **Scaling
+  Mode** (a blurred backdrop or bars; clips are never cropped).
+- **Transition Style**, **Add date overlay**, **Caption clips with their place**, and **Privacy mode**,
+  which blurs every picture and scrambles names for a public demo.
+- **Title** and **Subtitle**. Leave the title empty and **Who names the film** decides: as `generate`
+  would, the model, or the dates and places only.
+- **Music**: **Automatic** (as configured), **No music**, **Preview a track** made for this cut from
+  its mood (listen before you render; offered when MusicGen or ACE-Step is configured), or **Upload a
+  track** (MP3, M4A or WAV). **Music volume** sets
+  the mix. See [Titles, maps and music](./titles-maps-music.md).
+- **Upload the film to Immich**, into an **Album name**. It is the one write this app makes to Immich:
+  the film, tagged `immich-memories/generated`.
+
+<ThemedScreenshot name="memory-export" alt="The rendered film playing on the review page" />
+
+The render shows its progress the same way a cut does and survives a reload the same way. When it
+finishes the film plays on the page. The file is in `output.directory` (`~/Videos/Memories` by
+default), and every render is its own run, so an earlier film is never overwritten.
 
 ## Runs
 
 <ThemedScreenshot name="runs" alt="Run history as cards, each with the first pictures of its cut, its status and when it ran" />
 
-**Runs** lists manual and automatic renders from the same database as `immich-memories runs list`,
-failures included, newest first. Each card shows the first four pictures its saved cut plays, the
-memory type, its status and how long ago it ran. The status buttons filter the list, and older runs
-load as you scroll.
+**Runs** lists every cut and render, manual and automatic, failures included, newest first: the same
+database as `immich-memories runs list`. Each card shows the first pictures its cut plays, the memory
+type, its status and how long ago it ran. The status buttons filter the list, and older runs load as
+you scroll. Open one to review it, render it again, or play its film.
 
-This is the first page of the new web client, at `/app`. It looks and behaves like Immich because
-it is built on Immich's own component library, and it reads the same JSON API
-(`/api/v1`) that the rest of the pages are moving to, one at a time
-([#1395](https://github.com/sam-dumont/immich-video-memory-generator/issues/1395)). The old
-`/runs` address sends you here.
+<ThemedScreenshot name="run-details" alt="One run's output path, Immich delivery, phase timings" />
 
-Open a run to review its cut. The pictures sit in a contact sheet in the order the film plays them,
-each with its number, day, timecode, screen time and the editor's reason. **Videos** and **Stills**
-filter the sheet, and the arrow keys walk it. The inspector beside it shows the picture large; a
-video plays exactly the stretch the film uses, on a loop. Under it:
+Under the review sit the run's output path, its Immich delivery, warnings and phase timings.
+**Download child output** fetches the full output of an automatic run, credentials removed.
 
-- **Why this picture**: the editor's reason, the same line `runs story` prints.
-- **How the rules got here**: the passes it went through and where it was kept, in the words
-  `runs why` uses.
-- **Other pictures of this moment**: the rest of the moment, as the editor kept it for a later
-  swap, each with what became of it in this run (the same line the media pool shows). Open one to
-  see it beside the picture in the cut. **Browse the whole pool** goes further.
-- **Model polish**: what the model said, which rule overruled it, the picture a swap replaced and
-  any alternative it offered with the outcome. A cut no model read says so: the rules chose every
-  picture, which is what the NAS tier does.
+## Suggestions
 
-### Refining the cut
+<ThemedScreenshot name="suggestions" alt="Suggested memories with their dates, reasons and actions" />
 
-Every shot in the inspector can be edited. **Remove from this cut** takes it out (**Put it back**
-undoes that). A video trims with **Start here** and **End here** at the player's position; a still
-takes a **Screen time**. **Use this picture instead**, on another picture of the moment, swaps it
-in. The sheet marks removed and swapped shots, and a bar counts the changes and adds up the
-seconds against what the titles leave; **Undo** (or Ctrl/Cmd+Z) walks back one change.
+**Suggestions** shows what automation would make next, ranked as `immich-memories auto suggest`
+ranks it: reason, dates and picture count per card. **Candidate key** shows the key
+`auto run --candidate` takes, **Check eligibility** runs the checks without a render, and **Run this
+suggestion** renders on the server after re-checking cooldown and repetition. **Why other suggestions
+were skipped** names the rule behind each rejection. More on [Automate it](./automate.md).
 
-**Save revision** checks the edits the way the renderer would and keeps them as a numbered
-revision beside the run. A refused save says which edit and why. Earlier revisions stay in the
-**Revisions** list; **Open** loads one back into the editor. None of this selects: the rules and
-the model are not asked again, and a **Never use** decision on a picture is still the separate,
-library-wide choice.
+## Settings
 
-Below the sheet sit the run's output path, upload status, warnings and phase timings.
-**Download child output** fetches the full output of an automatic run, with credentials removed.
-Old `/runs?run_id=...` links land on this page.
+<ThemedScreenshot name="settings-config" alt="Settings: the Immich connection, the configuration in use and the caches" />
 
-<ThemedScreenshot name="run-details" alt="One run with its output path, phase timings and saved cut" />
+**Immich Connection** is the server and API key this install reads. The key field always loads empty:
+the saved key stays on the server, and an empty field keeps it. Change the URL and you type the key
+again, because a saved key only ever goes to the server it was saved for. **Test Connection** asks
+the server who the key belongs to without saving; **Save Config** writes both to `config.yaml`.
 
-## People: confirming who's who
+**Configuration** is the live configuration, read-only: `config.yaml` after environment overrides and
+after any preset filled the keys you did not set. **Reload from Disk** re-reads it after a hand edit.
+Any key named `api_key`, `api_keys`, `caption_api_key`, `client_secret`, `password`, `secret`, `token`,
+`trigger_token` or `urls` shows as `***`, masked on the server. Every key:
+[configuration reference](../reference/config-reference.md).
 
-`/settings/people` edits `~/.immich-memories/people.yaml`, the same file
-[`immich-memories people`](./cli/prepare.md) writes. The scan reads each named person's picture count
-and month curve from Immich, never a pixel. This page is what turns "people in the picture" into
-"your family" for the editor: the family seat and big stories read it
-([Teach it your family](../get-started/who-is-who.md)).
-
-A fresh install shows "No people file yet". **Rescan the library** writes the file and draws the
-roster. What the scan infers goes under `inferred:` and is recomputed each scan; what you confirm
-goes under `confirmed:` and a scan never touches it.
-
-The roster shows 20 people a page, inner circle first, with **Find a name** above. Each card has the
-tier the scan gave and why, the birth date from Immich (edit it in Immich) and a face crop. Three
-things are yours: **Role** (pick a suggestion or type your own), **Notes**, and **Relationships**
-(check confirms, cross rejects, pressing again takes it back). **Add relationship** records one the
-scan missed; **Add someone not in Immich** adds a person with no face record.
-
-**Curation** lists what only Immich can fix: two records with one name, or one person split across
-records, each linked to the record in Immich.
-
-## Config: what is actually running
-
-`/settings/config` is a **read-only view** of the live configuration: `config.yaml` after environment
-overrides and after any preset filled in the keys you did not set. It answers "is the default the
-docs mention what this install is using?". **Reload from Disk** re-reads the file after a hand edit.
-Every key is in the [configuration reference](../reference/config-reference.md).
-
-Any key named `api_key`, `api_keys`, `caption_api_key`, `client_secret`, `password`, `secret`,
-`token`, `trigger_token` or `urls` shows as `***`, masked on the server, so a screenshot of this page
-leaks nothing.
-
-### Saving config from the Memory page
-
-**Save Config**, in the connection panel under **Advanced** on the Memory page, writes the Immich URL
-and key, but it saves the **whole configuration**, so every value becomes explicitly set. A preset
-only fills what you have not chosen, so after a save it owns nothing: delete keys from `config.yaml`
-by hand to hand them back. Two exceptions: `server.host` is left out unless you set it, and
-credentials from environment variables stay in the environment.
-
-## Cache: what is on disk
-
-`/settings/cache` lists four caches with their size and a **Clear** button each.
+**Caches** lists four caches with their size and a **Clear** button each.
 
 | Cache | Holds | Cost of clearing |
 |-------|-------|------------------|
 | **Analysis** | a table no cut reads | nothing |
 | **Video** | downloaded source videos | re-download from Immich; evicted on its own anyway |
 | **Thumbnail** | Immich previews, read back for pixel facts, heads, contact sheets and the grid | re-fetched on demand |
-| **Preview** | the `.mp4` previews the review page plays | regenerated on the next preview |
+| **Preview** | clip previews the old web pages played; nothing writes it now | nothing |
 
-The expensive thing on disk is not behind those buttons. The editor's bank, `annotations.sqlite`
-under the cache directory, holds every fact it read about your pictures. **Clear all caches** leaves
-it alone. Delete it and the next cut reads your library from scratch. More on
-[Health, logs and caches](../run/maintenance/health-logs-cache.md).
+The expensive thing on disk is not behind those buttons. The editor's bank, `annotations.sqlite` under
+the cache directory, holds every fact it read about your pictures. Delete it and the next cut reads your
+library from scratch. More on [Health, logs and caches](../run/maintenance/health-logs-cache.md).
+
+### People: who is who
+
+<ThemedScreenshot name="settings-people" alt="The people file: each person with their picture count, role and relationships" />
+
+**People** edits `~/.immich-memories/people.yaml`, the file [`immich-memories people`](./cli/prepare.md)
+writes. It is what turns "people in the picture" into "your family" for the editor: the family seat
+and big stories read it ([Teach it your family](../get-started/who-is-who.md)).
+
+**Rescan the library** runs `people scan`, which reads each named person's picture count and month
+curve from Immich, never a pixel. What the scan infers is recomputed each scan; what you confirm
+stays. Each person shows their picture count and what the scan made of them. Three things are yours:
+a **Role** (pick a suggestion or type your own), **Notes**, and **Relationships** (**Yes, that is
+right** confirms, **No, they are not** rejects). **Add a relationship** records one the scan missed;
+**Add someone not in Immich** adds a person with no face record. **Find a name** filters the list.
+
+**Curation** lists what only Immich can fix: two records with one name, or one person split across
+records.

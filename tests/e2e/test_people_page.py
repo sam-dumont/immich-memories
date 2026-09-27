@@ -16,6 +16,7 @@ from playwright.sync_api import Page, expect
 pytestmark = pytest.mark.e2e
 
 _ROSTER = 34
+_PAGE = 30
 
 
 def _entry(index: int) -> dict:
@@ -54,35 +55,53 @@ def _write_people_file(root: Path) -> Path:
     return path
 
 
+def _cards(page: Page):
+    return page.get_by_role("listitem").filter(has=page.get_by_label("Notes"))
+
+
 def _open_people(page: Page, launch_app_url: str, launch_workspace) -> Path:
     path = _write_people_file(launch_workspace.root)
     page.goto(f"{launch_app_url}/settings/people", wait_until="domcontentloaded", timeout=30_000)
-    expect(page.locator(".roster-pager")).to_be_visible(timeout=30_000)
+    page.wait_for_url("**/app/settings/people")
+    expect(_cards(page).first).to_be_visible(timeout=30_000)
     return path
 
 
-def _cards(page: Page):
-    return page.locator(".roster-card")
+def _scrolled(page: Page) -> float:
+    """How far the page is scrolled: the app shell scrolls its own pane, not the window."""
+    return page.evaluate(
+        "() => { let pane = document.querySelector('main');"
+        " while (pane && pane.scrollTop === 0) pane = pane.parentElement;"
+        " return pane ? pane.scrollTop : window.scrollY; }"
+    )
 
 
-def test_the_roster_reads_the_workspace_file_twenty_to_a_page(
+def _saved(page: Page, person_id: str):
+    return page.expect_response(
+        lambda response: (
+            response.request.method == "PUT"
+            and response.url.endswith(f"/api/v1/roster/{person_id}")
+        )
+    )
+
+
+def test_the_roster_reads_the_workspace_file_a_page_at_a_time(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
     _open_people(page, launch_app_url, launch_workspace)
 
-    expect(page.get_by_text("Showing 1–20 of 34")).to_be_visible()
-    expect(_cards(page)).to_have_count(20)
+    expect(_cards(page)).to_have_count(_PAGE)
     expect(_cards(page).first).to_contain_text("Fixture Person 00")
     assert page.locator('img[src^="data:"]').count() == 0, "no face is inlined as a data URI"
-    faces = page.locator('img[src^="/media/person/"]')
-    assert faces.count() == 20
+    faces = page.locator('img[src^="/api/v1/people/"]')
+    expect(faces).to_have_count(_PAGE)
     expect(faces.first).to_have_js_property("naturalWidth", 128, timeout=15_000)
 
-    page.get_by_role("button", name="Next").click()
+    page.get_by_role("button", name="Show more").click()
 
-    expect(page.get_by_text("Showing 21–34 of 34")).to_be_visible()
-    expect(_cards(page)).to_have_count(14)
+    expect(_cards(page)).to_have_count(_ROSTER)
     expect(_cards(page).last).to_contain_text("Fixture Person 33")
+    expect(page.get_by_role("button", name="Show more")).to_have_count(0)
 
 
 def test_a_role_and_a_note_are_saved_without_reloading_the_page(
@@ -90,26 +109,23 @@ def test_a_role_and_a_note_are_saved_without_reloading_the_page(
 ) -> None:
     path = _open_people(page, launch_app_url, launch_workspace)
     page.evaluate("window.__s7_same_document = true")
-    page.get_by_role("button", name="Next").click()
-    expect(page.get_by_text("Showing 21–34 of 34")).to_be_visible()
+    page.get_by_role("button", name="Show more").click()
     last = _cards(page).last
+    expect(last).to_contain_text("Fixture Person 33")
     last.scroll_into_view_if_needed()
-    scrolled = page.evaluate("window.scrollY")
-    assert scrolled > 0
+    assert _scrolled(page) > 0
 
-    role = last.get_by_role("combobox", name="Role")
-    role.click()
-    role.fill("godparent")
-    role.press("Enter")
-    expect(page.get_by_text("Fixture Person 33: godparent")).to_be_visible(timeout=10_000)
-
-    notes = last.get_by_label("Notes")
-    notes.fill("lives abroad")
-    page.wait_for_timeout(1_500)
+    with _saved(page, "fake-person-33"):
+        last.get_by_label("Role", exact=False).fill("godparent")
+        last.get_by_label("Role", exact=False).press("Tab")
+    with _saved(page, "fake-person-33"):
+        last.get_by_label("Notes").fill("lives abroad")
+        last.get_by_label("Notes").press("Tab")
 
     assert page.evaluate("window.__s7_same_document") is True, "the page was reloaded"
-    assert page.evaluate("window.scrollY") > 0, "the page lost its place"
-    expect(page.get_by_text("Showing 21–34 of 34")).to_be_visible()
+    assert _scrolled(page) > 0, "the page lost its place"
+    expect(_cards(page)).to_have_count(_ROSTER)
+    expect(last.get_by_label("Role", exact=False)).to_have_value("godparent")
     saved = yaml.safe_load(path.read_text())
     person = next(entry for entry in saved["people"] if entry["ids"] == ["fake-person-33"])
     assert person["confirmed"]["role"] == "godparent"
@@ -122,11 +138,13 @@ def test_adding_a_person_redraws_the_roster_in_place(
     path = _open_people(page, launch_app_url, launch_workspace)
     page.evaluate("window.__s7_same_document = true")
 
-    page.get_by_role("button", name="Add someone not in Immich").click()
     page.get_by_label("Full name").fill("Off Camera Uncle")
-    page.get_by_role("button", name="Add person").click()
+    page.get_by_role("button", name="Add someone not in Immich").click()
+    expect(page.get_by_label("Full name")).to_have_value("")
 
-    expect(page.get_by_text("Showing 1–20 of 35")).to_be_visible(timeout=10_000)
+    page.get_by_label("Find a name").fill("off camera")
+    expect(_cards(page)).to_have_count(1)
+    expect(_cards(page).first).to_contain_text("Off Camera Uncle")
     assert page.evaluate("window.__s7_same_document") is True, "the page was reloaded"
     saved = yaml.safe_load(path.read_text())
     assert any(entry["name"] == "Off Camera Uncle" for entry in saved["people"])

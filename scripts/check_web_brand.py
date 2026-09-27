@@ -18,6 +18,8 @@ BRAND_EXPORTS = re.compile(
     r"\b(immichLogo\w*|immichFuto\w*|Logo|appStoreBadge|fdroidBadge|playStoreBadge|obtainiumBadge)\b"
 )
 IMMICH_UI_IMPORT = re.compile(r"import\s*\{([^}]*)\}\s*from\s*['\"]@immich/ui['\"]", re.S)
+# Components that draw the Immich logo unless told otherwise: a Modal without `icon=` does.
+LOGO_BY_DEFAULT = re.compile(r"<Modal\b(?![^>]*\bicon=)[^>]*>", re.S)
 BRAND_FILES = re.compile(
     r"(immich-logo|appstore-badge|fdroid-badge|playstore-badge|obtainium-badge)"
 )
@@ -30,6 +32,11 @@ def main() -> int:
         if path.suffix in {".svelte", ".ts", ".js"}
         for block in IMMICH_UI_IMPORT.findall(path.read_text())
         for name in BRAND_EXPORTS.findall(block)
+    ]
+    problems += [
+        f"{path.relative_to(ROOT)} has a <Modal> without icon=, which draws the Immich logo"
+        for path in SOURCE.rglob("*.svelte")
+        if LOGO_BY_DEFAULT.search(path.read_text())
     ]
     problems += [
         f"{path.relative_to(ROOT)} is an Immich brand asset"

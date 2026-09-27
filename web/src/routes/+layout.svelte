@@ -3,9 +3,18 @@
   import { page } from '$app/state';
   import { AppShell, AppShellHeader, AppShellSidebar, NavbarItem, ThemeSwitcher, TooltipProvider } from '@immich/ui';
   import { mdiCogOutline, mdiHistory, mdiLightbulbOutline, mdiMovieOpenStarOutline } from '@mdi/js';
-  import { t } from '$lib/i18n.svelte';
+  import { chooseLanguage, chosenLanguage, languages, t } from '$lib/i18n.svelte';
+  import { demoMode } from '$lib/demo-mode.svelte';
+  import { mdiEyeOffOutline, mdiEyeOutline } from '@mdi/js';
 
-  let { children } = $props();
+  let { children, data } = $props();
+  const bare = $derived(page.url.pathname.startsWith('/app/login'));
+
+  // WHY an effect: a class directive on <svelte:body> is not applied in Svelte 5.
+  $effect(() => {
+    // `server.enable_demo_mode` offers the switch; without it nothing is ever blurred.
+    document.body.classList.toggle('demo-mode', !!data.session?.demo_mode_offered && demoMode.on);
+  });
 
   // Pages not yet moved to this client open the server pages; each slice of #1395 moves one.
   const navigation = $derived([
@@ -17,6 +26,9 @@
 </script>
 
 <TooltipProvider>
+{#if bare}
+  <main class="mx-auto w-full max-w-7xl px-4 py-6">{@render children()}</main>
+{:else}
 <AppShell>
   <AppShellHeader>
     <header class="flex h-16 w-full items-center justify-between px-4">
@@ -24,7 +36,24 @@
         <svg viewBox="0 0 24 24" class="size-7 fill-current" aria-hidden="true"><path d={mdiMovieOpenStarOutline} /></svg>
         Immich Memories
       </a>
-      <ThemeSwitcher />
+      <div class="flex items-center gap-2">
+        <select class="rounded-lg border border-gray-300 bg-light px-2 py-1 text-sm dark:border-gray-700" aria-label={t('Interface language')}
+          value={chosenLanguage()} onchange={(event) => chooseLanguage(event.currentTarget.value)}>
+          <option value="auto">{t('Automatic (browser)')}</option>
+          {#each languages() as language (language.code)}<option value={language.code}>{language.name}</option>{/each}
+        </select>
+{#if data.session?.demo_mode_offered}
+        <button type="button" class="rounded-full p-2 text-primary hover:bg-primary/10" aria-pressed={demoMode.on} aria-label={t('Demo mode')}
+          title={t('Demo mode')} onclick={() => demoMode.toggle()}>
+          <svg viewBox="0 0 24 24" class="size-5 fill-current" aria-hidden="true"><path d={demoMode.on ? mdiEyeOffOutline : mdiEyeOutline} /></svg>
+        </button>
+        {/if}
+        <ThemeSwitcher />
+        {#if data.session?.auth_enabled && data.session?.signed_in}
+          {#if data.session.username}<span class="text-sm font-medium max-sm:hidden">{data.session.username}</span>{/if}
+          <a href="/logout" class="rounded-lg px-2 py-1 text-sm text-gray-600 hover:text-primary dark:text-gray-400">{t('Sign out')}</a>
+        {/if}
+      </div>
     </header>
   </AppShellHeader>
   <AppShellSidebar>
@@ -47,4 +76,5 @@
     </a>
   {/each}
 </nav>
+{/if}
 </TooltipProvider>

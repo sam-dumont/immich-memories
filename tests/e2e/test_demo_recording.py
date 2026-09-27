@@ -1,7 +1,7 @@
 """Record the Memory page walkthrough as one video, on the hermetic launch.
 
 One .webm under docs-site/static/demo/raw/ (gitignored): the brief, the cut in
-progress, the story it produced, and Export. It shows the flow in motion for a
+progress, the review it produced, a revision, and the render. It shows the flow in motion for a
 reviewer; the docs demo itself is the Remotion recreation under
 docs-site/remotion, never a screen recording. Part of `make e2e-full`.
 """
@@ -16,7 +16,7 @@ from playwright.sync_api import BrowserContext, Page, Playwright, expect
 
 from tests.e2e.fake_library import THESIS
 from tests.e2e.redaction import redact_page
-from tests.e2e.test_launch_smoke import _choose
+from tests.e2e.web_flow import contact_sheet, render, the_film
 
 pytestmark = [pytest.mark.e2e, pytest.mark.slow]
 
@@ -31,12 +31,6 @@ def _recording_context(playwright: Playwright, raw_dir: Path) -> BrowserContext:
     )
 
 
-def _smooth_scroll(page: Page, total: int, step: int = 40, delay: int = 60) -> None:
-    for _ in range(0, total, step):
-        page.mouse.wheel(0, step)
-        page.wait_for_timeout(delay)
-
-
 def _save_recording(context: BrowserContext, page: Page, raw_dir: Path, name: str) -> None:
     """Close the page to finalize the recording, then give it the segment's name."""
     page.close()
@@ -49,37 +43,40 @@ def _save_recording(context: BrowserContext, page: Page, raw_dir: Path, name: st
 def test_record_memory_walkthrough(
     playwright: Playwright, launch_app_url: str, demo_raw_dir: Path
 ) -> None:
-    """Brief, Advanced, Cut, the story, Export -- one take, real pauses between clicks."""
+    """Brief, Cut, the review, one edit kept as a revision, the render: one take, real pauses."""
     context = _recording_context(playwright, demo_raw_dir)
     page = context.new_page()
 
-    page.goto(launch_app_url, wait_until="domcontentloaded", timeout=30_000)
-    expect(page.get_by_role("combobox", name="Memory type")).to_be_visible(timeout=30_000)
+    page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
     page.wait_for_timeout(1200)
-    _choose(page, "Memory type", "Monthly Highlights")
-    page.wait_for_timeout(800)
-    _choose(page, "Month", "June")
-    page.wait_for_timeout(1200)
-
-    advanced = page.get_by_text("Advanced", exact=True)
-    advanced.click()
-    expect(page.get_by_role("button", name="Open the media pool")).to_be_visible()
-    redact_page(page)
-    page.wait_for_timeout(2000)
-    advanced.click()
-    page.wait_for_timeout(800)
+    page.get_by_text("Monthly Highlights", exact=True).click()
+    page.get_by_label("Year", exact=True).fill("2024")
+    page.wait_for_timeout(600)
+    page.get_by_label("Month", exact=True).fill("6")
+    page.get_by_text("Length and pictures").click()
+    page.get_by_label("Length in minutes", exact=False).fill("2")
+    page.wait_for_timeout(1500)
 
     page.get_by_role("button", name="Cut", exact=True).click()
-    expect(page.get_by_text(_THESIS)).to_be_visible(timeout=120_000)
+    page.wait_for_url("**/app/runs/**", timeout=240_000)
+    expect(page.get_by_text(_THESIS)).to_be_visible()
     page.wait_for_timeout(2000)
-    _smooth_scroll(page, 600)
-    page.wait_for_timeout(1500)
-    page.evaluate("window.scrollTo({top: 0, behavior: 'smooth'})")
+    contact_sheet(page).nth(2).click()
+    page.wait_for_timeout(2000)
+    page.get_by_role("article", name="Picture review").get_by_role(
+        "button", name="Remove from this cut"
+    ).click()
     page.wait_for_timeout(1200)
+    page.get_by_role("button", name="Save revision").click()
+    page.wait_for_timeout(1500)
 
-    page.get_by_role("button", name="Export", exact=True).click()
-    page.wait_for_url("**/step4", timeout=30_000)
-    expect(page.get_by_role("button", name="Generate Video")).to_be_visible(timeout=30_000)
+    page.get_by_role("region", name="Render").scroll_into_view_if_needed()
+    page.get_by_role("region", name="Render").get_by_label("What to render").select_option(
+        label="Revision 1"
+    )
+    page.wait_for_timeout(1200)
+    render(page, resolution="720p")
+    expect(the_film(page)).to_be_visible(timeout=600_000)
     # WHY: the output line names a pytest temp root that carries the developer's user name.
     redact_page(page)
     page.wait_for_timeout(2500)

@@ -63,11 +63,6 @@ class Shot:
     def timecode(self) -> str:
         return _clock(self.start)
 
-    @property
-    def kind_label(self) -> str:
-        """The badge word: a moving picture is a Video, everything else is held as a Still."""
-        return "Video" if self.motion else "Still"
-
 
 @dataclass(frozen=True)
 class Storyboard:

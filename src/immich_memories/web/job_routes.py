@@ -12,7 +12,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
@@ -64,15 +64,21 @@ class RenderOptions(BaseModel):
     resolution: str | None = None
     orientation: str | None = None
     format: str | None = None
-    no_music: bool = False
+    quality: str | None = None
+    scale_mode: str | None = None
+    # "none", "auto" (as configured), or the id of a previewed or uploaded track.
+    music: str = "auto"
     music_volume: float | None = None
     add_date: bool = False
     add_place: bool = False
     privacy_mode: bool = False
     upload_to_immich: bool = False
     album: str | None = None
+    # None leaves the naming to generate's own rule; True/False is --llm-title/--no-llm-title.
+    llm_title: bool | None = None
 
-    def flags(self) -> list[str]:
+    def flags(self, music_path: Path | None = None) -> list[str]:
+        """`runs render`'s flags; a chosen track travels as the server's own path to it."""
         valued = (
             "revision",
             "title",
@@ -81,10 +87,12 @@ class RenderOptions(BaseModel):
             "resolution",
             "orientation",
             "format",
+            "quality",
+            "scale_mode",
             "music_volume",
             "album",
         )
-        switches = ("no_music", "add_date", "add_place", "privacy_mode", "upload_to_immich")
+        switches = ("add_date", "add_place", "privacy_mode", "upload_to_immich")
         return [
             *(
                 f"--{n.replace('_', '-')}={getattr(self, n)}"
@@ -92,6 +100,13 @@ class RenderOptions(BaseModel):
                 if getattr(self, n) is not None
             ),
             *(f"--{n.replace('_', '-')}" for n in switches if getattr(self, n)),
+            *(["--no-music"] if self.music == "none" else []),
+            *([f"--music={music_path}"] if music_path else []),
+            *(
+                []
+                if self.llm_title is None
+                else ["--llm-title" if self.llm_title else "--no-llm-title"]
+            ),
         ]
 
 
@@ -101,6 +116,8 @@ class JobProgress(BaseModel):
     done: int | None = None
     total: int | None = None
     fraction: float | None = None
+    # The stage's own estimate, measured on this stage's work only (StageClock).
+    remaining_seconds: float | None = None
     recent_asset_ids: list[str] = []
 
 
@@ -124,9 +141,8 @@ def _cut_progress(config: Config, job: Job) -> JobProgress:
         phase=live.phase if live else "",
         done=live.done if live else None,
         total=live.total if live else None,
-        fraction=(live.done / live.total)
-        if live and live.total and live.done is not None
-        else None,
+        fraction=live.fraction if live else None,
+        remaining_seconds=live.remaining_seconds if live and live.remaining_label else None,
         recent_asset_ids=list(recent_pictures_of(record)),
     )
 
@@ -147,7 +163,7 @@ def _render_progress(job: Job) -> JobProgress:
 def _view(config: Config, job: Job) -> JobView:
     if job.kind == "cut":
         progress = _cut_progress(config, job)
-    elif job.kind == "render":
+    elif job.kind in {"render", "music"}:
         progress = _render_progress(job)
     else:
         progress = JobProgress(label="Reading the library")
@@ -264,19 +280,22 @@ def start_render(
     from uuid import uuid4
 
     job_id = uuid4().hex
-    progress_file = config.cache.cache_path / "web-jobs" / f"{job_id}.progress.json"
+    progress_file = runner.progress_path(job_id)
     config_flag = _config_flag()
+    track = None if options.music in {"none", "auto"} else music_file(config, options.music)
+    if options.music not in {"none", "auto"} and track is None:
+        raise HTTPException(404, "That music track is gone; preview or upload it again.")
     argv = [
         executable,
         *(["--config", str(config_flag)] if config_flag else []),
         "runs",
         "render",
         run_id,
-        *options.flags(),
+        *options.flags(track),
         "--progress-file",
         str(progress_file),
     ]
-    shown = shlex.join(["immich-memories", "runs", "render", run_id, *options.flags()])
+    shown = shlex.join(["immich-memories", "runs", "render", run_id, *options.flags(track)])
 
     def found_film(job: Job) -> Job:
         return job.model_copy(update={"result_run_id": run_id_for_attempt(attempt)})
@@ -386,3 +405,120 @@ def film(run_id: str, config: Annotated[Config, Depends(current_config)]) -> Fil
     if record is None or not record.output_path or not Path(record.output_path).is_file():
         raise HTTPException(404, "This run has no film on disk.")
     return FileResponse(record.output_path, media_type="video/mp4")
+
+
+_AUDIO = {".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".wav": "audio/wav"}
+
+
+def _music_dir(config: Config) -> Path:
+    return config.cache.cache_path / "web-music"
+
+
+def music_file(config: Config, music_id: str) -> Path | None:
+    """The track a music id names, only ever inside the web client's music folder."""
+    folder = _music_dir(config).resolve()
+    for candidate in folder.glob(f"{music_id}*") if folder.is_dir() else ():
+        path = candidate.resolve()
+        if path.is_file() and path.parent == folder and path.suffix in _AUDIO:
+            return path
+    return None
+
+
+@router.post(
+    "/runs/{run_id}/music-preview", response_model=JobView, status_code=202, responses={409: {}}
+)
+def start_music_preview(
+    run_id: str,
+    config: Annotated[Config, Depends(current_config)],
+    runner: Annotated[JobRunner, Depends(job_runner)],
+    executable: Annotated[str, Depends(cli_executable)],
+) -> JobView | JSONResponse:
+    """Generate the music this cut would get with `music preview`, to hear before rendering."""
+    from uuid import uuid4
+
+    job_id = uuid4().hex
+    out = config.cache.cache_path / "web-jobs" / f"{job_id}-music"
+    progress_file = runner.progress_path(job_id)
+    config_flag = _config_flag()
+    argv = [
+        executable,
+        *(["--config", str(config_flag)] if config_flag else []),
+        "music",
+        "preview",
+        run_id,
+        "--out",
+        str(out),
+        "--progress-file",
+        str(progress_file),
+    ]
+
+    def kept_track(job: Job) -> Job:
+        record = json.loads(progress_file.read_text()) if progress_file.is_file() else {}
+        made = Path(str(record.get("output_path") or ""))
+        if made.is_file() and made.suffix in _AUDIO:
+            _music_dir(config).mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(made, _music_dir(config) / f"preview-{job.id}{made.suffix}")
+            job.meta["music_id"] = f"preview-{job.id}"
+        return job
+
+    try:
+        job = runner.start(
+            "music",
+            argv,
+            meta={
+                "shown": f"immich-memories music preview {run_id}",
+                "run_id": run_id,
+                "progress_file": str(progress_file),
+            },
+            on_finish=kept_track,
+            job_id=job_id,
+        )
+    except JobBusy as busy:
+        return _busy(busy, config)
+    return _view(config, job)
+
+
+class MusicTrack(BaseModel):
+    id: str
+    name: str
+
+
+# A soundtrack is minutes of compressed audio; 64 MiB is generous for MP3/M4A and still bounds
+# what one upload can put on disk (S10).
+MAX_MUSIC_UPLOAD_BYTES = 64 * 1024 * 1024
+_AUDIO_MAGIC = (b"ID3", b"RIFF", b"\xff\xfb", b"\xff\xf3", b"\xff\xf2")
+
+
+def _sounds_like_audio(payload: bytes) -> bool:
+    # M4A is an MP4 container: its 'ftyp' box sits at offset 4.
+    return payload.startswith(_AUDIO_MAGIC) or payload[4:8] == b"ftyp"
+
+
+@router.post("/music", response_model=MusicTrack, status_code=201)
+async def upload_music(
+    file: UploadFile, config: Annotated[Config, Depends(current_config)]
+) -> MusicTrack:
+    """Keep an uploaded MP3, M4A or WAV for renders to use."""
+    from uuid import uuid4
+
+    suffix = Path(file.filename or "").suffix.lower()
+    payload = await file.read(MAX_MUSIC_UPLOAD_BYTES + 1)
+    if len(payload) > MAX_MUSIC_UPLOAD_BYTES:
+        raise HTTPException(413, "That file is too large for a soundtrack")
+    # Suffix AND content: the browser's accept= filter is advisory, and a renamed executable
+    # must not reach FFmpeg (S10).
+    if suffix not in _AUDIO or not _sounds_like_audio(payload):
+        raise HTTPException(422, "That file is not an MP3, M4A or WAV")
+    music_id = f"upload-{uuid4().hex}"
+    _music_dir(config).mkdir(parents=True, exist_ok=True)
+    (_music_dir(config) / f"{music_id}{suffix}").write_bytes(payload)
+    return MusicTrack(id=music_id, name=file.filename or music_id)
+
+
+@router.get("/music/{music_id}", response_class=FileResponse)
+def music(music_id: str, config: Annotated[Config, Depends(current_config)]) -> FileResponse:
+    """A previewed or uploaded track, for the player."""
+    path = music_file(config, music_id)
+    if path is None:
+        raise HTTPException(404, "No such track.")
+    return FileResponse(path, media_type=_AUDIO[path.suffix])

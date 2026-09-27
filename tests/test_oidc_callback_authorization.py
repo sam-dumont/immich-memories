@@ -4,8 +4,9 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
+from starlette.middleware.sessions import SessionMiddleware
 
 from immich_memories.config_models_auth import AuthConfig
 
@@ -17,7 +18,7 @@ from immich_memories.config_models_auth import AuthConfig
 def test_callback_checks_email_ownership_before_creating_a_session(
     monkeypatch, verified, allow_list
 ):
-    from immich_memories.ui import app as ui_app
+    from immich_memories.web import server as web_server
 
     config = SimpleNamespace(
         auth=AuthConfig(
@@ -28,7 +29,6 @@ def test_callback_checks_email_ownership_before_creating_a_session(
             **allow_list,
         )
     )
-    session = {}
     # WHY: the IdP exchange and browser session are external login boundaries.
     oauth = SimpleNamespace(
         oidc=SimpleNamespace(
@@ -43,14 +43,20 @@ def test_callback_checks_email_ownership_before_creating_a_session(
             )
         )
     )
-    monkeypatch.setattr(ui_app, "get_config", lambda: config)
-    monkeypatch.setattr(ui_app, "app", SimpleNamespace(storage=SimpleNamespace(user=session)))
-    monkeypatch.setattr("immich_memories.ui.auth_oidc.create_oidc_client", lambda _config: oauth)
+    monkeypatch.setattr(web_server, "get_config", lambda: config)
+    monkeypatch.setattr("immich_memories.web.auth_oidc.create_oidc_client", lambda _config: oauth)
     server = FastAPI()
-    server.add_api_route("/auth/callback", ui_app._oidc_callback, methods=["GET"])
+    server.add_api_route("/auth/callback", web_server.oidc_callback, methods=["GET"])
+
+    async def whoami(request: Request) -> dict:
+        return dict(request.session)
+
+    server.add_api_route("/whoami", whoami, methods=["GET"])
+    server.add_middleware(SessionMiddleware, secret_key="test-secret")  # noqa: S106
 
     with TestClient(server) as client:
         response = client.get("/auth/callback", follow_redirects=False)
+        session = client.get("/whoami").json()
 
     assert response.status_code == (307 if verified is True else 403)
     assert bool(session.get("authenticated")) is (verified is True)

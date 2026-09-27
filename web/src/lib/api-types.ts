@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * Albums
-         * @description The albums a film can be made from, the names `--from-album` takes.
+         * @description The albums a film can be made from, largest first; `--from-album` takes the id.
          */
         get: operations["albums_api_v1_albums_get"];
         put?: never;
@@ -144,6 +144,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/connection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Connection
+         * @description The server this install reads, and whether a key is stored for it.
+         */
+        get: operations["read_connection_api_v1_connection_get"];
+        /**
+         * Save Connection
+         * @description Keep the server and key in the config file the process reads.
+         */
+        put: operations["save_connection_api_v1_connection_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/connection/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test Connection
+         * @description Ask the server who the key belongs to, without saving anything.
+         */
+        post: operations["test_connection_api_v1_connection_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/cuts": {
         parameters: {
             query?: never;
@@ -178,6 +222,26 @@ export interface paths {
          * @description The command this brief stands for, as the page offers it to copy.
          */
         post: operations["cut_command_api_v1_cuts_command_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/holidays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Holidays
+         * @description The holidays the pipeline resolves, named in the page's language; any MM-DD works too.
+         */
+        get: operations["holidays_api_v1_holidays_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -296,6 +360,46 @@ export interface paths {
          * @description What the child printed, secrets removed: the reason a failed job gives.
          */
         get: operations["job_output_api_v1_jobs__job_id__output_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/music": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Music
+         * @description Keep an uploaded MP3, M4A or WAV for renders to use.
+         */
+        post: operations["upload_music_api_v1_music_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/music/{music_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Music
+         * @description A previewed or uploaded track, for the player.
+         */
+        get: operations["music_api_v1_music__music_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -552,6 +656,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/runs/{run_id}/music-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Music Preview
+         * @description Generate the music this cut would get with `music preview`, to hear before rendering.
+         */
+        post: operations["start_music_preview_api_v1_runs__run_id__music_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/runs/{run_id}/pool": {
         parameters: {
             query?: never;
@@ -636,6 +760,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/runs/{run_id}/story": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Story
+         * @description The stories the cut tells, heaviest first, each with the pictures that carry it.
+         */
+        get: operations["read_story_api_v1_runs__run_id__story_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Session View
+         * @description The provider the sign-in page offers and whether this browser is signed in.
+         */
+        get: operations["session_view_api_v1_session_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/special-days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Special Days
+         * @description The days `discover-days` catalogued, anniversaries due first, then the rest.
+         *
+         *     A scheduled run only proposes a day on its anniversary; someone at the brief wants a memory
+         *     now, so every catalogued day is offered below the due ones. A day the model could not name
+         *     is left out: there is nothing truthful to put on its title card.
+         */
+        get: operations["special_days_api_v1_special_days_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/suggestions": {
         parameters: {
             query?: never;
@@ -670,6 +858,26 @@ export interface paths {
          * @description Start the candidate as `auto run` would: a lease, an attempt, the real CLI child.
          */
         post: operations["run_suggestion_api_v1_suggestions_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/trips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Trips
+         * @description The trips that overlap a year, as `generate` lists them before it cuts one.
+         */
+        get: operations["trips_api_v1_trips_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -725,6 +933,11 @@ export interface components {
             /** Run Id */
             run_id: string | null;
         };
+        /** Body_upload_music_api_v1_music_post */
+        Body_upload_music_api_v1_music_post: {
+            /** File */
+            file: string;
+        };
         /** CacheStats */
         CacheStats: {
             /** Bytes */
@@ -754,6 +967,23 @@ export interface components {
             /** Removed */
             removed: number;
         };
+        /** Connection */
+        Connection: {
+            /** Has Key */
+            has_key: boolean;
+            /** Url */
+            url: string;
+        };
+        /** ConnectionEntry */
+        ConnectionEntry: {
+            /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /** Url */
+            url: string;
+        };
         /** Cut */
         Cut: {
             /** Content Budget Seconds */
@@ -776,6 +1006,11 @@ export interface components {
          * @description What to cut; None leaves a flag out, so the CLI's own default applies.
          */
         CutBrief: {
+            /**
+             * Accept Any Provenance
+             * @default false
+             */
+            accept_any_provenance: boolean;
             /**
              * All Trips
              * @default false
@@ -828,6 +1063,8 @@ export interface components {
             person: string[];
             /** Person Match */
             person_match?: ("and" | "or") | null;
+            /** Photo Duration */
+            photo_duration?: number | null;
             /** Season */
             season?: ("spring" | "summer" | "fall" | "autumn" | "winter") | null;
             /** Sharing */
@@ -895,6 +1132,11 @@ export interface components {
              */
             level: "anyone" | "family" | "just-us";
         };
+        /** Greeting */
+        Greeting: {
+            /** User */
+            user: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -911,6 +1153,13 @@ export interface components {
             decision: string | null;
             /** Reasons */
             reasons: string[];
+        };
+        /** HolidayChoice */
+        HolidayChoice: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
         };
         /** JobProgress */
         JobProgress: {
@@ -933,6 +1182,8 @@ export interface components {
              * @default []
              */
             recent_asset_ids: string[];
+            /** Remaining Seconds */
+            remaining_seconds?: number | null;
             /** Total */
             total?: number | null;
         };
@@ -957,7 +1208,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cut" | "render" | "scan";
+            kind: "cut" | "render" | "scan" | "music";
             /**
              * Meta
              * @default {}
@@ -979,6 +1230,13 @@ export interface components {
              */
             status: "running" | "succeeded" | "failed" | "cancelled" | "interrupted";
         };
+        /** Language */
+        Language: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+        };
         /** LinkAnswer */
         LinkAnswer: {
             /** Decision */
@@ -990,6 +1248,8 @@ export interface components {
         };
         /** Messages */
         Messages: {
+            /** Languages */
+            languages: components["schemas"]["Language"][];
             /** Locale */
             locale: string;
             /** Messages */
@@ -1016,6 +1276,13 @@ export interface components {
             replacement_outcome: string;
             /** Seat */
             seat: string;
+        };
+        /** MusicTrack */
+        MusicTrack: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** NamedPerson */
         NamedPerson: {
@@ -1054,6 +1321,11 @@ export interface components {
         Pool: {
             /** Items */
             items: components["schemas"]["PoolItem"][];
+            /**
+             * Outside
+             * @default 0
+             */
+            outside: number;
             /** Total */
             total: number;
         };
@@ -1073,6 +1345,8 @@ export interface components {
              * @enum {string}
              */
             kind: "photo" | "video" | "live";
+            /** Reachable */
+            reachable: boolean;
             /** Taken */
             taken: string;
         };
@@ -1118,13 +1392,15 @@ export interface components {
             album?: string | null;
             /** Format */
             format?: string | null;
+            /** Llm Title */
+            llm_title?: boolean | null;
+            /**
+             * Music
+             * @default auto
+             */
+            music: string;
             /** Music Volume */
             music_volume?: number | null;
-            /**
-             * No Music
-             * @default false
-             */
-            no_music: boolean;
             /** Orientation */
             orientation?: string | null;
             /**
@@ -1132,10 +1408,14 @@ export interface components {
              * @default false
              */
             privacy_mode: boolean;
+            /** Quality */
+            quality?: string | null;
             /** Resolution */
             resolution?: string | null;
             /** Revision */
             revision?: number | null;
+            /** Scale Mode */
+            scale_mode?: string | null;
             /** Subtitle */
             subtitle?: string | null;
             /** Title */
@@ -1362,6 +1642,31 @@ export interface components {
             /** Passed */
             passed: string[];
         };
+        /** SessionView */
+        SessionView: {
+            /** Auth Enabled */
+            auth_enabled: boolean;
+            /** Auto Launch */
+            auto_launch: boolean;
+            /** Button Text */
+            button_text: string | null;
+            /**
+             * Demo Mode Offered
+             * @default false
+             */
+            demo_mode_offered: boolean;
+            /**
+             * Music Preview Offered
+             * @default false
+             */
+            music_preview_offered: boolean;
+            /** Provider */
+            provider: string | null;
+            /** Signed In */
+            signed_in: boolean;
+            /** Username */
+            username: string | null;
+        };
         /** ShownCommand */
         ShownCommand: {
             /** Command */
@@ -1373,6 +1678,71 @@ export interface components {
             label: string;
             /** Rule */
             rule: string;
+        };
+        /** SpecialDay */
+        SpecialDay: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Event Id */
+            event_id: string | null;
+            /** Name */
+            name: string;
+            /** Years Ago */
+            years_ago: number | null;
+        };
+        /** Story */
+        Story: {
+            duration: components["schemas"]["StoryLength"] | null;
+            /** Preparation */
+            preparation: string;
+            /** Stories */
+            stories: components["schemas"]["StoryPart"][];
+            /** Thesis */
+            thesis: string;
+        };
+        /** StoryCarrier */
+        StoryCarrier: {
+            /** Asset Id */
+            asset_id: string;
+            /** Motion */
+            motion: boolean;
+            /** Reason */
+            reason: string;
+            /** Seconds */
+            seconds: number;
+            /** Taken */
+            taken: string;
+        };
+        /** StoryLength */
+        StoryLength: {
+            /** Content Budget Seconds */
+            content_budget_seconds: number;
+            /** Requested Seconds */
+            requested_seconds: number;
+            /** Selected Content Seconds */
+            selected_content_seconds: number;
+            /** Status */
+            status: string;
+        };
+        /** StoryPart */
+        StoryPart: {
+            /** Carriers */
+            carriers: components["schemas"]["StoryCarrier"][];
+            /** Day */
+            day: string;
+            /** Granted */
+            granted: number;
+            /** Key */
+            key: string;
+            /** Purpose */
+            purpose: string;
+            /** Title */
+            title: string;
+            /** Weight */
+            weight: string;
         };
         /** Suggestion */
         Suggestion: {
@@ -1401,6 +1771,27 @@ export interface components {
             error: string | null;
             /** Skipped */
             skipped: components["schemas"]["Skipped"][];
+        };
+        /** TripChoice */
+        TripChoice: {
+            /** Days */
+            days: number;
+            /**
+             * End
+             * Format: date
+             */
+            end: string;
+            /** Index */
+            index: number;
+            /** Pictures */
+            pictures: number;
+            /** Place */
+            place: string;
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -1608,6 +1999,92 @@ export interface operations {
             };
         };
     };
+    read_connection_api_v1_connection_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Connection"];
+                };
+            };
+        };
+    };
+    save_connection_api_v1_connection_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectionEntry"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Connection"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_connection_api_v1_connection_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectionEntry"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Greeting"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     start_cut_api_v1_cuts_post: {
         parameters: {
             query?: never;
@@ -1668,6 +2145,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShownCommand"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    holidays_api_v1_holidays_get: {
+        parameters: {
+            query?: {
+                lang?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HolidayChoice"][];
                 };
             };
             /** @description Validation Error */
@@ -1846,6 +2354,68 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_music_api_v1_music_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_music_api_v1_music_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MusicTrack"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    music_api_v1_music__music_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                music_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -2280,11 +2850,50 @@ export interface operations {
             };
         };
     };
+    start_music_preview_api_v1_runs__run_id__music_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobView"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_pool_api_v1_runs__run_id__pool_get: {
         parameters: {
             query?: {
                 offset?: number;
                 limit?: number;
+                reachable_only?: boolean;
             };
             header?: never;
             path: {
@@ -2464,6 +3073,77 @@ export interface operations {
             };
         };
     };
+    read_story_api_v1_runs__run_id__story_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Story"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    session_view_api_v1_session_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionView"];
+                };
+            };
+        };
+    };
+    special_days_api_v1_special_days_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpecialDay"][];
+                };
+            };
+        };
+    };
     suggestions_api_v1_suggestions_get: {
         parameters: {
             query?: never;
@@ -2512,6 +3192,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trips_api_v1_trips_get: {
+        parameters: {
+            query: {
+                year: number;
+                person?: string[] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripChoice"][];
+                };
             };
             /** @description Validation Error */
             422: {

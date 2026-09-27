@@ -30,6 +30,13 @@
     return minutes ? `${minutes}m ${String(seconds % 60).padStart(2, '0')}s` : `${seconds}s`;
   });
   const fraction = $derived(job.progress.fraction ?? null);
+  // Rounded on purpose, as the terminal rounds it: a stage estimate, not a countdown.
+  const remaining = $derived.by(() => {
+    const seconds = job.progress.remaining_seconds;
+    if (seconds == null) return '';
+    const amount = seconds < 60 ? `${Math.ceil(seconds)}s` : `${Math.ceil(seconds / 60)}m`;
+    return t('~{amount} left in this stage', { amount });
+  });
 
   async function copy() {
     await navigator.clipboard.writeText(job.command);
@@ -50,9 +57,11 @@
   </div>
 
   {#if job.status === 'running'}
-    <ProgressBar progress={fraction ?? undefined} />
+    <ProgressBar value={fraction ?? 0} valueLabel={fraction == null ? job.progress.label : `${Math.round(fraction * 100)}%`} aria-label={t('Progress')} />
     {#if job.progress.total}
-      <p class="text-sm text-gray-600 tabular-nums dark:text-gray-400">{t('{done} of {total}', { done: job.progress.done ?? 0, total: job.progress.total })}</p>
+      <p class="text-sm text-gray-600 tabular-nums dark:text-gray-400">
+        {t('{done} of {total}', { done: job.progress.done ?? 0, total: job.progress.total })}{#if remaining} · {remaining}{/if}
+      </p>
     {/if}
     {#if job.progress.recent_asset_ids.length}
       <ul class="flex gap-2 overflow-hidden" aria-label={t('Pictures just read')}>

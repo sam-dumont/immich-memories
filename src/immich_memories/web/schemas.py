@@ -95,6 +95,39 @@ class Cut(BaseModel):
     shots: list[CutShot]
 
 
+class StoryCarrier(BaseModel):
+    asset_id: str
+    seconds: float
+    taken: str
+    reason: str
+    motion: bool
+
+
+class StoryPart(BaseModel):
+    key: str
+    title: str
+    # The editor's own word: dominant, major, minor, glimpse, or none. The client words it.
+    weight: str
+    purpose: str
+    granted: int
+    day: str
+    carriers: list[StoryCarrier]
+
+
+class StoryLength(BaseModel):
+    requested_seconds: float
+    content_budget_seconds: float
+    selected_content_seconds: float
+    status: str
+
+
+class Story(BaseModel):
+    thesis: str
+    preparation: str
+    duration: StoryLength | None
+    stories: list[StoryPart]
+
+
 class PhaseTiming(BaseModel):
     name: str
     seconds: float
@@ -140,12 +173,16 @@ class PoolItem(BaseModel):
     kind: Literal["photo", "video", "live"]
     favourite: bool
     in_cut: bool
+    # False when the editor never received it (outside this memory's material): a tick can't reach it.
+    reachable: bool
     fate: str
     hold: Hold
 
 
 class Pool(BaseModel):
     total: int
+    # Pictures left out of this listing because the editor never received them.
+    outside: int = 0
     items: list[PoolItem]
 
 
@@ -154,7 +191,7 @@ class Decision(BaseModel):
     level: Literal["anyone", "family", "just-us"] = "anyone"
 
 
-JobKind = Literal["cut", "render", "scan"]
+JobKind = Literal["cut", "render", "scan", "music"]
 JobStatus = Literal["running", "succeeded", "failed", "cancelled", "interrupted"]
 
 
@@ -170,3 +207,43 @@ class Job(BaseModel):
     cancel_requested: bool = False
     meta: dict[str, str | int | None] = {}
     result_run_id: str | None = None
+
+
+class SessionView(BaseModel):
+    auth_enabled: bool
+    provider: str | None
+    signed_in: bool
+    username: str | None
+    button_text: str | None
+    auto_launch: bool
+    # `server.enable_demo_mode`: whether the blur switch is on offer at all.
+    demo_mode_offered: bool = False
+    # A music generator (MusicGen or ACE-Step) is configured, so a track can be previewed.
+    music_preview_offered: bool = False
+
+
+class Language(BaseModel):
+    code: str
+    name: str
+
+
+class Messages(BaseModel):
+    locale: str
+    messages: dict[str, str]
+    # Every interface language, each named in its own tongue, for the picker.
+    languages: list[Language]
+
+
+class Connection(BaseModel):
+    url: str
+    has_key: bool
+
+
+class ConnectionEntry(BaseModel):
+    url: str
+    # Empty means "keep the stored key": the field always loads empty.
+    api_key: str = ""
+
+
+class Greeting(BaseModel):
+    user: str

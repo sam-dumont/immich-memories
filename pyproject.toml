@@ -32,8 +32,10 @@ dependencies = [
     "httpx>=0.27",
     "pydantic>=2.0",
     "pydantic-settings>=2.14.2",
-    "nicegui>=3.16.0",  # 3.16 fixes GHSA-46f2 (unauth memory exhaustion) + GHSA-955g (XSS)
-    "fastapi>=0.135",  # the /api/v1 server the web client talks to; it outlives NiceGUI (#1395)
+    "fastapi>=0.135",  # the server the web client talks to (#1395)
+    "uvicorn>=0.30",  # runs it: `immich-memories ui`
+    "itsdangerous>=2.2",  # signs the session cookie (Starlette's SessionMiddleware)
+    "python-multipart>=0.0.31",  # music uploads: FastAPI reads multipart forms with it
     "opencv-python>=5,<6",  # photo rendering, thumbnail hashing, motion facts; YuNet freed the 4.x pin (#557)
     "pyyaml>=6.0",
     "click>=8.3.3",
@@ -197,11 +199,6 @@ packages = ["src/immich_memories"]
 include = [
     "/src",
     "/tests",
-    "/frontend/src",
-    "/frontend/package.json",
-    "/frontend/package-lock.json",
-    "/frontend/tsconfig.json",
-    "/frontend/vite.config.ts",
     "/web/src",
     "/web/package.json",
     "/web/package-lock.json",
@@ -278,9 +275,7 @@ constraint-dependencies = [
     "joserfc>=1.6.8",
     "lxml>=6.1.0",
     "lxml-html-clean>=0.4.5",
-    "python-engineio>=4.13.2",
     "python-multipart>=0.0.31",
-    "python-socketio>=5.16.2",
     # quadrants requires setuptools>=77 at runtime, which put it in the audited
     # set for the first time; 80.10.2 is PYSEC-2026-3447, fixed in 83.0.0.
     "setuptools>=83.0.0",
@@ -534,7 +529,8 @@ exclude = ["tests", "docs", "scripts"]
 
 [tool.deptry.per_rule_ignores]
 DEP002 = [
-    "gunicorn", "uvicorn",                              # Runtime-only servers
+    "gunicorn",                                         # Runtime-only server
+    "itsdangerous", "python-multipart",                 # Loaded by Starlette/FastAPI, never imported
     "hatch-vcs", "hatchling",                           # Build-only
     "semantic-release",                                 # CI-only
     "opencv-python",                                    # imported as cv2
@@ -570,7 +566,7 @@ DEP001 = [
     "laya_mlx",                                         # Optional: Laya audience pre-screen, out of band
     "transformers", "huggingface_hub",                  # Optional: smart-turn, off by default
     "PIL", "av", "freetype", "streamlit",               # Alt package names (Pillow→PIL, pyav→av)
-    "starlette",                                        # Transitive via nicegui→fastapi→starlette
+    "starlette",                                        # Transitive via fastapi→starlette
 ]
 DEP003 = ["PIL", "cv2", "yaml", "starlette"]  # Known transitive imports
 
@@ -594,21 +590,6 @@ source_modules = ["immich_memories"]
 forbidden_modules = ["immich_memories_inference"]
 
 [[tool.importlinter.contracts]]
-id = "no-ui-in-core"
-name = "Core analysis/processing must not import UI"
-type = "forbidden"
-source_modules = [
-    "immich_memories.analysis",
-    "immich_memories.processing",
-    "immich_memories.titles",
-    "immich_memories.people",
-    "immich_memories.store",
-    "immich_memories.triage",
-    "immich_memories.operations",
-]
-forbidden_modules = ["immich_memories.ui"]
-
-[[tool.importlinter.contracts]]
 id = "no-cli-in-core"
 name = "Core must not import CLI"
 type = "forbidden"
@@ -625,11 +606,11 @@ source_modules = [
 forbidden_modules = ["immich_memories.cli"]
 
 [[tool.importlinter.contracts]]
-id = "web-outlives-nicegui"
-name = "The web client's server must not import the NiceGUI pages or the CLI"
+id = "web-runs-the-cli-never-imports-it"
+name = "The web server runs the CLI as a child process and never imports it"
 type = "forbidden"
 source_modules = ["immich_memories.web"]
-forbidden_modules = ["immich_memories.ui", "immich_memories.cli", "nicegui"]
+forbidden_modules = ["immich_memories.cli"]
 
 [[tool.importlinter.contracts]]
 id = "no-web-in-core"
@@ -638,6 +619,10 @@ type = "forbidden"
 source_modules = [
     "immich_memories.analysis",
     "immich_memories.processing",
+    "immich_memories.titles",
+    "immich_memories.people",
+    "immich_memories.store",
+    "immich_memories.triage",
     "immich_memories.operations",
     "immich_memories.cache",
     "immich_memories.tracking",
@@ -680,20 +665,10 @@ addopts = "-p no:quadrants -m 'not integration and not e2e'"
 [tool.coverage.run]
 source = ["src/immich_memories", "services/inference/immich_memories_inference"]
 branch = true
-# Exclude NiceGUI UI pages from coverage measurement.
-# These are presentation-only (widgets, progress bars, video player) and cannot be
-# tested without a browser. Core logic lives in generate.py, processing/, analysis/.
-# When Playwright E2E tests are added (#37), remove this exclusion.
-omit = [
-    "src/immich_memories/ui/pages/*",
-    "src/immich_memories/ui/theme.py",
-    "src/immich_memories/ui/components/*",
-]
 
 [tool.coverage.report]
 # Unit tests alone reach ~67%. Integration XMLs push higher.
 # This floor prevents erosion — the REAL check is diff-cover at 80% per PR.
-# UI pages are excluded (see [tool.coverage.run].omit) until Playwright E2E (#37).
 fail_under = 65
 show_missing = true
 exclude_lines = [

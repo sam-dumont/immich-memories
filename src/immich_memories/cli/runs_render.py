@@ -7,37 +7,17 @@ takes too. `generate --no-render` followed by `runs render` is a cut and its fil
 
 from __future__ import annotations
 
-import json
-import os
 import sys
-import time
 from pathlib import Path
 
 import click
 
 from immich_memories.cli._helpers import print_error, print_success
 from immich_memories.cli._runs_reading import RunNotFound, resolve_attempt
+from immich_memories.cli.progress_file import progress_writer, write_progress
 from immich_memories.generate_saved_cut import CutRenderRequest, render_saved_cut
 from immich_memories.operations.cut_revisions import read_revisions
 from immich_memories.operations.revision_render import RenderUnavailable
-
-
-def _write_progress(path: Path | None, record: dict) -> None:
-    if path is None:
-        return
-    # Written whole and swapped in, so a reader never sees half a record.
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(json.dumps(record | {"updated_at": time.time()}))
-    os.replace(temporary, path)
-
-
-def _progress_writer(path: Path | None):
-    def report(phase: str, fraction: float, message: str) -> None:
-        _write_progress(
-            path, {"done": False, "phase": phase, "fraction": fraction, "message": message}
-        )
-
-    return report if path is not None else None
 
 
 def register_render_command(runs: click.Group) -> None:
@@ -57,8 +37,20 @@ def register_render_command(runs: click.Group) -> None:
     @click.option("--resolution", default=None, help="Output resolution, as generate takes it")
     @click.option("--orientation", default=None, help="landscape, portrait, square or auto")
     @click.option("--scale-mode", default=None, help="How sources fit the canvas")
-    @click.option("--format", "output_format", type=click.Choice(["mp4", "mov"]), default=None)
-    @click.option("--music", type=click.Path(exists=True, path_type=Path), default=None)
+    @click.option(
+        "--format",
+        "output_format",
+        type=click.Choice(["mp4", "h265", "prores"]),
+        default=None,
+        help="Output format override, as generate takes it (default: config value)",
+    )
+    @click.option(
+        "--quality",
+        type=click.Choice(["high", "medium", "low"]),
+        default=None,
+        help="Output quality (default: from config)",
+    )
+    @click.option("--music", default=None, help="A track to use, or 'auto' to choose as configured")
     @click.option("--no-music", is_flag=True, default=False)
     @click.option("--music-volume", type=float, default=0.5, show_default=True)
     @click.option("--add-date", is_flag=True, default=False, help="Date overlay on each clip")
@@ -106,10 +98,12 @@ def register_render_command(runs: click.Group) -> None:
             output_orientation=options["orientation"],
             scale_mode=options["scale_mode"],
             output_format=options["output_format"],
+            quality=options["quality"],
             add_date_overlay=options["add_date"],
             add_place_overlay=options["add_place"],
             privacy_mode=options["privacy_mode"],
-            music_path=options["music"],
+            # "auto" is a request to choose, as generate reads it, not a file to load.
+            music_path=Path(options["music"]) if options["music"] not in {None, "auto"} else None,
             music_volume=options["music_volume"],
             no_music=options["no_music"],
             upload=options["upload_to_immich"],
@@ -132,10 +126,10 @@ def register_render_command(runs: click.Group) -> None:
                     attempt_dir=attempt,
                     revision=chosen,
                     request=request,
-                    progress_callback=_progress_writer(progress_file),
+                    progress_callback=progress_writer(progress_file),
                 )
             except (RenderUnavailable, ValueError) as exc:
                 print_error(str(exc))
                 sys.exit(1)
-        _write_progress(progress_file, {"done": True, "fraction": 1.0, "output_path": str(path)})
+        write_progress(progress_file, {"done": True, "fraction": 1.0, "output_path": str(path)})
         print_success(f"Rendered {path}")

@@ -142,3 +142,37 @@ def test_edits_save_as_revisions_and_a_refused_one_says_why(client, config):
     assert refused.status_code == 422
     assert "not another picture of that moment" in refused.json()["detail"]
     assert [revision["number"] for revision in history] == [1]
+
+
+def test_the_story_view_orders_stories_by_weight_and_lists_what_carries_each(client, config):
+    import json
+
+    from tests.web_api_fixtures import PLAN
+
+    attempt = save_run(config, RUN)
+    plan = json.loads(json.dumps(PLAN))
+    plan["story"]["episodes"][0].update(weight="minor", purpose="the everyday", granted=2)
+    plan["story"]["episodes"][1].update(weight="dominant", purpose="the trip")
+    (attempt / "plan.private.json").write_text(json.dumps(plan))
+    (attempt / "preparation.private.json").write_text(json.dumps({"tier": "no_captions"}))
+
+    story = client.get(f"/api/v1/runs/{RUN}/story").json()
+
+    assert story["thesis"] == "A month that ends by the lake."
+    assert "classified, not read" in story["preparation"]
+    lake, garden = story["stories"]
+    assert (lake["title"], lake["weight"], lake["granted"]) == (
+        "Two nights by the lake",
+        "dominant",
+        1,
+    )
+    assert [c["asset_id"] for c in lake["carriers"]] == ["lake-1"]
+    assert lake["carriers"][0]["motion"] is True
+    assert garden["carriers"][0]["reason"] == "the table still out"
+    assert (garden["weight"], garden["granted"]) == ("minor", 2)
+
+
+def test_a_run_without_a_plan_has_no_story(client, config):
+    save_run(config, RUN, cut=False)
+
+    assert client.get(f"/api/v1/runs/{RUN}/story").status_code == 404

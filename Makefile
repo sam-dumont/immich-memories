@@ -11,7 +11,7 @@ help:
 	@echo "Development:"
 	@echo "  install      Install production dependencies"
 	@echo "  dev          Install all dependencies (including dev)"
-	@echo "  run          Run the NiceGUI app"
+	@echo "  run          Run the web client (immich-memories ui)"
 	@echo "  cli          Run the CLI tool"
 	@echo "  preflight    Check all provider connections (Immich, Ollama, etc.)"
 	@echo ""
@@ -129,10 +129,10 @@ dev-mac:
 	uv sync --extra all-mac --extra dev
 
 run:
-	uv run python src/immich_memories/ui/app.py
+	uv run immich-memories ui
 
 run-debug:
-	NICEGUI_LOGGING_LEVEL=DEBUG uv run python src/immich_memories/ui/app.py
+	uv run immich-memories ui --log-level DEBUG
 
 cli:
 	uv run immich-memories --help
@@ -493,8 +493,7 @@ dead-code:
 	# by name. Told once here, they stop producing whitelist lines forever:
 	#   @register_preset          puts the function in a preset dict
 	#   @*.command / @*.group     Click registers the callback on a group
-	#   @ui.page / @app.middleware NiceGUI/Starlette register the route
-	#   @LocalizedPage            ui.page subclass with per-request language
+	#   @router.get/post/put/delete, @app.middleware  FastAPI/Starlette register the route
 	#   @field_validator, @model_validator, @field_serializer
 	#                             pydantic runs these off the schema, never by name
 	# --ignore-names model_config: pydantic reads the ConfigDict class attribute
@@ -728,7 +727,7 @@ launch-check-ci: ensure-dev e2e
 	@echo "Hermetic launch check passed!"
 
 # Full CI-equivalent pipeline (locally)
-ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check docs-voice notices-check compose-check frontend-check web-check test
+ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check docs-voice notices-check compose-check web-check test
 	@echo "Full CI pipeline passed!"
 
 # Self-critique for AI code smells
@@ -964,22 +963,7 @@ notices-check:  ## Fail when THIRD_PARTY_NOTICES is stale against uv.lock
 docs-install:
 	cd docs-site && npm ci
 
-.PHONY: frontend-install frontend-build frontend-check ui-catalogues
-frontend-install:  ## Install the cut review frontend's pinned dependencies
-	cd frontend && npm ci
-
-frontend-build:  ## Bundle the Svelte contact sheet into the Python package
-	cd frontend && npm run build
-
-# The bundle is committed so a runtime install needs no Node: a fresh build must match it.
-frontend-check: frontend-install  ## Type-check the review workspace and fail when the committed bundle is stale
-	cd frontend && npm run check
-	@fresh=$$(mktemp -d); \
-	(cd frontend && npx vite build --logLevel error --outDir "$$fresh" --emptyOutDir) && \
-	diff -r "$$fresh" src/immich_memories/ui/static/review >/dev/null || { \
-		rm -rf "$$fresh"; echo "src/immich_memories/ui/static/review is stale: run make frontend-build"; exit 1; }; \
-	rm -rf "$$fresh"; echo "review bundle matches frontend/src"
-
+.PHONY: ui-catalogues
 ui-catalogues:  ## Extract UI labels and update the per-language PO files
 	uv run python scripts/update-ui-catalogues.py
 
@@ -1089,17 +1073,18 @@ demo-ui: demo-ui-install demo-fixture demo-soundtrack  ## Render Remotion demo �
 	@mkdir -p docs-site/static/demo
 	cd docs-site/remotion && npx remotion render src/index.ts DemoVideo ../static/demo/demo.mp4 --codec h264 --crf 18 $(DEMO_RENDER_ARGS)
 
-# The homepage and README hero is the brief → cut → storyboard stretch of the Remotion demo
-# (seconds 3.4 to 15.6) and then the last 3 s, the film it made: 720 px, 10 fps,
-# 15.1 s, under 4 MB. The README loads it from GitHub Pages on every visit, so 4 MB is
-# the ceiling. The film tail is what costs: full-bleed photography runs about
-# 1.4 MB per GIF second against the UI's 0.09, because LZW gets nothing on moving
-# photographs. Width and the cut window alone cannot pay for it, so the palette is
-# capped at 60 colours and a light hqdn3d takes the grain out before palettegen
-# sees it. sierra2_4a was measured worse than bayer here (+21%). Re-run after
-# `make demo-ui`, and re-check the size: the film's content sets it, not the code.
-demo-hero:  ## Cut the README hero GIF from docs-site/static/demo/demo.mp4: the brief, the cut and the storyboard, then the film it made
+# The homepage and README hero is the brief → cut → review stretch of the Remotion demo
+# (seconds 2.6 to 14.4: the brief, the cut's progress panel, the contact sheet with a
+# video shot opened) and then the last 3 s, the film it made: 720 px, 10 fps, 14.7 s,
+# 3.9 MB. The README loads it from GitHub Pages on every visit, so 4 MB is the ceiling.
+# The film tail is what costs: full-bleed photography runs about 0.6 MB per GIF second
+# against the light UI's 0.2, because LZW gets nothing on moving photographs. Width and
+# the cut window alone cannot pay for it, so the palette is capped at 60 colours and a
+# light hqdn3d takes the grain out before palettegen sees it. sierra2_4a was measured
+# worse than bayer here (+21%). Re-run after `make demo-ui`, and re-check the size: the
+# film's content sets it, not the code.
+demo-hero:  ## Cut the README hero GIF from docs-site/static/demo/demo.mp4: the brief, the cut and the review, then the film it made
 	$(eval DEMO_END := $(shell ffprobe -v error -show_entries format=duration -of csv=p=0 docs-site/static/demo/demo.mp4))
 	ffmpeg -y -loglevel error -i docs-site/static/demo/demo.mp4 \
-	  -filter_complex "[0:v]trim=3.4:15.6,setpts=PTS-STARTPTS[a];[0:v]trim=start=$$(python3 -c 'print($(DEMO_END)-3.0)'),setpts=PTS-STARTPTS[b];[a][b]concat=n=2:v=1:a=0,fps=10,scale=720:-1:flags=lanczos,hqdn3d,split[x][y];[y]palettegen=max_colors=60:stats_mode=diff[p];[x][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \
+	  -filter_complex "[0:v]trim=2.6:14.4,setpts=PTS-STARTPTS[a];[0:v]trim=start=$$(python3 -c 'print($(DEMO_END)-3.0)'),setpts=PTS-STARTPTS[b];[a][b]concat=n=2:v=1:a=0,fps=10,scale=720:-1:flags=lanczos,hqdn3d,split[x][y];[y]palettegen=max_colors=60:stats_mode=diff[p];[x][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \
 	  docs-site/static/img/demo-hero.gif

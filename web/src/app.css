@@ -13,3 +13,9 @@
   font-display: swap;
   src: url(/static/fonts/inter-latin.woff2) format('woff2');
 }
+
+/* Demo mode: every picture and film blurred, so a screen can be shared without a family's photos. */
+.demo-mode img,
+.demo-mode video {
+  filter: blur(14px);
+}

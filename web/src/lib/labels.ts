@@ -11,7 +11,7 @@ const MEMORY_TYPES: Record<string, string> = {
   album: N_('Album'),
   trip: N_('Trip'),
   holiday: N_('Holiday'),
-  special_day: N_('Surprise me'),
+  special_day: N_('Special day'),
   custom: N_('Custom date range'),
 };
 
@@ -49,3 +49,23 @@ const RULES: Record<string, string> = {
 };
 
 export const ruleLabel = (rule: string) => (RULES[rule] ? t(RULES[rule]) : rule);
+
+// The editor weighs each story in its own words; a weight with no reader word gets no badge.
+const WEIGHTS: Record<string, string> = {
+  dominant: N_('Main story'),
+  major: N_('Important'),
+  minor: N_('Supporting'),
+  glimpse: N_('Small moment'),
+};
+
+export const weightLabel = (weight: string) => (WEIGHTS[weight] ? t(WEIGHTS[weight]) : '');
+
+// The server words the reduced preparation tiers (operations/story_view.py); listed so the
+// catalogues carry them.
+N_('Edited without descriptions — picture content was classified, not read.');
+N_('Edited from metadata only — picture content was neither classified nor read, so every picture is held to family viewing.');
+// The connection's refusals (web/connection.py), shown as the server words them.
+N_('The server URL changed: enter the API key for the new server.');
+N_('Please enter both URL and API key');
+// The music upload's refusals (web/job_routes.py).
+N_('That file is too large for a soundtrack');

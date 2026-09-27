@@ -1,6 +1,18 @@
 """UI language selection uses the browser, independently of film settings."""
 
+import importlib.util
+from pathlib import Path
+
 from immich_memories.i18n import resolve_ui_locale
+
+
+def _web_client_labels():
+    """The labels the catalogue script extracts from the Svelte client, the one list it keeps."""
+    script = Path(__file__).resolve().parents[1] / "scripts" / "update-ui-catalogues.py"
+    spec = importlib.util.spec_from_file_location("update_ui_catalogues", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return list(module._web_labels())
 
 
 def test_browser_language_respects_quality_and_supported_regional_variants():
@@ -17,39 +29,14 @@ def test_saved_ui_preference_overrides_browser_and_auto_restores_it():
     assert resolve_ui_locale("fr", preference="unsupported") == "fr"
 
 
-def test_interface_catalogue_formats_values_and_falls_back_for_unknown_messages():
-    from immich_memories.ui.i18n import tr
-
-    assert tr("Memory", locale_code="fr") == "Souvenir"
-    assert (
-        tr("Connected as: {name}", locale_code="fr", name="Camille")
-        == "Connecté en tant que : Camille"
-    )
-    assert tr("An untranslated message", locale_code="fr") == "An untranslated message"
-    assert tr("Memory", locale_code="unsupported") == "Memory"
-
-
-def test_translated_choices_keep_the_values_the_pipeline_expects():
-    from immich_memories.ui.i18n import tr_options
-
-    assert tr_options({"memory": "Memory"}, locale_code="fr") == {"memory": "Souvenir"}
-    assert tr_options(["Memory"], locale_code="fr") == {"Memory": "Souvenir"}
-
-
 def test_every_offered_language_has_complete_ui_templates_with_matching_placeholders():
     from string import Formatter
 
-    from babel.messages.extract import extract_from_dir
     from babel.messages.pofile import read_po
 
     from immich_memories.i18n import LOCALES_DIR, SUPPORTED_LOCALES
 
-    messages = {
-        message
-        for _, _, message, _, _ in extract_from_dir(
-            str(LOCALES_DIR.parent / "ui"), keywords={"tr": (1,), "N_": (1,)}
-        )
-    }
+    messages = {message for _, _, message in _web_client_labels()}
     for locale in SUPPORTED_LOCALES:
         path = LOCALES_DIR / locale.replace("-", "_") / "LC_MESSAGES/ui.po"
         with path.open("rb") as handle:

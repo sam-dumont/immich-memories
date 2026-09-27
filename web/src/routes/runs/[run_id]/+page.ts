@@ -1,9 +1,9 @@
 import { error } from '@sveltejs/kit';
-import { api, ApiError, type Cut, type RunDetail } from '$lib/api';
+import { api, ApiError, type Cut, type RunDetail, type Story } from '$lib/api';
 
 export const load = async ({ params, fetch }) => {
   const id = encodeURIComponent(params.run_id);
-  const [run, cut] = await Promise.all([
+  const [run, cut, story] = await Promise.all([
     api<RunDetail>(`/runs/${id}`, fetch).catch((reason) => {
       if (reason instanceof ApiError && reason.status === 404) error(404, 'Run not found. It may have been removed.');
       throw reason;
@@ -13,6 +13,10 @@ export const load = async ({ params, fetch }) => {
       if (reason instanceof ApiError && reason.status === 404) return null;
       throw reason;
     }),
+    api<Story>(`/runs/${id}/story`, fetch).catch((reason) => {
+      if (reason instanceof ApiError && reason.status === 404) return null;
+      throw reason;
+    }),
   ]);
-  return { run, cut };
+  return { run, cut, story };
 };

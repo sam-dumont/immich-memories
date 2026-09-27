@@ -112,53 +112,6 @@ def test_cli_reports_recorded_shortfall_before_both_render_boundaries(tmp_path, 
         assert generate.call_args.args[0].editorial_selections == result.editorial_selections
 
 
-@pytest.mark.parametrize("status", ["editorial_shortfall", "near_target"])
-def test_ui_completion_advisory_and_generation_handoff_share_recorded_outcome(tmp_path, status):
-    from immich_memories.ui.pages import clip_pipeline
-    from immich_memories.ui.pages._step4_generate import _build_generation_params
-    from immich_memories.ui.state import AppState
-
-    result = _finished_selection()
-    record = SHORTFALL | {"status": status}
-    result.stats["editorial_duration_realization"] = record
-    state = AppState(
-        config=_config(tmp_path),
-        memory_type="multi_person",
-        target_duration=1.5,
-        pipeline_result={"stats": result.stats},
-        pipeline_selected_clips=result.selected_clips,
-        editorial_selections=result.editorial_selections,
-        clip_segments=result.clip_segments,
-    )
-    with patch.object(clip_pipeline, "ui") as ui:
-        clip_pipeline.render_pipeline_summary(state.pipeline_result)
-    texts = [call.args[0] for call in ui.label.call_args_list]
-    assert any("Pipeline complete" in str(text) for text in texts)
-    assert (WARNING in texts) is (status == "editorial_shortfall")
-    # WHY: avoids opening a real Immich connection; the test only checks the handed-off params.
-    with patch("immich_memories.api.immich.SyncImmichClient"):
-        params = _build_generation_params(state, result.selected_clips, tmp_path / "memory.mp4")
-    assert params.editorial_duration_realization == record
-    assert params.clips == result.selected_clips
-
-
-def test_reopening_completed_run_keeps_shortfall_with_other_warnings(tmp_path):
-    from types import SimpleNamespace
-
-    from immich_memories.ui.pages._step4_generate import _restore_completed_ui_state
-
-    state = SimpleNamespace()
-    completed = SimpleNamespace(
-        status="completed",
-        output_path=str(tmp_path / "memory.mp4"),
-        warnings=[WARNING, "Music was unavailable."],
-        output_duration_seconds=0.0,
-        delivery_status="not_requested",
-    )
-    _restore_completed_ui_state(state, completed)
-    assert state.generation_warning == WARNING + "\nMusic was unavailable."
-
-
 @pytest.mark.parametrize("status", ["near_target", "editorial_shortfall"])
 def test_direct_generation_persists_advisory_without_changing_completed_artifact(
     tmp_path, monkeypatch, status

@@ -90,7 +90,7 @@ src/immich_memories/
   processing/   # Video assembly (FFmpeg)
   titles/       # Title screens, map fly-overs
   audio/        # Music generation, audio ducking
-  ui/           # NiceGUI web interface
+  web/          # The web server: /api/v1, sign-in, health (the Svelte client is web/ at the repo root)
   cli/          # Click commands
   cache/        # Preview, video and run-history caching
   tracking/     # Run history

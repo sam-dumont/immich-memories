@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sys
 import time
+from pathlib import Path
 
 import pytest
 
@@ -59,7 +60,7 @@ def test_a_cut_runs_generate_no_render_and_shows_the_command_a_person_would_type
 
 
 def test_a_render_runs_runs_render_with_its_revision_and_a_progress_file(client):
-    started = client.post(f"/api/v1/runs/{RUN}/renders", json={"revision": 2, "no_music": True})
+    started = client.post(f"/api/v1/runs/{RUN}/renders", json={"revision": 2, "music": "none"})
 
     job = _finished(client, started.json()["id"])
     argv = json.loads(client.recorded.read_text())
@@ -91,11 +92,23 @@ def test_every_render_flag_the_web_can_send_is_one_runs_render_accepts():
         privacy_mode=True,
         upload_to_immich=True,
         album="a",
+        llm_title=False,
     )
 
-    emitted = {flag.split("=")[0] for flag in everything.flags()}
+    emitted = {flag.split("=")[0] for flag in everything.flags(Path("/music/track.mp3"))}
 
     assert emitted <= accepted, emitted - accepted
+
+
+def test_who_names_the_film_is_left_to_generate_unless_the_owner_says():
+    from immich_memories.web.job_routes import RenderOptions
+
+    def naming(choice):
+        return [f for f in RenderOptions(llm_title=choice).flags() if "llm-title" in f]
+
+    assert naming(None) == []
+    assert naming(True) == ["--llm-title"]
+    assert naming(False) == ["--no-llm-title"]
 
 
 def test_the_brief_picks_from_the_library_s_named_people_and_albums(tmp_path):
@@ -112,14 +125,21 @@ def test_the_brief_picks_from_the_library_s_named_people_and_albums(tmp_path):
             ]
 
         def list_albums(self):
-            return [SimpleNamespace(id="a", name="Trip", asset_count=40)]
+            return [
+                SimpleNamespace(id="a", name="Trip", asset_count=40),
+                SimpleNamespace(id="b", name="Trip", asset_count=300),
+            ]
 
     client = api_client(config_in(tmp_path))
     # WHY: Immich is the external boundary; the unit tier has no library to read.
     client.app.dependency_overrides[immich_client] = lambda: Library()
 
     assert [p["name"] for p in client.get("/api/v1/people").json()] == ["Ana", "zoé"]
-    assert client.get("/api/v1/albums").json() == [{"id": "a", "name": "Trip", "asset_count": 40}]
+    # Largest first, each with its id: two albums may share a name, and --from-album takes either.
+    assert [(a["id"], a["asset_count"]) for a in client.get("/api/v1/albums").json()] == [
+        ("b", 300),
+        ("a", 40),
+    ]
 
 
 def test_the_page_shows_the_command_its_brief_stands_for_before_running_it(client):
@@ -151,3 +171,24 @@ def test_rescanning_people_runs_people_scan(client):
     argv = json.loads(client.recorded.read_text())
     assert job["status"] == "succeeded" and argv[-2:] == ["people", "scan"]
     assert job["command"] == "immich-memories people scan"
+
+
+def test_music_is_previewed_by_music_preview_uploaded_and_played_back(client):
+    started = client.post(f"/api/v1/runs/{RUN}/music-preview")
+    job = _finished(client, started.json()["id"])
+    argv = json.loads(client.recorded.read_text())
+    assert job["status"] == "succeeded" and argv[argv.index("music") + 1] == "preview"
+    assert "--progress-file" in argv and job["command"] == f"immich-memories music preview {RUN}"
+
+    uploaded = client.post("/api/v1/music", files={"file": ("song.mp3", b"ID3tune", "audio/mpeg")})
+    refused = client.post("/api/v1/music", files={"file": ("notes.txt", b"hi", "text/plain")})
+    played = client.get(f"/api/v1/music/{uploaded.json()['id']}")
+
+    assert uploaded.status_code == 201 and played.content == b"ID3tune"
+    assert refused.status_code == 422
+    assert client.get("/api/v1/music/..%2F..%2Fsecret").status_code == 404
+
+    render = client.post(f"/api/v1/runs/{RUN}/renders", json={"music": uploaded.json()["id"]})
+    _finished(client, render.json()["id"])
+    argv = json.loads(client.recorded.read_text())
+    assert any(flag.startswith("--music=") and flag.endswith(".mp3") for flag in argv)

@@ -53,10 +53,10 @@ Immich first. Then, in this app, open **Settings > People**:
 1. Press **Rescan the library**. It reads each named person's picture count and month curve from
    Immich (never a pixel) and writes `~/.immich-memories/people.yaml`. The roster lists the inner
    circle first.
-2. On the cards of your partner, your children and your parents, set **Role** to `partner`,
-   `child` or `parent`. It saves the moment you pick it.
-3. Under **Relationships**, confirm the links the scan proposed (the check) or reject them (the
-   cross). **Add relationship** records one it missed.
+2. For your partner, your children and your parents, set **Role** to `partner`, `child` or
+   `parent`. It saves the moment you pick it.
+3. Under **Relationships**, confirm the links the scan proposed (**Yes, that is right**) or reject
+   them (**No, they are not**). **Add a relationship** records one it missed.
 
 Only what you confirm counts. The scan's own guesses (its tiers and proposed links) never make
 someone close family, and a later rescan never touches what you confirmed.
@@ -91,7 +91,7 @@ im people show                    # what the file says now
 (`im` is the `docker compose exec immich-memories immich-memories` alias from
 [Your first film](./first-film.mdx#the-same-on-the-cli).) The file is plain YAML and meant to be
 edited: everything under `confirmed:` is yours. The page itself is described on
-[The web UI](../make/web-ui.mdx#people-confirming-whos-who).
+[The web UI](../make/web-ui.mdx#people-who-is-who).
 
 ## Then cut again
 

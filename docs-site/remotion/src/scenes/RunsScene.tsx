@@ -1,72 +1,144 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Img,
   spring,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { COLORS } from "../theme";
-import { fontFamily } from "../fonts";
+import { mdiImageOffOutline } from "@mdi/js";
+import { COLORS, UI } from "../theme";
 import { WindowFrame } from "../components/WindowFrame";
-import { Sidebar } from "../components/Sidebar";
-import { PageHeader } from "../components/PageHeader";
-import { ImButton } from "../components/ImButton";
-import { ImSelect } from "../components/ImSelect";
+import { AppShell } from "../components/AppShell";
+import { Mdi } from "../components/Mdi";
+import { Badge, Button, Heading } from "../components/ui";
+import { SHOTS } from "../fixture";
 
 /**
- * The Runs page: every run the server has made, manual or automatic, kept with
- * its cut and its timings. It follows the completed export, keeping the browser
- * workflow together before the terminal scene.
+ * web/src/routes/runs/+page.svelte: every run, newest first, as a card with
+ * the first pictures of its cut. The film just rendered leads, then the cut it
+ * came from; the older runs are the fixture library's other stories.
  */
 
-const RUNS = [
+const JUNE = "Jun 1, 2024 to Jun 30, 2024";
+const firstFour = (pictures: string[]) => pictures.slice(0, 4);
+
+const RUNS: {
+  type: string;
+  span: string;
+  status: "Completed" | "Failed";
+  when: string;
+  pictures: string[];
+}[] = [
   {
-    id: "20260915_023320_d1f0",
-    meta: "2026-09-15 00:33 · completed · auto",
-    type: "monthly highlights",
-    dates: "2024-06-01 to 2024-06-30",
+    type: "Monthly Highlights",
+    span: JUNE,
+    status: "Completed",
+    when: "now · Manual",
+    pictures: firstFour([
+      SHOTS[0].picture,
+      "library/home-rain-window-02.jpg",
+      SHOTS[2].picture,
+      SHOTS[3].picture,
+    ]),
   },
   {
-    id: "20260914_191204_7ab3",
-    meta: "2026-09-14 19:12 · completed · manual",
-    type: "trip",
-    dates: "2024-06-21 to 2024-06-27",
+    type: "Monthly Highlights",
+    span: JUNE,
+    status: "Completed",
+    when: "4 minutes ago · Manual",
+    pictures: firstFour(SHOTS.map((shot) => shot.picture)),
   },
   {
-    id: "20260914_084417_2c9e",
-    meta: "2026-09-14 08:44 · failed · scheduled",
-    type: "person spotlight",
-    dates: "2023-01-01 to 2023-12-31",
+    type: "Trip",
+    span: "Jun 21, 2024 to Jun 23, 2024",
+    status: "Completed",
+    when: "yesterday · Automatic",
+    pictures: firstFour(
+      SHOTS.filter((shot) => shot.story === "A week by the lake")
+        .map((shot) => shot.picture)
+        .slice(1),
+    ),
+  },
+  {
+    type: "Person Spotlight",
+    span: "Jan 1, 2023 to Dec 31, 2023",
+    status: "Failed",
+    when: "2 days ago · Scheduled",
+    pictures: [],
+  },
+  {
+    type: "Custom date range",
+    span: "Jun 15, 2024 to Jun 15, 2024",
+    status: "Completed",
+    when: "3 days ago · Manual",
+    pictures: firstFour(
+      SHOTS.filter((shot) => shot.day === "2024-06-15").map(
+        (shot) => shot.picture,
+      ),
+    ),
+  },
+  {
+    type: "Special day",
+    span: "Jun 8, 2024 to Jun 8, 2024",
+    status: "Completed",
+    when: "5 days ago · Automatic",
+    pictures: firstFour(
+      SHOTS.filter((shot) => shot.day === "2024-06-08").map(
+        (shot) => shot.picture,
+      ),
+    ),
   },
 ];
 
-const Row: React.FC<{ run: (typeof RUNS)[number]; reveal: number }> = ({
-  run,
-  reveal,
-}) => (
+const CARD_W = (1279 - 3 * 20) / 4;
+
+const Mosaic: React.FC<{ pictures: string[] }> = ({ pictures }) => (
   <div
     style={{
-      backgroundColor: COLORS.elevated,
-      border: `1px solid ${COLORS.borderLight}`,
-      borderRadius: 8,
-      padding: "14px 18px",
-      marginBottom: 12,
-      opacity: reveal,
-      transform: `translateY(${(1 - reveal) * 12}px)`,
+      width: CARD_W,
+      height: CARD_W,
+      borderRadius: 16,
+      overflow: "hidden",
+      background: UI.gray100,
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gridTemplateRows: "1fr 1fr",
+      gap: 2,
     }}
   >
-    <div
-      style={{
-        fontSize: 15,
-        color: COLORS.primary,
-        textDecoration: "underline",
-      }}
-    >
-      {run.id}
-    </div>
-    <div style={{ fontSize: 14, color: COLORS.text, marginTop: 8 }}>{run.meta}</div>
-    <div style={{ fontSize: 14, color: COLORS.text, marginTop: 8 }}>{run.type}</div>
-    <div style={{ fontSize: 14, color: COLORS.text, marginTop: 8 }}>{run.dates}</div>
+    {pictures.length ? (
+      pictures.map((picture, i) => (
+        <Img
+          key={picture}
+          src={staticFile(picture)}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            gridRow:
+              pictures.length === 2 || (pictures.length === 3 && i === 0)
+                ? "span 2"
+                : undefined,
+          }}
+        />
+      ))
+    ) : (
+      <div
+        style={{
+          gridColumn: "span 2",
+          gridRow: "span 2",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "oklch(70.7% 0.022 261.325)",
+          opacity: 0.6,
+        }}
+      >
+        <Mdi path={mdiImageOffOutline} size={48} />
+      </div>
+    )}
   </div>
 );
 
@@ -80,41 +152,102 @@ export const RunsScene: React.FC<Props> = ({ bassIntensity }) => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
-      <WindowFrame bassIntensity={bassIntensity}>
-        <Sidebar active="Runs" />
-        <div
-          style={{
-            flex: 1,
-            padding: "20px 32px",
-            overflow: "hidden",
-            fontFamily,
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <PageHeader title="Runs" />
-
-          <div style={{ fontSize: 15, color: COLORS.text, opacity: reveal(2) }}>
-            Manual and automatic runs, including failures. Open a run to read its cut
-            and timings.
+      <WindowFrame path="/app/runs" bassIntensity={bassIntensity} enter={false}>
+        <AppShell active="Runs">
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <Heading size="large">Runs</Heading>
+              <div
+                style={{ fontSize: 16, lineHeight: "24px", color: UI.gray600 }}
+              >
+                Manual and automatic runs, including failures. Open a run to
+                read its cut and timings.
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              {[
+                "All",
+                "Completed",
+                "Running",
+                "Failed",
+                "Cancelled",
+                "Interrupted",
+              ].map((status) => (
+                <Button
+                  key={status}
+                  size="small"
+                  round
+                  variant={status === "All" ? "filled" : "outline"}
+                  color={status === "All" ? "primary" : "secondary"}
+                >
+                  {status}
+                </Button>
+              ))}
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: `repeat(4, ${CARD_W}px)`,
+                columnGap: 20,
+                rowGap: 32,
+              }}
+            >
+              {RUNS.map((run, i) => {
+                const shown = reveal(6 + i * 5);
+                return (
+                  <div
+                    key={`${run.type}-${run.when}`}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                      opacity: shown,
+                      transform: `translateY(${(1 - shown) * 14}px)`,
+                    }}
+                  >
+                    <Mosaic pictures={run.pictures} />
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 8,
+                        padding: "0 4px",
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 16, fontWeight: 500 }}>
+                          {run.type}
+                        </div>
+                        <div style={{ fontSize: 14, color: UI.gray600 }}>
+                          {run.span}
+                        </div>
+                      </div>
+                      <div>
+                        <Badge
+                          size="tiny"
+                          color={
+                            run.status === "Completed" ? "success" : "danger"
+                          }
+                        >
+                          {run.status}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        padding: "0 4px",
+                        fontSize: 12,
+                        color: UI.gray600,
+                      }}
+                    >
+                      {run.when}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-
-          <div style={{ marginTop: 14, opacity: reveal(5) }}>
-            <ImSelect label="Status" value="all" style={{ width: 120 }} small />
-          </div>
-
-          <div style={{ marginTop: 20 }}>
-            {RUNS.map((run, i) => (
-              <Row key={run.id} run={run} reveal={reveal(10 + i * 7)} />
-            ))}
-          </div>
-
-          <div style={{ display: "flex", gap: 12, marginTop: 6, opacity: reveal(30) }}>
-            <ImButton text="Previous runs" variant="primary" disabled />
-            <ImButton text="Next runs" variant="primary" disabled />
-            <ImButton text="Refresh runs" variant="primary" />
-          </div>
-        </div>
+        </AppShell>
       </WindowFrame>
     </AbsoluteFill>
   );
