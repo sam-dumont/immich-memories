@@ -688,7 +688,13 @@ def main():
         # A first is checked for itself: does the photo show that thing, not "is it a first".
         plan["visual_questions"], plan["same_thing"] = [], None
         # Ask what can be seen ("a carrot"), not who or whether it was a first.
-        plan["_per_item_questions"] = {c["_ref"]: [f'Does this photo show {c["word"]}?'] for c in chosen}
+        # A first is someone's: the person with the thing, in a real photograph. Presence per
+        # episode lets a screenshot or a stranger share the person's event, so ask for both.
+        # Two short questions, both required: one compound question made the small model check
+        # only its first half (09-27).
+        plan["_per_item_questions"] = {c["_ref"]: [
+            "Is this a real photograph (not a screenshot, document or artwork)?",
+            f'Does it show a person with {c["word"]}?'] for c in chosen}
     subject = set()
     if plan["subject"]:
         own, companions = companion_terms(reader, library, brief, key)
@@ -728,8 +734,13 @@ def main():
     text_budget = int(os.environ.get("TEXT_BUDGET", 3000))
     offered = spread_budget(library, pool, text_budget, score)
     offered = [i for i in offered if not library.rows[i].get("uncaptioned")]
-    decisions = choose_compact(reader, library, key, brief,
-                               sorted(set(offered) | {i for i in anchors & pool if not library.rows[i].get("uncaptioned")}))
+    if plan.get("firsts") and plan.get("_per_item_questions"):
+        # Being a first was decided by comparison over dates; a caption cannot show first-ness,
+        # so each first goes straight to its own photo question.
+        decisions = [{"ref": i, "decision": "unknown"} for i in sorted(pool)]
+    else:
+        decisions = choose_compact(reader, library, key, brief,
+                                   sorted(set(offered) | {i for i in anchors & pool if not library.rows[i].get("uncaptioned")}))
     plan["budgets"] = {"text": len(decisions)}
     kept = sorted((d["ref"] for d in decisions if d["decision"] == "match"),
                   key=lambda i: library.rows[i]["taken_at"])
