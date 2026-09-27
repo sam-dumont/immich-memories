@@ -139,8 +139,8 @@ def origins_for(
         else dict.fromkeys(wanted, model)
     )
     rows = connection.execute(
-        "SELECT d.asset_id,d.model,p.origin FROM descriptions d "
-        "JOIN preparation_wanted w ON d.asset_id=w.asset_id "
+        "SELECT d.asset_id,d.model,p.origin FROM preparation_wanted w "
+        "CROSS JOIN descriptions d ON d.asset_id=w.asset_id "
         "LEFT JOIN caption_provenance p ON d.asset_id=p.asset_id AND d.model=p.model "
         "WHERE d.model IN (?,?)",
         (model, DESCRIPTION_MODEL if llm else model),

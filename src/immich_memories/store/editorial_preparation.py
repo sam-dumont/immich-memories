@@ -178,10 +178,13 @@ def remember_faces(connection: sqlite3.Connection, asset_id: str, boxes: Sequenc
 
 def faces_unread(connection: sqlite3.Connection, asset_ids: Sequence[str]) -> tuple[str, ...]:
     """The wanted pictures no face read has covered yet, in the caller's order."""
+    stage_wanted(connection, tuple(dict.fromkeys(asset_ids)))
     read = {
         str(row[0])
         for row in connection.execute(
-            "SELECT asset_id FROM face_reads WHERE producer=?", (FACE_PRODUCER,)
+            "SELECT asset_id FROM preparation_wanted CROSS JOIN face_reads USING(asset_id) "
+            "WHERE producer=?",
+            (FACE_PRODUCER,),
         )
     }
     return tuple(asset_id for asset_id in asset_ids if asset_id not in read)
@@ -224,7 +227,10 @@ def missing_facts(
 
 
 def stage_wanted(connection: sqlite3.Connection, wanted: Sequence[str]) -> None:
-    """Put the ids this pass is about in one temp table, so every lookup can join it."""
+    """Stage this pass's ids; readers use CROSS JOIN to seek from this small set.
+
+    An ordinary join may scan the whole fact bank before filtering to these ids.
+    """
     connection.execute(
         "CREATE TEMP TABLE IF NOT EXISTS preparation_wanted (asset_id TEXT PRIMARY KEY)"
     )
@@ -250,13 +256,13 @@ def _complete_captions(connection: sqlite3.Connection, description_model: str) -
     descriptions = {
         r[0]: r[1:]
         for r in connection.execute(
-            "SELECT asset_id,text,source FROM descriptions JOIN preparation_wanted USING(asset_id) WHERE model=?",
+            "SELECT asset_id,text,source FROM preparation_wanted CROSS JOIN descriptions USING(asset_id) WHERE model=?",
             (description_model,),
         )
     }
     fields: dict[str, dict[str, str]] = {}
     for asset_id, field, value in connection.execute(
-        "SELECT asset_id,field,value FROM description_fields JOIN preparation_wanted USING(asset_id) WHERE model=?",
+        "SELECT asset_id,field,value FROM preparation_wanted CROSS JOIN description_fields USING(asset_id) WHERE model=?",
         (description_model,),
     ):
         fields.setdefault(asset_id, {})[field] = value
@@ -306,7 +312,7 @@ def _decided_heads(connection: sqlite3.Connection, head: str, version: str) -> s
     return {
         asset_id
         for asset_id, label, confidence in connection.execute(
-            "SELECT asset_id,label,confidence FROM head_facts JOIN preparation_wanted USING(asset_id) WHERE head=? AND version=?",
+            "SELECT asset_id,label,confidence FROM preparation_wanted CROSS JOIN head_facts USING(asset_id) WHERE head=? AND version=?",
             (head, version),
         )
         if isinstance(label, str)
@@ -321,8 +327,8 @@ def _measured_pixels(connection: sqlite3.Connection, pixel_producer_key: str) ->
     pixels = {
         asset_id
         for asset_id, *values in connection.execute(
-            "SELECT asset_id,sharpness,brightness,contrast,dark_fraction,bright_fraction FROM pixel_facts "
-            "JOIN preparation_wanted USING(asset_id) WHERE producer_key=?",
+            "SELECT asset_id,sharpness,brightness,contrast,dark_fraction,bright_fraction FROM preparation_wanted "
+            "CROSS JOIN pixel_facts USING(asset_id) WHERE producer_key=?",
             (pixel_producer_key,),
         )
         if all(isinstance(v, (int, float)) and math.isfinite(v) for v in values)
