@@ -205,7 +205,7 @@ def test_the_finished_film_drops_a_scene_it_already_shows_when_it_has_room(tmp_p
     assert "picture-001" not in [c["asset_id"] for c in plan["carriers"]]
 
 
-def _six_days_away(tmp_path, *, starred_days: int, seconds: float = 60):
+def _six_days_away(tmp_path, *, starred_days: int, seconds: float = 60, refine: bool = False):
     """Six days by the sea, one picture each; the first `starred_days` are starred and show one
     scene, every other day its own."""
     from datetime import date
@@ -223,16 +223,21 @@ def _six_days_away(tmp_path, *, starred_days: int, seconds: float = 60):
     prints = {a: np.eye(8)[0 if n < starred_days else n] for n, a in enumerate(ids)}
     # The last starred frame is the sharpest: it is the one the film keeps.
     captured = replace(captured, pixel_facts={a: (100.0 + n, 120.0) for n, a in enumerate(ids)})
-    plan = plan_structure(
-        captured,
-        StructurePlannerPorts(
-            judge=NoModelJudge(),
-            # Far apart on the hash: only the scene print can call two of these one picture.
-            thumbnail_hash=lambda a: hashlib.sha256(a.encode()).hexdigest()[:16],
-            scene_print=prints.get,
-            rules=RuleStructureReader(captured),
-        ),
-    ).plan
+    ports = StructurePlannerPorts(
+        judge=NoModelJudge(),
+        # Far apart on the hash: only the scene print can call two of these one picture.
+        thumbnail_hash=lambda a: hashlib.sha256(a.encode()).hexdigest()[:16],
+        scene_print=prints.get,
+        rules=RuleStructureReader(captured),
+    )
+    if refine:
+        # WHY: evidence acquisition changes nothing in this synthetic library;
+        # both planning passes and their duplicate reviews remain real.
+        ports = replace(
+            ports,
+            refine=lambda current, draft: (current, replace(ports, refine=None, draft=draft)),
+        )
+    plan = plan_structure(captured, ports).plan
     return ids, plan
 
 
@@ -243,6 +248,15 @@ def test_two_starred_frames_of_one_scene_leave_one_and_the_cut_record_names_the_
     collapsed = plan["final_duplicate_review"]["collapsed_favourites"]
     assert [(row["asset_id"], row["keeper"]) for row in collapsed] == [(ids[0], ids[1])]
     assert ids[1] in [c["asset_id"] for c in plan["carriers"]]
+
+
+def test_refinement_preserves_the_drafts_starred_duplicate_history(tmp_path):
+    ids, plan = _six_days_away(tmp_path, starred_days=2, refine=True)
+
+    collapsed = plan["final_duplicate_review"]["collapsed_favourites"]
+    assert [(row["asset_id"], row["keeper"]) for row in collapsed] == [(ids[0], ids[1])]
+    selected = {c["asset_id"] for c in plan["carriers"]}
+    assert ids[0] not in selected and ids[1] in selected
 
 
 def test_folding_starred_twins_never_leaves_a_film_with_nothing(tmp_path):

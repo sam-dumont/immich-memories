@@ -186,6 +186,8 @@ unchanged sources retain their existing bank entries.
   votes, audience verdicts). No row means nobody asked, never "measured nothing". Two runs write them at
   once (the pipeline lock covers assembly only): SQLite banks write row by row, and every JSON
   bank merges what is on disk under `locked_file.file_lock` before its atomic replace.
+  Private database creation is exclusive. Existing files are chmodded without opening and
+  closing an extra descriptor, which would release live SQLite connections' POSIX locks.
 
 **Building the cut**
 
@@ -213,6 +215,9 @@ unchanged sources retain their existing bank entries.
   kept (`editorial_story_lookalike.py`). The final review drops repeats by perceptual hash and by
   scene print, the pooled DINOv2 vector of a preview, which catches the same scene in another
   framing (`editorial_final_hash_review.py`, `editorial_scene_prints.py`).
+  The rules draft carries its explicit starred-twin collapses into refinement. Final invariant
+  checks follow that history only to a keeper still in the film; missing keepers and cycles
+  remain violations.
 - **Block vote**: the shape of every model yes/no. At most 12 rows, asked twice, in source order
   and in a hashed order; picked both times is firm, once is a maybe (`editorial_block_votes.py`).
 - **Thin layer / thin polish**: model mode's editing when `thin_model_layer` is on (the default).
