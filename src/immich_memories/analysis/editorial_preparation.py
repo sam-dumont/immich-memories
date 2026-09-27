@@ -61,6 +61,7 @@ from immich_memories.config_models_inference import InferenceConfig
 from immich_memories.config_models_triage import TriageConfig
 from immich_memories.operations.cancellation import check_cancelled as current_check_cancelled
 from immich_memories.store.caption_provenance import origins_for
+from immich_memories.store.caption_selection import conflicting_caption_rows
 from immich_memories.store.editorial_preparation import (
     faces_unread,
     heads_missing_for,
@@ -748,27 +749,6 @@ def _acquire_pixels(
     stage.pixels(connection, asset_ids)
 
 
-def _conflicting_caption_rows(
-    connection: sqlite3.Connection, asset_id: str, description_model: str
-) -> bool:
-    touched = connection.execute(
-        "SELECT 1 FROM descriptions WHERE asset_id=? AND model=? UNION ALL "
-        "SELECT 1 FROM description_fields WHERE asset_id=? AND model=?",
-        (asset_id, description_model, asset_id, description_model),
-    ).fetchone()
-    outcome_table = connection.execute(
-        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='description_unavailable'"
-    ).fetchone()
-    stale = (
-        outcome_table
-        and connection.execute(
-            "SELECT 1 FROM description_unavailable WHERE asset_id=? AND model=?",
-            (asset_id, description_model),
-        ).fetchone()
-    )
-    return bool(touched or stale)
-
-
 def _acquire_captions(
     stage: _Acquisition,
     connection: sqlite3.Connection,
@@ -785,7 +765,7 @@ def _acquire_captions(
     # Do not pay for captions that would collide with malformed immutable rows.
     clean_ids = []
     for asset_id in asset_ids:
-        if _conflicting_caption_rows(connection, asset_id, description_model):
+        if conflicting_caption_rows(connection, asset_id, description_model):
             stage.failures[f"caption:{asset_id}"] = (
                 "invalid or conflicting existing compact caption evidence; store repair is required"
             )
