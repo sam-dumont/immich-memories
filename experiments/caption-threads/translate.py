@@ -1,0 +1,377 @@
+"""Semantic translation: a light sentence -> a plan over the existing generate surface.
+
+The plan is small on purpose (a 4B model fills it): window, scope, subject, text to read,
+exclusions, what no picture can prove. Everything after it is existing code: the product's
+trip detection and home radius, the caption bank, Immich OCR, the E4B membership check,
+then a normal date-window `generate` narrowed to the checked pictures with the thesis as its
+written subject. Captions are the basis; OCR anchors are letters really in the photo.
+
+usage (env as run.sh): python translate.py "<sentence>"   (FILM_DRY=1: plan and pool only)
+"""
+
+import base64
+import hashlib
+import json
+import math
+import os
+import re
+import sqlite3
+import subprocess
+import sys
+from collections import Counter, defaultdict
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+import httpx
+
+from experiment_data import ROOT, load_library, save
+from immich_memories.analysis.editorial_home_radius import HOME_RADIUS_KM, home_of, near_home_of
+from immich_memories.analysis.trip_detection import detect_trips
+from immich_memories.analysis.llm_wire import openai_headers
+from immich_memories.api.models import Asset, ExifInfo
+from immich_memories.config import Config
+from model_reader import Reader
+from query import companion_terms, retrieve_plan, vocabulary
+from workflow import choose_sources
+
+TRANSLATE = '''Translate the owner's request for a photo film into a search plan over their library.
+- scope: "trips" when it is about holidays or travel away from home, "home" when it is about
+  the owner's home, otherwise "any".
+- subject: short phrases for what must be visible in the pictures, using words from
+  caption_vocabulary where they fit. Empty when the request is only about a time or a place.
+- read_text: words that would be written on something in the photos (a club, a brand, a sign),
+  spelled as they would appear. Empty when nothing written is asked for.
+- exclusions: what the owner wants left out.
+- unverifiable: parts of the request no picture can prove (ownership, who drove, feelings).
+- visual_questions: one to three yes/no questions someone looking at a photo would ask to
+  decide whether it belongs, using only what the request says.
+- same_thing: what single thing the film follows over time when the request is about one
+  particular thing (a house, an animal, a car), else null.
+- people: names from known_people the request is about, spelled exactly as listed.
+- firsts: true when the owner asks for first times (the first time someone did or saw something).
+Return JSON {"title":short plain title,"scope":"any|home|trips","subject":[phrases],
+"read_text":[strings],"exclusions":[strings],"unverifiable":[strings],
+"visual_questions":[strings],"same_thing":string or null,"people":[names],"firsts":boolean}.'''
+
+THESIS = '''Write the thesis of a short film from the owner's request and the pictures found for
+it (dates and captions, in order). Two to four plain sentences: what the film is about and how
+it moves through time. Use only the owner's words and what the captions show; invent no names,
+events or feelings. Return JSON {"thesis":string}.'''
+
+EPISODE = timedelta(minutes=90)  # the product's episode gap (selection_source_groups)
+PER_YEAR = 24                    # judge budget per year of a long window
+
+
+def years_of(brief):
+    """Dates are pattern work, not model work."""
+    span = re.search(r"\b(19|20)(\d\d)\s*(?:-|–|to|until|through)\s*(19|20)(\d\d)\b", brief)
+    if span:
+        return int(span[1] + span[2]), int(span[3] + span[4])
+    since = re.search(r"\b(?:since|from|after)\s+(?:\w+\s+){0,4}?((?:19|20)\d\d)\b", brief, re.I)
+    single = re.findall(r"\b((?:19|20)\d\d)\b", brief)
+    if since:
+        return int(since[1]), None
+    if len(single) == 1:
+        return int(single[0]), int(single[0])
+    return None, None
+
+
+def bank_assets(library, bank):
+    """The bank's GPS as product Assets, so the product's own trip detection runs unchanged."""
+    with sqlite3.connect(f"file:{bank}?mode=ro", uri=True) as db:
+        gps = {a: (la, lo) for a, la, lo in db.execute(
+            "SELECT asset_id, latitude, longitude FROM assets WHERE latitude IS NOT NULL")}
+    out = {}
+    for r in library.rows:
+        if r["asset_id"] in gps:
+            when = datetime.fromisoformat(r["taken_at"].replace("Z", "+00:00"))
+            la, lo = gps[r["asset_id"]]
+            out[r["asset_id"]] = Asset(id=r["asset_id"], type="IMAGE", file_created_at=when,
+                                       file_modified_at=when, updated_at=when,
+                                       exif_info=ExifInfo(latitude=la, longitude=lo))
+    return out
+
+
+def scoped(library, config, scope, assets):
+    home = home_of(config.trips)
+    if scope == "trips" and home:
+        trips = detect_trips(sorted(assets.values(), key=lambda a: a.file_created_at), *home,
+                             min_distance_km=config.trips.min_distance_km,
+                             min_duration_days=config.trips.min_duration_days,
+                             max_gap_days=config.trips.max_gap_days, name_locations=False)
+        ids = {i for t in trips for i in t.asset_ids}
+        return {i for i, r in enumerate(library.rows) if r["asset_id"] in ids}, f"{len(trips)} trips"
+    if scope == "home" and home:
+        near = {a for a, x in assets.items()
+                if near_home_of(home, [(x.exif_info.latitude, x.exif_info.longitude)])}
+        return {i for i, r in enumerate(library.rows) if r["asset_id"] in near}, f"within {HOME_RADIUS_KM} km of home"
+    return set(range(len(library.rows))), "whole library"
+
+
+def read_in_photos(config, texts):
+    """Immich OCR: letters really in the photo."""
+    found = set()
+    with httpx.Client(base_url=config.immich.url, headers={"x-api-key": config.immich.api_key},
+                      timeout=60) as c:
+        for text in texts:
+            page = 1
+            while page:
+                d = c.post("/api/search/metadata", json={"ocr": text, "size": 1000, "page": page}).json()
+                found |= {a["id"] for a in d.get("assets", {}).get("items", [])}
+                page = d.get("assets", {}).get("nextPage")
+                page = int(page) if page else None
+    return found
+
+
+def around(library, anchors):
+    """Each anchor's episode: pictures within the product's 90-minute gap of it."""
+    when = [datetime.fromisoformat(r["taken_at"].replace("Z", "+00:00")) for r in library.rows]
+    times = sorted(when[i] for i in anchors)
+    return {i for i, t in enumerate(when) if any(abs(t - a) <= EPISODE for a in times)}
+
+
+LOOK = '''Look at the photo{ref}. Answer each question with true or false from what is
+visible{same}. Return JSON {{"answers":[booleans, one per question],"same":{same_values},"why":short}}.
+Questions: {questions}'''
+LOOK_BUDGET = int(os.environ.get("LOOK_BUDGET", 160))
+
+
+def preview(config, asset_id):
+    r = httpx.get(f"{config.immich.url}/api/assets/{asset_id}/thumbnail?size=preview",
+                  headers={"x-api-key": config.immich.api_key}, timeout=60)
+    r.raise_for_status()
+    return "data:image/jpeg;base64," + base64.b64encode(r.content).decode()
+
+
+def ask_images(llm, text, images):
+    content = [{"type": "text", "text": text}] + [{"type": "image_url", "image_url": {"url": u}} for u in images]
+    body = {"model": llm.model, "messages": [{"role": "user", "content": content}],
+            "max_tokens": 200, "temperature": 0, **llm.extra_params, **llm.no_thinking_params}
+    r = httpx.post(llm.base_url.rstrip("/") + "/chat/completions", json=body, timeout=180,
+                   headers=openai_headers(llm), trust_env=False)
+    r.raise_for_status()
+    raw = r.json()["choices"][0]["message"]["content"]
+    return json.loads(raw[raw.find("{"): raw.rfind("}") + 1])
+
+
+def look(reader, config, library, plan, candidates, anchors):
+    """The one place pictures are shown to a model: this feature only (owner ruling 09-27).
+
+    Questions come from the sentence alone. A reference is a photo the letters vouch for (an
+    OCR anchor) or, for one thing followed over time, the earliest photo that passes. Only an
+    explicit "different" drops a picture; "cannot tell" stays (a room is not its facade).
+    """
+    general = plan.get("visual_questions") or []
+    per_item = plan.get("_per_item_questions") or {}
+    thing = plan.get("same_thing")
+    if not general and not thing and not per_item:
+        return candidates, []
+    cache = ROOT / "looks"
+    cache.mkdir(exist_ok=True)
+    # The budget is spread across years, anchors first: a date-ordered cut drops every late year.
+    years = defaultdict(list)
+    for i in sorted(candidates, key=lambda i: library.rows[i]["taken_at"]):
+        years[library.rows[i]["taken_at"][:4]].append(i)
+    share = max(1, LOOK_BUDGET // max(1, len(years)))
+    spread = [i for refs in years.values() for i in refs[:: max(1, len(refs) // share)][:share]]
+    ordered = sorted(set(spread) | (set(candidates) & anchors),
+                     key=lambda i: (i not in anchors, library.rows[i]["taken_at"]))[:LOOK_BUDGET + len(anchors)]
+    reference = next((library.rows[i]["asset_id"] for i in ordered if i in anchors), None)
+    ref_image = preview(config, reference) if reference else None
+    kept, log = [], []
+    for i in ordered:
+        aid = library.rows[i]["asset_id"]
+        questions = per_item.get(i) or general
+        use_ref = ref_image is not None and aid != reference
+        text = LOOK.format(ref=" (the first image is the reference, the second is the photo to judge)" if use_ref else "",
+                           same=f', and whether the {thing or "subject"} is the same one as in the reference' if use_ref else "",
+                           same_values='"same|different|cannot_tell"' if use_ref else "null",
+                           questions=json.dumps(questions))
+        key = hashlib.sha256((text + aid + (reference or "")).encode()).hexdigest()[:20]
+        path = cache / f"{key}.json"
+        if path.exists():
+            answer = json.loads(path.read_text())
+        else:
+            try:
+                answer = ask_images(reader.llm, text, ([ref_image] if use_ref else []) + [preview(config, aid)])
+            except (httpx.HTTPError, ValueError, KeyError) as exc:
+                answer = {"answers": [], "same": None, "why": f"error: {exc}"}
+            save(path, answer)
+        ok = all(answer.get("answers") or [False]) if questions else True
+        ok = ok and answer.get("same") != "different"
+        log.append({"date": library.rows[i]["taken_at"][:10], "caption": library.rows[i]["caption"][:80],
+                    "answers": answer.get("answers"), "same": answer.get("same"), "why": answer.get("why", "")[:120],
+                    "kept": ok})
+        if ok:
+            kept.append(i)
+            if thing and ref_image is None:
+                reference, ref_image = aid, preview(config, aid)
+    return kept, log
+
+
+FIRSTS = '''Below are things that appear for the first time in pictures of {who}, each with
+the date, {who}'s age that day, the first caption and a later one. Which are real firsts of
+something new for {who} (an experience, a place, a food, an activity, a skill, an encounter)?
+Leave out clothes, colours, furniture, camera angles and words that only describe the scene.
+Return JSON {{"firsts":[{{"id":id,"label":"first ... (plain words)"}}]}}.'''
+
+
+def known_people():
+    import yaml
+
+    data = yaml.safe_load((Path.home() / ".immich-memories/people.yaml").read_text()) or {}
+    people = data.get("people") or []
+    people = people.values() if isinstance(people, dict) else people
+    return {v.get("name"): v for v in people if isinstance(v, dict) and v.get("name")}
+
+
+def person_rows(library, person):
+    refs = {"P" + hashlib.sha256(str(i).encode()).hexdigest()[:10] for i in person.get("ids") or []}
+    return {i for i, r in enumerate(library.rows) if refs & set(r.get("person_refs") or [])}
+
+
+def firsts(reader, library, key, name, person, rows):
+    """First appearance of every caption word in a person's pictures, judged by E4B."""
+    from datetime import date
+
+    born = person.get("birth_date")
+    born = date.fromisoformat(str(born)) if born else None
+    ordered = sorted(rows, key=lambda i: library.rows[i]["taken_at"])
+    if not ordered:
+        return [], []
+    start = date.fromisoformat(library.rows[ordered[0]]["taken_at"][:10])
+    seen, days_of = {}, defaultdict(set)
+    for i in ordered:
+        d = date.fromisoformat(library.rows[i]["taken_at"][:10])
+        for t in library.tokens[i]:
+            days_of[t].add(d)
+            seen.setdefault(t, i)
+    n = len(library.rows)
+    cands = []
+    for t, i in seen.items():
+        first = date.fromisoformat(library.rows[i]["taken_at"][:10])
+        later = sorted(days_of[t])
+        # New (not there from the start), and it came back: a new thing, not a one-off word.
+        if (first - start).days < 21 or len(later) < 3:
+            continue
+        specific = math.log(n / max(1, len(library.posts.get(t, ()))))
+        cands.append((specific, t, i, later))
+    cands = sorted(cands, reverse=True)[:90]
+    offered = []
+    for j, (_, t, i, later) in enumerate(sorted(cands, key=lambda c: library.rows[c[2]]["taken_at"])):
+        first = date.fromisoformat(library.rows[i]["taken_at"][:10])
+        age = f"{(first - born).days // 30} months" if born else "unknown"
+        again = next((k for k in rows if t in library.tokens[k] and library.rows[k]["taken_at"][:10] > str(later[1])), i)
+        offered.append({"id": j, "word": t, "date": str(first), "age": age,
+                        "first_caption": library.rows[i]["caption"][:120],
+                        "later_caption": library.rows[again]["caption"][:120], "_ref": i})
+    chosen = []
+    for start_ix in range(0, len(offered), 30):
+        part = offered[start_ix:start_ix + 30]
+        ids = {o["id"] for o in part}
+
+        def valid(a, ids=ids):
+            assert all(f["id"] in ids for f in a["firsts"])
+
+        answer = reader.ask("firsts", f"{key}:{start_ix}", FIRSTS.format(who=name.split()[0]),
+                            [{k: v for k, v in o.items() if k != "_ref"} for o in part], valid, 900)
+        by_id = {o["id"]: o for o in part}
+        chosen += [by_id[f["id"]] | {"label": f.get("label", by_id[f["id"]]["word"])}
+                   for f in (answer or {"firsts": []})["firsts"]]
+    return chosen, offered
+
+
+def main():
+    brief = sys.argv[1]
+    key = "translate:" + hashlib.sha256(brief.encode()).hexdigest()[:16]
+    library, reader = load_library(), Reader()
+    config = Config.from_yaml(Path.home() / ".immich-memories/config.yaml")
+    since, until = years_of(brief)
+
+    def valid(a):
+        assert a["scope"] in {"any", "home", "trips"}
+        assert all(isinstance(a[k], list) for k in ("subject", "read_text", "exclusions", "unverifiable"))
+
+    people = known_people()
+    plan = reader.ask("translate", key, TRANSLATE, {"owner_request": brief,
+                      "caption_vocabulary": vocabulary(300), "known_people": sorted(people)}, valid, 500)
+    if plan is None:
+        raise SystemExit("E4B returned no valid plan")
+    plan |= {"since": since, "until": until}
+    bank = os.environ.get("BANK") or config.editorial.resolve_annotation_database(config.cache.cache_path)
+    assets = bank_assets(library, bank)
+    in_window = {i for i, r in enumerate(library.rows)
+                 if (since or 1) <= int(r["taken_at"][:4]) <= (until or 9999)}
+    scope, scope_note = scoped(library, config, plan["scope"], assets)
+    pool_scope = in_window & scope
+
+    named = [people[p] | {"name": p} for p in plan.get("people") or [] if p in people]
+    if named:
+        # Who is in a picture is Immich's face data, never a caption word.
+        pool_scope &= set().union(*(person_rows(library, p) for p in named))
+    if plan.get("firsts") and named:
+        chosen, offered = firsts(reader, library, key, named[0]["name"], named[0], pool_scope)
+        plan["subject"], plan["read_text"] = [], []
+        pool_scope = {c["_ref"] for c in chosen}
+        plan["firsts_found"] = [f'{c["date"]} ({c["age"]}): {c["label"]}' for c in chosen]
+        plan["firsts_offered"] = len(offered)
+        # A first is checked for itself: does the photo show that thing, not "is it a first".
+        plan["visual_questions"], plan["same_thing"] = [], None
+        plan["_per_item_questions"] = {c["_ref"]: [f'Does this photo show {named[0]["name"].split()[0]} with or at: {c["label"]}?']
+                                       for c in chosen}
+    subject = set()
+    if plan["subject"]:
+        own, companions = companion_terms(reader, library, brief, key)
+        phrases = plan["subject"] + own + [f"{a} {b}" for k, a in enumerate(companions) for b in companions[k + 1:]]
+        plan["subject_phrases"] = phrases
+        subject = set(retrieve_plan(library, {"queries": phrases, "places": [], "since": since, "until": until}))
+    anchors = set()
+    if plan["read_text"]:
+        ids = read_in_photos(config, plan["read_text"])
+        anchors = {i for i, r in enumerate(library.rows) if r["asset_id"] in ids}
+        events = around(library, anchors) & pool_scope
+        # A letter read in one photo vouches for its event, but only for pictures of the subject.
+        subject = (subject & events) | anchors if subject else events
+    pool = (subject if (plan["subject"] or plan["read_text"]) else pool_scope) & pool_scope
+
+    by_year = defaultdict(list)
+    for i in sorted(pool, key=lambda i: library.rows[i]["taken_at"]):
+        by_year[library.rows[i]["taken_at"][:4]].append(i)
+    offered = [i for refs in by_year.values() for i in refs[:: max(1, len(refs) // PER_YEAR)][:PER_YEAR]]
+    decisions = choose_sources(reader, library, key, brief, sorted(set(offered) | (anchors & pool)))
+    kept = sorted((d["ref"] for d in decisions if d["decision"] == "match"),
+                  key=lambda i: library.rows[i]["taken_at"])
+    unsure = [d["ref"] for d in decisions if d["decision"] == "unknown"]
+    looked = []
+    if not os.environ.get("NO_LOOK"):
+        kept, looked = look(reader, config, library, plan, set(kept) | set(unsure), anchors)
+        kept.sort(key=lambda i: library.rows[i]["taken_at"])
+    timeline = [f'{library.rows[i]["taken_at"][:10]}: {library.rows[i]["caption"][:110]}'
+                for i in kept[:: max(1, len(kept) // 24)]]
+    thesis = reader.ask("translate_thesis", key, THESIS, {"owner_request": brief, "timeline": timeline},
+                        lambda a: isinstance(a["thesis"], str), 400) if kept else None
+    plan.pop("_per_item_questions", None)
+    record = {"brief": brief, "plan": plan, "scope": scope_note,
+              "counts": {"window": len(in_window), "scope": len(pool_scope), "subject_matches": len(subject),
+                         "ocr_anchors": len(anchors), "pool": len(pool), "judged": len(decisions),
+                         "looked": len(looked), "kept": len(kept)},
+              "kept_by_year": dict(sorted(Counter(library.rows[i]["taken_at"][:4] for i in kept).items())),
+              "thesis": (thesis or {}).get("thesis"),
+              "sample": [f'{library.rows[i]["taken_at"][:10]} {library.rows[i]["caption"][:90]}'
+                         for i in kept[:: max(1, len(kept) // 10)]]}
+    save(ROOT / "translations" / f"{key[10:]}.json", record | {"looked": looked,
+         "asset_ids": [library.rows[i]["asset_id"] for i in kept]})
+    print(json.dumps(record, ensure_ascii=False, indent=1))
+    if os.environ.get("FILM_DRY") or len(kept) < 5:
+        return
+    intent = ROOT / "translations" / f"{key[10:]}.intent.json"
+    intent.write_text(json.dumps({"asset_ids": [library.rows[i]["asset_id"] for i in kept],
+                                  "thesis": record["thesis"] or brief}))
+    first, last = library.rows[kept[0]]["taken_at"][:10], library.rows[kept[-1]]["taken_at"][:10]
+    subprocess.run(["/private/tmp/imm-threads/.venv/bin/immich-memories", "generate", "--start", first,
+                    "--end", last, "--title", plan.get("title") or brief[:60]],
+                   env=os.environ | {"IMMICH_MEMORIES_INTENT": str(intent)}, check=False)
+
+
+if __name__ == "__main__":
+    main()

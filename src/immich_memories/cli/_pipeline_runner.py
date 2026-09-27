@@ -20,6 +20,7 @@ from immich_memories.analysis.editorial_review_list import review_count
 from immich_memories.analysis.llm_usage_record import write_llm_usage
 from immich_memories.cli._editorial_context import (
     build_editorial_context,
+    narrow_to_intent,
     narrow_to_special_event,
 )
 from immich_memories.cli._helpers import (
@@ -362,6 +363,9 @@ def run_pipeline_and_generate(
         assets=assets,
         photo_assets=photo_assets,
         memory_preset_params=memory_preset_params,
+    )
+    assets, photo_assets = narrow_to_intent(
+        assets=assets, photo_assets=photo_assets, memory_preset_params=memory_preset_params
     )
 
     resolved = ResolvedRunInputs.from_arguments(

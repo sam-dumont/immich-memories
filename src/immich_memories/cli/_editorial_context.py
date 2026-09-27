@@ -49,6 +49,26 @@ def narrow_to_special_event(
     return narrowed, list(select_source_members(photo_assets, members))
 
 
+def narrow_to_intent(
+    *, assets: list, photo_assets: list | None, memory_preset_params: dict | None
+) -> tuple[list, list | None]:
+    """PROBE (semantic translation): keep only the translator's checked pictures, and carry
+    its thesis as the written subject. Off unless IMMICH_MEMORIES_INTENT names a file."""
+    import json
+    import os
+    from pathlib import Path
+
+    path = os.environ.get("IMMICH_MEMORIES_INTENT")
+    if not path:
+        return assets, photo_assets
+    intent = json.loads(Path(path).read_text())
+    keep = set(intent["asset_ids"])
+    if memory_preset_params is not None and intent.get("thesis"):
+        memory_preset_params["thesis"] = intent["thesis"]
+    narrowed = [a for a in assets if a.id in keep]
+    return narrowed, (None if photo_assets is None else [a for a in photo_assets if a.id in keep])
+
+
 def build_editorial_context(
     *,
     resolved: ResolvedRunInputs,
