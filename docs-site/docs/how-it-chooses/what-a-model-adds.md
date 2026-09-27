@@ -118,6 +118,13 @@ records what it asked against that budget, and the run logs a warning when it go
 exactly: the run logs *The model polish did not run (...); the film is the rules draft*, the record
 says `ran: false` with the reason, and the filler pass of the no-model film runs.
 
+**When an episode can't be read**, the account can still use its factual card. The private
+`plan.private.json` records each demanded episode's availability and exact evidence identity under
+`episode_reading_health`. An unresolved reading marks that section `degraded` and adds a warning
+to the selection trace. A later successful read is marked `recovered`; it clears the unresolved
+warning and keeps the successful reading banked. A completed film can therefore still have an
+incomplete model pass, which the run evidence now makes visible.
+
 ## Reading on demand
 
 A model film pays for what it shows. Nothing is read in advance: the draft is built for free, then
