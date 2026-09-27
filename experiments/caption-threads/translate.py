@@ -34,6 +34,83 @@ from model_reader import Reader
 from query import companion_terms, retrieve_plan, vocabulary
 from workflow import choose_sources
 
+def _list(desc, most=6):
+    return {"type": "array", "items": {"type": "string"}, "maxItems": most, "description": desc}
+
+
+def _schema(**props):
+    # Every key required and every list capped: oMLX's enforced grammar stalls when the model
+    # wants to stop before a required key, and optional keys get skipped (measured 09-27).
+    return {"type": "object", "additionalProperties": False, "properties": props, "required": list(props)}
+
+
+SUBJECT_SCHEMA = _schema(subject=_list("what must be visible, with any colour, size or kind the request states", 4))
+SUBJECT = '''What must be visible in the photos this request asks for? Use plain words a photo
+caption would use (caption_vocabulary), keeping any colour, size or kind the request states
+("black cat", not "cat"). Return JSON.'''
+COLOURS = set("black white grey gray brown red orange yellow green blue purple pink ginger golden silver".split())
+FILLER_WORDS = set("a an the of in on at to for from with and or our my his her their your we i "
+                   "me us it its this that these those pictures picture photos photo memory memories "
+                   "create make show film video along years year over time all every best since anything something "
+                   "everything nothing".split())
+
+
+def parse_structure(brief, people, library):
+    """Everything a pattern can answer, answered by patterns (dates, people, text, shape)."""
+    low = brief.lower()
+    names = {}
+    for full in people:
+        first = full.split()[0].lower()
+        if re.search(rf"\b{re.escape(first)}\b", low) or full.lower() in low:
+            names[full] = True
+    words_in = re.findall(r"[a-zA-Z][a-zA-Z'\-]+", brief)
+    known = set(library.posts)
+    # Words no caption ever used and no dictionary would: candidates for letters in the photo.
+    odd = [w for w in words_in if w.lower() not in FILLER_WORDS
+           and not any(w.lower() == n.split()[0].lower() or w.lower().rstrip("'s") == n.split()[0].lower() for n in people)
+           and len(w) > 3 and not wn_known(w)]
+    places = {str(r.get(k) or "").lower() for r in library.rows[:: max(1, len(library.rows) // 20000)]
+              for k in ("city", "region", "country")}
+    excluded = " ".join(re.findall(r"\b(?:not|no|without|except)\s+([a-z][a-z \-]{2,40})", low))
+    # "in X", "at X / Y": a place the sentence names, not letters to read in the photo.
+    named_places = {w.lower() for m in re.findall(r"\b(?:in|at|near|from|around)\s+([^,.;]{2,40})", low)
+                    for w in re.findall(r"[a-z]+", m)}
+    odd = [w for w in odd if w.lower() not in places and w.lower() not in excluded
+           and w.lower() not in named_places]
+    thing = re.search(r"\b(?:our|my)\s+(?:own\s+)?([a-z]+)", low)
+    excl = re.findall(r"\b(?:not|no|without|except)\s+(?:the\s+|any\s+)?([a-z][a-z \-]{2,40}?)(?=[,.;]|$| please)", low)
+    stated = {"trips": r"\b(holiday|holidays|vacation|trip|trips|travel|travels|abroad|journey)\b",
+              "home": r"\b(home|house|flat|apartment|our place|garden)\b"}
+    scope = next((k for k, p in stated.items() if re.search(p, low)), "any")
+    return {"people": list(names), "read_text": odd, "firsts": bool(re.search(r"\bfirsts?\b", low)),
+            "same_thing": thing[1] if thing and thing[1] not in {"own", "first", "firsts"} else None,
+            "exclusions": [e.strip() for e in excl], "scope": scope}
+
+
+def wn_known(word):
+    from nltk.corpus import wordnet as wn
+    return bool(wn.synsets(word.lower()))
+
+
+def ask_plan(reader, key, brief, context, library, people):
+    plan = parse_structure(brief, people, library)
+    answer = reader.ask("plan_subject", key, SUBJECT, {"owner_request": brief,
+                        "caption_vocabulary": context["caption_vocabulary"]}, lambda a: None, 400,
+                        schema=SUBJECT_SCHEMA)
+    if answer is None:
+        return None
+    known = set(library.posts)
+    subject = [s.lower() for s in answer["subject"]]
+    # Qualifiers are words the sentence states AND the captions use; a place or a club name is not one.
+    stated = set(re.findall(r"[a-z]+", brief.lower()))
+    qualifiers = sorted({w for s in subject for w in s.split()
+                         if w in stated and w in known and (w in COLOURS or len(s.split()) > 1)} - set(
+                             w for s in subject for w in s.split()[-1:]))
+    plan |= {"subject": subject, "qualifiers": qualifiers, "title": brief[:60], "unverifiable": [], "unmapped": []}
+    plan["visual_questions"] = [f"Does the photo show {s}?" for s in subject[:2]]
+    return plan
+
+
 TRANSLATE = '''Translate the owner's request for a photo film into a search plan over their library.
 - scope: "trips" when it is about holidays or travel away from home, "home" when it is about
   the owner's home, otherwise "any".
@@ -47,7 +124,9 @@ TRANSLATE = '''Translate the owner's request for a photo film into a search plan
   decide whether it belongs, using only what the request says.
 - same_thing: what single thing the film follows over time when the request is about one
   particular thing (a house, an animal, a car), else null.
+- qualifiers: every colour, size, material or kind the request states about the subject.
 - people: names from known_people the request is about, spelled exactly as listed.
+- unmapped: anything in the request that no other field can hold.
 - firsts: true when the owner asks for first times (the first time someone did or saw something).
 Return JSON {"title":short plain title,"scope":"any|home|trips","subject":[phrases],
 "read_text":[strings],"exclusions":[strings],"unverifiable":[strings],
@@ -349,11 +428,19 @@ def main():
         assert all(isinstance(a[k], list) for k in ("subject", "read_text", "exclusions", "unverifiable"))
 
     people = known_people()
-    plan = reader.ask("translate", key, TRANSLATE, {"owner_request": brief,
-                      "caption_vocabulary": vocabulary(300), "known_people": sorted(people)}, valid, 500)
+    plan = ask_plan(reader, key, brief, {"caption_vocabulary": vocabulary(300)}, library, people)
     if plan is None:
         raise SystemExit("E4B returned no valid plan")
     plan |= {"since": since, "until": until}
+    for field, default in (("title", brief[:60]), ("unmapped", []), ("people", []), ("firsts", False),
+                           ("same_thing", None), ("visual_questions", []), ("exclusions", []),
+                           ("unverifiable", [])):
+        plan.setdefault(field, default)
+    # Qualifiers are joined to the subject by code, not left to the model to remember.
+    if plan.get("qualifiers") and plan["subject"]:
+        plan["subject"] = [f"{q} {s}" for q in plan["qualifiers"] for s in plan["subject"]
+                           if q.lower() not in s.lower()] + [s for s in plan["subject"]
+                           if any(q.lower() in s.lower() for q in plan["qualifiers"])]
     # A scope narrows only when the sentence states it, like dates: "club rides" is not a trip.
     stated = {"trips": r"\b(holiday|holidays|vacation|trip|trips|travel|travels|abroad|journey)\b",
               "home": r"\b(home|house|flat|apartment|our place|garden)\b"}
