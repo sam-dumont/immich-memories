@@ -546,7 +546,7 @@ editorial:
 
 Tier 2: lives under `advanced:` when the app writes the file.
 
-`people` is how the people file's close family (partner, child, parent) reach the selection. A close
+`people` is how the people registry's close family (partner, child, parent) reach the selection. A close
 family member on at least `seat_min_pictures` of the period's pictures, or `seat_min_share` of them,
 who is in none of the film's shots gets one seat: see
 [the family seat](../how-it-chooses/family-audience-duplicates.md#the-family-seat). A story without three favourites is floored

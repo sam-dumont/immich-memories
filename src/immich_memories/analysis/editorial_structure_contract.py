@@ -174,7 +174,7 @@ class StructurePlanningInput:
     # Owner ticks after a cut: admitted after the read, so no prompt or digest input changes.
     owner_required_asset_ids: tuple[str, ...] = ()
     render_timing: EditorialTimingPolicy | None = None
-    # The people file's facts and links, so a film about people can tell who is close to them
+    # The people registry's facts and links, so a film about people can tell who is close to them
     # rather than to the owner. None reads as it always did: every relation is the owner's.
     people: EditorialPeople | None = None
 

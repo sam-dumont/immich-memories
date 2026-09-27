@@ -75,12 +75,14 @@ months overnight. With `advanced.editorial.reader: rules` the command refuses it
 
 ## `people`
 
-Works out who is in your library from the numbers Immich already holds, writes it to a file you can edit, and
-never overwrites an answer you gave it. It reads counts and dates only, and asks you nothing.
+Works out who is in your library from the numbers Immich already holds, keeps it in the store as the people
+registry, and never overwrites an answer you gave it. It reads counts and dates only, and asks you nothing.
 
 ```bash
-immich-memories people scan     # build or refresh the file
-immich-memories people show     # read it back, --tier narrows it
+immich-memories people scan                    # build or refresh the registry
+immich-memories people show                    # read it back, --tier narrows it
+immich-memories people export --to people.yaml # write it out as YAML to edit or keep
+immich-memories people import --from people.yaml
 ```
 
 The one rule doing most of the work: volume is a burst, continuity is a relationship. 160 pictures over four
@@ -99,8 +101,10 @@ name on two person records. You are behind the camera, so pairs with you are rea
 frames. The owner comes from `--owner` or `IMMICH_MEMORIES_OWNER` (`identified: told`), else your Immich account
 name (`account`), else the longest-running person (`inferred`: check it).
 
-The file is `~/.immich-memories/people.yaml`, readable only by you. Everything under `inferred:` is recomputed on
-each scan; everything under `confirmed:` is yours and never overwritten, and wins where the two disagree:
+The registry lives in the [store](../../run/database.md), next to every other decision you made. Everything under
+`inferred:` is recomputed on each scan; everything under `confirmed:` is yours and never overwritten, and wins
+where the two disagree. `people export` writes it out in the shape below (to standard output, or to `--to FILE`
+readable only by you):
 
 ```yaml
 people:
@@ -115,7 +119,19 @@ people:
       links: []
 ```
 
-It is the same file as the **People** page in the web UI. The roles you confirm there decide who counts as close
+`people import --from FILE` replaces the registry with an edited export. It checks the whole file first: a
+person without a list of `ids`, or an id listed twice, is refused with its position, and nothing changes. Ids
+come back exactly as written, `manual:` ids included. A scan never reads the file; only an import does.
+
+The scan also writes its measurements (every person's counts and the pairs seen together) to
+`~/.immich-memories/people-graph.json`. That one stays a file: each scan recomputes all of it from Immich and
+nothing reads it back.
+
+Upgrading from a version that kept `~/.immich-memories/people.yaml`: the store imports that file once, never
+changes or deletes it, and skips anyone it already holds. An answer in the old file fills a person the store
+knows but nobody answered for; it never replaces one you gave since.
+
+It is the same registry as the **People** page in the web UI. The roles you confirm there decide who counts as close
 family, and selection reads that on every tier: the family seat, the big-story rule, and the relations a model
 sees. Setting it up is on [Teach it your family](../../get-started/who-is-who.md); how selection uses it is on
 [Family, audience and duplicates](../../how-it-chooses/family-audience-duplicates.md).
@@ -137,8 +153,8 @@ tells that story), and so are holidays spent at home, which have their own type.
 located pictures away from home, at least three favourites, at least three videos making half the day, or a
 long day (20 pictures over six active hours) with your close family on it. Each year keeps its strongest
 `advanced.automation.special_days_per_year` (6): days away first, the furthest first, then favourites, then
-video share, then family presence. The title is "A day in" the place. Without a `people.yaml`, a long day at
-home is not found.
+video share, then family presence. The title is "A day in" the place. Without roles in the people registry, a long
+day at home is not found.
 
 **With a reader** (optional), every run of activity is read a month at a time as one line of recorded facts
 (time, place, counts, who Immich recognised, close family by role, up to three captions), and the model names

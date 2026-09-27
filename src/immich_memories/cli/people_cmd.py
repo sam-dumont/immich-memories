@@ -8,9 +8,9 @@ from typing import Any
 
 import click
 
-from immich_memories.cli._helpers import console, print_success
+from immich_memories.cli._helpers import console, print_error, print_success
+from immich_memories.db import open_store
 from immich_memories.people.companion import (
-    default_people_path,
     load_document,
     people_entries,
     retained_immich_ids,
@@ -48,6 +48,7 @@ def register_people_commands(cli_group: click.Group) -> None:
 
     _register_scan(people)
     _register_show(people)
+    _register_transfer(people)
     cli_group.add_command(people)
 
 
@@ -58,7 +59,6 @@ def _list_immich_people(config: Any) -> None:
     from rich.table import Table
 
     from immich_memories.api.sync_client import SyncImmichClient
-    from immich_memories.cli._helpers import print_error
 
     if not config.immich.url or not config.immich.api_key:
         print_error("Immich not configured. Run 'immich-memories config' first.")
@@ -96,31 +96,25 @@ def _register_scan(people: click.Group) -> None:
         default=None,
         help="The name of the person whose library this is, if the account does not say",
     )
-    @click.option(
-        "--out",
-        type=click.Path(dir_okay=False, path_type=Path),
-        default=None,
-        help="Where to write the people file",
-    )
-    def scan(min_assets: int, owner: str | None, out: Path | None) -> None:
-        """Build or refresh the people file from Immich.
+    def scan(min_assets: int, owner: str | None) -> None:
+        """Build or refresh the people registry from Immich.
 
         Reads every named person's count and month curve, then asks about each
         remaining pair to find who appears with whom. Nothing here looks at a
         pixel and nothing here asks you a question: the library's own
         distribution is the whole input.
 
-        Safe to re-run: everything under `confirmed:` in the file is copied
-        through untouched, and preferred to this pass's reading forever after.
+        Safe to re-run: everything you confirmed is copied through untouched,
+        and preferred to this pass's reading forever after.
         """
         from immich_memories.api.sync_client import SyncImmichClient
         from immich_memories.config import get_config
         from immich_memories.people.graph import build_graph
 
-        path = out or default_people_path()
-        graph_path = default_evidence_graph_path(path)
-        retained = retained_immich_ids(load_document(path))
         config = get_config()
+        store = open_store(config)
+        graph_path = default_evidence_graph_path()
+        retained = retained_immich_ids(load_document(store))
         with SyncImmichClient(base_url=config.immich.url, api_key=config.immich.api_key) as client:
             graph = build_graph(
                 client,
@@ -129,36 +123,29 @@ def _register_scan(people: click.Group) -> None:
                 include_person_ids=retained,
             )
 
-        save_graph(path, graph)
-        save_evidence_graph(graph_path, graph, load_document(path))
+        save_graph(store, graph)
+        save_evidence_graph(graph_path, graph, load_document(store))
         _report(graph)
-        print_success(f"{len(graph.people)} people in {path}")
+        print_success(f"{len(graph.people)} people in the store ({store.location})")
         print_success(f"{len(graph.cooccurrences)} measured connections in {graph_path}")
 
 
 def _register_show(people: click.Group) -> None:
     @people.command("show")
     @click.option(
-        "--file",
-        "people_file",
-        type=click.Path(dir_okay=False, path_type=Path),
-        default=None,
-        help="The people file to read",
-    )
-    @click.option(
         "--tier",
         type=click.Choice(_TIER_ORDER),
         default=None,
         help="Show only one tier",
     )
-    def show(people_file: Path | None, tier: str | None) -> None:
-        """Print what the last scan wrote down."""
-        path = people_file or default_people_path()
-        document = load_document(path)
+    def show(tier: str | None) -> None:
+        """Print the people registry: what the last scan read and what you confirmed."""
+        store = open_store()
+        document = load_document(store)
         entries = people_entries(document)
         if not entries:
             console.print(
-                f"[yellow]Nothing in {path} yet — run 'immich-memories people scan'.[/yellow]"
+                "[yellow]No people in the store yet — run 'immich-memories people scan'.[/yellow]"
             )
             return
 
@@ -167,7 +154,64 @@ def _register_show(people: click.Group) -> None:
             if tier and _tier_of(entry) != tier:
                 continue
             console.print(_person_line(entry))
-        console.print(f"[dim]{path}[/dim]")
+        console.print(f"[dim]{store.location}[/dim]")
+
+
+def _register_transfer(people: click.Group) -> None:
+    @people.command("export")
+    @click.option(
+        "--to",
+        "target",
+        type=click.Path(dir_okay=False, path_type=Path),
+        default=None,
+        help="Write the YAML here instead of to standard output",
+    )
+    def export(target: Path | None) -> None:
+        """Write the people registry out as YAML, in the shape people.yaml had.
+
+        The file holds names and birth dates, so it is created readable by you
+        alone. Edit it and bring it back with `people import`.
+        """
+        from immich_memories.people.transfer import export_yaml
+        from immich_memories.security import write_secret_file
+
+        text = export_yaml(open_store())
+        if target is None:
+            click.echo(text, nl=False)
+            return
+        write_secret_file(target, text)
+        print_success(f"People registry written to {target}")
+
+    @people.command("import")
+    @click.option(
+        "--from",
+        "source",
+        type=click.Path(exists=True, dir_okay=False, path_type=Path),
+        required=True,
+        help="A YAML file written by `people export` (or an old people.yaml)",
+    )
+    def import_(source: Path) -> None:
+        """Replace the people registry with a YAML file, keeping every id as written.
+
+        The whole file is checked first; if any person in it is malformed,
+        nothing is written and every problem is listed.
+        """
+        import sys
+
+        from immich_memories.people.transfer import (
+            PeopleImportError,
+            import_document,
+            parse_yaml,
+        )
+
+        try:
+            count = import_document(open_store(), parse_yaml(source.read_text()))
+        except PeopleImportError as exc:
+            print_error(f"{source} was not imported; nothing changed:")
+            for problem in exc.problems:
+                console.print(f"  {problem}")
+            sys.exit(1)
+        print_success(f"{count} people imported from {source}")
 
 
 def _report(graph: PeopleGraph) -> None:
@@ -175,8 +219,8 @@ def _report(graph: PeopleGraph) -> None:
 
     A real library's inner circle is the user's household by name. Printing
     every one of them to a terminal that may be a log, a screenshot or a
-    shared session is not something a scan should do on its own; the file is
-    right there and `people show` asks for it on purpose.
+    shared session is not something a scan should do on its own; `people show`
+    asks for it on purpose.
     """
     if graph.owner is not None:
         _print_owner(

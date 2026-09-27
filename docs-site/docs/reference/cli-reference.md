@@ -413,17 +413,47 @@ what `immich-memories people` has always done.
 immich-memories people [OPTIONS]
 ```
 
+### `people export`
+
+Write the people registry out as YAML, in the shape people.yaml had.
+
+The file holds names and birth dates, so it is created readable by you
+alone. Edit it and bring it back with `people import`.
+
+```bash
+immich-memories people export [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--to` | file | - | Write the YAML here instead of to standard output |
+
+### `people import`
+
+Replace the people registry with a YAML file, keeping every id as written.
+
+The whole file is checked first; if any person in it is malformed,
+nothing is written and every problem is listed.
+
+```bash
+immich-memories people import [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--from` | file | - | A YAML file written by `people export` (or an old people.yaml) |
+
 ### `people scan`
 
-Build or refresh the people file from Immich.
+Build or refresh the people registry from Immich.
 
 Reads every named person's count and month curve, then asks about each
 remaining pair to find who appears with whom. Nothing here looks at a
 pixel and nothing here asks you a question: the library's own
 distribution is the whole input.
 
-Safe to re-run: everything under `confirmed:` in the file is copied
-through untouched, and preferred to this pass's reading forever after.
+Safe to re-run: everything you confirmed is copied through untouched,
+and preferred to this pass's reading forever after.
 
 ```bash
 immich-memories people scan [OPTIONS]
@@ -433,11 +463,10 @@ immich-memories people scan [OPTIONS]
 | --- | --- | --- | --- |
 | `--min-assets` | integer | 25 | Pictures a named person needs before the graph has an opinion |
 | `--owner` | text | - | The name of the person whose library this is, if the account does not say |
-| `--out` | file | - | Where to write the people file |
 
 ### `people show`
 
-Print what the last scan wrote down.
+Print the people registry: what the last scan read and what you confirmed.
 
 ```bash
 immich-memories people show [OPTIONS]
@@ -445,7 +474,6 @@ immich-memories people show [OPTIONS]
 
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--file` | file | - | The people file to read |
 | `--tier` | choice: `inner` \| `recurring` \| `episodic` \| `event` | - | Show only one tier |
 
 ## `pictures`

@@ -735,7 +735,9 @@ src/immich_memories/
 │   │                           # fcntl + BEGIN IMMEDIATE; pending_changes, migration_schema
 │   ├── migrations/             # env.py, script.py.mako, versions/ (shipped in the wheel; alembic.ini is dev only)
 │   ├── metadata.py             # The shared MetaData(schema="immich_memories") and naming convention
-│   ├── tables/                 # One module per domain's Table objects (store_meta so far)
+│   ├── tables/                 # One module per domain's Table objects: store_meta; people (people_registry,
+│   │                           # people, people_aliases, people_relationships; revision 0002_people)
+│   ├── legacy_import.py        # ImportOutcome: what one legacy importer took, skipped, and why
 │   ├── sqlite_files.py         # connect_sqlite: the one raw sqlite3 factory (WAL, busy_timeout 30 s,
 │   │                           # synchronous NORMAL, foreign keys), private_database_path (0600)
 │   ├── network_guard.py        # Refuses a SQLite file on NFS/SMB/CIFS unless IMMICH_MEMORIES_ALLOW_NETWORK_SQLITE=1
@@ -780,9 +782,13 @@ src/immich_memories/
 ├── people/                     # The library's people graph (counts and dates, no pixels)
 │   ├── signatures.py           # Tiers, onset, twins, duplicates, dyads, owner curve pairing
 │   ├── graph.py                # build_graph(): Immich roster + co-occurrence -> PeopleGraph
-│   ├── companion.py            # ~/.immich-memories/people.yaml; confirmed beats inferred
+│   ├── companion.py            # The people registry's writers (scan, confirm, add, relate), each one
+│   │                           # store transaction under the registry row lock; confirmed beats inferred
+│   ├── registry_store.py       # The registry document <-> the people tables (the only code that knows the rows)
+│   ├── transfer.py             # people export/import (validated, ids kept) and import_legacy(people.yaml)
+│   ├── evidence_graph.py       # ~/.immich-memories/people-graph.json: scan measurements, a derived file
 │   ├── expression_window.py    # The earliest day a people condition can hold, from birth dates
-│   └── editor.py               # The companion editor's model: the file as rows, and back
+│   └── editor.py               # The companion editor's model: the registry as rows, and back
 │
 ├── automation/                 # Smart automation (auto suggest/run)
 │   ├── __init__.py             # Public API re-exports

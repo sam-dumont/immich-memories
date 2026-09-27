@@ -1,8 +1,8 @@
 """Settings → People on the hermetic launch: the roster, the answers, and no reloads (#824, S7).
 
-The roster the page shows comes from the people file under the launch
-workspace's HOME, never the developer's own: the test writes that file itself
-and checks the names it wrote are the names on the page.
+The roster the page shows comes from the store under the launch workspace's
+HOME, never the developer's own: the test imports the roster into that store
+itself and checks the names it wrote are the names on the page.
 """
 
 from __future__ import annotations
@@ -10,8 +10,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-import yaml
 from playwright.sync_api import Page, expect
+
+from immich_memories.db import Store, StoreLocation, open_store
+from immich_memories.people.companion import load_document
+from immich_memories.people.transfer import import_document
 
 pytestmark = pytest.mark.e2e
 
@@ -42,30 +45,27 @@ def _entry(index: int) -> dict:
     }
 
 
-def _write_people_file(root: Path) -> Path:
-    path = root / ".immich-memories" / "people.yaml"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        yaml.safe_dump(
-            {"version": 1, "people": [_entry(index) for index in range(_ROSTER)]},
-            sort_keys=False,
-        )
-    )
-    return path
+def _seed_people(root: Path) -> Store:
+    """The launched app's default store (HOME is the workspace), holding the fixture roster."""
+    database = root / ".immich-memories" / "store.db"
+    database.parent.mkdir(parents=True, exist_ok=True)
+    store = open_store(location=StoreLocation(url=f"sqlite:///{database}"))
+    import_document(store, {"version": 1, "people": [_entry(index) for index in range(_ROSTER)]})
+    return store
 
 
-def _open_people(page: Page, launch_app_url: str, launch_workspace) -> Path:
-    path = _write_people_file(launch_workspace.root)
+def _open_people(page: Page, launch_app_url: str, launch_workspace) -> Store:
+    store = _seed_people(launch_workspace.root)
     page.goto(f"{launch_app_url}/settings/people", wait_until="domcontentloaded", timeout=30_000)
     expect(page.locator(".roster-pager")).to_be_visible(timeout=30_000)
-    return path
+    return store
 
 
 def _cards(page: Page):
     return page.locator(".roster-card")
 
 
-def test_the_roster_reads_the_workspace_file_twenty_to_a_page(
+def test_the_roster_reads_the_workspace_store_twenty_to_a_page(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
     _open_people(page, launch_app_url, launch_workspace)
@@ -88,7 +88,7 @@ def test_the_roster_reads_the_workspace_file_twenty_to_a_page(
 def test_a_role_and_a_note_are_saved_without_reloading_the_page(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
-    path = _open_people(page, launch_app_url, launch_workspace)
+    store = _open_people(page, launch_app_url, launch_workspace)
     page.evaluate("window.__s7_same_document = true")
     page.get_by_role("button", name="Next").click()
     expect(page.get_by_text("Showing 21–34 of 34")).to_be_visible()
@@ -110,7 +110,7 @@ def test_a_role_and_a_note_are_saved_without_reloading_the_page(
     assert page.evaluate("window.__s7_same_document") is True, "the page was reloaded"
     assert page.evaluate("window.scrollY") > 0, "the page lost its place"
     expect(page.get_by_text("Showing 21–34 of 34")).to_be_visible()
-    saved = yaml.safe_load(path.read_text())
+    saved = load_document(store)
     person = next(entry for entry in saved["people"] if entry["ids"] == ["fake-person-33"])
     assert person["confirmed"]["role"] == "godparent"
     assert person["confirmed"]["notes"] == "lives abroad"
@@ -119,7 +119,7 @@ def test_a_role_and_a_note_are_saved_without_reloading_the_page(
 def test_adding_a_person_redraws_the_roster_in_place(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
-    path = _open_people(page, launch_app_url, launch_workspace)
+    store = _open_people(page, launch_app_url, launch_workspace)
     page.evaluate("window.__s7_same_document = true")
 
     page.get_by_role("button", name="Add someone not in Immich").click()
@@ -128,5 +128,5 @@ def test_adding_a_person_redraws_the_roster_in_place(
 
     expect(page.get_by_text("Showing 1–20 of 35")).to_be_visible(timeout=10_000)
     assert page.evaluate("window.__s7_same_document") is True, "the page was reloaded"
-    saved = yaml.safe_load(path.read_text())
+    saved = load_document(store)
     assert any(entry["name"] == "Off Camera Uncle" for entry in saved["people"])

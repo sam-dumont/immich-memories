@@ -14,6 +14,7 @@ from immich_memories.db import (
     open_store,
     pending_changes,
 )
+from immich_memories.db.tables import metadata
 
 from .backends import drop_schema, pg_url, requires_postgres
 
@@ -72,7 +73,7 @@ def test_migrating_up_and_down_leaves_every_other_schema_alone(neighbours):
         with store.connect() as connection:
             ours = set(sa.inspect(connection).get_table_names(schema=schema))
 
-        assert ours == {"store_meta", "alembic_version"}
+        assert ours == {table.name for table in metadata.sorted_tables} | {"alembic_version"}
         assert pending_changes(store) == []
         assert _snapshot(engine, tables) == before
 

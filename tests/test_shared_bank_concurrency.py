@@ -14,6 +14,7 @@ from immich_memories.analysis.editorial_block_votes import (
 )
 from immich_memories.analysis.editorial_structure_audience import AudienceBank
 from immich_memories.analysis.place_name_cache import PlaceNameCache
+from immich_memories.db import open_store
 from immich_memories.people.companion import add_confirmed_person, load_document, people_entries
 
 HOLD = {"verdict": "do_not_show", "finding": "exposure_evidence", "policy": "nsfw-head"}
@@ -72,11 +73,11 @@ def test_two_runs_naming_different_places_keep_both_names(tmp_path):
     assert offline.name_for(51.05, 3.72, None) == "Gand, Belgique"
 
 
-def test_people_added_from_the_web_ui_and_the_cli_at_once_are_all_kept(tmp_path):
-    path = tmp_path / "people.yaml"
+def test_people_added_from_the_web_ui_and_the_cli_at_once_are_all_kept():
+    store = open_store()
     names = [f"person-{writer}-{n}" for writer in range(4) for n in range(10)]
 
     with ThreadPoolExecutor(4) as pool:
-        list(pool.map(lambda name: add_confirmed_person(path, name), names))
+        list(pool.map(lambda name: add_confirmed_person(store, name), names))
 
-    assert {entry["name"] for entry in people_entries(load_document(path))} == set(names)
+    assert {entry["name"] for entry in people_entries(load_document(store))} == set(names)

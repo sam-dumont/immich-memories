@@ -926,10 +926,10 @@ msgstr "Inga lämpliga förslag just nu."
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
 msgstr ""
-"Ingen personfil ännu. Läs igenom biblioteket igen: antal och månadskurvor läses för varje "
+"Inga personer ännu. Läs igenom biblioteket igen: antal och månadskurvor läses för varje "
 "namngiven person, utan bildanalys."
 
 #: pages/runs.py:105

@@ -42,7 +42,7 @@ def _default_head_versions() -> dict[str, str]:
 
 
 class EditorialPeopleConfig(BaseModel):
-    """How the people file's close family (partner, child, parent) reach the selection."""
+    """How the people registry's close family (partner, child, parent) reach the selection."""
 
     seat_min_pictures: int = Field(
         default=20,

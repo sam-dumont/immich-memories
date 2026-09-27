@@ -1,9 +1,9 @@
 """The companion editor — confirming who's who without opening a text editor.
 
 The page is a thin rendering of :mod:`immich_memories.people.editor`: it draws
-what that module read out of the people file and hands every answer straight
+what that module read out of the people registry and hands every answer straight
 back to it. Nothing about the schema, the ordering or the write contract lives
-here, which is why the confirm flow can be tested on a real file with no
+here, which is why the confirm flow can be tested on a real store with no
 browser in the room.
 
 Nothing here reloads the browser. Every answer redraws the roster in place, on
@@ -17,16 +17,12 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from pathlib import Path
 
 from nicegui import ui
 
 from immich_memories.config import get_config
-from immich_memories.people.companion import (
-    default_people_path,
-    load_document,
-    retained_immich_ids,
-)
+from immich_memories.db import Store, open_store
+from immich_memories.people.companion import load_document, retained_immich_ids
 from immich_memories.people.editor import (
     CONFIRMED,
     REJECTED,
@@ -63,7 +59,7 @@ _TIER_MEANING = {
 _UNSET = object()
 
 Refresh = Callable[[], None]
-Saver = Callable[[Path, PersonView], None]
+Saver = Callable[[Store, PersonView], None]
 
 
 @dataclass
@@ -98,7 +94,7 @@ def roster_page(
 
 
 def settle(
-    path: Path,
+    store: Store,
     person: PersonView,
     *,
     role: object = _UNSET,
@@ -109,7 +105,7 @@ def settle(
 
     The notes input fires once per pause in typing and the role select fires
     on every selection, including re-selecting what was there. Each write
-    rewrites the whole people file, so a value that did not change is not a
+    rewrites the whole people registry, so a value that did not change is not a
     write.
     """
     changed = False
@@ -120,13 +116,13 @@ def settle(
         person.notes = notes or None  # type: ignore[assignment]
         changed = True
     if changed:
-        save(path, person)
+        save(store, person)
     return changed
 
 
 def render_people_page() -> None:
-    """The people file as a page: the roster, the flags, and the confirm controls."""
-    path = default_people_path()
+    """The people registry as a page: the roster, the flags, and the confirm controls."""
+    store = open_store()
     view = _RosterView()
 
     im_info_card(
@@ -144,38 +140,40 @@ def render_people_page() -> None:
     roster_column = ui.column().classes("w-full gap-3")
 
     def refresh() -> None:
-        """Re-read the file and redraw, on the page the user was looking at."""
-        people = load_people(path)
+        """Re-read the registry and redraw, on the page the user was looking at."""
+        people = load_people(store)
         _draw_flags(flags_column, curation_flags(people))
-        _draw_roster(roster_column, people, path, view, refresh)
+        _draw_roster(roster_column, people, store, view, refresh)
 
     async def rescan() -> None:
         ui.notify(tr("Reading the library…"), type="ongoing")
         try:
-            found = await io_bound_result(_scan, path)
+            found = await io_bound_result(_scan, store)
         except Exception as exc:  # noqa: BLE001 - an unreachable Immich is a message, not a stack
             logger.warning("The people scan failed: %s", exc)
             ui.notify(tr("The scan could not finish: {exc}", exc=exc), type="negative")
             return
-        ui.notify(tr("{found} people in {path}", found=found, path=path), type="positive")
+        ui.notify(tr("{found} people in {path}", found=found, path=store.location), type="positive")
         refresh()
 
     # Above the roster: on a fresh install the empty-state card must sit under the button that fixes it.
     with actions_row:
         im_button(tr("Rescan the library"), variant="secondary", on_click=rescan, icon="refresh")
-        add_person_dialog = _add_person_dialog(path, refresh)
+        add_person_dialog = _add_person_dialog(store, refresh)
         im_button(
             tr("Add someone not in Immich"),
             variant="ghost",
             on_click=add_person_dialog.open,
             icon="person_add",
         )
-        ui.label(str(path)).classes("text-sm self-center").style("color: var(--im-text-secondary)")
+        ui.label(str(store.location)).classes("text-sm self-center").style(
+            "color: var(--im-text-secondary)"
+        )
 
     ui.timer(0.1, refresh, once=True)
 
 
-def _scan(path: Path) -> int:
+def _scan(store: Store) -> int:
     """The same code path as `immich-memories people scan`, in a worker thread.
 
     The client is built here rather than handed in: `run.io_bound` is a thread
@@ -189,12 +187,12 @@ def _scan(path: Path) -> int:
     )
     from immich_memories.people.graph import build_graph
 
-    retained = retained_immich_ids(load_document(path))
+    retained = retained_immich_ids(load_document(store))
     config = get_config()
     with SyncImmichClient(base_url=config.immich.url, api_key=config.immich.api_key) as client:
         graph = build_graph(client, include_person_ids=retained)
-    save_graph(path, graph)
-    save_evidence_graph(default_evidence_graph_path(path), graph, load_document(path))
+    save_graph(store, graph)
+    save_evidence_graph(default_evidence_graph_path(), graph, load_document(store))
     return len(graph.people)
 
 
@@ -238,7 +236,7 @@ def _flag_card(flag: CurationFlag) -> None:
 def _draw_roster(
     container: ui.column,
     people: list[PersonView],
-    path: Path,
+    store: Store,
     view: _RosterView,
     refresh: Refresh,
 ) -> None:
@@ -248,7 +246,7 @@ def _draw_roster(
         if not people:
             im_info_card(
                 tr(
-                    "No people file yet. Rescan the library to build one — it reads every named person's count and month curve, and looks at no pixels."
+                    "No people yet. Rescan the library to find them — it reads every named person's count and month curve, and looks at no pixels."
                 ),
                 variant="warning",
             )
@@ -265,7 +263,7 @@ def _draw_roster(
         ).classes("w-64 roster-filter")
         _pager(filtered_roster(people, view.query), view, label, refresh)
         for person in shown:
-            _person_card(person, people, path, refresh)
+            _person_card(person, people, store, refresh)
 
 
 def _pager(people: list[PersonView], view: _RosterView, label: str, refresh: Refresh) -> None:
@@ -292,7 +290,7 @@ def _pager(people: list[PersonView], view: _RosterView, label: str, refresh: Ref
 
 
 def _person_card(
-    person: PersonView, people: list[PersonView], path: Path, refresh: Refresh
+    person: PersonView, people: list[PersonView], store: Store, refresh: Refresh
 ) -> None:
     with (
         ui.card()
@@ -304,8 +302,8 @@ def _person_card(
             with ui.column().classes("flex-grow gap-1"):
                 _headline(person)
                 _facts(person)
-                _confirm_controls(person, path)
-        _links_section(person, people, path, refresh)
+                _confirm_controls(person, store)
+        _links_section(person, people, store, refresh)
 
 
 def _avatar(person_id: str) -> None:
@@ -365,11 +363,11 @@ def _role_options(role: str | None) -> list[str]:
     return options
 
 
-def _confirm_controls(person: PersonView, path: Path) -> None:
+def _confirm_controls(person: PersonView, store: Store) -> None:
     with ui.row().classes("w-full items-center gap-3 mt-1 no-wrap"):
 
         def on_role(event) -> None:
-            if settle(path, person, role=event.value):
+            if settle(store, person, role=event.value):
                 ui.notify(f"{person.name}: {person.role or 'no role'}", type="positive")
 
         ui.select(
@@ -383,7 +381,7 @@ def _confirm_controls(person: PersonView, path: Path) -> None:
         ).props("dense outlined").classes("w-48")
 
         def on_notes(event) -> None:
-            settle(path, person, notes=event.value)
+            settle(store, person, notes=event.value)
 
         ui.input(
             label=tr("Notes"),
@@ -393,7 +391,7 @@ def _confirm_controls(person: PersonView, path: Path) -> None:
 
 
 def _links_section(
-    person: PersonView, people: list[PersonView], path: Path, refresh: Refresh
+    person: PersonView, people: list[PersonView], store: Store, refresh: Refresh
 ) -> None:
     ui.separator().classes("my-2")
     with ui.row().classes("w-full items-center gap-2"):
@@ -401,7 +399,7 @@ def _links_section(
             "color: var(--im-text-secondary)"
         )
         ui.element("div").classes("flex-grow")
-        dialog = _relationship_dialog(person, people, path, refresh)
+        dialog = _relationship_dialog(person, people, store, refresh)
         ui.button(tr("Add relationship"), icon="add", on_click=dialog.open).props(
             "flat dense no-caps size=sm"
         ).style("color: var(--im-primary)")
@@ -411,7 +409,7 @@ def _links_section(
         )
         return
     for link in person.links:
-        _link_row(person, link, path, refresh)
+        _link_row(person, link, store, refresh)
 
 
 def _why(link: LinkView) -> str:
@@ -421,7 +419,7 @@ def _why(link: LinkView) -> str:
     return f"{link.prompt} ({link.confidence:.0%})" if link.confidence else link.prompt
 
 
-def _link_row(person: PersonView, link: LinkView, path: Path, refresh: Refresh) -> None:
+def _link_row(person: PersonView, link: LinkView, store: Store, refresh: Refresh) -> None:
     with ui.row().classes("w-full items-center gap-2 no-wrap"):
         ui.icon("link").classes("text-sm").style("color: var(--im-text-muted)")
         ui.label(f"{relationship_label(link.kind)} {link.target_name}").classes("text-sm").style(
@@ -433,7 +431,7 @@ def _link_row(person: PersonView, link: LinkView, path: Path, refresh: Refresh) 
             im_badge(tr("confirmed"), variant="success")
 
             def remove() -> None:
-                remove_relationship(path, person.person_id, link.kind, link.target_id)
+                remove_relationship(store, person.person_id, link.kind, link.target_id)
                 ui.notify(tr("Relationship removed"), type="positive")
                 refresh()
 
@@ -456,10 +454,10 @@ def _link_row(person: PersonView, link: LinkView, path: Path, refresh: Refresh) 
 
         def decide(answer: str) -> None:
             # Pressing the answer already given takes it back: an edge nobody
-            # has an opinion on is a real state, and the file says so by
+            # has an opinion on is a real state, and the registry says so by
             # writing nothing under `confirmed:` for it.
             link.decision = None if link.decision == answer else answer
-            save_person(path, person)
+            save_person(store, person)
             draw_answer()
             ui.notify(
                 tr(
@@ -478,7 +476,7 @@ def _link_row(person: PersonView, link: LinkView, path: Path, refresh: Refresh) 
         ).tooltip(tr("No, they are not"))
 
 
-def _add_person_dialog(path: Path, refresh: Refresh) -> ui.dialog:
+def _add_person_dialog(store: Store, refresh: Refresh) -> ui.dialog:
     with ui.dialog() as dialog, ui.card().classes("w-full max-w-md p-5 gap-4"):
         ui.label(tr("Add someone")).classes("text-lg font-semibold").style("color: var(--im-text)")
         ui.label(
@@ -490,7 +488,7 @@ def _add_person_dialog(path: Path, refresh: Refresh) -> ui.dialog:
 
         def create() -> None:
             try:
-                add_person(path, name.value or "")
+                add_person(store, name.value or "")
             except ValueError as exc:
                 ui.notify(str(exc), type="negative")
                 return
@@ -506,7 +504,7 @@ def _add_person_dialog(path: Path, refresh: Refresh) -> ui.dialog:
 
 
 def _relationship_dialog(
-    person: PersonView, people: list[PersonView], path: Path, refresh: Refresh
+    person: PersonView, people: list[PersonView], store: Store, refresh: Refresh
 ) -> ui.dialog:
     kinds = {choice.kind: choice.label for choice in RELATIONSHIP_CHOICES}
     targets = {
@@ -536,7 +534,7 @@ def _relationship_dialog(
             if not kind.value or not target.value:
                 ui.notify(tr("Choose a relationship and a person"), type="warning")
                 return
-            add_relationship(path, person.person_id, str(kind.value), str(target.value))
+            add_relationship(store, person.person_id, str(kind.value), str(target.value))
             dialog.close()
             ui.notify(tr("Relationship confirmed"), type="positive")
             refresh()

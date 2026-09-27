@@ -929,10 +929,10 @@ msgstr "Sem sugestões elegíveis neste momento."
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
 msgstr ""
-"Ainda não existe arquivo de pessoas. Analise a biblioteca novamente: lê as contagens e curvas"
+"Ainda não há pessoas. Analise a biblioteca novamente: lê as contagens e curvas"
 " mensais de cada pessoa com nome, sem analisar imagens."
 
 #: pages/runs.py:105

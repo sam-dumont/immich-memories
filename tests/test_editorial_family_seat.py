@@ -352,7 +352,7 @@ def _planned_person_film(tmp_path, *, product: str, scene_print=None, full=False
     from tests.editorial_film_fixtures import film_source, home_days
     from tests.editorial_subject_family import subject_people
 
-    people, relation = subject_people(tmp_path)
+    people, relation = subject_people()
     days = [*home_days(date(2030, 2, 3), 5), *home_days(date(2030, 2, 12), 5)]
     days = [replace(day, moments=3) for day in days]
     source = film_source(

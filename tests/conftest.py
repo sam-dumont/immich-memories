@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import uuid
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
@@ -123,6 +124,23 @@ def isolated_inference_compute(monkeypatch) -> None:
         "immich_memories.config_compute.local_inference_acceleration",
         lambda: (False, "No GPU runtime in this unit-test fixture"),
     )
+
+
+@pytest.fixture(autouse=True)
+def isolated_store(monkeypatch) -> Iterator[None]:
+    """Give every test its own empty default store, so none reads or writes the developer's.
+
+    `open_store()` with no location resolves `~/.immich-memories/store.db`; the environment
+    beats that, and a fresh file per test keeps one test's people out of the next.
+    """
+    from immich_memories.db import close_stores
+
+    assert _TEST_ROOT is not None
+    database = _TEST_ROOT / "stores" / f"{uuid.uuid4().hex}.db"
+    database.parent.mkdir(exist_ok=True)
+    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", f"sqlite:///{database}")
+    yield
+    close_stores()
 
 
 @pytest.fixture(autouse=True)

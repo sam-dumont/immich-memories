@@ -243,13 +243,13 @@ output of an automatic run, with credentials removed.
 
 ## People: confirming who's who
 
-`/settings/people` edits `~/.immich-memories/people.yaml`, the same file
-[`immich-memories people`](./cli/prepare.md) writes. The scan reads each named person's picture count
+`/settings/people` edits the people registry in the store, the same one
+[`immich-memories people`](./cli/prepare.md) writes and `people export` writes out as YAML. The scan reads each named person's picture count
 and month curve from Immich, never a pixel. This page is what turns "people in the picture" into
 "your family" for the editor: the family seat and big stories read it
 ([Teach it your family](../get-started/who-is-who.md)).
 
-A fresh install shows "No people file yet". **Rescan the library** writes the file and draws the
+A fresh install shows "No people yet". **Rescan the library** fills the registry and draws the
 roster. What the scan infers goes under `inferred:` and is recomputed each scan; what you confirm
 goes under `confirmed:` and a scan never touches it.
 

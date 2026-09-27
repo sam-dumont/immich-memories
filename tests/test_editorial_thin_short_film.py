@@ -118,7 +118,7 @@ def test_a_person_film_reads_first_the_week_its_subjects_parents_are_in(tmp_path
     from immich_memories.analysis.editorial_thin_short import episodes_to_read
     from tests.editorial_subject_family import film_of, her_parents, subject_people
 
-    _people, relation = subject_people(tmp_path)
+    _people, relation = subject_people()
     film = april_shaped()
     for asset in film.pool["S002"]:
         film.lines[asset["asset_id"]] += f" | {her_parents(relation)}"
@@ -134,7 +134,7 @@ def test_a_person_film_reads_first_the_week_its_subjects_parents_are_in(tmp_path
             reads=library.port(),
             line_of=film.lines.get,
             limit=1,
-            close_family=film_close_family(film_of(tmp_path / product, product)),
+            close_family=film_close_family(film_of(product)),
         )
         first[product] = episodes[0][0].split("-")[0]
 
