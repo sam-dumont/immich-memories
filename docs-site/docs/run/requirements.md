@@ -50,6 +50,12 @@ Kubernetes cluster. Timings per host are on [Measured](../better/measured.md).
 On Full, the rules editor still makes the draft. A preference vote keeps the original shot until
 a replacement passes the checks. Sharing decisions stay with rules, classifiers and Laya.
 
+The initial draft uses metadata and CPU facts on every tier, even if captions are already in the
+bank. Captions and their setting descriptions become available during refinement of selected shots
+and candidates. Full can also read banked captions from a selected shot's whole episode for context.
+This keeps the starting draft independent of prior caption jobs without deleting or regenerating
+their work.
+
 A [render worker](../better/gpu-render.md) moves the encode to another machine. It does not change
 the selection tier: a GPU that can encode video is not proof of inference capability.
 

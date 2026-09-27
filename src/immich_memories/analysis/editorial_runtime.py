@@ -535,7 +535,9 @@ def build_editorial_planner(
     )
 
     def rule_episode_reader(prepared: Any) -> EpisodeReader:
-        return RuleEpisodeReader(readings.reader(prepared), by_quality=True)
+        return RuleEpisodeReader(
+            replace(readings, include_captions=False).reader(prepared), by_quality=True
+        )
 
     def text_episode_reader(prepared: Any, *, lean: bool = False) -> EpisodeReader:
         annotations = readings.reader(prepared)
