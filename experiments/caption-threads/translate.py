@@ -601,6 +601,32 @@ def firsts(reader, library, key, name, person, rows):
     return chosen, offered
 
 
+COMPACT = '''For each numbered photo caption, answer whether that photo belongs in the film the owner
+asked for: "yes" only when the caption makes what the owner asked for the main subject of the
+photo, "no" when it is absent or only in the background, "unsure" when the caption cannot tell.
+Captions never know names or whose something is. Return JSON with one answer per caption, in order.'''
+COMPACT_BATCH = 24
+
+
+def choose_compact(reader, library, key, brief, refs):
+    """The cheap text check: one short enforced verdict per caption, no reasons (reasons were
+    ~90% of the time: 1.6 s per caption)."""
+    decisions = []
+    refs = [i for i in refs if library.rows[i]["caption"]]
+    for start in range(0, len(refs), COMPACT_BATCH):
+        part = refs[start:start + COMPACT_BATCH]
+        schema = _schema(answers={"type": "array", "items": {"type": "string", "enum": ["yes", "no", "unsure"]},
+                                  "minItems": len(part), "maxItems": len(part)})
+        answer = reader.ask("compact_check", f"{key}:{start}", COMPACT,
+                            {"owner_request": brief,
+                             "captions": [f"{n + 1}. {library.rows[i]['caption'][:140]}" for n, i in enumerate(part)]},
+                            lambda a: None, 20 + 6 * len(part), schema=schema)
+        verdicts = (answer or {}).get("answers") or ["unsure"] * len(part)
+        decisions += [{"ref": i, "decision": {"yes": "match", "no": "reject"}.get(v, "unknown")}
+                      for i, v in zip(part, verdicts)]
+    return decisions
+
+
 def main():
     original = sys.argv[1]
     key = "translate:" + hashlib.sha256(original.encode()).hexdigest()[:16]
@@ -697,21 +723,24 @@ def main():
     # hits ("mother", "woman", "baby" tied with "breastfeeding" at 3 and buried it, 09-27).
     score = {i: 10000 * len(own_set & library.tokens[i]) + 100 * len(comp_set & library.tokens[i])
                 + sum(1 for p in subj if p <= library.tokens[i]) for i in pool}
-    # Broad requests (twenty years of cars) get more checks; a narrow one keeps the floor.
-    judge_budget = min(450, max(JUDGE_BUDGET, len(pool) // 6))
-    plan["budgets"] = {"judge": judge_budget}
-    offered = spread_budget(library, pool, judge_budget, score)
+    # The cascade: a cheap text verdict on (nearly) every caption, the photo only where text
+    # cannot decide. Text "yes" is provisional: the regular flow's thesis-fit vote judges again.
+    text_budget = int(os.environ.get("TEXT_BUDGET", 3000))
+    offered = spread_budget(library, pool, text_budget, score)
     offered = [i for i in offered if not library.rows[i].get("uncaptioned")]
-    decisions = choose_sources(reader, library, key, brief,
+    decisions = choose_compact(reader, library, key, brief,
                                sorted(set(offered) | {i for i in anchors & pool if not library.rows[i].get("uncaptioned")}))
+    plan["budgets"] = {"text": len(decisions)}
     kept = sorted((d["ref"] for d in decisions if d["decision"] == "match"),
                   key=lambda i: library.rows[i]["taken_at"])
     unsure = [d["ref"] for d in decisions if d["decision"] == "unknown"]
     looked = []
     if not os.environ.get("NO_LOOK"):
-        kept, looked = look(reader, config, library, plan, set(kept) | set(unsure) | (uncaptioned & pool), anchors,
-                            score)
-        kept.sort(key=lambda i: library.rows[i]["taken_at"])
+        # Only what text could not settle: unsure captions, forwarded photos without one, and
+        # OCR anchors (whose letters, not captions, put them here).
+        seen, looked = look(reader, config, library, plan, set(unsure) | (uncaptioned & pool) | (anchors & pool),
+                            anchors, score)
+        kept = sorted(set(kept) | set(seen), key=lambda i: library.rows[i]["taken_at"])
     timeline = [f'{library.rows[i]["taken_at"][:10]}: {library.rows[i]["caption"][:110]}'
                 for i in kept[:: max(1, len(kept) // 24)]]
     thesis = reader.ask("translate_thesis", key, THESIS, {"owner_request": brief, "timeline": timeline},
@@ -720,7 +749,9 @@ def main():
         plan.pop(k, None)
     record = {"brief": original, "english": brief, "plan": plan, "scope": scope_note,
               "counts": {"window": len(in_window), "scope": len(pool_scope), "subject_matches": len(subject),
-                         "ocr_anchors": len(anchors), "uncaptioned": len(uncaptioned & pool), "pool": len(pool), "judged": len(decisions),
+                         "ocr_anchors": len(anchors), "uncaptioned": len(uncaptioned & pool), "pool": len(pool),
+                         "text_yes": sum(1 for d in decisions if d["decision"] == "match"),
+                         "text_unsure": len(unsure), "judged": len(decisions),
                          "looked": len(looked), "kept": len(kept)},
               "kept_by_year": dict(sorted(Counter(library.rows[i]["taken_at"][:4] for i in kept).items())),
               "thesis": (thesis or {}).get("thesis"),
