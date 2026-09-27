@@ -30,7 +30,7 @@ class FilmPreparation:
         self._prepared, self._on_stage = prepared, on_stage
         self._round = 0
         readings = self._evidence.readings
-        nas = replace(readings, config=nas_draft_config(readings.config))
+        nas = replace(readings, config=nas_draft_config(readings.config), include_captions=False)
         return replace(self._evidence, readings=nas, inspect_clips=False)(prepared, on_stage, reach)
 
     def refine(self, source: StructurePlanningInput, carriers) -> StructurePlanningInput:

@@ -169,7 +169,7 @@ class StoredAnnotationLineReader:
         *,
         store_path: Path,
         candidates: Sequence[EditorialCandidate],
-        description_model: str,
+        description_model: str | None,
         head_versions: Mapping[str, str],
         pixel_producer_key: str,
         people_context: Mapping[str, _PersonContext] | None = None,
@@ -180,6 +180,8 @@ class StoredAnnotationLineReader:
 
         A line's subject framing then reads only their faces; with none, any
         named face in the picture is its subject.
+        ``description_model=None`` gives the NAS draft a caption-free evidence
+        contract without deleting the banked captions needed by refinement.
         """
         candidate_by_id = {candidate.asset_id: candidate for candidate in candidates}
         if len(candidate_by_id) != len(candidates):
@@ -200,7 +202,9 @@ class StoredAnnotationLineReader:
         self._contract = AnnotationContract(
             renderer_version=ANNOTATION_LINE_RENDERER_VERSION,
             producer_versions=(
-                f"description:{description_model}",
+                f"description:{description_model}"
+                if description_model is not None
+                else "caption-view:excluded-v1",
                 "flags:all-except-exposure-v2",
                 *(f"head:{head}:{version}" for head, version in sorted(head_versions.items())),
                 "motion-bursts:legacy-v1",

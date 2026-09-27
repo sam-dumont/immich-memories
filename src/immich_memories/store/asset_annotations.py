@@ -106,13 +106,13 @@ class AssetAnnotationFactBatch:
 
 
 class AssetAnnotationFactRepository:
-    """Fetch one complete annotation-fact snapshot without writing the store."""
+    """Read banked facts; a null description producer excludes captions and their fields."""
 
     def __init__(
         self,
         store_path: Path,
         *,
-        description_model: str,
+        description_model: str | None,
         head_versions: Mapping[str, str],
         pixel_producer_key: str,
     ) -> None:
@@ -159,15 +159,16 @@ class AssetAnnotationFactRepository:
         )
         self._read_people(connection, records)
         self._read_faces(connection, records)
-        if self._description_model.startswith(LLM_CAPTION_PREFIX):
-            for asset_id, caption in selected_captions(
-                connection, asset_ids, self._description_model
-            ).items():
-                records[asset_id].description = caption.envelope.description
-                records[asset_id].setting = caption.envelope.setting
-        else:
-            self._read_descriptions(connection, records)
-            self._read_description_fields(connection, records)
+        if self._description_model is not None:
+            if self._description_model.startswith(LLM_CAPTION_PREFIX):
+                for asset_id, caption in selected_captions(
+                    connection, asset_ids, self._description_model
+                ).items():
+                    records[asset_id].description = caption.envelope.description
+                    records[asset_id].setting = caption.envelope.setting
+            else:
+                self._read_descriptions(connection, records)
+                self._read_description_fields(connection, records)
         self._read_flags(connection, records)
         self._read_heads(connection, records)
         self._read_pixels(connection, records)

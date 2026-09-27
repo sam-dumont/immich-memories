@@ -148,6 +148,9 @@ unchanged sources retain their existing bank entries.
   cheap picture facts before the NAS draft, then captions and clip inspection for that draft
   and actual replacement candidates (`editorial_film_preparation.py`). Bulk `prepare` keeps its
   explicit whole-source scope. Deferred video exposure is never banked as a completed frame check.
+  The first draft and its source gate use a caption-free annotation view, even when descriptions
+  are already banked. That view has a distinct evidence contract. Refinement and demanded episode
+  context retain the original caption producer; the bank is never erased to build the draft.
 - **Heads**: eight small linear classifiers over one pinned DINOv2 ONNX embedding: location,
   people, children, activity, venue, frame_kind, screen, uncovered_person
   (`triage/bundled_heads/public-8heads-v4.npz`, `editorial_preparation_heads.py`). Beside them sit
