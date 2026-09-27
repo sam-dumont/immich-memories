@@ -50,7 +50,8 @@ def run(source, judge, *, account):
             thumbnail_hash=lambda _asset: None,
             rules=RuleStructureReader(source),
             thin=ThinPolish(
-                bank_dir=source.bank_dir,
+                store=source.bank_store,
+                bank_scope=source.case.key,
                 read_period=lambda _stories: (account, {}),
             ),
         ),
@@ -117,7 +118,9 @@ def test_a_period_that_cannot_be_read_ships_the_no_model_cut_and_says_so(tmp_pat
                 judge=PolishJudge(),
                 thumbnail_hash=lambda _asset: None,
                 rules=RuleStructureReader(source),
-                thin=ThinPolish(bank_dir=source.bank_dir, read_period=unreadable),
+                thin=ThinPolish(
+                    store=source.bank_store, bank_scope=source.case.key, read_period=unreadable
+                ),
             ),
         ).plan
     nas = film(tmp_path / "nas")

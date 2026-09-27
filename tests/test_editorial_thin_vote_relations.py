@@ -14,6 +14,7 @@ from immich_memories.analysis.editorial_picture_admission import PictureAdmissio
 from immich_memories.analysis.editorial_story_replies import film_close_family
 from immich_memories.analysis.editorial_thin_layer import ThinPolish
 from immich_memories.config_models_llm import LLMConfig
+from immich_memories.db import open_store
 from tests.editorial_subject_family import film_of, subject_people
 
 PARTNER = "with Person A (partner; aged 34; inner circle)"
@@ -83,7 +84,8 @@ def carrier(asset):
 def polish_of(tmp_path, lines, *, standing=None, subject="", record=lambda _n, _p: None, **film):
     judge = FitJudge()
     polish = ThinPolish(
-        bank_dir=tmp_path,
+        store=open_store(),
+        bank_scope="case",
         read_period=lambda _stories: ("A month of domestic life around a newborn.", {}),
     )
     cut = [carrier(asset) for asset in lines]

@@ -122,8 +122,9 @@ class EditorialConfig(BaseModel):
         default="",
         description=(
             "Deprecated: facts and readings live in the store now. A legacy annotations.sqlite "
-            "here is imported into the store once, and its directory still holds the "
-            "structure-banks/ files. Blank means the configured cache directory"
+            "here is imported into the store once, and its directory still holds "
+            "structure-banks/ (thumbnail-hash and scene-print caches). Blank means the "
+            "configured cache directory"
         ),
     )
     description_model: str = Field(
@@ -217,5 +218,5 @@ class EditorialConfig(BaseModel):
         return self.annotation_database_path or cache_path / "annotations.sqlite"
 
     def resolve_bank_root(self, cache_path: Path) -> Path:
-        """The directory a library's file banks (structure-banks/) live in."""
+        """The directory a library's file caches (structure-banks/) live in."""
         return self.resolve_annotation_database(cache_path).parent

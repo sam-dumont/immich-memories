@@ -96,10 +96,15 @@ def resolve_location(config: Config | None = None) -> StoreLocation:
     Without a config the loaded one is used. `~` is expanded on every call, so a test or a
     container that moves HOME moves the default store with it.
     """
+    env_url, env_schema = os.environ.get(URL_ENV), os.environ.get(SCHEMA_ENV)
+    if config is None and env_url and (env_schema or env_url.startswith("sqlite")):
+        # The environment names everything the location needs: config.yaml is not read, so
+        # nothing it would log or fail on comes along.
+        return StoreLocation(url=normalize_url(env_url), schema=env_schema or DEFAULT_SCHEMA)
     if config is None:
         from immich_memories.config_loader import get_config
 
         config = get_config()
-    url = os.environ.get(URL_ENV) or config.database.url or DEFAULT_URL
-    schema = os.environ.get(SCHEMA_ENV) or config.database.schema_name or DEFAULT_SCHEMA
+    url = env_url or config.database.url or DEFAULT_URL
+    schema = env_schema or config.database.schema_name or DEFAULT_SCHEMA
     return StoreLocation(url=normalize_url(url), schema=schema)

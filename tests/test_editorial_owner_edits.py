@@ -10,6 +10,7 @@ import pytest
 from immich_memories.analysis.editorial_planner import EditorialSelection
 from immich_memories.api.models import AssetType
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_clips import _validated_render_directives
 from immich_memories.processing.editorial_live_render import validate_editorial_live_clip
@@ -25,6 +26,10 @@ from tests.conftest import make_clip
 
 @pytest.fixture(autouse=True)
 def no_external_work(monkeypatch):
+    # The store the review edits are banked in is opened first: opening it checks, once, that
+    # its file is not on a network mount, which is local bookkeeping and not a service.
+    open_store()
+
     def forbidden(*_args, **_kwargs):
         pytest.fail("owner review projection must not call models, media tools or services")
 
@@ -248,13 +253,13 @@ def ui_state(params):
     )
 
 
-def test_ui_factory_keeps_original_plan_and_writes_private_output_specific_edit_record(tmp_path):
-    import json
-
+def test_ui_factory_keeps_original_plan_and_banks_the_review_edits(tmp_path):
+    from immich_memories.store.owner_edits import owner_edits_of_attempt
     from immich_memories.ui.pages._step4_generate import _build_generation_params
 
     params = original_params(tmp_path)
     state = ui_state(params)
+    state.editorial_attempt_dir = tmp_path / "attempts" / "20260927T100000Z-0123456789ab"
     binding = deepcopy(state.editorial_render_timing)
     state.selected_clip_ids.remove("chosen-0")
     state.clip_segments = {**state.clip_segments, "chosen-2": (1, 3)}
@@ -266,24 +271,25 @@ def test_ui_factory_keeps_original_plan_and_writes_private_output_specific_edit_
     assert state.editorial_render_timing == binding
     assert state.editorial_selections == params.editorial_selections
     assert state.pipeline_selected_clips[2].editorial_live_manifest["selected_interval"] == [0, 4]
-    path = tmp_path / generated.editorial_owner_edits["artifact_name"]
-    assert path.name.startswith("memory.owner-edits-")
-    assert json.loads(path.read_text()) == generated.editorial_owner_edits
-    assert path.stat().st_mode & 0o777 == 0o600
+    banked = owner_edits_of_attempt(open_store(), "20260927T100000Z-0123456789ab")
+    assert banked == [generated.editorial_owner_edits]
     assert generated.editorial_owner_edits["removed_asset_ids"] == ["chosen-0"]
+    assert not list(tmp_path.glob("*.owner-edits-*.private.json"))
 
 
 def test_ui_factory_no_op_preserves_binding_and_does_not_write_an_edit(tmp_path):
+    from immich_memories.store.owner_edits import owner_edits_of_attempt
     from immich_memories.ui.pages._step4_generate import _build_generation_params
 
     params = original_params(tmp_path)
     state = ui_state(params)
+    state.editorial_attempt_dir = tmp_path / "attempt"
     # WHY: avoids opening a real Immich connection; the test never touches params.client.
     with patch("immich_memories.api.immich.SyncImmichClient"):
         generated = _build_generation_params(state, params.clips, params.output_path)
     assert generated.editorial_render_timing is state.editorial_render_timing
     assert generated.editorial_owner_edits is None
-    assert not list(tmp_path.glob("*.owner-edits-*.private.json"))
+    assert owner_edits_of_attempt(open_store(), "attempt") == []
 
 
 def test_ui_factory_rebinds_explicit_transition_settings(tmp_path):

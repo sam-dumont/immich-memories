@@ -340,7 +340,8 @@ class ProductionPostCardBackend:
             "rules": rules,
             "laya": laya_reader_for(config.editorial),
             "thin": ThinPolish(
-                bank_dir=source.bank_dir,
+                store=source.bank_store,
+                bank_scope=source.case.key,
                 read_period=lambda asset_ids_of: self._read_period(source, period, asset_ids_of),
                 short=self._short_reads(source, rules.standing),
             ),

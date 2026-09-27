@@ -179,6 +179,15 @@ class StructurePlanningInput:
     # rather than to the owner. None reads as it always did: every relation is the owner's.
     people: EditorialPeople | None = None
 
+    @property
+    def bank_store(self) -> Store:
+        """Where the library's banks live: this run's store, else the configured one."""
+        if self.store is not None:
+            return self.store
+        from immich_memories.db import open_store
+
+        return open_store(self.config)
+
     def __post_init__(self) -> None:
         _check_render_timing(self.render_timing, self.case)
         members = _check_wall_membership(self.wall_bytes, self.moment_asset_ids, self.assets)
