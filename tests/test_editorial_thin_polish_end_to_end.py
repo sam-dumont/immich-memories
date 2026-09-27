@@ -184,6 +184,35 @@ def test_one_polish_drops_the_junk_keeps_the_star_and_refills_what_the_gates_too
     assert kept == sorted(kept, key=lambda asset: LINES[asset])
 
 
+@pytest.mark.parametrize("depth_time", ["09:29:00", "09:31:00"])
+def test_polish_keeps_a_representative_and_its_accepted_depth_in_either_capture_order(
+    tmp_path, depth_time
+):
+    representative = unit("g2", "S2", moment="q1")
+    depth = dict(unit("g3", "S2", moment="q1"), depth=True, taken=f"2024-02-05T{depth_time}")
+    draft = [representative, depth]
+    layer = ThinPolish(bank_dir=tmp_path, read_period=lambda _stories: (ACCOUNT, {}))
+    records = {}
+
+    cut = layer.polish(
+        draft,
+        judge=PolishJudge(),
+        gates=PictureAdmission(
+            standing=standing_gate(), audience=Audience(), thumbnail_hash=lambda _a: None
+        ),
+        catalogue=layer.catalogue_of(STORY, MOMENTS, {}, drafted=draft),
+        contract="accepted-depth",
+        line_of=LINES.get,
+        record=lambda name, payload: records.update({name: payload}),
+        candidates_of=lambda _key: [],
+        content_cap=8.0,
+    )
+
+    assert {row["asset_id"] for row in cut} == {"g2", "g3"}
+    assert [row["taken"] for row in cut] == sorted(row["taken"] for row in cut)
+    assert records["thin-polish"]["refused_by_the_gates"] == []
+
+
 def test_the_polish_spends_one_vote_one_pick_and_one_check_and_no_standing_question(tmp_path):
     judge = PolishJudge()
     polish_once(tmp_path, judge)
