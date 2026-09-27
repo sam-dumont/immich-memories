@@ -547,6 +547,16 @@ def check_caption_endpoint(config: Config) -> CheckResult:
             status=CheckStatus.SKIPPED,
             message=f"Not required by {config.editorial.preparation.tier}",
         )
+    if config.editorial.preparation.caption_provider == "llm":
+        from immich_memories.config_models_editorial_preparation import LLM_CAPTION_WARNING
+
+        return CheckResult(
+            name="Captions",
+            status=CheckStatus.WARNING,
+            message=f"Explicit LLM captioning: {config.llm.model}",
+            details=LLM_CAPTION_WARNING
+            + " Image schema controls run before missing captions are acquired.",
+        )
     from immich_memories.analysis.editorial_description_contract import API_MODEL
     from immich_memories.analysis.editorial_preparation_captions import (
         CAPTION_KEY_HINT,

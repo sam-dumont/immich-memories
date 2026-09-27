@@ -19,6 +19,11 @@ MARQO_ONNX_URL = (
 PreparationTier = Literal["full", "no_captions", "metadata_only"]
 """Which producers a deployment demands. Named, never inferred from what happens to fail."""
 
+LLM_CAPTION_WARNING = (
+    "LLM captioning is less efficient than SmolVLM and can be much more expensive, "
+    "especially on hosted infrastructure. Image inputs go to the configured LLM."
+)
+
 
 def _endpoint(value: str, field: str) -> str:
     value = value.rstrip("/")
@@ -32,6 +37,14 @@ class EditorialPreparationConfig(BaseModel):
     """Missing facts are acquired; complete facts never contact a provider."""
 
     tier: PreparationTier = "full"
+    caption_provider: Literal["smolvlm", "llm"] = Field(
+        default="smolvlm",
+        description=(
+            "Explicit caption provider. 'llm' sends selected pictures and candidate frames "
+            "to the configured LLM. Less efficient than SmolVLM and potentially much more "
+            "expensive on hosted infrastructure. Never an automatic fallback."
+        ),
+    )
     caption_base_url: str = "http://localhost:8092/v1"
     caption_artifact_id: str = Field(
         default="",
@@ -105,7 +118,7 @@ class EditorialPreparationConfig(BaseModel):
 
     @property
     def demands_captions(self) -> bool:
-        return self.tier == "full"
+        return self.tier == "full" or self.caption_provider == "llm"
 
     @property
     def demands_models(self) -> bool:

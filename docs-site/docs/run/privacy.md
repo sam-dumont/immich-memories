@@ -17,7 +17,8 @@ source and is kept by hand: if you find a call that is not here,
 flowchart LR
   app["Immich Memories"] <-->|"always: reads, plus one upload if you turn it on"| immich[("Your Immich")]
   app -.->|"llm.base_url, default localhost:8080"| reader["Reader (model)"]
-  app -.->|"editorial.preparation.caption_base_url, default localhost:8092, full tier only"| captioner["Caption server"]
+  app -.->|"SmolVLM captions: GPU and Full"| captioner["Caption server"]
+  app -.->|"caption_provider: llm, explicit opt-in"| vision["LLM image captions"]
   app -.->|"inference.facts_base_url, default unset"| inference["Inference service"]
   app -.->|"render.worker_base_url, default unset"| worker["Render worker"]
   app -.->|"network.geocoding, default off"| nominatim["nominatim.openstreetmap.org"]
@@ -37,7 +38,8 @@ What that means per setup:
 - **A reader or caption server on your own box or LAN.** Still your network. The pictures the
   caption server reads land on that box's disk and in its logs.
 - **A hosted reader.** The annotation text of the candidates, and the names on it, go to that
-  provider. No picture does. Pointing `llm.base_url` at it is the consent step; nothing asks twice.
+  provider. Pointing `llm.base_url` at it enables text requests. Images go there only if you also
+  opt into `advanced.editorial.preparation.caption_provider: llm`.
 
 ## What Immich sees
 
@@ -65,7 +67,8 @@ touches nothing.
 | `llm.base_url` (titles) | a people or occasion film's opening title, whenever a reader is configured; trips only with `--llm-title` | text only: first names, birth dates and ages, the relationships your people file records, the span, place names, the album the cut mostly sits in | `--no-llm-title` or `--title` |
 | `llm.base_url` (music, special days) | music selection and special-day scans, with a model | text only: the cut's story labels and captions; for a day, capture times, places, coordinates and recognised names | no model: no call |
 | `api.openai.com`, `api.anthropic.com`, `api.z.ai` | `llm.provider` is `openai`, `anthropic` or `zai` and `base_url` is left at its default | the reader rows above, to that vendor | set `base_url` yourself |
-| `caption_base_url` | `tier: full` only, the first time a picture a cut can reach is prepared | a 400 px JPEG per picture; a strip of three keyframes per video and per playing Live Photo; `caption_api_key` as a bearer token if set | `localhost:8092`; `no_captions` sends nothing |
+| `caption_base_url` | GPU and Full with the default SmolVLM provider, for selected shots and actual candidates | a 400 px JPEG per picture; a strip of three keyframes per video and per playing Live Photo; `caption_api_key` as a bearer token if set | `localhost:8092`; NAS does not call it |
+| `llm.base_url` (caption provider) | explicit `advanced.editorial.preparation.caption_provider: llm`, on any tier | synthetic schema controls, then missing picture tiles and candidate video frame strips; configured LLM credentials | off; existing valid SmolVLM captions are reused first |
 | `inference.facts_base_url` | preparation, when set | each picture's preview, for the heads and detectors | unset: the app runs them itself |
 | `render.worker_base_url` | rendering on another box | the chosen cut, plus your Immich URL and API key so the worker can fetch the clips | unset: renders here |
 | `nominatim.openstreetmap.org` | `network.geocoding: true` | each trip's centre, and the rounded coordinates of places the film shows | off |
@@ -84,11 +87,16 @@ prints none.
 | Seat | Setting | What it is shown |
 |---|---|---|
 | captioner | `editorial.preparation.caption_base_url` | 400 px tiles, a 960 × 320 strip of three keyframes per video, no metadata |
+| explicit LLM caption provider | `editorial.preparation.caption_provider: llm` | the same tiles and frame strips, sent through the configured LLM provider |
 
-A model looks at a picture once, at ingest: the captioner above, plus the heads and detectors,
-which run in the app or on `advanced.inference.facts_base_url`. After that, no model looks at a
-picture again. The rules editor drafts the film from the text and facts ingest banked, and a
-reader, when you add one, reads that same text.
+The LLM caption option is less efficient and can be much more expensive, especially on hosted
+infrastructure. Configuring a prose reader alone never enables it.
+
+Picture facts and captions are banked under their producer. Later films reuse valid entries;
+missing facts or a changed producer can require another read. Film generation captions selected
+shots and actual candidates, while `prepare` can explicitly cover a wider scope. The heads and
+detectors run in the app or on `advanced.inference.facts_base_url`. The rules editor and the
+optional prose reader use the resulting text and facts.
 A film you share outside the family also leaves out every picture a detector or an exposure flag
 marked, whatever the reader says about it (`advanced.editorial.strict_sharing`, on by default).
 

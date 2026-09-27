@@ -524,6 +524,7 @@ editorial:
     venue: oi-v3
   preparation:
     tier: no_captions            # internal producer mode, derived from the product tier
+    caption_provider: smolvlm    # llm explicitly opts into images sent to advanced.llm; higher cost
     caption_base_url: http://localhost:8092/v1
     caption_artifact_id: ""   # optional artifact/revision label; existing captions stay banked
     caption_api_key: ""          # bearer token for a caption server that requires one

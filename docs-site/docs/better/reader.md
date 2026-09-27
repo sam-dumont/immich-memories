@@ -15,6 +15,10 @@ and replacement candidates; existing captions are reused. The reader can read a 
 whole episode for context, without asking the captioner to fill every neighbour first. What exactly it
 changes, with diagrams: [What a model adds](../how-it-chooses/what-a-model-adds.md).
 
+The same endpoint can separately act as the caption provider only when you explicitly enable
+[LLM captions](./captions.md#explicit-llm-captions). That role sends images, needs vision support,
+and can cost much more, especially hosted. The selection reader still receives text.
+
 ## What you need
 
 - A text model with at least a 32k context. No vision needed.
