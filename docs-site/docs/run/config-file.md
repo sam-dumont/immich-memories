@@ -25,6 +25,12 @@ and explains what is missing. A video encoder alone does not count as GPU infere
 `nas`, `gpu` and `full` values remain available for controlled comparisons. See the
 [tier reference](../reference/config-reference.md#tier) for the requirements.
 
+To use a vision-capable LLM for captions, explicitly set
+`advanced.editorial.preparation.caption_provider: llm`. This does not upgrade NAS selection.
+It sends image tiles and candidate video frames to your configured LLM, reusing existing
+SmolVLM captions first. It is less efficient and can cost much more, especially on hosted
+infrastructure. See [LLM captions](../better/captions.md#explicit-llm-captions).
+
 ## Quick start config
 
 A full plain-NAS setup, every default kept except the two values that make a cut good

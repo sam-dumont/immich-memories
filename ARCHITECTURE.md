@@ -156,7 +156,11 @@ unchanged sources retain their existing bank entries.
 - **Tiers**: `tier: auto` resolves `nas` (CPU heads and detectors), `gpu` (adds captions and Laya),
   or `full` (adds an explicitly configured prose LLM). NAS and GPU always use the rules reader.
   Text-only titles and music mood may use a configured LLM on every tier; they neither enable
-  model selection nor image captioning. LLM preflight checks those configured text services too.
+  model selection nor image captioning. Explicit `caption_provider: llm` lets preparation use
+  that LLM for missing still and motion captions, without promoting NAS to Full. Config and
+  preflight warn about cost; the NAS draft defers these requests to selected/candidate refinement.
+  CLI and film preparation pass the configured provider; motion provenance records its origin.
+  LLM preflight checks configured text services too.
   Preparation follows that same product tier; legacy overrides no longer win. `config_compute.py`
   checks inference-service health and local CUDA/MLX capability without loading weights.
   Explicit tiers remain available for comparisons. Sharing never asks the prose

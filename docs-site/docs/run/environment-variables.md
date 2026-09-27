@@ -66,7 +66,8 @@ whether the shipped compose file already passes it.
 |---|---|---|---|---|---|
 | `IMMICH_MEMORIES_TIER` | `tier` | `auto` | 1 | `auto` | Resolves NAS, GPU or Full from inference capability and the configured LLM; preparation follows it |
 | `IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` | `editorial.preparation.detector_cache_dir` | the Hugging Face cache | advanced | the config volume | Where the document classifier lives. Keep it on a volume |
-| `IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL` | `editorial.preparation.caption_base_url` | `http://localhost:8092/v1` | advanced | commented | The caption server, for `tier: full` |
+| `IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL` | `editorial.preparation.caption_base_url` | `http://localhost:8092/v1` | advanced | commented | The SmolVLM caption server, for GPU and Full |
+| `IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_PROVIDER` | `editorial.preparation.caption_provider` | `smolvlm` | advanced | no | `llm` explicitly sends images to the configured LLM on any tier; less efficient and potentially much more expensive, especially hosted |
 | `IMMICH_MEMORIES_OUTPUT__DIRECTORY` | `output.directory` | `~/Videos/Memories`; `/app/output` in the image | 1 | set by the image | Where films land. In a container, set this, not `output.directory` |
 | `IMMICH_MEMORIES_PRESET` | `preset` | none | 1 | no | `fast`: 1080p H.264, fast encoder preset, static titles. Explicit settings win |
 | `IMMICH_MEMORIES_HARDWARE__BACKEND` | `hardware.backend` | `auto` | advanced | no | `none`, `nvidia`, `apple`, `vaapi` or `qsv` to name one encoder instead of probing |

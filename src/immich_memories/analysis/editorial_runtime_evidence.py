@@ -180,6 +180,7 @@ class EvidencePreparation:
             triage_config=config.triage,
             head_versions=config.editorial.head_versions,
             inference_config=config.inference,
+            llm_config=config.llm,
             description_model=config.editorial.description_model,
             pixel_producer_key=config.editorial.pixel_producer_key,
             fetch_preview=lambda asset_id: self.ports.fetch_preview(self.client, asset_id),

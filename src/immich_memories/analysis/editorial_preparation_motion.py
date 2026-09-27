@@ -427,6 +427,7 @@ def prepare_motion_lines(
     check_cancelled: Callable[[], None],
     progress: Callable[[str, int, int], None],
     producer: str = MOTION_PRODUCER,
+    caption_origin: Mapping[str, Any] | None = None,
 ) -> MotionPreparation:
     """Bank a line, or a settled refusal, for each source; transport failures stay undone.
 
@@ -445,7 +446,7 @@ def prepare_motion_lines(
                 for source in batch
             ]
             for source, future in zip(batch, futures, strict=True):
-                _settle(connection, source, future.result(), outcome, producer)
+                _settle(connection, source, future.result(), outcome, producer, caption_origin)
             progress("motion", start + len(batch), len(sources))
     return outcome
 
@@ -456,6 +457,7 @@ def _settle(
     result: _Outcome,
     outcome: MotionPreparation,
     producer: str,
+    caption_origin: Mapping[str, Any] | None,
 ) -> None:
     outcome.bytes_read += result.bytes_read
     outcome.requests += result.requests
@@ -470,7 +472,8 @@ def _settle(
         source_digest=source.digest,
         line=result.line,
         bytes_read=result.bytes_read,
-        provenance=_provenance(source, result),
+        provenance=_provenance(source, result)
+        | ({"caption_origin": dict(caption_origin)} if caption_origin else {}),
     )
     if result.line.status == DESCRIBED:
         outcome.described += 1

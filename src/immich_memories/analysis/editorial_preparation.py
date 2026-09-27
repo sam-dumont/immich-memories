@@ -9,7 +9,7 @@ import tempfile
 import time
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import closing, contextmanager, suppress
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from PIL import Image
@@ -51,14 +51,17 @@ from immich_memories.analysis.editorial_video_motion import (
     bank_video_motion,
     videos_owing_motion,
 )
+from immich_memories.analysis.llm_caption_identity import llm_caption_identity
+from immich_memories.analysis.llm_providers import resolved_llm_config
 from immich_memories.analysis.remote_facts import RemoteFactsError
 from immich_memories.analysis.subject_framing import FaceBox
 from immich_memories.api.models import Asset
 from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
 from immich_memories.config_models_inference import InferenceConfig
+from immich_memories.config_models_llm import LLMConfig
 from immich_memories.config_models_triage import TriageConfig
 from immich_memories.operations.cancellation import check_cancelled as current_check_cancelled
-from immich_memories.store.caption_provenance import origins_for
+from immich_memories.store.caption_provenance import CaptionOrigin, origins_for
 from immich_memories.store.caption_selection import conflicting_caption_rows
 from immich_memories.store.editorial_preparation import (
     faces_unread,
@@ -256,6 +259,7 @@ class _Acquisition:
     # `report` is also handed work in batches they cannot name.
     note: Callable[[str], None]
     failures: dict[str, str]
+    llm_config: LLMConfig | None = None
     # Sources the server refused by name, kept apart from `failures` so the
     # completeness check never reads them as a producer that went down.
     unservable: dict[str, str] = field(default_factory=dict)
@@ -473,6 +477,11 @@ class _Acquisition:
     def captions(self, connection: sqlite3.Connection, asset_ids: Sequence[str]) -> None:
         self.check()
         try:
+            options = {}
+            if self.preparation_config.caption_provider == "llm":
+                if self.llm_config is None:
+                    raise ValueError("LLM captioning needs the configured LLM")
+                options = {"llm_config": self.llm_config}
             with self.timed("captions", len(asset_ids)):
                 errors = self.providers.captions(
                     connection=connection,
@@ -485,15 +494,19 @@ class _Acquisition:
                     concurrency=self.preparation_config.caption_concurrency,
                     check_cancelled=self.check,
                     progress=self.report,
+                    **options,
                 )
             self.failures.update({f"caption:{key}": value for key, value in errors.items()})
         except PermissionError as exc:
             # The endpoint answered and asked for a credential; repointing the URL is not the fix.
             self.failures["captions"] = str(exc)
         except Exception as exc:
-            self.failures["captions"] = (
-                f"{type(exc).__name__}: {exc}; configure caption_base_url with the compact-v3 public model endpoint"
+            hint = (
+                "check the configured LLM's image and structured-output support"
+                if self.preparation_config.caption_provider == "llm"
+                else "configure caption_base_url with the compact-v3 public model endpoint"
             )
+            self.failures["captions"] = f"{type(exc).__name__}: {exc}; {hint}"
 
     def motion(
         self,
@@ -504,6 +517,24 @@ class _Acquisition:
         self.check()
         config = self.preparation_config
         try:
+            llm = None
+            options = {}
+            if config.caption_provider == "llm":
+                if self.llm_config is None:
+                    raise ValueError("LLM captioning needs the configured LLM")
+                llm = resolved_llm_config(self.llm_config)
+                options = {
+                    "producer": motion_producer(
+                        llm_caption_identity(llm, config.caption_artifact_id)
+                    ),
+                    "caption_origin": asdict(
+                        CaptionOrigin(
+                            model_id=llm.model,
+                            endpoint=llm.base_url,
+                            artifact_id=config.caption_artifact_id,
+                        )
+                    ),
+                }
             with self.timed("motion", len(sources)):
                 outcome = self.providers.motion(
                     connection=connection,
@@ -513,10 +544,12 @@ class _Acquisition:
                         config.caption_base_url,
                         api_key=config.caption_api_key,
                         timeout=config.caption_timeout_seconds,
+                        llm_config=llm,
                     ),
                     concurrency=config.caption_concurrency,
                     check_cancelled=self.check,
                     progress=self.report,
+                    **options,
                 )
         except PermissionError as exc:
             self.failures["motion"] = str(exc)
@@ -541,6 +574,7 @@ def prepare_editorial_annotations(
     triage_config: TriageConfig,
     head_versions: Mapping[str, str],
     inference_config: InferenceConfig | None = None,
+    llm_config: LLMConfig | None = None,
     description_model: str = DESCRIPTION_MODEL,
     pixel_producer_key: str = PRODUCER_KEY,
     fetch_preview: Callable[[str], bytes | None] | None = None,
@@ -574,6 +608,7 @@ def prepare_editorial_annotations(
         preparation_config=preparation_config,
         triage_config=triage_config,
         inference_config=inference_config or InferenceConfig(),
+        llm_config=llm_config,
         store_path=store_path,
         preview_for=lambda asset_id: cached_preview(cache_path, asset_id),
         check=check_cancelled or current_check_cancelled,
@@ -725,9 +760,14 @@ def _acquire_captions(
 ) -> None:
     if not asset_ids:
         return
-    if description_model != DESCRIPTION_MODEL:
+    accepted = DESCRIPTION_MODEL
+    if stage.preparation_config.caption_provider == "llm" and stage.llm_config is not None:
+        accepted = llm_caption_identity(
+            stage.llm_config, stage.preparation_config.caption_artifact_id
+        )
+    if description_model != accepted:
         stage.failures["caption_provider"] = (
-            f"no packaged producer for {description_model}; accepted producer is {DESCRIPTION_MODEL}"
+            f"no packaged producer for {description_model}; accepted producer is {accepted}"
         )
         return
     # Do not pay for captions that would collide with malformed immutable rows.

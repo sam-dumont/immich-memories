@@ -32,7 +32,38 @@ A caption takes about 31 s on four Celeron cores and well under a second on a Ma
 is why a NAS stays on `no_captions` or sends its captions to another box. Nothing leaves your
 network but a 400 px tile of each picture, to the server you name, once.
 
-## The contract
+## Explicit LLM captions
+
+SmolVLM is the default caption provider. An LLM configured for titles or prose never receives
+images automatically. To let a vision-capable LLM supply missing captions, opt in:
+
+```yaml
+advanced:
+  llm:
+    provider: openai-compatible
+    base_url: http://localhost:8000/v1
+    model: your-vision-capable-model
+  editorial:
+    preparation:
+      caption_provider: llm
+```
+
+**This is less efficient than SmolVLM and can be much more expensive, especially on hosted
+infrastructure.** The app warns at startup and in preflight. Image tiles and video frame strips
+go to the configured LLM, using its credentials and provider settings. The SmolVLM endpoint and
+`caption_api_key` are unused for this choice.
+
+Existing valid SmolVLM captions and motion lines stay banked and are reused first. New LLM
+captions have a separate producer identity and provenance; changing models does not relabel old
+captions. Before new picture captions, three synthetic tiles must pass the schema check. A failed
+LLM caption stays outstanding, with no automatic fallback to another model.
+
+Film generation still captions only the selected shots and actual candidates. `prepare` is the
+explicit job for a wider scope. This choice works on NAS without promoting selection to Full:
+automatic tiers still follow available GPU inference capability. Sharing decisions remain with
+the rules, classifiers and Laya where enabled.
+
+## The SmolVLM contract
 
 Before a single library picture goes on the wire, the app checks that `GET /models` advertises
 `smolvlm2-500m-base-public`, then sends three synthetic control tiles (red, blue, grey) and
@@ -45,7 +76,8 @@ The alias is a promise about behaviour, not a name lookup: any endpoint can clai
 descriptions under that name came from SmolVLM2-500M with this prompt and this schema, so a bank
 filled last month and one filled today are comparable. Alias a 30B vision model and the app will
 believe you, and the bank then holds two things under one name. No commercial API advertises this
-alias, so a hosted captioner means your own server behind a URL.
+alias, so the default SmolVLM provider needs your own server behind a URL. The explicit LLM
+option above uses the configured model's own identity instead.
 
 `caption_api_key` goes out as `Authorization: Bearer <key>`; blank sends no header. The reader's
 `llm.api_key` is never borrowed for it.
