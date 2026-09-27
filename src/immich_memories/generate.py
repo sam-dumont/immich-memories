@@ -6,7 +6,6 @@ All UI interaction is replaced by a progress callback.
 
 from __future__ import annotations
 
-import io
 import logging
 import shutil
 from collections.abc import Callable
@@ -15,6 +14,8 @@ from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, overload
 
+from immich_memories.db import Store, open_store
+from immich_memories.db.leases import Lease, LeaseHeldError
 from immich_memories.generate_clips import cleanup_temp_clips, cleanup_temp_dirs
 from immich_memories.generate_delivery import (
     _deliver_with_operational_progress,
@@ -197,38 +198,27 @@ class DeliveryError(GenerationError):
 
 
 class PipelineLock:
-    """File-based lock preventing concurrent pipeline runs.
+    """Lease preventing concurrent pipeline runs.
 
-    Uses fcntl.flock() for cross-process exclusion. Non-blocking —
-    raises GenerationError immediately if another instance holds the lock.
+    A lock file on a SQLite store, an advisory lock on PostgreSQL (so it holds across hosts).
+    Non-blocking: raises GenerationError immediately if another instance holds it.
     """
 
-    def __init__(self, lock_path: Path) -> None:
+    def __init__(self, lock_path: Path, store: Store | None = None) -> None:
         self._lock_path = lock_path
-        self._fd: io.TextIOWrapper | None = None
+        self._lease = Lease("pipeline", lock_path, store)
 
     def __enter__(self) -> PipelineLock:
-        import fcntl
-
-        self._lock_path.parent.mkdir(parents=True, exist_ok=True)
-        self._fd = self._lock_path.open("w")
         try:
-            fcntl.flock(self._fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError:
-            self._fd.close()
-            self._fd = None
+            self._lease.acquire()
+        except (LeaseHeldError, OSError):
             raise GenerationError(
                 f"Another instance is already running. Lock file: {self._lock_path}"
-            )
+            ) from None
         return self
 
     def __exit__(self, *exc: object) -> None:
-        import fcntl
-
-        if self._fd is not None:
-            fcntl.flock(self._fd, fcntl.LOCK_UN)
-            self._fd.close()
-            self._fd = None
+        self._lease.release()
 
 
 # Minimum free disk space before starting generation
@@ -281,7 +271,7 @@ def generate_memory(
 
     # Single-instance lock: prevent concurrent pipeline runs from corrupting state
     lock_path = params.config.cache.database_path.parent / ".lock"
-    with PipelineLock(lock_path):
+    with PipelineLock(lock_path, open_store(params.config)):
         if run_tracker is None and not defer_finalization:
             return _generate_memory_inner(params)
         return _generate_memory_inner(
@@ -393,7 +383,6 @@ def _generate_memory_inner(
     from immich_memories.processing.editorial_timing import prepare_certified_timeline
 
     prepare_certified_timeline(params)
-    from immich_memories.db import open_store
     from immich_memories.security import sanitize_filename
     from immich_memories.tracking import RunTracker, generate_run_id
 

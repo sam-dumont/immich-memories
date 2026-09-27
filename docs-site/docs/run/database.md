@@ -120,12 +120,16 @@ attempt directory it was cut from are store rows. That is what automation's cool
 made this memory" checks read, so wiping `cache.db` no longer re-films a memory you already have.
 The attempt directories themselves, and the `run_metadata.json` beside each film, stay files.
 
-Two things still coordinate through lock files beside `cache.db` rather than through the store: a
-render takes `.lock`, and a nightly automation pass takes `.auto.lock`, so the scheduler inside the
-web UI and a CLI run on the same host never start the same work twice. That holds on PostgreSQL
-too. It does not stretch across hosts: two machines running automation against one PostgreSQL store
-is not supported, which is also why the Kubernetes CronJobs trigger the running pod instead of
-running their own.
+Three kinds of work must never run twice at once: a nightly automation pass, an assembly, and a
+film attempt. Each takes a lease first, and the store decides what a lease is:
+
+- **SQLite:** a lock file beside `cache.db` (`.auto.lock`, `.lock`) or in the attempt directory
+  (`.lease`). The operating system drops it when the process dies. One host, as SQLite always is.
+- **PostgreSQL:** an advisory lock in the database, held on a connection the holder keeps open.
+  The server drops it the moment that connection closes, a crash included. So several app
+  instances, on as many machines as you like, can share one PostgreSQL store: whichever takes the
+  lease runs, and the others say another run holds it. Two stores in one database (two schemas)
+  never block each other.
 
 ## Backups
 

@@ -39,7 +39,8 @@ from immich_memories.automation.status import (
 )
 from immich_memories.automation.variety import VarietyDecision
 from immich_memories.config_loader import Config
-from immich_memories.db import open_store
+from immich_memories.db import Store, open_store
+from immich_memories.db.leases import Lease, LeaseHeldError
 from immich_memories.operations.auto_output import NOTHING_WORTH_A_FILM, retain_output
 from immich_memories.operations.bounded_process import run_bounded_process
 from immich_memories.security import configured_secret_values, sanitize_error_message
@@ -58,33 +59,25 @@ class AutomationAlreadyRunningError(RuntimeError):
 
 
 class AutomationLease:
-    """Nonblocking OS lease for one config-scoped automation decision."""
+    """Nonblocking lease for one config-scoped automation decision.
 
-    def __init__(self, lock_path: Path) -> None:
-        self._lock_path = lock_path
-        self._fd: Any = None
+    A lock file on a SQLite store; on PostgreSQL an advisory lock, so every host sharing the
+    store agrees on who is running.
+    """
+
+    def __init__(self, lock_path: Path, store: Store | None = None) -> None:
+        self._lease = Lease("automation", lock_path, store)
 
     def acquire(self) -> None:
         """Take the lease, or refuse because another process already holds it."""
-        import fcntl
-
-        self._lock_path.parent.mkdir(parents=True, exist_ok=True)
-        self._fd = self._lock_path.open("w")
         try:
-            fcntl.flock(self._fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            self._fd.close()
-            self._fd = None
+            self._lease.acquire()
+        except LeaseHeldError:
             raise AutomationAlreadyRunningError("automation already running") from None
 
     def release(self) -> None:
         """Drop the lease. Safe to call when it was never taken."""
-        import fcntl
-
-        if self._fd is not None:
-            fcntl.flock(self._fd, fcntl.LOCK_UN)
-            self._fd.close()
-            self._fd = None
+        self._lease.release()
 
     def __enter__(self) -> AutomationLease:
         self.acquire()
@@ -548,7 +541,9 @@ class AutoRunner:
         Raises:
             AutomationAlreadyRunningError: another process holds the lease.
         """
-        lease = AutomationLease(self.config.cache.database_path.parent / ".auto.lock")
+        lease = AutomationLease(
+            self.config.cache.database_path.parent / ".auto.lock", open_store(self.config)
+        )
         lease.acquire()
         try:
             attempt = self.state.start_attempt(reason=reason)

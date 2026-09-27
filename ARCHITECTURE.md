@@ -743,6 +743,8 @@ src/immich_memories/
 │   ├── sqlite_files.py         # connect_sqlite: the one raw sqlite3 factory (WAL, busy_timeout 30 s,
 │   │                           # synchronous NORMAL, foreign keys), private_database_path (0600)
 │   ├── network_guard.py        # Refuses a SQLite file on NFS/SMB/CIFS unless IMMICH_MEMORIES_ALLOW_NETWORK_SQLITE=1
+│   ├── leases.py               # Lease: fcntl lock file on SQLite, pg_try_advisory_lock on PostgreSQL
+│   │                           # (automation, PipelineLock, editorial attempt; works across hosts)
 │   ├── upsert.py               # upsert(): dialect insert().on_conflict_do_update / do_nothing
 │   └── time.py                 # to_db / from_db: naive UTC in the store, aware UTC at the edge
 │
