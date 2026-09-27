@@ -1,7 +1,6 @@
 """The shots between 0.2 and 0.5 that nothing else holds, written down for the owner."""
 
 import json
-import sqlite3
 
 from immich_memories.analysis.editorial_review_list import (
     FILENAME,
@@ -11,6 +10,7 @@ from immich_memories.analysis.editorial_review_list import (
     to_check,
     write_review_list,
 )
+from tests.annotation_rows import add_rows, annotation_store
 
 
 def _carriers(*asset_ids):
@@ -63,22 +63,31 @@ def test_the_written_list_is_what_the_summary_counts_and_runs_why_reads(tmp_path
     assert review_note(tmp_path, "b2") == ""
 
 
-def test_the_probability_comes_from_the_row_the_head_already_wrote(tmp_path):
-    from immich_memories.store.editorial_preparation import initialize
-
-    store = tmp_path / "annotations.sqlite"
-    with sqlite3.connect(store) as connection:
-        initialize(connection)
-        connection.executemany(
-            "INSERT INTO head_facts VALUES (?,?,?,?,?,?,?)",
-            [
-                ("a1", "nsfw_marqo", "det-v3", "no", 0.31, "k", "now"),
-                ("b2", "nsfw_marqo", "det-v2", "no", 0.31, "k", "now"),
-            ],
-        )
+def test_the_probability_comes_from_the_row_the_head_already_wrote():
+    store = annotation_store()
+    add_rows(
+        store,
+        "head_facts",
+        {
+            "asset_id": "a1",
+            "head": "nsfw_marqo",
+            "version": "det-v3",
+            "label": "no",
+            "confidence": 0.31,
+            "encoder_key": "k",
+        },
+        {
+            "asset_id": "b2",
+            "head": "nsfw_marqo",
+            "version": "det-v2",
+            "label": "no",
+            "confidence": 0.31,
+            "encoder_key": "k",
+        },
+    )
 
     assert exposure_probabilities(store, ["a1", "b2"], "det-v3") == {"a1": 0.31}
-    assert exposure_probabilities(tmp_path / "absent.sqlite", ["a1"], "det-v3") == {}
+    assert exposure_probabilities(None, ["a1"], "det-v3") == {}
 
 
 def test_the_summary_says_how_many_even_when_there_are_none():
@@ -99,23 +108,33 @@ def test_the_summary_says_how_many_even_when_there_are_none():
 
 def test_a_finished_cut_writes_its_grey_zone_shots_at_the_version_the_run_reads(tmp_path):
     from immich_memories.analysis.editorial_review_list import write_for_cut
-    from immich_memories.store.editorial_preparation import initialize
 
-    store = tmp_path / "annotations.sqlite"
-    with sqlite3.connect(store) as connection:
-        initialize(connection)
-        connection.executemany(
-            "INSERT INTO head_facts VALUES (?,?,?,?,?,?,?)",
-            [
-                ("a1", "nsfw_marqo", "det-v3", "no", 0.31, "k", "now"),
-                ("b2", "nsfw_marqo", "det-v3", "no", 0.42, "k", "now"),
-            ],
-        )
+    store = annotation_store()
+    add_rows(
+        store,
+        "head_facts",
+        {
+            "asset_id": "a1",
+            "head": "nsfw_marqo",
+            "version": "det-v3",
+            "label": "no",
+            "confidence": 0.31,
+            "encoder_key": "k",
+        },
+        {
+            "asset_id": "b2",
+            "head": "nsfw_marqo",
+            "version": "det-v3",
+            "label": "no",
+            "confidence": 0.42,
+            "encoder_key": "k",
+        },
+    )
 
     from types import SimpleNamespace
 
     source = SimpleNamespace(
-        store_path=store,
+        store=store,
         artifact_dir=tmp_path,
         config=SimpleNamespace(editorial=SimpleNamespace(head_versions={"nsfw_marqo": "det-v3"})),
     )

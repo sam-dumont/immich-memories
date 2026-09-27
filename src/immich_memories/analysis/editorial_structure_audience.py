@@ -25,9 +25,9 @@ AUDIENCE_BANK_NAME = "audience-verdicts.private.json"
 CARRIER_RULE_SOURCE = "carrier-rule-on-observations"
 
 
-def library_bank_path(store_path: Path) -> Path:
-    """The library's audience bank, beside the annotation store every film of it reads."""
-    return Path(store_path).parent / "structure-banks" / AUDIENCE_BANK_NAME
+def library_bank_path(bank_root: Path) -> Path:
+    """The library's audience bank, under the directory every film of it keeps its banks in."""
+    return Path(bank_root) / "structure-banks" / AUDIENCE_BANK_NAME
 
 
 # Holds that say nothing was looked at, not that something was seen. Kept, they would hold a

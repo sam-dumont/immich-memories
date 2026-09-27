@@ -32,6 +32,7 @@ from immich_memories.store.episode_readings import (
     EpisodeReadingStore,
     EpisodeRepresentative,
 )
+from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 
 
@@ -85,7 +86,7 @@ def _scenario(tmp_path: Path, *, warm: bool = True):
         )
         for projection in projections
     )
-    store = EpisodeReadingStore(tmp_path / "episode-plan.sqlite")
+    store = EpisodeReadingStore(annotation_store())
     if warm:
         store.remember(
             (
@@ -212,7 +213,7 @@ def test_initial_and_retry_completions_survive_a_later_interruption(tmp_path: Pa
         )
         for projection in projections
     )
-    store = EpisodeReadingStore(tmp_path / "interrupted.sqlite")
+    store = EpisodeReadingStore(annotation_store())
     calls = 0
 
     def requester(_prompt: str) -> str:
@@ -274,7 +275,7 @@ def test_interrupted_multi_page_episode_is_not_partially_banked(tmp_path: Path) 
         producer_key=producer.key(),
         annotation_lines=lines._lines,
     )
-    store = EpisodeReadingStore(tmp_path / "paged-interrupted.sqlite")
+    store = EpisodeReadingStore(annotation_store())
     calls = 0
 
     def requester(_prompt: str) -> str:

@@ -748,7 +748,7 @@ def _banked_facts(source, ports) -> BankedAnswers:
     return open_banked_facts(
         bank_dir=source.bank_dir,
         attempts_dir=source.artifact_dir.parent,
-        store_path=source.store_path,
+        store=source.store,
         audience=source.audience,
         episode_cards=source.episode_readings,
         own_producers=frozenset(

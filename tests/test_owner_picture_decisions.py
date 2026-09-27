@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from immich_memories.analysis import editorial_shareability as share
 from immich_memories.store import owner_decisions as owner
+from tests.annotation_rows import add_rows, annotation_store
 
 
 def excluded(store, *ids):
@@ -12,7 +13,7 @@ def excluded(store, *ids):
 
 
 def test_a_picture_the_owner_will_never_use_is_never_a_carrier(tmp_path):
-    store = tmp_path / "annotations.sqlite"
+    store = annotation_store()
 
     owner.decide(store, "p1", owner.NEVER_USE, via="cli")
 
@@ -20,7 +21,7 @@ def test_a_picture_the_owner_will_never_use_is_never_a_carrier(tmp_path):
 
 
 def test_a_new_decision_replaces_the_old_one(tmp_path):
-    store = tmp_path / "annotations.sqlite"
+    store = annotation_store()
     owner.decide(store, "p1", owner.NEVER_USE, via="cli")
 
     owner.decide(store, "p1", owner.CLEAR_HOLD, via="web")
@@ -30,7 +31,7 @@ def test_a_new_decision_replaces_the_old_one(tmp_path):
 
 
 def test_forgetting_a_decision_hands_the_picture_back_to_the_app(tmp_path):
-    store = tmp_path / "annotations.sqlite"
+    store = annotation_store()
     owner.decide(store, "p1", owner.NEVER_USE, via="cli")
 
     owner.forget(store, "p1")
@@ -40,7 +41,7 @@ def test_forgetting_a_decision_hands_the_picture_back_to_the_app(tmp_path):
 
 
 def test_a_live_photo_is_one_picture_its_clip_goes_with_its_still(tmp_path):
-    store = tmp_path / "annotations.sqlite"
+    store = annotation_store()
 
     written = owner.decide(store, "still", owner.CLEAR_HOLD, via="web", clip_id="clip")
 
@@ -49,19 +50,14 @@ def test_a_live_photo_is_one_picture_its_clip_goes_with_its_still(tmp_path):
 
 
 def test_the_store_finds_the_clip_of_a_live_photo_it_banked(tmp_path):
-    import sqlite3
-
     store = empty_store(tmp_path)
-    with sqlite3.connect(store) as connection:
-        connection.execute(
-            "INSERT INTO assets (asset_id, live_photo_video_id) VALUES ('still', 'clip')"
-        )
+    add_rows(store, "annotation_assets", {"asset_id": "still", "live_photo_video_id": "clip"})
 
     assert owner.decide(store, "still", owner.NEVER_USE, via="cli") == ("still", "clip")
 
 
-def test_a_library_with_no_store_yet_has_no_decisions(tmp_path):
-    assert owner.decisions(tmp_path / "missing.sqlite") == {}
+def test_a_library_with_no_store_yet_has_no_decisions():
+    assert owner.decisions(annotation_store()) == {}
 
 
 # The audience gate, on every preparation tier.
@@ -80,7 +76,8 @@ FLAGGED_BY_THE_HEAD = {"solo": Annotation("A person on a beach.", (("nsfw_marqo"
 
 
 def empty_store(tmp_path):
-    store = tmp_path / "annotations.sqlite"
+    del tmp_path
+    store = annotation_store()
     owner.forget(store, "nobody")
     return store
 
@@ -185,7 +182,7 @@ def test_the_no_model_draft_does_not_carry_a_banked_refusal_past_the_owner(tmp_p
         return open_banked_facts(
             bank_dir=bank_dir,
             attempts_dir=None,
-            store_path=store,
+            store=store,
             audience="family",
             episode_cards={},
         ).refused_for_audience("held")

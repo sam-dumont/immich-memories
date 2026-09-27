@@ -1,12 +1,12 @@
 """D18: enumerate semantic misses and operational hits at the shared cache boundary."""
 
 from dataclasses import replace
-from pathlib import Path
 
 import pytest
 
 from immich_memories.analysis.editorial_case import TextRequest
 from immich_memories.config_models_llm import LLMConfig
+from tests.annotation_rows import annotation_store
 
 
 def request():
@@ -19,7 +19,7 @@ def request():
             api_key="test-credential",
             thinking=True,
         ),
-        cache_path=Path("unused.sqlite"),
+        judgments=annotation_store(),
         max_tokens=800,
         timeout_seconds=30,
     )
@@ -71,7 +71,7 @@ def test_credentials_deadlines_and_storage_paths_do_not_change_the_answer_identi
     changed = replace(
         original,
         llm_config=original.llm_config.model_copy(update={"api_key": "rotated-test-credential"}),
-        cache_path=Path("another-unused.sqlite"),
+        judgments=annotation_store(),
         timeout_seconds=90,
     )
     assert changed.judgment_key == original.judgment_key

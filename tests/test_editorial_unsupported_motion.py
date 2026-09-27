@@ -7,7 +7,6 @@ bright figure crossing it. The residual is the production optical-flow measureme
 from __future__ import annotations
 
 import json
-import sqlite3
 
 import pytest
 
@@ -21,15 +20,14 @@ from immich_memories.analysis.editorial_preparation_motion import (
 )
 from immich_memories.analysis.editorial_structure_budget import RESIDUAL_MIN
 from immich_memories.analysis.editorial_structure_lines import UnitLines
-from immich_memories.db.sqlite_files import private_database_path
-from immich_memories.store.editorial_preparation import initialize
 from immich_memories.store.motion_lines import (
     DESCRIBED,
     MotionLine,
-    initialize_motion_lines,
-    remember_motion_line,
+    motion_line_row,
+    remember_motion_lines,
 )
-from tests.test_editorial_preparation_motion import Seat, answer, picture, produce
+from tests.annotation_rows import add_rows, annotation_store, read_rows
+from tests.test_editorial_preparation_motion import Seat, answer, picture, produce, video
 
 
 def companion(tmp_path, *, figure: bool) -> bytes:
@@ -55,11 +53,8 @@ def companion(tmp_path, *, figure: bool) -> bytes:
 
 
 @pytest.fixture
-def store(tmp_path):
-    path = private_database_path(tmp_path / "annotations.sqlite")
-    with sqlite3.connect(path) as connection:
-        initialize(connection)
-    return path
+def store():
+    return annotation_store()
 
 
 def test_a_caption_claiming_action_in_an_empty_room_is_not_evidence_of_it(tmp_path, store):
@@ -67,17 +62,19 @@ def test_a_caption_claiming_action_in_an_empty_room_is_not_evidence_of_it(tmp_pa
     assert residual < RESIDUAL_MIN
     room = picture("room", live="room-companion")
     # A line an older pass banked for this picture, before this companion was measured.
-    with sqlite3.connect(store) as connection:
-        initialize_motion_lines(connection)
-        remember_motion_line(
-            connection,
-            asset_id="room",
-            producer=MOTION_PRODUCER,
-            source_digest=source_metadata_digest(room),
-            line=MotionLine(DESCRIBED, "A woman dances across the living room.", 3),
-            bytes_read=0,
-        )
-    lines = BankedMotionLines(store_path=store, assets={"room": room}, described=True)
+    remember_motion_lines(
+        store,
+        [
+            motion_line_row(
+                asset_id="room",
+                producer=MOTION_PRODUCER,
+                source_digest=source_metadata_digest(room),
+                line=MotionLine(DESCRIBED, "A woman dances across the living room.", 3),
+                bytes_read=0,
+            )
+        ],
+    )
+    lines = BankedMotionLines(store=store, assets={"room": room}, described=True)
     text = UnitLines({"room": "2024-03-02 | An empty living room with a grey sofa."})
     live = {"asset_id": "room", "members": ["room"], "raw_seconds": 3.0, "favourite": False}
     unmeasured = live | {"kind": "live-motion", "residual": None, "motion_assessed": False}
@@ -94,7 +91,7 @@ def test_a_live_photo_whose_measured_action_differs_from_its_still_stays_usable(
     swing = picture("swing", live="swing-companion")
     sources = motion_sources([swing], residual_of=lambda _asset: residual)
     produce(store, sources, seat=Seat(answer("A child runs in and jumps onto the swing.")))
-    lines = BankedMotionLines(store_path=store, assets={"swing": swing}, described=True)
+    lines = BankedMotionLines(store=store, assets={"swing": swing}, described=True)
     text = UnitLines({"swing": "2024-03-02 | An empty swing in a garden."})
     unit = {
         "asset_id": "swing",
@@ -111,10 +108,7 @@ def test_a_live_photo_whose_measured_action_differs_from_its_still_stays_usable(
 
 
 def test_a_prepared_line_records_the_evidence_that_admitted_it(store):
-    from contextlib import closing
-
     from immich_memories.analysis.editorial_motion_facts import RESIDUAL_PRODUCER
-    from tests.test_editorial_preparation_motion import video
 
     swing = picture("swing", live="swing-companion")
     sources = motion_sources(
@@ -122,8 +116,7 @@ def test_a_prepared_line_records_the_evidence_that_admitted_it(store):
     )
     produce(store, sources, seat=Seat(answer("A child runs.")))
 
-    with closing(sqlite3.connect(store)) as connection:
-        rows = dict(connection.execute("SELECT asset_id, provenance FROM motion_lines"))
+    rows = {row["asset_id"]: row["provenance"] for row in read_rows(store, "motion_lines")}
     live, clip = json.loads(rows["swing"]), json.loads(rows["clip"])
     assert live["admitted_on"] == {"residual": 2.1, "producer": RESIDUAL_PRODUCER}
     assert clip["admitted_on"] == {"kind": "video"}
@@ -131,45 +124,32 @@ def test_a_prepared_line_records_the_evidence_that_admitted_it(store):
     assert live["prompt"] == clip["prompt"] != ""
 
 
-def test_a_line_banked_before_provenance_is_counted_when_it_is_used(tmp_path):
-    from contextlib import closing
-
-    from tests.test_editorial_preparation_motion import video
-
+def test_a_line_banked_before_provenance_is_counted_when_it_is_used(store):
     clip = video("clip")
-    bank = tmp_path / "annotations.sqlite"
-    with closing(sqlite3.connect(bank)) as connection, connection:
-        # The table exactly as the first motion producer created and filled it.
-        connection.execute(
-            "CREATE TABLE motion_lines (asset_id TEXT NOT NULL, producer TEXT NOT NULL, "
-            "source_digest TEXT NOT NULL, status TEXT NOT NULL, text TEXT NOT NULL, "
-            "frames INTEGER NOT NULL, bytes_read INTEGER NOT NULL, written_at TEXT NOT NULL, "
-            "PRIMARY KEY(asset_id, producer))"
-        )
-        connection.execute(
-            "INSERT INTO motion_lines VALUES (?,?,?,?,?,?,?,?)",
-            (
-                "clip",
-                MOTION_PRODUCER,
-                source_metadata_digest(clip),
-                DESCRIBED,
-                "A dog runs.",
-                3,
-                0,
-                "2026-09-17T00:00:00Z",
-            ),
-        )
-    lines = BankedMotionLines(store_path=bank, assets={"clip": clip}, described=True)
+    # A row exactly as the first motion producer wrote it, before provenance existed: no value
+    # for that column at all, rather than a later producer's explicit NULL.
+    add_rows(
+        store,
+        "motion_lines",
+        {
+            "asset_id": "clip",
+            "producer": MOTION_PRODUCER,
+            "source_digest": source_metadata_digest(clip),
+            "status": DESCRIBED,
+            "text": "A dog runs.",
+            "frames": 3,
+            "bytes_read": 0,
+        },
+    )
+    lines = BankedMotionLines(store=store, assets={"clip": clip}, described=True)
 
-    # Read-only, before any preparation migrated the table: the old line still answers.
+    # Read-only, before any preparation recorded provenance: the old line still answers.
     assert lines.observe({"asset_id": "clip", "kind": "video"}).startswith("A dog runs.")
     assert lines.metrics()["unrecorded"] == 1
 
-    with closing(sqlite3.connect(bank)) as connection:
-        produce_into = motion_sources([video("fresh")], residual_of=lambda _a: None)
-        initialize_motion_lines(connection)
-        assert [s.asset_id for s in missing_motion(connection, produce_into)] == ["fresh"]
-    produce(bank, produce_into, seat=Seat(answer("A cat jumps.")))
-    fresh = BankedMotionLines(store_path=bank, assets={"fresh": video("fresh")}, described=True)
+    produce_into = motion_sources([video("fresh")], residual_of=lambda _a: None)
+    assert [s.asset_id for s in missing_motion(store, produce_into)] == ["fresh"]
+    produce(store, produce_into, seat=Seat(answer("A cat jumps.")))
+    fresh = BankedMotionLines(store=store, assets={"fresh": video("fresh")}, described=True)
     assert fresh.observe({"asset_id": "fresh", "kind": "video"}).startswith("A cat jumps.")
     assert fresh.metrics()["unrecorded"] == 0

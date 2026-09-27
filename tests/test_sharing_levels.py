@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from immich_memories.analysis import editorial_shareability as share
+from tests.annotation_rows import annotation_store
 
 
 @pytest.mark.parametrize(
@@ -366,7 +367,7 @@ def owner_gate(tmp_path, store, level, caption="A person on a beach.", finding="
     [("anyone", "share"), ("family", "family_only"), ("just-us", "just_us")],
 )
 def test_a_hold_cleared_for_a_level_plays_up_to_that_level(tmp_path, cleared_for, verdict):
-    store = tmp_path / "annotations.sqlite"
+    store = annotation_store()
     owner.decide(store, "solo", owner.clearance_for(cleared_for), via="cli")
 
     plays = {
@@ -380,7 +381,7 @@ def test_a_hold_cleared_for_a_level_plays_up_to_that_level(tmp_path, cleared_for
 
 
 def test_clearing_for_the_family_lifts_a_caption_hold_the_reader_keeps_casting(tmp_path):
-    store = tmp_path / "annotations.sqlite"
+    store = annotation_store()
     owner.decide(store, "solo", owner.clearance_for("family"), via="web")
 
     verdict = owner_gate(tmp_path, store, "family", BATH, "bathing").verdict_of(UNIT)
@@ -389,7 +390,7 @@ def test_clearing_for_the_family_lifts_a_caption_hold_the_reader_keeps_casting(t
 
 
 def test_a_burst_the_owner_cleared_at_two_levels_takes_the_stricter(tmp_path):
-    store = tmp_path / "annotations.sqlite"
+    store = annotation_store()
     owner.decide(store, "a", owner.clearance_for("anyone"), via="cli")
     owner.decide(store, "b", owner.clearance_for("just-us"), via="cli")
     flags = share.load_flags(store, ["a", "b"])
@@ -402,7 +403,7 @@ def test_the_no_model_draft_lifts_a_banked_refusal_only_where_the_clearance_reac
     from immich_memories.analysis.editorial_rule_banked_facts import open_banked_facts
     from immich_memories.analysis.editorial_structure_audience import AUDIENCE_BANK_NAME
 
-    store = tmp_path / "annotations.sqlite"
+    store = annotation_store()
     bank_dir = tmp_path / "structure-banks" / "case"
     AudienceBank(bank_dir.parent / AUDIENCE_BANK_NAME, answerer="full|reader").hold(
         "held", {"verdict": "family_only", "finding": "exposure_evidence", "policy": "heads"}
@@ -413,7 +414,7 @@ def test_the_no_model_draft_lifts_a_banked_refusal_only_where_the_clearance_reac
         return open_banked_facts(
             bank_dir=bank_dir,
             attempts_dir=None,
-            store_path=store,
+            store=store,
             audience=level,
             episode_cards={},
         ).refused_for_audience("held")

@@ -6,6 +6,7 @@ import pytest
 
 from immich_memories.analysis.editorial_motion_facts import DemandedMotionResolver, measure_motion
 from immich_memories.api.models import AssetType
+from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 
 
@@ -40,7 +41,7 @@ def test_only_chosen_carrier_samples_download_and_exact_warm_uses_no_transport(t
 
     resolver = DemandedMotionResolver(
         assets=assets,
-        cache_path=tmp_path / "motion.sqlite",
+        store=annotation_store(),
         fetch_video=fetch,
         measure=lambda _payload: {"residual": 2.0, "frames": 12},
     )
@@ -66,7 +67,7 @@ def test_source_metadata_change_invalidates_only_that_motion_fact(tmp_path):
     fetched = []
     resolver = DemandedMotionResolver(
         assets=assets,
-        cache_path=tmp_path / "motion.sqlite",
+        store=annotation_store(),
         fetch_video=lambda video: fetched.append(video) or b"preview",
         measure=lambda _payload: {"residual": 0.1},
     )
@@ -86,7 +87,7 @@ def test_a_failed_preview_keeps_the_photograph_and_is_not_banked_as_a_fact(tmp_p
         raise TimeoutError("preview unavailable")
 
     resolver = DemandedMotionResolver(
-        assets=_assets(1), cache_path=tmp_path / "motion.sqlite", fetch_video=failed
+        assets=_assets(1), store=annotation_store(), fetch_video=failed
     )
     result, metrics = resolver([_carrier("still-0")])
     assert result[0]["kind"] == "live-still" and result[0]["asset_id"] == "still-0"
@@ -107,7 +108,7 @@ def test_a_borrowed_candidate_flag_never_reclassifies_an_ordinary_video(tmp_path
 
     resolver = DemandedMotionResolver(
         assets={"ordinary-video": video},
-        cache_path=tmp_path / "motion.sqlite",
+        store=annotation_store(),
         fetch_video=forbidden,
     )
     carriers = [
@@ -133,7 +134,7 @@ def test_a_borrowed_candidate_flag_never_reclassifies_an_ordinary_video(tmp_path
 def test_a_live_candidate_with_a_linked_member_still_resolves(tmp_path):
     resolver = DemandedMotionResolver(
         assets=_assets(1),
-        cache_path=tmp_path / "motion.sqlite",
+        store=annotation_store(),
         fetch_video=lambda _video: b"preview",
         measure=lambda _payload: {"residual": 2.0},
     )
@@ -149,7 +150,7 @@ def test_programming_errors_and_a_blocked_network_are_not_silently_swallowed(tmp
         raise RuntimeError("HTTP blocked")
 
     resolver = DemandedMotionResolver(
-        assets=_assets(1), cache_path=tmp_path / "motion.sqlite", fetch_video=forbidden
+        assets=_assets(1), store=annotation_store(), fetch_video=forbidden
     )
     with pytest.raises(RuntimeError, match="HTTP blocked"):
         resolver([_carrier("still-0")])
@@ -184,7 +185,7 @@ def test_wrapped_immich_transport_failure_keeps_still_and_does_not_bank_error(tm
         raise ImmichAPIError("playback unavailable")
 
     resolver = DemandedMotionResolver(
-        assets={"one": asset}, cache_path=tmp_path / "motion.sqlite", fetch_video=fail
+        assets={"one": asset}, store=annotation_store(), fetch_video=fail
     )
     carriers = [{"asset_id": "one", "members": ["one"], "raw_seconds": 3, "motion_candidate": True}]
     first, cost = resolver(carriers)

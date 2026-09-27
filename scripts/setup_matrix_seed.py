@@ -10,8 +10,9 @@ What must NOT come across is anything a reader decided. Per-cell caches exist
 because the first real Mac run shared one and `mac-rules` published `mac-local`'s
 verdicts as its own losses; seeding a reader's answers into a cell that exists to
 compare readers would be that failure with extra steps. So the copy is followed
-by a delete: every table in the annotation store that holds a model's answer is
-emptied, and the separate judgment database beside it is removed outright.
+by a delete: every table in the cell's store (`store.db`, which `cache_pins` puts
+in the cache directory) that holds a model's answer is emptied, as is any legacy
+`annotations.sqlite`, and the separate judgment database beside it is removed outright.
 
     uv run python scripts/setup_matrix_seed.py <source cache> <destination cache>
 """
@@ -41,7 +42,9 @@ VERDICT_TABLES = (
 # (`verdicts_beside`), and a file is easier to delete than to empty.
 VERDICT_FILES = ("judgments.db", "judgments.db-wal", "judgments.db-shm")
 
-ANNOTATION_STORE = "annotations.sqlite"
+# Each cell's store lives in its cache directory (`setup_matrix_plan.cache_pins`); a legacy
+# annotation file is still emptied in case the importer reads it again.
+STORE_FILES = ("store.db", "annotations.sqlite")
 
 
 def strip_judgements(store: Path) -> list[str]:
@@ -84,7 +87,7 @@ def seed_cache(source: Path, destination: Path) -> list[str]:
     shutil.copytree(source, destination)
     for name in VERDICT_FILES:
         (destination / name).unlink(missing_ok=True)
-    return strip_judgements(destination / ANNOTATION_STORE)
+    return [table for name in STORE_FILES for table in strip_judgements(destination / name)]
 
 
 def main(argv: list[str]) -> int:

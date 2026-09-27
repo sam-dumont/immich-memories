@@ -11,6 +11,7 @@ from immich_memories.analysis.editorial_structure_material import build_material
 from immich_memories.analysis.editorial_structure_planner import plan_structure
 from immich_memories.analysis.live_clock_offsets import BankedClockOffsets
 from immich_memories.analysis.motion_rendering import motion_renderings
+from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 from tests.editorial_story_fixtures import ControlledStoryJudge
 from tests.test_editorial_duration_planner_integration import source
@@ -39,7 +40,7 @@ def bursts(tmp_path, count):
             for asset in assets.values()
         },
         motion_residuals={key: {"residual": 9.0} for key in assets},
-        store_path=tmp_path / "annotations.sqlite",
+        store=annotation_store(),
     )
 
 
@@ -199,7 +200,7 @@ class Library:
 
 def banked_offsets(tmp_path, library, companions):
     return BankedClockOffsets(
-        store_path=tmp_path / "annotations.sqlite",
+        store=annotation_store(),
         companions=companions,
         # WHY: Immich playback is the transport; a download is what the bank saves.
         fetch=library.fetch,

@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -728,11 +729,11 @@ async def generate_title_with_llm(
     facts: MemoryTitleFacts | None = None,
     llm_config: LLMConfig | None = None,
     temperature: float = 0.1,
-    cache_path: Path | None = None,
+    judgments: Store | None = None,
 ) -> TitleSuggestion | None:
     """Generate a title using the LLM. Returns None on failure.
 
-    With cache_path, a title asked for twice about the same memory is paid for
+    With judgments, a title asked for twice about the same memory is paid for
     once: the prompt carries the dates, places, people, recorded relations and
     clip descriptions, so anything that would change the answer changes the key.
     """
@@ -761,7 +762,7 @@ async def generate_title_with_llm(
             max_tokens=8000,
             timeout_seconds=300,
             thinking=True,
-            cache_path=cache_path,
+            judgments=judgments,
             response_format=title_shape(trip=_is_trip(memory_type)),
         )
         parsed = parse_title_response(raw)

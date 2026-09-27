@@ -42,7 +42,7 @@ from immich_memories.automation.catalogue import entries_from
 from immich_memories.config_loader import Config
 from immich_memories.timeperiod import DateRange
 from tests.conftest import make_asset, make_clip
-from tests.test_editorial_runtime import _create_annotation_store
+from tests.test_editorial_runtime import _seed_descriptions
 
 WINDOW = DateRange(datetime(2020, 6, 14, tzinfo=UTC), datetime(2020, 6, 14, 23, 59, tzinfo=UTC))
 
@@ -153,13 +153,11 @@ def test_production_wall_receives_only_selected_event_even_if_port_returns_whole
         name: make_clip(name, file_created_at=WINDOW.start.replace(hour=10))
         for name in ("race", "festival")
     }
-    store = tmp_path / "annotations.sqlite"
-    _create_annotation_store(store, {member: "People share an occasion."})
+    _seed_descriptions({member: "People share an occasion."})
     config = Config(
         llm={"model": "fake-model"},
         editorial={
             "enabled": True,
-            "annotation_database": str(store),
             "description_model": "student-v1",
         },
     )

@@ -5,7 +5,6 @@ store) and read back as the line the pick reads, so the test crosses the one pla
 identity used to be dropped.
 """
 
-import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -14,7 +13,8 @@ from immich_memories.analysis.editorial_contracts import EditorialCandidate
 from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
 from immich_memories.analysis.subject_framing import face_boxes_of, framing_visibility
 from immich_memories.api.models import AssetFace, Person
-from immich_memories.store.editorial_preparation import initialize, remember_faces
+from immich_memories.store.editorial_preparation import remember_faces
+from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 
 CAPTURED = datetime(2030, 5, 1, 10, tzinfo=UTC)
@@ -51,14 +51,11 @@ def _candidate(asset_id: str, people: list[Person]) -> EditorialCandidate:
 
 
 def _lines(tmp_path: Path, faces: dict[str, list[AssetFace]], **reader_options) -> dict[str, str]:
-    store_path = tmp_path / "annotations.sqlite"
-    with sqlite3.connect(store_path) as connection:
-        initialize(connection)
-        for asset_id, found in faces.items():
-            remember_faces(connection, asset_id, face_boxes_of(found))
-        connection.commit()
+    del tmp_path
+    store = annotation_store()
+    remember_faces(store, {asset_id: face_boxes_of(found) for asset_id, found in faces.items()})
     reader = StoredAnnotationLineReader(
-        store_path=store_path,
+        store=store,
         candidates=[_candidate(asset_id, [PERSON_A, PERSON_B]) for asset_id in faces],
         description_model="student-v1",
         head_versions={},
@@ -141,7 +138,6 @@ def test_the_runtime_reads_lines_about_the_people_the_memory_is_about(tmp_path: 
     )
     # Isolate the metadata reading path from the model acquisition component.
     config.editorial.preparation.tier = "metadata_only"
-    store_path = config.editorial.resolve_annotation_database(config.cache.cache_path)
     planner = build_editorial_planner(
         client=object(),
         config=config,
@@ -158,9 +154,7 @@ def test_the_runtime_reads_lines_about_the_people_the_memory_is_about(tmp_path: 
         # WHY: the people context is read from the owner's config dir; none is needed here.
         ports=EditorialRuntimePorts(load_people=dict),
     )
-    with sqlite3.connect(store_path) as connection:
-        remember_faces(connection, "a-speck", face_boxes_of(_A_SPECK_B_LARGE))
-        connection.commit()
+    remember_faces(annotation_store(), {"a-speck": face_boxes_of(_A_SPECK_B_LARGE)})
     prepared = SimpleNamespace(candidates=[_candidate("a-speck", [PERSON_A, PERSON_B])])
 
     assert planner._prepare_annotations is not None

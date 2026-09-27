@@ -10,6 +10,7 @@ from immich_memories.analysis.editorial_block_votes import judge_worthiness
 from immich_memories.analysis.editorial_structure_io import StructureTextJudge
 from immich_memories.config import Config
 from immich_memories.config_models_llm import LLMConfig
+from tests.annotation_rows import annotation_store
 
 
 def worthiness(judge, happenings):
@@ -57,7 +58,7 @@ def test_votes_overlap_blocks_but_keep_order_and_reuse_the_same_bank(tmp_path, m
     cold_out, warm_out = tmp_path / "cold", tmp_path / "warm"
     cold_out.mkdir()
     warm_out.mkdir()
-    cold = StructureTextJudge(config, cold_out, cache_path=tmp_path / "judgments.sqlite")
+    cold = StructureTextJudge(config, cold_out, judgments=annotation_store())
     pictures = [f"asset-{i}" for i in range(36)]
 
     def read(judge):
@@ -75,7 +76,7 @@ def test_votes_overlap_blocks_but_keep_order_and_reuse_the_same_bank(tmp_path, m
     warm = StructureTextJudge(
         config.model_copy(update={"llm": config.llm.model_copy(update={"reader_concurrency": 1})}),
         warm_out,
-        cache_path=tmp_path / "judgments.sqlite",
+        judgments=annotation_store(),
     )
     assert read(warm) == first
     assert len(sent) == 6
@@ -147,7 +148,7 @@ def test_one_question_asked_by_two_jobs_at_once_is_paid_for_once(tmp_path, monke
     monkeypatch.setattr(gateway, "query_llm", completion)
     config = Config(llm=LLMConfig(model="test-reader", reader_concurrency=2))
     (tmp_path / "out").mkdir()
-    judge = StructureTextJudge(config, tmp_path / "out", cache_path=tmp_path / "judgments.sqlite")
+    judge = StructureTextJudge(config, tmp_path / "out", judgments=annotation_store())
 
     def ask_the_same_thing(child, _item):
         both_asking.wait()
@@ -171,7 +172,7 @@ def test_a_failed_job_keeps_its_artifact_and_its_number_among_the_others(tmp_pat
     monkeypatch.setattr(gateway, "query_llm", completion)
     config = Config(llm=LLMConfig(model="test-reader", reader_concurrency=4))
     (tmp_path / "out").mkdir()
-    judge = StructureTextJudge(config, tmp_path / "out", cache_path=tmp_path / "judgments.sqlite")
+    judge = StructureTextJudge(config, tmp_path / "out", judgments=annotation_store())
     judge.ask("opening", "a readable question", json_object=True)
 
     def read(child, item):
@@ -204,7 +205,7 @@ def test_every_failing_job_names_its_own_cause(tmp_path, caplog):
 
     config = Config(llm=LLMConfig(model="test-reader", reader_concurrency=2))
     (tmp_path / "out").mkdir()
-    judge = StructureTextJudge(config, tmp_path / "out", cache_path=tmp_path / "judgments.sqlite")
+    judge = StructureTextJudge(config, tmp_path / "out", judgments=annotation_store())
     with caplog.at_level(logging.WARNING), pytest.raises(RuntimeError) as caught:
         run_reader_jobs(judge, fail, ["one", "two"])
 

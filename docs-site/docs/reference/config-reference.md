@@ -503,7 +503,7 @@ editorial:
   reader: rules                 # derived from the product tier; not an independent choice
   thin_model_layer: true         # the model polishes a rules draft; false makes it plan the film
   strict_sharing: true           # anything a head or exposure flag marked stays out of shared films
-  annotation_database: ""        # defaults to annotations.sqlite inside the configured cache directory
+  annotation_database: ""        # deprecated: a legacy annotations.sqlite imported into the store once; blank = the cache directory
   laya_audience: false           # derived: off for NAS, on for GPU and Full
   # Apple silicon defaults below; elsewhere the ONNX archive and threshold 0.185 are used.
   laya_checkpoint: "~/.immich-memories/models/laya/laya-audience-a79ad9fa.tar"

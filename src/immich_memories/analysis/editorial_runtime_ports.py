@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.catalogue_runtime import catalogue_requester
@@ -30,6 +29,7 @@ from immich_memories.store.episode_readings import EpisodeReadingStore
 
 if TYPE_CHECKING:
     from immich_memories.config_loader import Config
+    from immich_memories.db import Store
 
 
 def _load_people() -> Mapping[str, PersonPromptContext]:
@@ -72,7 +72,7 @@ class EditorialRuntimePorts:
     # The period account is one small request over readings the run has already paid for,
     # so it uses its own plain transport rather than the episode batch above.
     catalogue_requester_factory: Callable[[Config], Callable[[str], str]] = catalogue_requester
-    episode_store_factory: Callable[[Path], EpisodeReadingStore] = EpisodeReadingStore
+    episode_store_factory: Callable[[Store], EpisodeReadingStore] = EpisodeReadingStore
     structure_planner: Callable[
         [StructurePlanningInput, StructurePlannerPorts], StructurePlanningResult
     ] = plan_structure
@@ -80,10 +80,10 @@ class EditorialRuntimePorts:
     prepare_annotations: Callable[..., Any] | None = None
 
 
-def production_story_motion(source, *, cache_path):
+def production_story_motion(source, *, store):
     """The pick's motion evidence, read from the preparation bank; no model call, no download."""
     return BankedMotionLines(
-        store_path=cache_path,
+        store=store,
         assets=source.assets,
         described=source.config.editorial.preparation.demands_captions,
         producer=motion_producer(source.config.editorial.description_model),
@@ -114,9 +114,7 @@ def production_live_clock_offsets(source, *, resources):
             resources.callback(client.close)
         return client.get_video_playback(video_id)
 
-    return BankedClockOffsets(
-        store_path=source.store_path, companions=source.companion_assets, fetch=fetch
-    )
+    return BankedClockOffsets(store=source.store, companions=source.companion_assets, fetch=fetch)
 
 
 def production_speech_resolver(source, *, resources):
@@ -145,7 +143,7 @@ def production_speech_resolver(source, *, resources):
 
     facts = SpeechFacts(
         assets=dict(source.assets) | dict(source.companion_assets),
-        store_path=source.store_path,
+        store=source.store,
         fetch=fetch,
         config=source.config.speech,
     )
@@ -159,6 +157,9 @@ def production_speech_resolver(source, *, resources):
                 "Install immich-memories[editorial] to enable the local detector."
             )
             return carriers
-        return resolve_speech_cuts(carriers, facts, buffer=speech_buffer(source.config))
+        try:
+            return resolve_speech_cuts(carriers, facts, buffer=speech_buffer(source.config))
+        finally:
+            facts.flush()
 
     return resolve

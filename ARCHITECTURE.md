@@ -15,7 +15,7 @@ five stages: **Reading dates, places and people -> Reading event evidence
 -> Building editorial cards -> Editing the memory -> Validating selected source timing**. Every
 attempt is durable under `<cache>/editorial-runs/<key>/attempts/<id>/`
 (`operations/editorial_attempt.py`, an OS lease tells interrupted from slow); the facts and banks
-it reads live in `<cache>/annotations.sqlite` (`store/`). The design is summarised in
+it reads live in the store (`db/`, repositories in `store/`). The design is summarised in
 `docs/designs/2026-09-10-story-first-selection.md`.
 
 Selection carries the exact episode reading identities into its audit lineage. The former
@@ -181,10 +181,10 @@ unchanged sources retain their existing bank entries.
   `editorial_thin_short.py`).
 - **Bank / banked**: an answer stored under its exact inputs and producer identity, so the next
   run asks nothing and a changed asset invalidates only its own rows. The main ones:
-  `annotations.sqlite` (`store/`), episode readings, accounts, cut measurements
-  (`store/cut_measurements.py`) and the `structure-banks/*.private.json` files (thesis-fit
+  the store's annotation tables (`store/`), episode readings, accounts, cut measurements
+  (`store/cut_measurements.py`), judgments (`cache/judgment_cache.py`) and the `structure-banks/*.private.json` files (thesis-fit
   votes, audience verdicts). No row means nobody asked, never "measured nothing". Two runs write them at
-  once (the pipeline lock covers assembly only): SQLite banks write row by row, and every JSON
+  once (the pipeline lock covers assembly only): store banks write in short transactions, and every JSON
   bank merges what is on disk under `locked_file.file_lock` before its atomic replace.
   Private database creation is exclusive. Existing files are chmodded without opening and
   closing an extra descriptor, which would release live SQLite connections' POSIX locks.
@@ -735,7 +735,11 @@ src/immich_memories/
 │   │                           # fcntl + BEGIN IMMEDIATE; pending_changes, migration_schema
 │   ├── migrations/             # env.py, script.py.mako, versions/ (shipped in the wheel; alembic.ini is dev only)
 │   ├── metadata.py             # The shared MetaData(schema="immich_memories") and naming convention
-│   ├── tables/                 # One module per domain's Table objects (store_meta so far)
+│   ├── tables/                 # One module per domain's Table objects: store_meta; annotations.py (asset
+│   │                           # facts, captions, heads, pixels, faces, cut measurements, motion lines,
+│   │                           # owner decisions in asset_flags); model_answers.py (judgments, Cull
+│   │                           # verdicts, episode readings/refusals, library overviews)
+│   ├── legacy_import.py        # ImportOutcome: what one legacy importer took, left alone, and why
 │   ├── sqlite_files.py         # connect_sqlite: the one raw sqlite3 factory (WAL, busy_timeout 30 s,
 │   │                           # synchronous NORMAL, foreign keys), private_database_path (0600)
 │   ├── network_guard.py        # Refuses a SQLite file on NFS/SMB/CIFS unless IMMICH_MEMORIES_ALLOW_NETWORK_SQLITE=1
@@ -750,7 +754,9 @@ src/immich_memories/
 │   ├── migration_sql.py        # Transactional migration helpers
 │   ├── migration_v11.py … v23.py # One module per schema migration (no v18, no v20)
 │   ├── asset_score_cache.py    # The legacy photo scorer's table, still read by `cache stats/export/import`
-│   ├── judgment_cache.py       # Reasoning-mode LLM verdicts, keyed by the exact prompt asked
+│   ├── judgment_cache.py       # Reasoning-mode LLM verdicts, keyed by the exact prompt asked (store table `judgments`)
+│   ├── editorial_verdicts.py   # Cull's standing per-picture verdicts (store table `editorial_verdicts`)
+│   ├── embedding_cache.py      # HeadFactStore: head answers (store table `head_facts`)
 │   ├── thumbnail_cache.py      # File-based thumbnail storage
 │   ├── disk_budget.py          # LRU-by-mtime eviction that holds a cache directory to a size cap
 │   └── video_cache.py          # Downloaded video file cache
@@ -761,19 +767,24 @@ src/immich_memories/
 │   ├── daemon.py               # Daemon loop (foreground, SIGINT/SIGTERM)
 │   └── models.py               # Scheduling data models
 │
-├── store/                      # The annotation store: every banked fact and reading
+├── store/                      # Repositories over the store's annotation tables: every banked fact and reading
 │   ├── caption_provenance.py   # What served each caption (served /models row + control digest), grouped
 │   ├── motion_lines.py         # The motion line per video, keyed by picture, producer and source digest,
 │   │                           # with what produced it (question, keyframes, admitting residual)
 │   ├── library_overviews.py    # Read-only: the library's own account of a period, written by cataloguing
 │   ├── library_catalogue.py    # The only writer of that table: content-addressed period accounts
 │   ├── owner_decisions.py      # The only writer of the owner's per-picture decisions (clear hold,
-│   │                           # never use): `source='owner'` rows in `flags`, one per picture
+│   │                           # never use): `source='owner'` rows in `asset_flags`, one per picture
 │   ├── cut_measurements.py     # What a cut measures and banks: a Live Photo's motion residual, a
 │                               # clip's speech regions and a Live burst's companion clock offsets,
 │                               # keyed the same way (a missing row is "not measured", never
 │                               # "measured as nothing")
-│                               # (annotations.sqlite; see docs/research for the design)
+│   ├── legacy_annotations.py   # import_legacy(store, home): annotations.sqlite + judgments.db, read-only,
+│   │                           # keys kept, idempotent; the only reader of those files
+│   └── batches.py              # id_in/in_chunks (one array parameter on PostgreSQL, IN slices under
+│                               # SQLite's bind limit); bank_rows/upsert_rows: one transaction per batch.
+│                               # Producers bank in batches (PendingHeadFacts, PendingMeasurements,
+│                               # judgment_cache's shared bank): a crash costs at most one batch
 │
 ├── triage/                     # The pinned DINOv2 ONNX encoder and its eight context heads
 │

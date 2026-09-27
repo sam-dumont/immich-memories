@@ -113,7 +113,7 @@ def run_reader_jobs(judge, work, items):
         for number in range(len(items)):
             out = Path(scratch) / str(number)
             out.mkdir(mode=0o700)
-            children.append(StructureTextJudge(judge.config, out, cache_path=judge.cache_path))
+            children.append(StructureTextJudge(judge.config, out, judgments=judge.judgments))
         pool = ThreadPoolExecutor(max_workers=limit, thread_name_prefix="reader")
         futures: list[Future] = []
         try:

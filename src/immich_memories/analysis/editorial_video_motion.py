@@ -12,18 +12,16 @@ banked under its own producer and never answers for a Live Photo's, nor the othe
 
 from __future__ import annotations
 
-import sqlite3
 from collections.abc import Mapping, Sequence
-from contextlib import closing
 from pathlib import Path
 
 from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
 from immich_memories.analysis.editorial_motion_facts import flow_residual
 from immich_memories.api.models import Asset
+from immich_memories.db import Store
 from immich_memories.store.cut_measurements import (
+    PendingMeasurements,
     banked_motion_residuals,
-    open_cut_measurements,
-    remember_motion_residual,
 )
 
 VIDEO_METHOD = "median-flow-v1-detector-frames-320x240"
@@ -44,18 +42,18 @@ def measure_frame_motion(paths: Sequence[Path]) -> dict:
 
 
 def videos_owing_motion(
-    connection: sqlite3.Connection, assets: Sequence[Asset], video_ids: frozenset[str]
+    store: Store, assets: Sequence[Asset], video_ids: frozenset[str]
 ) -> dict[str, Asset]:
     """The videos among these that no pass has measured yet in their current version, by id."""
     videos = [asset for asset in assets if asset.id in video_ids]
     digests = {video.id: source_metadata_digest(video) for video in videos}
-    banked = banked_motion_residuals(connection, digests, VIDEO_RESIDUAL_PRODUCER)
+    banked = banked_motion_residuals(store, digests, VIDEO_RESIDUAL_PRODUCER)
     return {video.id: video for video in videos if video.id not in banked}
 
 
 def bank_video_motion(
     *,
-    store_path: Path,
+    store: Store,
     videos: Mapping[str, Asset],
     frame_paths: Mapping[str, Sequence[Path]],
 ) -> dict[str, str]:
@@ -65,14 +63,13 @@ def bank_video_motion(
     which is what every video was before: their motion is still taken on what they are.
     """
     failures: dict[str, str] = {}
-    with closing(open_cut_measurements(store_path)) as connection:
+    with PendingMeasurements(store) as pending:
         for asset_id, paths in frame_paths.items():
             fact = measure_frame_motion(paths)
             if "residual" not in fact:
                 failures[asset_id] = f"{fact.get('frames', 0)} of {len(paths)} frames readable"
                 continue
-            remember_motion_residual(
-                connection,
+            pending.motion_residual(
                 asset_id=asset_id,
                 producer=VIDEO_RESIDUAL_PRODUCER,
                 source_digest=source_metadata_digest(videos[asset_id]),

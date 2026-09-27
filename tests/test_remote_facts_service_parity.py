@@ -8,23 +8,22 @@ label, confidence and encoder key as the in-process banking code does for those 
 
 from __future__ import annotations
 
-import sqlite3
-from contextlib import closing
 from io import BytesIO
-from pathlib import Path
 
 import numpy as np
 from fastapi.testclient import TestClient
 from PIL import Image
 
 from immich_memories.analysis import editorial_preparation_detectors as detectors
-from immich_memories.analysis.editorial_preparation_detectors import _INSERT_FACT, _decided_rows
+from immich_memories.analysis.editorial_preparation_detectors import _FACT_COLUMNS, _decided_rows
 from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VERSIONS
 from immich_memories.analysis.editorial_preparation_remote import prepare_remote_facts
 from immich_memories.analysis.remote_facts import RemoteFactsClient
 from immich_memories.cache.embedding_cache import HeadFactStore
 from immich_memories.config_models_editorial import EditorialConfig
 from immich_memories.config_models_inference import InferenceConfig
+from immich_memories.db import Store, StoreLocation, open_store
+from immich_memories.store.editorial_preparation import remember_head_rows
 from immich_memories.triage.heads import HeadFact
 from immich_memories_inference.app import create_app
 from immich_memories_inference.producers import (
@@ -37,6 +36,7 @@ from immich_memories_inference.producers import (
 )
 from immich_memories_inference.runtime import ProducerRuntime
 from immich_memories_inference.settings import InferenceSettings
+from tests.annotation_rows import read_rows
 
 ENCODER_KEY = "b" * 64
 ASSETS = ("aa1", "bb2")
@@ -95,35 +95,49 @@ class StubDocling:
         return np.array([scores] * len(images), dtype=np.float32)
 
 
-def rows(path: Path) -> set[tuple]:
-    with closing(sqlite3.connect(path)) as connection:
-        return set(
-            connection.execute(
-                "SELECT asset_id, head, version, label, confidence, encoder_key FROM head_facts"
-            ).fetchall()
+def store_at(tmp_path, name: str) -> Store:
+    return open_store(location=StoreLocation(url=f"sqlite:///{tmp_path / name}"))
+
+
+def rows(store: Store) -> set[tuple]:
+    return {
+        (
+            row["asset_id"],
+            row["head"],
+            row["version"],
+            row["label"],
+            row["confidence"],
+            row["encoder_key"],
+        )
+        for row in read_rows(store, "head_facts")
+    }
+
+
+def bank_locally(store: Store) -> None:
+    """The in-process path: the engine's store call for heads, the worker's rows for detectors."""
+    head_store = HeadFactStore(store)
+    head_store.remember_facts(
+        {
+            asset_id: [
+                HeadFact(head=head, label="other", confidence=0.61, version=version)
+                for head, version in PUBLIC_HEAD_VERSIONS.items()
+            ]
+            for asset_id in ASSETS
+        },
+        encoder_key=ENCODER_KEY,
+    )
+    for detector in (StubMarqo(), StubDocling()):
+        probabilities = detector.batch([Image.open(BytesIO(picture()))] * len(ASSETS))
+        remember_head_rows(
+            store,
+            [
+                dict(zip(_FACT_COLUMNS, row, strict=True))
+                for row in _decided_rows(detector, ASSETS, probabilities)
+            ],
         )
 
 
-def bank_locally(path: Path) -> None:
-    """The in-process path: the engine's store call for heads, the worker's rows for detectors."""
-    with closing(HeadFactStore(path)) as store:
-        for asset_id in ASSETS:
-            store.remember_facts(
-                asset_id,
-                [
-                    HeadFact(head=head, label="other", confidence=0.61, version=version)
-                    for head, version in PUBLIC_HEAD_VERSIONS.items()
-                ],
-                encoder_key=ENCODER_KEY,
-            )
-    with closing(sqlite3.connect(path)) as connection:
-        for detector in (StubMarqo(), StubDocling()):
-            probabilities = detector.batch([Image.open(BytesIO(picture()))] * len(ASSETS))
-            connection.executemany(_INSERT_FACT, _decided_rows(detector, ASSETS, probabilities))
-        connection.commit()
-
-
-def stub_service(tmp_path: Path):
+def stub_service(tmp_path):
     """The real app and the real client, over stub weights."""
     runtime = ProducerRuntime(
         {
@@ -135,7 +149,7 @@ def stub_service(tmp_path: Path):
     return create_app(InferenceSettings(cache_dir=tmp_path), runtime=runtime)
 
 
-def bank_remotely(app, store_path: Path) -> float | None:
+def bank_remotely(app, store: Store) -> float | None:
     config = InferenceConfig(facts_base_url="http://inference.test:8092")
     versions = EditorialConfig().head_versions
     with (
@@ -144,7 +158,7 @@ def bank_remotely(app, store_path: Path) -> float | None:
     ):
         return prepare_remote_facts(
             pending={asset_id: dict(versions) for asset_id in ASSETS},
-            store_path=store_path,
+            store=store,
             client=client,
             concurrency=config.facts_concurrency,
             preview_for=lambda _asset_id: picture(),
@@ -154,9 +168,9 @@ def bank_remotely(app, store_path: Path) -> float | None:
         )
 
 
-def test_the_client_banks_exactly_what_the_local_producers_would(tmp_path: Path) -> None:
-    remote_store = tmp_path / "remote.sqlite"
-    local_store = tmp_path / "local.sqlite"
+def test_the_client_banks_exactly_what_the_local_producers_would(tmp_path) -> None:
+    remote_store = store_at(tmp_path, "remote.db")
+    local_store = store_at(tmp_path, "local.db")
     versions = EditorialConfig().head_versions
 
     bank_remotely(stub_service(tmp_path), remote_store)
@@ -168,9 +182,9 @@ def test_the_client_banks_exactly_what_the_local_producers_would(tmp_path: Path)
     assert {label for _, head, _, label, *_ in banked if head == NSFW_MARQO} == {"yes"}
 
 
-def test_the_client_reads_the_seconds_the_service_charged_itself(tmp_path: Path) -> None:
+def test_the_client_reads_the_seconds_the_service_charged_itself(tmp_path) -> None:
     """Client and service have to agree on the header name, and nothing else checks it."""
-    charged = bank_remotely(stub_service(tmp_path), tmp_path / "remote.sqlite")
+    charged = bank_remotely(stub_service(tmp_path), store_at(tmp_path, "remote.db"))
 
     assert charged is not None
     assert 0 <= charged < 60

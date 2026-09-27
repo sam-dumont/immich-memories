@@ -1,6 +1,5 @@
 """What a cut measures about a picture is banked, and the next cut plans with it."""
 
-from contextlib import closing
 from dataclasses import replace
 
 from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
@@ -11,10 +10,8 @@ from immich_memories.analysis.editorial_structure_material import build_material
 from immich_memories.analysis.editorial_structure_planner import plan_structure
 from immich_memories.analysis.editorial_structure_record import shave_content_duration
 from immich_memories.speech.facts import read_speech_regions, speech_producer
-from immich_memories.store.cut_measurements import (
-    open_cut_measurements,
-    remember_speech_regions,
-)
+from immich_memories.store.cut_measurements import PendingMeasurements
+from tests.annotation_rows import annotation_store
 from tests.editorial_story_fixtures import ControlledStoryJudge
 from tests.test_editorial_event_motion_material import live_source
 
@@ -22,7 +19,7 @@ from tests.test_editorial_event_motion_material import live_source
 def unmeasured(tmp_path):
     """One burst of Live Photos nobody has measured, and a bank beside it."""
     captured = live_source(tmp_path, pictures=2, add_context=False)
-    return replace(captured, motion_residuals={}, store_path=tmp_path / "annotations.sqlite")
+    return replace(captured, motion_residuals={}, store=annotation_store())
 
 
 def ports(resolve_motion=None):
@@ -43,7 +40,7 @@ def planned_units(source, resolve_motion=None):
 def measuring_resolver(source, downloads):
     return DemandedMotionResolver(
         assets=source.assets,
-        cache_path=source.store_path,
+        store=source.store,
         # WHY: Immich playback is the transport; the download is what banking saves.
         fetch_video=lambda video_id: downloads.append(video_id) or b"preview",
         # WHY: the optical flow needs decoded pixels of a real companion; the residual it
@@ -60,7 +57,7 @@ def test_a_residual_a_cut_measured_is_banked_and_read_by_the_next_plan(tmp_path)
 
     assert downloads, "the cut measured what its plan could not know"
     assert plan["carriers"][0]["kind"] == "live-still"
-    banked = read_motion_residuals(captured.store_path, captured.assets.values())
+    banked = read_motion_residuals(captured.store, captured.assets.values())
     assert {key: value["residual"] for key, value in banked.items()} == dict.fromkeys(
         captured.assets, 0.4
     )
@@ -88,23 +85,22 @@ def test_a_changed_source_retires_the_residual_banked_for_it(tmp_path):
         for key, asset in captured.assets.items()
     }
 
-    assert read_motion_residuals(captured.store_path, captured.assets.values())
-    assert read_motion_residuals(captured.store_path, changed.values()) == {}
+    assert read_motion_residuals(captured.store, captured.assets.values())
+    assert read_motion_residuals(captured.store, changed.values()) == {}
 
 
 def bank_a_sentence(captured, regions):
     """Bank one measured sentence for every companion of the burst, as a cut would."""
     producer = speech_producer(captured.config.speech)
-    with closing(open_cut_measurements(captured.store_path)) as connection:
+    with PendingMeasurements(captured.store) as pending:
         for companion in captured.companion_assets.values():
-            remember_speech_regions(
-                connection,
+            pending.speech_regions(
                 asset_id=companion.id,
                 producer=producer,
                 source_digest=source_metadata_digest(companion),
                 regions=regions,
             )
-    return read_speech_regions(captured.store_path, captured.companion_assets.values(), producer)
+    return read_speech_regions(captured.store, captured.companion_assets.values(), producer)
 
 
 def test_banked_speech_reaches_the_shave_without_measuring_again(tmp_path):
@@ -142,4 +138,4 @@ def test_a_changed_source_retires_the_speech_banked_for_it(tmp_path):
         for companion in captured.companion_assets.values()
     ]
 
-    assert read_speech_regions(captured.store_path, changed, producer) == {}
+    assert read_speech_regions(captured.store, changed, producer) == {}

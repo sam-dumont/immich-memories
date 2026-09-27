@@ -101,7 +101,7 @@ read-only. Four writable paths:
 
 | Mount | Backed by | Holds |
 |---|---|---|
-| `/home/immich/.immich-memories` | PVC `immich-memories-cache` | `config.yaml`, `cache/annotations.sqlite` (banked facts and readings), `cache.db` (run history, automation state), video cache |
+| `/home/immich/.immich-memories` | PVC `immich-memories-cache` | `config.yaml`, `store.db` (the store: banked facts, readings, your picture decisions), `cache.db` (run history, automation state), video cache |
 | `/app/output` | PVC `immich-memories-output` | generated videos |
 | `/models` | PVC `immich-memories-models` | the three artifacts `immich-memories models fetch` writes, at `IMMICH_MEMORIES_TRIAGE__ENCODER`, `..._MARQO_ONNX` and `..._DETECTOR_CACHE_DIR` |
 | `/tmp` | emptyDir 4Gi | FFmpeg intermediates; 8Gi for 4K |
@@ -210,8 +210,8 @@ Immich's own database, are on [Database and the store](./database.md).
 
 ## Backups
 
-Back up the cache PVC: `cache/annotations.sqlite` on it is the expensive part, and losing it means
-re-reading the library. `immich-memories cache backup|export` move the retired scorer's table, not
+Back up the cache PVC: `store.db` on it is the expensive part (unless the store is PostgreSQL), and
+losing it means re-reading the library. `immich-memories cache backup|export` move the retired scorer's table, not
 the banks. For secrets in git, use
 [sealed-secrets](https://github.com/bitnami-labs/sealed-secrets):
 `kubeseal --format=yaml < base/secret.yaml > base/sealed-secret.yaml`.

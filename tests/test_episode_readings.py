@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import sqlite3
 from dataclasses import replace
-from pathlib import Path
+
+from tests.annotation_rows import annotation_store
 
 
-def test_episode_reading_round_trips_only_for_the_version_that_produced_it(
-    tmp_path: Path,
-) -> None:
+def test_episode_reading_round_trips_only_for_the_version_that_produced_it() -> None:
     from immich_memories.store.episode_readings import (
         BankedEpisodeReading,
         EpisodeCullDecision,
@@ -39,16 +37,12 @@ def test_episode_reading_round_trips_only_for_the_version_that_produced_it(
         ),
         cull_decisions=(EpisodeCullDecision(asset_id="receipt", bucket="notes"),),
     )
-    path = tmp_path / "annotations.sqlite"
-    store = EpisodeReadingStore(path)
+    store = EpisodeReadingStore(annotation_store())
     store.remember((reading,))
-    store.close()
-
-    reopened = EpisodeReadingStore(path)
 
     assert (
-        reopened.readings_for((identity,)),
-        reopened.readings_for(
+        store.readings_for((identity,)),
+        store.readings_for(
             (
                 replace(
                     identity,
@@ -108,7 +102,7 @@ def test_episode_identity_changes_when_rendered_annotation_evidence_changes() ->
     assert original != changed
 
 
-def test_changed_episode_evidence_is_a_cache_miss(tmp_path: Path) -> None:
+def test_changed_episode_evidence_is_a_cache_miss() -> None:
     from immich_memories.store.episode_readings import (
         BankedEpisodeReading,
         EpisodeReadingIdentity,
@@ -133,56 +127,14 @@ def test_changed_episode_evidence_is_a_cache_miss(tmp_path: Path) -> None:
         representatives=(EpisodeRepresentative("asset-a", "Shows the walk."),),
         cull_decisions=(),
     )
-    store = EpisodeReadingStore(tmp_path / "annotations.sqlite")
+    store = EpisodeReadingStore(annotation_store())
     store.remember((reading,))
 
     assert store.readings_for((old_identity,)) == {old_identity.group_id: reading}
     assert store.readings_for((changed_identity,)) == {}
 
 
-def test_typed_store_coexists_with_the_legacy_probe_episode_table(tmp_path: Path) -> None:
-    from immich_memories.store.episode_readings import (
-        BankedEpisodeReading,
-        EpisodeReadingIdentity,
-        EpisodeReadingStore,
-        EpisodeRepresentative,
-    )
-
-    path = tmp_path / "annotations.sqlite"
-    with sqlite3.connect(path) as connection:
-        connection.execute(
-            "CREATE TABLE episode_readings ("
-            "episode_key TEXT, producer_key TEXT, asset_ids TEXT, what_happened TEXT, "
-            "PRIMARY KEY (episode_key, producer_key))"
-        )
-        connection.execute(
-            "INSERT INTO episode_readings VALUES (?, ?, ?, ?)",
-            ("legacy-key", "legacy-producer", '["legacy-asset"]', "Legacy meaning."),
-        )
-
-    identity = EpisodeReadingIdentity.from_annotations(
-        group_id="episode-v1-current-membership",
-        producer_key="producer-v2",
-        annotation_lines={"current-asset": "current annotation line"},
-    )
-    reading = BankedEpisodeReading(
-        identity=identity,
-        full_asset_ids=("current-asset",),
-        what_happened="Current meaning.",
-        representatives=(EpisodeRepresentative("current-asset", "Shows the event."),),
-        cull_decisions=(),
-    )
-    store = EpisodeReadingStore(path)
-    store.remember((reading,))
-
-    assert store.readings_for((identity,)) == {identity.group_id: reading}
-    with sqlite3.connect(path) as connection:
-        assert connection.execute(
-            "SELECT what_happened FROM episode_readings WHERE episode_key = 'legacy-key'"
-        ).fetchone() == ("Legacy meaning.",)
-
-
-def test_a_reading_keeps_the_moments_it_said_are_worth_a_record(tmp_path: Path) -> None:
+def test_a_reading_keeps_the_moments_it_said_are_worth_a_record() -> None:
     from immich_memories.store.episode_readings import (
         BankedEpisodeReading,
         EpisodeReadingIdentity,
@@ -203,65 +155,13 @@ def test_a_reading_keeps_the_moments_it_said_are_worth_a_record(tmp_path: Path) 
         cull_decisions=(),
         notable_moments=(EpisodeRepresentative("steps", "walking unaided for the first time"),),
     )
-    path = tmp_path / "annotations.sqlite"
-    store = EpisodeReadingStore(path)
+    store = EpisodeReadingStore(annotation_store())
     store.remember((reading,))
-    store.close()
 
-    assert EpisodeReadingStore(path).readings_for((identity,)) == {identity.group_id: reading}
-
-
-def test_a_bank_written_before_records_existed_reads_back_with_none(tmp_path: Path) -> None:
-    """The column is added in place; every row already in the bank keeps its meaning."""
-    from immich_memories.store.episode_readings import (
-        BankedEpisodeReading,
-        EpisodeReadingIdentity,
-        EpisodeReadingStore,
-        EpisodeRepresentative,
-    )
-
-    path = tmp_path / "annotations.sqlite"
-    with sqlite3.connect(path) as connection:
-        connection.execute(
-            "CREATE TABLE editorial_episode_readings ("
-            "group_id TEXT NOT NULL, producer_key TEXT NOT NULL, evidence_key TEXT NOT NULL, "
-            "full_asset_ids TEXT NOT NULL, what_happened TEXT NOT NULL, "
-            "representatives TEXT NOT NULL, cull_decisions TEXT NOT NULL, "
-            "answered_at TEXT NOT NULL DEFAULT (datetime('now')), "
-            "PRIMARY KEY (group_id, producer_key, evidence_key))"
-        )
-        connection.execute(
-            "INSERT INTO editorial_episode_readings (group_id, producer_key, evidence_key, "
-            "full_asset_ids, what_happened, representatives, cull_decisions) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (
-                "old-episode",
-                "producer-v2",
-                "evidence-a",
-                '["wide"]',
-                "An afternoon at home.",
-                '[{"asset_id": "wide", "reason": "Shows the room."}]',
-                "[]",
-            ),
-        )
-
-    identity = EpisodeReadingIdentity(
-        group_id="old-episode", producer_key="producer-v2", evidence_key="evidence-a"
-    )
-
-    assert EpisodeReadingStore(path).readings_for((identity,)) == {
-        "old-episode": BankedEpisodeReading(
-            identity=identity,
-            full_asset_ids=("wide",),
-            what_happened="An afternoon at home.",
-            representatives=(EpisodeRepresentative("wide", "Shows the room."),),
-            cull_decisions=(),
-            notable_moments=(),
-        )
-    }
+    assert store.readings_for((identity,)) == {identity.group_id: reading}
 
 
-def test_a_refusal_is_kept_under_the_exact_question_that_earned_it(tmp_path: Path) -> None:
+def test_a_refusal_is_kept_under_the_exact_question_that_earned_it() -> None:
     from immich_memories.store.episode_readings import (
         EpisodeReadingIdentity,
         EpisodeReadingStore,
@@ -270,13 +170,9 @@ def test_a_refusal_is_kept_under_the_exact_question_that_earned_it(tmp_path: Pat
     identity = EpisodeReadingIdentity(
         group_id="unreadable", producer_key="producer-v3", evidence_key="evidence-a"
     )
-    path = tmp_path / "annotations.sqlite"
-    store = EpisodeReadingStore(path)
+    store = EpisodeReadingStore(annotation_store())
     store.remember_refusals([(identity, "the answer named no offered asset")])
-    store.close()
 
-    reopened = EpisodeReadingStore(path)
-
-    assert reopened.refusals_for((identity,)) == {"unreadable": "the answer named no offered asset"}
-    assert reopened.refusals_for((replace(identity, producer_key="producer-v4"),)) == {}
-    assert reopened.refusals_for((replace(identity, evidence_key="evidence-b"),)) == {}
+    assert store.refusals_for((identity,)) == {"unreadable": "the answer named no offered asset"}
+    assert store.refusals_for((replace(identity, producer_key="producer-v4"),)) == {}
+    assert store.refusals_for((replace(identity, evidence_key="evidence-b"),)) == {}

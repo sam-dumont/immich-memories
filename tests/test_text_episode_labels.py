@@ -18,6 +18,7 @@ from immich_memories.store.episode_readings import (
     EpisodeReadingStore,
     EpisodeRepresentative,
 )
+from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 from tests.test_text_episode_request_plan import _Lines
 
@@ -46,7 +47,7 @@ def _reader_case(tmp_path, alias):
         }
     )
     reader = CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(annotation_store()),
         producer=EpisodeReadingProducer(
             model_id="public-text-model",
             prompt_version="episode-prompt-v1",

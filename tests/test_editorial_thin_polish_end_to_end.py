@@ -238,8 +238,7 @@ def test_a_second_run_over_the_same_bank_asks_nothing_and_cuts_the_same_film(tmp
 
 def banked_records(tmp_path):
     """The record the reading of S3's episode left behind, read back the way a run reads it."""
-    from contextlib import closing
-
+    del tmp_path  # kept for call-site symmetry; the store is the one this test's env names
     from immich_memories.analysis.catalogue_runtime import banked_notable_records
     from immich_memories.store.episode_readings import (
         BankedEpisodeReading,
@@ -247,25 +246,25 @@ def banked_records(tmp_path):
         EpisodeReadingStore,
         EpisodeRepresentative,
     )
+    from tests.annotation_rows import annotation_store
 
-    bank = tmp_path / "annotations.sqlite"
+    store = annotation_store()
     identity = EpisodeReadingIdentity(
         group_id="e3", producer_key="producer-a", evidence_key="evidence-a"
     )
-    with closing(EpisodeReadingStore(bank)) as store:
-        store.remember(
-            [
-                BankedEpisodeReading(
-                    identity=identity,
-                    full_asset_ids=("n1",),
-                    what_happened="A first.",
-                    representatives=(EpisodeRepresentative("n1", "the only frame"),),
-                    cull_decisions=(),
-                    notable_moments=(EpisodeRepresentative("n1", "the first of them"),),
-                )
-            ]
-        )
-    return banked_notable_records([identity], store_path=bank)
+    EpisodeReadingStore(store).remember(
+        [
+            BankedEpisodeReading(
+                identity=identity,
+                full_asset_ids=("n1",),
+                what_happened="A first.",
+                representatives=(EpisodeRepresentative("n1", "the only frame"),),
+                cull_decisions=(),
+                notable_moments=(EpisodeRepresentative("n1", "the first of them"),),
+            )
+        ]
+    )
+    return banked_notable_records([identity], store=store)
 
 
 def test_a_story_the_bank_records_something_about_is_seated_from_the_bank(tmp_path):

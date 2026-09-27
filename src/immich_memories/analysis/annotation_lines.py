@@ -6,7 +6,6 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
-from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
@@ -27,6 +26,7 @@ from immich_memories.store.asset_annotations import (
 
 if TYPE_CHECKING:
     from immich_memories.analysis.editorial_contracts import EditorialCandidate
+    from immich_memories.db import Store
 
 ANNOTATION_LINE_RENDERER_VERSION = "annotation-line-v1"
 
@@ -167,7 +167,7 @@ class StoredAnnotationLineReader:
     def __init__(
         self,
         *,
-        store_path: Path,
+        store: Store | None = None,
         candidates: Sequence[EditorialCandidate],
         description_model: str | None,
         head_versions: Mapping[str, str],
@@ -193,12 +193,16 @@ class StoredAnnotationLineReader:
         self._head_versions = head_versions
         self._people_context = dict(people_context or {})
         self._subjects = frozenset(_clean(subject) for subject in subjects if _clean(subject))
-        self._fact_repository = fact_repository or AssetAnnotationFactRepository(
-            Path(store_path),
-            description_model=description_model,
-            head_versions=head_versions,
-            pixel_producer_key=pixel_producer_key,
-        )
+        if fact_repository is None:
+            if store is None:
+                raise ValueError("annotation reader needs a store or a fact repository")
+            fact_repository = AssetAnnotationFactRepository(
+                store,
+                description_model=description_model,
+                head_versions=head_versions,
+                pixel_producer_key=pixel_producer_key,
+            )
+        self._fact_repository = fact_repository
         self._contract = AnnotationContract(
             renderer_version=ANNOTATION_LINE_RENDERER_VERSION,
             producer_versions=(

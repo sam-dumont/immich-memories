@@ -16,6 +16,7 @@ from immich_memories.operations.cancellation import (
     cancellation_scope,
     check_cancelled,
 )
+from tests.annotation_rows import annotation_store
 from tests.test_editorial_source_progress import pipeline_for
 from tests.test_editorial_source_route import photo
 
@@ -83,7 +84,7 @@ async def test_completed_request_is_banked_but_cancel_prevents_next_request(tmp_
     request = TextRequest(
         prompt="first question",
         llm_config=config,
-        cache_path=tmp_path / "answers.sqlite",
+        judgments=annotation_store(),
         max_tokens=200,
         timeout_seconds=30,
         thinking=False,
@@ -98,12 +99,9 @@ async def test_completed_request_is_banked_but_cancel_prevents_next_request(tmp_
             except Exception:
                 pytest.fail("A model fallback swallowed cancellation")
     assert requests == ["first question"]
-    cache = JudgmentCache(request.cache_path)
-    try:
-        assert cache.answer_for(request.judgment_key) == first.raw
-        assert cache.completion_failure_for(request.judgment_key) is None
-    finally:
-        cache.close()
+    cache = JudgmentCache(request.judgments)
+    assert cache.answer_for(request.judgment_key) == first.raw
+    assert cache.completion_failure_for(request.judgment_key) is None
     replay = await requester.request(request)
     assert replay.cache_hit
     assert requests == ["first question"]

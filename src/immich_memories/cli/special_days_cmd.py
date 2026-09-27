@@ -214,7 +214,7 @@ def _scan_one_year(
     """Ask about one year's standout days, appending each answer to the catalogue."""
     from immich_memories.analysis.prepared_captions import prepared_captions
     from immich_memories.automation.special_day_scan import scan_year
-    from immich_memories.cache.judgment_cache import verdicts_beside
+    from immich_memories.cache.judgment_cache import judgment_bank
 
     for day in scan_year(
         assets,
@@ -224,7 +224,7 @@ def _scan_one_year(
         analysis_config=config.analysis,
         trips_config=config.trips,
         captions=prepared_captions(config, tuple(asset.id for asset in assets)),
-        judgment_cache_path=verdicts_beside(config.cache.cache_path),
+        judgments=judgment_bank(config),
         still_seconds=config.photos.duration,
         reader=config.editorial.resolve_reader(config.llm.model),
         close_family=_close_family(),
