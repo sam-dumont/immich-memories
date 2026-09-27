@@ -310,7 +310,18 @@ def look(reader, config, library, plan, candidates, anchors):
     spread = [i for refs in years.values() for i in refs[:: max(1, len(refs) // share)][:share]]
     ordered = sorted(set(spread) | (set(candidates) & anchors),
                      key=lambda i: (i not in anchors, library.rows[i]["taken_at"]))[:LOOK_BUDGET + len(anchors)]
-    reference = next((library.rows[i]["asset_id"] for i in ordered if i in anchors), None)
+    reference = None
+    subject_words = " / ".join(plan.get("subject") or [])
+    for i in [i for i in ordered if i in anchors][:12]:
+        # The reference must show the subject: the first OCR hit can be a sticker on a device.
+        try:
+            probe = ask_images(reader.llm, f'Does this photo show {subject_words or "the subject"}? '
+                               'Return JSON {"answer":boolean}.', [preview(config, library.rows[i]["asset_id"])])
+        except (httpx.HTTPError, ValueError, KeyError):
+            continue
+        if probe.get("answer") is True:
+            reference = library.rows[i]["asset_id"]
+            break
     ref_image = preview(config, reference) if reference else None
     kept, log = [], []
     for i in ordered:
@@ -345,10 +356,10 @@ def look(reader, config, library, plan, candidates, anchors):
 
 
 FIRSTS = '''Below are things that appear for the first time in pictures of {who}, each with
-the date, {who}'s age that day, the first caption and a later one. Which are real firsts of
-something new for {who} (an experience, a place, a food, an activity, a skill, an encounter)?
-Leave out clothes, colours, furniture, camera angles and words that only describe the scene.
-Return JSON {{"firsts":[{{"id":id,"label":"first ... (plain words)"}}]}}.'''
+the date, {who}'s age that day, the first caption and a later one. Pick the (at most three)
+that are the most memorable real firsts of something new for {who}: an experience, a place, a
+food, an activity, a skill, an encounter. None of them when none qualifies. Clothes, colours,
+furniture, camera angles and words that only describe the scene are not firsts. Return JSON.'''
 
 
 def known_people():
@@ -383,7 +394,12 @@ def firsts(reader, library, key, name, person, rows):
             seen.setdefault(t, i)
     n = len(library.rows)
     cands = []
+    from nltk.corpus import wordnet as wn
+
     for t, i in seen.items():
+        # Things and actions only: an adjective or a function word is not a first.
+        if t in FILLER_WORDS or not (wn.synsets(t, pos=wn.NOUN) or wn.synsets(t, pos=wn.VERB)) or wn.synsets(t, pos=wn.ADJ):
+            continue
         first = date.fromisoformat(library.rows[i]["taken_at"][:10])
         later = sorted(days_of[t])
         # New (not there from the start), and it came back: a new thing, not a one-off word.
@@ -400,19 +416,17 @@ def firsts(reader, library, key, name, person, rows):
         offered.append({"id": j, "word": t, "date": str(first), "age": age,
                         "first_caption": library.rows[i]["caption"][:120],
                         "later_caption": library.rows[again]["caption"][:120], "_ref": i})
+    # Compared, not yes/no: a 4B judge says yes to nearly everything it sees alone.
     chosen = []
-    for start_ix in range(0, len(offered), 30):
-        part = offered[start_ix:start_ix + 30]
-        ids = {o["id"] for o in part}
-
-        def valid(a, ids=ids):
-            assert all(f["id"] in ids for f in a["firsts"])
-
-        answer = reader.ask("firsts", f"{key}:{start_ix}", FIRSTS.format(who=name.split()[0]),
-                            [{k: v for k, v in o.items() if k != "_ref"} for o in part], valid, 900)
+    for start_ix in range(0, len(offered), 10):
+        part = offered[start_ix:start_ix + 10]
+        schema = _schema(picked={"type": "array", "items": {"type": "integer", "enum": [o["id"] for o in part]},
+                                 "maxItems": 3})
+        answer = reader.ask("firsts_pick", f"{key}:{start_ix}", FIRSTS.format(who=name.split()[0]),
+                            [{k: v for k, v in o.items() if k != "_ref"} for o in part], lambda a: None, 300,
+                            schema=schema)
         by_id = {o["id"]: o for o in part}
-        chosen += [by_id[f["id"]] | {"label": f.get("label", by_id[f["id"]]["word"])}
-                   for f in (answer or {"firsts": []})["firsts"]]
+        chosen += [by_id[i] | {"label": "first " + by_id[i]["word"]} for i in (answer or {"picked": []})["picked"]]
     return chosen, offered
 
 
