@@ -143,8 +143,9 @@ def ask_filters(reader, key, brief, named, years):
 
 PHOTO_QUESTION = '''The owner asked for a photo film. Write the one yes/no question to ask of a
 single photo to decide whether it belongs: about what is visible in that one photo, not about
-time spans, dates or who someone is (a photo cannot show "across the years" or a name). Keep what
-the request says is being done (driving, riding, cooking, feeding), not only the object.
+time spans, dates or who someone is (a photo cannot show "across the years" or a name). Ask whether
+it is the main subject of the photo, not something in the background. Keep an action the request
+names only when one photo can show it (someone feeding, riding); do not require it otherwise.
 Return JSON.'''
 
 
@@ -249,8 +250,20 @@ def spread_budget(library, refs, budget, score=None):
         buckets[library.rows[i]["taken_at"][:width]].append(i)
     share = max(1, budget // len(buckets))
     if score:
-        # The best matches of each period first; time spread still keeps every period present.
-        return [i for b in buckets.values() for i in sorted(b, key=lambda i: -score.get(i, 0))[:share]]
+        # Best matches first, then variety: among equally relevant captions, the one describing
+        # something the picks do not yet (a red Mustang) beats the tenth "busy street with cars".
+        out = []
+        for b in buckets.values():
+            left = sorted(b, key=lambda i: -score.get(i, 0))
+            seen, picked = set(), []
+            while left and len(picked) < share:
+                # Every caption of the period competes: a cap on the date-ordered list cut December.
+                best = max(left, key=lambda i: (score.get(i, 0), len(library.tokens[i] - seen)))
+                picked.append(best)
+                seen |= library.tokens[best]
+                left.remove(best)
+            out += picked
+        return out
     return [i for b in buckets.values() for i in b[:: max(1, len(b) // share)][:share]]
 
 
@@ -678,7 +691,8 @@ def main():
 
     # Relevance to the ask: its own specific words weigh most, then their companions, then the subject.
     own_set, comp_set = set(plan.get("_own") or []), set(plan.get("_companions") or [])
-    subj = [set(p.split()) for p in plan.get("subject") or []]
+    # The kinds found the pool, so they count toward relevance too ("convertible" is a car).
+    subj = [set(p.split()) for p in (plan.get("subject") or []) + (plan.get("subject_kinds") or [])]
     # Lexicographic: one hit on the request's own specific word outranks any number of generic
     # hits ("mother", "woman", "baby" tied with "breastfeeding" at 3 and buried it, 09-27).
     score = {i: 10000 * len(own_set & library.tokens[i]) + 100 * len(comp_set & library.tokens[i])
