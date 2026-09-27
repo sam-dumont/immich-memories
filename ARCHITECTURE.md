@@ -186,6 +186,8 @@ unchanged sources retain their existing bank entries.
   votes, audience verdicts). No row means nobody asked, never "measured nothing". Two runs write them at
   once (the pipeline lock covers assembly only): SQLite banks write row by row, and every JSON
   bank merges what is on disk under `locked_file.file_lock` before its atomic replace.
+  Private database creation is exclusive. Existing files are chmodded without opening and
+  closing an extra descriptor, which would release live SQLite connections' POSIX locks.
 
 **Building the cut**
 
