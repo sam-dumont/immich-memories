@@ -336,6 +336,9 @@ these helper modules:
 - `generate_privacy.py`: GPS anonymization, fake names/cities, trip titles
 - `generate_settings.py`: assembly/title settings, assembler creation
 - `generate_render.py`: local source preparation/assembly or configured worker handoff
+- `generate_saved_cut.py`: render a saved cut or revision (CLI `runs render`, web export) from the
+  cut's own `render-inputs.private.json` (`processing/render_inputs.py`, written by every cut)
+  through `operations/revision_render.py` (owner edits incl. recorded-sibling swaps) → `generate_memory`
 - `processing/source_preparation.py`: bounded completion queue with worker-owned clients;
   `generate_clips.py` gives each source its own scratch directory and restores editorial order.
   `DownloadCoordinator.sources_for` shares downloaded components across workers by source ID.
@@ -560,7 +563,7 @@ src/immich_memories/
 │       ├── ace_step_captions.py # Dense caption templates
 │       └── demucs_local.py     # Local Demucs stem separation (in-process)
 │
-├── titles/                     # Title screen generation
+├── titles/                     # Title screen generation (film_title.py: explicit, model or template title, any surface)
 │   ├── generator.py            # TitleScreenGenerator (composes 3 services)
 │   ├── rendering_service.py    # RenderingService: GPU/CPU renderer selection
 │   ├── ending_service.py       # EndingService: fade-to-white ending
@@ -630,7 +633,7 @@ src/immich_memories/
 │   ├── _run_timeline.py        # The run's timeline: selection budget, then the settled plan
 │   ├── _asset_fetch.py         # What a memory asks Immich for: videos, Live Photos, stills
 │   ├── _album_generation.py    # Album mode: an Immich album is the candidate pool
-│   ├── _llm_title.py           # Opt-in LLM title on the CLI path (the wizard's default differs)
+│   ├── runs_render.py          # `runs render`: a saved cut or revision → generate_saved_cut
 │   ├── _trip_generation.py     # Trip detection, selection, per-trip generation
 │   ├── _trip_display.py        # Trip table formatting & selection logic
 │   ├── _date_resolution.py     # Date range resolution for memory types

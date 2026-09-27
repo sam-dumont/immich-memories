@@ -32,6 +32,7 @@ from immich_memories.cli._helpers import (
 from immich_memories.cli._run_inputs import ResolvedRunInputs
 from immich_memories.cli._run_summary import render_run_summary
 from immich_memories.cli._run_timeline import configure_timeline, final_timeline
+from immich_memories.filename_builder import name_after_recipe
 from immich_memories.operations.auto_output import NOTHING_WORTH_A_FILM
 from immich_memories.operations.run_index import run_id_for_attempt
 from immich_memories.operations.storyboard import read_storyboard
@@ -42,7 +43,6 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from rich.progress import TaskID
 
-    from immich_memories.analysis.editorial_planner import EditorialSelection
     from immich_memories.analysis.smart_pipeline import PipelineResult
     from immich_memories.api.immich import SyncImmichClient
     from immich_memories.cli._live_display import ProgressDisplay
@@ -538,7 +538,7 @@ def run_pipeline_and_generate(
         config=config,
     )
 
-    output_path = _name_after_recipe(
+    output_path = name_after_recipe(
         output_path,
         selected_clips=selected_clips,
         clip_segments=clip_segments,
@@ -557,7 +557,7 @@ def run_pipeline_and_generate(
     album_name = album or config.upload.album_name
     person_name = resolved.person_name
 
-    from immich_memories.cli._llm_title import resolve_cli_title
+    from immich_memories.titles.film_title import resolve_film_title
 
     def album_of_the_cut() -> str | None:
         from immich_memories.api.album_service import FilmScope
@@ -568,7 +568,7 @@ def run_pipeline_and_generate(
             scope=FilmScope(start=date_range.start, end=date_range.end, pool=pool),
         )
 
-    resolved_title, resolved_subtitle, title_source = resolve_cli_title(
+    resolved_title, resolved_subtitle, title_source = resolve_film_title(
         enabled=llm_title,
         title_override=title_override,
         subtitle_override=subtitle_override,
@@ -741,41 +741,3 @@ def _send_notification(
         )
     except (OSError, RuntimeError):
         logging.getLogger(__name__).debug("Notification failed", exc_info=True)
-
-
-def _name_after_recipe(
-    output_path: Path,
-    *,
-    selected_clips: list,
-    clip_segments: dict,
-    editorial_selections: tuple[EditorialSelection, ...] = (),
-    memory_type: str | None,
-    date_range,
-    target_duration: float,
-) -> Path:
-    """Name the output after its recipe so an identical rerun replaces it.
-
-    The name can only be finalised here: the CLI builds it before analysis, and
-    the clips that define the edit are not known until selection has run.
-    """
-    from immich_memories.filename_builder import apply_recipe_hash, recipe_hash
-
-    clips = []
-    for clip in selected_clips:
-        asset_id = clip.asset.id
-        start, end = clip_segments.get(asset_id, (0.0, 0.0))
-        clips.append((asset_id, start, end))
-    rendering = tuple(
-        (selection.asset_id, selection.render_mode, selection.render_frame_seconds)
-        for selection in editorial_selections
-    )
-
-    digest = recipe_hash(
-        memory_type=memory_type,
-        date_start=date_range.start.date() if date_range else None,
-        date_end=date_range.end.date() if date_range else None,
-        target_duration=target_duration,
-        clips=clips,
-        extras={"editorial_rendering": rendering} if rendering else None,
-    )
-    return apply_recipe_hash(output_path, digest)

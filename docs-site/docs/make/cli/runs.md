@@ -98,6 +98,28 @@ lifts it.
 Both commands find the run through the run id, which the CLI and the web UI share: a memory cut on
 the page can be read from the terminal and the other way round.
 
+## runs render
+
+```bash
+immich-memories runs render                      # the latest completed run, as it was cut
+immich-memories runs render 20260927_080000_cafe --revision 2 --no-music
+```
+
+Renders a finished cut again, or one of the revisions the web client saved, without selecting
+anything: no model is asked and no rule runs again. The cut's own render inputs are read back
+from its attempt directory, the revision's removals, trims, screen times and swaps are applied
+the way the web export applies them, and the film goes through the same engine as `generate`.
+It lands in your output folder and shows up in `runs list` as a new run.
+
+It takes `generate`'s output flags under the same names: `--title`, `--subtitle`,
+`--llm-title/--no-llm-title`, `--transition`, `--resolution`, `--orientation`, `--scale-mode`,
+`--format`, `--music`, `--no-music`, `--music-volume`, `--add-date`, `--add-place`,
+`--privacy-mode`, `--upload-to-immich`, `--album`. The length is the cut's: a revision can only
+shorten it or keep it within what the titles leave.
+
+`generate --no-render` and then `runs render` is a cut and its film in two steps. A cut made
+before this version kept no render inputs; `runs render` says so, and `generate` cuts it again.
+
 ## runs stats
 
 ```bash

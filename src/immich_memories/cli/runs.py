@@ -11,6 +11,7 @@ from rich.table import Table
 
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
 from immich_memories.cli._runs_reading import register_reading_commands
+from immich_memories.cli.runs_render import register_render_command
 
 
 def _print_storage_report(report) -> None:
@@ -328,6 +329,7 @@ def register_runs_commands(main: click.Group) -> None:
             _print_run_system_info(run.system_info)
 
     register_reading_commands(runs)
+    register_render_command(runs)
 
     @runs.command("stats")
     def runs_stats() -> None:

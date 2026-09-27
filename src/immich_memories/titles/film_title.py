@@ -1,4 +1,4 @@
-"""Ask the model for a title on the CLI path, and decide when to.
+"""Decide a film's title for any surface: an explicit title, the model's, or the template.
 
 A memory about people or an occasion is named by the model as soon as a reader
 is configured: the template opens a three-person film on a date span with three
@@ -25,7 +25,7 @@ from immich_memories.titles.title_source import TitleSource, override_source
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["resolve_cli_title"]
+__all__ = ["resolve_film_title"]
 
 
 def _descriptions(clips: list[Any]) -> list[str]:
@@ -66,7 +66,7 @@ def _asks_the_model(*, enabled: bool | None, memory_type: str | None, configured
     return memory_type in PEOPLE_MEMORY_TYPES or memory_type in OCCASION_MEMORY_TYPES
 
 
-def resolve_cli_title(
+def resolve_film_title(
     *,
     enabled: bool | None,
     title_override: str | None,

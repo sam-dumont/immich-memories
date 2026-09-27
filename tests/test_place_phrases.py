@@ -225,17 +225,17 @@ async def test_a_model_title_that_names_another_place_gives_way_to_the_template(
 
 
 def test_a_refused_model_title_leaves_the_trip_to_its_place_template(tmp_path):
-    from immich_memories.cli._llm_title import resolve_cli_title
     from immich_memories.config_loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.generate_settings import build_title_settings
     from immich_memories.timeperiod import DateRange
+    from immich_memories.titles.film_title import resolve_film_title
 
     config = Config()
     config.llm.model = "some-model"
     preset = {"location_name": "Crete, Greece", "trip_start": _JULY[0], "trip_end": _JULY[1]}
 
-    title, subtitle, source = resolve_cli_title(
+    title, subtitle, source = resolve_film_title(
         enabled=True,
         title_override=None,
         clips=[],

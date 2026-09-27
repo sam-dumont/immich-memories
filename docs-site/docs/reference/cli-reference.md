@@ -634,6 +634,40 @@ immich-memories runs list [OPTIONS]
 | `--person`, `-p` | text | - | Filter by person name |
 | `--status`, `-s` | choice: `completed` \| `failed` \| `running` \| `cancelled` \| `interrupted` | - | Filter by status |
 
+### `runs render`
+
+Render a finished cut, or one of its saved revisions, through the same engine as generate.
+
+With no RUN_ID the most recent completed run is rendered. Revisions are the ones the web
+client saved (`--revision 2`); without one, the cut renders as it was chosen.
+
+```bash
+immich-memories runs render [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--revision` | integer | - | Render this saved revision of the cut |
+| `--title` | text | - | Title card text (default: as generate decides) |
+| `--subtitle` | text | - | Title card subtitle |
+| `--llm-title` | boolean | - | Let the model name the film |
+| `--transition` | choice: `smart` \| `crossfade` \| `cut` \| `none` | - |  |
+| `--resolution` | text | - | Output resolution, as generate takes it |
+| `--orientation` | text | - | landscape, portrait, square or auto |
+| `--scale-mode` | text | - | How sources fit the canvas |
+| `--format` | choice: `mp4` \| `mov` | - |  |
+| `--music` | path | - |  |
+| `--no-music` | boolean | false |  |
+| `--music-volume` | float | 0.5 |  |
+| `--add-date` | boolean | false | Date overlay on each clip |
+| `--add-place` | boolean | false | Place overlay on each clip |
+| `--privacy-mode` | boolean | false |  |
+| `--upload-to-immich` | boolean | false |  |
+| `--album` | text | - | Immich album for the upload |
+
+**Arguments:**
+- `run_id` (text)
+
 ### `runs show`
 
 Show detailed information about a specific run.

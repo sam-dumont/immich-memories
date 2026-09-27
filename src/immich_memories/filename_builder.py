@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Literal
 from immich_memories.api.person_expression import PersonExpression
 
 if TYPE_CHECKING:
+    from immich_memories.analysis.editorial_planner import EditorialSelection
     from immich_memories.timeperiod import DateRange
 
 # 8 hex characters: short enough to read in a filename, and with a few hundred
@@ -395,3 +396,39 @@ def apply_recipe_hash(path: Path, digest: str) -> Path:
     """Return the path carrying this recipe hash, replacing any it already has."""
     stem = _RECIPE_HASH_SUFFIX.sub("", path.stem)
     return path.with_name(f"{stem}_{digest}{path.suffix}")
+
+
+def name_after_recipe(
+    output_path: Path,
+    *,
+    selected_clips: list,
+    clip_segments: dict,
+    editorial_selections: tuple[EditorialSelection, ...] = (),
+    memory_type: str | None,
+    date_range,
+    target_duration: float,
+) -> Path:
+    """Name the output after its recipe so an identical rerun replaces it.
+
+    The name can only be finalised after selection: the clips that define the edit
+    are not known before it, and a revision changes them again.
+    """
+    clips = []
+    for clip in selected_clips:
+        asset_id = clip.asset.id
+        start, end = clip_segments.get(asset_id, (0.0, 0.0))
+        clips.append((asset_id, start, end))
+    rendering = tuple(
+        (selection.asset_id, selection.render_mode, selection.render_frame_seconds)
+        for selection in editorial_selections
+    )
+
+    digest = recipe_hash(
+        memory_type=memory_type,
+        date_start=date_range.start.date() if date_range else None,
+        date_end=date_range.end.date() if date_range else None,
+        target_duration=target_duration,
+        clips=clips,
+        extras={"editorial_rendering": rendering} if rendering else None,
+    )
+    return apply_recipe_hash(output_path, digest)
