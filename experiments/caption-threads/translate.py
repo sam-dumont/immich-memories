@@ -390,6 +390,7 @@ LOOK = '''Look at the photo{ref}. Answer each question with true or false from w
 visible{same}. Return JSON {{"why":short,"answers":[booleans, one per question],"same":{same_values}}}.
 Questions: {questions}'''
 LOOK_BUDGET = int(os.environ.get("LOOK_BUDGET", 160))
+CALIBRATION, TRUST_TEXT = 24, 0.8  # sample of text yeses checked by photo; agreement needed to trust text
 
 
 def look_schema(n_questions, with_ref):
@@ -451,21 +452,9 @@ def look(reader, config, library, plan, candidates, anchors, score=None):
     spread = spread_budget(library, candidates, budget, score)
     ordered = sorted(set(spread) | (set(candidates) & anchors),
                      key=lambda i: (i not in anchors, library.rows[i]["taken_at"]))[:budget + len(anchors)]
+    # No "same one as the reference" check: on the owner's labels it dropped 36 good cat photos and
+    # good house photos ("clearly shows a black cat") and never helped once (09-27).
     reference = None
-    subject_words = " / ".join(plan.get("subject") or [])
-    for i in [i for i in ordered if i in anchors][:12]:
-        # The reference must show the subject: the first OCR hit can be a sticker on a device.
-        try:
-            probe = ask_images(reader.llm, f'Does this photo show {subject_words or "the subject"} '
-                               '(a real photograph, not a screenshot or a screen)? Return JSON.',
-                               [preview(config, library.rows[i]["asset_id"])],
-                               schema={"type": "object", "additionalProperties": False,
-                                       "properties": {"answer": {"type": "boolean"}}, "required": ["answer"]})
-        except (httpx.HTTPError, ValueError, KeyError):
-            continue
-        if truthy(probe.get("answer")):
-            reference = library.rows[i]["asset_id"]
-            break
     ref_image = preview(config, reference) if reference else None
     kept, log = [], []
     for i in ordered:
@@ -495,7 +484,7 @@ def look(reader, config, library, plan, candidates, anchors, score=None):
                     "kept": ok})
         if ok:
             kept.append(i)
-            if thing and ref_image is None:
+            if False:  # reference check removed (see above)
                 reference, ref_image = aid, preview(config, aid)
     return kept, log
 
@@ -751,6 +740,24 @@ def main():
         # OCR anchors (whose letters, not captions, put them here).
         seen, looked = look(reader, config, library, plan, set(unsure) | (uncaptioned & pool) | (anchors & pool),
                             anchors, score)
+        # Calibrate the text "yes" on a random sample it produced (the cascade pattern): trusted
+        # when the photos agree; otherwise the yeses are looked at too, best-ranked first within
+        # the budget, and only what the photo confirms stays (text yes kept 36 bad cars, 09-27).
+        import random as _random
+
+        text_yes = sorted(kept)
+        sample = _random.Random(11).sample(text_yes, min(CALIBRATION, len(text_yes)))
+        confirmed, sample_log = look(reader, config, library, plan, set(sample), set(), score)
+        agree = len(confirmed) / max(1, len(sample))
+        plan["text_yes_agreement"] = round(agree, 2)
+        looked += sample_log
+        if agree >= TRUST_TEXT or len(text_yes) <= len(sample):
+            kept = (set(text_yes) - set(sample)) | set(confirmed) if agree >= TRUST_TEXT else set(confirmed)
+        else:
+            rest = [i for i in text_yes if i not in sample]
+            more, more_log = look(reader, config, library, plan, set(rest), set(), score)
+            looked += more_log
+            kept = set(confirmed) | set(more)
         kept = sorted(set(kept) | set(seen), key=lambda i: library.rows[i]["taken_at"])
     timeline = [f'{library.rows[i]["taken_at"][:10]}: {library.rows[i]["caption"][:110]}'
                 for i in kept[:: max(1, len(kept) // 24)]]
