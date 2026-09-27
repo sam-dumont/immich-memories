@@ -5,6 +5,20 @@ creating what it declares; `tests/store/test_migrations.py` fails until the two 
 """
 
 from immich_memories.db.metadata import SCHEMA, metadata
+from immich_memories.db.tables.people import (
+    people,
+    people_aliases,
+    people_registry,
+    people_relationships,
+)
 from immich_memories.db.tables.store_meta import store_meta
 
-__all__ = ["SCHEMA", "metadata", "store_meta"]
+__all__ = [
+    "SCHEMA",
+    "metadata",
+    "people",
+    "people_aliases",
+    "people_registry",
+    "people_relationships",
+    "store_meta",
+]

@@ -45,7 +45,7 @@ Shots follow favourites and stories, so someone photographed all month and starr
 end up in no shot. The seat fixes that on every tier (`editorial_family_seat.py`).
 
 - **Who is owed one.** A close family member (partner, child or parent, as confirmed in
-  `people.yaml`) on at least 20 of the period's pictures, or 5 % of them, and in none of its shots.
+  the people registry) on at least 20 of the period's pictures, or 5 % of them, and in none of its shots.
   The two numbers are `advanced.editorial.people.seat_min_pictures` and `seat_min_share`. Only
   pictures the film could show count: someone whose every picture is refused as a shot is owed
   nothing, and the record says so.

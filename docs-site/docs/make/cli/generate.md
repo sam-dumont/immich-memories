@@ -96,7 +96,7 @@ Four things the examples hide:
 - `--people-expression` takes exact library names, binds `AND` tighter than `OR`, and works on
   date-range memories (months, years, seasons). Trips, albums and single-person presets refuse it.
 - A person or multi-person memory with no dates at all is not an error. It runs from the first day
-  one of its pictures could exist to today, read off the birth dates Immich holds (and `people.yaml`
+  one of its pictures could exist to today, read off the birth dates Immich holds (and the people registry
   where Immich holds none). See [memory types](../memory-types.mdx#a-people-memory-with-no-dates).
   With no birth date on record anywhere it still asks for `--year`, and says why.
 - Moving holidays are computed for each year (Easter, Thanksgiving, Mother's and Father's Day), with

@@ -915,9 +915,9 @@ msgstr "暂无符合条件的建议。"
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
-msgstr "尚无人物文件。请重新扫描媒体库：读取每位已命名人物的数量和月度曲线，不分析图片像素。"
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
+msgstr "尚无人物。请重新扫描媒体库：读取每位已命名人物的数量和月度曲线，不分析图片像素。"
 
 #: pages/runs.py:105
 msgid "No runs match this view. Make a memory from Memory or Suggestions."

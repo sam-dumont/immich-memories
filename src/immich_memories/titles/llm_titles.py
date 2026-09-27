@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +114,7 @@ class MemoryTitleFacts:
     holiday: str | None = None
     # The trip's place as trip naming chose it ("Crete, Greece"): the title must name it.
     place: str | None = None
-    people_path: Path | None = None
+    people_store: Store | None = None
     today: date | None = None
 
 
@@ -247,9 +248,9 @@ def _birth_date(context: PersonPromptContext | None) -> date | None:
         return None
 
 
-def _people_by_name(people_path: Path | None) -> dict[str, PersonPromptContext]:
+def _people_by_name(people_store: Store | None) -> dict[str, PersonPromptContext]:
     by_name: dict[str, PersonPromptContext] = {}
-    for context in load_people_prompt_context(people_path, include_derived=True).values():
+    for context in load_people_prompt_context(people_store, include_derived=True).values():
         by_name.setdefault(context.name, context)
     return by_name
 
@@ -279,7 +280,7 @@ def people_title_facts(
     start: date,
     end: date,
     *,
-    people_path: Path | None = None,
+    people_store: Store | None = None,
 ) -> str:
     """One line per person, then the family record for every ordered pair.
 
@@ -288,7 +289,7 @@ def people_title_facts(
     "no recorded relation" included, instead of a role towards somebody who is
     not in the film at all.
     """
-    by_name = _people_by_name(people_path)
+    by_name = _people_by_name(people_store)
     lines = [f"People in the film: {len(person_names)}"]
     lines += [_person_line(name, by_name.get(name), start, end) for name in person_names]
     if len(person_names) > 1:
@@ -340,12 +341,12 @@ def span_title_facts(
     end: date,
     person_names: Sequence[str] = (),
     *,
-    people_path: Path | None = None,
+    people_store: Store | None = None,
     today: date | None = None,
 ) -> str:
     """The span, and what it IS: a birth date, a first year, today, a calendar period."""
     notes = [f"{start} to {end} ({(end - start).days} days)"]
-    by_name = _people_by_name(people_path) if person_names else {}
+    by_name = _people_by_name(people_store) if person_names else {}
     for name in person_names:
         notes += _birth_notes(name, _birth_date(by_name.get(name)), start, end)
     if end == (today or date.today()):
@@ -373,11 +374,11 @@ def _people_prompt(
     facts: MemoryTitleFacts,
 ) -> TitlePrompt:
     condition = facts.people_condition or _plain_condition(person_names, facts.person_match)
-    known = people_title_facts(person_names, start, end, people_path=facts.people_path)
+    known = people_title_facts(person_names, start, end, people_store=facts.people_store)
     if facts.album_name:
         known += f"\nAlbum this film sits in: {facts.album_name}"
     span = span_title_facts(
-        start, end, person_names, people_path=facts.people_path, today=facts.today
+        start, end, person_names, people_store=facts.people_store, today=facts.today
     )
     return TitlePrompt(
         _load_prompt_template("title_people.md")
@@ -411,7 +412,7 @@ def _occasion_lines(
         lines.extend(
             (
                 "People most present in the pictures, in order:",
-                people_title_facts(person_names, start, end, people_path=facts.people_path),
+                people_title_facts(person_names, start, end, people_store=facts.people_store),
             )
         )
     return lines
@@ -428,7 +429,7 @@ def _occasion_prompt(
     person_names: Sequence[str],
 ) -> TitlePrompt:
     span = span_title_facts(
-        start, end, person_names, people_path=facts.people_path, today=facts.today
+        start, end, person_names, people_store=facts.people_store, today=facts.today
     )
     known = "\n".join(_occasion_lines(facts, start, end, daily_locations, person_names))
     return TitlePrompt(

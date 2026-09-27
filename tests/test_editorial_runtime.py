@@ -379,7 +379,7 @@ def test_episode_completion_ceiling_bounds_a_runaway_pack() -> None:
 
 
 def test_default_people_port_reads_the_people_scan_authority_with_derived_edges() -> None:
-    # WHY: the people scan reads the owner's people.yaml from the real home directory.
+    # WHY: the people registry lives in the store; this checks only which reader the port asks.
     with patch(
         "immich_memories.analysis.editorial_runtime_ports.load_people_prompt_context",
         return_value={},

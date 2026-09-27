@@ -2,7 +2,7 @@
 
 Grants follow favourites, so someone photographed all month and never starred could end up in
 no shot at all: the stories holding their pictures were funded for one favourite each. After
-the draft, every close family member (partner, child or parent, as the people file names them)
+the draft, every close family member (partner, child or parent, as the people registry names them)
 who is on enough of the period's pictures and in none of its shots gets one: their best frame by
 the rules' own standing, in the story holding most of their pictures. Nothing is asked of a model.
 """

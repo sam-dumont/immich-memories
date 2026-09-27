@@ -923,11 +923,11 @@ msgstr "No eligible suggestions right now."
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
 msgstr ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
 
 #: pages/runs.py:105
 msgid "No runs match this view. Make a memory from Memory or Suggestions."

@@ -915,9 +915,9 @@ msgstr "현재 사용 가능한 제안이 없습니다."
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
-msgstr "아직 인물 파일이 없습니다. 라이브러리를 다시 스캔하세요. 이름이 있는 각 인물의 수량과 월별 추이를 읽으며, 이미지 자체는 분석하지 않습니다."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
+msgstr "아직 인물이 없습니다. 라이브러리를 다시 스캔하세요. 이름이 있는 각 인물의 수량과 월별 추이를 읽으며, 이미지 자체는 분석하지 않습니다."
 
 #: pages/runs.py:105
 msgid "No runs match this view. Make a memory from Memory or Suggestions."

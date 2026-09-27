@@ -177,9 +177,9 @@ def _build_launch_environment(home: Path | None = None) -> dict[str, str]:
         }
     )
     if home is not None:
-        # Not every path resolves through the config directory: the people
-        # roster is read from `Path.home()` per call, so a launch that keeps
-        # the developer's HOME reads the developer's real family file.
+        # Not every path resolves through the config directory: the default store
+        # (and the people registry in it) sits under `Path.home()`, so a launch that
+        # keeps the developer's HOME reads the developer's real family.
         env["HOME"] = str(home)
         env["USERPROFILE"] = str(home)
     return env

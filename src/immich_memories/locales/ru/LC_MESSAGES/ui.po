@@ -930,10 +930,10 @@ msgstr "Сейчас нет подходящих предложений."
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
 msgstr ""
-"Файла людей пока нет. Просканируйте библиотеку снова: будут прочитаны количества и месячные "
+"Людей пока нет. Просканируйте библиотеку снова: будут прочитаны количества и месячные "
 "кривые каждого человека с именем, без анализа изображений."
 
 #: pages/runs.py:105

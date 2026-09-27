@@ -1,4 +1,4 @@
-"""`people scan` and `people show` — the graph from a terminal.
+"""`people scan`, `show`, `export` and `import` — the graph from a terminal.
 
 The library answered here is invented; the point of the assertions is the
 shape of the output, not who is in it.
@@ -12,8 +12,11 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+import yaml
 from click.testing import CliRunner
 
+from immich_memories.db import open_store
 from immich_memories.people.companion import add_confirmed_person, load_document, people_entries
 
 
@@ -88,7 +91,14 @@ def _unwrapped(text: str) -> str:
     return "".join(text.split())
 
 
-def _run(args: list[str], client: object | None = None) -> str:
+@pytest.fixture(autouse=True)
+def _home(monkeypatch, tmp_path: Path) -> Path:
+    # A scan writes its measurements under ~/.immich-memories; never the developer's.
+    monkeypatch.setenv("HOME", str(tmp_path))
+    return tmp_path
+
+
+def _run(args: list[str], client: object | None = None, *, exit_code: int = 0) -> str:
     from immich_memories.cli import main
     from immich_memories.config_loader import Config
 
@@ -108,65 +118,54 @@ def _run(args: list[str], client: object | None = None) -> str:
         patch("immich_memories.api.sync_client.SyncImmichClient", client or _Library),
     ):
         result = CliRunner().invoke(main, args, catch_exceptions=False)
-    assert result.exit_code == 0, result.output
+    assert result.exit_code == exit_code, result.output
     return result.output
 
 
 class TestScan:
-    def test_it_writes_the_people_file_and_says_where(self, tmp_path):
-        out = tmp_path / "people.yaml"
+    def test_it_writes_the_people_registry_to_the_store_and_says_so(self):
+        output = _run(["people", "scan"])
 
-        output = _run(["people", "scan", "--out", str(out)])
+        assert "people in the store" in output
+        assert len(people_entries(load_document())) == 3
 
-        assert _unwrapped(str(out)) in _unwrapped(output)
-        assert len(people_entries(load_document(out))) == 3
+    def test_it_writes_the_refreshable_evidence_graph_as_a_file(self, tmp_path):
+        output = _run(["people", "scan"])
 
-    def test_it_writes_the_refreshable_evidence_graph_beside_the_people_file(self, tmp_path):
-        out = tmp_path / "people.yaml"
-
-        output = _run(["people", "scan", "--out", str(out)])
-
-        graph_path = tmp_path / "people-graph.json"
+        graph_path = tmp_path / ".immich-memories" / "people-graph.json"
         graph = json.loads(graph_path.read_text())
         assert _unwrapped(str(graph_path)) in _unwrapped(output)
         assert len(graph["nodes"]) == 3
         assert graph["edges"] == []
 
-    def test_it_refreshes_a_confirmed_immich_face_below_the_normal_floor(self, tmp_path):
+    def test_it_refreshes_a_confirmed_immich_face_below_the_normal_floor(self):
         class LibraryWithUncle(_Library):
             people = [*_Library.people, _Person("p4", "Taylor Sample")]
             months = {**_Library.months, "p4": [(date(2020, 1, 1), 8)]}
 
-        out = tmp_path / "people.yaml"
-        add_confirmed_person(out, "Taylor Sample", person_id="p4", role="uncle")
+        add_confirmed_person(open_store(), "Taylor Sample", person_id="p4", role="uncle")
 
-        _run(["people", "scan", "--out", str(out)], LibraryWithUncle)
+        _run(["people", "scan"], LibraryWithUncle)
 
-        taylor = next(entry for entry in people_entries(load_document(out)) if "p4" in entry["ids"])
+        taylor = next(entry for entry in people_entries(load_document()) if "p4" in entry["ids"])
         assert taylor["inferred"]["evidence"]["count"] == 8
         assert taylor["confirmed"]["role"] == "uncle"
 
-    def test_it_reports_the_tiers_without_reading_out_the_roster(self, tmp_path):
-        out = tmp_path / "people.yaml"
-
-        output = _run(["people", "scan", "--out", str(out)])
+    def test_it_reports_the_tiers_without_reading_out_the_roster(self):
+        output = _run(["people", "scan"])
 
         assert "inner" in output and "event" in output
         assert "Rowan Example" not in output
 
-    def test_it_says_how_it_worked_out_who_the_owner_is(self, tmp_path):
-        out = tmp_path / "people.yaml"
-
-        output = _run(["people", "scan", "--out", str(out)])
+    def test_it_says_how_it_worked_out_who_the_owner_is(self):
+        output = _run(["people", "scan"])
 
         assert "account" in output
 
-    def test_being_told_the_owner_puts_that_name_in_the_file(self, tmp_path):
-        out = tmp_path / "people.yaml"
+    def test_being_told_the_owner_puts_that_name_in_the_registry(self):
+        _run(["people", "scan", "--owner", "Sam Sample"])
 
-        _run(["people", "scan", "--out", str(out), "--owner", "Sam Sample"])
-
-        assert load_document(out)["owner"]["name"] == "Sam Sample"
+        assert load_document()["owner"]["name"] == "Sam Sample"
 
 
 class TestTheBareCommand:
@@ -181,49 +180,96 @@ class TestTheBareCommand:
 
 
 class TestShow:
-    def test_it_reads_the_file_a_scan_left_behind(self, tmp_path):
-        out = tmp_path / "people.yaml"
-        _run(["people", "scan", "--out", str(out)])
+    def test_it_reads_what_a_scan_left_behind(self):
+        _run(["people", "scan"])
 
-        output = _run(["people", "show", "--file", str(out)])
+        output = _run(["people", "show"])
 
         assert "Alex Example" in output
         assert "inner" in output
 
-    def test_it_says_so_when_no_scan_has_run(self, tmp_path):
-        output = _run(["people", "show", "--file", str(tmp_path / "nothing.yaml")])
+    def test_it_says_so_when_no_scan_has_run(self):
+        output = _run(["people", "show"])
 
         assert "people scan" in output
 
-    def test_that_sentence_survives_a_narrow_terminal(self, tmp_path, monkeypatch):
+    def test_that_sentence_survives_a_narrow_terminal(self, monkeypatch):
         # The same sentence, read from a 40-column window: what the CLI prints
         # is not allowed to depend on the terminal the suite happens to run in.
         monkeypatch.setenv("COLUMNS", "40")
 
-        output = _run(["people", "show", "--file", str(tmp_path / "nothing.yaml")])
+        output = _run(["people", "show"])
 
         assert "people scan" in output
 
-    def test_show_carries_the_era_day_share(self, tmp_path):
-        out = tmp_path / "people.yaml"
-        _run(["people", "scan", "--out", str(out)])
+    def test_show_carries_the_era_day_share(self):
+        _run(["people", "scan"])
 
-        output = _run(["people", "show", "--file", str(out)])
+        output = _run(["people", "show"])
 
         assert "covid 30%" in output
 
-    def test_one_tier_can_be_asked_for_on_its_own(self, tmp_path):
-        out = tmp_path / "people.yaml"
-        _run(["people", "scan", "--out", str(out)])
+    def test_one_tier_can_be_asked_for_on_its_own(self):
+        _run(["people", "scan"])
 
-        output = _run(["people", "show", "--file", str(out), "--tier", "event"])
+        output = _run(["people", "show", "--tier", "event"])
 
         assert "Rowan Example" in output
         assert "Sam Sample" not in output
 
 
-def test_the_default_file_sits_in_the_immich_memories_home(monkeypatch, tmp_path: Path):
-    monkeypatch.setenv("HOME", str(tmp_path))
-    from immich_memories.people.companion import default_people_path
+class TestExportAndImport:
+    def test_an_export_is_a_file_only_its_owner_can_read(self, tmp_path):
+        _run(["people", "scan"])
+        target = tmp_path / "people.yaml"
 
-    assert default_people_path().parent.name == ".immich-memories"
+        _run(["people", "export", "--to", str(target)])
+
+        assert target.stat().st_mode & 0o077 == 0
+        assert len(yaml.safe_load(target.read_text())["people"]) == 3
+
+    def test_an_export_without_a_target_goes_to_standard_output(self):
+        _run(["people", "scan"])
+
+        output = _run(["people", "export"])
+
+        assert "Rowan Example" in output
+
+    def test_an_edited_export_comes_back_with_its_ids_and_answers(self, tmp_path):
+        _run(["people", "scan"])
+        target = tmp_path / "people.yaml"
+        _run(["people", "export", "--to", str(target)])
+        document = yaml.safe_load(target.read_text())
+        document["people"][0]["confirmed"]["role"] = "partner"
+        target.write_text(yaml.dump(document, sort_keys=False))
+
+        output = _run(["people", "import", "--from", str(target), "--replace"])
+
+        assert "3 people imported" in output
+        assert load_document() == document
+
+    def test_an_import_over_a_registry_needs_replace(self, tmp_path):
+        _run(["people", "scan"])
+        target = tmp_path / "people.yaml"
+        _run(["people", "export", "--to", str(target)])
+        document = yaml.safe_load(target.read_text())
+        document["people"][0]["confirmed"]["role"] = "partner"
+        target.write_text(yaml.dump(document, sort_keys=False))
+        before = load_document()
+
+        output = _run(["people", "import", "--from", str(target)], exit_code=1)
+
+        assert "--replace" in output
+        assert load_document() == before
+
+    def test_a_broken_file_is_refused_and_changes_nothing(self, tmp_path):
+        _run(["people", "scan"])
+        before = load_document()
+        target = tmp_path / "people.yaml"
+        target.write_text("version: 1\npeople:\n  - ids: p1\n    name: Typo\n")
+
+        output = _run(["people", "import", "--from", str(target)], exit_code=1)
+
+        assert "nothing changed" in output
+        assert "people[0]" in output
+        assert load_document() == before

@@ -52,7 +52,7 @@ flowchart LR
 | **Look-alike** | a story's next shot must not repeat one it holds (hash within 10 bits) | `editorial_story_lookalike.py` |
 | **Depth** | a story with slots left spends them inside moments it already shows, up to 3 frames each | `editorial_story_depth.py` |
 | **Family seat** | one shot for a close family member the cut left out | `editorial_family_seat.py` |
-| **Close family** | partner or spouse, child, parent, as confirmed in `people.yaml`; in a person film, that person's too | `people/relationships.py` |
+| **Close family** | partner or spouse, child, parent, as confirmed in the people registry; in a person film, that person's too | `people/relationships.py` |
 | **Owner-required** | a picture you ticked; added after the draft, kept through the trim and the duplicate review | `editorial_owner_required.py` |
 
 ## The gate and the checks

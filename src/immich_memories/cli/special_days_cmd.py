@@ -247,7 +247,7 @@ def _scan_one_year(
 
 
 def _close_family() -> dict[str, str]:
-    """The owner's close family by Immich person id, as the people file confirms it."""
+    """The owner's close family by Immich person id, as the people registry confirms it."""
     from immich_memories.analysis.special_day_sequence import close_family_roles
     from immich_memories.people.context import load_people_prompt_context
 

@@ -114,7 +114,7 @@ immich-memories generate --memory-type multi_person \
   --people-expression '("Riley" OR "Bob") AND "Sam"'
 ```
 
-The start comes from the birth dates Immich holds, and from `birth_date` in `people.yaml` where
+The start comes from the birth dates Immich holds, and from `birth_date` in the people registry where
 Immich has none. An AND waits for the youngest person it needs; an OR opens with the oldest it
 accepts, and bounds nothing when one of them has no birth date. Two grandparents AND a child born
 in 2024 covers 2024 onward, because no older picture can hold the child. `runs why` on an earlier

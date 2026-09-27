@@ -96,7 +96,7 @@ class SequenceReading:
 
 
 def close_family_roles(people: Mapping[str, Any]) -> dict[str, str]:
-    """Each close family member's role by Immich person id, from the people file's context.
+    """Each close family member's role by Immich person id, from the people registry's context.
 
     The owner, and the partner, child and parent roles the owner confirmed (#1180's set,
     `is_close_family`); a relationship only derived by closure is not a confirmation.
