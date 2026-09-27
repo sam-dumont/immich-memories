@@ -78,8 +78,14 @@ def private_database_path(path: Path) -> Path:
     """Create at 0600 before SQLite opens it; keep existing sidecars private too."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor = os.open(path, os.O_CREAT | os.O_WRONLY, 0o600)
-    os.close(descriptor)
+    # Closing any separate descriptor for an existing database releases this
+    # process's POSIX locks, including those held by live SQLite connections.
+    try:
+        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError:
+        pass
+    else:
+        os.close(descriptor)
     path.chmod(0o600)
     for suffix in ("-journal", "-wal", "-shm"):
         sidecar = Path(str(path) + suffix)
