@@ -64,7 +64,8 @@ export class CutEditor {
     this.current.segments[this.playing(shot)] ?? (shot.source_interval ? [...shot.source_interval] : null);
   seconds = (shot: CutShot) => {
     const segment = this.current.segments[this.playing(shot)];
-    return segment ? segment[1] - segment[0] : shot.seconds;
+    // The renderer counts recorded intervals, so the budget here does too.
+    return segment ? segment[1] - segment[0] : shot.recorded_seconds;
   };
 
   toggleRemoved(shot: CutShot) {

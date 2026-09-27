@@ -72,7 +72,7 @@ class TestTriggerTokenIsASecret:
         assert "workflow-token-secret" in configured_secret_values(config)
 
     def test_the_config_viewer_masks_it_like_every_other_secret(self) -> None:
-        from immich_memories.ui.pages.settings_config import redact_config
+        from immich_memories.security import redact_config
 
         redacted = redact_config({"server": {"trigger_token": "workflow-token-secret"}})
 

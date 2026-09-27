@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, field_serializer
 
@@ -16,6 +17,8 @@ class RunSummary(BaseModel):
     date_range_start: date | None
     date_range_end: date | None
     preview_asset_ids: list[str]
+    # False for a cut that stopped before rendering: it can be reviewed and rendered.
+    film: bool
 
     @field_serializer("created_at")
     def _rfc3339(self, value: datetime) -> str:
@@ -73,6 +76,9 @@ class CutShot(BaseModel):
     moment: str
     reason: str
     motion: bool
+    # The seconds the renderer counts for this shot (its recorded interval); `seconds` is the
+    # storyboard's display length, squeezed when a cut runs long.
+    recorded_seconds: float
     source_interval: tuple[float, float] | None
     selection: SelectionPath | None
     model: ModelDecision | None
@@ -118,3 +124,49 @@ class Revision(RevisionEdits):
     number: int
     created_at: str
     content_seconds: float
+
+
+class Hold(BaseModel):
+    """`never_use`, `cleared:<level>` or None; `reasons` say what holds the picture, if anything."""
+
+    decision: str | None
+    reasons: list[str]
+    can_clear: bool
+
+
+class PoolItem(BaseModel):
+    asset_id: str
+    taken: str
+    kind: Literal["photo", "video", "live"]
+    favourite: bool
+    in_cut: bool
+    fate: str
+    hold: Hold
+
+
+class Pool(BaseModel):
+    total: int
+    items: list[PoolItem]
+
+
+class Decision(BaseModel):
+    action: Literal["never_use", "clear", "forget"]
+    level: Literal["anyone", "family", "just-us"] = "anyone"
+
+
+JobKind = Literal["cut", "render", "scan"]
+JobStatus = Literal["running", "succeeded", "failed", "cancelled", "interrupted"]
+
+
+class Job(BaseModel):
+    id: str
+    kind: JobKind
+    argv: list[str]
+    status: JobStatus = "running"
+    started_at: float
+    finished_at: float | None = None
+    exit_code: int | None = None
+    pid: int | None = None
+    cancel_requested: bool = False
+    meta: dict[str, str | int | None] = {}
+    result_run_id: str | None = None

@@ -7,7 +7,10 @@ takes too. `generate --no-render` followed by `runs render` is a cut and its fil
 
 from __future__ import annotations
 
+import json
+import os
 import sys
+import time
 from pathlib import Path
 
 import click
@@ -17,6 +20,24 @@ from immich_memories.cli._runs_reading import RunNotFound, resolve_attempt
 from immich_memories.generate_saved_cut import CutRenderRequest, render_saved_cut
 from immich_memories.operations.cut_revisions import read_revisions
 from immich_memories.operations.revision_render import RenderUnavailable
+
+
+def _write_progress(path: Path | None, record: dict) -> None:
+    if path is None:
+        return
+    # Written whole and swapped in, so a reader never sees half a record.
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(json.dumps(record | {"updated_at": time.time()}))
+    os.replace(temporary, path)
+
+
+def _progress_writer(path: Path | None):
+    def report(phase: str, fraction: float, message: str) -> None:
+        _write_progress(
+            path, {"done": False, "phase": phase, "fraction": fraction, "message": message}
+        )
+
+    return report if path is not None else None
 
 
 def register_render_command(runs: click.Group) -> None:
@@ -45,7 +66,15 @@ def register_render_command(runs: click.Group) -> None:
     @click.option("--privacy-mode", is_flag=True, default=False)
     @click.option("--upload-to-immich", is_flag=True, default=False)
     @click.option("--album", default=None, help="Immich album for the upload")
-    def runs_render(run_id: str | None, revision: int | None, **options) -> None:
+    @click.option(
+        "--progress-file",
+        type=click.Path(dir_okay=False, path_type=Path),
+        default=None,
+        help="Keep the render's progress in this JSON file, for a watcher such as the web client",
+    )
+    def runs_render(
+        run_id: str | None, revision: int | None, progress_file: Path | None, **options
+    ) -> None:
         """Render a finished cut, or one of its saved revisions, through the same engine as generate.
 
         With no RUN_ID the most recent completed run is rendered. Revisions are the ones the web
@@ -103,8 +132,10 @@ def register_render_command(runs: click.Group) -> None:
                     attempt_dir=attempt,
                     revision=chosen,
                     request=request,
+                    progress_callback=_progress_writer(progress_file),
                 )
             except (RenderUnavailable, ValueError) as exc:
                 print_error(str(exc))
                 sys.exit(1)
+        _write_progress(progress_file, {"done": True, "fraction": 1.0, "output_path": str(path)})
         print_success(f"Rendered {path}")

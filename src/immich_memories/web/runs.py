@@ -39,6 +39,7 @@ def _summary(config: Config, record: RunMetadata) -> RunSummary:
         date_range_start=record.date_range_start,
         date_range_end=record.date_range_end,
         preview_asset_ids=_preview(config, record.run_id),
+        film=bool(record.output_path),
     )
 
 

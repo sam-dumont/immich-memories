@@ -82,3 +82,18 @@ def test_a_shot_can_be_swapped_for_another_picture_of_its_moment(attempt):
 
     assert read_revisions(attempt)[0].edits.swaps == {"garden-1": "garden-3"}
     assert revision.content_seconds == pytest.approx(7.0)
+
+
+def test_the_budget_counts_the_seconds_the_renderer_counts_not_the_squeezed_storyboard(tmp_path):
+    (tmp_path / PLAN_FILE).write_text(json.dumps(_PLAN))
+    # 5 s + 8 s of recorded intervals: one second more than the 12 s the titles leave. The
+    # storyboard squeezes that to fit for display; the renderer counts the intervals.
+    (tmp_path / PROJECTION_FILE).write_text(
+        json.dumps({"intervals": {"garden-1": [0.0, 5.0], "lake-1": [10.0, 18.0]}})
+    )
+
+    with pytest.raises(RevisionRefused, match="13.0 s"):
+        save_revision(tmp_path, CutEdits(segments={"lake-1": (10.0, 18.0)}))
+    fits = save_revision(tmp_path, CutEdits(segments={"lake-1": (10.0, 17.0)}))
+
+    assert fits.content_seconds == pytest.approx(12.0)

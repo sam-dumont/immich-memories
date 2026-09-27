@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-27 08:07+0200\n"
+"POT-Creation-Date: 2026-09-27 10:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -19,7 +19,7 @@ msgstr ""
 msgid " Cut again runs it once more."
 msgstr " Klipp igen kör klippningen en gång till."
 
-#: pages/settings_config.py:127
+#: pages/settings_config.py:104
 #, python-brace-format
 msgid " Preset '{preset}' is active and fills the knobs you have not set."
 msgstr " Förvalet '{preset}' är aktivt och fyller i alternativ som inte har angetts."
@@ -53,7 +53,7 @@ msgstr "4K"
 msgid "720p"
 msgstr "720p"
 
-#: pages/memory_run.py:101
+#: pages/memory_run.py:104
 msgid "A cut is already running; wait for it, or cancel it first"
 msgstr "En klippning pågår redan; vänta tills den är klar eller avbryt först"
 
@@ -65,6 +65,10 @@ msgid ""
 msgstr ""
 "Genereringen som startade {started} pågår fortfarande (körning {run_id}). Sidan kontrollerar "
 "regelbundet och visar videon när den är klar."
+
+#: web/lib/labels.ts:47
+msgid "A monthly review already finished this month."
+msgstr "En månadsgenomgång har redan slutförts den här månaden."
 
 #: pages/step3_options.py:371
 msgid "AI Generated"
@@ -82,11 +86,11 @@ msgstr "API-nyckel"
 msgid "Accept Forwarded Media"
 msgstr "Tillåt mottagna medier"
 
-#: pages/settings_config.py:165
+#: pages/settings_config.py:142
 msgid "Actions"
 msgstr "Åtgärder"
 
-#: pages/settings_config.py:162
+#: pages/settings_config.py:139
 msgid "Active Configuration"
 msgstr "Aktiv konfiguration"
 
@@ -95,13 +99,17 @@ msgstr "Aktiv konfiguration"
 msgid "Active condition: {display_label}"
 msgstr "Aktivt villkor: {display_label}"
 
-#: pages/settings_config.py:122
+#: pages/settings_config.py:99
 msgid "Active config from ~/.immich-memories/config.yaml with env overrides. API keys are redacted."
 msgstr ""
 "Konfiguration från ~/.immich-memories/config.yaml med miljövariabler som överstyrning. API-"
 "nycklar är dolda."
 
-#: pages/settings_people.py:516
+#: web/routes/settings/people/+page.svelte:165
+msgid "Add"
+msgstr "Lägg till"
+
+#: pages/settings_people.py:516 web/routes/settings/people/+page.svelte:157
 msgid "Add a relationship"
 msgstr "Lägg till en relation"
 
@@ -121,7 +129,7 @@ msgstr "Lägg till relation"
 msgid "Add someone"
 msgstr "Lägg till någon"
 
-#: pages/settings_people.py:168
+#: pages/settings_people.py:168 web/routes/settings/people/+page.svelte:102
 msgid "Add someone not in Immich"
 msgstr "Lägg till någon som inte finns i Immich"
 
@@ -147,6 +155,7 @@ msgid "Advanced people condition"
 msgstr "Avancerat personvillkor"
 
 #: pages/memory_brief.py:37 pages/step1_presets.py:290 web/lib/labels.ts:11
+#: web/routes/create/+page.svelte:165
 msgid "Album"
 msgstr "Album"
 
@@ -186,6 +195,10 @@ msgstr ""
 msgid "Any of these people"
 msgstr "Någon av dessa personer"
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:146
+msgid "Anyone"
+msgstr "Alla"
+
 #: pages/memory_brief.py:80
 msgid "Anyone. Only pictures nothing held back: no detector flag, no private moment."
 msgstr "Alla. Bara bilder utan begränsningar: ingen detektorflagga, inget privat ögonblick."
@@ -197,6 +210,10 @@ msgstr "Alla: även delbara filmer"
 #: pages/clip_review.py:403
 msgid "Apply"
 msgstr "Tillämpa"
+
+#: web/routes/create/+page.svelte:200
+msgid "As configured"
+msgstr "Enligt konfigurationen"
 
 #: pages/memory_duration.py:30
 msgid "Auto"
@@ -214,7 +231,7 @@ msgstr "Automatiskt (som klippen)"
 msgid "Auto duration"
 msgstr "Automatisk längd"
 
-#: web/lib/labels.ts:23
+#: web/lib/labels.ts:23 web/routes/runs/[run_id]/+page.svelte:284
 msgid "Automatic"
 msgstr "Automatisk"
 
@@ -234,15 +251,19 @@ msgstr "Automatisk uppladdning till Immich är avstängd."
 msgid "Automatically uses today's date across previous years"
 msgstr "Använder automatiskt dagens datum under tidigare år"
 
+#: web/routes/suggestions/+page.svelte:47
+msgid "Automation is already running. Open Runs to follow it."
+msgstr "Automatiseringen körs redan. Öppna Körningar för att följa den."
+
 #: pages/step4_export.py:236
 msgid "Back to Generation Options"
 msgstr "Tillbaka till genereringsalternativ"
 
-#: pages/memory_storyboard.py:160 web/routes/runs/[run_id]/+page.svelte:173
+#: pages/memory_storyboard.py:160 web/routes/runs/[run_id]/+page.svelte:216
 msgid "Back to pictures"
 msgstr "Tillbaka till bilderna"
 
-#: web/routes/runs/[run_id]/+page.svelte:100
+#: web/routes/runs/[run_id]/+page.svelte:135
 msgid "Back to runs"
 msgstr "Tillbaka till körningar"
 
@@ -250,7 +271,7 @@ msgstr "Tillbaka till körningar"
 msgid "Back to the brief"
 msgstr "Tillbaka till upplägget"
 
-#: pages/step2_review.py:290
+#: pages/step2_review.py:290 web/routes/runs/[run_id]/pool/+page.svelte:93
 msgid "Back to the cut"
 msgstr "Tillbaka till klippningen"
 
@@ -295,12 +316,17 @@ msgstr "Cache"
 msgid "Cache Management"
 msgstr "Cachehantering"
 
+#: web/routes/settings/+page.svelte:82 web/routes/settings/+page.svelte:83
+msgid "Caches"
+msgstr "Cachar"
+
 #: pages/step1_tabs.py:82
 msgid "Calendar Year"
 msgstr "Kalenderår"
 
-#: pages/_step4_generate.py:386 pages/memory_run.py:411 pages/picture_decisions.py:176
-#: pages/settings_people.py:503 pages/settings_people.py:545
+#: pages/_step4_generate.py:386 pages/memory_run.py:362 pages/picture_decisions.py:176
+#: pages/settings_people.py:503 pages/settings_people.py:545 web/lib/JobPanel.svelte:74
+#: web/routes/runs/[run_id]/pool/+page.svelte:152
 msgid "Cancel"
 msgstr "Avbryt"
 
@@ -308,7 +334,7 @@ msgstr "Avbryt"
 msgid "Cancel requested — stopping after current phase..."
 msgstr "Avbrott begärt: stoppar efter aktuell fas..."
 
-#: pages/memory_run.py:409
+#: pages/memory_run.py:360
 msgid "Cancelling after the current stage..."
 msgstr "Avbryter efter aktuellt steg..."
 
@@ -316,7 +342,7 @@ msgstr "Avbryter efter aktuellt steg..."
 msgid "Cancelling..."
 msgstr "Avbryter..."
 
-#: pages/suggestions.py:195
+#: pages/suggestions.py:195 web/routes/suggestions/+page.svelte:92
 msgid "Candidate key"
 msgstr "Kandidatnyckel"
 
@@ -328,12 +354,12 @@ msgstr "Visa plats på klippen"
 msgid "Change the brief"
 msgstr "Ändra upplägget"
 
-#: web/routes/runs/[run_id]/+page.svelte:182
+#: web/routes/runs/[run_id]/+page.svelte:225
 #, python-brace-format
 msgid "Changes: {count}"
 msgstr "Ändringar: {count}"
 
-#: pages/suggestions.py:199
+#: pages/suggestions.py:199 web/routes/suggestions/+page.svelte:94
 msgid "Check eligibility"
 msgstr "Kontrollera lämplighet"
 
@@ -345,7 +371,19 @@ msgstr "Läs serverloggen och generera sedan igen."
 msgid "Choose a relationship and a person"
 msgstr "Välj en relation och en person"
 
-#: pages/step1_cache.py:67
+#: web/routes/create/+page.svelte:167
+msgid "Choose an album"
+msgstr "Välj ett album"
+
+#: web/routes/create/+page.svelte:130
+msgid ""
+"Choose what the film covers. The cut is made the way the command below makes it; you review "
+"it before anything renders."
+msgstr ""
+"Välj vad filmen ska täcka. Klippningen görs precis som kommandot nedan gör den; du granskar "
+"den innan något renderas."
+
+#: pages/step1_cache.py:67 web/routes/settings/+page.svelte:88
 msgid "Clear"
 msgstr "Rensa"
 
@@ -354,8 +392,13 @@ msgid "Clear all caches"
 msgstr "Rensa alla cacher"
 
 #: pages/picture_decisions.py:133 pages/picture_decisions.py:182
+#: web/routes/runs/[run_id]/pool/+page.svelte:121 web/routes/runs/[run_id]/pool/+page.svelte:153
 msgid "Clear hold"
 msgstr "Ta bort spärr"
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:139
+msgid "Clear this hold?"
+msgstr "Ta bort den här spärren?"
 
 #: pages/picture_decisions.py:156
 msgid "Clear this picture's hold?"
@@ -381,6 +424,11 @@ msgstr "{count} cachade miniatyrer rensade"
 msgid "Cleared {count} cached videos"
 msgstr "{count} cachade videor rensade"
 
+#: web/routes/settings/+page.svelte:30
+#, python-brace-format
+msgid "Cleared {count} entries from the {cache}."
+msgstr "{count} poster rensades från {cache}."
+
 #: pages/step1_cache.py:175
 #, python-brace-format
 msgid "Cleared {count} preview files"
@@ -398,6 +446,10 @@ msgstr "Planerade klipp"
 msgid "Close"
 msgstr "Stäng"
 
+#: web/routes/create/+page.svelte:210
+msgid "Command"
+msgstr "Kommando"
+
 #: pages/step2_review.py:229
 msgid "Compact grid view"
 msgstr "Kompakt rutnät"
@@ -406,16 +458,16 @@ msgstr "Kompakt rutnät"
 msgid "Complete!"
 msgstr "Klart!"
 
-#: pages/settings_config.py:178
+#: pages/settings_config.py:155 web/routes/settings/+page.svelte:62
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "Konfigurationsfil: {config_path}"
 
-#: app.py:135 app.py:269
+#: app.py:135 app.py:269 web/routes/settings/+page.svelte:53 web/routes/settings/+page.svelte:55
 msgid "Configuration"
 msgstr "Konfiguration"
 
-#: pages/settings_config.py:170
+#: pages/settings_config.py:147
 msgid "Configuration reloaded from disk"
 msgstr "Konfigurationen har lästs om från disken"
 
@@ -448,7 +500,7 @@ msgstr ""
 msgid "Connected as: {name}"
 msgstr "Ansluten som: {name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:405 pages/step2_loading.py:319
 msgid "Connecting to Immich..."
 msgstr "Ansluter till Immich..."
 
@@ -460,6 +512,14 @@ msgstr "Anslutningen misslyckades: {value}"
 #: web/lib/ShotInspector.svelte:150
 msgid "Considered by the model"
 msgstr "Övervägd av modellen"
+
+#: web/lib/JobPanel.svelte:72
+msgid "Copied"
+msgstr "Kopierad"
+
+#: web/lib/JobPanel.svelte:72
+msgid "Copy as CLI command"
+msgstr "Kopiera som CLI-kommando"
 
 #: pages/step1_presets.py:268
 #, python-brace-format
@@ -475,7 +535,7 @@ msgstr "Kunde inte läsa in fotoår. Tidigare inlästa år visas."
 msgid "Could not load suggestions: {value}"
 msgstr "Kunde inte läsa in förslag: {value}"
 
-#: pages/memory_run.py:461
+#: pages/memory_run.py:412
 #, python-brace-format
 msgid "Could not re-load media: {value}"
 msgstr "Kunde inte läsa in medierna igen: {value}"
@@ -484,7 +544,8 @@ msgstr "Kunde inte läsa in medierna igen: {value}"
 msgid "Crossfade"
 msgstr "Övertoning"
 
-#: pages/settings_people.py:139
+#: pages/settings_people.py:139 web/routes/settings/people/+page.svelte:92
+#: web/routes/settings/people/+page.svelte:93
 msgid "Curation"
 msgstr "Ordna"
 
@@ -500,7 +561,7 @@ msgstr "Egen period"
 msgid "Custom seconds"
 msgstr "Eget antal sekunder"
 
-#: pages/memory_brief.py:219 pages/step2_review.py:154
+#: pages/memory_brief.py:219 pages/step2_review.py:154 web/routes/create/+page.svelte:213
 msgid "Cut"
 msgstr "Klipp"
 
@@ -508,17 +569,25 @@ msgstr "Klipp"
 msgid "Cut again"
 msgstr "Klipp igen"
 
-#: pages/memory_storyboard.py:138 web/routes/runs/[run_id]/+page.svelte:135
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
+msgid "Cut again with these choices"
+msgstr "Klipp igen med dessa val"
+
+#: pages/memory_storyboard.py:138 web/routes/runs/[run_id]/+page.svelte:178
 msgid "Cut contact sheet"
 msgstr "Kontaktkarta för klippningen"
 
-#: pages/memory_run.py:399
+#: pages/memory_run.py:350
 msgid "Cutting the memory..."
 msgstr "Klipper minnet..."
 
 #: theme.py:322
 msgid "Dark"
 msgstr "Mörkt"
+
+#: web/routes/create/+page.svelte:157
+msgid "Day"
+msgstr "Dag"
 
 #: app.py:101
 msgid "Demo mode"
@@ -540,20 +609,20 @@ msgstr "Hittar resor med GPS-data..."
 msgid "Difference"
 msgstr "Skillnad"
 
-#: web/routes/runs/[run_id]/+page.svelte:191
+#: web/routes/runs/[run_id]/+page.svelte:234
 msgid "Discard changes"
 msgstr "Kasta ändringar"
 
-#: pages/suggestions.py:165
+#: pages/suggestions.py:165 web/routes/suggestions/+page.svelte:79
 #, python-brace-format
 msgid "Discovery failed: {error}"
 msgstr "Sökningen misslyckades: {error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:69 pages/step2_loading.py:378
 msgid "Done"
 msgstr "Klart"
 
-#: web/routes/runs/[run_id]/+page.svelte:232
+#: web/routes/runs/[run_id]/+page.svelte:316
 msgid "Download child output"
 msgstr "Ladda ned tillhörande resultat"
 
@@ -569,11 +638,11 @@ msgstr "Längd"
 msgid "Edit this shot"
 msgstr "Redigera den här bilden"
 
-#: pages/memory_run.py:65
+#: pages/memory_run.py:68
 msgid "Editing"
 msgstr "Klippning"
 
-#: pages/memory_run.py:431
+#: pages/memory_run.py:382
 #, python-brace-format
 msgid "Elapsed: {value}"
 msgstr "Förfluten tid: {value}"
@@ -582,6 +651,10 @@ msgstr "Förfluten tid: {value}"
 msgid "Eligible when this shot was chosen. Open one to compare."
 msgstr "Möjliga när den här bilden valdes. Öppna en för att jämföra."
 
+#: web/routes/suggestions/+page.svelte:52
+msgid "Eligible. No video was generated."
+msgstr "Lämplig. Ingen video skapades."
+
 #: pages/step1_tabs.py:182
 msgid "End date"
 msgstr "Slutdatum"
@@ -589,6 +662,11 @@ msgstr "Slutdatum"
 #: web/lib/ShotInspector.svelte:58
 msgid "End here"
 msgstr "Sluta här"
+
+#: web/routes/settings/+page.svelte:87
+#, python-brace-format
+msgid "Entries: {count}"
+msgstr "Poster: {count}"
 
 #: pages/step1_config.py:132
 #, python-brace-format
@@ -599,6 +677,20 @@ msgstr "Fel: {value}"
 #, python-brace-format
 msgid "Errors ({error_count})"
 msgstr "Fel ({error_count})"
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:96
+msgid ""
+"Every picture this cut saw, in the order they were taken. Tick or untick, then cut again: the"
+" ticks become the next cut’s must-keeps and leave-outs. Never use and Clear hold last across "
+"every run."
+msgstr ""
+"Varje bild den här klippningen såg, i den ordning de togs. Bocka i eller ur och klipp sedan "
+"igen: bockarna blir det nästa klippning måste behålla eller utelämna. \"Använd aldrig\" och "
+"\"Ta bort spärr\" gäller över alla körningar."
+
+#: web/routes/create/+page.svelte:163
+msgid "Every trip of the year"
+msgstr "Varje resa under året"
 
 #: pages/memory_storyboard.py:137
 msgid "Excluded"
@@ -622,7 +714,8 @@ msgstr "Kunde inte läsa in videor: {value}"
 msgid "Failed: {value}"
 msgstr "Misslyckades: {value}"
 
-#: pages/memory_brief.py:73
+#: pages/memory_brief.py:73 web/routes/create/+page.svelte:201
+#: web/routes/runs/[run_id]/pool/+page.svelte:146
 msgid "Family"
 msgstr "Familj"
 
@@ -653,12 +746,16 @@ msgstr "Filmens språk"
 msgid "Film length"
 msgstr "Filmlängd"
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:144
+msgid "Films that may use it"
+msgstr "Filmer som får använda den"
+
 #: pages/clip_review.py:503
 #, python-brace-format
 msgid "Final Duration: {value}"
 msgstr "Slutlig längd: {value}"
 
-#: pages/settings_people.py:263
+#: pages/settings_people.py:263 web/routes/settings/people/+page.svelte:99
 msgid "Find a name"
 msgstr "Sök ett namn"
 
@@ -666,7 +763,7 @@ msgstr "Sök ett namn"
 msgid "Find alternatives in the pool"
 msgstr "Hitta alternativ bland medierna"
 
-#: pages/memory_run.py:62
+#: pages/memory_run.py:65
 msgid "Finding media"
 msgstr "Söker medier"
 
@@ -687,6 +784,10 @@ msgstr "Format"
 msgid "Found {count} trip(s):"
 msgstr "Hittade resor: {count}"
 
+#: web/routes/create/+page.svelte:159
+msgid "From"
+msgstr "Från"
+
 #: pages/step1_tabs.py:85
 msgid "From Birthday"
 msgstr "Från födelsedagen"
@@ -695,7 +796,7 @@ msgstr "Från födelsedagen"
 msgid "Full clip"
 msgstr "Hela klippet"
 
-#: pages/settings_people.py:489
+#: pages/settings_people.py:489 web/routes/settings/people/+page.svelte:101
 msgid "Full name"
 msgstr "Fullständigt namn"
 
@@ -739,7 +840,12 @@ msgstr "Endast HDR-klipp"
 msgid "Hard cut"
 msgstr "Hårt klipp"
 
-#: pages/step1_presets.py:178
+#: web/routes/runs/[run_id]/pool/+page.svelte:84
+#, python-brace-format
+msgid "Held: {reasons}."
+msgstr "Spärrad: {reasons}."
+
+#: pages/step1_presets.py:178 web/routes/create/+page.svelte:155
 msgid "Hemisphere"
 msgstr "Halvklot"
 
@@ -748,6 +854,7 @@ msgid "Hold cleared. The next cut may use it."
 msgstr "Spärren har tagits bort. Nästa klippning får använda bilden."
 
 #: pages/memory_brief.py:39 pages/step1_presets.py:82 web/lib/labels.ts:13
+#: web/routes/create/+page.svelte:161
 msgid "Holiday"
 msgstr "Högtid"
 
@@ -777,7 +884,7 @@ msgstr "Immich-serverns URL"
 msgid "Immich delivery: {delivery_label}"
 msgstr "Överföring till Immich: {delivery_label}"
 
-#: web/routes/runs/[run_id]/+page.svelte:222
+#: web/routes/runs/[run_id]/+page.svelte:306
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Överföring till Immich: {value}"
@@ -786,11 +893,15 @@ msgstr "Överföring till Immich: {value}"
 msgid "In the cut"
 msgstr "I klippet"
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:110
+msgid "In the next cut"
+msgstr "I nästa klippning"
+
 #: pages/clip_grid.py:170 pages/clip_grid.py:224
 msgid "Include"
 msgstr "Ta med"
 
-#: pages/memory_brief.py:58
+#: pages/memory_brief.py:58 web/routes/create/+page.svelte:205
 msgid "Include Live Photos"
 msgstr "Ta med Live Photos"
 
@@ -806,6 +917,10 @@ msgstr "Ta med i sammanställningen"
 msgid "Include in export"
 msgstr "Ta med i exporten"
 
+#: web/routes/create/+page.svelte:204
+msgid "Include photos"
+msgstr "Ta med foton"
+
 #: i18n.py:82
 msgid "Interface language"
 msgstr "Gränssnittets språk"
@@ -819,11 +934,16 @@ msgstr "Ogiltig period: {e}"
 msgid "Invalid username or password"
 msgstr "Fel användarnamn eller lösenord"
 
+#: web/lib/JobPanel.svelte:47
+msgid "It did not finish."
+msgstr "Blev inte klar."
+
 #: pages/picture_decisions.py:107
 msgid "It won't be in any film from the next cut on."
 msgstr "Från nästa klippning används bilden inte i någon film."
 
-#: pages/memory_brief.py:72
+#: pages/memory_brief.py:72 web/routes/create/+page.svelte:200
+#: web/routes/runs/[run_id]/pool/+page.svelte:146
 msgid "Just us"
 msgstr "Bara vi"
 
@@ -843,6 +963,11 @@ msgstr "Behåll mellanfiler"
 msgid "Keep the original"
 msgstr "Behåll originalet"
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:131
+#, python-brace-format
+msgid "Keep: {include} · Leave out: {exclude}"
+msgstr "Behåll: {include} · Utelämna: {exclude}"
+
 #: web/lib/ShotInspector.svelte:91
 #, python-brace-format
 msgid "Kept at {stage}"
@@ -852,6 +977,10 @@ msgstr "Behölls vid {stage}"
 msgid "Kept because"
 msgstr "Behölls eftersom"
 
+#: web/routes/runs/[run_id]/+page.svelte:284
+msgid "Landscape"
+msgstr "Liggande"
+
 #: pages/step3_options.py:273
 msgid "Landscape (16:9)"
 msgstr "Liggande (16:9)"
@@ -859,6 +988,14 @@ msgstr "Liggande (16:9)"
 #: pages/clip_review.py:180
 msgid "Last 5s"
 msgstr "Sista 5 s"
+
+#: web/routes/create/+page.svelte:195
+msgid "Length and pictures"
+msgstr "Längd och bilder"
+
+#: web/routes/create/+page.svelte:197
+msgid "Length in minutes (fitted to the pictures when empty)"
+msgstr "Längd i minuter (anpassas till bilderna om tomt)"
 
 #: pages/film_length.py:89
 #, python-brace-format
@@ -873,11 +1010,15 @@ msgstr "Svarta kanter"
 msgid "Light"
 msgstr "Ljust"
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:111
+msgid "Live"
+msgstr "Live"
+
 #: pages/step1_presets.py:248
 msgid "Loading albums..."
 msgstr "Läser in album..."
 
-#: pages/memory_run.py:63
+#: pages/memory_run.py:66
 msgid "Loading thumbnails"
 msgstr "Läser in miniatyrer"
 
@@ -889,7 +1030,7 @@ msgstr "Läser in videor..."
 msgid "Looking through the library…"
 msgstr "Går igenom biblioteket…"
 
-#: web/routes/+layout.svelte:32 web/routes/+layout.svelte:43
+#: web/routes/+layout.svelte:31 web/routes/+layout.svelte:42
 msgid "Main navigation"
 msgstr "Huvudnavigering"
 
@@ -912,7 +1053,7 @@ msgstr "Karta: {title_suggestion_map_mode}"
 msgid "Media Eligible"
 msgstr "Lämpliga medier"
 
-#: app.py:76 app.py:209 web/routes/+layout.svelte:15
+#: app.py:76 app.py:209
 msgid "Media pool"
 msgstr "Medier"
 
@@ -928,7 +1069,7 @@ msgstr "De minnen som automatiseringen skulle skapa härnäst, med samma regler 
 msgid "Memory"
 msgstr "Minne"
 
-#: pages/memory_brief.py:134
+#: pages/memory_brief.py:134 web/routes/create/+page.svelte:138
 msgid "Memory type"
 msgstr "Typ av minne"
 
@@ -944,7 +1085,7 @@ msgstr "Modellens finputsning"
 msgid "Model suggestion"
 msgstr "Modellens förslag"
 
-#: pages/step1_presets.py:214
+#: pages/step1_presets.py:214 web/routes/create/+page.svelte:150
 msgid "Month"
 msgstr "Månad"
 
@@ -969,7 +1110,7 @@ msgstr "Senaste året"
 msgid "Multi-Person"
 msgstr "Flera personer"
 
-#: pages/step3_options.py:361 pages/step3_options.py:417
+#: pages/step3_options.py:361 pages/step3_options.py:417 web/routes/runs/[run_id]/+page.svelte:294
 msgid "Music"
 msgstr "Musik"
 
@@ -994,9 +1135,13 @@ msgstr "Musikvolym:"
 msgid "Narrow this memory to these people, the same as --person on the CLI."
 msgstr "Begränsa minnet till dessa personer, som --person på kommandoraden."
 
-#: pages/picture_decisions.py:136
+#: pages/picture_decisions.py:136 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Never use"
 msgstr "Använd aldrig"
+
+#: web/routes/create/+page.svelte:125 web/routes/create/+page.svelte:129
+msgid "New memory"
+msgstr "Nytt minne"
 
 #: pages/settings_people.py:285
 msgid "Next"
@@ -1014,7 +1159,7 @@ msgstr "Nästa: förhandsvisning och export"
 msgid "No albums with any assets in them yet."
 msgstr "Det finns ännu inga album med medier."
 
-#: web/routes/runs/[run_id]/+page.svelte:234
+#: web/routes/runs/[run_id]/+page.svelte:318
 msgid "No child output was retained for this run."
 msgstr "Inget tillhörande resultat sparades för den här körningen."
 
@@ -1030,6 +1175,10 @@ msgstr "Inga lämpliga förslag just nu."
 msgid "No model read this cut: the rules chose every picture."
 msgstr "Ingen modell läste det här klippet: reglerna valde varje bild."
 
+#: web/routes/create/+page.svelte:183
+msgid "No named people in Immich yet."
+msgstr "Inga namngivna personer i Immich ännu."
+
 #: pages/memory_storyboard.py:154 web/lib/ShotInspector.svelte:151
 msgid "No outcome recorded."
 msgstr "Inget resultat sparat."
@@ -1042,7 +1191,7 @@ msgstr ""
 "Ingen personfil ännu. Läs igenom biblioteket igen: antal och månadskurvor läses för varje "
 "namngiven person, utan bildanalys."
 
-#: pages/memory_storyboard.py:140 web/routes/runs/[run_id]/+page.svelte:165
+#: pages/memory_storyboard.py:140 web/routes/runs/[run_id]/+page.svelte:208
 msgid "No pictures match this filter."
 msgstr "Inga bilder matchar det här filtret."
 
@@ -1054,9 +1203,13 @@ msgstr "Ingen motivering sparad för den här bilden."
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "Inga körningar matchar den här vyn. Skapa ett minne från Minne eller Förslag."
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:216
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:259
 msgid "No saved cut is available for this run."
 msgstr "Ingen sparad klippning finns för den här körningen."
+
+#: web/routes/suggestions/+page.svelte:99
+msgid "No suggestions right now."
+msgstr "Inga förslag just nu."
 
 #: pages/suggestions.py:212
 msgid "No suggestions were rejected by variety or failure backoff."
@@ -1074,19 +1227,27 @@ msgstr "Inga videoklipp i klippningen; inget att trimma."
 msgid "No videos found for the selected criteria."
 msgstr "Inga videor hittades för valda kriterier."
 
-#: pages/settings_people.py:478
+#: pages/settings_people.py:478 web/routes/settings/people/+page.svelte:141
 msgid "No, they are not"
 msgstr "Nej, det stämmer inte"
+
+#: web/routes/settings/people/+page.svelte:107
+msgid "Nobody yet. Rescan the library to read who is in it."
+msgstr "Ingen ännu. Läs igenom biblioteket igen för att se vem som finns i det."
 
 #: pages/step3_options.py:304 pages/step3_options.py:365
 msgid "None"
 msgstr "Ingen"
 
-#: pages/settings_people.py:389
+#: web/routes/create/+page.svelte:155
+msgid "North"
+msgstr "Norr"
+
+#: pages/settings_people.py:389 web/routes/settings/people/+page.svelte:127
 msgid "Notes"
 msgstr "Anteckningar"
 
-#: pages/settings_people.py:409
+#: pages/settings_people.py:409 web/routes/settings/people/+page.svelte:148
 msgid "Nothing recorded yet."
 msgstr "Inget registrerat ännu."
 
@@ -1118,7 +1279,7 @@ msgstr "En period kring högtiden varje år, från det senaste till det äldsta.
 msgid "Only with (optional)"
 msgstr "Bara med (valfritt)"
 
-#: web/routes/runs/[run_id]/+page.svelte:209
+#: web/routes/runs/[run_id]/+page.svelte:252
 msgid "Open"
 msgstr "Öppna"
 
@@ -1126,9 +1287,13 @@ msgstr "Öppna"
 msgid "Open it in Immich first if you haven't looked at it yourself."
 msgstr "Öppna bilden i Immich först om du inte har tittat på den själv."
 
-#: pages/suggestions.py:146
+#: pages/suggestions.py:146 web/routes/suggestions/+page.svelte:73
 msgid "Open run"
 msgstr "Öppna körning"
+
+#: web/routes/runs/[run_id]/+page.svelte:271
+msgid "Open the film run"
+msgstr "Öppna filmkörningen"
 
 #: pages/memory_brief.py:180
 msgid "Open the media pool"
@@ -1139,11 +1304,11 @@ msgstr "Öppna medierna"
 msgid "Open {name} in Immich"
 msgstr "Öppna {name} i Immich"
 
-#: pages/memory_storyboard.py:132 web/routes/runs/[run_id]/+page.svelte:131
+#: pages/memory_storyboard.py:132 web/routes/runs/[run_id]/+page.svelte:172
 msgid "Order and timecodes from the saved cut."
 msgstr "Ordning och tidskoder från den sparade klippningen."
 
-#: pages/step3_options.py:278
+#: pages/step3_options.py:278 web/routes/runs/[run_id]/+page.svelte:282
 msgid "Orientation"
 msgstr "Orientering"
 
@@ -1185,7 +1350,8 @@ msgstr "Klarade {stages}"
 msgid "Password"
 msgstr "Lösenord"
 
-#: app.py:136 app.py:288
+#: app.py:136 app.py:288 web/routes/create/+page.svelte:176 web/routes/settings/+page.svelte:50
+#: web/routes/settings/people/+page.svelte:74 web/routes/settings/people/+page.svelte:80
 msgid "People"
 msgstr "Personer"
 
@@ -1259,7 +1425,16 @@ msgstr "Bildgranskning"
 msgid "Pictures & video"
 msgstr "Foton och videor"
 
-#: web/routes/runs/[run_id]/+page.svelte:110
+#: web/lib/JobPanel.svelte:58
+msgid "Pictures just read"
+msgstr "Nyss lästa bilder"
+
+#: web/routes/create/+page.svelte:187
+msgid "Pictures with"
+msgstr "Bilder med"
+
+#: web/routes/runs/[run_id]/+page.svelte:145 web/routes/settings/people/+page.svelte:118
+#: web/routes/suggestions/+page.svelte:90
 #, python-brace-format
 msgid "Pictures: {count}"
 msgstr "Bilder: {count}"
@@ -1277,17 +1452,28 @@ msgstr "Ange både URL och API-nyckel"
 msgid "Please select at least one clip"
 msgstr "Välj minst ett klipp"
 
-#: pages/memory_brief.py:172
+#: pages/memory_brief.py:172 web/routes/runs/[run_id]/+page.svelte:173
+#: web/routes/runs/[run_id]/pool/+page.svelte:88 web/routes/runs/[run_id]/pool/+page.svelte:95
+#: web/routes/runs/[run_id]/pool/+page.svelte:104
 msgid "Pool"
 msgstr "Tillgängliga medier"
+
+#: web/routes/runs/[run_id]/+page.svelte:285
+msgid "Portrait"
+msgstr "Stående"
 
 #: pages/step3_options.py:274
 msgid "Portrait (9:16)"
 msgstr "Stående (9:16)"
 
-#: pages/memory_run.py:68
+#: pages/memory_run.py:71
 msgid "Preparing the cut"
 msgstr "Förbereder klippningen"
+
+#: web/routes/settings/+page.svelte:62
+#, python-brace-format
+msgid "Preset: {preset}"
+msgstr "Förinställning: {preset}"
 
 #: pages/clip_review.py:164
 msgid "Preview"
@@ -1305,11 +1491,15 @@ msgstr "Förhandsvisningscache"
 msgid "Previous"
 msgstr "Föregående"
 
+#: web/lib/JobPanel.svelte:41
+msgid "Progress"
+msgstr "Förlopp"
+
 #: web/lib/ShotInspector.svelte:50
 msgid "Put it back"
 msgstr "Lägg tillbaka"
 
-#: pages/memory_run.py:467
+#: pages/memory_run.py:418
 msgid "Re-load media to export"
 msgstr "Läs in medier igen för export"
 
@@ -1317,7 +1507,7 @@ msgstr "Läs in medier igen för export"
 msgid "Reading the library…"
 msgstr "Läser biblioteket…"
 
-#: pages/memory_run.py:64
+#: pages/memory_run.py:67
 msgid "Reading the pictures"
 msgstr "Läser bilderna"
 
@@ -1325,7 +1515,7 @@ msgstr "Läser bilderna"
 msgid "Recorded alternative"
 msgstr "Sparat alternativ"
 
-#: pages/suggestions.py:95
+#: pages/suggestions.py:95 web/routes/suggestions/+page.svelte:64
 msgid "Refresh suggestions"
 msgstr "Uppdatera förslag"
 
@@ -1337,6 +1527,10 @@ msgstr "Generera igen"
 msgid "Regenerate Music"
 msgstr "Generera musik igen"
 
+#: web/routes/settings/people/+page.svelte:155
+msgid "Relationship"
+msgstr "Relation"
+
 #: pages/settings_people.py:541
 msgid "Relationship confirmed"
 msgstr "Relation bekräftad"
@@ -1345,11 +1539,11 @@ msgstr "Relation bekräftad"
 msgid "Relationship removed"
 msgstr "Relation borttagen"
 
-#: pages/settings_people.py:400
+#: pages/settings_people.py:400 web/routes/settings/people/+page.svelte:133
 msgid "Relationships"
 msgstr "Relationer"
 
-#: pages/settings_config.py:174
+#: pages/settings_config.py:151 web/routes/settings/+page.svelte:56
 msgid "Reload from Disk"
 msgstr "Läs om från disk"
 
@@ -1361,19 +1555,24 @@ msgstr "Läs in medier igen"
 msgid "Remove from this cut"
 msgstr "Ta bort ur det här klippet"
 
-#: pages/settings_people.py:442
+#: pages/settings_people.py:442 web/routes/settings/people/+page.svelte:144
 msgid "Remove this relationship"
 msgstr "Ta bort den här relationen"
 
-#: web/routes/runs/[run_id]/+page.svelte:148
+#: web/routes/runs/[run_id]/+page.svelte:191
 msgid "Removed"
 msgstr "Borttagen"
+
+#: web/routes/runs/[run_id]/+page.svelte:263 web/routes/runs/[run_id]/+page.svelte:264
+#: web/routes/runs/[run_id]/+page.svelte:297
+msgid "Render"
+msgstr "Rendera"
 
 #: pages/memory_storyboard.py:150 web/lib/labels.ts:29
 msgid "Replaced a picture the model doubted."
 msgstr "Ersatte en bild som modellen tvivlade på."
 
-#: pages/settings_people.py:165
+#: pages/settings_people.py:165 web/routes/settings/people/+page.svelte:83
 msgid "Rescan the library"
 msgstr "Läs igenom biblioteket igen"
 
@@ -1389,16 +1588,16 @@ msgstr "Resultat"
 msgid "Review the pool"
 msgstr "Granska medierna"
 
-#: web/routes/runs/[run_id]/+page.svelte:206
+#: web/routes/runs/[run_id]/+page.svelte:249 web/routes/runs/[run_id]/+page.svelte:279
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "Revision {number}"
 
-#: web/routes/runs/[run_id]/+page.svelte:202
+#: web/routes/runs/[run_id]/+page.svelte:245
 msgid "Revisions"
 msgstr "Revisioner"
 
-#: pages/settings_people.py:378
+#: pages/settings_people.py:378 web/routes/settings/people/+page.svelte:123
 msgid "Role (suggestions; type your own)"
 msgstr "Roll (förslag eller egen text)"
 
@@ -1406,11 +1605,11 @@ msgstr "Roll (förslag eller egen text)"
 msgid "Rotation"
 msgstr "Rotation"
 
-#: web/routes/runs/[run_id]/+page.svelte:220
+#: web/routes/runs/[run_id]/+page.svelte:304
 msgid "Run details"
 msgstr "Detaljer om körningen"
 
-#: pages/suggestions.py:203
+#: pages/suggestions.py:203 web/routes/suggestions/+page.svelte:95
 msgid "Run this suggestion"
 msgstr "Kör det här förslaget"
 
@@ -1418,13 +1617,13 @@ msgstr "Kör det här förslaget"
 msgid "Running a suggestion creates a video on the server. "
 msgstr "Att köra ett förslag skapar en video på servern. "
 
-#: pages/suggestions.py:137
+#: pages/suggestions.py:137 web/routes/suggestions/+page.svelte:70
 #, python-brace-format
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "Körs på servern: {phase}. Fortsätter om du lämnar sidan."
 
 #: app.py:75 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
-#: web/routes/runs/+page.svelte:80 web/routes/runs/[run_id]/+page.svelte:94
+#: web/routes/runs/+page.svelte:80 web/routes/runs/[run_id]/+page.svelte:129
 msgid "Runs"
 msgstr "Körningar"
 
@@ -1432,7 +1631,7 @@ msgstr "Körningar"
 msgid "Save Config"
 msgstr "Spara konfiguration"
 
-#: web/routes/runs/[run_id]/+page.svelte:193
+#: web/routes/runs/[run_id]/+page.svelte:236
 msgid "Save revision"
 msgstr "Spara revision"
 
@@ -1440,12 +1639,12 @@ msgstr "Spara revision"
 msgid "Saved - type a new key to replace it"
 msgstr "Sparad: skriv en ny nyckel för att ersätta"
 
-#: web/routes/runs/[run_id]/+page.svelte:196
+#: web/routes/runs/[run_id]/+page.svelte:239
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "Sparad som revision {number}."
 
-#: pages/step4_export.py:34 web/routes/runs/[run_id]/+page.svelte:221
+#: pages/step4_export.py:34 web/routes/runs/[run_id]/+page.svelte:305
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Sparad till: {output_path}"
@@ -1468,6 +1667,7 @@ msgid "Screen time (seconds)"
 msgstr "Tid i bild (sekunder)"
 
 #: pages/memory_brief.py:32 pages/step1_presets.py:165 web/lib/labels.ts:6
+#: web/routes/create/+page.svelte:152
 msgid "Season"
 msgstr "Årstid"
 
@@ -1508,11 +1708,12 @@ msgstr "Använd första 5 s för alla"
 msgid "Set all to middle 5s"
 msgstr "Använd mittersta 5 s för alla"
 
-#: app.py:77 web/routes/+layout.svelte:16
+#: app.py:77 web/routes/+layout.svelte:15 web/routes/settings/+page.svelte:40
+#: web/routes/settings/+page.svelte:44 web/routes/settings/people/+page.svelte:79
 msgid "Settings"
 msgstr "Inställningar"
 
-#: pages/memory_brief.py:74
+#: pages/memory_brief.py:74 web/routes/create/+page.svelte:201
 msgid "Shareable"
 msgstr "Delbar"
 
@@ -1520,9 +1721,13 @@ msgstr "Delbar"
 msgid "Sharing"
 msgstr "Delning"
 
-#: pages/memory_storyboard.py:133 web/routes/runs/[run_id]/+page.svelte:124
+#: pages/memory_storyboard.py:133 web/routes/runs/[run_id]/+page.svelte:164
 msgid "Show"
 msgstr "Visa"
+
+#: web/routes/settings/people/+page.svelte:171
+msgid "Show more"
+msgstr "Visa mer"
 
 #: pages/login.py:80
 msgid "Sign in"
@@ -1535,6 +1740,14 @@ msgstr "Logga ut"
 #: pages/step3_options.py:301
 msgid "Smart (mix of fades & cuts)"
 msgstr "Smart (övertoningar och klipp)"
+
+#: web/routes/create/+page.svelte:155
+msgid "South"
+msgstr "Söder"
+
+#: web/routes/runs/[run_id]/+page.svelte:285
+msgid "Square"
+msgstr "Kvadrat"
 
 #: pages/step3_options.py:275
 msgid "Square (1:1)"
@@ -1556,6 +1769,10 @@ msgstr "Börja här"
 msgid "Start over"
 msgstr "Börja om"
 
+#: web/lib/JobPanel.svelte:44
+msgid "Starting"
+msgstr "Startar"
+
 #: pages/step1_tabs.py:128
 msgid "Starting from"
 msgstr "Från"
@@ -1576,6 +1793,10 @@ msgstr "Stillbild"
 msgid "Stills"
 msgstr "Stillbilder"
 
+#: web/lib/JobPanel.svelte:46
+msgid "Stopped."
+msgstr "Avbruten."
+
 #: pages/memory.py:130
 msgid "Story"
 msgstr "Berättelse"
@@ -1588,13 +1809,18 @@ msgstr "Berättelsens vikt"
 msgid "Storyboard"
 msgstr "Bildmanus"
 
-#: pages/_step3_music_preview.py:212
+#: pages/_step3_music_preview.py:212 web/routes/runs/[run_id]/+page.svelte:291
 msgid "Subtitle"
 msgstr "Undertitel"
 
-#: app.py:74 app.py:228 web/routes/+layout.svelte:13
+#: app.py:74 app.py:228 web/routes/+layout.svelte:13 web/routes/suggestions/+page.svelte:56
+#: web/routes/suggestions/+page.svelte:61
 msgid "Suggestions"
 msgstr "Förslag"
+
+#: web/routes/suggestions/+page.svelte:78
+msgid "Suggestions could not be loaded."
+msgstr "Förslagen kunde inte läsas in."
 
 #: pages/step3_options.py:399 pages/step4_export.py:146
 msgid "Summary"
@@ -1604,7 +1830,7 @@ msgstr "Sammanfattning"
 msgid "Surprise me"
 msgstr "Överraska mig"
 
-#: web/routes/runs/[run_id]/+page.svelte:150
+#: web/routes/runs/[run_id]/+page.svelte:193
 msgid "Swapped"
 msgstr "Utbytt"
 
@@ -1636,6 +1862,18 @@ msgstr "Det gick inte att spara. Försök igen eller använd `pictures` på komm
 msgid "That file is not an MP3, M4A or WAV"
 msgstr "Filen är inte MP3, M4A eller WAV"
 
+#: web/routes/runs/[run_id]/+page.svelte:278
+msgid "The cut as chosen"
+msgstr "Den valda klippningen"
+
+#: web/routes/create/+page.svelte:114
+msgid "The cut could not start."
+msgstr "Klippningen kunde inte startas."
+
+#: web/lib/JobPanel.svelte:45
+msgid "The cut is ready."
+msgstr "Klippningen är klar."
+
 #: pages/memory.py:125 pages/memory_story.py:96 pages/memory_storyboard.py:47
 msgid "The editor left no thesis for this cut."
 msgstr "Klippningen lämnade ingen huvudidé."
@@ -1643,6 +1881,14 @@ msgstr "Klippningen lämnade ingen huvudidé."
 #: pages/memory_brief.py:60
 msgid "The editor may play a Live Photo's motion when it earns it"
 msgstr "Klippningen får använda rörelsen i en Live Photo när den tillför något"
+
+#: web/routes/runs/[run_id]/+page.svelte:153
+msgid "The film"
+msgstr "Filmen"
+
+#: web/lib/JobPanel.svelte:45
+msgid "The film is ready."
+msgstr "Filmen är klar."
 
 #: pages/_step4_upload.py:74
 msgid "The generated video will be uploaded to your Immich instance and added to the specified album."
@@ -1687,6 +1933,14 @@ msgstr ""
 msgid "The model had nothing to say about this picture."
 msgstr "Modellen hade inget att säga om den här bilden."
 
+#: web/routes/settings/people/+page.svelte:81
+msgid ""
+"The people file (`people.yaml`): who is close, their roles, and how they relate. `people "
+"scan` writes the guesses; your answers stay across scans."
+msgstr ""
+"Personfilen (`people.yaml`): vem som står nära, deras roller och hur de är släkt eller "
+"bekanta. `people scan` skriver gissningarna; dina svar sparas mellan skanningar."
+
 #: pages/memory_storyboard.py:148 web/lib/ShotInspector.svelte:140
 msgid "The picture it replaced"
 msgstr "Bilden den ersatte"
@@ -1696,7 +1950,15 @@ msgstr "Bilden den ersatte"
 msgid "The pool{value}"
 msgstr "Medierna{value}"
 
-#: web/routes/runs/[run_id]/+page.svelte:50
+#: web/lib/labels.ts:45
+msgid "The previous automatic memory used this category."
+msgstr "Det föregående automatiska minnet använde den här kategorin."
+
+#: web/routes/runs/[run_id]/+page.svelte:80
+msgid "The render could not start."
+msgstr "Renderingen kunde inte startas."
+
+#: web/routes/runs/[run_id]/+page.svelte:52
 msgid "The revision could not be saved."
 msgstr "Revisionen kunde inte sparas."
 
@@ -1721,9 +1983,21 @@ msgstr "Berättelsen"
 msgid "The type decides the length; turn off to set an exact target"
 msgstr "Typen bestämmer längden; stäng av för att ange en exakt mållängd"
 
+#: web/lib/labels.ts:48
+msgid "These people appear in the last two people memories."
+msgstr "De här personerna förekommer i de två senaste personminnena."
+
+#: web/lib/labels.ts:46
+msgid "This category already appears twice in the last six memories."
+msgstr "Den här kategorin förekommer redan två gånger i de senaste sex minnena."
+
 #: pages/memory.py:182
 msgid "This cut finished while the page was away. Re-load its media to export it."
 msgstr "Klippningen blev klar medan sidan var stängd. Läs in medierna igen för att exportera."
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:100
+msgid "This run kept no record of its pool. Cut again to see one."
+msgstr "Den här körningen sparade ingen uppteckning av sina medier. Klipp igen för att se en."
 
 #: pages/step1_cache.py:167
 msgid "Thumbnail cache"
@@ -1742,9 +2016,17 @@ msgstr "Förfluten tid"
 msgid "Title"
 msgstr "Titel"
 
+#: web/routes/runs/[run_id]/+page.svelte:288
+msgid "Title (decided as generate decides when empty)"
+msgstr "Titel (bestäms som `generate` gör om tomt)"
+
 #: pages/memory_storyboard.py:53
 msgid "Titles and transitions make up the rest of the film."
 msgstr "Titlar och övergångar fyller resten av filmen."
+
+#: web/routes/create/+page.svelte:160
+msgid "To"
+msgstr "Till"
 
 #: pages/step1_people.py:32
 msgid "Together"
@@ -1791,6 +2073,10 @@ msgstr "Resa"
 msgid "Trip detection failed: {exc}"
 msgstr "Resesökningen misslyckades: {exc}"
 
+#: web/routes/create/+page.svelte:162
+msgid "Trip number (the biggest when empty)"
+msgstr "Resenummer (den största om tomt)"
+
 #: pages/_step3_music_preview.py:164
 #, python-brace-format
 msgid "Trip: {title_suggestion_trip_type}"
@@ -1804,7 +2090,8 @@ msgstr "Försök igen"
 msgid "Turn your photo library into video memories"
 msgstr "Gör videominnen av ditt fotobibliotek"
 
-#: pages/picture_decisions.py:138 web/routes/runs/[run_id]/+page.svelte:190
+#: pages/picture_decisions.py:138 web/routes/runs/[run_id]/+page.svelte:233
+#: web/routes/runs/[run_id]/pool/+page.svelte:118
 msgid "Undo"
 msgstr "Ångra"
 
@@ -1819,6 +2106,10 @@ msgstr "Ladda upp efter generering"
 #: pages/step3_options.py:365
 msgid "Upload file"
 msgstr "Ladda upp fil"
+
+#: web/routes/runs/[run_id]/+page.svelte:295
+msgid "Upload the film to Immich"
+msgstr "Ladda upp filmen till Immich"
 
 #: pages/_step4_upload.py:116
 #, python-brace-format
@@ -1864,7 +2155,7 @@ msgid "Using {name}'s birthday: {value}"
 msgstr "Använder {name}s födelsedag: {value}"
 
 #: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:76
-#: web/routes/runs/[run_id]/+page.svelte:154
+#: web/routes/runs/[run_id]/+page.svelte:197 web/routes/runs/[run_id]/pool/+page.svelte:111
 msgid "Video"
 msgstr "Video"
 
@@ -1880,14 +2171,42 @@ msgstr "Videon har genererats!"
 msgid "Videos"
 msgstr "Videor"
 
-#: web/routes/runs/[run_id]/+page.svelte:111
+#: web/routes/runs/[run_id]/+page.svelte:146
 #, python-brace-format
 msgid "Videos: {count}"
 msgstr "Videor: {count}"
 
+#: web/routes/suggestions/+page.svelte:62
+msgid ""
+"What automation would make next, the same list `auto suggest` prints. Run one as `auto run` "
+"would, or check it first without rendering."
+msgstr ""
+"Vad automatiseringen skulle skapa härnäst, samma lista som `auto suggest` visar. Kör en som "
+"`auto run` skulle göra, eller kontrollera den först utan att rendera."
+
 #: pages/memory_brief.py:204
 msgid "What is it about"
 msgstr "Vad handlar det om"
+
+#: web/routes/settings/+page.svelte:45
+msgid ""
+"What this server runs with. The file is the source; environment overrides apply; secrets are "
+"masked."
+msgstr ""
+"Vad den här servern körs med. Filen är källan; miljövariabler har företräde; hemligheter är "
+"dolda."
+
+#: web/routes/runs/[run_id]/+page.svelte:276
+msgid "What to render"
+msgstr "Vad som ska renderas"
+
+#: web/routes/settings/+page.svelte:50
+msgid "Who is who, their roles and relationships."
+msgstr "Vem som är vem, deras roller och relationer."
+
+#: web/routes/create/+page.svelte:198
+msgid "Who may see it"
+msgstr "Vem som får se den"
 
 #: pages/settings_people.py:134
 msgid ""
@@ -1902,7 +2221,7 @@ msgstr ""
 msgid "Who will watch it"
 msgstr "Vem ska titta"
 
-#: pages/suggestions.py:209
+#: pages/suggestions.py:209 web/routes/suggestions/+page.svelte:104
 msgid "Why other suggestions were skipped"
 msgstr "Varför andra förslag hoppades över"
 
@@ -1919,9 +2238,13 @@ msgstr "Varför den här bilden"
 msgid "Will be saved to: {value}"
 msgstr "Sparas till: {value}"
 
+#: web/routes/settings/people/+page.svelte:160 web/routes/settings/people/+page.svelte:162
+msgid "With"
+msgstr "Med"
+
 #: pages/step1_config.py:261 pages/step1_people.py:250 pages/step1_people.py:312
 #: pages/step1_presets.py:133 pages/step1_presets.py:154 pages/step1_presets.py:203
-#: pages/step1_presets.py:443 pages/step1_tabs.py:67
+#: pages/step1_presets.py:443 pages/step1_tabs.py:67 web/routes/create/+page.svelte:149
 msgid "Year"
 msgstr "År"
 
@@ -1937,17 +2260,29 @@ msgstr "Typ av år"
 msgid "Years"
 msgstr "År"
 
+#: web/routes/create/+page.svelte:158
+msgid "Years back (all when empty)"
+msgstr "År tillbaka (alla om tomt)"
+
 #: pages/step1_presets.py:109
 msgid "Years to span"
 msgstr "Antal år"
 
-#: pages/settings_people.py:475
+#: pages/settings_people.py:475 web/routes/settings/people/+page.svelte:139
 msgid "Yes, that is right"
 msgstr "Ja, det stämmer"
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:82
+msgid "You cleared its hold."
+msgstr "Du tog bort spärren."
 
 #: pages/login.py:92
 msgid "You will be redirected to your identity provider"
 msgstr "Du skickas vidare till din identitetsleverantör"
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:80
+msgid "You'll never use this picture."
+msgstr "Den här bilden kommer aldrig att användas."
 
 #: pages/picture_decisions.py:114
 msgid "Your decision is gone; the app's own holds apply again."
@@ -1961,10 +2296,18 @@ msgstr "Din minnesvideo är klar!"
 msgid "about 10 minutes per year of range, shorter if the media cannot fill it"
 msgstr "ungefär 10 minuter per år i perioden, kortare om medierna inte räcker"
 
-#: web/routes/runs/[run_id]/+page.svelte:113
+#: web/routes/runs/[run_id]/+page.svelte:148
 #, python-brace-format
 msgid "about {film} of film"
 msgstr "ungefär {film} film"
+
+#: web/routes/create/+page.svelte:188
+msgid "all of them together"
+msgstr "alla tillsammans"
+
+#: web/routes/create/+page.svelte:188
+msgid "any of them"
+msgstr "någon av dem"
 
 #: pages/settings_people.py:433
 msgid "confirmed"
@@ -1998,16 +2341,20 @@ msgstr "norr"
 msgid "south"
 msgstr "söder"
 
+#: web/routes/suggestions/+page.svelte:70
+msgid "starting"
+msgstr "startar"
+
 #: pages/memory_duration.py:24
 msgid "the type's default length, shorter if the media cannot fill it"
 msgstr "typens standardlängd, kortare om medierna inte räcker"
 
-#: web/routes/runs/[run_id]/+page.svelte:112
+#: web/routes/runs/[run_id]/+page.svelte:147
 #, python-brace-format
 msgid "{content} of pictures and video"
 msgstr "{content} bilder och video"
 
-#: web/routes/runs/[run_id]/+page.svelte:185
+#: web/routes/runs/[run_id]/+page.svelte:228
 #, python-brace-format
 msgid "{content} of {budget} the titles leave"
 msgstr "{content} av {budget} som titlarna lämnar"
@@ -2031,6 +2378,11 @@ msgstr "{date_range_start} till {date_range_end} · {asset_count} bilder · {val
 #, python-brace-format
 msgid "{description} ({days} days)"
 msgstr "{description} ({days} dagar)"
+
+#: web/lib/JobPanel.svelte:55
+#, python-brace-format
+msgid "{done} of {total}"
+msgstr "{done} av {total}"
 
 #: pages/settings_people.py:160
 #, python-brace-format
@@ -2062,7 +2414,7 @@ msgstr "{seconds:g} s"
 msgid "{seconds} s on screen"
 msgstr "{seconds} s i bild"
 
-#: pages/settings_config.py:147
+#: pages/settings_config.py:124
 #, python-brace-format
 msgid "{title}  ({n_keys} keys)"
 msgstr "{title} ({n_keys} nycklar)"

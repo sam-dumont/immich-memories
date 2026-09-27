@@ -6,7 +6,7 @@
   import { t } from './i18n.svelte';
   import { clock, seatLabel } from './labels';
 
-  let { shot, modelPolish, editor }: { shot: CutShot; modelPolish: boolean; editor: CutEditor } = $props();
+  let { shot, modelPolish, editor, runId }: { shot: CutShot; modelPolish: boolean; editor: CutEditor; runId: string } = $props();
 
   let player = $state<HTMLVideoElement>();
   let comparing = $state<string | null>(null);
@@ -124,7 +124,7 @@
           <Button size="small" variant="outline" leadingIcon={mdiSwapHorizontal} class="w-fit" onclick={() => editor.swap(shot, compared.asset_id)}>{t('Use this picture instead')}</Button>
         {/if}
       {/if}
-      <a class="w-fit text-sm text-primary hover:underline" href="/step2">{t('Browse the whole pool')}</a>
+      <a class="w-fit text-sm text-primary hover:underline" href={`/app/runs/${encodeURIComponent(runId)}/pool`}>{t('Browse the whole pool')}</a>
     </section>
   {/if}
 

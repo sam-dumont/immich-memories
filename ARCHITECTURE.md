@@ -646,6 +646,11 @@ src/immich_memories/
 │   ├── cut.py                  # /api/v1/runs/{id}/cut (storyboard + trace + polish + siblings) and /revisions
 │   ├── media.py                # /api/v1/assets/{id}/thumbnail (shared cache) and /video (Range-streamed)
 │   ├── i18n.py                 # GET /api/v1/i18n: the browser's ui.po as JSON
+│   ├── brief.py                # CutBrief: generate's flags 1:1 → argv, and the command shown to copy
+│   ├── jobs.py                 # JobRunner: the CLI as a child process; records/logs under cache/web-jobs
+│   ├── job_routes.py           # POST /cuts (generate --no-render), /runs/{id}/renders (runs render),
+│   │                           #   /jobs/{id}[/events|/cancel|/output] (SSE progress), /runs/{id}/film
+│   ├── library.py              # GET /people, /albums from Immich for the brief's pickers
 │   ├── schemas.py              # Pydantic response models = the contract (openapi.json)
 │   ├── dependencies.py         # Config, thumbnail cache, Immich fetch; overridable in tests
 │   ├── openapi.json            # Generated (make web-api); web/src/lib/api-types.ts comes from it
@@ -775,8 +780,10 @@ src/immich_memories/
 ├── operations/                 # Public lifecycle contract + read-only ops reports
 │   ├── auto_output.py           # Private complete child transcripts, addressed by automation attempt
 │   ├── call_families.py        # family_of()/calls_by_family(): model calls grouped by stage family
-│   ├── cut_progress.py         # Where a run is, as one record the page and the terminal both read
-│   ├── run_index.py            # A run id resolved to its attempt directory, for both surfaces
+│   ├── cut_progress.py         # Where a run is, as one record the page and the terminal both read;
+│   │                           #   read_latest_attempt/live_progress_of: any process reads a cut's progress
+│   ├── run_index.py            # A run id resolved to its attempt directory, for both surfaces;
+│   │                           #   record_cut_run: `generate --no-render` keeps its cut as a run
 │   ├── candidate_fates.py       # Saved pool outcomes + decision-log reader shared with runs why
 │   ├── cut_review.py           # The model polish record per shot (swaps, protections, refused offers)
 │   ├── cut_revisions.py        # Owner edits to a saved cut as numbered revisions, checked like the renderer

@@ -81,3 +81,35 @@ def test_runs_render_without_a_revision_renders_the_cut_and_names_a_missing_one(
     missing = _invoke(config, ["runs", "render", RUN, "--revision", "4"], rendered)
     assert missing.exit_code != 0
     assert "no revision 4" in missing.output
+
+
+def test_runs_render_writes_the_engine_s_progress_where_a_watcher_can_read_it(tmp_path):
+    import json
+
+    config = _config(tmp_path)
+    save_run(config, RUN)
+    progress_file = tmp_path / "progress.json"
+    seen: list[dict] = []
+
+    def render(**kwargs):
+        kwargs["progress_callback"]("assembly", 0.4, "Joining clips")
+        seen.append(json.loads(progress_file.read_text()))
+        return Path("/films/june.mp4")
+
+    with (
+        patch("immich_memories.cli.init_config_dir"),
+        patch("immich_memories.cli.get_config", return_value=config),
+        patch("immich_memories.config.get_config", return_value=config),
+        # WHY: render_saved_cut writes the film; here it reports progress like the engine does.
+        patch("immich_memories.cli.runs_render.render_saved_cut", render),
+    ):
+        result = CliRunner().invoke(
+            main,
+            ["runs", "render", RUN, "--progress-file", str(progress_file)],
+            catch_exceptions=False,
+        )
+
+    assert result.exit_code == 0, result.output
+    assert seen[0]["phase"] == "assembly" and seen[0]["fraction"] == 0.4
+    assert seen[0]["message"] == "Joining clips"
+    assert json.loads(progress_file.read_text())["done"] is True

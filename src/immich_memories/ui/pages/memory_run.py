@@ -22,8 +22,12 @@ from nicegui import background_tasks, run, ui
 
 from immich_memories.analysis.editorial_planner import EditorialSelection
 from immich_memories.api.models import AssetType, VideoClipInfo
-from immich_memories.operations.cut_progress import StageUpdate, read_stage_progress
-from immich_memories.operations.editorial_attempt import read_editorial_attempt
+from immich_memories.operations.cut_progress import (
+    StageUpdate,
+    live_progress_of,
+    read_latest_attempt,
+    recent_pictures_of,
+)
 from immich_memories.operations.phases import OperationalPhase
 from immich_memories.operations.storyboard import MOTION_KINDS, PLAN_FILE
 from immich_memories.security import sanitize_error_message
@@ -47,7 +51,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-LATEST_ATTEMPT = "latest-attempt.private.json"
 RENDER_PROJECTION = "render-projection.private.json"
 
 # The phases a cut passes, in order. Render, music and delivery belong to Export.
@@ -116,61 +119,9 @@ def attempt_root(state: AppState) -> Path | None:
     return _cache_path(state) / "editorial-runs" / state.active_cut_key
 
 
-def _started_before(record: Mapping[str, Any], since: datetime | None) -> bool:
-    if since is None:
-        return False
-    try:
-        started = datetime.fromisoformat(str(record.get("started_at") or ""))
-    except ValueError:
-        return False
-    if started.tzinfo is None:
-        started = started.replace(tzinfo=UTC)
-    return started < since
-
-
-def read_latest_attempt(root: Path | None, since: datetime | None = None) -> dict[str, Any] | None:
-    """The newest attempt under a cut key, its liveness read from the lease.
-
-    An attempt started before `since` belongs to an earlier cut of the same
-    brief and reads as no attempt at all.
-    """
-    if root is None:
-        return None
-    pointer = root / LATEST_ATTEMPT
-    if not pointer.is_file():
-        return None
-    try:
-        directory = Path(json.loads(pointer.read_text())["directory"])
-        record = read_editorial_attempt(directory)
-    except (OSError, ValueError, KeyError):
-        return None
-    if _started_before(record, since):
-        return None
-    return record | {"directory": str(directory)}
-
-
 def latest_attempt_of(state: AppState) -> dict[str, Any] | None:
     """The armed cut's newest attempt, or None before it has written one."""
     return read_latest_attempt(attempt_root(state), since=state.cut_armed_at)
-
-
-def live_progress_of(record: Mapping[str, Any] | None) -> StageUpdate | None:
-    """The numbers the attempt is reporting right now, read from its own record.
-
-    Going through the record rather than the session's own key is what makes a
-    reload rejoin the bar exactly where it rejoins the rows. A stage that counts
-    nothing carries no numbers, so a finished per-asset pass never leaves a
-    full bar under a row that has moved on to other work.
-    """
-    progress = StageUpdate.from_record((record or {}).get("progress"))
-    return progress if progress is not None and progress.counted else None
-
-
-def recent_pictures_of(record: Mapping[str, Any] | None) -> tuple[str, ...]:
-    """The pictures the attempt's last counted pass finished most recently."""
-    directory = (record or {}).get("directory")
-    snapshot = read_stage_progress(Path(directory)) if directory else None
-    return snapshot.recent_asset_ids if snapshot is not None else ()
 
 
 def phase_of(record: Mapping[str, Any] | None) -> CutStatus:

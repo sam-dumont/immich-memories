@@ -3,9 +3,8 @@
 from immich_memories.analysis.editorial_projection import EditorialStageReporter
 from immich_memories.analysis.progress import ProgressTracker
 from immich_memories.cli._pipeline_runner import _SourceProgressReporter
-from immich_memories.operations.cut_progress import StageUpdate
+from immich_memories.operations.cut_progress import StageUpdate, live_progress_of
 from immich_memories.operations.editorial_attempt import EditorialAttempt, read_editorial_attempt
-from immich_memories.ui.pages.memory_run import live_progress_of
 from tests.test_surface_parity import CountingDisplay
 
 

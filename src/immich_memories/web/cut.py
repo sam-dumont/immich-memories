@@ -67,6 +67,10 @@ class _Evidence:
         return self.fates.trace.clips.get(asset_id, "") if self.fates.trace else ""
 
 
+def _recorded(interval: tuple[float, float] | None, fallback: float) -> float:
+    return round(interval[1] - interval[0], 2) if interval else fallback
+
+
 def _shot(position: int, shot: Shot, evidence: _Evidence) -> CutShot:
     decision = evidence.decisions.get(shot.asset_id)
     return CutShot(
@@ -83,6 +87,7 @@ def _shot(position: int, shot: Shot, evidence: _Evidence) -> CutShot:
         moment=shot.moment,
         reason=shot.reason,
         motion=shot.motion,
+        recorded_seconds=_recorded(evidence.intervals.get(shot.asset_id), shot.seconds),
         source_interval=evidence.intervals.get(shot.asset_id) if shot.motion else None,
         selection=_selection(evidence.fates.trace, shot.asset_id),
         model=ModelDecision.model_validate(decision) if decision else None,

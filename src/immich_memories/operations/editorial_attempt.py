@@ -18,6 +18,9 @@ from immich_memories.operations.cancellation import PipelineCancelled
 from immich_memories.operations.cut_progress import ANALYSIS_PHASE, StageClock, StageUpdate
 from immich_memories.security import write_secret_file
 
+# Beside a cut key's attempts: which attempt is the newest, for a reader in another process.
+LATEST_ATTEMPT = "latest-attempt.private.json"
+
 _FIRST_STAGE = StageUpdate("Preparing editorial evidence", ANALYSIS_PHASE)
 
 
@@ -59,7 +62,7 @@ class EditorialAttempt:
             self._usage = self._usage_scope.enter_context(collecting())
             self._save()
             write_secret_file(
-                self.root / "latest-attempt.private.json",
+                self.root / LATEST_ATTEMPT,
                 json.dumps({"attempt_id": self.attempt_id, "directory": str(self.directory)}),
             )
         except BaseException:

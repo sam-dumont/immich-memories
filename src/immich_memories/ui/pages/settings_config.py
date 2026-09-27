@@ -9,6 +9,7 @@ from typing import Any
 from nicegui import ui
 
 from immich_memories.config import get_config, get_config_path
+from immich_memories.security import redact_config
 from immich_memories.ui.components import im_button, im_info_card, im_section_header
 from immich_memories.ui.i18n import tr
 
@@ -16,30 +17,6 @@ logger = logging.getLogger(__name__)
 
 # Fields that contain secrets — redacted in display
 # WHY: notification URLs often embed credentials (e.g. apprise://user:pass@host)
-_SENSITIVE_KEYS = {
-    "api_key",
-    "api_keys",
-    "caption_api_key",
-    "client_secret",
-    "password",
-    "secret",
-    "token",
-    "trigger_token",
-    "urls",
-}
-
-
-def redact_config(data: Any, _key: str = "") -> Any:
-    """Recursively redact sensitive values in a config dict."""
-    if isinstance(data, dict):
-        return {k: redact_config(v, k) for k, v in data.items()}
-    if isinstance(data, list):
-        return [redact_config(v, _key) for v in data]
-    if _key in _SENSITIVE_KEYS and isinstance(data, str) and data:
-        # WHY a full mask (S16): the old abc***yz showed five characters of
-        # every secret, auth.password included.
-        return "***"
-    return data
 
 
 def _format_value(value: Any) -> str:

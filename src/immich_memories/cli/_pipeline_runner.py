@@ -144,11 +144,13 @@ def _finish_without_rendering(
     task,
     title: str | None,
     subtitle: str | None,
+    cut_run: dict,
 ) -> tuple[Path, bool, str | None]:
-    """Print the resolved plan and return without crossing the render boundary.
+    """Print the resolved plan, keep the cut as a run, and return without rendering.
 
     Selection has completed through the production story-first route; only the
-    encode is missing.
+    encode is missing. The cut is recorded as a run so it can be reviewed, revised
+    and rendered later (`runs story`, the web client, `runs render`).
     """
     from immich_memories.api.models import AssetType
     from immich_memories.cli._generation_preview import (
@@ -179,6 +181,23 @@ def _finish_without_rendering(
     )
     print_generation_preview(preview)
     progress.update(task, completed=100)
+    attempt = _attempt_dir_of(pipeline_result)
+    if attempt is not None:
+        from immich_memories.operations.run_index import record_cut_run
+
+        run_id = record_cut_run(
+            config,
+            attempt,
+            memory_type=memory_type,
+            date_range=(date_range.start.date(), date_range.end.date()),
+            clips_selected=len(selected_clips),
+            target_duration_seconds=timeline_plan.target_duration,
+            **cut_run,
+        )
+        print_info(
+            f"Kept the cut as run {run_id}: `runs story {run_id}` reads it, "
+            f"`runs render {run_id}` renders it."
+        )
     return output_path, should_upload, album_name
 
 
@@ -600,6 +619,12 @@ def run_pipeline_and_generate(
             task=task,
             title=resolved_title,
             subtitle=resolved_subtitle,
+            cut_run={
+                "memory_key": memory_key,
+                "people": normalize_memory_people(person_names),
+                "person_name": person_name,
+                "source": source,
+            },
         )
 
     def gen_progress(phase: str, frac: float, msg: str) -> None:

@@ -40,7 +40,7 @@ class TestS16SecretsAreFullyMasked:
     """abc***yz leaks five characters of every secret, auth.password included."""
 
     def test_no_characters_of_the_secret_survive(self):
-        from immich_memories.ui.pages.settings_config import redact_config
+        from immich_memories.security import redact_config
 
         redacted = redact_config({"immich": {"api_key": "abcdefghijklmnop"}})
 
@@ -48,14 +48,14 @@ class TestS16SecretsAreFullyMasked:
         assert "abc" not in redacted["immich"]["api_key"]
 
     def test_an_empty_secret_stays_empty(self):
-        from immich_memories.ui.pages.settings_config import redact_config
+        from immich_memories.security import redact_config
 
         assert redact_config({"immich": {"api_key": ""}})["immich"]["api_key"] == ""
 
     def test_no_configured_secret_reaches_the_settings_page(self):
         """The viewer renders the whole model, so a new secret field is masked by name."""
         from immich_memories.config_loader import Config
-        from immich_memories.ui.pages.settings_config import redact_config
+        from immich_memories.security import redact_config
 
         config = Config(editorial={"preparation": {"caption_api_key": "caption-credential"}})
 

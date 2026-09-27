@@ -39,3 +39,13 @@ export const clock = (seconds: number) => {
   const whole = Math.round(seconds);
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
 };
+
+// Why automation set a candidate aside; the same sentences the server pages showed.
+const RULES: Record<string, string> = {
+  same_category_as_previous: N_('The previous automatic memory used this category.'),
+  category_limit_two_of_six: N_('This category already appears twice in the last six memories.'),
+  monthly_review_already_completed_this_month: N_('A monthly review already finished this month.'),
+  person_in_last_two_person_runs: N_('These people appear in the last two people memories.'),
+};
+
+export const ruleLabel = (rule: string) => (RULES[rule] ? t(RULES[rule]) : rule);

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-27 08:07+0200\n"
+"POT-Creation-Date: 2026-09-27 10:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -19,7 +19,7 @@ msgstr ""
 msgid " Cut again runs it once more."
 msgstr " Cut again runs it once more."
 
-#: pages/settings_config.py:127
+#: pages/settings_config.py:104
 #, python-brace-format
 msgid " Preset '{preset}' is active and fills the knobs you have not set."
 msgstr " Preset '{preset}' is active and fills the knobs you have not set."
@@ -53,7 +53,7 @@ msgstr "4K"
 msgid "720p"
 msgstr "720p"
 
-#: pages/memory_run.py:101
+#: pages/memory_run.py:104
 msgid "A cut is already running; wait for it, or cancel it first"
 msgstr "A cut is already running; wait for it, or cancel it first"
 
@@ -65,6 +65,10 @@ msgid ""
 msgstr ""
 "A generation started at {started} is still running (run {run_id}). This page checks every few"
 " seconds and shows the video when it finishes."
+
+#: web/lib/labels.ts:47
+msgid "A monthly review already finished this month."
+msgstr "A monthly review already finished this month."
 
 #: pages/step3_options.py:371
 msgid "AI Generated"
@@ -82,11 +86,11 @@ msgstr "API Key"
 msgid "Accept Forwarded Media"
 msgstr "Accept Forwarded Media"
 
-#: pages/settings_config.py:165
+#: pages/settings_config.py:142
 msgid "Actions"
 msgstr "Actions"
 
-#: pages/settings_config.py:162
+#: pages/settings_config.py:139
 msgid "Active Configuration"
 msgstr "Active Configuration"
 
@@ -95,11 +99,15 @@ msgstr "Active Configuration"
 msgid "Active condition: {display_label}"
 msgstr "Active condition: {display_label}"
 
-#: pages/settings_config.py:122
+#: pages/settings_config.py:99
 msgid "Active config from ~/.immich-memories/config.yaml with env overrides. API keys are redacted."
 msgstr "Active config from ~/.immich-memories/config.yaml with env overrides. API keys are redacted."
 
-#: pages/settings_people.py:516
+#: web/routes/settings/people/+page.svelte:165
+msgid "Add"
+msgstr "Add"
+
+#: pages/settings_people.py:516 web/routes/settings/people/+page.svelte:157
 msgid "Add a relationship"
 msgstr "Add a relationship"
 
@@ -119,7 +127,7 @@ msgstr "Add relationship"
 msgid "Add someone"
 msgstr "Add someone"
 
-#: pages/settings_people.py:168
+#: pages/settings_people.py:168 web/routes/settings/people/+page.svelte:102
 msgid "Add someone not in Immich"
 msgstr "Add someone not in Immich"
 
@@ -145,6 +153,7 @@ msgid "Advanced people condition"
 msgstr "Advanced people condition"
 
 #: pages/memory_brief.py:37 pages/step1_presets.py:290 web/lib/labels.ts:11
+#: web/routes/create/+page.svelte:165
 msgid "Album"
 msgstr "Album"
 
@@ -184,6 +193,10 @@ msgstr ""
 msgid "Any of these people"
 msgstr "Any of these people"
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:146
+msgid "Anyone"
+msgstr "Anyone"
+
 #: pages/memory_brief.py:80
 msgid "Anyone. Only pictures nothing held back: no detector flag, no private moment."
 msgstr "Anyone. Only pictures nothing held back: no detector flag, no private moment."
@@ -195,6 +208,10 @@ msgstr "Anyone: shareable films too"
 #: pages/clip_review.py:403
 msgid "Apply"
 msgstr "Apply"
+
+#: web/routes/create/+page.svelte:200
+msgid "As configured"
+msgstr "As configured"
 
 #: pages/memory_duration.py:30
 msgid "Auto"
@@ -212,7 +229,7 @@ msgstr "Auto (match clips)"
 msgid "Auto duration"
 msgstr "Auto duration"
 
-#: web/lib/labels.ts:23
+#: web/lib/labels.ts:23 web/routes/runs/[run_id]/+page.svelte:284
 msgid "Automatic"
 msgstr "Automatic"
 
@@ -232,15 +249,19 @@ msgstr "Automatic upload to Immich is off."
 msgid "Automatically uses today's date across previous years"
 msgstr "Automatically uses today's date across previous years"
 
+#: web/routes/suggestions/+page.svelte:47
+msgid "Automation is already running. Open Runs to follow it."
+msgstr "Automation is already running. Open Runs to follow it."
+
 #: pages/step4_export.py:236
 msgid "Back to Generation Options"
 msgstr "Back to Generation Options"
 
-#: pages/memory_storyboard.py:160 web/routes/runs/[run_id]/+page.svelte:173
+#: pages/memory_storyboard.py:160 web/routes/runs/[run_id]/+page.svelte:216
 msgid "Back to pictures"
 msgstr "Back to pictures"
 
-#: web/routes/runs/[run_id]/+page.svelte:100
+#: web/routes/runs/[run_id]/+page.svelte:135
 msgid "Back to runs"
 msgstr "Back to runs"
 
@@ -248,7 +269,7 @@ msgstr "Back to runs"
 msgid "Back to the brief"
 msgstr "Back to the brief"
 
-#: pages/step2_review.py:290
+#: pages/step2_review.py:290 web/routes/runs/[run_id]/pool/+page.svelte:93
 msgid "Back to the cut"
 msgstr "Back to the cut"
 
@@ -293,12 +314,17 @@ msgstr "Cache"
 msgid "Cache Management"
 msgstr "Cache Management"
 
+#: web/routes/settings/+page.svelte:82 web/routes/settings/+page.svelte:83
+msgid "Caches"
+msgstr "Caches"
+
 #: pages/step1_tabs.py:82
 msgid "Calendar Year"
 msgstr "Calendar Year"
 
-#: pages/_step4_generate.py:386 pages/memory_run.py:411 pages/picture_decisions.py:176
-#: pages/settings_people.py:503 pages/settings_people.py:545
+#: pages/_step4_generate.py:386 pages/memory_run.py:362 pages/picture_decisions.py:176
+#: pages/settings_people.py:503 pages/settings_people.py:545 web/lib/JobPanel.svelte:74
+#: web/routes/runs/[run_id]/pool/+page.svelte:152
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -306,7 +332,7 @@ msgstr "Cancel"
 msgid "Cancel requested — stopping after current phase..."
 msgstr "Cancel requested — stopping after current phase..."
 
-#: pages/memory_run.py:409
+#: pages/memory_run.py:360
 msgid "Cancelling after the current stage..."
 msgstr "Cancelling after the current stage..."
 
@@ -314,7 +340,7 @@ msgstr "Cancelling after the current stage..."
 msgid "Cancelling..."
 msgstr "Cancelling..."
 
-#: pages/suggestions.py:195
+#: pages/suggestions.py:195 web/routes/suggestions/+page.svelte:92
 msgid "Candidate key"
 msgstr "Candidate key"
 
@@ -326,12 +352,12 @@ msgstr "Caption clips with their place"
 msgid "Change the brief"
 msgstr "Change the brief"
 
-#: web/routes/runs/[run_id]/+page.svelte:182
+#: web/routes/runs/[run_id]/+page.svelte:225
 #, python-brace-format
 msgid "Changes: {count}"
 msgstr "Changes: {count}"
 
-#: pages/suggestions.py:199
+#: pages/suggestions.py:199 web/routes/suggestions/+page.svelte:94
 msgid "Check eligibility"
 msgstr "Check eligibility"
 
@@ -343,7 +369,19 @@ msgstr "Check the server log, then generate again."
 msgid "Choose a relationship and a person"
 msgstr "Choose a relationship and a person"
 
-#: pages/step1_cache.py:67
+#: web/routes/create/+page.svelte:167
+msgid "Choose an album"
+msgstr "Choose an album"
+
+#: web/routes/create/+page.svelte:130
+msgid ""
+"Choose what the film covers. The cut is made the way the command below makes it; you review "
+"it before anything renders."
+msgstr ""
+"Choose what the film covers. The cut is made the way the command below makes it; you review "
+"it before anything renders."
+
+#: pages/step1_cache.py:67 web/routes/settings/+page.svelte:88
 msgid "Clear"
 msgstr "Clear"
 
@@ -352,8 +390,13 @@ msgid "Clear all caches"
 msgstr "Clear all caches"
 
 #: pages/picture_decisions.py:133 pages/picture_decisions.py:182
+#: web/routes/runs/[run_id]/pool/+page.svelte:121 web/routes/runs/[run_id]/pool/+page.svelte:153
 msgid "Clear hold"
 msgstr "Clear hold"
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:139
+msgid "Clear this hold?"
+msgstr "Clear this hold?"
 
 #: pages/picture_decisions.py:156
 msgid "Clear this picture's hold?"
@@ -379,6 +422,11 @@ msgstr "Cleared {count} cached thumbnails"
 msgid "Cleared {count} cached videos"
 msgstr "Cleared {count} cached videos"
 
+#: web/routes/settings/+page.svelte:30
+#, python-brace-format
+msgid "Cleared {count} entries from the {cache}."
+msgstr "Cleared {count} entries from the {cache}."
+
 #: pages/step1_cache.py:175
 #, python-brace-format
 msgid "Cleared {count} preview files"
@@ -396,6 +444,10 @@ msgstr "Clips Planned"
 msgid "Close"
 msgstr "Close"
 
+#: web/routes/create/+page.svelte:210
+msgid "Command"
+msgstr "Command"
+
 #: pages/step2_review.py:229
 msgid "Compact grid view"
 msgstr "Compact grid view"
@@ -404,16 +456,16 @@ msgstr "Compact grid view"
 msgid "Complete!"
 msgstr "Complete!"
 
-#: pages/settings_config.py:178
+#: pages/settings_config.py:155 web/routes/settings/+page.svelte:62
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "Config file: {config_path}"
 
-#: app.py:135 app.py:269
+#: app.py:135 app.py:269 web/routes/settings/+page.svelte:53 web/routes/settings/+page.svelte:55
 msgid "Configuration"
 msgstr "Configuration"
 
-#: pages/settings_config.py:170
+#: pages/settings_config.py:147
 msgid "Configuration reloaded from disk"
 msgstr "Configuration reloaded from disk"
 
@@ -446,7 +498,7 @@ msgstr ""
 msgid "Connected as: {name}"
 msgstr "Connected as: {name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:405 pages/step2_loading.py:319
 msgid "Connecting to Immich..."
 msgstr "Connecting to Immich..."
 
@@ -458,6 +510,14 @@ msgstr "Connection failed: {value}"
 #: web/lib/ShotInspector.svelte:150
 msgid "Considered by the model"
 msgstr "Considered by the model"
+
+#: web/lib/JobPanel.svelte:72
+msgid "Copied"
+msgstr "Copied"
+
+#: web/lib/JobPanel.svelte:72
+msgid "Copy as CLI command"
+msgstr "Copy as CLI command"
 
 #: pages/step1_presets.py:268
 #, python-brace-format
@@ -473,7 +533,7 @@ msgstr "Could not load photo years. Showing the previously loaded years."
 msgid "Could not load suggestions: {value}"
 msgstr "Could not load suggestions: {value}"
 
-#: pages/memory_run.py:461
+#: pages/memory_run.py:412
 #, python-brace-format
 msgid "Could not re-load media: {value}"
 msgstr "Could not re-load media: {value}"
@@ -482,7 +542,8 @@ msgstr "Could not re-load media: {value}"
 msgid "Crossfade"
 msgstr "Crossfade"
 
-#: pages/settings_people.py:139
+#: pages/settings_people.py:139 web/routes/settings/people/+page.svelte:92
+#: web/routes/settings/people/+page.svelte:93
 msgid "Curation"
 msgstr "Curation"
 
@@ -498,7 +559,7 @@ msgstr "Custom date range"
 msgid "Custom seconds"
 msgstr "Custom seconds"
 
-#: pages/memory_brief.py:219 pages/step2_review.py:154
+#: pages/memory_brief.py:219 pages/step2_review.py:154 web/routes/create/+page.svelte:213
 msgid "Cut"
 msgstr "Cut"
 
@@ -506,17 +567,25 @@ msgstr "Cut"
 msgid "Cut again"
 msgstr "Cut again"
 
-#: pages/memory_storyboard.py:138 web/routes/runs/[run_id]/+page.svelte:135
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
+msgid "Cut again with these choices"
+msgstr "Cut again with these choices"
+
+#: pages/memory_storyboard.py:138 web/routes/runs/[run_id]/+page.svelte:178
 msgid "Cut contact sheet"
 msgstr "Cut contact sheet"
 
-#: pages/memory_run.py:399
+#: pages/memory_run.py:350
 msgid "Cutting the memory..."
 msgstr "Cutting the memory..."
 
 #: theme.py:322
 msgid "Dark"
 msgstr "Dark"
+
+#: web/routes/create/+page.svelte:157
+msgid "Day"
+msgstr "Day"
 
 #: app.py:101
 msgid "Demo mode"
@@ -538,20 +607,20 @@ msgstr "Detecting trips from GPS data..."
 msgid "Difference"
 msgstr "Difference"
 
-#: web/routes/runs/[run_id]/+page.svelte:191
+#: web/routes/runs/[run_id]/+page.svelte:234
 msgid "Discard changes"
 msgstr "Discard changes"
 
-#: pages/suggestions.py:165
+#: pages/suggestions.py:165 web/routes/suggestions/+page.svelte:79
 #, python-brace-format
 msgid "Discovery failed: {error}"
 msgstr "Discovery failed: {error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:69 pages/step2_loading.py:378
 msgid "Done"
 msgstr "Done"
 
-#: web/routes/runs/[run_id]/+page.svelte:232
+#: web/routes/runs/[run_id]/+page.svelte:316
 msgid "Download child output"
 msgstr "Download child output"
 
@@ -567,11 +636,11 @@ msgstr "Duration"
 msgid "Edit this shot"
 msgstr "Edit this shot"
 
-#: pages/memory_run.py:65
+#: pages/memory_run.py:68
 msgid "Editing"
 msgstr "Editing"
 
-#: pages/memory_run.py:431
+#: pages/memory_run.py:382
 #, python-brace-format
 msgid "Elapsed: {value}"
 msgstr "Elapsed: {value}"
@@ -580,6 +649,10 @@ msgstr "Elapsed: {value}"
 msgid "Eligible when this shot was chosen. Open one to compare."
 msgstr "Eligible when this shot was chosen. Open one to compare."
 
+#: web/routes/suggestions/+page.svelte:52
+msgid "Eligible. No video was generated."
+msgstr "Eligible. No video was generated."
+
 #: pages/step1_tabs.py:182
 msgid "End date"
 msgstr "End date"
@@ -587,6 +660,11 @@ msgstr "End date"
 #: web/lib/ShotInspector.svelte:58
 msgid "End here"
 msgstr "End here"
+
+#: web/routes/settings/+page.svelte:87
+#, python-brace-format
+msgid "Entries: {count}"
+msgstr "Entries: {count}"
 
 #: pages/step1_config.py:132
 #, python-brace-format
@@ -597,6 +675,20 @@ msgstr "Error: {value}"
 #, python-brace-format
 msgid "Errors ({error_count})"
 msgstr "Errors ({error_count})"
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:96
+msgid ""
+"Every picture this cut saw, in the order they were taken. Tick or untick, then cut again: the"
+" ticks become the next cut’s must-keeps and leave-outs. Never use and Clear hold last across "
+"every run."
+msgstr ""
+"Every picture this cut saw, in the order they were taken. Tick or untick, then cut again: the"
+" ticks become the next cut’s must-keeps and leave-outs. Never use and Clear hold last across "
+"every run."
+
+#: web/routes/create/+page.svelte:163
+msgid "Every trip of the year"
+msgstr "Every trip of the year"
 
 #: pages/memory_storyboard.py:137
 msgid "Excluded"
@@ -620,7 +712,8 @@ msgstr "Failed to load videos: {value}"
 msgid "Failed: {value}"
 msgstr "Failed: {value}"
 
-#: pages/memory_brief.py:73
+#: pages/memory_brief.py:73 web/routes/create/+page.svelte:201
+#: web/routes/runs/[run_id]/pool/+page.svelte:146
 msgid "Family"
 msgstr "Family"
 
@@ -652,12 +745,16 @@ msgstr "Film language"
 msgid "Film length"
 msgstr "Film length"
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:144
+msgid "Films that may use it"
+msgstr "Films that may use it"
+
 #: pages/clip_review.py:503
 #, python-brace-format
 msgid "Final Duration: {value}"
 msgstr "Final Duration: {value}"
 
-#: pages/settings_people.py:263
+#: pages/settings_people.py:263 web/routes/settings/people/+page.svelte:99
 msgid "Find a name"
 msgstr "Find a name"
 
@@ -665,7 +762,7 @@ msgstr "Find a name"
 msgid "Find alternatives in the pool"
 msgstr "Find alternatives in the pool"
 
-#: pages/memory_run.py:62
+#: pages/memory_run.py:65
 msgid "Finding media"
 msgstr "Finding media"
 
@@ -686,6 +783,10 @@ msgstr "Format"
 msgid "Found {count} trip(s):"
 msgstr "Found {count} trip(s):"
 
+#: web/routes/create/+page.svelte:159
+msgid "From"
+msgstr "From"
+
 #: pages/step1_tabs.py:85
 msgid "From Birthday"
 msgstr "From Birthday"
@@ -694,7 +795,7 @@ msgstr "From Birthday"
 msgid "Full clip"
 msgstr "Full clip"
 
-#: pages/settings_people.py:489
+#: pages/settings_people.py:489 web/routes/settings/people/+page.svelte:101
 msgid "Full name"
 msgstr "Full name"
 
@@ -738,7 +839,12 @@ msgstr "HDR clips only"
 msgid "Hard cut"
 msgstr "Hard cut"
 
-#: pages/step1_presets.py:178
+#: web/routes/runs/[run_id]/pool/+page.svelte:84
+#, python-brace-format
+msgid "Held: {reasons}."
+msgstr "Held: {reasons}."
+
+#: pages/step1_presets.py:178 web/routes/create/+page.svelte:155
 msgid "Hemisphere"
 msgstr "Hemisphere"
 
@@ -747,6 +853,7 @@ msgid "Hold cleared. The next cut may use it."
 msgstr "Hold cleared. The next cut may use it."
 
 #: pages/memory_brief.py:39 pages/step1_presets.py:82 web/lib/labels.ts:13
+#: web/routes/create/+page.svelte:161
 msgid "Holiday"
 msgstr "Holiday"
 
@@ -776,7 +883,7 @@ msgstr "Immich Server URL"
 msgid "Immich delivery: {delivery_label}"
 msgstr "Immich delivery: {delivery_label}"
 
-#: web/routes/runs/[run_id]/+page.svelte:222
+#: web/routes/runs/[run_id]/+page.svelte:306
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Immich delivery: {value}"
@@ -785,11 +892,15 @@ msgstr "Immich delivery: {value}"
 msgid "In the cut"
 msgstr "In the cut"
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:110
+msgid "In the next cut"
+msgstr "In the next cut"
+
 #: pages/clip_grid.py:170 pages/clip_grid.py:224
 msgid "Include"
 msgstr "Include"
 
-#: pages/memory_brief.py:58
+#: pages/memory_brief.py:58 web/routes/create/+page.svelte:205
 msgid "Include Live Photos"
 msgstr "Include Live Photos"
 
@@ -805,6 +916,10 @@ msgstr "Include in compilation"
 msgid "Include in export"
 msgstr "Include in export"
 
+#: web/routes/create/+page.svelte:204
+msgid "Include photos"
+msgstr "Include photos"
+
 #: i18n.py:82
 msgid "Interface language"
 msgstr "Interface language"
@@ -818,11 +933,16 @@ msgstr "Invalid date range: {e}"
 msgid "Invalid username or password"
 msgstr "Invalid username or password"
 
+#: web/lib/JobPanel.svelte:47
+msgid "It did not finish."
+msgstr "It did not finish."
+
 #: pages/picture_decisions.py:107
 msgid "It won't be in any film from the next cut on."
 msgstr "It won't be in any film from the next cut on."
 
-#: pages/memory_brief.py:72
+#: pages/memory_brief.py:72 web/routes/create/+page.svelte:200
+#: web/routes/runs/[run_id]/pool/+page.svelte:146
 msgid "Just us"
 msgstr "Just us"
 
@@ -842,6 +962,11 @@ msgstr "Keep intermediate files"
 msgid "Keep the original"
 msgstr "Keep the original"
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:131
+#, python-brace-format
+msgid "Keep: {include} · Leave out: {exclude}"
+msgstr "Keep: {include} · Leave out: {exclude}"
+
 #: web/lib/ShotInspector.svelte:91
 #, python-brace-format
 msgid "Kept at {stage}"
@@ -851,6 +976,10 @@ msgstr "Kept at {stage}"
 msgid "Kept because"
 msgstr "Kept because"
 
+#: web/routes/runs/[run_id]/+page.svelte:284
+msgid "Landscape"
+msgstr "Landscape"
+
 #: pages/step3_options.py:273
 msgid "Landscape (16:9)"
 msgstr "Landscape (16:9)"
@@ -858,6 +987,14 @@ msgstr "Landscape (16:9)"
 #: pages/clip_review.py:180
 msgid "Last 5s"
 msgstr "Last 5s"
+
+#: web/routes/create/+page.svelte:195
+msgid "Length and pictures"
+msgstr "Length and pictures"
+
+#: web/routes/create/+page.svelte:197
+msgid "Length in minutes (fitted to the pictures when empty)"
+msgstr "Length in minutes (fitted to the pictures when empty)"
 
 #: pages/film_length.py:89
 #, python-brace-format
@@ -872,11 +1009,15 @@ msgstr "Letterbox (black bars)"
 msgid "Light"
 msgstr "Light"
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:111
+msgid "Live"
+msgstr "Live"
+
 #: pages/step1_presets.py:248
 msgid "Loading albums..."
 msgstr "Loading albums..."
 
-#: pages/memory_run.py:63
+#: pages/memory_run.py:66
 msgid "Loading thumbnails"
 msgstr "Loading thumbnails"
 
@@ -888,7 +1029,7 @@ msgstr "Loading videos..."
 msgid "Looking through the library…"
 msgstr "Looking through the library…"
 
-#: web/routes/+layout.svelte:32 web/routes/+layout.svelte:43
+#: web/routes/+layout.svelte:31 web/routes/+layout.svelte:42
 msgid "Main navigation"
 msgstr "Main navigation"
 
@@ -909,7 +1050,7 @@ msgstr "Map: {title_suggestion_map_mode}"
 msgid "Media Eligible"
 msgstr "Media Eligible"
 
-#: app.py:76 app.py:209 web/routes/+layout.svelte:15
+#: app.py:76 app.py:209
 msgid "Media pool"
 msgstr "Media pool"
 
@@ -925,7 +1066,7 @@ msgstr "Memories automation would make next, using the same rules as auto sugges
 msgid "Memory"
 msgstr "Memory"
 
-#: pages/memory_brief.py:134
+#: pages/memory_brief.py:134 web/routes/create/+page.svelte:138
 msgid "Memory type"
 msgstr "Memory type"
 
@@ -941,7 +1082,7 @@ msgstr "Model polish"
 msgid "Model suggestion"
 msgstr "Model suggestion"
 
-#: pages/step1_presets.py:214
+#: pages/step1_presets.py:214 web/routes/create/+page.svelte:150
 msgid "Month"
 msgstr "Month"
 
@@ -966,7 +1107,7 @@ msgstr "Most recent year"
 msgid "Multi-Person"
 msgstr "Multi-Person"
 
-#: pages/step3_options.py:361 pages/step3_options.py:417
+#: pages/step3_options.py:361 pages/step3_options.py:417 web/routes/runs/[run_id]/+page.svelte:294
 msgid "Music"
 msgstr "Music"
 
@@ -991,9 +1132,13 @@ msgstr "Music volume:"
 msgid "Narrow this memory to these people, the same as --person on the CLI."
 msgstr "Narrow this memory to these people, the same as --person on the CLI."
 
-#: pages/picture_decisions.py:136
+#: pages/picture_decisions.py:136 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Never use"
 msgstr "Never use"
+
+#: web/routes/create/+page.svelte:125 web/routes/create/+page.svelte:129
+msgid "New memory"
+msgstr "New memory"
 
 #: pages/settings_people.py:285
 msgid "Next"
@@ -1011,7 +1156,7 @@ msgstr "Next: Preview & Export"
 msgid "No albums with any assets in them yet."
 msgstr "No albums with any assets in them yet."
 
-#: web/routes/runs/[run_id]/+page.svelte:234
+#: web/routes/runs/[run_id]/+page.svelte:318
 msgid "No child output was retained for this run."
 msgstr "No child output was retained for this run."
 
@@ -1027,6 +1172,10 @@ msgstr "No eligible suggestions right now."
 msgid "No model read this cut: the rules chose every picture."
 msgstr "No model read this cut: the rules chose every picture."
 
+#: web/routes/create/+page.svelte:183
+msgid "No named people in Immich yet."
+msgstr "No named people in Immich yet."
+
 #: pages/memory_storyboard.py:154 web/lib/ShotInspector.svelte:151
 msgid "No outcome recorded."
 msgstr "No outcome recorded."
@@ -1039,7 +1188,7 @@ msgstr ""
 "No people file yet. Rescan the library to build one — it reads every named person's count and"
 " month curve, and looks at no pixels."
 
-#: pages/memory_storyboard.py:140 web/routes/runs/[run_id]/+page.svelte:165
+#: pages/memory_storyboard.py:140 web/routes/runs/[run_id]/+page.svelte:208
 msgid "No pictures match this filter."
 msgstr "No pictures match this filter."
 
@@ -1051,9 +1200,13 @@ msgstr "No reason recorded for this picture."
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "No runs match this view. Make a memory from Memory or Suggestions."
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:216
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:259
 msgid "No saved cut is available for this run."
 msgstr "No saved cut is available for this run."
+
+#: web/routes/suggestions/+page.svelte:99
+msgid "No suggestions right now."
+msgstr "No suggestions right now."
 
 #: pages/suggestions.py:212
 msgid "No suggestions were rejected by variety or failure backoff."
@@ -1071,19 +1224,27 @@ msgstr "No video clips in the cut; there is nothing to trim."
 msgid "No videos found for the selected criteria."
 msgstr "No videos found for the selected criteria."
 
-#: pages/settings_people.py:478
+#: pages/settings_people.py:478 web/routes/settings/people/+page.svelte:141
 msgid "No, they are not"
 msgstr "No, they are not"
+
+#: web/routes/settings/people/+page.svelte:107
+msgid "Nobody yet. Rescan the library to read who is in it."
+msgstr "Nobody yet. Rescan the library to read who is in it."
 
 #: pages/step3_options.py:304 pages/step3_options.py:365
 msgid "None"
 msgstr "None"
 
-#: pages/settings_people.py:389
+#: web/routes/create/+page.svelte:155
+msgid "North"
+msgstr "North"
+
+#: pages/settings_people.py:389 web/routes/settings/people/+page.svelte:127
 msgid "Notes"
 msgstr "Notes"
 
-#: pages/settings_people.py:409
+#: pages/settings_people.py:409 web/routes/settings/people/+page.svelte:148
 msgid "Nothing recorded yet."
 msgstr "Nothing recorded yet."
 
@@ -1115,7 +1276,7 @@ msgstr "One window around the holiday in each year, most recent first."
 msgid "Only with (optional)"
 msgstr "Only with (optional)"
 
-#: web/routes/runs/[run_id]/+page.svelte:209
+#: web/routes/runs/[run_id]/+page.svelte:252
 msgid "Open"
 msgstr "Open"
 
@@ -1123,9 +1284,13 @@ msgstr "Open"
 msgid "Open it in Immich first if you haven't looked at it yourself."
 msgstr "Open it in Immich first if you haven't looked at it yourself."
 
-#: pages/suggestions.py:146
+#: pages/suggestions.py:146 web/routes/suggestions/+page.svelte:73
 msgid "Open run"
 msgstr "Open run"
+
+#: web/routes/runs/[run_id]/+page.svelte:271
+msgid "Open the film run"
+msgstr "Open the film run"
 
 #: pages/memory_brief.py:180
 msgid "Open the media pool"
@@ -1136,11 +1301,11 @@ msgstr "Open the media pool"
 msgid "Open {name} in Immich"
 msgstr "Open {name} in Immich"
 
-#: pages/memory_storyboard.py:132 web/routes/runs/[run_id]/+page.svelte:131
+#: pages/memory_storyboard.py:132 web/routes/runs/[run_id]/+page.svelte:172
 msgid "Order and timecodes from the saved cut."
 msgstr "Order and timecodes from the saved cut."
 
-#: pages/step3_options.py:278
+#: pages/step3_options.py:278 web/routes/runs/[run_id]/+page.svelte:282
 msgid "Orientation"
 msgstr "Orientation"
 
@@ -1182,7 +1347,8 @@ msgstr "Passed {stages}"
 msgid "Password"
 msgstr "Password"
 
-#: app.py:136 app.py:288
+#: app.py:136 app.py:288 web/routes/create/+page.svelte:176 web/routes/settings/+page.svelte:50
+#: web/routes/settings/people/+page.svelte:74 web/routes/settings/people/+page.svelte:80
 msgid "People"
 msgstr "People"
 
@@ -1256,7 +1422,16 @@ msgstr "Picture review"
 msgid "Pictures & video"
 msgstr "Pictures & video"
 
-#: web/routes/runs/[run_id]/+page.svelte:110
+#: web/lib/JobPanel.svelte:58
+msgid "Pictures just read"
+msgstr "Pictures just read"
+
+#: web/routes/create/+page.svelte:187
+msgid "Pictures with"
+msgstr "Pictures with"
+
+#: web/routes/runs/[run_id]/+page.svelte:145 web/routes/settings/people/+page.svelte:118
+#: web/routes/suggestions/+page.svelte:90
 #, python-brace-format
 msgid "Pictures: {count}"
 msgstr "Pictures: {count}"
@@ -1274,17 +1449,28 @@ msgstr "Please enter both URL and API key"
 msgid "Please select at least one clip"
 msgstr "Please select at least one clip"
 
-#: pages/memory_brief.py:172
+#: pages/memory_brief.py:172 web/routes/runs/[run_id]/+page.svelte:173
+#: web/routes/runs/[run_id]/pool/+page.svelte:88 web/routes/runs/[run_id]/pool/+page.svelte:95
+#: web/routes/runs/[run_id]/pool/+page.svelte:104
 msgid "Pool"
 msgstr "Pool"
+
+#: web/routes/runs/[run_id]/+page.svelte:285
+msgid "Portrait"
+msgstr "Portrait"
 
 #: pages/step3_options.py:274
 msgid "Portrait (9:16)"
 msgstr "Portrait (9:16)"
 
-#: pages/memory_run.py:68
+#: pages/memory_run.py:71
 msgid "Preparing the cut"
 msgstr "Preparing the cut"
+
+#: web/routes/settings/+page.svelte:62
+#, python-brace-format
+msgid "Preset: {preset}"
+msgstr "Preset: {preset}"
 
 #: pages/clip_review.py:164
 msgid "Preview"
@@ -1302,11 +1488,15 @@ msgstr "Preview cache"
 msgid "Previous"
 msgstr "Previous"
 
+#: web/lib/JobPanel.svelte:41
+msgid "Progress"
+msgstr "Progress"
+
 #: web/lib/ShotInspector.svelte:50
 msgid "Put it back"
 msgstr "Put it back"
 
-#: pages/memory_run.py:467
+#: pages/memory_run.py:418
 msgid "Re-load media to export"
 msgstr "Re-load media to export"
 
@@ -1314,7 +1504,7 @@ msgstr "Re-load media to export"
 msgid "Reading the library…"
 msgstr "Reading the library…"
 
-#: pages/memory_run.py:64
+#: pages/memory_run.py:67
 msgid "Reading the pictures"
 msgstr "Reading the pictures"
 
@@ -1322,7 +1512,7 @@ msgstr "Reading the pictures"
 msgid "Recorded alternative"
 msgstr "Recorded alternative"
 
-#: pages/suggestions.py:95
+#: pages/suggestions.py:95 web/routes/suggestions/+page.svelte:64
 msgid "Refresh suggestions"
 msgstr "Refresh suggestions"
 
@@ -1334,6 +1524,10 @@ msgstr "Regenerate"
 msgid "Regenerate Music"
 msgstr "Regenerate Music"
 
+#: web/routes/settings/people/+page.svelte:155
+msgid "Relationship"
+msgstr "Relationship"
+
 #: pages/settings_people.py:541
 msgid "Relationship confirmed"
 msgstr "Relationship confirmed"
@@ -1342,11 +1536,11 @@ msgstr "Relationship confirmed"
 msgid "Relationship removed"
 msgstr "Relationship removed"
 
-#: pages/settings_people.py:400
+#: pages/settings_people.py:400 web/routes/settings/people/+page.svelte:133
 msgid "Relationships"
 msgstr "Relationships"
 
-#: pages/settings_config.py:174
+#: pages/settings_config.py:151 web/routes/settings/+page.svelte:56
 msgid "Reload from Disk"
 msgstr "Reload from Disk"
 
@@ -1358,19 +1552,24 @@ msgstr "Reload the pool"
 msgid "Remove from this cut"
 msgstr "Remove from this cut"
 
-#: pages/settings_people.py:442
+#: pages/settings_people.py:442 web/routes/settings/people/+page.svelte:144
 msgid "Remove this relationship"
 msgstr "Remove this relationship"
 
-#: web/routes/runs/[run_id]/+page.svelte:148
+#: web/routes/runs/[run_id]/+page.svelte:191
 msgid "Removed"
 msgstr "Removed"
+
+#: web/routes/runs/[run_id]/+page.svelte:263 web/routes/runs/[run_id]/+page.svelte:264
+#: web/routes/runs/[run_id]/+page.svelte:297
+msgid "Render"
+msgstr "Render"
 
 #: pages/memory_storyboard.py:150 web/lib/labels.ts:29
 msgid "Replaced a picture the model doubted."
 msgstr "Replaced a picture the model doubted."
 
-#: pages/settings_people.py:165
+#: pages/settings_people.py:165 web/routes/settings/people/+page.svelte:83
 msgid "Rescan the library"
 msgstr "Rescan the library"
 
@@ -1386,16 +1585,16 @@ msgstr "Result"
 msgid "Review the pool"
 msgstr "Review the pool"
 
-#: web/routes/runs/[run_id]/+page.svelte:206
+#: web/routes/runs/[run_id]/+page.svelte:249 web/routes/runs/[run_id]/+page.svelte:279
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "Revision {number}"
 
-#: web/routes/runs/[run_id]/+page.svelte:202
+#: web/routes/runs/[run_id]/+page.svelte:245
 msgid "Revisions"
 msgstr "Revisions"
 
-#: pages/settings_people.py:378
+#: pages/settings_people.py:378 web/routes/settings/people/+page.svelte:123
 msgid "Role (suggestions; type your own)"
 msgstr "Role (suggestions; type your own)"
 
@@ -1403,11 +1602,11 @@ msgstr "Role (suggestions; type your own)"
 msgid "Rotation"
 msgstr "Rotation"
 
-#: web/routes/runs/[run_id]/+page.svelte:220
+#: web/routes/runs/[run_id]/+page.svelte:304
 msgid "Run details"
 msgstr "Run details"
 
-#: pages/suggestions.py:203
+#: pages/suggestions.py:203 web/routes/suggestions/+page.svelte:95
 msgid "Run this suggestion"
 msgstr "Run this suggestion"
 
@@ -1415,13 +1614,13 @@ msgstr "Run this suggestion"
 msgid "Running a suggestion creates a video on the server. "
 msgstr "Running a suggestion creates a video on the server. "
 
-#: pages/suggestions.py:137
+#: pages/suggestions.py:137 web/routes/suggestions/+page.svelte:70
 #, python-brace-format
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "Running on the server: {phase}. It continues if you leave this page."
 
 #: app.py:75 web/routes/+layout.svelte:14 web/routes/runs/+page.svelte:76
-#: web/routes/runs/+page.svelte:80 web/routes/runs/[run_id]/+page.svelte:94
+#: web/routes/runs/+page.svelte:80 web/routes/runs/[run_id]/+page.svelte:129
 msgid "Runs"
 msgstr "Runs"
 
@@ -1429,7 +1628,7 @@ msgstr "Runs"
 msgid "Save Config"
 msgstr "Save Config"
 
-#: web/routes/runs/[run_id]/+page.svelte:193
+#: web/routes/runs/[run_id]/+page.svelte:236
 msgid "Save revision"
 msgstr "Save revision"
 
@@ -1437,12 +1636,12 @@ msgstr "Save revision"
 msgid "Saved - type a new key to replace it"
 msgstr "Saved - type a new key to replace it"
 
-#: web/routes/runs/[run_id]/+page.svelte:196
+#: web/routes/runs/[run_id]/+page.svelte:239
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "Saved as revision {number}."
 
-#: pages/step4_export.py:34 web/routes/runs/[run_id]/+page.svelte:221
+#: pages/step4_export.py:34 web/routes/runs/[run_id]/+page.svelte:305
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Saved to: {output_path}"
@@ -1465,6 +1664,7 @@ msgid "Screen time (seconds)"
 msgstr "Screen time (seconds)"
 
 #: pages/memory_brief.py:32 pages/step1_presets.py:165 web/lib/labels.ts:6
+#: web/routes/create/+page.svelte:152
 msgid "Season"
 msgstr "Season"
 
@@ -1505,11 +1705,12 @@ msgstr "Set all to first 5s"
 msgid "Set all to middle 5s"
 msgstr "Set all to middle 5s"
 
-#: app.py:77 web/routes/+layout.svelte:16
+#: app.py:77 web/routes/+layout.svelte:15 web/routes/settings/+page.svelte:40
+#: web/routes/settings/+page.svelte:44 web/routes/settings/people/+page.svelte:79
 msgid "Settings"
 msgstr "Settings"
 
-#: pages/memory_brief.py:74
+#: pages/memory_brief.py:74 web/routes/create/+page.svelte:201
 msgid "Shareable"
 msgstr "Shareable"
 
@@ -1517,9 +1718,13 @@ msgstr "Shareable"
 msgid "Sharing"
 msgstr "Sharing"
 
-#: pages/memory_storyboard.py:133 web/routes/runs/[run_id]/+page.svelte:124
+#: pages/memory_storyboard.py:133 web/routes/runs/[run_id]/+page.svelte:164
 msgid "Show"
 msgstr "Show"
+
+#: web/routes/settings/people/+page.svelte:171
+msgid "Show more"
+msgstr "Show more"
 
 #: pages/login.py:80
 msgid "Sign in"
@@ -1532,6 +1737,14 @@ msgstr "Sign out"
 #: pages/step3_options.py:301
 msgid "Smart (mix of fades & cuts)"
 msgstr "Smart (mix of fades & cuts)"
+
+#: web/routes/create/+page.svelte:155
+msgid "South"
+msgstr "South"
+
+#: web/routes/runs/[run_id]/+page.svelte:285
+msgid "Square"
+msgstr "Square"
 
 #: pages/step3_options.py:275
 msgid "Square (1:1)"
@@ -1553,6 +1766,10 @@ msgstr "Start here"
 msgid "Start over"
 msgstr "Start over"
 
+#: web/lib/JobPanel.svelte:44
+msgid "Starting"
+msgstr "Starting"
+
 #: pages/step1_tabs.py:128
 msgid "Starting from"
 msgstr "Starting from"
@@ -1573,6 +1790,10 @@ msgstr "Still"
 msgid "Stills"
 msgstr "Stills"
 
+#: web/lib/JobPanel.svelte:46
+msgid "Stopped."
+msgstr "Stopped."
+
 #: pages/memory.py:130
 msgid "Story"
 msgstr "Story"
@@ -1585,13 +1806,18 @@ msgstr "Story weight"
 msgid "Storyboard"
 msgstr "Storyboard"
 
-#: pages/_step3_music_preview.py:212
+#: pages/_step3_music_preview.py:212 web/routes/runs/[run_id]/+page.svelte:291
 msgid "Subtitle"
 msgstr "Subtitle"
 
-#: app.py:74 app.py:228 web/routes/+layout.svelte:13
+#: app.py:74 app.py:228 web/routes/+layout.svelte:13 web/routes/suggestions/+page.svelte:56
+#: web/routes/suggestions/+page.svelte:61
 msgid "Suggestions"
 msgstr "Suggestions"
+
+#: web/routes/suggestions/+page.svelte:78
+msgid "Suggestions could not be loaded."
+msgstr "Suggestions could not be loaded."
 
 #: pages/step3_options.py:399 pages/step4_export.py:146
 msgid "Summary"
@@ -1601,7 +1827,7 @@ msgstr "Summary"
 msgid "Surprise me"
 msgstr "Surprise me"
 
-#: web/routes/runs/[run_id]/+page.svelte:150
+#: web/routes/runs/[run_id]/+page.svelte:193
 msgid "Swapped"
 msgstr "Swapped"
 
@@ -1633,6 +1859,18 @@ msgstr "That didn't save. Try again, or use `pictures` in the CLI."
 msgid "That file is not an MP3, M4A or WAV"
 msgstr "That file is not an MP3, M4A or WAV"
 
+#: web/routes/runs/[run_id]/+page.svelte:278
+msgid "The cut as chosen"
+msgstr "The cut as chosen"
+
+#: web/routes/create/+page.svelte:114
+msgid "The cut could not start."
+msgstr "The cut could not start."
+
+#: web/lib/JobPanel.svelte:45
+msgid "The cut is ready."
+msgstr "The cut is ready."
+
 #: pages/memory.py:125 pages/memory_story.py:96 pages/memory_storyboard.py:47
 msgid "The editor left no thesis for this cut."
 msgstr "The editor left no thesis for this cut."
@@ -1640,6 +1878,14 @@ msgstr "The editor left no thesis for this cut."
 #: pages/memory_brief.py:60
 msgid "The editor may play a Live Photo's motion when it earns it"
 msgstr "The editor may play a Live Photo's motion when it earns it"
+
+#: web/routes/runs/[run_id]/+page.svelte:153
+msgid "The film"
+msgstr "The film"
+
+#: web/lib/JobPanel.svelte:45
+msgid "The film is ready."
+msgstr "The film is ready."
 
 #: pages/_step4_upload.py:74
 msgid "The generated video will be uploaded to your Immich instance and added to the specified album."
@@ -1682,6 +1928,14 @@ msgstr ""
 msgid "The model had nothing to say about this picture."
 msgstr "The model had nothing to say about this picture."
 
+#: web/routes/settings/people/+page.svelte:81
+msgid ""
+"The people file (`people.yaml`): who is close, their roles, and how they relate. `people "
+"scan` writes the guesses; your answers stay across scans."
+msgstr ""
+"The people file (`people.yaml`): who is close, their roles, and how they relate. `people "
+"scan` writes the guesses; your answers stay across scans."
+
 #: pages/memory_storyboard.py:148 web/lib/ShotInspector.svelte:140
 msgid "The picture it replaced"
 msgstr "The picture it replaced"
@@ -1691,7 +1945,15 @@ msgstr "The picture it replaced"
 msgid "The pool{value}"
 msgstr "The pool{value}"
 
-#: web/routes/runs/[run_id]/+page.svelte:50
+#: web/lib/labels.ts:45
+msgid "The previous automatic memory used this category."
+msgstr "The previous automatic memory used this category."
+
+#: web/routes/runs/[run_id]/+page.svelte:80
+msgid "The render could not start."
+msgstr "The render could not start."
+
+#: web/routes/runs/[run_id]/+page.svelte:52
 msgid "The revision could not be saved."
 msgstr "The revision could not be saved."
 
@@ -1716,9 +1978,21 @@ msgstr "The story"
 msgid "The type decides the length; turn off to set an exact target"
 msgstr "The type decides the length; turn off to set an exact target"
 
+#: web/lib/labels.ts:48
+msgid "These people appear in the last two people memories."
+msgstr "These people appear in the last two people memories."
+
+#: web/lib/labels.ts:46
+msgid "This category already appears twice in the last six memories."
+msgstr "This category already appears twice in the last six memories."
+
 #: pages/memory.py:182
 msgid "This cut finished while the page was away. Re-load its media to export it."
 msgstr "This cut finished while the page was away. Re-load its media to export it."
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:100
+msgid "This run kept no record of its pool. Cut again to see one."
+msgstr "This run kept no record of its pool. Cut again to see one."
 
 #: pages/step1_cache.py:167
 msgid "Thumbnail cache"
@@ -1737,9 +2011,17 @@ msgstr "Time Elapsed"
 msgid "Title"
 msgstr "Title"
 
+#: web/routes/runs/[run_id]/+page.svelte:288
+msgid "Title (decided as generate decides when empty)"
+msgstr "Title (decided as generate decides when empty)"
+
 #: pages/memory_storyboard.py:53
 msgid "Titles and transitions make up the rest of the film."
 msgstr "Titles and transitions make up the rest of the film."
+
+#: web/routes/create/+page.svelte:160
+msgid "To"
+msgstr "To"
 
 #: pages/step1_people.py:32
 msgid "Together"
@@ -1786,6 +2068,10 @@ msgstr "Trip"
 msgid "Trip detection failed: {exc}"
 msgstr "Trip detection failed: {exc}"
 
+#: web/routes/create/+page.svelte:162
+msgid "Trip number (the biggest when empty)"
+msgstr "Trip number (the biggest when empty)"
+
 #: pages/_step3_music_preview.py:164
 #, python-brace-format
 msgid "Trip: {title_suggestion_trip_type}"
@@ -1799,7 +2085,8 @@ msgstr "Try again"
 msgid "Turn your photo library into video memories"
 msgstr "Turn your photo library into video memories"
 
-#: pages/picture_decisions.py:138 web/routes/runs/[run_id]/+page.svelte:190
+#: pages/picture_decisions.py:138 web/routes/runs/[run_id]/+page.svelte:233
+#: web/routes/runs/[run_id]/pool/+page.svelte:118
 msgid "Undo"
 msgstr "Undo"
 
@@ -1814,6 +2101,10 @@ msgstr "Upload after generation"
 #: pages/step3_options.py:365
 msgid "Upload file"
 msgstr "Upload file"
+
+#: web/routes/runs/[run_id]/+page.svelte:295
+msgid "Upload the film to Immich"
+msgstr "Upload the film to Immich"
 
 #: pages/_step4_upload.py:116
 #, python-brace-format
@@ -1861,7 +2152,7 @@ msgid "Using {name}'s birthday: {value}"
 msgstr "Using {name}'s birthday: {value}"
 
 #: pages/memory_storyboard.py:64 web/lib/ShotInspector.svelte:76
-#: web/routes/runs/[run_id]/+page.svelte:154
+#: web/routes/runs/[run_id]/+page.svelte:197 web/routes/runs/[run_id]/pool/+page.svelte:111
 msgid "Video"
 msgstr "Video"
 
@@ -1877,14 +2168,42 @@ msgstr "Video generated successfully!"
 msgid "Videos"
 msgstr "Videos"
 
-#: web/routes/runs/[run_id]/+page.svelte:111
+#: web/routes/runs/[run_id]/+page.svelte:146
 #, python-brace-format
 msgid "Videos: {count}"
 msgstr "Videos: {count}"
 
+#: web/routes/suggestions/+page.svelte:62
+msgid ""
+"What automation would make next, the same list `auto suggest` prints. Run one as `auto run` "
+"would, or check it first without rendering."
+msgstr ""
+"What automation would make next, the same list `auto suggest` prints. Run one as `auto run` "
+"would, or check it first without rendering."
+
 #: pages/memory_brief.py:204
 msgid "What is it about"
 msgstr "What is it about"
+
+#: web/routes/settings/+page.svelte:45
+msgid ""
+"What this server runs with. The file is the source; environment overrides apply; secrets are "
+"masked."
+msgstr ""
+"What this server runs with. The file is the source; environment overrides apply; secrets are "
+"masked."
+
+#: web/routes/runs/[run_id]/+page.svelte:276
+msgid "What to render"
+msgstr "What to render"
+
+#: web/routes/settings/+page.svelte:50
+msgid "Who is who, their roles and relationships."
+msgstr "Who is who, their roles and relationships."
+
+#: web/routes/create/+page.svelte:198
+msgid "Who may see it"
+msgstr "Who may see it"
 
 #: pages/settings_people.py:134
 msgid ""
@@ -1900,7 +2219,7 @@ msgstr ""
 msgid "Who will watch it"
 msgstr "Who will watch it"
 
-#: pages/suggestions.py:209
+#: pages/suggestions.py:209 web/routes/suggestions/+page.svelte:104
 msgid "Why other suggestions were skipped"
 msgstr "Why other suggestions were skipped"
 
@@ -1917,9 +2236,13 @@ msgstr "Why this picture"
 msgid "Will be saved to: {value}"
 msgstr "Will be saved to: {value}"
 
+#: web/routes/settings/people/+page.svelte:160 web/routes/settings/people/+page.svelte:162
+msgid "With"
+msgstr "With"
+
 #: pages/step1_config.py:261 pages/step1_people.py:250 pages/step1_people.py:312
 #: pages/step1_presets.py:133 pages/step1_presets.py:154 pages/step1_presets.py:203
-#: pages/step1_presets.py:443 pages/step1_tabs.py:67
+#: pages/step1_presets.py:443 pages/step1_tabs.py:67 web/routes/create/+page.svelte:149
 msgid "Year"
 msgstr "Year"
 
@@ -1935,17 +2258,29 @@ msgstr "Year type"
 msgid "Years"
 msgstr "Years"
 
+#: web/routes/create/+page.svelte:158
+msgid "Years back (all when empty)"
+msgstr "Years back (all when empty)"
+
 #: pages/step1_presets.py:109
 msgid "Years to span"
 msgstr "Years to span"
 
-#: pages/settings_people.py:475
+#: pages/settings_people.py:475 web/routes/settings/people/+page.svelte:139
 msgid "Yes, that is right"
 msgstr "Yes, that is right"
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:82
+msgid "You cleared its hold."
+msgstr "You cleared its hold."
 
 #: pages/login.py:92
 msgid "You will be redirected to your identity provider"
 msgstr "You will be redirected to your identity provider"
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:80
+msgid "You'll never use this picture."
+msgstr "You'll never use this picture."
 
 #: pages/picture_decisions.py:114
 msgid "Your decision is gone; the app's own holds apply again."
@@ -1959,10 +2294,18 @@ msgstr "Your memory video is ready!"
 msgid "about 10 minutes per year of range, shorter if the media cannot fill it"
 msgstr "about 10 minutes per year of range, shorter if the media cannot fill it"
 
-#: web/routes/runs/[run_id]/+page.svelte:113
+#: web/routes/runs/[run_id]/+page.svelte:148
 #, python-brace-format
 msgid "about {film} of film"
 msgstr "about {film} of film"
+
+#: web/routes/create/+page.svelte:188
+msgid "all of them together"
+msgstr "all of them together"
+
+#: web/routes/create/+page.svelte:188
+msgid "any of them"
+msgstr "any of them"
 
 #: pages/settings_people.py:433
 msgid "confirmed"
@@ -1996,16 +2339,20 @@ msgstr "north"
 msgid "south"
 msgstr "south"
 
+#: web/routes/suggestions/+page.svelte:70
+msgid "starting"
+msgstr "starting"
+
 #: pages/memory_duration.py:24
 msgid "the type's default length, shorter if the media cannot fill it"
 msgstr "the type's default length, shorter if the media cannot fill it"
 
-#: web/routes/runs/[run_id]/+page.svelte:112
+#: web/routes/runs/[run_id]/+page.svelte:147
 #, python-brace-format
 msgid "{content} of pictures and video"
 msgstr "{content} of pictures and video"
 
-#: web/routes/runs/[run_id]/+page.svelte:185
+#: web/routes/runs/[run_id]/+page.svelte:228
 #, python-brace-format
 msgid "{content} of {budget} the titles leave"
 msgstr "{content} of {budget} the titles leave"
@@ -2029,6 +2376,11 @@ msgstr "{date_range_start} to {date_range_end} · {asset_count} pictures · {val
 #, python-brace-format
 msgid "{description} ({days} days)"
 msgstr "{description} ({days} days)"
+
+#: web/lib/JobPanel.svelte:55
+#, python-brace-format
+msgid "{done} of {total}"
+msgstr "{done} of {total}"
 
 #: pages/settings_people.py:160
 #, python-brace-format
@@ -2060,7 +2412,7 @@ msgstr "{seconds:g} s"
 msgid "{seconds} s on screen"
 msgstr "{seconds} s on screen"
 
-#: pages/settings_config.py:147
+#: pages/settings_config.py:124
 #, python-brace-format
 msgid "{title}  ({n_keys} keys)"
 msgstr "{title}  ({n_keys} keys)"

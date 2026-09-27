@@ -7,6 +7,11 @@ export type Messages = components['schemas']['Messages'];
 export type RunDetail = components['schemas']['RunDetail'];
 export type Cut = components['schemas']['Cut'];
 export type CutShot = components['schemas']['CutShot'];
+export type JobView = components['schemas']['JobView'];
+export type CutBrief = components['schemas']['CutBrief'];
+export type RenderOptions = components['schemas']['RenderOptions'];
+export type NamedPerson = components['schemas']['NamedPerson'];
+export type AlbumChoice = components['schemas']['AlbumChoice'];
 
 export class ApiError extends Error {
   constructor(
@@ -31,3 +36,14 @@ export const thumbnail = (assetId: string, size: 'thumbnail' | 'preview' = 'thum
   `/api/v1/assets/${encodeURIComponent(assetId)}/thumbnail${size === 'preview' ? '?size=preview' : ''}`;
 
 export const video = (assetId: string) => `/api/v1/assets/${encodeURIComponent(assetId)}/video`;
+
+/** POST JSON; a 409 hands back the job already running so the page can join it. */
+export async function post<T>(path: string, body: unknown): Promise<{ status: number; body: T & { detail?: string; job?: JobView } }> {
+  const response = await fetch(`/api/v1${path}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', accept: 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (response.status === 401) await goto('/login', { replaceState: true });
+  return { status: response.status, body: await response.json() };
+}

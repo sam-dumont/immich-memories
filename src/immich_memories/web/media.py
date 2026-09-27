@@ -9,22 +9,23 @@ from fastapi import APIRouter, Depends, Header, Response
 from fastapi.responses import StreamingResponse
 
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
-from immich_memories.cache.thumbnail_sizes import load_thumbnail
+from immich_memories.cache.thumbnail_sizes import load_person_thumbnail, load_thumbnail
 from immich_memories.web.dependencies import (
     PlaybackOpener,
     PreviewFetcher,
+    immich_face,
     immich_playback,
     immich_preview,
     thumbnail_cache,
 )
 
-router = APIRouter(prefix="/api/v1/assets", tags=["media"])
+router = APIRouter(prefix="/api/v1", tags=["media"])
 
 _ASSET_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 _CACHE_CONTROL = "private, max-age=86400"
 
 
-@router.get("/{asset_id}/thumbnail", response_class=Response)
+@router.get("/assets/{asset_id}/thumbnail", response_class=Response)
 def thumbnail(
     asset_id: str,
     cache: Annotated[ThumbnailCache, Depends(thumbnail_cache)],
@@ -43,7 +44,7 @@ def thumbnail(
     return Response(data, media_type="image/jpeg", headers={"Cache-Control": _CACHE_CONTROL})
 
 
-@router.get("/{asset_id}/video", response_class=StreamingResponse)
+@router.get("/assets/{asset_id}/video", response_class=StreamingResponse)
 def video(
     asset_id: str,
     open_playback: Annotated[PlaybackOpener, Depends(immich_playback)],
@@ -60,3 +61,18 @@ def video(
     return StreamingResponse(
         playback.chunks, status_code=playback.status, headers=headers, media_type=media_type
     )
+
+
+@router.get("/people/{person_id}/face", response_class=Response)
+def face(
+    person_id: str,
+    cache: Annotated[ThumbnailCache, Depends(thumbnail_cache)],
+    fetch: Annotated[PreviewFetcher, Depends(immich_face)],
+) -> Response:
+    """A person's face crop at avatar size, fetched from Immich once and cached after."""
+    if not _ASSET_ID.match(person_id):
+        return Response(status_code=404)
+    data = load_person_thumbnail(cache, person_id, fetch)
+    if data is None:
+        return Response(status_code=404)
+    return Response(data, media_type="image/jpeg", headers={"Cache-Control": _CACHE_CONTROL})

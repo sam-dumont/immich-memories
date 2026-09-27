@@ -191,7 +191,9 @@ day is what you get when no picture in the cut carries a usable time.
 still needs. Nothing is selected, so there is nothing to trace.
 
 `--no-render` selects for real, with every reading and every gate, and stops at the encode. The
-pictures it lists are the pictures it would have shipped, and the run is on record like any other.
-The plan it prints ends with the title and subtitle the film would open on, so a title can be tried
-without producing a file. Use it to compare settings, or to time selection without paying for an
-encode you will delete.
+pictures it lists are the pictures it would have shipped, and the cut is kept as a run: it prints
+the run id, `runs story <id>` reads the cut, and [`runs render <id>`](./runs.md#runs-render)
+turns it into the film later, with or without edits made in the web client. The plan it prints
+ends with the title and subtitle the film would open on, so a title can be tried without producing
+a file. Use it to compare settings, to time selection without paying for an encode, or to review a
+cut before rendering it. The web client's **Cut** button runs exactly this command.

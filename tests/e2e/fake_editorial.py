@@ -381,6 +381,17 @@ class _FakeEditorialPipeline:
                 EditorialAttempt(self._context.artifact_dir, request=request) as attempt,
                 cancellation_scope(report_stage.repeat),
             ):
+                from immich_memories.analysis.editorial_source_snapshot import (
+                    SNAPSHOT_NAME,
+                    source_payload,
+                )
+                from immich_memories.security import write_secret_file
+
+                # The production route records the pool it read; the pool page reads it back.
+                write_secret_file(
+                    attempt.directory / SNAPSHOT_NAME,
+                    json.dumps(source_payload(list(sources)), default=str),
+                )
                 self._prepare_previews(sources, attempt, report_stage, check_cancelled)
                 for label in STAGES:
                     update = StageUpdate(
@@ -403,6 +414,17 @@ class _FakeEditorialPipeline:
                     dropped,
                     result.stats.get("editorial_render_timing"),
                 )
+                if binding := result.stats.get("editorial_render_timing"):
+                    from immich_memories.processing.render_inputs import write_render_inputs
+
+                    # The production route keeps these beside the plan; so does the fixture.
+                    write_render_inputs(
+                        attempt.directory,
+                        result.selected_clips,
+                        result.editorial_selections,
+                        result.clip_segments,
+                        binding,
+                    )
                 attempt.complete(
                     selected=len(result.editorial_selections),
                     outcome="selected",

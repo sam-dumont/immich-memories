@@ -105,3 +105,22 @@ def immich_playback(config: Annotated[Config, Depends(current_config)]) -> Playb
         return Playback(status=response.status_code, headers=kept, chunks=chunks())
 
     return open_playback
+
+
+def immich_face(config: Annotated[Config, Depends(current_config)]) -> PreviewFetcher:
+    """Fetch a person's face crop from Immich server-side."""
+
+    def fetch(person_id: str) -> bytes | None:
+        from immich_memories.api.sync_client import SyncImmichClient
+
+        if not config.immich.url or not config.immich.api_key:
+            return None
+        try:
+            with SyncImmichClient(
+                base_url=config.immich.url, api_key=config.immich.api_key
+            ) as client:
+                return client.get_person_thumbnail(person_id)
+        except Exception:  # noqa: BLE001 - a missing face is an empty avatar, not a 500
+            return None
+
+    return fetch

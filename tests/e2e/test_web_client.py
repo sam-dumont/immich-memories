@@ -194,3 +194,84 @@ def test_edits_undo_save_as_a_revision_and_reopen_after_a_reload(
     page.get_by_role("button", name="Open", exact=True).click()
     expect(shots.first.get_by_text("Swapped")).to_be_visible()
     expect(shots.nth(1).get_by_text("Removed")).to_be_visible()
+
+
+def test_a_memory_made_in_the_browser_is_cut_reviewed_revised_rendered_and_played(
+    page: Page, launch_app_url: str
+) -> None:
+    """The whole loop through the real CLI: generate --no-render, a revision, runs render."""
+    page.goto(f"{launch_app_url}/app/create")
+    page.get_by_text("Monthly Highlights", exact=True).click()
+    page.get_by_label("Year", exact=True).fill("2024")
+    page.get_by_label("Month", exact=True).fill("6")
+    # WHY two minutes: the fixture editor keeps all eighteen carriers (79 s) whatever the
+    # length; a real cut fits its budget, so the brief asks for one this cut fits.
+    page.get_by_text("Length and pictures").click()
+    page.get_by_label("Length in minutes", exact=False).fill("2")
+    command = page.get_by_label("Command")
+    expect(command).to_have_text(
+        "immich-memories generate --memory-type=monthly_highlights --year=2024 --month=6 "
+        "--duration=120 --include-photos --include-live-photos --no-render"
+    )
+    page.get_by_role("button", name="Cut", exact=True).click()
+
+    expect(page.get_by_role("region", name="Progress")).to_be_visible()
+    page.wait_for_url("**/app/runs/**", timeout=240_000)
+    sheet = page.get_by_role("list", name="Cut contact sheet")
+    expect(sheet.get_by_role("button").first).to_be_visible(timeout=30_000)
+    shots = sheet.get_by_role("button").count()
+    assert shots >= 3
+
+    page.get_by_role("article", name="Picture review").get_by_role(
+        "button", name="Remove from this cut"
+    ).click()
+    page.get_by_role("button", name="Save revision").click()
+    expect(page.get_by_role("status")).to_have_text("Saved as revision 1.")
+
+    render = page.get_by_role("region", name="Render")
+    render.get_by_label("What to render").select_option(label="Revision 1")
+    render.get_by_label("Music").uncheck()
+    render.get_by_role("button", name="Render", exact=True).click()
+    film = render.locator("video")
+    expect(film).to_be_visible(timeout=600_000)
+    page.wait_for_function(
+        "video => video.readyState >= 1 && video.duration > 1",
+        arg=film.element_handle(),
+        timeout=60_000,
+    )
+    _shoot(page, "web-rendered")
+
+
+def _cut_in_the_browser(page: Page, launch_app_url: str) -> str:
+    page.goto(f"{launch_app_url}/app/create")
+    page.get_by_text("Monthly Highlights", exact=True).click()
+    page.get_by_label("Year", exact=True).fill("2024")
+    page.get_by_label("Month", exact=True).fill("6")
+    page.get_by_role("button", name="Cut", exact=True).click()
+    page.wait_for_url("**/app/runs/**", timeout=240_000)
+    return page.url.rsplit("/", 1)[-1]
+
+
+def test_the_pool_of_a_cut_takes_the_owner_s_word_and_cuts_again(
+    page: Page, launch_app_url: str
+) -> None:
+    first = _cut_in_the_browser(page, launch_app_url)
+    page.get_by_role("link", name="Pool", exact=True).click()
+    pool = page.get_by_role("list", name="Pool")
+    expect(pool.get_by_role("listitem").first).to_be_visible(timeout=30_000)
+    # The pool is the whole library window, so more pictures than the cut kept.
+    assert pool.get_by_role("listitem").count() > len(CARRIERS)
+
+    tiles = pool.get_by_role("listitem")
+    boxes = [tiles.nth(i).get_by_role("checkbox") for i in range(tiles.count())]
+    kept_at = next(i for i, box in enumerate(boxes) if box.is_checked())
+    left_at = next(i for i, box in enumerate(boxes) if not box.is_checked())
+    tiles.nth(kept_at).get_by_role("button", name="Never use").click()
+    expect(tiles.nth(kept_at).get_by_text("You'll never use this picture.")).to_be_visible()
+    expect(boxes[kept_at]).not_to_be_checked()
+    boxes[left_at].check()
+    expect(page.get_by_text("Keep: 1 · Leave out: 1")).to_be_visible()
+    _shoot(page, "web-pool")
+
+    page.get_by_role("button", name="Cut again with these choices").click()
+    page.wait_for_url(lambda url: "/app/runs/" in url and first not in url, timeout=240_000)

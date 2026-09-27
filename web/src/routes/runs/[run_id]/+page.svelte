@@ -1,7 +1,9 @@
 <script lang="ts">
   import { Alert, Badge, Button, Heading, Text } from '@immich/ui';
   import { mdiArrowLeft, mdiContentSaveOutline, mdiDownload, mdiPlay, mdiUndo } from '@mdi/js';
-  import { api, ApiError, thumbnail, type CutShot } from '$lib/api';
+  import { api, ApiError, post, thumbnail, type CutShot, type JobView } from '$lib/api';
+  import { followJob } from '$lib/job.svelte';
+  import JobPanel from '$lib/JobPanel.svelte';
   import type { components } from '$lib/api-types';
   import { CutEditor } from '$lib/cut-edits.svelte';
   import { locale, t } from '$lib/i18n.svelte';
@@ -51,6 +53,39 @@
     } finally {
       saving = false;
     }
+  }
+
+  // Rendering: the cut as chosen, or one saved revision of it, through `runs render`.
+  let renderFrom = $state<number | null>(null);
+  let renderTitle = $state('');
+  let renderSubtitle = $state('');
+  let renderMusic = $state(true);
+  let renderOrientation = $state('auto');
+  let renderUpload = $state(false);
+  let renderJob = $state<JobView | null>(null);
+  let renderProblem = $state('');
+
+  async function render() {
+    renderProblem = '';
+    const { status, body } = await post<JobView>(`/runs/${encodeURIComponent(run.run_id)}/renders`, {
+      revision: renderFrom,
+      title: renderTitle || null,
+      subtitle: renderSubtitle || null,
+      no_music: !renderMusic,
+      orientation: renderOrientation === 'auto' ? null : renderOrientation,
+      upload_to_immich: renderUpload,
+    });
+    const started = status === 202 ? body : status === 409 ? body.job : null;
+    if (!started) {
+      renderProblem = body.detail ?? t('The render could not start.');
+      return;
+    }
+    renderJob = started;
+    followJob(started.id, (update) => (renderJob = update));
+  }
+
+  async function cancelRender() {
+    if (renderJob) renderJob = (await post<JobView>(`/jobs/${encodeURIComponent(renderJob.id)}/cancel`, {})).body;
   }
 
   let filter = $state<'all' | 'videos' | 'stills'>('all');
@@ -113,6 +148,11 @@
         {#if cut.film_seconds}<span>{t('about {film} of film', { film: clock(cut.film_seconds) })}</span>{/if}
       {/if}
     </p>
+    {#if run.film}
+      <!-- svelte-ignore a11y_media_has_caption -->
+      <video class="w-full max-w-3xl rounded-2xl bg-black" controls preload="metadata" aria-label={t('The film')}
+        src={`/api/v1/runs/${encodeURIComponent(run.run_id)}/film`}></video>
+    {/if}
     {#if cut?.thesis}<p class="max-w-4xl text-lg">{cut.thesis}</p>{/if}
     {#each run.warnings as warning, index (index)}
       <Alert color="warning" size="small">{warning}</Alert>
@@ -128,7 +168,10 @@
             onclick={() => (filter = value)}>{t(label)}</Button>
         {/each}
       </div>
-      <Text size="small" color="muted">{t('Order and timecodes from the saved cut.')}</Text>
+      <div class="flex items-center gap-3">
+        <Text size="small" color="muted">{t('Order and timecodes from the saved cut.')}</Text>
+        <Button size="small" variant="outline" href={`/app/runs/${encodeURIComponent(run.run_id)}/pool`}>{t('Pool')}</Button>
+      </div>
     </div>
 
     <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
@@ -172,7 +215,7 @@
           <div class="mb-3 lg:hidden">
             <Button size="small" variant="ghost" leadingIcon={mdiArrowLeft} onclick={() => (inspecting = false)}>{t('Back to pictures')}</Button>
           </div>
-          {#if editor}<ShotInspector shot={selected} modelPolish={cut.model_polish} {editor} />{/if}
+          {#if editor}<ShotInspector shot={selected} modelPolish={cut.model_polish} {editor} runId={run.run_id} />{/if}
         </div>
       {/if}
     </div>
@@ -214,6 +257,47 @@
     {/if}
   {:else}
     <Text color="muted">{t('No saved cut is available for this run.')}</Text>
+  {/if}
+
+  {#if cut}
+    <section class="flex flex-col gap-4 border-t border-gray-200 pt-6 dark:border-gray-800" aria-label={t('Render')}>
+      <Heading size="tiny" tag="h2">{t('Render')}</Heading>
+      {#if renderJob}
+        <JobPanel job={renderJob} onCancel={cancelRender} />
+        {#if renderJob.status === 'succeeded' && renderJob.result_run_id}
+          <!-- svelte-ignore a11y_media_has_caption -->
+          <video class="w-full max-w-3xl rounded-2xl bg-black" controls preload="metadata"
+            src={`/api/v1/runs/${encodeURIComponent(renderJob.result_run_id)}/film`}></video>
+          <a class="w-fit text-sm text-primary hover:underline" href={`/app/runs/${encodeURIComponent(renderJob.result_run_id)}`}>{t('Open the film run')}</a>
+        {/if}
+      {/if}
+      {#if !renderJob || renderJob.status !== 'running'}
+        <form class="grid max-w-3xl gap-4 sm:grid-cols-2" onsubmit={(event) => { event.preventDefault(); void render(); }}>
+          <label class="flex flex-col gap-1 text-sm font-medium">{t('What to render')}
+            <select class="rounded-lg border border-gray-300 bg-light px-3 py-2 dark:border-gray-700" bind:value={renderFrom}>
+              <option value={null}>{t('The cut as chosen')}</option>
+              {#each revisions as revision (revision.number)}<option value={revision.number}>{t('Revision {number}', { number: revision.number })}</option>{/each}
+            </select>
+          </label>
+          <label class="flex flex-col gap-1 text-sm font-medium">{t('Orientation')}
+            <select class="rounded-lg border border-gray-300 bg-light px-3 py-2 dark:border-gray-700" bind:value={renderOrientation}>
+              <option value="auto">{t('Automatic')}</option><option value="landscape">{t('Landscape')}</option>
+              <option value="portrait">{t('Portrait')}</option><option value="square">{t('Square')}</option>
+            </select>
+          </label>
+          <label class="flex flex-col gap-1 text-sm font-medium">{t('Title (decided as generate decides when empty)')}
+            <input class="rounded-lg border border-gray-300 bg-light px-3 py-2 dark:border-gray-700" bind:value={renderTitle} />
+          </label>
+          <label class="flex flex-col gap-1 text-sm font-medium">{t('Subtitle')}
+            <input class="rounded-lg border border-gray-300 bg-light px-3 py-2 dark:border-gray-700" bind:value={renderSubtitle} />
+          </label>
+          <label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={renderMusic} />{t('Music')}</label>
+          <label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={renderUpload} />{t('Upload the film to Immich')}</label>
+          {#if renderProblem}<p class="text-sm text-danger sm:col-span-2" role="alert">{renderProblem}</p>{/if}
+          <Button type="submit" class="w-fit">{t('Render')}</Button>
+        </form>
+      {/if}
+    </section>
   {/if}
 
   <section class="flex flex-col gap-3 border-t border-gray-200 pt-6 dark:border-gray-800">

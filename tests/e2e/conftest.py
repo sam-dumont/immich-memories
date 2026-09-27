@@ -136,8 +136,9 @@ from tests.e2e.fake_editorial import install_fake_editorial_route
 # test has to land while the six stages are still running.
 install_fake_editorial_route(stage_seconds=1.5, models_fetched=sys.argv[4] == "fetched")
 
-from tests.e2e.fake_automation import install_fake_automation
+from tests.e2e.fake_automation import install_fake_automation, install_hermetic_web_jobs
 install_fake_automation(config_path, state_dir)
+install_hermetic_web_jobs(config_path, state_dir)
 
 from immich_memories.ui.app import main
 

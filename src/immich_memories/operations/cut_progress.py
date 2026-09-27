@@ -20,6 +20,7 @@ from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, replace
+from datetime import UTC, datetime
 from math import ceil
 from pathlib import Path
 from typing import Any
@@ -219,3 +220,58 @@ def read_stage_progress(directory: Path | None) -> StageUpdate | None:
         return None
     progress = StageUpdate.from_record(record)
     return progress if progress is not None and progress.counted else None
+
+
+def started_before(record: Mapping[str, Any], since: datetime | None) -> bool:
+    if since is None:
+        return False
+    try:
+        started = datetime.fromisoformat(str(record.get("started_at") or ""))
+    except ValueError:
+        return False
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=UTC)
+    return started < since
+
+
+def read_latest_attempt(root: Path | None, since: datetime | None = None) -> dict[str, Any] | None:
+    """The newest attempt under a cut key, its liveness read from the lease.
+
+    An attempt started before `since` belongs to an earlier cut of the same
+    brief and reads as no attempt at all.
+    """
+    # WHY local: editorial_attempt records StageUpdate from this module.
+    from immich_memories.operations.editorial_attempt import LATEST_ATTEMPT, read_editorial_attempt
+
+    if root is None:
+        return None
+    pointer = root / LATEST_ATTEMPT
+    if not pointer.is_file():
+        return None
+    try:
+        directory = Path(json.loads(pointer.read_text())["directory"])
+        record = read_editorial_attempt(directory)
+    except (OSError, ValueError, KeyError):
+        return None
+    if started_before(record, since):
+        return None
+    return record | {"directory": str(directory)}
+
+
+def live_progress_of(record: Mapping[str, Any] | None) -> StageUpdate | None:
+    """The numbers the attempt is reporting right now, read from its own record.
+
+    Going through the record rather than the session's own key is what makes a
+    reload rejoin the bar exactly where it rejoins the rows. A stage that counts
+    nothing carries no numbers, so a finished per-asset pass never leaves a
+    full bar under a row that has moved on to other work.
+    """
+    progress = StageUpdate.from_record((record or {}).get("progress"))
+    return progress if progress is not None and progress.counted else None
+
+
+def recent_pictures_of(record: Mapping[str, Any] | None) -> tuple[str, ...]:
+    """The pictures the attempt's last counted pass finished most recently."""
+    directory = (record or {}).get("directory")
+    snapshot = read_stage_progress(Path(directory)) if directory else None
+    return snapshot.recent_asset_ids if snapshot is not None else ()

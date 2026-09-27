@@ -21,13 +21,11 @@ from typing import Any
 from starlette.responses import Response
 
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
-from immich_memories.cache.thumbnail_sizes import downscale_to_thumbnail, load_thumbnail
+from immich_memories.cache.thumbnail_sizes import load_person_thumbnail, load_thumbnail
 
 THUMB_PATH = "/media/thumb/{asset_id}"
 PERSON_PATH = "/media/person/{person_id}"
 
-# The People page draws a 64 px avatar; 128 px covers a 2x display.
-AVATAR_PX = 128
 
 _ASSET_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 _SIZES = frozenset({"thumbnail", "preview"})
@@ -63,28 +61,6 @@ def register_media_route(target: Any, resolve_cache: CacheResolver) -> None:
         return Response(data, media_type="image/jpeg", headers={"Cache-Control": _CACHE_CONTROL})
 
     target.add_api_route(THUMB_PATH, thumbnail, methods=["GET"])
-
-
-def load_person_thumbnail(
-    cache: ThumbnailCache, person_id: str, fetch: PersonFetcher
-) -> bytes | None:
-    """The face crop at avatar size, fetched from Immich once and cached after.
-
-    Face crops live in the same session cache as the pictures, under their own
-    key, so clearing the thumbnail cache forgets them too and nothing is kept
-    that the pictures' own retention would not keep.
-    """
-    key = f"person-{person_id}"
-    cached = cache.get(key, "thumbnail")
-    if cached:
-        return cached
-    raw = fetch(person_id)
-    if not raw:
-        return None
-    small = downscale_to_thumbnail(raw, px=AVATAR_PX)
-    if small:
-        cache.put(key, "thumbnail", small)
-    return small
 
 
 def immich_person_face(person_id: str) -> bytes | None:

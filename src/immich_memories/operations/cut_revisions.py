@@ -20,6 +20,7 @@ from immich_memories.operations.storyboard import (
     Storyboard,
     moment_alternatives,
     read_storyboard,
+    source_intervals,
 )
 from immich_memories.processing.editorial_owner_edits import review_interval
 
@@ -46,13 +47,17 @@ class CutRevision:
     content_seconds: float
 
 
-def _content_seconds(board: Storyboard, edits: CutEdits) -> float:
+def _content_seconds(
+    board: Storyboard, edits: CutEdits, intervals: Mapping[str, tuple[float, float]]
+) -> float:
+    """The seconds the renderer will count: recorded intervals, not the squeezed storyboard."""
     total = 0.0
     for shot in board.shots:
         if shot.asset_id in edits.removed:
             continue
         playing = edits.swaps.get(shot.asset_id, shot.asset_id)
-        start, end = edits.segments.get(playing, (0.0, shot.seconds))
+        recorded = intervals.get(shot.asset_id, (0.0, shot.seconds))
+        start, end = edits.segments.get(playing, (0.0, recorded[1] - recorded[0]))
         total += end - start
     return round(total, 2)
 
@@ -123,7 +128,7 @@ def _checked(attempt_dir: Path, board: Storyboard, edits: CutEdits) -> None:
         except ValueError as error:
             raise RevisionRefused(str(error)) from error
     budget = board.content_budget_seconds
-    seconds = _content_seconds(board, edits)
+    seconds = _content_seconds(board, edits, source_intervals(attempt_dir))
     if budget is not None and seconds > budget + 1e-6:
         raise RevisionRefused(
             f"The edited cut needs {seconds:.1f} s of pictures and video; "
@@ -146,7 +151,7 @@ def save_revision(attempt_dir: Path, edits: CutEdits) -> CutRevision:
         number=len(read_revisions(attempt_dir)) + 1,
         created_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         edits=edits,
-        content_seconds=_content_seconds(board, edits),
+        content_seconds=_content_seconds(board, edits, source_intervals(Path(attempt_dir))),
     )
     _write(Path(attempt_dir) / REVISIONS_DIR, revision)
     return revision
