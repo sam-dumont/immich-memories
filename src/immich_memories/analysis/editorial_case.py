@@ -81,19 +81,25 @@ class TextRequest:
     refresh: bool = False
     json_fields: tuple[str, ...] = ()
     json_empty_array_pairs: tuple[tuple[str, str], ...] = ()
+    json_optional_fields: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        from immich_memories.analysis.editorial_json_completion import validate_empty_array_pairs
+        from immich_memories.analysis.editorial_json_completion import (
+            validate_empty_array_pairs,
+            validate_optional_fields,
+        )
 
         if self.json_fields and not self.json_object:
             raise ValueError("JSON fields require the JSON response contract")
         validate_empty_array_pairs(self.json_fields, self.json_empty_array_pairs)
+        validate_optional_fields(self.json_fields, self.json_optional_fields)
 
     @property
     def judgment_key(self) -> str:
         from immich_memories.analysis.editorial_json_completion import (
             JSON_EMPTY_ARRAY_POLICY,
             JSON_FIELDS_POLICY,
+            JSON_OPTIONAL_FIELDS_POLICY,
             JSON_RECOVERY_POLICY,
         )
 
@@ -114,6 +120,12 @@ class TextRequest:
             + (
                 f"/{JSON_EMPTY_ARRAY_POLICY}:" + json.dumps(sorted(self.json_empty_array_pairs))
                 if self.json_empty_array_pairs
+                else ""
+            )
+            + (
+                f"/{JSON_OPTIONAL_FIELDS_POLICY}:"
+                + json.dumps(sorted(set(self.json_optional_fields)))
+                if self.json_optional_fields
                 else ""
             ),
         )
