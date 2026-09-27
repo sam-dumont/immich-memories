@@ -118,7 +118,9 @@ def ask_people(reader, key, brief, people):
 FILTERS = '''Turn the owner's request into filters over their photo library. Use the facts given
 (people with their roles and birth dates, today's date, years found in the request) to decide:
 the date range the photos were taken in (YYYY-MM-DD, or null for no bound), and whether the listed
-people's faces must be recognised in every photo. Return JSON.'''
+people's faces must be recognised in every photo. A request about one moment or event gets the
+short range that moment covers; only a request that runs on ("since", "along the years") leaves
+the end open. Return JSON.'''
 
 
 def ask_filters(reader, key, brief, named, years):
@@ -586,6 +588,11 @@ def main():
     pool_scope = in_window & scope
 
     named = [people[p] | {"name": p} for p in plan.get("people") or [] if p in people]
+    if named:
+        # "my son" is a person: faces and presence per episode decide identity. A visual
+        # "same as the reference?" is for things (a car, a house, a kit), never people: it
+        # dropped 42 of 46 birth photos as "different" from an operating-room reference.
+        plan["same_thing"] = None
     filters = ask_filters(reader, key, brief, named, [y for y in (since, until) if y])
     plan["filters"] = filters
     lo, hi = filters.get("date_from") or "0000", filters.get("date_to") or "9999"
