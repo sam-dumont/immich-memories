@@ -149,6 +149,9 @@ gets the title asked for once more, then the day is dropped.
 Each proposed occasion is checked against that day's own evidence. An ordinary-day verdict drops it; an
 unreadable answer stays unjudged. A missing subtitle does not discard an otherwise valid confirmation, and
 existing valid cached answers are reused.
+A day that contains its occasion (most of its pictures at one place, a stretch the rest of the day
+only frames) is asked once more about that stretch before an ordinary verdict drops it, and a
+description longer than asked for is cut at a word rather than voiding the answer.
 
 Either way a day is kept only if a film of it can run 30 seconds, and a day can carry a window (the stretch at
 the circuit inside a long day) when that window holds at least half its pictures.

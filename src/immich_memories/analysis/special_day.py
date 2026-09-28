@@ -688,10 +688,23 @@ def _day_answer(raw: str) -> dict:
         answer["subtitle"] = ""
     # A grounded title can stand alone; facts-only answers already omit the summary.
     answer.setdefault("what", "")
-    for field, limit in (("title", 90), ("subtitle", 90), ("what", 80)):
-        if not isinstance(answer.get(field), str) or len(answer[field]) > limit:
-            raise ValueError(f"special-day {field} is not bounded text")
+    for field in ("title", "subtitle", "what"):
+        if not isinstance(answer.get(field), str):
+            raise ValueError(f"special-day {field} is not text")
+    if len(answer["title"]) > 90:
+        raise ValueError("special-day title is not bounded text")
+    # The verdict and the title are the answer. A small reader asked for an 80-character
+    # description of a race day wrote 170 of them three times in three; the day was lost.
+    answer["subtitle"] = _cut_at_a_word(answer["subtitle"], 90)
+    answer["what"] = _cut_at_a_word(answer["what"], 80)
     return answer
+
+
+def _cut_at_a_word(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    cut = text[: limit + 1].rsplit(" ", 1)[0] if " " in text[:limit] else text[:limit]
+    return cut[:limit].rstrip(" ,;:-")
 
 
 def _accepts_day_answer(raw: str) -> bool:
