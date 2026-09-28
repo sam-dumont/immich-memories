@@ -42,7 +42,18 @@ docker compose exec immich-memories immich-memories models fetch   # the CPU cla
 
 Open http://localhost:8080, pick **Monthly Highlights**, a month, and press **Cut**. The [Quick start](https://sam-dumont.github.io/immich-video-memory-generator/docs/get-started/quick-start) walks it step by step, and [Teach it your family](https://sam-dumont.github.io/immich-video-memory-generator/docs/get-started/who-is-who) covers the two settings that make the cut good: where home is, and who is who. Without Docker: [pip / uv](https://sam-dumont.github.io/immich-video-memory-generator/docs/run/uv-pip).
 
-The port is published on localhost only and authentication is off by default. The app holds an API key to your whole library, so turn on [authentication](https://sam-dumont.github.io/immich-video-memory-generator/docs/run/authentication) before you expose it. One instance only: the UI is single-user.
+The port is published on localhost only and authentication is disabled by default. The app holds an API key to your whole library, so turn on [authentication](https://sam-dumont.github.io/immich-video-memory-generator/docs/run/authentication) before you expose it. The UI is single-user, single-replica: run one instance.
+
+### Immich v2 and v3
+
+Both majors work, Immich v2 and v3, detected at runtime:
+
+```yaml
+immich:
+  api_version: auto  # auto | v2 | v3
+```
+
+Leave this on `auto`. The app detects the server major version and uses the matching API contract; you do not choose a version for each run. The explicit `v2` and `v3` values are manual troubleshooting overrides: escape hatches for proxies or unusual deployments that hide or rewrite the version endpoint. They force that contract, so don't use them as upgrade flags.
 
 ## What leaves your network
 
