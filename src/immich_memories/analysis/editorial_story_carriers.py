@@ -39,6 +39,7 @@ from immich_memories.analysis.editorial_story_standing import (
     WEIGHED_STORY_WEIGHTS,
     StandingGate,
 )
+from immich_memories.analysis.editorial_thin_vote import sole_era_shots
 
 MAX_PASSES = 3
 
@@ -581,10 +582,14 @@ class CarrierAdmission:
     def _weakest_unvouched(self) -> dict | None:
         stories = Counter(c["story_episode"] for c in self.carriers)
         order = {id(c): i for i, c in enumerate(self.carriers)}
+        # A year the film gives a voice keeps its only shot, the one its allocation granted.
+        voices = sole_era_shots(self.carriers, self.parts.voice_of)
         unvouched = [
             c
             for c in self.carriers
-            if not self._vouched(c) and c["asset_id"] not in self.kept_without_standing
+            if not self._vouched(c)
+            and c["asset_id"] not in self.kept_without_standing
+            and c["asset_id"] not in voices
         ]
         # A story keeps its only picture while another story can give one up; inside that,
         # the weakest standing goes first, and the latest admitted before an earlier one.
