@@ -31,8 +31,7 @@ from immich_memories.analysis.llm_wire import openai_headers
 from immich_memories.api.models import Asset, ExifInfo
 from immich_memories.config import Config
 from model_reader import Reader
-from discovery import words
-from filters_loop import revise
+from spec import AT_HOME_KM, at_home_rows, build_spec, build_subject, homes, show
 from query import companion_terms, retrieve_plan, vocabulary
 from workflow import choose_sources
 
@@ -594,13 +593,14 @@ def firsts(reader, library, key, name, person, rows):
 
 
 COMPACT = '''For each numbered photo caption, answer whether that photo belongs in the film the owner
-asked for: "yes" only when the caption makes what the owner asked for the main subject of the
-photo, "no" when it is absent or only in the background, "unsure" when the caption cannot tell.
+asked for, as what_belongs describes it: "yes" only when the caption makes it the main subject of
+the photo, "no" when it is absent, only in the background, or what_belongs rules it out, "unsure"
+when the caption cannot tell.
 Captions never know names or whose something is. Return JSON with one answer per caption, in order.'''
 COMPACT_BATCH = 24
 
 
-def choose_compact(reader, library, key, brief, refs):
+def choose_compact(reader, library, key, brief, refs, meaning=None):
     """The cheap text check: one short enforced verdict per caption, no reasons (reasons were
     ~90% of the time: 1.6 s per caption)."""
     decisions = []
@@ -610,7 +610,7 @@ def choose_compact(reader, library, key, brief, refs):
         schema = _schema(answers={"type": "array", "items": {"type": "string", "enum": ["yes", "no", "unsure"]},
                                   "minItems": len(part), "maxItems": len(part)})
         answer = reader.ask("compact_check", f"{key}:{start}", COMPACT,
-                            {"owner_request": brief,
+                            {"owner_request": brief, "what_belongs": meaning or brief,
                              "captions": [f"{n + 1}. {library.rows[i]['caption'][:140]}" for n, i in enumerate(part)]},
                             lambda a: None, 20 + 6 * len(part), schema=schema)
         verdicts = (answer or {}).get("answers") or ["unsure"] * len(part)
@@ -628,34 +628,26 @@ def main():
     config = Config.from_yaml(Path.home() / ".immich-memories/config.yaml")
     since, until = years_of(brief)
 
-    def valid(a):
-        assert a["scope"] in {"any", "home", "trips"}
-        assert all(isinstance(a[k], list) for k in ("subject", "read_text", "exclusions", "unverifiable"))
-
     people = known_people()
-    plan = ask_plan(reader, key, brief, {"caption_vocabulary": vocabulary(300)}, library, people)
-    if plan is None:
-        raise SystemExit("E4B returned no valid plan")
-    plan |= {"since": since, "until": until}
-    for field, default in (("title", brief[:60]), ("unmapped", []), ("people", []), ("firsts", False),
-                           ("same_thing", None), ("visual_questions", []), ("exclusions", []),
-                           ("unverifiable", [])):
-        plan.setdefault(field, default)
-    # Qualifiers are joined to the subject by code, not left to the model to remember.
-    if plan.get("qualifiers") and plan["subject"]:
-        plan["subject"] = [f"{q} {s}" for q in plan["qualifiers"] for s in plan["subject"]
-                           if q.lower() not in s.lower()] + [s for s in plan["subject"]
-                           if any(q.lower() in s.lower() for q in plan["qualifiers"])]
-    # A scope narrows only when the sentence states it, like dates: "club rides" is not a trip.
-    stated = {"trips": r"\b(holiday|holidays|vacation|trip|trips|travel|travels|abroad|journey)\b",
-              "home": r"\b(home|house|flat|apartment|our place|garden)\b"}
-    if plan["scope"] in stated and not re.search(stated[plan["scope"]], brief, re.I):
-        plan["scope_dropped"], plan["scope"] = plan["scope"], "any"
     bank = os.environ.get("BANK") or config.editorial.resolve_annotation_database(config.cache.cache_path)
     assets = bank_assets(library, bank)
+    lived = homes(library, assets)
+    named = [people[p] | {"name": p} for p in ask_people(reader, key, brief, people) if p in people]
+    # The translation, printed before anything runs on it (spec.py): every field is one grounded answer.
+    spec = build_spec(reader, key, brief, library, named, lived, [y for y in (since, until) if y])
+    plan = {"people": spec["people"], "read_text": spec["text_in_photo"],
+            "firsts": spec["shape"] == "first times", "scope": spec["where"]["kind"], "title": brief[:60],
+            "same_thing": None, "since": since, "until": until, "exclusions": [], "unverifiable": [],
+            "unmapped": []}
     in_window = {i for i, r in enumerate(library.rows)
                  if (since or 1) <= int(r["taken_at"][:4]) <= (until or 9999)}
-    scope, scope_note = scoped(library, config, plan["scope"], assets)
+    kind = spec["where"]["kind"]
+    if kind in {"home", "home_at_time"}:
+        scope = at_home_rows(library, assets, lived, spec["where"]["home"] if kind == "home" else None)
+        scope_note = f"{len(scope)} pictures within {AT_HOME_KM * 1000:.0f} m of " + (
+            f"the {spec['where']['home']} home" if kind == "home" else "the home of the time")
+    else:
+        scope, scope_note = scoped(library, config, kind, assets)
     pool_scope = in_window & scope
 
     named = [people[p] | {"name": p} for p in plan.get("people") or [] if p in people]
@@ -664,13 +656,21 @@ def main():
         # "same as the reference?" is for things (a car, a house, a kit), never people: it
         # dropped 42 of 46 birth photos as "different" from an operating-room reference.
         plan["same_thing"] = None
-    filters = ask_filters(reader, key, brief, named, [y for y in (since, until) if y])
+    filters = {"date_from": spec["when"]["from"], "date_to": spec["when"]["to"],
+               "faces_required": spec["people_must_appear"]}
     plan["filters"] = filters
     lo, hi = filters.get("date_from") or "0000", filters.get("date_to") or "9999"
     pool_scope &= {i for i, r in enumerate(library.rows) if lo <= r["taken_at"][:10] <= hi + "z"}
     if named and filters.get("faces_required"):
         # Who is in a picture is Immich's face data, never a caption word, read per episode.
         pool_scope &= set().union(*(present_rows(library, p) for p in named))
+    # What the photos show is chosen from candidates the filtered pictures themselves offer.
+    spec = build_subject(reader, key, brief, library, spec, pool_scope)
+    print(show(spec), file=sys.stderr)
+    if os.environ.get("SPEC_ONLY"):
+        print(json.dumps({"brief": original, "spec": spec, "structural": len(pool_scope)}, ensure_ascii=False))
+        return
+    plan |= {"subject": spec["caption_words"], "visual_questions": [spec["question"]], "meaning": spec["meaning"]}
     if plan.get("firsts") and named:
         chosen, offered = firsts(reader, library, key, named[0]["name"], named[0], pool_scope)
         plan["subject"], plan["read_text"] = [], []
@@ -712,11 +712,6 @@ def main():
         # and caption-less ones (forwarded) that the visual check will judge.
         subject = (subject & members) | anchors | uncaptioned if subject else members | anchors
     pool = (subject if (plan["subject"] or plan["read_text"]) else pool_scope) & pool_scope
-    if plan["subject"] and not plan.get("firsts"):
-        # Gemma sees what its filters found and revises them; code only runs and grounds them.
-        within = (members | anchors) & pool_scope if plan["read_text"] else pool_scope
-        pool, plan["revisions"] = revise(reader, key, brief, library, plan["subject_phrases"], within,
-                                         (anchors | uncaptioned) & pool_scope)
 
     # Relevance to the ask: its own specific words weigh most, then their companions, then the subject.
     own_set, comp_set = set(plan.get("_own") or []), set(plan.get("_companions") or [])
@@ -740,7 +735,7 @@ def main():
             # so each first goes straight to its own photo question.
             decisions = [{"ref": i, "decision": "unknown"} for i in sorted(pool)]
         else:
-            decisions = choose_compact(reader, library, key, brief,
+            decisions = choose_compact(reader, library, key, brief, meaning=plan.get("meaning"), refs=
                                        sorted(set(offered) | {i for i in anchors & pool if not library.rows[i].get("uncaptioned")}))
         plan["budgets"] = {"text": len(decisions)}
         kept = sorted((d["ref"] for d in decisions if d["decision"] == "match"),
@@ -793,14 +788,14 @@ def main():
     if os.environ.get("FILM_DRY") or len(kept) < 5:
         return
     intent = ROOT / "translations" / f"{key[10:]}.intent.json"
-    intent.write_text(json.dumps({"asset_ids": [library.rows[i]["asset_id"] for i in kept],
-                                  "thesis": record["thesis"] or brief}))
-    first, last = library.rows[kept[0]]["taken_at"][:10], library.rows[kept[-1]]["taken_at"][:10]
+    intent.write_text(json.dumps({"name": plan.get("title") or brief[:60], "thesis": record["thesis"] or brief,
+                                  "asset_ids": [library.rows[i]["asset_id"] for i in kept]}))
+    # The pool is the film's whole material, as an album is: no date window around it, and the
+    # album length curve over its photographed days (a multi-year date range clamps to 30 s).
     # Owner ruling: free-text films keep forwarded pictures (a club's photos arrive by chat).
-    subprocess.run(["/private/tmp/imm-threads/.venv/bin/immich-memories", "generate", "--start", first,
-                    "--end", last, "--title", plan.get("title") or brief[:60], "--accept-any-provenance",
-                    "--no-render", "--trace-selection", str(intent.with_suffix(".trace.json"))],
-                   env=os.environ | {"IMMICH_MEMORIES_INTENT": str(intent)}, check=False)
+    subprocess.run(["/private/tmp/imm-threads/.venv/bin/immich-memories", "generate", "--from-album",
+                    f"file:{intent}", "--accept-any-provenance", "--no-render",
+                    "--trace-selection", str(intent.with_suffix(".trace.json"))], check=False)
 
 
 if __name__ == "__main__":
