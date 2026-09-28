@@ -90,18 +90,16 @@ def legacy_files(home: Path) -> tuple[list[Path], list[Path]]:
     """The annotation files and judgment files the current code would have used under `home`."""
     caches = [home / "cache"]
     annotations = [home / "cache" / "annotations.sqlite"]
-    config_path = home / "config.yaml"
-    if config_path.is_file():
-        try:
-            from immich_memories.config_loader import Config
+    # Loaded even when the home has no config.yaml (a missing file reads as empty): a
+    # container moves its cache in the environment and ships no file.
+    try:
+        from immich_memories.config_loader import Config
 
-            config = Config.from_yaml(config_path)
-            caches.append(config.cache.cache_path)
-            annotations.append(
-                config.editorial.resolve_annotation_database(config.cache.cache_path)
-            )
-        except Exception as exc:  # WHY: a config that no longer loads still has default files
-            logger.warning("config.yaml unreadable for the import (%s): default paths only", exc)
+        config = Config.from_yaml(home / "config.yaml")
+        caches.append(config.cache.cache_path)
+        annotations.append(config.editorial.resolve_annotation_database(config.cache.cache_path))
+    except Exception as exc:  # WHY: a config that no longer loads still has default files
+        logger.warning("config.yaml unreadable for the import (%s): default paths only", exc)
     judgment_files = [cache / "judgments.db" for cache in caches]
     return _existing(annotations), _existing(judgment_files)
 

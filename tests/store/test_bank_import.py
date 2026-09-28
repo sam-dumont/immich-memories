@@ -145,3 +145,17 @@ def test_a_home_without_banks_imports_nothing(store, root):
     outcome = import_legacy(store, root / ".immich-memories")
 
     assert (outcome.imported, outcome.skipped) == (0, 0)
+
+
+def test_a_home_configured_by_the_environment_alone_brings_its_owner_edits(store, root):
+    # The Docker image names its output directory in the environment and ships no
+    # config.yaml, so the films and their reviews sit where only the environment says.
+    home = root / ".immich-memories"
+    home.mkdir(parents=True)
+    _write(root / "Films" / "june.owner-edits-1234abcd.private.json", EDIT)
+
+    outcome = import_legacy(store, home)
+
+    assert outcome.imported == 1
+    with store.connect() as connection:
+        assert connection.execute(sa.select(owner_edits.c.film_stem)).scalars().all() == ["june"]

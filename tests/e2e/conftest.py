@@ -13,6 +13,7 @@ import os
 import signal
 import subprocess
 import time
+import uuid
 from collections.abc import Generator
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,14 +23,20 @@ import pytest
 import yaml
 from playwright.sync_api import Page
 
-from immich_memories.db import Store, StoreLocation, open_store
+from immich_memories.db import Store, StoreLocation, close_stores, open_store
+from immich_memories.db.bootstrap import DEFAULT_SCHEMA, normalize_url
 from tests.e2e.fake_immich import FakeImmichServer
+from tests.store.backends import drop_schema
 
 _BASE_PORT = 8099
 _BASE_URL = f"http://localhost:{_BASE_PORT}"
 _STARTUP_TIMEOUT = 30  # seconds
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _SERVER_COVERAGE_FILE = _REPO_ROOT / ".coverage.e2e-server"
+
+# The launch check's store backend. Unset: a SQLite file per workspace. A PostgreSQL URL:
+# each workspace gets its own schema in that database, dropped when the session ends.
+E2E_DATABASE_ENV = "IMMICH_MEMORIES_E2E_DATABASE_URL"
 
 
 def pytest_configure(config: pytest.Config) -> None:
@@ -46,12 +53,13 @@ class LaunchWorkspace:
 
     def store(self) -> Store:
         """The store the launched server records runs in, opened from the test process."""
-        return open_store(location=StoreLocation(url=self.store_url))
+        return open_store(location=StoreLocation(url=self.store_url, schema=self.store_schema))
 
     root: Path
     config_path: Path
     database_path: Path
     store_url: str
+    store_schema: str
     cache_dir: Path
     output_dir: Path
     log_path: Path
@@ -61,14 +69,32 @@ class LaunchWorkspace:
 def launch_workspace(
     tmp_path_factory: pytest.TempPathFactory,
     fake_immich_server: FakeImmichServer,
-) -> LaunchWorkspace:
+) -> Generator[LaunchWorkspace]:
     """Create one config whose mutable paths stay under a pytest temp root."""
-    return _launch_workspace(tmp_path_factory.mktemp("launch-smoke"), fake_immich_server)
+    yield from _owned_workspace(tmp_path_factory.mktemp("launch-smoke"), fake_immich_server)
+
+
+def _owned_workspace(
+    root: Path, fake_immich_server: FakeImmichServer
+) -> Generator[LaunchWorkspace]:
+    """A workspace whose PostgreSQL schema, when it has one, is dropped afterwards."""
+    workspace = _launch_workspace(root, fake_immich_server)
+    yield workspace
+    close_stores()
+    if not workspace.store_url.startswith("sqlite"):
+        drop_schema(workspace.store_url, workspace.store_schema)
+
+
+def _store_location(root: Path) -> tuple[str, str]:
+    """The workspace's store: a SQLite file in it, or a schema of its own on PostgreSQL."""
+    if url := os.environ.get(E2E_DATABASE_ENV):
+        return normalize_url(url), f"e2e_{uuid.uuid4().hex[:12]}"
+    return f"sqlite:///{root / 'store.db'}", DEFAULT_SCHEMA
 
 
 def _launch_workspace(root: Path, fake_immich_server: FakeImmichServer) -> LaunchWorkspace:
     database_path = root / "cache" / "launch.db"
-    store_url = f"sqlite:///{root / 'store.db'}"
+    store_url, store_schema = _store_location(root)
     cache_dir = root / "cache"
     output_dir = root / "output"
     config_path = root / "config.yaml"
@@ -98,7 +124,7 @@ def _launch_workspace(root: Path, fake_immich_server: FakeImmichServer) -> Launc
                     "video_cache_max_size_gb": 1,
                     "video_cache_max_age_days": 1,
                 },
-                "database": {"url": store_url},
+                "database": {"url": store_url, "schema": store_schema},
                 "upload": {"enabled": False},
                 "photos": {"enabled": True},
                 # The fixture home is a public landmark; the week by the lake
@@ -122,6 +148,7 @@ def _launch_workspace(root: Path, fake_immich_server: FakeImmichServer) -> Launc
         config_path=config_path,
         database_path=database_path,
         store_url=store_url,
+        store_schema=store_schema,
         cache_dir=cache_dir,
         output_dir=output_dir,
         log_path=log_path,
@@ -207,9 +234,9 @@ def launch_app_url(
 def first_launch_workspace(
     tmp_path_factory: pytest.TempPathFactory,
     fake_immich_server: FakeImmichServer,
-) -> LaunchWorkspace:
+) -> Generator[LaunchWorkspace]:
     """Disposable state for a host where nobody has run `immich-memories models fetch`."""
-    return _launch_workspace(tmp_path_factory.mktemp("first-launch"), fake_immich_server)
+    yield from _owned_workspace(tmp_path_factory.mktemp("first-launch"), fake_immich_server)
 
 
 @pytest.fixture(scope="session")

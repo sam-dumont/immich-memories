@@ -6,7 +6,10 @@ wider real-Immich suites (pipeline/, cli/, live_photos/) stay where they are.
 
 The Makefile starts a digest-pinned Immich, seeds it (seed.py) and points HOME
 at the config the seed wrote, so `Config.get_default_path()` is the gate's own
-config and never a developer's.
+config and never a developer's. It also names the store every CLI run of the gate
+uses, SQLite or PostgreSQL (`IMMICH_GATE_DATABASE`), in `IMMICH_GATE_DATABASE_URL`:
+the unit suite's own conftest points `IMMICH_MEMORIES_DATABASE_URL` at a scratch
+file, so the gate hands its URL to each run itself (`gate_env`).
 """
 
 from __future__ import annotations
@@ -19,8 +22,10 @@ import pytest
 
 from immich_memories.api.sync_client import SyncImmichClient
 from immich_memories.config_loader import Config
+from immich_memories.db import Store, StoreLocation, close_stores, open_store
 from immich_memories.timeperiod import DateRange
 from tests.integration.immich_fixtures import has_immich, immich_unavailable
+from tests.integration.immich_gate.gate_cli import gate_store_url
 
 FIXTURE_MONTH = DateRange(start=datetime(2024, 6, 1), end=datetime(2024, 6, 30, 23, 59, 59))
 BULK_YEAR = DateRange(start=datetime(2019, 1, 1), end=datetime(2019, 12, 31, 23, 59, 59))
@@ -47,3 +52,10 @@ def gate_client(gate_config: Config) -> Generator[SyncImmichClient]:
     client = SyncImmichClient(base_url=gate_config.immich.url, api_key=gate_config.immich.api_key)
     yield client
     client.close()
+
+
+@pytest.fixture
+def gate_store() -> Generator[Store]:
+    """The store the gate's CLI runs write, opened from the test process."""
+    yield open_store(location=StoreLocation(url=gate_store_url()))
+    close_stores()

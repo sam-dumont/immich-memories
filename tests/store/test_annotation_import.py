@@ -112,6 +112,20 @@ def test_a_relocated_annotation_file_named_in_the_config_is_imported(store, tmp_
     assert owner_decisions.decisions(store) == {"still-1": "cleared_family"}
 
 
+def test_a_cache_the_environment_moved_is_imported_without_a_config_file(
+    store, tmp_path, monkeypatch
+):
+    # A container configures the app by environment alone and ships no config.yaml.
+    home = tmp_path / "home"
+    home.mkdir()
+    write_annotations(tmp_path / "volume-cache" / "annotations.sqlite")
+    monkeypatch.setenv("IMMICH_MEMORIES_CACHE__DIRECTORY", str(tmp_path / "volume-cache"))
+
+    import_legacy(store, home)
+
+    assert owner_decisions.decisions(store) == {"still-1": "cleared_family"}
+
+
 def test_nothing_to_import_says_so(store, tmp_path):
     outcome = import_legacy(store, tmp_path)
 

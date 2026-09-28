@@ -1056,7 +1056,9 @@ version and capabilities first); deployment files are `services/render-worker/co
 - **Private helpers**: Prefixed with `_`, same package
 - **Tests**: `tests/` directory, run with `make test`
 - **Integration tests**: run manually with `make test-integration*` (per-suite folders under `tests/integration/`, see CLAUDE.md); also run on the self-hosted GPU runner. Not a pre-commit hook.
-- **Real-Immich gate**: `make test-immich-gate` (`tests/integration/immich_gate/`: compose file, `seed.py`, `media.py`) runs on every PR against Immich v2 and v3 in Docker (`.github/workflows/immich-gate.yml`, required check `Immich Gate`); the pinned images ride in the Actions cache per version (`scripts/immich_gate_images.sh`, `make immich-gate-fetch`/`immich-gate-save`).
+- **Real-Immich gate**: `make test-immich-gate` (`tests/integration/immich_gate/`: compose file, `seed.py`, `media.py`) runs on every PR against Immich v2 and v3 in Docker, each with the store on SQLite and on PostgreSQL (`IMMICH_GATE_DATABASE`; `.github/workflows/immich-gate.yml`, required check `Immich Gate`); the pinned images ride in the Actions cache per version (`scripts/immich_gate_images.sh`, `make immich-gate-fetch`/`immich-gate-save`).
+- **Launch check per backend**: `make launch-check-ci` (SQLite) and `make launch-check-ci-postgres` (each launch workspace gets its own schema in `IMMICH_MEMORIES_E2E_DATABASE_URL`); CI job `Hermetic Launch Check (sqlite|postgresql)`. `scripts/with_throwaway_postgres.sh` starts the throwaway `postgres:16` for this, `make test-store` and the gate.
+- **Container e2e**: `make test-container` (`tests/container/`, marker `container`) builds the image and runs it from `docker-compose.yml` on a legacy volume: first-start import and `store import --verify`, `store backup`/`restore` in the image, the trigger API called by the CronJob's curl. `CONTAINER_E2E_DATABASE=postgresql` switches on the compose file's PostgreSQL example; CI job `Container E2E (sqlite|postgresql)`.
 - **Pre-commit**: Run `make ci` before committing
 
 The web sidebar links Memory, Suggestions, Runs, Media pool and Settings.

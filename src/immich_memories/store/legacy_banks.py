@@ -51,17 +51,18 @@ def bank_roots(home: Path) -> tuple[list[Path], list[Path]]:
     """The `structure-banks/` directories and film output directories the current code uses."""
     roots = [home / "cache"]
     outputs = [_expand(home, "~/Videos/Memories")]
-    config_path = home / "config.yaml"
-    if config_path.is_file():
-        try:
-            from immich_memories.config_loader import Config
+    # Loaded even when the home has no config.yaml (a missing file reads as empty): the
+    # Docker image names its output directory in the environment and ships no file. The
+    # default directory stays a candidate, so films reviewed before a move still count.
+    try:
+        from immich_memories.config_loader import Config
 
-            config = Config.from_yaml(config_path)
-            cache = _expand(home, config.cache.directory)
-            roots += [cache, config.editorial.resolve_bank_root(cache)]
-            outputs = [_expand(home, config.output.directory)]
-        except Exception as exc:  # WHY: a config that no longer loads still has default files
-            logger.warning("config.yaml unreadable for the import (%s): default paths only", exc)
+        config = Config.from_yaml(home / "config.yaml")
+        cache = _expand(home, config.cache.directory)
+        roots += [cache, config.editorial.resolve_bank_root(cache)]
+        outputs.append(_expand(home, config.output.directory))
+    except Exception as exc:  # WHY: a config that no longer loads still has default files
+        logger.warning("config.yaml unreadable for the import (%s): default paths only", exc)
     return _existing([root / "structure-banks" for root in roots]), _existing(outputs)
 
 

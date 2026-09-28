@@ -643,13 +643,14 @@ markers = [
     "perf: performance benchmarks (run with: make benchmark-perf)",
     "demo: renders a docs demo asset (run with: make demo-output)",
     "install_checks: meets the real pre-run install checks instead of an install that ran models fetch",
+    "container: runs the built image through docker compose (run with: make test-container)",
 ]
 # `-p no:quadrants`: the quadrants distribution registers a pytest11 plugin, so
 # merely having it installed pulls its C++ runtime into every pytest session,
 # including the thousands of tests that never touch a kernel. The app imports it
 # in exactly one place and nowhere near collection time; blocking the plugin
 # keeps it that way, and is a no-op where the wheel does not exist.
-addopts = "-p no:quadrants -m 'not integration and not e2e'"
+addopts = "-p no:quadrants -m 'not integration and not e2e and not container'"
 
 [tool.coverage.run]
 source = ["src/immich_memories", "services/inference/immich_memories_inference"]

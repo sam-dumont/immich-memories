@@ -6,35 +6,15 @@ the pinned artifacts before selection; no caption or prose model is used.
 
 from __future__ import annotations
 
-import os
-import subprocess
-import sys
-from pathlib import Path
-
-from immich_memories.config_loader import Config
 from tests.integration.immich_fixtures import requires_immich
+from tests.integration.immich_gate.gate_cli import run_cli
 
 pytestmark = [requires_immich]
-
-_PROVIDER_SHORTCUTS = ("IMMICH_URL", "IMMICH_API_KEY", "OPENAI_API_KEY")
-
-
-def _isolated_env() -> dict[str, str]:
-    # WHY: a developer's provider variables would override the gate's config and
-    # point the run at their own library or model.
-    return {
-        key: value
-        for key, value in os.environ.items()
-        if not key.startswith(("IMMICH_MEMORIES_", "ZAI_")) and key not in _PROVIDER_SHORTCUTS
-    }
 
 
 def test_rules_tier_selection_over_the_fixture_month_picks_a_cut(tmp_path):
     trace = tmp_path / "selection-trace.txt"
-    command = [
-        str(Path(sys.executable).parent / "immich-memories"),
-        "--config",
-        str(Config.get_default_path()),
+    result = run_cli(
         "generate",
         # A standard memory type: rules refuse a free-form custom range.
         "--memory-type",
@@ -49,14 +29,6 @@ def test_rules_tier_selection_over_the_fixture_month_picks_a_cut(tmp_path):
         "--quiet",
         "--trace-selection",
         str(trace),
-    ]
-    result = subprocess.run(  # noqa: S603 -- our own CLI, fixed argv
-        command,
-        capture_output=True,
-        text=True,
-        timeout=600,
-        env=_isolated_env(),
-        check=False,
     )
     output = result.stdout + result.stderr
 

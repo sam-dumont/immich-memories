@@ -49,7 +49,9 @@ CI runs in tiers, cheap to expensive.
 - **Tier 3: build**, after tests. Package build, and the Docker image on pull requests.
 
 The docs build depends on nothing and starts immediately. The hermetic launch check runs on pull
-requests off the cache setup alone: `make launch-check-ci`, Playwright e2e against a fake Immich.
+requests off the cache setup alone, once per store backend: `make launch-check-ci` (SQLite) and
+`make launch-check-ci-postgres`, Playwright e2e against a fake Immich. After the tests, the
+container e2e job builds the image and runs `make test-container` on each backend.
 
 `make ci` runs the same gates locally plus the unit tests; the Makefile is the list. CI adds what
 needs a remote or a diff: commitlint, pip-audit, gitleaks, hadolint.
