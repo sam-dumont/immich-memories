@@ -15,6 +15,7 @@ from immich_memories.free_text.grammar import free_tier, is_about, is_thing
 from immich_memories.free_text.homes import Home, homes_over_time
 from immich_memories.free_text.lexicon import (
     Lexicon,
+    Relative,
     WordNetLexicon,
     WordNetUnavailable,
     load_wordnet,
@@ -38,6 +39,7 @@ from immich_memories.free_text.linking import (
     time_cut,
 )
 from immich_memories.free_text.reading import Asker, Reading, WireAsker, read_request
+from immich_memories.free_text.subject import Subject, SubjectWords, build_subject, subject_words
 
 __all__ = [
     "Asker",
@@ -53,6 +55,9 @@ __all__ = [
     "OccasionDay",
     "Reading",
     "Reason",
+    "Relative",
+    "Subject",
+    "SubjectWords",
     "TripRules",
     "WhenLink",
     "WhereLink",
@@ -60,6 +65,7 @@ __all__ = [
     "WireAsker",
     "WordNetLexicon",
     "WordNetUnavailable",
+    "build_subject",
     "farthest_trip",
     "first_pictures",
     "free_tier",
@@ -75,5 +81,6 @@ __all__ = [
     "occasion_day",
     "read_library",
     "read_request",
+    "subject_words",
     "time_cut",
 ]

@@ -202,3 +202,14 @@ def test_a_quality_the_captions_never_say_or_a_noun_before_the_head_asks_nothing
 
     assert black.main == ("cat",)
     assert sport.main == ("apps",)
+
+
+def test_the_doer_of_an_asked_activity_may_be_the_main_subject(lexicon: Lexicon) -> None:
+    reading = _reading("me hiking along the years", who=("me",), what=("hiking",))
+    # WHY: stands in for the model server; every answer picks the hiker.
+    asker = BankedAsker(*[_picks("hiker")] * 3)
+
+    subject = build_subject(reading, NOBODY, (), lexicon, asker)
+
+    assert subject.main == ("hiker",)
+    assert set(subject.also) == {"hiking", "hike"}
