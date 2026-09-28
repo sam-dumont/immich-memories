@@ -512,6 +512,41 @@ def test_a_day_on_a_holiday_is_kept_unless_its_occasion_was_the_holiday(monkeypa
     ]
 
 
+def test_a_day_counts_its_pictures_not_the_files_they_are_stored_in(monkeypatch):
+    """A shared album stores a curated picture twice (09-28): the camera's file and a smaller copy,
+    same name, same instant. Discovery counted both, so a day looked twice its size."""
+    from immich_memories.api.models import AssetType
+
+    pictures = _day(datetime(2021, 7, 3, 9, tzinfo=UTC), pictures=20, hours=5, city="Somewhere")
+    copies = _day(datetime(2021, 7, 3, 9, tzinfo=UTC), pictures=20, hours=5, city="Somewhere")
+    for original, copy in zip(pictures, copies, strict=True):
+        for file, pixels in ((original, 4000), (copy, 2048)):
+            file.type = AssetType.IMAGE
+            file.original_file_name = f"IMG_{original.id}.HEIC"
+            file.width = file.height = pixels
+        copy.id = f"copy-{original.id}"
+    copies[0].is_favorite = True
+    captions = {p.id: "children around a campfire at a summer camp" for p in pictures + copies}
+    monkeypatch.setattr(
+        "immich_memories.analysis.special_day_sequence._read",
+        lambda *_a, **_k: json.dumps({"occasions": [{"run": "R1", "what": "a camp"}]}),
+    )
+    judged = []
+
+    # WHY: the day-level model is the text boundary; what reaches it is the subject.
+    def day_reader(items, *_a, **_k):
+        judged.extend(items)
+        return SpecialDay(special=True, title="Camp", what="a camp")
+
+    monkeypatch.setattr("immich_memories.automation.special_day_scan.ask_if_special", day_reader)
+
+    found = scan_year(pictures + copies, llm_config=None, home=None, captions=captions)
+
+    assert [d.photos for d in found] == [20]
+    assert not any(item.id.startswith("copy-") for item in judged)
+    assert any(item.is_favorite for item in judged)
+
+
 def test_a_day_is_named_by_its_moment_not_by_everything_it_held(monkeypatch):
     """A concert night (09-28): the reader, shown the whole day, called it an occasion and named
     it after the baby at home. The words its weeks never write gather between seven and ten in

@@ -192,6 +192,10 @@ of it has to show what its weeks do not: at least half its captions must write a
 that at most one neighbouring day writes at all. A day with nothing around it is never thinned (a
 pregnancy test is two pictures of an ordinary day), nor is a day that stands out from its year.
 
+A picture stored as several files counts once. A shared album keeps the camera's file and a smaller copy
+under the same name at the same instant; discovery reads the full-size one, with a star either file
+carries, the same way the editor does (one 2024 held 2,368 such copies in 21,520 files).
+
 Pictures forwarded to the library (sent by someone else or saved: stills with no camera in their
 EXIF) are evidence, not material. They never make a day of their own and never count toward its
 pictures, hours or film. On a day your camera already made, their words count for half toward
