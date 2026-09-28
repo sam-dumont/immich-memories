@@ -1,5 +1,4 @@
 ---
-sidebar_position: 1
 title: Docker Compose
 ---
 
@@ -23,7 +22,7 @@ curl -O https://raw.githubusercontent.com/sam-dumont/immich-video-memory-generat
 cp example.env .env
 ```
 
-**2. Fill in `.env`.** Two values are required, and the home base makes trips work:
+**2. Fill in `.env`.** Two values are required, and the home base makes trips and your country's public holidays work:
 
 ```bash
 IMMICH_URL=http://192.168.1.10:2283       # your Immich, as the container reaches it

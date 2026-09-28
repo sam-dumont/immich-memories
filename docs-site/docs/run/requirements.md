@@ -30,8 +30,8 @@ What the minimum costs you:
   of the animated title kernels: [CPUs without AVX](./hardware.md#cpus-without-avx).
 - **ARM64** gets no hardware encoder: the VA-API drivers ship in the amd64 image only.
 
-The 25 GB is the caches at their default budgets: 10 GB of Immich previews, 10 GB of downloaded
-video kept 7 days, 2 GB of clip previews. The models are about 130 MB. The one file worth backing
+The 25 GB covers the caches at their default budgets (10 GB of Immich previews, 10 GB of downloaded
+video kept 7 days) with room for the store to grow. The models are about 130 MB. The one file worth backing
 up is the store, `store.db`, where every fact the editor read is banked:
 [What to keep](./docker.md#what-to-keep).
 

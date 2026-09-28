@@ -26,7 +26,8 @@ The compose file uses `tier: auto`, which picks the `nas` tier here: the eight c
 two detectors run on the NAS CPU, and no caption or model service is needed.
 
 Set the home base in `.env` before the first cut
-(`IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE` and `..._LONGITUDE`). Without it no day counts as
+(`IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE` and `..._LONGITUDE`). It also picks your country's public
+holidays. Without it no day counts as
 away from home, so a three-week holiday arrives as three weekly stories instead of one trip. Then
 confirm who's who once: [Teach it your family](../get-started/who-is-who.md).
 
@@ -68,8 +69,8 @@ to that port.
 
 The first cut of a month reads every picture it can reach once, on the NAS CPU, and banks the
 answers. Run it in the evening. Later cuts reuse matching facts; new pictures and changed producers
-can require more work. `docker compose logs immich-memories | grep "preparation tier"` shows
-what each producer cost this box. Numbers per host are on [Measured](../better/measured.md).
+can require more work. `immich-memories runs show` prints where the time went, phase by phase and
+per picture. NAS timings are being re-measured; [Measured](../better/measured.md) has the rest.
 
 Start with one month, not a year: preparation grows with the pictures in the window, not with the
 length of the film. To read a bigger window ahead of time, run
