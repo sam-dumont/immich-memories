@@ -28,7 +28,10 @@ jobs:
   build:
     name: Build Docs
     runs-on: ubuntu-latest
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    # Model artifact releases (models-v*) are not app releases, and Pages refuses their tags.
+    if: >-
+      github.repository == 'sam-dumont/immich-video-memory-generator'
+      && !(github.event_name == 'release' && startsWith(github.event.release.tag_name, 'models-'))
     # Building only reads the tree; the Pages artifact upload runs on the
     # Actions runtime token, not GITHUB_TOKEN.
     permissions:
