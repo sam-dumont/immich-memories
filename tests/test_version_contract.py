@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import os
 import re
 import subprocess
 import tomllib
@@ -57,28 +59,19 @@ def _make_dry_run(target: str) -> str:
     return result.stdout
 
 
-def _ci_success_result(
-    event_name: str,
-    setup_result: str,
-    launch_result: str,
-) -> subprocess.CompletedProcess[str]:
-    """Run the checked-in summary gate against one GitHub-result scenario."""
+def _ci_success_result(**results: str) -> subprocess.CompletedProcess[str]:
+    """Run the checked-in summary gate with these job results; unnamed jobs succeeded."""
     workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text())
-    command = workflow["jobs"]["ci-success"]["steps"][0]["run"]
-    replacements = {
-        "${{ github.event_name }}": event_name,
-        "${{ needs.setup.result }}": setup_result,
-        "${{ needs['launch-check'].result }}": launch_result,
+    gate = workflow["jobs"]["ci-success"]
+    step = gate["steps"][0]
+    assert step["env"]["RESULTS"] == "${{ toJSON(needs) }}"
+    needs = {
+        job: {"result": results.get(job.replace("-", "_"), "success")} for job in gate["needs"]
     }
-    for token, result in replacements.items():
-        command = command.replace(token, result)
-    for job in workflow["jobs"]:
-        command = command.replace(f"${{{{ needs.{job}.result }}}}", "success")
-        command = command.replace(f"${{{{ needs['{job}'].result }}}}", "success")
-    assert "${{" not in command
     return subprocess.run(
-        ["bash", "-o", "pipefail", "-c", command],
+        ["bash", "-o", "pipefail", "-c", step["run"]],
         cwd=REPO_ROOT,
+        env={**os.environ, "RESULTS": json.dumps(needs)},
         check=False,
         capture_output=True,
         text=True,
@@ -144,7 +137,7 @@ def test_ci_runs_the_hermetic_launch_check_with_runtime_dependencies() -> None:
 
     # 40, not 30: the PostgreSQL leg runs the same suite against a real server.
     assert launch_job["timeout-minutes"] == 40
-    assert launch_job["strategy"]["matrix"]["database"] == ["sqlite", "postgresql"]
+    assert '["sqlite","postgresql"]' in launch_job["strategy"]["matrix"]["database"]
     assert "ffmpeg" in commands
     assert "playwright install --with-deps chromium" in commands
     # Exact target: "make launch-check" is a substring of "make launch-check-ci",
@@ -203,24 +196,24 @@ def test_dependency_audit_uses_the_frozen_ci_resolution() -> None:
 
 
 @pytest.mark.parametrize(
-    ("event_name", "setup_result", "launch_result", "expected_returncode"),
+    ("results", "expected_returncode"),
     [
-        ("pull_request", "success", "success", 0),
-        ("pull_request", "success", "skipped", 1),
-        ("pull_request", "success", "cancelled", 1),
-        ("workflow_call", "success", "skipped", 0),
-        ("workflow_call", "success", "cancelled", 0),
-        ("workflow_call", "failure", "skipped", 1),
+        ({}, 0),
+        # The change scope left the launch check out; skipped is how GitHub reports that.
+        ({"launch_check": "skipped"}, 0),
+        # A job past its timeout-minutes ends cancelled: never a pass.
+        ({"launch_check": "cancelled"}, 1),
+        ({"launch_check": "failure"}, 1),
+        ({"setup": "failure", "launch_check": "skipped"}, 1),
+        # Without a scope every job skips; that must not read as all green.
+        ({"changes": "failure", "test": "skipped", "launch_check": "skipped"}, 1),
     ],
 )
-def test_ci_summary_gate_enforces_event_sensitive_launch_result_matrix(
-    event_name: str,
-    setup_result: str,
-    launch_result: str,
-    expected_returncode: int,
+def test_ci_summary_gate_passes_only_success_or_a_scoped_skip(
+    results: dict[str, str], expected_returncode: int
 ) -> None:
-    """PR launch results are required; workflow calls permit the skipped launch job."""
-    result = _ci_success_result(event_name, setup_result, launch_result)
+    """CI Success is the required check: it fails on any job that failed, timed out or never had a scope."""
+    result = _ci_success_result(**results)
 
     assert result.returncode == expected_returncode, result.stdout + result.stderr
 
