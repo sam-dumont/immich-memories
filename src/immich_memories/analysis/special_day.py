@@ -442,6 +442,24 @@ def _described_by(asset: Any, captions: Mapping[str, str] | None) -> str | None:
     return prepared or getattr(asset, "llm_description", None)
 
 
+# Pictures someone else took say less about a day than its own, so fewer of them are shown.
+_FORWARDED_LINES = 3
+
+
+def _forwarded_lines(forwarded: list, captions: Mapping[str, str] | None) -> str:
+    """The day's forwarded pictures, marked as sent rather than taken, or nothing."""
+    described = [a for a in forwarded if _described_by(a, captions)]
+    if not described:
+        return ""
+    lines = [
+        _line_for(asset, _described_by(asset, captions))
+        for asset in sample_across_day(described, count=_FORWARDED_LINES)
+    ]
+    return "\n  forwarded that day (sent by someone else or saved, not taken here):\n" + "\n".join(
+        lines
+    )
+
+
 def _describe(assets: list, captions: Mapping[str, str] | None = None) -> str:
     """The day as text: one line per sampled picture, in the order they were taken.
 
@@ -579,8 +597,12 @@ def ask_if_special(
     timeout_seconds: int = 30,
     captions: Mapping[str, str] | None = None,
     judgments: Store | None = None,
+    forwarded: list | None = None,
 ) -> SpecialDay:
     """Ask the model whether a day was an occasion, and name it.
+
+    Pictures `forwarded` to the library that day follow the day's own lines, marked as sent
+    rather than taken: evidence of what happened, never a line of the day itself.
 
     Text, and only text. A day the caption bank has been over (see
     `day_is_prepared`) is answered from that text against the bank's own
@@ -597,15 +619,16 @@ def ask_if_special(
     if not assets:
         return SpecialDay(special=False)
 
+    sent = _forwarded_lines(forwarded or [], captions)
     described = _captioned_assets(assets, captions)
     if described:
         return _ask_from_captions(
-            assets, described, captions, llm_config, timeout_seconds, judgments
+            assets, described, captions, llm_config, timeout_seconds, judgments, sent
         )
     sampled = sample_across_day(assets)
     if not _has_text_to_read(sampled, captions):
         return _unjudged("nothing written about its pictures")
-    return _ask_from_facts(assets, sampled, captions, llm_config, timeout_seconds)
+    return _ask_from_facts(assets, sampled, captions, llm_config, timeout_seconds, sent)
 
 
 def _ask_from_facts(
@@ -614,6 +637,7 @@ def _ask_from_facts(
     captions: Mapping[str, str] | None,
     llm_config: LLMConfig,
     timeout_seconds: int,
+    sent: str = "",
 ) -> SpecialDay:
     """The day judged from its own recorded facts, in one text call.
 
@@ -622,7 +646,7 @@ def _ask_from_facts(
     to refuse: thinking is the transport's to budget, exactly as the caption
     route leaves it.
     """
-    lines = _describe(sampled, captions)
+    lines = _describe(sampled, captions) + sent
     prompt = _PROMPT.format(lines=lines)
     answer: dict | None = None
     because = ""
@@ -727,7 +751,9 @@ def _accepts_day_answer(raw: str) -> bool:
     return True
 
 
-def _ask_from_captions(assets, described, captions, llm_config, timeout_seconds, judgments):
+def _ask_from_captions(  # noqa: PLR0913 - the day, its text, and where the answer is kept
+    assets, described, captions, llm_config, timeout_seconds, judgments, sent=""
+):
     """A prepared day, judged against the text bank's own contract."""
     from immich_memories.analysis.editorial_case import TextRequest
     from immich_memories.analysis.editorial_text_gateway import QueryTextRequester
@@ -739,9 +765,12 @@ def _ask_from_captions(assets, described, captions, llm_config, timeout_seconds,
     # "not special".
     timeout_seconds = max(timeout_seconds, _THINKING_TIMEOUT_SECONDS)
     sampled = sample_across_day(described)
-    lines = "\n".join(
-        f"{asset.file_created_at.isoformat()} {_line_for(asset, captions[asset.id])}"
-        for asset in sampled
+    lines = (
+        "\n".join(
+            f"{asset.file_created_at.isoformat()} {_line_for(asset, captions[asset.id])}"
+            for asset in sampled
+        )
+        + sent
     )
     prompt = (
         f"{PROMPT_VERSION}\nThese are prepared captions with capture times, "
