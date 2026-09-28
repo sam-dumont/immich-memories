@@ -1,8 +1,9 @@
 # Free-text memories: semantic translation onto the existing engine
 
-Status: probe, not merged. Tracking issue #1436. Code on `exp/caption-threads`
-(`experiments/caption-threads/`, entry point `translate.py`), two small probe hooks in `cli/`.
-This page is the plan for building it properly; the probe is evidence, not the implementation.
+Status: built on `feat/free-text-memories` (draft PR #1505, tracking issue #1436) as
+`immich-memories generate --ask "<sentence>"`, package `src/immich_memories/free_text/`. The user
+page is `docs-site/docs/make/free-text.md`. The probe on `exp/caption-threads` was the evidence;
+sections below marked *not built* describe probe parts the product left out.
 
 > **Highly experimental.** Tuned and tried on a single real library (the owner's, 76k pictures)
 > plus a few synthetic test households. Two held-out rounds of prompts the owner wrote cold were
@@ -107,9 +108,8 @@ flowchart TD
   R --> F["6. what the library measures (facts.py)<br/>place names, picture kind, sharpness, faces per person"]
   R --> G["7. grammar: farthest, first, last"]
   WHAT --> S["8. the subject: candidates from Gemma, WordNet, captions<br/>Gemma votes; code keeps what fits"]
-  WHO & WHEN & WHERE & S & F & G --> P[9. pool]
-  P --> J[10. light pool: captions first, reads and looks only where thin]
-  J --> E["11. the regular engine, a special day, or a computed selection"]
+  WHO & WHEN & WHERE & S & F & G --> P[9. pool and verdict]
+  P --> E["10. the regular engine, a special day, or no film"]
 ```
 
 1. **Reading.** Gemma splits the request into who, when, where and what, using only phrases the
@@ -150,24 +150,31 @@ flowchart TD
    prove people; the doer of an asked activity stays: hiker for hiking), keeps a stated quality
    only when Gemma says it narrows which ones belong ("black cat" does, "live concert" does not),
    and never keeps a word the request excludes.
-9. **Pool, light pool, engine.** Unchanged from the probe below: captions whose subject is the
-   subject are free; thin periods get caption reads and photo questions; the pool goes to the
-   regular engine with the thesis as the written subject.
+9. **Pool and engine.** The pool is filter by filter over what the library holds: captions whose
+   subject is the subject, OCR words that vouch for their episode, faces, places. No model looks
+   at a picture (the probe's caption reads and photo questions for thin periods were not built).
+   The verdict is possible, thin (under 12 pictures, never for a computed selection) or not
+   possible (no film, naming the filter that emptied the pool). The pool goes to the regular
+   engine as an album whose written subject is the request.
 
-Every decision writes one line of reasoning. The owner reads the translation as that trace:
+Every decision writes one line of reasoning. The owner reads the translation as that trace
+(`free_text/trace.py`, a real dry run; numbers from the owner's library):
 
 ```
 "At the park with kids"
-READING  Gemma split your words 3 times -> who: kids; where: the park; what: the park | kids
-WHO      "kids" -> children must be in the photos, no one in particular
-WHEN     nothing said -> any time
-WHERE    your words "the park"; nothing beyond the subject's own nouns -> anywhere
-WHAT     your words "the park | kids" -> subject words park
-         Gemma picked the main subject: kids (3/3)
-         nothing left of Gemma's pick -> your own subject words: park
+READING  the model split your words 3 times; a word counts where 2 answers agree -> who: kids; where: the park; what: at the park | kids
+WHO      your words "kids" -> children must be in the photos, no one in particular (a plural word for children; a caption naming children shows it)
+WHEN     nothing said -> any time (no time words, years or people to date)
+WHERE    your words "the park" -> anywhere (nothing beyond the subject's own nouns)
+WHAT     your words "at the park | kids" -> subject words park (...)
+POOL     library 76367 -> kind of picture 74466 -> subject 1197 -> company 457
+VERDICT  possible: 457 pictures in the pool; ...
+FILM     the engine films the pool as an album whose written subject is your words: 457 pictures (the pool is the film's whole reach)
 ```
 
-### Judging
+A translation took 7 to 46 s per sentence on a Mac with a local Gemma E4B.
+
+### Judging (probe, not built)
 
 - Caption check: E4B yes / no / unsure per caption against the spec (main subject, what else it
   may show, what does not belong), twenty-four captions per call, budget spread over the pool's
@@ -192,7 +199,7 @@ WHAT     your words "the park | kids" -> subject words park
   material, the album length curve applies. A custom date range clamps to 30 s past about 40
   months (`duration_from_date_range`), so a multi-year request must not go through it.
 
-### Rule report and bypass
+### Rule report and bypass (not built)
 
 A requested film can be gutted by rules that protect ordinary films: forwarded copies,
 identifying records (a licence plate may read as one), standing (a car alone), the family-viewing
@@ -390,14 +397,20 @@ reference, not the code: every piece is rebuilt as product code with tests and e
    translation and the pool counts only.
 9. **Reports**: the free-text section of `immich-memories report` (#1428, builder from #1464):
    trace, funnel, picks, marked pictures; names, places, printed words and captions redacted.
-10. **Docs**: the user page "A film from a sentence" (experimental, sams-voice), this design doc,
-    ARCHITECTURE.md, the config and CLI references.
+10. **Docs** (done): the user page "A film from a sentence" (`docs-site/docs/make/free-text.md`,
+    under Make films), linked from the generate and report CLI pages; this design doc,
+    ARCHITECTURE.md, the config reference (`free_text.wordnet`, `free_text.wordnet_url`) and the
+    CLI reference (`generate --ask`, `report --wrong/--missing/--include-flagged-captions`).
 11. **Evaluation**: the dev and held-out prompts as recorded fixtures (banked Gemma answers), so the
     translation is tested without a model; the private prompt log stays outside git.
 12. **UI**: the sentence box lands with the Svelte rewrite (#1398), not in the NiceGUI pages.
 
 ## Documentation (owner 2026-09-28)
 
-The user-facing page opens by saying the feature is highly experimental: tuned and tried on a
-single real library plus a few synthetic tests. That line stays until held-out rounds pass on other
-libraries.
+The user-facing page (`docs-site/docs/make/free-text.md`, "A film from a sentence") opens by
+saying the feature is highly experimental: tuned and tried on a single real library plus a few
+synthetic tests. That line stays until held-out rounds pass on other libraries. The page covers
+how it works (a mermaid diagram of the reading, the links and the pool), the trace and the three
+verdicts, the redacted prompts-tried table, the limits, and how to report a bad result with
+`report --wrong/--missing` and what that report redacts. It names nothing from the owner's library
+beyond its size. The CLI pages for `generate` and `report` keep the flags and link to it.

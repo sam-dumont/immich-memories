@@ -23,7 +23,7 @@ and places, GPS coordinates, IP addresses, hostnames, URLs and absolute paths. I
 that only match inside that one report. Pictures are never included. Exactly what is removed, and
 how: [Privacy](../../run/privacy.md#diagnostic-reports).
 
-A run of `generate --ask` (a film from a sentence) adds a free-text section: the translation trace,
+A run of `generate --ask` ([a film from a sentence](../free-text.md)) adds a free-text section: the translation trace,
 the pool funnel and the engine's picks as hashed IDs. Names become roles ("the owner's son"), place
 names become "area A", words read by OCR become "text-1", and a birth date the trace dated from
 becomes `[private]`. Captions stay out unless you pass `--include-flagged-captions`.

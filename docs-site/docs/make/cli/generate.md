@@ -111,7 +111,8 @@ nobody in it. See [an album made for one subject](../memory-types.mdx#an-album-m
 ## A film from a sentence
 
 **Highly experimental.** Tuned on one real library and a few synthetic ones: expect wrong
-translations on yours.
+translations on yours. How it reads a sentence, what works and how to report a bad result:
+[A film from a sentence](../free-text.md).
 
 ```bash
 immich-memories generate --ask "our cat along the years" --dry-run

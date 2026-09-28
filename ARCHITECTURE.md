@@ -832,8 +832,8 @@ src/immich_memories/
 │   ├── expression_window.py    # The earliest day a people condition can hold, from birth dates
 │   └── editor.py               # The companion editor's model: the registry as rows, and back
 │
-├── free_text/                  # A film asked for in a sentence (#1436, being built; design in
-│   │                           # docs/designs/free-text-memories.md). Only reading.py and the
+├── free_text/                  # A film asked for in a sentence (#1436, experimental; design in
+│   │                           # docs/designs/free-text-memories.md, user page docs-site/docs/make/free-text.md). Only reading.py and the
 │   │                           # model's picks in linking.py, subject.py and pool_questions.py reach an LLM
 │   ├── __init__.py             # The package API (the pool, the reading and the CLI build on it)
 │   ├── lexicon.py              # Lexicon Protocol; load_wordnet(): the pinned WordNet 3.0 zip that
