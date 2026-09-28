@@ -680,7 +680,7 @@ immich-memories report [OPTIONS]
 | --- | --- | --- | --- |
 | `--json` | boolean | false | Print the redacted report as JSON |
 | `--bundle` | file | - | Write the full redacted report to a ZIP file |
-| `--include-flagged-captions` | boolean | false | Include captions of flagged free-text photos; review before sharing |
+| `--include-flagged-captions` | boolean | false | Include captions and reasons of flagged free-text photos; review before sharing |
 
 **Arguments:**
 - `run_id` (text)

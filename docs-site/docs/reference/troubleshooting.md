@@ -13,7 +13,8 @@ one with the output of `immich-memories report`. It defaults to the latest run, 
 Pass a run ID to report an older one. Review the report before pasting it.
 
 The report includes redacted run logs, system details, stage timings, model usage and the selection
-funnel when the run recorded them. Names, places, albums, paths and credentials are removed; IDs become
+funnel when the run recorded them. Names, places, albums, coordinates, hosts, IP addresses, URLs, paths
+and credentials are removed; IDs become
 randomized hashes that agree inside one report. `--json` prints structured data, and
 `--bundle report.zip` writes the full report and logs as an attachment. Nothing is sent automatically.
 Long pasted logs keep their last complete lines; the ZIP keeps the full version.

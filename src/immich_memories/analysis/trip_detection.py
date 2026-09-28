@@ -211,7 +211,8 @@ def reverse_geocode(
         # GeocoderUnavailable inherit from OSError. GeocoderServiceError
         # itself does not, and neither does the 403 raised when the service
         # declines — which used to travel out of a twenty-year scan.
-        logger.debug("Reverse geocoding failed for (%s, %s): %s", lat, lon, e)
+        # No coordinates in the line: logs travel into run reports and issues.
+        logger.debug("Reverse geocoding failed: %s", e)
     return None
 
 

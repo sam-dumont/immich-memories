@@ -17,9 +17,14 @@ class ReportResponse(BaseModel):
     has_flagged_photos: bool = False
 
 
+def report_config() -> Config:
+    """The loaded config, without get_config's reload flag becoming a public query parameter."""
+    return get_config()
+
+
 def read_report(
     run_id: str,
-    config: Annotated[Config, Depends(get_config)],
+    config: Annotated[Config, Depends(report_config)],
     include_flagged_captions: bool = False,
 ) -> ReportResponse:
     """Preview exactly what Copy report puts on the clipboard. Nothing is sent."""

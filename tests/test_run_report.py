@@ -92,9 +92,9 @@ def test_api_uses_the_same_builder_and_keeps_logs_private():
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
 
-    from immich_memories.config_loader import Config, get_config
+    from immich_memories.config_loader import Config
     from immich_memories.tracking import RunTracker
-    from immich_memories.tracking.report_api import router
+    from immich_memories.tracking.report_api import report_config, router
     from immich_memories.tracking.span_store import SpanStore
 
     tracker = RunTracker(capture_system=False)
@@ -104,7 +104,7 @@ def test_api_uses_the_same_builder_and_keeps_logs_private():
     app = FastAPI()
     app.include_router(router)
     # WHY: supply isolated configuration instead of the developer's configuration file.
-    app.dependency_overrides[get_config] = lambda: Config()
+    app.dependency_overrides[report_config] = lambda: Config()
     response = TestClient(app).get(f"/api/v1/runs/{tracker.run_id}/report")
     assert response.status_code == 200
     assert "Marigold" not in response.text
@@ -170,6 +170,7 @@ def test_free_text_report_redacts_the_request_and_omits_captions_by_default():
         "SECRET SIGN",
         "private-shot",
         "PRIVATE SCENE",
+        "builds",
     ):
         assert value not in text
     assert "the owner's son" in text
@@ -177,6 +178,25 @@ def test_free_text_report_redacts_the_request_and_omits_captions_by_default():
     assert "area A" in text
     assert "text-1" in text
     assert "id-" in text
+
+
+def test_flagged_reasons_and_captions_come_only_with_the_opt_in():
+    run = RunMetadata("request-run", datetime.now(UTC))
+    flagged = {"asset_id": "shot", "stage": "photo", "reason": "why", "caption": "what"}
+    diagnostics = {"free_text": {"request": "the beach", "flagged": [flagged]}}
+    rows = {}
+    for opted_in in (False, True):
+        report = build_report(
+            run,
+            Collector(),
+            privacy=ReportPrivacy(),
+            diagnostics=diagnostics,
+            include_flagged_captions=opted_in,
+        )
+        rows[opted_in] = report.data["free_text"]["flagged"][0]
+    assert set(rows[False]) == {"asset_id", "stage"}
+    assert rows[True]["reason"] == "why"
+    assert rows[True]["caption"] == "what"
 
 
 def test_geocoded_names_are_private_even_when_read_from_cache(tmp_path):
@@ -195,3 +215,17 @@ def test_geocoded_names_are_private_even_when_read_from_cache(tmp_path):
     )
     assert "Brookhaven" not in report.json()
     assert "Testland" not in report.json()
+
+
+def test_report_route_publishes_no_config_reload_parameter():
+    from fastapi import FastAPI
+
+    from immich_memories.tracking.report_api import router
+
+    app = FastAPI()
+    app.include_router(router)
+    operation = app.openapi()["paths"]["/api/v1/runs/{run_id}/report"]["get"]
+    assert {parameter["name"] for parameter in operation["parameters"]} == {
+        "run_id",
+        "include_flagged_captions",
+    }

@@ -22,7 +22,7 @@ def register_report_commands(main: click.Group) -> None:
     @click.option(
         "--include-flagged-captions",
         is_flag=True,
-        help="Include captions of flagged free-text photos; review before sharing",
+        help="Include captions and reasons of flagged free-text photos; review before sharing",
     )
     @click.pass_context
     def report(

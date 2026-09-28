@@ -61,7 +61,8 @@ def request_section(record: dict, privacy: ReportPrivacy, *, include_captions: b
         ids=[row["asset_id"] for row in flagged if row.get("asset_id")],
         aliases=_aliases(record.get("privacy", {})),
     )
-    keys = ("asset_id", "stage", "verdict", "reason") + (("caption",) if include_captions else ())
+    # A reason quotes what the picture shows, so it is caption text and shares the opt-in.
+    keys = ("asset_id", "stage", "verdict") + (("reason", "caption") if include_captions else ())
     return {
         "request": record.get("request", ""),
         "spec": {
