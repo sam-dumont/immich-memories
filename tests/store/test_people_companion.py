@@ -203,16 +203,17 @@ class TestOneEntryPerPerson:
     def test_two_people_sharing_a_confirmed_block_do_not_become_yaml_anchors(self, store):
         # An entry that lists several ids — a person merged by hand, or the
         # cross-account identities to come — hands the same confirmed block to
-        # two people. Written as one object, yaml emits `&id001`/`*id001`, and
-        # an export meant to be hand-edited must not contain aliases: editing one
-        # person silently edits the other, and deleting the anchor breaks both.
+        # two people once the scan no longer sees the entry's own first id. Written
+        # as one object, yaml emits `&id001`/`*id001`, and an export meant to be
+        # hand-edited must not contain aliases: editing one person silently edits
+        # the other, and deleting the anchor breaks both.
         import_document(
             store,
             {
                 "version": 1,
                 "people": [
                     {
-                        "ids": ["id-alex-example", "id-sam-sample"],
+                        "ids": ["id-gone", "id-alex-example", "id-sam-sample"],
                         "name": "Alex Example",
                         "confirmed": {"role": "partner", "links": []},
                     }

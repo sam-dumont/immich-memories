@@ -95,7 +95,14 @@ def _one_writer(
 def save_graph(document: dict[str, Any], graph: PeopleGraph) -> None:
     """Write the graph, preserving every confirmed field already in the registry."""
     kept = _confirmed_by_id(document)
-    entries = [_entry_for(node, kept) for node in graph.people]
+    bound = _bound_aliases(document, {node.evidence.person_id for node in graph.people})
+    # A node that is somebody's bound alias is that person already, not a second entry.
+    aliased = {alias for entry in bound.values() for alias in entry["ids"][1:]}
+    entries = [
+        _entry_for(node, kept, bound.get(node.evidence.person_id))
+        for node in graph.people
+        if node.evidence.person_id not in aliased
+    ]
     entries.extend(_annotated_strangers(document, graph))
     document.clear()
     document.update(
@@ -197,6 +204,33 @@ def remove_confirmed_relationship(
     _remove_confirmed_link(target, reverse, source_id)
 
 
+@_one_writer
+def bind_alias(
+    document: dict[str, Any], person_id: str, alias_id: str, *, account: str | None = None
+) -> None:
+    """Confirm that `alias_id`, as `account` reads it, is the person `person_id` names.
+
+    `account` None is the primary account. The binding only adds an id: the person's name,
+    birth date and confirmations stay exactly as they were, whatever the other account
+    calls them. An id that already belongs to somebody else is an error, never a merge;
+    binding the same id to the same person again changes nothing.
+    """
+    person = _entry_with_id(document, person_id)
+    holder = next((entry for entry in people_entries(document) if alias_id in entry["ids"]), None)
+    if holder is not None and holder is not person:
+        msg = f"{alias_id!r} already belongs to {holder.get('name') or holder['ids'][0]!r}"
+        raise ValueError(msg)
+    accounts = person.get("accounts") or {}
+    if holder is person:
+        if accounts.get(alias_id) != account:
+            msg = f"{alias_id!r} is already bound to this person for another account"
+            raise ValueError(msg)
+        return
+    person["ids"].append(alias_id)
+    if account is not None:
+        person["accounts"] = accounts | {alias_id: account}
+
+
 def _entry_with_id(document: dict[str, Any], person_id: str) -> dict[str, Any]:
     matches = [entry for entry in people_entries(document) if person_id in entry["ids"]]
     if len(matches) != 1:
@@ -287,10 +321,24 @@ def _owner_block(graph: PeopleGraph) -> dict[str, Any] | None:
     }
 
 
-def _entry_for(node: PersonNode, kept: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    person = node.evidence
+def _bound_aliases(document: dict[str, Any], scanned: set[str]) -> dict[str, dict[str, Any]]:
+    """The entries the scan sees under their canonical id that answer to more than one id."""
     return {
-        "ids": [person.person_id],
+        entry["ids"][0]: entry
+        for entry in people_entries(document)
+        if len(entry["ids"]) > 1 and entry["ids"][0] in scanned
+    }
+
+
+def _entry_for(
+    node: PersonNode, kept: dict[str, dict[str, Any]], bound: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    person = node.evidence
+    ids = list(bound["ids"]) if bound else [person.person_id]
+    accounts = {"accounts": dict(bound["accounts"])} if bound and bound.get("accounts") else {}
+    return {
+        "ids": ids,
+        **accounts,
         "name": person.name,
         "birth_date": _iso(person.birth_date),
         "inferred": {

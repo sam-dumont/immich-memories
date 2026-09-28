@@ -751,7 +751,8 @@ src/immich_memories/
 │   ├── migrations/             # env.py, script.py.mako, versions/ (shipped in the wheel; alembic.ini is dev only)
 │   ├── metadata.py             # The shared MetaData(schema="immich_memories") and naming convention
 │   ├── tables/                 # One module per domain's Table objects: store_meta; people (people_registry,
-│   │                           # people, people_aliases, people_relationships; 0002_people); settings
+│   │                           # people, people_aliases, people_relationships; 0002_people; the alias's
+│   │                           # Immich account, null = primary, 0009_people_alias_accounts); settings
 │   │                           # (0003_settings); annotations.py (asset facts, captions, heads, pixels, faces,
 │   │                           # cut measurements, motion lines, owner decisions in asset_flags) and
 │   │                           # model_answers.py (judgments, Cull verdicts, episode readings/refusals,

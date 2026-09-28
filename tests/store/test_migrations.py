@@ -13,6 +13,7 @@ from immich_memories.db import (
     pending_changes,
     revision_lineage,
 )
+from immich_memories.db.inventory import table_digest
 from immich_memories.db.migrate import script_directory
 from immich_memories.db.tables import metadata
 
@@ -104,7 +105,7 @@ def test_a_populated_store_rolls_back_revision_by_revision_and_up_again(store, t
     """
     from immich_memories.config_loader import Config, set_config
     from immich_memories.db import upgrade
-    from immich_memories.db.inventory import digests, table_digest
+    from immich_memories.db.inventory import digests
 
     from .legacy_home import fill_every_table, write_legacy_home
 
@@ -122,6 +123,7 @@ def test_a_populated_store_rolls_back_revision_by_revision_and_up_again(store, t
     remaining = set(before)
     scripts = script_directory()
 
+    reshaped: set[str] = set()
     for revision in revision_lineage(head):
         script = scripts.get_revision(revision)
         # WHY: a merge revision only joins two branches, so undoing it drops no table and
@@ -131,11 +133,18 @@ def test_a_populated_store_rolls_back_revision_by_revision_and_up_again(store, t
         downgrade(store, script.down_revision[0] if join else f"{revision}@-1")
         surviving = _tables(store) & set(before)
         with store.connect() as connection:
-            kept = {name: table_digest(connection, _table(name)) for name in surviving}
+            kept = {name: _kept(connection, store, name) for name in surviving}
+        now_reshaped = {name for name, (_, digest) in kept.items() if digest is None}
 
-        assert surviving == remaining if join else surviving < remaining
-        assert kept == {name: before[name] for name in surviving}
-        remaining = surviving
+        # A revision that only altered a table undoes that instead of dropping one.
+        undid = surviving < remaining or now_reshaped > reshaped
+        assert surviving == remaining if join else undid
+        # An altered table keeps every row; every other table keeps every value too.
+        assert kept == {
+            name: (before[name][0], None) if name in now_reshaped else before[name]
+            for name in surviving
+        }
+        remaining, reshaped = surviving, now_reshaped
 
     assert remaining == set()
     upgrade(store)
@@ -145,6 +154,15 @@ def test_a_populated_store_rolls_back_revision_by_revision_and_up_again(store, t
 
 def _table(name: str) -> sa.Table:
     return next(table for table in metadata.sorted_tables if table.name == name)
+
+
+def _kept(connection, store, name: str) -> tuple[int, str | None]:
+    """(rows, digest) of a table, with no digest once a downgrade changed its columns."""
+    table = _table(name)
+    built = {column["name"] for column in sa.inspect(connection).get_columns(name, store.schema)}
+    if built == set(table.columns.keys()):
+        return table_digest(connection, table)
+    return connection.execute(sa.select(sa.func.count()).select_from(table)).scalar_one(), None
 
 
 def test_no_store_column_declares_a_length():
