@@ -130,13 +130,17 @@ def _timed_plan() -> dict:
 
 
 def test_shots_are_timed_and_placed_the_way_the_renderer_will_play_them() -> None:
-    """The renderer trims the content to its budget and the opening card plays first."""
+    """The renderer trims the content to its budget and the opening card plays first.
+
+    The title and ending each play half a second of their clip, so the first
+    and last shots hold that much less on screen.
+    """
     board = storyboard_from_plan(_timed_plan(), _projection())
 
-    assert [shot.seconds for shot in board.shots] == [2.0, 2.75, 2.0]
-    assert [shot.start for shot in board.shots] == [3.5, 5.0, 7.75]
+    assert [shot.seconds for shot in board.shots] == [1.5, 2.75, 1.5]
+    assert [shot.start for shot in board.shots] == [3.5, 4.5, 7.25]
     assert board.shots[-1].timecode == "0:07"
-    assert board.summary_label == "3 pictures, 0:06 of pictures and video, about 0:16 of film"
+    assert board.summary_label == "3 pictures, 0:05 of pictures and video, about 0:15 of film"
 
 
 def test_crossfades_and_month_cards_both_move_the_shot_timecodes() -> None:
@@ -148,8 +152,8 @@ def test_crossfades_and_month_cards_both_move_the_shot_timecodes() -> None:
     board = storyboard_from_plan(plan, _projection())
 
     # Content-backed intro/ending cut; ordinary and divider boundaries fade.
-    assert [shot.start for shot in board.shots] == [3.5, 4.5, 7.25]
-    assert board.film_seconds == 16.25
+    assert [shot.start for shot in board.shots] == [3.5, 4.0, 6.75]
+    assert board.film_seconds == 15.25
     assert board.shots[-1].start + board.shots[-1].seconds + 7 == board.film_seconds
 
 

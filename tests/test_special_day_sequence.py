@@ -506,7 +506,10 @@ def test_a_day_on_a_holiday_is_kept_unless_its_occasion_was_the_holiday(monkeypa
     found = scan_year(race + christmas, llm_config=None, home=HOME_AT, captions=captions)
 
     assert [(d.day, d.title) for d in found] == [(date(2023, 6, 18), "City bike race")]
-    assert sorted(asked) == [("Christmas", "Christmas morning"), ("Father's Day", "City bike race")]
+    assert sorted(asked) == [
+        ("Christmas Day", "Christmas morning"),
+        ("Father's Day", "City bike race"),
+    ]
 
 
 def test_a_day_counts_its_pictures_not_the_files_they_are_stored_in(monkeypatch):
@@ -542,3 +545,112 @@ def test_a_day_counts_its_pictures_not_the_files_they_are_stored_in(monkeypatch)
     assert [d.photos for d in found] == [20]
     assert not any(item.id.startswith("copy-") for item in judged)
     assert any(item.is_favorite for item in judged)
+
+
+def test_a_day_is_named_by_its_moment_not_by_everything_it_held(monkeypatch):
+    """A concert night (09-28): the reader, shown the whole day, called it an occasion and named
+    it after the baby at home. The words its weeks never write gather between seven and ten in
+    the evening; asked about those hours, it names the concert."""
+    home = [
+        _day(datetime(2024, 10, day, 8, tzinfo=UTC), pictures=12, hours=6, city="Home", at=HOME_AT)
+        for day in range(1, 14)  # before Columbus Day, a US holiday that would ask its own question
+    ]
+    concert_day = datetime(2024, 10, 3, 8, tzinfo=UTC)
+    morning = _day(concert_day, pictures=20, hours=5, city="Home", at=HOME_AT)
+    evening = _day(concert_day.replace(hour=19), pictures=30, hours=3, city="Home", at=HOME_AT)
+    for picture in evening:
+        picture.id = f"evening-{picture.id}"
+    everyday = [p for d in home for p in d if p.file_created_at.day != 3]
+    captions = {p.id: "a baby lying on a blanket" for p in everyday + morning}
+    captions |= {p.id: "a singer performing on stage under bright lights" for p in evening}
+    monkeypatch.setattr(
+        "immich_memories.analysis.special_day_sequence._read",
+        lambda *_a, **_k: json.dumps({"occasions": [{"run": "R3", "what": "a concert"}]}),
+    )
+    asked = []
+
+    # WHY: the day-level model is the text boundary; shown everything, it names the baby.
+    def day_reader(items, *_a, **_k):
+        asked.append(len(items))
+        if any(item in morning for item in items):
+            return SpecialDay(special=True, title="A day with the baby", what="baby and a show")
+        return SpecialDay(special=True, title="A night of music", what="a concert")
+
+    monkeypatch.setattr("immich_memories.automation.special_day_scan.ask_if_special", day_reader)
+
+    found = scan_year(everyday + morning + evening, llm_config=None, home=None, captions=captions)
+
+    night = next(d for d in found if d.day == date(2024, 10, 3))
+    assert night.title == "A night of music"
+    assert asked[-2:] == [50, 30]
+
+
+def test_a_moment_never_makes_an_ordinary_day_an_occasion(monkeypatch):
+    """Asked alone, the moment of an ordinary day came back an occasion too often (09-28): a
+    replay gained eleven weak days that way. A moment only renames a confirmed day."""
+    home = [
+        _day(datetime(2024, 10, day, 8, tzinfo=UTC), pictures=12, hours=6, city="Home", at=HOME_AT)
+        for day in range(1, 14)  # before Columbus Day, a US holiday that would ask its own question
+    ]
+    concert_day = datetime(2024, 10, 3, 8, tzinfo=UTC)
+    morning = _day(concert_day, pictures=20, hours=5, city="Home", at=HOME_AT)
+    evening = _day(concert_day.replace(hour=19), pictures=30, hours=3, city="Home", at=HOME_AT)
+    for picture in evening:
+        picture.id = f"evening-{picture.id}"
+    everyday = [p for d in home for p in d if p.file_created_at.day != 3]
+    captions = {p.id: "a baby lying on a blanket" for p in everyday + morning}
+    captions |= {p.id: "a singer performing on stage under bright lights" for p in evening}
+    monkeypatch.setattr(
+        "immich_memories.analysis.special_day_sequence._read",
+        lambda *_a, **_k: json.dumps({"occasions": [{"run": "R3", "what": "a concert"}]}),
+    )
+    asked = []
+
+    # WHY: the day-level model is the text boundary; shown everything, it names the baby.
+    def day_reader(items, *_a, **_k):
+        asked.append(len(items))
+        if any(item in morning for item in items):
+            return SpecialDay(special=False, title="A day with the baby", what="baby and a show")
+        return SpecialDay(special=True, title="A night of music", what="a concert")
+
+    monkeypatch.setattr("immich_memories.automation.special_day_scan.ask_if_special", day_reader)
+
+    found = scan_year(everyday + morning + evening, llm_config=None, home=None, captions=captions)
+
+    assert date(2024, 10, 3) not in {d.day for d in found}
+    assert 30 not in asked
+
+
+def test_a_day_whose_title_already_names_what_stood_out_keeps_it(monkeypatch):
+    """ "Night of the Haunted Youth" came back "Under Purple Lights" (09-28): the band's name was
+    in the day's title, and the moment's reading lost it. A title that already names the day's
+    own unusual words is not asked again."""
+    home = [
+        _day(datetime(2024, 10, day, 8, tzinfo=UTC), pictures=12, hours=6, city="Home", at=HOME_AT)
+        for day in range(1, 14)  # before Columbus Day, a US holiday that would ask its own question
+    ]
+    concert_day = datetime(2024, 10, 3, 8, tzinfo=UTC)
+    morning = _day(concert_day, pictures=20, hours=5, city="Home", at=HOME_AT)
+    evening = _day(concert_day.replace(hour=19), pictures=30, hours=3, city="Home", at=HOME_AT)
+    for picture in evening:
+        picture.id = f"evening-{picture.id}"
+    everyday = [p for d in home for p in d if p.file_created_at.day != 3]
+    captions = {p.id: "a baby lying on a blanket" for p in everyday + morning}
+    captions |= {p.id: "a singer performing on stage under bright lights" for p in evening}
+    monkeypatch.setattr(
+        "immich_memories.analysis.special_day_sequence._read",
+        lambda *_a, **_k: json.dumps({"occasions": [{"run": "R3", "what": "a concert"}]}),
+    )
+    asked = []
+
+    # WHY: the day-level model is the text boundary; its whole-day title names the stage.
+    def day_reader(items, *_a, **_k):
+        asked.append(len(items))
+        return SpecialDay(special=True, title="The singer on stage", what="an evening show")
+
+    monkeypatch.setattr("immich_memories.automation.special_day_scan.ask_if_special", day_reader)
+
+    found = scan_year(everyday + morning + evening, llm_config=None, home=None, captions=captions)
+
+    assert next(d for d in found if d.day == date(2024, 10, 3)).title == "The singer on stage"
+    assert 30 not in asked

@@ -41,14 +41,19 @@ def _child_that_opened_its_run_then_failed(command: list[str]) -> ProcessResult:
 
 def install_fake_automation(config_path: Path, state_dir: Path) -> None:
     """Use a fixed calendar and fixture geocoder; only the editorial model is scripted."""
-    from immich_memories.analysis import trip_detection
+    from immich_memories.analysis import place_geocoder
     from immich_memories.automation import candidate_discovery, runner
     from immich_memories.self_command import self_command
     from tests.e2e.test_demo_assets import _TRIP_CLI_BOOTSTRAP
 
     candidate_discovery.date = FixtureDate
     # WHY: naming the fixture's lake must not contact the public Nominatim service.
-    trip_detection.reverse_geocode = lambda *_args, **_kwargs: "Annecy, France"
+    place_geocoder.nominatim_fetch = lambda *_args, **_kwargs: (
+        lambda *_point: {
+            "town": "Annecy",
+            "country": "France",
+        }
+    )
 
     def execute(command):
         marker = state_dir / FAIL_MARKER

@@ -59,7 +59,6 @@ output_names  # unused variable (src/immich_memories/triage/encoder.py:33)
 # C module reads when it materialises rows.
 _.row_factory  # unused attribute (src/immich_memories/automation/notification_state.py:103)
 _.row_factory  # unused attribute (src/immich_memories/automation/state_store.py:64)
-_.row_factory  # unused attribute (src/immich_memories/cache/asset_score_cache.py:32)
 _.row_factory  # unused attribute (src/immich_memories/cache/database.py:36)
 _.row_factory  # unused attribute (src/immich_memories/operations/storage_report.py:36)
 _.row_factory  # unused attribute (src/immich_memories/tracking/run_database.py:72)

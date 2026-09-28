@@ -13,6 +13,7 @@ from immich_memories.processing.assembly_config import (
 from immich_memories.processing.assembly_engine import decide_transitions
 from immich_memories.processing.timeline_budget import TimelinePlan
 from immich_memories.processing.title_divider_planner import TitleDividerPlanner
+from immich_memories.processing.title_inserter import title_borrow
 from immich_memories.titles.generator import GeneratedScreen
 
 
@@ -31,6 +32,33 @@ class _PreviewCards:
         self, location_name: str, lat: float | None = None, lon: float | None = None
     ) -> GeneratedScreen:
         return GeneratedScreen(Path(), 0, "location")
+
+
+def _open_with_title(sequence: list[AssemblyClip], duration: float, deblurs: bool) -> None:
+    """Put the title first; one that deblurs into its clip plays that clip's opening."""
+    first = next((i for i, clip in enumerate(sequence) if not clip.is_title_screen), None)
+    if deblurs and first is not None:
+        held = sequence[first]
+        sequence[first] = replace(held, duration=held.duration - title_borrow(held.duration))
+    sequence.insert(
+        0,
+        AssemblyClip(
+            Path(),
+            duration,
+            asset_id="title_screen",
+            is_title_screen=True,
+            outgoing_transition="cut" if deblurs else None,
+        ),
+    )
+
+
+def _close_with_ending(sequence: list[AssemblyClip], duration: float, deblurs: bool) -> None:
+    """Put the ending last; one backed by the last clip plays that clip's close."""
+    if sequence and deblurs:
+        last = sequence[-1]
+        tail = 0.0 if last.is_title_screen else title_borrow(last.duration)
+        sequence[-1] = replace(last, duration=last.duration - tail, outgoing_transition="cut")
+    sequence.append(AssemblyClip(Path(), duration, asset_id="ending_screen", is_title_screen=True))
 
 
 def preview_timeline(
@@ -53,24 +81,9 @@ def preview_timeline(
     content_backed = titles.title_background == "content_backed"
     if plan.title_duration > 0:
         map_intro = titles.memory_type == "trip" and any(c.latitude is not None for c in content)
-        sequence.insert(
-            0,
-            AssemblyClip(
-                Path(),
-                plan.title_duration,
-                asset_id="title_screen",
-                is_title_screen=True,
-                outgoing_transition="cut" if content_backed and not map_intro else None,
-            ),
-        )
+        _open_with_title(sequence, plan.title_duration, content_backed and not map_intro)
     if plan.ending_duration > 0:
-        if sequence and content_backed:
-            sequence[-1] = replace(sequence[-1], outgoing_transition="cut")
-        sequence.append(
-            AssemblyClip(
-                Path(), plan.ending_duration, asset_id="ending_screen", is_title_screen=True
-            )
-        )
+        _close_with_ending(sequence, plan.ending_duration, content_backed)
     transitions = decide_transitions(sequence, TransitionType(transition), transition_duration)
     positions = {}
     start = 0.0

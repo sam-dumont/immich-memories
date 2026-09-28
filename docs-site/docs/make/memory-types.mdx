@@ -179,10 +179,10 @@ immich-memories generate --memory-type holiday --holiday christmas --years-back 
 | `new_year` | 1 January |
 | `valentines` | 14 February |
 | `easter` | Western Easter Sunday, computed |
-| `mothers_day` | second Sunday of May, or where your `defaults.country` keeps it |
-| `fathers_day` | third Sunday of June, or where your `defaults.country` keeps it |
+| `mothers_day` | second Sunday of May, or where your home country keeps it |
+| `fathers_day` | third Sunday of June, or where your home country keeps it |
 | `halloween` | 31 October |
-| `thanksgiving` | fourth Thursday of November (US), second Monday of October (CA) |
+| `thanksgiving` | where the country's public calendar has it (the US: fourth Thursday of November) |
 | `christmas_eve` | 24 December |
 | `christmas` | 25 December |
 | `new_years_eve` | 31 December |
@@ -192,7 +192,14 @@ moved in). Without `--year`, the starting year steps back when this year's occas
 yet. The title is the occasion's name, subtitled "Through the Years" in the film's language, on both
 the CLI and the web UI.
 
-Three of them move by country, set with `defaults.country` (default `US`):
+The holidays follow the country your home base is in (`trips.homebase_latitude` and
+`trips.homebase_longitude`); Immich's own geodata says which country that is, so nothing leaves your
+server. Each country's public holidays come from the [`holidays`](https://github.com/vacanza/holidays)
+library, and `--holiday` accepts their names too (`--holiday "ascension day"` in Belgium). Without a
+home base the US holidays apply, as they always did.
+
+A few family days no public calendar lists are added on top: Valentine's Day, Halloween, Christmas
+Eve, New Year's Eve, and Mother's and Father's Day, which move by country:
 
 | Country | Mother's Day | Father's Day |
 |---|---|---|
@@ -206,11 +213,13 @@ Three of them move by country, set with `defaults.country` (default `US`):
 | `AU`, `NZ` | second Sunday of May | first Sunday of September |
 | `MX` | 10 May | third Sunday of June |
 
-Thanksgiving is kept only in the US and Canada. Holidays on the lunar calendar, like Eid or Lunar New
-Year, are not computed: give their date as `MM-DD` each year for now.
+Only national holidays are read: a holiday kept in one region (a German state, a Canadian province)
+is not. A holiday only some families keep, like Eid, is not a public holiday in most countries and
+is not in their calendar; give its date as `MM-DD`.
 
-**Something missing?** A holiday your family keeps or a country whose dates differ: open a pull
-request against `memory_types/date_builders.py`. Each rule is one line.
+**Something missing?** A public holiday belongs in the `holidays` library upstream. A family day, or a
+country whose Mother's or Father's Day differs: open a pull request against
+`memory_types/date_builders.py`, one rule per line.
 
 ## Trip
 
@@ -278,7 +287,8 @@ picture, offline:
 | A road trip, mostly Utah and Nevada | `Utah and Nevada, United States` |
 | Four states, none of them most of it | `United States` |
 
-`network.geocoding: true` lets Nominatim name a one-city or one-region trip in the film's language.
+`network.geocoding: true` lets Nominatim name a one-city or one-region trip in the film's language,
+and a trip to a village inside a merged municipality after the village.
 It is off by default: it sends coordinates to a third party.
 
 ## Album

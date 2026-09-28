@@ -94,14 +94,6 @@ class TestDetectTrips:
     HOME_LAT = 50.8468
     HOME_LON = 4.3525
 
-    @pytest.fixture(autouse=True)
-    def _no_geocode(self, monkeypatch):
-        """Disable network geocoding in trip detection tests."""
-        monkeypatch.setattr(
-            "immich_memories.analysis.trip_detection.reverse_geocode",
-            lambda *_args, **_kwargs: None,
-        )
-
     def test_filters_assets_near_home(self):
         """Assets within min_distance_km should be excluded."""
         from immich_memories.analysis.trip_detection import detect_trips
@@ -471,39 +463,23 @@ class TestFormatTripsTable:
         assert not selected
 
 
-class TestReverseGeocode:
-    """Reverse geocoding for trip location naming."""
+class TestTripPlaceName:
+    """The name a reverse-geocoded address gives a trip, at the trip's scale."""
 
-    def test_geocode_returns_location_name(self):
-        """reverse_geocode should return a formatted location string."""
-        from unittest.mock import MagicMock, patch
+    def test_a_trip_without_a_spread_takes_the_region(self):
+        from immich_memories.analysis.trip_detection import trip_place_name
 
-        from immich_memories.analysis.trip_detection import reverse_geocode
+        address = {"state": "Charente-Maritime", "country": "France"}
 
-        mock_location = MagicMock()
-        mock_location.raw = {"address": {"state": "Charente-Maritime", "country": "France"}}
+        assert trip_place_name(address) == "Charente-Maritime, France"
 
-        with patch("immich_memories.analysis.trip_detection.Nominatim") as mock_nom:
-            mock_nom.return_value.reverse.return_value = mock_location
-            result = reverse_geocode(45.95, -1.15)
+    def test_an_address_without_a_country_names_nothing(self):
+        from immich_memories.analysis.trip_detection import trip_place_name
 
-        assert result == "Charente-Maritime, France"
-
-    def test_geocode_returns_none_on_failure(self):
-        """reverse_geocode should return None when geocoding fails."""
-        from unittest.mock import patch
-
-        from immich_memories.analysis.trip_detection import reverse_geocode
-
-        with patch("immich_memories.analysis.trip_detection.Nominatim") as mock_nom:
-            mock_nom.return_value.reverse.side_effect = OSError("Network error")
-            result = reverse_geocode(45.95, -1.15)
-
-        assert result is None
+        assert trip_place_name({}) is None
+        assert trip_place_name({"town": "Dolus"}, spread_km=3.0) is None
 
     def test_naming_prefers_geocode_over_exif(self):
-        """_derive_location_name should prefer geocoded result over EXIF."""
-
         from immich_memories.analysis.trip_detection import _derive_location_name
 
         assets = [
@@ -518,8 +494,6 @@ class TestReverseGeocode:
         assert result.name == "Île d'Oléron, France"
 
     def test_naming_falls_back_to_exif_when_geocode_fails(self):
-        """When geocode returns None, fall back to EXIF city/country."""
-
         from immich_memories.analysis.trip_detection import _derive_location_name
 
         assets = [
@@ -531,135 +505,85 @@ class TestReverseGeocode:
 
         assert result.name == "Barcelona, Spain"
 
-
-class TestReverseGeocodeGranularity:
-    """Reverse geocoding should prefer specific names over broad regions."""
-
     def test_prefers_island_over_state(self):
-        """For islands, should return island name not state."""
-        from unittest.mock import MagicMock, patch
+        from immich_memories.analysis.trip_detection import trip_place_name
 
-        from immich_memories.analysis.trip_detection import reverse_geocode
+        address = {"island": "Tenerife", "state": "Canary Islands", "country": "Spain"}
 
-        mock_location = MagicMock()
-        mock_location.raw = {
-            "address": {
-                "island": "Tenerife",
-                "state": "Canary Islands",
-                "country": "Spain",
-            }
-        }
-
-        with patch("immich_memories.analysis.trip_detection.Nominatim") as mock_nom:
-            mock_nom.return_value.reverse.return_value = mock_location
-            result = reverse_geocode(28.2916, -16.6291)
-
-        assert result == "Tenerife, Spain"
+        assert trip_place_name(address) == "Tenerife, Spain"
 
     def test_a_region_scale_trip_takes_the_state_not_the_province(self):
         """A province is an administrative unit under the name people use."""
-        from unittest.mock import MagicMock, patch
+        from immich_memories.analysis.trip_detection import trip_place_name
 
-        from immich_memories.analysis.trip_detection import reverse_geocode
-
-        mock_location = MagicMock()
-        mock_location.raw = {
-            "address": {
-                "province": "Santa Cruz de Tenerife",
-                "state": "Canary Islands",
-                "country": "Spain",
-            }
+        address = {
+            "province": "Santa Cruz de Tenerife",
+            "state": "Canary Islands",
+            "country": "Spain",
         }
 
-        with patch("immich_memories.analysis.trip_detection.Nominatim") as mock_nom:
-            mock_nom.return_value.reverse.return_value = mock_location
-            result = reverse_geocode(28.2916, -16.6291, spread_km=120.0)
-
-        assert result == "Canary Islands, Spain"
+        assert trip_place_name(address, spread_km=120.0) == "Canary Islands, Spain"
 
     def test_a_county_is_never_the_trip_name(self):
         """Nominatim's county is a regional unit in some countries, in the local script."""
-        from unittest.mock import MagicMock, patch
+        from immich_memories.analysis.trip_detection import trip_place_name
 
-        from immich_memories.analysis.trip_detection import reverse_geocode
-
-        mock_location = MagicMock()
-        mock_location.raw = {
-            "address": {
-                "municipality": "Δήμος Ανωγείων",
-                "county": "Περιφερειακή Ενότητα Ρεθύμνης",
-                "state": "Crète",
-                "country": "Grèce",
-            }
+        address = {
+            "municipality": "Δήμος Ανωγείων",
+            "county": "Περιφερειακή Ενότητα Ρεθύμνης",
+            "state": "Crète",
+            "country": "Grèce",
         }
 
-        with patch("immich_memories.analysis.trip_detection.Nominatim") as mock_nom:
-            mock_nom.return_value.reverse.return_value = mock_location
-            result = reverse_geocode(35.24, 24.9, spread_km=150.0, language="fr")
-
-        assert result == "Crete, Grèce"
+        assert trip_place_name(address, spread_km=150.0) == "Crete, Grèce"
 
     def test_a_region_label_loses_its_administrative_wording(self):
-        from unittest.mock import MagicMock, patch
+        from immich_memories.analysis.trip_detection import trip_place_name
 
-        from immich_memories.analysis.trip_detection import reverse_geocode
+        address = {"state": "Région Crète", "country": "Grèce"}
 
-        mock_location = MagicMock()
-        mock_location.raw = {"address": {"state": "Région Crète", "country": "Grèce"}}
-
-        with patch("immich_memories.analysis.trip_detection.Nominatim") as mock_nom:
-            mock_nom.return_value.reverse.return_value = mock_location
-            result = reverse_geocode(35.24, 24.9, spread_km=150.0, language="fr")
-
-        assert result == "Crete, Grèce"
+        assert trip_place_name(address, spread_km=150.0) == "Crete, Grèce"
 
     def test_deduplicates_region_and_country(self):
         """When state == country (e.g., Cyprus), return just country name."""
-        from unittest.mock import MagicMock, patch
+        from immich_memories.analysis.trip_detection import trip_place_name
 
-        from immich_memories.analysis.trip_detection import reverse_geocode
-
-        # Cyprus: state == country, no useful county/island/province
-        location = MagicMock()
-        location.raw = {
-            "address": {
-                "state": "Cyprus",
-                "country": "Cyprus",
-            }
-        }
-
-        with patch("immich_memories.analysis.trip_detection.Nominatim") as mock_nom:
-            mock_nom.return_value.reverse.return_value = location
-            result = reverse_geocode(34.85, 32.85)
-
-        assert result == "Cyprus"  # Not "Cyprus, Cyprus"
+        assert trip_place_name({"state": "Cyprus", "country": "Cyprus"}) == "Cyprus"
 
     def test_a_city_scale_trip_takes_the_town(self):
-        """A trip that fits one town is named after the town, in the film's language."""
-        from unittest.mock import MagicMock, patch
+        from immich_memories.analysis.trip_detection import trip_place_name
 
-        from immich_memories.analysis.trip_detection import reverse_geocode
-
-        detailed_location = MagicMock()
-        detailed_location.raw = {
-            "address": {
-                "town": "Charleville-Mézières",
-                "county": "Ardennes",
-                "state": "Grand Est",
-                "country": "France",
-            }
+        address = {
+            "town": "Charleville-Mézières",
+            "county": "Ardennes",
+            "state": "Grand Est",
+            "country": "France",
         }
 
-        with patch("immich_memories.analysis.trip_detection.Nominatim") as mock_nom:
-            mock_nom.return_value.reverse.return_value = detailed_location
-            result = reverse_geocode(49.77, 4.72, spread_km=8.0)
+        assert trip_place_name(address, spread_km=8.0) == "Charleville-Mézières, France"
 
-        assert result == "Charleville-Mézières, France"
+    def test_a_village_is_named_before_the_municipality_it_belongs_to(self):
+        """A merged municipality's village is where the trip went, not the merged town."""
+        from immich_memories.analysis.trip_detection import trip_place_name
+
+        address = {
+            "village": "Wenduine",
+            "town": "De Haan",
+            "state": "Flandre-Occidentale",
+            "country": "Belgique",
+        }
+
+        assert trip_place_name(address, spread_km=4.0) == "Wenduine, Belgique"
+
+    def test_a_city_trip_is_named_after_the_city_not_a_district(self):
+        from immich_memories.analysis.trip_detection import trip_place_name
+
+        address = {"suburb": "Gràcia", "city": "Barcelona", "country": "Spain"}
+
+        assert trip_place_name(address, spread_km=6.0) == "Barcelona, Spain"
 
     def test_multi_country_trip_lists_countries(self):
         """A cross-country trip (>300km, multiple countries) lists countries."""
-        from unittest.mock import patch
-
         from immich_memories.analysis.trip_detection import _derive_location_name
 
         # European road trip: Belgium → France → Spain (spread >> 300km)
@@ -670,15 +594,12 @@ class TestReverseGeocodeGranularity:
             _make_asset(41.39, 2.17, "2024-06-07T10:00:00", country="Spain"),
         ]
 
-        with patch("immich_memories.analysis.trip_detection.reverse_geocode"):
-            result = _derive_location_name(assets, centroid_lat=47.0, centroid_lon=3.0)
+        result = _derive_location_name(assets, centroid_lat=47.0, centroid_lon=3.0)
 
         assert result.name == "Belgium → France → Spain"
 
     def test_dominant_country_ignores_layovers(self):
         """If 90%+ assets are in one country, use that country (ignore layovers)."""
-        from unittest.mock import patch
-
         from immich_memories.analysis.trip_detection import _derive_location_name
 
         # 9 assets in Cyprus, 1 in Greece (Athens layover) — 90%+ in Cyprus
@@ -690,33 +611,18 @@ class TestReverseGeocodeGranularity:
             for i in range(9)
         ]
 
-        with patch(
-            "immich_memories.analysis.trip_detection.reverse_geocode",
-            return_value="Cyprus",
-        ):
-            result = _derive_location_name(assets, centroid_lat=34.90, centroid_lon=33.00)
+        result = _derive_location_name(
+            assets, centroid_lat=34.90, centroid_lon=33.00, geocoder=lambda *_a, **_k: "Cyprus"
+        )
 
         assert result.name == "Cyprus"
 
     def test_falls_back_to_state_when_no_finer_detail(self):
-        """When no island/county/state_district, fall back to state."""
-        from unittest.mock import MagicMock, patch
+        from immich_memories.analysis.trip_detection import trip_place_name
 
-        from immich_memories.analysis.trip_detection import reverse_geocode
+        address = {"state": "California", "country": "United States"}
 
-        mock_location = MagicMock()
-        mock_location.raw = {
-            "address": {
-                "state": "California",
-                "country": "United States",
-            }
-        }
-
-        with patch("immich_memories.analysis.trip_detection.Nominatim") as mock_nom:
-            mock_nom.return_value.reverse.return_value = mock_location
-            result = reverse_geocode(34.05, -118.24)
-
-        assert result == "California, United States"
+        assert trip_place_name(address) == "California, United States"
 
 
 class TestCrossYearBoundary:
@@ -868,35 +774,42 @@ class TestGeocodingIsNotAlwaysWanted:
     def test_a_caller_can_ask_for_dates_without_names(self, monkeypatch):
         from immich_memories.analysis.trip_detection import detect_trips
 
-        monkeypatch.setattr(
-            "immich_memories.analysis.trip_detection.reverse_geocode",
-            lambda *_a, **_k: pytest.fail("geocoded a trip nobody asked to name"),
-        )
         assets = [
             _make_asset(41.3851, 2.1734, "2024-06-12T10:00:00", city="Barcelona", country="Spain"),
             _make_asset(41.3851, 2.1734, "2024-06-13T14:00:00", city="Barcelona", country="Spain"),
             _make_asset(41.3851, 2.1734, "2024-06-14T09:00:00", city="Barcelona", country="Spain"),
         ]
 
-        trips = detect_trips(assets, 50.8468, 4.3525, name_locations=False)
+        trips = detect_trips(
+            assets,
+            50.8468,
+            4.3525,
+            name_locations=False,
+            geocoder=lambda *_a, **_k: pytest.fail("geocoded a trip nobody asked to name"),
+        )
 
         assert len(trips) == 1
         assert trips[0].start_date.isoformat() == "2024-06-12"
         assert trips[0].end_date.isoformat() == "2024-06-14"
 
-    def test_a_refusal_from_the_geocoder_is_not_a_crash(self, monkeypatch):
+    def test_a_refusal_from_the_geocoder_is_not_a_crash(self, tmp_path, monkeypatch):
         """geopy's own base error is not an OSError, so it went straight up."""
         from geopy.exc import GeocoderInsufficientPrivileges
 
-        from immich_memories.analysis.trip_detection import reverse_geocode
+        from immich_memories.analysis.trip_detection import geocoder_for
+        from immich_memories.config_loader import Config
 
-        class _Refusing:
-            def __init__(self, *_a, **_k) -> None: ...
-
-            def reverse(self, *_a, **_k):
-                raise GeocoderInsufficientPrivileges(403)
+        def refuse(*_a, **_k):
+            raise GeocoderInsufficientPrivileges(403)
 
         # WHY: Nominatim is the network boundary; here it refuses the request.
-        monkeypatch.setattr("immich_memories.analysis.trip_detection.Nominatim", _Refusing)
+        monkeypatch.setattr(
+            "immich_memories.analysis.place_geocoder.nominatim_fetch", lambda *_a, **_k: refuse
+        )
+        config = Config()
+        config.network.geocoding = True
+        config.database.url = f"sqlite:///{tmp_path / 'store.db'}"
+        geocoder = geocoder_for(config)
 
-        assert reverse_geocode(41.3851, 2.1734) is None
+        assert geocoder is not None
+        assert geocoder(41.3851, 2.1734, spread_km=3.0) is None

@@ -14,6 +14,13 @@ behind an API, and MusicGen behind a server. Nothing here is on by default, and 
 fails falls through to a bundled track with a warning on the finished film, so a dead backend never
 passes for working music.
 
+:::tip Local music on a Mac needs `make install-acestep`, in every checkout
+`lib` mode runs ACE-Step from a `.venv-acestep` next to the checkout, and no `make dev*` target
+creates it. A fresh clone or a new git worktree has none, and then every film gets a bundled track.
+`immich-memories preflight` warns about it (**Music (ACE-Step)**); the fix is
+[`make install-acestep`](#install-locally-on-a-mac) in that checkout.
+:::
+
 ## ACE-Step
 
 ACE-Step 1.5 takes the tempo, key and time signature as structured fields. Two modes:
@@ -86,8 +93,9 @@ uv run immich-memories ui
 `make install-acestep` installs ACE-Step v0.1.8 and Demucs into a sibling `.venv-acestep`, because
 ACE-Step's Transformers pin wants an older Hugging Face library than the editor. `make
 check-local-audio` generates 15 seconds, splits all four stems and fails loudly if any of it didn't
-happen locally, so a remote server or a bundled track can't pass it. Rerun the installer after
-moving the checkout or changing the app version; it also repairs
+happen locally, so a remote server or a bundled track can't pass it. Every clone and every
+git worktree needs its own run, since the environment sits next to the checkout. Rerun the
+installer after moving the checkout or changing the app version; it also repairs
 `operator torchvision::nms does not exist`. A bare `uv sync` can remove Demucs from the editor's
 environment, and the installer puts it back.
 

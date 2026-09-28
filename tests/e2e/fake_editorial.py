@@ -535,14 +535,14 @@ def install_fake_editorial_route(
     that skipped it, which the run's install check must refuse.
     """
     import immich_memories.analysis.editorial_runtime as editorial_runtime
-    import immich_memories.analysis.trip_detection as trip_detection
+    import immich_memories.analysis.place_geocoder as place_geocoder
 
     if models_fetched:
         _stand_in_for_models_fetch()
 
     # WHY: fixture trips already have public place names in EXIF. A hermetic
     # browser or CLI run must not ask Nominatim to name them over the internet.
-    trip_detection.reverse_geocode = lambda *_args, **_kwargs: None
+    place_geocoder.nominatim_fetch = lambda *_args, **_kwargs: lambda *_point: None
 
     def build_smart_pipeline(
         client: Any,

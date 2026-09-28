@@ -179,6 +179,13 @@ the day's pictures and on at most 3% of the year's described days, and a day nee
 words. A year with fewer than 34 described days proposes nothing this way. Every proposed day
 still goes through the same day check.
 
+A confirmed day is named by its moment when its name misses what made it stand out. A day that held
+a baby at home and a concert that night came back "Baby's Day in Jette": the reader named what came
+first. The pictures that write the day's own unusual words, taken close together, mark its moment;
+when the day's title names none of those words, the moment is asked about alone, and an occasion
+found there gives the day its name and its window. The moment only renames: it never makes an
+ordinary day an occasion.
+
 A small reader can call a whole run of ordinary days occasions: a newborn's first months came back as
 fifty-five "new beginnings". So a confirmed day with four or more other confirmed days within fifteen days
 of it has to show what its weeks do not: at least half its captions must write a word it repeats and
@@ -236,6 +243,4 @@ immich-memories preflight       # can it reach Immich, the models, the renderer
 Bare `people` lists names exactly as Immich holds them: "Emma" versus "Emma S." is the difference between a
 film and an empty pool. `years` saves you guessing at `--year` on a library imported from old backups.
 
-`analyze` and `export-project` are older commands. `analyze` counts a year's videos and prepares nothing (use
-`prepare`); `export-project` writes a JSON list of the videos in scope that nothing reads back. To see how a
-cut was reached, use [`runs why`](./runs.md#runs-why).
+To see how a cut was reached, use [`runs why`](./runs.md#runs-why).

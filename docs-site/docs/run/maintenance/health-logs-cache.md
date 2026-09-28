@@ -132,9 +132,7 @@ Deleting `~/.immich-memories/cache` costs previews and clips, not facts: those a
 Don't delete `store.db`: without it every fact about your library is prepared again, and every
 picture you cleared or ruled out is held again.
 
-### The CLI cache commands are not for the banks
+### Moving an install
 
-`immich-memories cache stats|export|import` read and write the banked asset scores (the retired
-per-clip scorer's answers, which nothing writes any more) in the [store](../database.md); `cache
-backup` copies `cache.db` only. None of them touch the rest of the store. To
-move an install, copy `~/.immich-memories` (in Docker: the config volume).
+`immich-memories store backup` and `store restore` move everything the [store](../database.md)
+holds. Or copy `~/.immich-memories` (in Docker: the config volume) whole.

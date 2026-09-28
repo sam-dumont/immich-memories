@@ -518,16 +518,22 @@ class TestTheThumbnailBudgetMeetsThePreparedScope:
         change is a line in their config file, and repeating it per pass buries
         it in the run log it is trying to explain.
         """
-        caplog.set_level(logging.WARNING)
+        caplog.set_level(logging.WARNING, logger="immich_memories.cache.thumbnail_cache")
+
+        # Only the cache's own warnings count: a config file on the machine running
+        # the suite can add a config-loader warning that says nothing about this.
+        def budget_warnings():
+            return [r for r in caplog.records if r.name == "immich_memories.cache.thumbnail_cache"]
+
         cache, _ = self._earlier_run(tmp_path)
-        assert len(caplog.records) == 1
+        assert len(budget_warnings()) == 1
         caplog.clear()
 
         cache.begin_run()
         run(tmp_path, ports=successful_ports([]), thumbnail_cache=cache)
 
-        assert len(caplog.records) == 1
-        assert "thumbnail_cache_max_size_mb" in caplog.records[0].getMessage()
+        assert len(budget_warnings()) == 1
+        assert "thumbnail_cache_max_size_mb" in budget_warnings()[0].getMessage()
 
 
 def test_the_no_captions_tier_finishes_without_a_caption_server(tmp_path):

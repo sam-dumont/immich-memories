@@ -115,7 +115,9 @@ def _render_holiday_params(state: AppState) -> None:
 
     state.memory_preset_params.setdefault("holiday", current_holiday)
     if state.config is not None:
-        state.memory_preset_params.setdefault("country", state.config.defaults.country)
+        from immich_memories.home_country import home_country
+
+        state.memory_preset_params.setdefault("country", home_country(state.config))
     state.memory_preset_params.setdefault("year", current_year)
     state.memory_preset_params.setdefault("years_back", current_back)
     _apply_preset_to_state(MemoryType.HOLIDAY)
@@ -367,14 +369,10 @@ def _render_trip_params(state: AppState) -> None:
             from immich_memories.analysis.trip_detection import geocoder_for
             from immich_memories.analysis.trip_discovery import discover_year_trips
             from immich_memories.api.immich import SyncImmichClient
-            from immich_memories.processing.clip_caption import resolve_caption_locale
 
             assert state.config is not None  # set in initialize_app
             trips_config = state.config.trips
-            trip_geocoder = geocoder_for(
-                enabled=state.config.network.geocoding,
-                language=resolve_caption_locale(state.config.title_screens.locale),
-            )
+            trip_geocoder = geocoder_for(state.config)
 
             def do_detect() -> list[DetectedTrip]:
                 with SyncImmichClient(
