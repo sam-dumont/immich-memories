@@ -1,7 +1,7 @@
 """Truthful source kinds and complete, bounded moment-pick responses."""
 
 import math
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any, cast
 
 from immich_memories.analysis.editorial_numbers import exact_number
@@ -153,12 +153,15 @@ def ask_moment_pick(
     *,
     labels: set[str],
     count: int,
+    fallback: Sequence[str],
     allow_fewer: bool = False,
     record: Callable[[dict], None] | None = None,
 ) -> list[str]:
     """One whole-answer repair; never turn an invalid list into an apparent vote.
 
-    A reply that only overran the grant twice is cut to it instead, on the record.
+    A reply still invalid after it is never read as a vote either: one that only overran the
+    grant is cut to it, and any other takes the first ``count`` of ``fallback``, the labels in
+    the order the caller's rules keep them without a reader. Both are on the record.
     """
 
     def accepts(raw: str) -> bool:
@@ -201,34 +204,42 @@ def ask_moment_pick(
         if record is not None:
             record({"keep": kept, "unused_slots": unused, "why_fewer": why if unused else ""})
         return kept
-    return _overrun_pick(raw, labels=labels, count=count, error=error, record=record)
+    return _unanswered_pick(
+        raw, labels=labels, count=count, error=error, fallback=fallback, record=record
+    )
 
 
-def _overrun_pick(
+def _unanswered_pick(
     raw: str,
     *,
     labels: set[str],
     count: int,
     error: str,
+    fallback: Sequence[str],
     record: Callable[[dict], None] | None,
 ) -> list[str]:
-    """A reader that would not stop counting still ranked real rows: take the first ones it named.
+    """No valid answer after the repair, and still no film lost to it.
 
-    No film is lost to a length the repair could not talk the reader out of. The cut is on the
-    record with its reason, the way the timing trim records the carriers it drops.
+    A reader that would not stop counting still ranked real rows: take the first ones it named.
+    Any other invalid answer (one that does not parse, names too few, repeats a label or names
+    a row nobody offered) leaves no order to defend, so the rows get the pick the rules make
+    without a reader. Either way it is on the record with its reason, the way the timing trim
+    records the carriers it drops.
     """
     try:
         kept, received = _trim_to_grant(raw, labels=labels, count=count)
     except ValueError:
-        raise ValueError(f"Invalid moment pick after bounded repair: {error}") from None
+        kept = list(dict.fromkeys(fallback))[:count]
+        why = {
+            "reason": f"The reader's answer was still invalid after its repair ({error}); "
+            f"kept the {len(kept)} the rules pick",
+            "review_stage": "pick-rules-fallback",
+        }
+    else:
+        why = {
+            "reason": f"Kept the first {count} of the {received} labels the reader returned",
+            "review_stage": "pick-cap-trim",
+        }
     if record is not None:
-        record(
-            {
-                "keep": kept,
-                "unused_slots": 0,
-                "why_fewer": "",
-                "reason": f"Kept the first {count} of the {received} labels the reader returned",
-                "review_stage": "pick-cap-trim",
-            }
-        )
+        record({"keep": kept, "unused_slots": count - len(kept), "why_fewer": ""} | why)
     return kept

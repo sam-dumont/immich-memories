@@ -517,6 +517,7 @@ src/immich_memories/
 │   ├── album_source.py         # Album mode: the album is the candidate pool, nothing is searched for
 │   ├── source_filter.py        # Drop doorbell / dashcam / screen-recorder uploads by filename
 │   ├── source_quality.py       # Drop messaging re-encodes: sub-1080p with no camera EXIF
+│   ├── picture_copies.py       # One picture stored as several files: fold, keep the most pixels
 │   ├── llm_failures.py         # Separate "the model could not answer" from a bug in the calling code
 │   ├── request_heartbeat.py    # RequestHeartbeat: periodic log line for long-outstanding HTTP calls
 │   ├── duplicate_hashing.py    # Perceptual hashing for duplicates
@@ -1068,6 +1069,7 @@ version and capabilities first); deployment files are `services/render-worker/co
 - **Real-Immich gate**: `make test-immich-gate` (`tests/integration/immich_gate/`: compose file, `seed.py`, `media.py`) runs on every PR against Immich v2 and v3 in Docker, each with the store on SQLite and on PostgreSQL (`IMMICH_GATE_DATABASE`; `.github/workflows/immich-gate.yml`, required check `Immich Gate`); the pinned images ride in the Actions cache per version (`scripts/immich_gate_images.sh`, `make immich-gate-fetch`/`immich-gate-save`).
 - **Launch check per backend**: `make launch-check-ci` (SQLite) and `make launch-check-ci-postgres` (each launch workspace gets its own schema in `IMMICH_MEMORIES_E2E_DATABASE_URL`); CI job `Hermetic Launch Check (sqlite|postgresql)`. `scripts/with_throwaway_postgres.sh` starts the throwaway `postgres:16` for this, `make test-store` and the gate.
 - **Container e2e**: `make test-container` (`tests/container/`, marker `container`) builds the image and runs it from `docker-compose.yml` on a legacy volume: first-start import and `store import --verify`, `store backup`/`restore` in the image, the trigger API called by the CronJob's curl. `CONTAINER_E2E_DATABASE=postgresql` switches on the compose file's PostgreSQL example; CI job `Container E2E (sqlite|postgresql)`.
+- **CI scope**: `scripts/ci_scope.py` (`make ci-scope`) sorts a pull request's diff into docs, code, store and container areas; each job in `ci.yml` and `immich-gate.yml` reads that in its `if:`. Build files, workflows, unknown paths and the release run everything. Required checks are the rollups `CI Success` and `Immich Gate`.
 - **Pre-commit**: Run `make ci` before committing
 
 The web sidebar links Memory, Suggestions, Runs, Media pool and Settings.

@@ -7,9 +7,9 @@ the no-model film's last passes (the unvouched-filler drop), so the polish only 
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import datetime
 from functools import partial
 
+from immich_memories.analysis.editorial_intent import voiced_era_of
 from immich_memories.analysis.editorial_shot_kinds import shot_kind
 from immich_memories.analysis.editorial_story_candidates import story_candidates
 from immich_memories.analysis.editorial_story_replies import film_close_family
@@ -64,7 +64,7 @@ def polish_the_draft(
         protected=source.owner_required_asset_ids,
         subject=source.intent.subject or "",
         close_family=film_close_family(source),
-        era_of=_partition_of(source.intent) if source.intent.voice_per_partition else None,
+        era_of=voiced_era_of(source.intent),
         kind_of=_kind_of(source),
         vouched=partial(owner_vouches_for, evidence=filler_evidence(source)),
     )
@@ -94,11 +94,3 @@ def _kind_of(source) -> Callable[[str], str | None]:
         return shot_kind(dict(record.heads)) if record is not None else None
 
     return kind_of
-
-
-def _partition_of(intent) -> Callable[[str], str | None]:
-    def partition_of(taken: str) -> str | None:
-        part = intent.partition_for(datetime.fromisoformat(taken).date())
-        return part.key if part is not None else None
-
-    return partition_of

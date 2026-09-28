@@ -269,6 +269,7 @@ def picture_admission(source, ports, material, selection, gate) -> PictureAdmiss
         life=lambda asset_id: shows_life(material, unit_of, asset_id),
         unit_by_asset=unit_by_asset,
         pictures_of={s["key"]: s["seen"]["pictures"] for s in selection.story.stories},
+        context_without_life=source.intent.context_without_life,
     )
 
     def prepare_candidates(rows):

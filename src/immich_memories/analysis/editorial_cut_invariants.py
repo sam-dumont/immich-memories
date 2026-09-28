@@ -22,6 +22,7 @@ from typing import Any
 from immich_memories.analysis import editorial_shareability as _share
 from immich_memories.analysis.editorial_clip_frames import clips_miss_subject
 from immich_memories.analysis.editorial_family_seat import FamilySeatPolicy, film_refusal
+from immich_memories.analysis.editorial_intent import voiced_era_of
 from immich_memories.analysis.editorial_rule_banked_facts import withheld_by_bank
 from immich_memories.analysis.editorial_story_replies import film_close_family
 from immich_memories.analysis.editorial_structure_budget import RESIDUAL_MIN
@@ -365,9 +366,9 @@ def _finished_cut(source, selection, material, run, gate, banked, share_log) -> 
             for row in (run.final_duplicates or {}).get("collapsed_favourites") or ()
         },
     )
-    if not source.intent.voice_per_partition:
+    era_of = voiced_era_of(source.intent)
+    if era_of is None:
         return cut
-    era_of = _era_of(source.intent)
     return replace(
         cut,
         era_of=era_of,
@@ -424,14 +425,6 @@ def _standing_refused(decisions: Path) -> frozenset[str]:
             *(row["asset_id"] for row in record.get("context_rejected", ())),
         ]
     )
-
-
-def _era_of(intent) -> Callable[[str], str | None]:
-    def era_of(taken: str) -> str | None:
-        part = intent.partition_for(datetime.fromisoformat(taken).date())
-        return part.key if part is not None else None
-
-    return era_of
 
 
 def _era_pictures(selection, units, era_of, may_carry) -> dict[str, list[str]]:

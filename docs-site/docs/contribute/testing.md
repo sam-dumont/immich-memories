@@ -184,9 +184,10 @@ that reason rather than because they were wrong: the loudnorm fixtures (thirty F
 and the photo-caption test (120 encoded frames to 30, to assert one string). If a unit test renders
 video to check metadata, shrink the render.
 
-The `CI Success` gate tolerates `cancelled`, because the concurrency group cancels superseded runs
-and a runner death still produces `conclusion=failure` on the job (`make` returns 137). Check
-`gh run list --branch <branch>` to confirm a newer run covered the cancelled one.
+The `CI Success` gate accepts `success` and `skipped` only. A job the change scope left out reports
+`skipped`. `cancelled` fails, because a job that runs past its `timeout-minutes` ends cancelled; a
+run the concurrency group cancelled was superseded, so its verdict does not count. Check
+`gh run list --branch <branch>` to confirm a newer run covered it.
 
 `gh run rerun <run-id> --failed` is rejected while any job in the run is still in progress; the
 error message about a broken workflow file is misleading. Wait for the run to complete. If the same

@@ -68,7 +68,9 @@ its own, the only shot of a close family member, and a story's only shot that is
 say which; an empty interior doesn't count). Left alone,
 the vote reads a road race as filler and a posed selfie as the point. A block made only of those is
 not asked. Only a
-gate removes them. Your ticks are added back after the polish either way.
+gate removes them. In a film that gives every year a shot, a year's last shot is kept from the vote
+and from the standing gate too: only the sharing check, a source rule or a repeat takes it. Your
+ticks are added back after the polish either way.
 
 **Seats.** A refusal is a seat, not a hole. N seats take only the room the draft left unused, at
 the 3.5 s minimum hold. R seats swap within the original shot's time; T seats can use the seconds

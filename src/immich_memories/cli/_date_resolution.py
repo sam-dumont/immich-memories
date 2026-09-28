@@ -287,7 +287,11 @@ def _resolve_memory_type_dates(
             raise click.UsageError("--year is required with --memory-type monthly_highlights")
         return build_month(month, year)
 
-    spanning = _multi_year_ranges(memory_type, year, years_back, on_this_day_target, holiday)
+    # A holiday's date depends on the country that keeps it, which the config states.
+    country = (preset_params or {}).get("country", "US")
+    spanning = _multi_year_ranges(
+        memory_type, year, years_back, on_this_day_target, holiday, country
+    )
     if spanning is not None:
         return spanning
 
@@ -302,13 +306,15 @@ def _resolve_memory_type_dates(
     return calendar_year(year)
 
 
-def _holiday_ranges(holiday: str, year: int | None, years_back: int | None) -> list[DateRange]:
+def _holiday_ranges(
+    holiday: str, year: int | None, years_back: int | None, country: str
+) -> list[DateRange]:
     """One window per year around a holiday, as the registered preset builds them."""
     from immich_memories.memory_types.factory import create_preset
     from immich_memories.memory_types.registry import MemoryType
 
     preset = create_preset(
-        MemoryType.HOLIDAY, holiday=holiday, year=year, years_back=years_back or 5
+        MemoryType.HOLIDAY, holiday=holiday, year=year, years_back=years_back or 5, country=country
     )
     return preset.date_ranges
 
@@ -454,6 +460,7 @@ def _multi_year_ranges(
     years_back: int | None,
     on_this_day_target: date | None,
     holiday: str | None,
+    country: str = "US",
 ) -> list[DateRange] | None:
     """Ranges for the types that span several years, or None for the rest.
 
@@ -472,6 +479,6 @@ def _multi_year_ranges(
         # Through the preset, not build_holiday: the rule that a defaulted year
         # must skip a holiday that has not happened yet belongs to whoever
         # defaults the year, and the wizard defaults it there too.
-        return _holiday_ranges(holiday, year, years_back)
+        return _holiday_ranges(holiday, year, years_back, country)
 
     return None
