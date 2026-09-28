@@ -13,7 +13,7 @@ from immich_memories.analysis.familiar_places import (
     valid_coordinates,
 )
 from immich_memories.i18n import DEFAULT_LOCALE
-from immich_memories.i18n_places import localise_place
+from immich_memories.i18n_places import is_country, localise_place
 
 if TYPE_CHECKING:
     from immich_memories.generate import GenerationParams
@@ -96,39 +96,40 @@ def prepare_location_captions(
     trips = params.config.trips
     home = (trips.homebase_latitude, trips.homebase_longitude)
     locale = resolve_caption_locale(params.config.title_screens.locale)
-    captioned = apply_location_captions(
+    return apply_location_captions(
         clips, history, home=home if valid_coordinates(*home) else None, locale=locale
     )
-    return _geocoded_place_names(params, captioned, locale)
 
 
-def _geocoded_place_names(
-    params: GenerationParams, clips: list[AssemblyClip], locale: str
-) -> list[AssemblyClip]:
-    """Name the places the cut shows in the film's language, one request each.
+def district_place_names(params: GenerationParams, clips: list[AssemblyClip]) -> list[AssemblyClip]:
+    """Each clip's place under the district OpenStreetMap puts it in, when geocoding is on.
 
-    Only clips that already carry a place are asked about, so home and the
-    neighbourhoods the viewer sees every week are never sent anywhere. The
-    library is not walked: this is the cut, which is tens of clips.
+    Immich names a picture after the nearest GeoNames town, which for a district that is not
+    a municipality of its own is the neighbour's name. Home is asked about too: a location
+    card names it when the film comes back from a trip. The country stays Immich's English
+    one, so the home-country drop and the offline translation still recognise it; the
+    district arrives in the film's language. A privacy-mode cut is never asked about.
     """
-    if not params.config.network.geocoding:
+    if params.privacy_mode:
         return clips
-    from immich_memories.analysis.place_name_cache import (
-        PlaceNameCache,
-        nominatim_place_reader,
-    )
+    from immich_memories.analysis.place_geocoder import district_of, place_geocoder_for
 
-    cache = PlaceNameCache(params.config.cache.cache_path, locale, nominatim_place_reader(locale))
-    named = [
-        replace(
-            clip,
-            caption_location_name=cache.name_for(
-                clip.latitude, clip.longitude, clip.caption_location_name
-            ),
+    places = place_geocoder_for(params.config)
+    if places is None:
+        return clips
+    named = []
+    for clip in clips:
+        district = None
+        if clip.latitude is not None and clip.longitude is not None:
+            district = district_of(places.address(clip.latitude, clip.longitude))
+        named.append(
+            replace(clip, location_name=_with_district(district, clip.location_name))
+            if district
+            else clip
         )
-        if clip.caption_location_name and clip.latitude is not None and clip.longitude is not None
-        else clip
-        for clip in clips
-    ]
-    cache.flush()
     return named
+
+
+def _with_district(district: str, immich_name: str | None) -> str:
+    country = (immich_name or "").rpartition(", ")[2]
+    return f"{district}, {country}" if is_country(country) else district
