@@ -13,6 +13,7 @@ month's lines missed several of them, and which ones it missed changed with the 
 from __future__ import annotations
 
 import collections
+import itertools
 import re
 from collections.abc import Iterable, Mapping
 from datetime import date
@@ -103,3 +104,63 @@ def _words(texts: list[str]) -> set[str]:
 def _spelled(text: str) -> dict[str, str]:
     """A caption's words, a plural read as its singular, each with the spelling it had."""
     return {surface.removesuffix("s"): surface for surface in _WORD.findall(text.lower())}
+
+
+# Confirmed days this close together are a crowd, and each has to show what its weeks do not.
+_NEAR_DAYS = 15
+_CROWD = 4
+# A word the day repeats and at most one of its neighbouring days writes at all.
+_LOCAL_REPEATS = 2
+_LOCAL_DAYS = 1
+# The share of a crowded day's captions that must say something its weeks do not.
+_LOCAL_SHARE = 0.5
+
+
+def crowded_out(
+    confirmed: Iterable[date],
+    said: Mapping[date, list[str]],
+    *,
+    exempt: Iterable[date] = (),
+) -> set[date]:
+    """The confirmed days that only repeat the crowd of confirmed days around them.
+
+    A newborn's year: the reader called 55 ordinary baby days occasions, each saying what the
+    weeks around it said. Measured on five years, at most one caption in two of those days wrote
+    something their neighbouring days did not, where every day the owner named an occasion wrote
+    it in seven in ten or more. A day alone is never thinned, however little stands out: a
+    pregnancy test is two pictures of an ordinary day. Nor is a day that stands out from its year.
+    """
+    days = sorted(set(confirmed))
+    spared = set(exempt)
+    written = {day: [set(_spelled(text)) for text in texts] for day, texts in said.items()}
+    thinned: set[date] = set()
+    for day in days:
+        crowd = sum(1 for other in days if other != day and _within(other, day))
+        if day in spared or crowd < _CROWD:
+            continue
+        if _local_share(day, written) < _LOCAL_SHARE:
+            thinned.add(day)
+    return thinned
+
+
+def _within(one: date, other: date) -> bool:
+    return abs((one - other).days) <= _NEAR_DAYS
+
+
+def _local_share(day: date, written: Mapping[date, list[set[str]]]) -> float:
+    """The share of a day's captions that write a word its neighbouring days do not."""
+    captions = written.get(day, [])
+    if not captions:
+        return 0.0
+    neighbours = [
+        set().union(*texts)
+        for other, texts in written.items()
+        if other != day and _within(other, day)
+    ]
+    repeated = collections.Counter(itertools.chain.from_iterable(captions))
+    local = {
+        word
+        for word, count in repeated.items()
+        if count >= _LOCAL_REPEATS and sum(word in seen for seen in neighbours) <= _LOCAL_DAYS
+    }
+    return sum(1 for words in captions if words & local) / len(captions)

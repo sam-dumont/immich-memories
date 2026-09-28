@@ -360,6 +360,10 @@ def test_a_day_that_contains_an_occasion_is_judged_on_the_occasion(monkeypatch):
         return SpecialDay(special=True, title="Track Day", what="a race track")
 
     monkeypatch.setattr("immich_memories.automation.special_day_scan.ask_if_special", day_reader)
+    # WHY: the day fell on Easter; the holiday question is the same text boundary.
+    monkeypatch.setattr(
+        "immich_memories.automation.special_day_scan.was_the_holiday", lambda *_a, **_k: False
+    )
 
     found = scan_year(morning + circuit + evening, llm_config=None, home=HOME_AT, captions=captions)
 
@@ -464,3 +468,42 @@ def test_a_day_whose_words_stand_out_reaches_the_day_check_the_month_reading_mis
 
     assert [(d.day, d.photos) for d in found] == [(date(2021, 10, 17), 25)]
     assert asked == {date(2021, 10, 17): {p.id for p in batch}}
+
+
+def test_a_day_on_a_holiday_is_kept_unless_its_occasion_was_the_holiday(monkeypatch):
+    """A cycling race (09-28) fell on the date the list calls Father's Day, in the owner's own
+    city, and was skipped as a holiday spent at home. The day is judged first; only then is its
+    occasion asked whether it was the holiday itself."""
+    race = _day(datetime(2023, 6, 18, 6, tzinfo=UTC), pictures=30, hours=6, city="Home", at=HOME_AT)
+    christmas = _day(
+        datetime(2023, 12, 25, 10, tzinfo=UTC), pictures=30, hours=6, city="Home", at=HOME_AT
+    )
+    captions = {p.id: "cyclists racing through the city" for p in race}
+    captions |= {p.id: "a family opening presents by the christmas tree" for p in christmas}
+    monkeypatch.setattr(
+        "immich_memories.analysis.special_day_sequence._read",
+        lambda *_a, **_k: json.dumps({"occasions": []}),
+    )
+
+    # WHY: the day-level model is the text boundary; it calls both days occasions.
+    def day_reader(items, *_a, **_k):
+        if items[0] in race:
+            return SpecialDay(special=True, title="City bike race", what="a cycling race")
+        return SpecialDay(special=True, title="Christmas morning", what="opening presents")
+
+    asked = []
+
+    # WHY: the holiday question is the same text boundary, asked only of holiday occasions.
+    def holiday_reader(holiday, title, *_a, **_k):
+        asked.append((holiday, title))
+        return title == "Christmas morning"
+
+    monkeypatch.setattr("immich_memories.automation.special_day_scan.ask_if_special", day_reader)
+    monkeypatch.setattr(
+        "immich_memories.automation.special_day_scan.was_the_holiday", holiday_reader
+    )
+
+    found = scan_year(race + christmas, llm_config=None, home=HOME_AT, captions=captions)
+
+    assert [(d.day, d.title) for d in found] == [(date(2023, 6, 18), "City bike race")]
+    assert sorted(asked) == [("Christmas", "Christmas morning"), ("Father's Day", "City bike race")]

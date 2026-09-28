@@ -127,6 +127,12 @@ says nothing, and the heads and the caption are taken at their word.
 
 The same face rule decides whether a picture "shows life" for the gate: a picture with life in a
 major story is only ordered, never refused, and a person Immich found no face for no longer counts.
+A picture with nobody in it serves its story only when it is starred, or when the story is major,
+dominant or minor and holds more than two pictures. Anywhere else it is refused as context
+(`context_rejected` in `derived-decisions/story-selection.private.json`). A custom film about
+something you wrote (a renovation, the works on a house) drops that rule: its pictures were chosen
+for the subject, so a stripped wall or a room under construction can carry its story, as long as it
+stands. A custom film of its window alone keeps the rule.
 
 Once a moment's frames are through the gate, the ones that stand are sorted again: favourite first,
 then the higher standing score, then the order above. A still that scores 2 can beat a video that

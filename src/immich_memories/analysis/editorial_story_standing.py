@@ -27,12 +27,14 @@ class StandingGate:
         life: Callable[[str], bool],
         unit_by_asset: Mapping[str, Any],
         pictures_of: Mapping[str, int],
+        context_without_life: bool = False,
     ) -> None:
         self._score_of = score_of
         self._line_of = line_of
         self._life = life
         self._unit_by_asset = unit_by_asset
         self._pictures_of = pictures_of
+        self._context_without_life = context_without_life
         self.scores: dict[str, int] = {}
         self.context_rejected: set[tuple[str, str]] = set()
 
@@ -83,9 +85,12 @@ class StandingGate:
         return unusable_video(self._unit_by_asset[asset][1], self._line_of(asset))
 
     def _context_allowed(self, asset: str, weight: str, story_key: str) -> bool:
+        """A film bound to a written subject (`context_without_life`) chose its material for
+        that subject, so a frame of it with nobody in it may serve its story too."""
         starred = bool(self._unit_by_asset[asset][1].get("favourite"))
         return (
-            self._life(asset)
+            self._context_without_life
+            or self._life(asset)
             or starred
             or (weight in WEIGHED_STORY_WEIGHTS and self._pictures_of.get(story_key, 0) > 2)
         )

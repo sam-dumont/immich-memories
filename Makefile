@@ -684,6 +684,9 @@ diff-cover:
 
 # Dependency vulnerability audit
 # Fails closed: a truncated export or a crashed pip-audit must not read as a clean audit.
+# The export is fully pinned, so pip-audit audits it as-is (--no-deps --disable-pip).
+# Without those flags it builds a virtualenv and re-resolves all ~165 packages from
+# PyPI's index on every run, and a slow index then fails the audit with nothing audited.
 pip-audit:  ## Check dependencies for known vulnerabilities (warns on unfixable, fails on fixable)
 	@set -eu; \
 	REQS=$$(mktemp "$${TMPDIR:-/tmp}/pip-audit-reqs.XXXXXX"); \
@@ -696,7 +699,7 @@ pip-audit:  ## Check dependencies for known vulnerabilities (warns on unfixable,
 		exit 2; \
 	fi; \
 	echo "auditing $$COUNT pinned packages"; \
-	set +e; uvx pip-audit -r "$$REQS" --strict > "$$OUT" 2>&1; AUDIT_EXIT=$$?; set -e; \
+	set +e; uvx pip-audit -r "$$REQS" --no-deps --disable-pip --timeout 60 --strict > "$$OUT" 2>&1; AUDIT_EXIT=$$?; set -e; \
 	python3 scripts/pip_audit_smart.py --audit-exit "$$AUDIT_EXIT" < "$$OUT"
 
 diff-cover-local:  ## Check diff-cover locally before pushing (runs tests + merges integration coverage)

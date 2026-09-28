@@ -15,16 +15,29 @@ from immich_memories.analysis.editorial_unvouched_filler import (
 )
 
 
-def _shot(asset_id: str, *, kind: str = "still", favourite: bool = False) -> dict:
-    return {"asset_id": asset_id, "kind": kind, "favourite": favourite, "seconds": 3.5}
+def _shot(
+    asset_id: str, *, kind: str = "still", favourite: bool = False, taken: str = "2030-02-03"
+) -> dict:
+    return {
+        "asset_id": asset_id,
+        "kind": kind,
+        "favourite": favourite,
+        "seconds": 3.5,
+        "taken": taken,
+    }
 
 
-def _evidence(frame_kinds, *, people=(), protected=()):
+def _evidence(frame_kinds, *, people=(), protected=(), era_of=None):
     return FillerEvidence(
         frame_kind_of=frame_kinds.get,
         known_person=lambda asset: asset in people,
         protected=frozenset(protected),
+        era_of=era_of,
     )
+
+
+def _year(taken: str) -> str:
+    return f"year-{taken[:4]}"
 
 
 def test_a_plain_still_the_heads_read_as_a_lone_object_leaves_and_nothing_takes_its_place():
@@ -63,6 +76,34 @@ def test_any_indicator_keeps_a_picture_whatever_the_heads_read(shot, vouched):
 
     assert kept == [shot]
     assert dropped == []
+
+
+def test_a_years_only_shot_stays_in_a_film_that_gives_every_year_a_voice():
+    film = [
+        _shot("starred", favourite=True, taken="2018-04-07T10:00"),
+        _shot("object", taken="2018-04-08T10:00"),
+        _shot("screen", taken="2019-04-08T10:00"),
+    ]
+    frame_kinds = {"object": "lone_everyday_object", "screen": "screen_or_document"}
+
+    kept, dropped = drop_unvouched_filler(film, _evidence(frame_kinds, era_of=_year))
+
+    assert [c["asset_id"] for c in kept] == ["starred", "screen"]
+    assert [c["asset_id"] for c in dropped] == ["object"]
+
+
+def test_a_year_whose_every_shot_is_filler_keeps_the_one_that_stands_best():
+    film = [
+        _shot("starred", favourite=True, taken="2018-04-07T10:00"),
+        _shot("weak", taken="2019-04-08T10:00") | {"standing": 1},
+        _shot("better", taken="2019-05-02T10:00") | {"standing": 2},
+    ]
+    frame_kinds = {"weak": "lone_everyday_object", "better": "screen_or_document"}
+
+    kept, dropped = drop_unvouched_filler(film, _evidence(frame_kinds, era_of=_year))
+
+    assert [c["asset_id"] for c in kept] == ["starred", "better"]
+    assert [c["asset_id"] for c in dropped] == ["weak"]
 
 
 def test_a_picture_the_frame_head_never_read_is_not_called_empty():
