@@ -165,10 +165,22 @@ class EvidencePreparation:
         # The sentence and the numbers are published together, on one throttle,
         # so a watcher never sees a bar disagreeing with the row above it.
         live = StageProgressWriter(self.artifact_dir)
+        last_published: tuple[str, int, int] | None = None
+        last_seen = 0
 
         def progress(stage: str, done: int, total: int) -> None:
-            if done not in {0, total} and done % batch_size:
+            nonlocal last_published, last_seen
+            reset = done < last_seen
+            last_seen = done
+            if (
+                last_published is not None
+                and (stage, total) == (last_published[0], last_published[2])
+                and done not in {0, total}
+                and not reset
+                and 0 <= done - last_published[1] < batch_size
+            ):
                 return
+            last_published = (stage, done, total)
             if on_stage is not None:
                 on_stage(live.publish(stage, done, total))
 
