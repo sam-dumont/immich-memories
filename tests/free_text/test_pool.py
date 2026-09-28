@@ -8,7 +8,7 @@ from typing import Any
 from immich_memories.free_text.facts import LibraryFacts
 from immich_memories.free_text.homes import Home
 from immich_memories.free_text.lexicon import Lexicon
-from immich_memories.free_text.library import LibraryPicture, LibraryView
+from immich_memories.free_text.library import LibraryPerson, LibraryPicture, LibraryView
 from immich_memories.free_text.linking import Household, WhenLink, WhereLink, WhoLink
 from immich_memories.free_text.pool import Translation, build_pool
 from immich_memories.free_text.reading import Reading
@@ -73,6 +73,7 @@ def test_the_pool_is_the_dated_pictures_whose_caption_is_about_the_subject(
     assert [(step.name, step.kept) for step in pool.funnel] == [
         ("library", 16),
         ("when", 15),
+        ("kind of picture", 15),
         ("subject", 14),
     ]
     assert pool.verdict == "possible"
@@ -114,7 +115,7 @@ def test_a_named_person_is_present_anywhere_in_the_episode_of_their_recognised_f
     pool = build_pool(asked, view, NOBODY, lexicon, BankedAsker())
 
     assert _ids(pool) == {"face", "from-behind"}
-    assert pool.funnel[-1].name == "who"
+    assert ("who", 2) in [(step.name, step.kept) for step in pool.funnel]
 
 
 def test_company_needs_a_caption_naming_people_of_that_kind(lexicon: Lexicon) -> None:
@@ -177,3 +178,79 @@ def test_away_from_home_without_a_known_home_cannot_be_told_and_says_so(
 
     assert pool.verdict == "not possible"
     assert "no home" in pool.why
+
+
+def test_the_place_names_a_request_says_replace_its_where_and_screens_are_left_out(
+    lexicon: Lexicon,
+) -> None:
+    view = _view(
+        _picture("there", country="Examplia", picture_kind="photograph"),
+        _picture("there-video", country="Examplia", media_kind="video"),
+        _picture("there-screen", country="Examplia", picture_kind="screenshot_from_computer"),
+        _picture("elsewhere", country="Otherland"),
+    )
+    facts = LibraryFacts(places=(("country", "Examplia"),))
+    asked = _asked("examplia", facts=facts, where=WhereLink(scope="near_home"))
+
+    pool = build_pool(asked, view, MOVED, lexicon, BankedAsker())
+
+    assert _ids(pool) == {"there", "there-video"}
+    assert [step.name for step in pool.funnel] == ["library", "place names", "kind of picture"]
+
+
+def test_a_named_kind_of_picture_and_the_sharpness_line_filter_mechanically(
+    lexicon: Lexicon,
+) -> None:
+    view = _view(
+        _picture("screen", picture_kind="screenshot_from_computer"),
+        _picture("photo", picture_kind="photograph", sharpness=2.0),
+        _picture("soft", picture_kind="photograph", sharpness=0.5),
+        _picture("unmeasured", picture_kind="photograph"),
+        sharpness_line=1.0,
+    )
+    screens = _asked("screenshots", facts=LibraryFacts(picture_kinds=("screenshots",)))
+    blurry = _asked("blurry", facts=LibraryFacts(sharpness="below", sharpness_line=1.0))
+
+    assert _ids(build_pool(screens, view, NOBODY, lexicon, BankedAsker())) == {"screen"}
+    assert _ids(build_pool(blurry, view, NOBODY, lexicon, BankedAsker())) == {"soft"}
+
+
+def test_first_and_last_pictures_of_each_frequent_person_are_the_whole_pool(
+    lexicon: Lexicon,
+) -> None:
+    pat, sam = frozenset({"pat"}), frozenset({"sam"})
+    view = _view(
+        _picture("pat-first", "2019-01-01", people=pat),
+        _picture("pat-screen", "2018-01-01", people=pat, picture_kind="screenshot_from_manual"),
+        _picture("both", "2019-06-01", people=pat | sam),
+        _picture("sam-last", "2020-01-01", people=sam, caption="A man on a bench"),
+        people={
+            "pat": LibraryPerson("pat", "Pat Example", None, None),
+            "sam": LibraryPerson("sam", "Sam Example", "son", date(2018, 5, 1)),
+        },
+    )
+    firsts = LibraryFacts(people=("pat", "sam"), extreme="first")
+    faces = LibraryFacts(people=("sam",))
+
+    first = build_pool(_asked("first", facts=firsts), view, NOBODY, lexicon, BankedAsker())
+    anyone = build_pool(_asked("sam", facts=faces), view, NOBODY, lexicon, BankedAsker())
+
+    assert _ids(first) == {"pat-first", "both"}
+    assert first.verdict == "possible"
+    assert _ids(anyone) == {"both", "sam-last"}
+
+
+def test_the_farthest_trip_is_the_pool_whatever_the_subject(lexicon: Lexicon) -> None:
+    far = [
+        _picture(f"far-{n}", f"2021-08-0{n}", latitude=45.0, longitude=5.0, caption="A beach")
+        for n in range(1, 4)
+    ]
+    view = _view(*_places().pictures, *far)
+    asked = _asked("farthest", main=("cat",), facts=LibraryFacts(extreme="farthest"))
+
+    pool = build_pool(asked, view, MOVED, lexicon, BankedAsker())
+    unknown = build_pool(asked, view, NOBODY, lexicon, BankedAsker())
+
+    assert _ids(pool) == {"far-1", "far-2", "far-3"}
+    assert "subject" not in [step.name for step in pool.funnel]
+    assert unknown.verdict == "not possible"

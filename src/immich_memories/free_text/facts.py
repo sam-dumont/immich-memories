@@ -114,15 +114,22 @@ class LibraryFacts:
 
     def admits(self, picture: LibraryPicture) -> bool:
         """Whether the picture meets every per-picture field the request names."""
-        placed = not self.places or any(
+        return self.placed(picture) and self.of_kind(picture) and self.sharp_enough(picture)
+
+    def placed(self, picture: LibraryPicture) -> bool:
+        """Whether Immich placed the picture in one of the named places (any, when none)."""
+        return not self.places or any(
             _fold(getattr(picture, field) or "") == _fold(value) for field, value in self.places
         )
-        kind = not self.picture_kinds or any(
+
+    def of_kind(self, picture: LibraryPicture) -> bool:
+        """Whether the picture is one of the named kinds (any, when none is named)."""
+        return not self.picture_kinds or any(
             _KINDS[name].holds(picture) for name in self.picture_kinds
         )
-        return placed and kind and self._sharp_enough(picture)
 
-    def _sharp_enough(self, picture: LibraryPicture) -> bool:
+    def sharp_enough(self, picture: LibraryPicture) -> bool:
+        """Whether the picture sits on the asked side of the sharpness line (any, unasked)."""
         if self.sharpness is None or self.sharpness_line is None:
             return True
         if picture.sharpness is None:
