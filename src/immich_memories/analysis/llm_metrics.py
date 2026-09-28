@@ -24,10 +24,10 @@ from contextvars import ContextVar, Token
 from dataclasses import dataclass, field
 from functools import wraps
 from threading import Lock
-from typing import TYPE_CHECKING, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Coroutine, Iterator
 
 _P = ParamSpec("_P")
 _T = TypeVar("_T")
@@ -245,6 +245,22 @@ def record_batch_reply(
             counters.batch_completion_tokens += completion_tokens
             counters.reasoning_tokens += reasoning_tokens
             counters.batch_reasoning_tokens += reasoning_tokens
+
+
+def scoped_model(
+    function: Callable[_P, Coroutine[Any, Any, _T]],
+) -> Callable[_P, Coroutine[Any, Any, _T]]:
+    """Forget the request's model when it returns, so later events are not charged to it."""
+
+    @wraps(function)
+    async def scoped(*args: _P.args, **kwargs: _P.kwargs) -> _T:
+        token = _model.set(None)
+        try:
+            return await function(*args, **kwargs)
+        finally:
+            _model.reset(token)
+
+    return scoped
 
 
 def begin_request(model: str | None) -> None:

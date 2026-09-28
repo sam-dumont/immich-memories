@@ -229,3 +229,14 @@ def test_report_route_publishes_no_config_reload_parameter():
         "run_id",
         "include_flagged_captions",
     }
+
+
+def test_report_carries_how_many_lines_each_level_logged():
+    diagnostics = {"log_counts": {"WARNING": 7000, "ERROR": 2}}
+    report = build_report(
+        RunMetadata("counted-run", datetime.now(UTC)),
+        Collector(),
+        privacy=ReportPrivacy(),
+        diagnostics=diagnostics,
+    )
+    assert report.data["log_counts"] == {"WARNING": 7000, "ERROR": 2}

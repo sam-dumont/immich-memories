@@ -235,6 +235,7 @@ def build_report(
             for stage in diagnostics.get("funnel", [])
         ],
         "logs": collected.logs,
+        "log_counts": diagnostics.get("log_counts", {}),
     }
     if free_text := diagnostics.get("free_text"):
         from immich_memories.tracking.report_request import request_section

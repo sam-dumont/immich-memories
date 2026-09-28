@@ -46,19 +46,34 @@ def observe_run(
             with timing.span("run"):
                 yield tracker
         except (PipelineCancelled, KeyboardInterrupt):
-            saved = tracker.db.get_run(tracker.run_id)
-            if saved is not None and saved.status == "running":
+            if _still_running(tracker):
                 tracker.cancel_run()
+            raise
+        except SystemExit as error:
+            if _still_running(tracker):
+                _end_on_exit(tracker, error)
             raise
         except BaseException as error:
             tracker.fail_run(str(error))
             raise
         else:
-            saved = tracker.db.get_run(tracker.run_id)
-            if saved is not None and saved.status == "running":
+            if _still_running(tracker):
                 tracker.complete_run()
         finally:
             _save_observations(tracker.db, tracker.run_id, collected, counters)
+
+
+def _still_running(tracker: RunTracker) -> bool:
+    saved = tracker.db.get_run(tracker.run_id)
+    return saved is not None and saved.status == "running"
+
+
+def _end_on_exit(tracker: RunTracker, error: SystemExit) -> None:
+    # "Nothing worth a film" exits 0 after finishing the run's work.
+    if timing.clean_exit(error):
+        tracker.complete_run()
+    else:
+        tracker.fail_run(f"Exited with status {error.code}")
 
 
 @contextmanager

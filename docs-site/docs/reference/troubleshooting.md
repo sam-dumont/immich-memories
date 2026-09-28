@@ -17,7 +17,8 @@ funnel when the run recorded them. Names, places, albums, coordinates, hosts, IP
 and credentials are removed; IDs become
 randomized hashes that agree inside one report. `--json` prints structured data, and
 `--bundle report.zip` writes the full report and logs as an attachment. Nothing is sent automatically.
-Long pasted logs keep their last complete lines; the ZIP keeps the full version.
+A run keeps its last 5,000 log lines and a count of every line per level. Long pasted logs keep
+their last complete lines; the ZIP keeps all 5,000.
 
 Two commands answer most questions: `immich-memories -v <command>` logs at DEBUG for one run, and
 `immich-memories preflight` checks Immich, the model files, the output directory and every configured server in

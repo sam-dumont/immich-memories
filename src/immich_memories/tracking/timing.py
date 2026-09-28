@@ -14,6 +14,9 @@ from typing import Any
 
 from immich_memories.logging_config import SecretRedactionFilter, redact_secrets
 
+# The lines a run keeps for its report; the report shows the tail, the counts cover all.
+LOG_LINES = 5000
+
 _active: ContextVar[Collector | None] = ContextVar("run_timing", default=None)
 _parent: ContextVar[Span | None] = ContextVar("timing_parent", default=None)
 
@@ -71,10 +74,20 @@ class _RunLogHandler(logging.Handler):
         if active() is not self.collector:
             return
         message = self.format(record)
-        self.collector.logs.append(message)
+        counts = self.collector.diagnostics.setdefault("log_counts", {})
+        counts[record.levelname] = counts.get(record.levelname, 0) + 1
+        logs = self.collector.logs
+        logs.append(message)
+        if len(logs) > LOG_LINES:
+            del logs[: len(logs) - LOG_LINES]
         current = _parent.get()
         if record.levelno >= logging.WARNING and current is not None:
             current.warnings.append(message)
+
+
+def clean_exit(error: BaseException) -> bool:
+    """sys.exit(0) or a bare sys.exit() ends work that finished; it is not a failure."""
+    return isinstance(error, SystemExit) and error.code in (0, None)
 
 
 def clock() -> float:
@@ -123,6 +136,8 @@ def span(name: str, *, items: int | None = None, **attributes: float) -> Iterato
     try:
         yield measured
     except BaseException as error:
+        if clean_exit(error):
+            raise
         measured.error = {
             "type": type(error).__name__,
             "message": redact_secrets(str(error)),

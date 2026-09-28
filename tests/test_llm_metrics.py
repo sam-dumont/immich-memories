@@ -329,3 +329,17 @@ def test_model_and_stage_keep_rates_and_cache_hits():
     assert counters.by_model["fixture-model"].wall_seconds == 2
     assert counters.by_model["fixture-model"].cache_hits == 1
     assert counters.by_stage["episode"].wall_seconds == 2
+
+
+@pytest.mark.asyncio
+async def test_a_served_model_is_not_charged_for_work_after_its_request() -> None:
+    from immich_memories.analysis import llm_metrics
+    from immich_memories.analysis.llm_query import query_llm
+
+    reply = _openai_response(model="glm-5.3-flash")
+    # WHY: the LLM server is the external boundary naming the model that served.
+    with collecting() as counters, patch("httpx.AsyncClient.post", return_value=reply):
+        await query_llm("Judge this cut", _thinking_config(thinking=False))
+        llm_metrics.record_truncation()
+    assert counters.truncated == 1
+    assert counters.by_model["glm-5.3-flash"].truncated == 0

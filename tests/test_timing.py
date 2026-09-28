@@ -78,3 +78,40 @@ def test_concurrent_runs_keep_their_own_warnings_and_parentage():
         child, parent = collected.spans
         assert child.parent_id == parent.span_id
         assert child.warnings == [parent.name]
+
+
+@pytest.mark.parametrize(("code", "status"), [(0, "completed"), (None, "completed"), (2, "failed")])
+def test_an_exit_ends_the_run_by_its_status_code(code, status):
+    import sys
+
+    from immich_memories.db import open_store
+    from immich_memories.tracking.run_observations import observe_run
+
+    with (
+        pytest.raises(SystemExit),
+        observe_run(open_store(), source="manual", capture_system=False) as tracker,
+    ):
+        sys.exit(code)
+    saved = tracker.db.get_run(tracker.run_id)
+    assert saved.status == status
+    run_span = next(span for span in _spans(tracker) if span.name == "run")
+    assert (run_span.error is None) == (status == "completed")
+
+
+def _spans(tracker):
+    from immich_memories.tracking.span_store import SpanStore
+
+    return SpanStore(tracker.db.store).load(tracker.run_id).spans
+
+
+def test_run_logs_keep_the_last_lines_and_count_every_level(monkeypatch):
+    # WHY: a small cap stands in for the real one without logging thousands of lines.
+    monkeypatch.setattr(timing, "LOG_LINES", 10)
+    log = logging.getLogger("immich_memories.fixture")
+    with timing.collecting() as collected:
+        for number in range(25):
+            log.warning("line %d", number)
+        log.error("last")
+    assert len(collected.logs) == 10
+    assert collected.logs[-1].endswith("last")
+    assert collected.diagnostics["log_counts"] == {"WARNING": 25, "ERROR": 1}

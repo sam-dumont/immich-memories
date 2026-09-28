@@ -173,6 +173,7 @@ def build_llm_timeout(read_timeout: float) -> httpx.Timeout:
     )
 
 
+@llm_metrics.scoped_model
 async def query_llm(
     prompt: str,
     llm_config: LLMConfig,
