@@ -955,7 +955,7 @@ export interface components {
              * Name
              * @enum {string}
              */
-            name: "analysis" | "video" | "thumbnail" | "preview";
+            name: "video" | "thumbnail";
         };
         /** Choice */
         Choice: {
@@ -970,7 +970,7 @@ export interface components {
              * Name
              * @enum {string}
              */
-            name: "analysis" | "video" | "thumbnail" | "preview";
+            name: "video" | "thumbnail";
             /** Removed */
             removed: number;
         };
@@ -2046,7 +2046,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                name: "analysis" | "video" | "thumbnail" | "preview";
+                name: "video" | "thumbnail";
             };
             cookie?: never;
         };

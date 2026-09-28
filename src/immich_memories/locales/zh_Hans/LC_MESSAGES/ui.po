@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 18:13+0200\n"
+"POT-Creation-Date: 2026-09-28 19:18+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -19,7 +19,7 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "本月的月度回顾已经完成。"
 
-#: web/routes/settings/+page.svelte:91
+#: web/routes/settings/+page.svelte:89
 msgid "API Key"
 msgstr "API 密钥"
 
@@ -82,10 +82,6 @@ msgstr "同时显示此回忆之外的 {count} 张照片"
 #: web/lib/ShotInspector.svelte:156
 msgid "Alternatives considered"
 msgstr "已考虑的备选项"
-
-#: web/routes/settings/+page.svelte:26
-msgid "Analysis cache"
-msgstr "分析缓存"
 
 #: web/routes/create/+page.svelte:332
 msgid ""
@@ -163,7 +159,7 @@ msgstr "模糊背景"
 msgid "Browse the whole pool"
 msgstr "浏览全部素材"
 
-#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
+#: web/routes/settings/+page.svelte:109 web/routes/settings/+page.svelte:110
 msgid "Caches"
 msgstr "缓存"
 
@@ -206,7 +202,7 @@ msgid ""
 "it before anything renders."
 msgstr "选择这部影片要涵盖的内容。剪辑会按照下方命令的方式生成；在渲染之前，你可以先查看审阅。"
 
-#: web/routes/settings/+page.svelte:117
+#: web/routes/settings/+page.svelte:115
 msgid "Clear"
 msgstr "清除"
 
@@ -218,7 +214,7 @@ msgstr "解除限制"
 msgid "Clear this hold?"
 msgstr "解除此限制？"
 
-#: web/routes/settings/+page.svelte:69
+#: web/routes/settings/+page.svelte:67
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "已从 {cache} 中清除 {count} 条记录。"
@@ -240,7 +236,7 @@ msgstr "配置文件：{config_path}"
 msgid "Configuration"
 msgstr "配置"
 
-#: web/routes/settings/+page.svelte:58
+#: web/routes/settings/+page.svelte:56
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "已以 {name} 身份连接"
@@ -348,7 +344,7 @@ msgstr "在此结束"
 msgid "Ends"
 msgstr "结束方式"
 
-#: web/routes/settings/+page.svelte:116
+#: web/routes/settings/+page.svelte:114
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "记录：{count}"
@@ -360,7 +356,7 @@ msgid ""
 "across every run."
 msgstr "这次剪辑看过的每张照片，按拍摄顺序排列。勾选或取消勾选，然后预览：你的勾选会原样进入影片，不会重新挑选任何内容。“永不使用”和“解除限制”在每次运行中都会保留。"
 
-#: web/routes/settings/+page.svelte:82
+#: web/routes/settings/+page.svelte:80
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
@@ -436,11 +432,11 @@ msgstr "节日"
 msgid "How the rules got here"
 msgstr "规则如何得出这一结果"
 
-#: web/routes/settings/+page.svelte:85 web/routes/settings/+page.svelte:86
+#: web/routes/settings/+page.svelte:83 web/routes/settings/+page.svelte:84
 msgid "Immich Connection"
 msgstr "Immich 连接"
 
-#: web/routes/settings/+page.svelte:88
+#: web/routes/settings/+page.svelte:86
 msgid "Immich Server URL"
 msgstr "Immich 服务器地址"
 
@@ -730,7 +726,7 @@ msgstr "通过了{stages}"
 msgid "Password"
 msgstr "密码"
 
-#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:106
+#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:104
 #: web/routes/settings/people/+page.svelte:74 web/routes/settings/people/+page.svelte:80
 msgid "People"
 msgstr "人物"
@@ -785,10 +781,6 @@ msgstr "竖屏"
 #: web/lib/RenderPanel.svelte:210
 msgid "Preview a track"
 msgstr "试听曲目"
-
-#: web/routes/settings/+page.svelte:29
-msgid "Preview cache"
-msgstr "预览缓存"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:153
 msgid "Preview with these choices"
@@ -921,7 +913,7 @@ msgstr "同一片段"
 msgid "Save"
 msgstr "保存"
 
-#: web/routes/settings/+page.svelte:97
+#: web/routes/settings/+page.svelte:95
 msgid "Save Config"
 msgstr "保存配置"
 
@@ -929,7 +921,7 @@ msgstr "保存配置"
 msgid "Save revision"
 msgstr "保存修订"
 
-#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:93
+#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:91
 msgid "Saved - type a new key to replace it"
 msgstr "已保存，输入新密钥可替换它"
 
@@ -947,7 +939,7 @@ msgstr "在此保存"
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "已在此保存，但 {name} 无法解密：正在使用默认值"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:63
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:61
 msgid "Saved to the database"
 msgstr "已保存到数据库"
 
@@ -989,8 +981,8 @@ msgstr "由 {name} 设置（环境变量）"
 msgid "Set in config.yaml as {key}"
 msgstr "在 config.yaml 中设为 {key}"
 
-#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:77
-#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:79
+#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:75
+#: web/routes/settings/+page.svelte:79 web/routes/settings/people/+page.svelte:79
 msgid "Settings"
 msgstr "设置"
 
@@ -1096,7 +1088,7 @@ msgstr "已替换"
 msgid "Take out"
 msgstr "移除"
 
-#: web/routes/settings/+page.svelte:96
+#: web/routes/settings/+page.svelte:94
 msgid "Test Connection"
 msgstr "测试连接"
 
@@ -1108,7 +1100,7 @@ msgstr "此文件不是 MP3、M4A 或 WAV"
 msgid "That file is too large for a soundtrack"
 msgstr "该文件太大，无法用作配乐"
 
-#: web/routes/settings/+page.svelte:54
+#: web/routes/settings/+page.svelte:52
 msgid "The connection could not be checked."
 msgstr "无法检查连接。"
 
@@ -1218,7 +1210,7 @@ msgstr "这个分类已在最近六次回忆中出现两次。"
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "此任务没有保留其媒体的记录。重新剪辑即可查看。"
 
-#: web/routes/settings/+page.svelte:28
+#: web/routes/settings/+page.svelte:27
 msgid "Thumbnail cache"
 msgstr "缩略图缓存"
 
@@ -1296,7 +1288,7 @@ msgstr "用户名"
 msgid "Video"
 msgstr "视频"
 
-#: web/routes/settings/+page.svelte:27
+#: web/routes/settings/+page.svelte:26
 msgid "Video cache"
 msgstr "视频缓存"
 
@@ -1319,7 +1311,7 @@ msgstr "自动化接下来会创建的内容，与 `auto suggest` 打印的列�
 msgid "What to render"
 msgstr "渲染内容"
 
-#: web/routes/settings/+page.svelte:106
+#: web/routes/settings/+page.svelte:104
 msgid "Who is who, their roles and relationships."
 msgstr "谁是谁，以及他们的角色和关系。"
 

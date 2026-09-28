@@ -23,10 +23,8 @@
   let checking = $state(false);
 
   const CACHE_LABELS: Record<string, string> = {
-    analysis: N_('Analysis cache'),
     video: N_('Video cache'),
     thumbnail: N_('Thumbnail cache'),
-    preview: N_('Preview cache'),
   };
 
   onMount(() => {

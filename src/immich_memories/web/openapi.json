@@ -121,10 +121,8 @@
           },
           "name": {
             "enum": [
-              "analysis",
               "video",
-              "thumbnail",
-              "preview"
+              "thumbnail"
             ],
             "title": "Name",
             "type": "string"
@@ -160,10 +158,8 @@
         "properties": {
           "name": {
             "enum": [
-              "analysis",
               "video",
-              "thumbnail",
-              "preview"
+              "thumbnail"
             ],
             "title": "Name",
             "type": "string"
@@ -3078,10 +3074,8 @@
             "required": true,
             "schema": {
               "enum": [
-                "analysis",
                 "video",
-                "thumbnail",
-                "preview"
+                "thumbnail"
               ],
               "title": "Name",
               "type": "string"
