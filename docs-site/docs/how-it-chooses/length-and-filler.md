@@ -42,7 +42,8 @@ measured) drops whole shots, lightest story first: `none` and `glimpse` stories,
 shots of the lightest story, then its only shot, and the heaviest story's only shot last. Inside one
 story the latest shot goes first. A picture you ticked is never dropped, and a favourite is never
 dropped while a shot nothing vouches for (no star, no recorded video, nobody Immich knows, not ticked)
-is still in the film.
+is still in the film. In a film that gives every year a shot (a long person film, a custom film over
+several ranges), a year's only shot goes after every other one.
 
 **The shave** takes 0.5 s off the longest hold, over and over, while the film is over length. It
 never takes a hold under 3.5 s (or under the shot's own length, if that was shorter) and never
@@ -79,7 +80,8 @@ flowchart TD
 It runs on the no-model film and on a polished one alike. The polish refines the no-model film,
 so it never keeps what that film would drop: a caption that misreads a printed recipe as a posed
 child does not get it past this pass. A screen that plays as a Live Photo, or shows someone Immich
-knows, still stays. What left is listed by id and head label
+knows, still stays. So does one shot of a year this pass would leave empty, in a film that gives
+every year a shot: the one that stands best. What left is listed by id and head label
 in `derived-decisions/unvouched-filler.private.json`.
 
 ## Going short, on purpose
@@ -95,8 +97,8 @@ The draft tries to reach its length before it gives up the seconds:
 - **Readmission.** A frame refused for looking like another, or for crowding its place, comes back
   when nothing else can fill the slot. A favourite refused for crowding its place comes back sooner:
   before a shot nothing vouches for keeps the slot it freed. That shot leaves (the weakest first, a
-  story's only shot last) and is listed under `displaced_for_a_favourite` in
-  `derived-decisions/story-selection.private.json`.
+  story's only shot last, and never a year's only shot in a film that gives every year one) and is
+  listed under `displaced_for_a_favourite` in `derived-decisions/story-selection.private.json`.
 - **With a model**, a film still short by S seconds reads up to 2 × ceil(S / 3.5) episodes it never
   reached, and seats the ones whose reading records something
   ([What a model adds](./what-a-model-adds.md#a-short-film-gets-one-more-look)).

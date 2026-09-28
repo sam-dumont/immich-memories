@@ -10,16 +10,16 @@ from __future__ import annotations
 
 import calendar
 import hashlib
-from collections.abc import Collection, Sequence
+from collections.abc import Callable, Collection, Sequence
 from dataclasses import dataclass, replace
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from operator import itemgetter
 
 from immich_memories.analysis.editorial_product_brief import written_subject
 from immich_memories.analysis.special_event_scope import SpecialEventAdmission
 from immich_memories.timeperiod import DateRange
 
-__all__ = ["EditorialIntent", "IntentPartition", "build_editorial_intent"]
+__all__ = ["EditorialIntent", "IntentPartition", "build_editorial_intent", "voiced_era_of"]
 
 ERA_THRESHOLD_DAYS = (
     548  # a person span longer than ~18 months is read as eras, one per calendar year
@@ -126,6 +126,19 @@ class EditorialIntent:
             partitions=_per_range(spans, "occurrence", required=True),
             max_carriers_per_partition=None,
         ).prompt_block()
+
+
+def voiced_era_of(intent: EditorialIntent) -> Callable[[str], str | None] | None:
+    """The partition key of a capture time (ISO text), for a film that gives every partition a
+    voice; None for a film that promises none. A time outside every partition has no key."""
+    if not intent.voice_per_partition:
+        return None
+
+    def era_of(taken: str) -> str | None:
+        part = intent.partition_for(datetime.fromisoformat(taken).date())
+        return part.key if part is not None else None
+
+    return era_of
 
 
 def build_editorial_intent(
