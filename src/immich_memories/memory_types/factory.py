@@ -152,7 +152,10 @@ def _season(
         description=f"{season_cap} highlights of {year}",
         date_ranges=[date_range],
         person_filter=person_filter_for(person_names, person_match=person_match),
-        default_duration_seconds=135,  # ~45s per month × 3
+        # WHY not the season's length: planning.memory_length fits the date-range
+        # curve (~195s for a full season, #1503). Only the NiceGUI wizard still
+        # reads this number, and #1398 deletes it.
+        default_duration_seconds=135,
     )
 
 

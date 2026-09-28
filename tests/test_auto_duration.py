@@ -7,7 +7,6 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
-from immich_memories.cli._date_resolution import default_duration_for_type
 from immich_memories.cli._pipeline_runner import _decide_duration
 from immich_memories.config_loader import Config
 from immich_memories.planning.auto_duration import (
@@ -15,6 +14,7 @@ from immich_memories.planning.auto_duration import (
     DURATION_FROM_MATERIAL,
     decide_memory_duration,
 )
+from immich_memories.planning.memory_length import default_duration_for_type
 from immich_memories.timeperiod import DateRange
 
 

@@ -17,7 +17,7 @@ from immich_memories.api.models import Person
 from immich_memories.automation.calendar_detectors import BirthdayDetector
 from immich_memories.automation.generation_request import GenerationRequest
 from immich_memories.cli._asset_fetch import fetch_videos
-from immich_memories.cli._date_resolution import default_duration_for_type, resolve_date_range
+from immich_memories.cli._date_resolution import resolve_date_range
 from immich_memories.cli._helpers import set_active_display
 from immich_memories.memory_types.date_builders import (
     BIRTHDAY_HISTORY_FROM,
@@ -26,6 +26,7 @@ from immich_memories.memory_types.date_builders import (
 )
 from immich_memories.memory_types.factory import create_preset
 from immich_memories.memory_types.registry import MemoryType
+from immich_memories.planning.memory_length import default_duration_for_type
 from immich_memories.timeperiod import DateRange
 from immich_memories.ui.pages import step1_people
 from immich_memories.ui.state import AppState

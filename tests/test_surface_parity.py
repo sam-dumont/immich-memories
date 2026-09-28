@@ -36,12 +36,12 @@ from immich_memories.api.models import Person
 from immich_memories.cli._asset_fetch import fetch_media
 from immich_memories.cli._date_resolution import (
     BIRTHDAY_FLAG_FORMAT,
-    default_duration_for_type,
     resolve_date_range,
 )
 from immich_memories.config import Config
 from immich_memories.memory_types.factory import create_preset
 from immich_memories.memory_types.registry import MemoryType
+from immich_memories.planning.memory_length import default_duration_for_type
 from immich_memories.timeperiod import DateRange
 from immich_memories.ui.pages import step2_loading
 from immich_memories.ui.state import AppState
@@ -182,11 +182,12 @@ class DocumentedDifference:
     recorded_at: str
 
 
-# The wizard's cards carry a fixed length; the CLI fits a curve through the
-# date range. Both numbers are editable defaults for the surface they belong
-# to, which is the product decision #630 wrote down. Asserted to the value, so
-# a change on either side still lands here.
-_SPLIT_RECORD = "docs-site/docs/make/memory-types.mdx#monthly-season-person-multi-person"
+# The NiceGUI wizard's season card carries a fixed 135s; the CLI fits the
+# date-range curve. #630 once allowed that; #1503 reversed it (the curve on
+# every surface), and the Svelte UI already runs the CLI's resolver. This record
+# goes when #1398 deletes the wizard. Asserted to the value, so a change on
+# either side still lands here.
+_SPLIT_RECORD = "https://github.com/sam-dumont/immich-video-memory-generator/issues/1503"
 DOCUMENTED_DURATION_SPLIT: dict[MemoryType, DocumentedDifference] = {
     MemoryType.SEASON: DocumentedDifference(cli=195.02, ui=135, recorded_at=_SPLIT_RECORD),
 }
