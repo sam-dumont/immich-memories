@@ -571,9 +571,9 @@ and refreshes dependent readings; other head facts stay reusable.
 
 `nsfw_marqo` uses `det-v3`, which reads a video on up to eight frames across its length rather than
 on the single early frame Immich serves as its preview, and keeps the strongest answer. A still is
-read exactly as `det-v2` read it, but the banked row does not say which kind of source it came from,
-so saved `det-v1` and `det-v2` settings upgrade on load and the next run recomputes that head for
-every source. Everything else it banked stays reusable.
+read exactly as `det-v2` read it, so saved `det-v1` and `det-v2` settings upgrade on load, a still
+keeps its banked `det-v2` answer as its `det-v3` one, and the next run recomputes that head for
+videos only. Everything else it banked stays reusable.
 
 `frame_kind`, `screen` and `uncovered_person` were distilled from a typed picture reader onto the
 same encoder the other five heads run on, so a library prepared before they existed is owed only

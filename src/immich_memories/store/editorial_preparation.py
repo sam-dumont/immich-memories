@@ -33,7 +33,7 @@ from immich_memories.db.tables import (
     pixel_facts,
     pixel_facts_thresholds,
 )
-from immich_memories.store.batches import id_in, in_chunks, insert_rows, upsert_rows
+from immich_memories.store.batches import bank_rows, id_in, in_chunks, insert_rows, upsert_rows
 from immich_memories.store.caption_selection import selected_captions
 
 
@@ -292,6 +292,42 @@ def heads_missing_for(
     return tuple(asset_id for asset_id in wanted if asset_id not in decided)
 
 
+def carry_head_answers(
+    store: Store,
+    asset_ids: Sequence[str],
+    head: str,
+    *,
+    banked_version: str,
+    version: str,
+    encoder_key: str,
+) -> None:
+    """Bank each source's ``banked_version`` answer under ``version`` where it has none yet.
+
+    For a producer whose new version computes exactly what the old one did for these
+    sources; the caller names the sources, the store only copies. Only a decided row the
+    same producer (``encoder_key``) wrote is carried, keeping the time it was decided, and
+    a source already decided under ``version`` keeps its own row.
+    """
+    h = head_facts
+    carried: list[dict[str, Any]] = []
+    with store.connect() as connection:
+        decided = _decided_heads(connection, asset_ids, head, version)
+        for chunk in in_chunks(connection, [a for a in asset_ids if a not in decided]):
+            carried.extend(
+                {**row._mapping, "version": version}
+                for row in connection.execute(
+                    sa.select(h).where(
+                        h.c.head == head,
+                        h.c.version == banked_version,
+                        h.c.encoder_key == encoder_key,
+                        id_in(connection, h.c.asset_id, chunk),
+                    )
+                )
+                if _is_decided(row.label, row.confidence)
+            )
+    bank_rows(store, h, carried, keys=("asset_id", "head", "version"))
+
+
 def _decided_heads(
     connection: Connection, wanted: Sequence[str], head: str, version: str
 ) -> set[str]:
@@ -306,13 +342,19 @@ def _decided_heads(
                     id_in(connection, head_facts.c.asset_id, chunk),
                 )
             )
-            if isinstance(label, str)
-            and label.strip()
-            and isinstance(confidence, (int, float))
-            and math.isfinite(confidence)
-            and 0 <= confidence <= 1
+            if _is_decided(label, confidence)
         )
     return decided
+
+
+def _is_decided(label: Any, confidence: Any) -> bool:
+    return (
+        isinstance(label, str)
+        and bool(label.strip())
+        and isinstance(confidence, (int, float))
+        and math.isfinite(confidence)
+        and 0 <= confidence <= 1
+    )
 
 
 _PIXEL_VALUES = ("sharpness", "brightness", "contrast", "dark_fraction", "bright_fraction")
