@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 11:01+0200\n"
+"POT-Creation-Date: 2026-09-28 14:05+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -23,10 +23,10 @@ msgstr "En månadsgenomgång har redan slutförts den här månaden."
 msgid "API Key"
 msgstr "API-nyckel"
 
-#: web/lib/JobPanel.svelte:38
+#: web/lib/JobPanel.svelte:41
 #, python-brace-format
 msgid "About {amount} left"
-msgstr ""
+msgstr "Ungefär {amount} kvar"
 
 #: web/routes/create/+page.svelte:373
 msgid "Accept forwarded and downloaded media"
@@ -155,7 +155,7 @@ msgstr "Bläddra i hela poolen"
 msgid "Caches"
 msgstr "Cachar"
 
-#: web/lib/JobPanel.svelte:84 web/routes/runs/[run_id]/pool/+page.svelte:173
+#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:173
 msgid "Cancel"
 msgstr "Avbryt"
 
@@ -209,9 +209,9 @@ msgstr "Ta bort den här spärren?"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{count} poster rensades från {cache}."
 
-#: web/lib/RunReport.svelte:55
+#: web/lib/RunReport.svelte:61
 msgid "Clipboard unavailable. Select the report below and copy it."
-msgstr ""
+msgstr "Urklipp är inte tillgängligt. Markera rapporten nedan och kopiera den."
 
 #: web/routes/create/+page.svelte:378
 msgid "Command"
@@ -239,17 +239,17 @@ msgstr "Ansluten som: {name}"
 msgid "Considered by the model"
 msgstr "Övervägd av modellen"
 
-#: web/lib/JobPanel.svelte:82 web/lib/RunReport.svelte:67
+#: web/lib/JobPanel.svelte:85 web/lib/RunReport.svelte:73
 msgid "Copied"
 msgstr "Kopierad"
 
-#: web/lib/JobPanel.svelte:82
+#: web/lib/JobPanel.svelte:85
 msgid "Copy as CLI command"
 msgstr "Kopiera som CLI-kommando"
 
-#: web/lib/RunReport.svelte:67 web/lib/RunReport.svelte:69
+#: web/lib/RunReport.svelte:73 web/lib/RunReport.svelte:75
 msgid "Copy report"
-msgstr ""
+msgstr "Kopiera rapport"
 
 #: web/lib/RenderPanel.svelte:140
 msgid "Crossfade"
@@ -442,9 +442,9 @@ msgstr "I nästa klippning"
 msgid "Include Live Photos"
 msgstr "Ta med Live Photos"
 
-#: web/lib/RunReport.svelte:64
+#: web/lib/RunReport.svelte:70
 msgid "Include captions of flagged photos"
-msgstr ""
+msgstr "Ta med bildtexter för flaggade foton"
 
 #: web/routes/create/+page.svelte:370
 msgid "Include photos"
@@ -454,7 +454,7 @@ msgstr "Ta med foton"
 msgid "Interface language"
 msgstr "Gränssnittets språk"
 
-#: web/lib/JobPanel.svelte:54
+#: web/lib/JobPanel.svelte:57
 msgid "It did not finish."
 msgstr "Blev inte klar."
 
@@ -721,7 +721,7 @@ msgstr "Fotolängd (sekunder)"
 msgid "Picture review"
 msgstr "Bildgranskning"
 
-#: web/lib/JobPanel.svelte:68
+#: web/lib/JobPanel.svelte:71
 msgid "Pictures just read"
 msgstr "Nyss lästa bilder"
 
@@ -765,7 +765,7 @@ msgstr "Förhandsgranskningscache"
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Sekretessläge: gör alla bilder suddiga och döljer namn"
 
-#: web/lib/JobPanel.svelte:48 web/lib/JobPanel.svelte:60
+#: web/lib/JobPanel.svelte:51 web/lib/JobPanel.svelte:63
 msgid "Progress"
 msgstr "Förlopp"
 
@@ -817,9 +817,9 @@ msgstr "Rendera"
 msgid "Replaced a picture the model doubted."
 msgstr "Ersatte en bild som modellen tvivlade på."
 
-#: web/lib/RunReport.svelte:66
+#: web/lib/RunReport.svelte:72
 msgid "Report preview"
-msgstr ""
+msgstr "Förhandsvisning av rapporten"
 
 #: web/routes/settings/people/+page.svelte:83
 msgid "Rescan the library"
@@ -829,9 +829,9 @@ msgstr "Läs igenom biblioteket igen"
 msgid "Resolution"
 msgstr "Upplösning"
 
-#: web/lib/RunReport.svelte:62
+#: web/lib/RunReport.svelte:68
 msgid "Review the report, then copy it. Nothing is sent automatically."
-msgstr ""
+msgstr "Granska rapporten och kopiera den sedan. Inget skickas automatiskt."
 
 #: web/lib/RenderPanel.svelte:134 web/routes/runs/[run_id]/+page.svelte:273
 #, python-brace-format
@@ -956,7 +956,7 @@ msgstr "Kvadrat"
 msgid "Start here"
 msgstr "Börja här"
 
-#: web/lib/JobPanel.svelte:51
+#: web/lib/JobPanel.svelte:54
 msgid "Starting"
 msgstr "Startar"
 
@@ -968,7 +968,7 @@ msgstr "Status"
 msgid "Still"
 msgstr "Stillbild"
 
-#: web/lib/JobPanel.svelte:53
+#: web/lib/JobPanel.svelte:56
 msgid "Stopped."
 msgstr "Avbruten."
 
@@ -1021,7 +1021,7 @@ msgstr "Den valda klippningen"
 msgid "The cut could not start."
 msgstr "Klippningen kunde inte startas."
 
-#: web/lib/JobPanel.svelte:52
+#: web/lib/JobPanel.svelte:55
 msgid "The cut is ready."
 msgstr "Klippningen är klar."
 
@@ -1037,7 +1037,7 @@ msgstr "Redigeraren fick aldrig den här bilden, så en bock kan inte ta med den
 msgid "The film"
 msgstr "Filmen"
 
-#: web/lib/JobPanel.svelte:52
+#: web/lib/JobPanel.svelte:55
 msgid "The film is ready."
 msgstr "Filmen är klar."
 
@@ -1079,9 +1079,9 @@ msgstr "Det föregående automatiska minnet använde den här kategorin."
 msgid "The render could not start."
 msgstr "Renderingen kunde inte startas."
 
-#: web/lib/RunReport.svelte:42
+#: web/lib/RunReport.svelte:48
 msgid "The report could not be loaded."
-msgstr ""
+msgstr "Rapporten kunde inte läsas in."
 
 #: web/routes/runs/[run_id]/+page.svelte:53
 msgid "The revision could not be saved."
@@ -1311,7 +1311,7 @@ msgstr "{date_range_start} till {date_range_end}"
 msgid "{days} days · {count} pictures"
 msgstr "{days} dagar · {count} bilder"
 
-#: web/lib/JobPanel.svelte:64
+#: web/lib/JobPanel.svelte:67
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done} av {total}"
@@ -1325,4 +1325,9 @@ msgstr "{seconds} s i bild"
 #, python-brace-format
 msgid "{years} years ago"
 msgstr "för {years} år sedan"
+
+#: web/lib/JobPanel.svelte:41
+#, python-brace-format
+msgid "~{amount} left in this stage"
+msgstr "~{amount} kvar i detta steg"
 

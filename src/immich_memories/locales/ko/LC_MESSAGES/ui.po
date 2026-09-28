@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 11:01+0200\n"
+"POT-Creation-Date: 2026-09-28 14:05+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -23,10 +23,10 @@ msgstr "이번 달 월간 검토가 이미 완료되었습니다."
 msgid "API Key"
 msgstr "API 키"
 
-#: web/lib/JobPanel.svelte:38
+#: web/lib/JobPanel.svelte:41
 #, python-brace-format
 msgid "About {amount} left"
-msgstr ""
+msgstr "약 {amount} 남음"
 
 #: web/routes/create/+page.svelte:373
 msgid "Accept forwarded and downloaded media"
@@ -153,7 +153,7 @@ msgstr "전체 후보 보기"
 msgid "Caches"
 msgstr "캐시"
 
-#: web/lib/JobPanel.svelte:84 web/routes/runs/[run_id]/pool/+page.svelte:173
+#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:173
 msgid "Cancel"
 msgstr "취소"
 
@@ -205,9 +205,9 @@ msgstr "이 제한을 해제할까요?"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{cache}에서 {count}개 항목을 지웠습니다."
 
-#: web/lib/RunReport.svelte:55
+#: web/lib/RunReport.svelte:61
 msgid "Clipboard unavailable. Select the report below and copy it."
-msgstr ""
+msgstr "클립보드를 사용할 수 없습니다. 아래 보고서를 선택해 복사하세요."
 
 #: web/routes/create/+page.svelte:378
 msgid "Command"
@@ -235,17 +235,17 @@ msgstr "{name}(으)로 연결됨"
 msgid "Considered by the model"
 msgstr "모델이 검토함"
 
-#: web/lib/JobPanel.svelte:82 web/lib/RunReport.svelte:67
+#: web/lib/JobPanel.svelte:85 web/lib/RunReport.svelte:73
 msgid "Copied"
 msgstr "복사됨"
 
-#: web/lib/JobPanel.svelte:82
+#: web/lib/JobPanel.svelte:85
 msgid "Copy as CLI command"
 msgstr "CLI 명령어로 복사"
 
-#: web/lib/RunReport.svelte:67 web/lib/RunReport.svelte:69
+#: web/lib/RunReport.svelte:73 web/lib/RunReport.svelte:75
 msgid "Copy report"
-msgstr ""
+msgstr "보고서 복사"
 
 #: web/lib/RenderPanel.svelte:140
 msgid "Crossfade"
@@ -435,9 +435,9 @@ msgstr "다음 편집에서"
 msgid "Include Live Photos"
 msgstr "Live Photos 포함"
 
-#: web/lib/RunReport.svelte:64
+#: web/lib/RunReport.svelte:70
 msgid "Include captions of flagged photos"
-msgstr ""
+msgstr "표시된 사진의 캡션 포함"
 
 #: web/routes/create/+page.svelte:370
 msgid "Include photos"
@@ -447,7 +447,7 @@ msgstr "사진 포함"
 msgid "Interface language"
 msgstr "화면 언어"
 
-#: web/lib/JobPanel.svelte:54
+#: web/lib/JobPanel.svelte:57
 msgid "It did not finish."
 msgstr "완료되지 않았습니다."
 
@@ -710,7 +710,7 @@ msgstr "사진 표시 시간(초)"
 msgid "Picture review"
 msgstr "이미지 검토"
 
-#: web/lib/JobPanel.svelte:68
+#: web/lib/JobPanel.svelte:71
 msgid "Pictures just read"
 msgstr "방금 읽은 이미지"
 
@@ -754,7 +754,7 @@ msgstr "미리보기 캐시"
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "개인정보 보호 모드: 모든 이미지를 흐리게 하고 이름을 가립니다"
 
-#: web/lib/JobPanel.svelte:48 web/lib/JobPanel.svelte:60
+#: web/lib/JobPanel.svelte:51 web/lib/JobPanel.svelte:63
 msgid "Progress"
 msgstr "진행 상황"
 
@@ -806,9 +806,9 @@ msgstr "렌더링"
 msgid "Replaced a picture the model doubted."
 msgstr "모델이 의심한 이미지를 대체했습니다."
 
-#: web/lib/RunReport.svelte:66
+#: web/lib/RunReport.svelte:72
 msgid "Report preview"
-msgstr ""
+msgstr "보고서 미리보기"
 
 #: web/routes/settings/people/+page.svelte:83
 msgid "Rescan the library"
@@ -818,9 +818,9 @@ msgstr "라이브러리 다시 스캔"
 msgid "Resolution"
 msgstr "해상도"
 
-#: web/lib/RunReport.svelte:62
+#: web/lib/RunReport.svelte:68
 msgid "Review the report, then copy it. Nothing is sent automatically."
-msgstr ""
+msgstr "보고서를 검토한 뒤 복사하세요. 자동으로 전송되는 것은 없습니다."
 
 #: web/lib/RenderPanel.svelte:134 web/routes/runs/[run_id]/+page.svelte:273
 #, python-brace-format
@@ -945,7 +945,7 @@ msgstr "정사각형"
 msgid "Start here"
 msgstr "여기서 시작"
 
-#: web/lib/JobPanel.svelte:51
+#: web/lib/JobPanel.svelte:54
 msgid "Starting"
 msgstr "시작 중"
 
@@ -957,7 +957,7 @@ msgstr "상태"
 msgid "Still"
 msgstr "정지 이미지"
 
-#: web/lib/JobPanel.svelte:53
+#: web/lib/JobPanel.svelte:56
 msgid "Stopped."
 msgstr "중지되었습니다."
 
@@ -1010,7 +1010,7 @@ msgstr "선택한 그대로의 편집"
 msgid "The cut could not start."
 msgstr "편집을 시작할 수 없습니다."
 
-#: web/lib/JobPanel.svelte:52
+#: web/lib/JobPanel.svelte:55
 msgid "The cut is ready."
 msgstr "편집이 준비되었습니다."
 
@@ -1026,7 +1026,7 @@ msgstr "편집기가 이 사진을 받은 적이 없으므로 체크해도 다�
 msgid "The film"
 msgstr "이 영상"
 
-#: web/lib/JobPanel.svelte:52
+#: web/lib/JobPanel.svelte:55
 msgid "The film is ready."
 msgstr "영상이 준비되었습니다."
 
@@ -1064,9 +1064,9 @@ msgstr "이전 자동 추억은 이 카테고리를 사용했습니다."
 msgid "The render could not start."
 msgstr "렌더링을 시작할 수 없습니다."
 
-#: web/lib/RunReport.svelte:42
+#: web/lib/RunReport.svelte:48
 msgid "The report could not be loaded."
-msgstr ""
+msgstr "보고서를 불러오지 못했습니다."
 
 #: web/routes/runs/[run_id]/+page.svelte:53
 msgid "The revision could not be saved."
@@ -1292,7 +1292,7 @@ msgstr "{date_range_start}부터 {date_range_end}까지"
 msgid "{days} days · {count} pictures"
 msgstr "{days}일 · 이미지 {count}장"
 
-#: web/lib/JobPanel.svelte:64
+#: web/lib/JobPanel.svelte:67
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done} / {total}"
@@ -1306,4 +1306,9 @@ msgstr "화면에 {seconds}초"
 #, python-brace-format
 msgid "{years} years ago"
 msgstr "{years}년 전"
+
+#: web/lib/JobPanel.svelte:41
+#, python-brace-format
+msgid "~{amount} left in this stage"
+msgstr "이 단계에 약 {amount} 남음"
 

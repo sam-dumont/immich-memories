@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 11:01+0200\n"
+"POT-Creation-Date: 2026-09-28 14:05+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -23,10 +23,10 @@ msgstr "Er is deze maand al een maandelijkse controle voltooid."
 msgid "API Key"
 msgstr "API-sleutel"
 
-#: web/lib/JobPanel.svelte:38
+#: web/lib/JobPanel.svelte:41
 #, python-brace-format
 msgid "About {amount} left"
-msgstr ""
+msgstr "Nog ongeveer {amount}"
 
 #: web/routes/create/+page.svelte:373
 msgid "Accept forwarded and downloaded media"
@@ -155,7 +155,7 @@ msgstr "De hele pool bekijken"
 msgid "Caches"
 msgstr "Caches"
 
-#: web/lib/JobPanel.svelte:84 web/routes/runs/[run_id]/pool/+page.svelte:173
+#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:173
 msgid "Cancel"
 msgstr "Annuleren"
 
@@ -209,9 +209,9 @@ msgstr "Deze beperking opheffen?"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{count} items verwijderd uit {cache}."
 
-#: web/lib/RunReport.svelte:55
+#: web/lib/RunReport.svelte:61
 msgid "Clipboard unavailable. Select the report below and copy it."
-msgstr ""
+msgstr "Klembord niet beschikbaar. Selecteer het rapport hieronder en kopieer het."
 
 #: web/routes/create/+page.svelte:378
 msgid "Command"
@@ -239,17 +239,17 @@ msgstr "Verbonden als: {name}"
 msgid "Considered by the model"
 msgstr "Door het model overwogen"
 
-#: web/lib/JobPanel.svelte:82 web/lib/RunReport.svelte:67
+#: web/lib/JobPanel.svelte:85 web/lib/RunReport.svelte:73
 msgid "Copied"
 msgstr "Gekopieerd"
 
-#: web/lib/JobPanel.svelte:82
+#: web/lib/JobPanel.svelte:85
 msgid "Copy as CLI command"
 msgstr "Als CLI-opdracht kopiëren"
 
-#: web/lib/RunReport.svelte:67 web/lib/RunReport.svelte:69
+#: web/lib/RunReport.svelte:73 web/lib/RunReport.svelte:75
 msgid "Copy report"
-msgstr ""
+msgstr "Rapport kopiëren"
 
 #: web/lib/RenderPanel.svelte:140
 msgid "Crossfade"
@@ -442,9 +442,9 @@ msgstr "In de volgende montage"
 msgid "Include Live Photos"
 msgstr "Live Photos opnemen"
 
-#: web/lib/RunReport.svelte:64
+#: web/lib/RunReport.svelte:70
 msgid "Include captions of flagged photos"
-msgstr ""
+msgstr "Bijschriften van gemarkeerde foto's opnemen"
 
 #: web/routes/create/+page.svelte:370
 msgid "Include photos"
@@ -454,7 +454,7 @@ msgstr "Foto's opnemen"
 msgid "Interface language"
 msgstr "Interfacetaal"
 
-#: web/lib/JobPanel.svelte:54
+#: web/lib/JobPanel.svelte:57
 msgid "It did not finish."
 msgstr "Niet voltooid."
 
@@ -721,7 +721,7 @@ msgstr "Fotoduur (seconden)"
 msgid "Picture review"
 msgstr "Beeld beoordelen"
 
-#: web/lib/JobPanel.svelte:68
+#: web/lib/JobPanel.svelte:71
 msgid "Pictures just read"
 msgstr "Net gelezen beelden"
 
@@ -765,7 +765,7 @@ msgstr "Voorbeeldcache"
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Privémodus: alle beelden vervagen en namen verhullen"
 
-#: web/lib/JobPanel.svelte:48 web/lib/JobPanel.svelte:60
+#: web/lib/JobPanel.svelte:51 web/lib/JobPanel.svelte:63
 msgid "Progress"
 msgstr "Voortgang"
 
@@ -817,9 +817,9 @@ msgstr "Renderen"
 msgid "Replaced a picture the model doubted."
 msgstr "Verving een beeld waaraan het model twijfelde."
 
-#: web/lib/RunReport.svelte:66
+#: web/lib/RunReport.svelte:72
 msgid "Report preview"
-msgstr ""
+msgstr "Voorbeeld van het rapport"
 
 #: web/routes/settings/people/+page.svelte:83
 msgid "Rescan the library"
@@ -829,9 +829,9 @@ msgstr "Bibliotheek opnieuw scannen"
 msgid "Resolution"
 msgstr "Resolutie"
 
-#: web/lib/RunReport.svelte:62
+#: web/lib/RunReport.svelte:68
 msgid "Review the report, then copy it. Nothing is sent automatically."
-msgstr ""
+msgstr "Bekijk het rapport en kopieer het daarna. Er wordt niets automatisch verstuurd."
 
 #: web/lib/RenderPanel.svelte:134 web/routes/runs/[run_id]/+page.svelte:273
 #, python-brace-format
@@ -956,7 +956,7 @@ msgstr "Vierkant"
 msgid "Start here"
 msgstr "Hier beginnen"
 
-#: web/lib/JobPanel.svelte:51
+#: web/lib/JobPanel.svelte:54
 msgid "Starting"
 msgstr "Starten"
 
@@ -968,7 +968,7 @@ msgstr "Status"
 msgid "Still"
 msgstr "Stilstaand beeld"
 
-#: web/lib/JobPanel.svelte:53
+#: web/lib/JobPanel.svelte:56
 msgid "Stopped."
 msgstr "Gestopt."
 
@@ -1021,7 +1021,7 @@ msgstr "De gekozen montage"
 msgid "The cut could not start."
 msgstr "De montage kon niet worden gestart."
 
-#: web/lib/JobPanel.svelte:52
+#: web/lib/JobPanel.svelte:55
 msgid "The cut is ready."
 msgstr "De montage is klaar."
 
@@ -1039,7 +1039,7 @@ msgstr ""
 msgid "The film"
 msgstr "De film"
 
-#: web/lib/JobPanel.svelte:52
+#: web/lib/JobPanel.svelte:55
 msgid "The film is ready."
 msgstr "De film is klaar."
 
@@ -1079,9 +1079,9 @@ msgstr "De vorige automatische herinnering gebruikte deze categorie."
 msgid "The render could not start."
 msgstr "Het renderen kon niet worden gestart."
 
-#: web/lib/RunReport.svelte:42
+#: web/lib/RunReport.svelte:48
 msgid "The report could not be loaded."
-msgstr ""
+msgstr "Het rapport kon niet worden geladen."
 
 #: web/routes/runs/[run_id]/+page.svelte:53
 msgid "The revision could not be saved."
@@ -1315,7 +1315,7 @@ msgstr "{date_range_start} tot {date_range_end}"
 msgid "{days} days · {count} pictures"
 msgstr "{days} dagen · {count} beelden"
 
-#: web/lib/JobPanel.svelte:64
+#: web/lib/JobPanel.svelte:67
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done} van {total}"
@@ -1329,4 +1329,9 @@ msgstr "{seconds} s in beeld"
 #, python-brace-format
 msgid "{years} years ago"
 msgstr "{years} jaar geleden"
+
+#: web/lib/JobPanel.svelte:41
+#, python-brace-format
+msgid "~{amount} left in this stage"
+msgstr "~{amount} over in deze fase"
 

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  immich-memories\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 11:01+0200\n"
+"POT-Creation-Date: 2026-09-28 14:05+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -23,10 +23,10 @@ msgstr "Une révision mensuelle s’est déjà terminée ce mois-ci."
 msgid "API Key"
 msgstr "Clé API"
 
-#: web/lib/JobPanel.svelte:38
+#: web/lib/JobPanel.svelte:41
 #, python-brace-format
 msgid "About {amount} left"
-msgstr ""
+msgstr "Encore environ {amount}"
 
 #: web/routes/create/+page.svelte:373
 msgid "Accept forwarded and downloaded media"
@@ -155,7 +155,7 @@ msgstr "Parcourir tout le fonds"
 msgid "Caches"
 msgstr "Caches"
 
-#: web/lib/JobPanel.svelte:84 web/routes/runs/[run_id]/pool/+page.svelte:173
+#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:173
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -209,9 +209,9 @@ msgstr "Lever cette restriction ?"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{count} entrées supprimées de {cache}."
 
-#: web/lib/RunReport.svelte:55
+#: web/lib/RunReport.svelte:61
 msgid "Clipboard unavailable. Select the report below and copy it."
-msgstr ""
+msgstr "Presse-papiers indisponible. Sélectionnez le rapport ci-dessous et copiez-le."
 
 #: web/routes/create/+page.svelte:378
 msgid "Command"
@@ -239,17 +239,17 @@ msgstr "Connecté en tant que : {name}"
 msgid "Considered by the model"
 msgstr "Envisagée par le modèle"
 
-#: web/lib/JobPanel.svelte:82 web/lib/RunReport.svelte:67
+#: web/lib/JobPanel.svelte:85 web/lib/RunReport.svelte:73
 msgid "Copied"
 msgstr "Copié"
 
-#: web/lib/JobPanel.svelte:82
+#: web/lib/JobPanel.svelte:85
 msgid "Copy as CLI command"
 msgstr "Copier comme commande CLI"
 
-#: web/lib/RunReport.svelte:67 web/lib/RunReport.svelte:69
+#: web/lib/RunReport.svelte:73 web/lib/RunReport.svelte:75
 msgid "Copy report"
-msgstr ""
+msgstr "Copier le rapport"
 
 #: web/lib/RenderPanel.svelte:140
 msgid "Crossfade"
@@ -442,9 +442,9 @@ msgstr "Dans le prochain montage"
 msgid "Include Live Photos"
 msgstr "Inclure les Live Photos"
 
-#: web/lib/RunReport.svelte:64
+#: web/lib/RunReport.svelte:70
 msgid "Include captions of flagged photos"
-msgstr ""
+msgstr "Inclure les légendes des photos signalées"
 
 #: web/routes/create/+page.svelte:370
 msgid "Include photos"
@@ -454,7 +454,7 @@ msgstr "Inclure des photos"
 msgid "Interface language"
 msgstr "Langue de l’interface"
 
-#: web/lib/JobPanel.svelte:54
+#: web/lib/JobPanel.svelte:57
 msgid "It did not finish."
 msgstr "Il ne s’est pas terminé."
 
@@ -721,7 +721,7 @@ msgstr "Durée des photos (secondes)"
 msgid "Picture review"
 msgstr "Examen de l’image"
 
-#: web/lib/JobPanel.svelte:68
+#: web/lib/JobPanel.svelte:71
 msgid "Pictures just read"
 msgstr "Photos juste lues"
 
@@ -765,7 +765,7 @@ msgstr "Cache d'aperçu"
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Mode confidentialité : floute chaque image et brouille les noms"
 
-#: web/lib/JobPanel.svelte:48 web/lib/JobPanel.svelte:60
+#: web/lib/JobPanel.svelte:51 web/lib/JobPanel.svelte:63
 msgid "Progress"
 msgstr "Progression"
 
@@ -817,9 +817,9 @@ msgstr "Rendu"
 msgid "Replaced a picture the model doubted."
 msgstr "A remplacé une image dont le modèle doutait."
 
-#: web/lib/RunReport.svelte:66
+#: web/lib/RunReport.svelte:72
 msgid "Report preview"
-msgstr ""
+msgstr "Aperçu du rapport"
 
 #: web/routes/settings/people/+page.svelte:83
 msgid "Rescan the library"
@@ -829,9 +829,9 @@ msgstr "Réanalyser la photothèque"
 msgid "Resolution"
 msgstr "Résolution"
 
-#: web/lib/RunReport.svelte:62
+#: web/lib/RunReport.svelte:68
 msgid "Review the report, then copy it. Nothing is sent automatically."
-msgstr ""
+msgstr "Relisez le rapport, puis copiez-le. Rien n'est envoyé automatiquement."
 
 #: web/lib/RenderPanel.svelte:134 web/routes/runs/[run_id]/+page.svelte:273
 #, python-brace-format
@@ -956,7 +956,7 @@ msgstr "Carré"
 msgid "Start here"
 msgstr "Commencer ici"
 
-#: web/lib/JobPanel.svelte:51
+#: web/lib/JobPanel.svelte:54
 msgid "Starting"
 msgstr "Démarrage"
 
@@ -968,7 +968,7 @@ msgstr "État"
 msgid "Still"
 msgstr "Image fixe"
 
-#: web/lib/JobPanel.svelte:53
+#: web/lib/JobPanel.svelte:56
 msgid "Stopped."
 msgstr "Arrêté."
 
@@ -1021,7 +1021,7 @@ msgstr "Le montage tel que choisi"
 msgid "The cut could not start."
 msgstr "Impossible de démarrer le montage."
 
-#: web/lib/JobPanel.svelte:52
+#: web/lib/JobPanel.svelte:55
 msgid "The cut is ready."
 msgstr "Le montage est prêt."
 
@@ -1039,7 +1039,7 @@ msgstr ""
 msgid "The film"
 msgstr "Le film"
 
-#: web/lib/JobPanel.svelte:52
+#: web/lib/JobPanel.svelte:55
 msgid "The film is ready."
 msgstr "Le film est prêt."
 
@@ -1079,9 +1079,9 @@ msgstr "Le précédent souvenir automatique utilisait cette catégorie."
 msgid "The render could not start."
 msgstr "Impossible de démarrer le rendu."
 
-#: web/lib/RunReport.svelte:42
+#: web/lib/RunReport.svelte:48
 msgid "The report could not be loaded."
-msgstr ""
+msgstr "Le rapport n'a pas pu être chargé."
 
 #: web/routes/runs/[run_id]/+page.svelte:53
 msgid "The revision could not be saved."
@@ -1315,7 +1315,7 @@ msgstr "Du {date_range_start} au {date_range_end}"
 msgid "{days} days · {count} pictures"
 msgstr "{days} jours · {count} images"
 
-#: web/lib/JobPanel.svelte:64
+#: web/lib/JobPanel.svelte:67
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done} sur {total}"
@@ -1329,4 +1329,9 @@ msgstr "{seconds} s à l’écran"
 #, python-brace-format
 msgid "{years} years ago"
 msgstr "il y a {years} ans"
+
+#: web/lib/JobPanel.svelte:41
+#, python-brace-format
+msgid "~{amount} left in this stage"
+msgstr "~{amount} restant à cette étape"
 

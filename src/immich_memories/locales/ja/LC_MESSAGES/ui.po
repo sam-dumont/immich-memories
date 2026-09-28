@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 11:01+0200\n"
+"POT-Creation-Date: 2026-09-28 14:05+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -23,10 +23,10 @@ msgstr "今月はすでに月次レビューが完了しています。"
 msgid "API Key"
 msgstr "APIキー"
 
-#: web/lib/JobPanel.svelte:38
+#: web/lib/JobPanel.svelte:41
 #, python-brace-format
 msgid "About {amount} left"
-msgstr ""
+msgstr "残り約 {amount}"
 
 #: web/routes/create/+page.svelte:373
 msgid "Accept forwarded and downloaded media"
@@ -153,7 +153,7 @@ msgstr "候補全体を見る"
 msgid "Caches"
 msgstr "キャッシュ"
 
-#: web/lib/JobPanel.svelte:84 web/routes/runs/[run_id]/pool/+page.svelte:173
+#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:173
 msgid "Cancel"
 msgstr "キャンセル"
 
@@ -205,9 +205,9 @@ msgstr "この制限を解除しますか？"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{cache} から {count} 件のエントリを消去しました。"
 
-#: web/lib/RunReport.svelte:55
+#: web/lib/RunReport.svelte:61
 msgid "Clipboard unavailable. Select the report below and copy it."
-msgstr ""
+msgstr "クリップボードを使用できません。下のレポートを選択してコピーしてください。"
 
 #: web/routes/create/+page.svelte:378
 msgid "Command"
@@ -235,17 +235,17 @@ msgstr "{name} として接続中"
 msgid "Considered by the model"
 msgstr "モデルが検討"
 
-#: web/lib/JobPanel.svelte:82 web/lib/RunReport.svelte:67
+#: web/lib/JobPanel.svelte:85 web/lib/RunReport.svelte:73
 msgid "Copied"
 msgstr "コピーしました"
 
-#: web/lib/JobPanel.svelte:82
+#: web/lib/JobPanel.svelte:85
 msgid "Copy as CLI command"
 msgstr "コマンドラインのコマンドとしてコピー"
 
-#: web/lib/RunReport.svelte:67 web/lib/RunReport.svelte:69
+#: web/lib/RunReport.svelte:73 web/lib/RunReport.svelte:75
 msgid "Copy report"
-msgstr ""
+msgstr "レポートをコピー"
 
 #: web/lib/RenderPanel.svelte:140
 msgid "Crossfade"
@@ -433,9 +433,9 @@ msgstr "次回の編集で"
 msgid "Include Live Photos"
 msgstr "Live Photos を含める"
 
-#: web/lib/RunReport.svelte:64
+#: web/lib/RunReport.svelte:70
 msgid "Include captions of flagged photos"
-msgstr ""
+msgstr "フラグ付き写真のキャプションを含める"
 
 #: web/routes/create/+page.svelte:370
 msgid "Include photos"
@@ -445,7 +445,7 @@ msgstr "写真を含める"
 msgid "Interface language"
 msgstr "画面の言語"
 
-#: web/lib/JobPanel.svelte:54
+#: web/lib/JobPanel.svelte:57
 msgid "It did not finish."
 msgstr "完了しませんでした。"
 
@@ -708,7 +708,7 @@ msgstr "写真の表示時間（秒）"
 msgid "Picture review"
 msgstr "画像の確認"
 
-#: web/lib/JobPanel.svelte:68
+#: web/lib/JobPanel.svelte:71
 msgid "Pictures just read"
 msgstr "直前に読み取った画像"
 
@@ -752,7 +752,7 @@ msgstr "プレビューキャッシュ"
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "プライバシーモード: すべての画像をぼかし、名前を隠します"
 
-#: web/lib/JobPanel.svelte:48 web/lib/JobPanel.svelte:60
+#: web/lib/JobPanel.svelte:51 web/lib/JobPanel.svelte:63
 msgid "Progress"
 msgstr "進行状況"
 
@@ -804,9 +804,9 @@ msgstr "レンダリングする"
 msgid "Replaced a picture the model doubted."
 msgstr "モデルが疑問を持った画像を置き換えました。"
 
-#: web/lib/RunReport.svelte:66
+#: web/lib/RunReport.svelte:72
 msgid "Report preview"
-msgstr ""
+msgstr "レポートのプレビュー"
 
 #: web/routes/settings/people/+page.svelte:83
 msgid "Rescan the library"
@@ -816,9 +816,9 @@ msgstr "ライブラリを再スキャン"
 msgid "Resolution"
 msgstr "解像度"
 
-#: web/lib/RunReport.svelte:62
+#: web/lib/RunReport.svelte:68
 msgid "Review the report, then copy it. Nothing is sent automatically."
-msgstr ""
+msgstr "レポートを確認してからコピーしてください。自動で送信されるものはありません。"
 
 #: web/lib/RenderPanel.svelte:134 web/routes/runs/[run_id]/+page.svelte:273
 #, python-brace-format
@@ -943,7 +943,7 @@ msgstr "正方形"
 msgid "Start here"
 msgstr "ここから開始"
 
-#: web/lib/JobPanel.svelte:51
+#: web/lib/JobPanel.svelte:54
 msgid "Starting"
 msgstr "開始中"
 
@@ -955,7 +955,7 @@ msgstr "状態"
 msgid "Still"
 msgstr "静止画"
 
-#: web/lib/JobPanel.svelte:53
+#: web/lib/JobPanel.svelte:56
 msgid "Stopped."
 msgstr "停止しました。"
 
@@ -1008,7 +1008,7 @@ msgstr "選択した編集結果"
 msgid "The cut could not start."
 msgstr "編集を開始できませんでした。"
 
-#: web/lib/JobPanel.svelte:52
+#: web/lib/JobPanel.svelte:55
 msgid "The cut is ready."
 msgstr "編集結果の準備ができました。"
 
@@ -1024,7 +1024,7 @@ msgstr "エディターはこの写真を受け取っていないため、チェ
 msgid "The film"
 msgstr "この動画"
 
-#: web/lib/JobPanel.svelte:52
+#: web/lib/JobPanel.svelte:55
 msgid "The film is ready."
 msgstr "動画の準備ができました。"
 
@@ -1062,9 +1062,9 @@ msgstr "前回の自動思い出はこのカテゴリーを使用しました。
 msgid "The render could not start."
 msgstr "レンダリングを開始できませんでした。"
 
-#: web/lib/RunReport.svelte:42
+#: web/lib/RunReport.svelte:48
 msgid "The report could not be loaded."
-msgstr ""
+msgstr "レポートを読み込めませんでした。"
 
 #: web/routes/runs/[run_id]/+page.svelte:53
 msgid "The revision could not be saved."
@@ -1290,7 +1290,7 @@ msgstr "{date_range_start} から {date_range_end}"
 msgid "{days} days · {count} pictures"
 msgstr "{days} 日間・{count} 枚"
 
-#: web/lib/JobPanel.svelte:64
+#: web/lib/JobPanel.svelte:67
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done}/{total}"
@@ -1304,4 +1304,9 @@ msgstr "画面に{seconds}秒"
 #, python-brace-format
 msgid "{years} years ago"
 msgstr "{years} 年前"
+
+#: web/lib/JobPanel.svelte:41
+#, python-brace-format
+msgid "~{amount} left in this stage"
+msgstr "この段階、残り約 {amount}"
 
