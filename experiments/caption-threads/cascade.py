@@ -167,7 +167,8 @@ def fill_pool(library, pool, core, not_this, shape, anchors, captionless, read, 
 
     caption = lambda i: library.rows[i].get("caption") or ""  # noqa: E731
     captioned = {i for i in pool if caption(i) and not library.rows[i].get("uncaptioned")}
-    free = {i for i in captioned if grammar_says_subject(caption(i), core, not_this)}
+    # No subject words left means the named person is the subject: faces already chose the pool.
+    free = set(captioned) if not core else {i for i in captioned if grammar_says_subject(caption(i), core, not_this)}
     if place_words:
         # A place subject is proven by GPS; its caption only has to show the place or its change:
         # at the house, "a ladder leaning against a wall" with "renovation" or "peeling" is the house

@@ -238,6 +238,13 @@ def _choose(reader, stage, key, prompt, data, options, tokens=500):
     return (top[0][0] if top and top[0][1] >= 2 else options[0]), dict(votes)
 
 
+def _is_person(word):
+    from nltk.corpus import wordnet as wn
+
+    senses = wn.synsets(wn.morphy(word, wn.NOUN) or word, pos=wn.NOUN)[:1]
+    return any(h.name() == "person.n.01" for s in senses for path in s.hypernym_paths() for h in path)
+
+
 def stated_phrase(brief, word):
     """The request's own wording of a subject noun with its quality ("Black cat" -> "black cat")."""
     from nltk.corpus import wordnet as wn
@@ -434,6 +441,12 @@ def build_subject(reader, key, brief, library, spec, rows):
                  "core", shows, 6) or seeds or [brief]
     # A quality the request states stays ("our cat ... Black cat." -> "black cat", whatever Gemma dropped).
     core = list(dict.fromkeys(stated_phrase(brief, c) for c in core))
+    if spec.get("people"):
+        # A named person is proven by faces; "baby", "child", "girl" add nothing and made every photo
+        # of him the subject of "breastfeeding <child>" (09-28). With nothing else left, the person is
+        # the subject: "the birth of my son" is his photos of that month.
+        core = [c for c in core if not _is_person(c.split()[-1])]
+        spec["person_is_subject"] = not core
     # Logic, not judgement: once Gemma names the subject, its parts and kinds are the subject too.
     from nltk.corpus import wordnet as wn
 
@@ -463,10 +476,13 @@ def build_subject(reader, key, brief, library, spec, rows):
     same = _vote(reader, "spec_same_as", key, SAME_AS, {"owner_request": brief, "main_subject": core},
                  "same", others, 6)
     # The qualities come from the main phrase only: a bare part ("paw") would make a bare "kitten".
-    main = next((c for c in core if len(c.split()) > 1), core[0])
+    main = next((c for c in core if len(c.split()) > 1), core[0] if core else "")
     qualities = re.findall(r"[a-z]+", main.lower())[:-1]
     extent += [p for w in same if (p := " ".join(qualities + [w])) not in core + extent]
-    question = "Is the main subject of this photo " + " or ".join(core) + (
+    if spec.get("people"):
+        # The same rule after the other-names step: it offered "baby", "child" for breastfeeding.
+        extent = [e for e in extent if not _is_person(e.split()[-1])]
+    question = "Is the main subject of this photo " + " or ".join(core or spec.get("people") or [brief]) + (
         " (or one of its parts or kinds: " + ", ".join(extent[:10]) + ")" if extent else "") + "?"
     core = core + extent
     if not_this:
