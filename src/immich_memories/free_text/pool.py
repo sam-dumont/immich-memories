@@ -26,7 +26,7 @@ from immich_memories.free_text.grammar import free_tier
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryPicture, LibraryView
 from immich_memories.free_text.linking import Household, Reason, WhenLink, WhereLink, WhoLink
-from immich_memories.free_text.pool_questions import left_out
+from immich_memories.free_text.pool_questions import left_out, other_names
 from immich_memories.free_text.reading import Asker, Reading, words_of
 from immich_memories.free_text.scopes import in_place
 from immich_memories.free_text.subject import Subject
@@ -109,7 +109,11 @@ def build_pool(
     _where(funnel, translation, household, rules)
     _measured(funnel, translation.facts)
     if not _computed(funnel, translation.facts, view, household, rules):
-        _subject(funnel, translation.subject, excluded, lexicon, left_out_reason)
+        names, names_reason = other_names(
+            translation.reading.request, translation.subject, funnel.pictures, lexicon, asker
+        )
+        notes = (names_reason, left_out_reason)
+        _subject(funnel, translation.subject, names, excluded, lexicon, notes)
     _company(funnel, translation.who, lexicon)
     return _verdict(funnel)
 
@@ -237,9 +241,10 @@ def _company(funnel: _Funnel, who: WhoLink, lexicon: Lexicon) -> None:
 def _subject(
     funnel: _Funnel,
     subject: Subject,
+    names: Sequence[str],
     excluded: Sequence[str],
     lexicon: Lexicon,
-    left_out_reason: Reason | None,
+    notes: Sequence[Reason | None],
 ) -> None:
     # Nothing is both the subject and left out, but the request's own nouns stay: "our cat, not
     # the neighbour's cats" still films a cat.
@@ -247,7 +252,7 @@ def _subject(
     gone = {_head(phrase, lexicon) for phrase in excluded} - own
     phrases = [
         phrase
-        for phrase in dict.fromkeys((*subject.main, *subject.extent))
+        for phrase in dict.fromkeys((*subject.main, *subject.extent, *names))
         if _head(phrase, lexicon) not in gone
     ]
     if not phrases:
@@ -256,8 +261,7 @@ def _subject(
     rule = "caption grammar: a thing is the caption's subject, a scene counts anywhere"
     if subject.also:
         rule += f"; a photo may also show {', '.join(subject.also)}, which alone does not count"
-    if left_out_reason is not None:
-        rule += f"; {left_out_reason.rule}: {left_out_reason.outcome}"
+    rule += "".join(f"; {note.rule}: {note.outcome}" for note in notes if note)
     funnel.keep(
         "subject", kept, Reason(", ".join(phrases), rule, f"captions about {', '.join(phrases)}")
     )

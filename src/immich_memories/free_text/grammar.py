@@ -168,6 +168,12 @@ def is_about(caption: str | None, phrases: Iterable[str], excluded: Iterable[str
     return False
 
 
+def subject_head(caption: str | None) -> str | None:
+    """The head of the caption's subject: "A small black kitten is playing" is kitten."""
+    words = _subject_words(caption or "")
+    return words[-1].removesuffix("'s") if words else None
+
+
 def is_thing(phrase: str, lexicon: Lexicon) -> bool:
     """Whether the phrase names a thing (a food, an artifact, an animal, a plant, a person).
 

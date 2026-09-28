@@ -85,8 +85,10 @@ def test_a_few_pictures_are_thin_and_none_is_not_possible_with_the_step_that_emp
     few = build_pool(
         _asked("our cat", main=("cat",)), _view(*_cats(3)), NOBODY, lexicon, BankedAsker()
     )
+    # WHY: stands in for the model server, asked whether "cat" (the captions' subject) is a brunch.
+    no_other_name = BankedAsker(*[{"reason": "banked", "choices": []}] * 3)
     none = build_pool(
-        _asked("brunches", main=("brunch",)), _view(*_cats(3)), NOBODY, lexicon, BankedAsker()
+        _asked("brunches", main=("brunch",)), _view(*_cats(3)), NOBODY, lexicon, no_other_name
     )
 
     assert few.verdict == "thin"
@@ -270,6 +272,7 @@ def test_only_what_follows_a_negation_can_be_left_out_and_the_request_keeps_its_
     )
     subject = Subject(heads=("car",), words=("car",), main=("car",), extent=("motorcycle",))
     asked = _asked("the cars I drove, no toy cars or motorcycles", subject=subject)
+    # WHY: stands in for the model server; two of three answers leave out both phrases.
     asker = BankedAsker(
         _picks("toy cars", "motorcycles"), _picks("toy cars", "motorcycles"), _picks("toy cars")
     )
@@ -284,3 +287,30 @@ def test_only_what_follows_a_negation_can_be_left_out_and_the_request_keeps_its_
     assert "toy cars" in offered
     assert "the cars" not in offered
     assert _ids(plain) == {"car-0", "car-1", "car-2", "toy", "bike"}
+
+
+def test_other_names_for_the_subject_carry_its_stated_quality(lexicon: Lexicon) -> None:
+    def said(caption: str, count: int) -> list[LibraryPicture]:
+        return [_picture(f"{caption}-{n}", caption=caption) for n in range(count)]
+
+    view = _view(
+        *said("A black kitten is playing with yarn", 3),
+        *said("A black cat is sleeping", 2),
+        *said("A black puss on a sofa", 1),
+        *said("A white kitten on a rug", 1),
+        *said("A dog is running on a beach", 3),
+        *said("A woman is reading a book", 3),
+    )
+    subject = Subject(heads=("cat",), words=("cat",), main=("black cat",))
+    # WHY: stands in for the model server; only kitten gets two votes as another name.
+    asker = BankedAsker(_picks("kitten"), _picks("kitten", "dog"), _picks("kitten"))
+
+    pool = build_pool(_asked("our black cat", subject=subject), view, NOBODY, lexicon, asker)
+
+    assert {p.caption for p in pool.pictures} == {
+        "A black kitten is playing with yarn",
+        "A black cat is sleeping",
+        "A black puss on a sofa",
+    }
+    offered = asker.questions[0][1]["properties"]["choices"]["items"]["enum"]
+    assert sorted(offered) == ["dog", "kitten"]

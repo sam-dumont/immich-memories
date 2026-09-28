@@ -8,9 +8,14 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from collections.abc import Iterable
 
+from immich_memories.free_text.facts import PICTURE_WORDS
+from immich_memories.free_text.grammar import Captioned, subject_head
+from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.linking import GLUE, Reason
-from immich_memories.free_text.reading import Asker, choose_several
+from immich_memories.free_text.reading import Asker, choose_several, words_of
+from immich_memories.free_text.subject import Subject
 
 _LEAVE_OUT = """Which of these phrases from the request name what the owner asks to leave out of the
 film? None when the request excludes nothing. Reason first. Return JSON."""
@@ -46,6 +51,75 @@ def left_out(request: str, asker: Asker) -> tuple[tuple[str, ...], Reason | None
         f"leave out {', '.join(picked)}" if picked else "nothing left out",
     )
     return tuple(picked), reason
+
+
+_SAME_AS = """Which of these words name the main subject itself too: a young one of it, another name
+for it, or a kind of it? Only words that do; none when none does. Reason first. Return JSON."""
+# A word the captions put in the subject slot this often is how the library names its subjects.
+_SLOT_USES = 3
+_MOST_SLOT_WORDS = 40
+_MOST_SAME = 6
+
+
+def other_names(
+    request: str,
+    subject: Subject,
+    pictures: Iterable[Captioned],
+    lexicon: Lexicon,
+    asker: Asker,
+) -> tuple[tuple[str, ...], Reason | None]:
+    """Other names the captions give the main subject, with its stated quality carried over.
+
+    WordNet's other names for it count as they are. The words the captions put in the
+    subject slot ("A black kitten is playing": kitten) are offered to the model, which picks
+    those naming the subject too; a word for people never is (faces prove people).
+    """
+    if not subject.main:
+        return (), None
+    taken = {word for phrase in (*subject.main, *subject.extent) for word in words_of(phrase)}
+    heads = [words_of(phrase)[-1] for phrase in subject.main if words_of(phrase)]
+    same = [name for head in heads for name in lexicon.synonyms(head) if name not in taken]
+    offered = _slot_words(subject, pictures, taken | set(same), lexicon)
+    votes: Counter[str] = Counter()
+    if offered:
+        picked, votes = choose_several(
+            asker,
+            _SAME_AS,
+            {"owner_request": request, "main_subject": list(subject.main)},
+            offered,
+            most=_MOST_SAME,
+        )
+        same += picked
+    if not same:
+        return (), None
+    quality = _qualities(subject.main, lexicon)
+    names = tuple(dict.fromkeys(" ".join([*quality, name]) for name in same))
+    rule = "WordNet's other names for it, and the caption subjects the model says name it"
+    if votes:
+        rule += f" ({tally(votes)})"
+    return names, Reason(", ".join(subject.main), rule, ", ".join(names))
+
+
+def _slot_words(
+    subject: Subject, pictures: Iterable[Captioned], taken: set[str], lexicon: Lexicon
+) -> list[str]:
+    slots = Counter(head for picture in pictures if (head := subject_head(picture.caption)))
+    common = [word for word, uses in slots.most_common(_MOST_SLOT_WORDS) if uses >= _SLOT_USES]
+    return [
+        word
+        for word in dict.fromkeys([*common, *subject.also])
+        if word not in taken
+        and word not in PICTURE_WORDS
+        and (lexicon.noun_base(word) or word) not in taken
+        and not lexicon.is_human(word)
+    ]
+
+
+def _qualities(main: Iterable[str], lexicon: Lexicon) -> list[str]:
+    # The main phrase's adjectives carry over ("black cat" and kitten: "black kitten"); a bare
+    # part would make a bare kitten.
+    phrase = next((words_of(p) for p in main if len(words_of(p)) > 1), [])
+    return [word for word in phrase[:-1] if lexicon.is_adjective(word)]
 
 
 def tally(votes: Counter[str]) -> str:

@@ -11,7 +11,9 @@ from tests.free_text.wordnet_corpus import Sense, write_corpus
 
 # Each word's senses as WordNet 3.0 orders them, first sense first.
 VOCABULARY: dict[str, tuple[str | Sense, ...]] = {
-    "cat": ("noun.animal", "noun.person"),
+    "cat": (Sense("noun.animal", also=("puss",)), "noun.person"),
+    "kitten": ("noun.animal",),
+    "woman": (Sense("noun.person", kind_of="person.n.01"),),
     "dog": ("noun.animal",),
     "car": ("noun.artifact",),
     "bread": ("noun.food",),

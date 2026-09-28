@@ -103,6 +103,10 @@ class Lexicon(Protocol):
         """Whether WordNet holds the word as an adjective ("black", "closed", "live")."""
         ...
 
+    def synonyms(self, word: str) -> tuple[str, ...]:
+        """Other one-word names of the word's first noun sense, each its own first sense too."""
+        ...
+
     def derived_nouns(self, word: str) -> frozenset[str]:
         """The nouns WordNet forms from the word as a noun or a verb, its own noun included.
 
@@ -181,6 +185,15 @@ class WordNetLexicon:
                     if name != head:
                         found.setdefault(name, Relative(name, how, head, shared))
         return tuple(found.values())
+
+    def synonyms(self, word: str) -> tuple[str, ...]:
+        head = self.noun_base(word) or word.strip().lower()
+        return tuple(
+            name
+            for sense in self._reader.synsets(head, pos=NOUN)[:1]
+            for name in self._everyday_names(sense)
+            if name != head
+        )
 
     def _everyday_names(self, synset: Any) -> list[str]:
         # One-word names whose first noun sense is this synset; captions have no multi-words.
