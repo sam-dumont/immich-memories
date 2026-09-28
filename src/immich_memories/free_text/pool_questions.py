@@ -13,7 +13,7 @@ from collections.abc import Iterable
 from immich_memories.free_text.facts import PICTURE_WORDS
 from immich_memories.free_text.grammar import Captioned, subject_head
 from immich_memories.free_text.lexicon import Lexicon
-from immich_memories.free_text.linking import GLUE, Reason
+from immich_memories.free_text.linking import FIRST_PERSON, GLUE, Reason
 from immich_memories.free_text.reading import Asker, Reading, choose, choose_several, words_of
 from immich_memories.free_text.subject import PLACE, Subject, subject_kind
 
@@ -172,6 +172,29 @@ def _one_by_grammar(reading: Reading, subject: Subject, lexicon: Lexicon) -> boo
                 if any(w in _POSSESSIVES or w.endswith(("'s", "’s")) for w in before):
                     return True
     return None
+
+
+_PRINTED = """Which words of the request would be written on something in the photos (a club or team
+name on a jersey, a brand, a sign)? Only a name the request uses that is likely printed on
+things; usually none. Reason first. Return JSON."""
+_MOST_PRINTED = 3
+_SHORTEST_PRINTED = 3
+
+
+def printed_words(request: str, asker: Asker) -> tuple[tuple[str, ...], Reason]:
+    """The request's words the model says are printed on things in the photos (read by OCR)."""
+    offered = [
+        word
+        for word in dict.fromkeys(words_of(request))
+        if len(word) >= _SHORTEST_PRINTED and word not in GLUE | FIRST_PERSON | PICTURE_WORDS
+    ]
+    if not offered:
+        return (), Reason("", "no word to read", "none")
+    picked, votes = choose_several(
+        asker, _PRINTED, {"owner_request": request}, offered, most=_MOST_PRINTED
+    )
+    rule = f"the model says these are printed on things ({tally(votes)}); OCR reads them"
+    return tuple(picked), Reason(", ".join(picked), rule, ", ".join(picked) or "none")
 
 
 def tally(votes: Counter[str]) -> str:

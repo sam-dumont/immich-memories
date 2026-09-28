@@ -11,7 +11,8 @@ from __future__ import annotations
 import bisect
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
+from typing import Protocol
 
 from immich_memories.analysis.moment_grouping import EPISODE_WINDOW_MINUTES
 from immich_memories.config_models_automation import TripsConfig
@@ -26,7 +27,12 @@ from immich_memories.free_text.grammar import free_tier
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryPicture, LibraryView
 from immich_memories.free_text.linking import Household, Reason, WhenLink, WhereLink, WhoLink
-from immich_memories.free_text.pool_questions import left_out, one_particular_place, other_names
+from immich_memories.free_text.pool_questions import (
+    left_out,
+    one_particular_place,
+    other_names,
+    printed_words,
+)
 from immich_memories.free_text.reading import Asker, Reading, words_of
 from immich_memories.free_text.scopes import in_place
 from immich_memories.free_text.subject import Subject
@@ -80,6 +86,8 @@ class _Funnel:
         self.pictures = list(pictures)
         # A computed selection (one picture per person, one trip) is the film at any size.
         self.computed = False
+        # Pictures whose printed text the request names: evidence for the subject by themselves.
+        self.anchors: set[str] = set()
         self.steps: list[Step] = [
             Step("library", len(self.pictures), Reason("", "every dated picture", "the library"))
         ]
@@ -87,6 +95,14 @@ class _Funnel:
     def keep(self, name: str, kept: Sequence[LibraryPicture], reason: Reason) -> None:
         self.pictures = list(kept)
         self.steps.append(Step(name, len(self.pictures), reason))
+
+
+class PrintedText(Protocol):
+    """Letters really in the photos: Immich's OCR search."""
+
+    def pictures_reading(self, text: str) -> frozenset[str]:
+        """The ids of the pictures whose printed text holds `text`."""
+        ...
 
 
 def build_pool(
@@ -97,19 +113,22 @@ def build_pool(
     asker: Asker,
     *,
     trips: TripRules | None = None,
+    printed: PrintedText | None = None,
 ) -> Pool:
     """The pictures the linked request can be filmed from, filter by filter, with a verdict.
 
     A request the library cannot show says so with the filter that emptied it; a pool is never
     padded with pictures that do not mean the ask. `trips` are the trip-detection rules
-    (the config's defaults when not given).
+    (the config's defaults when not given); `printed` searches the letters in the photos,
+    and without it no printed word is looked for.
     """
     funnel = _Funnel(view.pictures)
     excluded, left_out_reason = left_out(translation.reading.request, asker)
     _when(funnel, translation.when)
     _present(funnel, translation.who)
     rules = trips or TripsConfig()
-    _where(funnel, translation, household, rules, lexicon, asker)
+    if not (printed and _printed(funnel, translation.reading.request, printed, asker)):
+        _where(funnel, translation, household, rules, lexicon, asker)
     _measured(funnel, translation.facts)
     if not _computed(funnel, translation.facts, view, household, rules):
         names, names_reason = other_names(
@@ -224,16 +243,39 @@ def _present(funnel: _Funnel, who: WhoLink) -> None:
     if not who.present:
         return
     wanted = set(who.present)
-    faces = sorted(p.taken_at for p in funnel.pictures if wanted & p.people)
-    episode = timedelta(minutes=EPISODE_WINDOW_MINUTES)
-
-    def near_a_face(picture: LibraryPicture) -> bool:
-        at = bisect.bisect_left(faces, picture.taken_at - episode)
-        return at < len(faces) and faces[at] <= picture.taken_at + episode
-
-    kept = [picture for picture in funnel.pictures if near_a_face(picture)]
+    faces = [p.taken_at for p in funnel.pictures if wanted & p.people]
+    kept = _in_episodes(funnel.pictures, faces)
     rule = "a recognised face of theirs in the picture's episode (90 minutes)"
     funnel.keep("who", kept, Reason(", ".join(who.present), rule, "they are there"))
+
+
+def _printed(funnel: _Funnel, request: str, printed: PrintedText, asker: Asker) -> bool:
+    # A word printed in a photo (a club's name on a jersey) vouches for the photo's episode: the
+    # event decides where, and the subject is then read inside it. A name no picture reads is
+    # not found, and the pool says so rather than filming any ride.
+    words, reason = printed_words(request, asker)
+    if not words:
+        return False
+    found = frozenset().union(*(printed.pictures_reading(word) for word in words))
+    anchors = [picture for picture in funnel.pictures if picture.asset_id in found]
+    funnel.anchors = {picture.asset_id for picture in anchors}
+    kept = _in_episodes(funnel.pictures, [picture.taken_at for picture in anchors])
+    outcome = f"{len(anchors)} pictures read {', '.join(words)}; their episodes are the scope"
+    funnel.keep("printed text", kept, Reason(reason.said, reason.rule, outcome))
+    return True
+
+
+def _in_episodes(
+    pictures: Sequence[LibraryPicture], moments: Sequence[datetime]
+) -> list[LibraryPicture]:
+    times = sorted(moments)
+    episode = timedelta(minutes=EPISODE_WINDOW_MINUTES)
+
+    def near(picture: LibraryPicture) -> bool:
+        at = bisect.bisect_left(times, picture.taken_at - episode)
+        return at < len(times) and times[at] <= picture.taken_at + episode
+
+    return [picture for picture in pictures if near(picture)]
 
 
 def _company(funnel: _Funnel, who: WhoLink, lexicon: Lexicon) -> None:
@@ -276,7 +318,8 @@ def _subject(
     ]
     if not phrases:
         return
-    kept = free_tier(funnel.pictures, phrases, lexicon, excluded)
+    about = {p.asset_id for p in free_tier(funnel.pictures, phrases, lexicon, excluded)}
+    kept = [p for p in funnel.pictures if p.asset_id in about or p.asset_id in funnel.anchors]
     rule = "caption grammar: a thing is the caption's subject, a scene counts anywhere"
     if subject.also:
         rule += f"; a photo may also show {', '.join(subject.also)}, which alone does not count"

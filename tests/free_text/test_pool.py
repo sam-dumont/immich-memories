@@ -350,3 +350,45 @@ def test_one_particular_place_at_home_needs_gps_and_any_of_a_kind_does_not(
 
     assert _ids(one) == {"ours"}
     assert _ids(any_kind) == {"ours", "no-gps"}
+
+
+class _Printed:
+    """Pictures whose printed text holds a word, as Immich's OCR search would answer."""
+
+    def __init__(self, **found: frozenset[str]) -> None:
+        self.found = found
+        self.asked: list[str] = []
+
+    def pictures_reading(self, text: str) -> frozenset[str]:
+        self.asked.append(text)
+        return self.found.get(text, frozenset())
+
+
+def test_printed_text_vouches_for_its_episode_and_the_subject_is_read_inside_it(
+    lexicon: Lexicon,
+) -> None:
+    view = _view(
+        _at("jersey", "2020-05-01T10:00+00:00", caption="A jersey on a hanger"),
+        _at("riding", "2020-05-01T10:30+00:00", caption="A group of cyclists riding"),
+        _at("lunch", "2020-05-01T10:45+00:00", caption="A plate of food on a table"),
+        _at("other-ride", "2020-05-04T10:00+00:00", caption="A cyclist on a road"),
+    )
+    request = "the wheelers club rides"
+    asked = _asked(
+        request, subject=Subject(heads=("cyclist",), words=("cyclist",), main=("cyclist",))
+    )
+    # WHY: stands in for Immich's OCR search, a read of the server's text index.
+    printed = _Printed(wheelers=frozenset({"jersey"}))
+    # WHY: stands in for the model server; two of three answers say the club name is printed.
+    asker = BankedAsker(_picks("wheelers"), _picks("wheelers", "club"), _picks("rides"))
+    nowhere = _Printed()
+    # WHY: as above, for a library where no picture reads the name.
+    again = BankedAsker(_picks("wheelers"), _picks("wheelers"), _picks("wheelers"))
+
+    pool = build_pool(asked, view, NOBODY, lexicon, asker, printed=printed)
+    lost = build_pool(asked, view, NOBODY, lexicon, again, printed=nowhere)
+
+    assert _ids(pool) == {"jersey", "riding"}
+    assert printed.asked == ["wheelers"]
+    assert lost.verdict == "not possible"
+    assert "wheelers" in lost.why
