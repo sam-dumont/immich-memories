@@ -375,12 +375,13 @@ class CarrierAdmission:
             motion_of=_unit_reader(self._motion_line, self._unit_by_asset),
             plays=lambda c: carries_motion(self._unit_by_asset[c.primary][1]),
             replacement_allowed=allows_replacement,
+            rules_order=self._rules_order,
         )
         self.calls["pick_calls"] += len(self._judge.calls) - calls_before
         return picked
 
-    def _repeat_pick(self, eligible, n, chosen) -> list[DepictedChoice]:
-        """A story already asked in this partition refills mechanically, never with a new call.
+    def _rules_order(self, eligible, n) -> list[DepictedChoice]:
+        """Every moment, in the order the rules take them for a grant of ``n``, asking nobody.
 
         A story with more favourites than its grant spends it across the story's whole span;
         the favourites the spread passes over stay behind it, for when one cannot be placed.
@@ -392,8 +393,12 @@ class CarrierAdmission:
         strangers = [c for c in eligible if not self.starred_choice(c) and self.of_strangers(c)]
         preferred = [*_spread(stars, n), *_spread(rest, max(0, n - len(stars)))]
         preferred.extend(_spread(strangers, max(0, n - len(preferred))))
+        return [*preferred, *(c for c in (*stars, *rest, *strangers) if c not in preferred)]
+
+    def _repeat_pick(self, eligible, n, chosen) -> list[DepictedChoice]:
+        """A story already asked in this partition refills mechanically, never with a new call."""
         local: list[DepictedChoice] = []
-        for c in (*preferred, *(c for c in (*stars, *rest, *strangers) if c not in preferred)):
+        for c in self._rules_order(eligible, n):
             if len(local) >= n or not self.compatible(c, [*chosen, *local]):
                 continue
             local.append(c)

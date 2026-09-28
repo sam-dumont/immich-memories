@@ -56,16 +56,46 @@ def test_absent_source_length_is_unknown_not_the_planned_hold(value):
 )
 def test_invalid_response_is_repaired_in_full_without_truncating_it(answer):
     judge = Answers([answer, '{"keep":["M02"]}'])
-    result = ask_moment_pick(judge, "pick", "Choose one row.", labels={"M01", "M02"}, count=1)
+    result = ask_moment_pick(
+        judge, "pick", "Choose one row.", labels={"M01", "M02"}, count=1, fallback=["M01"]
+    )
     assert result == ["M02"]
     assert [c[0] for c in judge.calls] == ["pick", "pick-repair"]
 
 
-def test_repeated_invalid_answer_fails_after_one_repair():
-    judge = Answers(['{"keep":["M01","M01"]}'] * 2)
-    with pytest.raises(ValueError, match="after bounded repair"):
-        ask_moment_pick(judge, "pick", "Choose two rows.", labels={"M01", "M02"}, count=2)
-    assert len(judge.calls) == 2
+@pytest.mark.parametrize(
+    ("answer", "count", "error"),
+    [
+        # The two answers that ended real films, each given again after its repair.
+        ("I would keep M02, it shows the whole family.", 1, "one complete JSON object"),
+        ('{"keep":[]}', 1, "exactly 1 distinct labels"),
+        ('{"keep":["M01","M01"],"unused_slots":0}', 2, "at most 2 distinct labels"),
+        ('{"keep":["M01","M09"],"unused_slots":0}', 2, "absent from the offered rows"),
+        # An overrun naming a row nobody offered leaves no order of the reader's to cut.
+        ('{"keep":["M01","M02","M09"],"unused_slots":0}', 2, "received 3 labels"),
+    ],
+)
+def test_an_answer_still_invalid_after_its_repair_takes_the_rules_pick(answer, count, error):
+    judge = Answers([answer] * 2)
+    records = []
+
+    result = ask_moment_pick(
+        judge,
+        "pick",
+        "Choose.",
+        labels={"M01", "M02", "M03"},
+        count=count,
+        allow_fewer=count > 1,
+        fallback=["M03", "M01", "M02"],
+        record=records.append,
+    )
+
+    assert result == ["M03", "M01"][:count]
+    assert [c[0] for c in judge.calls] == ["pick", "pick-repair"]
+    assert len(records) == 1
+    assert records[0]["keep"] == result
+    assert records[0]["review_stage"] == "pick-rules-fallback"
+    assert error in records[0]["reason"]
 
 
 def test_overfull_pick_repair_sees_its_rejected_list_and_exact_excess():
@@ -80,6 +110,7 @@ def test_overfull_pick_repair_sees_its_rejected_list_and_exact_excess():
         "Choose at most 46 from all 76 moments.",
         labels=offered,
         count=46,
+        fallback=sorted(offered),
         allow_fewer=True,
     )
 
@@ -173,7 +204,9 @@ _ECHOED_ROW = (
 
 def test_an_echoed_offered_row_is_read_as_its_label_without_a_repair():
     judge = Answers([json.dumps({"keep": [_ECHOED_ROW]})])
-    result = ask_moment_pick(judge, "pick", "Choose one row.", labels={"M01", "M02"}, count=1)
+    result = ask_moment_pick(
+        judge, "pick", "Choose one row.", labels={"M01", "M02"}, count=1, fallback=["M02"]
+    )
     assert result == ["M01"]
     assert [c[0] for c in judge.calls] == ["pick"]
 
@@ -181,8 +214,18 @@ def test_an_echoed_offered_row_is_read_as_its_label_without_a_repair():
 def test_an_echoed_row_whose_label_was_never_offered_is_still_refused():
     unknown = f'{{"keep": ["M99 | {_ECHOED_ROW.split(" | ", 1)[1]}"]}}'
     judge = Answers([unknown] * 2)
-    with pytest.raises(ValueError, match="absent from the offered rows"):
-        ask_moment_pick(judge, "pick", "Choose one row.", labels={"M01", "M02"}, count=1)
+    records = []
+    result = ask_moment_pick(
+        judge,
+        "pick",
+        "Choose one row.",
+        labels={"M01", "M02"},
+        count=1,
+        fallback=["M02"],
+        record=records.append,
+    )
+    assert result == ["M02"]
+    assert "absent from the offered rows" in records[0]["reason"]
 
 
 def test_the_pick_prompt_names_the_label_shape_beside_the_rows():
@@ -205,7 +248,9 @@ def test_the_pick_prompt_names_the_label_shape_beside_the_rows():
 
 def test_the_repair_question_lists_the_labels_that_were_offered():
     judge = Answers(['{"keep":["M09"]}', '{"keep":["M02"]}'])
-    ask_moment_pick(judge, "pick", "Choose one row.", labels={"M02", "M01"}, count=1)
+    ask_moment_pick(
+        judge, "pick", "Choose one row.", labels={"M02", "M01"}, count=1, fallback=["M01"]
+    )
     assert 'The offered labels are "M01", "M02".' in judge.calls[1][1]
 
 
@@ -240,11 +285,15 @@ def test_a_refused_pick_is_asked_again_on_the_next_run_instead_of_replayed(tmp_p
     def run() -> list[str]:
         judge = StructureTextJudge(config, out, judgments=annotation_store())
         return ask_moment_pick(
-            judge, "story-pick-K01", "Choose one row.", labels={"M01", "M02"}, count=1
+            judge,
+            "story-pick-K01",
+            "Choose one row.",
+            labels={"M01", "M02"},
+            count=1,
+            fallback=["M02"],
         )
 
-    with pytest.raises(ValueError, match="after bounded repair"):
-        run()
+    assert run() == ["M02"]
     assert run() == ["M01"]
     assert len(asked) == 3
 
@@ -257,9 +306,9 @@ def test_one_label_where_a_list_belongs_is_one_pick():
     """
     judge = Answers([json.dumps({"keep": "M01"})])
 
-    assert ask_moment_pick(judge, "pick", "Choose one row.", labels={"M01", "M02"}, count=1) == [
-        "M01"
-    ]
+    assert ask_moment_pick(
+        judge, "pick", "Choose one row.", labels={"M01", "M02"}, count=1, fallback=["M02"]
+    ) == ["M01"]
 
 
 def test_a_valid_shortfall_without_a_reason_survives_its_repair():
@@ -279,6 +328,7 @@ def test_a_valid_shortfall_without_a_reason_survives_its_repair():
         "question",
         labels={"M01", "M02", "M03"},
         count=3,
+        fallback=["M03", "M02", "M01"],
         allow_fewer=True,
         record=recorded.append,
     )
@@ -300,6 +350,7 @@ def test_an_overrun_pick_is_trimmed_to_the_grant_rather_than_ending_the_film():
         "Choose at most 65 of the 102 moments.",
         labels=set(offered),
         count=65,
+        fallback=offered[::-1],
         allow_fewer=True,
         record=records.append,
     )
@@ -321,6 +372,7 @@ def test_a_pick_inside_the_grant_is_recorded_whole_and_never_trimmed():
         "Choose at most three rows.",
         labels={"M01", "M02", "M03"},
         count=3,
+        fallback=["M02"],
         allow_fewer=True,
         record=records.append,
     )
@@ -330,40 +382,10 @@ def test_a_pick_inside_the_grant_is_recorded_whole_and_never_trimmed():
     assert records == [{"keep": ["M03", "M01"], "unused_slots": 1, "why_fewer": "one"}]
 
 
-def test_an_overrun_naming_a_row_nobody_offered_still_fails():
-    answer = json.dumps({"keep": ["M01", "M02", "M99"], "unused_slots": 0})
-    judge = Answers([answer, answer])
-
-    with pytest.raises(ValueError, match="after bounded repair"):
-        ask_moment_pick(
-            judge,
-            "pick",
-            "Choose at most two rows.",
-            labels={"M01", "M02"},
-            count=2,
-            allow_fewer=True,
-        )
-
-
-def test_an_overrun_that_never_parsed_still_fails():
-    judge = Answers(["M01, M02, M03 and the rest"] * 2)
-
-    with pytest.raises(ValueError, match="after bounded repair"):
-        ask_moment_pick(
-            judge,
-            "pick",
-            "Choose at most two rows.",
-            labels={"M01", "M02"},
-            count=2,
-            allow_fewer=True,
-        )
-
-
 def test_the_repair_request_names_the_label_nobody_offered():
     judge = Answers(['{"keep":["M01","M07 (near home)"]}', '{"keep":["M01","M02"]}'])
-    assert ask_moment_pick(judge, "pick", "Choose.", labels={"M01", "M02", "M03"}, count=2) == [
-        "M01",
-        "M02",
-    ]
+    assert ask_moment_pick(
+        judge, "pick", "Choose.", labels={"M01", "M02", "M03"}, count=2, fallback=["M03", "M02"]
+    ) == ["M01", "M02"]
     repair = judge.calls[1][1].removeprefix("Choose.")
     assert 'keep contains labels absent from the offered rows: ["M07 (near home)"]' in repair
