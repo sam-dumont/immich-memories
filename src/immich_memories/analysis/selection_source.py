@@ -27,6 +27,7 @@ from immich_memories.analysis.editorial_contracts import (
     SourceEvidence,
     TraceDecision,
 )
+from immich_memories.analysis.picture_copies import picture_copies, starred_keepers
 from immich_memories.analysis.selection_source_groups import (
     EditorialGroup,
     _build_moment_groups_within,
@@ -208,11 +209,20 @@ def prepare_editorial_source(
     )
     components = live_photo_component_ids(asset_of(source) for source in sources)
     generated = frozenset(request.scope.generated_asset_ids)
+    copies = picture_copies(
+        (asset_of(source) for source in sources),
+        hash_of=_preview_hash(dependencies.preview_jpeg),
+    )
+    starred = starred_keepers(copies, (asset_of(source) for source in sources))
+    sources = tuple(
+        _with_favourite(source, True) if asset_id_of(source) in starred else source
+        for source in sources
+    )
     source_decisions = tuple(
         (
             source,
             _source_exclusion_reason(
-                source, request, dependencies, excluded, components, generated
+                source, request, dependencies, excluded, components, generated, copies
             ),
         )
         for source in sources
@@ -364,6 +374,24 @@ def _required_in_pool(
         if asset_id not in in_pool:
             trace.warnings.append(f"owner required picture is not in the eligible pool: {asset_id}")
     return tuple(asset_id for asset_id in request.owner_required_asset_ids if asset_id in in_pool)
+
+
+def _preview_hash(
+    preview_jpeg: Callable[[Asset], bytes | None] | None,
+) -> Callable[[Asset], str | None] | None:
+    """A cached preview's perceptual hash; no preview, or one that cannot be read, is no hash."""
+    if preview_jpeg is None:
+        return None
+    from immich_memories.analysis.duplicate_hashing import compute_thumbnail_hash
+
+    def hash_of(asset: Asset) -> str | None:
+        try:
+            preview = preview_jpeg(asset)
+            return compute_thumbnail_hash(preview) if preview else None
+        except Exception:  # WHY: one unreadable preview only means that file is not folded
+            return None
+
+    return hash_of
 
 
 def _visual_source_from(

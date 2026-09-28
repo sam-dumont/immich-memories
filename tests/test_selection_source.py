@@ -270,9 +270,10 @@ def test_groups_conserve_candidates_in_canonical_order_with_stable_ids() -> None
     noon = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
     assets = (
         make_asset("d", file_created_at=noon + timedelta(hours=3)),
-        make_asset("b", file_created_at=noon),
+        # Two cameras' clips at one instant: different names, so two pictures.
+        make_asset("b", file_created_at=noon, original_file_name="VID_B.MOV"),
         make_asset("c", file_created_at=noon + timedelta(minutes=5)),
-        make_asset("a", file_created_at=noon),
+        make_asset("a", file_created_at=noon, original_file_name="VID_A.MOV"),
     )
     prepared = prepare_editorial_source(
         EditorialSelectionRequest(scope=SourceScope()),
@@ -1224,3 +1225,87 @@ def test_the_duration_cap_covers_clips_and_cannot_be_bypassed_by_the_owner() -> 
 
     assert prepared.candidate_ids == ()
     assert prepared.excluded_ids == ("long-clip",)
+
+
+def _camera_file(asset_id: str, *, width: int, height: int, favourite: bool = False):
+    taken = datetime(2024, 2, 7, 11, 20, 40, 702000, tzinfo=UTC)
+    picture = make_asset(
+        asset_id, file_created_at=taken, original_file_name="IMG_5213.HEIC", is_favorite=favourite
+    )
+    picture.type = AssetType.IMAGE
+    picture.width, picture.height = width, height
+    return picture
+
+
+def test_one_picture_stored_twice_reaches_the_editor_once_as_its_full_size_file() -> None:
+    """A shared album carries no originals: the same shot arrives again, downscaled.
+
+    Both files keep the camera's name and the capture instant to the millisecond, so
+    they are one picture. The film plays the file with the most pixels, and a star
+    set on the small copy belongs to the picture, so the kept file takes it.
+    """
+    original = _camera_file("original", width=3024, height=4032)
+    album_copy = _camera_file("album-copy", width=1536, height=2048, favourite=True)
+
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(scope=SourceScope()),
+        EditorialDependencies(source_fetcher=lambda _scope: (album_copy, original)),
+    )
+
+    assert prepared.candidate_ids == ("original",)
+    assert prepared.excluded_ids == ("album-copy",)
+    assert "another file of the same picture" in prepared.trace.story_of("album-copy").reason
+    assert prepared.candidates[0].favourite
+
+
+def test_pictures_received_in_one_second_under_different_names_stay_apart() -> None:
+    """A messaging app dates a received batch to the second it arrived: six photos, one
+    instant. Without the camera's own name nothing says they are one picture."""
+    batch = []
+    for index in range(3):
+        photo = make_asset(
+            f"received-{index}",
+            file_created_at=datetime(2024, 2, 3, 19, 13, 31, tzinfo=UTC),
+            original_file_name=f"{index}0a0c73-a862-4eaf-85a8-062477858ed9.jpg",
+        )
+        photo.type = AssetType.IMAGE
+        batch.append(photo)
+
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(scope=SourceScope()),
+        EditorialDependencies(source_fetcher=lambda _scope: tuple(batch)),
+    )
+
+    assert set(prepared.candidate_ids) == {"received-0", "received-1", "received-2"}
+
+
+def test_a_forwarded_copy_with_a_cached_preview_folds_into_its_picture() -> None:
+    import io
+
+    from PIL import Image
+
+    second = datetime(2024, 2, 8, 10, 38, 12, tzinfo=UTC)
+    camera = make_asset("camera", file_created_at=second, original_file_name="IMG_5293.HEIC")
+    forwarded = make_asset(
+        "forwarded",
+        file_created_at=second,
+        original_file_name="4d4a6872-c7d5-4a25-a0c9-7b1e2f3a4b5c.jpg",
+    )
+    for asset, (width, height) in ((camera, (3024, 4032)), (forwarded, (1536, 2048))):
+        asset.type = AssetType.IMAGE
+        asset.width, asset.height = width, height
+    buffer = io.BytesIO()
+    gradient = Image.linear_gradient("L").convert("RGB")
+    gradient.save(buffer, format="JPEG")
+
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(scope=SourceScope()),
+        EditorialDependencies(
+            source_fetcher=lambda _scope: (camera, forwarded),
+            # WHY: the preview cache is the boundary; both files show the same picture.
+            preview_jpeg=lambda _asset: buffer.getvalue(),
+        ),
+    )
+
+    assert prepared.candidate_ids == ("camera",)
+    assert prepared.excluded_ids == ("forwarded",)
