@@ -67,6 +67,10 @@ class EditorialIntent:
     # lifetime or a works period over years is about the span, and a year that holds her is
     # part of it however few stars it has.
     voice_per_partition: bool = False
+    # A custom film about what its owner wrote: its material was chosen for that subject, so a
+    # frame of it with nobody in it (a stripped wall, a room under construction) is still one
+    # its story can show.
+    context_without_life: bool = False
 
     def partition_for(self, when: date) -> IntentPartition | None:
         return next((part for part in self.partitions if part.covers(when)), None)
@@ -373,6 +377,7 @@ def _custom(product, spans, whole, *, brief, who):
         abstention_policy="the subject is not visible in the material: insufficient_material, not a film about something else",
         subject=subject,
         voice_per_partition=len(spans) > 1,
+        context_without_life=True,
     )
 
 
