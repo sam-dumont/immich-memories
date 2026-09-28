@@ -16,7 +16,7 @@ import yaml
 
 from experiment_data import ROOT
 
-ORDER = ["scope", "pool", "caption_read", "caption_yes", "caption_unsure", "kept"]
+ORDER = ["scope", "pool", "free", "caption_read", "caption_yes", "caption_unsure", "to_look", "kept"]
 
 
 def main(spec_path):

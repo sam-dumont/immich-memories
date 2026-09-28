@@ -1,9 +1,9 @@
 """Cheaper machinery in front of Gemma, each part calibrated per request (owner 09-28). The default
 and only path: no switch (owner ruling, "no gate, this is how we lose stuff").
 
-- Captions: grammar proposes "belongs" when a main-subject word sits before the caption's verb
-  ("A black cat is sleeping...", "A car's dashboard with..."). Gemma judges a sample of those; the
-  grammar's yeses stand only when Gemma agrees on at least AGREE of the sample.
+- Captions: a caption whose subject (before its verb) is a main-subject word belongs, free
+  ("A black cat is sleeping...", "A car's dashboard with..."): measured 92-100% precise on the
+  owner's labels where Gemma's caption check agreed with it only 69% of the time.
 - Photos: the stack's own captioner (SmolVLM-500M, ~0.7 s a photo against ~5.6 s) answers the
   same yes/no question. Both answer the first photos; SmolVLM answers the rest only when they agree
   on at least AGREE of them.
@@ -19,7 +19,6 @@ import httpx
 from experiment_data import ROOT, save
 
 AGREE = 0.9
-GRAMMAR_SAMPLE = 48
 SMOL_SAMPLE = 24
 # English grammar, not meaning: the first verb or preposition ends a caption's subject.
 SUBJECT_ENDS = re.compile(
@@ -61,9 +60,13 @@ def smol_yes(config, question, asset_id, preview):
     path = cache / (hashlib.sha256((_ENDPOINT["model"] + question + asset_id).encode()).hexdigest()[:24] + ".json")
     if path.exists():
         return json.loads(path.read_text()).get("yes")
+    try:
+        image = preview(config, asset_id)
+    except httpx.HTTPError:
+        return None  # Immich serves no preview for it (a deleted or unprocessed forward)
     body = {"model": _ENDPOINT["model"], "max_tokens": 3, "temperature": 0,
             "messages": [{"role": "user", "content": [
-                {"type": "image_url", "image_url": {"url": preview(config, asset_id)}},
+                {"type": "image_url", "image_url": {"url": image}},
                 {"type": "text", "text": question + " Answer yes or no."}]}]}
     try:
         reply = httpx.post(_ENDPOINT["base"] + "/chat/completions", json=body, timeout=120, trust_env=False).json()
@@ -76,15 +79,15 @@ def smol_yes(config, question, asset_id, preview):
 
 
 
-# ---- The look ladder: pictures only after every free check, and only where they change the film.
 
-EPISODE_GAP_S = 90 * 60  # the product's episode gap (selection_source_groups)
-PER_MOMENT = 2           # photos looked at per open moment; the engine keeps a few per moment anyway
-HEADS = ("doc_docling", "location", "venue", "activity", "people", "children")
+# ---- The light pool: the free tier first, Gemma only where a period is thin, photos only where no
+# caption can speak (owner 09-28: the free tier alone was 92-100% precise on the pet, the
+# landscapes and the birth, against the owner's labels).
 
-CONTRADICT = '''The owner asked for a film (owner_request). Small image models recorded these facts about
-each photo. Which facts mean a photo cannot belong in this film? Pick only facts that clearly
-contradict the request; none when none does. Return JSON.'''
+HEADS = ("doc_docling",)
+MIN_PER_PERIOD = 12   # enough for the engine to choose from in a period; the pet's 300 s film used ~4 a year
+READ_PER_PERIOD = 96  # captions Gemma reads at most in one thin period (four calls)
+LOOK_PER_PERIOD = 24  # photos looked at at most in one thin period
 
 
 def banked_heads(bank, asset_ids):
@@ -104,81 +107,55 @@ def banked_heads(bank, asset_ids):
     return out
 
 
-def moments(library, refs):
-    """Episode id per ref: a new moment after a 90-minute gap, as the product groups them."""
-    from datetime import datetime
-
-    ordered = sorted(refs, key=lambda i: library.rows[i]["taken_at"])
-    out, current, last = {}, -1, None
-    for i in ordered:
-        t = datetime.fromisoformat(library.rows[i]["taken_at"].replace("Z", "+00:00")).timestamp()
-        if last is None or t - last > EPISODE_GAP_S:
-            current += 1
-        out[i], last = current, t
-    return out
+def period_of(row, shape):
+    return row["taken_at"][:10] if shape == "one moment or event" else row["taken_at"][:4]
 
 
-def ask_contradictions(reader, key, brief, heads):
-    labels = sorted({f"{h}: {v}" for facts in heads.values() for h, v in facts.items()
-                     if h != "doc_docling" and v not in {"other", "undetermined"}})
-    if not labels:
-        return set()
-    answer = reader.ask("ladder_contradicts", key, CONTRADICT, {"owner_request": brief, "facts": labels},
-                        lambda a: None, 200, schema={"type": "object", "additionalProperties": False,
-                        "required": ["facts"], "properties": {"facts": {"type": "array", "maxItems": 6,
-                        "items": {"type": "string", "enum": labels}}}}) or {}
-    return {tuple(f.split(": ", 1)) for f in answer.get("facts") or []}
+def fill_pool(library, pool, core, not_this, shape, anchors, captionless, read, look=None):
+    """The free tier (captions whose subject is a main-subject word) is the pool; a thin period
+    (fewer than MIN_PER_PERIOD) gets Gemma on its other captions, core word first, then a look at
+    what no caption can settle. read(refs) -> decisions; look(refs) -> (confirmed, log).
+    Returns (kept, log, stats, stages)."""
+    from collections import defaultdict
 
-
-def ladder(look, library, plan, kept, unsure, captionless, anchors, score, heads, contradicts, rng_seed=11):
-    """Text yes, unsure captions and caption-less pictures through the cheapest checks first.
-
-    look(refs) -> (confirmed, log). Returns (kept, log, stats)."""
-    import random
-
-    stats = {}
-    aid = lambda i: library.rows[i]["asset_id"]  # noqa: E731
-    photo = lambda i: heads.get(aid(i), {}).get("doc_docling", "photograph") == "photograph"  # noqa: E731
-    ruled = lambda i: any(heads.get(aid(i), {}).get(h) == v for h, v in contradicts)  # noqa: E731
-    # 1. Free: a film is made of photographs (screenshots, logos, maps and tables out).
-    kept = [i for i in kept if photo(i)]
-    open_ = [i for i in set(unsure) | set(captionless) | set(anchors) if photo(i)]
-    stats["not_photographs"] = len(set(unsure) | set(captionless) | set(anchors)) - len(open_)
-    # 2. Free: a banked fact Gemma said contradicts the request (never applied to anchors: letters vouch).
-    before = len(open_)
-    open_ = [i for i in open_ if i in anchors or not ruled(i)]
-    stats["ruled_out_by_facts"] = before - len(open_)
-    log = []
-    # 3. The caption yeses: a sample calibrates them (and, first, SmolVLM against E4B).
-    sample = random.Random(rng_seed).sample(sorted(kept), min(24, len(kept)))
-    confirmed, sample_log = look(set(sample))
-    log += sample_log
-    agree = len(confirmed) / max(1, len(sample))
-    stats["text_yes_agreement"] = round(agree, 2)
-    moment = moments(library, set(kept) | set(open_))
-    if agree >= 0.8 or len(kept) <= len(sample):
-        kept = (set(kept) - set(sample)) | set(confirmed) if agree >= 0.8 else set(confirmed)
-    else:
-        # Not trusted: look at up to PER_MOMENT yeses per moment; a moment passes or fails together.
-        by = {}
-        for i in sorted(set(kept) - set(sample), key=lambda i: -(score or {}).get(i, 0)):
-            by.setdefault(moment[i], []).append(i)
-        probe = [i for refs in by.values() for i in refs[:PER_MOMENT]]
-        passed, probe_log = look(set(probe))
-        log += probe_log
-        good = {moment[i] for i in passed} | {moment[i] for i in confirmed}
-        kept = set(confirmed) | {i for m, refs in by.items() if m in good for i in refs}
-        stats["yes_moments_looked"] = len(by)
-    # 4. Free: a moment already in the pool needs no more looking.
-    covered = {moment[i] for i in kept}
-    waiting = [i for i in open_ if moment[i] not in covered or i in anchors]
-    stats["open_in_covered_moments"] = len(open_) - len(waiting)
-    # 5. Up to PER_MOMENT photos per open moment, best-ranked first (SmolVLM or E4B inside look()).
-    by = {}
-    for i in sorted(waiting, key=lambda i: (i not in anchors, -(score or {}).get(i, 0))):
-        by.setdefault(moment[i], []).append(i)
-    probe = [i for refs in by.values() for i in refs[:PER_MOMENT]]
-    stats["open_moments"], stats["open_looked"] = len(by), len(probe)
-    seen, open_log = look(set(probe))
-    log += open_log
-    return sorted(set(kept) | set(seen), key=lambda i: library.rows[i]["taken_at"]), log, stats
+    caption = lambda i: library.rows[i].get("caption") or ""  # noqa: E731
+    captioned = {i for i in pool if caption(i) and not library.rows[i].get("uncaptioned")}
+    free = {i for i in captioned if grammar_says_subject(caption(i), core, not_this)}
+    wanted = {_stem(w) for phrase in core for w in re.findall(r"[a-z]+", phrase.lower())}
+    periods = defaultdict(list)
+    for i in pool:
+        periods[period_of(library.rows[i], shape)].append(i)
+    said_yes, unsure, read_refs = set(), set(), set()
+    # A thin period stays thin ("short beats a guess"): Gemma's yeses there were good 1 in 5, 0 in 9
+    # and 0 in 5 on the owner's labels (09-28). It reads only when the request has almost no free
+    # tier at all (the subject is never a caption's subject: "breastfeeding").
+    for _, refs in sorted(periods.items()) if len(free) < MIN_PER_PERIOD else ():
+        have = len(free & set(refs))
+        if have >= MIN_PER_PERIOD:
+            continue
+        rest = sorted((i for i in refs if i in captioned and i not in free),
+                      key=lambda i: (not wanted & {_stem(w) for w in re.findall(r"[a-z]+", caption(i).lower())},
+                                     library.rows[i]["taken_at"]))[:READ_PER_PERIOD]
+        for start in range(0, len(rest), 24):
+            part = rest[start:start + 24]
+            decided = read(part)
+            read_refs |= set(part)
+            said_yes |= {d["ref"] for d in decided if d["decision"] == "match"}
+            unsure |= {d["ref"] for d in decided if d["decision"] == "unknown"}
+            if have + len(said_yes & set(refs)) >= MIN_PER_PERIOD:
+                break
+    to_look = set()
+    for _, refs in periods.items():
+        if len((free | said_yes) & set(refs)) >= MIN_PER_PERIOD:
+            continue
+        open_ = [i for i in refs if i in captionless or i in unsure or (i in anchors and i not in free | said_yes)]
+        to_look |= set(sorted(open_, key=lambda i: (i not in anchors, library.rows[i]["taken_at"]))[:LOOK_PER_PERIOD])
+    seen, log = look(to_look) if look and to_look else (set(), [])
+    kept = free | said_yes | set(seen)
+    stats = {"free": len(free), "periods": len(periods),
+             "thin_periods": sum(len(free & set(r)) < MIN_PER_PERIOD for r in periods.values()),
+             "captions_read": len(read_refs), "caption_yes": len(said_yes), "looked": len(to_look) if look else 0,
+             "photo_yes": len(seen)}
+    stages = {"free": free, "caption_read": read_refs, "caption_yes": said_yes, "caption_unsure": unsure,
+              "to_look": to_look}
+    return sorted(kept, key=lambda i: library.rows[i]["taken_at"]), log, stats, stages

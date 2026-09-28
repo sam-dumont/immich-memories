@@ -31,8 +31,7 @@ from immich_memories.analysis.llm_wire import openai_headers
 from immich_memories.api.models import Asset, ExifInfo
 from immich_memories.config import Config
 from model_reader import Reader
-from cascade import (AGREE, GRAMMAR_SAMPLE, SMOL_SAMPLE, ask_contradictions, banked_heads, grammar_says_subject,
-                     ladder, smol_yes)
+from cascade import AGREE, SMOL_SAMPLE, banked_heads, fill_pool, smol_yes
 from spec import AT_HOME_KM, at_home_rows, build_spec, build_subject, homes, show
 from query import companion_terms, retrieve_plan, vocabulary
 from workflow import choose_sources
@@ -603,27 +602,10 @@ Captions never know names or whose something is. Return JSON with one answer per
 COMPACT_BATCH = 24
 
 
-def choose_compact(reader, library, key, brief, refs, meaning=None, core=None, not_this=(), stats=None):
+def choose_compact(reader, library, key, brief, refs, meaning=None):
     """The cheap text check: one short enforced verdict per caption, no reasons (reasons were
-    ~90% of the time: 1.6 s per caption). Grammar's "belongs" stands for the captions it
-    names when Gemma agrees on a sample of them (cascade.py)."""
-    refs = [i for i in refs if library.rows[i]["caption"]]
-    if core:
-        named = [i for i in refs if grammar_says_subject(library.rows[i]["caption"], core, not_this)]
-        if named:
-            import random as _random
-
-            sample = sorted(_random.Random(7).sample(named, min(GRAMMAR_SAMPLE, len(named))))
-            checked = _gemma_compact(reader, library, f"{key}:grammar", brief, sample, meaning)
-            agree = sum(d["decision"] == "match" for d in checked) / len(checked)
-            if stats is not None:
-                stats.update({"grammar_named": len(named), "grammar_agreement": round(agree, 2),
-                              "grammar_trusted": agree >= AGREE})
-            if agree >= AGREE:
-                taken = set(named)
-                return checked + [{"ref": i, "decision": "match", "by": "grammar"} for i in named if i not in set(sample)] \
-                    + _gemma_compact(reader, library, key, brief, [i for i in refs if i not in taken], meaning)
-    return _gemma_compact(reader, library, key, brief, refs, meaning)
+    ~90% of the time: 1.6 s per caption)."""
+    return _gemma_compact(reader, library, key, brief, [i for i in refs if library.rows[i]["caption"]], meaning)
 
 
 def _gemma_compact(reader, library, key, brief, refs, meaning):
@@ -782,70 +764,36 @@ def main():
         return
     decisions, unsure, looked, kept = [], [], [], sorted(pool, key=lambda i: library.rows[i]["taken_at"])
     if not os.environ.get("SIMPLE"):
-        text_budget = int(os.environ.get("TEXT_BUDGET", 3000))
         # Free first: what preparation already recorded (a film is made of photographs).
         heads = banked_heads(bank, [library.rows[i]["asset_id"] for i in pool])
         pool = {i for i in pool if heads.get(library.rows[i]["asset_id"], {}).get("doc_docling", "photograph")
                 == "photograph"}
-        offered = spread_budget(library, pool, text_budget, score)
-        offered = [i for i in offered if not library.rows[i].get("uncaptioned")]
         if plan.get("firsts") and plan.get("_per_item_questions"):
-            # Being a first was decided by comparison over dates; a caption cannot show first-ness,
-            # so each first goes straight to its own photo question.
-            decisions = [{"ref": i, "decision": "unknown"} for i in sorted(pool)]
+            # Being a first was decided by comparison over dates; each first gets its own photo question.
+            if not os.environ.get("NO_LOOK"):
+                seen, looked = look(reader, config, library, plan, set(pool), anchors, score)
+                kept = sorted(seen, key=lambda i: library.rows[i]["taken_at"])
         else:
-            decisions = choose_compact(reader, library, key, brief, meaning=plan.get("meaning"),
-                                       core=spec.get("core"), not_this=spec.get("not_this") or (),
-                                       stats=plan.setdefault("cascade_captions", {}), refs=
-                                       sorted(set(offered) | {i for i in anchors & pool if not library.rows[i].get("uncaptioned")}))
-        plan["budgets"] = {"text": len(decisions)}
-        kept = sorted((d["ref"] for d in decisions if d["decision"] == "match"),
-                      key=lambda i: library.rows[i]["taken_at"])
-        unsure = [d["ref"] for d in decisions if d["decision"] == "unknown"]
-        stages |= {"caption_yes": set(kept), "caption_unsure": set(unsure),
-                   "caption_read": {d["ref"] for d in decisions}}
-        if os.environ.get("STOP_AFTER") == "captions":
-            save_stages(key, original, spec, library, stages, plan.get("cascade_captions"))
-            print(json.dumps({"brief": original, "stages": {k: len(v) for k, v in stages.items()},
-                              "grammar": plan.get("cascade_captions")}))
-            return
-        looked = []
-        if not os.environ.get("NO_LOOK") and not plan.get("firsts"):
-            # The ladder (cascade.py): free checks first, pictures last and per open moment.
-            contradicts = ask_contradictions(reader, key, brief, heads)
-            plan["ladder_contradicts"] = [": ".join(c) for c in sorted(contradicts)]
+            def read(refs):
+                return choose_compact(reader, library, key, brief, refs, meaning=plan.get("meaning"))
 
             def looker(refs):
                 return look(reader, config, library, plan, refs, anchors, score)
 
-            kept, looked, plan["ladder"] = ladder(looker, library, plan, kept, unsure, uncaptioned & pool,
-                                                  anchors & pool, score, heads, contradicts)
-        elif not os.environ.get("NO_LOOK"):
-            # Only what text could not settle: unsure captions, forwarded photos without one, and
-            # OCR anchors (whose letters, not captions, put them here).
-            seen, looked = look(reader, config, library, plan, set(unsure) | (uncaptioned & pool) | (anchors & pool),
-                                anchors, score)
-            # Calibrate the text "yes" on a random sample it produced (the cascade pattern): trusted
-            # when the photos agree; otherwise the yeses are looked at too, best-ranked first within
-            # the budget, and only what the photo confirms stays (text yes kept 36 bad cars, 09-27).
-            import random as _random
-
-            text_yes = sorted(kept)
-            sample = _random.Random(11).sample(text_yes, min(CALIBRATION, len(text_yes)))
-            confirmed, sample_log = look(reader, config, library, plan, set(sample), set(), score)
-            agree = len(confirmed) / max(1, len(sample))
-            plan["text_yes_agreement"] = round(agree, 2)
-            looked += sample_log
-            if agree >= TRUST_TEXT or len(text_yes) <= len(sample):
-                kept = (set(text_yes) - set(sample)) | set(confirmed) if agree >= TRUST_TEXT else set(confirmed)
-            else:
-                rest = [i for i in text_yes if i not in sample]
-                more, more_log = look(reader, config, library, plan, set(rest), set(), score)
-                looked += more_log
-                kept = set(confirmed) | set(more)
-            kept = sorted(set(kept) | set(seen), key=lambda i: library.rows[i]["taken_at"])
+            stop = os.environ.get("STOP_AFTER") == "captions" or os.environ.get("NO_LOOK")
+            kept, looked, plan["fill"], filled = fill_pool(
+                library, pool, spec.get("core") or [], spec.get("not_this") or (), spec["shape"],
+                anchors & pool, uncaptioned & pool, read, None if stop else looker)
+            stages |= filled
+            decisions = [{"ref": i, "decision": "match"} for i in filled["caption_yes"]]
+            unsure = sorted(filled["caption_unsure"])
+            if os.environ.get("STOP_AFTER") == "captions":
+                stages["kept"] = set(kept)
+                save_stages(key, original, spec, library, stages, plan["fill"])
+                print(json.dumps({"brief": original, "fill": plan["fill"]}))
+                return
     stages["kept"] = set(kept)
-    save_stages(key, original, spec, library, stages, plan.get("ladder"))
+    save_stages(key, original, spec, library, stages, plan.get("fill"))
     timeline = [f'{library.rows[i]["taken_at"][:10]}: {library.rows[i]["caption"][:110]}'
                 for i in kept[:: max(1, len(kept) // 24)]]
     thesis = reader.ask("translate_thesis", key, THESIS, {"owner_request": brief, "timeline": timeline},
