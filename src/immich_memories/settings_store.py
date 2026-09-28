@@ -44,6 +44,8 @@ SKIP_STORED_SETTINGS_ENV = "IMMICH_MEMORIES_SKIP_STORED_SETTINGS"
 
 # Beyond the credential fields: notification URLs embed tokens (apprise://user:pass@host).
 _SECRET_FIELD_NAMES = CREDENTIAL_FIELD_NAMES | {"api_keys", "secret", "token", "urls"}
+# Maps saved as one row whose entries carry credentials: sealed whole, like `urls`.
+_SECRET_MAPS = frozenset({"immich.accounts"})
 # Fixed on purpose: the same IMMICH_MEMORIES_SECRET_KEY must open the same rows next run.
 _HKDF_SALT = b"immich-memories/settings/v1"
 
@@ -58,7 +60,7 @@ class SecretKeyError(RuntimeError):
 
 def is_secret_key(key: str) -> bool:
     """Whether a runtime key path holds a credential and is kept encrypted."""
-    return key.rsplit(".", 1)[-1] in _SECRET_FIELD_NAMES
+    return key in _SECRET_MAPS or key.rsplit(".", 1)[-1] in _SECRET_FIELD_NAMES
 
 
 def is_bootstrap_key(key: str) -> bool:

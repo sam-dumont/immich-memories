@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click
 from rich.markup import escape
@@ -12,6 +13,9 @@ from rich.table import Table
 
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
 from immich_memories.config import Config
+
+if TYPE_CHECKING:
+    from immich_memories.preflight import CheckResult
 
 
 def _config_file(ctx: click.Context) -> Path:
@@ -32,6 +36,18 @@ def _prompt_for_api_key(existing: str) -> str:
         console.print("[dim]An API key is already configured — press enter to keep it.[/dim]")
     entered = click.prompt("API key", default="", hide_input=True, show_default=False)
     return entered or existing
+
+
+def _print_connection_check(result: CheckResult) -> None:
+    from immich_memories.preflight import CheckStatus
+
+    prefix = "" if result.name == "Immich" else f"{result.name}: "
+    details = f": {result.details}" if result.details else ""
+    line = f"{prefix}{result.message}{details}"
+    if result.status is CheckStatus.OK:
+        print_success(line)
+    else:
+        print_error(line)
 
 
 def _save(ctx: click.Context, changes: dict[str, str]) -> bool:
@@ -148,16 +164,19 @@ def register_config_commands(main: click.Group) -> None:
     @config.command("test")
     @click.pass_context
     def config_test(ctx: click.Context) -> None:
-        """Check the Immich connection and the API version it resolves (read-only)."""
-        from immich_memories.preflight import CheckStatus, check_immich
+        """Check the Immich connection and the API version it resolves (read-only).
 
-        result = check_immich(ctx.obj["config"])
-        details = f": {result.details}" if result.details else ""
-        if result.status is CheckStatus.OK:
-            print_success(f"{result.message}{details}")
-            return
-        print_error(f"{result.message}{details}")
-        ctx.exit(1)
+        Every extra account under immich.accounts is checked too, one line each.
+        """
+        from immich_memories.preflight import CheckStatus, check_immich
+        from immich_memories.preflight_accounts import check_extra_accounts
+
+        config = ctx.obj["config"]
+        results = [check_immich(config), *check_extra_accounts(config)]
+        for result in results:
+            _print_connection_check(result)
+        if any(result.status is not CheckStatus.OK for result in results):
+            ctx.exit(1)
 
     @config.command("show")
     @click.argument("prefixes", nargs=-1)
@@ -222,7 +241,7 @@ def register_config_commands(main: click.Group) -> None:
         """Run preflight checks to validate all provider connections.
 
         Checks:
-        - Immich server connection and API key
+        - Immich server connection and API key, and each extra account
         - LLM availability (Ollama or OpenAI-compatible)
         - Title rendering (GPU or PIL fallback)
         - Pinned DINOv2 encoder export (presence and digest)

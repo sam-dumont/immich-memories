@@ -220,6 +220,26 @@ immich-memories config test
 
 Read-only: it reports the connection and the resolved contract, and does nothing else.
 
+## A second Immich account
+
+Two people on one Immich server each upload to their own account. The second one goes under
+`immich.accounts`, by name, next to the primary account (which stays the only upload target):
+
+```yaml
+immich:
+  url: "https://photos.example.com"
+  api_key: "${IMMICH_API_KEY}"
+  accounts:
+    partner:
+      url: "https://photos.example.com"
+      api_key: "${PARTNER_IMMICH_API_KEY}"
+```
+
+For now this is a connection and nothing more: `config test` and `preflight` check it, one line per
+account, and films still read the primary account only. Reading both libraries into one film lands
+in later releases ([#1500](https://github.com/sam-dumont/immich-video-memory-generator/issues/1500)).
+Name rules, secrets and env variables: [extra accounts](../reference/config-reference.md#extra-accounts).
+
 ## Environment variable substitution
 
 These fields expand `${VAR_NAME}` at load time:

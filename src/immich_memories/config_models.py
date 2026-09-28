@@ -67,8 +67,14 @@ def _warn_about_bare_references(value: str) -> None:
             )
 
 
-class ImmichConfig(BaseModel):
-    """Immich server configuration."""
+PRIMARY_ACCOUNT = "primary"
+# Lowercase with single underscores: an env override lowercases the name it reads, and a
+# double underscore would split it into two levels (IMMICH_MEMORIES_IMMICH__ACCOUNTS__<NAME>__URL).
+_ACCOUNT_NAME = re.compile(r"[a-z0-9]+(?:_[a-z0-9]+)*")
+
+
+class ImmichConnection(BaseModel):
+    """Where one Immich account is and the key that reads it."""
 
     url: str = Field(default="", description="Immich server URL")
     api_key: str = Field(default="", description="Immich API key")
@@ -86,6 +92,30 @@ class ImmichConfig(BaseModel):
         if isinstance(v, str):
             return expand_env_vars(v)
         return v
+
+
+class ImmichConfig(ImmichConnection):
+    """The primary Immich account (read and upload target), plus named extra accounts.
+
+    An extra account is only read by a run that selects it by name; the name is what a
+    person alias bound to that account records.
+    """
+
+    accounts: dict[str, ImmichConnection] = Field(
+        default_factory=dict,
+        description="Extra Immich accounts by name, read only when a run selects them",
+    )
+
+    @field_validator("accounts")
+    @classmethod
+    def _account_names(cls, value: dict[str, ImmichConnection]) -> dict[str, ImmichConnection]:
+        for name in value:
+            if name == PRIMARY_ACCOUNT or not _ACCOUNT_NAME.fullmatch(name):
+                raise ValueError(
+                    f"account name {name!r} must be lowercase letters and digits joined by "
+                    f"single underscores, and not {PRIMARY_ACCOUNT!r}"
+                )
+        return value
 
 
 class DatabaseConfig(BaseModel):
