@@ -19,9 +19,16 @@ def write_progress(path: Path | None, record: dict) -> None:
 
 
 def progress_writer(path: Path | None):
+    # Imported once, as the command starts: a timing module that cannot load fails the render
+    # before any work, never inside the engine's first progress report.
+    from immich_memories.tracking.timing import active
+
     def report(phase: str, fraction: float, message: str) -> None:
+        collected = active()
+        estimate = collected.diagnostics.get("progress", {}) if collected else {}
         write_progress(
-            path, {"done": False, "phase": phase, "fraction": fraction, "message": message}
+            path,
+            {"done": False, "phase": phase, "fraction": fraction, "message": message, **estimate},
         )
 
     return report if path is not None else None

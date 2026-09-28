@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 18:09+0200\n"
+"POT-Creation-Date: 2026-09-28 18:13+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -22,6 +22,11 @@ msgstr "En månadsgenomgång har redan slutförts den här månaden."
 #: web/routes/settings/+page.svelte:91
 msgid "API Key"
 msgstr "API-nyckel"
+
+#: web/lib/JobPanel.svelte:44
+#, python-brace-format
+msgid "About {amount} left"
+msgstr "Ungefär {amount} kvar"
 
 #: web/routes/create/+page.svelte:432
 msgid "Accept forwarded and downloaded media"
@@ -52,8 +57,8 @@ msgstr "Lägg till: {include} · Ta bort: {exclude}"
 msgid "Added for a moment the catalogue records as notable."
 msgstr "Tillagd för ett ögonblick som katalogen noterar som anmärkningsvärt."
 
-#: web/routes/runs/[run_id]/+page.svelte:256 web/routes/runs/[run_id]/+page.svelte:258
-#: web/routes/runs/[run_id]/+page.svelte:261
+#: web/routes/runs/[run_id]/+page.svelte:258 web/routes/runs/[run_id]/+page.svelte:260
+#: web/routes/runs/[run_id]/+page.svelte:263
 msgid "Added from the pool"
 msgstr "Tillagd från poolen"
 
@@ -132,11 +137,11 @@ msgstr "Automatiseringen körs redan. Öppna Körningar för att följa den."
 msgid "Autumn"
 msgstr "Höst"
 
-#: web/routes/runs/[run_id]/+page.svelte:248
+#: web/routes/runs/[run_id]/+page.svelte:250
 msgid "Back to pictures"
 msgstr "Tillbaka till bilderna"
 
-#: web/routes/runs/[run_id]/+page.svelte:124
+#: web/routes/runs/[run_id]/+page.svelte:125
 msgid "Back to runs"
 msgstr "Tillbaka till körningar"
 
@@ -164,7 +169,7 @@ msgstr "Bläddra i hela poolen"
 msgid "Caches"
 msgstr "Cachar"
 
-#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:174
+#: web/lib/JobPanel.svelte:90 web/routes/runs/[run_id]/pool/+page.svelte:174
 msgid "Cancel"
 msgstr "Avbryt"
 
@@ -180,7 +185,7 @@ msgstr "Visa plats på klippen"
 msgid "Catalogued days"
 msgstr "Katalogiserade dagar"
 
-#: web/routes/runs/[run_id]/+page.svelte:272
+#: web/routes/runs/[run_id]/+page.svelte:274
 #, python-brace-format
 msgid "Changes: {count}"
 msgstr "Ändringar: {count}"
@@ -222,6 +227,10 @@ msgstr "Ta bort den här spärren?"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{count} poster rensades från {cache}."
 
+#: web/lib/RunReport.svelte:61
+msgid "Clipboard unavailable. Select the report below and copy it."
+msgstr "Urklipp är inte tillgängligt. Markera rapporten nedan och kopiera den."
+
 #: web/routes/create/+page.svelte:437
 msgid "Command"
 msgstr "Kommando"
@@ -244,13 +253,17 @@ msgstr "Ansluten som: {name}"
 msgid "Considered by the model"
 msgstr "Övervägd av modellen"
 
-#: web/lib/JobPanel.svelte:85
+#: web/lib/JobPanel.svelte:88 web/lib/RunReport.svelte:73
 msgid "Copied"
 msgstr "Kopierad"
 
-#: web/lib/JobPanel.svelte:85
+#: web/lib/JobPanel.svelte:88
 msgid "Copy as CLI command"
 msgstr "Kopiera som CLI-kommando"
+
+#: web/lib/RunReport.svelte:73 web/lib/RunReport.svelte:75
+msgid "Copy report"
+msgstr "Kopiera rapport"
 
 #: web/lib/RenderPanel.svelte:145
 msgid "Crossfade"
@@ -268,7 +281,7 @@ msgstr "Egen period"
 msgid "Cut"
 msgstr "Klipp"
 
-#: web/routes/runs/[run_id]/+page.svelte:209
+#: web/routes/runs/[run_id]/+page.svelte:211
 msgid "Cut contact sheet"
 msgstr "Kontaktkarta för klippningen"
 
@@ -296,7 +309,7 @@ msgstr "Beskriver bilderna"
 msgid "Detecting trips from GPS data..."
 msgstr "Identifierar resor från GPS-data…"
 
-#: web/routes/runs/[run_id]/+page.svelte:281
+#: web/routes/runs/[run_id]/+page.svelte:283
 msgid "Discard changes"
 msgstr "Kasta ändringar"
 
@@ -305,7 +318,7 @@ msgstr "Kasta ändringar"
 msgid "Discovery failed: {error}"
 msgstr "Sökningen misslyckades: {error}"
 
-#: web/routes/runs/[run_id]/+page.svelte:324
+#: web/routes/runs/[run_id]/+page.svelte:326
 msgid "Download child output"
 msgstr "Ladda ned tillhörande resultat"
 
@@ -442,7 +455,7 @@ msgstr "Immich-anslutning"
 msgid "Immich Server URL"
 msgstr "Immich-serverns URL"
 
-#: web/routes/runs/[run_id]/+page.svelte:314
+#: web/routes/runs/[run_id]/+page.svelte:316
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Överföring till Immich: {value}"
@@ -463,6 +476,10 @@ msgstr "I filmen"
 msgid "Include Live Photos"
 msgstr "Ta med Live Photos"
 
+#: web/lib/RunReport.svelte:70
+msgid "Include captions of flagged photos"
+msgstr "Ta med bildtexter för flaggade foton"
+
 #: web/routes/create/+page.svelte:429
 msgid "Include photos"
 msgstr "Ta med foton"
@@ -471,7 +488,7 @@ msgstr "Ta med foton"
 msgid "Interface language"
 msgstr "Gränssnittets språk"
 
-#: web/lib/JobPanel.svelte:60
+#: web/lib/JobPanel.svelte:63
 msgid "It did not finish."
 msgstr "Blev inte klar."
 
@@ -603,7 +620,7 @@ msgstr ""
 "Inga katalogiserade dagar ännu. Kör `immich-memories discover-days` för att hitta dem, eller "
 "filma valfri dag utifrån dess datum."
 
-#: web/routes/runs/[run_id]/+page.svelte:326
+#: web/routes/runs/[run_id]/+page.svelte:328
 msgid "No child output was retained for this run."
 msgstr "Inget tillhörande resultat sparades för den här körningen."
 
@@ -627,7 +644,7 @@ msgstr "Inga namngivna personer i Immich ännu."
 msgid "No outcome recorded."
 msgstr "Inget resultat sparat."
 
-#: web/routes/runs/[run_id]/+page.svelte:239
+#: web/routes/runs/[run_id]/+page.svelte:241
 msgid "No pictures match this filter."
 msgstr "Inga bilder matchar det här filtret."
 
@@ -639,7 +656,7 @@ msgstr "Ingen motivering sparad för den här bilden."
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "Inga körningar matchar den här vyn. Skapa ett minne från Minne eller Förslag."
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:306
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:308
 msgid "No saved cut is available for this run."
 msgstr "Ingen sparad klippning finns för den här körningen."
 
@@ -693,7 +710,7 @@ msgstr "Ett visst datum"
 msgid "Only with (optional)"
 msgstr "Bara med (valfritt)"
 
-#: web/routes/runs/[run_id]/+page.svelte:299
+#: web/routes/runs/[run_id]/+page.svelte:301
 msgid "Open"
 msgstr "Öppna"
 
@@ -705,7 +722,7 @@ msgstr "Öppna körning"
 msgid "Open the film run"
 msgstr "Öppna filmkörningen"
 
-#: web/routes/runs/[run_id]/+page.svelte:174
+#: web/routes/runs/[run_id]/+page.svelte:176
 msgid "Order and timecodes from the saved cut."
 msgstr "Ordning och tidskoder från den sparade klippningen."
 
@@ -755,7 +772,7 @@ msgstr "Fotolängd (sekunder)"
 msgid "Picture review"
 msgstr "Bildgranskning"
 
-#: web/lib/JobPanel.svelte:71
+#: web/lib/JobPanel.svelte:74
 msgid "Pictures just read"
 msgstr "Nyss lästa bilder"
 
@@ -763,7 +780,7 @@ msgstr "Nyss lästa bilder"
 msgid "Pictures with"
 msgstr "Bilder med"
 
-#: web/routes/runs/[run_id]/+page.svelte:134 web/routes/runs/[run_id]/+page.svelte:188
+#: web/routes/runs/[run_id]/+page.svelte:135 web/routes/runs/[run_id]/+page.svelte:190
 #: web/routes/settings/people/+page.svelte:118 web/routes/suggestions/+page.svelte:106
 #, python-brace-format
 msgid "Pictures: {count}"
@@ -773,7 +790,7 @@ msgstr "Bilder: {count}"
 msgid "Please enter both URL and API key"
 msgstr "Ange både URL och API-nyckel"
 
-#: web/routes/runs/[run_id]/+page.svelte:175 web/routes/runs/[run_id]/pool/+page.svelte:99
+#: web/routes/runs/[run_id]/+page.svelte:177 web/routes/runs/[run_id]/pool/+page.svelte:99
 #: web/routes/runs/[run_id]/pool/+page.svelte:106 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Pool"
 msgstr "Tillgängliga medier"
@@ -798,7 +815,7 @@ msgstr "Förhandsgranskning med dessa val"
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Sekretessläge: gör alla bilder suddiga och döljer namn"
 
-#: web/lib/JobPanel.svelte:54 web/lib/JobPanel.svelte:66
+#: web/lib/JobPanel.svelte:57 web/lib/JobPanel.svelte:69
 msgid "Progress"
 msgstr "Förlopp"
 
@@ -854,7 +871,7 @@ msgstr "Ta bort ur det här klippet"
 msgid "Remove this relationship"
 msgstr "Ta bort den här relationen"
 
-#: web/routes/runs/[run_id]/+page.svelte:222
+#: web/routes/runs/[run_id]/+page.svelte:224
 msgid "Removed"
 msgstr "Borttagen"
 
@@ -866,6 +883,10 @@ msgstr "Rendera"
 msgid "Replaced a picture the model doubted."
 msgstr "Ersatte en bild som modellen tvivlade på."
 
+#: web/lib/RunReport.svelte:72
+msgid "Report preview"
+msgstr "Förhandsvisning av rapporten"
+
 #: web/routes/settings/people/+page.svelte:83
 msgid "Rescan the library"
 msgstr "Läs igenom biblioteket igen"
@@ -874,12 +895,16 @@ msgstr "Läs igenom biblioteket igen"
 msgid "Resolution"
 msgstr "Upplösning"
 
-#: web/lib/RenderPanel.svelte:139 web/routes/runs/[run_id]/+page.svelte:296
+#: web/lib/RunReport.svelte:68
+msgid "Review the report, then copy it. Nothing is sent automatically."
+msgstr "Granska rapporten och kopiera den sedan. Inget skickas automatiskt."
+
+#: web/lib/RenderPanel.svelte:139 web/routes/runs/[run_id]/+page.svelte:298
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "Revision {number}"
 
-#: web/routes/runs/[run_id]/+page.svelte:292
+#: web/routes/runs/[run_id]/+page.svelte:294
 msgid "Revisions"
 msgstr "Revisioner"
 
@@ -887,7 +912,7 @@ msgstr "Revisioner"
 msgid "Role (suggestions; type your own)"
 msgstr "Roll (förslag eller egen text)"
 
-#: web/routes/runs/[run_id]/+page.svelte:312
+#: web/routes/runs/[run_id]/+page.svelte:314
 msgid "Run details"
 msgstr "Detaljer om körningen"
 
@@ -901,7 +926,7 @@ msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "Körs på servern: {phase}. Fortsätter om du lämnar sidan."
 
 #: web/routes/+layout.svelte:23 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
-#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:118
+#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:119
 msgid "Runs"
 msgstr "Körningar"
 
@@ -917,7 +942,7 @@ msgstr "Spara"
 msgid "Save Config"
 msgstr "Spara konfiguration"
 
-#: web/routes/runs/[run_id]/+page.svelte:283
+#: web/routes/runs/[run_id]/+page.svelte:285
 msgid "Save revision"
 msgstr "Spara revision"
 
@@ -925,7 +950,7 @@ msgstr "Spara revision"
 msgid "Saved - type a new key to replace it"
 msgstr "Sparad. Skriv en ny nyckel för att ersätta den"
 
-#: web/routes/runs/[run_id]/+page.svelte:286
+#: web/routes/runs/[run_id]/+page.svelte:288
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "Sparad som revision {number}."
@@ -943,7 +968,7 @@ msgstr "Sparad här, men {name} kan inte dekryptera den: standardvärdet använd
 msgid "Saved to the database"
 msgstr "Sparad i databasen"
 
-#: web/routes/runs/[run_id]/+page.svelte:313
+#: web/routes/runs/[run_id]/+page.svelte:315
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Sparad till: {output_path}"
@@ -992,7 +1017,7 @@ msgstr "Inställningar"
 msgid "Shareable"
 msgstr "Delbar"
 
-#: web/routes/runs/[run_id]/+page.svelte:164
+#: web/routes/runs/[run_id]/+page.svelte:166
 msgid "Show"
 msgstr "Visa"
 
@@ -1041,7 +1066,7 @@ msgstr "Kvadrat"
 msgid "Start here"
 msgstr "Börja här"
 
-#: web/lib/JobPanel.svelte:57
+#: web/lib/JobPanel.svelte:60
 msgid "Starting"
 msgstr "Startar"
 
@@ -1053,11 +1078,11 @@ msgstr "Status"
 msgid "Still"
 msgstr "Stillbild"
 
-#: web/lib/JobPanel.svelte:59
+#: web/lib/JobPanel.svelte:62
 msgid "Stopped."
 msgstr "Avbruten."
 
-#: web/routes/runs/[run_id]/+page.svelte:181
+#: web/routes/runs/[run_id]/+page.svelte:183
 msgid "Stories"
 msgstr "Berättelser"
 
@@ -1082,11 +1107,11 @@ msgstr "Sommar"
 msgid "Supporting"
 msgstr "Sekundär"
 
-#: web/routes/runs/[run_id]/+page.svelte:224
+#: web/routes/runs/[run_id]/+page.svelte:226
 msgid "Swapped"
 msgstr "Utbytt"
 
-#: web/routes/runs/[run_id]/+page.svelte:262
+#: web/routes/runs/[run_id]/+page.svelte:264
 msgid "Take out"
 msgstr "Ta bort"
 
@@ -1114,7 +1139,7 @@ msgstr "Den valda klippningen"
 msgid "The cut could not start."
 msgstr "Klippningen kunde inte startas."
 
-#: web/lib/JobPanel.svelte:58
+#: web/lib/JobPanel.svelte:61
 msgid "The cut is ready."
 msgstr "Klippningen är klar."
 
@@ -1131,11 +1156,11 @@ msgstr ""
 "inställning som satts av någon av de två första visas gråtonad: ändra den där etiketten "
 "anger."
 
-#: web/routes/runs/[run_id]/+page.svelte:142
+#: web/routes/runs/[run_id]/+page.svelte:143
 msgid "The film"
 msgstr "Filmen"
 
-#: web/lib/JobPanel.svelte:58
+#: web/lib/JobPanel.svelte:61
 msgid "The film is ready."
 msgstr "Filmen är klar."
 
@@ -1170,7 +1195,9 @@ msgstr "Bilden den ersatte"
 msgid ""
 "The place is Immich's. With geocoding on (Settings, network), it names the district in the "
 "film's language, through the public Nominatim or network.geocoding_url."
-msgstr "Platsen är Immichs. Med geokodning på (Inställningar, nätverk) anger den stadsdelen på filmens språk, via den publika Nominatim eller network.geocoding_url."
+msgstr ""
+"Platsen är Immichs. Med geokodning på (Inställningar, nätverk) anger den stadsdelen på "
+"filmens språk, via den publika Nominatim eller network.geocoding_url."
 
 #: web/lib/RenderPanel.svelte:204
 msgid "The previewed track"
@@ -1184,7 +1211,11 @@ msgstr "Det föregående automatiska minnet använde den här kategorin."
 msgid "The render could not start."
 msgstr "Renderingen kunde inte startas."
 
-#: web/routes/runs/[run_id]/+page.svelte:62 web/routes/runs/[run_id]/pool/+page.svelte:81
+#: web/lib/RunReport.svelte:48
+msgid "The report could not be loaded."
+msgstr "Rapporten kunde inte läsas in."
+
+#: web/routes/runs/[run_id]/+page.svelte:63 web/routes/runs/[run_id]/pool/+page.svelte:81
 msgid "The revision could not be saved."
 msgstr "Revisionen kunde inte sparas."
 
@@ -1204,7 +1235,7 @@ msgstr "Inställningarna kunde inte sparas."
 msgid "These people appear in the last two people memories."
 msgstr "De här personerna förekommer i de två senaste personminnena."
 
-#: web/routes/runs/[run_id]/+page.svelte:257
+#: web/routes/runs/[run_id]/+page.svelte:259
 msgid "They play in the order they were taken, prepared like the rest of the cut."
 msgstr "De spelas upp i den ordning de togs, förberedda som resten av klippet."
 
@@ -1260,7 +1291,7 @@ msgstr "Försök igen"
 msgid "Turn your photo library into video memories"
 msgstr "Gör ditt fotobibliotek till videominnen"
 
-#: web/routes/runs/[run_id]/+page.svelte:280 web/routes/runs/[run_id]/pool/+page.svelte:139
+#: web/routes/runs/[run_id]/+page.svelte:282 web/routes/runs/[run_id]/pool/+page.svelte:139
 msgid "Undo"
 msgstr "Ångra"
 
@@ -1289,8 +1320,8 @@ msgstr "Använd den här bilden i stället"
 msgid "Username"
 msgstr "Användarnamn"
 
-#: web/lib/ShotInspector.svelte:76 web/routes/runs/[run_id]/+page.svelte:198
-#: web/routes/runs/[run_id]/+page.svelte:228 web/routes/runs/[run_id]/pool/+page.svelte:127
+#: web/lib/ShotInspector.svelte:76 web/routes/runs/[run_id]/+page.svelte:200
+#: web/routes/runs/[run_id]/+page.svelte:230 web/routes/runs/[run_id]/pool/+page.svelte:127
 msgid "Video"
 msgstr "Video"
 
@@ -1298,12 +1329,12 @@ msgstr "Video"
 msgid "Video cache"
 msgstr "Videocache"
 
-#: web/routes/runs/[run_id]/+page.svelte:135
+#: web/routes/runs/[run_id]/+page.svelte:136
 #, python-brace-format
 msgid "Videos: {count}"
 msgstr "Videor: {count}"
 
-#: web/routes/runs/[run_id]/+page.svelte:156
+#: web/routes/runs/[run_id]/+page.svelte:158
 msgid "View"
 msgstr "Visa"
 
@@ -1384,7 +1415,7 @@ msgstr "Du kommer att omdirigeras till din identitetsleverantör"
 msgid "You'll never use this picture."
 msgstr "Den här bilden kommer aldrig att användas."
 
-#: web/routes/runs/[run_id]/+page.svelte:137
+#: web/routes/runs/[run_id]/+page.svelte:138
 #, python-brace-format
 msgid "about {film} of film"
 msgstr "ungefär {film} film"
@@ -1401,12 +1432,12 @@ msgstr "någon av dem"
 msgid "starting"
 msgstr "startar"
 
-#: web/routes/runs/[run_id]/+page.svelte:136
+#: web/routes/runs/[run_id]/+page.svelte:137
 #, python-brace-format
 msgid "{content} of pictures and video"
 msgstr "{content} bilder och video"
 
-#: web/routes/runs/[run_id]/+page.svelte:275
+#: web/routes/runs/[run_id]/+page.svelte:277
 #, python-brace-format
 msgid "{content}: the film grows past its {budget} to hold them"
 msgstr "{content}: filmen växer förbi sin {budget} för att få plats med dem"
@@ -1421,7 +1452,7 @@ msgstr "{date_range_start} till {date_range_end}"
 msgid "{days} days · {count} pictures"
 msgstr "{days} dagar · {count} bilder"
 
-#: web/lib/JobPanel.svelte:68
+#: web/lib/JobPanel.svelte:71
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done} av {total}"
@@ -1436,7 +1467,7 @@ msgstr "{seconds} s i bild"
 msgid "{years} years ago"
 msgstr "för {years} år sedan"
 
-#: web/lib/JobPanel.svelte:43
+#: web/lib/JobPanel.svelte:46
 #, python-brace-format
 msgid "~{amount} left in this stage"
 msgstr "~{amount} kvar i detta steg"

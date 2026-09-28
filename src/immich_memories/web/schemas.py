@@ -212,6 +212,22 @@ class Job(BaseModel):
     result_run_id: str | None = None
 
 
+class JobProgress(BaseModel):
+    label: str = ""
+    # The stage's own name ("previews", "public_heads"), for the page to word; `label` is the
+    # engine's sentence.
+    stage_name: str = ""
+    phase: str = ""
+    done: int | None = None
+    total: int | None = None
+    # The whole job's share done when a finished run measured it, else the stage's own.
+    fraction: float | None = None
+    # Only ever a whole-job estimate; a first cut has none and shows the stage's instead.
+    remaining_seconds: float | None = None
+    stage_remaining_seconds: float | None = None
+    recent_asset_ids: list[str] = []
+
+
 class SessionView(BaseModel):
     auth_enabled: bool
     provider: str | None
@@ -250,20 +266,6 @@ class ConnectionEntry(BaseModel):
 
 class Greeting(BaseModel):
     user: str
-
-
-class JobProgress(BaseModel):
-    label: str = ""
-    # The stage's own name ("previews", "public_heads"), for the page to word; `label` is the
-    # engine's sentence.
-    stage_name: str = ""
-    phase: str = ""
-    done: int | None = None
-    total: int | None = None
-    fraction: float | None = None
-    # The stage's own estimate, measured on this stage's work only (StageClock).
-    remaining_seconds: float | None = None
-    recent_asset_ids: list[str] = []
 
 
 class SettingRow(BaseModel):

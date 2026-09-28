@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 18:09+0200\n"
+"POT-Creation-Date: 2026-09-28 18:13+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -23,6 +23,11 @@ msgstr "Ежемесячная проверка в этом месяце уже 
 #: web/routes/settings/+page.svelte:91
 msgid "API Key"
 msgstr "Ключ API"
+
+#: web/lib/JobPanel.svelte:44
+#, python-brace-format
+msgid "About {amount} left"
+msgstr "Осталось около {amount}"
 
 #: web/routes/create/+page.svelte:432
 msgid "Accept forwarded and downloaded media"
@@ -53,8 +58,8 @@ msgstr "Добавить: {include} · Убрать: {exclude}"
 msgid "Added for a moment the catalogue records as notable."
 msgstr "Добавлено ради момента, который каталог отмечает как особый."
 
-#: web/routes/runs/[run_id]/+page.svelte:256 web/routes/runs/[run_id]/+page.svelte:258
-#: web/routes/runs/[run_id]/+page.svelte:261
+#: web/routes/runs/[run_id]/+page.svelte:258 web/routes/runs/[run_id]/+page.svelte:260
+#: web/routes/runs/[run_id]/+page.svelte:263
 msgid "Added from the pool"
 msgstr "Добавлено из набора"
 
@@ -133,11 +138,11 @@ msgstr "Автоматизация уже выполняется. Откройт
 msgid "Autumn"
 msgstr "Осень"
 
-#: web/routes/runs/[run_id]/+page.svelte:248
+#: web/routes/runs/[run_id]/+page.svelte:250
 msgid "Back to pictures"
 msgstr "Назад к изображениям"
 
-#: web/routes/runs/[run_id]/+page.svelte:124
+#: web/routes/runs/[run_id]/+page.svelte:125
 msgid "Back to runs"
 msgstr "Назад к запускам"
 
@@ -165,7 +170,7 @@ msgstr "Смотреть весь набор"
 msgid "Caches"
 msgstr "Кэши"
 
-#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:174
+#: web/lib/JobPanel.svelte:90 web/routes/runs/[run_id]/pool/+page.svelte:174
 msgid "Cancel"
 msgstr "Отмена"
 
@@ -181,7 +186,7 @@ msgstr "Показывать место на клипах"
 msgid "Catalogued days"
 msgstr "Каталогизированные дни"
 
-#: web/routes/runs/[run_id]/+page.svelte:272
+#: web/routes/runs/[run_id]/+page.svelte:274
 #, python-brace-format
 msgid "Changes: {count}"
 msgstr "Изменения: {count}"
@@ -223,6 +228,10 @@ msgstr "Снять это ограничение?"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "Удалено {count} записей из {cache}."
 
+#: web/lib/RunReport.svelte:61
+msgid "Clipboard unavailable. Select the report below and copy it."
+msgstr "Буфер обмена недоступен. Выделите отчёт ниже и скопируйте его."
+
 #: web/routes/create/+page.svelte:437
 msgid "Command"
 msgstr "Команда"
@@ -245,13 +254,17 @@ msgstr "Подключено как: {name}"
 msgid "Considered by the model"
 msgstr "Рассмотрено моделью"
 
-#: web/lib/JobPanel.svelte:85
+#: web/lib/JobPanel.svelte:88 web/lib/RunReport.svelte:73
 msgid "Copied"
 msgstr "Скопировано"
 
-#: web/lib/JobPanel.svelte:85
+#: web/lib/JobPanel.svelte:88
 msgid "Copy as CLI command"
 msgstr "Копировать как команду CLI"
+
+#: web/lib/RunReport.svelte:73 web/lib/RunReport.svelte:75
+msgid "Copy report"
+msgstr "Скопировать отчёт"
 
 #: web/lib/RenderPanel.svelte:145
 msgid "Crossfade"
@@ -269,7 +282,7 @@ msgstr "Свой период"
 msgid "Cut"
 msgstr "Смонтировать"
 
-#: web/routes/runs/[run_id]/+page.svelte:209
+#: web/routes/runs/[run_id]/+page.svelte:211
 msgid "Cut contact sheet"
 msgstr "Контактный лист монтажа"
 
@@ -297,7 +310,7 @@ msgstr "Описание изображений"
 msgid "Detecting trips from GPS data..."
 msgstr "Определение поездок по данным GPS…"
 
-#: web/routes/runs/[run_id]/+page.svelte:281
+#: web/routes/runs/[run_id]/+page.svelte:283
 msgid "Discard changes"
 msgstr "Отменить изменения"
 
@@ -306,7 +319,7 @@ msgstr "Отменить изменения"
 msgid "Discovery failed: {error}"
 msgstr "Поиск не удался: {error}"
 
-#: web/routes/runs/[run_id]/+page.svelte:324
+#: web/routes/runs/[run_id]/+page.svelte:326
 msgid "Download child output"
 msgstr "Скачать связанный результат"
 
@@ -443,7 +456,7 @@ msgstr "Подключение к Immich"
 msgid "Immich Server URL"
 msgstr "URL сервера Immich"
 
-#: web/routes/runs/[run_id]/+page.svelte:314
+#: web/routes/runs/[run_id]/+page.svelte:316
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Передача в Immich: {value}"
@@ -464,6 +477,10 @@ msgstr "В фильме"
 msgid "Include Live Photos"
 msgstr "Включить Live Photos"
 
+#: web/lib/RunReport.svelte:70
+msgid "Include captions of flagged photos"
+msgstr "Включить подписи отмеченных фото"
+
 #: web/routes/create/+page.svelte:429
 msgid "Include photos"
 msgstr "Включить фотографии"
@@ -472,7 +489,7 @@ msgstr "Включить фотографии"
 msgid "Interface language"
 msgstr "Язык интерфейса"
 
-#: web/lib/JobPanel.svelte:60
+#: web/lib/JobPanel.svelte:63
 msgid "It did not finish."
 msgstr "Не завершилось."
 
@@ -604,7 +621,7 @@ msgstr ""
 "Пока нет каталогизированных дней. Запустите `immich-memories discover-days`, чтобы найти их, "
 "или снимите фильм о любом дне по его дате."
 
-#: web/routes/runs/[run_id]/+page.svelte:326
+#: web/routes/runs/[run_id]/+page.svelte:328
 msgid "No child output was retained for this run."
 msgstr "Для этого запуска не сохранён связанный результат."
 
@@ -628,7 +645,7 @@ msgstr "В Immich пока нет людей с именами."
 msgid "No outcome recorded."
 msgstr "Результат не записан."
 
-#: web/routes/runs/[run_id]/+page.svelte:239
+#: web/routes/runs/[run_id]/+page.svelte:241
 msgid "No pictures match this filter."
 msgstr "Нет изображений, соответствующих этому фильтру."
 
@@ -642,7 +659,7 @@ msgstr ""
 "Нет запусков для этого представления. Создайте воспоминание через «Воспоминание» или "
 "«Предложения»."
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:306
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:308
 msgid "No saved cut is available for this run."
 msgstr "Для этого запуска нет сохранённого монтажа."
 
@@ -696,7 +713,7 @@ msgstr "В определённую дату"
 msgid "Only with (optional)"
 msgstr "Только с (необязательно)"
 
-#: web/routes/runs/[run_id]/+page.svelte:299
+#: web/routes/runs/[run_id]/+page.svelte:301
 msgid "Open"
 msgstr "Открыть"
 
@@ -708,7 +725,7 @@ msgstr "Открыть запуск"
 msgid "Open the film run"
 msgstr "Открыть запуск фильма"
 
-#: web/routes/runs/[run_id]/+page.svelte:174
+#: web/routes/runs/[run_id]/+page.svelte:176
 msgid "Order and timecodes from the saved cut."
 msgstr "Порядок и таймкоды сохранённого монтажа."
 
@@ -758,7 +775,7 @@ msgstr "Длительность фото (секунды)"
 msgid "Picture review"
 msgstr "Просмотр изображения"
 
-#: web/lib/JobPanel.svelte:71
+#: web/lib/JobPanel.svelte:74
 msgid "Pictures just read"
 msgstr "Только что прочитанные изображения"
 
@@ -766,7 +783,7 @@ msgstr "Только что прочитанные изображения"
 msgid "Pictures with"
 msgstr "Изображения с"
 
-#: web/routes/runs/[run_id]/+page.svelte:134 web/routes/runs/[run_id]/+page.svelte:188
+#: web/routes/runs/[run_id]/+page.svelte:135 web/routes/runs/[run_id]/+page.svelte:190
 #: web/routes/settings/people/+page.svelte:118 web/routes/suggestions/+page.svelte:106
 #, python-brace-format
 msgid "Pictures: {count}"
@@ -776,7 +793,7 @@ msgstr "Изображения: {count}"
 msgid "Please enter both URL and API key"
 msgstr "Введите URL и ключ API"
 
-#: web/routes/runs/[run_id]/+page.svelte:175 web/routes/runs/[run_id]/pool/+page.svelte:99
+#: web/routes/runs/[run_id]/+page.svelte:177 web/routes/runs/[run_id]/pool/+page.svelte:99
 #: web/routes/runs/[run_id]/pool/+page.svelte:106 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Pool"
 msgstr "Доступные медиа"
@@ -801,7 +818,7 @@ msgstr "Превью с этим выбором"
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Режим приватности: размывает каждое изображение и скрывает имена"
 
-#: web/lib/JobPanel.svelte:54 web/lib/JobPanel.svelte:66
+#: web/lib/JobPanel.svelte:57 web/lib/JobPanel.svelte:69
 msgid "Progress"
 msgstr "Прогресс"
 
@@ -857,7 +874,7 @@ msgstr "Убрать из монтажа"
 msgid "Remove this relationship"
 msgstr "Удалить эту связь"
 
-#: web/routes/runs/[run_id]/+page.svelte:222
+#: web/routes/runs/[run_id]/+page.svelte:224
 msgid "Removed"
 msgstr "Убрано"
 
@@ -869,6 +886,10 @@ msgstr "Рендер"
 msgid "Replaced a picture the model doubted."
 msgstr "Заменило изображение, в котором модель сомневалась."
 
+#: web/lib/RunReport.svelte:72
+msgid "Report preview"
+msgstr "Предпросмотр отчёта"
+
 #: web/routes/settings/people/+page.svelte:83
 msgid "Rescan the library"
 msgstr "Просканировать библиотеку снова"
@@ -877,12 +898,16 @@ msgstr "Просканировать библиотеку снова"
 msgid "Resolution"
 msgstr "Разрешение"
 
-#: web/lib/RenderPanel.svelte:139 web/routes/runs/[run_id]/+page.svelte:296
+#: web/lib/RunReport.svelte:68
+msgid "Review the report, then copy it. Nothing is sent automatically."
+msgstr "Проверьте отчёт, затем скопируйте его. Ничего не отправляется автоматически."
+
+#: web/lib/RenderPanel.svelte:139 web/routes/runs/[run_id]/+page.svelte:298
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "Редакция {number}"
 
-#: web/routes/runs/[run_id]/+page.svelte:292
+#: web/routes/runs/[run_id]/+page.svelte:294
 msgid "Revisions"
 msgstr "Редакции"
 
@@ -890,7 +915,7 @@ msgstr "Редакции"
 msgid "Role (suggestions; type your own)"
 msgstr "Роль (подсказки или свой текст)"
 
-#: web/routes/runs/[run_id]/+page.svelte:312
+#: web/routes/runs/[run_id]/+page.svelte:314
 msgid "Run details"
 msgstr "Подробности запуска"
 
@@ -904,7 +929,7 @@ msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "Выполняется на сервере: {phase}. Продолжится, даже если вы уйдёте со страницы."
 
 #: web/routes/+layout.svelte:23 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
-#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:118
+#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:119
 msgid "Runs"
 msgstr "Запуски"
 
@@ -920,7 +945,7 @@ msgstr "Сохранить"
 msgid "Save Config"
 msgstr "Сохранить конфигурацию"
 
-#: web/routes/runs/[run_id]/+page.svelte:283
+#: web/routes/runs/[run_id]/+page.svelte:285
 msgid "Save revision"
 msgstr "Сохранить редакцию"
 
@@ -928,7 +953,7 @@ msgstr "Сохранить редакцию"
 msgid "Saved - type a new key to replace it"
 msgstr "Сохранено. Введите новый ключ, чтобы заменить его"
 
-#: web/routes/runs/[run_id]/+page.svelte:286
+#: web/routes/runs/[run_id]/+page.svelte:288
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "Сохранено как редакция {number}."
@@ -946,7 +971,7 @@ msgstr "Сохранено здесь, но {name} не может это рас
 msgid "Saved to the database"
 msgstr "Сохранено в базе данных"
 
-#: web/routes/runs/[run_id]/+page.svelte:313
+#: web/routes/runs/[run_id]/+page.svelte:315
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Сохранено в: {output_path}"
@@ -995,7 +1020,7 @@ msgstr "Настройки"
 msgid "Shareable"
 msgstr "Для публикации"
 
-#: web/routes/runs/[run_id]/+page.svelte:164
+#: web/routes/runs/[run_id]/+page.svelte:166
 msgid "Show"
 msgstr "Показать"
 
@@ -1044,7 +1069,7 @@ msgstr "Квадрат"
 msgid "Start here"
 msgstr "Начать здесь"
 
-#: web/lib/JobPanel.svelte:57
+#: web/lib/JobPanel.svelte:60
 msgid "Starting"
 msgstr "Запуск"
 
@@ -1056,11 +1081,11 @@ msgstr "Состояние"
 msgid "Still"
 msgstr "Статичное изображение"
 
-#: web/lib/JobPanel.svelte:59
+#: web/lib/JobPanel.svelte:62
 msgid "Stopped."
 msgstr "Остановлено."
 
-#: web/routes/runs/[run_id]/+page.svelte:181
+#: web/routes/runs/[run_id]/+page.svelte:183
 msgid "Stories"
 msgstr "Истории"
 
@@ -1085,11 +1110,11 @@ msgstr "Лето"
 msgid "Supporting"
 msgstr "Второстепенная"
 
-#: web/routes/runs/[run_id]/+page.svelte:224
+#: web/routes/runs/[run_id]/+page.svelte:226
 msgid "Swapped"
 msgstr "Заменено"
 
-#: web/routes/runs/[run_id]/+page.svelte:262
+#: web/routes/runs/[run_id]/+page.svelte:264
 msgid "Take out"
 msgstr "Убрать"
 
@@ -1117,7 +1142,7 @@ msgstr "Монтаж в выбранном виде"
 msgid "The cut could not start."
 msgstr "Не удалось запустить монтаж."
 
-#: web/lib/JobPanel.svelte:58
+#: web/lib/JobPanel.svelte:61
 msgid "The cut is ready."
 msgstr "Монтаж готов."
 
@@ -1134,11 +1159,11 @@ msgstr ""
 "умолчанию. Настройка, заданная любым из первых двух, показана серым: измените её там, где "
 "указано в подписи."
 
-#: web/routes/runs/[run_id]/+page.svelte:142
+#: web/routes/runs/[run_id]/+page.svelte:143
 msgid "The film"
 msgstr "Фильм"
 
-#: web/lib/JobPanel.svelte:58
+#: web/lib/JobPanel.svelte:61
 msgid "The film is ready."
 msgstr "Фильм готов."
 
@@ -1170,7 +1195,9 @@ msgstr "Изображение, которое оно заменило"
 msgid ""
 "The place is Immich's. With geocoding on (Settings, network), it names the district in the "
 "film's language, through the public Nominatim or network.geocoding_url."
-msgstr "Место берётся из Immich. При включённом геокодировании (Настройки, сеть) оно называет район на языке фильма через публичный Nominatim или network.geocoding_url."
+msgstr ""
+"Место берётся из Immich. При включённом геокодировании (Настройки, сеть) оно называет район "
+"на языке фильма через публичный Nominatim или network.geocoding_url."
 
 #: web/lib/RenderPanel.svelte:204
 msgid "The previewed track"
@@ -1184,7 +1211,11 @@ msgstr "Предыдущее автоматическое воспоминани
 msgid "The render could not start."
 msgstr "Не удалось запустить рендер."
 
-#: web/routes/runs/[run_id]/+page.svelte:62 web/routes/runs/[run_id]/pool/+page.svelte:81
+#: web/lib/RunReport.svelte:48
+msgid "The report could not be loaded."
+msgstr "Не удалось загрузить отчёт."
+
+#: web/routes/runs/[run_id]/+page.svelte:63 web/routes/runs/[run_id]/pool/+page.svelte:81
 msgid "The revision could not be saved."
 msgstr "Не удалось сохранить редакцию."
 
@@ -1204,7 +1235,7 @@ msgstr "Не удалось сохранить настройки."
 msgid "These people appear in the last two people memories."
 msgstr "Эти люди встречаются в последних двух воспоминаниях о людях."
 
-#: web/routes/runs/[run_id]/+page.svelte:257
+#: web/routes/runs/[run_id]/+page.svelte:259
 msgid "They play in the order they were taken, prepared like the rest of the cut."
 msgstr ""
 "Они воспроизводятся в том порядке, в котором были сняты, подготовленные так же, как остальной"
@@ -1262,7 +1293,7 @@ msgstr "Повторить"
 msgid "Turn your photo library into video memories"
 msgstr "Превратите вашу фототеку в видеовоспоминания"
 
-#: web/routes/runs/[run_id]/+page.svelte:280 web/routes/runs/[run_id]/pool/+page.svelte:139
+#: web/routes/runs/[run_id]/+page.svelte:282 web/routes/runs/[run_id]/pool/+page.svelte:139
 msgid "Undo"
 msgstr "Отменить решение"
 
@@ -1293,8 +1324,8 @@ msgstr "Использовать это изображение"
 msgid "Username"
 msgstr "Имя пользователя"
 
-#: web/lib/ShotInspector.svelte:76 web/routes/runs/[run_id]/+page.svelte:198
-#: web/routes/runs/[run_id]/+page.svelte:228 web/routes/runs/[run_id]/pool/+page.svelte:127
+#: web/lib/ShotInspector.svelte:76 web/routes/runs/[run_id]/+page.svelte:200
+#: web/routes/runs/[run_id]/+page.svelte:230 web/routes/runs/[run_id]/pool/+page.svelte:127
 msgid "Video"
 msgstr "Видео"
 
@@ -1302,12 +1333,12 @@ msgstr "Видео"
 msgid "Video cache"
 msgstr "Кэш видео"
 
-#: web/routes/runs/[run_id]/+page.svelte:135
+#: web/routes/runs/[run_id]/+page.svelte:136
 #, python-brace-format
 msgid "Videos: {count}"
 msgstr "Видео: {count}"
 
-#: web/routes/runs/[run_id]/+page.svelte:156
+#: web/routes/runs/[run_id]/+page.svelte:158
 msgid "View"
 msgstr "Просмотр"
 
@@ -1388,7 +1419,7 @@ msgstr "Вы будете перенаправлены к вашему пров�
 msgid "You'll never use this picture."
 msgstr "Это изображение никогда не будет использовано."
 
-#: web/routes/runs/[run_id]/+page.svelte:137
+#: web/routes/runs/[run_id]/+page.svelte:138
 #, python-brace-format
 msgid "about {film} of film"
 msgstr "около {film} фильма"
@@ -1405,12 +1436,12 @@ msgstr "любой из них"
 msgid "starting"
 msgstr "запуск"
 
-#: web/routes/runs/[run_id]/+page.svelte:136
+#: web/routes/runs/[run_id]/+page.svelte:137
 #, python-brace-format
 msgid "{content} of pictures and video"
 msgstr "{content} изображений и видео"
 
-#: web/routes/runs/[run_id]/+page.svelte:275
+#: web/routes/runs/[run_id]/+page.svelte:277
 #, python-brace-format
 msgid "{content}: the film grows past its {budget} to hold them"
 msgstr "{content}: фильм превышает свой {budget}, чтобы вместить их"
@@ -1425,7 +1456,7 @@ msgstr "{date_range_start} — {date_range_end}"
 msgid "{days} days · {count} pictures"
 msgstr "{days} дней · {count} изображений"
 
-#: web/lib/JobPanel.svelte:68
+#: web/lib/JobPanel.svelte:71
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done} из {total}"
@@ -1440,7 +1471,7 @@ msgstr "{seconds} с на экране"
 msgid "{years} years ago"
 msgstr "{years} лет назад"
 
-#: web/lib/JobPanel.svelte:43
+#: web/lib/JobPanel.svelte:46
 #, python-brace-format
 msgid "~{amount} left in this stage"
 msgstr "~{amount} осталось на этом этапе"

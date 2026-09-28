@@ -20,6 +20,7 @@ from immich_memories.web.schemas import PhaseTiming, RunDetail, RunPage, RunSumm
 
 router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
 
+
 # Enough pictures for a card's strip; the whole cut is one request away.
 _PREVIEW_SHOTS = 8
 

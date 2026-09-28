@@ -65,3 +65,16 @@ def test_a_job_s_progress_file_is_never_read_as_a_job(tmp_path):
     assert [listed.id for listed in runner.jobs()] == [job.id]
     # The next job starts: a render's progress beside the records once blocked every later job.
     runner.start("cut", [sys.executable, "-c", "pass"])
+
+
+def test_a_finished_child_whose_result_cannot_be_read_ends_failed_not_running(tmp_path):
+    runner = JobRunner(tmp_path)
+
+    def unreadable(_job):
+        raise ValueError("half-written progress file")
+
+    job = runner.start("render", [sys.executable, "-c", "pass"], on_finish=unreadable)
+
+    finished = _wait(runner, job.id, timeout=5)
+    assert finished.status == "failed" and finished.exit_code == 0
+    assert runner.active() is None

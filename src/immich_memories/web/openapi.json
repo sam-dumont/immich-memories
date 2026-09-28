@@ -888,6 +888,17 @@
             "title": "Stage Name",
             "type": "string"
           },
+          "stage_remaining_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage Remaining Seconds"
+          },
           "total": {
             "anyOf": [
               {
@@ -1538,6 +1549,24 @@
           }
         },
         "title": "RenderOptions",
+        "type": "object"
+      },
+      "ReportResponse": {
+        "properties": {
+          "has_flagged_photos": {
+            "default": false,
+            "title": "Has Flagged Photos",
+            "type": "boolean"
+          },
+          "markdown": {
+            "title": "Markdown",
+            "type": "string"
+          }
+        },
+        "required": [
+          "markdown"
+        ],
+        "title": "ReportResponse",
         "type": "object"
       },
       "Revision": {
@@ -4428,6 +4457,59 @@
         "summary": "Start Render",
         "tags": [
           "jobs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/report": {
+      "get": {
+        "description": "Preview exactly what Copy report puts on the clipboard. Nothing is sent.",
+        "operationId": "read_report_api_v1_runs__run_id__report_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_flagged_captions",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Flagged Captions",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Report",
+        "tags": [
+          "reports"
         ]
       }
     },

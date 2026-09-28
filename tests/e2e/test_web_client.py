@@ -20,6 +20,104 @@ from tests.e2e.web_flow import contact_sheet, render, the_film
 pytestmark = pytest.mark.e2e
 
 
+def test_report_is_previewed_before_copying(page, launch_app_url, launch_workspace):
+    _seed(launch_workspace)
+    report = "## Immich Memories run report\n\n<details><summary>Logs</summary>redacted</details>"
+    # WHY: this branch lands with #1428's builder; this test owns the browser/clipboard boundary.
+    page.route(
+        "**/api/v1/runs/20240701_web_fail/report",
+        lambda route: route.fulfill(json={"markdown": report}),
+    )
+    page.context.grant_permissions(["clipboard-read", "clipboard-write"])
+    page.goto(f"{launch_app_url}/app/runs/20240701_web_fail")
+    page.get_by_role("button", name="Copy report", exact=True).click()
+    expect(page.get_by_label("Report preview")).to_have_text(report)
+    page.get_by_role("button", name="Copy report", exact=True).click()
+    expect(page.get_by_role("button", name="Copied", exact=True)).to_be_visible()
+    assert page.evaluate("navigator.clipboard.readText()") == report
+
+
+def test_flagged_captions_are_opt_in_and_previewed(page, launch_app_url, launch_workspace):
+    _seed(launch_workspace)
+    requests = []
+
+    def report_response(route):
+        requests.append(route.request.url)
+        included = "include_flagged_captions=true" in route.request.url
+        route.fulfill(
+            json={
+                "markdown": "flagged caption" if included else "no captions",
+                "has_flagged_photos": True,
+            }
+        )
+
+    # WHY: exercise explicit caption consent without requiring the separate free-text producer.
+    page.route("**/api/v1/runs/20240701_web_fail/report*", report_response)
+    page.goto(f"{launch_app_url}/app/runs/20240701_web_fail")
+    page.get_by_role("button", name="Copy report", exact=True).click()
+    expect(page.get_by_label("Report preview")).to_have_text("no captions")
+    page.get_by_label("Include captions of flagged photos").check()
+    expect(page.get_by_label("Report preview")).to_have_text("flagged caption")
+    assert len(requests) == 2
+
+
+def test_a_caption_tick_that_cannot_refresh_goes_back_to_the_report_shown(
+    page, launch_app_url, launch_workspace
+):
+    _seed(launch_workspace)
+
+    def report_response(route):
+        if "include_flagged_captions=true" in route.request.url:
+            route.fulfill(status=500, json={"detail": "boom"})
+        else:
+            route.fulfill(json={"markdown": "no captions", "has_flagged_photos": True})
+
+    # WHY: a refresh failing is the server's side; this test owns what the page then shows.
+    page.route("**/api/v1/runs/20240701_web_fail/report*", report_response)
+    page.goto(f"{launch_app_url}/app/runs/20240701_web_fail")
+    page.get_by_role("button", name="Copy report", exact=True).click()
+    tick = page.get_by_label("Include captions of flagged photos")
+    tick.check()
+
+    expect(page.get_by_text("The report could not be loaded.")).to_be_visible()
+    expect(tick).not_to_be_checked()
+    expect(page.get_by_label("Report preview")).to_have_text("no captions")
+
+
+def test_a_first_cut_shows_its_stage_s_share_and_time_left(page, launch_app_url):
+    job = {
+        "id": "first-cut",
+        "kind": "cut",
+        "argv": ["immich-memories", "generate"],
+        "status": "running",
+        "started_at": datetime.now(UTC).timestamp(),
+        "command": "immich-memories generate --no-render",
+        "progress": {
+            "label": "Preparing previews",
+            "phase": "analysis",
+            "done": 60,
+            "total": 120,
+            # No finished run measured the whole cut: the server sends the stage's own numbers.
+            "fraction": 0.5,
+            "remaining_seconds": None,
+            "stage_remaining_seconds": 42.0,
+            "recent_asset_ids": [],
+        },
+    }
+    event = f"data: {json.dumps(job)}\n\n"
+    # WHY: a cold library's first cut takes minutes; this test owns how its progress is drawn.
+    page.route("**/api/v1/jobs/active", lambda route: route.fulfill(json=job))
+    page.route(
+        "**/api/v1/jobs/first-cut/events",
+        lambda route: route.fulfill(body=event, content_type="text/event-stream"),
+    )
+    page.goto(f"{launch_app_url}/app/create")
+
+    panel = page.get_by_role("region", name="Progress")
+    expect(panel.get_by_role("progressbar")).to_have_attribute("aria-valuetext", "50%")
+    expect(panel.get_by_text("~42s left in this stage")).to_be_visible()
+
+
 def _seed(workspace) -> None:
     db = RunDatabase(workspace.store())
     if db.get_run("20240630_web_cut"):

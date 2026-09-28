@@ -48,7 +48,8 @@ class JobRunner:
 
     def __init__(self, root: Path) -> None:
         self._dir = Path(root) / "web-jobs"
-        self._lock = threading.Lock()
+        # Reentrant: start() holds it while active() reads records through get().
+        self._lock = threading.RLock()
         self._processes: dict[str, subprocess.Popen] = {}
 
     def _record(self, job_id: str) -> Path:
@@ -72,8 +73,14 @@ class JobRunner:
             return None
         job = Job.model_validate(json.loads(path.read_text()))
         if job.status == "running" and job_id not in self._processes and not _alive(job.pid):
-            job = job.model_copy(update={"status": "interrupted", "finished_at": time.time()})
-            self._save(job)
+            with self._lock:
+                # Read again under the lock: the follower may have just saved how it ended.
+                job = Job.model_validate(json.loads(path.read_text()))
+                if job.status == "running":
+                    job = job.model_copy(
+                        update={"status": "interrupted", "finished_at": time.time()}
+                    )
+                    self._save(job)
         return job
 
     def jobs(self) -> list[Job]:
@@ -137,19 +144,33 @@ class JobRunner:
         self, job_id: str, process: subprocess.Popen, on_finish: Callable[[Job], Job] | None
     ) -> None:
         code = process.wait()
-        job = self.get(job_id)
-        if job is None:
-            return
-        status: JobStatus = (
-            "cancelled" if job.cancel_requested else "succeeded" if code == 0 else "failed"
-        )
-        job = job.model_copy(
-            update={"status": status, "exit_code": code, "finished_at": time.time()}
-        )
-        if on_finish is not None and status == "succeeded":
-            job = on_finish(job)
-        self._save(job)
-        self._processes.pop(job_id, None)
+        try:
+            job = self.get(job_id)
+            if job is None:
+                return
+            status: JobStatus = (
+                "cancelled" if job.cancel_requested else "succeeded" if code == 0 else "failed"
+            )
+            job = job.model_copy(
+                update={"status": status, "exit_code": code, "finished_at": time.time()}
+            )
+            if on_finish is not None and status == "succeeded":
+                job = self._finish(job, on_finish)
+            with self._lock:
+                self._save(job)
+                self._processes.pop(job_id, None)
+        finally:
+            # Out of the live set whatever happened above: get() then reads a record still
+            # saying "running" as interrupted, instead of a page watching it forever.
+            self._processes.pop(job_id, None)
+
+    def _finish(self, job: Job, on_finish: Callable[[Job], Job]) -> Job:
+        try:
+            return on_finish(job)
+        except Exception as error:  # noqa: BLE001 - any failure reading the result fails the job
+            with self._log(job.id).open("a") as log:
+                log.write(f"\nThe job finished but its result could not be read: {error}\n")
+            return job.model_copy(update={"status": "failed"})
 
     def cancel(self, job_id: str) -> Job | None:
         """Stop the child: SIGTERM to its whole process group.

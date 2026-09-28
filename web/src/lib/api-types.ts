@@ -702,6 +702,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/runs/{run_id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Report
+         * @description Preview exactly what Copy report puts on the clipboard. Nothing is sent.
+         */
+        get: operations["read_report_api_v1_runs__run_id__report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/runs/{run_id}/revisions": {
         parameters: {
             query?: never;
@@ -1176,6 +1196,8 @@ export interface components {
              * @default
              */
             stage_name: string;
+            /** Stage Remaining Seconds */
+            stage_remaining_seconds?: number | null;
             /** Total */
             total?: number | null;
         };
@@ -1410,6 +1432,16 @@ export interface components {
              * @default false
              */
             upload_to_immich: boolean;
+        };
+        /** ReportResponse */
+        ReportResponse: {
+            /**
+             * Has Flagged Photos
+             * @default false
+             */
+            has_flagged_photos: boolean;
+            /** Markdown */
+            markdown: string;
         };
         /** Revision */
         Revision: {
@@ -2994,6 +3026,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_report_api_v1_runs__run_id__report_get: {
+        parameters: {
+            query?: {
+                include_flagged_captions?: boolean;
+            };
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportResponse"];
+                };
             };
             /** @description Validation Error */
             422: {

@@ -124,3 +124,28 @@ def test_a_progress_file_in_a_folder_not_made_yet_is_still_written(tmp_path):
     write_progress(target, {"done": True})
 
     assert json.loads(target.read_text())["done"] is True
+
+
+def test_a_render_that_cannot_measure_its_progress_fails_before_rendering(tmp_path, monkeypatch):
+    import sys
+
+    config = _config(tmp_path)
+    save_run(config, RUN)
+    rendered: list[dict] = []
+    # A missing module fails its import: the render must stop there, not on its first report.
+    monkeypatch.setitem(sys.modules, "immich_memories.tracking.timing", None)
+
+    with (
+        patch("immich_memories.cli.init_config_dir"),
+        patch("immich_memories.cli.get_config", return_value=config),
+        patch("immich_memories.config.get_config", return_value=config),
+        # WHY: render_saved_cut writes the film; here it only records that it was reached.
+        patch("immich_memories.cli.runs_render.render_saved_cut", lambda **kw: rendered.append(kw)),
+    ):
+        result = CliRunner().invoke(
+            main, ["runs", "render", RUN, "--progress-file", str(tmp_path / "progress.json")]
+        )
+
+    assert result.exit_code != 0
+    assert isinstance(result.exception, ImportError)
+    assert rendered == []

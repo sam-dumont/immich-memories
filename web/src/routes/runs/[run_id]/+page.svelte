@@ -3,6 +3,7 @@
   import { mdiArrowLeft, mdiContentSaveOutline, mdiDownload, mdiPlay, mdiUndo } from '@mdi/js';
   import { api, ApiError, thumbnail, type CutShot } from '$lib/api';
   import RenderPanel from '$lib/RenderPanel.svelte';
+  import RunReport from '$lib/RunReport.svelte';
   import type { components } from '$lib/api-types';
   import { CutEditor } from '$lib/cut-edits.svelte';
   import { locale, t } from '$lib/i18n.svelte';
@@ -147,6 +148,7 @@
     {#each run.warnings as warning, index (index)}
       <Alert color="warning" size="small">{warning}</Alert>
     {/each}
+    <RunReport runId={run.run_id} />
   </div>
 
   {#if cut}

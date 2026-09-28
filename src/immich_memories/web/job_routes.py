@@ -126,14 +126,22 @@ def _cut_progress(config: Config, job: Job) -> JobProgress:
     if record is None:
         return JobProgress(label="Preparing the pool")
     live = live_progress_of(record)
+    if live is None:
+        return JobProgress(
+            label=str(record.get("stage") or ""),
+            stage_name=str((record.get("progress") or {}).get("label") or ""),
+            recent_asset_ids=list(recent_pictures_of(record)),
+        )
+    # A cold library has no finished run to measure the whole cut from: the stage carries the bar.
     return JobProgress(
         label=str(record.get("stage") or ""),
-        stage_name=live.label if live else str((record.get("progress") or {}).get("label") or ""),
-        phase=live.phase if live else "",
-        done=live.done if live else None,
-        total=live.total if live else None,
-        fraction=live.fraction if live else None,
-        remaining_seconds=live.remaining_seconds if live and live.remaining_label else None,
+        stage_name=live.label,
+        phase=live.phase,
+        done=live.done,
+        total=live.total,
+        fraction=live.fraction if live.total_fraction is None else live.total_fraction,
+        remaining_seconds=live.total_remaining_seconds,
+        stage_remaining_seconds=live.remaining_seconds if live.remaining_label else None,
         recent_asset_ids=list(recent_pictures_of(record)),
     )
 
@@ -148,6 +156,7 @@ def _render_progress(job: Job) -> JobProgress:
         label=str(record.get("message") or "Preparing the render"),
         phase=str(record.get("phase") or ""),
         fraction=record.get("fraction"),
+        remaining_seconds=record.get("remaining_seconds"),
     )
 
 

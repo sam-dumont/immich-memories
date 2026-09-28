@@ -37,10 +37,13 @@
       : job.progress.label,
   );
   const clockText = (seconds: number) => (seconds < 60 ? `${Math.ceil(seconds)}s` : `${Math.ceil(seconds / 60)} min`);
-  // Rounded on purpose, as the terminal rounds it: a stage estimate, not a countdown.
+  // The whole job's estimate when a finished run measured it; a first cut only has its stage's.
+  // Rounded on purpose, as the terminal rounds it: an estimate, not a countdown.
   const remaining = $derived.by(() => {
-    const seconds = job.progress.remaining_seconds;
-    return seconds == null ? '' : t('~{amount} left in this stage', { amount: clockText(seconds) });
+    const total = job.progress.remaining_seconds;
+    if (total != null) return t('About {amount} left', { amount: clockText(total) });
+    const stage = job.progress.stage_remaining_seconds;
+    return stage == null ? '' : t('~{amount} left in this stage', { amount: clockText(stage) });
   });
 
 
@@ -65,7 +68,7 @@
   {#if job.status === 'running'}
     <ProgressBar value={fraction ?? 0} valueLabel={fraction == null ? heading : `${Math.round(fraction * 100)}%`} aria-label={t('Progress')} />
     <p class="text-sm text-gray-600 tabular-nums dark:text-gray-400">
-      {#if job.progress.total}{t('{done} of {total}', { done: job.progress.done ?? 0, total: job.progress.total })}{#if remaining} · {remaining}{/if}{/if}
+      {#if job.progress.total}{t('{done} of {total}', { done: job.progress.done ?? 0, total: job.progress.total })}{#if remaining} · {/if}{/if}{remaining}
     </p>
     {#if job.progress.recent_asset_ids.length}
       <ul class="flex gap-2 overflow-hidden" aria-label={t('Pictures just read')}>
