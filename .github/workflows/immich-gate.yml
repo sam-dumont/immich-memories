@@ -10,8 +10,10 @@ name: Immich Gate
 # synthesized paging pictures; never anyone's photos.
 #
 # Each Immich version runs twice: the app's store on SQLite, and on PostgreSQL
-# (the postgres:16 service below, pinned like the test-store job's). The same
-# gate tests read back what the runs left in whichever store they had.
+# (a throwaway postgres:16 the Makefile starts, pinned like the test-store
+# job's). Not a job service: the containerd step below restarts the Docker
+# daemon, which kills any service container started before it. The same gate
+# tests read back what the runs left in whichever store they had.
 
 on:
   pull_request:
@@ -40,20 +42,6 @@ jobs:
       matrix:
         immich: [v2, v3]
         database: [sqlite, postgresql]
-    # Started on every leg (services cannot follow the matrix); only the
-    # postgresql legs are given its URL.
-    services:
-      postgres:
-        image: docker.io/library/postgres:16@sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54
-        env:
-          POSTGRES_PASSWORD: store-test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -h 127.0.0.1"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
@@ -131,8 +119,6 @@ jobs:
 
       - name: Real-Immich gate (${{ matrix.immich }}, ${{ matrix.database }})
         run: make test-immich-gate IMMICH_GATE_VERSION=${{ matrix.immich }} IMMICH_GATE_DATABASE=${{ matrix.database }}
-        env:
-          IMMICH_GATE_DATABASE_URL: ${{ matrix.database == 'postgresql' && 'postgresql://postgres:store-test@127.0.0.1:5432/postgres' || '' }}
 
       # Saved after the tests so a cold run's tests do not wait on docker save.
       # A failed save only costs the next run a pull; it never fails the gate.

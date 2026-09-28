@@ -54,9 +54,10 @@ does, on every PR, for both majors:
 | generate | `generate --memory-type monthly_highlights --no-render` on the rules tier picks a cut from the fixture month |
 | store | a `people scan` and a `pictures never-use` read back from the store, a second `prepare` of the month changes no banked fact, and a rendered film is in the run history with its phases |
 
-Every test runs twice per major: the app's store on SQLite, and on PostgreSQL. CI gives the
-PostgreSQL legs a `postgres:16` service; locally `IMMICH_GATE_DATABASE=postgresql` starts a
-throwaway one. The runs get the store through `IMMICH_MEMORIES_DATABASE_URL`, the same variable a
+Every test runs twice per major: the app's store on SQLite, and on PostgreSQL.
+`IMMICH_GATE_DATABASE=postgresql` starts a throwaway `postgres:16` for the run, in CI too (a job
+service would not survive the workflow's Docker daemon restart), unless
+`IMMICH_GATE_DATABASE_URL` names a server. The runs get the store through `IMMICH_MEMORIES_DATABASE_URL`, the same variable a
 deployment uses.
 
 The gate is deliberately small and stable. Wider real-Immich coverage stays in the other

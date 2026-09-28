@@ -362,7 +362,7 @@ immich-gate-logs:
 	$(IMMICH_GATE_COMPOSE) logs --no-color --timestamps
 
 # The store backend the gate's runs use: sqlite (a file in the gate home) or postgresql
-# (IMMICH_GATE_DATABASE_URL when CI names its service, else a throwaway postgres:16).
+# (the server IMMICH_GATE_DATABASE_URL names, else a throwaway postgres:16 in Docker).
 IMMICH_GATE_DATABASE ?= sqlite
 IMMICH_GATE_RUN_HOME = $(CURDIR)/$(IMMICH_GATE_DIR)/home-$(IMMICH_GATE_VERSION)-$(IMMICH_GATE_DATABASE)
 IMMICH_GATE_JUNIT = tests/immich-gate-$(IMMICH_GATE_VERSION)-$(IMMICH_GATE_DATABASE)-junit.xml
