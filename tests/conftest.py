@@ -255,7 +255,7 @@ def make_asset(
     *,
     is_favorite: bool = False,
     file_created_at: datetime | None = None,
-    original_file_name: str = "VID_001.MOV",
+    original_file_name: str | None = None,
     exif_make: str | None = "Apple",
     exif_model: str | None = "iPhone 15 Pro",
     duration: str | int | float | None = "0:00:10.000",
@@ -270,7 +270,8 @@ def make_asset(
         fileModifiedAt=now,
         updatedAt=now,
         isFavorite=is_favorite,
-        originalFileName=original_file_name,
+        # Each asset its own camera name: two files sharing a name and an instant are one picture.
+        originalFileName=original_file_name or f"VID_{asset_id}.MOV",
         exifInfo=exif,
         duration=duration,
     )

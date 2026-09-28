@@ -39,6 +39,7 @@ from immich_memories.analysis.editorial_story_standing import (
     WEIGHED_STORY_WEIGHTS,
     StandingGate,
 )
+from immich_memories.analysis.editorial_thin_vote import sole_era_shots
 
 MAX_PASSES = 3
 
@@ -374,12 +375,13 @@ class CarrierAdmission:
             motion_of=_unit_reader(self._motion_line, self._unit_by_asset),
             plays=lambda c: carries_motion(self._unit_by_asset[c.primary][1]),
             replacement_allowed=allows_replacement,
+            rules_order=self._rules_order,
         )
         self.calls["pick_calls"] += len(self._judge.calls) - calls_before
         return picked
 
-    def _repeat_pick(self, eligible, n, chosen) -> list[DepictedChoice]:
-        """A story already asked in this partition refills mechanically, never with a new call.
+    def _rules_order(self, eligible, n) -> list[DepictedChoice]:
+        """Every moment, in the order the rules take them for a grant of ``n``, asking nobody.
 
         A story with more favourites than its grant spends it across the story's whole span;
         the favourites the spread passes over stay behind it, for when one cannot be placed.
@@ -391,8 +393,12 @@ class CarrierAdmission:
         strangers = [c for c in eligible if not self.starred_choice(c) and self.of_strangers(c)]
         preferred = [*_spread(stars, n), *_spread(rest, max(0, n - len(stars)))]
         preferred.extend(_spread(strangers, max(0, n - len(preferred))))
+        return [*preferred, *(c for c in (*stars, *rest, *strangers) if c not in preferred)]
+
+    def _repeat_pick(self, eligible, n, chosen) -> list[DepictedChoice]:
+        """A story already asked in this partition refills mechanically, never with a new call."""
         local: list[DepictedChoice] = []
-        for c in (*preferred, *(c for c in (*stars, *rest, *strangers) if c not in preferred)):
+        for c in self._rules_order(eligible, n):
             if len(local) >= n or not self.compatible(c, [*chosen, *local]):
                 continue
             local.append(c)
@@ -581,10 +587,14 @@ class CarrierAdmission:
     def _weakest_unvouched(self) -> dict | None:
         stories = Counter(c["story_episode"] for c in self.carriers)
         order = {id(c): i for i, c in enumerate(self.carriers)}
+        # A year the film gives a voice keeps its only shot, the one its allocation granted.
+        voices = sole_era_shots(self.carriers, self.parts.voice_of)
         unvouched = [
             c
             for c in self.carriers
-            if not self._vouched(c) and c["asset_id"] not in self.kept_without_standing
+            if not self._vouched(c)
+            and c["asset_id"] not in self.kept_without_standing
+            and c["asset_id"] not in voices
         ]
         # A story keeps its only picture while another story can give one up; inside that,
         # the weakest standing goes first, and the latest admitted before an earlier one.
