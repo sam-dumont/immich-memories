@@ -129,17 +129,17 @@ def where_options(lived):
     return options
 
 
-def at_home_rows(library, assets, lived, which=None, radius=AT_HOME_KM):
+def at_home_rows(library, assets, lived, which=None, radius=AT_HOME_KM, require_gps=False):
     """Rows taken at a home: `which` names one; None means the home valid on the photo's date."""
     out = set()
     for i, r in enumerate(library.rows):
         a = assets.get(r["asset_id"])
         if not a:
             # No GPS is no evidence of elsewhere when the place only frames the subject (a pet at
-            # home): the photo stays. When the place IS the subject (one particular home), a photo
+            # home): the photo stays. When the subject IS a place (the spec's subject_kind), a photo
             # must show it was there: a house film admitted a Thai house and a stranger's pool
             # house without GPS (09-28).
-            if which is None:
+            if not require_gps:
                 out.add(i)
             continue
         day = r["taken_at"][:10]
@@ -190,6 +190,15 @@ SPANS = {"one day": 0, "one week": 6, "one month": 30, "three months": 91}
 
 SHAPE = '''What shape of film does the request ask for? Pick one. Return JSON.'''
 
+KIND = '''What kind of thing is the main subject of the photos this request asks for? A place is
+somewhere a person can be: a building or part of one, an outdoor area, a view. Pick one. Reason
+first. Return JSON.'''
+KINDS = ["a place", "a person", "an animal", "a thing", "an activity or event"]
+
+ONE = '''Does the request follow one particular individual of its main subject (the owner's own, the
+same one across the photos) or any of that kind? Pick one. Reason first. Return JSON.'''
+ONES = ["one particular individual", "any of that kind"]
+
 FILTERS = '''Give the date range the photos were taken in (YYYY-MM-DD, or null for no bound), and
 whether the listed people's faces must be recognised in each photo. Use the facts given (people's
 birth dates, when the owner moved into each home, years written in the request, today's date, and
@@ -214,6 +223,19 @@ def _vote(reader, stage, key, prompt, data, field, options, most, tokens=300):
                                       "maxItems": most}}), tokens).get(field) or []
         votes.update({w for w in got if w in options})
     return [w for w in options if votes[w] >= 2]
+
+
+def _choose(reader, stage, key, prompt, data, options, tokens=500):
+    """One choice asked three times in three option orders; the majority wins, else the first option."""
+    votes = Counter()
+    for n, order in enumerate([options, options[::-1], options[1:] + options[:1]]):
+        got = _ask(reader, stage, f"{key}:c{n}", prompt, data | {"options": order},
+                   _schema(reason={"type": "string", "maxLength": 200}, choice={"type": "string", "enum": order}),
+                   tokens).get("choice")
+        if got in options:
+            votes[got] += 1
+    top = votes.most_common(1)
+    return (top[0][0] if top and top[0][1] >= 2 else options[0]), dict(votes)
 
 
 def stated_phrase(brief, word):
@@ -253,6 +275,11 @@ def build_spec(reader, key, brief, library, people_named, lived, years):
     shows = [x.strip() for x in _ask(reader, "spec_shows", key, SHOWS, {"owner_request": brief},
              _schema(shows={"type": "array", "items": {"type": "string", "maxLength": 50}, "maxItems": 10})
              ).get("shows") or [] if x.strip()]
+    # What the subject is decides how identity is proven: a place by GPS, a person by faces, one
+    # particular animal or thing by a sameness check against reference photos (owner 09-28).
+    kind_of, kind_votes = _choose(reader, "spec_kind", key, KIND, {"owner_request": brief, "subject": shows}, KINDS)
+    one, one_votes = (_choose(reader, "spec_one", key, ONE, {"owner_request": brief, "subject": shows}, ONES)
+                      if kind_of in {"an animal", "a thing"} else (None, {}))
     shape = _ask(reader, "spec_shape", key, SHAPE, {"owner_request": brief, "options": SHAPES},
                  _schema(shape={"type": "string", "enum": SHAPES})).get("shape") or "along the years"
     date = {"type": ["string", "null"], "pattern": "^[12][0-9]{3}-[01][0-9]-[0-3][0-9]$"}
@@ -278,6 +305,9 @@ def build_spec(reader, key, brief, library, people_named, lived, years):
                       "votes": dict(votes)},
             "text_in_photo": [w for w in text.get("words") or [] if w],
             "seeds": shows, "span": span,
+            "subject_kind": {"an activity or event": "activity"}.get(kind_of, kind_of.split()[-1]),
+            "one_particular": one == ONES[0],
+            "kind_votes": {"kind": kind_votes, "one": one_votes},
             "shape": shape}
 
 
@@ -471,7 +501,9 @@ def show(spec):
              f'  not this      {", ".join(spec["not_this"]) or "-"}',
              f'  question      {spec["question"]}',
              f'  caption words {", ".join(spec["caption_words"])}',
-             f'  shape         {spec["shape"]}']
+             f'  shape         {spec["shape"]}',
+             f'  subject kind  {spec.get("subject_kind")}' + (" (photos need GPS)" if spec.get("subject_kind") == "place" else "")
+             + (", one particular: checked against reference photos" if spec.get("one_particular") else "")]
     return "\n".join(lines)
 
 

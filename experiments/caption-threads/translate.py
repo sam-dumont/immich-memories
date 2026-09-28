@@ -668,10 +668,11 @@ def main():
                  if (since or 1) <= int(r["taken_at"][:4]) <= (until or 9999) and IMMICH_ID.match(r["asset_id"])}
     kind = spec["where"]["kind"]
     if kind == "near_home":
-        scope = at_home_rows(library, assets, lived, radius=HOME_RADIUS_KM)
+        scope = at_home_rows(library, assets, lived, radius=HOME_RADIUS_KM, require_gps=spec["subject_kind"] == "place")
         scope_note = f"{len(scope)} pictures within {HOME_RADIUS_KM:.0f} km of the home of the time"
     elif kind in {"home", "home_at_time"}:
-        scope = at_home_rows(library, assets, lived, spec["where"]["home"] if kind == "home" else None)
+        scope = at_home_rows(library, assets, lived, spec["where"]["home"] if kind == "home" else None,
+                             require_gps=spec["subject_kind"] == "place")
         scope_note = f"{len(scope)} pictures within {AT_HOME_KM * 1000:.0f} m of " + (
             f"the {spec['where']['home']} home" if kind == "home" else "the home of the time")
     else:
