@@ -5,8 +5,6 @@ title: Environment variables
 
 # Environment variables
 
-Reader: power user.
-
 Every config key has an environment variable, and an environment variable beats the config file
 and whatever the web UI saved to the database. The UI greys out a setting a variable sets and names
 the variable; `immich-memories config show` lists them all ([where a setting comes from](./config-file.md#where-a-setting-comes-from)).
@@ -195,7 +193,5 @@ config file.
 
 ## Compute tier
 
-`IMMICH_MEMORIES_TIER=auto|nas|gpu|full` selects the same tier as `tier:` in the config file.
-The default is `auto`: no GPU inference capability means NAS; GPU capability means GPU;
-GPU capability plus a configured LLM means Full. An LLM alone remains available for text features.
-See the [tier reference](../reference/config-reference.md#tier).
+`IMMICH_MEMORIES_TIER=auto|nas|gpu|full` sets the same tier as `tier:` in the config file, and
+beats it. The default is `auto`: [The three tiers](./requirements.md#the-preparation-tier).

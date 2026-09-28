@@ -8,8 +8,6 @@ import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
 
 # The web UI
 
-Reader: newcomer. Every page and button, in the order you meet them.
-
 `immich-memories ui` serves the web client at `/app`. It looks like Immich because it is built on
 Immich's own component library, and it does nothing the CLI cannot: every button runs the same
 command you could type, and the page shows you that command. What the browser adds is the review.
@@ -306,14 +304,12 @@ keeps the stored value. Secrets are encrypted in the database with `IMMICH_MEMOR
 without it the page greys them out and says so. Every key:
 [configuration reference](../reference/config-reference.md).
 
-**Caches** lists four caches with their size and a **Clear** button each.
+**Caches** lists the two caches a run fills, with their size and a **Clear** button each.
 
 | Cache | Holds | Cost of clearing |
 |-------|-------|------------------|
-| **Analysis** | a table no cut reads | nothing |
 | **Video** | downloaded source videos | re-download from Immich; evicted on its own anyway |
 | **Thumbnail** | Immich previews, read back for pixel facts, heads, contact sheets and the grid | re-fetched on demand |
-| **Preview** | clip previews the old web pages played; nothing writes it now | nothing |
 
 The expensive thing on disk is not behind those buttons. The editor's bank lives in the store
 (`store.db`), not under the cache directory, and holds every fact it read about your pictures.

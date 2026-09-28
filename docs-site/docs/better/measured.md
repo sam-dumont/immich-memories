@@ -4,11 +4,9 @@ title: Measured
 
 # Measured
 
-Reader: power user.
-
-NAS is a good default. GPU and Full add refinement, which can change a few pictures or leave the
-cut alone. These measurements show the work each layer did. They do not establish that a higher
-tier makes a better film.
+What each setup costs in time and calls, measured on a named machine and commit. The quality side
+(which pictures each tier keeps) is judged on contact sheets, not in this table. Timings on a NAS
+appliance are being re-measured; until then this page has none.
 
 ## Selection comparison, 27 September 2026
 
@@ -34,15 +32,15 @@ tiers. From the next attempt, GPU inherited its paired NAS preparation, and Full
 The tables keep those two methods separate.
 
 **The cold-year target of under one hour on 8–16 GB remains unverified.** A quick Full refinement
-does not include the work already done by NAS and GPU. One NAS year alone took 72 minutes.
+does not include the work already done by NAS and GPU. One `nas`-tier year alone took 72 minutes on the M5 Max.
 
-### NAS baseline
+### The `nas` tier, on the M5 Max's CPU
 
 These are ranges across the cases in each group, rounded to the nearest second. CLI time
 includes acquisition, selection and any post-selection metadata work. Video rendering, music,
 cache-copy staging and waiting for another job are outside it.
 
-| Cases | NAS CLI time |
+| Cases | `nas` tier CLI time (M5 Max) |
 |---|---:|
 | Years (4 runs) | 4m14s–72m37s |
 | Months (7 runs) | 49s–10m45s |

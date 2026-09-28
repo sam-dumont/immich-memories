@@ -4,8 +4,6 @@ sidebar_label: "Upgrading"
 
 # Upgrading
 
-Reader: power user.
-
 Read the [release notes](https://github.com/sam-dumont/immich-video-memory-generator/releases)
 first (the repo's `CHANGELOG.md` points there). What bites: a config key renamed or removed, a
 default that changes your output, a new system requirement such as an FFmpeg version.

@@ -4,8 +4,6 @@ title: Generated music
 
 # Generated music
 
-Reader: power user.
-
 Every film already gets music on a plain NAS: your own file, or one of 28 bundled tracks picked by
 the film's mood and ducked under the clips' own sound
 ([Music](../make/titles-maps-music.md#music)). A generator writes an original track for each film

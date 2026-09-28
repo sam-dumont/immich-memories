@@ -4,7 +4,6 @@ title: Glossary
 
 # Glossary
 
-Reader: power user. Every word the editor's records, logs and these pages use, in the order a cut
 meets them. Where the code and this page disagree, the code wins.
 
 ```mermaid

@@ -6,8 +6,6 @@ title: Preparing a library
 
 # Preparing a library
 
-Reader: power user.
-
 Four commands that run against the library rather than against one film: `prepare` does the pixel work up
 front, `people` works out who is in it, `discover-days` finds the days worth remembering, and a few small ones
 answer questions before you generate anything. All of them work on a plain NAS; `prepare --overviews` is the one

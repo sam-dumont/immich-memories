@@ -5,8 +5,6 @@ title: uv / pip
 
 # uv or pip
 
-Reader: power user.
-
 For a Mac, a Linux box without Docker, or a checkout you want to hack on. Docker Compose is the
 [recommended install](./docker.md); this one gives the same app with your Python.
 

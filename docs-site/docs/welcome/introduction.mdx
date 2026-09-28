@@ -30,27 +30,30 @@ turn it on.
 
 </small>
 
-Reader: newcomer.
-
 Immich Memories reads a period of your self-hosted [Immich](https://immich.app) library (a
 month, a year, a trip, one person across the years), picks the pictures and videos that tell it,
 keeps them in the order they were taken, and renders the film with titles, maps and music.
+
+To try it: the [Quick start](../get-started/quick-start.md) gets it running next to Immich, and
+[Your first film](../get-started/first-film.mdx) cuts one month. [Requirements](../run/requirements.md)
+says which box is enough.
 
 ## Works on a plain NAS, better with a GPU or a model
 
 The default install is one container on the box that already runs Immich. It cuts the film from
 what your library already knows: dates, places, favourites, the people Immich recognised, and
-what a few small pinned classifiers say about each picture (a screen, a document, sensitive
-content, who is in frame). Those run on the CPU and are fetched once with `models fetch`.
-Nothing else to host, no API key, no account.
+what a few small classifiers say about each picture (a screen, a document, sensitive content, who
+is in frame). Those run on the CPU and are fetched once with `models fetch`. Nothing else to host,
+no API key, no account.
 
 That already makes a film worth sharing. It needs two things from you: where home is, so a week
 away counts as a trip, and who is who, so close family gets its place in the film.
 [Teach it your family](../get-started/who-is-who.md) covers both.
 
-Start with the [Quick start](../get-started/quick-start.md), then cut one month with
-[Your first film](../get-started/first-film.mdx). [Requirements](../run/requirements.md) says
-which box is enough.
+A GPU adds a caption for every picture in the cut and a second family-viewing check. A text model on
+top of it polishes the cut, writes the title and picks the music. Everything is banked, so adding
+one later costs nothing that was already done:
+[What a GPU or a model adds](../get-started/what-a-gpu-or-a-model-adds.md), feature by feature.
 
 ## What you get
 
@@ -72,29 +75,13 @@ How it decides is written down: [How it chooses](../how-it-chooses/overview.md) 
 rule with diagrams, and [Overrule it](../how-it-chooses/overrule-it.md) lists every lever you
 have.
 
-## What a GPU or a model adds
-
-Each of these makes the film better or faster, and all of them are optional. They plug into the
-same install, and what they add is banked next to what the NAS already worked out, so switching
-one off later costs nothing.
-
-| Add | What it buys | Where it runs |
-|---|---|---|
-| A GPU | the same film, sooner | encoding on the NAS's own iGPU ([Hardware encoding](../run/hardware.md)), preparation on a [GPU box](../better/inference.md) |
-| A reader model | it reads the finished draft, names the shots that add nothing and fills their seats with better ones. It does not re-plan the film | a [local or hosted model](../better/reader.md) |
-| Captions | a line of description under every picture, for the reader and the family-viewing check | a [caption server](../better/captions.md) |
-| Generated music | an original track for each film (ACE-Step or MusicGen) | a [music server](../better/music.md) |
-
-What each one costs in hardware, time and euros is on
-[What a model adds, what it costs](../better/overview.md).
-
 ## What leaves your network
 
 A default run talks to your Immich server and nothing else. No telemetry, no cloud. Immich stays
 read-only: the film goes back into it only when you ask for the upload. Every outside host sits
 behind a switch that is off in a fresh install, and [Privacy](../run/privacy.md) lists them.
 
-## Why it is being reworked so much
+## What is stable, what still moves
 
 Some parts are done and stay put: the install (one compose file, one image), how it uses Immich
 (read-only unless you upload), and the render (titles, maps, music, HDR, encoding).

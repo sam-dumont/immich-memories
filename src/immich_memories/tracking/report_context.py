@@ -53,7 +53,7 @@ def record_config(config, arguments: dict) -> None:
             config.cache.cache_path,
         )
     )
-    for key in ("person", "album", "title", "subtitle", "output", "from_album"):
+    for key in ("person", "album", "title", "subtitle", "output", "from_album", "subject"):
         value = arguments.get(key)
         if isinstance(value, (str, Path)):
             collected.private_terms.add(str(value))

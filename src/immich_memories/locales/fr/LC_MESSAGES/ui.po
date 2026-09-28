@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  immich-memories\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 18:13+0200\n"
+"POT-Creation-Date: 2026-09-28 19:18+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -19,7 +19,7 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "Une révision mensuelle s’est déjà terminée ce mois-ci."
 
-#: web/routes/settings/+page.svelte:91
+#: web/routes/settings/+page.svelte:89
 msgid "API Key"
 msgstr "Clé API"
 
@@ -82,10 +82,6 @@ msgstr "Afficher aussi les {count} photos hors de ce souvenir"
 #: web/lib/ShotInspector.svelte:156
 msgid "Alternatives considered"
 msgstr "Alternatives examinées"
-
-#: web/routes/settings/+page.svelte:26
-msgid "Analysis cache"
-msgstr "Cache d'analyse"
 
 #: web/routes/create/+page.svelte:332
 msgid ""
@@ -165,7 +161,7 @@ msgstr "Arrière-plan flouté"
 msgid "Browse the whole pool"
 msgstr "Parcourir tout le fonds"
 
-#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
+#: web/routes/settings/+page.svelte:109 web/routes/settings/+page.svelte:110
 msgid "Caches"
 msgstr "Caches"
 
@@ -210,7 +206,7 @@ msgstr ""
 "Choisissez ce que couvre le film. Le montage se fait comme la commande ci-dessous le fait ; "
 "vous le révisez avant tout rendu."
 
-#: web/routes/settings/+page.svelte:117
+#: web/routes/settings/+page.svelte:115
 msgid "Clear"
 msgstr "Effacer"
 
@@ -222,7 +218,7 @@ msgstr "Lever la restriction"
 msgid "Clear this hold?"
 msgstr "Lever cette restriction ?"
 
-#: web/routes/settings/+page.svelte:69
+#: web/routes/settings/+page.svelte:67
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{count} entrées supprimées de {cache}."
@@ -244,7 +240,7 @@ msgstr "Fichier de configuration : {config_path}"
 msgid "Configuration"
 msgstr "Configuration"
 
-#: web/routes/settings/+page.svelte:58
+#: web/routes/settings/+page.svelte:56
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "Connecté en tant que : {name}"
@@ -354,7 +350,7 @@ msgstr "Finir ici"
 msgid "Ends"
 msgstr "Se termine"
 
-#: web/routes/settings/+page.svelte:116
+#: web/routes/settings/+page.svelte:114
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "Entrées : {count}"
@@ -369,7 +365,7 @@ msgstr ""
 "décoche, puis prévisualise : tes coches passent dans le film telles quelles, sans nouvelle "
 "sélection. Ne jamais utiliser et Lever la restriction durent d'une exécution à l'autre."
 
-#: web/routes/settings/+page.svelte:82
+#: web/routes/settings/+page.svelte:80
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
@@ -447,11 +443,11 @@ msgstr "Fête"
 msgid "How the rules got here"
 msgstr "Comment les règles en sont arrivées là"
 
-#: web/routes/settings/+page.svelte:85 web/routes/settings/+page.svelte:86
+#: web/routes/settings/+page.svelte:83 web/routes/settings/+page.svelte:84
 msgid "Immich Connection"
 msgstr "Connexion Immich"
 
-#: web/routes/settings/+page.svelte:88
+#: web/routes/settings/+page.svelte:86
 msgid "Immich Server URL"
 msgstr "URL du serveur Immich"
 
@@ -747,7 +743,7 @@ msgstr "A passé {stages}"
 msgid "Password"
 msgstr "Mot de passe"
 
-#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:106
+#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:104
 #: web/routes/settings/people/+page.svelte:74 web/routes/settings/people/+page.svelte:80
 msgid "People"
 msgstr "Personnes"
@@ -802,10 +798,6 @@ msgstr "Portrait"
 #: web/lib/RenderPanel.svelte:210
 msgid "Preview a track"
 msgstr "Écouter un morceau"
-
-#: web/routes/settings/+page.svelte:29
-msgid "Preview cache"
-msgstr "Cache d'aperçu"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:153
 msgid "Preview with these choices"
@@ -938,7 +930,7 @@ msgstr "Même épisode"
 msgid "Save"
 msgstr "Enregistrer"
 
-#: web/routes/settings/+page.svelte:97
+#: web/routes/settings/+page.svelte:95
 msgid "Save Config"
 msgstr "Enregistrer la configuration"
 
@@ -946,7 +938,7 @@ msgstr "Enregistrer la configuration"
 msgid "Save revision"
 msgstr "Enregistrer la révision"
 
-#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:93
+#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:91
 msgid "Saved - type a new key to replace it"
 msgstr "Enregistrée : saisissez une nouvelle clé pour la remplacer"
 
@@ -964,7 +956,7 @@ msgstr "Enregistré ici"
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "Enregistré ici, mais {name} ne peut pas le déchiffrer : la valeur par défaut s'applique"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:63
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:61
 msgid "Saved to the database"
 msgstr "Enregistré dans la base de données"
 
@@ -1008,8 +1000,8 @@ msgstr "Défini par {name} (environnement)"
 msgid "Set in config.yaml as {key}"
 msgstr "Défini dans config.yaml comme {key}"
 
-#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:77
-#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:79
+#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:75
+#: web/routes/settings/+page.svelte:79 web/routes/settings/people/+page.svelte:79
 msgid "Settings"
 msgstr "Réglages"
 
@@ -1115,7 +1107,7 @@ msgstr "Remplacée"
 msgid "Take out"
 msgstr "Retirer"
 
-#: web/routes/settings/+page.svelte:96
+#: web/routes/settings/+page.svelte:94
 msgid "Test Connection"
 msgstr "Tester la connexion"
 
@@ -1127,7 +1119,7 @@ msgstr "Ce fichier n’est pas un MP3, M4A ou WAV"
 msgid "That file is too large for a soundtrack"
 msgstr "Ce fichier est trop volumineux pour une bande son"
 
-#: web/routes/settings/+page.svelte:54
+#: web/routes/settings/+page.svelte:52
 msgid "The connection could not be checked."
 msgstr "La connexion n'a pas pu être vérifiée."
 
@@ -1247,7 +1239,7 @@ msgstr ""
 "Cette exécution n’a conservé aucun enregistrement de ses médias. Montez à nouveau pour en "
 "voir un."
 
-#: web/routes/settings/+page.svelte:28
+#: web/routes/settings/+page.svelte:27
 msgid "Thumbnail cache"
 msgstr "Cache des miniatures"
 
@@ -1327,7 +1319,7 @@ msgstr "Nom d'utilisateur"
 msgid "Video"
 msgstr "Vidéo"
 
-#: web/routes/settings/+page.svelte:27
+#: web/routes/settings/+page.svelte:26
 msgid "Video cache"
 msgstr "Cache vidéo"
 
@@ -1352,7 +1344,7 @@ msgstr ""
 msgid "What to render"
 msgstr "Ce qui sera rendu"
 
-#: web/routes/settings/+page.svelte:106
+#: web/routes/settings/+page.svelte:104
 msgid "Who is who, their roles and relationships."
 msgstr "Qui est qui, leurs rôles et leurs liens."
 

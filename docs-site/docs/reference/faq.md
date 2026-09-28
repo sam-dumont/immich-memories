@@ -4,7 +4,6 @@ title: FAQ
 
 # FAQ
 
-Reader: newcomer. The questions self-hosters ask before and after the first film. For a run that stopped, see
 [Troubleshooting](./troubleshooting.md).
 
 ## Before you install
@@ -25,8 +24,9 @@ place names in your language and the map fly-over are all opt-in, each one liste
 **Will it run on my NAS?**
 
 Yes, it works on a plain NAS: the default install cuts films on a NAS CPU from dates, places, favourites,
-people and what small local classifiers measure on each picture. A GPU or a model makes it better and faster
-([What a model adds](../better/overview.md)). Sizes and the one Synology trap are on
+people and what small local classifiers measure on each picture. A GPU makes it faster and adds captions,
+and a model on top makes the cut better
+([What a GPU or a model adds](../get-started/what-a-gpu-or-a-model-adds.md)). Sizes and the one Synology trap are on
 [On a NAS](../run/nas.md) and [Requirements](../run/requirements.md).
 
 **Do I need face recognition?**
@@ -58,7 +58,7 @@ The first cut measures each picture it can reach once and banks the result; the 
 **How much disk?**
 
 Caches are capped by config: 10 GB of downloaded video (kept 7 days), 10 GB of Immich previews, plus the
-annotation store. Films come on top, sized by length, resolution and codec.
+store (`store.db`). Films come on top, sized by length, resolution and codec.
 
 **Can it make films on its own?**
 

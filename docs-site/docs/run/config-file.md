@@ -5,8 +5,6 @@ title: Config File
 
 # Config file
 
-Reader: power user.
-
 `~/.immich-memories/config.yaml` is yours: the app reads it and never writes it, except when you
 run `immich-memories config move-to-db`. Keep it at permissions `600` if it holds API keys. What
 you save from the web UI or `immich-memories config` goes to the database instead (see
@@ -87,20 +85,10 @@ and the settings page mark each one, and you save them again. Logs never print a
 
 ## Compute tier
 
-Leave `tier` unset, or use `tier: auto`. With no supported GPU inference runtime or service,
-selection uses NAS: inexpensive CPU heads and detectors. GPU capability adds captions and
-Laya; a configured LLM alongside it selects Full. Preparation follows that same tier.
-
-An LLM without GPU capability still works for titles and music mood; selection stays on NAS
-and explains what is missing. A video encoder alone does not count as GPU inference. Explicit
-`nas`, `gpu` and `full` values remain available for controlled comparisons. See the
-[tier reference](../reference/config-reference.md#tier) for the requirements.
-
-To use a vision-capable LLM for captions, explicitly set
-`advanced.editorial.preparation.caption_provider: llm`. This does not upgrade NAS selection.
-It sends image tiles and candidate video frames to your configured LLM, reusing existing
-SmolVLM captions first. It is less efficient and can cost much more, especially on hosted
-infrastructure. See [LLM captions](../better/captions.md#explicit-llm-captions).
+Leave `tier` unset, or set `tier: auto`: the app picks `nas`, `gpu` or `full` from what it finds.
+How it decides: [The three tiers](./requirements.md#the-preparation-tier). Captions from a
+vision-capable LLM instead of the caption server are a separate, explicit switch:
+[LLM captions](../better/captions.md#explicit-llm-captions).
 
 ## Quick start config
 

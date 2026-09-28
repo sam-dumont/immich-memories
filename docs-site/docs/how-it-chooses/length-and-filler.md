@@ -4,8 +4,6 @@ title: Length, quiet weeks and filler
 
 # Length, quiet weeks and filler
 
-Reader: power user, with a newcomer summary first.
-
 A film's target length is where it starts, not a promise. A month with three photographed days
 gets about 20 seconds, not a minute, and a quiet month with a week of nothing in it spends no shot
 on that week. When a film runs out of pictures worth showing, it ends early. A shorter film with
@@ -83,6 +81,10 @@ child does not get it past this pass. A screen that plays as a Live Photo, or sh
 knows, still stays. So does one shot of a year this pass would leave empty, in a film that gives
 every year a shot: the one that stands best. What left is listed by id and head label
 in `derived-decisions/unvouched-filler.private.json`.
+
+An album handed over with a written subject (`--from-album ... --subject ...`) skips this pass. Every
+picture in it was picked for that subject, so a loaf in a bread film is the film, not filler
+([Picking each shot](./picking-shots.md#what-a-frame-must-pass)).
 
 ## Going short, on purpose
 

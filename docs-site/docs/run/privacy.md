@@ -5,8 +5,6 @@ title: "Privacy: what leaves your network"
 
 # Privacy: what leaves your network
 
-Reader: newcomer and power user.
-
 **A NAS run with no optional services talks to your Immich server only.** No telemetry, no update check, no
 analytics, no font or model download while a film renders. Every other host on this page is a
 switch you turn on, and each one says below what it sends. The list comes from a sweep of the

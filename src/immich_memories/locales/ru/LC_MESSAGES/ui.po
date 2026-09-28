@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 18:13+0200\n"
+"POT-Creation-Date: 2026-09-28 19:18+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -20,7 +20,7 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "Ежемесячная проверка в этом месяце уже завершена."
 
-#: web/routes/settings/+page.svelte:91
+#: web/routes/settings/+page.svelte:89
 msgid "API Key"
 msgstr "Ключ API"
 
@@ -83,10 +83,6 @@ msgstr "Показать также {count} фото вне этого восп�
 #: web/lib/ShotInspector.svelte:156
 msgid "Alternatives considered"
 msgstr "Рассмотренные варианты"
-
-#: web/routes/settings/+page.svelte:26
-msgid "Analysis cache"
-msgstr "Кэш анализа"
 
 #: web/routes/create/+page.svelte:332
 msgid ""
@@ -166,7 +162,7 @@ msgstr "Размытый фон"
 msgid "Browse the whole pool"
 msgstr "Смотреть весь набор"
 
-#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
+#: web/routes/settings/+page.svelte:109 web/routes/settings/+page.svelte:110
 msgid "Caches"
 msgstr "Кэши"
 
@@ -211,7 +207,7 @@ msgstr ""
 "Выберите, что охватывает фильм. Монтаж выполняется так же, как показывает команда ниже; вы "
 "проверяете его, прежде чем что-либо рендерится."
 
-#: web/routes/settings/+page.svelte:117
+#: web/routes/settings/+page.svelte:115
 msgid "Clear"
 msgstr "Очистить"
 
@@ -223,7 +219,7 @@ msgstr "Снять ограничение"
 msgid "Clear this hold?"
 msgstr "Снять это ограничение?"
 
-#: web/routes/settings/+page.svelte:69
+#: web/routes/settings/+page.svelte:67
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "Удалено {count} записей из {cache}."
@@ -245,7 +241,7 @@ msgstr "Файл конфигурации: {config_path}"
 msgid "Configuration"
 msgstr "Конфигурация"
 
-#: web/routes/settings/+page.svelte:58
+#: web/routes/settings/+page.svelte:56
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "Подключено как: {name}"
@@ -355,7 +351,7 @@ msgstr "Закончить здесь"
 msgid "Ends"
 msgstr "Заканчивается"
 
-#: web/routes/settings/+page.svelte:116
+#: web/routes/settings/+page.svelte:114
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "Записи: {count}"
@@ -370,7 +366,7 @@ msgstr ""
 "затем откройте превью: ваши отметки попадают в фильм как есть, без повторного выбора. "
 "«Никогда не использовать» и «Снять ограничение» действуют при каждом запуске."
 
-#: web/routes/settings/+page.svelte:82
+#: web/routes/settings/+page.svelte:80
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
@@ -448,11 +444,11 @@ msgstr "Праздник"
 msgid "How the rules got here"
 msgstr "Как правила пришли к этому"
 
-#: web/routes/settings/+page.svelte:85 web/routes/settings/+page.svelte:86
+#: web/routes/settings/+page.svelte:83 web/routes/settings/+page.svelte:84
 msgid "Immich Connection"
 msgstr "Подключение к Immich"
 
-#: web/routes/settings/+page.svelte:88
+#: web/routes/settings/+page.svelte:86
 msgid "Immich Server URL"
 msgstr "URL сервера Immich"
 
@@ -750,7 +746,7 @@ msgstr "Прошло {stages}"
 msgid "Password"
 msgstr "Пароль"
 
-#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:106
+#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:104
 #: web/routes/settings/people/+page.svelte:74 web/routes/settings/people/+page.svelte:80
 msgid "People"
 msgstr "Люди"
@@ -805,10 +801,6 @@ msgstr "Вертикально"
 #: web/lib/RenderPanel.svelte:210
 msgid "Preview a track"
 msgstr "Прослушать трек"
-
-#: web/routes/settings/+page.svelte:29
-msgid "Preview cache"
-msgstr "Кэш превью"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:153
 msgid "Preview with these choices"
@@ -941,7 +933,7 @@ msgstr "Тот же эпизод"
 msgid "Save"
 msgstr "Сохранить"
 
-#: web/routes/settings/+page.svelte:97
+#: web/routes/settings/+page.svelte:95
 msgid "Save Config"
 msgstr "Сохранить конфигурацию"
 
@@ -949,7 +941,7 @@ msgstr "Сохранить конфигурацию"
 msgid "Save revision"
 msgstr "Сохранить редакцию"
 
-#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:93
+#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:91
 msgid "Saved - type a new key to replace it"
 msgstr "Сохранено. Введите новый ключ, чтобы заменить его"
 
@@ -967,7 +959,7 @@ msgstr "Сохранено здесь"
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "Сохранено здесь, но {name} не может это расшифровать: используется значение по умолчанию"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:63
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:61
 msgid "Saved to the database"
 msgstr "Сохранено в базе данных"
 
@@ -1011,8 +1003,8 @@ msgstr "Задано через {name} (окружение)"
 msgid "Set in config.yaml as {key}"
 msgstr "Задано в config.yaml как {key}"
 
-#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:77
-#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:79
+#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:75
+#: web/routes/settings/+page.svelte:79 web/routes/settings/people/+page.svelte:79
 msgid "Settings"
 msgstr "Настройки"
 
@@ -1118,7 +1110,7 @@ msgstr "Заменено"
 msgid "Take out"
 msgstr "Убрать"
 
-#: web/routes/settings/+page.svelte:96
+#: web/routes/settings/+page.svelte:94
 msgid "Test Connection"
 msgstr "Проверить подключение"
 
@@ -1130,7 +1122,7 @@ msgstr "Этот файл не в формате MP3, M4A или WAV"
 msgid "That file is too large for a soundtrack"
 msgstr "Этот файл слишком велик для саундтрека"
 
-#: web/routes/settings/+page.svelte:54
+#: web/routes/settings/+page.svelte:52
 msgid "The connection could not be checked."
 msgstr "Не удалось проверить подключение."
 
@@ -1249,7 +1241,7 @@ msgstr "Эта категория уже дважды встречается в 
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "Для этого запуска не сохранилось записи о его медиа. Смонтируйте заново, чтобы увидеть её."
 
-#: web/routes/settings/+page.svelte:28
+#: web/routes/settings/+page.svelte:27
 msgid "Thumbnail cache"
 msgstr "Кэш миниатюр"
 
@@ -1329,7 +1321,7 @@ msgstr "Имя пользователя"
 msgid "Video"
 msgstr "Видео"
 
-#: web/routes/settings/+page.svelte:27
+#: web/routes/settings/+page.svelte:26
 msgid "Video cache"
 msgstr "Кэш видео"
 
@@ -1354,7 +1346,7 @@ msgstr ""
 msgid "What to render"
 msgstr "Что рендерить"
 
-#: web/routes/settings/+page.svelte:106
+#: web/routes/settings/+page.svelte:104
 msgid "Who is who, their roles and relationships."
 msgstr "Кто есть кто, их роли и связи."
 

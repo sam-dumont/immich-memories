@@ -4,8 +4,6 @@ title: Picking each shot
 
 # Picking each shot
 
-Reader: power user, with a newcomer summary first.
-
 Once a story has its shots, each one has to be a moment and a frame. You shot 30 frames of the
 agility run in four minutes: that is one moment, and it gets one frame. The one you starred wins.
 Without a star, the one that moves wins (a video, or a Live Photo whose clip moves), then the frame
@@ -133,6 +131,16 @@ dominant or minor and holds more than two pictures. Anywhere else it is refused 
 something you wrote (a renovation, the works on a house) drops that rule: its pictures were chosen
 for the subject, so a stripped wall or a room under construction can carry its story, as long as it
 stands. A custom film of its window alone keeps the rule.
+
+An album handed over with a written subject (`generate --from-album "Bread" --subject "bread making
+along the years"`) goes one step further. The album is a pool picked for that subject, so its
+pictures stand on the subject and a score of 0 no longer refuses them: a loaf on a counter scores 0
+like any lone object, and stays. A video whose frames mostly miss its subject is still refused, and
+every other gate still runs: sharing and the family-viewing holds, source eligibility, provenance,
+look-alikes, duplicates and length. The allocation gives every year the album holds a shot, even a
+year whose stories the reader weighed `none`. Each shot that got in this way is listed under
+`stood_on_subject` in `derived-decisions/story-selection.private.json`, with its score and why. A
+custom date range with a written subject is not a pool and keeps the rules above.
 
 Once a moment's frames are through the gate, the ones that stand are sorted again: favourite first,
 then the higher standing score, then the order above. A still that scores 2 can beat a video that

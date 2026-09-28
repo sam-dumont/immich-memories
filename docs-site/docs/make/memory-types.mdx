@@ -7,7 +7,6 @@ import Video from '@site/src/components/Video';
 
 # Memory types
 
-Reader: newcomer. What each kind of film covers, how long it runs, and what your library has to
 hold for it to work.
 
 Ten types. Most are a date range with a filter on it. Trip, album, holiday and special day are not,
@@ -312,6 +311,21 @@ candidates and their IDs; the web UI lists albums largest first and stores the c
 Smart albums like *Recents* can hold tens of thousands of assets. Album mode reads at most
 `advanced.analysis.max_album_assets` per media type (10,000), newest first, and says so. Past that you
 probably want a date range.
+
+### An album made for one subject
+
+An album you built around one thing (every loaf you baked, every car you drove) can say what that
+thing is:
+
+```bash
+immich-memories generate --from-album "Bread" --subject "bread making along the years"
+```
+
+With `--subject`, every picture in the album stands on that subject. An ordinary film drops a loaf on
+a counter with nobody in frame; this one keeps it. Every year the album holds gets at least one shot.
+Sharing, the family-viewing holds, duplicates and the length still apply, and the run record lists
+each shot that got in on the subject alone ([Picking each shot](../how-it-chooses/picking-shots.md#what-a-frame-must-pass)).
+`--subject` needs `--from-album` and a model reader: the plain NAS reader refuses a written subject.
 
 ## Special day (Surprise me)
 

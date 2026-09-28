@@ -69,3 +69,14 @@ def test_a_cache_reports_its_size_and_clears_on_request(tmp_path):
 
     assert before["thumbnail"]["items"] == 1 and cleared["removed"] == 1
     assert after["thumbnail"]["items"] == 0
+
+
+def test_only_the_caches_a_run_still_fills_are_listed_and_cleared(tmp_path):
+    """The Analysis table and the old players' preview folder hold nothing a run reads (#1508)."""
+    client = api_client(config_in(tmp_path))
+
+    listed = [c["name"] for c in client.get("/api/v1/caches").json()]
+
+    assert listed == ["video", "thumbnail"]
+    for retired in ("analysis", "preview"):
+        assert client.post(f"/api/v1/caches/{retired}/clear").status_code == 422
