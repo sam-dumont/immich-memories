@@ -486,6 +486,7 @@ def select_story_first(
     partition_of: Callable[[str], str | None] | None = None,
     partition_limit: int | None = None,
     voice_per_partition: bool = False,
+    context_without_life: bool = False,
     motion_line: Callable[[Mapping[str, Any]], str] | None = None,
     episode_readings: Mapping[str, Any] | None = None,
     rules=None,
@@ -513,7 +514,8 @@ def select_story_first(
     `banked` answers what a model already said about these pictures on an earlier run; it asks
     nothing, and on a library nothing has read it answers nothing and the draft is unchanged.
     `voice_per_partition` gives every partition (`partition_of`) that holds a story one picture
-    before any story takes a second.
+    before any story takes a second. `context_without_life` lets a picture with nobody in it
+    serve its story, in a film whose material was chosen for a written subject.
     """
     calls = {
         "story_pages": 0,
@@ -637,6 +639,7 @@ def select_story_first(
         life=life,
         unit_by_asset=unit_by_asset,
         pictures_of={s["key"]: s["seen"]["pictures"] for s in stories},
+        context_without_life=context_without_life,
     )
     admission = CarrierAdmission(
         judge,

@@ -189,6 +189,7 @@ class ThinPolish:
         first_call = len(judge.calls)
         tier_of = {story.key: story.tier for story in catalogue.stories}
         admitted, refused = gates.admit(carriers, tier_of=tier_of, protected=protected)
+        admitted, refused = _years_kept_past_standing(carriers, admitted, refused, era_of)
         fit = _FitQuestion(
             judge, catalogue, contract, line_of, subject, close_family, era_of, kind_of
         )
@@ -549,6 +550,32 @@ def _with_records(
         record = catalogue.notable_record_of(row["asset_id"])
         marked.append(dict(row) | {"notable_record": record} if record else dict(row))
     return marked
+
+
+def _years_kept_past_standing(
+    carriers: Sequence[dict[str, Any]],
+    admitted: list[dict[str, Any]],
+    refused: list[GateRefusal],
+    era_of: Callable[[str], str | None] | None,
+) -> tuple[list[dict[str, Any]], list[GateRefusal]]:
+    """A year the film gives a voice keeps its last shot through the standing gate.
+
+    The draft stood that shot, and the slot a refusal opens can be refilled from any other year.
+    The family-viewing gate, a source rule and the repetition checks still take it.
+    """
+    if era_of is None:
+        return admitted, refused
+    voiced = {era_of(str(row["taken"])) for row in admitted}
+    by_asset = {row["asset_id"]: row for row in carriers}
+    kept, still = admitted.copy(), []
+    for refusal in refused:
+        era = era_of(str(by_asset[refusal.asset_id]["taken"]))
+        if refusal.rule == "standing" and era is not None and era not in voiced:
+            voiced.add(era)
+            kept.append(by_asset[refusal.asset_id])
+        else:
+            still.append(refusal)
+    return sorted(kept, key=itemgetter("taken", "asset_id")), still
 
 
 def _removed(carriers: Sequence[Mapping[str, Any]], kept: Sequence[Mapping[str, Any]]):

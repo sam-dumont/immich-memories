@@ -270,7 +270,9 @@ logs why, and reads in real time for the rest of the run.
   page, story synthesis at 32,000, the period account split into pages. A 32k context holds every
   one.
 - **Answers are parsed against the stage's contract.** An answer the contract refuses costs one
-  repair round on that call.
+  repair round on that call. A moment pick still refused after its repair doesn't end the film:
+  those rows get the moments the no-model film would pick, and the story's pick record says why
+  (`pick-rules-fallback`).
 - **Text only.** No request to the reader carries a picture; a test fails the build if one does.
 
 The prompt shapes the setup matrix probes readers with are in `scripts/reader_probe_prompts/`.
