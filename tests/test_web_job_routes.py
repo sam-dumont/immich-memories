@@ -194,7 +194,7 @@ def test_music_is_previewed_by_music_preview_uploaded_and_played_back(client):
     assert any(flag.startswith("--music=") and flag.endswith(".mp3") for flag in argv)
 
 
-def test_a_cut_s_progress_carries_the_stage_s_own_time_left(client, tmp_path):
+def test_a_first_cut_does_not_promise_a_whole_cut_estimate(client, tmp_path):
     from immich_memories.operations.cut_progress import StageUpdate
     from immich_memories.operations.editorial_attempt import EditorialAttempt
 
@@ -208,9 +208,10 @@ def test_a_cut_s_progress_carries_the_stage_s_own_time_left(client, tmp_path):
         attempt.stage(StageUpdate("previews", done=60, total=120))
         progress = client.get(f"/api/v1/jobs/{job_id}").json()["progress"]
 
-    assert (progress["done"], progress["total"], progress["fraction"]) == (60, 120, 0.5)
+    assert (progress["done"], progress["total"], progress["fraction"]) == (60, 120, None)
     # 30 pictures took ~0.2 s, so the 60 left are ~0.4 s away.
-    assert 0.2 < progress["remaining_seconds"] < 5
+    assert progress["remaining_seconds"] is None
+    assert 0.2 < progress["stage_remaining_seconds"] < 5
 
 
 def test_a_stage_that_counts_nothing_offers_no_time_left(client, tmp_path):

@@ -914,6 +914,17 @@
             ],
             "title": "Remaining Seconds"
           },
+          "stage_remaining_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage Remaining Seconds"
+          },
           "total": {
             "anyOf": [
               {
@@ -4335,6 +4346,70 @@
         "summary": "Start Render",
         "tags": [
           "jobs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/report": {
+      "get": {
+        "description": "Return the same redacted Markdown as the CLI report command (#1428).",
+        "operationId": "read_report_api_v1_runs__run_id__report_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_flagged_captions",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Flagged Captions",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  },
+                  "title": "Response Read Report Api V1 Runs  Run Id  Report Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Report",
+        "tags": [
+          "runs"
         ]
       }
     },

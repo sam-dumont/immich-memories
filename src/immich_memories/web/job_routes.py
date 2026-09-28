@@ -116,8 +116,9 @@ class JobProgress(BaseModel):
     done: int | None = None
     total: int | None = None
     fraction: float | None = None
-    # The stage's own estimate, measured on this stage's work only (StageClock).
+    # Overall timings are measured from the previous finished run's spans.
     remaining_seconds: float | None = None
+    stage_remaining_seconds: float | None = None
     recent_asset_ids: list[str] = []
 
 
@@ -141,8 +142,9 @@ def _cut_progress(config: Config, job: Job) -> JobProgress:
         phase=live.phase if live else "",
         done=live.done if live else None,
         total=live.total if live else None,
-        fraction=live.fraction if live else None,
-        remaining_seconds=live.remaining_seconds if live and live.remaining_label else None,
+        fraction=live.total_fraction if live else None,
+        remaining_seconds=live.total_remaining_seconds if live else None,
+        stage_remaining_seconds=live.remaining_seconds if live and live.remaining_label else None,
         recent_asset_ids=list(recent_pictures_of(record)),
     )
 
@@ -157,6 +159,7 @@ def _render_progress(job: Job) -> JobProgress:
         label=str(record.get("message") or "Preparing the render"),
         phase=str(record.get("phase") or ""),
         fraction=record.get("fraction"),
+        remaining_seconds=record.get("remaining_seconds"),
     )
 
 

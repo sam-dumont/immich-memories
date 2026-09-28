@@ -736,6 +736,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/runs/{run_id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Report
+         * @description Return the same redacted Markdown as the CLI report command (#1428).
+         */
+        get: operations["read_report_api_v1_runs__run_id__report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/runs/{run_id}/revisions": {
         parameters: {
             query?: never;
@@ -1184,6 +1204,8 @@ export interface components {
             recent_asset_ids: string[];
             /** Remaining Seconds */
             remaining_seconds?: number | null;
+            /** Stage Remaining Seconds */
+            stage_remaining_seconds?: number | null;
             /** Total */
             total?: number | null;
         };
@@ -2995,6 +3017,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_report_api_v1_runs__run_id__report_get: {
+        parameters: {
+            query?: {
+                include_flagged_captions?: boolean;
+            };
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string | boolean;
+                    };
+                };
             };
             /** @description Validation Error */
             422: {

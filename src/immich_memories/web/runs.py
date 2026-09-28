@@ -19,6 +19,29 @@ from immich_memories.web.schemas import PhaseTiming, RunDetail, RunPage, RunSumm
 
 router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
 
+
+@router.get("/{run_id}/report")
+def read_report(
+    run_id: str,
+    config: Annotated[Config, Depends(current_config)],
+    include_flagged_captions: bool = False,
+) -> dict[str, str | bool]:
+    """Return the same redacted Markdown as the CLI report command (#1428)."""
+    from immich_memories.db import open_store
+    from immich_memories.tracking.report_service import report_for_run
+
+    try:
+        report = report_for_run(
+            open_store(config), config, run_id, include_flagged_captions=include_flagged_captions
+        )
+    except LookupError as error:
+        raise HTTPException(404, str(error)) from error
+    return {
+        "markdown": report.markdown(),
+        "has_flagged_photos": bool(report.data.get("free_text", {}).get("flagged")),
+    }
+
+
 # Enough pictures for a card's strip; the whole cut is one request away.
 _PREVIEW_SHOTS = 8
 

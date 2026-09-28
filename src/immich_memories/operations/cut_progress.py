@@ -52,6 +52,8 @@ class StageUpdate:
     # the editorial reads read.
     verb: str = "Preparing"
     remaining_seconds: float | None = None
+    total_fraction: float | None = None
+    total_remaining_seconds: float | None = None
 
     @property
     def identity(self) -> tuple[str, str, str, int | None]:
@@ -92,6 +94,8 @@ class StageUpdate:
             "total": self.total,
             "verb": self.verb,
             "remaining_seconds": self.remaining_seconds,
+            "total_fraction": self.total_fraction,
+            "total_remaining_seconds": self.total_remaining_seconds,
         }
 
     @classmethod
@@ -109,6 +113,8 @@ class StageUpdate:
                 recent_asset_ids=tuple(str(v) for v in record.get("recent_asset_ids") or ()),
                 verb=str(record.get("verb") or "Preparing"),
                 remaining_seconds=record.get("remaining_seconds"),
+                total_fraction=record.get("total_fraction"),
+                total_remaining_seconds=record.get("total_remaining_seconds"),
             )
         except (ValueError, TypeError):
             return None

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-27 15:26+0200\n"
+"POT-Creation-Date: 2026-09-28 11:01+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -22,6 +22,11 @@ msgstr "本月的月度回顾已经完成。"
 #: web/routes/settings/+page.svelte:95
 msgid "API Key"
 msgstr "API 密钥"
+
+#: web/lib/JobPanel.svelte:38
+#, python-brace-format
+msgid "About {amount} left"
+msgstr ""
 
 #: web/routes/create/+page.svelte:373
 msgid "Accept forwarded and downloaded media"
@@ -116,11 +121,11 @@ msgstr "自动（浏览器）"
 msgid "Automation is already running. Open Runs to follow it."
 msgstr "自动化已在运行。打开任务查看进度。"
 
-#: web/routes/runs/[run_id]/+page.svelte:238
+#: web/routes/runs/[run_id]/+page.svelte:240
 msgid "Back to pictures"
 msgstr "返回图片"
 
-#: web/routes/runs/[run_id]/+page.svelte:114
+#: web/routes/runs/[run_id]/+page.svelte:115
 msgid "Back to runs"
 msgstr "返回任务列表"
 
@@ -148,7 +153,7 @@ msgstr "浏览全部素材"
 msgid "Caches"
 msgstr "缓存"
 
-#: web/lib/JobPanel.svelte:83 web/routes/runs/[run_id]/pool/+page.svelte:173
+#: web/lib/JobPanel.svelte:84 web/routes/runs/[run_id]/pool/+page.svelte:173
 msgid "Cancel"
 msgstr "取消"
 
@@ -164,7 +169,7 @@ msgstr "在片段上显示地点"
 msgid "Catalogued days"
 msgstr "已收录的日期"
 
-#: web/routes/runs/[run_id]/+page.svelte:247
+#: web/routes/runs/[run_id]/+page.svelte:249
 #, python-brace-format
 msgid "Changes: {count}"
 msgstr "更改：{count}"
@@ -200,6 +205,10 @@ msgstr "解除此限制？"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "已从 {cache} 中清除 {count} 条记录。"
 
+#: web/lib/RunReport.svelte:55
+msgid "Clipboard unavailable. Select the report below and copy it."
+msgstr ""
+
 #: web/routes/create/+page.svelte:378
 msgid "Command"
 msgstr "命令"
@@ -226,13 +235,17 @@ msgstr "已以 {name} 身份连接"
 msgid "Considered by the model"
 msgstr "模型曾考虑"
 
-#: web/lib/JobPanel.svelte:81
+#: web/lib/JobPanel.svelte:82 web/lib/RunReport.svelte:67
 msgid "Copied"
 msgstr "已复制"
 
-#: web/lib/JobPanel.svelte:81
+#: web/lib/JobPanel.svelte:82
 msgid "Copy as CLI command"
 msgstr "复制为 CLI 命令"
+
+#: web/lib/RunReport.svelte:67 web/lib/RunReport.svelte:69
+msgid "Copy report"
+msgstr ""
 
 #: web/lib/RenderPanel.svelte:140
 msgid "Crossfade"
@@ -254,7 +267,7 @@ msgstr "剪辑"
 msgid "Cut again with these choices"
 msgstr "按这些选择重新剪辑"
 
-#: web/routes/runs/[run_id]/+page.svelte:199
+#: web/routes/runs/[run_id]/+page.svelte:201
 msgid "Cut contact sheet"
 msgstr "剪辑缩略图总览"
 
@@ -274,7 +287,7 @@ msgstr "演示模式"
 msgid "Detecting trips from GPS data..."
 msgstr "正在根据 GPS 数据检测旅行…"
 
-#: web/routes/runs/[run_id]/+page.svelte:256
+#: web/routes/runs/[run_id]/+page.svelte:258
 msgid "Discard changes"
 msgstr "放弃更改"
 
@@ -283,7 +296,7 @@ msgstr "放弃更改"
 msgid "Discovery failed: {error}"
 msgstr "搜索失败：{error}"
 
-#: web/routes/runs/[run_id]/+page.svelte:299
+#: web/routes/runs/[run_id]/+page.svelte:301
 msgid "Download child output"
 msgstr "下载关联输出"
 
@@ -399,7 +412,7 @@ msgstr "Immich 连接"
 msgid "Immich Server URL"
 msgstr "Immich 服务器地址"
 
-#: web/routes/runs/[run_id]/+page.svelte:289
+#: web/routes/runs/[run_id]/+page.svelte:291
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "上传到 Immich：{value}"
@@ -419,6 +432,10 @@ msgstr "在下次剪辑中"
 #: web/routes/create/+page.svelte:371
 msgid "Include Live Photos"
 msgstr "包含 Live Photos"
+
+#: web/lib/RunReport.svelte:64
+msgid "Include captions of flagged photos"
+msgstr ""
 
 #: web/routes/create/+page.svelte:370
 msgid "Include photos"
@@ -549,7 +566,7 @@ msgid ""
 "its date."
 msgstr "还没有已收录的日期。运行 `immich-memories discover-days` 来查找，或者按日期为任意一天制作影片。"
 
-#: web/routes/runs/[run_id]/+page.svelte:301
+#: web/routes/runs/[run_id]/+page.svelte:303
 msgid "No child output was retained for this run."
 msgstr "此任务未保留关联输出。"
 
@@ -569,7 +586,7 @@ msgstr "Immich 中还没有已命名的人物。"
 msgid "No outcome recorded."
 msgstr "未记录结果。"
 
-#: web/routes/runs/[run_id]/+page.svelte:229
+#: web/routes/runs/[run_id]/+page.svelte:231
 msgid "No pictures match this filter."
 msgstr "没有符合此筛选条件的图片。"
 
@@ -581,7 +598,7 @@ msgstr "未记录选择此图片的原因。"
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "没有符合筛选条件的任务。请从“回忆”或“建议”创建回忆。"
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:281
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:283
 msgid "No saved cut is available for this run."
 msgstr "此任务没有已保存的剪辑。"
 
@@ -629,7 +646,7 @@ msgstr "指定日期"
 msgid "Only with (optional)"
 msgstr "仅包含（可选）"
 
-#: web/routes/runs/[run_id]/+page.svelte:274
+#: web/routes/runs/[run_id]/+page.svelte:276
 msgid "Open"
 msgstr "打开"
 
@@ -641,7 +658,7 @@ msgstr "打开任务"
 msgid "Open the film run"
 msgstr "打开影片任务"
 
-#: web/routes/runs/[run_id]/+page.svelte:164
+#: web/routes/runs/[run_id]/+page.svelte:166
 msgid "Order and timecodes from the saved cut."
 msgstr "已保存剪辑的顺序和时间码。"
 
@@ -691,7 +708,7 @@ msgstr "照片时长（秒）"
 msgid "Picture review"
 msgstr "图片审阅"
 
-#: web/lib/JobPanel.svelte:67
+#: web/lib/JobPanel.svelte:68
 msgid "Pictures just read"
 msgstr "刚读取的图片"
 
@@ -699,7 +716,7 @@ msgstr "刚读取的图片"
 msgid "Pictures with"
 msgstr "包含以下人物的图片"
 
-#: web/routes/runs/[run_id]/+page.svelte:124 web/routes/runs/[run_id]/+page.svelte:178
+#: web/routes/runs/[run_id]/+page.svelte:125 web/routes/runs/[run_id]/+page.svelte:180
 #: web/routes/settings/people/+page.svelte:118 web/routes/suggestions/+page.svelte:90
 #, python-brace-format
 msgid "Pictures: {count}"
@@ -709,7 +726,7 @@ msgstr "图片：{count}"
 msgid "Please enter both URL and API key"
 msgstr "请同时填写地址和 API 密钥"
 
-#: web/routes/runs/[run_id]/+page.svelte:165 web/routes/runs/[run_id]/pool/+page.svelte:101
+#: web/routes/runs/[run_id]/+page.svelte:167 web/routes/runs/[run_id]/pool/+page.svelte:101
 #: web/routes/runs/[run_id]/pool/+page.svelte:108 web/routes/runs/[run_id]/pool/+page.svelte:124
 msgid "Pool"
 msgstr "候选媒体"
@@ -775,7 +792,7 @@ msgstr "从此剪辑中移除"
 msgid "Remove this relationship"
 msgstr "移除此关系"
 
-#: web/routes/runs/[run_id]/+page.svelte:212
+#: web/routes/runs/[run_id]/+page.svelte:214
 msgid "Removed"
 msgstr "已移除"
 
@@ -787,6 +804,10 @@ msgstr "渲染"
 msgid "Replaced a picture the model doubted."
 msgstr "替换了一张模型存疑的图片。"
 
+#: web/lib/RunReport.svelte:66
+msgid "Report preview"
+msgstr ""
+
 #: web/routes/settings/people/+page.svelte:83
 msgid "Rescan the library"
 msgstr "重新扫描媒体库"
@@ -795,12 +816,16 @@ msgstr "重新扫描媒体库"
 msgid "Resolution"
 msgstr "分辨率"
 
-#: web/lib/RenderPanel.svelte:134 web/routes/runs/[run_id]/+page.svelte:271
+#: web/lib/RunReport.svelte:62
+msgid "Review the report, then copy it. Nothing is sent automatically."
+msgstr ""
+
+#: web/lib/RenderPanel.svelte:134 web/routes/runs/[run_id]/+page.svelte:273
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "修订 {number}"
 
-#: web/routes/runs/[run_id]/+page.svelte:267
+#: web/routes/runs/[run_id]/+page.svelte:269
 msgid "Revisions"
 msgstr "修订"
 
@@ -808,7 +833,7 @@ msgstr "修订"
 msgid "Role (suggestions; type your own)"
 msgstr "角色（可选建议或自行输入）"
 
-#: web/routes/runs/[run_id]/+page.svelte:287
+#: web/routes/runs/[run_id]/+page.svelte:289
 msgid "Run details"
 msgstr "运行详情"
 
@@ -822,7 +847,7 @@ msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "正在服务器上运行：{phase}。离开此页面后仍会继续。"
 
 #: web/routes/+layout.svelte:23 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
-#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:108
+#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:109
 msgid "Runs"
 msgstr "任务"
 
@@ -830,7 +855,7 @@ msgstr "任务"
 msgid "Save Config"
 msgstr "保存配置"
 
-#: web/routes/runs/[run_id]/+page.svelte:258
+#: web/routes/runs/[run_id]/+page.svelte:260
 msgid "Save revision"
 msgstr "保存修订"
 
@@ -838,12 +863,12 @@ msgstr "保存修订"
 msgid "Saved - type a new key to replace it"
 msgstr "已保存，输入新密钥可替换它"
 
-#: web/routes/runs/[run_id]/+page.svelte:261
+#: web/routes/runs/[run_id]/+page.svelte:263
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "已保存为修订 {number}。"
 
-#: web/routes/runs/[run_id]/+page.svelte:288
+#: web/routes/runs/[run_id]/+page.svelte:290
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "已保存至：{output_path}"
@@ -873,7 +898,7 @@ msgstr "设置"
 msgid "Shareable"
 msgstr "可分享"
 
-#: web/routes/runs/[run_id]/+page.svelte:154
+#: web/routes/runs/[run_id]/+page.svelte:156
 msgid "Show"
 msgstr "显示"
 
@@ -934,7 +959,7 @@ msgstr "静态图片"
 msgid "Stopped."
 msgstr "已停止。"
 
-#: web/routes/runs/[run_id]/+page.svelte:171
+#: web/routes/runs/[run_id]/+page.svelte:173
 msgid "Stories"
 msgstr "故事"
 
@@ -955,7 +980,7 @@ msgstr "无法加载建议。"
 msgid "Supporting"
 msgstr "次要"
 
-#: web/routes/runs/[run_id]/+page.svelte:214
+#: web/routes/runs/[run_id]/+page.svelte:216
 msgid "Swapped"
 msgstr "已替换"
 
@@ -995,7 +1020,7 @@ msgstr "只用日期和地点，绝不使用模型"
 msgid "The editor never received this picture, so a tick cannot bring it into the next cut."
 msgstr "编辑器从未收到这张照片，勾选也无法把它加入下一次剪辑。"
 
-#: web/routes/runs/[run_id]/+page.svelte:132
+#: web/routes/runs/[run_id]/+page.svelte:133
 msgid "The film"
 msgstr "影片"
 
@@ -1037,7 +1062,11 @@ msgstr "上一次自动生成的回忆使用了这个分类。"
 msgid "The render could not start."
 msgstr "渲染无法启动。"
 
-#: web/routes/runs/[run_id]/+page.svelte:52
+#: web/lib/RunReport.svelte:42
+msgid "The report could not be loaded."
+msgstr ""
+
+#: web/routes/runs/[run_id]/+page.svelte:53
 msgid "The revision could not be saved."
 msgstr "无法保存修订。"
 
@@ -1105,7 +1134,7 @@ msgstr "重试"
 msgid "Turn your photo library into video memories"
 msgstr "把你的照片库变成回忆视频"
 
-#: web/routes/runs/[run_id]/+page.svelte:255 web/routes/runs/[run_id]/pool/+page.svelte:139
+#: web/routes/runs/[run_id]/+page.svelte:257 web/routes/runs/[run_id]/pool/+page.svelte:139
 msgid "Undo"
 msgstr "撤销"
 
@@ -1129,8 +1158,8 @@ msgstr "改用这张图片"
 msgid "Username"
 msgstr "用户名"
 
-#: web/lib/ShotInspector.svelte:76 web/routes/runs/[run_id]/+page.svelte:188
-#: web/routes/runs/[run_id]/+page.svelte:218 web/routes/runs/[run_id]/pool/+page.svelte:132
+#: web/lib/ShotInspector.svelte:76 web/routes/runs/[run_id]/+page.svelte:190
+#: web/routes/runs/[run_id]/+page.svelte:220 web/routes/runs/[run_id]/pool/+page.svelte:132
 msgid "Video"
 msgstr "视频"
 
@@ -1138,12 +1167,12 @@ msgstr "视频"
 msgid "Video cache"
 msgstr "视频缓存"
 
-#: web/routes/runs/[run_id]/+page.svelte:125
+#: web/routes/runs/[run_id]/+page.svelte:126
 #, python-brace-format
 msgid "Videos: {count}"
 msgstr "视频：{count}"
 
-#: web/routes/runs/[run_id]/+page.svelte:146
+#: web/routes/runs/[run_id]/+page.svelte:148
 msgid "View"
 msgstr "查看"
 
@@ -1224,7 +1253,7 @@ msgstr "你将被重定向到你的身份提供方"
 msgid "You'll never use this picture."
 msgstr "这张图片将永远不会被使用。"
 
-#: web/routes/runs/[run_id]/+page.svelte:127
+#: web/routes/runs/[run_id]/+page.svelte:128
 #, python-brace-format
 msgid "about {film} of film"
 msgstr "影片约 {film}"
@@ -1241,12 +1270,12 @@ msgstr "其中任意一人"
 msgid "starting"
 msgstr "正在启动"
 
-#: web/routes/runs/[run_id]/+page.svelte:126
+#: web/routes/runs/[run_id]/+page.svelte:127
 #, python-brace-format
 msgid "{content} of pictures and video"
 msgstr "图片和视频共 {content}"
 
-#: web/routes/runs/[run_id]/+page.svelte:250
+#: web/routes/runs/[run_id]/+page.svelte:252
 #, python-brace-format
 msgid "{content} of {budget} the titles leave"
 msgstr "标题留出的 {budget} 中的 {content}"
@@ -1261,7 +1290,7 @@ msgstr "{date_range_start} 至 {date_range_end}"
 msgid "{days} days · {count} pictures"
 msgstr "{days} 天 · {count} 张图片"
 
-#: web/lib/JobPanel.svelte:63
+#: web/lib/JobPanel.svelte:64
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done}/{total}"
@@ -1275,9 +1304,4 @@ msgstr "在屏幕上 {seconds} 秒"
 #, python-brace-format
 msgid "{years} years ago"
 msgstr "{years} 年前"
-
-#: web/lib/JobPanel.svelte:38
-#, python-brace-format
-msgid "~{amount} left in this stage"
-msgstr "此阶段约剩 {amount}"
 

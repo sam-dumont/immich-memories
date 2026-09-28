@@ -98,9 +98,10 @@ or type any date into **Day**. With no catalogue yet, the page says to run `immi
 
 <ThemedScreenshot name="memory-cutting" alt="The cut in progress: the stage, a bar, the count and the pictures just read" />
 
-**Cut** runs `generate --no-render` on the server. The panel shows the stage, a bar and a count for a
-stage that counts its work, an estimate of the time left in that stage measured from its own finished
-work, and the last pictures it read. On a library that has never been read, *Reading dates, places
+**Cut** runs `generate --no-render` on the server. The panel shows the stage, its count and the last
+pictures it read. With a previous completed run, the bar and time left cover the whole cut: saved
+stage times scale to this picture count, and the current stage uses its measured speed. Without
+history, the total time stays unknown. On a library that has never been read, *Reading dates, places
 and people* is the long one; a later cut over the same pictures reuses what it banked. The stages:
 [From library to film](../how-it-chooses/overview.md).
 
@@ -227,6 +228,11 @@ you scroll. Open one to review it, render it again, or play its film.
 
 Under the review sit the run's output path, its Immich delivery, warnings and phase timings.
 **Download child output** fetches the full output of an automatic run, credentials removed.
+
+**Copy report** opens the same redacted report as `immich-memories report`, including logs, warnings
+and timings. Read the preview, then copy it into an issue. Nothing is sent automatically. On a
+free-text run with flagged photos, **Include captions of flagged photos** adds only those captions
+to the preview; it starts off. Pictures are never included. Failed runs have reports too.
 
 ## Suggestions
 

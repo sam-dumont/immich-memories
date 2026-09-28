@@ -20,8 +20,13 @@ def write_progress(path: Path | None, record: dict) -> None:
 
 def progress_writer(path: Path | None):
     def report(phase: str, fraction: float, message: str) -> None:
+        from immich_memories.tracking.timing import active
+
+        collected = active()
+        estimate = collected.diagnostics.get("progress", {}) if collected else {}
         write_progress(
-            path, {"done": False, "phase": phase, "fraction": fraction, "message": message}
+            path,
+            {"done": False, "phase": phase, "fraction": fraction, "message": message, **estimate},
         )
 
     return report if path is not None else None
