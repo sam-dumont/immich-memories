@@ -25,7 +25,7 @@ dropped, `RuntimeDefault` seccomp, `read_only_root_filesystem = true`). Four wri
 
 | Mount | Backed by | Holds |
 |-------|-----------|-------|
-| `/home/immich/.immich-memories` | cache PVC | `config.yaml`, `store.db` (the store when it is SQLite: the editor's banks, your decisions, people, run history, automation state, special days), `cache.db` (derived analysis), video cache |
+| `/home/immich/.immich-memories` | cache PVC | `config.yaml`, `store.db` (the store when it is SQLite: the editor's banks, your decisions, people, run history, automation state, special days), video cache (a `cache.db` there is a pre-store leftover, imported once) |
 | `/app/output` | output PVC | generated videos (`IMMICH_MEMORIES_OUTPUT__DIRECTORY=/app/output`) |
 | `/models` | models PVC | pinned encoder and detector artifacts; `models_storage_size` defaults to `10Gi` |
 | `/tmp` | emptyDir (`tmp_size`, 4Gi) | FFmpeg intermediates: 8Gi for 4K |

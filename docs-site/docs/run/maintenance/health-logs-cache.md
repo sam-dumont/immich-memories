@@ -56,7 +56,7 @@ Everything lives under `~/.immich-memories/cache/` (or `cache.directory`):
 | `thumbnails/` | one Immich preview per candidate a film can reach | `thumbnail_cache_max_size_mb`, 10 GB |
 | `video-cache/` | downloaded Immich clips | `video_cache_max_size_gb` 10 GB, `video_cache_max_age_days` 7 |
 | `preview-cache/` | clip previews the old web pages played; nothing writes it now. Delete a leftover folder by hand | none |
-| `../cache.db` (one level up) | derived video analysis; run history moved to the [store](../database.md) | none |
+| `../cache.db` (one level up) | a pre-store file nothing writes; its run history and scores are imported into the [store](../database.md) once, then it can go | none |
 
 The facts the app banked (head answers, detector verdicts, measurements, and captions and
 readings when a model is used, each keyed by producer and exact input) and your own picture

@@ -772,12 +772,8 @@ src/immich_memories/
 │   ├── upsert.py               # upsert(): dialect insert().on_conflict_do_update / do_nothing
 │   └── time.py                 # to_db / from_db: naive UTC in the store, aware UTC at the edge
 │
-├── cache/                      # Analysis caching system
+├── cache/                      # Local caches and the store-backed banks
 │   ├── __init__.py             # Re-exports public API
-│   ├── database.py             # VideoAnalysisCache over cache.db (derived analysis only)
-│   ├── analysis_schema.py      # The cache's tables and PRAGMA user_version stamp: never migrated; a finished
-│   │                           # v25 ladder is adopted as is, any other layout rebuilt empty; the store's old
-│   │                           # tables in an old cache.db are left for the legacy import
 │   ├── judgment_cache.py       # Reasoning-mode LLM verdicts, keyed by the exact prompt asked (store table `judgments`)
 │   ├── editorial_verdicts.py   # Cull's standing per-picture verdicts (store table `editorial_verdicts`)
 │   ├── embedding_cache.py      # HeadFactStore: head answers (store table `head_facts`)

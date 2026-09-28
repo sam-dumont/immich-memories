@@ -4,16 +4,13 @@ from __future__ import annotations
 
 import json
 import logging
-import multiprocessing
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
 from unittest.mock import patch
 
 import pytest
 
-from immich_memories.cache.database import VideoAnalysisCache
 from immich_memories.config_loader import Config, set_config
 from immich_memories.db import open_store
 from immich_memories.operations.store_import import import_legacy
@@ -21,17 +18,6 @@ from immich_memories.tracking.models import PhaseStats, RunMetadata
 from immich_memories.tracking.run_database import RunDatabase
 from immich_memories.tracking.run_tracker import RunTracker
 from tests.legacy_cache_db import write_legacy_cache_db
-
-
-def _initialize_database_process(db_path: str, start_event: Any, result_queue: Any) -> None:
-    """Initialize one real child-process database client after a shared start signal."""
-    start_event.wait()
-    try:
-        VideoAnalysisCache(Path(db_path))
-    except Exception as exc:
-        result_queue.put(f"{type(exc).__name__}: {exc}")
-    else:
-        result_queue.put(None)
 
 
 @pytest.fixture
@@ -162,39 +148,6 @@ def test_a_populated_v9_database_imports_without_losing_rows(tmp_path: Path) -> 
     # What v11 back-fills on a completed auto run reaches the store the same way.
     assert loaded.memory_category == "trip"
     assert loaded.memory_people == ()
-
-
-def test_concurrent_processes_build_a_fresh_cache_once(tmp_path: Path) -> None:
-    """Four real initializers race on an empty file and all find one finished cache."""
-    db_path = tmp_path / "multiprocess.db"
-    context = multiprocessing.get_context("spawn")
-    start_event = context.Event()
-    result_queue = context.Queue()
-    processes = [
-        context.Process(
-            target=_initialize_database_process,
-            args=(str(db_path), start_event, result_queue),
-        )
-        for _ in range(4)
-    ]
-    try:
-        for process in processes:
-            process.start()
-        start_event.set()
-        for process in processes:
-            process.join(timeout=20)
-        messages = [result_queue.get(timeout=5) for _ in processes]
-    finally:
-        for process in processes:
-            if process.is_alive():
-                process.terminate()
-            process.join(timeout=5)
-
-    assert [process.exitcode for process in processes] == [0, 0, 0, 0]
-    assert messages == [None, None, None, None]
-    with sqlite3.connect(db_path) as conn:
-        columns = [row[1] for row in conn.execute("PRAGMA table_info(video_segments)")]
-    assert columns.count("safe_cut_gaps") == 1
 
 
 def test_a_populated_v11_database_imports_without_losing_runs(tmp_path: Path) -> None:

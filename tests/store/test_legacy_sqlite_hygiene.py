@@ -10,7 +10,6 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
-from immich_memories.cache.database import VideoAnalysisCache
 from immich_memories.cache.sqlite_conn import ThreadOwnedConnections
 
 
@@ -21,14 +20,6 @@ def _journal_mode(path: Path) -> str:
 
 def _left_open(path: Path) -> bool:
     return Path(f"{path}-wal").exists()
-
-
-def test_the_analysis_cache_opens_in_wal_and_closes(tmp_path):
-    path = tmp_path / "cache.db"
-    VideoAnalysisCache(path).get_stats()
-
-    assert _journal_mode(path) == "wal"
-    assert not _left_open(path)
 
 
 def test_thread_owned_caches_open_in_wal(tmp_path):
