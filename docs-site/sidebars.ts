@@ -1,8 +1,5 @@
 import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 
-// Pages under docs/being-rewritten/ are the old text the new pages are written
-// from. They are unlisted, on purpose absent from this tree, and each one goes
-// away with the PR that finishes its last destination (epic #1276).
 const sidebars: SidebarsConfig = {
   docsSidebar: [
     {
@@ -52,12 +49,12 @@ const sidebars: SidebarsConfig = {
       label: 'How it chooses',
       items: [
         'how-it-chooses/overview',
+        'how-it-chooses/overrule-it',
         'how-it-chooses/moments-and-stories',
         'how-it-chooses/picking-shots',
         'how-it-chooses/family-audience-duplicates',
         'how-it-chooses/length-and-filler',
         'how-it-chooses/what-a-model-adds',
-        'how-it-chooses/overrule-it',
         'how-it-chooses/glossary',
       ],
     },

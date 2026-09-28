@@ -326,3 +326,50 @@ GGUF Q8_0: `A bunch of balloons tied together with a string.` / `sky and clouds`
 of balloons in the sky,` / `insufficient evidence`. `description` stays close, `setting` diverges,
 and neither is graded better than the other. But a bank filled by both holds a mix with nothing
 marking the seam, so if that matters for your library, pick one server and keep it.
+
+## Motion lines
+
+On the `gpu` and `full` tiers, every video a cut prepares gets one banked sentence about what
+happens in it, from the same caption server and model. So does every Live Photo whose motion an earlier cut measured at
+1.5 or more; one nobody measured yet is not known to play and gets none. The story pick reads that
+sentence beside the video's row, so the reader compares a video with a still in text and never
+sees a video frame.
+
+The app does not download the video for it. Immich answers byte ranges on its playback rendition,
+so preparation reads the index (tens of kilobytes), picks the three keyframes nearest a quarter,
+half and three quarters of the clip, and reads only those. FFmpeg copies exactly those packets
+out of a sparse local copy and decodes them, which behaves the same on FFmpeg 5.1 (the app
+image), 6.1, 7.1 and 8.1. A codec other than H.264, HEVC, VP9 or AV1 also costs its first
+keyframe, which FFmpeg needs to read the stream at all. Measured on ten real playbacks of 6 to 49 seconds: 235 to 528 KB and 0.1 to 0.4 s
+each, against 10 to 60 MB for the whole file. A clip with a single keyframe is a short one, and
+is read whole (0.5 to 2.2 MB for the Live Photo companions measured). The three frames go to the
+server as one 960 × 320 JPEG strip with a one-field schema (`description`, 120 characters), under
+the same temperature, penalty, token cap and `caption_api_key` as captions.
+
+A whole year of one library, cold, on an Apple Silicon laptop with the MLX captioner: 888 videos in
+373 s (0.42 s each), 3,227 range requests, 888 caption calls and 891 MB read. The median video
+cost 416 KB. The 54 single-keyframe clips read whole took 394 MB of the total. A warm pass reads
+and asks nothing.
+
+The bank keys on the picture, its complete source metadata and
+`motion-line-v1@smolvlm2-500m-base-public/3-keyframes-320px`, so a changed source is asked again
+and nothing else is. Two invalid answers, a playback Immich answers 404 for, or an index the app
+cannot read are banked as settled; timeouts and transport failures stay missing and stop the run
+like a missing caption. `caption_concurrency` bounds the requests in flight; keyframe reads run
+four at a time.
+
+Each row also records what produced it: a digest of the question asked, the keyframe times it
+read, and what made the source owe a line (`video`, or the Live Photo's residual and the
+measurement that produced it). Rows banked before this existed have no record and still answer;
+the cut counts how many of those it read as `unrecorded` in its motion metrics.
+
+A video's sentence counts only where its motion is measured. On every tier that samples a
+video's frames for the exposure head, preparation also measures their optical-flow residual and
+banks it under the picture, its source metadata and
+`motion-residual-v1@median-flow-v1-detector-frames-320x240`, with the frame count it was measured
+on. A video that measures under 1.5 has its sentence withheld (a favourite keeps it); see
+[Picking each shot](../how-it-chooses/picking-shots.md). A video already prepared before this is sampled once more
+for the residual alone; a frame read or measurement that fails is named and never blocks the cut.
+
+The `nas` tier asks for no motion line. The pick then reads the video's plain
+facts instead: its length, and the measured motion of a Live Photo that has one.
