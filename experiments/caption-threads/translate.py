@@ -31,7 +31,8 @@ from immich_memories.analysis.llm_wire import openai_headers
 from immich_memories.api.models import Asset, ExifInfo
 from immich_memories.config import Config
 from model_reader import Reader
-from cascade import AGREE, GRAMMAR_SAMPLE, SMOL_SAMPLE, grammar_says_subject, smol_yes
+from cascade import (AGREE, GRAMMAR_SAMPLE, SMOL_SAMPLE, ask_contradictions, banked_heads, grammar_says_subject,
+                     ladder, smol_yes)
 from spec import AT_HOME_KM, at_home_rows, build_spec, build_subject, homes, show
 from query import companion_terms, retrieve_plan, vocabulary
 from workflow import choose_sources
@@ -627,6 +628,18 @@ def choose_compact(reader, library, key, brief, refs, meaning=None, core=None, n
 
 
 def _gemma_compact(reader, library, key, brief, refs, meaning):
+    if os.environ.get("CASCADE"):
+        # A burst's identical captions get one verdict.
+        first = {}
+        for i in refs:
+            first.setdefault(library.rows[i]["caption"], i)
+        unique = _gemma_compact_all(reader, library, key, brief, list(first.values()), meaning)
+        verdict = {library.rows[d["ref"]]["caption"]: d["decision"] for d in unique}
+        return [{"ref": i, "decision": verdict[library.rows[i]["caption"]]} for i in refs]
+    return _gemma_compact_all(reader, library, key, brief, refs, meaning)
+
+
+def _gemma_compact_all(reader, library, key, brief, refs, meaning):
     decisions = []
     for start in range(0, len(refs), COMPACT_BATCH):
         part = refs[start:start + COMPACT_BATCH]
@@ -760,6 +773,12 @@ def main():
     decisions, unsure, looked, kept = [], [], [], sorted(pool, key=lambda i: library.rows[i]["taken_at"])
     if not os.environ.get("SIMPLE"):
         text_budget = int(os.environ.get("TEXT_BUDGET", 3000))
+        heads = {}
+        if os.environ.get("CASCADE"):
+            # Free first: what preparation already recorded (a film is made of photographs).
+            heads = banked_heads(bank, [library.rows[i]["asset_id"] for i in pool])
+            pool = {i for i in pool if heads.get(library.rows[i]["asset_id"], {}).get("doc_docling", "photograph")
+                    == "photograph"}
         offered = spread_budget(library, pool, text_budget, score)
         offered = [i for i in offered if not library.rows[i].get("uncaptioned")]
         if plan.get("firsts") and plan.get("_per_item_questions"):
@@ -776,7 +795,17 @@ def main():
                       key=lambda i: library.rows[i]["taken_at"])
         unsure = [d["ref"] for d in decisions if d["decision"] == "unknown"]
         looked = []
-        if not os.environ.get("NO_LOOK"):
+        if os.environ.get("CASCADE") and not os.environ.get("NO_LOOK") and not plan.get("firsts"):
+            # The ladder (cascade.py): free checks first, pictures last and per open moment.
+            contradicts = ask_contradictions(reader, key, brief, heads)
+            plan["ladder_contradicts"] = [": ".join(c) for c in sorted(contradicts)]
+
+            def looker(refs):
+                return look(reader, config, library, plan, refs, anchors, score)
+
+            kept, looked, plan["ladder"] = ladder(looker, library, plan, kept, unsure, uncaptioned & pool,
+                                                  anchors & pool, score, heads, contradicts)
+        elif not os.environ.get("NO_LOOK"):
             # Only what text could not settle: unsure captions, forwarded photos without one, and
             # OCR anchors (whose letters, not captions, put them here).
             seen, looked = look(reader, config, library, plan, set(unsure) | (uncaptioned & pool) | (anchors & pool),
