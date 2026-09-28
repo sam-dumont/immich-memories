@@ -193,12 +193,16 @@ class Deployment:
     def shell(self, script: str) -> str:
         return self.compose("exec", "-T", APP, "sh", "-c", script)
 
-    def curl(self, *args: str, check: bool = True) -> str:
-        """Run the CronJob's curl image on the project's network."""
+    def curl(self, *args: str) -> str:
+        """Run the CronJob's curl image on the project's network; its stdout only.
+
+        Docker reports a first pull of the image on stderr, and the answer must parse.
+        """
         return _run(
             ["docker", "run", "--rm", "--network", f"{self.project}_default", CURL_IMAGE, *args],
             timeout=120,
-            check=check,
+            check=True,
+            stdout_only=True,
         )
 
     def trigger_url(self, suffix: str = "") -> str:
@@ -226,7 +230,7 @@ def copy_tree(source: Path, target: Path) -> None:
             shutil.copy2(path, destination)
 
 
-def _run(command: list[str], *, timeout: int, check: bool) -> str:
+def _run(command: list[str], *, timeout: int, check: bool, stdout_only: bool = False) -> str:
     result = subprocess.run(  # noqa: S603 -- the docker CLI, fixed argv
         command, capture_output=True, text=True, timeout=timeout, check=False
     )
@@ -235,4 +239,4 @@ def _run(command: list[str], *, timeout: int, check: bool) -> str:
         raise DeploymentError(
             f"{' '.join(command[:8])} ... exited {result.returncode}:\n{output[-4000:]}"
         )
-    return output
+    return result.stdout if stdout_only else output
