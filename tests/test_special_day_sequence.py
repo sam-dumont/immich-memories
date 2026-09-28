@@ -506,4 +506,7 @@ def test_a_day_on_a_holiday_is_kept_unless_its_occasion_was_the_holiday(monkeypa
     found = scan_year(race + christmas, llm_config=None, home=HOME_AT, captions=captions)
 
     assert [(d.day, d.title) for d in found] == [(date(2023, 6, 18), "City bike race")]
-    assert sorted(asked) == [("Christmas", "Christmas morning"), ("Father's Day", "City bike race")]
+    assert sorted(asked) == [
+        ("Christmas Day", "Christmas morning"),
+        ("Father's Day", "City bike race"),
+    ]

@@ -900,7 +900,7 @@
         ]
       }
     ],
-    "complexity": 136
+    "complexity": 137
   },
   {
     "path": "src/immich_memories/cli/music_cmd.py",

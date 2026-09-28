@@ -304,7 +304,7 @@ def register_generate_commands(main: click.Group) -> None:
             years_back=years_back,
             on_this_day_target=exact_on_this_day,
             holiday=holiday,
-            preset_params=special_day or {"country": config.defaults.country},
+            preset_params=special_day or _holiday_country(memory_type, config),
             people_window=derived_window,
         )
         window_record = announce_people_window(derived_window, date_range)
@@ -718,3 +718,12 @@ def register_generate_commands(main: click.Group) -> None:
     from immich_memories.cli._analyze_export import register_analyze_export_commands
 
     register_analyze_export_commands(main)
+
+
+def _holiday_country(memory_type: str | None, config) -> dict:
+    """A holiday memory's dates are the home country's; no other type needs to ask Immich."""
+    if memory_type != "holiday":
+        return {}
+    from immich_memories.home_country import home_country
+
+    return {"country": home_country(config)}

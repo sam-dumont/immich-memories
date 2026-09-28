@@ -248,13 +248,14 @@ def _scan_one_year(
     from immich_memories.analysis.prepared_captions import prepared_captions
     from immich_memories.automation.special_day_scan import scan_year
     from immich_memories.cache.judgment_cache import judgment_bank
+    from immich_memories.home_country import home_country
 
     for day in scan_year(
         assets,
         llm_config=config.llm,
         home=home,
         extra_holidays=also_skip,
-        country=config.defaults.country,
+        country=home_country(config),
         analysis_config=config.analysis,
         trips_config=config.trips,
         captions=prepared_captions(config, tuple(asset.id for asset in assets)),

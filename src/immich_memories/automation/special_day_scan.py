@@ -29,7 +29,7 @@ from immich_memories.analysis.special_day import (
     run_extent,
     window_that_holds_the_day,
 )
-from immich_memories.analysis.special_day_holiday import holiday_name, was_the_holiday
+from immich_memories.analysis.special_day_holiday import was_the_holiday
 from immich_memories.analysis.special_day_sequence import (
     MIN_FILM_SECONDS,
     filmable_seconds,
@@ -43,7 +43,7 @@ from immich_memories.automation.special_day_facts import ranked_occasions
 from immich_memories.config_models_analysis import AnalysisConfig
 from immich_memories.config_models_automation import TripsConfig
 from immich_memories.config_models_render import PhotoConfig
-from immich_memories.memory_types.date_builders import KNOWN_HOLIDAYS, resolve_holiday
+from immich_memories.memory_types.date_builders import holiday_name, holidays_of, resolve_holiday
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -91,16 +91,16 @@ class DiscoveredDay:
 
 
 def holidays_in(year: int, extra: Iterable[str] = (), *, country: str = "US") -> dict[date, str]:
-    """Dates a holiday memory already covers, each with the holiday's name.
+    """The holidays of the home country, each with its name, and any the library adds.
 
     Nothing is defined here: date_builders owns which holidays exist and when
-    they fall, moving ones included. Adding one there is enough for it to be
-    skipped here too.
+    they fall, moving ones included: the country's public holidays and the few
+    family days no public calendar lists.
     """
-    covered: dict[date, str] = {}
-    for name in (*KNOWN_HOLIDAYS, *extra):
+    covered = holidays_of(year, country)
+    for name in extra:
         try:
-            covered[resolve_holiday(name, year, country=country)] = holiday_name(name)
+            covered.setdefault(resolve_holiday(name, year, country=country), holiday_name(name))
         except ValueError:
             logger.debug("Not a holiday this build knows: %r", name)
     return covered
