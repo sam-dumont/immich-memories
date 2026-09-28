@@ -64,7 +64,7 @@ that holds something you care about is never quiet to the editor.
 ## Filler nothing vouches for
 
 A quiet month can still have more slots than shots anyone vouches for, and the leftover slots go to
-whatever stands. So a no-model film gets one last removal pass (`drop_filler_nothing_vouches_for`,
+whatever stands. So every film drafted from the rules gets one last removal pass (`drop_filler_nothing_vouches_for`,
 PR #1250), after the duplicate review:
 
 ```mermaid
@@ -76,8 +76,10 @@ flowchart TD
   fk -- yes --> drop["leaves; nothing takes its place"]
 ```
 
-It runs on the no-model film, and on a model film whose polish did not run. A polished film skips
-it: the model's vote already asked which shots add nothing. What left is listed by id and head label
+It runs on the no-model film and on a polished one alike. The polish refines the no-model film,
+so it never keeps what that film would drop: a caption that misreads a printed recipe as a posed
+child does not get it past this pass. A screen that plays as a Live Photo, or shows someone Immich
+knows, still stays. What left is listed by id and head label
 in `derived-decisions/unvouched-filler.private.json`.
 
 ## Going short, on purpose
@@ -101,6 +103,9 @@ The draft tries to reach its length before it gives up the seconds:
 
 What never happens: a slot filled with a frame nothing vouches for, a filler frame dropped by the
 pass above refilled, or a film padded with a still repeated for time.
+The final scene-duplicate check also accepts a shorter film: falling below the target's 15 %
+tolerance does not protect a repeated scene. Owner-required shots and someone's only family
+appearance keep their existing protections.
 
 The run record says how it landed: `near_target` when the film is within 15 % of its content length,
 `search_limited` or `editorial_shortfall` when it ran shorter, with the seconds behind it.

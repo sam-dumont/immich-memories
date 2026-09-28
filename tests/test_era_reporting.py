@@ -34,14 +34,8 @@ class _Immich:
     def get_videos_for_date_range(self, date_range: DateRange) -> list:
         return self._by_range.get(date_range, [])
 
-    def get_videos_for_person_and_date_range(self, person_id: str, date_range: DateRange) -> list:
-        """Immich filters server-side, so a window can come back empty for one
-        person while holding plenty for everyone else."""
-        return [
-            a
-            for a in self._by_range.get(date_range, [])
-            if any(p.id == person_id for p in getattr(a, "people", None) or [])
-        ]
+    def get_photos_for_date_range(self, _date_range: DateRange) -> list:
+        return []
 
 
 class _Progress:

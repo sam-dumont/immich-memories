@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 19:10+0200\n"
+"POT-Creation-Date: 2026-09-27 22:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -196,7 +196,7 @@ msgstr "自动（与片段一致）"
 msgid "Auto duration"
 msgstr "自动时长"
 
-#: i18n.py:101
+#: i18n.py:102
 msgid "Automatic (browser)"
 msgstr "自动（浏览器）"
 
@@ -407,7 +407,7 @@ msgstr "请连接 Immich 服务器以继续。在上方输入服务器地址和 
 msgid "Connected as: {name}"
 msgstr "已连接，用户：{name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:454 pages/step2_loading.py:307
 msgid "Connecting to Immich..."
 msgstr "正在连接 Immich..."
 
@@ -496,7 +496,7 @@ msgstr "差异"
 msgid "Discovery failed: {error}"
 msgstr "搜索失败：{error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:66 pages/step2_loading.py:366
 msgid "Done"
 msgstr "完成"
 
@@ -539,7 +539,7 @@ msgstr "错误（{error_count}）"
 msgid "Export"
 msgstr "导出"
 
-#: pages/step2_loading.py:336
+#: pages/step2_loading.py:324
 #, python-brace-format
 msgid "Failed to load videos: {value}"
 msgstr "加载视频失败：{value}"
@@ -566,10 +566,6 @@ msgid ""
 msgstr ""
 "已启用快速 NAS 预设：1080p H.264、快速编码、静态标题背景、不分析语音、较少照片、优先分析收藏内容。通过 config.yaml 中的 `preset: fast` 或 "
 "IMMICH_MEMORIES_PRESET=fast 设置；本次运行以下方选择为准。"
-
-#: pages/step2_loading.py:252
-msgid "Fetching photos..."
-msgstr "正在获取照片..."
 
 #: pages/_step3_music_preview.py:232
 msgid "Film language"
@@ -700,7 +696,7 @@ msgstr "上传到 Immich：{delivery_label}"
 msgid "Immich delivery: {value}"
 msgstr "上传到 Immich：{value}"
 
-#: pages/clip_grid.py:170 pages/clip_grid.py:224
+#: pages/clip_grid.py:177 pages/clip_grid.py:232
 msgid "Include"
 msgstr "包含"
 
@@ -716,7 +712,7 @@ msgstr "包含照片"
 msgid "Include in compilation"
 msgstr "加入合辑"
 
-#: i18n.py:109
+#: i18n.py:110
 msgid "Interface language"
 msgstr "界面语言"
 
@@ -778,7 +774,7 @@ msgstr "正在加载相册..."
 msgid "Loading thumbnails"
 msgstr "正在加载缩略图"
 
-#: pages/step2_loading.py:313
+#: pages/step2_loading.py:301
 msgid "Loading videos..."
 msgstr "正在加载视频..."
 
@@ -1051,7 +1047,7 @@ msgstr "人物筛选"
 msgid "Person Spotlight"
 msgstr "人物特辑"
 
-#: pages/clip_grid.py:193
+#: pages/clip_grid.py:200
 msgid "Photo"
 msgstr "照片"
 
@@ -1063,7 +1059,7 @@ msgstr "可用照片"
 msgid "Photo duration (seconds)"
 msgstr "照片时长（秒）"
 
-#: pages/step2_loading.py:461
+#: pages/step2_loading.py:449
 #, python-brace-format
 msgid "Photo thumbnails: {value}/{count}"
 msgstr "照片缩略图：{value}/{count}"
@@ -1242,6 +1238,10 @@ msgstr "正在服务器上运行：{phase}。离开此页面后仍会继续。"
 #: app.py:73 app.py:219
 msgid "Runs"
 msgstr "任务"
+
+#: pages/clip_grid.py:108 pages/clip_grid.py:320 pages/clip_grid.py:356
+msgid "Same episode"
+msgstr "同一片段"
 
 #: pages/step1_config.py:140
 msgid "Save Config"
@@ -1491,7 +1491,7 @@ msgstr "此剪辑在你离开期间完成。重新加载媒体后即可导出。
 msgid "Thumbnail cache"
 msgstr "缩略图缓存"
 
-#: pages/step2_loading.py:415
+#: pages/step2_loading.py:403
 #, python-brace-format
 msgid "Thumbnails: {value}/{count}"
 msgstr "缩略图：{value}/{count}"
@@ -1514,9 +1514,9 @@ msgstr "同时出现"
 
 #: pages/step1_people.py:181
 msgid ""
-"Together keeps only the moments holding everyone named. Any of these people keeps a moment "
-"holding any one of them."
-msgstr "“同时出现”仅保留所有指定人物同框的时刻。“其中任意人物”保留至少一位指定人物出现的时刻。"
+"Together keeps the times everyone named was there, even if never in the same photo. Any of "
+"these people keeps the times any one of them was there."
+msgstr "“一起”保留所有指定的人都在场的时段，即使他们从未出现在同一张照片里。“其中任何一人”保留其中任意一人在场的时段。"
 
 #: pages/login.py:64
 msgid "Too many failed attempts. Try again later."

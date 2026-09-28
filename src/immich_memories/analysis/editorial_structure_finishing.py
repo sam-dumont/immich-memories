@@ -9,17 +9,13 @@ that build one.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import partial
 from typing import Any
 
 from immich_memories.analysis import editorial_shareability as _share
-from immich_memories.analysis.editorial_completion import (
-    ACCEPTED_SHORTFALL_FRACTION,
-    RetainedMotion,
-)
+from immich_memories.analysis.editorial_completion import RetainedMotion
 from immich_memories.analysis.editorial_final_hash_review import Admits, review_cut_by_cached_hashes
 from immich_memories.analysis.editorial_intent_validation import MIN_CARRIERS, MIN_CONTENT_SHARE
 from immich_memories.analysis.editorial_source_route import retire_unprojectable
@@ -70,8 +66,6 @@ class PlanRun:
     )
     # Binds a kept carrier's unmeasured Live stitch to its measurement (`measured_stitch`).
     bind_stitch: Callable[[dict], dict] | None = None
-    # Whether the model polish ran on the rules draft; a draft it did not touch is the no-model film.
-    polished: bool = False
 
 
 def resolve_motion_and_timing(
@@ -206,11 +200,9 @@ def final_duplicate_review(
         frame_quality=frame_quality,
         # Folding starred twins never takes a film under the floor where it abstains.
         film_floor=(MIN_CARRIERS, MIN_CONTENT_SHARE * requested_seconds),
-        # A scene repeat nothing replaces leaves only while the film still reaches its target
-        # within the shortfall the owner accepts: a film short of material keeps it.
-        content_floor=run.final_content_cap * (1 - ACCEPTED_SHORTFALL_FRACTION)
-        if run.final_content_cap > 0
-        else math.inf,
+        # Requested duration is a ceiling. A repeated scene cannot earn its place just
+        # because distinct replacements ran out; the intent check reports the shortfall.
+        content_floor=0.0,
     )
     # Refinement must retain the draft's explicit starred-twin history. The
     # invariant checker still requires its keeper to survive in the final cut.
@@ -327,7 +319,7 @@ def apply_audience_gate(
 
 
 def drop_filler_nothing_vouches_for(run: PlanRun, evidence: FillerEvidence, record) -> None:
-    """The no-model film's last pass: filler that shows nothing leaves, and no pass refills it."""
+    """Every rules-drafted film's last pass: filler that shows nothing leaves, and no pass refills it."""
     run.carriers, dropped = drop_unvouched_filler(run.carriers, evidence)
     run.cut_carriers.extend(
         carrier

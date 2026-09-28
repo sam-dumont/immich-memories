@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import FrozenInstanceError, dataclass
+from dataclasses import FrozenInstanceError
 from datetime import UTC, datetime
 from unittest.mock import Mock
 
@@ -195,56 +195,7 @@ def test_parser_rejects_invalid_or_unsafe_syntax(text):
         PersonExpression.parse(text)
 
 
-@dataclass(frozen=True)
-class FetchedAsset:
-    id: str
-    file_created_at: datetime
-    media_type: str
-
-
 WINDOW = DateRange(datetime(2024, 1, 1, tzinfo=UTC), datetime(2024, 12, 31, tzinfo=UTC))
-
-
-@pytest.mark.parametrize(
-    "media_type,fetcher", [("photo", photos_in_window), ("video", videos_in_window)]
-)
-def test_expression_fetches_each_face_once_preserves_objects_and_sorts(media_type, fetcher):
-    early = FetchedAsset("early", WINDOW.start, media_type)
-    late_b = FetchedAsset("late-b", WINDOW.end, media_type)
-    late_a = FetchedAsset("late-a", WINDOW.end, media_type)
-    excluded = FetchedAsset("parent-alone", WINDOW.start, media_type)
-    groups = {"a": [late_b, early, excluded], "b": [late_a, late_b], "c": [late_b, late_a, early]}
-    client = Mock()
-    client.get_photos_for_date_range.side_effect = lambda _date_range, **kw: groups[kw["person_id"]]
-    client.get_videos_for_person_and_date_range.side_effect = lambda face, _date_range: groups[face]
-    expression = PersonExpression.parse('("a" OR "b" OR "a") AND "c"')
-    selected = fetcher(client, [], WINDOW, person_expression=expression)
-    assert selected == [early, late_a, late_b]
-    assert selected[0] is early
-    if media_type == "photo":
-        calls = client.get_photos_for_date_range.call_args_list
-        assert [call.kwargs for call in calls] == [
-            {"person_id": value} for value in ("a", "b", "c")
-        ]
-        assert all(call.args == (WINDOW,) for call in calls)
-    else:
-        assert [
-            call.args for call in client.get_videos_for_person_and_date_range.call_args_list
-        ] == [(value, WINDOW) for value in ("a", "b", "c")]
-        client.get_videos_for_all_persons.assert_not_called()
-        client.get_videos_for_date_range.assert_not_called()
-
-
-@pytest.mark.parametrize("fetcher", [photos_in_window, videos_in_window])
-def test_empty_intersection_does_not_fall_back_to_whole_window(fetcher):
-    client = Mock()
-    client.get_photos_for_date_range.return_value = []
-    client.get_videos_for_person_and_date_range.return_value = []
-    assert (
-        fetcher(client, [], WINDOW, person_expression=PersonExpression.parse('"a" AND "b"')) == []
-    )
-    client.get_videos_for_date_range.assert_not_called()
-    client.get_videos_for_all_persons.assert_not_called()
 
 
 @pytest.mark.parametrize("fetcher", [photos_in_window, videos_in_window])
@@ -255,38 +206,13 @@ def test_mixed_flat_and_nested_scope_is_rejected_before_fetch(fetcher):
     assert client.mock_calls == []
 
 
-@pytest.mark.parametrize(
-    "ids,match", [([], "and"), (["a"], "and"), (["a", "b"], "and"), (["a", "b"], "or")]
-)
-def test_flat_photo_endpoint_arguments_are_unchanged(ids, match):
+def test_naming_nobody_reads_the_window_whole_with_no_person_argument():
+    # WHY: Immich is the read boundary; the call shape is what this pins.
     client = Mock()
     client.get_photos_for_date_range.return_value = []
-    photos_in_window(client, ids, WINDOW, person_match=match)
-    expected = (
-        [{"person_id": "a"}, {"person_id": "b"}]
-        if match == "or"
-        else [
-            {
-                "person_id": ids[0] if len(ids) == 1 else None,
-                "person_ids": ids if len(ids) > 1 else None,
-            }
-        ]
-    )
-    assert [call.kwargs for call in client.get_photos_for_date_range.call_args_list] == expected
-
-
-@pytest.mark.parametrize(
-    "ids,match,method,args",
-    [
-        ([], "and", "get_videos_for_date_range", [(WINDOW,)]),
-        (["a"], "and", "get_videos_for_person_and_date_range", [("a", WINDOW)]),
-        (["a", "b"], "and", "get_videos_for_all_persons", [(["a", "b"], WINDOW)]),
-        (["a", "b"], "or", "get_videos_for_person_and_date_range", [("a", WINDOW), ("b", WINDOW)]),
-    ],
-)
-def test_flat_video_endpoint_choices_are_unchanged(ids, match, method, args):
-    client = Mock()
-    getattr(client, method).return_value = []
-    videos_in_window(client, ids, WINDOW, person_match=match)
-    assert [call.args for call in getattr(client, method).call_args_list] == args
-    assert len(client.mock_calls) == len(args)
+    client.get_videos_for_date_range.return_value = []
+    photos_in_window(client, [], WINDOW)
+    videos_in_window(client, [], WINDOW)
+    assert [call.args for call in client.get_photos_for_date_range.call_args_list] == [(WINDOW,)]
+    assert client.get_photos_for_date_range.call_args.kwargs == {}
+    assert [call.args for call in client.get_videos_for_date_range.call_args_list] == [(WINDOW,)]

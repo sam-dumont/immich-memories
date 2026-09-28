@@ -540,8 +540,10 @@ def _select(
     )
     run.selection_stages["after_final_duplicate_review"] = len(run.carriers)
     announce_count(len(run.carriers), "after the duplicate review")
-    if ports.rules is not None and not run.polished:
+    if ports.rules is not None:
         # The last removal pass, so no replacement pass can bring a removed filler's like back in.
+        # A polished film runs it too: the polish refines the no-model film, and must not keep
+        # a screen or an empty frame that film would have dropped.
         drop_filler_nothing_vouches_for(run, filler_evidence(source), record_story)
     # After every pass that removes a shot, so none of them can undo a family seat. It seats a
     # close family member's frame, never filler the pass above removed.
