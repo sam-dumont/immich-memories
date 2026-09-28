@@ -720,12 +720,11 @@ class TestConfigShowCommand:
         config.immich.api_key = "secret-key"
         result = _invoke(["config", "--show"], config=config)
         assert result.exit_code == 0
-        # Exact table cells, not a substring probe: a bare URL literal inside a
-        # string reads as URL sanitization to CodeQL (and tests less precisely).
+        # Exact table cells, not a substring probe: a bare URL literal with `in`
+        # reads as incomplete URL substring sanitization to CodeQL, even against
+        # a set. A set comparison sidesteps that pattern entirely.
         cells = {cell.strip() for line in result.output.splitlines() for cell in line.split("│")}
-        assert "immich.url" in cells
-        assert "http://photos.test:2283" in cells
-        assert "***" in cells  # API key masked
+        assert cells >= {"immich.url", "http://photos.test:2283", "***"}  # API key masked
         assert "secret-key" not in result.output
 
     def test_config_show_no_key(self):
