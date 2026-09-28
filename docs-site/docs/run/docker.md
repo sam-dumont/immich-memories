@@ -11,7 +11,8 @@ on a plain NAS; a GPU or a model makes it better. The shortest path through it i
 ## Install
 
 You need Docker Engine with Compose v2 (`docker compose version` answers), Immich v2 or v3, and
-the hardware on [Requirements](./requirements.md).
+the hardware on [Requirements](./requirements.md). What the image has been checked on, and when:
+[Supported and tested](./requirements.md#supported-and-tested).
 
 **1. Download the compose file and `example.env`** into an empty directory:
 

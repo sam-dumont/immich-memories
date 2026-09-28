@@ -11,6 +11,7 @@ nothing else. Putting the heads and detectors on a card is the
 [inference service](../better/inference.md), a separate add-on.
 
 `immich-memories hardware` prints what it found and which backend it would pick. Run it first.
+Which encoders have been checked, and when: [Supported and tested](./requirements.md#supported-and-tested).
 
 ## Without a GPU
 

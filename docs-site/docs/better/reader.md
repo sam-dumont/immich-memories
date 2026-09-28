@@ -19,6 +19,8 @@ and can cost much more, especially hosted. The selection reader still receives t
 
 ## What you need
 
+Which servers and hosted models have been checked, and when: [Supported and tested](../run/requirements.md#supported-and-tested).
+
 - A text model with at least a 32k context. No vision needed.
 - An endpoint that speaks the OpenAI `/v1/chat/completions` or the Anthropic `/v1/messages` API, or
   Ollama's own.

@@ -8,7 +8,8 @@ The NAS that runs Immich runs this too, on its own, and makes the whole film the
 model makes it better later ([what each one adds](../get-started/what-a-gpu-or-a-model-adds.md)).
 The install is the
 [Docker Compose](./docker.md) one; this page is what is different on a Synology, QNAP, TrueNAS or
-Unraid box. Tested on a Synology DS423+ (Celeron J4125, four cores).
+Unraid box. It has run on a Synology DS423+ (Celeron J4125, four cores); when, and on which release:
+[Supported and tested](./requirements.md#supported-and-tested).
 
 ## Install
 
