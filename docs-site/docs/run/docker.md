@@ -128,13 +128,9 @@ release. An unknown major version stops the run:
 
 ## The product tier in compose {#the-preparation-tier-in-compose}
 
-The compose file sets `IMMICH_MEMORIES_TIER: "auto"`. Without GPU inference, that resolves to
-NAS. A usable GPU inference service selects GPU; adding a configured LLM selects Full.
-Caption and Laya services must also be ready. Preparation follows the same product tier.
-
-An environment variable beats `config.yaml`: remove the Compose tier variable if you want the
-file to control an explicit tier. Do not set a separate preparation tier. What each tier runs is on
-[Requirements and tiers](./requirements.md#the-preparation-tier).
+The compose file sets `IMMICH_MEMORIES_TIER: "auto"`, so the app picks its tier from what it
+finds: a plain NAS until a GPU and a caption server are there. How it decides:
+[The three tiers](./requirements.md#the-preparation-tier).
 
 `IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` puts the document classifier on the
 config volume. Keep that line if you write your own service block: without it the classifier lands

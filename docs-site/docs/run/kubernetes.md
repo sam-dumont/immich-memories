@@ -126,9 +126,9 @@ three are there, so a restart costs nothing and a nightly CronJob never goes bac
 
 ## Automatic product tiers {#set-the-preparation-tier}
 
-The Deployment, Job and CronJobs set `IMMICH_MEMORIES_TIER` to `auto`. Preparation follows the
-resolved product tier. A CPU-only base stays on NAS. For GPU selection, configure a GPU inference
-service and caption service on every pod you run, and install the Laya checkpoint:
+The Deployment, Job and CronJobs set `IMMICH_MEMORIES_TIER` to `auto`, so a CPU-only base runs
+the `nas` tier. To reach `gpu`, point every pod you run at a GPU inference service and a caption
+server, and install the Laya checkpoint:
 
 ```yaml
             - name: IMMICH_MEMORIES_TIER
@@ -139,16 +139,10 @@ service and caption service on every pod you run, and install the Laya checkpoin
               value: "http://captioner:8092/v1"
 ```
 
-The inference service must report CUDA; a CPU inference service or caption URL alone does not
-select GPU. A usable local CUDA runtime also qualifies. Adding a configured LLM selects Full.
-Without GPU inference, an LLM still supplies text features such as titles.
-
-Use `kubectl -n immich-memories set env deployment/immich-memories` with these pairs for a running
-Deployment. Environment variables override config files, so remove the tier env var if you want
-`config.yaml` to select an explicit product tier. Check the services with
-`immich-memories preflight`; see [Laya setup](../better/reader.md#the-laya-audience-pre-screen).
-
-What each tier runs and gives up is on [Requirements and tiers](./requirements.md#the-preparation-tier).
+On a running Deployment, `kubectl -n immich-memories set env deployment/immich-memories` takes the
+same pairs. `immich-memories preflight` checks the services, and
+[Laya setup](../better/reader.md#the-laya-audience-pre-screen) covers the checkpoint. How the tier is
+picked: [The three tiers](./requirements.md#the-preparation-tier).
 
 ## Check it from outside the pod
 
@@ -176,7 +170,7 @@ Both apply on their own, with no Secret and no `base/`:
 
 ```bash
 kubectl apply -k deploy/kubernetes/overlays/inference    # heads and detectors, -cuda for a card
-kubectl apply -k deploy/kubernetes/overlays/captioner    # the caption server tier: full wants
+kubectl apply -k deploy/kubernetes/overlays/captioner    # the caption server the gpu and full tiers need
 ```
 
 Point the app at them with `IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL=http://inference:8092` (two

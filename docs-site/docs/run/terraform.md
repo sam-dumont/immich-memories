@@ -46,9 +46,8 @@ artifacts already present. Inspect it with:
 kubectl logs -n immich-memories deploy/immich-memories -c fetch-models
 ```
 
-The module defaults to `IMMICH_MEMORIES_TIER=auto`. Without GPU inference, selection stays on
-NAS. GPU or Full also need a caption provider and Laya ready; preparation follows the resolved
-product tier. See [Requirements and tiers](./requirements.md#which-tier-you-get).
+The module sets `IMMICH_MEMORIES_TIER=auto`, so the app picks its tier from what it finds:
+[The three tiers](./requirements.md#the-preparation-tier).
 
 ## Prerequisites
 

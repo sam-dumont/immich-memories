@@ -4,8 +4,9 @@ title: On a NAS
 
 # On a NAS
 
-The NAS that runs Immich runs this too, on its own. NAS is a good default; optional GPU and model
-layers can add small refinements. Compare the pictures before upgrading. The install is the
+The NAS that runs Immich runs this too, on its own, and makes the whole film there. A GPU or a
+model makes it better later ([what each one adds](../get-started/what-a-gpu-or-a-model-adds.md)).
+The install is the
 [Docker Compose](./docker.md) one; this page is what is different on a Synology, QNAP, TrueNAS or
 Unraid box. Tested on a Synology DS423+ (Celeron J4125, four cores).
 
@@ -21,8 +22,8 @@ sudo docker compose exec immich-memories immich-memories models fetch
 sudo docker compose exec immich-memories immich-memories preflight
 ```
 
-The compose file uses `tier: auto`, which selects `nas` without GPU inference. The eight context
-heads and two detectors run on the NAS CPU; no caption or LLM service is required.
+The compose file uses `tier: auto`, which picks the `nas` tier here: the eight context heads and
+two detectors run on the NAS CPU, and no caption or model service is needed.
 
 Set the home base in `.env` before the first cut
 (`IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE` and `..._LONGITUDE`). Without it no day counts as
