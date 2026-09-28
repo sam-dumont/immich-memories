@@ -36,6 +36,9 @@ class TitleInserter:
         self.prober = prober
         self.background_renderer = TitleBackgroundRenderer(settings, prober)
         self._certified_intervals = settings.certified_content_intervals.copy()
+        # Seconds the title (head) and ending (tail) play from a clip in slow
+        # motion, which the clip itself therefore no longer plays.
+        self._borrowed: dict[str, tuple[float, float]] = {}
 
     def _validate_certified_content(self, clips: list[AssemblyClip]) -> None:
         """Check source identity and exact extracted length after title composition."""
@@ -57,11 +60,12 @@ class TitleInserter:
             if len(matches) != 1 or matches[0].is_title_screen:
                 raise ValueError("Certified editorial Live source was lost or duplicated by titles")
             clip = matches[0]
+            head, tail = self._borrowed.get(asset_id, (0.0, 0.0))
             if (
                 isinstance(clip.duration, bool)
                 or not math.isfinite(clip.duration)
-                or clip.duration != interval[1] - interval[0]
-                or clip.input_seek != 0.0
+                or not math.isclose(clip.duration, interval[1] - interval[0] - head - tail)
+                or not math.isclose(clip.input_seek, head)
             ):
                 raise ValueError(
                     "Certified editorial Live interval changed during title composition"
@@ -77,13 +81,17 @@ class TitleInserter:
         self._validate_certified_content(clips)
         return assemble_fn(clips, output_path, progress_callback)
 
-    @staticmethod
-    def _trim_first_clip(clips: list[AssemblyClip], trim_seconds: float) -> None:
+    def _borrow(self, asset_id: str, *, head: float = 0.0, tail: float = 0.0) -> None:
+        was_head, was_tail = self._borrowed.get(asset_id, (0.0, 0.0))
+        self._borrowed[asset_id] = (was_head + head, was_tail + tail)
+
+    def _trim_first_clip(self, clips: list[AssemblyClip], trim_seconds: float) -> None:
         """Trim seconds from the start of the first clip (used in title slow-mo)."""
         if not clips:
             return
         first = clips[0]
         if first.duration > trim_seconds + 1.0:
+            self._borrow(first.asset_id, head=trim_seconds)
             # WHY replace(): AssemblyClip carries sixteen fields and rebuilding
             # it by hand copied eight, silently dropping a user-set
             # rotation_override, the has_music flag the ducking pass depends on,
@@ -192,13 +200,10 @@ class TitleInserter:
         source_seconds = 0.5
         if final_clips and not final_clips[-1].is_title_screen:
             last = final_clips[-1]
-            trim_dur = (
-                last.duration - source_seconds
-                if ending_clip
-                and last.asset_id not in self._certified_intervals
-                and last.duration > source_seconds + 1.0
-                else last.duration
-            )
+            borrows = bool(ending_clip) and last.duration > source_seconds + 1.0
+            if borrows:
+                self._borrow(last.asset_id, tail=source_seconds)
+            trim_dur = last.duration - source_seconds if borrows else last.duration
             # Same here: the hand-built copy also lost the clip's place, so a
             # cut ending on a located clip dropped its caption.
             final_clips[-1] = replace(
@@ -308,6 +313,7 @@ class TitleInserter:
         Returns:
             Path to assembled video.
         """
+        self._borrowed.clear()
         self._validate_certified_content(clips)
         if not clips:
             raise ValueError("No clips provided")
@@ -380,8 +386,12 @@ class TitleInserter:
             )
         ]
 
-        # Trim 0.5s from first clip (used in title slow-mo)
-        if use_content_bg and content_clip and clips[0].asset_id not in self._certified_intervals:
+        # WHY every clip, certified or not: the title plays the first clip's
+        # opening half-second in slow motion, so the clip starts after it.
+        # Exempting certified clips (every editorial one) replayed that
+        # half-second and the picture visibly jumped back at the cut. The
+        # certificate still holds: title + clip + ending cover the interval once.
+        if use_content_bg and content_clip:
             self._trim_first_clip(clips, 0.5)
 
         _t_title_done = _time.monotonic()
