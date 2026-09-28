@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 import nltk
-from nltk.corpus.reader.wordnet import NOUN, WordNetCorpusReader
+from nltk.corpus.reader.wordnet import ADJ, NOUN, VERB, WordNetCorpusReader
 from nltk.data import ZipFilePathPointer
 
 # The synsets whose kinds are people: a person, people as a whole, a group of people.
@@ -59,6 +59,21 @@ class Lexicon(Protocol):
 
     def names_role(self, word: str, role: str) -> bool:
         """Whether the word names a people-file role: the role itself or a kind of it."""
+        ...
+
+    def verb_base(self, word: str) -> str | None:
+        """The verb a word is a form of ("hiking": "hike"), or None when it is no verb."""
+        ...
+
+    def is_adjective(self, word: str) -> bool:
+        """Whether WordNet holds the word as an adjective ("black", "closed", "live")."""
+        ...
+
+    def derived_nouns(self, word: str) -> frozenset[str]:
+        """The nouns WordNet forms from the word as a noun or a verb, its own noun included.
+
+        "hiking" gives hiking, hike and hiker; "partying" (no noun) gives party and partier.
+        """
         ...
 
 
@@ -118,6 +133,31 @@ class WordNetLexicon:
             for synset in (sense, *sense.hypernyms())
             for lemma in synset.lemmas()
         )
+
+    def verb_base(self, word: str) -> str | None:
+        base = self._reader.morphy(word.strip().lower(), VERB)
+        return str(base) if base else None
+
+    def is_adjective(self, word: str) -> bool:
+        return bool(self._reader.synsets(word.strip().lower(), pos=ADJ))
+
+    def derived_nouns(self, word: str) -> frozenset[str]:
+        found: set[str] = set()
+        noun = self.noun_base(word)
+        if noun:
+            found.add(noun)
+        for base, pos in ((noun, NOUN), (self.verb_base(word), VERB)):
+            if not base:
+                continue
+            found |= {
+                formed.name().lower()
+                for synset in self._reader.synsets(base, pos=pos)
+                for lemma in synset.lemmas()
+                if lemma.name().lower() == base
+                for formed in lemma.derivationally_related_forms()
+                if formed.synset().pos() == NOUN
+            }
+        return frozenset(found)
 
     def _kinds(self, word: str) -> set[str]:
         base = self.noun_base(word) or word.strip().lower()

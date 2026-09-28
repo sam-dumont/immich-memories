@@ -30,7 +30,7 @@ from immich_memories.free_text.reading import (
 
 # The owner's own words for themself. The library is the owner's point of view: "I" and "me"
 # usually stand behind the camera, so they anchor facts (an age, a home), never a face.
-_FIRST_PERSON = frozenset(
+FIRST_PERSON = frozenset(
     {"i", "me", "my", "mine", "myself", "we", "us", "our", "ours", "ourselves"}
 )
 # "We" is the owner and their partner: "our wedding" is the two of them.
@@ -61,9 +61,7 @@ places does that mean? Pick one. Reason first. Return JSON."""
 _ARTICLES = frozenset(
     {"a", "an", "the", "some", "and", "or", "my", "our", "his", "her", "their", "its", "your"}
 )
-_PLACE_GLUE = _ARTICLES | frozenset(
-    {"at", "in", "on", "to", "from", "of", "by", "with", "near", "around"}
-)
+GLUE = _ARTICLES | frozenset({"at", "in", "on", "to", "from", "of", "by", "with", "near", "around"})
 # Nested scopes, narrowest first: several phrases give the widest one.
 _NESTED = ("home", "home_at_time", "near_home", "anywhere")
 
@@ -136,7 +134,7 @@ def link_who(
     reasons: list[Reason] = []
     anchors: list[str] = []
     said = set(words_of(request))
-    first_person = sorted(said & _FIRST_PERSON)
+    first_person = sorted(said & FIRST_PERSON)
     if first_person and owner:
         anchors.append(owner.person_id)
         reasons.append(
@@ -189,7 +187,7 @@ def _people_in(
     company: str | None = None
     reasons: list[Reason] = []
     for index, token in enumerate(tokens):
-        if token in _FIRST_PERSON:
+        if token in FIRST_PERSON:
             continue
         named, rule = _matches(" ".join(tokens[index : index + 2]), token, people, lexicon)
         if not named:
@@ -519,7 +517,7 @@ def link_where(
 
 def _beyond_subject(span: str, heads: Collection[str]) -> str:
     words = [word for word in words_of(span) if word not in heads and word not in _ARTICLES]
-    return " ".join(words) if any(word not in _PLACE_GLUE for word in words) else ""
+    return " ".join(words) if any(word not in GLUE for word in words) else ""
 
 
 def _union(chosen: Sequence[tuple[str, Home | None]]) -> tuple[str, Home | None]:

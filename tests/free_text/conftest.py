@@ -17,8 +17,14 @@ VOCABULARY: dict[str, tuple[str | Sense, ...]] = {
     "bread": ("noun.food",),
     "park": ("noun.location", "noun.artifact"),
     "race": ("noun.event",),
-    "party": ("noun.event",),
+    "party": ("noun.event", Sense("verb.social", formed=("party.n.01", "partier.n.01"))),
+    "partier": (Sense("noun.person", kind_of="person.n.01"),),
     "hiking": ("noun.act",),
+    "hike": ("noun.act", Sense("verb.motion", formed=("hiker.n.01", "hike.n.01", "hiking.n.01"))),
+    "hiker": (Sense("noun.person", kind_of="person.n.01"),),
+    "making": ("noun.act",),
+    "make": (Sense("verb.creation", formed=("making.n.01", "maker.n.01")),),
+    "maker": (Sense("noun.person", kind_of="person.n.01"),),
     "meadow": ("noun.location",),
     "Northvale": ("noun.location",),
     "person": ("noun.person",),
@@ -36,6 +42,9 @@ VOCABULARY: dict[str, tuple[str | Sense, ...]] = {
     "beach": ("noun.location",),
     "pool": ("noun.artifact",),
     "home": ("noun.location",),
+    "eye": ("noun.body",),
+    "closed": ("adj.all",),
+    "rose": ("noun.plant",),
 }
 # Irregular plurals, as WordNet's noun.exc lists them.
 EXCEPTIONS = {"children": "child"}
