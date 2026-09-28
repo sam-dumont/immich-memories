@@ -13,6 +13,7 @@ from fastapi import Depends
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
 from immich_memories.config import get_config
 from immich_memories.config_loader import Config
+from immich_memories.web.answer_cache import AnswerCache, answer_cache
 
 PreviewFetcher = Callable[[str], bytes | None]
 
@@ -147,3 +148,8 @@ def config_file() -> Path:
     from immich_memories.config import get_config_path
 
     return get_config_path()
+
+
+def answers(config: Annotated[Config, Depends(current_config)]) -> AnswerCache:
+    """Slow answers (suggestions, trips) served from their last run and refreshed behind the page."""
+    return answer_cache(config)

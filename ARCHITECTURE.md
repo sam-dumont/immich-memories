@@ -756,7 +756,7 @@ src/immich_memories/
 │   │                           #   record_cut_run: `generate --no-render` keeps its cut as a run
 │   ├── candidate_fates.py       # Saved pool outcomes + decision-log reader shared with runs why
 │   ├── cut_review.py           # The model polish record per shot (swaps, protections, refused offers)
-│   ├── cut_revisions.py        # Owner edits to a saved cut as numbered revisions, checked like the renderer
+│   ├── cut_revisions.py        # Owner edits to a saved cut (incl. pool additions) as numbered revisions
 │   ├── revision_render.py      # A revision projected onto the cut's render inputs, as the render reads it
 │   ├── storyboard.py           # A saved cut as shots in playback order, their intervals and moment siblings
 │   ├── story_view.py           # The stories a cut tells, heaviest first, from plan.private.json
@@ -949,7 +949,10 @@ whose progress the page follows over SSE. The review page (`web/src/routes/runs/
 the saved cut (`operations/storyboard.py`, `cut_review.py`, `story_view.py`), keeps the owner's
 edits as numbered revisions in the attempt directory (`operations/cut_revisions.py`), and renders
 one through the same projection the CLI uses (`operations/revision_render.py`,
-`generate_saved_cut.py`). Suggestions use `AutoRunner`; nothing owns a separate job store.
+`generate_saved_cut.py`). The pool's ticks are the owner's last pass, saved as a revision too:
+added pictures are made playable by `processing/added_material.py` (a Live Photo's motion stitched
+through `motion_renderings`) and the film grows to hold them; nothing is selected again.
+Suggestions use `AutoRunner`; nothing owns a separate job store.
 
 **Web client (`web/` at the repo root, served from `src/immich_memories/web/client`).** SvelteKit
 static SPA with `@immich/ui` (MIT; its logos and store badges are Immich trademarks, stripped at

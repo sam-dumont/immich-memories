@@ -3,10 +3,11 @@
   import { Button, Heading, LoadingSpinner, Text } from '@immich/ui';
   import { mdiMovieOpenPlayOutline } from '@mdi/js';
   import { onMount } from 'svelte';
-  import { api, post, type AlbumChoice, type CutBrief, type JobView, type NamedPerson, type SpecialDay, type TripChoice } from '$lib/api';
+  import { api, post, type AlbumChoice, type CutBrief, type JobView, type NamedPerson, type SpecialDay, type TripChoice, type Trips } from '$lib/api';
   import { locale, N_, t } from '$lib/i18n.svelte';
   import { followJob } from '$lib/job.svelte';
   import JobPanel from '$lib/JobPanel.svelte';
+  import { updatedAgo } from '$lib/ago';
   import { memoryTypeLabel } from '$lib/labels';
 
   // Which of generate's scope flags each memory type reads, in the order the form asks them.
@@ -36,6 +37,18 @@
   };
   const TYPES = Object.keys(FIELDS);
   const SEASONS = ['spring', 'summer', 'fall', 'winter'] as const;
+  const SEASON_LABELS: Record<(typeof SEASONS)[number], string> = {
+    spring: N_('Spring'),
+    summer: N_('Summer'),
+    fall: N_('Autumn'),
+    winter: N_('Winter'),
+  };
+  // Month names in the interface language, from the browser's own calendar data.
+  const monthNames = $derived(
+    Array.from({ length: 12 }, (_, index) =>
+      new Intl.DateTimeFormat(locale(), { month: 'long' }).format(new Date(2024, index, 1)),
+    ),
+  );
   const now = new Date();
 
   let kind = $state('monthly_highlights');
@@ -73,6 +86,17 @@
   let eventId = $state<string | null>(null);
   let tripProblem = $state('');
   let people = $state<NamedPerson[]>([]);
+  let peopleQuery = $state('');
+  // The most pictured first (the server's order); the rest are a search away. Chosen names always show.
+  const PEOPLE_SHOWN = 16;
+  const visiblePeople = $derived.by(() => {
+    const query = peopleQuery.trim().toLocaleLowerCase();
+    const matches = query
+      ? people.filter((person) => person.name.toLocaleLowerCase().includes(query)).slice(0, 40)
+      : people.slice(0, PEOPLE_SHOWN);
+    const extra = people.filter((person) => chosen.includes(person.name) && !matches.includes(person));
+    return [...extra, ...matches];
+  });
   let albums = $state<AlbumChoice[]>([]);
   let command = $state('');
   let job = $state<JobView | null>(null);
@@ -126,18 +150,38 @@
   });
 
   // Without a trip chosen, `generate` only lists the year's trips: the form lists them here instead.
+  // The server keeps each year's list and works out a fresh one behind it, so this is quick after
+  // the first time; while a first discovery runs, the page asks again every few seconds.
+  let tripsUpdated = $state<string | null>(null);
+  let tripsRefreshing = $state(false);
+  let tripPoll = 0;
+
+  async function loadTrips(asked: number, refresh = false) {
+    try {
+      const answer = await api<Trips>(`/trips?year=${asked}${refresh ? '&refresh=true' : ''}`);
+      if (asked !== year) return;
+      trips = answer.trips ?? null;
+      tripsUpdated = answer.computed_at ?? null;
+      tripsRefreshing = answer.refreshing;
+      tripProblem = answer.error && !answer.trips ? t('Trip detection failed.') : '';
+      if (answer.refreshing) tripPoll = window.setTimeout(() => void loadTrips(asked), 3000);
+    } catch {
+      trips = [];
+      tripProblem = t('Trip detection failed.');
+    }
+  }
+
   $effect(() => {
     if (kind !== 'trip' || !year) return;
     const asked = year;
     trips = null;
     tripProblem = '';
     tripIndex = null;
-    const timer = setTimeout(() => {
-      api<TripChoice[]>(`/trips?year=${asked}`)
-        .then((found) => { if (asked === year) trips = found; })
-        .catch(() => { trips = []; tripProblem = t('Trip detection failed.'); });
-    }, 300);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => void loadTrips(asked), 300);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(tripPoll);
+    };
   });
   // Albums are asked of Immich only when the brief is about one.
   let albumsAsked = false;
@@ -224,7 +268,7 @@
         <legend class="mb-2 text-sm font-semibold">{t('Memory type')}</legend>
         <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {#each TYPES as type (type)}
-            <label class={['cursor-pointer rounded-xl border px-3 py-2 text-sm', kind === type ? 'border-primary bg-primary/10 font-medium' : 'border-gray-200 dark:border-gray-800']}>
+            <label class={['relative cursor-pointer rounded-xl border px-3 py-2 text-sm', kind === type ? 'border-primary bg-primary/10 font-medium' : 'border-gray-200 dark:border-gray-800']}>
               <input type="radio" name="kind" value={type} bind:group={kind} class="sr-only" />{memoryTypeLabel(type)}
             </label>
           {/each}
@@ -233,9 +277,13 @@
 
       <div class="grid gap-4 sm:grid-cols-2">
         {#if shown.includes('year')}<label class={label}>{t('Year')}<input class={field} type="number" min="1990" max="2100" bind:value={year} /></label>{/if}
-        {#if shown.includes('month')}<label class={label}>{t('Month')}<input class={field} type="number" min="1" max="12" bind:value={month} /></label>{/if}
+        {#if shown.includes('month')}
+          <label class={label}>{t('Month')}
+            <select class={field} aria-label={t('Month')} bind:value={month}>{#each monthNames as name, index (index)}<option value={index + 1}>{name}</option>{/each}</select>
+          </label>
+        {/if}
         {#if shown.includes('season')}
-          <label class={label}>{t('Season')}<select class={field} bind:value={season}>{#each SEASONS as value (value)}<option {value}>{t(value)}</option>{/each}</select></label>
+          <label class={label}>{t('Season')}<select class={field} bind:value={season}>{#each SEASONS as value (value)}<option {value}>{t(SEASON_LABELS[value])}</option>{/each}</select></label>
         {/if}
         {#if shown.includes('hemisphere')}
           <label class={label}>{t('Hemisphere')}<select class={field} bind:value={hemisphere}><option value="north">{t('North')}</option><option value="south">{t('South')}</option></select></label>
@@ -302,7 +350,13 @@
 
       {#if shown.includes('trip_index')}
         <fieldset class="flex flex-col gap-2">
-          <legend class="mb-1 text-sm font-semibold">{t('Trip')}</legend>
+          <legend class="mb-1 flex w-full items-center gap-3 text-sm font-semibold">{t('Trip')}
+            {#if tripsUpdated}
+              <span class="text-xs font-normal text-gray-600 dark:text-gray-400">{updatedAgo(tripsUpdated)}</span>
+              <button type="button" class="text-xs font-normal text-primary hover:underline disabled:opacity-50" disabled={tripsRefreshing}
+                onclick={() => { clearTimeout(tripPoll); void loadTrips(year, true); }}>{tripsRefreshing ? t('Refreshing...') : t('Refresh')}</button>
+            {/if}
+          </legend>
           {#if trips === null && !tripProblem}
             <span class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"><LoadingSpinner size="small" />{t('Detecting trips from GPS data...')}</span>
           {:else if tripProblem}
@@ -311,7 +365,7 @@
             <ul class="flex flex-col gap-1" aria-label={t('Trips')}>
               {#each trips as trip (trip.index)}
                 <li>
-                  <label class={['flex cursor-pointer flex-wrap items-baseline gap-x-3 rounded-lg border px-3 py-2 text-sm', !allTrips && tripIndex === trip.index ? 'border-primary bg-primary/10' : 'border-gray-200 dark:border-gray-800']}>
+                  <label class={['relative flex cursor-pointer flex-wrap items-baseline gap-x-3 rounded-lg border px-3 py-2 text-sm', !allTrips && tripIndex === trip.index ? 'border-primary bg-primary/10' : 'border-gray-200 dark:border-gray-800']}>
                     <input type="radio" name="trip" class="sr-only" value={trip.index} bind:group={tripIndex} disabled={allTrips} />
                     <span class="font-medium">{trip.place}</span>
                     <span class="text-gray-600 tabular-nums dark:text-gray-400">{trip.start} – {trip.end}</span>
@@ -330,13 +384,18 @@
       {#if shown.includes('person')}
         <fieldset class="flex flex-col gap-2">
           <legend class="mb-1 text-sm font-semibold">{ABOUT_PEOPLE.has(kind) ? t('People') : t('Only with (optional)')}</legend>
-          <div class="flex max-h-48 flex-wrap gap-2 overflow-y-auto">
-            {#each people as person (person.id)}
-              <label class={['cursor-pointer rounded-full border px-3 py-1 text-sm', chosen.includes(person.name) ? 'border-primary bg-primary/10' : 'border-gray-200 dark:border-gray-800']}>
+          {#if people.length > PEOPLE_SHOWN}
+            <input class={[field, 'w-full max-w-sm']} type="search" bind:value={peopleQuery} placeholder={t('Find a name')} aria-label={t('Find a name')} />
+          {/if}
+          <div class="flex flex-wrap gap-2">
+            {#each visiblePeople as person (person.id)}
+              <!-- relative: the hidden checkbox stays inside its chip, so focusing it never scrolls the page away. -->
+              <label class={['relative cursor-pointer rounded-full border px-3 py-1 text-sm', chosen.includes(person.name) ? 'border-primary bg-primary/10' : 'border-gray-200 dark:border-gray-800']}>
                 <input type="checkbox" class="sr-only" value={person.name} bind:group={chosen} disabled={grouped} />{person.name}
+                {#if person.pictures}<span class="ml-1 text-xs text-gray-500 tabular-nums">{person.pictures.toLocaleString(locale())}</span>{/if}
               </label>
             {:else}
-              <Text size="small" color="muted">{t('No named people in Immich yet.')}</Text>
+              <Text size="small" color="muted">{people.length ? t('No name matches.') : t('No named people in Immich yet.')}</Text>
             {/each}
           </div>
           {#if shown.includes('people_expression')}

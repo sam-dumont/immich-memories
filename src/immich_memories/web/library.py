@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -11,7 +11,9 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
 from immich_memories.config_loader import Config
-from immich_memories.web.dependencies import current_config
+from immich_memories.web.answer_cache import AnswerCache, Cached
+from immich_memories.web.dependencies import answers, current_config
+from immich_memories.web.roster import people_path
 
 router = APIRouter(prefix="/api/v1", tags=["library"])
 
@@ -19,6 +21,8 @@ router = APIRouter(prefix="/api/v1", tags=["library"])
 class NamedPerson(BaseModel):
     id: str
     name: str
+    # Pictures the last `people scan` counted for this face; None before a scan reached them.
+    pictures: int | None = None
 
 
 class AlbumChoice(BaseModel):
@@ -49,11 +53,34 @@ def immich_client(config: Annotated[Config, Depends(current_config)]) -> Iterato
         yield client
 
 
+def _picture_counts(path: Path) -> dict[str, int]:
+    """Each Immich person id's picture count, from the people file `people scan` writes."""
+    from immich_memories.people.companion import load_document, people_entries
+
+    counts: dict[str, int] = {}
+    for entry in people_entries(load_document(path)):
+        evidence = (entry.get("inferred") or {}).get("evidence") or {}
+        if isinstance(evidence.get("count"), int):
+            counts.update(dict.fromkeys(entry["ids"], evidence["count"]))
+    return counts
+
+
 @router.get("/people", response_model=list[NamedPerson])
-def people(client: Annotated[Any, Depends(immich_client)]) -> list[NamedPerson]:
-    """Everyone Immich has a name for, alphabetically: the names `--person` takes."""
-    named = [NamedPerson(id=p.id, name=p.name) for p in client.get_all_people() if p.name]
-    return sorted(named, key=lambda person: person.name.casefold())
+def people(
+    client: Annotated[Any, Depends(immich_client)],
+    people_file: Annotated[Path, Depends(people_path)],
+) -> list[NamedPerson]:
+    """Everyone Immich has a name for, the names `--person` takes: most pictured first.
+
+    The counts are the last people scan's; anyone it has not counted follows alphabetically.
+    """
+    counts = _picture_counts(people_file)
+    named = [
+        NamedPerson(id=p.id, name=p.name, pictures=counts.get(p.id))
+        for p in client.get_all_people()
+        if p.name
+    ]
+    return sorted(named, key=lambda p: (-(p.pictures or -1), p.name.casefold()))
 
 
 @router.get("/albums", response_model=list[AlbumChoice])
@@ -71,13 +98,15 @@ def albums(client: Annotated[Any, Depends(immich_client)]) -> list[AlbumChoice]:
 TripFinder = Callable[[int, list[str]], list[Any]]
 
 
-def trip_finder(
-    config: Annotated[Config, Depends(current_config)],
-    client: Annotated[Any, Depends(immich_client)],
-) -> TripFinder:
-    """Discovery as `generate --memory-type trip` runs it, so an index names the same trip."""
+def trip_finder(config: Annotated[Config, Depends(current_config)]) -> TripFinder:
+    """Discovery as `generate --memory-type trip` runs it, so an index names the same trip.
+
+    It opens its own Immich client: the answer is worked out behind the page, after the request
+    that asked for it has finished.
+    """
     from immich_memories.analysis.trip_detection import geocoder_for
     from immich_memories.analysis.trip_discovery import discover_year_trips
+    from immich_memories.api.sync_client import SyncImmichClient
     from immich_memories.processing.clip_caption import resolve_caption_locale
 
     geocoder = geocoder_for(
@@ -86,20 +115,27 @@ def trip_finder(
     )
 
     def find(year: int, people: list[str]) -> list[Any]:
-        return discover_year_trips(
-            client, config.trips, year, person_names=people or None, geocoder=geocoder
-        )
+        with SyncImmichClient(
+            base_url=config.immich.url,
+            api_key=config.immich.api_key,
+            api_version=config.immich.api_version,
+        ) as client:
+            return discover_year_trips(
+                client, config.trips, year, person_names=people or None, geocoder=geocoder
+            )
 
     return find
 
 
-@router.get("/trips", response_model=list[TripChoice])
-def trips(
-    year: int,
-    find: Annotated[TripFinder, Depends(trip_finder)],
-    person: Annotated[list[str] | None, Query()] = None,
-) -> list[TripChoice]:
-    """The trips that overlap a year, as `generate` lists them before it cuts one."""
+class Trips(BaseModel):
+    # None until the first discovery of this year has finished.
+    trips: list[TripChoice] | None
+    computed_at: datetime | None
+    refreshing: bool
+    error: str | None
+
+
+def _trip_choices(found: list[Any]) -> list[TripChoice]:
     return [
         TripChoice(
             index=number,
@@ -109,8 +145,40 @@ def trips(
             days=(trip.end_date - trip.start_date).days + 1,
             pictures=trip.asset_count,
         )
-        for number, trip in enumerate(find(year, person or []), 1)
+        for number, trip in enumerate(found, 1)
     ]
+
+
+def trips_answer(
+    cache: AnswerCache, find: TripFinder, year: int, people: list[str], *, refresh: bool = False
+) -> Cached:
+    """A year's trips from the answer cache, worked out behind the page when due."""
+    named = sorted(people)
+    return cache.read(
+        f"trips:{year}:{','.join(named)}",
+        lambda: {"trips": [t.model_dump(mode="json") for t in _trip_choices(find(year, named))]},
+        refresh=refresh,
+    )
+
+
+@router.get("/trips", response_model=Trips)
+def trips(
+    year: int,
+    find: Annotated[TripFinder, Depends(trip_finder)],
+    cache: Annotated[AnswerCache, Depends(answers)],
+    person: Annotated[list[str] | None, Query()] = None,
+    refresh: bool = False,
+) -> Trips:
+    """The trips that overlap a year, as `generate` lists them before it cuts one.
+
+    Discovery reads the year's GPS and takes a while; the last answer for the year comes back at
+    once, and a fresh one is worked out behind it when it is a day old or `refresh` asks.
+    """
+    got = trips_answer(cache, find, year, person or [], refresh=refresh)
+    listed = [TripChoice.model_validate(t) for t in got.value["trips"]] if got.value else None
+    return Trips(
+        trips=listed, computed_at=got.computed_at, refreshing=got.refreshing, error=got.error
+    )
 
 
 class SpecialDay(BaseModel):

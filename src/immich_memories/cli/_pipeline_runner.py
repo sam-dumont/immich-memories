@@ -318,6 +318,27 @@ class _SourceProgressReporter:
         )
 
 
+def _keep_cut_titles(
+    pipeline_result: Any,
+    title: str | None,
+    subtitle: str | None,
+    source: Any,
+    preset_params: dict | None,
+) -> None:
+    """A render made later from this cut (`runs render`, the web client) names it the same."""
+    if (cut_attempt := _attempt_dir_of(pipeline_result)) is None:
+        return
+    from immich_memories.processing.render_inputs import write_cut_titles
+
+    write_cut_titles(
+        cut_attempt,
+        title=title,
+        subtitle=subtitle,
+        source=source,
+        preset_params=preset_params or {},
+    )
+
+
 @llm_metrics.counted
 def run_pipeline_and_generate(
     *,
@@ -598,6 +619,9 @@ def run_pipeline_and_generate(
         person_names=person_names,
         memory_preset_params=resolved.preset_params,
         album_lookup=album_of_the_cut,
+    )
+    _keep_cut_titles(
+        pipeline_result, resolved_title, resolved_subtitle, title_source, resolved.preset_params
     )
 
     if _stops_before_rendering(dry_run=dry_run, no_render=no_render):

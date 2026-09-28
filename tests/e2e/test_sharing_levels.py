@@ -59,7 +59,7 @@ def test_the_brief_asks_who_will_watch_and_the_cut_is_made_for_them(
     page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
     page.get_by_text("Monthly Highlights", exact=True).click()
     page.get_by_label("Year", exact=True).fill("2024")
-    page.get_by_label("Month", exact=True).fill("6")
+    page.get_by_label("Month", exact=True).select_option("6")
     page.get_by_text("Length and pictures").click()
     who = page.get_by_label("Who may see it")
     command = page.get_by_label("Command")

@@ -130,10 +130,14 @@ def test_the_brief_picks_from_the_library_s_named_people_and_albums(tmp_path):
                 SimpleNamespace(id="b", name="Trip", asset_count=300),
             ]
 
+    from immich_memories.web.roster import people_path
+
     client = api_client(config_in(tmp_path))
     # WHY: Immich is the external boundary; the unit tier has no library to read.
     client.app.dependency_overrides[immich_client] = lambda: Library()
+    client.app.dependency_overrides[people_path] = lambda: tmp_path / "no-people.yaml"
 
+    # Before a people scan there is no count to go by: alphabetical.
     assert [p["name"] for p in client.get("/api/v1/people").json()] == ["Ana", "zoé"]
     # Largest first, each with its id: two albums may share a name, and --from-album takes either.
     assert [(a["id"], a["asset_count"]) for a in client.get("/api/v1/albums").json()] == [
@@ -150,18 +154,6 @@ def test_the_page_shows_the_command_its_brief_stands_for_before_running_it(clien
     assert shown.json() == {
         "command": "immich-memories generate --memory-type=year_in_review --year=2023 --no-render"
     }
-
-
-def test_cut_again_from_a_terminal_made_run_keeps_its_scope_and_adds_the_ticks(client):
-    started = client.post(
-        f"/api/v1/runs/{RUN}/recut", json={"include": ["garden-2"], "exclude": ["lake-1"]}
-    )
-
-    job = _finished(client, started.json()["id"])
-    argv = json.loads(client.recorded.read_text())
-    assert job["status"] == "succeeded"
-    assert "--memory-type=monthly_highlights" in argv
-    assert "--include=garden-2" in argv and "--exclude=lake-1" in argv
 
 
 def test_rescanning_people_runs_people_scan(client):
@@ -225,3 +217,39 @@ def test_a_stage_that_counts_nothing_offers_no_time_left(client, tmp_path):
         progress = client.get(f"/api/v1/jobs/{job_id}").json()["progress"]
 
     assert progress["remaining_seconds"] is None
+
+
+def test_the_brief_offers_the_people_with_the_most_pictures_first(tmp_path):
+    from types import SimpleNamespace
+
+    import yaml
+
+    from immich_memories.web.library import immich_client
+    from immich_memories.web.roster import people_path
+
+    class Library:
+        def get_all_people(self):
+            return [
+                SimpleNamespace(id=i, name=n) for i, n in (("1", "Ana"), ("2", "Zoé"), ("3", "Bo"))
+            ]
+
+    people = tmp_path / "people.yaml"
+    people.write_text(
+        yaml.safe_dump(
+            {
+                "version": 1,
+                "people": [
+                    {"ids": ["2"], "name": "Zoé", "inferred": {"evidence": {"count": 900}}},
+                    {"ids": ["3"], "name": "Bo", "inferred": {"evidence": {"count": 40}}},
+                ],
+            }
+        )
+    )
+    client = api_client(config_in(tmp_path))
+    # WHY: Immich is the external boundary; the people file is the scan's count of each face.
+    client.app.dependency_overrides[immich_client] = lambda: Library()
+    client.app.dependency_overrides[people_path] = lambda: people
+
+    found = client.get("/api/v1/people").json()
+
+    assert [(p["name"], p["pictures"]) for p in found] == [("Zoé", 900), ("Bo", 40), ("Ana", None)]

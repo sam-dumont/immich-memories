@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 from immich_memories.analysis.trip_detection import DetectedTrip
+from immich_memories.web.answer_cache import AnswerCache
+from immich_memories.web.dependencies import answers
 from immich_memories.web.library import trip_finder
 from tests.web_api_fixtures import api_client, config_in
 
@@ -34,10 +36,17 @@ def test_trips_keep_discovery_order_and_number_from_one(tmp_path: Path):
     client = api_client(config_in(tmp_path))
     # WHY: discovery reads the whole year's GPS from Immich; the e2e runs it against the fake.
     client.app.dependency_overrides[trip_finder] = lambda: find
+    client.app.dependency_overrides[answers] = lambda: AnswerCache(
+        tmp_path / "answers", max_age=timedelta(hours=24), start=lambda work: work()
+    )
 
-    trips = client.get("/api/v1/trips", params={"year": 2024, "person": ["Ana"]}).json()
+    answer = client.get("/api/v1/trips", params={"year": 2024, "person": ["Ana"]}).json()
+    # A second look at the same year is the answer already worked out, not a second discovery.
+    again = client.get("/api/v1/trips", params={"year": 2024, "person": ["Ana"]}).json()
 
     assert asked == [(2024, ["Ana"])]
+    assert again == answer and answer["refreshing"] is False and answer["computed_at"]
+    trips = answer["trips"]
     assert trips == [
         {
             "index": 1,

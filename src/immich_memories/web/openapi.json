@@ -914,6 +914,11 @@
             ],
             "title": "Remaining Seconds"
           },
+          "stage_name": {
+            "default": "",
+            "title": "Stage Name",
+            "type": "string"
+          },
           "total": {
             "anyOf": [
               {
@@ -1206,6 +1211,17 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "pictures": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pictures"
           }
         },
         "required": [
@@ -1366,29 +1382,6 @@
           "hold"
         ],
         "title": "PoolItem",
-        "type": "object"
-      },
-      "Recut": {
-        "description": "The pool's ticks: pictures the next cut must keep, and pictures it must leave out.",
-        "properties": {
-          "exclude": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Exclude",
-            "type": "array"
-          },
-          "include": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Include",
-            "type": "array"
-          }
-        },
-        "title": "Recut",
         "type": "object"
       },
       "Relationship": {
@@ -1575,6 +1568,14 @@
       },
       "Revision": {
         "properties": {
+          "added": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Added",
+            "type": "array"
+          },
           "content_seconds": {
             "title": "Content Seconds",
             "type": "number"
@@ -1631,8 +1632,16 @@
         "type": "object"
       },
       "RevisionEdits": {
-        "description": "What the owner changed; every id must be in the cut, or a recorded sibling for a swap.",
+        "description": "What the owner changed: removals and swaps name the cut's shots, additions its pool.",
         "properties": {
+          "added": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Added",
+            "type": "array"
+          },
           "removed": {
             "default": [],
             "items": {
@@ -2555,6 +2564,18 @@
             "title": "Candidates",
             "type": "array"
           },
+          "computed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Computed At"
+          },
           "error": {
             "anyOf": [
               {
@@ -2565,6 +2586,11 @@
               }
             ],
             "title": "Error"
+          },
+          "refreshing": {
+            "default": false,
+            "title": "Refreshing",
+            "type": "boolean"
           },
           "skipped": {
             "items": {
@@ -2620,6 +2646,59 @@
           "pictures"
         ],
         "title": "TripChoice",
+        "type": "object"
+      },
+      "Trips": {
+        "properties": {
+          "computed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Computed At"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "refreshing": {
+            "title": "Refreshing",
+            "type": "boolean"
+          },
+          "trips": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TripChoice"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trips"
+          }
+        },
+        "required": [
+          "trips",
+          "computed_at",
+          "refreshing",
+          "error"
+        ],
+        "title": "Trips",
         "type": "object"
       },
       "ValidationError": {
@@ -3509,7 +3588,7 @@
     },
     "/api/v1/people": {
       "get": {
-        "description": "Everyone Immich has a name for, alphabetically: the names `--person` takes.",
+        "description": "Everyone Immich has a name for, the names `--person` takes: most pictured first.\n\nThe counts are the last people scan's; anyone it has not counted follows alphabetically.",
         "operationId": "people_api_v1_people_get",
         "responses": {
           "200": {
@@ -4226,62 +4305,6 @@
         ]
       }
     },
-    "/api/v1/runs/{run_id}/recut": {
-      "post": {
-        "description": "Cut the same brief again with the owner's ticks, as `generate --include/--exclude` does.",
-        "operationId": "recut_api_v1_runs__run_id__recut_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "run_id",
-            "required": true,
-            "schema": {
-              "title": "Run Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Recut"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "202": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobView"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "409": {
-            "description": "Conflict"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Recut",
-        "tags": [
-          "jobs"
-        ]
-      }
-    },
     "/api/v1/runs/{run_id}/renders": {
       "post": {
         "description": "Render this run's cut, or one revision of it, with `runs render`.",
@@ -4529,8 +4552,20 @@
     },
     "/api/v1/suggestions": {
       "get": {
-        "description": "Up to twenty candidates, and why the others were set aside.",
+        "description": "Up to twenty candidates and why the others were set aside, from the last discovery.\n\nDiscovery reads the library and takes a while; the last list comes back at once and a fresh\none is worked out behind it when it is a day old or `refresh` asks.",
         "operationId": "suggestions_api_v1_suggestions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "refresh",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Refresh",
+              "type": "boolean"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -4541,6 +4576,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Suggestions",
@@ -4596,7 +4641,7 @@
     },
     "/api/v1/trips": {
       "get": {
-        "description": "The trips that overlap a year, as `generate` lists them before it cuts one.",
+        "description": "The trips that overlap a year, as `generate` lists them before it cuts one.\n\nDiscovery reads the year's GPS and takes a while; the last answer for the year comes back at\nonce, and a fresh one is worked out behind it when it is a day old or `refresh` asks.",
         "operationId": "trips_api_v1_trips_get",
         "parameters": [
           {
@@ -4626,6 +4671,16 @@
               ],
               "title": "Person"
             }
+          },
+          {
+            "in": "query",
+            "name": "refresh",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Refresh",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -4633,11 +4688,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/TripChoice"
-                  },
-                  "title": "Response Trips Api V1 Trips Get",
-                  "type": "array"
+                  "$ref": "#/components/schemas/Trips"
                 }
               }
             },

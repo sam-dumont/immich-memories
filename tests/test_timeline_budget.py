@@ -302,15 +302,29 @@ def test_first_month_is_not_counted_as_a_divider() -> None:
     assert plan.title_budget == pytest.approx(5.5)
 
 
-def test_short_memory_shortens_opening_instead_of_stealing_content() -> None:
+def test_a_short_memory_still_ends_on_its_ending_card() -> None:
     from immich_memories.processing.timeline_budget import plan_timeline
 
     plan = plan_timeline([_clip("one", "2026-01-05")], _titles(), 15.0, "custom")
 
+    # The opening shortens to the titles' share; the ending keeps its two seconds from the
+    # pictures (owner, 28 Sep: a film always ends on its fade to white).
     assert plan.title_duration == 3.0
-    assert plan.ending_duration == 0.0
-    assert plan.content_budget == 12.0
+    assert plan.ending_duration == 2.0
+    assert plan.content_budget == 10.0
     assert plan.soft_max_duration == 18.0
+
+
+def test_a_twenty_second_special_day_fades_out_too() -> None:
+    from immich_memories.processing.timeline_budget import plan_timeline
+
+    plan = plan_timeline(
+        [_clip("one", "2016-01-01")], _titles(ending_duration=4.0), 20.0, "special_day"
+    )
+
+    assert (plan.title_duration, plan.ending_duration) == (3.5, 2.0)
+    assert plan.content_budget == 14.5
+    assert plan.max_dividers >= 0
 
 
 def test_disabled_titles_leave_the_full_budget_for_content() -> None:

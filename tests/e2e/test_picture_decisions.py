@@ -116,10 +116,10 @@ def test_never_use_and_clear_a_hold_from_the_pool(
 
         # Ruling out a ticked picture unticks it: the pool never says both.
         ticked = _tile(page, kept)
-        expect(ticked.get_by_role("checkbox", name="In the next cut")).to_be_checked()
+        expect(ticked.get_by_role("checkbox", name="In the film")).to_be_checked()
         ticked.get_by_role("button", name="Never use").click()
         expect(ticked.get_by_text("You'll never use this picture.")).to_be_visible()
-        expect(ticked.get_by_role("checkbox", name="In the next cut")).not_to_be_checked()
+        expect(ticked.get_by_role("checkbox", name="In the film")).not_to_be_checked()
         assert owner_decisions.decisions(store, [kept]) == {kept: owner_decisions.NEVER_USE}
         _frame(ticked, "1324-pool-never-use-unticks")
         ticked.get_by_role("button", name="Undo").click()

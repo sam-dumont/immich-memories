@@ -417,7 +417,9 @@ export interface paths {
         };
         /**
          * People
-         * @description Everyone Immich has a name for, alphabetically: the names `--person` takes.
+         * @description Everyone Immich has a name for, the names `--person` takes: most pictured first.
+         *
+         *     The counts are the last people scan's; anyone it has not counted follows alphabetically.
          */
         get: operations["people_api_v1_people_get"];
         put?: never;
@@ -696,26 +698,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/runs/{run_id}/recut": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Recut
-         * @description Cut the same brief again with the owner's ticks, as `generate --include/--exclude` does.
-         */
-        post: operations["recut_api_v1_runs__run_id__recut_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/runs/{run_id}/renders": {
         parameters: {
             query?: never;
@@ -833,7 +815,10 @@ export interface paths {
         };
         /**
          * Suggestions
-         * @description Up to twenty candidates, and why the others were set aside.
+         * @description Up to twenty candidates and why the others were set aside, from the last discovery.
+         *
+         *     Discovery reads the library and takes a while; the last list comes back at once and a fresh
+         *     one is worked out behind it when it is a day old or `refresh` asks.
          */
         get: operations["suggestions_api_v1_suggestions_get"];
         put?: never;
@@ -874,6 +859,9 @@ export interface paths {
         /**
          * Trips
          * @description The trips that overlap a year, as `generate` lists them before it cuts one.
+         *
+         *     Discovery reads the year's GPS and takes a while; the last answer for the year comes back at
+         *     once, and a fresh one is worked out behind it when it is a day old or `refresh` asks.
          */
         get: operations["trips_api_v1_trips_get"];
         put?: never;
@@ -1184,6 +1172,11 @@ export interface components {
             recent_asset_ids: string[];
             /** Remaining Seconds */
             remaining_seconds?: number | null;
+            /**
+             * Stage Name
+             * @default
+             */
+            stage_name: string;
             /** Total */
             total?: number | null;
         };
@@ -1290,6 +1283,8 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Pictures */
+            pictures?: number | null;
         };
         /** NewPerson */
         NewPerson: {
@@ -1349,22 +1344,6 @@ export interface components {
             reachable: boolean;
             /** Taken */
             taken: string;
-        };
-        /**
-         * Recut
-         * @description The pool's ticks: pictures the next cut must keep, and pictures it must leave out.
-         */
-        Recut: {
-            /**
-             * Exclude
-             * @default []
-             */
-            exclude: string[];
-            /**
-             * Include
-             * @default []
-             */
-            include: string[];
         };
         /** Relationship */
         Relationship: {
@@ -1430,6 +1409,11 @@ export interface components {
         };
         /** Revision */
         Revision: {
+            /**
+             * Added
+             * @default []
+             */
+            added: string[];
             /** Content Seconds */
             content_seconds: number;
             /** Created At */
@@ -1461,9 +1445,14 @@ export interface components {
         };
         /**
          * RevisionEdits
-         * @description What the owner changed; every id must be in the cut, or a recorded sibling for a swap.
+         * @description What the owner changed: removals and swaps name the cut's shots, additions its pool.
          */
         RevisionEdits: {
+            /**
+             * Added
+             * @default []
+             */
+            added: string[];
             /**
              * Removed
              * @default []
@@ -1767,8 +1756,15 @@ export interface components {
         Suggestions: {
             /** Candidates */
             candidates: components["schemas"]["Suggestion"][];
+            /** Computed At */
+            computed_at?: string | null;
             /** Error */
             error: string | null;
+            /**
+             * Refreshing
+             * @default false
+             */
+            refreshing: boolean;
             /** Skipped */
             skipped: components["schemas"]["Skipped"][];
         };
@@ -1792,6 +1788,17 @@ export interface components {
              * Format: date
              */
             start: string;
+        };
+        /** Trips */
+        Trips: {
+            /** Computed At */
+            computed_at: string | null;
+            /** Error */
+            error: string | null;
+            /** Refreshing */
+            refreshing: boolean;
+            /** Trips */
+            trips: components["schemas"]["TripChoice"][] | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -2923,48 +2930,6 @@ export interface operations {
             };
         };
     };
-    recut_api_v1_runs__run_id__recut_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Recut"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["JobView"];
-                };
-            };
-            /** @description Conflict */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     start_render_api_v1_runs__run_id__renders_post: {
         parameters: {
             query?: never;
@@ -3146,7 +3111,9 @@ export interface operations {
     };
     suggestions_api_v1_suggestions_get: {
         parameters: {
-            query?: never;
+            query?: {
+                refresh?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3160,6 +3127,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Suggestions"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -3209,6 +3185,7 @@ export interface operations {
             query: {
                 year: number;
                 person?: string[] | null;
+                refresh?: boolean;
             };
             header?: never;
             path?: never;
@@ -3222,7 +3199,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TripChoice"][];
+                    "application/json": components["schemas"]["Trips"];
                 };
             };
             /** @description Validation Error */

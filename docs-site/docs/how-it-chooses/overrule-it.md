@@ -10,11 +10,12 @@ Reader: power user, with a newcomer summary first.
 
 The editor's choices are defaults, and you have the last word on most of them. Star the pictures
 that matter in Immich before you cut. After a cut, untick what you don't want in the media pool,
-tick what you do, and cut again. Tell the app who your family is and where home is. When a choice
-still puzzles you, `runs why` says which rule made it.
+tick what you do, and preview: the film plays what you kept. Tell the app who your family is and
+where home is. When a choice still puzzles you, `runs why` says which rule made it.
 
-A tick never puts back a picture the family-viewing gate refused. Clearing the picture's hold does,
-one picture at a time, after you've looked at it. **Never use** keeps a picture out for good.
+A pool tick is final, even on a picture the family-viewing gate held: you looked at it. On a new cut
+(`--include`), the gate still judges it; clearing the hold lets it through there. **Never use**
+keeps a picture out for good.
 
 ## Where each lever acts
 
@@ -22,8 +23,10 @@ one picture at a time, after you've looked at it. **Never use** keeps a picture 
 flowchart TD
   star["star in Immich"] --> rank["wins its moment, always stands<br/>rule_representative_rank, RuleStructureReader.standing"]
   star --> weight["weighs the story<br/>editorial_story_weighing._floor_one"]
-  untick["untick in the pool, or --exclude"] --> source["never a source<br/>owner_excluded_asset_ids"]
-  tick["tick in the pool, or --include"] --> req["added after the draft and polish<br/>admit_owner_required"]
+  pool["tick or untick in the pool"] --> revision["a revision of the cut<br/>cut_revisions.save_revision"]
+  revision --> film
+  untick["--exclude on a new cut"] --> source["never a source<br/>owner_excluded_asset_ids"]
+  tick["--include on a new cut"] --> req["added after the draft and polish<br/>admit_owner_required"]
   req --> gate["family-viewing gate<br/>apply_audience_gate"]
   clear["Clear hold, or pictures clear-hold"] --> gate
   never["Never use, or pictures never-use"] --> out["never a carrier, any cut<br/>never_auto_ids"]
@@ -55,18 +58,18 @@ still apply.
 ## Tick and untick
 
 On a cut's review page, **Pool** shows every picture the cut saw, what the cut did with it, and an
-**In the next cut** checkbox ([The web UI](../make/web-ui.mdx#the-pool)).
+**In the film** checkbox ([The web UI](../make/web-ui.mdx#the-pool)). The ticks are the last pass
+over that cut: **Preview with these choices** saves them as a revision and nothing is chosen again.
 
-- **Untick** a picture and it is never a source: the next cut can't use it anywhere.
-- **Tick** a picture the cut left out and **Cut again** keeps it, in its own story at its capture
-  time, without re-arguing the rest. It goes in after the draft and the model polish, and the trim
-  and the duplicate review never remove it.
-- The family-viewing gate still judges it. A ticked picture the gate refuses is named in
-  `derived-decisions/owner-required-after-audience.private.json`.
+- **Untick** a picture and it comes out of the film.
+- **Tick** a picture the cut left out and it goes in at the time it was taken, prepared to play like
+  the cut's own shots. No detector, hold or length check stands in the way: the film grows or
+  shrinks to what you kept.
 
-**Cut again with these choices** runs `generate` with them as `--include ASSET_ID` and
-`--exclude ASSET_ID`, both repeatable, which is how the CLI does the same. Ticks belong to that
-one cut; the next cut's pool starts from what it kept.
+To steer a new cut instead, `generate` takes `--include ASSET_ID` and `--exclude ASSET_ID`, both
+repeatable. An excluded picture is never a source. An included one goes in after the draft and the
+model polish, the trim and the duplicate review never remove it, and the family-viewing gate still
+judges it: a refusal is named in `derived-decisions/owner-required-after-audience.private.json`.
 
 ## Pick who it's for
 

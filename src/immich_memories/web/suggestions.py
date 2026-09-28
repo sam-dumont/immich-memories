@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import threading
+from datetime import datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,7 +15,8 @@ from immich_memories.automation.runner import AutomationAlreadyRunningError, Aut
 from immich_memories.automation.state_store import AutomationStateStore
 from immich_memories.config_loader import Config
 from immich_memories.tracking import RunDatabase
-from immich_memories.web.dependencies import current_config
+from immich_memories.web.answer_cache import AnswerCache, Cached
+from immich_memories.web.dependencies import answers, current_config
 
 router = APIRouter(prefix="/api/v1", tags=["suggestions"])
 
@@ -42,6 +44,9 @@ class Suggestions(BaseModel):
     candidates: list[Suggestion]
     skipped: list[Skipped]
     error: str | None
+    # When this list was worked out, and whether a fresher one is being worked out now.
+    computed_at: datetime | None = None
+    refreshing: bool = False
 
 
 class RunSuggestion(BaseModel):
@@ -62,9 +67,7 @@ def automation(config: Annotated[Config, Depends(current_config)]) -> Any:
     return AutoRunner(config)
 
 
-@router.get("/suggestions", response_model=Suggestions)
-def suggestions(runner: Annotated[Any, Depends(automation)]) -> Suggestions:
-    """Up to twenty candidates, and why the others were set aside."""
+def _discover(runner: Any) -> Suggestions:
     found = runner.suggest(limit=20) or []
     skipped = [
         Skipped(label=item.candidate.reason, rule=item.rule)
@@ -86,6 +89,39 @@ def suggestions(runner: Annotated[Any, Depends(automation)]) -> Suggestions:
         ],
         skipped=skipped,
         error=runner.last_suggest_status.error,
+    )
+
+
+def suggestions_answer(cache: AnswerCache, runner: Any, *, refresh: bool = False) -> Cached:
+    """The last discovery from the answer cache, run again behind the page when due."""
+    return cache.read(
+        "suggestions", lambda: _discover(runner).model_dump(mode="json"), refresh=refresh
+    )
+
+
+@router.get("/suggestions", response_model=Suggestions)
+def suggestions(
+    runner: Annotated[Any, Depends(automation)],
+    cache: Annotated[AnswerCache, Depends(answers)],
+    refresh: bool = False,
+) -> Suggestions:
+    """Up to twenty candidates and why the others were set aside, from the last discovery.
+
+    Discovery reads the library and takes a while; the last list comes back at once and a fresh
+    one is worked out behind it when it is a day old or `refresh` asks.
+    """
+    got = suggestions_answer(cache, runner, refresh=refresh)
+    body = (
+        Suggestions.model_validate(got.value)
+        if got.value
+        else Suggestions(candidates=[], skipped=[], error=None)
+    )
+    return body.model_copy(
+        update={
+            "computed_at": got.computed_at,
+            "refreshing": got.refreshing,
+            "error": got.error or body.error,
+        }
     )
 
 

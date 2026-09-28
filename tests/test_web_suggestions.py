@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import threading
-from datetime import date
+from datetime import date, timedelta
 from types import SimpleNamespace
 
 from immich_memories.automation.runner import AutomationAlreadyRunningError
+from immich_memories.web.answer_cache import AnswerCache
+from immich_memories.web.dependencies import answers
 from immich_memories.web.suggestions import SUGGESTION_REASON, automation
 from tests.web_api_fixtures import api_client, config_in
 
@@ -56,6 +58,10 @@ def _client(tmp_path, runner):
     client = api_client(config_in(tmp_path))
     # WHY: the runner reaches Immich and starts the CLI child; here only its answers matter.
     client.app.dependency_overrides[automation] = lambda: runner
+    # The discovery runs inline here, so each ask sees its answer.
+    client.app.dependency_overrides[answers] = lambda: AnswerCache(
+        tmp_path / "answers", max_age=timedelta(hours=24), start=lambda work: work()
+    )
     return client
 
 
@@ -82,3 +88,15 @@ def test_running_a_suggestion_executes_it_like_auto_run_and_refuses_a_second(tmp
         "/api/v1/suggestions/run", json={"memory_key": "x"}
     )
     assert busy.status_code == 409
+
+
+def test_the_last_suggestions_come_back_without_discovering_again(tmp_path):
+    runner = _Runner()
+    client = _client(tmp_path, runner)
+    first = client.get("/api/v1/suggestions").json()
+    runner.suggest = lambda **_: (_ for _ in ()).throw(AssertionError("discovered again"))
+
+    again = client.get("/api/v1/suggestions").json()
+
+    assert again["candidates"] == first["candidates"]
+    assert again["computed_at"] and again["refreshing"] is False

@@ -23,7 +23,7 @@ from immich_memories.operations.revision_render import RenderUnavailable, projec
 from immich_memories.processing.editorial_timing import timing_policy_for_params
 from immich_memories.processing.encoding_plan import resolve_output_selection
 from immich_memories.processing.output_canvas import resolve_output_canvas
-from immich_memories.processing.render_inputs import read_render_inputs
+from immich_memories.processing.render_inputs import CutTitles, read_cut_titles, read_render_inputs
 from immich_memories.security import write_secret_file
 from immich_memories.timeperiod import DateRange
 from immich_memories.titles.film_title import resolve_film_title
@@ -31,9 +31,12 @@ from immich_memories.titles.film_title import resolve_film_title
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from immich_memories.analysis.motion_rendering import MotionRendering
+    from immich_memories.api.models import Asset
     from immich_memories.api.sync_client import SyncImmichClient
     from immich_memories.config_loader import Config
     from immich_memories.operations.cut_revisions import CutRevision
+    from immich_memories.processing.added_material import LiveMotion
     from immich_memories.tracking.models import RunMetadata
 
 
@@ -75,6 +78,21 @@ def _fetcher(client: SyncImmichClient | None) -> Callable[[str], VideoClipInfo |
     return fetch
 
 
+def _live_motion(config: Config, client: SyncImmichClient | None) -> LiveMotion:
+    """Stitch an added Live Photo's motion the way the cut's own Live shots were stitched."""
+
+    def stitch(asset: Asset) -> MotionRendering | None:
+        if client is None or not asset.live_photo_video_id:
+            return None
+        from immich_memories.analysis.motion_rendering import motion_renderings
+
+        companion = client.get_asset(asset.live_photo_video_id)
+        found = motion_renderings([asset], config, companion_assets={companion.id: companion})
+        return found.get(asset.id)
+
+    return stitch
+
+
 def _date_range(run: RunMetadata) -> DateRange:
     start = run.date_range_start or run.created_at.date()
     end = run.date_range_end or start
@@ -110,8 +128,10 @@ def _apply_request(
     run: RunMetadata,
     date_range: DateRange,
     cut_clips: list[VideoClipInfo],
+    saved: CutTitles | None,
 ) -> None:
     config = params.config
+    params.memory_preset_params = dict(saved.preset_params) if saved is not None else {}
     params.transition = request.transition or params.transition
     params.output_resolution = request.output_resolution
     params.output_orientation = request.output_orientation
@@ -131,6 +151,15 @@ def _apply_request(
     params.no_music = request.no_music
     params.upload_enabled = request.upload
     params.upload_album = request.album or config.upload.album_name
+    # The title `generate` gave the cut stands (a special day's catalogue name, a trip's place)
+    # unless this render names the film itself or asks the model again.
+    if saved is not None and saved.title and request.title is None is request.llm_title:
+        params.title, params.subtitle, params.title_source = (
+            saved.title,
+            request.subtitle or saved.subtitle,
+            saved.source,
+        )
+        return
     params.title, params.subtitle, source = resolve_film_title(
         enabled=request.llm_title,
         title_override=request.title,
@@ -140,6 +169,7 @@ def _apply_request(
         memory_type=run.memory_type,
         date_range=date_range,
         person_names=list(run.memory_people),
+        memory_preset_params=params.memory_preset_params,
     )
     params.title_source = source.value if source is not None else None
 
@@ -166,10 +196,18 @@ def render_saved_cut(
     params.editorial_attempt_dir = attempt_dir
     params.progress_callback = progress_callback
     params.phase_callback = phase_callback
-    _apply_request(params, request, run, date_range, list(inputs.clips))
-    projection = project_revision(
-        attempt_dir, revision, _fetcher(client), timing_policy_for_params(params)
+    _apply_request(
+        params, request, run, date_range, list(inputs.clips), read_cut_titles(attempt_dir)
     )
+    projection = project_revision(
+        attempt_dir,
+        revision,
+        _fetcher(client),
+        timing_policy_for_params(params),
+        live_motion=_live_motion(config, client),
+    )
+    # The owner's edits may have made the film longer; the render asks for the length they need.
+    params.target_duration_seconds = projection.binding["policy"]["target_seconds"]
     params.clips = list(projection.clips)
     params.editorial_selections = projection.selections
     params.clip_segments = projection.segments

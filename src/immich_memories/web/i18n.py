@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import unicodedata
 from functools import lru_cache
 from typing import Annotated
 
@@ -40,4 +41,12 @@ def _languages() -> list[Language]:
     for code in SUPPORTED_LOCALES:
         name = babel_locale(code).get_display_name(code.replace("-", "_")) or code
         named.append(Language(code=code, name=name[:1].upper() + name[1:]))
-    return named
+    return sorted(named, key=_picker_order)
+
+
+def _picker_order(language: Language) -> tuple[bool, str]:
+    """By the language's own name as pickers list them: accents folded, Latin scripts first."""
+    folded = "".join(
+        c for c in unicodedata.normalize("NFKD", language.name) if not unicodedata.combining(c)
+    ).casefold()
+    return (not folded[:1].isascii(), folded)

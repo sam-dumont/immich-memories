@@ -24,11 +24,9 @@ from playwright.sync_api import Page, expect
 
 from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 from tests.e2e.conftest import _REPO_ROOT, _build_launch_environment
-from tests.e2e.fake_library import CARRIERS
 from tests.e2e.web_flow import (
-    contact_sheet,
-    cut_again_without_the_first_kept,
     cut_june,
+    preview_without_the_first_kept,
     render,
     the_film,
 )
@@ -49,9 +47,8 @@ def demo_public_dir() -> Path:
 
 def _render_at_1080p(page: Page, launch_app_url: str) -> None:
     cut_june(page, launch_app_url)
-    # The Remotion owner unticks one kept picture and cuts again before rendering.
-    cut_again_without_the_first_kept(page)
-    expect(contact_sheet(page)).to_have_count(len(CARRIERS) - 1)
+    # The Remotion owner unticks one kept picture and previews that revision before rendering.
+    preview_without_the_first_kept(page)
     # WHY no music: the demo composition lays its own track over this clip and mutes the video.
     render(page, resolution="1080p")
     expect(the_film(page)).to_be_visible(timeout=900_000)

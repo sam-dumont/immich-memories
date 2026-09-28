@@ -218,14 +218,16 @@ def test_owner_edit_cannot_bypass_original_binding_or_live_validation(tmp_path):
         project(params, segments={"chosen-2": (1, 2)})
 
 
-def test_excess_hold_or_title_budget_is_rejected_without_shortening_other_clips(tmp_path):
+def test_a_hold_past_the_titles_budget_makes_the_film_longer_and_shortens_nothing(tmp_path):
     params = original_params(tmp_path)
     before = deepcopy(params)
-    with pytest.raises(ValueError, match="current titles leave"):
-        project(params, segments={**params.clip_segments, "chosen-0": (0, 60)})
-    tighter = replace(timing_policy_for_params(params), target_seconds=20)
-    with pytest.raises(ValueError, match="current titles leave"):
-        project(params, policy=tighter)
+
+    longer = project(params, segments={**params.clip_segments, "chosen-0": (0, 60)})
+
+    assert longer.segments["chosen-0"] == (0, 60)
+    assert all(longer.segments[key] == (0, 4) for key in ("chosen-1", "chosen-2", "chosen-3"))
+    assert longer.timeline.content_budget >= 60 + 3 * 4
+    assert longer.binding["policy"]["target_seconds"] > params.target_duration_seconds
     assert params == before
 
 

@@ -180,6 +180,7 @@ def _revision(revision: CutRevision) -> Revision:
         removed=list(revision.edits.removed),
         segments=dict(revision.edits.segments),
         swaps=dict(revision.edits.swaps),
+        added=list(revision.edits.added),
     )
 
 
@@ -199,7 +200,12 @@ def create_revision(
     try:
         revision = save_revision(
             _attempt(config, run_id),
-            CutEdits(removed=tuple(edits.removed), segments=edits.segments, swaps=edits.swaps),
+            CutEdits(
+                removed=tuple(edits.removed),
+                segments=edits.segments,
+                swaps=edits.swaps,
+                added=tuple(edits.added),
+            ),
         )
     except RevisionRefused as refusal:
         raise HTTPException(422, str(refusal)) from refusal

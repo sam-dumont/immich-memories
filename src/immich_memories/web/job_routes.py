@@ -28,7 +28,7 @@ from immich_memories.tracking import RunDatabase
 from immich_memories.web.brief import CutBrief
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.jobs import JobBusy, JobRunner
-from immich_memories.web.schemas import Job
+from immich_memories.web.schemas import Job, JobProgress
 
 router = APIRouter(prefix="/api/v1", tags=["jobs"])
 
@@ -110,17 +110,6 @@ class RenderOptions(BaseModel):
         ]
 
 
-class JobProgress(BaseModel):
-    label: str = ""
-    phase: str = ""
-    done: int | None = None
-    total: int | None = None
-    fraction: float | None = None
-    # The stage's own estimate, measured on this stage's work only (StageClock).
-    remaining_seconds: float | None = None
-    recent_asset_ids: list[str] = []
-
-
 class JobView(Job):
     command: str
     progress: JobProgress
@@ -138,6 +127,7 @@ def _cut_progress(config: Config, job: Job) -> JobProgress:
     live = live_progress_of(record)
     return JobProgress(
         label=str(record.get("stage") or ""),
+        stage_name=live.label if live else str((record.get("progress") or {}).get("label") or ""),
         phase=live.phase if live else "",
         done=live.done if live else None,
         total=live.total if live else None,
@@ -224,44 +214,6 @@ def start_cut(
     executable: Annotated[str, Depends(cli_executable)],
 ) -> JobView | JSONResponse:
     """Cut this brief with `generate --no-render`; the job ends with the run the cut became."""
-    return _start_cut(brief, config, runner, executable)
-
-
-class Recut(BaseModel):
-    """The pool's ticks: pictures the next cut must keep, and pictures it must leave out."""
-
-    include: list[str] = []
-    exclude: list[str] = []
-
-
-def _brief_of(runner: JobRunner, config: Config, run_id: str) -> CutBrief:
-    """The brief this run was cut from; a cut made in a terminal gives its recorded scope."""
-    for job in runner.jobs():
-        if job.result_run_id == run_id and job.meta.get("brief"):
-            return CutBrief.model_validate_json(str(job.meta["brief"]))
-    record = RunDatabase(config.cache.database_path).get_run(run_id)
-    if record is None:
-        raise HTTPException(404, "Run not found. It may have been removed.")
-    return CutBrief(
-        memory_type=record.memory_type,
-        start=record.date_range_start,
-        end=record.date_range_end,
-        person=list(record.memory_people),
-    )
-
-
-@router.post("/runs/{run_id}/recut", response_model=JobView, status_code=202, responses={409: {}})
-def recut(
-    run_id: str,
-    choices: Recut,
-    config: Annotated[Config, Depends(current_config)],
-    runner: Annotated[JobRunner, Depends(job_runner)],
-    executable: Annotated[str, Depends(cli_executable)],
-) -> JobView | JSONResponse:
-    """Cut the same brief again with the owner's ticks, as `generate --include/--exclude` does."""
-    brief = _brief_of(runner, config, run_id).model_copy(
-        update={"include_asset": choices.include, "exclude_asset": choices.exclude}
-    )
     return _start_cut(brief, config, runner, executable)
 
 

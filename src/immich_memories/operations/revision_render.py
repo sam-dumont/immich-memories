@@ -10,8 +10,9 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from immich_memories.operations.cut_revisions import CutRevision
+from immich_memories.operations.cut_revisions import CutRevision, added_hold
 from immich_memories.operations.storyboard import moment_alternatives
+from immich_memories.processing.added_material import LiveMotion, prepared_addition
 from immich_memories.processing.editorial_owner_edits import (
     EditorialOwnerEditProjection,
     project_editorial_owner_edits,
@@ -19,6 +20,7 @@ from immich_memories.processing.editorial_owner_edits import (
 from immich_memories.processing.render_inputs import read_render_inputs
 
 if TYPE_CHECKING:
+    from immich_memories.analysis.editorial_planner import EditorialSelection
     from immich_memories.api.models import VideoClipInfo
     from immich_memories.processing.editorial_timing import EditorialTimingPolicy
 
@@ -29,16 +31,39 @@ class RenderUnavailable(RuntimeError):
     """This cut cannot be rendered again as it stands; the message says what to do."""
 
 
+def _additions(
+    added: tuple[str, ...],
+    selections: tuple[EditorialSelection, ...],
+    fetch_clip: ClipFetcher,
+    live_motion: LiveMotion | None,
+) -> list[tuple[VideoClipInfo, EditorialSelection]]:
+    measure = [
+        ((row.end_time or 0.0) - (row.start_time or 0.0), row.render_mode == "motion")
+        for row in selections
+    ]
+    ready = []
+    for asset_id in added:
+        clip = fetch_clip(asset_id)
+        if clip is None:
+            raise RenderUnavailable(f"{asset_id} is no longer in the library")
+        seconds, motion = added_hold(measure, clip.asset)
+        ready.append(prepared_addition(clip, seconds, motion=motion, live_motion=live_motion))
+    return ready
+
+
 def project_revision(
     attempt_dir: Path,
     revision: CutRevision | None,
     fetch_clip: ClipFetcher,
     policy: EditorialTimingPolicy | None,
+    *,
+    live_motion: LiveMotion | None = None,
 ) -> EditorialOwnerEditProjection:
     """The clips, directives, segments and timeline to render for this cut or revision.
 
-    `fetch_clip` loads a swapped-in sibling from Immich; nothing else is fetched, because the
-    cut's own clips come back exactly as its first render used them.
+    `fetch_clip` loads a swapped-in sibling or an added picture from Immich, and `live_motion`
+    stitches an added Live Photo's motion; the cut's own clips come back exactly as its first
+    render used them.
     """
     inputs = read_render_inputs(Path(attempt_dir))
     if inputs is None or policy is None:
@@ -62,4 +87,7 @@ def project_revision(
         policy=policy,
         replacements=replacements,
         moment_siblings=moment_alternatives(Path(attempt_dir)),
+        additions=_additions(
+            edits.added if edits else (), inputs.selections, fetch_clip, live_motion
+        ),
     )

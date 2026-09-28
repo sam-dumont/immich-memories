@@ -157,3 +157,13 @@ def test_the_picker_offers_every_interface_language_in_its_own_name(client):
 
     assert {"code": "fr", "name": "Français"} in languages
     assert {"code": "de", "name": "Deutsch"} in languages
+    # As language pickers usually are: by each language's own name, accents folded, Latin
+    # scripts first and the others after.
+    names = [language["name"] for language in languages]
+    assert (
+        names.index("Deutsch")
+        < names.index("English")
+        < names.index("Español")
+        < names.index("Français")
+    )
+    assert names.index("Svenska") < names.index("Русский") < names.index("日本語")

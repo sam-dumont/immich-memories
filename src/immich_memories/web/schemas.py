@@ -146,11 +146,12 @@ class RunDetail(RunSummary):
 
 
 class RevisionEdits(BaseModel):
-    """What the owner changed; every id must be in the cut, or a recorded sibling for a swap."""
+    """What the owner changed: removals and swaps name the cut's shots, additions its pool."""
 
     removed: list[str] = []
     segments: dict[str, tuple[float, float]] = {}
     swaps: dict[str, str] = {}
+    added: list[str] = []
 
 
 class Revision(RevisionEdits):
@@ -247,3 +248,17 @@ class ConnectionEntry(BaseModel):
 
 class Greeting(BaseModel):
     user: str
+
+
+class JobProgress(BaseModel):
+    label: str = ""
+    # The stage's own name ("previews", "public_heads"), for the page to word; `label` is the
+    # engine's sentence.
+    stage_name: str = ""
+    phase: str = ""
+    done: int | None = None
+    total: int | None = None
+    fraction: float | None = None
+    # The stage's own estimate, measured on this stage's work only (StageClock).
+    remaining_seconds: float | None = None
+    recent_asset_ids: list[str] = []

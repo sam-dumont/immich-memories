@@ -28,7 +28,7 @@ def cut_june(page: Page, launch_app_url: str, *, minutes: float | None = 2) -> s
     page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
     page.get_by_text("Monthly Highlights", exact=True).click()
     page.get_by_label("Year", exact=True).fill("2024")
-    page.get_by_label("Month", exact=True).fill("6")
+    page.get_by_label("Month", exact=True).select_option("6")
     if minutes is not None:
         page.get_by_text("Length and pictures").click()
         page.get_by_label("Length in minutes", exact=False).fill(str(minutes))
@@ -38,9 +38,9 @@ def cut_june(page: Page, launch_app_url: str, *, minutes: float | None = 2) -> s
     return page.url.rsplit("/", 1)[-1]
 
 
-def cut_again_without_the_first_kept(page: Page) -> str:
-    """From a review page: untick the first kept picture in the pool and cut again."""
-    first = page.url.rsplit("/", 1)[-1]
+def preview_without_the_first_kept(page: Page) -> None:
+    """From a review page: untick the first kept picture in the pool and preview that revision."""
+    run = page.url.rsplit("/", 1)[-1]
     page.get_by_role("link", name="Pool", exact=True).click()
     tiles = page.get_by_role("list", name="Pool").get_by_role("listitem")
     expect(tiles.first).to_be_visible(timeout=30_000)
@@ -51,13 +51,9 @@ def cut_again_without_the_first_kept(page: Page) -> str:
     )
     kept.uncheck()
     expect(kept).not_to_be_checked()
-    page.get_by_role("button", name="Cut again with these choices").click()
-    page.wait_for_url(
-        lambda url: "/app/runs/" in url and "/pool" not in url and first not in url,
-        timeout=240_000,
-    )
-    expect(contact_sheet(page).first).to_be_visible(timeout=30_000)
-    return page.url.rsplit("/", 1)[-1]
+    page.get_by_role("button", name="Preview with these choices").click()
+    page.wait_for_url(f"**/app/runs/{run}?revision=*", timeout=30_000)
+    expect(contact_sheet(page).get_by_text("Removed", exact=True)).to_have_count(1)
 
 
 def render(page: Page, *, resolution: str, fmt: str = "mp4") -> None:

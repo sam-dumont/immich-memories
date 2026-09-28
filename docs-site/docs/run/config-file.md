@@ -104,8 +104,10 @@ path that is missing here, so a copied config fails up front instead of hours in
 | `audio.local_music_dir` | your own music, read by `immich-memories music` |
 
 Blank is the default for `head_bundle`, `detector_python` and `detector_cache_dir`, and the portable
-value: it means "work it out here". A Mac venv path carried into a NAS container is how
-`detector_python` ends in `detectors: FileNotFoundError` and no film. Containers already pin most of these: the image sets
+value: it means "work it out here". A `detector_python` that is not on this host (a Mac venv
+path carried into a NAS container, or a venv deleted since) stops a cut before it reads a picture,
+naming the key; `doctor` shows the same row. Remove the key and the detectors run on the app's own
+Python. Containers already pin most of these: the image sets
 `output.directory` to `/app/output`, and the [Kubernetes manifests](./kubernetes.md) put the model
 paths on the `/models` claim.
 

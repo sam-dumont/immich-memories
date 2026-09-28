@@ -74,7 +74,7 @@ def _open(page: Page, url: str, theme: str) -> None:
 def _brief_for_june(page: Page) -> None:
     page.get_by_text("Monthly Highlights", exact=True).click()
     page.get_by_label("Year", exact=True).fill("2024")
-    page.get_by_label("Month", exact=True).fill("6")
+    page.get_by_label("Month", exact=True).select_option("6")
     page.get_by_text("Length and pictures").click()
     page.get_by_label("Length in minutes", exact=False).fill("2")
 

@@ -56,7 +56,7 @@ into a terminal and you get the same cut.
 | Album | One of your Immich albums | 30 s + 10 s an active day, 60 to 300 s |
 | Trip | Year, then one of the trips found in your GPS, or every trip | 30 s + 10 s an active day, 60 to 300 s |
 | Holiday | Year, Holiday, Years to span, Only with | 1 min |
-| Special day | A day from the `discover-days` catalogue, or any date | 30 s + 6 s an active hour, 60 to 180 s |
+| Special day | A day from the `discover-days` catalogue, or any date | 30 s + 6 s an active hour, 60 to 180 s, at least 30 s of pictures |
 | Custom date range | From, then a date or a period (`6m`, `1y`), Only with | about 10 min per year of range |
 
 What each type covers: [Memory types](./memory-types.mdx). The length is fitted to what the pictures
@@ -73,7 +73,9 @@ nothing held back). The rules: [Sharing levels](../how-it-chooses/family-audienc
 
 ### People
 
-The names come from Immich's face recognition, so only named faces appear. **Person Spotlight** takes
+The names come from Immich's face recognition, so only named faces appear. The chips put the people
+with the most pictures first, with their count, and show the top sixteen; type in the search box to
+find anyone else. **Person Spotlight** takes
 one, **Multi-Person** two or more, and every other dated type has **Only with (optional)**. With two
 names, **Pictures with** asks whether you mean **all of them together** (`--person` repeated) or **any
 of them** (`--person-match or`).
@@ -87,8 +89,11 @@ command line shows which one the cut will use.
 <ThemedScreenshot name="memory-trip-brief" alt="The trip picker: the trips found in 2024, one chosen" />
 
 A **Trip** lists the trips found in the year's GPS, with their dates, length and picture count, the
-same list `generate --memory-type trip` prints. Pick one, or **Every trip of the year**. **Cut** stays
-greyed out until you do, because a trip brief without one only lists them.
+same list `generate --memory-type trip` prints. Finding them reads the whole year from Immich, so the
+server keeps the last list for a day and works out a new one in the background: the list shows at
+once, with when it was found, and **Refresh** asks for a new one. A trip is named after the town that
+holds more than half its pictures, the region only when no town does. Pick one, or **Every trip of
+the year**. **Cut** stays greyed out until you do, because a trip brief without one only lists them.
 
 A **Special day** lists the days in `~/.immich-memories/special-days.json`, anniversaries due first. A
 scheduled run only proposes a day on its anniversary; here you can pick any day the catalogue holds,
@@ -150,30 +155,35 @@ Every shot can be edited from the inspector:
 - **Use this picture instead**, on another picture of the same moment, swaps it in.
 
 The sheet marks removed and swapped shots. A bar at the bottom counts the changes and adds up the
-seconds against what the titles leave; it turns red when the cut no longer fits. **Undo** (or
-Ctrl/Cmd+Z) walks back one change.
+seconds; past what the titles left, it says the film grows to hold them. Your edits are the last
+pass, so length never refuses one. **Undo** (or Ctrl/Cmd+Z) walks back one change.
 
-**Save revision** checks the edits the way the renderer will and keeps them as a numbered revision
-beside the run (`revisions/0001.private.json` in its attempt folder). A refused save says which edit
-and why. **Revisions** lists every saved one; **Open** loads it back into the editor.
+**Save revision** keeps the edits as a numbered revision beside the run
+(`revisions/0001.private.json` in its attempt folder). It only refuses what the renderer cannot
+play, like a trim past the end of a video, and says which edit. **Revisions** lists every saved
+one; **Open** loads it back into the editor.
 
-None of this reruns the editor. For that, use the pool.
+None of this reruns the editor, and neither does the pool.
 
 ### The pool
 
 <ThemedScreenshot name="memory-pool-outcomes" alt="The pool: every picture the cut saw, with its outcome and a checkbox" />
 
 **Pool** shows every picture the cut saw, in capture order, each with what became of it (**In the cut**
-with its reason, or where and why it was left out; `runs why` reads the same line) and an **In the next
-cut** checkbox. Untick a picture the cut kept and it is left out; tick one it dropped and it is kept,
-in its own story at its capture time. **Cut again with these choices** runs a new cut with those
-ticks as `--include` and `--exclude`, and opens its review. The only thing that outranks a tick is the
-family-viewing gate.
+with its reason, or where and why it was left out; `runs why` reads the same line) and an **In the
+film** checkbox. Untick a picture the cut kept and it comes out; tick one it dropped and it goes in,
+at the time it was taken. **Preview with these choices** saves the ticks as a revision of this same
+cut and opens it, ready to render. Nothing is chosen again, so it takes a second, not a cut.
+
+The ticks are your decision, and the film plays them as they are: longer or shorter than the cut,
+a held picture included. The only work left is making each one playable the way the cut's own shots
+are. A photo holds as long as the cut's stills, a video plays from its start as long as its moving
+shots, and a Live Photo plays its stitched motion (or its still, when the motion can't be stitched).
+Trim any of them in the review before you render.
 
 The pool opens on this memory's own pictures: the ones the editor was given. A spotlight's editor
 only gets the pictures its person is in, so the rest of the year stays out of the list. **Also show
-the pictures outside this memory** brings them back, greyed out and without a checkbox, because a
-tick cannot bring a picture into a memory it is not part of.
+the pictures outside this memory** brings them back, and you can tick those too.
 
 <ThemedScreenshot name="pictures-pool-held" alt="A held picture: the reason, Clear hold and Never use" />
 
@@ -197,8 +207,9 @@ selected again: the film plays exactly the reviewed cut. Every option defaults t
 - **Resolution**, **Format** (H.264 or H.265 MP4, ProRes MOV), **Quality**, **Orientation** (Automatic
   follows most of the kept clips; Portrait with a short length is a vertical short) and **Scaling
   Mode** (a blurred backdrop or bars; clips are never cropped).
-- **Transition Style**, **Add date overlay**, **Caption clips with their place**, and **Privacy mode**,
-  which blurs every picture and scrambles names for a public demo.
+- **Transition Style**, **Add date overlay** and **Caption clips with their place** (both on; untick
+  to leave them out), and **Privacy mode**, which blurs every picture and scrambles names for a public
+  demo.
 - **Title** and **Subtitle**. Leave the title empty and **Who names the film** decides: as `generate`
   would, the model, or the dates and places only.
 - **Music**: **Automatic** (as configured), **No music**, **Preview a track** made for this cut from
@@ -236,7 +247,9 @@ Under the review sit the run's output path, its Immich delivery, warnings and ph
 ranks it: reason, dates and picture count per card. **Candidate key** shows the key
 `auto run --candidate` takes, **Check eligibility** runs the checks without a render, and **Run this
 suggestion** renders on the server after re-checking cooldown and repetition. **Why other suggestions
-were skipped** names the rule behind each rejection. More on [Automate it](./automate.md).
+were skipped** names the rule behind each rejection. The list is kept for a day like the trips: it
+shows at once with when it was worked out, and **Refresh suggestions** reads the library again. More on
+[Automate it](./automate.md).
 
 ## Settings
 

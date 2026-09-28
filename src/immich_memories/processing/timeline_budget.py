@@ -243,8 +243,14 @@ def plan_timeline(
     remaining -= title_duration
 
     configured_ending = max(0.0, float(title_settings.ending_duration))
-    ending_duration = min(configured_ending, remaining) if remaining >= _MIN_ENDING_SECONDS else 0.0
-    remaining -= ending_duration
+    # Every film ends on its ending card (owner, 28 Sep): a short film gets a short one, at least
+    # _MIN_ENDING_SECONDS, taken from the pictures when the titles' share has run out.
+    ending_duration = (
+        min(configured_ending, max(remaining, _MIN_ENDING_SECONDS))
+        if configured_ending > 0
+        else 0.0
+    )
+    remaining = max(0.0, remaining - ending_duration)
 
     divider_duration = max(0.0, float(title_settings.month_divider_duration))
     if _is_chronological_month_mode(title_settings, memory_type):

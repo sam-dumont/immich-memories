@@ -49,7 +49,7 @@ def test_never_use_is_the_owner_s_word_across_runs_and_undo_forgets_it(tmp_path)
     assert forgotten.json()["decision"] is None
 
 
-def test_a_picture_the_editor_never_received_cannot_be_ticked_into_the_next_cut(tmp_path):
+def test_the_pool_opens_on_this_memory_s_own_pictures_and_counts_the_rest(tmp_path):
     config = config_in(tmp_path)
     trace = selection_trace()
     # The first pass saw it; the editor, given only this memory's material, never did.
@@ -76,3 +76,17 @@ def test_a_picture_the_editor_never_received_cannot_be_ticked_into_the_next_cut(
     mine = client.get(f"/api/v1/runs/{RUN}/pool", params={"reachable_only": True}).json()
     assert [item["asset_id"] for item in mine["items"]] == ["garden-1"]
     assert (mine["total"], mine["outside"]) == (1, 1)
+
+
+def test_the_pool_s_ticks_are_the_owner_s_last_pass_saved_as_a_revision_without_a_recut(tmp_path):
+    _config, client = _cut_with_pool(tmp_path)
+
+    saved = client.post(
+        f"/api/v1/runs/{RUN}/revisions", json={"added": ["woods-9"], "removed": ["lake-1"]}
+    )
+    refused = client.post(f"/api/v1/runs/{RUN}/revisions", json={"added": ["a-stranger"]})
+
+    assert saved.status_code == 201
+    assert (saved.json()["added"], saved.json()["removed"]) == (["woods-9"], ["lake-1"])
+    assert refused.status_code == 422 and "not in this cut's pool" in refused.json()["detail"]
+    assert client.post(f"/api/v1/runs/{RUN}/recut", json={}).status_code in {404, 405}
