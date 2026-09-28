@@ -82,11 +82,31 @@ def homes(library, assets):
     for n, h in enumerate(listed):
         until = str(listed[n + 1]["since"]) if n + 1 < len(listed) else None
         where = (h["lat"], h["lon"])
+        points = [where]
+        # Where the phone put the photos taken there: indoors GPS settles away from the address pin
+        # (the owner's pin was 180 m from the photos of that home, 09-28). The densest ~100 m cell of
+        # photo days within 500 m during the stay joins the home's points.
+        days, near = {}, {}
+        for r in library.rows:
+            a = assets.get(r["asset_id"])
+            if not a or not (str(h["since"]) <= r["taken_at"][:10] < (until or "9999")):
+                continue
+            spot = (a.exif_info.latitude, a.exif_info.longitude)
+            if km(where, spot) <= 0.5:
+                cell = (round(spot[0] / 0.001), round(spot[1] / 0.001))
+                days.setdefault(cell, set()).add(r["taken_at"][:10])
+                near.setdefault(cell, []).append(spot)
+        if days:
+            cell = max(days, key=lambda c: (len(days[c]), c))
+            if len(days[cell]) >= 3:
+                spots = near[cell]
+                points.append(tuple(sorted(x)[len(x) // 2] for x in zip(*spots)))
         areas = Counter(r.get("city") for r in library.rows
-                        if (a := assets.get(r["asset_id"])) and km(where, (a.exif_info.latitude, a.exif_info.longitude)) <= AT_HOME_KM)
+                        if (a := assets.get(r["asset_id"]))
+                        and min(km(p, (a.exif_info.latitude, a.exif_info.longitude)) for p in points) <= AT_HOME_KM)
         # An inferred home is a ~200 m grid cell's estimate: 150 m missed photos 260 m from it (09-28).
         radius = AT_HOME_KM if h.get("source") == "confirmed" else INFERRED_HOME_KM
-        out.append({"name": h.get("name") or f"home {n + 1}", "lat": h["lat"], "lon": h["lon"],
+        out.append({"name": h.get("name") or f"home {n + 1}", "lat": h["lat"], "lon": h["lon"], "points": points,
                     "since": str(h["since"]), "until": until, "radius": radius,
                     "area": [c for c, _ in areas.most_common(2) if c]})
     return out
@@ -122,8 +142,8 @@ def at_home_rows(library, assets, lived, which=None, radius=AT_HOME_KM):
             candidates = [h for h in lived if h["name"] == which]
         else:
             candidates = [h for h in lived if h["since"] <= day and (h["until"] is None or day < h["until"])][-1:]
-        if any(km((h["lat"], h["lon"]), (a.exif_info.latitude, a.exif_info.longitude)) <= max(radius, h.get("radius", 0))
-               for h in candidates):
+        spot = (a.exif_info.latitude, a.exif_info.longitude)
+        if any(km(p, spot) <= max(radius, h.get("radius", 0)) for h in candidates for p in h.get("points") or [(h["lat"], h["lon"])]):
             out.add(i)
     return out
 
