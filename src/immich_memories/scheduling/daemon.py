@@ -20,6 +20,7 @@ from immich_memories.scheduling.engine import PendingJob, Scheduler
 from immich_memories.scheduling.executor import resolve_schedule_params
 from immich_memories.scheduling.models import DEFAULT_JOB_TIMEOUT_MINUTES, SchedulerConfig
 from immich_memories.security import sanitize_filename
+from immich_memories.self_command import self_command
 
 logger = logging.getLogger(__name__)
 
@@ -191,7 +192,7 @@ def _scope_arguments(params: dict) -> list[str]:
 
 
 def _generate_command(params: dict, config_path: Path | None) -> list[str]:
-    cmd = ["immich-memories"]
+    cmd = self_command()
     if config_path is not None:
         cmd.extend(["--config", str(config_path)])
     cmd.append("generate")

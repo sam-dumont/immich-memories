@@ -30,6 +30,7 @@ from immich_memories.automation.runner import (
 )
 from immich_memories.cli.auto_cmd import _candidates_to_json, _print_candidates_table
 from immich_memories.config_loader import Config
+from immich_memories.self_command import self_command
 from immich_memories.tracking.models import RunMetadata
 
 
@@ -1652,7 +1653,7 @@ class TestBuildGenerateCommand:
         )
         cmd = _build_generate_command(candidate, upload=False)
         assert cmd == [
-            "immich-memories",
+            *self_command(),
             "generate",
             "--memory-type",
             "monthly_highlights",
@@ -1695,7 +1696,7 @@ class TestBuildGenerateCommand:
         )
         cmd = _build_generate_command(candidate, upload=False)
         assert cmd == [
-            "immich-memories",
+            *self_command(),
             "generate",
             "--memory-type",
             "year_in_review",
