@@ -51,10 +51,6 @@ help:
 	@echo "  workflow-guard Check every workflow job skips in the private GPU mirror"
 	@echo ""
 	@echo "Cache Management:"
-	@echo "  cache-stats           Show analysis cache stats"
-	@echo "  video-cache-stats     Show video download cache stats"
-	@echo "  thumbnail-cache-stats Show thumbnail cache stats"
-	@echo "  all-cache-stats       Show all cache stats"
 	@echo "  clean-cache           Clear analysis cache (SQLite)"
 	@echo "  clean-video-cache     Clear video file cache"
 	@echo "  clean-thumbnail-cache Clear thumbnail cache"
@@ -986,21 +982,6 @@ info:
 # Open cache database with sqlite3
 db:
 	sqlite3 ~/.immich-memories/cache.db
-
-# Show analysis cache stats
-cache-stats:
-	@uv run python -c "from immich_memories.cache import VideoAnalysisCache; c = VideoAnalysisCache(); import json; print(json.dumps(c.get_stats(), indent=2))"
-
-# Show video cache stats
-video-cache-stats:
-	@uv run python -c "from immich_memories.cache import VideoDownloadCache; c = VideoDownloadCache(); import json; print(json.dumps(c.get_stats(), indent=2, default=str))"
-
-# Show thumbnail cache stats
-thumbnail-cache-stats:
-	@uv run python -c "from immich_memories.cache import ThumbnailCache; c = ThumbnailCache(); import json; print(json.dumps(c.get_stats(), indent=2, default=str))"
-
-# Show all cache stats
-all-cache-stats: cache-stats video-cache-stats thumbnail-cache-stats
 
 # Generate version info
 version:

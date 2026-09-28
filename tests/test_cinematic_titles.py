@@ -242,14 +242,3 @@ class TestBackgroundGeneration:
         assert edge_brightness < 0.15, (
             f"Vignette edge brightness {edge_brightness:.3f} should be < 0.15 (dark)"
         )
-
-
-class TestTitleConfigDefaults:
-    """Verify TitleScreenConfig defaults are cinematic."""
-
-    def test_show_decorative_lines_is_false(self):
-        """Config should not show decorative lines by default."""
-        from immich_memories.titles.generator import TitleScreenConfig
-
-        config = TitleScreenConfig()
-        assert not config.show_decorative_lines

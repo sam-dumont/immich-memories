@@ -211,8 +211,8 @@ Immich's own database, are on [Database and the store](./database.md).
 ## Backups
 
 Back up the cache PVC: `store.db` on it is the expensive part (unless the store is PostgreSQL), and
-losing it means re-reading the library. `immich-memories cache backup|export` move the retired scorer's table, not
-the banks. For secrets in git, use
+losing it means re-reading the library. `immich-memories store backup` writes the whole store to one
+file. For secrets in git, use
 [sealed-secrets](https://github.com/bitnami-labs/sealed-secrets):
 `kubeseal --format=yaml < base/secret.yaml > base/sealed-secret.yaml`.
 
