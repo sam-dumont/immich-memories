@@ -4,8 +4,6 @@ title: Troubleshooting
 
 # Troubleshooting
 
-Reader: anyone whose run stopped.
-
 **Help, in four steps:** read the table below and the [FAQ](./faq.md); check the
 [release notes](https://github.com/sam-dumont/immich-video-memory-generator/releases) for your version;
 [search the issues](https://github.com/sam-dumont/immich-video-memory-generator/issues?q=is%3Aissue); then open

@@ -5,8 +5,6 @@ title: Hardware encoding
 
 # Hardware encoding
 
-Reader: power user.
-
 It works on a plain NAS: preparation, selection, assembly and encoding all run on a CPU, a four-core
 Celeron included. A GPU makes it better in two ways: a faster encode, and the effects in the animated
 title screens. It does not run the models: NVENC, Quick Sync and VAAPI decode, scale and encode,

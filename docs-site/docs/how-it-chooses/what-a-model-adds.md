@@ -4,8 +4,6 @@ title: What a model adds
 
 # What a model adds
 
-Reader: power user, with a newcomer summary first.
-
 NAS makes the whole film from metadata, pixels and inexpensive CPU classifiers. It is a good
 default. GPU adds captions and Laya for selected shots and candidates. Full adds a
 text model that reads the draft's annotation lines and proposes small refinements. It may replace

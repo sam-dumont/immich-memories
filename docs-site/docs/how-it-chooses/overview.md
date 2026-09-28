@@ -4,7 +4,6 @@ title: From library to film
 
 # From library to film
 
-Reader: newcomer and power user. The first two sections are for everyone; the rest follows the
 route through the code, for when you want to see every step.
 
 ## The short version

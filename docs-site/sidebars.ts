@@ -22,6 +22,7 @@ const sidebars: SidebarsConfig = {
         'get-started/quick-start',
         {type: 'doc', id: 'get-started/first-film', label: 'Your first film'},
         'get-started/who-is-who',
+        {type: 'doc', id: 'get-started/what-a-gpu-or-a-model-adds', label: 'What a GPU or a model adds'},
       ],
     },
     {

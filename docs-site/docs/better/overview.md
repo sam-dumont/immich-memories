@@ -4,8 +4,6 @@ title: What a model adds, what it costs
 
 # What a model adds, what it costs
 
-Reader: newcomer and power user.
-
 Immich Memories works on a plain NAS: one container, one `models fetch`, and the whole film gets
 made there. That is a good default. Optional models can add small refinements; compare the
 pictures and decide whether the extra time, memory or API cost is worth it. They can also leave

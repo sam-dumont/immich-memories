@@ -6,8 +6,6 @@ import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
 
 # Overrule it
 
-Reader: power user, with a newcomer summary first.
-
 The editor's choices are defaults, and you have the last word on most of them. Star the pictures
 that matter in Immich before you cut. After a cut, untick what you don't want in the media pool,
 tick what you do, and preview: the film plays what you kept. Tell the app who your family is and

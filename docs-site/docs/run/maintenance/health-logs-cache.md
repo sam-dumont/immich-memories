@@ -4,8 +4,6 @@ sidebar_label: "Health, logs and caches"
 
 # Health, logs and caches
 
-Reader: power user.
-
 ## Health endpoints
 
 | Endpoint | Returns | Use it for |

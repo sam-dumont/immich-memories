@@ -4,8 +4,6 @@ title: Inference on a GPU box
 
 # Inference on a GPU box
 
-Reader: power user.
-
 On a plain NAS the app runs the DINOv2 encoder, its eight heads and the two detectors in its own
 process, on the CPU, once per picture. The inference service moves that work to another machine:
 a GPU box, a Kubernetes node, or just a container you can restart on its own. The facts are the

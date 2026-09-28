@@ -7,8 +7,6 @@ import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
 
 # pictures
 
-Reader: power user.
-
 Your own word on one picture: clear what holds it, or never use it. It's the terminal side of the
 **Clear hold** and **Never use** buttons in the media pool and on the storyboard, and writes the same
 place, so either one sees what the other did. Every tier reads it in every later cut. Every flag is in

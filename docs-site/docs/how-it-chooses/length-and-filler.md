@@ -4,8 +4,6 @@ title: Length, quiet weeks and filler
 
 # Length, quiet weeks and filler
 
-Reader: power user, with a newcomer summary first.
-
 A film's target length is where it starts, not a promise. A month with three photographed days
 gets about 20 seconds, not a minute, and a quiet month with a week of nothing in it spends no shot
 on that week. When a film runs out of pictures worth showing, it ends early. A shorter film with
