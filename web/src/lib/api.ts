@@ -5,6 +5,7 @@ export type RunSummary = components['schemas']['RunSummary'];
 export type RunPage = components['schemas']['RunPage'];
 export type Messages = components['schemas']['Messages'];
 export type RunDetail = components['schemas']['RunDetail'];
+export type ReportResponse = components['schemas']['ReportResponse'];
 export type Cut = components['schemas']['Cut'];
 export type CutShot = components['schemas']['CutShot'];
 export type Story = components['schemas']['Story'];

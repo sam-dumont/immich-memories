@@ -745,7 +745,7 @@ export interface paths {
         };
         /**
          * Read Report
-         * @description Return the same redacted Markdown as the CLI report command (#1428).
+         * @description Preview exactly what Copy report puts on the clipboard. Nothing is sent.
          */
         get: operations["read_report_api_v1_runs__run_id__report_get"];
         put?: never;
@@ -1449,6 +1449,16 @@ export interface components {
              * @default false
              */
             upload_to_immich: boolean;
+        };
+        /** ReportResponse */
+        ReportResponse: {
+            /**
+             * Has Flagged Photos
+             * @default false
+             */
+            has_flagged_photos: boolean;
+            /** Markdown */
+            markdown: string;
         };
         /** Revision */
         Revision: {
@@ -3033,6 +3043,7 @@ export interface operations {
         parameters: {
             query?: {
                 include_flagged_captions?: boolean;
+                reload?: boolean;
             };
             header?: never;
             path: {
@@ -3048,9 +3059,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: string | boolean;
-                    };
+                    "application/json": components["schemas"]["ReportResponse"];
                 };
             };
             /** @description Validation Error */

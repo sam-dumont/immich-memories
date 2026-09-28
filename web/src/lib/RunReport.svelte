@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Alert, Button } from '@immich/ui';
   import { mdiContentCopy } from '@mdi/js';
-  import { api } from './api';
+  import { api, type ReportResponse } from './api';
   import { t } from './i18n.svelte';
 
   let { runId }: { runId: string } = $props();
@@ -24,7 +24,13 @@
     requestNumber += 1;
   });
 
-  async function preview() {
+  // A failed refresh keeps the report on screen, so the tick has to go back to what it shows.
+  async function toggleCaptions() {
+    const shown = !includeCaptions;
+    if (!(await preview())) includeCaptions = shown;
+  }
+
+  async function preview(): Promise<boolean> {
     loading = true;
     problem = '';
     const requested = runId;
@@ -32,16 +38,15 @@
     copied = false;
     try {
       const query = includeCaptions ? '?include_flagged_captions=true' : '';
-      const report = await api<{ markdown: string; has_flagged_photos: boolean }>(`/runs/${encodeURIComponent(requested)}/report${query}`);
+      const report = await api<ReportResponse>(`/runs/${encodeURIComponent(requested)}/report${query}`);
       if (requested === runId && request === requestNumber) {
         markdown = report.markdown;
         hasFlaggedPhotos = report.has_flagged_photos;
       }
+      return true;
     } catch {
-      if (request === requestNumber) {
-        markdown = '';
-        problem = t('The report could not be loaded.');
-      }
+      if (request === requestNumber) problem = t('The report could not be loaded.');
+      return false;
     } finally {
       if (request === requestNumber) loading = false;
     }
@@ -62,7 +67,7 @@
   {#if markdown}
     <p class="text-sm text-gray-600 dark:text-gray-400">{t('Review the report, then copy it. Nothing is sent automatically.')}</p>
     {#if hasFlaggedPhotos}
-      <label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={includeCaptions} onchange={preview} disabled={loading} />{t('Include captions of flagged photos')}</label>
+      <label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={includeCaptions} onchange={toggleCaptions} disabled={loading} />{t('Include captions of flagged photos')}</label>
     {/if}
     <pre aria-label={t('Report preview')} class="max-h-80 w-full overflow-auto rounded-lg bg-gray-100 p-3 text-xs whitespace-pre-wrap select-text dark:bg-gray-900">{markdown}</pre>
     <Button size="small" variant="outline" leadingIcon={mdiContentCopy} disabled={loading} onclick={copy}>{copied ? t('Copied') : t('Copy report')}</Button>

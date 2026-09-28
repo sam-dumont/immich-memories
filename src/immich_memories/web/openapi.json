@@ -1584,6 +1584,24 @@
         "title": "RenderOptions",
         "type": "object"
       },
+      "ReportResponse": {
+        "properties": {
+          "has_flagged_photos": {
+            "default": false,
+            "title": "Has Flagged Photos",
+            "type": "boolean"
+          },
+          "markdown": {
+            "title": "Markdown",
+            "type": "string"
+          }
+        },
+        "required": [
+          "markdown"
+        ],
+        "title": "ReportResponse",
+        "type": "object"
+      },
       "Revision": {
         "properties": {
           "content_seconds": {
@@ -4351,7 +4369,7 @@
     },
     "/api/v1/runs/{run_id}/report": {
       "get": {
-        "description": "Return the same redacted Markdown as the CLI report command (#1428).",
+        "description": "Preview exactly what Copy report puts on the clipboard. Nothing is sent.",
         "operationId": "read_report_api_v1_runs__run_id__report_get",
         "parameters": [
           {
@@ -4372,6 +4390,16 @@
               "title": "Include Flagged Captions",
               "type": "boolean"
             }
+          },
+          {
+            "in": "query",
+            "name": "reload",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Reload",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -4379,18 +4407,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "boolean"
-                      }
-                    ]
-                  },
-                  "title": "Response Read Report Api V1 Runs  Run Id  Report Get",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ReportResponse"
                 }
               }
             },
@@ -4409,7 +4426,7 @@
         },
         "summary": "Read Report",
         "tags": [
-          "runs"
+          "reports"
         ]
       }
     },
