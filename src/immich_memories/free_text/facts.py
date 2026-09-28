@@ -1,9 +1,14 @@
 """What the library measures, named, so a request's words link to it by code.
 
-Each entry is a field the library already holds, with the words that name it: the place names
-Immich gives each picture (a name that is also an English word, such as a town called Meadow,
-links only when written capitalised mid-sentence). A request that names none of these fields gets none of these
-filters, and every link says why it was made.
+The catalogue: each entry is a field the library already holds, with the words that name it.
+Immich's place names (a name that is also an English word, such as a town called Meadow,
+links only when written capitalised mid-sentence), the kind of picture preparation labelled,
+the engine's own sharpness line, and how often each person's face is recognised. A request
+that names none of these fields gets none of these filters, and every link says why.
+
+The computed selections: each person's first picture (at the onset, never before their
+birth) and last picture, the trip farthest from the home of its time, and the day an undated
+occasion's pictures show its people together.
 """
 
 from __future__ import annotations
@@ -11,10 +16,18 @@ from __future__ import annotations
 import re
 import unicodedata
 from collections import Counter
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import date
+from statistics import median
+from typing import Protocol
 
+from immich_memories.analysis.trip_detection import detect_trips, haversine_km
+from immich_memories.api.models import Asset, AssetType, ExifInfo
+from immich_memories.free_text.homes import Home
 from immich_memories.free_text.lexicon import Lexicon
-from immich_memories.free_text.library import LibraryPicture, LibraryView
+from immich_memories.free_text.library import LibraryPerson, LibraryPicture, LibraryView
+from immich_memories.people.signatures import first_sustained_month
 
 _PLACE_FIELDS = ("country", "region", "city")
 
@@ -211,3 +224,187 @@ def _written_as_a_name(request: str, name: str) -> bool:
     # A town that is also a word ("Meadow") is that town only when capitalised where a
     # sentence's first word would not be.
     return any(found.start() > 0 for found in re.finditer(rf"\b{re.escape(name)}\b", request))
+
+
+def _faces_of(pictures: Sequence[LibraryPicture], person: LibraryPerson) -> list[LibraryPicture]:
+    # Nobody is photographed before they are born: an earlier face match is someone else.
+    born = person.birth_date
+    return sorted(
+        (
+            picture
+            for picture in pictures
+            if person.person_id in picture.people
+            and (born is None or picture.taken_at.date() >= born)
+        ),
+        key=lambda picture: picture.taken_at,
+    )
+
+
+def first_pictures(
+    pictures: Iterable[LibraryPicture], people: Iterable[LibraryPerson]
+) -> Mapping[str, LibraryPicture]:
+    """Each person's first picture: when they entered the library for good.
+
+    That is the product's onset (the first month with three more inside the following year),
+    not a stray older photo, and never before their birth date. Someone who never stayed
+    gets their earliest picture.
+    """
+    held = list(pictures)
+    firsts: dict[str, LibraryPicture] = {}
+    for person in people:
+        faces = _faces_of(held, person)
+        if not faces:
+            continue
+        onset = first_sustained_month({picture.taken_at.date().replace(day=1) for picture in faces})
+        firsts[person.person_id] = next(
+            (picture for picture in faces if onset and picture.taken_at.date() >= onset),
+            faces[0],
+        )
+    return firsts
+
+
+def last_pictures(
+    pictures: Iterable[LibraryPicture], people: Iterable[LibraryPerson]
+) -> Mapping[str, LibraryPicture]:
+    """Each person's latest picture with their recognised face: where everyone is now."""
+    held = list(pictures)
+    return {person.person_id: faces[-1] for person in people if (faces := _faces_of(held, person))}
+
+
+class TripRules(Protocol):
+    """How far and how long a trip is (the `trips` config section)."""
+
+    @property
+    def min_distance_km(self) -> float: ...
+
+    @property
+    def min_duration_days(self) -> int: ...
+
+    @property
+    def max_gap_days(self) -> int: ...
+
+
+@dataclass(frozen=True)
+class FarthestTrip:
+    """The trip farthest from home, and its pictures."""
+
+    first_day: date
+    last_day: date
+    distance_km: float
+    asset_ids: frozenset[str]
+
+    @property
+    def reason(self) -> str:
+        return (
+            f'"farthest" -> the trip whose middle photo is farthest from the home of its time: '
+            f"{self.distance_km:.0f} km, {self.first_day} to {self.last_day}"
+        )
+
+
+def farthest_trip(
+    pictures: Iterable[LibraryPicture], homes: Sequence[Home], rules: TripRules
+) -> FarthestTrip | None:
+    """The trip farthest from the home the owner had when they took it.
+
+    Trips are the product's own trip detection, run over each home's years from that home. A
+    trip is as far as its median photo, so one wrong GPS fix cannot make it the farthest.
+    """
+    located = [p for p in pictures if p.latitude is not None and p.longitude is not None]
+    best: FarthestTrip | None = None
+    for home in homes:
+        during = {p.asset_id: p for p in located if _lived_in(home, p.taken_at.date())}
+        trips = detect_trips(
+            [_trip_asset(picture) for picture in during.values()],
+            home.latitude,
+            home.longitude,
+            min_distance_km=rules.min_distance_km,
+            min_duration_days=rules.min_duration_days,
+            max_gap_days=rules.max_gap_days,
+            name_locations=False,
+        )
+        for trip in trips:
+            far = median(
+                haversine_km(home.latitude, home.longitude, *_where(during[asset_id]))
+                for asset_id in trip.asset_ids
+            )
+            if best is None or far > best.distance_km:
+                best = FarthestTrip(trip.start_date, trip.end_date, far, frozenset(trip.asset_ids))
+    return best
+
+
+def _lived_in(home: Home, day: date) -> bool:
+    return (home.since is None or home.since <= day) and (home.until is None or day < home.until)
+
+
+def _where(picture: LibraryPicture) -> tuple[float, float]:
+    return picture.latitude or 0.0, picture.longitude or 0.0
+
+
+def _trip_asset(picture: LibraryPicture) -> Asset:
+    return Asset(
+        id=picture.asset_id,
+        type=AssetType.VIDEO if picture.media_kind == "video" else AssetType.IMAGE,
+        file_created_at=picture.taken_at,
+        file_modified_at=picture.taken_at,
+        updated_at=picture.taken_at,
+        exif_info=ExifInfo(latitude=picture.latitude, longitude=picture.longitude),
+    )
+
+
+@dataclass(frozen=True)
+class OccasionDay:
+    """The day an undated occasion happened, or None with the days its words were found on."""
+
+    day: date | None
+    photos: int
+    reason: str
+    # When no day qualifies: up to three days its words were found on, with who was on them.
+    found: tuple[tuple[date, int, frozenset[str]], ...] = ()
+
+
+def occasion_day(
+    pictures: Iterable[LibraryPicture], words: Sequence[str], people: Iterable[str]
+) -> OccasionDay:
+    """The day whose pictures of the occasion show all its people on the photo itself.
+
+    "Our wedding" has no date to read, so it is the day with the most pictures whose caption
+    names it and where everyone it belongs to is recognised on that same picture. Presence
+    that day proves nothing (a couple spends most days together), and a guest at somebody
+    else's wedding, or a framed old photo, shows one of them. Counted on the request's own
+    words.
+    """
+    wanted = frozenset(people)
+    said = [re.compile(rf"\b{re.escape(word.lower())}") for word in words]
+    of_it = [
+        picture
+        for picture in pictures
+        if picture.caption and any(word.search(picture.caption.lower()) for word in said)
+    ]
+    together = Counter(picture.taken_at.date() for picture in of_it if wanted <= picture.people)
+    asked = ", ".join(words)
+    if together:
+        day, photos = min(together.items(), key=lambda item: (-item[1], item[0]))
+        return OccasionDay(
+            day=day,
+            photos=photos,
+            reason=(
+                f"no date known for one occasion -> the day whose photos of {asked} show "
+                f"everyone it belongs to on the photo itself: {day} ({photos} photos)"
+            ),
+        )
+    by_day: dict[date, list[LibraryPicture]] = {}
+    for picture in of_it:
+        by_day.setdefault(picture.taken_at.date(), []).append(picture)
+    busiest = sorted(by_day.items(), key=lambda item: (-len(item[1]), item[0]))[:3]
+    return OccasionDay(
+        day=None,
+        photos=0,
+        reason=(
+            f"not possible: no day's photos of {asked} show everyone it belongs to together "
+            f"({len(of_it)} photos name it)"
+        ),
+        found=tuple(
+            (day, len(held), frozenset().union(*(picture.people for picture in held)))
+            for day, held in busiest
+        ),
+    )

@@ -179,7 +179,8 @@ unchanged sources retain their existing bank entries.
   Explicit tiers remain available for comparisons. Sharing never asks the prose
   LLM (`config_tiers.py`, `config_models_editorial*.py`, `editorial_shareability_tiers.py`).
   `laya_checkpoints.py` selects platform-matched archive, path and threshold defaults;
-  `pinned_models.py` owns the SHA-256 pins used by `models fetch`.
+  `pinned_models.py` owns the SHA-256 pins used by `models fetch` (the encoder, the detector
+  exports, Laya, and the WordNet corpus free-text requests are read with).
 - **Reach**: the pictures a film can actually select (for a person film, its person presence),
   plus their Live Photo siblings and capture runs. This bounds cheap preparation; captions
   and playback have the narrower selected/candidate scope. The rest of the window is read as
@@ -829,6 +830,23 @@ src/immich_memories/
 │   ├── expression_window.py    # The earliest day a people condition can hold, from birth dates
 │   └── editor.py               # The companion editor's model: the registry as rows, and back
 │
+├── free_text/                  # A film asked for in a sentence (#1436, being built; design in
+│   │                           # docs/designs/free-text-memories.md). No LLM in these modules
+│   ├── __init__.py             # The package API (the pool, the reading and the CLI build on it)
+│   ├── lexicon.py              # Lexicon Protocol; load_wordnet(): the pinned WordNet 3.0 zip that
+│   │                           # `models fetch` writes (free_text.wordnet), digest-checked, read through
+│   │                           # nltk; never downloaded at run time
+│   ├── library.py              # read_library(): per picture, Immich's date/media kind/places/GPS from
+│   │                           # annotation_assets, and the configured producers' caption, doc_docling
+│   │                           # label, sharpness and people-file faces via AssetAnnotationFactRepository
+│   ├── grammar.py              # Caption grammar: is_about (the subject up to the first verb), is_thing
+│   │                           # (WordNet's noun file), free_tier (captions about the subject)
+│   ├── facts.py                # link_facts(): request words -> places, picture kinds, the sharpness line,
+│   │                           # faces over N, first/last/farthest; first_pictures (the onset, never
+│   │                           # before birth), last_pictures, farthest_trip, occasion_day
+│   └── homes.py                # homes_over_time(): each year's most-photographed ~200 m cell, a new
+│                               # home past 300 m; the configured home base when none shows
+│
 ├── automation/                 # Smart automation (auto suggest/run)
 │   ├── __init__.py             # Public API re-exports
 │   ├── candidates.py           # Memory candidate detection
@@ -891,6 +909,7 @@ src/immich_memories/
 ├── config_models_analysis.py   # Source admission and the expected seconds per clip
 ├── config_models_auth.py       # Authentication config model (basic, OIDC, header)
 ├── config_models_automation.py # Running unattended: trips, automation, notifications, upload
+├── config_models_free_text.py  # free_text: where the pinned WordNet corpus lives and comes from
 ├── config_models_llm.py        # LLM provider settings (shared by analysis and titles)
 ├── config_models_network.py    # The three third-party hosts a run may reach; all off by default
 ├── config_models_render.py     # What the video looks like: defaults, output, title screens, photos
