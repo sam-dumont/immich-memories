@@ -166,8 +166,9 @@ def fill_pool(library, pool, core, not_this, shape, anchors, captionless, read, 
     return sorted(kept, key=lambda i: library.rows[i]["taken_at"]), log, stats, stages
 
 
-def fewer_poses(library, kept, heads, shape, per=4):
-    """At most one posed photo per `per` others in each period, for a subject that is not a person:
+def fewer_poses(library, kept, heads, shape, per=8):
+    """At most one posed photo per `per` others in each period, for a subject that is not a person
+    (one per four still left the engine picking 38% posed, 09-28):
     the engine favours people and picked twice the pool's share of poses (41% of 21%, 09-28)."""
     from collections import defaultdict
 
@@ -192,3 +193,20 @@ def subject_head(caption):
     verb = re.search(r"\b[a-z]+ing\b", head)
     words = re.findall(r"[a-z]+", head[:verb.start()] if verb else head)
     return words[-1] if words else None
+
+
+def balance_years(library, kept):
+    """For an 'along the years' film: a year holding more than the median year is thinned, evenly
+    over its dates, to the median, so no year can bury another (the first year got 1 pick of 52
+    from a pool holding 61 of its photos, 09-28)."""
+    from collections import defaultdict
+
+    years = defaultdict(list)
+    for i in sorted(kept, key=lambda i: library.rows[i]["taken_at"]):
+        years[library.rows[i]["taken_at"][:4]].append(i)
+    sizes = sorted(len(v) for v in years.values())
+    cap = max(MIN_PER_PERIOD * 2, sizes[len(sizes) // 2]) if sizes else 0
+    out = []
+    for refs in years.values():
+        out += refs if len(refs) <= cap else [refs[round(k * len(refs) / cap)] for k in range(cap)]
+    return sorted(out, key=lambda i: library.rows[i]["taken_at"])

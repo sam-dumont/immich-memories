@@ -197,6 +197,34 @@ def _ask(reader, stage, key, prompt, data, schema, tokens=300):
     return reader.ask(stage, key, prompt, data, lambda a: None, tokens, schema=schema) or {}
 
 
+def _vote(reader, stage, key, prompt, data, field, options, most, tokens=300):
+    """A pick-list answer asked three times with the options in three orders; a word needs two
+    votes. One answer is a coin toss at 4B: the same request once named "black cat", once "cat"
+    and "dog" as another name for it, after the candidate list shifted (09-28)."""
+    if not options:
+        return []
+    votes = Counter()
+    for n, order in enumerate([options, options[::-1], options[1:] + options[:1]]):
+        got = _ask(reader, stage, f"{key}:v{n}", prompt, data | {field + "_options": order},
+                   _schema(**{field: {"type": "array", "items": {"type": "string", "enum": order},
+                                      "maxItems": most}}), tokens).get(field) or []
+        votes.update({w for w in got if w in options})
+    return [w for w in options if votes[w] >= 2]
+
+
+def stated_phrase(brief, word):
+    """The request's own wording of a subject noun with its quality ("Black cat" -> "black cat")."""
+    from nltk.corpus import wordnet as wn
+
+    head = wn.morphy(word.split()[-1], wn.NOUN) or word.split()[-1]
+    toks = re.findall(r"[a-z]+", brief.lower())
+    for k in range(1, len(toks)):
+        if (wn.morphy(toks[k], wn.NOUN) or toks[k]) == head and toks[k - 1] not in GLUE | ARTICLES \
+                and wn.synsets(toks[k - 1], pos=wn.ADJ):
+            return f"{toks[k - 1]} {toks[k]}"
+    return word
+
+
 def build_spec(reader, key, brief, library, people_named, lived, years):
     """people_named: the people the request is about (already linked); returns the spec dict."""
     options = where_options(lived)
@@ -372,10 +400,10 @@ def build_subject(reader, key, brief, library, spec, rows):
     not_this = list(dict.fromkeys([x for x in said if x] + not_this))
     # Gemma decides which words make a photo belong; the rest only widen the search.
     relations = {w: related[w] for w in shows if w in related}
-    core = [w for w in _ask(reader, "spec_core", key, CORE, {"owner_request": brief, "words": shows,
-                                                             "relations": relations},
-                            _schema(core={"type": "array", "items": {"type": "string", "enum": shows or [""]}, "maxItems": 6})
-                            ).get("core") or [] if w] or seeds or [brief]
+    core = _vote(reader, "spec_core", key, CORE, {"owner_request": brief, "relations": relations},
+                 "core", shows, 6) or seeds or [brief]
+    # A quality the request states stays ("our cat ... Black cat." -> "black cat", whatever Gemma dropped).
+    core = list(dict.fromkeys(stated_phrase(brief, c) for c in core))
     # Logic, not judgement: once Gemma names the subject, its parts and kinds are the subject too.
     from nltk.corpus import wordnet as wn
 
@@ -403,13 +431,12 @@ def build_subject(reader, key, brief, library, spec, rows):
     slot = Counter(h for i in rows if (h := subject_head(library.rows[i].get("caption"))))
     slot_words = [w for w, n in slot.most_common(40) if n >= 3 and w not in names]
     others = list(dict.fromkeys(w for w in shows + slot_words if w not in core and w not in extent))[:50]
-    same = [w for w in _ask(reader, "spec_same_as", key, SAME_AS, {
-        "owner_request": brief, "main_subject": core, "words": others},
-        _schema(same={"type": "array", "items": {"type": "string", "enum": others or [""]}, "maxItems": 6})
-        ).get("same") or [] if w] if others else []
-    for c in list(core):
-        qualities = re.findall(r"[a-z]+", c.lower())[:-1]
-        extent += [p for w in same if (p := " ".join(qualities + [w])) not in core + extent]
+    same = _vote(reader, "spec_same_as", key, SAME_AS, {"owner_request": brief, "main_subject": core},
+                 "same", others, 6)
+    # The qualities come from the main phrase only: a bare part ("paw") would make a bare "kitten".
+    main = next((c for c in core if len(c.split()) > 1), core[0])
+    qualities = re.findall(r"[a-z]+", main.lower())[:-1]
+    extent += [p for w in same if (p := " ".join(qualities + [w])) not in core + extent]
     question = "Is the main subject of this photo " + " or ".join(core) + (
         " (or one of its parts or kinds: " + ", ".join(extent[:10]) + ")" if extent else "") + "?"
     core = core + extent
