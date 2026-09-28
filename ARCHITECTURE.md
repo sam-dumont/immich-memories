@@ -681,7 +681,10 @@ src/immich_memories/
 │   ├── _editorial_context.py   # CLI flags + presets -> one EditorialRunContext
 │   ├── _run_timeline.py        # The run's timeline: selection budget, then the settled plan
 │   ├── _asset_fetch.py         # What a memory asks Immich for: videos, Live Photos, stills
-│   ├── _album_generation.py    # Album mode: an Immich album is the candidate pool
+│   ├── _album_generation.py    # Album mode: an Immich album is the candidate pool; a CuratedPool
+│   │                           # (generate --ask) is read by asset id in its place
+│   ├── _ask_generation.py      # generate --ask: model tier required, translate against the store,
+│   │                           # print + save the trace, then a RunScope (pool as album, or special day)
 │   ├── runs_render.py          # `runs render`: a saved cut or revision → generate_saved_cut
 │   ├── _trip_generation.py     # Trip detection, selection, per-trip generation
 │   ├── _trip_display.py        # Trip table formatting & selection logic
@@ -843,7 +846,21 @@ src/immich_memories/
 │   │                           # request's own n-grams, 3 field orders, 2-of-3 token votes, where+what
 │   │                           # voted as content; choose() (one option, 3 orders), choose_several()
 │   │                           # (a list, 2-of-3 per option); Asker Protocol and WireAsker
-│   │                           # (llm_query.query_llm with the answer's json_schema)
+│   │                           # (llm_query.query_llm with the answer's json_schema, through the async
+│   │                           # bridge so it also answers under a running loop)
+│   ├── translate.py            # translate(): reading -> link_who -> link_when -> build_subject ->
+│   │                           # link_where (Subject.heads) -> link_facts -> build_pool, as an Ask
+│   │                           # (Translation + Pool); household_of(): people file, owner, homes
+│   ├── handoff.py              # film_for(): one occasion of one day (the pool's found day, a one-day
+│   │                           # date range, or the model's voted "one day or longer") -> special day,
+│   │                           # the model picking between the catalogue's occasions that day; else the
+│   │                           # pool as the film's whole reach with the request as written subject;
+│   │                           # "not possible" -> no film
+│   ├── trace.py                # explain(): READING/WHO/WHEN/WHERE/WHAT/FACTS/POOL/VERDICT/FILM lines;
+│   │                           # save_with_run(): the run's diagnostics["free_text"] (report builder)
+│   │                           # and free-text-trace.private.txt in the attempt directory
+│   ├── printed.py              # ImmichPrintedText: the PrintedText port on Immich's /search/metadata
+│   │                           # `ocr` filter (the store banks no OCR text)
 │   ├── subject.py              # subject_words(): the head noun per coordinated part of the what-spans
 │   │                           # (time phrase cut; people, picture words never), -ing activities add
 │   │                           # WordNet's derived nouns, "X making" is X. build_subject(): candidates

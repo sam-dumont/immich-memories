@@ -270,6 +270,7 @@ immich-memories generate [OPTIONS]
 | `--birthday`, `-b` | text | - | Run the year up to a birthday, plus earlier birthdays (reads Immich's birth date, or override with MM-DD, e.g. 03-15) |
 | `--from-album` | text | - | Generate from an Immich album (name or ID) instead of a date range |
 | `--subject` | text | - | With --from-album: what the album was curated for, in your words. Every picture then stands on that subject, a loaf in a bread album included, and every year the album holds gets a shot. Needs a model reader |
+| `--ask` | text | - | Highly experimental: the film in a sentence, e.g. "our cat along the years". Read by the configured model reader against your prepared library; the translation is printed first. Needs tier: full |
 | `--person`, `-p` | text | - | Person name (repeatable) |
 | `--people-expression` | text | - | Grouped people condition, e.g. ("Person A" OR "Person B") AND "Person C". Use exact library names; read per episode: a person recognised once in an episode counts in all of its pictures. |
 | `--person-match` | choice: `and` \| `or` | and | With several --person values, require everyone recognised somewhere in the same episode (and) or accept any named person (or) |
