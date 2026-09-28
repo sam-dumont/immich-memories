@@ -2,6 +2,8 @@
 
 The document is the shape `people.yaml` had: a header (version, generated, owner) and a list
 of person entries with `ids`, `name`, `birth_date`, `inferred`, `confirmed` and `origin`.
+An entry whose ids come from a second Immich account adds `accounts`, id to account name;
+an id it does not list is the primary account's, so a one-account registry never has one.
 Callers edit that document; this module is the only code that knows how it maps to rows.
 A write replaces the whole registry inside the caller's transaction, after `lock_registry`,
 so two writers queue on the registry row instead of dropping each other's change.
@@ -26,7 +28,7 @@ from immich_memories.db.tables import (
 
 REGISTRY = "default"
 
-_PERSON_KEYS = ("ids", "name", "birth_date", "origin", "inferred", "confirmed")
+_PERSON_KEYS = ("ids", "accounts", "name", "birth_date", "origin", "inferred", "confirmed")
 _LINK_KEYS = ("kind", "with", "reverse", "decision")
 
 
@@ -52,11 +54,15 @@ def read_document(connection: Connection) -> dict[str, Any]:
     rows = connection.execute(sa.select(people).order_by(people.c.position)).mappings().all()
     if not header and not rows:
         return {}
-    ids = _grouped(connection, people_aliases, operator.itemgetter("alias_id"))
+    aliases = _grouped(connection, people_aliases, operator.itemgetter("alias_id", "account"))
     links = _grouped(connection, people_relationships, _link)
     document = dict(header or {})
     document["people"] = [
-        _entry(row, ids.get(row["person_id"], [row["person_id"]]), links.get(row["person_id"], []))
+        _entry(
+            row,
+            aliases.get(row["person_id"], [(row["person_id"], None)]),
+            links.get(row["person_id"], []),
+        )
         for row in rows
     ]
     return document
@@ -111,8 +117,14 @@ def _rows(
                 or None,
             }
         )
+        accounts = entry.get("accounts") or {}
         alias_rows.extend(
-            {"alias_id": alias, "person_id": person_id, "position": index}
+            {
+                "alias_id": alias,
+                "person_id": person_id,
+                "position": index,
+                "account": accounts.get(alias),
+            }
             for index, alias in enumerate(entry["ids"])
         )
         link_rows.extend(
@@ -148,8 +160,14 @@ def _link(row: Any) -> dict[str, Any]:
     return link
 
 
-def _entry(row: Any, ids: list[str], links: list[dict[str, Any]]) -> dict[str, Any]:
-    entry: dict[str, Any] = {"ids": ids, "name": row["name"], "birth_date": row["birth_date"]}
+def _entry(
+    row: Any, aliases: list[tuple[str, str | None]], links: list[dict[str, Any]]
+) -> dict[str, Any]:
+    entry: dict[str, Any] = {"ids": [alias for alias, _ in aliases]}
+    accounts = {alias: account for alias, account in aliases if account is not None}
+    if accounts:
+        entry["accounts"] = accounts
+    entry |= {"name": row["name"], "birth_date": row["birth_date"]}
     if row["inferred"] is not None:
         entry["inferred"] = row["inferred"]
     block = dict(row["confirmed"] or {})
