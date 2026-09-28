@@ -327,7 +327,7 @@ def _make_person(name: str, *, thumbnail: str | None = "/thumb.jpg") -> MagicMoc
 class TestMultiPersonDetector:
     def test_detects_top_pairs(self):
         """Top pairs by estimated co-occurrence are proposed."""
-        people = [_make_person("Alice"), _make_person("Bob")]
+        people = [_make_person("Ada"), _make_person("Bob")]
         counts = {people[0].id: 500, people[1].id: 400}
         today = date(2026, 3, 1)
 
@@ -344,7 +344,7 @@ class TestMultiPersonDetector:
         c = result[0]
         assert c.memory_type == "multi_person"
         assert c.category is CandidateCategory.MULTI_PERSON
-        assert "Alice" in c.reason
+        assert "Ada" in c.reason
         assert "Bob" in c.reason
         estimated = int(min(500, 400) * 0.3)
         assert f"~{estimated}" in c.reason
@@ -352,13 +352,11 @@ class TestMultiPersonDetector:
 
     def test_skips_generated_pairs(self):
         """Already-generated pairs are skipped."""
-        people = [_make_person("Alice"), _make_person("Bob")]
+        people = [_make_person("Ada"), _make_person("Bob")]
         counts = {people[0].id: 500, people[1].id: 400}
         today = date(2026, 3, 1)
 
-        key = make_memory_key(
-            "multi_person", date(2025, 1, 1), date(2025, 12, 31), ["alice", "bob"]
-        )
+        key = make_memory_key("multi_person", date(2025, 1, 1), date(2025, 12, 31), ["ada", "bob"])
 
         result = MultiPersonDetector().detect(
             assets_by_month={},
@@ -373,7 +371,7 @@ class TestMultiPersonDetector:
 
     def test_skips_low_count_pairs(self):
         """Pairs below MIN_SHARED_ASSETS threshold are skipped."""
-        people = [_make_person("Alice"), _make_person("Bob")]
+        people = [_make_person("Ada"), _make_person("Bob")]
         # min(50, 40) * 0.3 = 12 < 50 threshold
         counts = {people[0].id: 50, people[1].id: 40}
         today = date(2026, 3, 1)
@@ -391,7 +389,7 @@ class TestMultiPersonDetector:
 
     def test_pair_key_is_sorted(self):
         """Memory key uses sorted lowercase names regardless of input order."""
-        people = [_make_person("Zara"), _make_person("Alice")]
+        people = [_make_person("Zara"), _make_person("Ada")]
         counts = {people[0].id: 500, people[1].id: 400}
         today = date(2026, 3, 1)
 
@@ -405,5 +403,5 @@ class TestMultiPersonDetector:
         )
 
         assert len(result) == 1
-        # Key should have alice before zara (alphabetical)
-        assert "alice,zara" in result[0].memory_key
+        # Key should have ada before zara (alphabetical)
+        assert "ada,zara" in result[0].memory_key

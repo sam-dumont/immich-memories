@@ -234,18 +234,18 @@ def test_run_identity_fields_round_trip_with_normalized_people(db: RunDatabase) 
     """Run identity persists category and canonical Unicode person names."""
     run = _make_completed_run("normalized", datetime(2026, 7, 2, 9, 0, tzinfo=UTC))
     run.memory_category = "person_spotlight"
-    run.memory_people = ("  ALICE\tSmith ", "Straße   Example")
+    run.memory_people = ("  ADA\tSmith ", "Straße   Example")
     run.automation_attempt_id = "attempt-round-trip"
     db.save_run(run)
 
     loaded = db.get_run("normalized")
     assert loaded is not None
     assert loaded.memory_category == "person_spotlight"
-    assert loaded.memory_people == ("alice smith", "strasse example")
+    assert loaded.memory_people == ("ada smith", "strasse example")
     assert loaded.automation_attempt_id == "attempt-round-trip"
-    assert loaded.to_dict()["memory_people"] == ["alice smith", "strasse example"]
+    assert loaded.to_dict()["memory_people"] == ["ada smith", "strasse example"]
     assert RunMetadata.from_dict(json.loads(loaded.to_json())).memory_people == (
-        "alice smith",
+        "ada smith",
         "strasse example",
     )
 
