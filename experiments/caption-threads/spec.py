@@ -17,7 +17,7 @@ the request). Gemma translates; code only offers the choices and applies the ans
 import json
 import math
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import UTC, datetime, timedelta
 
 import yaml
@@ -44,11 +44,39 @@ def km(a, b):
     return 12742 * math.asin(math.sqrt(h))
 
 
+def infer_homes(library, assets):
+    """Where the owner lived, from the library alone: each year's ~200 m cell with the most photo
+    days, when it holds at least a fifth of that year's photo days; a new home starts when that
+    cell moves more than 300 m. The owner's homes.yaml, when there is one, wins."""
+    days = defaultdict(lambda: defaultdict(set))
+    points = defaultdict(list)
+    for r in library.rows:
+        a = assets.get(r["asset_id"])
+        if not a:
+            continue
+        lat, lon = a.exif_info.latitude, a.exif_info.longitude
+        cell = (round(lat / 0.002), round(lon / 0.002))
+        days[r["taken_at"][:4]][cell].add(r["taken_at"][:10])
+        points[cell].append((lat, lon))
+    out = []
+    for year in sorted(days):
+        cell, held = max(days[year].items(), key=lambda kv: (len(kv[1]), kv[0]))
+        if len(held) < max(10, 0.2 * len(set().union(*days[year].values()))):
+            continue
+        where = tuple(sorted(x)[len(x) // 2] for x in zip(*points[cell]))
+        if out and km((out[-1]["lat"], out[-1]["lon"]), where) <= 0.3:
+            continue
+        out.append({"name": f"home {len(out) + 1}", "lat": where[0], "lon": where[1],
+                    "since": min(held) if out else f"{year}-01-01", "source": "inferred"})
+    return out
+
+
 def homes(library, assets):
     """The homes list with each one's end date and the area name Immich gives its pictures."""
     path = ROOT / "homes.yaml"
     listed = sorted((yaml.safe_load(path.read_text()) or {}).get("homes") or [], key=lambda h: str(h["since"])) \
         if path.exists() else []
+    listed = listed or infer_homes(library, assets)
     out = []
     for n, h in enumerate(listed):
         until = str(listed[n + 1]["since"]) if n + 1 < len(listed) else None
@@ -63,9 +91,12 @@ def homes(library, assets):
 
 def where_options(lived):
     # Each option says what it means, as a semantic layer describes its fields: Gemma picks by meaning.
-    options = {"anywhere: the request does not tie the photos to a place": ("any", None),
-               "at home, wherever the owner lived when the photo was taken: what belongs to the owner's "
-               "household and moves with them (their pets, life at home)": ("home_at_time", None)}
+    options = {"anywhere: the request does not tie the photos to a place": ("any", None)}
+    if lived:
+        options["at home, wherever the owner lived when the photo was taken: what belongs to the owner's "
+                "household and moves with them (their pets, life at home)"] = ("home_at_time", None)
+        options["near home: around where the owner lived at the time, the neighbourhood and town, not "
+                "only the house"] = ("near_home", None)
     for h in lived:
         area = f", the area Immich calls {' / '.join(h['area'])}" if h["area"] else ""
         options[f"at the {h['name']} home only ({h['since'][:4]} to {h['until'][:4] if h['until'] else 'now'}{area}): "
@@ -74,7 +105,7 @@ def where_options(lived):
     return options
 
 
-def at_home_rows(library, assets, lived, which=None):
+def at_home_rows(library, assets, lived, which=None, radius=AT_HOME_KM):
     """Rows taken at a home: `which` names one; None means the home valid on the photo's date."""
     out = set()
     for i, r in enumerate(library.rows):
@@ -86,14 +117,13 @@ def at_home_rows(library, assets, lived, which=None):
             candidates = [h for h in lived if h["name"] == which]
         else:
             candidates = [h for h in lived if h["since"] <= day and (h["until"] is None or day < h["until"])][-1:]
-        if any(km((h["lat"], h["lon"]), (a.exif_info.latitude, a.exif_info.longitude)) <= AT_HOME_KM for h in candidates):
+        if any(km((h["lat"], h["lon"]), (a.exif_info.latitude, a.exif_info.longitude)) <= radius for h in candidates):
             out.add(i)
     return out
 
 
-WHERE = '''Where were the photos this request asks for taken? Pick one of the options. Pick a place
-only when the request says or clearly means it ("our house", "at home", "holidays"); otherwise
-"anywhere". Reason first. Return JSON.'''
+WHERE = '''Where were the photos this request asks for taken? Pick the option whose description fits
+the request best. Reason first. Return JSON.'''
 
 TEXT = '''Which words of the request would be written on something in the photos (a club or team name
 on a jersey, a brand, a sign)? Only a name the request uses that is likely printed on things;
@@ -111,6 +141,14 @@ things that are only nearby. Return JSON.'''
 PICK_NOT = '''These phrases come from captions of the owner's photos. Which name something that does NOT
 belong in this film, although it looks close? Pick only those that clearly do not belong; none
 when all could belong. Return JSON.'''
+
+ALONGSIDE = '''These words come from the owner's captions that show the film's main subject. Which of
+them describe photos that belong in this film, given the film's shape? For a film of how
+something changed over time, that includes the subject being worked on or changed, and its state
+before and after. Return JSON.'''
+
+LEAVE_OUT = '''Which of these phrases from the request name what the owner asks to leave out of the film?
+None when the request excludes nothing. Return JSON.'''
 
 SPAN = '''This film is about one moment or event that starts on date_from. How long after it do its
 photos run? Pick one. Return JSON.'''
@@ -132,10 +170,21 @@ def _ask(reader, stage, key, prompt, data, schema, tokens=300):
 def build_spec(reader, key, brief, library, people_named, lived, years):
     """people_named: the people the request is about (already linked); returns the spec dict."""
     options = where_options(lived)
-    where = _ask(reader, "spec_where", key, WHERE, {"owner_request": brief, "options": list(options)},
-                 _schema(reason={"type": "string", "maxLength": 200},
-                         where={"type": "string", "enum": list(options)}))
-    where_text = where.get("where") or "anywhere"
+    # One answer is a coin toss at 4B: asked three times with the options in three orders, the
+    # majority wins; three different answers fall back to the widest place (loses precision only).
+    names = list(options)
+    orders = [names, names[::-1], names[1:] + names[:1]]
+    answers = []
+    for n, order in enumerate(orders):
+        got = _ask(reader, "spec_where", f"{key}:o{n}", WHERE, {"owner_request": brief, "options": order},
+                   _schema(reason={"type": "string", "maxLength": 200}, where={"type": "string", "enum": order}),
+                   700)  # the server does not enforce maxLength: reasons ran past 300 tokens
+        if got.get("where") in options:
+            answers.append(got)
+    votes = Counter(a["where"] for a in answers)
+    top = votes.most_common(1)
+    where_text = top[0][0] if top and top[0][1] >= 2 else names[0]
+    where = next((a for a in answers if a["where"] == where_text), {})
     request_words = sorted({w for w in re.findall(r"[A-Za-z][A-Za-z'\-]{2,}", brief)})
     text = _ask(reader, "spec_text", key, TEXT, {"owner_request": brief},
                 _schema(words={"type": "array", "items": {"type": "string", "enum": request_words or [""]}, "maxItems": 3}))
@@ -163,14 +212,17 @@ def build_spec(reader, key, brief, library, people_named, lived, years):
     return {"english": brief, "people": [p["name"] for p in people_named],
             "people_must_appear": bool(when.get("faces_required")) and bool(people_named),
             "when": {"from": when.get("date_from"), "to": when.get("date_to")},
-            "where": {"said": where_text, "kind": kind, "home": home, "why": (where.get("reason") or "")[:200]},
+            "where": {"said": where_text, "kind": kind, "home": home, "why": (where.get("reason") or "")[:200],
+                      "votes": dict(votes)},
             "text_in_photo": [w for w in text.get("words") or [] if w],
             "seeds": shows, "span": span,
             "shape": shape}
 
 
-def _used(library, word, at_least=10):
-    return "_" not in word and len(library.posts.get(word, ())) >= at_least
+def _used(library, word, at_least=None):
+    # Scaled to the library: 10 uses in 76k captions, 2 in a few thousand.
+    floor = at_least if at_least is not None else max(2, len(library.rows) // 8000)
+    return "_" not in word and len(library.posts.get(word, ())) >= floor
 
 
 def lexicon(library, seeds, most=25):
@@ -207,7 +259,7 @@ def lifted(library, rows, within=None, most=15):
         return []
     inside = Counter(t for i in rows for t in library.tokens[i])
     outside = Counter(t for i in base for t in library.tokens[i])
-    floor = max(5, int(len(rows) * 0.002))
+    floor = max(3, int(len(rows) * 0.002))
     lift = {w: (c / len(rows)) / (outside[w] / len(base)) for w, c in inside.items()
             if c >= floor and outside[w] and _used(library, w)}
     return sorted((w for w in lift if lift[w] >= 2), key=lambda w: (-lift[w] * math.log(inside[w]), w))[:most]
@@ -259,7 +311,8 @@ def build_subject(reader, key, brief, library, spec, rows):
     proposed = _ask(reader, "spec_propose", key, PROPOSE, {"owner_request": brief, "subject": seeds},
                     _schema(words={"type": "array", "items": {"type": "string", "maxLength": 30}, "maxItems": 15})
                     ).get("words") or []
-    grounded = [w.lower() for w in proposed if _used(library, w.lower(), 5) and w.lower() not in names]
+    grounded = [w.lower() for w in proposed if _used(library, w.lower(), max(2, len(library.rows) // 15000))
+                and w.lower() not in names]
     related = lexicon(library, seeds)
     offered = [w for w in dict.fromkeys(seeds + grounded + list(related) + lifted(library, with_seed, rows)
                                         + lifted(library, rows)) if w not in names][:60]
@@ -276,6 +329,17 @@ def build_subject(reader, key, brief, library, spec, rows):
                     _schema(not_this={"type": "array", "items": {"type": "string", "enum": near or [""]}, "maxItems": 15}),
                     400).get("not_this") or [] if near else []
     not_this = [x for x in not_this if x]
+    # What the owner says to leave out, picked from the request's own phrases.
+    # Only what follows a negation can be left out: asked over the whole request, E4B picked the
+    # subject itself ("garden" out of "our garden").
+    negated = re.findall(r"\b(?:not|no|without|except|excluding|but not)\b([^.;!?]*)", brief.lower())
+    toks_of = [re.findall(r"[a-z][a-z'\-]*", span) for span in negated]
+    grams = list(dict.fromkeys(" ".join(t[i:i + n]) for t in toks_of for n in (1, 2, 3) for i in range(len(t) - n + 1)
+                               if not set(t[i:i + n]) <= GLUE | {"please", "or", "and"}))[:40]
+    said = _ask(reader, "spec_leave_out", key, LEAVE_OUT, {"owner_request": brief, "phrases": grams},
+                _schema(leave_out={"type": "array", "items": {"type": "string", "enum": grams or [""]}, "maxItems": 4})
+                ).get("leave_out") or [] if grams else []
+    not_this = list(dict.fromkeys([x for x in said if x] + not_this))
     # Gemma decides which words make a photo belong; the rest only widen the search.
     relations = {w: related[w] for w in shows if w in related}
     core = [w for w in _ask(reader, "spec_core", key, CORE, {"owner_request": brief, "words": shows,
@@ -290,13 +354,23 @@ def build_subject(reader, key, brief, library, spec, rows):
 
     heads_of_core = {base(re.findall(r"[a-z]+", c)[-1]) for c in core if re.findall(r"[a-z]+", c)}
     extent = [w for w in shows if w not in core and relations.get(w, "").split(" of ")[-1] in heads_of_core]
+    # The words captions use alongside the chosen subject, offered back: how a change shows up
+    # (paint, ladder, peeling) is in the owner's captions, not in the request.
+    core_words = {w for c in core + extent for w in re.findall(r"[a-z]+", c)}
+    with_core = {i for i in rows if core_words & library.tokens[i]}
+    near_core = [w for w in lifted(library, with_core, rows, most=30) if w not in shows and w not in names]
+    alongside = [w for w in _ask(reader, "spec_alongside", key, ALONGSIDE, {
+        "owner_request": brief, "main_subject": core + extent, "film_shape": spec["shape"], "words": near_core},
+        _schema(words={"type": "array", "items": {"type": "string", "enum": near_core or [""]}, "maxItems": 15}),
+        300).get("words") or [] if w] if near_core else []
+    shows = list(dict.fromkeys(shows + alongside))
     question = "Is the main subject of this photo " + " or ".join(core) + (
         " (or one of its parts or kinds: " + ", ".join(extent[:10]) + ")" if extent else "") + "?"
     core = core + extent
     if not_this:
         question += " (Not " + " or ".join(not_this[:6]) + ".)"
     also = [w for w in shows if w not in core]
-    spec |= {"offered": offered, "shows": shows, "core": core, "not_this": not_this, "question": question,
+    spec |= {"offered": offered, "alongside": alongside, "shows": shows, "core": core, "not_this": not_this, "question": question,
              "meaning": "Main subject: " + ", ".join(core) + "." + (" It may also show: " + ", ".join(also) + "." if also else "")
              + (" Does not belong: " + ", ".join(not_this) + "." if not_this else ""),
              "caption_words": shows}
@@ -316,6 +390,7 @@ def show(spec):
              f'  offered       {"; ".join(k + ": " + ", ".join(v) for k, v in spec.get("sources", {}).items() if v)}',
              f'  main subject  {", ".join(spec["core"]) or "-"}',
              f'  also finds    {", ".join(w for w in spec["shows"] if w not in spec["core"]) or "-"}',
+             f'  alongside     {", ".join(spec.get("alongside") or []) or "-"}',
              f'  not this      {", ".join(spec["not_this"]) or "-"}',
              f'  question      {spec["question"]}',
              f'  caption words {", ".join(spec["caption_words"])}',

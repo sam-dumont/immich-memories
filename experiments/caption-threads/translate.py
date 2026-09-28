@@ -491,11 +491,11 @@ def look(reader, config, library, plan, candidates, anchors, score=None):
     return kept, log
 
 
-FIRSTS = '''Below are things that appear for the first time in pictures of {who}, each with
-the date, {who}'s age that day, the first caption and a later one. Pick the (at most three)
-that are the most memorable real firsts of something new for {who}: an experience, a place, a
-food, an activity, a skill, an encounter. None of them when none qualifies. Clothes, colours,
-furniture, camera angles and words that only describe the scene are not firsts. Return JSON.'''
+FIRSTS = '''Below are words that appear for the first time in {who}'s own photos, each with the date,
+{who}'s age that day and that first caption. Which of them are the most meaningful firsts for {who}: the
+first time {who} met, did, saw, ate or went to something? Pick at most three; none when none is.
+Return JSON.'''
+FIRSTS_KEPT = 60  # compared again in groups of ten until about this many remain
 
 
 def known_people():
@@ -529,67 +529,45 @@ def present_rows(library, person):
 
 
 def firsts(reader, library, key, name, person, rows):
-    """First appearance of every caption word in a person's pictures, judged by E4B."""
+    """The first occurrence of every noun in the person's own photos (their face is recognised in
+    it), in date order; E4B keeps the meaningful ones, ten at a time, as many as it finds."""
     from datetime import date
+
+    from nltk.corpus import wordnet as wn
 
     born = person.get("birth_date")
     born = date.fromisoformat(str(born)) if born else None
-    ordered = sorted(rows, key=lambda i: library.rows[i]["taken_at"])
-    if not ordered:
-        return [], []
-    start = date.fromisoformat(library.rows[ordered[0]]["taken_at"][:10])
-    seen, days_of = {}, defaultdict(set)
-    for i in ordered:
-        d = date.fromisoformat(library.rows[i]["taken_at"][:10])
-        for t in library.tokens[i]:
-            days_of[t].add(d)
-            seen.setdefault(t, i)
-    n = len(library.rows)
-    cands = []
-    from nltk.corpus import wordnet as wn
-
-    for t, i in seen.items():
-        # Things and actions only: an adjective or a function word is not a first.
-        # Things only (a place, a food, an animal, an object, an event), and never a verb form.
-        if t in FILLER_WORDS or not wn.synsets(t, pos=wn.NOUN) or wn.synsets(t, pos=wn.ADJ) or t.endswith(("ing", "ed", "es")) and wn.synsets(t, pos=wn.VERB):
-            continue
-        first = date.fromisoformat(library.rows[i]["taken_at"][:10])
-        later = sorted(days_of[t])
-        # New (not there from the start), and it came back: a new thing, not a one-off word.
-        if (first - start).days < 21 or len(later) < 3:
-            continue
-        specific = math.log(n / max(1, len(library.posts.get(t, ()))))
-        cands.append((specific, t, i, later))
-    cands = sorted(cands, reverse=True)[:90]
+    own = sorted(set(rows) & person_rows(library, person), key=lambda i: library.rows[i]["taken_at"])
+    first = {}
+    for i in own:
+        for t in sorted(library.tokens[i]):
+            # Grammar, not meaning: a first is a thing or an event, so nouns only.
+            if t not in first and t not in FILLER_WORDS and wn.synsets(t, pos=wn.NOUN):
+                first[t] = i
     offered = []
-    for j, (_, t, i, later) in enumerate(sorted(cands, key=lambda c: library.rows[c[2]]["taken_at"])):
-        first = date.fromisoformat(library.rows[i]["taken_at"][:10])
-        age = f"{(first - born).days // 30} months" if born else "unknown"
-        again = next((k for k in rows if t in library.tokens[k] and library.rows[k]["taken_at"][:10] > str(later[1])), i)
-        offered.append({"id": j, "word": t, "date": str(first), "age": age,
-                        "first_caption": library.rows[i]["caption"][:120],
-                        "later_caption": library.rows[again]["caption"][:120], "_ref": i})
-    # Compared, not yes/no: a 4B judge says yes to nearly everything it sees alone.
-    chosen = []
-    for start_ix in range(0, len(offered), 10):
-        part = offered[start_ix:start_ix + 10]
-        schema = _schema(picked={"type": "array", "items": {"type": "integer", "enum": [o["id"] for o in part]},
-                                 "maxItems": 3})
-        answer = reader.ask("firsts_pick", f"{key}:{start_ix}", FIRSTS.format(who=name.split()[0]),
-                            [{k: v for k, v in o.items() if k != "_ref"} for o in part], lambda a: None, 300,
-                            schema=schema)
-        by_id = {o["id"]: o for o in part}
-        chosen += [by_id[i] | {"label": "first " + by_id[i]["word"]} for i in (answer or {"picked": []})["picked"]]
-    # Every batch fills its three slots, junk batches too: one final comparison keeps the best.
-    if len(chosen) > 12:
-        ids = {j: c for j, c in enumerate(chosen)}
-        schema = _schema(picked={"type": "array", "items": {"type": "integer", "enum": list(ids)}, "maxItems": 12})
-        final = reader.ask("firsts_final", f"{key}:final", FIRSTS.replace("(at most three)", "(at most twelve)").format(
-                           who=name.split()[0]), [{"id": j, "word": c["word"], "date": c["date"], "age": c["age"],
-                           "first_caption": c["first_caption"]} for j, c in ids.items()], lambda a: None, 400,
-                           schema=schema)
-        chosen = sorted((ids[j] for j in (final or {"picked": list(ids)})["picked"]), key=lambda c: c["date"])
-    return chosen, offered
+    for j, (t, i) in enumerate(sorted(first.items(), key=lambda kv: (library.rows[kv[1]]["taken_at"], kv[0]))):
+        day = date.fromisoformat(library.rows[i]["taken_at"][:10])
+        age = f"{(day - born).days // 30} months" if born else "unknown"
+        offered.append({"id": j, "word": t, "date": str(day), "age": age,
+                        "first_caption": library.rows[i]["caption"][:120], "_ref": i})
+    # Compared, not yes/no: asked to keep every meaningful one, E4B kept 774 of 1835 (09-28).
+    # Each round keeps at most three of every ten, in date order, until about FIRSTS_KEPT remain.
+    chosen, rnd = offered, 0
+    while len(chosen) > FIRSTS_KEPT:
+        kept = []
+        for start_ix in range(0, len(chosen), 10):
+            part = chosen[start_ix:start_ix + 10]
+            schema = _schema(picked={"type": "array", "items": {"type": "integer", "enum": [o["id"] for o in part]},
+                                     "maxItems": 3})
+            answer = reader.ask("firsts_compare", f"{key}:r{rnd}:{start_ix}", FIRSTS.format(who=name.split()[0]),
+                                [{k: v for k, v in o.items() if k not in {"_ref", "label"}} for o in part],
+                                lambda a: None, 200, schema=schema)
+            by_id = {o["id"]: o for o in part}
+            kept += [by_id[i] for i in (answer or {"picked": []})["picked"] if i in by_id]
+        if len(kept) >= len(chosen):
+            break
+        chosen, rnd = sorted(kept, key=lambda o: (o["date"], o["word"])), rnd + 1
+    return [c | {"label": "first " + c["word"]} for c in chosen], offered
 
 
 COMPACT = '''For each numbered photo caption, answer whether that photo belongs in the film the owner
@@ -642,7 +620,10 @@ def main():
     in_window = {i for i, r in enumerate(library.rows)
                  if (since or 1) <= int(r["taken_at"][:4]) <= (until or 9999)}
     kind = spec["where"]["kind"]
-    if kind in {"home", "home_at_time"}:
+    if kind == "near_home":
+        scope = at_home_rows(library, assets, lived, radius=HOME_RADIUS_KM)
+        scope_note = f"{len(scope)} pictures within {HOME_RADIUS_KM:.0f} km of the home of the time"
+    elif kind in {"home", "home_at_time"}:
         scope = at_home_rows(library, assets, lived, spec["where"]["home"] if kind == "home" else None)
         scope_note = f"{len(scope)} pictures within {AT_HOME_KM * 1000:.0f} m of " + (
             f"the {spec['where']['home']} home" if kind == "home" else "the home of the time")
@@ -668,6 +649,10 @@ def main():
     spec = build_subject(reader, key, brief, library, spec, pool_scope)
     print(show(spec), file=sys.stderr)
     if os.environ.get("SPEC_ONLY"):
+        if spec["shape"] == "first times" and named:
+            chosen, offered = firsts(reader, library, key, named[0]["name"], named[0], pool_scope)
+            print(f"  firsts        {len(chosen)} of {len(offered)} first words kept: "
+                  + ", ".join(f'{c["word"]} ({c["age"]})' for c in chosen), file=sys.stderr)
         print(json.dumps({"brief": original, "spec": spec, "structural": len(pool_scope)}, ensure_ascii=False))
         return
     plan |= {"subject": spec["caption_words"], "visual_questions": [spec["question"]], "meaning": spec["meaning"]}
