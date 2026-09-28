@@ -122,14 +122,16 @@ def test_zero_slice_preserves_alias_but_does_not_request_displayed_video(last_vi
     assert len(result.material.segments) == 2
 
 
-def test_two_files_of_one_instant_share_one_offer_and_both_stay_selectable():
+def test_two_files_of_one_instant_share_one_offer_and_reach_the_editor_as_one_picture():
     photos, companions = material([0, 0], [3, 3], videos=["shared", "shared"])
+    # An album copy keeps the camera's name: the two files are one picture (#1462).
+    photos = [photo.model_copy(update={"original_file_name": "IMG_0001.HEIC"}) for photo in photos]
     result = motion_renderings(photos, Config(), companion_assets=companions)
     assert result["still-0"] is result["still-1"]
     assert result["still-0"].video_ids == ("shared",)
     assert len(result["still-0"].material.segments) == 1
     _, candidates = demand([*photos, *companions.values()])
-    assert {row.clip.asset.id for row in candidates} == {"still-0", "still-1"}
+    assert len({row.clip.asset.id for row in candidates}) == 1
 
 
 @pytest.mark.parametrize("times", [[0, 0.5]])

@@ -13,9 +13,10 @@ Neither half knows a pass exists, and neither builds anything.
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING
 
+from immich_memories.analysis.picture_copies import copy_reason
 from immich_memories.analysis.source_filter import (
     asset_of,
     is_editorial_source_asset,
@@ -48,10 +49,13 @@ def _source_exclusion_reason(
     owner_exclusions: set[str],
     components: frozenset[str],
     generated: frozenset[str],
+    copies: Mapping[str, Asset],
 ) -> str | None:
     clip = source if isinstance(source, VideoClipInfo) else None
     asset = asset_of(source)
-    reason = _identity_exclusion_reason(asset, request, owner_exclusions, components, generated)
+    reason = _identity_exclusion_reason(
+        asset, request, owner_exclusions, components, generated, copies
+    )
     if reason is None:
         reason = _provenance_exclusion_reason(asset, clip, request.scope)
     if reason is None:
@@ -102,8 +106,9 @@ def _identity_exclusion_reason(
     owner_exclusions: set[str],
     components: frozenset[str],
     generated: frozenset[str],
+    copies: Mapping[str, Asset],
 ) -> str | None:
-    """Facts about this asset alone: who asked for it, and who already refused it."""
+    """Facts about this asset: who asked for it, who refused it, and whether it is a copy."""
     if request.scope.asset_ids is not None and asset.id not in request.scope.asset_ids:
         return "outside exact asset membership"
     if not request.scope.include_off_timeline and not_on_the_timeline(asset):
@@ -116,6 +121,8 @@ def _identity_exclusion_reason(
         return "Live Photo component"
     if asset.id in generated:
         return "a film this app generated"
+    if asset.id in copies:
+        return copy_reason(copies[asset.id])
     return None
 
 
