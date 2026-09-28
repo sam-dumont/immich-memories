@@ -32,16 +32,36 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  # Scoped like CI (scripts/ci_scope.py): a docs-only change skips the gate,
+  # and the PostgreSQL legs run when the store changes. A push to main runs all.
+  changes:
+    name: Change Scope
+    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    runs-on: ubuntu-latest
+    outputs:
+      docs_only: ${{ steps.scope.outputs.docs_only }}
+      store: ${{ steps.scope.outputs.store }}
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0  # the diff needs the base branch
+      - id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: origin/${{ github.base_ref }}
+        run: make ci-scope CI_SCOPE_EVENT="$EVENT" CI_SCOPE_BASE="$BASE"
+
   immich:
     name: Real Immich (${{ matrix.immich }}, ${{ matrix.database }})
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    needs: [changes]
+    if: github.repository == 'sam-dumont/immich-video-memory-generator' && needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
         immich: [v2, v3]
-        database: [sqlite, postgresql]
+        database: ${{ fromJSON(needs.changes.outputs.store == 'true' && '["sqlite","postgresql"]' || '["sqlite"]') }}
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
@@ -149,13 +169,25 @@ jobs:
   # per leg; this folds them into a name that survives adding a version or a backend.
   gate:
     name: Immich Gate
-    needs: [immich]
+    needs: [changes, immich]
     if: always() && github.repository == 'sam-dumont/immich-video-memory-generator'
     runs-on: ubuntu-latest
     steps:
       - name: Every Immich version passed on every store backend
+        env:
+          SCOPE: ${{ needs.changes.result }}
+          IMMICH: ${{ needs.immich.result }}
+          DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
         run: |
-          if [[ "${{ needs.immich.result }}" != "success" ]]; then
-            echo "Real-Immich gate did not pass: ${{ needs.immich.result }}"
+          if [[ "$SCOPE" != "success" ]]; then
+            echo "Change scope did not succeed: $SCOPE"
+            exit 1
+          fi
+          if [[ "$IMMICH" == "skipped" && "$DOCS_ONLY" == "true" ]]; then
+            echo "Docs-only change: no real-Immich run needed"
+            exit 0
+          fi
+          if [[ "$IMMICH" != "success" ]]; then
+            echo "Real-Immich gate did not pass: $IMMICH"
             exit 1
           fi
