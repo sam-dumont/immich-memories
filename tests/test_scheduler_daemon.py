@@ -11,6 +11,7 @@ import pytest
 from pydantic import ValidationError
 
 from immich_memories.scheduling.models import ScheduleEntry, SchedulerConfig
+from immich_memories.self_command import self_command
 
 
 class TestDaemonLoop:
@@ -44,8 +45,8 @@ class TestDaemonLoop:
 
         mock_run.assert_called_once()
         cmd = mock_run.call_args[0][0]
-        assert cmd[0] == "immich-memories"
-        assert cmd[1] == "generate"
+        assert cmd[: len(self_command())] == self_command()
+        assert cmd[len(self_command())] == "generate"
         assert "--memory-type" in cmd
         assert "year_in_review" in cmd
         assert "--year" in cmd
@@ -72,8 +73,8 @@ class TestDaemonLoop:
             mock_run.return_value = MagicMock(returncode=0)
             execute_job(job, config_path=config_path)
 
-        assert mock_run.call_args.args[0][:4] == [
-            "immich-memories",
+        assert mock_run.call_args.args[0][: len(self_command()) + 3] == [
+            *self_command(),
             "--config",
             str(config_path),
             "generate",

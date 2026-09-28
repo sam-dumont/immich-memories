@@ -12,6 +12,7 @@ from immich_memories.automation.candidates import (
     MemoryCandidate,
     bind_people_expression_key,
 )
+from immich_memories.self_command import self_command
 
 
 @dataclass(frozen=True)
@@ -107,7 +108,7 @@ class GenerationRequest:
 
     def to_argv(self) -> list[str]:
         """Build shell-safe argv for the public generate command."""
-        argv = ["immich-memories"]
+        argv = self_command()
         if self.config_path is not None:
             argv.extend(["--config", str(self.config_path)])
         argv.extend(["generate", "--memory-type", self.memory_type])
