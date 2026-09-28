@@ -4,8 +4,6 @@ title: Picking each shot
 
 # Picking each shot
 
-Reader: power user, with a newcomer summary first.
-
 Once a story has its shots, each one has to be a moment and a frame. You shot 30 frames of the
 agility run in four minutes: that is one moment, and it gets one frame. The one you starred wins.
 Without a star, the one that moves wins (a video, or a Live Photo whose clip moves), then the frame

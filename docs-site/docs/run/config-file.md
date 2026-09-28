@@ -5,8 +5,6 @@ title: Config File
 
 # Config file
 
-Reader: power user.
-
 `~/.immich-memories/config.yaml` is yours: the app reads it and never writes it, except when you
 run `immich-memories config move-to-db`. Keep it at permissions `600` if it holds API keys. What
 you save from the web UI or `immich-memories config` goes to the database instead (see

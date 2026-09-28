@@ -5,8 +5,6 @@ title: Environment variables
 
 # Environment variables
 
-Reader: power user.
-
 Every config key has an environment variable, and an environment variable beats the config file
 and whatever the web UI saved to the database. The UI greys out a setting a variable sets and names
 the variable; `immich-memories config show` lists them all ([where a setting comes from](./config-file.md#where-a-setting-comes-from)).

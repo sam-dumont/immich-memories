@@ -6,8 +6,6 @@ import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
 
 # Quick start
 
-Reader: newcomer.
-
 One month of your Immich library, cut into a film, on the box that already runs Immich. It works
 on a plain NAS, and this page sets up exactly that; a GPU or a model makes it better later.
 
@@ -97,4 +95,5 @@ A cut checks the models and the output folder before it asks Immich for anything
 - [Teach it your family](./who-is-who.md): home base and who's who, the two steps that make the
   cut good.
 - [On a NAS](../run/nas.md): Synology output folder, the CPU limit trap, hardware encoding.
-- [Make it better (optional)](../better/overview.md): a model, captions, a GPU box.
+- [What a GPU or a model adds](./what-a-gpu-or-a-model-adds.md): captions, a second family-viewing
+  check and a model's polish, feature by feature.

@@ -4,8 +4,6 @@ title: Moments, episodes and stories
 
 # Moments, episodes and stories
 
-Reader: power user, with a newcomer summary first.
-
 A Saturday at the dog park is one **moment** if you shot it in ten minutes, and an afternoon of
 them (park, café, the walk home) is one **episode**. A week of ordinary evenings at home is one
 **story**; so is a ski week away, however long it lasts. The editor weighs the stories against each

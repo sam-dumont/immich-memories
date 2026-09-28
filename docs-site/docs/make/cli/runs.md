@@ -5,8 +5,6 @@ title: runs
 
 # runs
 
-Reader: power user.
-
 Every `generate`, from the CLI or the web UI, writes a run row: how long it took, how many clips it processed,
 where the title came from, the model's call count and cost when a model was used, errors, system info. It does
 not record render settings. `runs` reads that history back, and `runs story` and `runs why` are how you find out

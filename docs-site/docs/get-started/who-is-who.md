@@ -4,8 +4,6 @@ title: Teach it your family
 
 # Teach it your family
 
-Reader: newcomer.
-
 Two steps, about ten minutes, once. On a plain NAS the editor cuts from dates, places, favourites and
 people. It reads the dates and the favourites off Immich. It can't guess where home is, or which
 of the forty named faces in your library are your partner and your kids. These two steps tell it,

@@ -4,8 +4,6 @@ title: Add captions
 
 # Add captions
 
-Reader: power user.
-
 The `nas` product tier runs without them by default. GPU and Full start with the NAS selection,
 then caption those shots with a 500M vision model. A replacement candidate gets its caption
 before it is judged. Each caption is banked and reused by later films:

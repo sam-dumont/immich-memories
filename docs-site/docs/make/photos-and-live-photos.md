@@ -7,7 +7,6 @@ import Video from '@site/src/components/Video';
 
 # Photos, Live Photos and HDR
 
-Reader: power user. How a still becomes a shot, when a Live Photo plays as motion, and how HDR
 survives from the phone to the film.
 
 Photos compete in the same pool as videos, on every tier. There is no separate photo pipeline: a

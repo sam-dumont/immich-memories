@@ -4,8 +4,6 @@ title: On a NAS
 
 # On a NAS
 
-Reader: newcomer.
-
 The NAS that runs Immich runs this too, on its own. NAS is a good default; optional GPU and model
 layers can add small refinements. Compare the pictures before upgrading. The install is the
 [Docker Compose](./docker.md) one; this page is what is different on a Synology, QNAP, TrueNAS or

@@ -5,8 +5,6 @@ title: generate
 
 # generate
 
-Reader: power user. The newcomer's version is [Your first film](../../get-started/first-film.mdx).
-
 `immich-memories generate` reads a period of your Immich library, drafts a film from it and renders the cut.
 It works on a plain NAS with nothing leaving the box; a GPU or a model makes it better. It prepares only the pictures
 the film can reach (the ones selection can pick, their Live Photo clips and the bursts around them), never the

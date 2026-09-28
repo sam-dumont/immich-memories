@@ -4,8 +4,6 @@ title: Family, audience and duplicates
 
 # Family, audience and duplicates
 
-Reader: power user, with a newcomer summary first.
-
 Once the draft is cut, a few passes make sure it is a film you'd show, to the people you cut it for. Your partner, who is on 300
 pictures of the month and starred in none, gets a shot. A picture the family-viewing gate refuses
 leaves and another frame of the same moment takes its place. Two near-identical photos of the same

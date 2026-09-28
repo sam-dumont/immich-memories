@@ -5,8 +5,6 @@ sidebar_label: "Add a reader (local or hosted)"
 
 # Add a reader
 
-Reader: power user.
-
 The NAS makes the film without one. A reader is a text model that writes the prose (what happened
 in each episode, an account of the period, the film's title, the music's mood). On Full it can
 refine the rules draft: a proposed replacement must pass the shared checks before taking a shot's

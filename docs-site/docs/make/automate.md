@@ -5,8 +5,6 @@ title: Automate it
 
 # Automate it
 
-Reader: newcomer for the first two sections, power user for the rest.
-
 `immich-memories auto run` is the single daily entry point. It looks at your library, decides which one memory
 is worth making today (a trip that ended last week, a birthday two days ago, last month's highlights, a year
 nobody cut yet), makes it, and exits. Schedule it once a day and the films arrive on their own.

@@ -4,8 +4,6 @@ title: Render on a GPU box
 
 # Render on a GPU box
 
-Reader: power user.
-
 On a plain NAS the render is the long part of every run: what the editor read is banked, the
 encode is not, so a second cut of the same month still encodes the whole film on the NAS's cores.
 The render worker takes that one stage to a machine with an NVIDIA card. Selection stays on the

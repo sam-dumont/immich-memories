@@ -4,7 +4,6 @@ title: FAQ
 
 # FAQ
 
-Reader: newcomer. The questions self-hosters ask before and after the first film. For a run that stopped, see
 [Troubleshooting](./troubleshooting.md).
 
 ## Before you install

@@ -4,8 +4,6 @@ title: Measured
 
 # Measured
 
-Reader: power user.
-
 NAS is a good default. GPU and Full add refinement, which can change a few pictures or leave the
 cut alone. These measurements show the work each layer did. They do not establish that a higher
 tier makes a better film.

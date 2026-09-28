@@ -4,8 +4,6 @@ title: Requirements and tiers
 
 # Requirements and tiers
 
-Reader: newcomer and power user.
-
 The default install is one container on the box that already runs Immich. It works on a plain
 NAS and makes the whole film there. That is a good default. GPU models and an LLM can add
 some refinement; compare the result and decide whether it is worth the extra work.

@@ -5,7 +5,6 @@ title: Title screens, maps and music
 
 # Title screens, maps and music
 
-Reader: newcomer first. The power-user parts (languages, place names, where a title came from) are further
 down.
 
 The clips are the film, but the cards around them are what make it read as a memory and not an FFmpeg concat
