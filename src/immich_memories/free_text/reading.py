@@ -9,7 +9,6 @@ word belongs to a part when two answers put it there; answers that cut a phrase 
 
 from __future__ import annotations
 
-import asyncio
 import json
 import re
 from collections import Counter
@@ -17,6 +16,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol
 
+from immich_memories.analysis.editorial_async_bridge import _run_sync
 from immich_memories.analysis.llm_metrics import recording_stage
 from immich_memories.analysis.llm_query import query_llm
 from immich_memories.analysis.llm_wire import LLMIncompleteResponse
@@ -69,7 +69,8 @@ class WireAsker:
         }
         try:
             with recording_stage("free_text"):
-                raw = asyncio.run(
+                # A running loop (the web server) cannot run another: the bridge uses a thread.
+                raw = _run_sync(
                     query_llm(
                         prompt,
                         self._config,

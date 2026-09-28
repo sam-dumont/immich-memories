@@ -85,6 +85,8 @@ class Pool:
     one_occasion: bool = False
     # The day an undated occasion's pictures show its people together.
     day: date | None = None
+    # Why the request is, or is not, one single occasion; None when it was not asked.
+    occasion: Reason | None = None
 
 
 class _Funnel:
@@ -95,6 +97,7 @@ class _Funnel:
         # Pictures whose printed text the request names: evidence for the subject by themselves.
         self.anchors: set[str] = set()
         self.one_occasion = False
+        self.occasion: Reason | None = None
         self.day: date | None = None
         self.steps: list[Step] = [
             Step("library", len(self.pictures), Reason("", "every dated picture", "the library"))
@@ -258,6 +261,7 @@ def _occasion(
     funnel.one_occasion, reason = one_occasion(
         translation.reading.request, translation.subject, lexicon, asker
     )
+    funnel.occasion = reason
     if not funnel.one_occasion or translation.when.start or translation.when.end:
         return False
     found = occasion_day(funnel.pictures, words, translation.who.anchors)
@@ -399,4 +403,5 @@ def _verdict(funnel: _Funnel) -> Pool:
         why=why,
         one_occasion=funnel.one_occasion,
         day=funnel.day,
+        occasion=funnel.occasion,
     )

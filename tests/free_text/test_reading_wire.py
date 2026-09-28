@@ -47,3 +47,16 @@ def test_a_cut_off_or_unreadable_answer_is_none(
     _transport(monkeypatch, reply)
 
     assert WireAsker(LLMConfig()).ask("which?", SCHEMA, max_tokens=300) is None
+
+
+def test_a_question_asked_from_inside_a_running_event_loop_is_answered(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import asyncio
+
+    _transport(monkeypatch, '{"what": ["cat"]}')
+
+    async def from_a_loop() -> Any:
+        return WireAsker(LLMConfig()).ask("which?", SCHEMA, max_tokens=300)
+
+    assert asyncio.run(from_a_loop()) == {"what": ["cat"]}

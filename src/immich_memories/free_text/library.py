@@ -66,6 +66,8 @@ class LibraryView:
     people: Mapping[str, LibraryPerson]
     # The library's 10th-percentile sharpness: the engine calls a picture soft below it.
     sharpness_line: float | None
+    # The people file's owner: "I" and "we" in a request.
+    owner_id: str | None = None
 
 
 class LibraryUnavailable(RuntimeError):
@@ -79,9 +81,12 @@ def read_library(
     contexts = load_people_prompt_context(store)
     canonical = {person_id: context.person_ids[0] for person_id, context in contexts.items()}
     people = {context.person_ids[0]: _person(context) for context in contexts.values()}
+    owner_id = next(
+        (c.person_ids[0] for c in contexts.values() if c.relationship_source == "owner"), None
+    )
     sources = _sources(store, asset_ids)
     if not sources:
-        return LibraryView(pictures=(), people=people, sharpness_line=None)
+        return LibraryView(pictures=(), people=people, sharpness_line=None, owner_id=owner_id)
     batch = AssetAnnotationFactRepository(
         store,
         description_model=editorial.description_model,
@@ -107,7 +112,9 @@ def read_library(
         ),
         None,
     )
-    return LibraryView(pictures=tuple(pictures), people=people, sharpness_line=line)
+    return LibraryView(
+        pictures=tuple(pictures), people=people, sharpness_line=line, owner_id=owner_id
+    )
 
 
 def _person(context: PersonPromptContext) -> LibraryPerson:

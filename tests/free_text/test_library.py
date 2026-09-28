@@ -146,3 +146,10 @@ def test_the_sharpness_line_is_the_library_tenth_percentile_the_engine_measured(
     )
 
     assert read_library(store, EDITORIAL).sharpness_line == 30.0
+
+
+def test_the_owner_is_the_people_file_owner_under_their_first_id() -> None:
+    store = seed_people({**PEOPLE, "owner": {"person_id": "immich-alex-merged"}})
+
+    assert read_library(store, EDITORIAL).owner_id == "immich-alex"
+    assert read_library(seed_people(PEOPLE), EDITORIAL).owner_id is None
