@@ -31,8 +31,7 @@ from immich_memories.analysis.llm_wire import openai_headers
 from immich_memories.api.models import Asset, ExifInfo
 from immich_memories.config import Config
 from model_reader import Reader
-from cascade import (AGREE, GRAMMAR_SAMPLE, SMOL_SAMPLE, ask_contradictions, banked_heads, grammar_says_subject,
-                     ladder, smol_yes)
+from cascade import AGREE, GRAMMAR_SAMPLE, SMOL_SAMPLE, grammar_says_subject, smol_yes
 from spec import AT_HOME_KM, at_home_rows, build_spec, build_subject, homes, show
 from query import companion_terms, retrieve_plan, vocabulary
 from workflow import choose_sources
@@ -394,7 +393,6 @@ def around(library, anchors):
 LOOK = '''Look at the photo{ref}. Answer each question with true or false from what is
 visible{same}. Return JSON {{"why":short,"answers":[booleans, one per question],"same":{same_values}}}.
 Questions: {questions}'''
-LOOK_BUDGET = int(os.environ.get("LOOK_BUDGET", 160))
 CALIBRATION, TRUST_TEXT = 24, 0.8  # sample of text yeses checked by photo; agreement needed to trust text
 
 
@@ -451,21 +449,18 @@ def look(reader, config, library, plan, candidates, anchors, score=None):
         return candidates, []
     cache = ROOT / "looks"
     cache.mkdir(exist_ok=True)
-    # Spread over the pool's own time scale, anchors first: a date-ordered cut drops every late period.
-    budget = min(320, max(LOOK_BUDGET, len(candidates) // 3))
-    plan.setdefault("budgets", {})["look"] = budget
-    spread = spread_budget(library, candidates, budget, score)
-    ordered = sorted(set(spread) | (set(candidates) & anchors),
-                     key=lambda i: (i not in anchors, library.rows[i]["taken_at"]))[:budget + len(anchors)]
+    # Every candidate is looked at: a budget left the rest unread and so out (owner 09-28, "no gate").
+    # SmolVLM makes that affordable once it has agreed with E4B on this request's first photos.
+    ordered = sorted(candidates, key=lambda i: (i not in anchors, library.rows[i]["taken_at"]))
+    plan.setdefault("budgets", {})["look"] = plan["budgets"].get("look", 0) + len(ordered)
     # No "same one as the reference" check: on the owner's labels it dropped 36 good cat photos and
     # good house photos ("clearly shows a black cat") and never helped once (09-27).
     reference = None
     ref_image = preview(config, reference) if reference else None
     kept, log = [], []
-    # CASCADE: SmolVLM and E4B both answer until SMOL_SAMPLE pairs exist for this request; SmolVLM
+    # SmolVLM and E4B both answer until SMOL_SAMPLE pairs exist for this request; SmolVLM
     # then answers alone when they agreed on at least AGREE of them (cascade.py).
-    state = plan.setdefault("cascade", {"smol_trusted": None, "pairs": 0, "agreed": 0, "smol": 0, "e4b": 0}) \
-        if os.environ.get("CASCADE") else None
+    state = plan.setdefault("cascade", {"smol_trusted": None, "pairs": 0, "agreed": 0, "smol": 0, "e4b": 0})
     for i in ordered:
         aid = library.rows[i]["asset_id"]
         questions = per_item.get(i) or general
@@ -606,10 +601,10 @@ COMPACT_BATCH = 24
 
 def choose_compact(reader, library, key, brief, refs, meaning=None, core=None, not_this=(), stats=None):
     """The cheap text check: one short enforced verdict per caption, no reasons (reasons were
-    ~90% of the time: 1.6 s per caption). CASCADE: grammar's "belongs" stands for the captions it
+    ~90% of the time: 1.6 s per caption). Grammar's "belongs" stands for the captions it
     names when Gemma agrees on a sample of them (cascade.py)."""
     refs = [i for i in refs if library.rows[i]["caption"]]
-    if os.environ.get("CASCADE") and core:
+    if core:
         named = [i for i in refs if grammar_says_subject(library.rows[i]["caption"], core, not_this)]
         if named:
             import random as _random
@@ -628,15 +623,13 @@ def choose_compact(reader, library, key, brief, refs, meaning=None, core=None, n
 
 
 def _gemma_compact(reader, library, key, brief, refs, meaning):
-    if os.environ.get("CASCADE"):
-        # A burst's identical captions get one verdict.
-        first = {}
-        for i in refs:
-            first.setdefault(library.rows[i]["caption"], i)
-        unique = _gemma_compact_all(reader, library, key, brief, list(first.values()), meaning)
-        verdict = {library.rows[d["ref"]]["caption"]: d["decision"] for d in unique}
-        return [{"ref": i, "decision": verdict[library.rows[i]["caption"]]} for i in refs]
-    return _gemma_compact_all(reader, library, key, brief, refs, meaning)
+    # A burst's identical captions get one verdict.
+    first = {}
+    for i in refs:
+        first.setdefault(library.rows[i]["caption"], i)
+    unique = _gemma_compact_all(reader, library, key, brief, list(first.values()), meaning)
+    verdict = {library.rows[d["ref"]]["caption"]: d["decision"] for d in unique}
+    return [{"ref": i, "decision": verdict[library.rows[i]["caption"]]} for i in refs]
 
 
 def _gemma_compact_all(reader, library, key, brief, refs, meaning):
@@ -772,15 +765,8 @@ def main():
     # engine's thesis-fit vote and story selection do the choosing; no second selector here.
     decisions, unsure, looked, kept = [], [], [], sorted(pool, key=lambda i: library.rows[i]["taken_at"])
     if not os.environ.get("SIMPLE"):
-        text_budget = int(os.environ.get("TEXT_BUDGET", 3000))
-        heads = {}
-        if os.environ.get("CASCADE"):
-            # Free first: what preparation already recorded (a film is made of photographs).
-            heads = banked_heads(bank, [library.rows[i]["asset_id"] for i in pool])
-            pool = {i for i in pool if heads.get(library.rows[i]["asset_id"], {}).get("doc_docling", "photograph")
-                    == "photograph"}
-        offered = spread_budget(library, pool, text_budget, score)
-        offered = [i for i in offered if not library.rows[i].get("uncaptioned")]
+        # Every caption in the pool is read: an unread one was out, which is a drop without a no.
+        offered = [i for i in pool if not library.rows[i].get("uncaptioned")]
         if plan.get("firsts") and plan.get("_per_item_questions"):
             # Being a first was decided by comparison over dates; a caption cannot show first-ness,
             # so each first goes straight to its own photo question.
@@ -795,17 +781,7 @@ def main():
                       key=lambda i: library.rows[i]["taken_at"])
         unsure = [d["ref"] for d in decisions if d["decision"] == "unknown"]
         looked = []
-        if os.environ.get("CASCADE") and not os.environ.get("NO_LOOK") and not plan.get("firsts"):
-            # The ladder (cascade.py): free checks first, pictures last and per open moment.
-            contradicts = ask_contradictions(reader, key, brief, heads)
-            plan["ladder_contradicts"] = [": ".join(c) for c in sorted(contradicts)]
-
-            def looker(refs):
-                return look(reader, config, library, plan, refs, anchors, score)
-
-            kept, looked, plan["ladder"] = ladder(looker, library, plan, kept, unsure, uncaptioned & pool,
-                                                  anchors & pool, score, heads, contradicts)
-        elif not os.environ.get("NO_LOOK"):
+        if not os.environ.get("NO_LOOK"):
             # Only what text could not settle: unsure captions, forwarded photos without one, and
             # OCR anchors (whose letters, not captions, put them here).
             seen, looked = look(reader, config, library, plan, set(unsure) | (uncaptioned & pool) | (anchors & pool),
