@@ -2,7 +2,7 @@
 # Uses uv for fast Python package management
 export PYTHONUNBUFFERED=1
 
-.PHONY: workflow-guard docs-voice notices notices-check help install dev dev-ci dev-test run preflight parity docs-cli-check docs-config-check test test-extras test-cov test-cov-xml test-integration test-integration-auth test-integration-photos test-integration-audio test-integration-audio-mixing test-integration-titles test-fast benchmark benchmark-perf benchmark-steps benchmark-assembly benchmark-titles benchmark-titles-json benchmark-pipeline benchmark-json benchmark-submit lint format typecheck check launch-check launch-check-ci launch-check-ci-postgres clean clean-cache clean-all build build-check docker docker-run docker-shell compose-check file-length complexity cognitive-complexity security-lint bandit-ci semgrep dead-code duplication refurb dep-check arch-check diff-cover diff-cover-ci integration-coverage-for-diff ci critique ensure-dev commitlint privacy-gate pip-audit docs-install docs-dev docs-build docs-check docs-cli demo-video playwright-install e2e e2e-full screenshots demo-output demo-output-trip diagrams capability-matrix
+.PHONY: workflow-guard docs-voice notices notices-check help install dev dev-ci dev-test run preflight parity docs-cli-check docs-config-check test test-extras test-cov test-cov-xml test-integration test-integration-auth test-integration-photos test-integration-audio test-integration-audio-mixing test-integration-titles test-fast benchmark benchmark-perf benchmark-steps benchmark-assembly benchmark-titles benchmark-titles-json benchmark-pipeline benchmark-json benchmark-submit lint format typecheck check launch-check launch-check-ci launch-check-ci-postgres clean clean-cache clean-all build build-check docker docker-run docker-shell compose-check file-length complexity cognitive-complexity security-lint bandit-ci semgrep dead-code duplication refurb dep-check arch-check diff-cover diff-cover-ci integration-coverage-for-diff ci-scope ci critique ensure-dev commitlint privacy-gate pip-audit docs-install docs-dev docs-build docs-check docs-cli demo-video playwright-install e2e e2e-full screenshots demo-output demo-output-trip diagrams capability-matrix
 
 # Default target
 help:
@@ -744,6 +744,13 @@ integration-coverage-for-diff:  ## Run only the local integration suites the dif
 			$(MAKE) test-integration-$$s || exit 1; \
 		done; \
 	fi
+
+# Which CI jobs this branch's changes can break. CI's `changes` job runs it and
+# every job reads the answer in its `if:`; locally it shows what a push would run.
+CI_SCOPE_EVENT ?= pull_request
+CI_SCOPE_BASE ?= origin/main
+ci-scope:  ## Print which CI jobs this branch's changes run (CI_SCOPE_BASE=origin/main)
+	python3 scripts/ci_scope.py --event $(CI_SCOPE_EVENT) --base $(CI_SCOPE_BASE)
 
 # Diff coverage for PRs. CI runs integration-coverage-for-diff first, so the
 # FFmpeg-only suites covering the changed paths have written their XMLs here.

@@ -28,19 +28,13 @@ git push
 
 ### `ci.yml` - Continuous Integration
 
-Runs on every push to `main` and on pull requests. All jobs use `make` targets as the single source of truth for commands.
+Runs on pull requests and when the release calls it. All jobs use `make` targets as the single source of truth for commands.
 
-**Jobs:**
-- **commitlint**: Validates commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
-- **lint**: Runs `make lint` and `make format-check`
-- **typecheck**: Runs `make typecheck`
-- **file-length**: Runs `make file-length` (all `.py` files must be ≤800 lines)
-- **complexity**: Runs `make complexity` (Xenon grade C max)
-- **test**: Runs `make test` on Python 3.11, 3.12, and 3.13, on Ubuntu and macOS
-- **test-extras**: Tests optional extras (audio, gpu, mac) on Python 3.13
-- **build**: Builds the package with version from git tags
+A pull request runs only the jobs its changes can break: the `changes` job runs `make ci-scope` (`scripts/ci_scope.py`), and every other job reads the scope in its `if:`. The release, build and dependency files, workflows and unknown paths run everything. The table of what runs when is in `docs-site/docs/contribute/architecture.md`.
 
-Run the full CI pipeline locally with `make ci`.
+`CI Success` rolls every job up and is the check branch protection requires; a job the scope skipped counts as passing there, a failed, timed-out or cancelled one does not.
+
+Run the full CI pipeline locally with `make ci`, and `make ci-scope` to see what your branch would run.
 
 ### `release.yml` - Automatic Release
 
@@ -99,6 +93,7 @@ Go to Settings → Branches → Add rule for `main`:
 - [x] Require approvals (1+)
 - [x] Require status checks to pass
   - `CI Success`
+  - `Immich Gate`
   - `Validate PR Title`
 - [x] Require conversation resolution before merging
 - [x] Require signed commits (optional but recommended)

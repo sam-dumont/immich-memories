@@ -196,7 +196,14 @@ defaults:
   transition: "smart"            # cut, crossfade, smart, none (used when --transition is left on smart)
   transition_duration: 0.5       # 0-2 seconds
   sharing: "family"              # just-us | family | shareable; used when --sharing is not given
+  country: "US"                  # ISO 3166 code; the dates of Mother's Day, Father's Day, Thanksgiving
 ```
+
+`country` sets the holidays that move by country, for the holiday memory type and for which days
+discovery treats as a holiday. With `BE`, Father's Day is the second Sunday of June; with `FR`,
+Mother's Day is the last Sunday of May (a week later when Pentecost takes it). A holiday a country
+does not keep, like Thanksgiving outside the US and Canada, is not a holiday there. The countries
+and rules: [Holiday](../make/memory-types.mdx#holiday).
 
 `sharing` is who a film is for when the run doesn't say (`generate --sharing`, or **Who will watch
 it** in the web brief). `just-us` is the household: a private moment a caption names, like a bath,

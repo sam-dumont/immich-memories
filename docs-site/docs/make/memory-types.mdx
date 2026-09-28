@@ -179,10 +179,10 @@ immich-memories generate --memory-type holiday --holiday christmas --years-back 
 | `new_year` | 1 January |
 | `valentines` | 14 February |
 | `easter` | Western Easter Sunday, computed |
-| `mothers_day` | second Sunday of May |
-| `fathers_day` | third Sunday of June |
+| `mothers_day` | second Sunday of May, or where your `defaults.country` keeps it |
+| `fathers_day` | third Sunday of June, or where your `defaults.country` keeps it |
 | `halloween` | 31 October |
-| `thanksgiving` | fourth Thursday of November |
+| `thanksgiving` | fourth Thursday of November (US), second Monday of October (CA) |
 | `christmas_eve` | 24 December |
 | `christmas` | 25 December |
 | `new_years_eve` | 31 December |
@@ -191,6 +191,26 @@ Anything else is read as `MM-DD`, for a household's own occasion (`--holiday 09-
 moved in). Without `--year`, the starting year steps back when this year's occasion has not happened
 yet. The title is the occasion's name, subtitled "Through the Years" in the film's language, on both
 the CLI and the web UI.
+
+Three of them move by country, set with `defaults.country` (default `US`):
+
+| Country | Mother's Day | Father's Day |
+|---|---|---|
+| `US`, and any country not listed | second Sunday of May | third Sunday of June |
+| `BE`, `AT` | second Sunday of May | second Sunday of June |
+| `DE` | second Sunday of May | Ascension Day |
+| `IT` | second Sunday of May | 19 March |
+| `ES`, `PT` | first Sunday of May | 19 March |
+| `FR` | last Sunday of May, a week later on Pentecost | third Sunday of June |
+| `GB`, `IE` | three weeks before Easter | third Sunday of June |
+| `AU`, `NZ` | second Sunday of May | first Sunday of September |
+| `MX` | 10 May | third Sunday of June |
+
+Thanksgiving is kept only in the US and Canada. Holidays on the lunar calendar, like Eid or Lunar New
+Year, are not computed: give their date as `MM-DD` each year for now.
+
+**Something missing?** A holiday your family keeps or a country whose dates differ: open a pull
+request against `memory_types/date_builders.py`. Each rule is one line.
 
 ## Trip
 

@@ -21,10 +21,34 @@ env:
 # =============================================================================
 # Job ordering: cheap → expensive. All quality gates run in parallel.
 # Tests and Docker only run after quality gates pass.
+#
+# Each job runs only when the pull request touches what it can break
+# (scripts/ci_scope.py, `make ci-scope`). A job skipped by its `if:` reports as
+# passing; `CI Success` is the check branch protection requires, so the set of
+# jobs can change without a required check going missing.
 # =============================================================================
 
 jobs:
-  # ── Tier 0: Cache setup (shared by all jobs) ──────────────────────────────
+  # ── Tier 0: Change scope and cache setup ──────────────────────────────────
+  changes:
+    name: Change Scope
+    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    runs-on: ubuntu-latest
+    outputs:
+      docs_only: ${{ steps.scope.outputs.docs_only }}
+      docs_site: ${{ steps.scope.outputs.docs_site }}
+      store: ${{ steps.scope.outputs.store }}
+      container: ${{ steps.scope.outputs.container }}
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0  # the diff needs the base branch
+      - id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: origin/${{ github.base_ref }}
+        run: make ci-scope CI_SCOPE_EVENT="$EVENT" CI_SCOPE_BASE="$BASE"
+
   setup:
     name: Setup Cache
     runs-on: ubuntu-latest
@@ -187,13 +211,18 @@ jobs:
   test:
     name: Test (Python ${{ matrix.python-version }}, ${{ matrix.os }})
     if: github.repository == 'sam-dumont/immich-video-memory-generator'
-    needs: [quality, security]
+    needs: [changes, quality, security]
     permissions:
       contents: read
       pull-requests: write
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
+      # A docs-only change still runs the suite, since ~20 contract tests read
+      # docs, manifests and workflows, but on one cell: the Python/OS grid exists
+      # to catch code that behaves differently there, and a docs page cannot.
+      # 3.12 on ubuntu is the cell that uploads coverage.
+      #
       # WHY the event-dependent matrix: this repo is public, so hosted runners
       # are free but capped, and macOS is capped at 5 concurrent jobs. Three
       # macOS cells per pull request meant ~30 jobs queueing for 5 slots once a
@@ -201,7 +230,9 @@ jobs:
       # mid-job ("runner has received a shutdown signal", then Error 137).
       # Ubuntu keeps every Python; macOS keeps one per PR and the full grid on
       # main, where runs are serialised anyway.
-      matrix: ${{ fromJSON(github.event_name == 'pull_request'
+      matrix: ${{ fromJSON(needs.changes.outputs.docs_only == 'true'
+        && '{"include":[{"os":"ubuntu-latest","python-version":"3.12"}]}'
+        || github.event_name == 'pull_request'
         && '{"include":[{"os":"ubuntu-latest","python-version":"3.11"},{"os":"ubuntu-latest","python-version":"3.12"},{"os":"ubuntu-latest","python-version":"3.13"},{"os":"macos-latest","python-version":"3.13"}]}'
         || '{"include":[{"os":"ubuntu-latest","python-version":"3.11"},{"os":"ubuntu-latest","python-version":"3.12"},{"os":"ubuntu-latest","python-version":"3.13"},{"os":"macos-latest","python-version":"3.11"},{"os":"macos-latest","python-version":"3.12"},{"os":"macos-latest","python-version":"3.13"}]}') }}
     steps:
@@ -320,8 +351,8 @@ jobs:
 
   test-extras:
     name: Test Extras (${{ matrix.os }})
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
-    needs: [quality, security]
+    if: github.repository == 'sam-dumont/immich-video-memory-generator' && needs.changes.outputs.docs_only != 'true'
+    needs: [changes, quality, security]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
@@ -376,8 +407,8 @@ jobs:
   # repositories are what has to behave the same on both backends.
   test-store:
     name: Test Store (SQLite + PostgreSQL)
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
-    needs: [quality, security]
+    if: github.repository == 'sam-dumont/immich-video-memory-generator' && needs.changes.outputs.store == 'true'
+    needs: [changes, quality, security]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -424,8 +455,8 @@ jobs:
   # ── Tier 3: Build + Docker (most expensive, after tests) ─────────────────
   build:
     name: Build Package
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
-    needs: [test]
+    if: github.repository == 'sam-dumont/immich-video-memory-generator' && needs.changes.outputs.docs_only != 'true'
+    needs: [changes, test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -443,9 +474,9 @@ jobs:
 
   docker:
     name: Docker (${{ matrix.platform }})
-    needs: [test]
+    needs: [changes, test]
     runs-on: ${{ matrix.runner }}
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && (github.event_name == 'pull_request')
+    if: github.repository == 'sam-dumont/immich-video-memory-generator' && github.event_name == 'pull_request' && needs.changes.outputs.container == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -478,13 +509,17 @@ jobs:
   # runner), started from docker-compose.yml on a volume a pre-store install
   # left, then `store backup`/`restore` inside it and the trigger API called as
   # the Kubernetes CronJob calls it. The postgresql leg switches on the compose
-  # file's own PostgreSQL example, so that example is what gets tested.
+  # file's own PostgreSQL example, so that example is what gets tested. Runs when
+  # the image, its deployment or the store it backs up changes.
   container-e2e:
     name: Container E2E (${{ matrix.database }})
-    needs: [test]
+    needs: [changes, test]
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && (github.event_name == 'pull_request')
+    if: >-
+      github.repository == 'sam-dumont/immich-video-memory-generator'
+      && github.event_name == 'pull_request'
+      && (needs.changes.outputs.container == 'true' || needs.changes.outputs.store == 'true')
     strategy:
       fail-fast: false
       matrix:
@@ -511,7 +546,8 @@ jobs:
 
   docs:
     name: Docs Build
-    if: github.repository == 'sam-dumont/immich-video-memory-generator'
+    if: github.repository == 'sam-dumont/immich-video-memory-generator' && needs.changes.outputs.docs_site == 'true'
+    needs: [changes]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -533,18 +569,23 @@ jobs:
       - run: cd docs-site && npm ci
       - run: make docs-check
 
-  # The same launch check with the app's store on each backend. `ci-success`
-  # reads this job's result, which is a failure when either leg fails.
+  # The same launch check with the app's store on each backend; the PostgreSQL
+  # leg runs when the store changes. One job, not a smoke/pages split: the page
+  # tests reuse what the render leaves in the session, and alone they took as
+  # long as the whole suite. `ci-success` fails when either leg fails.
   launch-check:
     name: Hermetic Launch Check (${{ matrix.database }})
-    needs: [setup]
+    needs: [changes, setup]
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && (github.event_name == 'pull_request')
+    if: >-
+      github.repository == 'sam-dumont/immich-video-memory-generator'
+      && github.event_name == 'pull_request'
+      && needs.changes.outputs.docs_only != 'true'
     strategy:
       fail-fast: false
       matrix:
-        database: [sqlite, postgresql]
+        database: ${{ fromJSON(needs.changes.outputs.store == 'true' && '["sqlite","postgresql"]' || '["sqlite"]') }}
     # Started on both legs (services cannot follow the matrix); only the
     # postgresql leg is given its URL. Pinned like the test-store job's.
     services:
@@ -611,40 +652,28 @@ jobs:
             /tmp/pytest-of-runner/**/launch-smoke*/output/**
 
   # ── Summary gate ──────────────────────────────────────────────────────────
+  # The one check branch protection requires. A job the change scope skipped
+  # reports "skipped"; one skipped because a job it needs failed is caught by
+  # that job's own result. "cancelled" fails: a job past its timeout-minutes
+  # ends cancelled, and a superseded run's verdict no longer counts anyway.
   ci-success:
     name: CI Success
-    needs: [setup, quality, security, test, test-extras, test-store, build, docker, container-e2e, docs, launch-check]
+    needs: [changes, setup, quality, security, test, test-extras, test-store, build, docker, container-e2e, docs, launch-check]
     runs-on: ubuntu-latest
     if: always() && github.repository == 'sam-dumont/immich-video-memory-generator'
     steps:
       - name: Check all jobs passed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
         run: |
-          if [[ "${{ needs.setup.result }}" != "success" ]]; then
-            echo "Cache/dependency setup did not succeed: ${{ needs.setup.result }}"
-            exit 1
-          fi
-          if [[ "${{ github.event_name }}" == "pull_request" && "${{ needs['launch-check'].result }}" != "success" ]]; then
-            echo "Required launch check did not succeed: ${{ needs['launch-check'].result }}"
-            exit 1
-          fi
-          if [[ "${{ github.event_name }}" == "pull_request" && "${{ needs['container-e2e'].result }}" != "success" ]]; then
-            echo "Required container e2e did not succeed: ${{ needs['container-e2e'].result }}"
-            exit 1
-          fi
-          results=(
-            "${{ needs.quality.result }}"
-            "${{ needs.security.result }}"
-            "${{ needs.test.result }}"
-            "${{ needs.test-extras.result }}"
-            "${{ needs.test-store.result }}"
-            "${{ needs.build.result }}"
-            "${{ needs.docker.result }}"
-            "${{ needs['container-e2e'].result }}"
-            "${{ needs.docs.result }}"
-            "${{ needs['launch-check'].result }}"
-          )
-          for r in "${results[@]}"; do
-            # Allow "success", "skipped" (conditional jobs), and "cancelled" (concurrency group)
-            [[ "$r" != "success" && "$r" != "skipped" && "$r" != "cancelled" ]] && echo "A job failed: $r" && exit 1
+          for job in changes setup; do
+            result=$(jq -r --arg job "$job" '.[$job].result' <<< "$RESULTS")
+            [[ "$result" == "success" ]] || { echo "$job did not succeed: $result"; exit 1; }
           done
+          failed=$(jq -r 'to_entries[] | select(.value.result != "success" and .value.result != "skipped") | "\(.key): \(.value.result)"' <<< "$RESULTS")
+          if [[ -n "$failed" ]]; then
+            echo "$failed"
+            exit 1
+          fi
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$RESULTS"
           echo "All jobs passed!"
