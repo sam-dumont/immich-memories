@@ -198,6 +198,8 @@ def test_dependency_audit_uses_the_frozen_ci_resolution() -> None:
 
     assert "uv export --frozen --extra dev --no-emit-project --no-hashes" in commands
     assert "uv pip freeze" not in commands
+    # The export is pinned: re-resolving it from PyPI's index only adds a way to fail.
+    assert "--no-deps --disable-pip" in commands
 
 
 @pytest.mark.parametrize(
