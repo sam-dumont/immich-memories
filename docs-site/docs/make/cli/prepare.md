@@ -149,7 +149,10 @@ immich-memories discover-days --since 2015
 ```
 
 A day ends when the pictures stop for five hours, not at midnight. Days inside a trip are skipped (the trip film
-tells that story), and so are holidays spent at home, which have their own type.
+tells that story). A holiday spent at home has its own type, so with a reader it is judged like any day
+and then asked one narrow question: was its occasion the holiday itself? A Father's Day lunch is the
+holiday's, and stays out; a cycling race that happened to fall on that date is a special day. With no
+answer, or on a plain NAS, a holiday spent at home is skipped as before.
 
 **On a plain NAS** (the default) nothing is asked. A day counts when one recorded fact is loud: most of its
 located pictures away from home, at least three favourites, at least three videos making half the day, or a
@@ -175,6 +178,12 @@ is no list of occasions or of words to skip. A word counts when it is written ab
 the day's pictures and on at most 3% of the year's described days, and a day needs two such
 words. A year with fewer than 34 described days proposes nothing this way. Every proposed day
 still goes through the same day check.
+
+A small reader can call a whole run of ordinary days occasions: a newborn's first months came back as
+fifty-five "new beginnings". So a confirmed day with four or more other confirmed days within fifteen days
+of it has to show what its weeks do not: at least half its captions must write a word it repeats and
+that at most one neighbouring day writes at all. A day with nothing around it is never thinned (a
+pregnancy test is two pictures of an ordinary day), nor is a day that stands out from its year.
 
 Pictures forwarded to the library (sent by someone else or saved: stills with no camera in their
 EXIF) are evidence, not material. They never make a day of their own and never count toward its
