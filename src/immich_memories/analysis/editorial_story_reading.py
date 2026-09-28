@@ -434,7 +434,9 @@ def _unplaced_episode(key, unplaced, rows_by_reading) -> StoryEpisode:
 
 def _read_month_page(judge, page: StoryPage):
     """Read one month, re-asking only its own omitted rows. Nothing carries to another month."""
-    announce_stage(StageUpdate(f"Reading the period account: {page.month}"))
+    announce_stage(
+        StageUpdate(f"Reading the period account: {page.month}", key="Reading the period account")
+    )
     attempts: dict[str, int] = {}
     queue, decisions, unplaced, omitted, asked = list(page.rows), [], [], [], 0
     while queue:

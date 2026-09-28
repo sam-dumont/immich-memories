@@ -198,7 +198,8 @@ def _render_satellite(lat: float, lon: float, zoom: float, w: int, h: int) -> Im
         # WHY so broad: the tiles come through a third-party HTTP client and a
         # decoder, and an offline box has produced OSError, RuntimeError and a
         # ValueError out of a truncated body. One grey frame beats a dead render.
-        logger.warning("Tile fetch failed z=%d (%.2f,%.2f): %s", z_int, lat, lon, e)
+        # No coordinates in the line: warnings travel into run reports and issues.
+        logger.warning("Tile fetch failed at zoom %d: %s", z_int, e)
         img = Image.new("RGB", (rw, rh), (40, 50, 60))
 
     if img.size != (w, h):

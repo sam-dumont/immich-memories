@@ -53,8 +53,10 @@ from immich_memories.db.tables.people import (
     people_registry,
     people_relationships,
 )
+from immich_memories.db.tables.places import geocoded_places
 from immich_memories.db.tables.settings import settings
 from immich_memories.db.tables.store_meta import store_meta
+from immich_memories.db.tables.timing import run_diagnostics, run_spans
 
 __all__ = [
     "SCHEMA",
@@ -74,6 +76,7 @@ __all__ = [
     "editorial_verdicts",
     "face_boxes",
     "face_reads",
+    "geocoded_places",
     "head_facts",
     "judgments",
     "library_overviews",
@@ -93,6 +96,8 @@ __all__ = [
     "pixel_facts",
     "pixel_facts_thresholds",
     "run_attempts",
+    "run_diagnostics",
+    "run_spans",
     "settings",
     "special_days",
     "speech_regions",

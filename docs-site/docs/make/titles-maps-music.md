@@ -161,8 +161,9 @@ The full title adds the length and the season or month: `TWO WEEKS IN CRETE, GRE
 
 Immich stores places in English. Country, island and region names are translated offline (CLDR and the bundled
 tables). City names stay as Immich stored them unless you switch on `network.geocoding`, which asks Nominatim
-for the name in the film's language, one request per distinct place on the cut. What that sends is on
-[Privacy](../run/privacy.md).
+for the district each clip is in, in the film's language, one request per distinct place and kept for the
+next film. That also fixes the district Immich names after its neighbour (Wilrijk, not Hoboken) on captions,
+location cards and map pins. What that sends is on [Privacy](../run/privacy.md).
 
 ## Date and place captions
 

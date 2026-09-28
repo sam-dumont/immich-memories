@@ -13,6 +13,7 @@ from immich_memories.db import (
     pending_changes,
     revision_lineage,
 )
+from immich_memories.db.migrate import script_directory
 from immich_memories.db.tables import metadata
 
 
@@ -54,11 +55,11 @@ def test_the_history_goes_down_to_base_and_back_up(store):
     assert pending_changes(store) == []
 
 
-def test_every_head_descends_from_the_foundation():
-    # Slices land as siblings of the foundation for now; they are relinked into one line at
-    # integration, and this becomes a single-head assertion then.
-    for head in heads():
-        assert FOUNDATION_REVISION in revision_lineage(head)
+def test_the_history_has_one_head_on_the_foundation():
+    # WHY: two branches that each add a revision on the same parent pass their own CI and
+    # leave main with two heads; the second to land owes a merge revision joining them.
+    (head,) = heads()
+    assert FOUNDATION_REVISION in revision_lineage(head)
 
 
 def _revision(store, body) -> None:
@@ -119,14 +120,20 @@ def test_a_populated_store_rolls_back_revision_by_revision_and_up_again(store, t
         before = digests(connection)
     (head,) = heads()
     remaining = set(before)
+    scripts = script_directory()
 
-    for target in [*revision_lineage(head)[1:], "base"]:
-        downgrade(store, target)
+    for revision in revision_lineage(head):
+        script = scripts.get_revision(revision)
+        # WHY: a merge revision only joins two branches, so undoing it drops no table and
+        # leaves both parents applied; "<rev>@-1" then steps back one branch at a time,
+        # where a plain revision target would take both branches down in one step.
+        join = script.is_merge_point
+        downgrade(store, script.down_revision[0] if join else f"{revision}@-1")
         surviving = _tables(store) & set(before)
         with store.connect() as connection:
             kept = {name: table_digest(connection, _table(name)) for name in surviving}
 
-        assert surviving < remaining
+        assert surviving == remaining if join else surviving < remaining
         assert kept == {name: before[name] for name in surviving}
         remaining = surviving
 

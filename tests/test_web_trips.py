@@ -93,7 +93,30 @@ def test_the_holidays_the_brief_offers_are_the_ones_the_pipeline_resolves(tmp_pa
     english = client.get("/api/v1/holidays").json()
     french = client.get("/api/v1/holidays", params={"lang": "fr"}).json()
 
-    assert [h["key"] for h in english] == list(KNOWN_HOLIDAYS)
+    assert [h["key"] for h in english][: len(KNOWN_HOLIDAYS)] == list(KNOWN_HOLIDAYS)
     christmas = {h["key"]: h["name"] for h in english}["christmas"]
     assert christmas == "Christmas"
     assert {h["key"]: h["name"] for h in french}["christmas"] == "Noël"
+
+
+def test_the_home_country_s_public_holidays_are_offered_after_the_known_ones(tmp_path: Path):
+    """`--holiday` takes any public holiday of the home base's country by name (#1492)."""
+    from datetime import date
+
+    from immich_memories.memory_types.date_builders import resolve_holiday
+    from immich_memories.memory_types.factory import KNOWN_HOLIDAYS
+    from immich_memories.web.library import holiday_country
+
+    client = api_client(config_in(tmp_path))
+    # WHY: the home base's country is an Immich reverse-geocode; the test names it.
+    client.app.dependency_overrides[holiday_country] = lambda: "BE"
+
+    offered = client.get("/api/v1/holidays").json()
+    keys = [h["key"] for h in offered]
+
+    assert keys[: len(KNOWN_HOLIDAYS)] == list(KNOWN_HOLIDAYS)
+    public = keys[len(KNOWN_HOLIDAYS) :]
+    assert public, "Belgium keeps public holidays beyond the known ones"
+    # Every one of them is a name the pipeline resolves for that country.
+    for key in public:
+        resolve_holiday(key, date.today().year, country="BE")

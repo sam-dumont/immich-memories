@@ -220,7 +220,8 @@ export interface paths {
         };
         /**
          * Holidays
-         * @description The holidays the pipeline resolves, named in the page's language; any MM-DD works too.
+         * @description The holidays the pipeline resolves: the known ones, named in the page's language, then
+         *     the home country's other public holidays by their own name. Any MM-DD works too.
          */
         get: operations["holidays_api_v1_holidays_get"];
         put?: never;

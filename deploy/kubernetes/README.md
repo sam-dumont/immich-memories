@@ -229,6 +229,5 @@ kubectl apply -f base/sealed-secret.yaml
 detector verdict and reading the editor has banked. Lose it and the next cut re-reads the library.
 Back up the PVC.
 
-`immich-memories cache backup|export|import` are not the tool for it. Those three move the retired
-per-clip scorer's table out of `cache.db`, which nothing writes any more, and leave the banks
-behind.
+`immich-memories store backup` copies the store (decisions, model answers, run history) to one
+file; `store restore` puts it back.

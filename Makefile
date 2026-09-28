@@ -2,7 +2,7 @@
 # Uses uv for fast Python package management
 export PYTHONUNBUFFERED=1
 
-.PHONY: workflow-guard docs-voice notices notices-check help install dev dev-ci dev-test run preflight parity docs-cli-check docs-config-check test test-extras test-cov test-cov-xml test-integration test-integration-auth test-integration-photos test-integration-audio test-integration-audio-mixing test-integration-titles test-fast benchmark benchmark-perf benchmark-steps benchmark-assembly benchmark-titles benchmark-titles-json benchmark-pipeline benchmark-json benchmark-submit lint format typecheck check launch-check launch-check-ci launch-check-ci-postgres clean clean-cache clean-all build build-check docker docker-run docker-shell compose-check file-length complexity cognitive-complexity security-lint bandit-ci semgrep dead-code duplication refurb dep-check arch-check diff-cover diff-cover-ci integration-coverage-for-diff ci critique ensure-dev commitlint privacy-gate pip-audit docs-install docs-dev docs-build docs-check docs-cli demo-video playwright-install e2e e2e-full screenshots demo-output demo-output-trip diagrams capability-matrix
+.PHONY: workflow-guard docs-voice notices notices-check help install dev dev-ci dev-test run preflight parity docs-cli-check docs-config-check test test-extras test-cov test-cov-xml test-integration test-integration-auth test-integration-photos test-integration-audio test-integration-audio-mixing test-integration-titles test-fast benchmark benchmark-perf benchmark-steps benchmark-assembly benchmark-titles benchmark-titles-json benchmark-pipeline benchmark-json benchmark-submit lint format typecheck check launch-check launch-check-ci launch-check-ci-postgres clean clean-cache clean-all build build-check docker docker-run docker-shell compose-check file-length complexity cognitive-complexity security-lint bandit-ci semgrep dead-code duplication refurb dep-check arch-check diff-cover diff-cover-ci integration-coverage-for-diff ci-scope ci critique ensure-dev commitlint privacy-gate pip-audit docs-install docs-dev docs-build docs-check docs-cli demo-video playwright-install e2e e2e-full screenshots demo-output demo-output-trip diagrams capability-matrix
 
 # Default target
 help:
@@ -51,10 +51,6 @@ help:
 	@echo "  workflow-guard Check every workflow job skips in the private GPU mirror"
 	@echo ""
 	@echo "Cache Management:"
-	@echo "  cache-stats           Show analysis cache stats"
-	@echo "  video-cache-stats     Show video download cache stats"
-	@echo "  thumbnail-cache-stats Show thumbnail cache stats"
-	@echo "  all-cache-stats       Show all cache stats"
 	@echo "  clean-cache           Clear analysis cache (SQLite)"
 	@echo "  clean-video-cache     Clear video file cache"
 	@echo "  clean-thumbnail-cache Clear thumbnail cache"
@@ -749,6 +745,13 @@ integration-coverage-for-diff:  ## Run only the local integration suites the dif
 		done; \
 	fi
 
+# Which CI jobs this branch's changes can break. CI's `changes` job runs it and
+# every job reads the answer in its `if:`; locally it shows what a push would run.
+CI_SCOPE_EVENT ?= pull_request
+CI_SCOPE_BASE ?= origin/main
+ci-scope:  ## Print which CI jobs this branch's changes run (CI_SCOPE_BASE=origin/main)
+	python3 scripts/ci_scope.py --event $(CI_SCOPE_EVENT) --base $(CI_SCOPE_BASE)
+
 # Diff coverage for PRs. CI runs integration-coverage-for-diff first, so the
 # FFmpeg-only suites covering the changed paths have written their XMLs here.
 # tests/*-coverage.xml is gitignored and can never arrive from a contributor's
@@ -983,21 +986,6 @@ info:
 # Open cache database with sqlite3
 db:
 	sqlite3 ~/.immich-memories/cache.db
-
-# Show analysis cache stats
-cache-stats:
-	@uv run python -c "from immich_memories.cache import VideoAnalysisCache; c = VideoAnalysisCache(); import json; print(json.dumps(c.get_stats(), indent=2))"
-
-# Show video cache stats
-video-cache-stats:
-	@uv run python -c "from immich_memories.cache import VideoDownloadCache; c = VideoDownloadCache(); import json; print(json.dumps(c.get_stats(), indent=2, default=str))"
-
-# Show thumbnail cache stats
-thumbnail-cache-stats:
-	@uv run python -c "from immich_memories.cache import ThumbnailCache; c = ThumbnailCache(); import json; print(json.dumps(c.get_stats(), indent=2, default=str))"
-
-# Show all cache stats
-all-cache-stats: cache-stats video-cache-stats thumbnail-cache-stats
 
 # Generate version info
 version:

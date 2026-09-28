@@ -21,6 +21,7 @@ from immich_memories.api.person_scope import (
 )
 from immich_memories.cli._helpers import print_info, print_success, print_warning
 from immich_memories.timeperiod import DateRange
+from immich_memories.tracking.timed import timed
 
 logger = logging.getLogger(__name__)
 
@@ -225,6 +226,7 @@ def fetch_videos(
     return assets
 
 
+@timed("discovery")
 def fetch_media(
     *,
     client: SyncImmichClient,

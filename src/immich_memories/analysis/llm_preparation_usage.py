@@ -30,4 +30,6 @@ def record_preparation_attempt(body: object, *, stage: str, elapsed_seconds: flo
         stage=stage,
         usage_known=prompt is not None and output is not None,
     )
-    llm_metrics.record_wall(elapsed_seconds)
+    llm_metrics.record_wall(
+        elapsed_seconds, model=model if isinstance(model, str) else None, stage=stage
+    )

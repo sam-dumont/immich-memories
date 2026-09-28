@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 12:51+0200\n"
+"POT-Creation-Date: 2026-09-28 18:09+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -65,7 +65,7 @@ msgstr "一段时间之后"
 msgid "Album"
 msgstr "相册"
 
-#: web/lib/RenderPanel.svelte:226
+#: web/lib/RenderPanel.svelte:231
 msgid "Album name"
 msgstr "相册名称"
 
@@ -101,7 +101,7 @@ msgid "Anyone. Only pictures nothing held back: no detector flag, no private mom
 msgstr "任何人。仅使用未受限制的画面：没有检测标记，也没有私密时刻。"
 
 #: web/lib/RenderPanel.svelte:144 web/lib/RenderPanel.svelte:167 web/lib/RenderPanel.svelte:173
-#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:226
+#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:231
 #: web/routes/create/+page.svelte:424
 msgid "As configured"
 msgstr "按配置"
@@ -114,7 +114,7 @@ msgstr "由生成时决定"
 msgid "Automatic"
 msgstr "自动"
 
-#: web/lib/RenderPanel.svelte:197
+#: web/lib/RenderPanel.svelte:202
 msgid "Automatic (as configured)"
 msgstr "自动（按配置）"
 
@@ -222,7 +222,7 @@ msgstr "已从 {cache} 中清除 {count} 条记录。"
 msgid "Command"
 msgstr "命令"
 
-#: web/lib/SettingsEditor.svelte:72
+#: web/lib/SettingsEditor.svelte:71
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "配置文件：{config_path}"
@@ -566,11 +566,11 @@ msgstr "月度精选"
 msgid "Multi-Person"
 msgstr "多人"
 
-#: web/lib/RenderPanel.svelte:195
+#: web/lib/RenderPanel.svelte:200
 msgid "Music"
 msgstr "音乐"
 
-#: web/lib/RenderPanel.svelte:218
+#: web/lib/RenderPanel.svelte:223
 msgid "Music volume:"
 msgstr "音乐音量："
 
@@ -596,7 +596,7 @@ msgstr "此任务未保留关联输出。"
 msgid "No model read this cut: the rules chose every picture."
 msgstr "没有模型阅读此剪辑：每张图片都由规则选出。"
 
-#: web/lib/RenderPanel.svelte:198
+#: web/lib/RenderPanel.svelte:203
 msgid "No music"
 msgstr "无音乐"
 
@@ -765,7 +765,7 @@ msgstr "候选媒体"
 msgid "Portrait"
 msgstr "竖屏"
 
-#: web/lib/RenderPanel.svelte:205
+#: web/lib/RenderPanel.svelte:210
 msgid "Preview a track"
 msgstr "试听曲目"
 
@@ -777,7 +777,7 @@ msgstr "预览缓存"
 msgid "Preview with these choices"
 msgstr "按此选择预览"
 
-#: web/lib/RenderPanel.svelte:191
+#: web/lib/RenderPanel.svelte:196
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "隐私模式：模糊所有图片并打乱姓名"
 
@@ -841,7 +841,7 @@ msgstr "移除此关系"
 msgid "Removed"
 msgstr "已移除"
 
-#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:229
+#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:234
 msgid "Render"
 msgstr "渲染"
 
@@ -1139,7 +1139,13 @@ msgstr "人物档案：谁是亲近的人、他们的角色，以及彼此的关
 msgid "The picture it replaced"
 msgstr "被替换的图片"
 
-#: web/lib/RenderPanel.svelte:199
+#: web/lib/RenderPanel.svelte:193
+msgid ""
+"The place is Immich's. With geocoding on (Settings, network), it names the district in the "
+"film's language, through the public Nominatim or network.geocoding_url."
+msgstr "地点来自 Immich。开启地理编码后（设置，网络），会通过公共 Nominatim 或 network.geocoding_url，以影片的语言显示所在街区。"
+
+#: web/lib/RenderPanel.svelte:204
 msgid "The previewed track"
 msgstr "已试听的曲目"
 
@@ -1236,11 +1242,11 @@ msgstr "撤销"
 msgid "Updated {when}"
 msgstr "{when}更新"
 
-#: web/lib/RenderPanel.svelte:208
+#: web/lib/RenderPanel.svelte:213
 msgid "Upload a track"
 msgstr "上传曲目"
 
-#: web/lib/RenderPanel.svelte:225
+#: web/lib/RenderPanel.svelte:230
 msgid "Upload the film to Immich"
 msgstr "将影片上传到 Immich"
 

@@ -57,7 +57,7 @@ def test_saved_marqo_version_moves_to_the_current_onnx_producer() -> None:
 
 
 def test_a_saved_single_frame_exposure_version_moves_to_the_frame_reading_one() -> None:
-    """A det-v2 bank answered a video on one preview frame; it owes every source a re-read."""
+    """A det-v2 bank answered a video on one preview frame; it owes every video a re-read."""
     config = EditorialConfig(head_versions={"nsfw_marqo": "det-v2", "doc_docling": "det-v2"})
     assert config.head_versions == {"nsfw_marqo": "det-v3", "doc_docling": "det-v2"}
 

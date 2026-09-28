@@ -1,9 +1,10 @@
 """Which model producer still owes a fact, and who is allowed to answer for it.
 
-Four decisions live here, in this order: what the inference service may be asked for,
-which pictures the packaged public heads still owe, which sources the detector worker
-must read, and which attached clips owe the exposure head a row of their own. A head
-nothing packages is named rather than silently skipped.
+Five decisions live here, in this order: which stills an earlier exposure answer still
+covers, what the inference service may be asked for, which pictures the packaged public
+heads still owe, which sources the detector worker must read, and which attached clips
+owe the exposure head a row of their own. A head nothing packages is named rather than
+silently skipped.
 """
 
 from __future__ import annotations
@@ -20,13 +21,15 @@ from immich_memories.analysis.editorial_preparation_detector_frames import (
 from immich_memories.analysis.editorial_preparation_detectors import (
     DETECTOR_VERSIONS,
     MARQO_HEAD,
+    MARQO_ONNX_ID,
+    MARQO_STILL_EQUIVALENT,
 )
 from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VERSIONS
 from immich_memories.analysis.remote_facts import offloaded_versions
 from immich_memories.api.models import Asset
 from immich_memories.config_models_inference import InferenceConfig
 from immich_memories.db import Store
-from immich_memories.store.editorial_preparation import heads_missing_for
+from immich_memories.store.editorial_preparation import carry_head_answers, heads_missing_for
 
 
 class ModelFactStage(Protocol):
@@ -75,6 +78,28 @@ class ModelFactStage(Protocol):
 
 
 CLIP_COMPANION = "clip_companion"
+
+
+def carry_still_exposure(
+    store: Store, source: Sequence[Asset], head_versions: Mapping[str, str]
+) -> None:
+    """Bank a still's earlier exposure answer as the current one instead of reading it again.
+
+    The current version changed how a video is read and nothing about a still, which is
+    still decided on its preview by the same export. A video, and a Live Photo's clip
+    (never in ``source``), keep owing the current version a read of their own.
+    """
+    version = head_versions.get(MARQO_HEAD, "")
+    if version != DETECTOR_VERSIONS[MARQO_HEAD]:
+        return
+    carry_head_answers(
+        store,
+        [asset.id for asset in source if not asset.is_video],
+        MARQO_HEAD,
+        banked_version=MARQO_STILL_EQUIVALENT,
+        version=version,
+        encoder_key=MARQO_ONNX_ID,
+    )
 
 
 def deferred_exposure(

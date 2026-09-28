@@ -98,6 +98,10 @@ once, with when it was found, and **Refresh** asks for a new one. A trip is name
 holds more than half its pictures, the region only when no town does. Pick one, or **Every trip of
 the year**. **Cut** stays greyed out until you do, because a trip brief without one only lists them.
 
+A **Holiday** offers the known holidays first, then the other public holidays of the country your
+home base is in (`trips.homebase_*`), by the calendar's own name; each falls on the date that country
+keeps it. **Another day (MM-DD)** takes a household's own day.
+
 A **Special day** lists the days in `~/.immich-memories/special-days.json`, anniversaries due first. A
 scheduled run only proposes a day on its anniversary; here you can pick any day the catalogue holds,
 or type any date into **Day**. With no catalogue yet, the page says to run `immich-memories discover-days`.
@@ -217,7 +221,9 @@ selected again: the film plays exactly the reviewed cut. Every option defaults t
   Mode** (a blurred backdrop or bars; clips are never cropped).
 - **Transition Style**, **Add date overlay** and **Caption clips with their place** (both on; untick
   to leave them out), and **Privacy mode**, which blurs every picture and scrambles names for a public
-  demo.
+  demo. A place caption is Immich's place name. With `network.geocoding` on (Settings, **Network**),
+  it names the district rather than a neighbouring town, in the film's language, through the public
+  Nominatim or your own (`network.geocoding_url`). See [Titles, maps and music](./titles-maps-music.md).
 - **Title** and **Subtitle**. Leave the title empty and **Who names the film** decides: as `generate`
   would, the model, or the dates and places only.
 - **Music**: **Automatic** (as configured), **No music**, **Preview a track** made for this cut from

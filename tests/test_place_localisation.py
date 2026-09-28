@@ -150,65 +150,10 @@ class TestTheFilmReadsTheseNames:
         assert asked == ["Nicosia, Chypre"]
 
 
-class TestGeocodedPlaceNames:
-    """One question per distinct place on the cut, kept on disk, never fatal."""
+class TestTheNominatimRequest:
+    """What leaves the host when geocoding is on, and what is kept of the answer."""
 
-    def test_one_reading_serves_every_clip_at_the_same_place(self, tmp_path: Path) -> None:
-        from immich_memories.analysis.place_name_cache import PlaceNameCache
-
-        asked: list[tuple[float, float]] = []
-
-        def read(latitude: float, longitude: float) -> str:
-            asked.append((latitude, longitude))
-            return "Nicosie, Chypre"
-
-        cache = PlaceNameCache(tmp_path, "fr", read)
-        # Two points about 300 m apart: one place once rounded.
-        first = cache.name_for(35.1712, 33.3634, "Nicosia, Cyprus")
-        second = cache.name_for(35.1729, 33.3648, "Nicosia, Cyprus")
-
-        assert (first, second) == ("Nicosie, Chypre", "Nicosie, Chypre")
-        assert asked == [(35.17, 33.36)]
-
-    def test_the_next_run_reads_the_answer_off_disk(self, tmp_path: Path) -> None:
-        from immich_memories.analysis.place_name_cache import PlaceNameCache
-
-        warm = PlaceNameCache(tmp_path, "fr", lambda *_a: "Nicosie, Chypre")
-        warm.name_for(35.17, 33.36, None)
-        warm.flush()
-
-        cold = PlaceNameCache(tmp_path, "fr", None)
-
-        assert cold.name_for(35.17, 33.36, "Nicosia, Cyprus") == "Nicosie, Chypre"
-
-    def test_another_language_is_a_different_question(self, tmp_path: Path) -> None:
-        from immich_memories.analysis.place_name_cache import PlaceNameCache
-
-        french = PlaceNameCache(tmp_path, "fr", lambda *_a: "Nicosie, Chypre")
-        french.name_for(35.17, 33.36, None)
-        french.flush()
-
-        english = PlaceNameCache(tmp_path, "en", None)
-
-        assert english.name_for(35.17, 33.36, "Nicosia, Cyprus") == "Nicosia, Cyprus"
-
-    def test_a_geocoder_that_fails_leaves_the_stored_name(self, tmp_path: Path) -> None:
-        from immich_memories.analysis.place_name_cache import PlaceNameCache
-
-        def die(*_args: float) -> str:
-            raise RuntimeError("service unavailable")
-
-        cache = PlaceNameCache(tmp_path, "fr", die)
-
-        assert cache.name_for(35.17, 33.36, "Nicosia, Cyprus") == "Nicosia, Cyprus"
-        # And it stops asking: one outage must not cost one call per place.
-        assert cache.name_for(48.86, 2.35, "Paris, France") == "Paris, France"
-
-
-class TestTheNominatimReader:
-    """The reader built when the switch is on: what it asks, what it returns."""
-
-    def _reader(self, monkeypatch: pytest.MonkeyPatch, raw: dict):
+    def _fetch(self, monkeypatch: pytest.MonkeyPatch, raw: dict, url: str = ""):
         asked: dict = {}
 
         class _Answer:
@@ -216,140 +161,142 @@ class TestTheNominatimReader:
                 self.raw = raw
 
         class _Geolocator:
+            def __init__(self, **kwargs) -> None:
+                asked["client"] = kwargs
+
             def reverse(self, query, **kwargs):
                 asked["query"] = query
                 asked.update(kwargs)
                 return _Answer() if raw else None
 
-        # WHY: Nominatim is the outside host, and RateLimiter would hold the test
-        # for a second per call. Both are replaced; the address parsing is ours.
-        monkeypatch.setattr("geopy.geocoders.Nominatim", lambda **_k: _Geolocator())
-        monkeypatch.setattr("geopy.extra.rate_limiter.RateLimiter", lambda call, **_k: call)
-        from immich_memories.analysis.place_name_cache import nominatim_place_reader
+        def _limiter(call, **kwargs):
+            asked["limiter"] = kwargs
+            return call
 
-        return nominatim_place_reader("fr"), asked
+        # WHY: Nominatim is the outside host, and RateLimiter would hold the test for a
+        # second per call. Both are replaced; the request and the parsing are ours.
+        monkeypatch.setattr("geopy.geocoders.Nominatim", _Geolocator)
+        monkeypatch.setattr("geopy.extra.rate_limiter.RateLimiter", _limiter)
+        from immich_memories.analysis.place_geocoder import nominatim_fetch
 
-    def test_it_asks_in_the_films_language_at_town_zoom(
+        return nominatim_fetch("fr", url), asked
+
+    def test_it_asks_once_a_second_at_district_zoom_in_the_films_language(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        read, asked = self._reader(
-            monkeypatch, {"address": {"town": "Nicosie", "country": "Chypre"}}
+        fetch, asked = self._fetch(monkeypatch, {"address": {"suburb": "Wilrijk"}})
+        fetch(51.17, 4.39)
+
+        assert asked["query"] == "51.17, 4.39"
+        assert (asked["zoom"], asked["language"]) == (14, "fr")
+        assert asked["limiter"]["min_delay_seconds"] >= 1
+        assert asked["client"]["domain"] == "nominatim.openstreetmap.org"
+        assert asked["client"]["user_agent"].startswith("immich-memories/")
+
+    def test_a_self_hosted_nominatim_takes_the_request(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fetch, asked = self._fetch(
+            monkeypatch, {"address": {}}, url="http://nominatim.lan:8080/geo/"
         )
 
-        assert read(35.17, 33.36) == "Nicosie, Chypre"
-        assert asked["language"] == "fr"
-        assert asked["zoom"] == 14
+        assert asked["client"]["domain"] == "nominatim.lan:8080/geo"
+        assert asked["client"]["scheme"] == "http"
 
-    def test_a_place_with_only_a_country_still_answers(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        read, _asked = self._reader(monkeypatch, {"address": {"country": "Chypre"}})
+    def test_only_the_administrative_names_are_kept(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        raw = {
+            "address": {
+                "road": "Boomsesteenweg",
+                "postcode": "2610",
+                "suburb": "Wilrijk",
+                "city": "Antwerpen",
+                "country": "Belgique",
+            }
+        }
+        fetch, _asked = self._fetch(monkeypatch, raw)
 
-        assert read(35.17, 33.36) == "Chypre"
+        assert fetch(51.17, 4.39) == {
+            "suburb": "Wilrijk",
+            "city": "Antwerpen",
+            "country": "Belgique",
+        }
 
     def test_a_coordinate_nobody_can_name_answers_nothing(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        read, _asked = self._reader(monkeypatch, {})
+        fetch, _asked = self._fetch(monkeypatch, {})
 
-        assert read(0.0, 0.0) is None
-
-
-class TestThePlaceNameStore:
-    """What the store does with a file it cannot use, and one it cannot write."""
-
-    def test_an_answerless_reading_leaves_the_stored_name(self, tmp_path: Path) -> None:
-        from immich_memories.analysis.place_name_cache import PlaceNameCache
-
-        cache = PlaceNameCache(tmp_path, "fr", lambda *_a: None)
-
-        assert cache.name_for(35.17, 33.36, "Nicosia, Cyprus") == "Nicosia, Cyprus"
-        cache.flush()  # nothing was learned, so nothing is written
-        assert not (tmp_path / "place-names").exists()
-
-    def test_a_store_from_another_schema_is_ignored(self, tmp_path: Path) -> None:
-        from immich_memories.analysis.place_name_cache import PlaceNameCache
-
-        warm = PlaceNameCache(tmp_path, "fr", lambda *_a: "Nicosie, Chypre")
-        warm.name_for(35.17, 33.36, None)
-        warm.flush()
-        stored = next((tmp_path / "place-names").glob("*.json"))
-        stored.write_text('{"schema_version": 99, "names": {"35.17,33.36": "Nowhere"}}')
-
-        cold = PlaceNameCache(tmp_path, "fr", None)
-
-        assert cold.name_for(35.17, 33.36, "Nicosia, Cyprus") == "Nicosia, Cyprus"
-
-    def test_a_store_it_cannot_write_is_not_a_render_failure(self, tmp_path: Path) -> None:
-        from immich_memories.analysis.place_name_cache import PlaceNameCache
-
-        blocked = tmp_path / "blocked"
-        blocked.write_text("this is a file, not a directory")
-        cache = PlaceNameCache(blocked, "fr", lambda *_a: "Nicosie, Chypre")
-        cache.name_for(35.17, 33.36, None)
-
-        cache.flush()  # must not raise
+        assert fetch(0.0, -30.0) is None
 
 
 class TestGeocodingReachesTheCut:
     """`prepare_location_captions` is where the switch turns into better names."""
 
-    def _params(self, tmp_path: Path, geocoding: bool):
+    def _params(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, geocoding: bool):
         from immich_memories.config import Config
         from immich_memories.generate import GenerationParams
 
+        monkeypatch.setenv("HOME", str(tmp_path))
         config = Config()
         config.network.geocoding = geocoding
-        config.cache.directory = str(tmp_path)
+        config.database.url = f"sqlite:///{tmp_path / 'store.db'}"
         config.title_screens.locale = "fr"
-        config.trips.homebase_latitude = 48.86
-        config.trips.homebase_longitude = 2.35
         return GenerationParams(
-            clips=[],
-            output_path=tmp_path / "out.mp4",
-            config=config,
-            add_place_overlay=True,
+            clips=[], output_path=tmp_path / "out.mp4", config=config, add_place_overlay=True
         )
 
     def _clip(self):
         from immich_memories.processing.assembly_config import AssemblyClip
 
+        # Immich names Wilrijk after the nearest GeoNames point: its neighbour Hoboken.
         return AssemblyClip(
             path=Path("/x/a.mp4"),
             duration=3.0,
-            latitude=35.17,
-            longitude=33.36,
-            location_name="Nicosia, Cyprus",
+            latitude=51.1682,
+            longitude=4.3931,
+            location_name="Hoboken, Belgium",
         )
 
-    def test_off_means_the_stored_name_translated_and_nothing_asked(
+    def _named(self, params, clip):
+        from immich_memories.generate_captions import (
+            district_place_names,
+            prepare_location_captions,
+        )
+
+        return prepare_location_captions(params, district_place_names(params, [clip]))[0]
+
+    def test_off_asks_nobody_and_keeps_immichs_name(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # WHY: Nominatim is the outside host; a reader that raises proves the
-        # default path never builds one.
-        monkeypatch.setattr(
-            "immich_memories.analysis.place_name_cache.nominatim_place_reader",
-            lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("must not geocode")),
-        )
-        from immich_memories.generate_captions import prepare_location_captions
+        def refuse(*_args: object, **_kwargs: object):
+            raise AssertionError("the default run must not build a geocoder")
 
-        captioned = prepare_location_captions(self._params(tmp_path, False), [self._clip()])
+        # WHY: Nominatim is the outside host; a request builder that raises proves the
+        # default path never reaches it.
+        monkeypatch.setattr("immich_memories.analysis.place_geocoder.nominatim_fetch", refuse)
 
-        assert captioned[0].caption_location_name == "Nicosia, Chypre"
+        clip = self._named(self._params(tmp_path, monkeypatch, False), self._clip())
 
-    def test_on_means_the_geocoder_names_the_place(
+        assert clip.location_name == "Hoboken, Belgium"
+        assert clip.caption_location_name == "Hoboken, Belgique"
+
+    def test_on_names_the_district_in_the_films_language(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # WHY: same host, answering this time, so the cut carries its town name.
-        monkeypatch.setattr(
-            "immich_memories.analysis.place_name_cache.nominatim_place_reader",
-            lambda *_a, **_k: lambda *_p: "Nicosie, Chypre",
-        )
-        from immich_memories.generate_captions import prepare_location_captions
+        built: list[tuple[str, str]] = []
 
-        captioned = prepare_location_captions(self._params(tmp_path, True), [self._clip()])
+        def fetch(language: str, url: str = ""):
+            built.append((language, url))
+            return lambda *_p: {"suburb": "Wilrijk", "city": "Antwerpen", "country": "Belgique"}
 
-        assert captioned[0].caption_location_name == "Nicosie, Chypre"
+        # WHY: same host, answering this time.
+        monkeypatch.setattr("immich_memories.analysis.place_geocoder.nominatim_fetch", fetch)
+
+        clip = self._named(self._params(tmp_path, monkeypatch, True), self._clip())
+
+        assert clip.location_name == "Wilrijk, Belgium"
+        assert clip.caption_location_name == "Wilrijk, Belgique"
+        assert built == [("fr", "")]
 
 
 def test_a_chinese_or_japanese_caption_place_takes_its_own_comma():

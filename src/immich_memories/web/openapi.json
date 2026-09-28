@@ -3280,7 +3280,7 @@
     },
     "/api/v1/holidays": {
       "get": {
-        "description": "The holidays the pipeline resolves, named in the page's language; any MM-DD works too.",
+        "description": "The holidays the pipeline resolves: the known ones, named in the page's language, then\nthe home country's other public holidays by their own name. Any MM-DD works too.",
         "operationId": "holidays_api_v1_holidays_get",
         "parameters": [
           {

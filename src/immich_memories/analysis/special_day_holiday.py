@@ -22,18 +22,6 @@ logger = logging.getLogger(__name__)
 
 QUESTION_VERSION = "special-day-holiday-v1"
 
-_NAMES = {
-    "new_year": "New Year's Day",
-    "valentines": "Valentine's Day",
-    "halloween": "Halloween",
-    "christmas_eve": "Christmas Eve",
-    "christmas": "Christmas",
-    "new_years_eve": "New Year's Eve",
-    "easter": "Easter",
-    "thanksgiving": "Thanksgiving",
-    "mothers_day": "Mother's Day",
-    "fathers_day": "Father's Day",
-}
 
 _PROMPT = """{version}
 A day from someone's photo library fell on {holiday}. What its pictures show was summed up, from
@@ -45,11 +33,6 @@ happened on that date? Answer with STRICT JSON only: {{"the_holiday": true}} or 
 _ANSWER_TOKENS = 60
 _TIMEOUT_SECONDS = 300
 _JSON = re.compile(r"\{.*\}", re.DOTALL)
-
-
-def holiday_name(key: str) -> str:
-    """How a holiday is written for a reader: its name, or the MM-DD it was given as."""
-    return _NAMES.get(key, key)
 
 
 def was_the_holiday(

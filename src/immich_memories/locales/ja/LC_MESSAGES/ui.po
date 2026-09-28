@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 12:51+0200\n"
+"POT-Creation-Date: 2026-09-28 18:09+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -65,7 +65,7 @@ msgstr "期間の後"
 msgid "Album"
 msgstr "アルバム"
 
-#: web/lib/RenderPanel.svelte:226
+#: web/lib/RenderPanel.svelte:231
 msgid "Album name"
 msgstr "アルバム名"
 
@@ -101,7 +101,7 @@ msgid "Anyone. Only pictures nothing held back: no detector flag, no private mom
 msgstr "誰でも。検出器の警告や私的な場面など、制限のない画像だけを使います。"
 
 #: web/lib/RenderPanel.svelte:144 web/lib/RenderPanel.svelte:167 web/lib/RenderPanel.svelte:173
-#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:226
+#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:231
 #: web/routes/create/+page.svelte:424
 msgid "As configured"
 msgstr "設定どおり"
@@ -114,7 +114,7 @@ msgstr "生成時に決定"
 msgid "Automatic"
 msgstr "自動"
 
-#: web/lib/RenderPanel.svelte:197
+#: web/lib/RenderPanel.svelte:202
 msgid "Automatic (as configured)"
 msgstr "自動（設定どおり）"
 
@@ -222,7 +222,7 @@ msgstr "{cache} から {count} 件のエントリを消去しました。"
 msgid "Command"
 msgstr "コマンド"
 
-#: web/lib/SettingsEditor.svelte:72
+#: web/lib/SettingsEditor.svelte:71
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "設定ファイル：{config_path}"
@@ -566,11 +566,11 @@ msgstr "月のハイライト"
 msgid "Multi-Person"
 msgstr "複数の人物"
 
-#: web/lib/RenderPanel.svelte:195
+#: web/lib/RenderPanel.svelte:200
 msgid "Music"
 msgstr "音楽"
 
-#: web/lib/RenderPanel.svelte:218
+#: web/lib/RenderPanel.svelte:223
 msgid "Music volume:"
 msgstr "音楽の音量："
 
@@ -596,7 +596,7 @@ msgstr "この実行には関連する出力が保存されていません。"
 msgid "No model read this cut: the rules chose every picture."
 msgstr "この編集はモデルが読んでいません。すべての画像をルールが選びました。"
 
-#: web/lib/RenderPanel.svelte:198
+#: web/lib/RenderPanel.svelte:203
 msgid "No music"
 msgstr "音楽なし"
 
@@ -765,7 +765,7 @@ msgstr "候補メディア"
 msgid "Portrait"
 msgstr "縦向き"
 
-#: web/lib/RenderPanel.svelte:205
+#: web/lib/RenderPanel.svelte:210
 msgid "Preview a track"
 msgstr "曲を試聴"
 
@@ -777,7 +777,7 @@ msgstr "プレビューキャッシュ"
 msgid "Preview with these choices"
 msgstr "この選択でプレビュー"
 
-#: web/lib/RenderPanel.svelte:191
+#: web/lib/RenderPanel.svelte:196
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "プライバシーモード: すべての画像をぼかし、名前を隠します"
 
@@ -841,7 +841,7 @@ msgstr "この関係を削除"
 msgid "Removed"
 msgstr "外しました"
 
-#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:229
+#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:234
 msgid "Render"
 msgstr "レンダリングする"
 
@@ -1107,7 +1107,9 @@ msgstr "日付と場所のみ、モデルは使いません"
 msgid ""
 "The environment wins, then config.yaml, then what is saved here, then the default. A setting "
 "either of the first two sets is greyed out: change it where its label says."
-msgstr "環境変数が最優先され、次に config.yaml、次にここでの保存内容、最後に既定値が使われます。先の2つのいずれかで設定されている項目はグレー表示になります。ラベルに示された場所で変更してください。"
+msgstr ""
+"環境変数が最優先され、次に "
+"config.yaml、次にここでの保存内容、最後に既定値が使われます。先の2つのいずれかで設定されている項目はグレー表示になります。ラベルに示された場所で変更してください。"
 
 #: web/routes/runs/[run_id]/+page.svelte:142
 msgid "The film"
@@ -1133,13 +1135,21 @@ msgstr "設定されている場合はモデル"
 msgid ""
 "The people registry: who is close, their roles, and how they relate. `people scan` writes the"
 " guesses; your answers stay across scans. `people export` writes it out as YAML."
-msgstr "人物台帳: 誰が近しいか、その役割、そして互いの関係。`people scan` が推測を書き込み、あなたの回答はスキャンをまたいで保持されます。`people export` はそれを YAML として書き出します。"
+msgstr ""
+"人物台帳: 誰が近しいか、その役割、そして互いの関係。`people scan` が推測を書き込み、あなたの回答はスキャンをまたいで保持されます。`people export` はそれを"
+" YAML として書き出します。"
 
 #: web/lib/ShotInspector.svelte:141
 msgid "The picture it replaced"
 msgstr "置き換えられた画像"
 
-#: web/lib/RenderPanel.svelte:199
+#: web/lib/RenderPanel.svelte:193
+msgid ""
+"The place is Immich's. With geocoding on (Settings, network), it names the district in the "
+"film's language, through the public Nominatim or network.geocoding_url."
+msgstr "場所は Immich のものです。ジオコーディングを有効にすると（設定、ネットワーク）、公開の Nominatim または network.geocoding_url を通じて、映像の言語で地区名を表示します。"
+
+#: web/lib/RenderPanel.svelte:204
 msgid "The previewed track"
 msgstr "試聴した曲"
 
@@ -1236,11 +1246,11 @@ msgstr "元に戻す"
 msgid "Updated {when}"
 msgstr "{when}に更新"
 
-#: web/lib/RenderPanel.svelte:208
+#: web/lib/RenderPanel.svelte:213
 msgid "Upload a track"
 msgstr "曲をアップロード"
 
-#: web/lib/RenderPanel.svelte:225
+#: web/lib/RenderPanel.svelte:230
 msgid "Upload the film to Immich"
 msgstr "動画を Immich にアップロード"
 

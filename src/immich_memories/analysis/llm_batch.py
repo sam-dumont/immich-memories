@@ -224,7 +224,12 @@ class BatchCoordinator:
         delay = FIRST_POLL_SECONDS
         while True:
             check_cancelled()
-            announce_stage(StageUpdate(_waiting_line(adapter.name, count, submitted)))
+            announce_stage(
+                StageUpdate(
+                    _waiting_line(adapter.name, count, submitted),
+                    key=f"waiting on {adapter.name} batch",
+                )
+            )
             if await adapter.ended(client, handle):
                 return True
             if self._now().timestamp() + delay > deadline:

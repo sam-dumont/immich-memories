@@ -188,6 +188,11 @@
       <div class="flex flex-col gap-2 text-sm">
         <label class="flex items-center gap-2"><input type="checkbox" bind:checked={addDate} />{t('Add date overlay')}</label>
         <label class="flex items-center gap-2"><input type="checkbox" bind:checked={addPlace} />{t('Caption clips with their place')}</label>
+        {#if addPlace}
+          <p class="-mt-1 ml-6 text-xs text-gray-600 dark:text-gray-400">
+            {t("The place is Immich's. With geocoding on (Settings, network), it names the district in the film's language, through the public Nominatim or network.geocoding_url.")}
+          </p>
+        {/if}
         <label class="flex items-center gap-2"><input type="checkbox" bind:checked={privacy} />{t('Privacy mode: blur every picture and scramble names')}</label>
       </div>
 

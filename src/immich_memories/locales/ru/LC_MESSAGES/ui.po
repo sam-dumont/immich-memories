@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 12:51+0200\n"
+"POT-Creation-Date: 2026-09-28 18:09+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -66,7 +66,7 @@ msgstr "После периода"
 msgid "Album"
 msgstr "Альбом"
 
-#: web/lib/RenderPanel.svelte:226
+#: web/lib/RenderPanel.svelte:231
 msgid "Album name"
 msgstr "Название альбома"
 
@@ -104,7 +104,7 @@ msgid "Anyone. Only pictures nothing held back: no detector flag, no private mom
 msgstr "Все. Только изображения без ограничений: без сигнала детектора и без личных моментов."
 
 #: web/lib/RenderPanel.svelte:144 web/lib/RenderPanel.svelte:167 web/lib/RenderPanel.svelte:173
-#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:226
+#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:231
 #: web/routes/create/+page.svelte:424
 msgid "As configured"
 msgstr "Как настроено"
@@ -117,7 +117,7 @@ msgstr "Как решит генерация"
 msgid "Automatic"
 msgstr "Автоматический"
 
-#: web/lib/RenderPanel.svelte:197
+#: web/lib/RenderPanel.svelte:202
 msgid "Automatic (as configured)"
 msgstr "Автоматически (как настроено)"
 
@@ -227,7 +227,7 @@ msgstr "Удалено {count} записей из {cache}."
 msgid "Command"
 msgstr "Команда"
 
-#: web/lib/SettingsEditor.svelte:72
+#: web/lib/SettingsEditor.svelte:71
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "Файл конфигурации: {config_path}"
@@ -361,7 +361,9 @@ msgstr ""
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
-msgstr "Каждая настройка и откуда берётся её значение. То, что вы сохраняете здесь, попадает в базу данных; config.yaml и окружение никогда не записываются и имеют приоритет над этим."
+msgstr ""
+"Каждая настройка и откуда берётся её значение. То, что вы сохраняете здесь, попадает в базу "
+"данных; config.yaml и окружение никогда не записываются и имеют приоритет над этим."
 
 #: web/routes/create/+page.svelte:377
 msgid "Every trip of the year"
@@ -578,11 +580,11 @@ msgstr "Главное за месяц"
 msgid "Multi-Person"
 msgstr "Несколько людей"
 
-#: web/lib/RenderPanel.svelte:195
+#: web/lib/RenderPanel.svelte:200
 msgid "Music"
 msgstr "Музыка"
 
-#: web/lib/RenderPanel.svelte:218
+#: web/lib/RenderPanel.svelte:223
 msgid "Music volume:"
 msgstr "Громкость музыки:"
 
@@ -610,7 +612,7 @@ msgstr "Для этого запуска не сохранён связанны�
 msgid "No model read this cut: the rules chose every picture."
 msgstr "Ни одна модель не читала этот монтаж: каждое изображение выбрали правила."
 
-#: web/lib/RenderPanel.svelte:198
+#: web/lib/RenderPanel.svelte:203
 msgid "No music"
 msgstr "Без музыки"
 
@@ -658,7 +660,9 @@ msgstr "Нет, это не так"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:132
 msgid "Nobody this memory is about was recognised here; they were, elsewhere in the same episode."
-msgstr "Никто из тех, о ком этот эпизод памяти, не был распознан здесь; их узнали в другом месте того же эпизода."
+msgstr ""
+"Никто из тех, о ком этот эпизод памяти, не был распознан здесь; их узнали в другом месте того"
+" же эпизода."
 
 #: web/routes/settings/people/+page.svelte:107
 msgid "Nobody yet. Rescan the library to read who is in it."
@@ -781,7 +785,7 @@ msgstr "Доступные медиа"
 msgid "Portrait"
 msgstr "Вертикально"
 
-#: web/lib/RenderPanel.svelte:205
+#: web/lib/RenderPanel.svelte:210
 msgid "Preview a track"
 msgstr "Прослушать трек"
 
@@ -793,7 +797,7 @@ msgstr "Кэш превью"
 msgid "Preview with these choices"
 msgstr "Превью с этим выбором"
 
-#: web/lib/RenderPanel.svelte:191
+#: web/lib/RenderPanel.svelte:196
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Режим приватности: размывает каждое изображение и скрывает имена"
 
@@ -857,7 +861,7 @@ msgstr "Удалить эту связь"
 msgid "Removed"
 msgstr "Убрано"
 
-#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:229
+#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:234
 msgid "Render"
 msgstr "Рендер"
 
@@ -968,7 +972,9 @@ msgstr "Время года"
 msgid ""
 "Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
 "config.yaml."
-msgstr "Секреты нельзя сохранить здесь, пока не задано {name}. Задайте его или храните их в окружении либо в config.yaml."
+msgstr ""
+"Секреты нельзя сохранить здесь, пока не задано {name}. Задайте его или храните их в окружении"
+" либо в config.yaml."
 
 #: web/lib/SettingsEditor.svelte:37
 #, python-brace-format
@@ -1123,7 +1129,10 @@ msgstr "Даты и места, никогда модель"
 msgid ""
 "The environment wins, then config.yaml, then what is saved here, then the default. A setting "
 "either of the first two sets is greyed out: change it where its label says."
-msgstr "Окружение имеет приоритет, затем config.yaml, затем сохранённое здесь, затем значение по умолчанию. Настройка, заданная любым из первых двух, показана серым: измените её там, где указано в подписи."
+msgstr ""
+"Окружение имеет приоритет, затем config.yaml, затем сохранённое здесь, затем значение по "
+"умолчанию. Настройка, заданная любым из первых двух, показана серым: измените её там, где "
+"указано в подписи."
 
 #: web/routes/runs/[run_id]/+page.svelte:142
 msgid "The film"
@@ -1149,13 +1158,21 @@ msgstr "Модель, если она настроена"
 msgid ""
 "The people registry: who is close, their roles, and how they relate. `people scan` writes the"
 " guesses; your answers stay across scans. `people export` writes it out as YAML."
-msgstr "Реестр людей: кто близок, их роли и как они связаны. `people scan` записывает предположения; ваши ответы сохраняются между сканированиями. `people export` экспортирует их в YAML."
+msgstr ""
+"Реестр людей: кто близок, их роли и как они связаны. `people scan` записывает предположения; "
+"ваши ответы сохраняются между сканированиями. `people export` экспортирует их в YAML."
 
 #: web/lib/ShotInspector.svelte:141
 msgid "The picture it replaced"
 msgstr "Изображение, которое оно заменило"
 
-#: web/lib/RenderPanel.svelte:199
+#: web/lib/RenderPanel.svelte:193
+msgid ""
+"The place is Immich's. With geocoding on (Settings, network), it names the district in the "
+"film's language, through the public Nominatim or network.geocoding_url."
+msgstr "Место берётся из Immich. При включённом геокодировании (Настройки, сеть) оно называет район на языке фильма через публичный Nominatim или network.geocoding_url."
+
+#: web/lib/RenderPanel.svelte:204
 msgid "The previewed track"
 msgstr "Прослушанный трек"
 
@@ -1254,11 +1271,11 @@ msgstr "Отменить решение"
 msgid "Updated {when}"
 msgstr "Обновлено {when}"
 
-#: web/lib/RenderPanel.svelte:208
+#: web/lib/RenderPanel.svelte:213
 msgid "Upload a track"
 msgstr "Загрузить трек"
 
-#: web/lib/RenderPanel.svelte:225
+#: web/lib/RenderPanel.svelte:230
 msgid "Upload the film to Immich"
 msgstr "Загрузить фильм в Immich"
 

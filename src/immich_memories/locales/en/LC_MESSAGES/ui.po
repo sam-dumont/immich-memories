@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 12:51+0200\n"
+"POT-Creation-Date: 2026-09-28 18:09+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -65,7 +65,7 @@ msgstr "After a period"
 msgid "Album"
 msgstr "Album"
 
-#: web/lib/RenderPanel.svelte:226
+#: web/lib/RenderPanel.svelte:231
 msgid "Album name"
 msgstr "Album name"
 
@@ -103,7 +103,7 @@ msgid "Anyone. Only pictures nothing held back: no detector flag, no private mom
 msgstr "Anyone. Only pictures nothing held back: no detector flag, no private moment."
 
 #: web/lib/RenderPanel.svelte:144 web/lib/RenderPanel.svelte:167 web/lib/RenderPanel.svelte:173
-#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:226
+#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:231
 #: web/routes/create/+page.svelte:424
 msgid "As configured"
 msgstr "As configured"
@@ -116,7 +116,7 @@ msgstr "As generate decides"
 msgid "Automatic"
 msgstr "Automatic"
 
-#: web/lib/RenderPanel.svelte:197
+#: web/lib/RenderPanel.svelte:202
 msgid "Automatic (as configured)"
 msgstr "Automatic (as configured)"
 
@@ -226,7 +226,7 @@ msgstr "Cleared {count} entries from the {cache}."
 msgid "Command"
 msgstr "Command"
 
-#: web/lib/SettingsEditor.svelte:72
+#: web/lib/SettingsEditor.svelte:71
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "Config file: {config_path}"
@@ -577,11 +577,11 @@ msgstr "Monthly Highlights"
 msgid "Multi-Person"
 msgstr "Multi-Person"
 
-#: web/lib/RenderPanel.svelte:195
+#: web/lib/RenderPanel.svelte:200
 msgid "Music"
 msgstr "Music"
 
-#: web/lib/RenderPanel.svelte:218
+#: web/lib/RenderPanel.svelte:223
 msgid "Music volume:"
 msgstr "Music volume:"
 
@@ -609,7 +609,7 @@ msgstr "No child output was retained for this run."
 msgid "No model read this cut: the rules chose every picture."
 msgstr "No model read this cut: the rules chose every picture."
 
-#: web/lib/RenderPanel.svelte:198
+#: web/lib/RenderPanel.svelte:203
 msgid "No music"
 msgstr "No music"
 
@@ -778,7 +778,7 @@ msgstr "Pool"
 msgid "Portrait"
 msgstr "Portrait"
 
-#: web/lib/RenderPanel.svelte:205
+#: web/lib/RenderPanel.svelte:210
 msgid "Preview a track"
 msgstr "Preview a track"
 
@@ -790,7 +790,7 @@ msgstr "Preview cache"
 msgid "Preview with these choices"
 msgstr "Preview with these choices"
 
-#: web/lib/RenderPanel.svelte:191
+#: web/lib/RenderPanel.svelte:196
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Privacy mode: blur every picture and scramble names"
 
@@ -854,7 +854,7 @@ msgstr "Remove this relationship"
 msgid "Removed"
 msgstr "Removed"
 
-#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:229
+#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:234
 msgid "Render"
 msgstr "Render"
 
@@ -1158,7 +1158,15 @@ msgstr ""
 msgid "The picture it replaced"
 msgstr "The picture it replaced"
 
-#: web/lib/RenderPanel.svelte:199
+#: web/lib/RenderPanel.svelte:193
+msgid ""
+"The place is Immich's. With geocoding on (Settings, network), it names the district in the "
+"film's language, through the public Nominatim or network.geocoding_url."
+msgstr ""
+"The place is Immich's. With geocoding on (Settings, network), it names the district in the "
+"film's language, through the public Nominatim or network.geocoding_url."
+
+#: web/lib/RenderPanel.svelte:204
 msgid "The previewed track"
 msgstr "The previewed track"
 
@@ -1255,11 +1263,11 @@ msgstr "Undo"
 msgid "Updated {when}"
 msgstr "Updated {when}"
 
-#: web/lib/RenderPanel.svelte:208
+#: web/lib/RenderPanel.svelte:213
 msgid "Upload a track"
 msgstr "Upload a track"
 
-#: web/lib/RenderPanel.svelte:225
+#: web/lib/RenderPanel.svelte:230
 msgid "Upload the film to Immich"
 msgstr "Upload the film to Immich"
 

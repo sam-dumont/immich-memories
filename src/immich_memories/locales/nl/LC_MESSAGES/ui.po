@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 12:51+0200\n"
+"POT-Creation-Date: 2026-09-28 18:09+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -65,7 +65,7 @@ msgstr "Na een periode"
 msgid "Album"
 msgstr "Album"
 
-#: web/lib/RenderPanel.svelte:226
+#: web/lib/RenderPanel.svelte:231
 msgid "Album name"
 msgstr "Albumnaam"
 
@@ -103,7 +103,7 @@ msgid "Anyone. Only pictures nothing held back: no detector flag, no private mom
 msgstr "Iedereen. Alleen beelden zonder beperkingen: geen detectiemelding, geen privémoment."
 
 #: web/lib/RenderPanel.svelte:144 web/lib/RenderPanel.svelte:167 web/lib/RenderPanel.svelte:173
-#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:226
+#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:231
 #: web/routes/create/+page.svelte:424
 msgid "As configured"
 msgstr "Zoals geconfigureerd"
@@ -116,7 +116,7 @@ msgstr "Zoals het genereren bepaalt"
 msgid "Automatic"
 msgstr "Automatisch"
 
-#: web/lib/RenderPanel.svelte:197
+#: web/lib/RenderPanel.svelte:202
 msgid "Automatic (as configured)"
 msgstr "Automatisch (zoals geconfigureerd)"
 
@@ -226,7 +226,7 @@ msgstr "{count} items verwijderd uit {cache}."
 msgid "Command"
 msgstr "Opdracht"
 
-#: web/lib/SettingsEditor.svelte:72
+#: web/lib/SettingsEditor.svelte:71
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "Configuratiebestand: {config_path}"
@@ -360,7 +360,9 @@ msgstr ""
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
-msgstr "Elke instelling en waar de waarde vandaan komt. Wat je hier opslaat, gaat naar de database; config.yaml en de omgeving worden nooit beschreven en hebben voorrang hierop."
+msgstr ""
+"Elke instelling en waar de waarde vandaan komt. Wat je hier opslaat, gaat naar de database; "
+"config.yaml en de omgeving worden nooit beschreven en hebben voorrang hierop."
 
 #: web/routes/create/+page.svelte:377
 msgid "Every trip of the year"
@@ -577,11 +579,11 @@ msgstr "Hoogtepunten van de maand"
 msgid "Multi-Person"
 msgstr "Meerdere personen"
 
-#: web/lib/RenderPanel.svelte:195
+#: web/lib/RenderPanel.svelte:200
 msgid "Music"
 msgstr "Muziek"
 
-#: web/lib/RenderPanel.svelte:218
+#: web/lib/RenderPanel.svelte:223
 msgid "Music volume:"
 msgstr "Muziekvolume:"
 
@@ -609,7 +611,7 @@ msgstr "Er is geen onderliggend resultaat bewaard voor deze uitvoering."
 msgid "No model read this cut: the rules chose every picture."
 msgstr "Geen model heeft deze montage gelezen: de regels kozen elk beeld."
 
-#: web/lib/RenderPanel.svelte:198
+#: web/lib/RenderPanel.svelte:203
 msgid "No music"
 msgstr "Geen muziek"
 
@@ -778,7 +780,7 @@ msgstr "Beschikbare media"
 msgid "Portrait"
 msgstr "Staand"
 
-#: web/lib/RenderPanel.svelte:205
+#: web/lib/RenderPanel.svelte:210
 msgid "Preview a track"
 msgstr "Een nummer beluisteren"
 
@@ -790,7 +792,7 @@ msgstr "Voorbeeldcache"
 msgid "Preview with these choices"
 msgstr "Voorbeeld met deze selectie"
 
-#: web/lib/RenderPanel.svelte:191
+#: web/lib/RenderPanel.svelte:196
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Privémodus: alle beelden vervagen en namen verhullen"
 
@@ -854,7 +856,7 @@ msgstr "Deze relatie verwijderen"
 msgid "Removed"
 msgstr "Verwijderd"
 
-#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:229
+#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:234
 msgid "Render"
 msgstr "Renderen"
 
@@ -965,7 +967,9 @@ msgstr "Seizoen"
 msgid ""
 "Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
 "config.yaml."
-msgstr "Geheimen kunnen hier pas worden opgeslagen als {name} is ingesteld. Stel het in, of bewaar ze in de omgeving of config.yaml."
+msgstr ""
+"Geheimen kunnen hier pas worden opgeslagen als {name} is ingesteld. Stel het in, of bewaar ze"
+" in de omgeving of config.yaml."
 
 #: web/lib/SettingsEditor.svelte:37
 #, python-brace-format
@@ -1120,7 +1124,10 @@ msgstr "De data en plaatsen, nooit een model"
 msgid ""
 "The environment wins, then config.yaml, then what is saved here, then the default. A setting "
 "either of the first two sets is greyed out: change it where its label says."
-msgstr "De omgeving heeft voorrang, dan config.yaml, dan wat hier is opgeslagen, dan de standaardwaarde. Een instelling die door een van de eerste twee wordt bepaald, is grijs weergegeven: wijzig deze waar het label aangeeft."
+msgstr ""
+"De omgeving heeft voorrang, dan config.yaml, dan wat hier is opgeslagen, dan de "
+"standaardwaarde. Een instelling die door een van de eerste twee wordt bepaald, is grijs "
+"weergegeven: wijzig deze waar het label aangeeft."
 
 #: web/routes/runs/[run_id]/+page.svelte:142
 msgid "The film"
@@ -1146,13 +1153,22 @@ msgstr "Het model, als er een is ingesteld"
 msgid ""
 "The people registry: who is close, their roles, and how they relate. `people scan` writes the"
 " guesses; your answers stay across scans. `people export` writes it out as YAML."
-msgstr "Het personenregister: wie dichtbij staat, hun rollen en hoe ze verbonden zijn. `people scan` schrijft de vermoedens; je antwoorden blijven bewaard over scans heen. `people export` schrijft het uit als YAML."
+msgstr ""
+"Het personenregister: wie dichtbij staat, hun rollen en hoe ze verbonden zijn. `people scan` "
+"schrijft de vermoedens; je antwoorden blijven bewaard over scans heen. `people export` "
+"schrijft het uit als YAML."
 
 #: web/lib/ShotInspector.svelte:141
 msgid "The picture it replaced"
 msgstr "Het beeld dat het verving"
 
-#: web/lib/RenderPanel.svelte:199
+#: web/lib/RenderPanel.svelte:193
+msgid ""
+"The place is Immich's. With geocoding on (Settings, network), it names the district in the "
+"film's language, through the public Nominatim or network.geocoding_url."
+msgstr "De plaats is die van Immich. Met geocodering aan (Instellingen, netwerk) noemt hij de wijk in de taal van de film, via de openbare Nominatim of network.geocoding_url."
+
+#: web/lib/RenderPanel.svelte:204
 msgid "The previewed track"
 msgstr "Het beluisterde nummer"
 
@@ -1251,11 +1267,11 @@ msgstr "Ongedaan maken"
 msgid "Updated {when}"
 msgstr "Bijgewerkt {when}"
 
-#: web/lib/RenderPanel.svelte:208
+#: web/lib/RenderPanel.svelte:213
 msgid "Upload a track"
 msgstr "Een nummer uploaden"
 
-#: web/lib/RenderPanel.svelte:225
+#: web/lib/RenderPanel.svelte:230
 msgid "Upload the film to Immich"
 msgstr "De film naar Immich uploaden"
 

@@ -238,6 +238,12 @@ class KernelTitleRenderer:
                 self.gpu.temp, self.gpu.frame, self._blur_kernel_np, cfg.blur_radius
             )
 
+        # WHY: a content-backed title hard-cuts to its clip, so the sharp end
+        # of the deblur must be the clip itself. The look (vignette, grain,
+        # bokeh) belongs to the blurred picture and leaves with the blur;
+        # left on, it snapped off at the cut and the picture visibly jumped.
+        look = _deblur_mix(progress, cfg) if has_animated_bg else 1.0
+
         # 3. Color pulse (GPU in-place, non-animated only)
         if not has_animated_bg:
             brightness_delta = cfg.color_pulse_amount * math.sin(progress * 2 * math.pi)
@@ -245,10 +251,10 @@ class KernelTitleRenderer:
             kernels._apply_color_pulse(self.gpu.frame, brightness_delta, saturation_mult)
 
         # 4. Vignette + noise (FUSED — one kernel launch instead of two)
-        vignette_strength = cfg.vignette_strength + cfg.vignette_pulse * math.sin(
-            progress * 2 * math.pi
+        vignette_strength = look * (
+            cfg.vignette_strength + cfg.vignette_pulse * math.sin(progress * 2 * math.pi)
         )
-        noise_intensity = (
+        noise_intensity = look * (
             cfg.noise_intensity if (cfg.enable_noise and cfg.noise_intensity > 0) else 0.0
         )
         noise_seed = frame_number * 12345 % 1000000 if noise_intensity > 0 else 0
@@ -257,7 +263,7 @@ class KernelTitleRenderer:
         )
 
         # 5. Particles (GPU)
-        self._render_particles(progress, cfg)
+        self._render_particles(progress, cfg, look)
 
         # 6. Text (GPU)
         self.text.render(t, progress, title, subtitle)
@@ -402,7 +408,7 @@ class KernelTitleRenderer:
 
         self._aurora_blobs = blobs
 
-    def _render_particles(self, progress: float, cfg: KernelTitleConfig):
+    def _render_particles(self, progress: float, cfg: KernelTitleConfig, opacity: float = 1.0):
         """Render bokeh or fireworks particles (GPU-resident)."""
         if not cfg.enable_bokeh:
             return
@@ -415,5 +421,5 @@ class KernelTitleRenderer:
         kernels._render_bokeh_particles(
             self.gpu.bokeh, self.particles.buffer, self.particles.count, cfg.width, cfg.height
         )
-        kernels._composite_rgba_over(self.gpu.frame, self.gpu.bokeh, self.gpu.temp, 1.0)
+        kernels._composite_rgba_over(self.gpu.frame, self.gpu.bokeh, self.gpu.temp, opacity)
         kernels._copy_field_3(self.gpu.temp, self.gpu.frame)

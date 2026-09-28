@@ -1079,6 +1079,9 @@ def test_generation_without_upload_completes_artifact_as_not_requested(
     assert saved.delivery_status is DeliveryStatus.NOT_REQUESTED
     assert saved.delivery_attempts == 0
     assert saved.automation_attempt_id == "attempt-generation"
+    from immich_memories.tracking.span_store import SpanStore
+
+    assert SpanStore(RunDatabase().store).load(saved.run_id).spans
 
 
 @pytest.mark.parametrize("upload_enabled", [False, True], ids=["not-requested", "delivered"])

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 12:51+0200\n"
+"POT-Creation-Date: 2026-09-28 18:09+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -65,7 +65,7 @@ msgstr "기간 후"
 msgid "Album"
 msgstr "앨범"
 
-#: web/lib/RenderPanel.svelte:226
+#: web/lib/RenderPanel.svelte:231
 msgid "Album name"
 msgstr "앨범 이름"
 
@@ -101,7 +101,7 @@ msgid "Anyone. Only pictures nothing held back: no detector flag, no private mom
 msgstr "누구나. 감지기 표시나 사적인 순간 등 제한이 없는 이미지만 사용합니다."
 
 #: web/lib/RenderPanel.svelte:144 web/lib/RenderPanel.svelte:167 web/lib/RenderPanel.svelte:173
-#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:226
+#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:231
 #: web/routes/create/+page.svelte:424
 msgid "As configured"
 msgstr "설정대로"
@@ -114,7 +114,7 @@ msgstr "생성 시 결정되는 대로"
 msgid "Automatic"
 msgstr "자동"
 
-#: web/lib/RenderPanel.svelte:197
+#: web/lib/RenderPanel.svelte:202
 msgid "Automatic (as configured)"
 msgstr "자동(설정대로)"
 
@@ -222,7 +222,7 @@ msgstr "{cache}에서 {count}개 항목을 지웠습니다."
 msgid "Command"
 msgstr "명령어"
 
-#: web/lib/SettingsEditor.svelte:72
+#: web/lib/SettingsEditor.svelte:71
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "설정 파일: {config_path}"
@@ -568,11 +568,11 @@ msgstr "이달의 하이라이트"
 msgid "Multi-Person"
 msgstr "여러 인물"
 
-#: web/lib/RenderPanel.svelte:195
+#: web/lib/RenderPanel.svelte:200
 msgid "Music"
 msgstr "음악"
 
-#: web/lib/RenderPanel.svelte:218
+#: web/lib/RenderPanel.svelte:223
 msgid "Music volume:"
 msgstr "음악 음량:"
 
@@ -598,7 +598,7 @@ msgstr "이 작업에 연결된 결과가 저장되지 않았습니다."
 msgid "No model read this cut: the rules chose every picture."
 msgstr "이 편집은 모델이 읽지 않았습니다. 모든 이미지를 규칙이 골랐습니다."
 
-#: web/lib/RenderPanel.svelte:198
+#: web/lib/RenderPanel.svelte:203
 msgid "No music"
 msgstr "음악 없음"
 
@@ -767,7 +767,7 @@ msgstr "후보 미디어"
 msgid "Portrait"
 msgstr "세로"
 
-#: web/lib/RenderPanel.svelte:205
+#: web/lib/RenderPanel.svelte:210
 msgid "Preview a track"
 msgstr "트랙 미리듣기"
 
@@ -779,7 +779,7 @@ msgstr "미리보기 캐시"
 msgid "Preview with these choices"
 msgstr "이 선택으로 미리보기"
 
-#: web/lib/RenderPanel.svelte:191
+#: web/lib/RenderPanel.svelte:196
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "개인정보 보호 모드: 모든 이미지를 흐리게 하고 이름을 가립니다"
 
@@ -843,7 +843,7 @@ msgstr "이 관계 삭제"
 msgid "Removed"
 msgstr "뺌"
 
-#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:229
+#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:234
 msgid "Render"
 msgstr "렌더링"
 
@@ -1109,7 +1109,9 @@ msgstr "날짜와 장소만, 모델은 사용하지 않음"
 msgid ""
 "The environment wins, then config.yaml, then what is saved here, then the default. A setting "
 "either of the first two sets is greyed out: change it where its label says."
-msgstr "환경 변수가 우선하고, 그다음 config.yaml, 그다음 여기에 저장된 값, 마지막으로 기본값이 적용됩니다. 앞의 두 가지 중 하나로 설정된 항목은 회색으로 표시되며, 레이블에 적힌 위치에서 변경하세요."
+msgstr ""
+"환경 변수가 우선하고, 그다음 config.yaml, 그다음 여기에 저장된 값, 마지막으로 기본값이 적용됩니다. 앞의 두 가지 중 하나로 설정된 항목은 회색으로 "
+"표시되며, 레이블에 적힌 위치에서 변경하세요."
 
 #: web/routes/runs/[run_id]/+page.svelte:142
 msgid "The film"
@@ -1135,13 +1137,21 @@ msgstr "설정된 경우 모델"
 msgid ""
 "The people registry: who is close, their roles, and how they relate. `people scan` writes the"
 " guesses; your answers stay across scans. `people export` writes it out as YAML."
-msgstr "인물 등록부: 누가 가깝고, 그들의 역할, 서로 어떻게 관계되는지. `people scan`이 추측을 기록하고, 답변은 스캔 후에도 유지됩니다. `people export`는 이를 YAML로 내보냅니다."
+msgstr ""
+"인물 등록부: 누가 가깝고, 그들의 역할, 서로 어떻게 관계되는지. `people scan`이 추측을 기록하고, 답변은 스캔 후에도 유지됩니다. `people "
+"export`는 이를 YAML로 내보냅니다."
 
 #: web/lib/ShotInspector.svelte:141
 msgid "The picture it replaced"
 msgstr "대체된 이미지"
 
-#: web/lib/RenderPanel.svelte:199
+#: web/lib/RenderPanel.svelte:193
+msgid ""
+"The place is Immich's. With geocoding on (Settings, network), it names the district in the "
+"film's language, through the public Nominatim or network.geocoding_url."
+msgstr "장소는 Immich의 것입니다. 지오코딩을 켜면(설정, 네트워크) 공개 Nominatim 또는 network.geocoding_url을 통해 영상의 언어로 동네 이름을 표시합니다."
+
+#: web/lib/RenderPanel.svelte:204
 msgid "The previewed track"
 msgstr "미리 들은 트랙"
 
@@ -1238,11 +1248,11 @@ msgstr "되돌리기"
 msgid "Updated {when}"
 msgstr "{when} 업데이트됨"
 
-#: web/lib/RenderPanel.svelte:208
+#: web/lib/RenderPanel.svelte:213
 msgid "Upload a track"
 msgstr "트랙 업로드"
 
-#: web/lib/RenderPanel.svelte:225
+#: web/lib/RenderPanel.svelte:230
 msgid "Upload the film to Immich"
 msgstr "영상을 Immich에 업로드"
 

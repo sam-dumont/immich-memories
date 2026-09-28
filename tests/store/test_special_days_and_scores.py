@@ -1,16 +1,14 @@
-"""The special-days catalogue and banked asset scores in the store, through their public faces."""
+"""The special-days catalogue in the store, through its public faces."""
 
 from __future__ import annotations
 
 import json
-from datetime import date
 from unittest.mock import patch
 
 import pytest
 from click.testing import CliRunner
 
 from immich_memories.automation.catalogue import entries_from, load_catalogue, save_catalogue
-from immich_memories.cache.asset_score_cache import AssetScoreCache
 from immich_memories.config_loader import Config
 from immich_memories.db.bootstrap import SCHEMA_ENV, URL_ENV
 
@@ -96,37 +94,3 @@ def test_the_cli_refuses_a_file_that_is_not_a_catalogue(cli_store, tmp_path):
 
     assert result.exit_code == 1
     assert load_catalogue(cli_store) == CATALOGUE
-
-
-def test_a_score_is_banked_per_prompt_version(store):
-    scores = AssetScoreCache(store)
-    scores.save_asset_score("a1", "video", 0.4, 0.5, llm_interest=0.7, model_version="v1")
-    scores.save_asset_score("a1", "video", 0.4, 0.6, llm_interest=0.9, model_version="v1")
-    scores.save_asset_score("a1", "video", 0.4, 0.8, model_version="v2")
-    scores.save_asset_score("p1", "photo", 0.2, 0.2)
-
-    banked = {(row["asset_id"], row["model_version"]): row for row in scores.all_scores()}
-    stats = scores.get_cache_stats()
-
-    assert set(banked) == {("a1", "v1"), ("a1", "v2"), ("p1", "")}
-    assert banked[("a1", "v1")]["combined_score"] == 0.6
-    assert (stats["total"], stats["assets"], stats["with_llm"]) == (3, 2, 1)
-    assert stats["by_type"] == {"video": 2, "photo": 1}
-    assert date.fromisoformat(stats["oldest"][:10]) <= date.fromisoformat(stats["newest"][:10])
-
-
-def test_the_cache_cli_exports_and_reimports_scores(cli_store, tmp_path):
-    AssetScoreCache(cli_store).save_asset_score(
-        "a1", "video", 0.4, 0.5, llm_category="party", model_version="v1"
-    )
-    exported = tmp_path / "scores.json"
-
-    _cli("cache", "export", str(exported))
-    rows = json.loads(exported.read_text())
-    rows[0]["combined_score"] = 0.9
-    exported.write_text(json.dumps(rows))
-    _cli("cache", "import", str(exported))
-
-    (row,) = AssetScoreCache(cli_store).all_scores()
-    assert (row["combined_score"], row["llm_category"]) == (0.9, "party")
-    assert "Scored assets" in _cli("cache", "stats")

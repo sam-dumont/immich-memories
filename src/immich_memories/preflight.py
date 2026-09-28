@@ -620,7 +620,6 @@ HOST_PATH_KEYS = (
     "editorial.preparation.head_bundle",
     "editorial.preparation.detector_python",
     "editorial.preparation.detector_cache_dir",
-    "triage.bundle",
 )
 
 
@@ -674,6 +673,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
         List of check results.
     """
     from immich_memories.preflight_homebase import check_homebase
+    from immich_memories.preflight_music import check_music
     from immich_memories.preflight_network import outside_call_checks
     from immich_memories.preflight_render import check_render_worker
     from immich_memories.preflight_run import (
@@ -696,6 +696,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
         check_output_directory(config.output.output_path),
         check_notifications(config),
         check_render_worker(config),
+        check_music(config),
         check_hardware(),
         *outside_call_checks(config),
     ]

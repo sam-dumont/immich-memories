@@ -104,6 +104,29 @@ class RunDatabase:
         runs = self._select_runs(sa.select(pipeline_runs).where(_RUNS.run_id == run_id))
         return runs[0] if runs else None
 
+    def describe_run(self, run: RunMetadata) -> None:
+        """Fill resolved inputs on the run opened before discovery, preserving its lifecycle."""
+        row = run_to_row(run)
+        names = (
+            "person_name",
+            "person_id",
+            "date_range_start",
+            "date_range_end",
+            "target_duration_seconds",
+            "memory_type",
+            "memory_key",
+            "memory_category",
+            "memory_people",
+            "source",
+            "automation_attempt_id",
+        )
+        with self.store.begin() as conn:
+            conn.execute(
+                sa.update(pipeline_runs)
+                .where(_RUNS.run_id == run.run_id)
+                .values({name: row[name] for name in names})
+            )
+
     def delete_run(self, run_id: str) -> bool:
         """Delete a run and its stats."""
         with self.store.begin() as conn:
@@ -252,18 +275,6 @@ class RunDatabase:
             },
             raise_invalid_delivery_transition,
         )
-
-    def mark_stale_runs_as_interrupted(self) -> int:
-        """Mark any 'running' runs as 'interrupted' (startup cleanup)."""
-        with self.store.begin() as conn:
-            count = conn.execute(
-                sa.update(pipeline_runs)
-                .where(_RUNS.status == "running")
-                .values(status="interrupted")
-            ).rowcount
-        if count > 0:
-            logger.info(f"Marked {count} stale run(s) as interrupted")
-        return count
 
     def _pending_deliveries(self, source: str) -> sa.Select:
         return sa.select(_RUNS.run_id, _RUNS.output_path).where(

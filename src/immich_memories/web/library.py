@@ -107,12 +107,8 @@ def trip_finder(config: Annotated[Config, Depends(current_config)]) -> TripFinde
     from immich_memories.analysis.trip_detection import geocoder_for
     from immich_memories.analysis.trip_discovery import discover_year_trips
     from immich_memories.api.sync_client import SyncImmichClient
-    from immich_memories.processing.clip_caption import resolve_caption_locale
 
-    geocoder = geocoder_for(
-        enabled=config.network.geocoding,
-        language=resolve_caption_locale(config.title_screens.locale),
-    )
+    geocoder = geocoder_for(config)
 
     def find(year: int, people: list[str]) -> list[Any]:
         with SyncImmichClient(
@@ -245,9 +241,32 @@ class HolidayChoice(BaseModel):
     name: str
 
 
+def holiday_country(config: Annotated[Config, Depends(current_config)]) -> str:
+    """The country whose calendar a holiday brief keeps: the home base's, as `generate` reads it."""
+    from immich_memories.home_country import home_country
+
+    return home_country(config)
+
+
 @router.get("/holidays", response_model=list[HolidayChoice])
-def holidays(lang: str = "en") -> list[HolidayChoice]:
-    """The holidays the pipeline resolves, named in the page's language; any MM-DD works too."""
+def holidays(
+    country: Annotated[str, Depends(holiday_country)], lang: str = "en"
+) -> list[HolidayChoice]:
+    """The holidays the pipeline resolves: the known ones, named in the page's language, then
+    the home country's other public holidays by their own name. Any MM-DD works too."""
+    from immich_memories.memory_types.date_builders import holidays_of, resolve_holiday
     from immich_memories.memory_types.factory import holiday_choices
 
-    return [HolidayChoice(key=key, name=name) for key, name in holiday_choices(lang).items()]
+    year = date.today().year
+    known = holiday_choices(lang)
+    taken = set()
+    for key in known:
+        try:
+            taken.add(resolve_holiday(key, year, country=country))
+        except ValueError:
+            continue
+    public = [name for day, name in sorted(holidays_of(year, country).items()) if day not in taken]
+    return [
+        *(HolidayChoice(key=key, name=name) for key, name in known.items()),
+        *(HolidayChoice(key=name, name=name) for name in dict.fromkeys(public)),
+    ]

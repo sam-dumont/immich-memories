@@ -118,6 +118,10 @@ class RunTracker:
 
         self.db.save_run(run)
         self._run = run
+        from immich_memories.tracking.timing import active
+
+        if collected := active():
+            collected.run_id = self.run_id
         logger.info(f"Started run {self.run_id}")
 
         return self.run_id
@@ -448,6 +452,11 @@ class RunTracker:
             logger.debug(f"Saved run metadata to {metadata_path}")
         except (OSError, ValueError):
             logger.warning("Failed to refresh run metadata sidecar")
+
+    @property
+    def current_run(self) -> RunMetadata | None:
+        """Get the current run metadata."""
+        return self._run
 
 
 def format_duration(seconds: float) -> str:

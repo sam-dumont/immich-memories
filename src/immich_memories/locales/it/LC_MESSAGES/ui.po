@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 12:51+0200\n"
+"POT-Creation-Date: 2026-09-28 18:09+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: it\n"
@@ -65,7 +65,7 @@ msgstr "Dopo un periodo"
 msgid "Album"
 msgstr "Album"
 
-#: web/lib/RenderPanel.svelte:226
+#: web/lib/RenderPanel.svelte:231
 msgid "Album name"
 msgstr "Nome dell’album"
 
@@ -103,7 +103,7 @@ msgid "Anyone. Only pictures nothing held back: no detector flag, no private mom
 msgstr "Chiunque. Solo immagini senza restrizioni: nessuna segnalazione, nessun momento privato."
 
 #: web/lib/RenderPanel.svelte:144 web/lib/RenderPanel.svelte:167 web/lib/RenderPanel.svelte:173
-#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:226
+#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:231
 #: web/routes/create/+page.svelte:424
 msgid "As configured"
 msgstr "Come configurato"
@@ -116,7 +116,7 @@ msgstr "Come decide la generazione"
 msgid "Automatic"
 msgstr "Automatica"
 
-#: web/lib/RenderPanel.svelte:197
+#: web/lib/RenderPanel.svelte:202
 msgid "Automatic (as configured)"
 msgstr "Automatica (come configurato)"
 
@@ -226,7 +226,7 @@ msgstr "{count} voci rimosse da {cache}."
 msgid "Command"
 msgstr "Comando"
 
-#: web/lib/SettingsEditor.svelte:72
+#: web/lib/SettingsEditor.svelte:71
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "File di configurazione: {config_path}"
@@ -360,7 +360,9 @@ msgstr ""
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
-msgstr "Ogni impostazione e da dove viene il suo valore. Quello che salvi qui va nel database; config.yaml e l'ambiente non vengono mai scritti e hanno la precedenza su di esso."
+msgstr ""
+"Ogni impostazione e da dove viene il suo valore. Quello che salvi qui va nel database; "
+"config.yaml e l'ambiente non vengono mai scritti e hanno la precedenza su di esso."
 
 #: web/routes/create/+page.svelte:377
 msgid "Every trip of the year"
@@ -575,11 +577,11 @@ msgstr "Momenti del mese"
 msgid "Multi-Person"
 msgstr "Più persone"
 
-#: web/lib/RenderPanel.svelte:195
+#: web/lib/RenderPanel.svelte:200
 msgid "Music"
 msgstr "Musica"
 
-#: web/lib/RenderPanel.svelte:218
+#: web/lib/RenderPanel.svelte:223
 msgid "Music volume:"
 msgstr "Volume della musica:"
 
@@ -607,7 +609,7 @@ msgstr "Nessun risultato associato conservato per questa esecuzione."
 msgid "No model read this cut: the rules chose every picture."
 msgstr "Nessun modello ha letto questo montaggio: le regole hanno scelto ogni immagine."
 
-#: web/lib/RenderPanel.svelte:198
+#: web/lib/RenderPanel.svelte:203
 msgid "No music"
 msgstr "Nessuna musica"
 
@@ -653,7 +655,9 @@ msgstr "No, non lo sono"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:132
 msgid "Nobody this memory is about was recognised here; they were, elsewhere in the same episode."
-msgstr "Nessuno di chi parla questo ricordo è stato riconosciuto qui; lo è stato altrove, nello stesso episodio."
+msgstr ""
+"Nessuno di chi parla questo ricordo è stato riconosciuto qui; lo è stato altrove, nello "
+"stesso episodio."
 
 #: web/routes/settings/people/+page.svelte:107
 msgid "Nobody yet. Rescan the library to read who is in it."
@@ -776,7 +780,7 @@ msgstr "Contenuti disponibili"
 msgid "Portrait"
 msgstr "Verticale"
 
-#: web/lib/RenderPanel.svelte:205
+#: web/lib/RenderPanel.svelte:210
 msgid "Preview a track"
 msgstr "Ascolta un brano"
 
@@ -788,7 +792,7 @@ msgstr "Cache di anteprima"
 msgid "Preview with these choices"
 msgstr "Anteprima con questa selezione"
 
-#: web/lib/RenderPanel.svelte:191
+#: web/lib/RenderPanel.svelte:196
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Modalità privacy: sfoca ogni immagine e nasconde i nomi"
 
@@ -852,7 +856,7 @@ msgstr "Rimuovi questa relazione"
 msgid "Removed"
 msgstr "Tolta"
 
-#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:229
+#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:234
 msgid "Render"
 msgstr "Renderizza"
 
@@ -963,7 +967,9 @@ msgstr "Stagione"
 msgid ""
 "Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
 "config.yaml."
-msgstr "I segreti non possono essere salvati qui finché {name} non è impostato. Impostalo, oppure tienili nell'ambiente o in config.yaml."
+msgstr ""
+"I segreti non possono essere salvati qui finché {name} non è impostato. Impostalo, oppure "
+"tienili nell'ambiente o in config.yaml."
 
 #: web/lib/SettingsEditor.svelte:37
 #, python-brace-format
@@ -1118,7 +1124,10 @@ msgstr "Le date e i luoghi, mai un modello"
 msgid ""
 "The environment wins, then config.yaml, then what is saved here, then the default. A setting "
 "either of the first two sets is greyed out: change it where its label says."
-msgstr "L'ambiente ha la precedenza, poi config.yaml, poi quanto salvato qui, poi il valore predefinito. Un'impostazione definita da uno dei primi due appare in grigio: modificala dove indicato dalla sua etichetta."
+msgstr ""
+"L'ambiente ha la precedenza, poi config.yaml, poi quanto salvato qui, poi il valore "
+"predefinito. Un'impostazione definita da uno dei primi due appare in grigio: modificala dove "
+"indicato dalla sua etichetta."
 
 #: web/routes/runs/[run_id]/+page.svelte:142
 msgid "The film"
@@ -1144,13 +1153,22 @@ msgstr "Il modello, quando ne è configurato uno"
 msgid ""
 "The people registry: who is close, their roles, and how they relate. `people scan` writes the"
 " guesses; your answers stay across scans. `people export` writes it out as YAML."
-msgstr "Il registro delle persone: chi è vicino, i loro ruoli e come sono legati tra loro. `people scan` scrive le ipotesi; le tue risposte restano tra una scansione e l'altra. `people export` le esporta come YAML."
+msgstr ""
+"Il registro delle persone: chi è vicino, i loro ruoli e come sono legati tra loro. `people "
+"scan` scrive le ipotesi; le tue risposte restano tra una scansione e l'altra. `people export`"
+" le esporta come YAML."
 
 #: web/lib/ShotInspector.svelte:141
 msgid "The picture it replaced"
 msgstr "L'immagine che ha sostituito"
 
-#: web/lib/RenderPanel.svelte:199
+#: web/lib/RenderPanel.svelte:193
+msgid ""
+"The place is Immich's. With geocoding on (Settings, network), it names the district in the "
+"film's language, through the public Nominatim or network.geocoding_url."
+msgstr "Il luogo è quello di Immich. Con la geocodifica attiva (Impostazioni, rete), indica il quartiere nella lingua del film, tramite il Nominatim pubblico o network.geocoding_url."
+
+#: web/lib/RenderPanel.svelte:204
 msgid "The previewed track"
 msgstr "Il brano ascoltato"
 
@@ -1251,11 +1269,11 @@ msgstr "Annulla decisione"
 msgid "Updated {when}"
 msgstr "Aggiornato {when}"
 
-#: web/lib/RenderPanel.svelte:208
+#: web/lib/RenderPanel.svelte:213
 msgid "Upload a track"
 msgstr "Carica un brano"
 
-#: web/lib/RenderPanel.svelte:225
+#: web/lib/RenderPanel.svelte:230
 msgid "Upload the film to Immich"
 msgstr "Carica il film su Immich"
 

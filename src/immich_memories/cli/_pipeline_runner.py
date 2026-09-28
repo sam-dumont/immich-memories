@@ -39,6 +39,7 @@ from immich_memories.operations.auto_output import NOTHING_WORTH_A_FILM
 from immich_memories.operations.run_index import run_id_for_attempt
 from immich_memories.operations.storyboard import read_storyboard
 from immich_memories.timeperiod import DateRange
+from immich_memories.tracking.timed import timed
 
 logger = logging.getLogger(__name__)
 
@@ -183,24 +184,77 @@ def _finish_without_rendering(
     )
     print_generation_preview(preview)
     progress.update(task, completed=100)
-    attempt = _attempt_dir_of(pipeline_result)
-    if attempt is not None:
-        from immich_memories.operations.run_index import record_cut_run
-
-        run_id = record_cut_run(
-            config,
-            attempt,
-            memory_type=memory_type,
-            date_range=(date_range.start.date(), date_range.end.date()),
-            clips_selected=len(selected_clips),
-            target_duration_seconds=timeline_plan.target_duration,
-            **cut_run,
-        )
+    run_id = _keep_cut_as_run(
+        config,
+        _attempt_dir_of(pipeline_result),
+        memory_type=memory_type,
+        date_range=date_range,
+        clips_analyzed=len(assets) + len(photo_assets or []),
+        clips_selected=len(selected_clips),
+        target_seconds=timeline_plan.target_duration,
+        cut_run=cut_run,
+    )
+    if run_id:
         print_info(
             f"Kept the cut as run {run_id}: `runs story {run_id}` reads it, "
             f"`runs render {run_id}` renders it."
         )
     return output_path, should_upload, album_name
+
+
+def _keep_cut_as_run(
+    config: Config,
+    attempt: Path | None,
+    *,
+    memory_type: str | None,
+    date_range: DateRange,
+    clips_analyzed: int,
+    clips_selected: int,
+    target_seconds: float,
+    cut_run: dict,
+) -> str | None:
+    """Record a cut that stopped before rendering as a run with no film yet.
+
+    The CLI run opened before discovery is that run: it is described with the cut's scope,
+    completed without an output path (a memory is made by its film, not its cut), and linked to
+    the attempt the web client and `runs render` read. Without an observed run, a run of its
+    own is recorded instead.
+    """
+    from dataclasses import replace
+
+    from immich_memories.operations.run_index import record_cut_run, record_run_attempt
+    from immich_memories.tracking.run_observations import current_tracker
+
+    tracker = current_tracker()
+    if tracker is None or tracker.current_run is None:
+        if attempt is None:
+            return None
+        return record_cut_run(
+            config,
+            attempt,
+            memory_type=memory_type,
+            date_range=(date_range.start.date(), date_range.end.date()),
+            clips_selected=clips_selected,
+            target_duration_seconds=target_seconds,
+            **cut_run,
+        )
+    tracker.db.describe_run(
+        replace(
+            tracker.current_run,
+            memory_type=memory_type,
+            memory_key=cut_run.get("memory_key"),
+            memory_people=tuple(cut_run.get("people") or ()),
+            person_name=cut_run.get("person_name"),
+            source=cut_run.get("source") or "manual",
+            date_range_start=date_range.start.date(),
+            date_range_end=date_range.end.date(),
+            target_duration_seconds=round(target_seconds),
+        )
+    )
+    tracker.complete_run(clips_analyzed=clips_analyzed, clips_selected=clips_selected)
+    if attempt is not None:
+        record_run_attempt(tracker.run_id, attempt, "", store=tracker.db.store)
+    return tracker.run_id
 
 
 def _finish_preparation(
@@ -338,6 +392,7 @@ def _keep_cut_titles(
 
 
 @llm_metrics.counted
+@timed("pipeline")
 def run_pipeline_and_generate(
     *,
     assets: list,
@@ -387,6 +442,9 @@ def run_pipeline_and_generate(
 
     Returns (result_path, should_upload, album_name).
     """
+    from immich_memories.tracking.report_context import record_assets
+
+    record_assets([*assets, *(photo_assets or [])])
     from immich_memories.analysis.editorial_runtime import build_smart_pipeline
     from immich_memories.analysis.smart_pipeline import PipelineConfig
     from immich_memories.cache.thumbnail_cache import ThumbnailCache

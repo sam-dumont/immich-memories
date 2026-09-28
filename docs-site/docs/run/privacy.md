@@ -71,7 +71,7 @@ touches nothing.
 | `llm.base_url` (caption provider) | explicit `advanced.editorial.preparation.caption_provider: llm`, on any tier | synthetic schema controls, then missing picture tiles and candidate video frame strips; configured LLM credentials | off; existing valid SmolVLM captions are reused first |
 | `inference.facts_base_url` | preparation, when set | each picture's preview, for the heads and detectors | unset: the app runs them itself |
 | `render.worker_base_url` | rendering on another box | the chosen cut, plus your Immich URL and API key so the worker can fetch the clips | unset: renders here |
-| `nominatim.openstreetmap.org` | `network.geocoding: true` | each trip's centre, and the rounded coordinates of places the film shows | off |
+| `nominatim.openstreetmap.org`, or your `network.geocoding_url` | `network.geocoding: true` | each trip's centre, and the coordinates of every clip on the cut, home included, rounded to about a kilometre, once per place | off |
 | `server.arcgisonline.com` | `network.map_tiles: true` | tile requests over the trip area and your home base | off |
 | `ace_step.api_url`, `musicgen.base_url` | AI music through a remote API | mood, tempo and genre text; MusicGen is also sent the generated track, for stem separation | off |
 | Apprise or ntfy targets | `notifications.enabled: true` | memory type, outcome, duration, output path, a redacted error tail; a frame if `attach_thumbnail: true` | off |
@@ -133,23 +133,36 @@ Both off. Both worth turning on if you are fine with what they send.
 ```yaml
 network:
   geocoding: false
+  geocoding_url: ""       # a self-hosted Nominatim, e.g. http://nominatim.lan:8080
   map_tiles: false
 ```
 
-**`geocoding`** asks Nominatim about each trip's centre and about the places the cut actually
-shows, rounded to 2 decimals (about a kilometre): one request per place at Nominatim's one a second,
-cached under `cache.directory/place-names/`. Only clips that already show a place are asked about,
-so home and the neighbourhoods you see every week are never sent, and the library itself is never
-geocoded. What it buys: city names in the film's language ("Nicosie" instead of "Nicosia"). Trips
-are named at the right scale without it, from what Immich already stored, and country names are
-translated offline either way. A nightly `auto run` that finds a trip geocodes it the same way.
+**`geocoding`** asks Nominatim about each trip's centre and about the place of every clip on the
+cut, home included, each rounded to 2 decimals (about a kilometre) before it leaves. Nothing else
+goes with it: no picture, no date, no name. One request per place, at most one a second, with a
+User-Agent naming this app, and every answer is kept in the [store](./database.md), so a place is
+asked about once, not once per render. The library itself is never walked.
+
+What it buys:
+
+- **The right district.** Immich names a picture after the nearest town in GeoNames' list of
+  places over 500 people. A district that is not its own municipality gets its neighbour's name:
+  a picture in Wilrijk says "Hoboken". OpenStreetMap knows the district, so captions, location
+  cards and trip map pins say "Wilrijk".
+- **Trip names from the map**, at the trip's scale: the village rather than the merged
+  municipality it belongs to, the town, or the region.
+- **Names in the film's language** ("Nicosie" instead of "Nicosia"). Country names are translated
+  offline either way.
+
+A nightly `auto run` that finds a trip geocodes it the same way. Set `geocoding_url` to your own
+Nominatim and the requests go there instead; the switch still has to be on.
 
 **`map_tiles`** fetches ArcGIS World Imagery for the trip fly-over, the static trip map and the
 background of location cards: hundreds of tiles for a fly-over, a handful for a card. Off, a trip
 opens on the ordinary title card and location cards keep their text on the style's background.
 
-Privacy mode does not stop either call: with `geocoding: true` the real coordinates have been asked
-about before the fake city is picked.
+Privacy mode stops the cut's places from being asked about, but not the trip names: with
+`geocoding: true` a trip's real centre has been asked about before the fake city is picked.
 
 ## Thumbnails in the web UI
 
@@ -180,3 +193,14 @@ the top bar; on, it blurs every image and video the UI shows. Each browser keeps
 The move is the same every run, so repeated renders give nothing away by averaging. Two gaps: the
 output file name is built before anonymisation, so rename it before sharing, and privacy mode
 changes what the film shows, not what the app sends.
+
+## Diagnostic reports
+
+`immich-memories report` builds a local report from selected diagnostic fields. From the included
+logs and errors it removes configured credentials, known personal names, albums and places, GPS
+coordinates, IP addresses, hostnames with ports, URLs of any scheme (`postgresql://user:pw@host/db`
+too) and absolute paths, in field names as well as values. Names match as whole words, so "Al" goes
+but "Alarm" stays; only single letters are left alone. IDs become hashes that match within that report and
+change in the next one. Config appears as shape, without hostnames or values. Pictures are never
+included. Free-text memories (#1436) will add flagged-photo captions and reasons, behind an explicit
+opt-in; no run records them yet. Read the report before sharing it. Nothing is sent automatically.

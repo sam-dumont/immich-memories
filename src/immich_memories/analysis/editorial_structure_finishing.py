@@ -45,7 +45,9 @@ from immich_memories.operations.cut_progress import StageUpdate, announce_stage
 
 def announce_count(pictures: int, point: str) -> None:
     """The edit's own counts, said out loud instead of only written to a record."""
-    announce_stage(StageUpdate(f"Editing the memory: {pictures} pictures {point}"))
+    announce_stage(
+        StageUpdate(f"Editing the memory: {pictures} pictures {point}", key="Editing the memory")
+    )
 
 
 @dataclass
