@@ -736,6 +736,7 @@ def _story_selection(
         journey=source.case.product == "trip",
         partition_limit=partition_limit,
         voice_per_partition=source.intent.voice_per_partition,
+        context_without_life=source.intent.context_without_life,
         partition_of=lambda taken: (
             part.key
             if (part := source.intent.partition_for(datetime.fromisoformat(taken).date()))

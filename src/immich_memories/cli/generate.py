@@ -306,7 +306,7 @@ def register_generate_commands(main: click.Group) -> None:
             years_back=years_back,
             on_this_day_target=exact_on_this_day,
             holiday=holiday,
-            preset_params=special_day,
+            preset_params=special_day or {"country": config.defaults.country},
             people_window=derived_window,
         )
         window_record = announce_people_window(derived_window, date_range)

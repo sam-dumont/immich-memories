@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from immich_memories.analysis.editorial_carrier_eligibility import NOTHING_KINDS
+from immich_memories.analysis.editorial_intent import voiced_era_of
 
 # A screen or document is evidence a film can carry when something vouches for it; as filler
 # it shows nothing a viewer came for.
@@ -27,6 +28,8 @@ class FillerEvidence:
     frame_kind_of: Callable[[str], str | None]
     known_person: Callable[[str], bool]
     protected: frozenset[str] = frozenset()
+    # The partition of a capture time, for a film that gives every partition a voice.
+    era_of: Callable[[str], str | None] | None = None
 
 
 def owner_vouches_for(carrier: Mapping[str, Any], evidence: FillerEvidence) -> bool:
@@ -54,17 +57,37 @@ def drop_unvouched_filler(
 ) -> tuple[list[dict], list[dict]]:
     """Split a settled cut into the shots it keeps and the filler it drops.
 
-    Only removes: a shot with any indicator, or with no frame reading, is kept as it is.
+    Only removes: a shot with any indicator, or with no frame reading, is kept as it is. A film
+    that promised every partition a voice keeps one shot of a partition the drop would silence.
     """
-    kept: list[dict] = []
-    dropped: list[dict] = []
-    for carrier in carriers:
-        empty = evidence.frame_kind_of(carrier["asset_id"]) in SHOWS_NOTHING_AS_FILLER
-        if empty and not _has_indicator(carrier, evidence):
-            dropped.append(carrier)
-        else:
-            kept.append(carrier)
+    filler = {
+        c["asset_id"]
+        for c in carriers
+        if evidence.frame_kind_of(c["asset_id"]) in SHOWS_NOTHING_AS_FILLER
+        and not _has_indicator(c, evidence)
+    }
+    filler -= _last_voices(carriers, filler, evidence.era_of)
+    kept = [c for c in carriers if c["asset_id"] not in filler]
+    dropped = [c for c in carriers if c["asset_id"] in filler]
     return kept, dropped
+
+
+def _last_voices(
+    carriers: Sequence[dict], filler: set[str], era_of: Callable[[str], str | None] | None
+) -> set[str]:
+    """One shot of every partition whose every shot is filler: the one that stands best, the
+    earlier on a tie."""
+    if era_of is None:
+        return set()
+    shots_of: dict[str, list[dict]] = {}
+    for carrier in carriers:
+        if (era := era_of(str(carrier["taken"]))) is not None:
+            shots_of.setdefault(era, []).append(carrier)
+    return {
+        min(shots, key=lambda c: (-(c.get("standing") or 0), str(c["taken"])))["asset_id"]
+        for shots in shots_of.values()
+        if all(c["asset_id"] in filler for c in shots)
+    }
 
 
 def filler_evidence(source) -> FillerEvidence:
@@ -82,4 +105,5 @@ def filler_evidence(source) -> FillerEvidence:
         frame_kind_of=frame_kind_of,
         known_person=known_person,
         protected=frozenset(source.owner_required_asset_ids),
+        era_of=voiced_era_of(source.intent),
     )

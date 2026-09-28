@@ -203,15 +203,23 @@ prints yours last.
 
 ## Duplicates
 
-Sameness is decided in three places, from what ingest banked (the preview hash and the scene print).
+Sameness is decided in four places, from what ingest banked (the preview hash and the scene print).
 No tier asks a model to compare two pictures.
 
-1. **Bursts, before the editor.** Photos within `photos.burst_window_seconds` (300) of each other
+1. **Copies, at the source.** A shared album carries no originals, so a curated shot arrives twice:
+   the camera's file and a ~2048 px downscale, same name, same instant to the millisecond. Files
+   with the same camera name, kind and capture instant are one picture. So is a file forwarded
+   back under a UUID name on the same second, when both cached previews sit within 2 bits (a
+   received batch shares a second too, so the pixels have to agree; burst frames hash alike, so
+   the name has to say it was forwarded). The file with the most pixels plays, a star on any copy
+   counts for the picture, and the others are left out as "another file of the same picture". On
+   one real month that was 415 of 2,028 files.
+2. **Bursts, before the editor.** Photos within `photos.burst_window_seconds` (300) of each other
    **and** within `photos.burst_hash_threshold` (8) bits on a preview hash are one burst; the
    favourite survives it, else the best frame. A photo with no hash is kept.
-2. **Inside a story, while the cut is built.** A 10-bit hash check against the shots around it (see
+3. **Inside a story, while the cut is built.** A 10-bit hash check against the shots around it (see
    [Picking each shot](./picking-shots.md#what-a-frame-must-pass)).
-3. **Over the finished cut** (`review_cut_by_cached_hashes`):
+4. **Over the finished cut** (`review_cut_by_cached_hashes`):
    - a preview hash within 6 bits, inside the same story or the same day;
    - a scene print (the pooled DINOv2 vector of the preview, banked in `scene-prints.sqlite`) at a
      cosine of 0.65 or more, within 14 days, across stories. That catches the same trail at dusk
