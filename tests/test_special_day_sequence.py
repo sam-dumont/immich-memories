@@ -506,7 +506,10 @@ def test_a_day_on_a_holiday_is_kept_unless_its_occasion_was_the_holiday(monkeypa
     found = scan_year(race + christmas, llm_config=None, home=HOME_AT, captions=captions)
 
     assert [(d.day, d.title) for d in found] == [(date(2023, 6, 18), "City bike race")]
-    assert sorted(asked) == [("Christmas", "Christmas morning"), ("Father's Day", "City bike race")]
+    assert sorted(asked) == [
+        ("Christmas Day", "Christmas morning"),
+        ("Father's Day", "City bike race"),
+    ]
 
 
 def test_a_day_is_named_by_its_moment_not_by_everything_it_held(monkeypatch):
@@ -515,7 +518,7 @@ def test_a_day_is_named_by_its_moment_not_by_everything_it_held(monkeypatch):
     the evening; asked about those hours, it names the concert."""
     home = [
         _day(datetime(2024, 10, day, 8, tzinfo=UTC), pictures=12, hours=6, city="Home", at=HOME_AT)
-        for day in range(1, 16)
+        for day in range(1, 14)  # before Columbus Day, a US holiday that would ask its own question
     ]
     concert_day = datetime(2024, 10, 3, 8, tzinfo=UTC)
     morning = _day(concert_day, pictures=20, hours=5, city="Home", at=HOME_AT)
@@ -552,7 +555,7 @@ def test_a_moment_never_makes_an_ordinary_day_an_occasion(monkeypatch):
     replay gained eleven weak days that way. A moment only renames a confirmed day."""
     home = [
         _day(datetime(2024, 10, day, 8, tzinfo=UTC), pictures=12, hours=6, city="Home", at=HOME_AT)
-        for day in range(1, 16)
+        for day in range(1, 14)  # before Columbus Day, a US holiday that would ask its own question
     ]
     concert_day = datetime(2024, 10, 3, 8, tzinfo=UTC)
     morning = _day(concert_day, pictures=20, hours=5, city="Home", at=HOME_AT)
@@ -589,7 +592,7 @@ def test_a_day_whose_title_already_names_what_stood_out_keeps_it(monkeypatch):
     own unusual words is not asked again."""
     home = [
         _day(datetime(2024, 10, day, 8, tzinfo=UTC), pictures=12, hours=6, city="Home", at=HOME_AT)
-        for day in range(1, 16)
+        for day in range(1, 14)  # before Columbus Day, a US holiday that would ask its own question
     ]
     concert_day = datetime(2024, 10, 3, 8, tzinfo=UTC)
     morning = _day(concert_day, pictures=20, hours=5, city="Home", at=HOME_AT)

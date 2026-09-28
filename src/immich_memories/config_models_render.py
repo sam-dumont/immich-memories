@@ -69,14 +69,6 @@ class DefaultsConfig(BaseModel):
             "'family' (the default) or 'shareable' (anyone: only pictures nothing held)"
         ),
     )
-    country: str = Field(
-        default="US",
-        pattern=r"^[A-Za-z]{2}$",
-        description=(
-            "ISO 3166 country code. Sets the dates of the holidays that move by country: "
-            "Mother's Day, Father's Day, Thanksgiving"
-        ),
-    )
 
     @field_validator("scale_mode", mode="before")
     @classmethod

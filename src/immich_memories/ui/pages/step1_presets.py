@@ -115,7 +115,9 @@ def _render_holiday_params(state: AppState) -> None:
 
     state.memory_preset_params.setdefault("holiday", current_holiday)
     if state.config is not None:
-        state.memory_preset_params.setdefault("country", state.config.defaults.country)
+        from immich_memories.home_country import home_country
+
+        state.memory_preset_params.setdefault("country", home_country(state.config))
     state.memory_preset_params.setdefault("year", current_year)
     state.memory_preset_params.setdefault("years_back", current_back)
     _apply_preset_to_state(MemoryType.HOLIDAY)
