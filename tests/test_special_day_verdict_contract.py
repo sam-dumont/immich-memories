@@ -76,7 +76,6 @@ def test_a_positive_day_can_have_an_optional_subtitle(tmp_path, banked, subtitle
         '{"special":true,"title":null,"what":"A race"}',
         '{"special":true,"what":"A race"}',
         json.dumps({"special": True, "title": "A" * 91, "what": "A race"}),
-        json.dumps({"special": True, "title": "A race", "what": "A" * 81}),
         '{"special":true,"title":"A race","subtitle":[],"what":"A race"}',
         '{"special":true,"title":"A race","what":"A race","extra":true}',
         '{"special":true,"title":"A race"',
@@ -98,6 +97,32 @@ def test_an_invalid_day_answer_stays_unjudged_on_every_route(tmp_path, route, ra
         )
 
     assert not verdict.judged and not verdict.special
+
+
+@pytest.mark.parametrize("route", ["facts", "captions", "banked"])
+def test_a_description_longer_than_asked_is_cut_not_a_reason_to_drop_the_day(tmp_path, route):
+    """A race day (09-28): the small reader said yes, titled it, and described it in 170
+    characters where 80 were asked for. The day was left unjudged three times in three. The
+    verdict and the title are the answer; the description is cut at a word."""
+    assets, captions = _a_real_day(captioned=30)
+    if route == "facts":
+        captions = {}
+        for asset in assets:
+            asset.llm_description = "People cross a finish line."
+    long = "A race track with a red car, a green car, a blue car and spectators along the fence all morning"
+    raw = json.dumps({"special": True, "title": "A race", "subtitle": long, "what": long})
+    # WHY: the provider's reply is the only external boundary.
+    with patch("httpx.AsyncClient.post", return_value=_verdict_response(raw)):
+        verdict = ask_if_special(
+            assets,
+            LLMConfig(model="day-reader", provider="ollama"),
+            captions=captions,
+            judgments=annotation_store() if route == "banked" else None,
+        )
+
+    assert verdict.judged and verdict.special and verdict.title == "A race"
+    assert len(verdict.what) <= 80 and long.startswith(verdict.what)
+    assert not verdict.what.endswith(" ")
 
 
 def test_a_valid_negative_day_verdict_vetoes_the_months_proposed_occasion(tmp_path):

@@ -26,7 +26,7 @@ import collections
 import logging
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.llm_failures import stop_if_this_is_our_bug
@@ -40,7 +40,6 @@ from immich_memories.analysis.special_day import (
     _json_in,
     active_hours,
     run_extent,
-    sample_across_day,
 )
 from immich_memories.people.relationships import is_close_family
 
@@ -172,12 +171,31 @@ def _close_family_part(items: list, family: Mapping[str, str]) -> list[str]:
 
 
 def _written_about(items: list, captions: Mapping[str, str] | None) -> list[str]:
-    """A few distinct things written about the run's pictures, spread across its hours."""
-    described = [a for a in items if _described_by(a, captions)]
-    texts = [
-        str(_described_by(a, captions))[:_CAPTION_CHARACTERS] for a in sample_across_day(described)
-    ]
-    return list(dict.fromkeys(texts))[:_CAPTIONS_PER_RUN]
+    """A few distinct things written about the run's pictures, from the hours most were taken in.
+
+    One per hour, so a burst cannot fill the line. Taken by the hours' picture counts rather
+    than in clock order: a race day that began with the cat at home was quoted as the cat
+    twice and never the circuit, and read as an ordinary day.
+    """
+    pictures_in = collections.Counter(_hour_of(a) for a in items)
+    written: dict[datetime, list[tuple[datetime, str]]] = collections.defaultdict(list)
+    for asset in items:
+        if text := _described_by(asset, captions):
+            written[_hour_of(asset)].append(
+                (asset.file_created_at, str(text)[:_CAPTION_CHARACTERS])
+            )
+    picked: dict[str, datetime] = {}
+    for hour in sorted(written, key=lambda h: (-pictures_in[h], h)):
+        texts = written[hour]
+        when, text = texts[len(texts) // 2]
+        picked.setdefault(text, when)
+        if len(picked) == _CAPTIONS_PER_RUN:
+            break
+    return sorted(picked, key=picked.__getitem__)
+
+
+def _hour_of(asset: Any) -> datetime:
+    return asset.file_created_at.replace(minute=0, second=0, microsecond=0)
 
 
 def _recognised(people: collections.Counter) -> list[str]:

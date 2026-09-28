@@ -75,6 +75,7 @@ class DiscoveredDay:
     asset_ids: tuple[str, ...] = ()
     event_admission: SpecialEventAdmission | None = None
     judged: bool = True
+    unjudged_because: str = ""
     # How many of the day's pictures the recorded window holds, against `photos`.
     # Zero means a scan from before #1067 that never counted, so its window is
     # taken as written; every other row can be checked without re-fetching the
@@ -272,12 +273,7 @@ def scan_year(
         verdict = (
             SpecialDay(special=True, title=honest_title(items, what=what, evidence=""), what=what)
             if reader == "rules"
-            else ask_if_special(
-                items,
-                llm_config,
-                captions={a.id: captions[a.id] for a in items if captions and captions.get(a.id)},
-                judgments=judgments,
-            )
+            else _read_the_day(items, llm_config, captions, judgments)
         )
         outcome = _day_from(day, items, verdict, what)
         if outcome is not None:
@@ -321,6 +317,43 @@ class YearNotRead(RuntimeError):
         super().__init__(f"{year}: {len(months)} month(s) could not be read ({', '.join(months)})")
 
 
+def _read_the_day(
+    items: list, llm_config: Any, captions: Mapping[str, str] | None, judgments: Store | None
+) -> SpecialDay:
+    """The day-level verdict, asked once more about the day's event when the day read ordinary.
+
+    Some days contain an occasion rather than being one: a race day began with the cat at
+    home and ended there, and the small reader, shown the whole day, named it after the cat.
+    Where the pictures were taken already says which stretch the day was spent on
+    (`event_window`), so an ordinary verdict is asked again about that stretch alone. A day
+    with no such stretch, or one the reader already called an occasion, is asked once.
+    """
+
+    def ask(pictures: list) -> SpecialDay:
+        return ask_if_special(
+            pictures,
+            llm_config,
+            captions={a.id: captions[a.id] for a in pictures if captions and captions.get(a.id)},
+            judgments=judgments,
+        )
+
+    verdict = ask(items)
+    if verdict.special or not verdict.judged:
+        return verdict
+    window = window_that_holds_the_day(event_window(items), items)
+    if window is None:
+        return verdict
+    start, end = window
+    logger.info(
+        "%s read as ordinary; asking about its %s-%s stretch at one place",
+        items[0].file_created_at.date(),
+        f"{start:%H:%M}",
+        f"{end:%H:%M}",
+    )
+    inside = ask([a for a in items if start <= a.file_created_at <= end])
+    return inside if inside.special else verdict
+
+
 def _day_from(day: date, items: list, verdict: Any, what: str = "") -> DiscoveredDay | None:
     """One candidate day's row, or nothing when there is nothing honest to write.
 
@@ -344,6 +377,7 @@ def _day_from(day: date, items: list, verdict: Any, what: str = "") -> Discovere
             photos=len(items),
             window=None,
             judged=False,
+            unjudged_because=verdict.unjudged_because,
             prompt_version=SCAN_VERSION,
             app_version=__version__,
         )

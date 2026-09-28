@@ -220,23 +220,25 @@ def sample_across_day(assets: list, count: int = 8) -> list:
     """Spread the sample over the day's hours, not its busiest minutes.
 
     Taking the first N would describe one burst, which is the very thing the
-    question is meant to see past.
+    question is meant to see past, so every hour gets one picture first (the
+    busiest hours, when there are more hours than pictures to take). What is
+    left goes where the day was spent: the hour with the most pictures still
+    untaken. Handing it back to the earliest hours described a race day by the
+    cat at home before leaving, and the day read as ordinary.
     """
     by_hour: dict[int, list] = collections.defaultdict(list)
-    for asset in assets:
+    for asset in sorted(assets, key=lambda a: a.file_created_at):
         by_hour[asset.file_created_at.hour].append(asset)
 
+    def take(hour: int) -> None:
+        bucket = by_hour[hour]
+        picked.append(bucket.pop(len(bucket) // 2))
+
     picked: list = []
-    hours = sorted(by_hour)
-    while hours and len(picked) < count:
-        for hour in hours.copy():
-            if len(picked) >= count:
-                break
-            bucket = by_hour[hour]
-            if bucket:
-                picked.append(bucket.pop(len(bucket) // 2))
-            if not bucket:
-                hours.remove(hour)
+    for hour in sorted(by_hour, key=lambda h: (-len(by_hour[h]), h))[:count]:
+        take(hour)
+    while len(picked) < count and any(by_hour.values()):
+        take(max(by_hour, key=lambda h: (len(by_hour[h]), -h)))
     return sorted(picked, key=lambda a: a.file_created_at)
 
 
@@ -561,6 +563,13 @@ class SpecialDay:
     what: str = ""
     window: tuple[datetime, datetime] | None = None
     judged: bool = True
+    # Why nobody could say, when `judged` is false: the scan prints it instead of a guess.
+    unjudged_because: str = ""
+
+
+def _unjudged(because: str) -> SpecialDay:
+    logger.warning("Special day left unjudged: %s", because)
+    return SpecialDay(special=False, judged=False, unjudged_because=because)
 
 
 def ask_if_special(
@@ -595,8 +604,7 @@ def ask_if_special(
         )
     sampled = sample_across_day(assets)
     if not _has_text_to_read(sampled, captions):
-        logger.info("Not enough written about this day to judge it; leaving it unjudged")
-        return SpecialDay(special=False, judged=False)
+        return _unjudged("nothing written about its pictures")
     return _ask_from_facts(assets, sampled, captions, llm_config, timeout_seconds)
 
 
@@ -615,24 +623,30 @@ def _ask_from_facts(
     route leaves it.
     """
     lines = _describe(sampled, captions)
-    try:
-        raw = _ask(_PROMPT.format(lines=lines), llm_config, timeout_seconds)
-    except Exception as exc:  # noqa: BLE001 - an unreachable model is not a verdict
-        stop_if_this_is_our_bug(exc, "special-day question")
-        logger.debug("Special-day question failed: %s", type(exc).__name__)
-        return SpecialDay(special=False, judged=False)
-
-    # A null content is documented mlx-vlm behaviour, which is why llm_query
-    # retries. Silence is not a verdict either, and reading it as one ended a
-    # multi-hour scan on a TypeError.
-    if not raw:
-        logger.debug("Special-day question came back empty")
-        return SpecialDay(special=False, judged=False)
-
-    try:
-        answer = _day_answer(raw)
-    except ValueError:
-        return SpecialDay(special=False, judged=False)
+    prompt = _PROMPT.format(lines=lines)
+    answer: dict | None = None
+    because = ""
+    # A small model sometimes answers in prose, or not at all. Neither is a verdict on the
+    # day, so the question is asked once more before the day is left unjudged.
+    for _attempt in range(2):
+        try:
+            raw = _ask(prompt, llm_config, timeout_seconds)
+        except Exception as exc:  # noqa: BLE001 - an unreachable model is not a verdict
+            stop_if_this_is_our_bug(exc, "special-day question")
+            return _unjudged(f"the reader failed ({type(exc).__name__})")
+        # A null content is documented mlx-vlm behaviour, which is why llm_query
+        # retries. Silence is not a verdict either, and reading it as one ended a
+        # multi-hour scan on a TypeError.
+        if not raw:
+            because = "the reader answered nothing"
+            continue
+        try:
+            answer = _day_answer(raw)
+            break
+        except ValueError:
+            because = "the reader's answer could not be read"
+    if answer is None:
+        return _unjudged(because)
     special = answer["special"]
     if not special:
         return SpecialDay(special=False)
@@ -686,10 +700,23 @@ def _day_answer(raw: str) -> dict:
         answer["subtitle"] = ""
     # A grounded title can stand alone; facts-only answers already omit the summary.
     answer.setdefault("what", "")
-    for field, limit in (("title", 90), ("subtitle", 90), ("what", 80)):
-        if not isinstance(answer.get(field), str) or len(answer[field]) > limit:
-            raise ValueError(f"special-day {field} is not bounded text")
+    for field in ("title", "subtitle", "what"):
+        if not isinstance(answer.get(field), str):
+            raise ValueError(f"special-day {field} is not text")
+    if len(answer["title"]) > 90:
+        raise ValueError("special-day title is not bounded text")
+    # The verdict and the title are the answer. A small reader asked for an 80-character
+    # description of a race day wrote 170 of them three times in three; the day was lost.
+    answer["subtitle"] = _cut_at_a_word(answer["subtitle"], 90)
+    answer["what"] = _cut_at_a_word(answer["what"], 80)
     return answer
+
+
+def _cut_at_a_word(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    cut = text[: limit + 1].rsplit(" ", 1)[0] if " " in text[:limit] else text[:limit]
+    return cut[:limit].rstrip(" ,;:-")
 
 
 def _accepts_day_answer(raw: str) -> bool:
@@ -758,8 +785,7 @@ def _ask_from_captions(assets, described, captions, llm_config, timeout_seconds,
         answer = _day_answer(raw)
     except Exception as exc:  # WHY: an unavailable text model must not trigger an image send.
         stop_if_this_is_our_bug(exc, "special-day caption question")
-        logger.warning("Special-day caption question failed (%s)", type(exc).__name__)
-        return SpecialDay(special=False, judged=False)
+        return _unjudged(f"the caption question failed ({type(exc).__name__})")
     what = answer["what"].strip()
     return SpecialDay(
         special=answer["special"],

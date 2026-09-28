@@ -183,6 +183,7 @@ def test_a_cuda_wheel_without_a_usable_device_does_not_enable_gpu(monkeypatch, l
     monkeypatch.setitem(
         sys.modules, "mlx.core", SimpleNamespace(metal=SimpleNamespace(is_available=lambda: False))
     )
+    monkeypatch.setitem(sys.modules, "Metal", None)
 
     config = Config(llm={"model": "local-reader", "base_url": "http://localhost:9999/v1"})
 
@@ -203,3 +204,33 @@ def test_explicit_nas_config_does_not_import_inference_runtimes():
         check=False,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_a_mac_installed_with_its_extra_is_a_gpu_machine(monkeypatch, local_runtime_probe):
+    """The `mac` extra ships the Metal bindings, not MLX: MLX is installed out of band, so
+    probing MLX alone left every Mac installed as documented on NAS. The whole tier turns on
+    together; a part that turns out missing degrades on its own."""
+    monkeypatch.setitem(sys.modules, "onnxruntime", SimpleNamespace(get_available_providers=list))
+    monkeypatch.setitem(sys.modules, "mlx", None)
+    # WHY: the Metal framework stands in for the Mac's GPU boundary.
+    monkeypatch.setitem(
+        sys.modules, "Metal", SimpleNamespace(MTLCreateSystemDefaultDevice=lambda: object())
+    )
+
+    config = Config(llm={"model": "local-reader", "base_url": "http://localhost:9999/v1"})
+
+    assert config.tier == "full"
+    assert config.editorial.reader == "model"
+    assert config.editorial.preparation.demands_captions
+    assert config.editorial.laya_audience
+
+
+def test_metal_bindings_without_a_device_leave_the_machine_on_nas(monkeypatch, local_runtime_probe):
+    monkeypatch.setitem(sys.modules, "onnxruntime", SimpleNamespace(get_available_providers=list))
+    monkeypatch.setitem(sys.modules, "mlx", None)
+    # WHY: an Intel Mac or a VM has the bindings but no Metal device to offer.
+    monkeypatch.setitem(
+        sys.modules, "Metal", SimpleNamespace(MTLCreateSystemDefaultDevice=lambda: None)
+    )
+
+    assert Config().tier == "nas"

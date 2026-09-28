@@ -132,12 +132,12 @@ advanced:
       caption_base_url: http://localhost:8092/v1
 ```
 
-That is the default value of `caption_base_url`. With a usable local MLX runtime, automatic
-selection chooses GPU, or Full when an LLM is also configured. Install the
+That is the default value of `caption_base_url`. On an Apple Silicon Mac installed with the
+`all-mac` extra, automatic selection sees the Metal GPU and chooses GPU, or Full when an LLM is also configured. Install the
 [Laya checkpoint](./reader.md#the-laya-audience-pre-screen) too. From the app in Docker Desktop on the same Mac, the address is
 `http://host.docker.internal:8092/v1`; from a NAS, the Mac's LAN name or IP. If you run oMLX
 for the reader, use the separate SmolVLM caption server with its own process
-on its own port. A container does not inherit the Mac's MLX runtime: configure a
+on its own port. A container does not see the Mac's GPU: configure a
 [GPU inference service](./inference.md) as well. A caption URL alone does not select the GPU tier.
 
 ## Docker and Linux, with llama.cpp
