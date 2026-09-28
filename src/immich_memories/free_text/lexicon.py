@@ -16,6 +16,12 @@ import nltk
 from nltk.corpus.reader.wordnet import NOUN, WordNetCorpusReader
 from nltk.data import ZipFilePathPointer
 
+# The synsets whose kinds are people: a person, people as a whole, a group of people.
+_HUMAN = frozenset({"person.n.01", "people.n.01", "social_group.n.01"})
+# A young person, and someone's child: WordNet files a baby under offspring, not juvenile.
+_YOUNG = frozenset({"juvenile.n.01", "child.n.02"})
+_TIME_PERIOD = "time_period.n.01"
+
 # nltk_data's `packages/corpora/wordnet.zip`, WordNet 3.0 as nltk distributes it.
 WORDNET_SHA256 = "cbda5ea6eef7f36a97a43d4a75f85e07fccbb4f23657d27b4ccbc93e2646ab59"
 
@@ -33,6 +39,26 @@ class Lexicon(Protocol):
 
     def is_common_word(self, word: str) -> bool:
         """Whether the word is also an ordinary English word, not only a name."""
+        ...
+
+    def noun_base(self, word: str) -> str | None:
+        """The noun a word is a form of ("children": "child"), or None when it is no noun."""
+        ...
+
+    def is_human(self, word: str) -> bool:
+        """Whether the word's first noun sense is a kind of person, people or social group."""
+        ...
+
+    def is_young(self, word: str) -> bool:
+        """Whether the word's first noun sense is a young person or someone's child."""
+        ...
+
+    def is_time_period(self, word: str) -> bool:
+        """Whether the word's first noun sense is a period of time ("years", "summers")."""
+        ...
+
+    def names_role(self, word: str, role: str) -> bool:
+        """Whether the word names a people-file role: the role itself or a kind of it."""
         ...
 
 
@@ -65,6 +91,42 @@ class WordNetLexicon:
             for synset in self._reader.synsets(folded)
             for lemma in synset.lemmas()
         )
+
+    def noun_base(self, word: str) -> str | None:
+        folded = word.strip().lower()
+        base = self._reader.morphy(folded, NOUN)
+        return str(base) if base else None
+
+    def is_human(self, word: str) -> bool:
+        return bool(self._kinds(word) & _HUMAN)
+
+    def is_young(self, word: str) -> bool:
+        return bool(self._kinds(word) & _YOUNG)
+
+    def is_time_period(self, word: str) -> bool:
+        return _TIME_PERIOD in self._kinds(word)
+
+    def names_role(self, word: str, role: str) -> bool:
+        wanted = " ".join(role.lower().split())
+        base = self.noun_base(word) or word.strip().lower()
+        if base in {wanted, wanted.split()[-1] if wanted else ""}:
+            return True
+        # The first two senses: "wife" is a spouse, whose names include "partner".
+        return any(
+            lemma.name().lower().replace("_", " ") == wanted
+            for sense in self._reader.synsets(base, pos=NOUN)[:2]
+            for synset in (sense, *sense.hypernyms())
+            for lemma in synset.lemmas()
+        )
+
+    def _kinds(self, word: str) -> set[str]:
+        base = self.noun_base(word) or word.strip().lower()
+        return {
+            str(kind.name())
+            for sense in self._reader.synsets(base, pos=NOUN)[:1]
+            for path in sense.hypernym_paths()
+            for kind in path
+        }
 
 
 def load_wordnet(path: Path, *, sha256: str = WORDNET_SHA256) -> WordNetLexicon:

@@ -26,10 +26,22 @@ from immich_memories.free_text.library import (
     LibraryView,
     read_library,
 )
+from immich_memories.free_text.linking import (
+    Household,
+    Reason,
+    WhenLink,
+    WhoLink,
+    link_when,
+    link_who,
+    time_cut,
+)
+from immich_memories.free_text.reading import Asker, Reading, WireAsker, read_request
 
 __all__ = [
+    "Asker",
     "FarthestTrip",
     "Home",
+    "Household",
     "Lexicon",
     "LibraryFacts",
     "LibraryPerson",
@@ -37,7 +49,12 @@ __all__ = [
     "LibraryUnavailable",
     "LibraryView",
     "OccasionDay",
+    "Reading",
+    "Reason",
     "TripRules",
+    "WhenLink",
+    "WhoLink",
+    "WireAsker",
     "WordNetLexicon",
     "WordNetUnavailable",
     "farthest_trip",
@@ -48,7 +65,11 @@ __all__ = [
     "is_thing",
     "last_pictures",
     "link_facts",
+    "link_when",
+    "link_who",
     "load_wordnet",
     "occasion_day",
     "read_library",
+    "read_request",
+    "time_cut",
 ]
