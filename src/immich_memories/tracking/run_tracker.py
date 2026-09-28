@@ -118,6 +118,10 @@ class RunTracker:
 
         self.db.save_run(run)
         self._run = run
+        from immich_memories.tracking.timing import active
+
+        if collected := active():
+            collected.run_id = self.run_id
         logger.info(f"Started run {self.run_id}")
 
         return self.run_id

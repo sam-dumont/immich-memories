@@ -11,6 +11,8 @@ import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
+from immich_memories.tracking.timing import Span
+
 
 @dataclass(frozen=True, slots=True)
 class ProducerCost:
@@ -39,27 +41,43 @@ class ProducerClock:
     where it is actually paid.
     """
 
-    def __init__(self, now: Callable[[], float] | None = None) -> None:
+    def __init__(
+        self,
+        now: Callable[[], float] | None = None,
+        *,
+        spans: list[Span] | None = None,
+    ) -> None:
         self._now = now or time.perf_counter
-        self._seconds: dict[str, float] = {}
+        self._spans = spans if spans is not None else []
+        self._external = spans is not None
         self._pending: dict[str, int] = {}
-        self._order: list[str] = []
-        self._mark = self._now()
+        self._mark = 0.0 if self._external else self._now()
 
     def report(self, producer: str, done: int, total: int) -> None:
-        """Takes preparation's own `(stage, done, total)` progress callback shape."""
-        moment = self._now()
-        if producer not in self._seconds:
-            self._order.append(producer)
-            self._seconds[producer] = 0.0
-        self._seconds[producer] += moment - self._mark
-        self._mark = moment
+        """Retain progress counts; production durations come from producer spans."""
         self._pending[producer] = max(self._pending.get(producer, 0), done, total)
+        if not self._external:
+            moment = self._now()
+            self._spans.append(
+                Span(
+                    len(self._spans) + 1,
+                    f"preparation.{producer}",
+                    None,
+                    self._mark,
+                    moment - self._mark,
+                )
+            )
+            self._mark = moment
 
     def costs(self) -> tuple[ProducerCost, ...]:
+        totals: dict[str, float] = {}
+        for measured in self._spans:
+            if measured.name.startswith("preparation."):
+                producer = measured.name.removeprefix("preparation.")
+                totals[producer] = totals.get(producer, 0.0) + measured.duration
         return tuple(
-            ProducerCost(producer, self._pending.get(producer, 0), self._seconds[producer])
-            for producer in self._order
+            ProducerCost(name, self._pending.get(name, 0), seconds)
+            for name, seconds in totals.items()
         )
 
 

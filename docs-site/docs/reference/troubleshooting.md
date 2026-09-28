@@ -9,8 +9,16 @@ Reader: anyone whose run stopped.
 **Help, in four steps:** read the table below and the [FAQ](./faq.md); check the
 [release notes](https://github.com/sam-dumont/immich-video-memory-generator/releases) for your version;
 [search the issues](https://github.com/sam-dumont/immich-video-memory-generator/issues?q=is%3Aissue); then open
-one with the command, the version (`immich-memories --version`) and the last 50 lines of `-v` output. API keys
-are redacted from logs, but check for names before you paste.
+one with the output of `immich-memories report`. It defaults to the latest run, including failed runs.
+Pass a run ID to report an older one. Review the report before pasting it.
+
+The report includes redacted run logs, system details, stage timings, model usage and the selection
+funnel when the run recorded them. Names, places, albums, coordinates, hosts, IP addresses, URLs, paths
+and credentials are removed; IDs become
+randomized hashes that agree inside one report. `--json` prints structured data, and
+`--bundle report.zip` writes the full report and logs as an attachment. Nothing is sent automatically.
+A run keeps its last 5,000 log lines and a count of every line per level. Long pasted logs keep
+their last complete lines; the ZIP keeps all 5,000.
 
 Two commands answer most questions: `immich-memories -v <command>` logs at DEBUG for one run, and
 `immich-memories preflight` checks Immich, the model files, the output directory and every configured server in

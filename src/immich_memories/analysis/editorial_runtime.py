@@ -71,6 +71,7 @@ from immich_memories.processing.editorial_timing import EditorialTimingPolicy
 from immich_memories.security import write_secret_file
 from immich_memories.store.episode_readings import EpisodeReadingProducer
 from immich_memories.timeperiod import DateRange
+from immich_memories.tracking.timed import timed
 
 if TYPE_CHECKING:
     from immich_memories.analysis.smart_pipeline import (
@@ -273,6 +274,7 @@ class RuntimeEditorialPlanner:
             return tuple(rows)
         return tuple(row for row in rows if asset_of(row).id in self._asset_ids)
 
+    @timed("selection")
     def plan_source(
         self,
         sources: Sequence[Asset | VideoClipInfo],

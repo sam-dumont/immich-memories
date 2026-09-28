@@ -138,7 +138,7 @@ class QueryTextRequester:
             None if request.refresh else cache.completion_failure_for(request.judgment_key)
         )
         if failure is not None:
-            llm_metrics.record_cache_hit()
+            llm_metrics.record_cache_hit(model=request.llm_config.model)
             raise failure
         raw = await self._bounded_query(request, cache)
         if accepts is None or accepts(raw):
@@ -172,7 +172,7 @@ class QueryTextRequester:
         if accepts is not None and not accepts(raw):
             cache.forget(request.judgment_key)
             return None
-        llm_metrics.record_cache_hit()
+        llm_metrics.record_cache_hit(model=request.llm_config.model)
         return raw
 
     async def _bounded_query(self, request, cache):

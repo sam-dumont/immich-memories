@@ -1,0 +1,24 @@
+name: Performance report
+description: Report a slow preparation, cut, or render
+labels: ["perf"]
+body:
+  - type: textarea
+    id: report
+    attributes:
+      label: Report
+      description: Paste `immich-memories report`. Review it before sharing. Attach `--bundle report.zip` for full logs.
+    validations:
+      required: true
+  - type: textarea
+    id: slow
+    attributes:
+      label: What felt slow?
+      description: Name the stage and how long you waited.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true

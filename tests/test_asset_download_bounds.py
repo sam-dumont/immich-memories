@@ -31,18 +31,23 @@ class RecordingStream(httpx.AsyncByteStream):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("header", ["9", "3"])
 async def test_header_rejection_happens_before_reading_body(tmp_path, header):
+    from immich_memories.tracking import timing
+
     stream = RecordingStream(b"abcdefgh")
     transport = httpx.MockTransport(
         lambda _request: httpx.Response(200, headers={"content-length": header}, stream=stream)
     )
     async with httpx.AsyncClient(base_url="https://immich.test", transport=transport) as client:
         service = AssetService(None, "https://immich.test", lambda: client)
-        with pytest.raises(ValueError):
+        with timing.collecting() as collected, pytest.raises(ValueError):
             await service.download_asset(
                 "recording", tmp_path / "original.part", max_size_bytes=4, expected_size_bytes=8
             )
     assert not stream.started
     assert not (tmp_path / "original.part").exists()
+    assert collected.spans[0].name == "download.original"
+    assert collected.spans[0].items == 1
+    assert collected.spans[0].error["type"] == "ValueError"
 
 
 @pytest.mark.asyncio

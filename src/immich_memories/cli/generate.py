@@ -62,6 +62,7 @@ from immich_memories.planning.auto_duration import (
 )
 from immich_memories.processing.encoding_plan import resolve_output_selection
 from immich_memories.timeperiod import DateRange
+from immich_memories.tracking.run_observations import observed_command
 
 
 def _apply_sharing(config, sharing: str | None) -> None:
@@ -91,6 +92,7 @@ def register_generate_commands(main: click.Group) -> None:
         help="Silence the live progress display and print log lines instead (cron, logs); -v sets the log level",
     )
     @click.pass_context
+    @observed_command("manual")
     def generate(
         ctx: click.Context,
         year: int | None,

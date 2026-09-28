@@ -641,6 +641,13 @@ class tracing:  # noqa: N801 - reads as a context manager at the call site
         return self.trace
 
     def __exit__(self, *_exc: object) -> None:
+        from immich_memories.tracking.timing import active as active_timing
+
+        if collected := active_timing():
+            collected.diagnostics["funnel"] = [
+                {"stage": stage.name, "kept": stage.kept, "dropped": stage.dropped}
+                for stage in self.trace.stages
+            ]
         if self._joined:
             return
         if self._token is not None:

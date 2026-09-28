@@ -29,7 +29,7 @@ import sys
 import traceback
 from collections.abc import Iterable
 from datetime import UTC, datetime
-from typing import Protocol
+from typing import Protocol, TextIO
 
 # Context variable holding the current pipeline run_id.
 # WHY: contextvars over threading.local — works with asyncio and threads.
@@ -81,7 +81,8 @@ def install_secret_redaction(values: Iterable[str]) -> None:
     _secret_values = tuple(sorted(keep | set(_secret_values), key=len, reverse=True))
 
 
-def _redact(text: str) -> str:
+def redact_secrets(text: str) -> str:
+    """Strip configured credentials from persisted diagnostic text as well as logs."""
     for secret in _secret_values:
         text = text.replace(secret, REDACTED)
     return text
@@ -101,18 +102,18 @@ class SecretRedactionFilter(logging.Filter):
         # secret is rewritten; getMessage() skips %-formatting when args is
         # None, so the substituted text is safe to re-emit verbatim.
         message = record.getMessage()
-        redacted = _redact(message)
+        redacted = redact_secrets(message)
         if redacted != message:
             record.msg = redacted
             record.args = None
 
         if record.exc_text:
-            record.exc_text = _redact(record.exc_text)
+            record.exc_text = redact_secrets(record.exc_text)
         elif record.exc_info and record.exc_info[1] is not None:
             # WHY: formatters render the traceback from exc_info, out of a
             # filter's reach. Pre-rendering it into exc_text -- the cache
             # logging.Formatter prefers -- is the only place redaction can land.
-            record.exc_text = _redact("".join(traceback.format_exception(*record.exc_info)))
+            record.exc_text = redact_secrets("".join(traceback.format_exception(*record.exc_info)))
 
         return True
 
@@ -230,6 +231,7 @@ def configure_logging(
     fmt: str | None = None,
     level: str | None = None,
     log_file: str | None = None,
+    stream: TextIO | None = None,
 ) -> None:
     """Configure the root logger with the specified format.
 
@@ -255,7 +257,7 @@ def configure_logging(
     for handler in root.handlers.copy():
         root.removeHandler(handler)
 
-    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler = logging.StreamHandler(stream if stream is not None else sys.stdout)
     stream_handler.addFilter(RunIdFilter())
     stream_handler.addFilter(SecretRedactionFilter())
 

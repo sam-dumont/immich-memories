@@ -26,41 +26,10 @@ body:
     validations:
       required: true
 
-  - type: dropdown
-    id: install-method
+  - type: textarea
+    id: report
     attributes:
-      label: Installation method
-      options:
-        - pip
-        - Docker
-        - Kubernetes
-        - From source
+      label: Report
+      description: Paste the output of `immich-memories report` (or Copy report in the web client). Review it before sharing. Attach the ZIP from `--bundle report.zip` if needed.
     validations:
       required: true
-
-  - type: input
-    id: version
-    attributes:
-      label: Version
-      description: Output of `immich-memories --version`
-      placeholder: "0.2.0"
-    validations:
-      required: true
-
-  - type: textarea
-    id: logs
-    attributes:
-      label: Relevant log output
-      description: Paste any relevant logs (use `--log-level DEBUG` for verbose output)
-      render: shell
-
-  - type: textarea
-    id: environment
-    attributes:
-      label: Environment
-      description: OS, Python version, FFmpeg version, GPU (if applicable)
-      placeholder: |
-        - OS: Ubuntu 24.04
-        - Python: 3.13
-        - FFmpeg: 7.0
-        - GPU: NVIDIA RTX 3080

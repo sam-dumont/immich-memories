@@ -26,6 +26,7 @@ from immich_memories.config_models_network import GEOCODING_HOST
 from immich_memories.db import Store, now_db
 from immich_memories.db.tables import geocoded_places
 from immich_memories.db.upsert import upsert
+from immich_memories.tracking.report_context import private_place_name
 
 if TYPE_CHECKING:
     from immich_memories.config_loader import Config
@@ -84,6 +85,7 @@ def cell_of(latitude: float, longitude: float) -> tuple[float, float]:
     return round(latitude, _PRECISION), round(longitude, _PRECISION)
 
 
+@private_place_name
 def district_of(address: Address) -> str | None:
     """The district, village or town an address is in; None when it names none."""
     return next((address[key] for key in _DISTRICT_KEYS if address.get(key)), None)

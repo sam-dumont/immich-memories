@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 from immich_memories.analysis.trip_place import TripPlace, trip_place
 from immich_memories.api.models import Asset
 from immich_memories.place_names import short_place_name
+from immich_memories.tracking.report_context import private_place_name
 
 if TYPE_CHECKING:
     from immich_memories.config_loader import Config
@@ -197,6 +198,7 @@ def _place_at_scale(address: Mapping[str, str], spread_km: float | None) -> str 
     return next((name for key in keys if (name := short_place_name(address.get(key)))), None)
 
 
+@private_place_name
 def trip_place_name(address: Mapping[str, str], spread_km: float | None = None) -> str | None:
     """The trip's place at its scale: the town under `_CITY_SPREAD_KM`, else the region.
 

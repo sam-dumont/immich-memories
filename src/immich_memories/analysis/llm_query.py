@@ -16,7 +16,6 @@ from __future__ import annotations
 import asyncio
 import base64
 import logging
-import time
 from dataclasses import replace
 from functools import partial
 from typing import TYPE_CHECKING, Any
@@ -64,6 +63,7 @@ from immich_memories.analysis.llm_wire import (
 )
 from immich_memories.config_models_llm import LLMConfig
 from immich_memories.operations.cancellation import check_cancelled
+from immich_memories.tracking.timing import span
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
@@ -173,6 +173,7 @@ def build_llm_timeout(read_timeout: float) -> httpx.Timeout:
     )
 
 
+@llm_metrics.scoped_model
 async def query_llm(
     prompt: str,
     llm_config: LLMConfig,
@@ -203,6 +204,7 @@ async def query_llm(
     """
     check_cancelled()
     llm_config = resolved_llm_config(llm_config)
+    llm_metrics.begin_request(llm_config.model)
     # A prompt hash cannot see the pictures, so an image-bearing call with a
     # fixed prompt template — "one line per picture, in order" — would key
     # identically for two entirely different days and serve one the other's
@@ -225,7 +227,7 @@ async def query_llm(
     remembered = _remembered(judgments, key) if key is not None else None
     if remembered is not None:
         logger.debug("Reusing the answer to an identical question")
-        llm_metrics.record_cache_hit()
+        llm_metrics.record_cache_hit(model=llm_config.model)
         return remembered
     attempt_number = 0
 
@@ -235,30 +237,30 @@ async def query_llm(
         if transport_observer is not None:
             transport_observer(replace(attempt, attempt=attempt_number))
 
-    started = time.monotonic()
     effective_thinking = bool(thinking and llm_config.reasons and not images)
     total_timeout = float(timeout_seconds)
     if effective_thinking:
         total_timeout = max(total_timeout, float(THINKING_MIN_TIMEOUT_SECONDS))
     try:
-        async with asyncio.timeout(total_timeout):
-            answer = await _dispatch(
-                prompt,
-                llm_config,
-                temperature,
-                max_tokens,
-                timeout_seconds,
-                thinking,
-                images,
-                image_detail,
-                watch,
-                require_complete,
-                response_format,
-            )
+        with span("reader.call") as measured:
+            async with asyncio.timeout(total_timeout):
+                answer = await _dispatch(
+                    prompt,
+                    llm_config,
+                    temperature,
+                    max_tokens,
+                    timeout_seconds,
+                    thinking,
+                    images,
+                    image_detail,
+                    watch,
+                    require_complete,
+                    response_format,
+                )
     finally:
         # In `finally` so a failed call still shows the time it burned; a run
         # that spent four minutes on a dead server should not read as free.
-        llm_metrics.record_wall(time.monotonic() - started)
+        llm_metrics.record_wall(measured.duration)
     if key is not None:
         _remember(judgments, key, answer)
     return answer

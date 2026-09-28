@@ -206,6 +206,17 @@ def _print_run_system_info(si) -> None:
         console.print(f"  FFmpeg: {si.ffmpeg_version}")
 
 
+def _print_run_spans(store, run) -> None:
+    from immich_memories.tracking.span_progress import span_tree
+    from immich_memories.tracking.span_store import SpanStore
+
+    spans = SpanStore(store).load(run.run_id).spans
+    if spans:
+        console.print("\nStage spans")
+        for line in span_tree(spans, run.total_duration_seconds):
+            console.print(line, markup=False)
+
+
 def register_runs_commands(main: click.Group) -> None:
     """Register the runs command group on the main CLI group."""
 
@@ -325,6 +336,7 @@ def register_runs_commands(main: click.Group) -> None:
         if run.phases:
             _print_run_phases_table(run, format_duration)
         _print_run_llm_totals(run)
+        _print_run_spans(db.store, run)
 
         if run.system_info:
             _print_run_system_info(run.system_info)

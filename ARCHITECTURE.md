@@ -759,7 +759,10 @@ src/immich_memories/
 │   │                           # phase_stats, automation_attempts, notification_health, asset_scores,
 │   │                           # run_attempts, special_days; 0005_operations); banks.py (audience answers
 │   │                           # and holds, block vote entries, owner review edits; 0006_banks); places.py
-│   │                           # (geocoded_places: opt-in reverse-geocode answers per cell; 0007)
+│   │                           # (geocoded_places: opt-in reverse-geocode answers per cell;
+│   │                           # 0007_geocoded_places); timing.py (run_spans, run_diagnostics;
+│   │                           # 0007_timing). Both 0007s grew from 0006_banks; the empty
+│   │                           # 0008_merge_timing_geocoded joins them into one head
 │   ├── legacy_import.py        # ImportOutcome: what one domain's import_legacy(store, home) did; the
 │   │                           # `legacy_import` records in store_meta (read_/write_import_record)
 │   ├── inventory.py            # row_counts, present_counts, recorded_revisions, digests: order-free,
@@ -1068,3 +1071,15 @@ version and capabilities first); deployment files are `services/render-worker/co
 The web sidebar links Memory, Suggestions, Runs, Media pool and Settings.
 `ui/pages/suggestions.py` uses `AutoRunner`; `ui/pages/runs.py` reads `RunDatabase`
 and the shared run index/storyboard. Neither page owns a separate job store.
+
+## Run diagnostics
+
+`tracking/timing.py` buffers context-local spans and logs. Preparation, reader, discovery and render
+boundaries share it; worker pools propagate context. `run_observations.py` owns the CLI lifecycle from
+before discovery through failure or completion. `span_store.py` persists spans and diagnostic context
+through Alembic revision `0007_timing`, on SQLite or PostgreSQL. No span writes to the database.
+
+`tracking/report.py` allowlists diagnostic fields. `report_privacy.py` redacts the chosen strings and
+assigns per-report salted IDs. `report_service.py` assembles the same report for `report` and the HTTP
+endpoint; neither calls Immich or sends anything. `span_progress.py` reads the saved spans for normalized
+rates and whole-run estimates. A first run has no historical total estimate.

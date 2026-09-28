@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import inspect
-import time as _time
 from collections.abc import Callable, Iterable
 from dataclasses import replace
 from pathlib import Path
@@ -32,6 +31,8 @@ from immich_memories.generate_timeline import (
 from immich_memories.operations.phases import OperationalPhase
 from immich_memories.processing.clip_validation import validate_clips
 from immich_memories.processing.probe_cache import ProbeCache
+from immich_memories.tracking.timed import timed
+from immich_memories.tracking.timing import span
 
 if TYPE_CHECKING:
     from immich_memories.config_loader import Config
@@ -203,18 +204,21 @@ def _anonymized_params(params: GenerationParams) -> GenerationParams:
     )
 
 
+@timed("render")
 def render_base(params, output_path, directory, tracker, operational, progress, phase_times):
     """Choose the configured renderer and keep one progress and run-tracking lifecycle."""
     from immich_memories.generate import GenerationError
     from immich_memories.processing.remote_render import RemoteRenderClient
 
     if params.config.render.enabled:
-        started = _time.monotonic()
         operational.emit_unperformed_prerequisites(OperationalPhase.SELECTION)
         operational.emit(OperationalPhase.RENDER, 0, len(params.clips), "Rendering on worker")
         tracker.start_phase("assembly", len(params.clips))
         try:
-            with RemoteRenderClient(params.config.render) as worker:
+            with (
+                span("render.assembly", items=len(params.clips)) as remote,
+                RemoteRenderClient(params.config.render) as worker,
+            ):
                 result = worker.render(params, output_path.with_suffix(".mp4"), progress.report)
         except GenerationError:
             if not params.config.render.fallback_to_local:
@@ -231,7 +235,7 @@ def render_base(params, output_path, directory, tracker, operational, progress, 
                 result.clips_selected,
                 "Render complete",
             )
-            phase_times["assembly"] = _time.monotonic() - started
+            phase_times["assembly"] = remote.duration
             return result
     return render_local(params, output_path, directory, tracker, operational, progress, phase_times)
 
@@ -249,32 +253,32 @@ def render_local(
     from immich_memories.generate import GenerationError, PreparedGeneration
 
     probe_cache = ProbeCache()
-    phase_start = _time.monotonic()
     assembly_clips: list = []
     try:
-        # Phase 1: Download and extract clips
-        pp.report("download", 0.0, "Downloading clips...")
-        run_tracker.start_phase("clip_extraction", len(params.clips))
-        _emit_download_phase(
-            operational,
-            params,
-            0,
-            len(params.clips),
-            "Preparing source downloads",
-        )
+        with span("render.clip_extraction", items=len(params.clips)) as extraction:
+            # Phase 1: Download and extract clips
+            pp.report("download", 0.0, "Downloading clips...")
+            run_tracker.start_phase("clip_extraction", len(params.clips))
+            _emit_download_phase(
+                operational,
+                params,
+                0,
+                len(params.clips),
+                "Preparing source downloads",
+            )
 
-        assembly_clips = _extracted_sources(params, run_output_dir, probe_cache=probe_cache)
-        run_tracker.complete_phase(items_processed=len(assembly_clips))
-        _emit_download_phase(
-            operational,
-            params,
-            len(assembly_clips),
-            len(params.clips),
-            "Sources prepared",
-        )
-        operational.emit_unperformed_prerequisites(OperationalPhase.SELECTION)
-        operational.emit(OperationalPhase.RENDER, 0, len(params.clips), "Rendering memory")
-        phase_times["download"] = _time.monotonic() - phase_start
+            assembly_clips = _extracted_sources(params, run_output_dir, probe_cache=probe_cache)
+            run_tracker.complete_phase(items_processed=len(assembly_clips))
+            _emit_download_phase(
+                operational,
+                params,
+                len(assembly_clips),
+                len(params.clips),
+                "Sources prepared",
+            )
+            operational.emit_unperformed_prerequisites(OperationalPhase.SELECTION)
+            operational.emit(OperationalPhase.RENDER, 0, len(params.clips), "Rendering memory")
+        phase_times["download"] = extraction.duration
         pp.report("download", 1.0, "Clips downloaded")
 
         # Pre-assembly validation: skip clips with missing/empty files
@@ -301,49 +305,49 @@ def render_local(
         assembly_clips = prepare_location_captions(params, assembly_clips)
 
         # Phase 2: Assemble (includes title generation + streaming encode)
-        _t = _time.monotonic()
-        assembly_cb = pp.assembly_callback()
-        run_tracker.start_phase("assembly", len(assembly_clips))
+        with span("render.assembly", items=len(assembly_clips)) as assembly:
+            assembly_cb = pp.assembly_callback()
+            run_tracker.start_phase("assembly", len(assembly_clips))
 
-        settings = _build_settings_with_optional_probe_cache(
-            params,
-            assembly_clips,
-            probe_cache=probe_cache,
-        )
-        if settings.title_screens is not None:
-            announce_title_source(settings.title_screens, run_tracker)
-        result_output_path = normalize_output_path(
-            requested_output_path,
-            cast(Literal["mp4", "mov"], settings.encoding_plan.container),
-        )
-        assembler = _create_assembler_with_optional_probe_cache(
-            settings,
-            params.config,
-            probe_cache=probe_cache,
-        )
-        staged_output_path = result_output_path.with_name(
-            f"{result_output_path.stem}.assembling{result_output_path.suffix}"
-        )
-        encode_started = _time.monotonic()
-        staged_result_path = assembler.assemble_with_titles(
-            assembly_clips,
-            staged_output_path,
-            assembly_cb,
-            frame_preview_callback=params.frame_preview_callback,
-        )
-        # Titles included: every second of it was this machine producing the
-        # film, and decoding the result can only be faster.
-        encode_seconds = _time.monotonic() - encode_started
-        plan = settings.encoding_plan
-        metrics, duration_warning = check_rendered_film(params, staged_result_path, plan)
-        run_tracker.complete_phase(items_processed=len(assembly_clips), extra_metrics=metrics)
-        operational.emit(
-            OperationalPhase.RENDER,
-            len(assembly_clips),
-            len(assembly_clips),
-            "Render complete",
-        )
-        phase_times["assembly"] = _time.monotonic() - _t
+            settings = _build_settings_with_optional_probe_cache(
+                params,
+                assembly_clips,
+                probe_cache=probe_cache,
+            )
+            if settings.title_screens is not None:
+                announce_title_source(settings.title_screens, run_tracker)
+            result_output_path = normalize_output_path(
+                requested_output_path,
+                cast(Literal["mp4", "mov"], settings.encoding_plan.container),
+            )
+            assembler = _create_assembler_with_optional_probe_cache(
+                settings,
+                params.config,
+                probe_cache=probe_cache,
+            )
+            staged_output_path = result_output_path.with_name(
+                f"{result_output_path.stem}.assembling{result_output_path.suffix}"
+            )
+            with span("render.encode", items=len(assembly_clips)) as encode:
+                staged_result_path = assembler.assemble_with_titles(
+                    assembly_clips,
+                    staged_output_path,
+                    assembly_cb,
+                    frame_preview_callback=params.frame_preview_callback,
+                )
+            # Titles included: every second of it was this machine producing the
+            # film, and decoding the result can only be faster.
+            encode_seconds = encode.duration
+            plan = settings.encoding_plan
+            metrics, duration_warning = check_rendered_film(params, staged_result_path, plan)
+            run_tracker.complete_phase(items_processed=len(assembly_clips), extra_metrics=metrics)
+            operational.emit(
+                OperationalPhase.RENDER,
+                len(assembly_clips),
+                len(assembly_clips),
+                "Render complete",
+            )
+        phase_times["assembly"] = assembly.duration
         return PreparedGeneration(
             path=result_output_path,
             staged_path=staged_result_path,

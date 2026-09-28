@@ -11,6 +11,7 @@ from typing import Any, TypeVar
 import httpx
 
 from immich_memories.api.models import Asset, AssetFace
+from immich_memories.tracking.timed import timed
 
 RequestFn = Callable[..., Any]
 DEFAULT_DOWNLOAD_LIMIT = 25 * 1024**3
@@ -82,6 +83,7 @@ class AssetService:
         rows = await self._request("GET", "/faces", params={"id": asset_id})
         return [AssetFace(**row) for row in rows] if isinstance(rows, list) else []
 
+    @timed("download.preview", items=1)
     async def get_asset_thumbnail(self, asset_id: str, size: str = "preview") -> bytes:
         """Get asset thumbnail."""
         params = {"size": size}
@@ -126,6 +128,7 @@ class AssetService:
             return response.content[start : start + length], len(response.content)
         return response.content, int(response.headers["content-range"].rpartition("/")[2])
 
+    @timed("download.original", items=1)
     async def download_asset(
         self,
         asset_id: str,
@@ -151,6 +154,7 @@ class AssetService:
             expected_size_bytes,
         )
 
+    @timed("download.playback", items=1)
     async def download_playback(self, asset_id: str, output_path: Path) -> Path:
         """Stream the video's playback rendition to a file, never holding it in memory."""
         return await self._stream_to(
