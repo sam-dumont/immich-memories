@@ -12,7 +12,7 @@ from immich_memories.analysis.editorial_final_hash_review import (
     review_cut_by_cached_hashes,
 )
 from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
-from immich_memories.analysis.editorial_shareability import allowed
+from immich_memories.analysis.editorial_shareability import allowed, unit_members
 from immich_memories.analysis.editorial_story_replies import film_close_family
 from immich_memories.analysis.editorial_story_shortlist import capture_space_available
 from immich_memories.analysis.editorial_story_standing import StandingGate
@@ -163,6 +163,8 @@ class PictureAdmission:
         """
         needs = {}
         for shot in shots:
+            if self._source_refusal(shot) is not None:
+                continue
             story = str(shot.get("story_episode") or "")
             needs[shot["asset_id"]] = (
                 0
@@ -178,6 +180,8 @@ class PictureAdmission:
 
     def stands_alone(self, shot: Mapping[str, Any], tier_of: Mapping[str, str]) -> bool:
         """The standing gate's answer for this shot as its story's weight reads it."""
+        if self._source_refusal(shot) is not None:
+            return False
         story = str(shot.get("story_episode") or "")
         stands = self.standing.stands(shot["asset_id"], _weight(shot, tier_of), story)
         return stands or _owner_and_record(shot)
@@ -186,8 +190,9 @@ class PictureAdmission:
         story = str(shot.get("story_episode") or "")
         moment = str(shot.get("moment") or "")
         asset = shot["asset_id"]
-        if asset in self.excluded:
-            return GateRefusal(asset, story, "source", self.excluded[asset], moment)
+        source_refusal = self._source_refusal(shot)
+        if source_refusal is not None:
+            return source_refusal
         stands = (
             (
                 not self.standing.rejected_motion(asset)
@@ -210,6 +215,18 @@ class PictureAdmission:
             return GateRefusal(
                 shot["asset_id"], story, "capture spacing", "inside five minutes", moment
             )
+        return None
+
+    def _source_refusal(self, shot: Mapping[str, Any]) -> GateRefusal | None:
+        for member in unit_members(shot):
+            if member in self.excluded:
+                return GateRefusal(
+                    shot["asset_id"],
+                    str(shot.get("story_episode") or ""),
+                    "source",
+                    self.excluded[member],
+                    str(shot.get("moment") or ""),
+                )
         return None
 
 

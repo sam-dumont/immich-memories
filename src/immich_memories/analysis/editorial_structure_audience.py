@@ -265,7 +265,9 @@ class AudienceGate:
     def verdict_of(self, u) -> str:
         observed_reason, evidence = self._evidence(u)
         if observed_reason:
-            return self._refuse(u["asset_id"], observed_reason, persist=True)
+            member, reason = observed_reason
+            self._refuse(member, reason, persist=True)
+            return self._refuse(u["asset_id"], reason, persist=False)
         if unusable_video(u, self._lines.get(u["asset_id"], "")):
             # A fresh quality check is eligibility for this cut, never a permanent privacy hold.
             return self._refuse(u["asset_id"], "clip subject often missing", persist=False)
@@ -376,14 +378,14 @@ class AudienceGate:
         if self._prepare_candidates is not None:
             self._prepare_candidates(units)
 
-    def _evidence(self, u) -> tuple[str | None, dict[str, Any]]:
+    def _evidence(self, u) -> tuple[tuple[str, str] | None, dict[str, Any]]:
         """The carrier rule's refusal if one applies, and the evidence the audience question is
         asked on."""
         self.prepare([u])
-        asset_id = u["asset_id"]
-        observed_reason = excluded_carrier_sources({asset_id: self._lines.get(asset_id, "")}).get(
-            asset_id
+        excluded = excluded_carrier_sources(
+            {member: self._lines.get(member, "") for member in _share.unit_members(u)}
         )
+        observed_reason = next(iter(excluded.items()), None)
         evidence = _share.evidence_for_unit(
             u,
             self._annotations,
