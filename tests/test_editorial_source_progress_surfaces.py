@@ -114,61 +114,19 @@ def test_cli_real_display_enters_indeterminate_then_reports_actual_terminal_stag
     assert observed[2] == expected
 
 
-@pytest.mark.parametrize("status", ["running", "complete", "failed"])
-def test_ui_callback_keeps_the_stage_and_elapsed_and_marks_the_display_indeterminate(status):
-    from immich_memories.ui.pages.clip_pipeline import _make_progress_callback
-
-    state: dict = {}
-    _make_progress_callback(state)(_status(status=status))
-    assert state["phase_label"] == "Editing the memory"
-    assert state["status"] == status and state["indeterminate"] is True
-    assert state["started_at"] == 100.0 and state["elapsed"] == "8s"
-
-
-def test_ui_progress_callback_preserves_explicit_cancellation_contract():
-    from immich_memories.ui.pages.clip_pipeline import PipelineCancelled, _make_progress_callback
-
-    with pytest.raises(PipelineCancelled):
-        _make_progress_callback({}, lambda: True)(_status())
-
-
-def test_cached_asset_checks_do_not_repeat_logs_or_ui_writes_and_still_cancel(caplog):
+def test_cached_asset_checks_log_each_stage_once(caplog):
     import logging
 
     from immich_memories.cli._live_display import QuietDisplay
-    from immich_memories.ui.pages.clip_pipeline import PipelineCancelled, _make_progress_callback
 
-    class CountingState(dict):
-        writes = 0
-
-        def __setitem__(self, key, value):
-            self.writes += 1
-            super().__setitem__(key, value)
-
-    state = CountingState()
-    cancel = {"requested": False}
-    update_ui = _make_progress_callback(state, lambda: cancel["requested"])
     display = QuietDisplay()
     with caplog.at_level(logging.INFO, logger="immich_memories.progress"):
         task = display.add_task("Preparing cached previews", total=None)
-        update_ui(_status("Preparing cached previews"))
-        initial_writes = state.writes
         for _ in range(1500):
             display.update(task, description="Preparing cached previews")
-            update_ui(_status("Preparing cached previews"))
-        assert state.writes == initial_writes
         assert caplog.messages.count("Preparing cached previews") == 1
         display.update(task, description="Reading the period")
-        update_ui(_status("Reading the period"))
-        assert state["phase_label"] == "Reading the period"
         assert caplog.messages.count("Reading the period") == 1
-        update_ui({**_status("Reading the period"), "current_index": 4, "total_items": 9})
-        assert (state["current_index"], state["total_items"]) == (4, 9)
-        update_ui(_status("Reading the period", status="complete"))
-        assert state["status"] == "complete"
-        cancel["requested"] = True
-        with pytest.raises(PipelineCancelled):
-            update_ui(_status("Reading the period"))
 
 
 def test_identical_interactive_description_does_not_refresh_display():

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Immich Memories</title>
+    <script>
+      // @immich/ui applies the theme only when it changes; apply the saved one before first paint.
+      try {
+        const saved = JSON.parse(localStorage.getItem('immich-ui-theme') ?? '"system"');
+        const dark = saved === 'dark' || (saved !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.add(dark ? 'dark' : 'light');
+      } catch {}
+    </script>
+    %sveltekit.head%
+  </head>
+  <body class="bg-light text-dark" data-sveltekit-preload-data="hover">
+    <div style="display: contents">%sveltekit.body%</div>
+  </body>
+</html>

@@ -204,27 +204,6 @@ def _with_transition_budget(
     )
 
 
-def estimate_film_duration(
-    plan: TimelinePlan,
-    *,
-    content_seconds: float,
-    content_clips: int,
-    transition_mode: Any,
-    transition_duration: float,
-) -> float:
-    """How long the rendered file will run: titles, the content that fits, less the overlap.
-
-    This count-only estimate uses SMART's expected fade share. A preview with
-    source IDs can use ``preview_timeline`` for the actual boundary decisions.
-    A finished file's ffprobed duration replaces either estimate.
-    """
-    content = min(max(0.0, content_seconds), max(0.0, plan.content_budget))
-    cards = int(plan.title_duration > 0.0) + plan.max_dividers + int(plan.ending_duration > 0.0)
-    boundaries = max(0, max(0, content_clips) + cards - 1)
-    overlap = boundaries * max(0.0, transition_duration) * _transition_ratio(transition_mode)
-    return max(0.0, plan.title_budget + content - overlap)
-
-
 def _selected_month_divider_count(clips: list[Any]) -> int:
     months = list(
         dict.fromkeys(
@@ -264,8 +243,14 @@ def plan_timeline(
     remaining -= title_duration
 
     configured_ending = max(0.0, float(title_settings.ending_duration))
-    ending_duration = min(configured_ending, remaining) if remaining >= _MIN_ENDING_SECONDS else 0.0
-    remaining -= ending_duration
+    # Every film ends on its ending card (owner, 28 Sep): a short film gets a short one, at least
+    # _MIN_ENDING_SECONDS, taken from the pictures when the titles' share has run out.
+    ending_duration = (
+        min(configured_ending, max(remaining, _MIN_ENDING_SECONDS))
+        if configured_ending > 0
+        else 0.0
+    )
+    remaining = max(0.0, remaining - ending_duration)
 
     divider_duration = max(0.0, float(title_settings.month_divider_duration))
     if _is_chronological_month_mode(title_settings, memory_type):

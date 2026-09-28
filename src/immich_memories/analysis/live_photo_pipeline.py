@@ -10,7 +10,7 @@ Person scopes keep the Immich person tag as their exact source boundary. An
 untagged temporal neighbour does not enter the pool merely because it sits near
 a tagged Live Photo.
 
-Shared between CLI and UI — no NiceGUI imports allowed here.
+Shared between the CLI and the web server.
 """
 
 from __future__ import annotations

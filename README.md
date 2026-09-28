@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://sam-dumont.github.io/immich-video-memory-generator/demo/demo.mp4">
-    <img src="https://sam-dumont.github.io/immich-video-memory-generator/img/demo-hero.gif" alt="Choose a memory, review its storyboard, and watch the finished film" width="720" height="405">
+    <img src="https://sam-dumont.github.io/immich-video-memory-generator/img/demo-hero.gif" alt="Choose a memory, review and change its cut, and watch the finished film" width="720" height="405">
   </a>
   <br/>
   <sub><a href="https://sam-dumont.github.io/immich-video-memory-generator/demo/demo.mp4">▶ Play the demo with music</a> · <a href="https://sam-dumont.github.io/immich-video-memory-generator/demo/trip-preview.mp4">Watch a finished trip film</a> · CC0 stock pictures, <a href="tests/e2e/fixtures/library/CREDITS.md">credited here</a> · <a href="https://sam-dumont.github.io/immich-video-memory-generator/docs/">Documentation</a></sub>
@@ -22,7 +22,7 @@ It reads a period of your library, picks the pictures and videos that tell it, k
 
 **Works on a plain NAS. A GPU or a model makes it better.** The base install is one container next to Immich, cutting from dates, places, favourites, the people Immich recognised and a few small classifiers on the CPU, and that already gives you a film worth sharing. A GPU makes it faster, and a reader model polishes the cut: [what each one adds](https://sam-dumont.github.io/immich-video-memory-generator/docs/better/overview).
 
-You see the storyboard before anything renders. Untick what you disagree with and cut again; `immich-memories runs why <asset-id>` says which rule kept a picture or left it out. [How it chooses](https://sam-dumont.github.io/immich-video-memory-generator/docs/how-it-chooses/overview) writes every rule down.
+The CLI and web UI run the same editor: every button in the browser runs a command you could type, and shows it. Automate with the CLI, or make a cut in the browser and review it before anything renders. The review is a contact sheet: open a picture to read why it stayed and what a model said about it, remove it, trim it, swap in another picture of the same moment, save that as a revision and render it. `immich-memories runs why <asset-id>` reads the same saved evidence. [How it chooses](https://sam-dumont.github.io/immich-video-memory-generator/docs/how-it-chooses/overview) writes every rule down.
 
 ## Run it
 

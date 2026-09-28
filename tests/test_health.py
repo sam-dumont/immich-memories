@@ -34,13 +34,25 @@ def _config_with_every_secret_class() -> Config:
     )
 
 
+def _server():
+    """The real server, built over a default config; its health routes read their own."""
+    from immich_memories.web.server import create_app
+
+    # WHY: building the app reads the config file and the session secret from the host.
+    with (
+        patch("immich_memories.web.server.get_config", return_value=Config()),
+        patch.dict("os.environ", {"IMMICH_MEMORIES_STORAGE_SECRET": "test-secret"}),
+    ):
+        return create_app()
+
+
 @pytest.fixture(autouse=True)
 def _fresh_health_snapshot():
     """The snapshot cache is process-global, as it must be to serve probes.
 
     Tests would otherwise read each other's snapshots, so each starts cold.
     """
-    from immich_memories.ui import health_api as health_module
+    from immich_memories.web import health as health_module
 
     health_module._health_snapshot_cache = None
     yield
@@ -60,7 +72,7 @@ class TestHealthEndpoint:
         expected_diagnostic: str,
     ) -> None:
         """Optional status failures retain class diagnostics without their sensitive message."""
-        from immich_memories.ui.health_api import _ImmichDependency, _readiness_handler
+        from immich_memories.web.health import _ImmichDependency, _readiness_handler
 
         config = _config_with_every_secret_class()
         sensitive_values = (config.immich.url, *configured_secret_values(config))
@@ -73,10 +85,10 @@ class TestHealthEndpoint:
             last_run.side_effect = failure
 
         with (
-            caplog.at_level(logging.WARNING, logger="immich_memories.ui.health_api"),
-            patch("immich_memories.ui.health_api.get_config", return_value=config),
+            caplog.at_level(logging.WARNING, logger="immich_memories.web.health"),
+            patch("immich_memories.web.health.get_config", return_value=config),
             patch(
-                "immich_memories.ui.health_api._check_immich_dependency",
+                "immich_memories.web.health._check_immich_dependency",
                 new_callable=AsyncMock,
                 return_value=_ImmichDependency(
                     status="ready",
@@ -84,8 +96,8 @@ class TestHealthEndpoint:
                     resolved_api_version="v3",
                 ),
             ),
-            patch("immich_memories.ui.health_api._get_automation_status", automation),
-            patch("immich_memories.ui.health_api._get_last_successful_run", last_run),
+            patch("immich_memories.web.health._get_automation_status", automation),
+            patch("immich_memories.web.health._get_last_successful_run", last_run),
         ):
             response = await _readiness_handler(MagicMock())
 
@@ -97,11 +109,11 @@ class TestHealthEndpoint:
 
     def test_registered_health_routes_keep_individual_fallbacks_without_config(self):
         """The real app bypasses config before exact liveness/readiness/legacy handlers."""
-        from immich_memories.ui.app import app
+        app = _server()
 
         client = TestClient(app, raise_server_exceptions=False)
         with patch(
-            "immich_memories.ui.health_api.get_config",
+            "immich_memories.web.health.get_config",
             side_effect=RuntimeError("configuration unavailable"),
         ):
             live = client.get("/health/live")
@@ -117,8 +129,8 @@ class TestHealthEndpoint:
 
     def test_readiness_reports_the_in_process_automation_timer(self, tmp_path: Path):
         """Docker users check /health to see when the in-app daily run will fire (#305)."""
-        from immich_memories.ui.app import app
-        from immich_memories.ui.health_api import _ImmichDependency
+        app = _server()
+        from immich_memories.web.health import _ImmichDependency
 
         config = Config(
             immich={"url": "http://immich.test", "api_key": "health-secret"},
@@ -135,13 +147,13 @@ class TestHealthEndpoint:
         client = TestClient(app, raise_server_exceptions=False)
         with (
             # WHY: /health must not reach out to a real Immich in a unit test.
-            patch("immich_memories.ui.health_api.get_config", return_value=config),
+            patch("immich_memories.web.health.get_config", return_value=config),
             patch(
-                "immich_memories.ui.health_api._check_immich_dependency",
+                "immich_memories.web.health._check_immich_dependency",
                 new_callable=AsyncMock,
                 return_value=_ImmichDependency(status="ready", reachable=True),
             ),
-            patch("immich_memories.ui.health_api.automation_scheduler", scheduler),
+            patch("immich_memories.web.health.automation_scheduler", scheduler),
         ):
             response = client.get("/health/ready")
 
@@ -153,17 +165,15 @@ class TestHealthEndpoint:
 
     def test_registered_readiness_uses_one_configuration_snapshot(self):
         """A real detailed request cannot reload config while reading run history."""
-        from immich_memories.ui.app import app
-        from immich_memories.ui.health_api import _ImmichDependency
+        app = _server()
+        from immich_memories.web.health import _ImmichDependency
 
         config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         client = TestClient(app, raise_server_exceptions=False)
         with (
+            patch("immich_memories.web.health.get_config", return_value=config) as get_config_mock,
             patch(
-                "immich_memories.ui.health_api.get_config", return_value=config
-            ) as get_config_mock,
-            patch(
-                "immich_memories.ui.health_api._check_immich_dependency",
+                "immich_memories.web.health._check_immich_dependency",
                 new_callable=AsyncMock,
                 return_value=_ImmichDependency(
                     status="ready",
@@ -171,14 +181,15 @@ class TestHealthEndpoint:
                     resolved_api_version="v3",
                 ),
             ),
-            patch("immich_memories.ui.health_api._get_automation_status", return_value=None),
+            patch("immich_memories.web.health._get_automation_status", return_value=None),
             patch("immich_memories.tracking.run_database.RunDatabase") as database,
         ):
             database.return_value.list_runs.return_value = []
             response = client.get("/health/ready")
 
         assert response.status_code == 200
-        assert get_config_mock.call_count == 1
+        # One read builds the snapshot; the other is the per-request check of who may see detail.
+        assert get_config_mock.call_count == 2
 
     def test_automation_status_truthfully_defaults_pending_delivery_without_queue(
         self, tmp_path: Path
@@ -198,16 +209,16 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_readiness_projects_real_automation_delivery_defaults(self, tmp_path: Path):
         """The detailed endpoint consumes delivery fields from the real status producer."""
-        from immich_memories.ui.health_api import _ImmichDependency, _readiness_handler
+        from immich_memories.web.health import _ImmichDependency, _readiness_handler
 
         config = Config(
             immich={"url": "http://immich.test", "api_key": "health-secret"},
             cache={"database": str(tmp_path / "health.db"), "directory": str(tmp_path / "cache")},
         )
         with (
-            patch("immich_memories.ui.health_api.get_config", return_value=config),
+            patch("immich_memories.web.health.get_config", return_value=config),
             patch(
-                "immich_memories.ui.health_api._check_immich_dependency",
+                "immich_memories.web.health._check_immich_dependency",
                 new_callable=AsyncMock,
                 return_value=_ImmichDependency(
                     status="ready",
@@ -215,7 +226,7 @@ class TestHealthEndpoint:
                     resolved_api_version="v3",
                 ),
             ),
-            patch("immich_memories.ui.health_api._get_last_successful_run", return_value=None),
+            patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
             response = await _readiness_handler(MagicMock())
 
@@ -230,7 +241,7 @@ class TestHealthEndpoint:
             NotificationFailureCategory,
             NotificationStateStore,
         )
-        from immich_memories.ui.health_api import _ImmichDependency, _readiness_handler
+        from immich_memories.web.health import _ImmichDependency, _readiness_handler
 
         config = Config(
             immich={"url": "http://immich.test", "api_key": "health-secret"},
@@ -239,15 +250,15 @@ class TestHealthEndpoint:
         )
         NotificationStateStore().record_failure(NotificationFailureCategory.QUOTA)
         with (
-            patch("immich_memories.ui.health_api.get_config", return_value=config),
+            patch("immich_memories.web.health.get_config", return_value=config),
             patch(
-                "immich_memories.ui.health_api._check_immich_dependency",
+                "immich_memories.web.health._check_immich_dependency",
                 new_callable=AsyncMock,
                 return_value=_ImmichDependency(
                     status="ready", reachable=True, resolved_api_version="v3"
                 ),
             ),
-            patch("immich_memories.ui.health_api._get_last_successful_run", return_value=None),
+            patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
             response = await _readiness_handler(MagicMock())
 
@@ -259,17 +270,17 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_liveness_is_process_only(self):
         """Liveness must stay green without consulting config, Immich, or SQLite."""
-        from immich_memories.ui.health_api import _liveness_handler
+        from immich_memories.web.health import _liveness_handler
 
         config = MagicMock(name="get_config")
         immich = MagicMock(name="check_immich_dependency")
         automation = MagicMock(name="get_automation_status")
         last_run = MagicMock(name="get_last_successful_run")
         with (
-            patch("immich_memories.ui.health_api.get_config", config),
-            patch("immich_memories.ui.health_api._check_immich_dependency", immich),
-            patch("immich_memories.ui.health_api._get_automation_status", automation),
-            patch("immich_memories.ui.health_api._get_last_successful_run", last_run),
+            patch("immich_memories.web.health.get_config", config),
+            patch("immich_memories.web.health._check_immich_dependency", immich),
+            patch("immich_memories.web.health._get_automation_status", automation),
+            patch("immich_memories.web.health._get_last_successful_run", last_run),
         ):
             response = await _liveness_handler(MagicMock())
 
@@ -294,7 +305,7 @@ class TestHealthEndpoint:
         failing_boundary,
     ):
         """Database diagnostics must be sanitized before response or logging boundaries."""
-        from immich_memories.ui.health_api import _ImmichDependency, _readiness_handler
+        from immich_memories.web.health import _ImmichDependency, _readiness_handler
 
         config = _config_with_every_secret_class()
         secrets = configured_secret_values(config)
@@ -306,11 +317,11 @@ class TestHealthEndpoint:
         else:
             last_run.side_effect = failure
 
-        caplog.set_level(logging.WARNING, logger="immich_memories.ui.health_api")
+        caplog.set_level(logging.WARNING, logger="immich_memories.web.health")
         with (
-            patch("immich_memories.ui.health_api.get_config", return_value=config),
+            patch("immich_memories.web.health.get_config", return_value=config),
             patch(
-                "immich_memories.ui.health_api._check_immich_dependency",
+                "immich_memories.web.health._check_immich_dependency",
                 new_callable=AsyncMock,
                 return_value=_ImmichDependency(
                     status="ready",
@@ -318,8 +329,8 @@ class TestHealthEndpoint:
                     resolved_api_version="v3",
                 ),
             ),
-            patch("immich_memories.ui.health_api._get_automation_status", automation),
-            patch("immich_memories.ui.health_api._get_last_successful_run", last_run),
+            patch("immich_memories.web.health._get_automation_status", automation),
+            patch("immich_memories.web.health._get_last_successful_run", last_run),
         ):
             response = await _readiness_handler(MagicMock())
 
@@ -332,16 +343,16 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_readiness_is_503_when_configuration_is_missing(self):
         """A default config cannot generate memories and must not be reported ready."""
-        from immich_memories.ui.health_api import _readiness_handler
+        from immich_memories.web.health import _readiness_handler
 
         with (
-            patch("immich_memories.ui.health_api.get_config", return_value=Config()),
+            patch("immich_memories.web.health.get_config", return_value=Config()),
             patch(
-                "immich_memories.ui.health_api._check_immich_dependency",
+                "immich_memories.web.health._check_immich_dependency",
                 side_effect=AssertionError("missing config should not contact Immich"),
             ),
-            patch("immich_memories.ui.health_api._get_automation_status", return_value=None),
-            patch("immich_memories.ui.health_api._get_last_successful_run", return_value=None),
+            patch("immich_memories.web.health._get_automation_status", return_value=None),
+            patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
             response = await _readiness_handler(MagicMock())
 
@@ -355,19 +366,19 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_readiness_is_503_when_immich_is_unreachable(self):
         """An unreachable configured server must fail the readiness gate."""
-        from immich_memories.ui.health_api import _ImmichDependency, _readiness_handler
+        from immich_memories.web.health import _ImmichDependency, _readiness_handler
 
         config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         dependency = _ImmichDependency(status="unreachable", reachable=False)
         with (
-            patch("immich_memories.ui.health_api.get_config", return_value=config),
+            patch("immich_memories.web.health.get_config", return_value=config),
             patch(
-                "immich_memories.ui.health_api._check_immich_dependency",
+                "immich_memories.web.health._check_immich_dependency",
                 new_callable=AsyncMock,
                 return_value=dependency,
             ),
-            patch("immich_memories.ui.health_api._get_automation_status", return_value=None),
-            patch("immich_memories.ui.health_api._get_last_successful_run", return_value=None),
+            patch("immich_memories.web.health._get_automation_status", return_value=None),
+            patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
             response = await _readiness_handler(MagicMock())
 
@@ -377,19 +388,19 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_readiness_is_503_for_unsupported_immich(self):
         """Auto-detecting an unsupported major must fail the readiness gate."""
-        from immich_memories.ui.health_api import _ImmichDependency, _readiness_handler
+        from immich_memories.web.health import _ImmichDependency, _readiness_handler
 
         config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         dependency = _ImmichDependency(status="unsupported_version", reachable=True)
         with (
-            patch("immich_memories.ui.health_api.get_config", return_value=config),
+            patch("immich_memories.web.health.get_config", return_value=config),
             patch(
-                "immich_memories.ui.health_api._check_immich_dependency",
+                "immich_memories.web.health._check_immich_dependency",
                 new_callable=AsyncMock,
                 return_value=dependency,
             ),
-            patch("immich_memories.ui.health_api._get_automation_status", return_value=None),
-            patch("immich_memories.ui.health_api._get_last_successful_run", return_value=None),
+            patch("immich_memories.web.health._get_automation_status", return_value=None),
+            patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
             response = await _readiness_handler(MagicMock())
 
@@ -399,7 +410,7 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_ready_snapshot_exposes_policy_version_and_automation_without_secrets(self):
         """Operators get actionable state, while configured credentials never enter JSON."""
-        from immich_memories.ui.health_api import _ImmichDependency, _readiness_handler
+        from immich_memories.web.health import _ImmichDependency, _readiness_handler
 
         secret = "never-serialize-this-key"  # noqa: S105
         config = Config(immich={"url": "http://immich.test", "api_key": secret})
@@ -420,15 +431,15 @@ class TestHealthEndpoint:
             },
         }
         with (
-            patch("immich_memories.ui.health_api.get_config", return_value=config),
+            patch("immich_memories.web.health.get_config", return_value=config),
             patch(
-                "immich_memories.ui.health_api._check_immich_dependency",
+                "immich_memories.web.health._check_immich_dependency",
                 new_callable=AsyncMock,
                 return_value=dependency,
             ),
-            patch("immich_memories.ui.health_api._get_automation_status", return_value=automation),
+            patch("immich_memories.web.health._get_automation_status", return_value=automation),
             patch(
-                "immich_memories.ui.health_api._get_last_successful_run",
+                "immich_memories.web.health._get_last_successful_run",
                 return_value="2026-08-11T06:15:00+00:00",
             ),
         ):
@@ -459,19 +470,19 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_legacy_health_keeps_detailed_payload_and_http_200_when_degraded(self):
         """Compatibility clients retain details without inheriting readiness status codes."""
-        from immich_memories.ui.health_api import _health_handler, _ImmichDependency
+        from immich_memories.web.health import _health_handler, _ImmichDependency
 
         config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         dependency = _ImmichDependency(status="unreachable", reachable=False)
         with (
-            patch("immich_memories.ui.health_api.get_config", return_value=config),
+            patch("immich_memories.web.health.get_config", return_value=config),
             patch(
-                "immich_memories.ui.health_api._check_immich_dependency",
+                "immich_memories.web.health._check_immich_dependency",
                 new_callable=AsyncMock,
                 return_value=dependency,
             ),
-            patch("immich_memories.ui.health_api._get_automation_status", return_value=None),
-            patch("immich_memories.ui.health_api._get_last_successful_run", return_value=None),
+            patch("immich_memories.web.health._get_automation_status", return_value=None),
+            patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
             response = await _health_handler(MagicMock())
 
@@ -483,19 +494,19 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_legacy_health_keeps_ok_status_when_dependency_is_healthy(self):
         """Compatibility health keeps its established healthy status label."""
-        from immich_memories.ui.health_api import _health_handler, _ImmichDependency
+        from immich_memories.web.health import _health_handler, _ImmichDependency
 
         config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         dependency = _ImmichDependency(status="ready", reachable=True, resolved_api_version="v3")
         with (
-            patch("immich_memories.ui.health_api.get_config", return_value=config),
+            patch("immich_memories.web.health.get_config", return_value=config),
             patch(
-                "immich_memories.ui.health_api._check_immich_dependency",
+                "immich_memories.web.health._check_immich_dependency",
                 new_callable=AsyncMock,
                 return_value=dependency,
             ),
-            patch("immich_memories.ui.health_api._get_automation_status", return_value=None),
-            patch("immich_memories.ui.health_api._get_last_successful_run", return_value=None),
+            patch("immich_memories.web.health._get_automation_status", return_value=None),
+            patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
             response = await _health_handler(MagicMock())
 
@@ -505,15 +516,15 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_health_handler_returns_json(self):
         """Health handler should return valid JSON with expected keys."""
-        from immich_memories.ui.health_api import _health_handler
+        from immich_memories.web.health import _health_handler
 
         mock_request = MagicMock()
 
         # WHY: detailed health reads both disk configuration and SQLite status.
         with (
-            patch("immich_memories.ui.health_api._get_automation_status", return_value=None),
-            patch("immich_memories.ui.health_api._get_last_successful_run", return_value=None),
-            patch("immich_memories.ui.health_api.get_config", return_value=Config()),
+            patch("immich_memories.web.health._get_automation_status", return_value=None),
+            patch("immich_memories.web.health._get_last_successful_run", return_value=None),
+            patch("immich_memories.web.health.get_config", return_value=Config()),
         ):
             response = await _health_handler(mock_request)
 
@@ -526,7 +537,7 @@ class TestHealthEndpoint:
     async def test_dependency_probe_resolves_version_and_authenticates(self):
         """A usable connection reports the selected API compatibility version."""
         from immich_memories.api.compatibility import ResolvedApiVersion
-        from immich_memories.ui.health_api import _check_immich_dependency
+        from immich_memories.web.health import _check_immich_dependency
 
         config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         client = AsyncMock()
@@ -545,7 +556,7 @@ class TestHealthEndpoint:
     async def test_dependency_probe_accepts_a_supported_v2_server(self):
         """A configured v2 server is just as ready as the existing v3 path."""
         from immich_memories.api.compatibility import ResolvedApiVersion
-        from immich_memories.ui.health_api import _check_immich_dependency
+        from immich_memories.web.health import _check_immich_dependency
 
         config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         client = AsyncMock()
@@ -563,7 +574,7 @@ class TestHealthEndpoint:
         """A rejected key means the server answered, but it is not ready for work."""
         from immich_memories.api.compatibility import ResolvedApiVersion
         from immich_memories.api.immich import ImmichAuthError
-        from immich_memories.ui.health_api import _check_immich_dependency
+        from immich_memories.web.health import _check_immich_dependency
 
         config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         client = AsyncMock()
@@ -580,7 +591,7 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_readiness_timeout_returns_503_and_closes_cancelled_client(self):
         """A cancelled dependency probe releases its client and degrades readiness."""
-        from immich_memories.ui.health_api import _readiness_handler
+        from immich_memories.web.health import _readiness_handler
 
         async def cancelled_wait_for(operation, timeout):  # noqa: ARG001
             task = asyncio.create_task(operation)
@@ -593,11 +604,11 @@ class TestHealthEndpoint:
         client = AsyncMock()
         client.__aenter__.return_value = client
         with (
-            patch("immich_memories.ui.health_api.get_config", return_value=config),
+            patch("immich_memories.web.health.get_config", return_value=config),
             patch("immich_memories.api.immich.ImmichClient", return_value=client),
-            patch("immich_memories.ui.health_api.asyncio.wait_for", new=cancelled_wait_for),
-            patch("immich_memories.ui.health_api._get_automation_status", return_value=None),
-            patch("immich_memories.ui.health_api._get_last_successful_run", return_value=None),
+            patch("immich_memories.web.health.asyncio.wait_for", new=cancelled_wait_for),
+            patch("immich_memories.web.health._get_automation_status", return_value=None),
+            patch("immich_memories.web.health._get_last_successful_run", return_value=None),
         ):
             response = await _readiness_handler(MagicMock())
 
@@ -609,7 +620,7 @@ class TestHealthEndpoint:
     async def test_dependency_probe_distinguishes_an_unsupported_server(self):
         """A responding unsupported major is different from a network outage."""
         from immich_memories.api.compatibility import UnsupportedImmichVersion
-        from immich_memories.ui.health_api import _check_immich_dependency
+        from immich_memories.web.health import _check_immich_dependency
 
         config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         client = AsyncMock()
@@ -623,7 +634,7 @@ class TestHealthEndpoint:
 
     def test_get_last_successful_run_returns_none_when_no_runs(self):
         """Should return None when no completed runs exist."""
-        from immich_memories.ui.health_api import _get_last_successful_run
+        from immich_memories.web.health import _get_last_successful_run
 
         # WHY: RunDatabase reads from SQLite file (lazy import inside function)
         with patch("immich_memories.tracking.run_database.RunDatabase") as mock_db_cls:
@@ -638,8 +649,8 @@ class TestHealthDisclosure:
 
     @pytest.mark.parametrize("path", ["/health", "/health/ready"])
     def test_unauthenticated_health_omits_automation_detail_when_auth_enabled(self, path: str):
-        from immich_memories.ui.app import app
-        from immich_memories.ui.health_api import _ImmichDependency
+        app = _server()
+        from immich_memories.web.health import _ImmichDependency
 
         config = Config(
             immich={"url": "http://immich.test", "api_key": "health-secret"},
@@ -658,14 +669,14 @@ class TestHealthDisclosure:
         client = TestClient(app, raise_server_exceptions=False)
         with (
             # WHY: config and Immich probe are external boundaries; the test is about payload shape.
-            patch("immich_memories.ui.health_api.get_config", return_value=config),
+            patch("immich_memories.web.health.get_config", return_value=config),
             patch(
-                "immich_memories.ui.health_api._check_immich_dependency",
+                "immich_memories.web.health._check_immich_dependency",
                 new_callable=AsyncMock,
                 return_value=_ImmichDependency(status="ready", reachable=True),
             ),
-            patch("immich_memories.ui.health_api._get_automation_status", return_value=automation),
-            patch("immich_memories.ui.health_api._get_last_successful_run", return_value="run-123"),
+            patch("immich_memories.web.health._get_automation_status", return_value=automation),
+            patch("immich_memories.web.health._get_last_successful_run", return_value="run-123"),
         ):
             response = client.get(path)
 
@@ -679,22 +690,22 @@ class TestHealthDisclosure:
         assert body["last_successful_run"] is None
 
     def test_health_keeps_detail_when_auth_disabled(self):
-        from immich_memories.ui.app import app
-        from immich_memories.ui.health_api import _ImmichDependency
+        app = _server()
+        from immich_memories.web.health import _ImmichDependency
 
         config = Config(immich={"url": "http://immich.test", "api_key": "health-secret"})
         automation = {"last_attempt": {"memory_key": "year_in_review:2024"}}
         client = TestClient(app, raise_server_exceptions=False)
         with (
             # WHY: same boundaries as above; auth disabled means a trusted LAN deployment.
-            patch("immich_memories.ui.health_api.get_config", return_value=config),
+            patch("immich_memories.web.health.get_config", return_value=config),
             patch(
-                "immich_memories.ui.health_api._check_immich_dependency",
+                "immich_memories.web.health._check_immich_dependency",
                 new_callable=AsyncMock,
                 return_value=_ImmichDependency(status="ready", reachable=True),
             ),
-            patch("immich_memories.ui.health_api._get_automation_status", return_value=automation),
-            patch("immich_memories.ui.health_api._get_last_successful_run", return_value="run-123"),
+            patch("immich_memories.web.health._get_automation_status", return_value=automation),
+            patch("immich_memories.web.health._get_last_successful_run", return_value="run-123"),
         ):
             response = client.get("/health")
 
@@ -714,7 +725,7 @@ class TestHealthIsCheapUnderRepeatedProbes:
 
     @staticmethod
     def _reset_cache() -> None:
-        from immich_memories.ui import health_api as health_module
+        from immich_memories.web import health as health_module
 
         health_module._health_snapshot_cache = None
 
@@ -732,7 +743,7 @@ class TestHealthIsCheapUnderRepeatedProbes:
 
     @pytest.mark.asyncio
     async def test_a_burst_of_probes_does_the_work_once(self):
-        from immich_memories.ui import health_api as health_module
+        from immich_memories.web import health as health_module
 
         self._reset_cache()
         calls = []
@@ -744,11 +755,11 @@ class TestHealthIsCheapUnderRepeatedProbes:
         # WHY: the Immich server and the SQLite stores behind the snapshot
         with (
             # WHY: the probe only runs for a configured Immich
-            patch("immich_memories.ui.health_api.get_config", self._configured_config),
+            patch("immich_memories.web.health.get_config", self._configured_config),
             # WHY: external Immich server
-            patch("immich_memories.ui.health_api._check_immich_dependency", counted_dependency),
+            patch("immich_memories.web.health._check_immich_dependency", counted_dependency),
             # WHY: reads four SQLite databases
-            patch("immich_memories.ui.health_api._operational_detail", return_value=(None, None)),
+            patch("immich_memories.web.health._operational_detail", return_value=(None, None)),
         ):
             for _ in range(5):
                 await health_module._health_handler(MagicMock())
@@ -758,7 +769,7 @@ class TestHealthIsCheapUnderRepeatedProbes:
     @pytest.mark.asyncio
     async def test_the_snapshot_goes_stale_so_readiness_stays_truthful(self, monkeypatch):
         """A cache that never expires would report a dead Immich as ready."""
-        from immich_memories.ui import health_api as health_module
+        from immich_memories.web import health as health_module
 
         self._reset_cache()
         calls = []
@@ -772,11 +783,11 @@ class TestHealthIsCheapUnderRepeatedProbes:
         # WHY: the Immich server and the SQLite stores behind the snapshot
         with (
             # WHY: the probe only runs for a configured Immich
-            patch("immich_memories.ui.health_api.get_config", self._configured_config),
+            patch("immich_memories.web.health.get_config", self._configured_config),
             # WHY: external Immich server
-            patch("immich_memories.ui.health_api._check_immich_dependency", counted_dependency),
+            patch("immich_memories.web.health._check_immich_dependency", counted_dependency),
             # WHY: reads four SQLite databases
-            patch("immich_memories.ui.health_api._operational_detail", return_value=(None, None)),
+            patch("immich_memories.web.health._operational_detail", return_value=(None, None)),
         ):
             await health_module._health_handler(MagicMock())
             clock["now"] += 60.0
@@ -790,7 +801,7 @@ class TestHealthIsCheapUnderRepeatedProbes:
         import asyncio
         import time as time_module
 
-        from immich_memories.ui import health_api as health_module
+        from immich_memories.web import health as health_module
 
         self._reset_cache()
         ticks = 0
@@ -813,11 +824,11 @@ class TestHealthIsCheapUnderRepeatedProbes:
         # WHY: stands in for the Immich server and for a slow SQLite read
         with (
             # WHY: the probe only runs for a configured Immich
-            patch("immich_memories.ui.health_api.get_config", self._configured_config),
+            patch("immich_memories.web.health.get_config", self._configured_config),
             # WHY: external Immich server
-            patch("immich_memories.ui.health_api._check_immich_dependency", ready_dependency),
+            patch("immich_memories.web.health._check_immich_dependency", ready_dependency),
             # WHY: a real contended SQLite read, without needing contention
-            patch("immich_memories.ui.health_api._operational_detail", slow_blocking_detail),
+            patch("immich_memories.web.health._operational_detail", slow_blocking_detail),
         ):
             ticker = asyncio.create_task(tick())
             await asyncio.sleep(0.01)

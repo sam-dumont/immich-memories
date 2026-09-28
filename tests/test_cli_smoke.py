@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
-import sys
 from datetime import date
 from pathlib import Path
-from types import ModuleType
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -67,11 +65,8 @@ class TestVerbosity:
         assert logging.getLogger().level == logging.WARNING
 
     def test_verbose_reaches_the_ui_process(self):
-        fake_app = ModuleType("immich_memories.ui.app")
-        fake_main = MagicMock()
-        fake_app.main = fake_main  # type: ignore[attr-defined]
-        # WHY: the real ui.app.main starts a NiceGUI server; the flag's job ends at this call.
-        with patch.dict(sys.modules, {"immich_memories.ui.app": fake_app}):
+        # WHY: the real web.server.main starts uvicorn; the flag's job ends at this call.
+        with patch("immich_memories.web.server.main") as fake_main:
             _invoke(["-v", "ui"], config=Config(server={"host": "127.0.0.1"}))
         assert fake_main.call_args.kwargs["log_level"] == "DEBUG"
 
@@ -191,10 +186,8 @@ class TestUIExposureWarning:
 
     @staticmethod
     def _invoke_ui(config: Config) -> tuple[Result, MagicMock]:
-        fake_app = ModuleType("immich_memories.ui.app")
-        fake_main = MagicMock()
-        fake_app.main = fake_main  # type: ignore[attr-defined]
-        with patch.dict(sys.modules, {"immich_memories.ui.app": fake_app}):
+        # WHY: the real web.server.main starts uvicorn; the check under test runs before it.
+        with patch("immich_memories.web.server.main") as fake_main:
             return _invoke(["ui"], config=config), fake_main
 
     def test_ui_warns_before_unauthenticated_external_bind(self) -> None:

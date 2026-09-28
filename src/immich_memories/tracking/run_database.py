@@ -418,10 +418,19 @@ class RunDatabase:
         return runs[0] if runs else None
 
     def get_generated_memory_keys(self) -> set[str]:
-        """Get all memory_keys that have been successfully generated."""
+        """Get all memory_keys a finished film exists for.
+
+        A cut recorded without rendering (`generate --no-render`, the web client's review) has
+        no output yet: the memory is not made until a render of it is.
+        """
         query = (
             sa.select(_RUNS.memory_key)
-            .where(_RUNS.status == "completed", _RUNS.memory_key.is_not(None))
+            .where(
+                _RUNS.status == "completed",
+                _RUNS.memory_key.is_not(None),
+                _RUNS.output_path.is_not(None),
+                _RUNS.output_path != "",
+            )
             .distinct()
         )
         with self.store.connect() as conn:

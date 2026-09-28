@@ -5,7 +5,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 from immich_memories.config_models_auth import AuthConfig
-from immich_memories.ui.auth import verify_credentials
+from immich_memories.web.auth import verify_credentials
 
 
 def _basic_config(username: str = "admin", password: str = "secret") -> AuthConfig:  # noqa: S107
@@ -52,6 +52,6 @@ class TestVerifyCredentials:
         """secrets.compare_digest is called for BOTH username and password."""
         cfg = _basic_config()
         # WHY: verify constant-time comparison to prevent timing attacks
-        with patch("immich_memories.ui.auth.secrets.compare_digest", return_value=True) as mock_cd:
+        with patch("immich_memories.web.auth.secrets.compare_digest", return_value=True) as mock_cd:
             verify_credentials("admin", "secret", cfg)
             assert mock_cd.call_count == 2

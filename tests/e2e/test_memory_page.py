@@ -1,56 +1,29 @@
-"""The Memory page on the hermetic launch: the brief, the cut, and what it produced."""
+"""Making a memory in the web client on the hermetic launch: the brief, the cut, and its review."""
 
 from __future__ import annotations
 
 import json
-import os
 import re
-import subprocess
-from collections import Counter
+import shutil
 from datetime import datetime, timedelta
-from itertools import groupby
 from pathlib import Path
 
 import pytest
 from playwright.sync_api import Page, expect
 
-from immich_memories.api.person_expression import PersonExpression
-from immich_memories.ui.pages.clip_grid import CLIPS_PER_PAGE
-from immich_memories.ui.pages.memory_brief import MEMORY_TYPE_LABELS
-from immich_memories.ui.pages.step1_people import PEOPLE_CONDITION_PANEL
-from tests.e2e.conftest import _build_launch_environment
-from tests.e2e.fake_editorial import _EPISODES, PREVIEW_STAGE, STAGES
-from tests.e2e.fake_library import (
-    CARRIERS,
-    LIBRARY,
-    STORIES,
-    STORY_OF,
-    THESIS,
-    pool_line,
-    summary_line,
-)
-from tests.e2e.test_demo_assets import _TRIP_CLI_BOOTSTRAP
-from tests.e2e.test_launch_smoke import _choose
+from tests.e2e.fake_editorial import PREVIEW_STAGE
+from tests.e2e.fake_library import CARRIERS, HOME, LIBRARY, STORIES, THESIS
+from tests.e2e.web_flow import contact_sheet, cut_june
 
 pytestmark = pytest.mark.e2e
 
-# The scripted editor's thesis and its four stories, from the fixture.
-_THESIS = THESIS
-_STORY_TITLES = tuple(story.title for story in STORIES)
-# The pool pages twenty at a time; the first page carries the first pictures of the month.
-_POOL_FILES = tuple(picture.filename for picture in LIBRARY[:5])
-_SUMMARY = summary_line()
-_POOL = pool_line()
-_CARRIER_VIDEOS = sum(1 for picture in CARRIERS if picture.is_video)
-_CARRIER_STILLS = len(CARRIERS) - _CARRIER_VIDEOS
-
-
-# One of the fixture's editing stages, exactly as the active row reports it once the
-# attempt exists (the row titles alone never match, so this waits for the real run).
-_EDITING_STAGE = re.compile("^(" + "|".join(re.escape(stage) for stage in STAGES[1:]) + ")$")
-
-# The reading the editor gave a picture — a badge only the Details disclosure shows.
-_STANDINGS = re.compile(r"^(remarkable|maybe)$")
+# The heaviest story leads the Stories view: the weights are the editor's own order.
+_WEIGHT_ORDER = ("dominant", "major", "minor", "glimpse")
+_BY_WEIGHT = [
+    story.title
+    for story in sorted(STORIES, key=lambda story: _WEIGHT_ORDER.index(story.weight))
+    if any(picture.story_key == story.key for picture in CARRIERS)
+]
 
 
 def _episodes_of_the_fixture() -> list[list]:
@@ -83,7 +56,6 @@ def _present(holds) -> set[str]:
 
 # The Boolean override: both named people recognised somewhere in the same episode.
 _CONDITION = '"Robin" AND "Kit"'
-_CONDITION_LABEL = PersonExpression.parse(_CONDITION).display_label
 _CONDITION_ASSETS = _present(lambda names: {"Robin", "Kit"} <= names)
 # The same two names read the plain way: any one of them is enough.
 _EITHER_ASSETS = _present(lambda names: bool({"Robin", "Kit"} & names))
@@ -93,99 +65,86 @@ _SAME_FRAME_ASSETS = {
 }
 
 
-def _active_stage(page: Page):
-    """The stage on the active phase row, not the same string echoed in the detail panel."""
-    return page.locator(".cut-phase-rows").get_by_text(_EDITING_STAGE)
+@pytest.fixture(autouse=True)
+def _no_page_errors(page: Page):
+    errors: list[str] = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    yield
+    assert errors == []
 
 
-def _attempts_written(launch_workspace) -> int:
-    return len(list(launch_workspace.cache_dir.glob("editorial-runs/*/attempts/*")))
+def _attempts(launch_workspace) -> set[Path]:
+    return set(launch_workspace.cache_dir.glob("editorial-runs/*/attempts/*"))
 
 
-def _newest_attempt(launch_workspace):
-    return max(
-        launch_workspace.cache_dir.glob("editorial-runs/*/attempts/*"),
-        key=lambda path: path.stat().st_mtime,
-    )
-
-
-def _open_brief(page: Page, launch_app_url: str) -> None:
-    page.goto(launch_app_url, wait_until="domcontentloaded", timeout=30_000)
-    expect(page.get_by_role("combobox", name="Memory type")).to_be_visible(timeout=30_000)
+def _request_of_the_cut_after(launch_workspace, before: set[Path]) -> dict:
+    """The request this cut wrote, not one an earlier cut is still writing into."""
+    written = _attempts(launch_workspace) - before
+    assert written, "the cut opened no attempt"
+    newest = max(written, key=lambda path: path.stat().st_mtime)
+    return json.loads((newest / "status.private.json").read_text())["request"]
 
 
 def _brief_for_june(page: Page, launch_app_url: str) -> None:
-    _open_brief(page, launch_app_url)
-    _choose(page, "Memory type", "Monthly Highlights")
-    _choose(page, "Month", "June")
+    page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
+    page.get_by_text("Monthly Highlights", exact=True).click()
+    page.get_by_label("Year", exact=True).fill("2024")
+    page.get_by_label("Month", exact=True).select_option("6")
 
 
-def test_the_brief_offers_the_cli_memory_types(page: Page, launch_app_url: str) -> None:
-    _open_brief(page, launch_app_url)
-
-    page.get_by_role("combobox", name="Memory type").click()
-
-    expect(page.get_by_role("option")).to_have_text(list(MEMORY_TYPE_LABELS.values()))
-    page.keyboard.press("Escape")
+def _brief_for_trips(page: Page, launch_app_url: str, year: int) -> None:
+    page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
+    page.get_by_text("Trip", exact=True).click()
+    page.get_by_label("Year", exact=True).fill(str(year))
 
 
-def test_the_brief_finds_the_lake_trip_across_photographed_days(
+def _progress(page: Page):
+    return page.get_by_role("region", name="Progress")
+
+
+def test_the_brief_offers_every_memory_type_generate_takes(page: Page, launch_app_url: str) -> None:
+    from immich_memories.cli import main
+
+    generate = main.commands["generate"]
+    choices = next(p for p in generate.params if p.name == "memory_type").type.choices
+    page.goto(f"{launch_app_url}/app/create")
+    kinds = page.locator("input[name='kind']")
+    expect(kinds).to_have_count(len(choices) + 1)
+
+    offered = kinds.evaluate_all("inputs => inputs.map(i => i.value)")
+
+    # `custom` is a date range with no --memory-type at all.
+    assert sorted(offered) == sorted([*choices, "custom"])
+
+
+def test_the_trip_picker_finds_the_lake_week_and_cuts_it(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
-    _open_brief(page, launch_app_url)
-    _choose(page, "Memory type", "Trip")
-    trip = page.get_by_role("combobox", name="Select a trip")
-    expect(trip).to_be_visible(timeout=30_000)
-    trip.click()
-    option = page.get_by_role(
-        "option", name=re.compile(r"2024-06-21 to 2024-06-27, 7d, \d+ assets")
-    )
-    expect(option).to_be_visible()
-    option.click()
-    expect(page.get_by_role("button", name="Cut", exact=True)).to_be_enabled()
-    page.get_by_role("button", name="Cut", exact=True).click()
-    expect(page.get_by_role("button", name="Export", exact=True)).to_be_visible(timeout=120_000)
-    expected = sum(p.story_key == "S0002" for p in CARRIERS)
-    expect(page.locator(".storyboard-shot")).to_have_count(expected)
-    root = Path(__file__).resolve().parents[2]
-    completed = subprocess.run(
-        [
-            str(root / ".venv/bin/python"),
-            "-c",
-            _TRIP_CLI_BOOTSTRAP,
-            str(launch_workspace.config_path),
-            str(launch_workspace.root / "state"),
-            "generate",
-            "--memory-type",
-            "trip",
-            "--year",
-            "2024",
-            "--trip-index",
-            "1",
-            "--no-render",
-            "--no-music",
-            "--quiet",
-        ],
-        cwd=root,
-        env=_build_launch_environment(launch_workspace.root),
-        capture_output=True,
-        text=True,
-        timeout=120,
-    )
-    transcript = completed.stdout + completed.stderr
-    evidence = root / "test-results"
-    evidence.mkdir(exist_ok=True)
-    (evidence / "trip-cli.txt").write_text(
-        transcript.replace(str(launch_workspace.root), "<fixture-workspace>")
-    )
-    assert completed.returncode == 0, transcript
-    assert "2024-06-21 to 2024-06-27" in transcript
-    assert "Trip plan complete:" in transcript
+    # Another test may have left a swapped library's trips in the server's cache.
+    shutil.rmtree(launch_workspace.cache_dir / "web-answers", ignore_errors=True)
+    _brief_for_trips(page, launch_app_url, 2024)
+    cut = page.get_by_role("button", name="Cut", exact=True)
+    # Without a trip, generate only lists the year's trips: the form will not send that.
+    expect(cut).to_be_disabled()
+    trips = page.get_by_role("list", name="Trips").get_by_role("listitem")
+    lake = trips.filter(has_text=re.compile(r"2024-06-21 – 2024-06-27.*7 days"))
+    expect(lake).to_have_count(1, timeout=60_000)
+    number = trips.all_inner_texts().index(lake.inner_text()) + 1
+    lake.click()
+    expect(page.get_by_label("Command")).to_contain_text(f"--trip-index={number}")
+
+    cut.click()
+
+    page.wait_for_url("**/app/runs/**", timeout=240_000)
+    # The lake week's story, less the suitcase packed at home: a trip is cut from what was
+    # taken away, as `generate --memory-type trip` cuts it.
+    away = [p for p in CARRIERS if p.story_key == "S0002" and p.place != HOME]
+    expect(contact_sheet(page)).to_have_count(len(away))
 
 
 @pytest.mark.parametrize("middle_type", ["IMAGE", "VIDEO"])
-def test_the_brief_keeps_new_year_trips_whole_and_excludes_buffer_only_trips(
-    page: Page, launch_app_url: str, monkeypatch, middle_type: str
+def test_the_trip_picker_keeps_new_year_trips_whole_and_drops_buffer_only_trips(
+    page: Page, launch_app_url: str, monkeypatch, middle_type: str, launch_workspace
 ) -> None:
     from tests.e2e import fake_immich
 
@@ -215,21 +174,19 @@ def test_the_brief_keeps_new_year_trips_whole_and_excludes_buffer_only_trips(
     )
     # WHY: replace the HTTP fixture's library, keeping the real client and GPS detector.
     monkeypatch.setattr(fake_immich, "TIMELINE_ASSETS", (*assets, home_video))
-    _open_brief(page, launch_app_url)
-    _choose(page, "Memory type", "Trip")
-    trip = page.get_by_role("combobox", name="Select a trip")
-    expect(trip).to_be_visible(timeout=30_000)
-    trip.click()
-    expect(page.get_by_role("option")).to_have_count(1)
-    expect(page.get_by_role("option")).to_have_text(
-        re.compile(r"2023-12-30 to 2024-01-01, 3d, 3 assets")
-    )
-    page.keyboard.press("Escape")
+    # The server keeps each year's trips; this library is new, so its answer must be too.
+    shutil.rmtree(launch_workspace.cache_dir / "web-answers", ignore_errors=True)
+
+    _brief_for_trips(page, launch_app_url, 2024)
+
+    trips = page.get_by_role("list", name="Trips").get_by_role("listitem")
+    expect(trips).to_have_count(1, timeout=60_000)
+    expect(trips).to_contain_text(re.compile(r"2023-12-30 – 2024-01-01.*3 days · 3 pictures"))
 
 
 @pytest.mark.parametrize("only_photos", [False, True])
 def test_the_trip_picker_offers_a_year_with_only_photos(
-    page: Page, launch_app_url: str, monkeypatch, only_photos: bool
+    page: Page, launch_app_url: str, monkeypatch, only_photos: bool, launch_workspace
 ) -> None:
     from tests.e2e import fake_immich
 
@@ -246,16 +203,14 @@ def test_the_trip_picker_offers_a_year_with_only_photos(
     # WHY: cover both a photo-only year in a mixed library and a photo-only library.
     existing = () if only_photos else fake_immich.TIMELINE_ASSETS
     monkeypatch.setattr(fake_immich, "TIMELINE_ASSETS", (*existing, *photos))
-    _open_brief(page, launch_app_url)
-    _choose(page, "Memory type", "Trip")
-    _choose(page, "Year", "2018")
-    trip = page.get_by_role("combobox", name="Select a trip")
-    expect(trip).to_be_visible(timeout=30_000)
-    trip.click()
-    expect(page.get_by_role("option")).to_have_text(
-        re.compile(r"2018-07-01 to 2018-07-03, 3d, 3 assets")
+    # The server keeps each year's trips; this library is new, so its answer must be too.
+    shutil.rmtree(launch_workspace.cache_dir / "web-answers", ignore_errors=True)
+
+    _brief_for_trips(page, launch_app_url, 2018)
+
+    expect(page.get_by_role("list", name="Trips")).to_contain_text(
+        re.compile(r"2018-07-01 – 2018-07-03.*3 days · 3 pictures"), timeout=60_000
     )
-    page.keyboard.press("Escape")
 
 
 def test_a_first_cut_before_models_fetch_says_to_run_it_and_the_message_stays(
@@ -266,449 +221,218 @@ def test_a_first_cut_before_models_fetch_says_to_run_it_and_the_message_stays(
 
     page.get_by_role("button", name="Cut", exact=True).click()
 
-    refusal = page.get_by_text(
-        re.compile(r"The last cut failed: .*Run `immich-memories models fetch`")
-    )
-    expect(refusal).to_be_visible(timeout=60_000)
-    expect(page.get_by_role("combobox", name="Memory type")).to_be_visible()
+    refusal = _progress(page).get_by_text(re.compile(r"immich-memories models fetch"))
+    expect(refusal.first).to_be_visible(timeout=60_000)
+    expect(_progress(page).get_by_text("It did not finish.")).to_be_visible()
     # Refused before the pool loads: not one picture was asked of Immich.
     with first_launch_workspace.log_path.open() as log:
         log.seek(log_before_cut)
         after_cut = log.read()
     assert "/thumbnail" not in after_cut
     assert "/api/search/" not in after_cut
-    # The command is what the reader has to copy into a terminal, so the
-    # message waits for them instead of fading with a toast.
+    # The command is what the reader has to copy into a terminal, so the message waits for them.
     page.reload()
-    expect(refusal).to_be_visible(timeout=30_000)
+    expect(refusal.first).to_be_visible(timeout=30_000)
 
 
-def test_a_cut_from_the_brief_shows_the_story_and_offers_export(
+def test_the_cut_opens_as_a_contact_sheet_in_the_order_the_film_plays(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
-    _brief_for_june(page, launch_app_url)
-    expect(page.get_by_text("Auto · 1m 00s", exact=True)).to_be_visible()
+    before = _attempts(launch_workspace)
+    cut_june(page, launch_app_url, minutes=None)
 
-    page.get_by_role("button", name="Cut", exact=True).click()
-
-    expect(page.get_by_text(_THESIS)).to_be_visible(timeout=120_000)
-    page.get_by_role("tab", name="Story", exact=True).click()
-    # Weight order, not capture order: the heaviest story leads, the lightest closes.
-    titles = page.locator(".q-card .text-base.font-semibold")
-    expect(titles).to_have_text(list(_STORY_TITLES))
-    expect(page.get_by_text(_SUMMARY, exact=True)).to_be_visible()
-    expect(page.get_by_text("Motion", exact=True)).to_have_count(_CARRIER_VIDEOS)
-    expect(page.get_by_text("Still", exact=True)).to_have_count(_CARRIER_STILLS)
-    expect(page.get_by_text(re.compile(r"^\d+ s of pictures and video selected"))).to_be_visible()
-    expect(page.get_by_role("button", name="Export", exact=True)).to_be_visible()
-    # The attempt keeps what each story was read from, so a later drift can be diffed.
-    provenance = json.loads(
-        (_newest_attempt(launch_workspace) / "evidence-hashes.json").read_text()
+    expect(page.get_by_text(THESIS)).to_be_visible()
+    shots = contact_sheet(page)
+    expect(shots).to_have_count(len(CARRIERS))
+    played = shots.locator("img").evaluate_all(
+        "images => images.map(image => decodeURIComponent(image.src.split('/assets/')[1].split('/')[0]))"
     )
-    assert [episode["group_id"] for episode in provenance["episodes"]] == [
-        episode["key"] for episode in _EPISODES
-    ]
+    assert played == [picture.asset_id for picture in CARRIERS]
+    expect(shots.first).to_contain_text(CARRIERS[0].taken_at[:10])
+    expect(shots.last).to_contain_text(CARRIERS[-1].taken_at[:10])
+    # The attempt keeps what each story was read from, so a later drift can be diffed.
+    newest = max(_attempts(launch_workspace) - before, key=lambda path: path.stat().st_mtime)
+    provenance = json.loads((newest / "evidence-hashes.json").read_text())
     assert "IMG_" not in json.dumps(provenance)
+    # What generate named the cut from is kept for a render made later (`runs render`):
+    # its own title, or the preset the template title is built from (a None title).
+    titles = json.loads((newest / "cut-titles.private.json").read_text())
+    assert titles["title"] or titles["preset_params"]
 
 
-def test_the_storyboard_is_the_default_view_and_plays_in_capture_order(
+def test_the_stories_view_weighs_the_stories_in_reader_words(
     page: Page, launch_app_url: str
 ) -> None:
-    _brief_for_june(page, launch_app_url)
-    page.get_by_role("button", name="Cut", exact=True).click()
-    expect(page.get_by_text(_THESIS)).to_be_visible(timeout=120_000)
+    cut_june(page, launch_app_url, minutes=None)
 
-    # The storyboard is what opens: one shot per picture, in the order the video plays them.
-    shots = page.locator(".storyboard-shot")
-    expect(shots).to_have_count(len(CARRIERS))
-    # The day is printed once, on the first shot of each day.
-    expect(page.locator(".storyboard-shot .storyboard-day")).to_have_text(
-        [day for day, _ in groupby(picture.taken_at[:10] for picture in CARRIERS)]
-    )
-    expect(page.locator(".storyboard-shot .storyboard-story")).to_have_text(
-        [STORY_OF[picture.asset_id].title for picture in CARRIERS]
-    )
-    expect(page.locator(".storyboard-chapter")).to_have_text(["June 2024"])
-    expect(page.get_by_text(f"{len(CARRIERS)} pictures, ", exact=False)).to_be_visible()
+    page.get_by_role("radio", name="Stories").click()
 
-    # The weighed story is one tab away and comes back the same way.
-    page.get_by_role("tab", name="Story", exact=True).click()
-    expect(page.get_by_text(_SUMMARY, exact=True)).to_be_visible()
-    page.get_by_role("tab", name="Storyboard", exact=True).click()
-    expect(shots).to_have_count(len(CARRIERS))
+    stories = page.get_by_role("list", name="Stories")
+    expect(stories.get_by_role("heading", level=3)).to_have_text(_BY_WEIGHT)
+    for badge in ("Main story", "Important", "Small moment"):
+        expect(stories.get_by_text(badge, exact=True).first).to_be_visible()
+    for machine_word in ("dominant", "major", "glimpse"):
+        expect(stories.get_by_text(machine_word, exact=True)).to_have_count(0)
+    # Every carrier is reachable from its story, and opens in the inspector.
+    carriers = stories.get_by_role("button")
+    expect(carriers).to_have_count(len(CARRIERS))
+    carriers.first.click()
+    expect(page.get_by_role("article", name="Picture review")).to_be_visible()
+    page.get_by_role("radio", name="Contact sheet").click()
+    expect(contact_sheet(page)).to_have_count(len(CARRIERS))
+
+
+def test_the_inspector_keeps_a_refused_model_alternative_distinct_from_the_cut(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    before = _attempts(launch_workspace)
+    cut_june(page, launch_app_url, minutes=None)
+    attempt = max(_attempts(launch_workspace) - before, key=lambda path: path.stat().st_mtime)
+    original = next(picture for picture in CARRIERS if picture.is_favorite)
+    alternative, replaced = [picture for picture in LIBRARY if picture not in CARRIERS][:2]
+    newcomer = next(picture for picture in CARRIERS if picture is not original)
+    folder = attempt / "derived-decisions"
+    folder.mkdir(exist_ok=True)
+    # WHY: the fixture replaces inference; the browser still reads the saved production format.
+    (folder / "thin-polish.private.json").write_text(
+        json.dumps(
+            {
+                "ran": True,
+                "verdicts": {
+                    original.asset_id: {
+                        "state": "kept",
+                        "named_by": 2,
+                        "why": "Repeated viewpoint",
+                        "protected": True,
+                        "held_by": "the owner starred it or the catalogue records it",
+                        "rule": "thesis-fit vote",
+                    }
+                },
+                "slots": [
+                    {
+                        "replacing": original.asset_id,
+                        "chosen": alternative.asset_id,
+                        "offered": "2",
+                        "outcome": "refused by look-alike",
+                    },
+                    {
+                        "rule": "vote-weak",
+                        "replacing": replaced.asset_id,
+                        "chosen": newcomer.asset_id,
+                        "offered": "3",
+                        "outcome": "seated",
+                    },
+                ],
+                "revoked_by_the_fit_check": [],
+            }
+        )
+    )
+    page.reload(wait_until="domcontentloaded")
+    contact_sheet(page).nth(CARRIERS.index(original)).click()
+    inspector = page.get_by_role("article", name="Picture review")
+    expect(inspector.get_by_text("Repeated viewpoint")).to_be_visible()
+    expect(
+        inspector.get_by_text("the owner starred it or the catalogue records it")
+    ).to_be_visible()
+    expect(inspector.get_by_text("refused by look-alike", exact=True)).to_be_visible()
+    expect(inspector.get_by_role("img", name="Recorded alternative")).to_have_attribute(
+        "src", re.compile(re.escape(alternative.asset_id))
+    )
+    expect(inspector.get_by_role("button", name="Remove from this cut")).to_be_visible()
+
+    contact_sheet(page).nth(CARRIERS.index(newcomer)).click()
+    expect(inspector.get_by_text("Replaced a picture the model doubted.")).to_be_visible()
+    expect(inspector.get_by_role("img", name="The picture it replaced")).to_have_attribute(
+        "src", re.compile(re.escape(replaced.asset_id))
+    )
 
 
 def test_a_reload_mid_cut_joins_the_running_cut_instead_of_starting_another(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
+    before = _attempts(launch_workspace)
     _brief_for_june(page, launch_app_url)
     page.get_by_role("button", name="Cut", exact=True).click()
-    expect(_active_stage(page)).to_be_visible(timeout=60_000)
-    attempts_before = _attempts_written(launch_workspace)
+    expect(_progress(page).get_by_role("progressbar")).to_be_visible(timeout=30_000)
 
-    # WHY: a reload is what a user does when a run seems stuck; it deletes the NiceGUI
-    # client, so the new page must find the cut through the attempt tree, not the old timer.
     page.reload(wait_until="domcontentloaded", timeout=30_000)
 
-    expect(page.get_by_text("Cutting the memory...", exact=True)).to_be_visible(timeout=30_000)
-    expect(page.get_by_text(_THESIS)).to_be_visible(timeout=120_000)
-    assert _attempts_written(launch_workspace) == attempts_before
+    expect(_progress(page)).to_be_visible(timeout=30_000)
+    page.wait_for_url("**/app/runs/**", timeout=240_000)
+    expect(page.get_by_text(THESIS)).to_be_visible()
+    assert len(_attempts(launch_workspace) - before) == 1
 
 
 def test_the_cut_shows_the_pictures_it_is_working_on_while_it_works(
-    page: Page, launch_app_url: str, launch_workspace
+    page: Page, launch_app_url: str
 ) -> None:
     """The wait has to look alive: the user's own library goes past, and a bar moves."""
     _brief_for_june(page, launch_app_url)
     page.get_by_role("button", name="Cut", exact=True).click()
 
-    strip = page.locator(".q-img").locator("visible=true")
+    strip = _progress(page).get_by_role("list", name="Pictures just read").locator("img")
     expect(strip.first).to_be_visible(timeout=60_000)
-    # A real bar for the pass that reports numbers, from the engine's own count.
-    expect(
-        page.get_by_text(
-            re.compile(rf"^{PREVIEW_STAGE} \d+ of {len(LIBRARY)} · ~\d+s left in this stage$")
-        )
-    ).to_be_visible(timeout=60_000)
-    # Bounded by construction: a long stage must not grow the page.
-    expect(page.locator(".q-linear-progress")).to_have_count(1)
-    assert strip.count() <= 12
-    # Once the run moves on to the edit, nothing new arrives, so the strip goes
-    # away instead of lingering under the Editing row.
-    expect(_active_stage(page)).to_be_visible(timeout=60_000)
-    expect(strip).to_have_count(0)
-    expect(page.get_by_text(re.compile("left in this stage"))).to_be_hidden()
-    expect(page.get_by_text(_THESIS)).to_be_visible(timeout=120_000)
-    expect(page.locator(".storyboard-shot")).to_have_count(len(CARRIERS))
-    root = Path(__file__).resolve().parents[2]
-    completed = subprocess.run(
-        [
-            str(root / ".venv/bin/python"),
-            "-c",
-            _TRIP_CLI_BOOTSTRAP,
-            str(launch_workspace.config_path),
-            str(launch_workspace.root / "state"),
-            "generate",
-            "--memory-type",
-            "monthly_highlights",
-            "--year",
-            "2024",
-            "--month",
-            "6",
-            "--no-render",
-            "--no-music",
-            "--quiet",
-        ],
-        cwd=root,
-        env=_build_launch_environment(launch_workspace.root),
-        capture_output=True,
-        text=True,
-        timeout=120,
+    assert strip.count() <= 8
+    # A real count for the pass that reports numbers, from the engine's own record.
+    expect(_progress(page).get_by_text(re.compile(rf"\d+ of {len(LIBRARY)}"))).to_be_visible(
+        timeout=60_000
     )
-    transcript = completed.stdout + completed.stderr
-    evidence = root / "test-results"
-    evidence.mkdir(exist_ok=True)
-    (evidence / "stage-progress-cli.txt").write_text(
-        transcript.replace(str(launch_workspace.root), "<fixture-workspace>")
-    )
-    assert completed.returncode == 0, transcript
-    assert "left in this stage" in transcript
-    assert f"Selected {len(CARRIERS)} clips" in transcript
-
-
-def test_the_detail_lines_are_folded_away_until_asked_for(page: Page, launch_app_url: str) -> None:
-    _brief_for_june(page, launch_app_url)
-    page.get_by_role("button", name="Cut", exact=True).click()
-    expect(_active_stage(page)).to_be_visible(timeout=60_000)
-    # The clean five-row view is the default: the lines exist but are not shown.
-    a_preview_line = page.get_by_text(
-        re.compile(rf"^Preparing {PREVIEW_STAGE}: \d+/{len(LIBRARY)}$")
-    )
-    expect(a_preview_line.first).to_be_hidden()
-
-    page.get_by_text("Details", exact=True).click()
-
-    # The engine's own stage strings, newest last, including ones already passed.
-    expect(a_preview_line.first).to_be_visible()
-    expect(page.get_by_text(STAGES[0], exact=True).last).to_be_visible()
+    expect(_progress(page).get_by_role("progressbar")).to_have_count(1)
+    expect(_progress(page).get_by_text(PREVIEW_STAGE, exact=False).first).to_be_visible()
+    page.wait_for_url("**/app/runs/**", timeout=240_000)
+    expect(contact_sheet(page)).to_have_count(len(CARRIERS))
 
 
 def test_cancel_ends_the_cut_and_offers_to_cut_again(page: Page, launch_app_url: str) -> None:
     _brief_for_june(page, launch_app_url)
     page.get_by_role("button", name="Cut", exact=True).click()
-    expect(_active_stage(page)).to_be_visible(timeout=60_000)
+    expect(_progress(page)).to_be_visible(timeout=30_000)
 
-    page.get_by_role("button", name="Cancel", exact=True).click()
+    _progress(page).get_by_role("button", name="Cancel").click()
 
-    expect(page.get_by_text(re.compile(r"cancelled before it finished"))).to_be_visible(
-        timeout=60_000
-    )
-    expect(page.get_by_role("button", name="Cut again")).to_be_visible()
+    expect(_progress(page).get_by_text("Stopped.")).to_be_visible(timeout=60_000)
+    expect(page.get_by_role("button", name="Cut", exact=True)).to_be_enabled()
 
 
-def test_the_media_pool_stays_reachable_from_advanced(page: Page, launch_app_url: str) -> None:
-    _brief_for_june(page, launch_app_url)
-    page.get_by_text("Advanced", exact=True).click()
-    include_photos = page.locator(".q-toggle").filter(has_text="Include Photos")
-    expect(include_photos).to_have_attribute("aria-checked", "true")
-
-    page.get_by_role("button", name="Open the media pool").click()
-
-    expect(page.get_by_text(_POOL, exact=False)).to_be_visible(timeout=60_000)
-    for filename in _POOL_FILES:
-        expect(page.get_by_text(filename, exact=True).first).to_be_visible()
-
-
-def test_the_media_pool_loads_its_pictures_through_the_media_route(
+def test_the_pool_loads_its_pictures_through_the_thumbnail_route(
     page: Page, launch_app_url: str
 ) -> None:
     """No base64 data URI in the DOM: every thumbnail is an <img> the browser fetches and caches."""
-    _brief_for_june(page, launch_app_url)
-    page.get_by_text("Advanced", exact=True).click()
-    page.get_by_role("button", name="Open the media pool").click()
-    expect(page.get_by_text(_POOL, exact=False)).to_be_visible(timeout=60_000)
+    cut_june(page, launch_app_url, minutes=None)
+    page.get_by_role("link", name="Pool", exact=True).click()
+    tiles = page.get_by_role("list", name="Pool").get_by_role("listitem")
+    expect(tiles.first).to_be_visible(timeout=30_000)
+    # A page at a time, loaded as the last one scrolls into view: the DOM grows with reading.
+    while tiles.count() < len(LIBRARY):
+        seen = tiles.count()
+        tiles.last.scroll_into_view_if_needed()
+        expect(tiles).not_to_have_count(seen, timeout=10_000)
+    expect(tiles).to_have_count(len(LIBRARY))
 
-    routed = page.locator("img[src^='/media/thumb/']")
-    expect(routed.first).to_be_visible(timeout=30_000)
+    routed = page.locator("img[src*='/api/v1/assets/']")
     assert page.locator("img[src^='data:']").count() == 0
-    assert routed.count() >= len(_POOL_FILES)
-    # The count above is DOM entries; the entries themselves finish decoding
-    # asynchronously, so wait for the last one instead of sampling the instant
-    # the first one is visible.
+    assert routed.count() >= len(LIBRARY)
     page.wait_for_function(
-        "() => Array.from(document.querySelectorAll(\"img[src^='/media/thumb/']\"))"
-        ".every(img => img.complete && img.naturalWidth > 0)",
-        timeout=30_000,
+        "image => image.complete && image.naturalWidth > 0", arg=routed.first.element_handle()
     )
-    loaded = page.evaluate(
-        "() => Array.from(document.querySelectorAll(\"img[src^='/media/thumb/']\"))"
-        ".filter(img => img.complete && img.naturalWidth > 0).length"
-    )
-    assert loaded == routed.count(), "every routed thumbnail decoded in the browser"
 
 
-def test_the_story_reads_in_reader_words_and_hides_the_answer_schema_behind_details(
-    page: Page, launch_app_url: str
-) -> None:
-    _brief_for_june(page, launch_app_url)
-    page.get_by_role("button", name="Cut", exact=True).click()
-    expect(page.get_by_text(_THESIS)).to_be_visible(timeout=120_000)
-    page.get_by_role("tab", name="Story", exact=True).click()
-
-    for badge in ("Main story", "Important", "Small moment"):
-        expect(page.get_by_text(badge, exact=True)).to_be_visible()
-    per_story = Counter(picture.story_key for picture in CARRIERS)
-    for count, stories in Counter(per_story.values()).items():
-        expect(page.get_by_text(f"{count} pictures", exact=True)).to_have_count(stories)
-    for machine_word in ("dominant", "remarkable", "maybe"):
-        expect(page.get_by_text(machine_word, exact=True).first).to_be_hidden()
-
-    lead = page.locator(".q-card").filter(has_text=_STORY_TITLES[0]).first
-    lead.get_by_text("Details", exact=True).click()
-
-    expect(lead.get_by_text("dominant", exact=True)).to_be_visible()
-    expect(lead.get_by_text(_STANDINGS).first).to_be_visible()
-
-
-_PAGE = CLIPS_PER_PAGE
-
-
-def _open_media_pool(page: Page) -> None:
-    page.get_by_text("Advanced", exact=True).click()
-    page.get_by_role("button", name="Open the media pool").click()
-
-
-def _grid_images(page: Page):
-    return page.locator(".media-pool-grid img")
-
-
-def test_the_media_pool_shows_one_page_at_a_time(page: Page, launch_app_url: str) -> None:
-    """Paging replaces the page in the DOM instead of appending to it (#824)."""
-    _brief_for_june(page, launch_app_url)
-    _open_media_pool(page)
-    expect(page.get_by_text(_POOL, exact=False)).to_be_visible(timeout=60_000)
-    total = len(LIBRARY)
-    pages = -(-total // _PAGE)
-
-    expect(_grid_images(page).first).to_be_visible(timeout=30_000)
-    expect(page.get_by_text(f"1–{_PAGE} of {total}", exact=True)).to_be_visible()
-    assert 0 < _grid_images(page).count() <= _PAGE
-
-    page.get_by_role("button", name="Next page").click()
-    expect(page.get_by_text(f"{_PAGE + 1}–{2 * _PAGE} of {total}", exact=True)).to_be_visible()
-    assert _grid_images(page).count() <= _PAGE
-
-    for index in range(2, pages):
-        page.get_by_role("button", name="Next page").click()
-        last = total if index == pages - 1 else (index + 1) * _PAGE
-        expect(
-            page.get_by_text(f"{index * _PAGE + 1}–{last} of {total}", exact=True)
-        ).to_be_visible()
-    assert _grid_images(page).count() == total - (pages - 1) * _PAGE
-
-    page.get_by_role("button", name="Previous page").click()
-    expect(
-        page.get_by_text(f"{(pages - 2) * _PAGE + 1}–{(pages - 1) * _PAGE} of {total}", exact=True)
-    ).to_be_visible()
-
-
-def test_a_tick_in_the_compact_grid_performs_no_navigation(page: Page, launch_app_url: str) -> None:
-    """A toggled cell redraws in place; the page is not reloaded around it (#824)."""
-    _brief_for_june(page, launch_app_url)
-    _open_media_pool(page)
-    expect(page.get_by_text(_POOL, exact=False)).to_be_visible(timeout=60_000)
-    # The view toggle itself navigates; let that page settle before planting the marker.
-    page.locator("button").filter(has=page.locator("i:has-text('grid_view')")).click()
-    page.wait_for_load_state("networkidle")
-
-    cells = page.locator(".media-pool-grid .cursor-pointer")
-    expect(cells.first).to_be_visible(timeout=30_000)
-    expect(cells.first.locator("i:has-text('check_circle')")).to_have_count(1)
-    page.evaluate("window.__still_here = 'yes'")
-
-    cells.first.click()
-    expect(cells.first.locator("i:has-text('check_circle')")).to_have_count(0)
-    cells.first.click()
-    expect(cells.first.locator("i:has-text('check_circle')")).to_have_count(1)
-    assert page.evaluate("window.__still_here") == "yes"
-
-
-def test_review_rows_hold_a_video_only_while_they_are_open(page: Page, launch_app_url: str) -> None:
-    """A closed row shows a thumbnail; opening it starts the preview, closing it releases it."""
-    _brief_for_june(page, launch_app_url)
-    page.get_by_role("button", name="Cut", exact=True).click()
-    expect(page.get_by_text(_THESIS)).to_be_visible(timeout=120_000)
-    page.get_by_role("button", name="Review the pool").click()
-    page.get_by_role("button", name="Trim the video clips").click()
-
-    # Only the videos the cut kept have a row: a still has no seconds to trim; rows are in capture order.
-    videos = [p for p in CARRIERS if p.is_video]
-    rows = page.locator(".review-clip-row")
-    expect(rows).to_have_count(len(videos), timeout=30_000)
-    expect(page.locator(".review-clip-row video")).to_have_count(1, timeout=60_000)
-
-    # The fourth picture in capture order is a video; a still would never hold a <video>.
-    second_video = 1
-    rows.nth(second_video).locator(".q-expansion-item__toggle-icon").first.click()
-    expect(page.locator(".review-clip-row video")).to_have_count(2, timeout=60_000)
-
-    rows.nth(second_video).locator(".q-expansion-item__toggle-icon").first.click()
-    expect(page.locator(".review-clip-row video")).to_have_count(1, timeout=30_000)
-
-
-def _latest_request(launch_workspace) -> dict:
-    return json.loads((_newest_attempt(launch_workspace) / "status.private.json").read_text())[
-        "request"
-    ]
-
-
-def _attempts(launch_workspace) -> set[Path]:
-    return set(launch_workspace.cache_dir.glob("editorial-runs/*/attempts/*"))
-
-
-def _request_of_the_cut_after(launch_workspace, before: set[Path]) -> dict:
-    """The request this cut wrote, not one an earlier cut is still writing into.
-
-    A test that stops watching a run leaves it going, so the newest attempt on
-    disk belongs to whichever cut last touched a file. The attempt that was not
-    there before the click is the one this cut opened.
-    """
-    written = _attempts(launch_workspace) - before
-    assert written, "the cut opened no attempt"
-    newest = max(written, key=lambda path: path.stat().st_mtime)
-    return json.loads((newest / "status.private.json").read_text())["request"]
-
-
-def _evidence(page: Page, name: str) -> None:
-    """Save a walk-through frame when UX_EVIDENCE_DIR is set (the owner's browser-tested rule)."""
-    target = os.environ.get("UX_EVIDENCE_DIR")
-    if target:
-        Path(target).mkdir(parents=True, exist_ok=True)
-        page.screenshot(path=str(Path(target) / f"{name}.png"), full_page=True)
-
-
-def test_a_tick_survives_the_cut_and_cut_again_keeps_the_pool(
+def test_the_people_condition_reaches_the_cut(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
-    """Untick one picture, cut again: it is out. Tick it back, cut again: it is required, and in."""
+    """Quoted names are the override, folded away, and they still narrow a cut (#887)."""
     _brief_for_june(page, launch_app_url)
-    _evidence(page, "01-brief")
-    page.get_by_role("button", name="Cut", exact=True).click()
-    story_tab = page.get_by_role("tab", name="Story", exact=True)
-    expect(story_tab).to_be_visible(timeout=120_000)
-    story_tab.click()
-    expect(page.get_by_text(_SUMMARY, exact=True)).to_be_visible(timeout=120_000)
-    _evidence(page, "02-first-cut")
-
-    # The pool stays reachable after a cut, with the cut's own ticks: the first page
-    # of the pool opens on the first picture of the month, which the cut kept.
-    page.get_by_role("button", name="Review the pool", exact=True).click()
-    boxes = page.get_by_role("checkbox", name="Include")
-    expect(boxes).to_have_count(min(_PAGE, len(LIBRARY)))
-    assert LIBRARY[0].shipped
-    expect(boxes.first).to_be_checked()
-    _evidence(page, "03-pool-after-cut")
-
-    # A NiceGUI checkbox flips after the server round trip: click, then wait for the state.
-    boxes.first.click()
-    expect(boxes.first).not_to_be_checked()
-    _evidence(page, "04-pool-one-unticked")
-    page.get_by_role("button", name="Cut again", exact=True).click()
-    story_tab = page.get_by_role("tab", name="Story", exact=True)
-    expect(story_tab).to_be_visible(timeout=120_000)
-    story_tab.click()
-    one_fewer = _SUMMARY.replace(f"{len(CARRIERS)} pictures", f"{len(CARRIERS) - 1} pictures")
-    expect(page.get_by_text(one_fewer, exact=True)).to_be_visible(timeout=120_000)
-    _evidence(page, "05-second-cut-one-fewer")
-    # After a cut the pool's ticks are the cut's own, so the next request carries
-    # the cut minus the one picture that was unticked.
-    request = _latest_request(launch_workspace)
-    assert len(request["requested_assets"]) == len(CARRIERS) - 1
-    assert request["required_assets"] == []
-
-    # Tick the one the cut left out: it is required now, and the next cut carries it.
-    page.get_by_role("button", name="Review the pool", exact=True).click()
-    boxes = page.get_by_role("checkbox", name="Include")
-    expect(boxes).to_have_count(min(_PAGE, len(LIBRARY)))
-    expect(boxes.first).not_to_be_checked()
-    boxes.first.click()
-    expect(boxes.first).to_be_checked()
-    _evidence(page, "06-pool-ticked-back-in")
-    page.get_by_role("button", name="Cut again", exact=True).click()
-    story_tab = page.get_by_role("tab", name="Story", exact=True)
-    expect(story_tab).to_be_visible(timeout=120_000)
-    story_tab.click()
-    expect(page.get_by_text(_SUMMARY, exact=True)).to_be_visible(timeout=120_000)
-    _evidence(page, "07-third-cut")
-    request = _latest_request(launch_workspace)
-    assert len(request["required_assets"]) == 1
-    assert request["required_assets"][0] in request["requested_assets"]
-
-    page.get_by_role("button", name="Export", exact=True).click()
-    expect(page.get_by_text("Preview & Export", exact=True).first).to_be_visible()
-    _evidence(page, "08-export-page")
-
-
-def test_the_people_condition_waits_under_advanced_and_still_reaches_the_cut(
-    page: Page, launch_app_url: str, launch_workspace
-) -> None:
-    """Quoted names are the override, not the first screen, and they still narrow a cut (#887)."""
-    _brief_for_june(page, launch_app_url)
-    condition = page.get_by_label("Grouped people condition (optional)")
-    expect(page.get_by_label("Only with (optional)")).to_be_visible()
+    condition = page.get_by_label("People condition")
     expect(condition).to_be_hidden()
-    _evidence(page, "01-brief-condition-folded-away")
 
-    page.get_by_text(PEOPLE_CONDITION_PANEL, exact=True).click()
-
-    expect(condition).to_be_visible()
+    page.get_by_text("Grouped condition", exact=True).click()
     condition.fill(_CONDITION)
-    expect(page.get_by_text(f"Active condition: {_CONDITION_LABEL}", exact=True)).to_be_visible()
-    _evidence(page, "02-condition-typed-under-advanced")
+    expect(page.get_by_label("Command")).to_contain_text("--people-expression")
+    expect(page.get_by_label("Command")).not_to_contain_text("--person=")
 
     before = _attempts(launch_workspace)
     page.get_by_role("button", name="Cut", exact=True).click()
-    expect(_active_stage(page)).to_be_visible(timeout=60_000)
+    page.wait_for_url("**/app/runs/**", timeout=240_000)
 
     request = _request_of_the_cut_after(launch_workspace, before)
     assert set(request["requested_assets"]) == _CONDITION_ASSETS
@@ -716,111 +440,48 @@ def test_the_people_condition_waits_under_advanced_and_still_reaches_the_cut(
     assert _CONDITION_ASSETS > _SAME_FRAME_ASSETS
 
 
-def test_the_picker_says_together_or_any_of_these_people_without_a_condition(
+def test_two_names_ask_together_or_any_of_them(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
     """Two names and one word for what they mean is the whole plain path (#887)."""
     _brief_for_june(page, launch_app_url)
-    any_of = page.get_by_role("button", name="Any of these people")
-    expect(any_of).to_be_hidden()
+    match = page.get_by_label("Pictures with")
+    expect(match).to_be_hidden()
 
-    people = page.get_by_role("combobox", name="Only with (optional)")
-    people.click()
-    for name in ("Robin", "Kit"):
-        page.get_by_role("option", name=name, exact=True).click()
-    page.keyboard.press("Escape")
-
+    people = page.get_by_role("group", name="Only with (optional)")
+    people.get_by_text("Robin", exact=True).click()
     # One name means nothing to choose between; the second is what raises the question.
-    expect(any_of).to_be_visible()
-    any_of.click()
-    _evidence(page, "03-together-or-any-of-these-people")
+    expect(match).to_be_hidden()
+    people.get_by_text("Kit", exact=True).click()
+    match.select_option("or")
+    expect(page.get_by_label("Command")).to_contain_text("--person-match=or")
 
     before = _attempts(launch_workspace)
     page.get_by_role("button", name="Cut", exact=True).click()
-    expect(_active_stage(page)).to_be_visible(timeout=60_000)
+    page.wait_for_url("**/app/runs/**", timeout=240_000)
 
     requested = set(_request_of_the_cut_after(launch_workspace, before)["requested_assets"])
     assert requested == _EITHER_ASSETS
     assert requested > _CONDITION_ASSETS
 
 
-def test_pool_outcomes_match_saved_cut_and_survive_ticks(
-    page: Page, launch_app_url, launch_workspace
-):
-    from immich_memories.cli._runs_reading import why_text
-    from immich_memories.operations.candidate_fates import CandidateFates
+def test_an_album_is_cut_from_its_own_pictures_only(page: Page, launch_app_url: str) -> None:
+    from tests.e2e.fake_immich import ALBUM_ASSETS, ALBUM_ID
 
-    _brief_for_june(page, launch_app_url)
+    page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
+    page.get_by_text("Album", exact=True).click()
+    album = page.get_by_role("combobox", name="Album")
+    expect(album.locator("option", has_text="The lake week")).to_have_count(1, timeout=30_000)
+    album.select_option(ALBUM_ID)
+    # The id, not the name: two albums may share one, and --from-album takes either.
+    expect(page.get_by_label("Command")).to_contain_text(f"--from-album={ALBUM_ID}")
+
     page.get_by_role("button", name="Cut", exact=True).click()
-    expect(page.get_by_role("tab", name="Story", exact=True)).to_be_visible(timeout=120_000)
-    page.get_by_role("button", name="Review the pool", exact=True).click()
-    fates = CandidateFates.read(_newest_attempt(launch_workspace))
-    labels = page.locator(".pool-outcome")
-    expect(labels).to_have_count(min(_PAGE, len(LIBRARY)))
-    assert labels.all_text_contents() == [fates.describe(p.asset_id) for p in LIBRARY[:_PAGE]]
-    before = labels.first.inner_text()
-    page.get_by_role("checkbox", name="Include").first.click()
-    expect(labels.first).to_have_text(before)
-    _evidence(page, "824-pool-outcomes-list")
-    page.locator("button").filter(has=page.locator("i:has-text('grid_view')")).click()
-    expect(labels).to_have_count(min(_PAGE, len(LIBRARY)))
-    page.locator(".media-pool-grid .cursor-pointer").first.click()
-    expect(labels.first).to_have_text(before)
-    _evidence(page, "824-pool-outcomes-grid")
-    assert fates.trace is not None
-    dropped = next(p for p in LIBRARY[:_PAGE] if not p.shipped)
-    assert dropped.drop_reason in why_text(
-        dropped.asset_id, fates.trace.story_of(dropped.asset_id), fates.board
-    )
-    assert dropped.drop_reason in fates.describe(dropped.asset_id)
 
-    # Run the same month through the real Click entry point with the fixture editor.
-    from tests.e2e.conftest import _build_launch_environment
-    from tests.e2e.test_demo_assets import _TRIP_CLI_BOOTSTRAP
-
-    root = Path(__file__).resolve().parents[2]
-    prefix = [
-        str(root / ".venv/bin/python"),
-        "-c",
-        _TRIP_CLI_BOOTSTRAP,
-        str(launch_workspace.config_path),
-        str(launch_workspace.root / "state"),
-    ]
-    transcript = []
-    commands = [
-        [
-            "generate",
-            "--memory-type",
-            "monthly_highlights",
-            "--year",
-            "2024",
-            "--month",
-            "6",
-            "--no-render",
-            "--no-music",
-            "--quiet",
-        ],
-        ["runs", "why", dropped.asset_id, "--run", str(_newest_attempt(launch_workspace))],
-    ]
-    for command in commands:
-        if command[0] == "runs":
-            command[-1] = str(_newest_attempt(launch_workspace))
-        result = subprocess.run(
-            prefix + command,
-            cwd=root,
-            env=_build_launch_environment(launch_workspace.root),
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        transcript.append(result.stdout + result.stderr)
-        assert result.returncode == 0, transcript[-1]
-    cli_fates = CandidateFates.read(_newest_attempt(launch_workspace))
-    assert cli_fates.board is not None and fates.board is not None
-    assert [s.asset_id for s in cli_fates.board.shots] == [s.asset_id for s in fates.board.shots]
-    assert dropped.drop_reason in " ".join(transcript[-1].split())
-    evidence = root / "test-results"
-    evidence.mkdir(exist_ok=True)
-    (evidence / "pool-outcomes-cli.txt").write_text(
-        "\n".join(transcript).replace(str(launch_workspace.root), "<fixture-workspace>")
+    page.wait_for_url("**/app/runs/**", timeout=240_000)
+    shots = contact_sheet(page)
+    expect(shots.first).to_be_visible(timeout=30_000)
+    played = shots.locator("img").evaluate_all(
+        "images => images.map(i => decodeURIComponent(i.src.split('/assets/')[1].split('/')[0]))"
     )
+    assert played and set(played) <= ALBUM_ASSETS

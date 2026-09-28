@@ -25,7 +25,7 @@ sys.path.insert(0, str(REPO))
 # not read the developer's own. Every provider override goes too.
 _HOME = Path(tempfile.mkdtemp(prefix="demo-cli-home-"))
 for key in list(os.environ):
-    if key.startswith(("IMMICH_MEMORIES_", "NICEGUI_")):
+    if key.startswith("IMMICH_MEMORIES_"):
         del os.environ[key]
 os.environ.update(
     {

@@ -68,12 +68,3 @@ class TestCliPresetFlag:
         assert config.preset == "fast"
         assert config.hardware.encoder_preset == "fast"
         assert config.output.resolution == "1080p"
-
-
-class TestUiDefaultsUnderPreset:
-    def test_step3_resolution_defaults_to_the_preset_resolution(self) -> None:
-        from immich_memories.ui.pages.step3_options import default_resolution_label
-
-        assert default_resolution_label(Config(preset="fast")) == "1080p"
-        assert default_resolution_label(Config()) == "Auto (match clips)"
-        assert default_resolution_label(None) == "Auto (match clips)"

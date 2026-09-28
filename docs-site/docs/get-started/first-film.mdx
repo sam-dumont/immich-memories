@@ -20,23 +20,23 @@ This page assumes the [Quick start](./quick-start.md) is done: the container is 
 ## Pick a month
 
 Open [http://localhost:8080](http://localhost:8080). With `IMMICH_URL` and `IMMICH_API_KEY` set,
-the page connects on its own and shows the brief. If it doesn't, open **Advanced**, fill the
-**Immich Connection** panel and press **Test Connection**.
+the page reads Immich on its own and shows the brief. If it doesn't, open **Settings**, fill in
+**Immich Connection** and press **Test Connection**.
 
-Choose **Monthly Highlights** and a month with a fair number of pictures and a few videos. Leave
-**Auto duration** on.
+Choose **Monthly Highlights**, a year and a month with a fair number of pictures and a few videos.
+Leave the length empty: it is fitted to what the month can fill.
 
 <ThemedScreenshot name="memory-brief" alt="The brief, connected to Immich" />
 
 ## Cut
 
-Press **Cut**. One row per phase follows the run: reading dates, places and people, then the
-pictures, then the edit. The counted stages draw a bar with an estimate, and reloading the page
-mid-cut lands on the same rows.
+Press **Cut**. The panel follows the run: reading dates, places and people, then the pictures,
+then the edit. A stage that counts its work draws a bar with an estimate, and the last pictures it
+read go past underneath. The cut runs on the server, so reloading the page mid-cut picks it back up.
 
 If `immich-memories models fetch` has not run on this host, the cut does not start and nothing is
-asked of Immich. The brief comes back with a red card that names the missing model and the
-command to run (`Run immich-memories models fetch`), and it stays there until the next **Cut**.
+asked of Immich. The panel shows the command's own last lines, which name the missing model and
+the command to run (`Run immich-memories models fetch`), and they stay there after a reload.
 
 <ThemedScreenshot name="memory-cutting" alt="The cut in progress" />
 
@@ -44,13 +44,13 @@ The first cut reads every picture the film can reach: the month's pictures, thei
 and the bursts around them. Each one goes through the eight context heads and the two detectors
 once, and the answers are banked. The second cut of the same month reads nothing again.
 
-## Read the storyboard
+## Read the cut
 
-When the cut finishes, the page opens on the **Storyboard**: the film in the order it plays, one
-shot per row, with its timecode, its day, the story it belongs to and the reason the editor kept
-it. The **Story** tab shows the same cut the way the editor weighed it, heaviest story first.
+When the cut finishes, its review opens as a contact sheet in playback order. Open a picture to see
+it larger and the reason it stayed; a video plays the stretch the film uses. **Stories** shows the
+same cut the way the editor weighed it, heaviest story first.
 
-<ThemedScreenshot name="memory-story" alt="The storyboard of the first cut" />
+<ThemedScreenshot name="memory-story" alt="The contact sheet of the first cut" />
 
 A few things to look for on a first cut:
 
@@ -63,34 +63,39 @@ A few things to look for on a first cut:
 Why each rule exists, and every number behind it, is on
 [How it chooses](../how-it-chooses/overview.md).
 
-## Fix it with two clicks
+## Fix it
 
-**Review the pool** opens the media pool with the cut's picks ticked. Untick a picture the editor
-kept and it's out; tick one it dropped and it's in, in its own story at its own time. Press
-**Cut again**. Your ticks hold until **Start over**. The one thing that outranks a tick is the
-family-viewing gate.
+Two ways, depending on what's wrong.
 
-<ThemedScreenshot name="memory-pool-outcomes" alt="The media pool after a cut, with the picks ticked" />
+A shot is wrong: edit it in place. In the inspector, **Remove from this cut**, trim a video with
+**Start here** and **End here**, or **Use this picture instead** on another picture of the same
+moment. **Save revision** keeps the edits; nothing is re-selected.
 
-Two minutes in the pool before the first cut pays off too: untick the pocket recording and the
-45-second clip of a wall. Twins and bursts the editor judges itself; what it can't know is what
-you would never show anyone.
+<ThemedScreenshot name="memory-review-edit" alt="A picture removed and one swapped, with the change bar" />
+
+A picture is missing: open **Pool**. It shows every picture the cut saw, ticked if the cut kept it.
+Untick one and it's out; tick one and it's in, at the time it was taken. Press **Preview with these
+choices**: your ticks become a revision of the same cut, played as you left them, even past the
+length or a hold. **Never use** is for what you would never show anyone, in any film.
+
+<ThemedScreenshot name="memory-pool-outcomes" alt="The pool after a cut, with the picks ticked" />
 
 More ways to steer it (stars, people, `runs why`) are on
 [Overrule it](../how-it-chooses/overrule-it.md).
 
-## Export and watch
+## Render and watch
 
-Press **Export**, then **Generate Video**. The status line walks through downloading the clips,
-assembling with titles and transitions, the music, and delivery. Music, title and resolution sit
-one click away under **Back to Generation Options**; the defaults are fine for a first film.
+Scroll to **Render**. Pick the cut or a saved revision under **What to render**, and press **Render**.
+Resolution, title and music are all there, each defaulting to your configuration; the defaults are
+fine for a first film. The panel walks through downloading the clips, assembling with titles and
+transitions, the music, and delivery.
 
-<ThemedScreenshot name="memory-export" alt="Export: output filename and Generate Video" />
+<ThemedScreenshot name="memory-export" alt="The rendered film playing on the review page" />
 
-The player shows the result. **Saved to** gives the path: `./output` beside your compose file on
-Docker, `~/Videos/Memories` on pip, one folder per run. **Length** is measured from the finished
-file. With **Upload after generation** on, the film also goes to the Immich album you named,
-tagged as this app's own so a later run never films it again.
+The film plays on the page when it's done. It's in `./output` beside your compose file on Docker,
+`~/Videos/Memories` on pip, one folder per run. With **Upload the film to Immich** ticked, the film
+also goes to the Immich album you named, tagged as this app's own so a later run never films it
+again.
 
 ## The same on the CLI
 

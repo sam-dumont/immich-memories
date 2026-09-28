@@ -1,4 +1,4 @@
-"""The settings page's and the connection panel's save handlers, and `config show`.
+"""The web Settings page's and connection's save handlers, and `config show`.
 
 They go through the same store as the app, on both backends; no browser is involved.
 """
@@ -8,7 +8,6 @@ from __future__ import annotations
 import socket
 from collections.abc import Iterator
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 from click.testing import CliRunner
@@ -18,8 +17,8 @@ from immich_memories.config_loader import load_config, set_config
 from immich_memories.config_sources import describe_settings
 from immich_memories.db import StoreLocation, open_store
 from immich_memories.settings_store import SECRET_KEY_ENV, SettingsStore
-from immich_memories.ui.pages.settings_config import save_form
-from immich_memories.ui.pages.step1_config import connection_changes
+from immich_memories.web.connection import connection_changes
+from immich_memories.web.settings import save_form
 
 SECRET_KEY = "test-only-secret-key-0123456789abcdef"  # noqa: S105 — synthetic
 
@@ -87,11 +86,12 @@ def test_without_the_secret_key_the_page_says_what_to_do(config_path, monkeypatc
 
 def test_the_connection_panel_saves_only_the_field_that_changed(config_path):
     config = load_config(config_path)
-    state = SimpleNamespace(
-        config=config, immich_url="http://immich.invalid:2283", immich_api_key=""
+
+    changes = connection_changes(
+        config, url="http://immich.invalid:2283", key=config.immich.api_key
     )
 
-    assert connection_changes(state) == {"immich.url": "http://immich.invalid:2283"}
+    assert changes == {"immich.url": "http://immich.invalid:2283"}
 
 
 def test_config_show_names_every_source(config_path, monkeypatch):
@@ -121,7 +121,9 @@ def test_the_cli_stops_with_the_reason_when_the_store_cannot_be_read(tmp_path, m
 
 
 def test_the_ui_server_refuses_to_start_when_the_store_cannot_be_read(tmp_path, monkeypatch):
-    from immich_memories.ui import app
+    import uvicorn
+
+    from immich_memories.web import server as app
 
     monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", "postgresql://u:synthetic-pw@127.0.0.1:1/db")
     monkeypatch.setattr(Path, "home", classmethod(lambda _cls: tmp_path))
@@ -130,8 +132,8 @@ def test_the_ui_server_refuses_to_start_when_the_store_cannot_be_read(tmp_path, 
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         free_port = probe.getsockname()[1]
-    # WHY: ui.run would start a real server; it must never be reached here.
-    monkeypatch.setattr(app.ui, "run", lambda **_kwargs: pytest.fail("the server started"))
+    # WHY: uvicorn.run would start a real server; it must never be reached here.
+    monkeypatch.setattr(uvicorn, "run", lambda *_args, **_kwargs: pytest.fail("the server started"))
 
     with pytest.raises(SystemExit) as stopped:
         app.main(port=free_port, host="127.0.0.1")

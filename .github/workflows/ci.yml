@@ -127,6 +127,14 @@ jobs:
       - name: Code Duplication (≤5%)
         if: '!cancelled()'
         run: make duplication
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Web client (types, stale bundle or contract, Immich brand assets)
+        if: '!cancelled()'
+        run: make web-check
       - name: AI Smell Audit
         if: '!cancelled()'
         run: make critique

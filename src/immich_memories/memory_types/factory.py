@@ -334,13 +334,13 @@ def holiday_label(holiday: str, year: int, locale: str = "en", *, country: str =
     return resolved.strftime("%-d %B")
 
 
-def holiday_choices() -> dict[str, str]:
-    """Every holiday the pipeline resolves, with a printable name.
+def holiday_choices(locale: str = "en") -> dict[str, str]:
+    """Every holiday the pipeline resolves, with a printable name in `locale`.
 
     Keyed off KNOWN_HOLIDAYS so adding one there reaches the picker without a
     second list to keep in step.
     """
-    return {key: holiday_label(key, date.today().year) for key in KNOWN_HOLIDAYS}
+    return {key: holiday_label(key, date.today().year, locale) for key in KNOWN_HOLIDAYS}
 
 
 @register_preset(

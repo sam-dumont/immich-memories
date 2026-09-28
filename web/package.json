@@ -1,0 +1,30 @@
+{
+  "name": "immich-memories-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "api-types": "openapi-typescript ../src/immich_memories/web/openapi.json -o src/lib/api-types.ts"
+  },
+  "devDependencies": {
+    "@immich/ui": "0.90.0",
+    "@mdi/js": "7.4.47",
+    "@sveltejs/adapter-static": "3.0.10",
+    "@sveltejs/kit": "2.70.3",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "@tailwindcss/vite": "4.3.3",
+    "openapi-typescript": "7.13.0",
+    "svelte": "5.57.1",
+    "svelte-check": "4.7.6",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3",
+    "vite": "8.3.1"
+  },
+  "overrides": {
+    "openapi-typescript": {
+      "typescript": "$typescript"
+    }
+  }
+}

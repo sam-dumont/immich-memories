@@ -17,7 +17,6 @@ from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePor
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.config_loader import Config
 from immich_memories.memory_types.date_builders import build_season
-from immich_memories.ui.state import AppState
 from tests.annotation_rows import annotation_store
 from tests.conftest import make_clip
 
@@ -160,9 +159,8 @@ def test_actual_cli_hemisphere_flag_survives_the_generation_handoff(tmp_path):
 
 
 @pytest.mark.parametrize("hemisphere", ["north", "south"])
-def test_cli_and_ui_contexts_feed_the_same_runtime_season_statement(tmp_path, hemisphere):
+def test_the_cli_context_feeds_the_runtime_season_statement(tmp_path, hemisphere):
     from immich_memories.cli._pipeline_runner import run_pipeline_and_generate
-    from immich_memories.ui.pages.clip_pipeline import _build_ui_editorial_context
 
     config = Config(
         cache={"directory": str(tmp_path / "cache"), "database": str(tmp_path / "analysis.db")}
@@ -197,22 +195,9 @@ def test_cli_and_ui_contexts_feed_the_same_runtime_season_statement(tmp_path, he
             no_render=True,
         )
     cli_context = build.call_args.kwargs["editorial_context"]
-    state = AppState(
-        config=config,
-        memory_type="season",
-        date_ranges=[window],
-        clips=[clip],
-        target_duration=1.0,
-        memory_preset_params={"hemisphere": hemisphere},
-    )
-    ui_context = _build_ui_editorial_context(state, config, [clip], [])
-    assert cli_context.hemisphere == ui_context.hemisphere == hemisphere
-    assert (
-        _runtime_brief(cli_context, config)
-        == _runtime_brief(ui_context, config)
-        == build_editorial_brief(
-            "season",
-            (window,),
-            hemisphere=hemisphere,
-        )
+    assert cli_context.hemisphere == hemisphere
+    assert _runtime_brief(cli_context, config) == build_editorial_brief(
+        "season",
+        (window,),
+        hemisphere=hemisphere,
     )

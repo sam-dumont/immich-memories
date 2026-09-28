@@ -443,6 +443,7 @@ def register_generate_commands(main: click.Group) -> None:
                         )
 
                         handle_album_generation(
+                            explicit_output=output is not None,
                             client=client,
                             config=config,
                             progress=progress,
@@ -486,6 +487,7 @@ def register_generate_commands(main: click.Group) -> None:
                     # Trip detection flow: branch early
                     if memory_type == "trip" and year:
                         handle_trip_generation(
+                            explicit_output=output is not None,
                             client=client,
                             config=config,
                             progress=progress,

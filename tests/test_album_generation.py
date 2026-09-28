@@ -165,3 +165,9 @@ def test_a_written_subject_hands_the_album_over_as_a_subject_pool(monkeypatch):
     captured = _run_album(monkeypatch, videos, [], subject="Bread making along the years")
 
     assert captured["memory_preset_params"]["subject"] == "Bread making along the years"
+
+
+def test_an_explicit_output_is_where_the_album_film_goes():
+    asked = Path("/films/holiday.mp4")
+
+    assert album_output_path(asked, "Trip 2025", "mp4", explicit=True) == asked

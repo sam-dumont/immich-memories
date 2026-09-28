@@ -162,7 +162,16 @@ def test_a_run_phase_never_goes_back_and_mirrors_its_attempt(store):
 def test_cooldown_and_dedup_read_the_completed_auto_history(store):
     db = RunDatabase(store)
     recent = datetime.now(tz=UTC) - timedelta(hours=2)
-    db.save_run(_run("manual", status="completed", memory_key="trip:a", completed_at=recent))
+    # A made memory is a film: a cut kept without one (`generate --no-render`) is not.
+    db.save_run(
+        _run(
+            "manual",
+            status="completed",
+            memory_key="trip:a",
+            completed_at=recent,
+            output_path="/films/trip-a.mp4",
+        )
+    )
     db.save_run(_run("failed", status="failed", memory_key="trip:b", source="auto"))
 
     assert is_within_cooldown(db, 24) is False
@@ -176,6 +185,7 @@ def test_cooldown_and_dedup_read_the_completed_auto_history(store):
             status="completed",
             memory_key="year:2025",
             source="auto",
+            output_path="/films/year-2025.mp4",
         )
     )
 

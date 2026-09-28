@@ -7,7 +7,7 @@ import sys
 import pytest
 
 from immich_memories.config_models_auth import AuthConfig
-from immich_memories.ui.auth_oidc import (
+from immich_memories.web.auth_oidc import (
     _import_authlib,
     create_oidc_client,
     extract_user_from_token,
