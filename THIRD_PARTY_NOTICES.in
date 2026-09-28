@@ -98,6 +98,20 @@ Docling document figure classifier (docling-project/DocumentFigureClassifier-v2.
   Copyright: IBM Corporation (Docling project)
   URL: https://huggingface.co/docling-project/DocumentFigureClassifier-v2.0
 
+WordNet 3.0 (Princeton University; the nltk_data packaging)
+  Role: the English dictionary a film asked for in a sentence is read with
+    (which words are things, places or names), through nltk
+  Artifact: packages/corpora/wordnet.zip at commit
+    550b6625bcef1f2abff2ff770a5a0d272c9c6b2a of nltk/nltk_data, 11 MB,
+    sha256 cbda5ea6eef7f36a97a43d4a75f85e07fccbb4f23657d27b4ccbc93e2646ab59;
+    fetched by `immich-memories models fetch`, never bundled
+  License: the WordNet 3.0 licence (permission to use, copy, modify and
+    distribute without fee, with the copyright notice and disclaimer kept);
+    the archive carries it as wordnet/LICENSE
+  Copyright: WordNet 3.0 Copyright 2006 by Princeton University. All rights
+    reserved.
+  URL: https://wordnet.princeton.edu/
+
 YuNet face detector (opencv_zoo)
   Role: the face centre behind smart-zoom framing, on the OpenCV path
   Artifact: face_detection_yunet_2023mar.onnx at revision

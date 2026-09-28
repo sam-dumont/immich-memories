@@ -32,6 +32,7 @@ _TEST_ENV_KEYS = {
     # there. No test reads a model it did not put in place itself.
     "IMMICH_MEMORIES_TRIAGE__ENCODER": "models/triage/dinov2-small.onnx",
     "IMMICH_MEMORIES_EDITORIAL__LAYA_CHECKPOINT": "models/laya/checkpoint",
+    "IMMICH_MEMORIES_FREE_TEXT__WORDNET": "models/wordnet/wordnet.zip",
     # The first-open import reads legacy files from here, never from the developer's home.
     "IMMICH_MEMORIES_IMPORT_FROM": "legacy",
 }
@@ -186,6 +187,7 @@ def isolated_user_paths() -> Iterator[Path]:
     }
     assert not resolved_paths & normal_user_paths
     assert Path.home() not in config.triage.encoder_path.parents
+    assert Path.home() not in config.free_text.wordnet_path.parents
 
 
 @pytest.fixture()

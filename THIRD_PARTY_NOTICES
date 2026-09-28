@@ -98,6 +98,20 @@ Docling document figure classifier (docling-project/DocumentFigureClassifier-v2.
   Copyright: IBM Corporation (Docling project)
   URL: https://huggingface.co/docling-project/DocumentFigureClassifier-v2.0
 
+WordNet 3.0 (Princeton University; the nltk_data packaging)
+  Role: the English dictionary a film asked for in a sentence is read with
+    (which words are things, places or names), through nltk
+  Artifact: packages/corpora/wordnet.zip at commit
+    550b6625bcef1f2abff2ff770a5a0d272c9c6b2a of nltk/nltk_data, 11 MB,
+    sha256 cbda5ea6eef7f36a97a43d4a75f85e07fccbb4f23657d27b4ccbc93e2646ab59;
+    fetched by `immich-memories models fetch`, never bundled
+  License: the WordNet 3.0 licence (permission to use, copy, modify and
+    distribute without fee, with the copyright notice and disclaimer kept);
+    the archive carries it as wordnet/LICENSE
+  Copyright: WordNet 3.0 Copyright 2006 by Princeton University. All rights
+    reserved.
+  URL: https://wordnet.princeton.edu/
+
 YuNet face detector (opencv_zoo)
   Role: the face centre behind smart-zoom framing, on the OpenCV path
   Artifact: face_detection_yunet_2023mar.onnx at revision
@@ -320,7 +334,7 @@ of public domain, BSD and GPL parts. Nothing here changes the project's MIT
 licence for its own code, but a downstream that vendors the environment
 should know.
 
-144 packages, computed from uv.lock: everything reachable from
+148 packages, computed from uv.lock: everything reachable from
 immich-memories through the runtime extras (never the dev tools). Regenerate
 with `make notices`; `make notices-check` fails when this list is stale.
 
@@ -419,6 +433,10 @@ cuda-pathfinder 1.8.1
 cuda-toolkit 13.0.3.0
   License: NVIDIA proprietary (CUDA Toolkit EULA); pulled only by torch on Linux through the demucs extra
   URL: https://docs.nvidia.com/cuda/eula/
+
+defusedxml 0.7.1
+  License: PSF-2.0
+  URL: https://github.com/tiran/defusedxml
 
 demucs 4.0.1
   License: MIT
@@ -520,6 +538,10 @@ jinja2 3.1.6
   License: BSD
   URL: https://github.com/pallets/jinja/
 
+joblib 1.6.0
+  License: BSD-3-Clause
+  URL: https://joblib.readthedocs.io
+
 joserfc 1.7.4
   License: BSD
   URL: https://github.com/authlib/joserfc
@@ -579,6 +601,10 @@ networkx 3.6.1
 nicegui 3.16.0
   License: MIT
   URL: https://nicegui.io
+
+nltk 3.10.3
+  License: Apache-2.0
+  URL: https://github.com/nltk/nltk
 
 numpy 2.4.2
   License: BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0
@@ -771,6 +797,10 @@ pyyaml 6.0.3
 quadrants 1.3.0
   License: Apache-2.0
   URL: https://github.com/Genesis-Embodied-AI/quadrants
+
+regex 2026.9.10
+  License: Apache-2.0 AND CNRI-Python
+  URL: https://github.com/mrabarnett/mrab-regex
 
 requests 2.33.0
   License: Apache-2.0

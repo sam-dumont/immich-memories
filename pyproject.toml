@@ -62,6 +62,9 @@ dependencies = [
     "alembic>=1.13",
     "psycopg[binary]>=3.2",  # PostgreSQL driver, loaded by SQLAlchemy's postgresql+psycopg dialect
     "cryptography>=50.0.0",  # Fernet for secrets the settings layer keeps in the store
+    # WordNet through nltk: which words of a request typed as a sentence are things, places or
+    # names. The corpus is a model file `models fetch` downloads; nothing fetches it at run time.
+    "nltk>=3.9.1",
 ]
 
 [project.optional-dependencies]
@@ -396,6 +399,9 @@ module = [
     "staticmap.*",
     # Geocoding (geopy)
     "geopy.*",
+    # WordNet reader (nltk ships no type information)
+    "nltk",
+    "nltk.*",
 ]
 ignore_missing_imports = true
 
@@ -601,6 +607,7 @@ source_modules = [
     "immich_memories.store",
     "immich_memories.triage",
     "immich_memories.operations",
+    "immich_memories.free_text",
 ]
 forbidden_modules = ["immich_memories.ui"]
 
@@ -617,6 +624,7 @@ source_modules = [
     "immich_memories.store",
     "immich_memories.triage",
     "immich_memories.operations",
+    "immich_memories.free_text",
 ]
 forbidden_modules = ["immich_memories.cli"]
 

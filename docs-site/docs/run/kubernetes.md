@@ -103,7 +103,7 @@ read-only. Four writable paths:
 |---|---|---|
 | `/home/immich/.immich-memories` | PVC `immich-memories-cache` | `config.yaml`, `store.db` (the store when it is SQLite: banked facts, readings, your picture decisions, people, run history, automation state, special days), `cache.db` (derived analysis), video cache |
 | `/app/output` | PVC `immich-memories-output` | generated videos |
-| `/models` | PVC `immich-memories-models` | the three artifacts `immich-memories models fetch` writes, at `IMMICH_MEMORIES_TRIAGE__ENCODER`, `..._MARQO_ONNX` and `..._DETECTOR_CACHE_DIR` |
+| `/models` | PVC `immich-memories-models` | the four artifacts `immich-memories models fetch` writes, at `IMMICH_MEMORIES_TRIAGE__ENCODER`, `..._MARQO_ONNX`, `..._DETECTOR_CACHE_DIR` and `IMMICH_MEMORIES_FREE_TEXT__WORDNET` |
 | `/tmp` | emptyDir 4Gi | FFmpeg intermediates; 8Gi for 4K |
 
 A deployment that predates the models claim has to add it before the next apply, or the pod stays

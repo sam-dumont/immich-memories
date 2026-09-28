@@ -127,3 +127,7 @@ has_flagged_photos
 # tracking/__init__.py uses it to re-export lazily, so timing spans never load the
 # run database (and SQLAlchemy) into the API client and the renderer.
 __getattr__  # unused function (src/immich_memories/tracking/__init__.py:43)
+
+# nltk's WordNetCorpusReader calls map_wn from its own constructor; the override in
+# free_text/lexicon.py stops it loading a second copy of the corpus. No line here names it.
+_.map_wn

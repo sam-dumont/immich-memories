@@ -77,7 +77,7 @@ touches nothing.
 | Apprise or ntfy targets | `notifications.enabled: true` | memory type, outcome, duration, output path, a redacted error tail; a frame if `attach_thumbnail: true` | off |
 | Your OIDC provider | login with `provider: oidc` | the standard OIDC flow with PKCE | basic auth |
 | Hugging Face, `github.com` | only when you run `models fetch` (and ACE-Step or Demucs on first use) | nothing about your library: pinned weights, checked by SHA-256 | a run never downloads |
-| `raw.githubusercontent.com` | only `titles fonts --install`, or while the Docker image builds | nothing about your library: 42 Noto files, 43 MB | a render never downloads |
+| `raw.githubusercontent.com` | only `titles fonts --install`, `models fetch`, or while the Docker image builds | nothing about your library: 42 Noto files, 43 MB; the WordNet 3.0 corpus, 11 MB, checked by SHA-256 | a render never downloads |
 
 `preflight` prints one row per outside switch you turned on, naming the host. A default install
 prints none.

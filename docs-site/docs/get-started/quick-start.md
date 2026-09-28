@@ -50,9 +50,9 @@ docker compose up -d
 docker compose exec immich-memories immich-memories models fetch
 ```
 
-`models fetch` downloads about 130 MB of pinned models, once, onto the config volume: the image
-encoder behind the eight context heads, the sensitive-content detector and the document
-classifier. They run on your CPU; no picture leaves the box.
+`models fetch` downloads about 140 MB of pinned models, once, onto the config volume: the image
+encoder behind the eight context heads, the sensitive-content detector, the document
+classifier and the WordNet dictionary. They run on your CPU; no picture leaves the box.
 
 ## 4. Cut a month
 

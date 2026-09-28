@@ -114,7 +114,7 @@ load and are recomputed on the next run. A still keeps its `det-v2` exposure ans
 | `nsfw_marqo` | a 22.5 MB ONNX export of `Marqo/nsfw-image-detection-384@0c26ec22111b83f106d72a55f611ec35962bcb65` | `marqo_onnx`, SHA-256 `924658f1ac638d96e9126ecb29de047dc8d31c9c9defcab77a26a5c96ed69e11`, checked on load |
 | `doc_docling` | `model.onnx` from `docling-project/DocumentFigureClassifier-v2.0` | revision `2a12e02668b98ca40216eab41cdf19530577cba4` in the Hugging Face cache |
 
-`models fetch` supplies both (`--no-detectors` fetches only the encoder), so
+`models fetch` supplies both (`--no-detectors` fetches only the encoder and WordNet), so
 `allow_model_downloads` can stay `false`. With it `true` the worker acquires the Docling snapshot
 itself; the sensitive-content export is never fetched from inside a run. `preflight` checks both
 digests, and a producer that cannot load names the missing model, the path it looked at and the

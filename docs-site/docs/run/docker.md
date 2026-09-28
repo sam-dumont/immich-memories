@@ -58,9 +58,9 @@ docker compose exec immich-memories immich-memories models fetch
 docker compose exec immich-memories immich-memories preflight
 ```
 
-`models fetch` downloads about 130 MB: the pinned DINOv2 encoder behind the eight context heads,
-the sensitive-content detector, and the document classifier. All three are checked against a
-SHA-256 and land on the config volume, so a `docker compose pull` keeps them. `preflight` checks
+`models fetch` downloads about 140 MB: the pinned DINOv2 encoder behind the eight context heads,
+the sensitive-content detector, the document classifier, and the WordNet dictionary a film asked
+for in a sentence is read with. All four are checked against a SHA-256 and land on the config volume, so a `docker compose pull` keeps them. `preflight` checks
 Immich, the model digests, the home base and whether the output folder takes a file.
 
 **5. Open [http://localhost:8080](http://localhost:8080)** and cut a month:
