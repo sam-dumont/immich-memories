@@ -311,3 +311,24 @@ def test_the_model_tier_is_not_capped_by_the_shortlist(reader):
     )
 
     assert len(found) == 30
+
+
+def test_a_run_is_described_by_where_its_pictures_are_not_by_its_first_hour():
+    """A race day (09-28): three cat pictures at home before leaving, a hundred at the circuit,
+    two more at home at night. The line quoted the cat twice and never the circuit, so the
+    reader called it an ordinary day."""
+    from immich_memories.analysis.special_day_sequence import run_line
+
+    start = datetime(2030, 4, 7, 7, tzinfo=UTC)
+    home = [_picture(start + timedelta(minutes=n), n, city="Home") for n in range(3)]
+    circuit = _day(start + timedelta(hours=2), pictures=100, hours=2, city="Circuit")
+    night = [
+        _picture(start + timedelta(hours=10, minutes=n), 200 + n, city="Home") for n in range(2)
+    ]
+    captions = {a.id: f"A tabby cat on the stairs, number {i}" for i, a in enumerate(home + night)}
+    captions |= {a.id: f"A race car on the track, lap {i}" for i, a in enumerate(circuit)}
+
+    line = run_line("R1", [*home, *circuit, *night], captions)
+
+    written = line.split("written: ", 1)[1]
+    assert written.count("race car") >= 2

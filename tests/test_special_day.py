@@ -68,6 +68,21 @@ def test_the_sample_spreads_over_the_day_not_the_busiest_minute() -> None:
     assert len(hours) >= 4, f"sample collapsed onto {hours}"
 
 
+def test_the_sample_leans_on_the_hours_the_day_was_spent_in() -> None:
+    """A race day: a few pictures at home either side, most of them at the circuit. Covering
+    every hour once is right; the samples left over belong to the circuit, not to the first
+    hour of the morning again."""
+    home = [_asset(7, m) for m in (0, 5, 10)] + [_asset(17, m) for m in (0, 5)]
+    circuit = [_asset(10, m) for m in range(60)] + [_asset(9, m) for m in range(0, 60, 6)]
+    day = [*home, *circuit]
+
+    sampled = sample_across_day(list(reversed(day)), count=8)
+
+    assert sum(a.file_created_at.hour == 7 for a in sampled) == 1
+    assert sum(a.file_created_at.hour == 10 for a in sampled) >= 4
+    assert sampled == sample_across_day(day, count=8)
+
+
 def test_an_unreachable_model_is_not_a_verdict() -> None:
     """A failed question must not silently mark every day special."""
     # WHY: the LLM is the external boundary; here it is simply down.

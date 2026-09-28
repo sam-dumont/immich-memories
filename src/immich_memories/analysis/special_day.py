@@ -220,23 +220,25 @@ def sample_across_day(assets: list, count: int = 8) -> list:
     """Spread the sample over the day's hours, not its busiest minutes.
 
     Taking the first N would describe one burst, which is the very thing the
-    question is meant to see past.
+    question is meant to see past, so every hour gets one picture first (the
+    busiest hours, when there are more hours than pictures to take). What is
+    left goes where the day was spent: the hour with the most pictures still
+    untaken. Handing it back to the earliest hours described a race day by the
+    cat at home before leaving, and the day read as ordinary.
     """
     by_hour: dict[int, list] = collections.defaultdict(list)
-    for asset in assets:
+    for asset in sorted(assets, key=lambda a: a.file_created_at):
         by_hour[asset.file_created_at.hour].append(asset)
 
+    def take(hour: int) -> None:
+        bucket = by_hour[hour]
+        picked.append(bucket.pop(len(bucket) // 2))
+
     picked: list = []
-    hours = sorted(by_hour)
-    while hours and len(picked) < count:
-        for hour in hours.copy():
-            if len(picked) >= count:
-                break
-            bucket = by_hour[hour]
-            if bucket:
-                picked.append(bucket.pop(len(bucket) // 2))
-            if not bucket:
-                hours.remove(hour)
+    for hour in sorted(by_hour, key=lambda h: (-len(by_hour[h]), h))[:count]:
+        take(hour)
+    while len(picked) < count and any(by_hour.values()):
+        take(max(by_hour, key=lambda h: (len(by_hour[h]), -h)))
     return sorted(picked, key=lambda a: a.file_created_at)
 
 
