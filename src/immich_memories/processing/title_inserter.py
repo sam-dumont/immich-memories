@@ -27,6 +27,20 @@ AssembleFn = Callable[
     Path,
 ]
 
+_BORROW_SECONDS = 0.5
+
+
+def title_borrow(clip_duration: float) -> float:
+    """Seconds a content-backed title or ending plays from its neighbouring clip.
+
+    The title deblurs out of the first clip's opening half-second in slow
+    motion and the ending out of the last clip's closing one, so those clips
+    hold that much less on screen. A clip too short to spare it keeps it all.
+    The timeline preview uses the same rule, so the film it promises is the one
+    assembly renders.
+    """
+    return _BORROW_SECONDS if clip_duration > _BORROW_SECONDS + 1.0 else 0.0
+
 
 class TitleInserter:
     """Inserts title screens, month/year dividers, and location cards into clip lists."""
@@ -87,21 +101,20 @@ class TitleInserter:
 
     def _trim_first_clip(self, clips: list[AssemblyClip], trim_seconds: float) -> None:
         """Trim seconds from the start of the first clip (used in title slow-mo)."""
-        if not clips:
+        if not clips or trim_seconds <= 0:
             return
         first = clips[0]
-        if first.duration > trim_seconds + 1.0:
-            self._borrow(first.asset_id, head=trim_seconds)
-            # WHY replace(): AssemblyClip carries sixteen fields and rebuilding
-            # it by hand copied eight, silently dropping a user-set
-            # rotation_override, the has_music flag the ducking pass depends on,
-            # is_photo and the planned outgoing_transition. Trimming
-            # a clip should change its start and its length, nothing else.
-            clips[0] = replace(
-                first,
-                duration=first.duration - trim_seconds,
-                input_seek=trim_seconds,
-            )
+        self._borrow(first.asset_id, head=trim_seconds)
+        # WHY replace(): AssemblyClip carries sixteen fields and rebuilding
+        # it by hand copied eight, silently dropping a user-set
+        # rotation_override, the has_music flag the ducking pass depends on,
+        # is_photo and the planned outgoing_transition. Trimming
+        # a clip should change its start and its length, nothing else.
+        clips[0] = replace(
+            first,
+            duration=first.duration - trim_seconds,
+            input_seek=trim_seconds,
+        )
 
     def _build_title_config(
         self,
@@ -197,18 +210,15 @@ class TitleInserter:
         )
         # WHY: last content clip gets hard cut → ending, and trim 0.5s from
         # the end since those frames were used in the ending slow-mo.
-        source_seconds = 0.5
         if final_clips and not final_clips[-1].is_title_screen:
             last = final_clips[-1]
-            borrows = bool(ending_clip) and last.duration > source_seconds + 1.0
-            if borrows:
-                self._borrow(last.asset_id, tail=source_seconds)
-            trim_dur = last.duration - source_seconds if borrows else last.duration
+            tail = title_borrow(last.duration) if ending_clip else 0.0
+            self._borrow(last.asset_id, tail=tail)
             # Same here: the hand-built copy also lost the clip's place, so a
             # cut ending on a located clip dropped its caption.
             final_clips[-1] = replace(
                 last,
-                duration=trim_dur,
+                duration=last.duration - tail,
                 outgoing_transition="cut" if use_content_bg else None,
             )
         final_clips.append(
@@ -317,6 +327,9 @@ class TitleInserter:
         self._validate_certified_content(clips)
         if not clips:
             raise ValueError("No clips provided")
+        # WHY a copy: the caller's list is the selected cut, which the render
+        # worker checks against the plan. What the titles borrow is composition.
+        clips = clips.copy()
 
         title_settings = self.settings.title_screens
         if title_settings is None or not title_settings.enabled:
@@ -392,7 +405,7 @@ class TitleInserter:
         # half-second and the picture visibly jumped back at the cut. The
         # certificate still holds: title + clip + ending cover the interval once.
         if use_content_bg and content_clip:
-            self._trim_first_clip(clips, 0.5)
+            self._trim_first_clip(clips, title_borrow(clips[0].duration))
 
         _t_title_done = _time.monotonic()
         if progress_callback:
