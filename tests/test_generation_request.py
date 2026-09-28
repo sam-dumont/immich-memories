@@ -11,6 +11,7 @@ import pytest
 
 from immich_memories.automation.candidates import CandidateCategory, MemoryCandidate
 from immich_memories.automation.generation_request import GenerationRequest
+from immich_memories.self_command import self_command
 from tests.cli_argv_contract import parse_generate_argv
 
 
@@ -46,7 +47,7 @@ def _candidate(
                 end=date(2026, 5, 31),
             ),
             [
-                "immich-memories",
+                *self_command(),
                 "generate",
                 "--memory-type",
                 "monthly_highlights",
@@ -67,7 +68,7 @@ def _candidate(
                 end=date(2026, 4, 30),
             ),
             [
-                "immich-memories",
+                *self_command(),
                 "generate",
                 "--memory-type",
                 "monthly_highlights",
@@ -83,7 +84,7 @@ def _candidate(
         (
             _candidate(CandidateCategory.YEAR_IN_REVIEW, "year_in_review"),
             [
-                "immich-memories",
+                *self_command(),
                 "generate",
                 "--memory-type",
                 "year_in_review",
@@ -101,7 +102,7 @@ def _candidate(
                 people=["Alice"],
             ),
             [
-                "immich-memories",
+                *self_command(),
                 "generate",
                 "--memory-type",
                 "person_spotlight",
@@ -122,7 +123,7 @@ def _candidate(
                 people=["Alice"],
             ),
             [
-                "immich-memories",
+                *self_command(),
                 "generate",
                 "--memory-type",
                 "person_spotlight",
@@ -142,7 +143,7 @@ def _candidate(
                 people=["Alice", "--Bob"],
             ),
             [
-                "immich-memories",
+                *self_command(),
                 "generate",
                 "--memory-type",
                 "multi_person",
@@ -163,7 +164,7 @@ def _candidate(
                 end=date(2026, 8, 11),
             ),
             [
-                "immich-memories",
+                *self_command(),
                 "generate",
                 "--memory-type",
                 "on_this_day",
@@ -182,7 +183,7 @@ def _candidate(
                 end=date(2026, 5, 11),
             ),
             [
-                "immich-memories",
+                *self_command(),
                 "generate",
                 "--memory-type",
                 "trip",
@@ -268,7 +269,12 @@ def test_custom_config_precedes_generate_subcommand_without_shell_encoding() -> 
         config_path=config_path,
     ).to_argv()
 
-    assert argv[:4] == ["immich-memories", "--config", str(config_path), "generate"]
+    assert argv[: len(self_command()) + 3] == [
+        *self_command(),
+        "--config",
+        str(config_path),
+        "generate",
+    ]
 
 
 def test_unknown_category_fails_before_request_creation() -> None:

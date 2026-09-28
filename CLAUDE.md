@@ -115,6 +115,9 @@ make arch-check
 # Diff coverage for PRs (≥80% on changed lines)
 make diff-cover
 
+# Which CI jobs this branch's changes run (the same scope the PR's jobs read)
+make ci-scope
+
 # Commit message lint (conventional commits)
 make commitlint
 

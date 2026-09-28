@@ -20,6 +20,7 @@ from immich_memories.cli.generate_resolution import (
     _resolve_generation_scope,
     _validate_album_scope,
 )
+from immich_memories.self_command import self_command
 from immich_memories.timeperiod import DateRange
 
 EXECUTABLE = "immich-memories"
@@ -44,9 +45,10 @@ def parse_argv(argv: list[str]) -> tuple[str, dict[str, Any]]:
     Raises click.UsageError (NoSuchOption, BadParameter, ...) when the argv
     would not have reached the command at all.
     """
-    executable, *args = argv
-    if executable != EXECUTABLE:
-        raise AssertionError(f"argv must invoke {EXECUTABLE!r}, not {executable!r}")
+    prefix = self_command()
+    if argv[: len(prefix)] != prefix:
+        raise AssertionError(f"argv must start this install's CLI {prefix!r}, not {argv[:3]!r}")
+    args = argv[len(prefix) :]
 
     group_ctx = main.make_context(EXECUTABLE, args)
     name, command, rest = main.resolve_command(group_ctx, _tokens_after_group(group_ctx))
