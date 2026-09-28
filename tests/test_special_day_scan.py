@@ -92,6 +92,12 @@ class TestAHolidayIsOnlySkippedWhenTheDayLooksLikeOne:
                 special=True, title="A day", subtitle="", what="out", window=None
             ),
         )
+        self.the_holiday: bool | None = False
+        # WHY: the holiday question is the same text boundary; each test says what it answers.
+        monkeypatch.setattr(
+            "immich_memories.automation.special_day_scan.was_the_holiday",
+            lambda *_a, **_k: self.the_holiday,
+        )
 
     def test_a_holiday_spent_away_from_home_still_reaches_the_model(self) -> None:
         found = scan_year(
@@ -103,8 +109,9 @@ class TestAHolidayIsOnlySkippedWhenTheDayLooksLikeOne:
 
         assert [d.day for d in found] == [date(2021, 12, 25)]
 
-    def test_a_holiday_kept_at_home_is_still_skipped(self) -> None:
+    def test_a_holiday_kept_at_home_is_skipped_when_its_occasion_was_the_holiday(self) -> None:
         """The holiday memory does cover this one, which is why the skip exists."""
+        self.the_holiday = True
         found = scan_year(
             _christmas_day(_HOME),
             llm_config=None,
@@ -114,8 +121,9 @@ class TestAHolidayIsOnlySkippedWhenTheDayLooksLikeOne:
 
         assert found == []
 
-    def test_a_holiday_that_recorded_no_location_is_skipped(self) -> None:
-        """Nothing contradicts the holiday, so the date stands as it always did."""
+    def test_a_holiday_the_reader_could_not_answer_for_is_skipped_as_before(self) -> None:
+        """No answer contradicts the holiday, so the date stands as it always did."""
+        self.the_holiday = None
         unplaced = _christmas_day(_HOME)
         for asset in unplaced:
             asset.exif_info.latitude = None

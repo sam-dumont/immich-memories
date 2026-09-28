@@ -3,7 +3,7 @@
 from datetime import date
 from types import SimpleNamespace
 
-from immich_memories.analysis.special_day_vocabulary import distinctive_days, telling
+from immich_memories.analysis.special_day_vocabulary import crowded_out, distinctive_days, telling
 
 RACE = date(2021, 4, 4)
 
@@ -67,3 +67,50 @@ def test_the_pictures_that_say_what_the_year_does_not_are_the_ones_told():
     told = telling(pictures, captions, said, keep=2)
 
     assert [p.id for p in told] == ["p1", "p3"]
+
+
+def _weeks_of_a_newborn() -> dict[date, list[str]]:
+    """Forty days in a row of the same baby, as a newborn's first weeks are written about."""
+    first = date(2024, 2, 8)
+    return {
+        date.fromordinal(first.toordinal() + n): [
+            "A baby lying on a blanket",
+            "A man holding a baby",
+            "A baby sleeping in a crib",
+        ]
+        * 10
+        for n in range(40)
+    }
+
+
+def test_a_crowd_of_confirmed_days_that_say_what_their_weeks_say_is_thinned():
+    """A newborn's year (09-28): the reader called 55 ordinary baby days occasions. Each one
+    said what the weeks around it said."""
+    said = _weeks_of_a_newborn()
+    confirmed = sorted(said)[5:25]
+
+    assert crowded_out(confirmed, said) == set(confirmed)
+
+
+def test_a_day_in_the_crowd_that_shows_what_its_weeks_do_not_stays():
+    said = _weeks_of_a_newborn()
+    confirmed = sorted(said)[5:25]
+    birthday = confirmed[10]
+    said[birthday] = ["A child blowing out birthday candles on a cake"] * 12 + said[birthday][:6]
+
+    assert birthday not in crowded_out(confirmed, said)
+
+
+def test_a_day_alone_is_never_thinned_however_little_stands_out():
+    """A pregnancy test is two pictures of an ordinary day; nothing crowds it."""
+    said = _weeks_of_a_newborn()
+    alone = sorted(said)[20]
+
+    assert crowded_out([alone], said) == set()
+
+
+def test_a_day_that_stands_out_from_its_year_is_never_thinned():
+    said = _weeks_of_a_newborn()
+    confirmed = sorted(said)[5:25]
+
+    assert confirmed[3] not in crowded_out(confirmed, said, exempt={confirmed[3]})
