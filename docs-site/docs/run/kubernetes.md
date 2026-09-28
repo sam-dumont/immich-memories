@@ -119,9 +119,9 @@ port; oMLX serves on 8000) and the caption server on 8092. Edit the ports if you
 
 ## The models the first cut needs
 
-Every pod in `base/` runs a `fetch-models` init container first, writing the three pinned artifacts
+Every pod in `base/` runs a `fetch-models` init container first, writing the four pinned artifacts
 onto the `/models` claim, so there is nothing to run by hand. It exits without a download when all
-three are there, so a restart costs nothing and a nightly CronJob never goes back to the network.
+four are there, so a restart costs nothing and a nightly CronJob never goes back to the network.
 `kubectl logs -n immich-memories deploy/immich-memories -c fetch-models` shows what it did.
 
 ## Automatic product tiers {#set-the-preparation-tier}
