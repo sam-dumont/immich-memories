@@ -17,7 +17,7 @@ from immich_memories.timeperiod import DateRange
 
 if TYPE_CHECKING:
     from immich_memories.api.album_service import AlbumRef
-    from immich_memories.api.models import Asset, VideoClipInfo
+    from immich_memories.api.models import Asset
     from immich_memories.api.sync_client import SyncImmichClient
     from immich_memories.config_loader import Config
 
@@ -115,21 +115,3 @@ def fetch_album_media(
     )
     media.truncated = truncated
     return media
-
-
-# An album is one curated event, so the pool is mostly keepers: a few seconds
-# each reads as a highlight reel rather than a slideshow.
-_SECONDS_PER_ITEM = 4.0
-_MIN_TARGET_MINUTES = 0.5
-_MAX_TARGET_MINUTES = 10.0
-
-
-def album_target_minutes(clips: list[VideoClipInfo], photos: list[Asset]) -> float:
-    """Target length for an album memory, scaled to how much is in the album.
-
-    Albums are the one memory type with no preset behind them, so nothing else
-    supplies a target: without this the wizard keeps whatever the last-clicked
-    preset left in state.
-    """
-    items = len(clips) + len(photos)
-    return min(_MAX_TARGET_MINUTES, max(_MIN_TARGET_MINUTES, items * _SECONDS_PER_ITEM / 60))

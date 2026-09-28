@@ -12,7 +12,12 @@ link the other way, and stays a file beside the attempt.
 from __future__ import annotations
 
 import json
+from datetime import UTC, date, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from immich_memories.config_loader import Config
 
 import sqlalchemy as sa
 
@@ -80,3 +85,49 @@ def sharing_line(attempt_dir: Path | None) -> str:
     request = status.get("request") if isinstance(status, dict) else None
     level = request.get("audience", "family") if isinstance(request, dict) else "family"
     return f"Sharing: {_LEVEL_WORDS.get(level, level)}"
+
+
+def record_cut_run(
+    config: Config,
+    attempt_dir: Path,
+    *,
+    memory_type: str | None,
+    memory_key: str | None,
+    date_range: tuple[date, date] | None,
+    people: tuple[str, ...] = (),
+    person_name: str | None = None,
+    source: str = "manual",
+    clips_selected: int = 0,
+    target_duration_seconds: float | None = None,
+) -> str:
+    """Record a finished cut that stopped before rendering as a run of its own.
+
+    The run has no film yet. It can be read (`runs story`), revised in the web client and
+    rendered (`runs render`); each render is then a film run on this same attempt.
+    """
+    from immich_memories.tracking import RunDatabase
+    from immich_memories.tracking.models import RunMetadata
+    from immich_memories.tracking.run_id import generate_run_id
+
+    now = datetime.now(UTC)
+    run_id = generate_run_id(now)
+    store = open_store(config)
+    RunDatabase(store).save_run(
+        RunMetadata(
+            run_id=run_id,
+            created_at=now,
+            completed_at=now,
+            status="completed",
+            memory_type=memory_type,
+            memory_key=memory_key,
+            memory_people=people,
+            person_name=person_name,
+            source=source,
+            date_range_start=date_range[0] if date_range else None,
+            date_range_end=date_range[1] if date_range else None,
+            clips_selected=clips_selected,
+            target_duration_seconds=int(target_duration_seconds or 0),
+        )
+    )
+    record_run_attempt(run_id, attempt_dir, "", store=store)
+    return run_id

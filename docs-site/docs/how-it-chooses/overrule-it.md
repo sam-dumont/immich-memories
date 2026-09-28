@@ -10,11 +10,12 @@ Reader: power user, with a newcomer summary first.
 
 The editor's choices are defaults, and you have the last word on most of them. Star the pictures
 that matter in Immich before you cut. After a cut, untick what you don't want in the media pool,
-tick what you do, and cut again. Tell the app who your family is and where home is. When a choice
-still puzzles you, `runs why` says which rule made it.
+tick what you do, and preview: the film plays what you kept. Tell the app who your family is and
+where home is. When a choice still puzzles you, `runs why` says which rule made it.
 
-A tick never puts back a picture the family-viewing gate refused. Clearing the picture's hold does,
-one picture at a time, after you've looked at it. **Never use** keeps a picture out for good.
+A pool tick is final, even on a picture the family-viewing gate held: you looked at it. On a new cut
+(`--include`), the gate still judges it; clearing the hold lets it through there. **Never use**
+keeps a picture out for good.
 
 ## Where each lever acts
 
@@ -22,8 +23,10 @@ one picture at a time, after you've looked at it. **Never use** keeps a picture 
 flowchart TD
   star["star in Immich"] --> rank["wins its moment, always stands<br/>rule_representative_rank, RuleStructureReader.standing"]
   star --> weight["weighs the story<br/>editorial_story_weighing._floor_one"]
-  untick["untick in the pool, or --exclude"] --> source["never a source<br/>owner_excluded_asset_ids"]
-  tick["tick in the pool, or --include"] --> req["added after the draft and polish<br/>admit_owner_required"]
+  pool["tick or untick in the pool"] --> revision["a revision of the cut<br/>cut_revisions.save_revision"]
+  revision --> film
+  untick["--exclude on a new cut"] --> source["never a source<br/>owner_excluded_asset_ids"]
+  tick["--include on a new cut"] --> req["added after the draft and polish<br/>admit_owner_required"]
   req --> gate["family-viewing gate<br/>apply_audience_gate"]
   clear["Clear hold, or pictures clear-hold"] --> gate
   never["Never use, or pictures never-use"] --> out["never a carrier, any cut<br/>never_auto_ids"]
@@ -54,24 +57,25 @@ still apply.
 
 ## Tick and untick
 
-On the Memory page, **Open the media pool** shows every picture with an **Include** checkbox and,
-after a cut, what the cut did with it ([The web UI](../make/web-ui.mdx#the-media-pool)).
+On a cut's review page, **Pool** shows every picture the cut saw, what the cut did with it, and an
+**In the film** checkbox ([The web UI](../make/web-ui.mdx#the-pool)). The ticks are the last pass
+over that cut: **Preview with these choices** saves them as a revision and nothing is chosen again.
 
-- **Untick** a picture and it is never a source: the next cut can't use it anywhere.
-- **Tick** a picture the cut left out and **Cut again** keeps it, in its own story at its capture
-  time, without re-arguing the rest. It goes in after the draft and the model polish, and the trim
-  and the duplicate review never remove it.
-- The family-viewing gate still judges it. A ticked picture the gate refuses is named in
-  `derived-decisions/owner-required-after-audience.private.json`.
+- **Untick** a picture and it comes out of the film.
+- **Tick** a picture the cut left out and it goes in at the time it was taken, prepared to play like
+  the cut's own shots. No detector, hold or length check stands in the way: the film grows or
+  shrinks to what you kept.
 
-The CLI does the same with `generate --include ASSET_ID` and `--exclude ASSET_ID`, both repeatable.
-The web pool's ticks live in your session; **Start over** forgets them.
+To steer a new cut instead, `generate` takes `--include ASSET_ID` and `--exclude ASSET_ID`, both
+repeatable. An excluded picture is never a source. An included one goes in after the draft and the
+model polish, the trim and the duplicate review never remove it, and the family-viewing gate still
+judges it: a refusal is named in `derived-decisions/owner-required-after-audience.private.json`.
 
 ## Pick who it's for
 
-<ThemedScreenshot name="memory-brief-sharing" alt="The brief's Sharing select on Just us" />
+<ThemedScreenshot name="memory-brief-sharing" alt="The brief's Who may see it select on Just us" />
 
-Each film is cut for one sharing level: **Who will watch it** in the brief, `generate --sharing`, and
+Each film is cut for one sharing level: **Who may see it** in the brief, `generate --sharing`, and
 `defaults.sharing` for the rest (`family` unless you change it).
 
 - **Just us**: the household. A bath or a nappy change the caption names plays too.
@@ -87,7 +91,7 @@ Some pictures are held by the family-viewing gate: a nudity detector flagged the
 clip, or an earlier cut read a private moment in its caption. Detectors miss both ways, and a swim
 in a lake looks a lot like what they're trained to catch. Holds only ever lean cautious, so a held
 picture you know is fine is yours to clear. And some pictures you just never want in a film. Both
-are one click on the picture, in the media pool or on the storyboard.
+are on each picture in a cut's pool.
 
 A held picture says why, in plain words, with **Clear hold** under it:
 
@@ -97,18 +101,16 @@ A held picture says why, in plain words, with **Clear hold** under it:
 may go: **Just us** (only films for the household), **Family** (the default: family films too) or
 **Anyone** (shareable films too). The app never clears a hold on its own, and there's no bulk clear.
 
-<ThemedScreenshot name="pictures-clear-dialog" alt="The dialog: 'Clear this picture's hold?', the picture, the reason, Fine for Just us, Family or Anyone, and Cancel or Clear hold" />
+<ThemedScreenshot name="pictures-clear-dialog" alt="The dialog: 'Clear this hold?', the picture, the reason, which films may use it, and Cancel or Clear hold" />
 
 Once cleared, the card says so, and **Undo** is there if you change your mind:
 
-<ThemedScreenshot name="pictures-pool-cleared" alt="The same card after clearing for anyone: 'You cleared its hold for anyone (a nudity detector flagged it).', Never use and Undo" />
+<ThemedScreenshot name="pictures-pool-cleared" alt="The same card after clearing: 'You cleared its hold for family.', and Undo" />
 
-**Never use** keeps a picture out of every film from the next cut on. In the pool it also unticks
-it; on the storyboard the shot says so until you cut again.
+**Never use** keeps a picture out of every film from the next cut on. **Undo** forgets the decision.
+To take a picture out of one film only, remove it from that cut in the review instead.
 
-<ThemedScreenshot name="pictures-pool-never-use" alt="A pool card after Never use: 'You'll never use this picture.', Undo, and Include unticked" />
-
-<ThemedScreenshot name="pictures-storyboard-never-use" alt="A storyboard shot after Never use: 'You'll never use this picture.' and Undo" />
+<ThemedScreenshot name="pictures-pool-never-use" alt="A pool card after Never use: 'You'll never use this picture.' and Undo" />
 
 What each answer does, film by film:
 

@@ -1,4 +1,4 @@
-/* Immich Memories docs: matches the NiceGUI app's visual system */
+/* Immich Memories docs: matches the web client's visual system */
 
 /* Local Inter fonts (bundled, no Google Fonts dependency) */
 @font-face {
@@ -24,7 +24,7 @@
 }
 
 :root {
-  /* Match NiceGUI app primary: #4250af */
+  /* The web client's primary (@immich/ui): #4250af */
   --ifm-color-primary: #4250af;
   --ifm-color-primary-dark: #3b489e;
   --ifm-color-primary-darker: #384495;
@@ -48,7 +48,7 @@
 }
 
 [data-theme='dark'] {
-  /* Match NiceGUI dark: #6B8FE8 */
+  /* Dark primary */
   --ifm-color-primary: #6B8FE8;
   --ifm-color-primary-dark: #5A7FD8;
   --ifm-color-primary-darker: #4F75D3;

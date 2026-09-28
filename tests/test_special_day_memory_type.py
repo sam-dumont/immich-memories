@@ -8,13 +8,13 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta, timezone
 
-from immich_memories.cli._date_resolution import (
-    default_duration_for_type,
-    duration_from_date_range,
-)
 from immich_memories.memory_types.date_builders import build_special_day
 from immich_memories.memory_types.factory import create_preset
 from immich_memories.memory_types.registry import MemoryType
+from immich_memories.planning.memory_length import (
+    default_duration_for_type,
+    duration_from_date_range,
+)
 
 
 class TestBuildSpecialDay:

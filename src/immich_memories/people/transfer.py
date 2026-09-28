@@ -197,11 +197,15 @@ def _entry(raw: object, seen: set[str]) -> tuple[dict[str, Any], str | None]:
     person_ids = [str(i) for i in ids]
     if len(set(person_ids)) != len(person_ids) or seen.intersection(person_ids):
         return {}, f"an id is listed twice: {', '.join(person_ids)}"
-    problem = _shape_problem(raw)
+    problem = _shape_problem(raw) or _accounts_problem(raw.get("accounts"), person_ids)
     if problem is not None:
         return {}, problem
     entry = {key: _plain(value) for key, value in raw.items()}
     entry["ids"] = person_ids
+    if raw.get("accounts"):
+        entry["accounts"] = {str(alias): str(name) for alias, name in raw["accounts"].items()}
+    else:
+        entry.pop("accounts", None)
     for key in ("name", "origin"):
         if entry.get(key) is not None:
             entry[key] = str(entry[key])
@@ -225,6 +229,19 @@ def _shape_problem(raw: dict[str, Any]) -> str | None:
         isinstance(links, list) and all(isinstance(link, dict) for link in links)
     ):
         return "`confirmed.links` must be a list of mappings"
+    return None
+
+
+def _accounts_problem(accounts: object, person_ids: list[str]) -> str | None:
+    """Why an entry's `accounts` (id to the account that reads it) cannot be stored."""
+    if accounts is None:
+        return None
+    if not isinstance(accounts, dict) or not all(
+        isinstance(name, str) and name for name in accounts.values()
+    ):
+        return "`accounts` must map each id to an account name"
+    if not {str(alias) for alias in accounts} <= set(person_ids):
+        return "`accounts` names an id this person does not have"
     return None
 
 

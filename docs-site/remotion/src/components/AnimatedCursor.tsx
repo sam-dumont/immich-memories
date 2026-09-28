@@ -1,6 +1,6 @@
 import React from "react";
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { COLORS } from "../theme";
+import { UI } from "../theme";
 
 type CursorStep = {
   frame: number; // when to arrive at this position
@@ -11,14 +11,15 @@ type CursorStep = {
 
 type Props = {
   steps: CursorStep[];
+  /** Frame windows the pointer steps out of, e.g. while the camera moves in. */
+  hidden?: [number, number][];
 };
 
 /**
- * Animated cursor dot that moves between positions and "clicks".
- * Renders as a small white circle with blue glow that pulses on click.
- * Position is absolute within the parent container.
+ * The pointer, moving between positions and "clicking": a ring spreads from
+ * the tip on each click. Positions are in the 1920x1080 frame (see onScreen).
  */
-export const AnimatedCursor: React.FC<Props> = ({ steps }) => {
+export const AnimatedCursor: React.FC<Props> = ({ steps, hidden = [] }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -67,23 +68,69 @@ export const AnimatedCursor: React.FC<Props> = ({ steps }) => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
+  const ring = current.click
+    ? interpolate(frame, [current.frame, current.frame + 14], [0, 1], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      })
+    : 1;
+
   return (
     <div
       style={{
         position: "absolute",
-        left: x - 7,
-        top: y - 7,
-        width: 14,
-        height: 14,
-        borderRadius: "50%",
-        backgroundColor: "white",
-        border: `2px solid ${COLORS.primary}`,
-        boxShadow: `0 0 ${8 + clickScale * 6}px rgba(107, 143, 232, ${glowOpacity})`,
-        transform: `scale(${clickScale})`,
-        opacity: fadeIn,
+        left: x,
+        top: y,
+        opacity:
+          fadeIn *
+          hidden.reduce(
+            (shown, [from, to]) =>
+              shown *
+              interpolate(frame, [from, from + 6, to - 6, to], [1, 0, 0, 1], {
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              }),
+            1,
+          ),
         pointerEvents: "none",
         zIndex: 9999,
       }}
-    />
+    >
+      {ring > 0 && ring < 1 && (
+        <div
+          style={{
+            position: "absolute",
+            left: -22 * ring,
+            top: -22 * ring,
+            width: 44 * ring,
+            height: 44 * ring,
+            borderRadius: "50%",
+            border: `3px solid ${UI.primary}`,
+            opacity: (1 - ring) * glowOpacity * 1.6,
+          }}
+        />
+      )}
+      <svg
+        width={28}
+        height={28}
+        viewBox="0 0 24 24"
+        style={{
+          position: "absolute",
+          left: -5,
+          top: -3,
+          transform: `scale(${1 / clickScale ** 0.3})`,
+          transformOrigin: "5px 3px",
+          filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.35))",
+        }}
+      >
+        <path
+          d="M5.5,2.5 L5.5,19.5 L9.6,15.6 L12.4,21.6 L15.1,20.4 L12.4,14.5 L18,14.5 Z"
+          fill="#111"
+          stroke="#fff"
+          strokeWidth={1.4}
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
   );
 };

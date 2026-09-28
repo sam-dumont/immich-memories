@@ -351,14 +351,6 @@ class TestRunDatabaseDedup:
         """Returns None when no completed runs of that type exist."""
         assert db.get_last_run_of_type("trip") is None
 
-    def test_get_generated_memory_keys(self, db):
-        """Returns set of all completed memory keys."""
-        db.save_run(_make_run(run_id="r1", status="completed", memory_key="k1"))
-        db.save_run(_make_run(run_id="r2", status="completed", memory_key="k2"))
-        db.save_run(_make_run(run_id="r3", status="failed", memory_key="k3"))
-        keys = db.get_generated_memory_keys()
-        assert keys == {"k1", "k2"}
-
 
 class TestRunDatabaseWithSystemInfo:
     """Runs with SystemInfo round-trip through save/load."""

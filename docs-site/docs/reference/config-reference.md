@@ -758,7 +758,6 @@ cache:
   video_cache_max_size_gb: 10.0  # Max disk usage for video cache (1-500 GB)
   video_cache_max_age_days: 7    # Auto-delete cached videos older than this (1-365)
   thumbnail_cache_max_size_mb: 10000.0 # Max disk for Immich previews (50 MB-100 GB)
-  preview_cache_max_size_mb: 2000.0    # Max disk for clip previews (100 MB-100 GB)
 ```
 
 Tight on disk: lower `video_cache_max_size_gb`, or turn it off with `video_cache_enabled: false`.
@@ -775,7 +774,7 @@ A scope of ten thousand candidates wants about 3.4 GB; the `0.35` leaves a littl
 
 If the run's working set does not fit, nothing is lost mid-run: previews still in use are never deleted and the cache overflows the limit instead. The *next* run reclaims them, so the next overlapping memory re-downloads every preview. You get one `WARNING` per run saying how far over you are. Raise it rather than ignoring it.
 
-The other two budgets are not library-sized: `preview_cache_max_size_mb` holds the video renditions the wizard's player streams, and the video cache holds the originals being assembled. Both are tens of files per run, however big your library is.
+The video cache is not library-sized: it holds the originals being assembled, tens of files per run however big your library is. `preview_cache_max_size_mb` is gone: it capped the clip previews the old web pages played, and the web client streams Immich's own renditions. An old config that still sets it loads with a warning.
 
 ## Store database
 
@@ -805,7 +804,7 @@ server:
   host: "0.0.0.0"               # Listen address. Without auth and without this set
                                  # explicitly, the UI binds 127.0.0.1 (secure default)
   port: 8080                     # Listen port (1-65535)
-  enable_demo_mode: false        # Show the demo/privacy (blur) toggle in the sidebar
+  enable_demo_mode: false        # Offer the Demo mode (blur) switch in the web top bar
   secure_cookies: false          # Mark the session cookie Secure (turn on behind an HTTPS reverse proxy)
   trigger_token: ""              # Shared secret for POST /api/trigger. Empty, and with auth
                                  # off, the trigger API is not served at all

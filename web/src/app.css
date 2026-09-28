@@ -1,0 +1,21 @@
+@import '@immich/ui/theme/default.css';
+@source '../node_modules/@immich/ui';
+
+/* The web UI sits beside Immich: its palette, its type. */
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(/static/fonts/inter-latin.woff2) format('woff2');
+}
+
+/* Demo mode: every picture and film blurred, so a screen can be shared without a family's photos. */
+.demo-mode img,
+.demo-mode video {
+  filter: blur(14px);
+}

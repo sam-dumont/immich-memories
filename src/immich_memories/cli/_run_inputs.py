@@ -34,7 +34,6 @@ class ResolvedRunInputs:
     """What the run's raw arguments mean, decided once."""
 
     photo_assets: list[Any] | None
-    has_photos: bool
     attempt_id: str | None
     should_upload: bool
     person_name: str | None
@@ -59,7 +58,6 @@ class ResolvedRunInputs:
         photos = photo_assets if include_photos else None
         return cls(
             photo_assets=photos,
-            has_photos=bool(photos),
             # A rehearsal must not mark an automation attempt as spent.
             attempt_id=None if dry_run else automation_attempt_id,
             should_upload=upload_to_immich or config.upload.enabled,

@@ -14,6 +14,13 @@ export type Shot = {
   chapter?: string;
 };
 
+/** A weighed story, heaviest first, as the Stories view lists them. */
+export type Story = {
+  title: string;
+  weight: string;
+  purpose: string;
+};
+
 export type PoolCard = {
   picture: string;
   motion: boolean;
@@ -35,14 +42,16 @@ export const POOL_PAGE = 20;
 export const CUT_COUNT = 18;
 export const CUT_SECONDS = 79;
 export const CUT_FILM_SECONDS = 61.65000000000001;
-export const RECUT_FILM_SECONDS = 61.79999999999999;
+/** The pictures' own seconds, and what the titles leave them: the edit bar's two numbers. */
+export const CUT_CONTENT_SECONDS = 56.09;
+export const CUT_CONTENT_BUDGET = 56.15;
 
 /** How long output-preview.mp4 runs, measured. */
-export const FILM_SECONDS = 61.57;
+export const FILM_SECONDS = 81.0;
 /** The last second of it that still shows a photograph, before the ending card. */
-export const FILM_PICTURES_END = 54.5;
+export const FILM_PICTURES_END = 74.0;
 /** Its size, in the words the completion page prints. */
-export const FILM_SIZE = "14 MB";
+export const FILM_SIZE = "17 MB";
 
 export const SHOTS: Shot[] = [
   {
@@ -209,160 +218,26 @@ export const SHOTS: Shot[] = [
     "reason": "pancakes for breakfast"
   }
 ];
-export const RECUT_SHOTS: Shot[] = [
+export const STORIES: Story[] = [
   {
-    "picture": "library/home-rain-window-01.jpg",
-    "day": "2024-06-03",
-    "motion": false,
-    "seconds": 2.98,
-    "start": 3.5,
-    "story": "Ordinary days",
-    "reason": "rain on a window",
-    "chapter": "June 2024"
+    "title": "A birthday in the garden",
+    "weight": "dominant",
+    "purpose": "The one afternoon the whole month was arranged around"
   },
   {
-    "picture": "library/home-dog-walk-01.jpg",
-    "day": "2024-06-04",
-    "motion": true,
-    "seconds": 3.72,
-    "start": 6.48,
-    "story": "Ordinary days",
-    "reason": "a dog outdoors"
+    "title": "A week by the lake",
+    "weight": "major",
+    "purpose": "Seven days away, the only time the month leaves the city"
   },
   {
-    "picture": "library/birthday-balloons-01.jpg",
-    "day": "2024-06-08",
-    "motion": false,
-    "seconds": 2.98,
-    "start": 9.7,
-    "story": "A birthday in the garden",
-    "reason": "colourful party balloons"
+    "title": "The Saturday in the woods",
+    "weight": "minor",
+    "purpose": "One day out between the party and the holiday"
   },
   {
-    "picture": "library/garden-table.jpg",
-    "day": "2024-06-08",
-    "motion": true,
-    "seconds": 2.98,
-    "start": 12.17,
-    "story": "A birthday in the garden",
-    "reason": "a table and chairs on the lawn"
-  },
-  {
-    "picture": "library/garden-cake.jpg",
-    "day": "2024-06-08",
-    "motion": false,
-    "seconds": 2.98,
-    "start": 14.65,
-    "story": "A birthday in the garden",
-    "reason": "a birthday cake with lit candles"
-  },
-  {
-    "picture": "library/birthday-candles-01.jpg",
-    "day": "2024-06-08",
-    "motion": true,
-    "seconds": 3.72,
-    "start": 17.62,
-    "story": "A birthday in the garden",
-    "reason": "lit birthday candles on a cake"
-  },
-  {
-    "picture": "library/woods-hamper.jpg",
-    "day": "2024-06-15",
-    "motion": false,
-    "seconds": 2.98,
-    "start": 21.34,
-    "story": "The Saturday in the woods",
-    "reason": "a closed picnic basket on a checked cloth"
-  },
-  {
-    "picture": "library/woods-stream-01.jpg",
-    "day": "2024-06-15",
-    "motion": false,
-    "seconds": 2.98,
-    "start": 23.82,
-    "story": "The Saturday in the woods",
-    "reason": "a stream through the woods"
-  },
-  {
-    "picture": "library/woods-path.jpg",
-    "day": "2024-06-15",
-    "motion": true,
-    "seconds": 4.46,
-    "start": 26.8,
-    "story": "The Saturday in the woods",
-    "reason": "a sunlit path through the woods"
-  },
-  {
-    "picture": "library/home-suitcase-02.jpg",
-    "day": "2024-06-21",
-    "motion": false,
-    "seconds": 2.98,
-    "start": 30.76,
-    "story": "A week by the lake",
-    "reason": "badges displayed in an open suitcase at a market"
-  },
-  {
-    "picture": "library/trip-lake-arrival-01.jpg",
-    "day": "2024-06-21",
-    "motion": true,
-    "seconds": 3.72,
-    "start": 33.74,
-    "story": "A week by the lake",
-    "reason": "a wooden jetty pointing towards the mountains"
-  },
-  {
-    "picture": "library/lake-tents.jpg",
-    "day": "2024-06-21",
-    "motion": true,
-    "seconds": 3.72,
-    "start": 36.96,
-    "story": "A week by the lake",
-    "reason": "two tents on a slope above the lake"
-  },
-  {
-    "picture": "library/trip-morning-mist-01.jpg",
-    "day": "2024-06-22",
-    "motion": false,
-    "seconds": 2.98,
-    "start": 40.18,
-    "story": "A week by the lake",
-    "reason": "mist above the lake"
-  },
-  {
-    "picture": "library/trip-swim-01.jpg",
-    "day": "2024-06-22",
-    "motion": true,
-    "seconds": 3.72,
-    "start": 42.65,
-    "story": "A week by the lake",
-    "reason": "a swimmer underwater"
-  },
-  {
-    "picture": "library/lake-sunset.jpg",
-    "day": "2024-06-22",
-    "motion": false,
-    "seconds": 2.98,
-    "start": 46.37,
-    "story": "A week by the lake",
-    "reason": "sunset over a sandy beach"
-  },
-  {
-    "picture": "library/trip-summit-view-01.jpg",
-    "day": "2024-06-23",
-    "motion": false,
-    "seconds": 2.98,
-    "start": 49.35,
-    "story": "A week by the lake",
-    "reason": "a view of the mountains"
-  },
-  {
-    "picture": "library/home-pancakes-01.jpg",
-    "day": "2024-06-29",
-    "motion": false,
-    "seconds": 2.98,
-    "start": 51.82,
-    "story": "Ordinary days",
-    "reason": "pancakes for breakfast"
+    "title": "Ordinary days",
+    "weight": "glimpse",
+    "purpose": "What the rest of the month looked like at home"
   }
 ];
 export const POOL: PoolCard[] = [

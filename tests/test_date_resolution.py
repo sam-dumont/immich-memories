@@ -9,11 +9,11 @@ import pytest
 
 from immich_memories.cli._date_resolution import (
     BIRTHDAY_FLAG_FORMAT,
-    default_duration_for_type,
     resolve_date_range,
 )
 from immich_memories.cli._trip_display import _closest_trip_to_date, select_trips
 from immich_memories.memory_types.date_builders import BIRTHDAY_HISTORY_FROM
+from immich_memories.planning.memory_length import default_duration_for_type
 from immich_memories.timeperiod import DateRange
 
 

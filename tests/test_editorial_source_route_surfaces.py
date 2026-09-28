@@ -4,16 +4,15 @@ from __future__ import annotations
 
 import socket
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from immich_memories.analysis.editorial_planner import EditorialSelection
-from immich_memories.analysis.smart_pipeline import PipelineConfig, PipelineResult
+from immich_memories.analysis.smart_pipeline import PipelineResult
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
 from immich_memories.config_loader import Config
 from immich_memories.timeperiod import DateRange
-from immich_memories.ui.state import AppState
 from tests.conftest import make_asset, make_clip
 
 _WHEN = datetime(2026, 7, 10, tzinfo=UTC)
@@ -205,157 +204,3 @@ def test_cli_short_and_unknown_videos_reach_editor_as_timed_clips(tmp_path, dura
     sources = pipeline.run_editorial_source.call_args.args[0]
     assert len(sources) == 1 and sources[0].asset == asset
     assert sources[0].duration_seconds == (duration or 0.0)
-
-
-@pytest.mark.parametrize("include_photos", [False, True])
-@pytest.mark.parametrize("include_live", [False, True])
-def test_ui_source_route_retains_reviewed_demand_and_exact_selection(
-    tmp_path, include_photos, include_live
-):
-    from immich_memories.ui.pages.clip_pipeline import _run_pipeline_blocking
-
-    result = _finished_selection()
-    reviewed_videos = [result.selected_clips[2], result.selected_clips[0]]
-    reviewed_photo = result.selected_clips[1].asset
-    excluded_video = make_clip("owner-excluded-video", file_created_at=_WHEN)
-    excluded_photo = _photo("owner-excluded-photo")
-    config = _config(tmp_path)
-    state = AppState(
-        config=config,
-        immich_url="http://immich.test",
-        immich_api_key="fake-test-key",
-        memory_type="album",
-        album_id="reviewed-album",
-        album_name="Reviewed album",
-        date_ranges=[_WINDOW],
-        clips=[*reviewed_videos, excluded_video],
-        photo_assets=[reviewed_photo, excluded_photo],
-        include_photos=include_photos,
-        include_live_photos=include_live,
-        target_duration=1.0,
-        thumbnail_cache=MagicMock(),
-        pipeline_running=True,
-    )
-    if not include_photos:
-        result.selected_clips.remove(result.selected_clips[1])
-        result.clip_segments.pop(reviewed_photo.id)
-        result.editorial_selections = tuple(
-            d for d in result.editorial_selections if d.asset_id != reviewed_photo.id
-        )
-    pipeline = _source_pipeline(result)
-    progress = {"cancelled": False, "done": False, "error": None}
-    # WHY: stubs the Immich client, config lookup, and pipeline builder for this UI run.
-    with (
-        # WHY: replaces the Immich HTTP client so no real connection opens here.
-        patch("immich_memories.ui.pages.clip_pipeline.SyncImmichClient") as client_type,
-        # WHY: replaces the process-wide config singleton with this test's Config instance.
-        patch("immich_memories.config.get_config", return_value=config),
-        # WHY: the collaborator under inspection; its album/context kwargs are asserted below.
-        patch(
-            "immich_memories.analysis.editorial_runtime.build_smart_pipeline", return_value=pipeline
-        ) as build,
-    ):
-        client_type.return_value.__enter__.return_value = MagicMock()
-        _run_pipeline_blocking(state, PipelineConfig(), reviewed_videos, [reviewed_photo], progress)
-
-    assert progress == {"cancelled": False, "done": True, "error": None}
-    assert state.pipeline_running is False
-    assert pipeline.run_editorial_source.call_args.args[0] == [
-        *reviewed_videos,
-        *([reviewed_photo] if include_photos else []),
-    ]
-    assert pipeline.run_editorial_source.call_args.kwargs["include_live_photos"] is include_live
-    context = build.call_args.kwargs["editorial_context"]
-    assert context.album_sources == (*state.clips, *state.photo_assets)
-    assert context.owner_excluded_asset_ids == (excluded_video.asset.id, excluded_photo.id)
-    assert context.date_ranges == ()
-    assert context.target_seconds == 60.0
-    assert state.pipeline_selected_clips is result.selected_clips
-    assert state.clip_segments is result.clip_segments
-    assert state.editorial_selections is result.editorial_selections
-    assert state.pipeline_result["stats"]["selection_route"] == "editorial-source"
-    if include_photos:
-        assert state.selected_photo_ids == {reviewed_photo.id}
-
-
-def test_ui_unavailable_source_reports_failure_without_legacy_reentry(tmp_path):
-    from immich_memories.ui.pages.clip_pipeline import _run_pipeline_blocking
-
-    clip = make_clip("unavailable-source", file_created_at=_WHEN)
-    config = _config(tmp_path)
-    state = AppState(
-        config=config,
-        immich_url="http://immich.test",
-        immich_api_key="fake-test-key",
-        memory_type="monthly_highlights",
-        date_ranges=[_WINDOW],
-        clips=[clip],
-        target_duration=1.0,
-        thumbnail_cache=MagicMock(),
-        pipeline_running=True,
-    )
-    pipeline = _source_pipeline(_finished_selection())
-    pipeline.run_editorial_source.side_effect = RuntimeError("selected source evidence unavailable")
-    progress = {"cancelled": False, "done": False, "error": None}
-    # WHY: stubs the Immich client, config lookup, and pipeline builder for this failure path.
-    with (
-        # WHY: replaces the Immich HTTP client; this run never needs a live connection.
-        patch("immich_memories.ui.pages.clip_pipeline.SyncImmichClient"),
-        # WHY: replaces the process-wide config singleton with this test's Config instance.
-        patch("immich_memories.config.get_config", return_value=config),
-        # WHY: the collaborator whose stubbed failure is expected to reach progress state.
-        patch(
-            "immich_memories.analysis.editorial_runtime.build_smart_pipeline", return_value=pipeline
-        ),
-    ):
-        _run_pipeline_blocking(state, PipelineConfig(), [clip], [], progress)
-    assert progress["error"] == "selected source evidence unavailable"
-    assert progress["done"] is True
-    assert state.pipeline_running is False
-    assert state.pipeline_selected_clips == []
-    pipeline.run_analysis.assert_not_called()
-    pipeline.run_selection.assert_not_called()
-
-
-def test_ui_loading_always_retains_raw_short_and_unknown_sources():
-    from immich_memories.ui.pages.step2_loading import _build_clips
-
-    assets = [
-        make_asset("short", duration=0.25, file_created_at=_WHEN),
-        make_asset("unknown", duration=None, file_created_at=_WHEN),
-        make_asset("ordinary", duration=5.0, file_created_at=_WHEN),
-    ]
-    clips, skipped = _build_clips(assets)
-    assert [clip.asset for clip in clips] == assets
-    assert skipped == 0
-    assert [clip.duration_seconds for clip in clips] == [0.25, 0.0, 5.0]
-
-
-@pytest.mark.asyncio
-async def test_ui_loading_fetches_only_uncached_thumbnails_and_never_probes(tmp_path):
-    from immich_memories.ui.pages.step2_loading import _load_thumbnails_async
-
-    config = _config(tmp_path)
-    cached = make_clip("cached-thumbnail", file_created_at=_WHEN)
-    missing = make_clip("missing-thumbnail", file_created_at=_WHEN)
-    clips = [cached, missing]
-    thumbnails = MagicMock()
-    thumbnails.cached_ids.return_value = {cached.asset.id}
-    state = AppState(config=config, thumbnail_cache=thumbnails)
-    # WHY: stubs the page's app-state lookup and the batched thumbnail fetch together.
-    with (
-        # WHY: replaces the module-level state accessor with this test's mocked AppState.
-        patch("immich_memories.ui.pages.step2_loading.get_app_state", return_value=state),
-        # WHY: the collaborator under inspection; await args show only the uncached clip was sent.
-        patch(
-            "immich_memories.ui.pages.step2_loading._fetch_thumbnails_batched",
-            new_callable=AsyncMock,
-            return_value=1,
-        ) as fetch_thumbnails,
-    ):
-        await _load_thumbnails_async(clips, MagicMock())
-
-    # The loader has no probe path left: a clip keeps the duration and size Immich
-    # declared, and only the thumbnail the cache lacks is fetched.
-    assert (missing.width, missing.height, missing.duration_seconds) == (1920, 1080, 5.0)
-    assert fetch_thumbnails.await_args.args[0] == [missing]

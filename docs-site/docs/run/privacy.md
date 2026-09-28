@@ -178,8 +178,8 @@ For showing someone how the app edits without showing your pictures.
 immich-memories generate --privacy-mode --year 2024
 ```
 
-In the web UI, set `server.enable_demo_mode: true` and a **Demo mode** switch appears in the
-sidebar; on, it blurs every image and video the UI shows.
+In the web UI, set `server.enable_demo_mode: true` and a **Demo mode** switch (the eye) appears in
+the top bar; on, it blurs every image and video the UI shows. Each browser keeps its own choice.
 
 | Data | What happens |
 |------|-----------------|

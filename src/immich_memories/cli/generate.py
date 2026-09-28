@@ -13,8 +13,6 @@ from immich_memories.analysis.live_photo_pipeline import drop_live_photo_compone
 from immich_memories.cli._asset_fetch import fetch_media
 from immich_memories.cli._date_resolution import (
     BIRTHDAY_FLAG_FORMAT,
-    default_duration_for_type,
-    duration_from_date_range,
     infer_memory_type,
     resolve_date_range,
 )
@@ -59,6 +57,10 @@ from immich_memories.planning.auto_duration import (
     DURATION_FROM_DURATION_FLAG,
     DURATION_FROM_MATERIAL,
     DURATION_FROM_SHORT_FORM,
+)
+from immich_memories.planning.memory_length import (
+    default_duration_for_type,
+    duration_from_date_range,
 )
 from immich_memories.processing.encoding_plan import resolve_output_selection
 from immich_memories.timeperiod import DateRange
@@ -441,6 +443,7 @@ def register_generate_commands(main: click.Group) -> None:
                         )
 
                         handle_album_generation(
+                            explicit_output=output is not None,
                             client=client,
                             config=config,
                             progress=progress,
@@ -483,6 +486,7 @@ def register_generate_commands(main: click.Group) -> None:
                     # Trip detection flow: branch early
                     if memory_type == "trip" and year:
                         handle_trip_generation(
+                            explicit_output=output is not None,
                             client=client,
                             config=config,
                             progress=progress,

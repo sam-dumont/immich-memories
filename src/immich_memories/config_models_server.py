@@ -16,7 +16,7 @@ class ServerConfig(BaseModel):
     host: str = Field(default=WILDCARD_HOST, description="Listen address (IPv4, IPv6, or hostname)")
     port: int = Field(default=8080, ge=1, le=65535, description="Listen port")
     enable_demo_mode: bool = Field(
-        default=False, description="Show demo/privacy toggle in sidebar (for screenshots/E2E)"
+        default=False, description="Offer the Demo mode (blur) switch in the web client's top bar"
     )
     secure_cookies: bool = Field(
         default=False,

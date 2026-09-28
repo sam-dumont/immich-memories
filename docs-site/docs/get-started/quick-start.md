@@ -62,17 +62,17 @@ Open [http://localhost:8080](http://localhost:8080). On a headless NAS, tunnel f
 The page connects to Immich by itself. Pick **Monthly Highlights**, a month with a few hundred
 pictures, and press **Cut**.
 
-<ThemedScreenshot name="memory-cutting" alt="A cut in progress: one row per phase" />
+<ThemedScreenshot name="memory-cutting" alt="A cut in progress: the stage, its bar and the pictures just read" />
 
 The first cut reads every picture the film can reach once and banks what it saw, so it takes a
 while on a NAS CPU. Every later cut of that month skips the reading.
 
-When it finishes you get the **Storyboard**: the film in the order it plays, one row per shot,
-with its day, its story and why the editor kept it.
+When it finishes you get the review: the film in the order it plays, one picture per shot, with its
+day and why the editor kept it.
 
-<ThemedScreenshot name="memory-story" alt="The storyboard of a finished cut" />
+<ThemedScreenshot name="memory-story" alt="The contact sheet of a finished cut" />
 
-Press **Export**, then **Generate Video**. The film is in `./output`, and in the player on the page.
+Press **Render** at the bottom of the page. The film is in `./output`, and in the player on the page.
 
 That's it. The CLI does the same in one line:
 

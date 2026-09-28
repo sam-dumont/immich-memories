@@ -104,6 +104,8 @@ _REMOVED_CONFIG_KEYS: dict[str, str] = {
     "photos.read_moments": _WENT_WITH_THE_SCORER,
     "photos.moment_gap_seconds": _WENT_WITH_THE_SCORER,
     "photos.moment_hash_threshold": _WENT_WITH_THE_SCORER,
+    "cache.preview_cache_max_size_mb": "it capped the clip previews the old web pages played; "
+    "the web client streams Immich's own renditions (#1395)",
     **{
         f"analysis.{field}": _WENT_WITH_THE_SCORER
         for field in (

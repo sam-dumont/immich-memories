@@ -38,7 +38,8 @@ people = Table(
     Column("extra", JSON, nullable=True),
 )
 
-# Every id a person answers to, the canonical one at position 0. An id belongs to one person.
+# Every id a person answers to, the canonical one at position 0. An id belongs to one person,
+# whichever account it came from: a second account's id for somebody is a different id.
 people_aliases = Table(
     "people_aliases",
     metadata,
@@ -51,6 +52,8 @@ people_aliases = Table(
         index=True,
     ),
     Column("position", Integer, nullable=False),
+    # The Immich account that can read this id; null is the primary account.
+    Column("account", String(), nullable=True),
 )
 
 # The confirmed links, in the order the person's block lists them. `target_id` is not a

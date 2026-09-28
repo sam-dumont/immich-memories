@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-27 22:38+0200\n"
+"POT-Creation-Date: 2026-09-28 18:13+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -16,1861 +16,1463 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: pages/memory.py:162
-msgid " Cut again runs it once more."
-msgstr " «Смонтировать заново» повторит монтаж."
+#: web/lib/labels.ts:47
+msgid "A monthly review already finished this month."
+msgstr "Ежемесячная проверка в этом месяце уже завершена."
 
-#: pages/settings_config.py:127
-#, python-brace-format
-msgid " Preset '{preset}' is active and fills the knobs you have not set."
-msgstr " Профиль «{preset}» активен и заполняет неуказанные параметры."
-
-#: pages/step1_people.py:113
-msgid "(\"Person A\" OR \"Person B\") AND \"Person C\""
-msgstr "(\"Человек A\" OR \"Человек B\") AND \"Человек C\""
-
-#: pages/step4_export.py:120
-#, python-brace-format
-msgid "+ {value} more"
-msgstr "ещё {value}"
-
-#: pages/step3_options.py:239
-msgid "1080p"
-msgstr "1080p"
-
-#: pages/memory_duration.py:17
-msgid "30 s plus 10 s per active day, from the media once it is loaded"
-msgstr "30 с плюс 10 с за каждый активный день, после загрузки медиа"
-
-#: pages/memory_duration.py:21
-msgid "30 s plus 6 s per active hour of the day"
-msgstr "30 с плюс 6 с за каждый активный час дня"
-
-#: pages/step3_options.py:239
-msgid "4K"
-msgstr "4K"
-
-#: pages/step3_options.py:239
-msgid "720p"
-msgstr "720p"
-
-#: pages/memory_run.py:101
-msgid "A cut is already running; wait for it, or cancel it first"
-msgstr "Монтаж уже выполняется; дождитесь завершения или сначала отмените его"
-
-#: pages/step4_export.py:62
-#, python-brace-format
-msgid ""
-"A generation started at {started} is still running (run {run_id}). This page checks every few"
-" seconds and shows the video when it finishes."
-msgstr ""
-"Генерация, начатая в {started}, ещё выполняется (запуск {run_id}). Страница регулярно "
-"проверяет состояние и покажет готовое видео."
-
-#: pages/step3_options.py:371
-msgid "AI Generated"
-msgstr "Сгенерированная ИИ"
-
-#: pages/step3_options.py:166
-msgid "AI will generate music based on the mood of your video clips"
-msgstr "ИИ создаст музыку по настроению ваших видеоклипов"
-
-#: pages/step1_config.py:69
+#: web/routes/settings/+page.svelte:91
 msgid "API Key"
 msgstr "Ключ API"
 
-#: pages/memory_brief.py:63
-msgid "Accept Forwarded Media"
-msgstr "Принимать полученные медиа"
-
-#: pages/settings_config.py:165
-msgid "Actions"
-msgstr "Действия"
-
-#: pages/settings_config.py:162
-msgid "Active Configuration"
-msgstr "Текущая конфигурация"
-
-#: pages/step1_people.py:97 pages/step1_people.py:123
+#: web/lib/JobPanel.svelte:44
 #, python-brace-format
-msgid "Active condition: {display_label}"
-msgstr "Активное условие: {display_label}"
+msgid "About {amount} left"
+msgstr "Осталось около {amount}"
 
-#: pages/settings_config.py:122
-msgid "Active config from ~/.immich-memories/config.yaml with env overrides. API keys are redacted."
-msgstr ""
-"Конфигурация из ~/.immich-memories/config.yaml с приоритетом переменных окружения. Ключи API "
-"скрыты."
+#: web/routes/create/+page.svelte:432
+msgid "Accept forwarded and downloaded media"
+msgstr "Принимать пересланные и скачанные медиафайлы"
 
-#: pages/settings_people.py:516
+#: web/routes/settings/people/+page.svelte:165
+msgid "Add"
+msgstr "Добавить"
+
+#: web/routes/settings/people/+page.svelte:157
 msgid "Add a relationship"
 msgstr "Добавить связь"
 
-#: pages/step3_options.py:318
+#: web/lib/RenderPanel.svelte:189
 msgid "Add date overlay"
 msgstr "Показывать дату"
 
-#: pages/settings_people.py:504
-msgid "Add person"
-msgstr "Добавить человека"
-
-#: pages/settings_people.py:405
-msgid "Add relationship"
-msgstr "Добавить связь"
-
-#: pages/settings_people.py:483
-msgid "Add someone"
-msgstr "Добавить человека"
-
-#: pages/settings_people.py:168
+#: web/routes/settings/people/+page.svelte:102
 msgid "Add someone not in Immich"
 msgstr "Добавить человека, которого нет в Immich"
 
-#: pages/settings_people.py:498
+#: web/routes/runs/[run_id]/pool/+page.svelte:152
 #, python-brace-format
-msgid "Added {value}"
-msgstr "Добавлено: {value}"
+msgid "Add: {include} · Take out: {exclude}"
+msgstr "Добавить: {include} · Убрать: {exclude}"
 
-#: pages/memory_brief.py:170
-msgid "Advanced"
-msgstr "Дополнительно"
+#: web/lib/labels.ts:32
+msgid "Added for a moment the catalogue records as notable."
+msgstr "Добавлено ради момента, который каталог отмечает как особый."
 
-#: pages/step3_options.py:265
-msgid "Advanced options"
-msgstr "Дополнительные параметры"
+#: web/routes/runs/[run_id]/+page.svelte:258 web/routes/runs/[run_id]/+page.svelte:260
+#: web/routes/runs/[run_id]/+page.svelte:263
+msgid "Added from the pool"
+msgstr "Добавлено из набора"
 
-#: pages/step1_people.py:37
-msgid "Advanced people condition"
-msgstr "Расширенное условие для людей"
+#: web/routes/create/+page.svelte:302
+msgid "After a period"
+msgstr "После периода"
 
-#: pages/memory_brief.py:37 pages/step1_presets.py:290
+#: web/lib/labels.ts:11 web/routes/create/+page.svelte:317
 msgid "Album"
 msgstr "Альбом"
 
-#: pages/_step4_upload.py:65
+#: web/lib/RenderPanel.svelte:231
 msgid "Album name"
 msgstr "Название альбома"
 
-#: pages/step1_people.py:249 pages/step1_people.py:311
-msgid "All Time"
-msgstr "Все годы"
+#: web/routes/runs/[run_id]/pool/+page.svelte:113
+#, python-brace-format
+msgid "Also show the {count} pictures outside this memory"
+msgstr "Показать также {count} фото вне этого воспоминания"
 
-#: pages/step1_config.py:219
-msgid "All people"
-msgstr "Все люди"
+#: web/lib/ShotInspector.svelte:156
+msgid "Alternatives considered"
+msgstr "Рассмотренные варианты"
 
-#: pages/step1_cache.py:124
+#: web/routes/settings/+page.svelte:26
 msgid "Analysis cache"
 msgstr "Кэш анализа"
 
-#: pages/step1_presets.py:579
+#: web/routes/create/+page.svelte:332
 msgid ""
 "Anniversaries first, then the rest. A scheduled run only proposes a day on its anniversary; "
 "here you can pick any day the catalogue holds."
 msgstr ""
-"Сначала годовщины, затем остальные дни. Запуск по расписанию предлагает день только в его "
+"Сначала годовщины, затем остальное. Запланированный запуск предлагает день только в его "
 "годовщину; здесь можно выбрать любой день из каталога."
 
-#: pages/step1_people.py:32
-msgid "Any of these people"
-msgstr "Любой из этих людей"
+#: web/routes/create/+page.svelte:311
+msgid "Another day (MM-DD)"
+msgstr "Другой день (MM-DD)"
 
-#: pages/memory_brief.py:80
+#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:168
+msgid "Anyone"
+msgstr "Все"
+
+#: web/routes/create/+page.svelte:36
 msgid "Anyone. Only pictures nothing held back: no detector flag, no private moment."
 msgstr "Все. Только изображения без ограничений: без сигнала детектора и без личных моментов."
 
-#: pages/picture_decisions.py:28
-msgid "Anyone: shareable films too"
-msgstr "Все: также фильмы для публикации"
+#: web/lib/RenderPanel.svelte:144 web/lib/RenderPanel.svelte:167 web/lib/RenderPanel.svelte:173
+#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:231
+#: web/routes/create/+page.svelte:424
+msgid "As configured"
+msgstr "Как настроено"
 
-#: pages/clip_review.py:403
-msgid "Apply"
-msgstr "Применить"
+#: web/lib/RenderPanel.svelte:153
+msgid "As generate decides"
+msgstr "Как решит генерация"
 
-#: pages/memory_duration.py:30
-msgid "Auto"
-msgstr "Автоматически"
+#: web/lib/RenderPanel.svelte:161 web/lib/labels.ts:23
+msgid "Automatic"
+msgstr "Автоматический"
 
-#: pages/step3_options.py:272
-msgid "Auto (detect from clips)"
-msgstr "Автоматически (по клипам)"
+#: web/lib/RenderPanel.svelte:202
+msgid "Automatic (as configured)"
+msgstr "Автоматически (как настроено)"
 
-#: pages/step3_options.py:239
-msgid "Auto (match clips)"
-msgstr "Автоматически (как в клипах)"
-
-#: pages/memory_duration.py:68
-msgid "Auto duration"
-msgstr "Автоматическая длительность"
-
-#: i18n.py:102
+#: web/routes/+layout.svelte:42
 msgid "Automatic (browser)"
 msgstr "Автоматически (браузер)"
 
-#: pages/suggestions.py:90
-msgid "Automatic upload to Immich is enabled."
-msgstr "Автоматическая загрузка в Immich включена."
+#: web/routes/suggestions/+page.svelte:60
+msgid "Automation is already running. Open Runs to follow it."
+msgstr "Автоматизация уже выполняется. Откройте Запуски, чтобы следить за ней."
 
-#: pages/suggestions.py:92
-msgid "Automatic upload to Immich is off."
-msgstr "Автоматическая загрузка в Immich выключена."
+#: web/routes/create/+page.svelte:43
+msgid "Autumn"
+msgstr "Осень"
 
-#: pages/step1_presets.py:62
-msgid "Automatically uses today's date across previous years"
-msgstr "Автоматически использует сегодняшнюю дату в прошлые годы"
+#: web/routes/runs/[run_id]/+page.svelte:250
+msgid "Back to pictures"
+msgstr "Назад к изображениям"
 
-#: pages/step4_export.py:236
-msgid "Back to Generation Options"
-msgstr "Назад к параметрам генерации"
-
-#: pages/runs.py:21
+#: web/routes/runs/[run_id]/+page.svelte:125
 msgid "Back to runs"
 msgstr "Назад к запускам"
 
-#: pages/step2_review.py:84 pages/step2_review.py:104 pages/step2_review.py:287
-msgid "Back to the brief"
-msgstr "Назад к замыслу"
-
-#: pages/step2_review.py:290
+#: web/routes/runs/[run_id]/pool/+page.svelte:104
 msgid "Back to the cut"
 msgstr "Назад к монтажу"
 
-#: pages/clip_review.py:429 pages/clip_review.py:462 pages/step3_options.py:436
-#: pages/step4_export.py:139
-msgid "Back to the media pool"
-msgstr "Назад к медиа"
+#: web/routes/create/+page.svelte:294
+msgid "Birthday (MM-DD; Immich’s birth date when empty)"
+msgstr "День рождения (MM-DD; дата рождения из Immich, если пусто)"
 
-#: pages/step3_options.py:385
-msgid "Background music"
-msgstr "Фоновая музыка"
+#: web/routes/create/+page.svelte:293
+msgid "Birthday to birthday, with earlier birthdays"
+msgstr "От дня рождения к дню рождения, включая прошлые"
 
-#: pages/step1_tabs.py:25
-msgid "Birthday"
-msgstr "День рождения"
-
-#: pages/step1_people.py:284
-msgid "Birthday to birthday"
-msgstr "От дня рождения до дня рождения"
-
-#: pages/step3_options.py:49
-msgid "Blur background"
+#: web/lib/RenderPanel.svelte:185
+msgid "Blurred background"
 msgstr "Размытый фон"
 
-#: pages/_step3_music_preview.py:67
-msgid "Building mood timeline..."
-msgstr "Подготовка музыкальной шкалы..."
+#: web/lib/ShotInspector.svelte:128
+msgid "Browse the whole pool"
+msgstr "Смотреть весь набор"
 
-#: pages/step3_options.py:369
-msgid "Bundled"
-msgstr "Встроенная"
+#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
+msgid "Caches"
+msgstr "Кэши"
 
-#: app.py:135
-msgid "Cache"
-msgstr "Кэш"
-
-#: app.py:308 pages/step1_cache.py:76
-msgid "Cache Management"
-msgstr "Управление кэшем"
-
-#: pages/step1_tabs.py:82
-msgid "Calendar Year"
-msgstr "Календарный год"
-
-#: pages/_step4_generate.py:386 pages/memory_run.py:411 pages/picture_decisions.py:176
-#: pages/settings_people.py:503 pages/settings_people.py:545
+#: web/lib/JobPanel.svelte:90 web/routes/runs/[run_id]/pool/+page.svelte:174
 msgid "Cancel"
 msgstr "Отмена"
 
-#: pages/_step4_generate.py:74
-msgid "Cancel requested — stopping after current phase..."
-msgstr "Запрошена отмена: остановка после текущей фазы..."
-
-#: pages/memory_run.py:409
-msgid "Cancelling after the current stage..."
-msgstr "Отмена после текущего этапа..."
-
-#: pages/_step4_generate.py:72
-msgid "Cancelling..."
-msgstr "Отмена..."
-
-#: pages/suggestions.py:195
+#: web/routes/suggestions/+page.svelte:108
 msgid "Candidate key"
 msgstr "Ключ кандидата"
 
-#: pages/step3_options.py:327
+#: web/lib/RenderPanel.svelte:190
 msgid "Caption clips with their place"
 msgstr "Показывать место на клипах"
 
-#: pages/memory.py:113
-msgid "Change the brief"
-msgstr "Изменить замысел"
+#: web/routes/create/+page.svelte:328 web/routes/create/+page.svelte:333
+msgid "Catalogued days"
+msgstr "Каталогизированные дни"
 
-#: pages/suggestions.py:199
+#: web/routes/runs/[run_id]/+page.svelte:274
+#, python-brace-format
+msgid "Changes: {count}"
+msgstr "Изменения: {count}"
+
+#: web/routes/suggestions/+page.svelte:110
 msgid "Check eligibility"
 msgstr "Проверить пригодность"
 
-#: pages/step4_export.py:75
-msgid "Check the server log, then generate again."
-msgstr "Проверьте журнал сервера и запустите генерацию снова."
+#: web/lib/labels.ts:79
+msgid "Checking pictures for the family audience"
+msgstr "Проверка изображений на пригодность для семейного просмотра"
 
-#: pages/settings_people.py:537
-msgid "Choose a relationship and a person"
-msgstr "Выберите связь и человека"
+#: web/routes/create/+page.svelte:319
+msgid "Choose an album"
+msgstr "Выберите альбом"
 
-#: pages/step1_cache.py:67
+#: web/routes/create/+page.svelte:260
+msgid ""
+"Choose what the film covers. The cut is made the way the command below makes it; you review "
+"it before anything renders."
+msgstr ""
+"Выберите, что охватывает фильм. Монтаж выполняется так же, как показывает команда ниже; вы "
+"проверяете его, прежде чем что-либо рендерится."
+
+#: web/routes/settings/+page.svelte:117
 msgid "Clear"
 msgstr "Очистить"
 
-#: pages/step1_cache.py:211
-msgid "Clear all caches"
-msgstr "Очистить весь кэш"
-
-#: pages/picture_decisions.py:133 pages/picture_decisions.py:182
+#: web/routes/runs/[run_id]/pool/+page.svelte:142 web/routes/runs/[run_id]/pool/+page.svelte:175
 msgid "Clear hold"
 msgstr "Снять ограничение"
 
-#: pages/picture_decisions.py:156
-msgid "Clear this picture's hold?"
-msgstr "Снять ограничение с этого изображения?"
+#: web/routes/runs/[run_id]/pool/+page.svelte:161
+msgid "Clear this hold?"
+msgstr "Снять это ограничение?"
 
-#: pages/step1_cache.py:205
+#: web/routes/settings/+page.svelte:69
 #, python-brace-format
-msgid "Cleared all caches ({total} items)"
-msgstr "Весь кэш очищен ({total} элементов)"
+msgid "Cleared {count} entries from the {cache}."
+msgstr "Удалено {count} записей из {cache}."
 
-#: pages/step1_cache.py:121
-#, python-brace-format
-msgid "Cleared {count} analysis entries"
-msgstr "Удалено записей анализа: {count}"
+#: web/lib/RunReport.svelte:61
+msgid "Clipboard unavailable. Select the report below and copy it."
+msgstr "Буфер обмена недоступен. Выделите отчёт ниже и скопируйте его."
 
-#: pages/step1_cache.py:164
-#, python-brace-format
-msgid "Cleared {count} cached thumbnails"
-msgstr "Удалено миниатюр из кэша: {count}"
+#: web/routes/create/+page.svelte:437
+msgid "Command"
+msgstr "Команда"
 
-#: pages/step1_cache.py:141
-#, python-brace-format
-msgid "Cleared {count} cached videos"
-msgstr "Удалено видео из кэша: {count}"
-
-#: pages/step1_cache.py:175
-#, python-brace-format
-msgid "Cleared {count} preview files"
-msgstr "Удалено файлов предпросмотра: {count}"
-
-#: pages/step3_options.py:414 pages/step4_export.py:155
-msgid "Clips"
-msgstr "Клипы"
-
-#: pages/clip_pipeline.py:71
-msgid "Clips Planned"
-msgstr "Запланированные клипы"
-
-#: pages/step2_review.py:229
-msgid "Compact grid view"
-msgstr "Компактная сетка"
-
-#: pages/_step4_generate.py:120
-msgid "Complete!"
-msgstr "Готово!"
-
-#: pages/settings_config.py:178
+#: web/lib/SettingsEditor.svelte:71
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "Файл конфигурации: {config_path}"
 
-#: app.py:133 app.py:272
+#: web/lib/SettingsEditor.svelte:63 web/lib/SettingsEditor.svelte:65
 msgid "Configuration"
 msgstr "Конфигурация"
 
-#: pages/settings_config.py:170
-msgid "Configuration reloaded from disk"
-msgstr "Конфигурация перечитана с диска"
-
-#: pages/step1_config.py:172
-msgid "Configuration saved!"
-msgstr "Конфигурация сохранена!"
-
-#: pages/settings_people.py:546
-msgid "Confirm relationship"
-msgstr "Подтвердить связь"
-
-#: pages/step1_presets.py:241
-msgid "Connect to Immich first to choose an album."
-msgstr "Сначала подключитесь к Immich, чтобы выбрать альбом."
-
-#: pages/step1_presets.py:353
-msgid "Connect to Immich first to detect trips."
-msgstr "Сначала подключитесь к Immich, чтобы найти поездки."
-
-#: pages/memory_brief.py:196
-msgid ""
-"Connect to your Immich server to continue. Enter your server URL and API key above, then "
-"click 'Test Connection'."
-msgstr ""
-"Подключитесь к серверу Immich, чтобы продолжить. Введите выше адрес сервера и ключ API, затем"
-" нажмите «Проверить соединение»."
-
-#: pages/step1_config.py:53 pages/step1_config.py:110 pages/step1_config.py:120
+#: web/routes/settings/+page.svelte:58
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "Подключено как: {name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:307
-msgid "Connecting to Immich..."
-msgstr "Подключение к Immich..."
+#: web/lib/ShotInspector.svelte:151
+msgid "Considered by the model"
+msgstr "Рассмотрено моделью"
 
-#: pages/step1_config.py:127
-#, python-brace-format
-msgid "Connection failed: {value}"
-msgstr "Ошибка соединения: {value}"
+#: web/lib/JobPanel.svelte:88 web/lib/RunReport.svelte:73
+msgid "Copied"
+msgstr "Скопировано"
 
-#: pages/step1_presets.py:268
-#, python-brace-format
-msgid "Could not list albums: {exc}"
-msgstr "Не удалось получить список альбомов: {exc}"
+#: web/lib/JobPanel.svelte:88
+msgid "Copy as CLI command"
+msgstr "Копировать как команду CLI"
 
-#: pages/step1_presets.py:323
-msgid "Could not load photo years. Showing the previously loaded years."
-msgstr "Не удалось загрузить годы фотографий. Показаны ранее загруженные годы."
+#: web/lib/RunReport.svelte:73 web/lib/RunReport.svelte:75
+msgid "Copy report"
+msgstr "Скопировать отчёт"
 
-#: pages/suggestions.py:174
-#, python-brace-format
-msgid "Could not load suggestions: {value}"
-msgstr "Не удалось загрузить предложения: {value}"
-
-#: pages/memory_run.py:461
-#, python-brace-format
-msgid "Could not re-load media: {value}"
-msgstr "Не удалось повторно загрузить медиа: {value}"
-
-#: pages/step3_options.py:302
+#: web/lib/RenderPanel.svelte:145
 msgid "Crossfade"
 msgstr "Наплыв"
 
-#: pages/settings_people.py:139
+#: web/routes/settings/people/+page.svelte:92 web/routes/settings/people/+page.svelte:93
 msgid "Curation"
 msgstr "Упорядочивание"
 
-#: pages/step1_config.py:263
-msgid "Custom Range"
-msgstr "Свой период"
-
-#: pages/memory_brief.py:47
+#: web/lib/labels.ts:15
 msgid "Custom date range"
 msgstr "Свой период"
 
-#: pages/clip_review.py:394
-msgid "Custom seconds"
-msgstr "Своя длительность в секундах"
-
-#: pages/memory_brief.py:219 pages/step2_review.py:154
+#: web/lib/RenderPanel.svelte:145 web/routes/create/+page.svelte:440
 msgid "Cut"
 msgstr "Смонтировать"
 
-#: pages/memory.py:110 pages/step2_review.py:144
-msgid "Cut again"
-msgstr "Смонтировать заново"
+#: web/routes/runs/[run_id]/+page.svelte:211
+msgid "Cut contact sheet"
+msgstr "Контактный лист монтажа"
 
-#: pages/memory_run.py:399
-msgid "Cutting the memory..."
-msgstr "Монтаж воспоминания..."
+#: web/routes/create/+page.svelte:291
+msgid "Day"
+msgstr "День"
 
-#: theme.py:322
-msgid "Dark"
-msgstr "Тёмная"
+#: web/routes/create/+page.svelte:314
+msgid "Day (MM-DD)"
+msgstr "День (MM-DD)"
 
-#: app.py:99
+#: web/lib/SettingsEditor.svelte:41
+msgid "Default"
+msgstr "По умолчанию"
+
+#: web/routes/+layout.svelte:46 web/routes/+layout.svelte:47
 msgid "Demo mode"
 msgstr "Деморежим"
 
-#: pages/step2_review.py:233
-msgid "Detailed list view"
-msgstr "Подробный список"
+#: web/lib/labels.ts:81
+msgid "Describing the pictures"
+msgstr "Описание изображений"
 
-#: pages/cut_progress_view.py:188 pages/memory_story.py:58
-msgid "Details"
-msgstr "Подробности"
-
-#: pages/step1_presets.py:362
+#: web/routes/create/+page.svelte:361
 msgid "Detecting trips from GPS data..."
-msgstr "Поиск поездок по данным GPS..."
+msgstr "Определение поездок по данным GPS…"
 
-#: pages/clip_review.py:369
-msgid "Difference"
-msgstr "Разница"
+#: web/routes/runs/[run_id]/+page.svelte:283
+msgid "Discard changes"
+msgstr "Отменить изменения"
 
-#: pages/suggestions.py:165
+#: web/routes/suggestions/+page.svelte:95
 #, python-brace-format
 msgid "Discovery failed: {error}"
 msgstr "Поиск не удался: {error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:366
-msgid "Done"
-msgstr "Готово"
-
-#: pages/runs.py:71
+#: web/routes/runs/[run_id]/+page.svelte:326
 msgid "Download child output"
 msgstr "Скачать связанный результат"
 
-#: pages/memory_brief.py:67
-msgid "Drop SDR video from the pool"
-msgstr "Исключить SDR-видео"
+#: web/lib/ShotInspector.svelte:47
+msgid "Edit this shot"
+msgstr "Изменить этот кадр"
 
-#: pages/step1_config.py:262 pages/step1_tabs.py:105
-msgid "Duration"
-msgstr "Длительность"
+#: web/lib/labels.ts:66
+msgid ""
+"Edited from metadata only — picture content was neither classified nor read, so every picture"
+" is held to family viewing."
+msgstr ""
+"Смонтировано только по метаданным: содержимое изображений не было ни классифицировано, ни "
+"прочитано, поэтому каждое изображение ограничено семейным просмотром."
 
-#: pages/memory_run.py:65
-msgid "Editing"
-msgstr "Монтаж"
+#: web/lib/labels.ts:65
+msgid "Edited without descriptions — picture content was classified, not read."
+msgstr "Смонтировано без описаний: содержимое изображений классифицировано, но не прочитано."
 
-#: pages/memory_run.py:431
+#: web/lib/ShotInspector.svelte:101
+msgid "Eligible when this shot was chosen. Open one to compare."
+msgstr "Подходили, когда выбирали этот кадр. Откройте одно для сравнения."
+
+#: web/routes/suggestions/+page.svelte:65
+msgid "Eligible. No video was generated."
+msgstr "Подходит. Видео не было создано."
+
+#: web/lib/ShotInspector.svelte:58
+msgid "End here"
+msgstr "Закончить здесь"
+
+#: web/routes/create/+page.svelte:301
+msgid "Ends"
+msgstr "Заканчивается"
+
+#: web/routes/settings/+page.svelte:116
 #, python-brace-format
-msgid "Elapsed: {value}"
-msgstr "Прошло: {value}"
+msgid "Entries: {count}"
+msgstr "Записи: {count}"
 
-#: pages/step1_tabs.py:182
-msgid "End date"
-msgstr "Дата окончания"
+#: web/routes/runs/[run_id]/pool/+page.svelte:107
+msgid ""
+"Every picture this cut saw, in the order they were taken. Tick or untick, then preview: your "
+"ticks go into the film as they are, with nothing chosen again. Never use and Clear hold last "
+"across every run."
+msgstr ""
+"Все фотографии, которые видел этот монтаж, в порядке съёмки. Отметьте или снимите отметку, "
+"затем откройте превью: ваши отметки попадают в фильм как есть, без повторного выбора. "
+"«Никогда не использовать» и «Снять ограничение» действуют при каждом запуске."
 
-#: pages/step1_config.py:132
-#, python-brace-format
-msgid "Error: {value}"
-msgstr "Ошибка: {value}"
+#: web/routes/settings/+page.svelte:82
+msgid ""
+"Every setting and where its value comes from. What you save here goes to the database; "
+"config.yaml and the environment are never written, and they win over it."
+msgstr ""
+"Каждая настройка и откуда берётся её значение. То, что вы сохраняете здесь, попадает в базу "
+"данных; config.yaml и окружение никогда не записываются и имеют приоритет над этим."
 
-#: pages/clip_pipeline.py:84
-#, python-brace-format
-msgid "Errors ({error_count})"
-msgstr "Ошибки ({error_count})"
+#: web/routes/create/+page.svelte:377
+msgid "Every trip of the year"
+msgstr "Все поездки за год"
 
-#: pages/memory.py:96
-msgid "Export"
-msgstr "Экспорт"
-
-#: pages/step2_loading.py:324
-#, python-brace-format
-msgid "Failed to load videos: {value}"
-msgstr "Не удалось загрузить видео: {value}"
-
-#: pages/_step3_music_preview.py:124
-#, python-brace-format
-msgid "Failed: {value}"
-msgstr "Не удалось: {value}"
-
-#: pages/memory_brief.py:73
+#: web/routes/create/+page.svelte:425 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Family"
 msgstr "Семья"
 
-#: pages/picture_decisions.py:27
-msgid "Family: family films too"
-msgstr "Семья: также семейные фильмы"
+#: web/lib/labels.ts:75
+msgid "Fetching picture previews"
+msgstr "Загрузка превью изображений"
 
-#: pages/step3_options.py:81
-msgid ""
-"Fast (NAS) preset is active: 1080p H.264 with the fast encoder preset, static title "
-"backgrounds, no speech analysis, fewer photos, favorites-first analysis. Set with `preset: "
-"fast` in config.yaml or IMMICH_MEMORIES_PRESET=fast; the choices below still win for this "
-"run."
-msgstr ""
-"Активен быстрый профиль NAS: H.264 1080p, быстрое кодирование, статичные фоны титров, без "
-"анализа речи, меньше фото, избранное анализируется первым. Задаётся через `preset: fast` в "
-"config.yaml или IMMICH_MEMORIES_PRESET=fast; параметры ниже имеют приоритет для этого "
-"запуска."
+#: web/routes/runs/[run_id]/pool/+page.svelte:166
+msgid "Films that may use it"
+msgstr "Фильмы, которые могут его использовать"
 
-#: pages/_step3_music_preview.py:232
-msgid "Film language"
-msgstr "Язык фильма"
-
-#: pages/film_length.py:73 pages/film_length.py:83
-msgid "Film length"
-msgstr "Длительность фильма"
-
-#: pages/clip_review.py:503
-#, python-brace-format
-msgid "Final Duration: {value}"
-msgstr "Итоговая длительность: {value}"
-
-#: pages/settings_people.py:263
+#: web/routes/create/+page.svelte:388 web/routes/settings/people/+page.svelte:99
 msgid "Find a name"
 msgstr "Найти имя"
 
-#: pages/memory_run.py:62
-msgid "Finding media"
-msgstr "Поиск медиа"
+#: web/lib/labels.ts:77
+msgid "Finding faces"
+msgstr "Поиск лиц"
 
-#: pages/picture_decisions.py:168
-msgid "Fine for"
-msgstr "Разрешить для"
+#: web/lib/RenderPanel.svelte:185
+msgid "Fit with bars"
+msgstr "Вписать с полосами"
 
-#: pages/clip_review.py:168
-msgid "First 5s"
-msgstr "Первые 5 с"
-
-#: pages/step4_export.py:159
+#: web/lib/RenderPanel.svelte:171
 msgid "Format"
 msgstr "Формат"
 
-#: pages/step1_presets.py:407
-#, python-brace-format
-msgid "Found {count} trip(s):"
-msgstr "Найдено поездок: {count}"
+#: web/routes/create/+page.svelte:299
+msgid "From"
+msgstr "С"
 
-#: pages/step1_tabs.py:85
-msgid "From Birthday"
-msgstr "От дня рождения"
-
-#: pages/clip_review.py:204
-msgid "Full clip"
-msgstr "Весь клип"
-
-#: pages/settings_people.py:489
+#: web/routes/settings/people/+page.svelte:101
 msgid "Full name"
 msgstr "Полное имя"
 
-#: pages/_step3_music_preview.py:275
-msgid "Generate Music"
-msgstr "Создать музыку"
-
-#: pages/step4_export.py:225
-msgid "Generate Video"
-msgstr "Создать видео"
-
-#: pages/_step3_music_preview.py:288
-msgid "Generate music now to preview before rendering your video"
-msgstr "Создайте музыку сейчас, чтобы прослушать её до рендеринга видео"
-
-#: pages/_step3_music_preview.py:146
-msgid "Generated Music"
-msgstr "Сгенерированная музыка"
-
-#: pages/_step3_music_preview.py:99
-msgid "Generating music..."
-msgstr "Генерация музыки..."
-
-#: app.py:243
-msgid "Generation Options"
-msgstr "Параметры генерации"
-
-#: pages/memory_brief.py:78
+#: web/routes/create/+page.svelte:35
 msgid "Grandparents, siblings, the group chat. Private moments stay out."
 msgstr "Бабушки, дедушки, братья, сёстры, групповой чат. Личные моменты исключены."
 
-#: pages/step1_people.py:111
-msgid "Grouped people condition (optional)"
-msgstr "Групповое условие для людей (необязательно)"
+#: web/routes/create/+page.svelte:403
+msgid "Grouped condition"
+msgstr "Групповое условие"
 
-#: pages/memory_brief.py:67
-msgid "HDR clips only"
-msgstr "Только HDR-клипы"
+#: web/routes/runs/[run_id]/pool/+page.svelte:95
+#, python-brace-format
+msgid "Held: {reasons}."
+msgstr "Ограничено: {reasons}."
 
-#: pages/step3_options.py:303
-msgid "Hard cut"
-msgstr "Прямая склейка"
-
-#: pages/step1_presets.py:178
+#: web/routes/create/+page.svelte:289
 msgid "Hemisphere"
 msgstr "Полушарие"
 
-#: pages/picture_decisions.py:101
-msgid "Hold cleared. The next cut may use it."
-msgstr "Ограничение снято. Следующий монтаж сможет использовать изображение."
+#: web/lib/RenderPanel.svelte:179
+msgid "High"
+msgstr "Высокое"
 
-#: pages/memory_brief.py:39 pages/step1_presets.py:82
+#: web/lib/labels.ts:13 web/routes/create/+page.svelte:308
 msgid "Holiday"
 msgstr "Праздник"
 
-#: pages/memory_brief.py:210
-msgid "How long"
-msgstr "Как долго"
+#: web/lib/ShotInspector.svelte:89
+msgid "How the rules got here"
+msgstr "Как правила пришли к этому"
 
-#: pages/step1_config.py:39
+#: web/routes/settings/+page.svelte:85 web/routes/settings/+page.svelte:86
 msgid "Immich Connection"
-msgstr "Соединение с Immich"
+msgstr "Подключение к Immich"
 
-#: pages/step1_config.py:37
-#, python-brace-format
-msgid "Immich Connection: {name}"
-msgstr "Соединение с Immich: {name}"
-
-#: pages/step1_config.py:61
+#: web/routes/settings/+page.svelte:88
 msgid "Immich Server URL"
-msgstr "Адрес сервера Immich"
+msgstr "URL сервера Immich"
 
-#: pages/_step4_generate.py:663 pages/step4_export.py:42
-#, python-brace-format
-msgid "Immich delivery: {delivery_label}"
-msgstr "Передача в Immich: {delivery_label}"
-
-#: pages/runs.py:39
+#: web/routes/runs/[run_id]/+page.svelte:316
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Передача в Immich: {value}"
 
-#: pages/clip_grid.py:177 pages/clip_grid.py:232
-msgid "Include"
-msgstr "Включить"
+#: web/lib/labels.ts:56
+msgid "Important"
+msgstr "Важно"
 
-#: pages/memory_brief.py:58
+#: web/lib/ShotInspector.svelte:117
+msgid "In the cut"
+msgstr "В монтаже"
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:126
+msgid "In the film"
+msgstr "В фильме"
+
+#: web/routes/create/+page.svelte:430
 msgid "Include Live Photos"
 msgstr "Включить Live Photos"
 
-#: pages/memory_brief.py:53
-msgid "Include Photos"
+#: web/lib/RunReport.svelte:70
+msgid "Include captions of flagged photos"
+msgstr "Включить подписи отмеченных фото"
+
+#: web/routes/create/+page.svelte:429
+msgid "Include photos"
 msgstr "Включить фотографии"
 
-#: pages/clip_review.py:308
-msgid "Include in compilation"
-msgstr "Включить в подборку"
-
-#: i18n.py:110
+#: web/routes/+layout.svelte:40
 msgid "Interface language"
 msgstr "Язык интерфейса"
 
-#: pages/step1_config.py:209
-#, python-brace-format
-msgid "Invalid date range: {e}"
-msgstr "Недопустимый период: {e}"
+#: web/lib/JobPanel.svelte:63
+msgid "It did not finish."
+msgstr "Не завершилось."
 
-#: pages/login.py:77
-msgid "Invalid username or password"
-msgstr "Неверное имя пользователя или пароль"
-
-#: pages/picture_decisions.py:107
-msgid "It won't be in any film from the next cut on."
-msgstr "Начиная со следующего монтажа это изображение не попадёт ни в один фильм."
-
-#: pages/memory_brief.py:72
+#: web/routes/create/+page.svelte:424 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Just us"
 msgstr "Только мы"
 
-#: pages/picture_decisions.py:26
-msgid "Just us: only films for the household"
-msgstr "Только мы: фильмы только для домочадцев"
+#: web/lib/ShotInspector.svelte:52
+msgid "Keep the original"
+msgstr "Оставить исходное"
 
-#: pages/memory_brief.py:65
-msgid "Keep WhatsApp and other received media in the pool for this memory"
-msgstr "Сохранить WhatsApp и другие полученные медиа для этого воспоминания"
-
-#: pages/step3_options.py:336
-msgid "Keep intermediate files"
-msgstr "Сохранить промежуточные файлы"
-
-#: pages/step3_options.py:273
-msgid "Landscape (16:9)"
-msgstr "Горизонтально (16:9)"
-
-#: pages/clip_review.py:180
-msgid "Last 5s"
-msgstr "Последние 5 с"
-
-#: pages/film_length.py:89
+#: web/lib/ShotInspector.svelte:92
 #, python-brace-format
-msgid "Length: {duration}"
-msgstr "Длительность: {duration}"
+msgid "Kept at {stage}"
+msgstr "Оставлено на этапе {stage}"
 
-#: pages/step3_options.py:50
-msgid "Letterbox (black bars)"
-msgstr "Чёрные полосы"
+#: web/lib/ShotInspector.svelte:147
+msgid "Kept because"
+msgstr "Оставлено, потому что"
 
-#: theme.py:320
-msgid "Light"
-msgstr "Светлая"
+#: web/lib/RenderPanel.svelte:161
+msgid "Landscape"
+msgstr "Горизонтально"
 
-#: pages/step1_presets.py:248
-msgid "Loading albums..."
-msgstr "Загрузка альбомов..."
+#: web/routes/create/+page.svelte:419
+msgid "Length and pictures"
+msgstr "Длительность и изображения"
 
-#: pages/memory_run.py:63
-msgid "Loading thumbnails"
-msgstr "Загрузка миниатюр"
+#: web/routes/create/+page.svelte:421
+msgid "Length in minutes (fitted to the pictures when empty)"
+msgstr "Длительность в минутах (подбирается по изображениям, если не указано)"
 
-#: pages/step2_loading.py:301
-msgid "Loading videos..."
-msgstr "Загрузка видео..."
+#: web/routes/runs/[run_id]/pool/+page.svelte:127
+msgid "Live"
+msgstr "Live"
 
-#: pages/suggestions.py:157
-msgid "Looking through the library…"
-msgstr "Просмотр библиотеки…"
+#: web/routes/suggestions/+page.svelte:98
+msgid "Looking through your library for memories to suggest..."
+msgstr "Поиск воспоминаний для предложения в вашей библиотеке..."
 
-#: pages/memory_duration.py:30
+#: web/lib/RenderPanel.svelte:180
+msgid "Low"
+msgstr "Низкое"
+
+#: web/routes/+layout.svelte:60 web/routes/+layout.svelte:71
+msgid "Main navigation"
+msgstr "Основная навигация"
+
+#: web/lib/labels.ts:55
+msgid "Main story"
+msgstr "Главная история"
+
+#: web/lib/labels.ts:23
 msgid "Manual"
 msgstr "Вручную"
 
-#: pages/runs.py:83
+#: web/routes/runs/+page.svelte:81
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr ""
 "Ручные и автоматические запуски, включая неудачные. Откройте запуск, чтобы увидеть монтаж и "
 "время этапов."
 
-#: pages/_step3_music_preview.py:171
-#, python-brace-format
-msgid "Map: {title_suggestion_map_mode}"
-msgstr "Карта: {title_suggestion_map_mode}"
+#: web/lib/RenderPanel.svelte:167
+msgid "Match the sources"
+msgstr "Как у источников"
 
-#: pages/clip_pipeline.py:66
-msgid "Media Eligible"
-msgstr "Подходящие медиа"
+#: web/lib/labels.ts:80
+msgid "Measuring motion in the videos"
+msgstr "Измерение движения в видео"
 
-#: app.py:74 app.py:207
-msgid "Media pool"
-msgstr "Медиа"
+#: web/lib/labels.ts:76
+msgid "Measuring the pictures"
+msgstr "Измерение изображений"
 
-#: pages/_step4_upload.py:65
-msgid "Memories"
-msgstr "Воспоминания"
+#: web/lib/RenderPanel.svelte:180
+msgid "Medium"
+msgstr "Среднее"
 
-#: pages/suggestions.py:86
-msgid "Memories automation would make next, using the same rules as auto suggest."
-msgstr ""
-"Воспоминания, которые автоматизация создала бы следующими, по тем же правилам, что и auto "
-"suggest."
-
-#: app.py:71 app.py:195
+#: web/lib/labels.ts:18 web/routes/+layout.svelte:21
 msgid "Memory"
 msgstr "Воспоминание"
 
-#: pages/memory_brief.py:134
+#: web/routes/create/+page.svelte:268
 msgid "Memory type"
 msgstr "Тип воспоминания"
 
-#: pages/clip_review.py:192
-msgid "Middle 5s"
-msgstr "Средние 5 с"
+#: web/lib/ShotInspector.svelte:133
+msgid "Model polish"
+msgstr "Доработка моделью"
 
-#: pages/step1_presets.py:214
+#: web/lib/ShotInspector.svelte:144
+msgid "Model suggestion"
+msgstr "Предложение модели"
+
+#: web/routes/create/+page.svelte:281 web/routes/create/+page.svelte:282
 msgid "Month"
 msgstr "Месяц"
 
-#: pages/memory_brief.py:35
+#: web/lib/labels.ts:9
 msgid "Monthly Highlights"
 msgstr "Главное за месяц"
 
-#: pages/step1_tabs.py:116
-msgid "Months"
-msgstr "Месяцы"
-
-#: pages/_step3_music_preview.py:148
-#, python-brace-format
-msgid "Mood: {mood_text}"
-msgstr "Настроение: {mood_text}"
-
-#: pages/step1_presets.py:96
-msgid "Most recent year"
-msgstr "Последний год"
-
-#: pages/memory_brief.py:34
+#: web/lib/labels.ts:8
 msgid "Multi-Person"
 msgstr "Несколько людей"
 
-#: pages/step3_options.py:361 pages/step3_options.py:417
+#: web/lib/RenderPanel.svelte:200
 msgid "Music"
 msgstr "Музыка"
 
-#: pages/_step3_music_preview.py:120
-msgid "Music generated successfully!"
-msgstr "Музыка успешно создана!"
-
-#: pages/_step3_music_preview.py:115
-msgid "Music generated!"
-msgstr "Музыка создана!"
-
-#: pages/_step3_music_preview.py:126
-#, python-brace-format
-msgid "Music generation failed: {value}"
-msgstr "Не удалось создать музыку: {value}"
-
-#: pages/step3_options.py:120
+#: web/lib/RenderPanel.svelte:223
 msgid "Music volume:"
 msgstr "Громкость музыки:"
 
-#: pages/step1_people.py:174
-msgid "Narrow this memory to these people, the same as --person on the CLI."
-msgstr "Ограничить воспоминание этими людьми, как --person в командной строке."
-
-#: pages/picture_decisions.py:136
+#: web/routes/runs/[run_id]/pool/+page.svelte:141
 msgid "Never use"
 msgstr "Никогда не использовать"
 
-#: pages/settings_people.py:285
-msgid "Next"
-msgstr "Далее"
+#: web/routes/create/+page.svelte:255 web/routes/create/+page.svelte:259
+msgid "New memory"
+msgstr "Новое воспоминание"
 
-#: pages/runs.py:127
-msgid "Next runs"
-msgstr "Следующие запуски"
+#: web/routes/create/+page.svelte:346
+msgid ""
+"No catalogued days yet. Run immich-memories discover-days to find them, or film any day by "
+"its date."
+msgstr ""
+"Пока нет каталогизированных дней. Запустите `immich-memories discover-days`, чтобы найти их, "
+"или снимите фильм о любом дне по его дате."
 
-#: pages/clip_review.py:433
-msgid "Next: Generation Options"
-msgstr "Далее: параметры генерации"
-
-#: pages/step3_options.py:439
-msgid "Next: Preview & Export"
-msgstr "Далее: предпросмотр и экспорт"
-
-#: pages/step1_presets.py:276
-msgid "No albums with any assets in them yet."
-msgstr "Пока нет альбомов с медиа."
-
-#: pages/runs.py:73
+#: web/routes/runs/[run_id]/+page.svelte:328
 msgid "No child output was retained for this run."
 msgstr "Для этого запуска не сохранён связанный результат."
 
-#: pages/step4_export.py:132
-msgid "No clips selected. Go back to select clips."
-msgstr "Клипы не выбраны. Вернитесь и выберите их."
+#: web/lib/ShotInspector.svelte:135
+msgid "No model read this cut: the rules chose every picture."
+msgstr "Ни одна модель не читала этот монтаж: каждое изображение выбрали правила."
 
-#: pages/suggestions.py:168
-msgid "No eligible suggestions right now."
-msgstr "Сейчас нет подходящих предложений."
+#: web/lib/RenderPanel.svelte:203
+msgid "No music"
+msgstr "Без музыки"
 
-#: pages/settings_people.py:251
-msgid ""
-"No people yet. Rescan the library to find them — it reads every named person's count and month"
-" curve, and looks at no pixels."
-msgstr ""
-"Людей пока нет. Просканируйте библиотеку снова: будут прочитаны количества и месячные "
-"кривые каждого человека с именем, без анализа изображений."
+#: web/routes/create/+page.svelte:398
+msgid "No name matches."
+msgstr "Нет совпадений по имени."
 
-#: pages/runs.py:105
+#: web/routes/create/+page.svelte:398
+msgid "No named people in Immich yet."
+msgstr "В Immich пока нет людей с именами."
+
+#: web/lib/ShotInspector.svelte:152
+msgid "No outcome recorded."
+msgstr "Результат не записан."
+
+#: web/routes/runs/[run_id]/+page.svelte:241
+msgid "No pictures match this filter."
+msgstr "Нет изображений, соответствующих этому фильтру."
+
+#: web/lib/ShotInspector.svelte:84
+msgid "No reason recorded for this picture."
+msgstr "Причина выбора этого изображения не записана."
+
+#: web/routes/runs/+page.svelte:121
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr ""
 "Нет запусков для этого представления. Создайте воспоминание через «Воспоминание» или "
 "«Предложения»."
 
-#: pages/runs.py:62
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:308
 msgid "No saved cut is available for this run."
 msgstr "Для этого запуска нет сохранённого монтажа."
 
-#: pages/suggestions.py:212
-msgid "No suggestions were rejected by variety or failure backoff."
-msgstr "Нет предложений, пропущенных ради разнообразия или ожидания после ошибки."
+#: web/routes/suggestions/+page.svelte:115
+msgid "No suggestions right now."
+msgstr "Сейчас нет предложений."
 
-#: pages/step1_presets.py:402
+#: web/routes/create/+page.svelte:379
 msgid "No trips detected for this year."
-msgstr "За этот год поездок не найдено."
+msgstr "За этот год поездок не обнаружено."
 
-#: pages/clip_review.py:454
-msgid "No video clips in the cut; there is nothing to trim."
-msgstr "В монтаже нет видеоклипов; обрезать нечего."
-
-#: pages/step2_review.py:98
-msgid "No videos found for the selected criteria."
-msgstr "Видео по выбранным условиям не найдены."
-
-#: pages/settings_people.py:478
+#: web/routes/settings/people/+page.svelte:141
 msgid "No, they are not"
 msgstr "Нет, это не так"
 
-#: pages/step3_options.py:304 pages/step3_options.py:365
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
+msgid "Nobody this memory is about was recognised here; they were, elsewhere in the same episode."
+msgstr ""
+"Никто из тех, о ком этот эпизод памяти, не был распознан здесь; их узнали в другом месте того"
+" же эпизода."
+
+#: web/routes/settings/people/+page.svelte:107
+msgid "Nobody yet. Rescan the library to read who is in it."
+msgstr "Пока никого. Просканируйте библиотеку заново, чтобы увидеть, кто в ней есть."
+
+#: web/lib/RenderPanel.svelte:145
 msgid "None"
 msgstr "Нет"
 
-#: pages/settings_people.py:389
+#: web/routes/create/+page.svelte:289
+msgid "North"
+msgstr "Север"
+
+#: web/routes/settings/people/+page.svelte:127
 msgid "Notes"
 msgstr "Заметки"
 
-#: pages/settings_people.py:409
+#: web/routes/settings/people/+page.svelte:148
 msgid "Nothing recorded yet."
 msgstr "Пока ничего не записано."
 
-#: pages/settings_people.py:212
-msgid "Nothing to curate — no twins and no split records."
-msgstr "Нечего упорядочивать: нет дублей или разделённых записей."
-
-#: pages/memory_brief.py:36
+#: web/lib/labels.ts:10
 msgid "On This Day"
 msgstr "В этот день"
 
-#: pages/picture_decisions.py:22
-msgid ""
-"Once cleared, every film up to that level may use it. Nothing the app reads later puts the "
-"hold back; Undo does."
-msgstr ""
-"После снятия ограничения изображение может использоваться в фильмах вплоть до выбранного "
-"уровня. Последующий анализ не вернёт ограничение; «Отменить решение» вернёт."
+#: web/routes/create/+page.svelte:302
+msgid "On a date"
+msgstr "В определённую дату"
 
-#: pages/settings_people.py:521
-msgid "One answer updates both people. Confirmed relationships are never replaced by a scan."
-msgstr "Один ответ обновляет обоих людей. Сканирование никогда не заменяет подтверждённые связи."
-
-#: pages/step1_presets.py:114
-msgid "One window around the holiday in each year, most recent first."
-msgstr "Период вокруг праздника в каждом году, от нового к старому."
-
-#: pages/step1_people.py:169
+#: web/routes/create/+page.svelte:386
 msgid "Only with (optional)"
 msgstr "Только с (необязательно)"
 
-#: pages/picture_decisions.py:165
-msgid "Open it in Immich first if you haven't looked at it yourself."
-msgstr "Сначала откройте изображение в Immich, если ещё не смотрели его лично."
+#: web/routes/runs/[run_id]/+page.svelte:301
+msgid "Open"
+msgstr "Открыть"
 
-#: pages/suggestions.py:146
+#: web/routes/suggestions/+page.svelte:89
 msgid "Open run"
 msgstr "Открыть запуск"
 
-#: pages/memory_brief.py:180
-msgid "Open the media pool"
-msgstr "Открыть медиа"
+#: web/lib/RenderPanel.svelte:131
+msgid "Open the film run"
+msgstr "Открыть запуск фильма"
 
-#: pages/settings_people.py:233
-#, python-brace-format
-msgid "Open {name} in Immich"
-msgstr "Открыть {name} в Immich"
+#: web/routes/runs/[run_id]/+page.svelte:176
+msgid "Order and timecodes from the saved cut."
+msgstr "Порядок и таймкоды сохранённого монтажа."
 
-#: pages/step3_options.py:278
+#: web/lib/RenderPanel.svelte:159
 msgid "Orientation"
 msgstr "Ориентация"
 
-#: pages/step4_export.py:165
-msgid "Output"
-msgstr "Результат"
+#: web/lib/ShotInspector.svelte:108 web/lib/ShotInspector.svelte:120
+msgid "Other picture of this moment"
+msgstr "Другое изображение этого момента"
 
-#: pages/step3_options.py:253
-msgid "Output Format"
-msgstr "Формат вывода"
+#: web/lib/ShotInspector.svelte:100 web/lib/ShotInspector.svelte:102
+msgid "Other pictures of this moment"
+msgstr "Другие изображения этого момента"
 
-#: pages/step3_options.py:228
-msgid "Output Settings"
-msgstr "Параметры вывода"
-
-#: pages/step4_export.py:194
-msgid "Output filename"
-msgstr "Имя выходного файла"
-
-#: pages/_step4_generate.py:118
+#: web/lib/ShotInspector.svelte:91
 #, python-brace-format
-msgid "Output: {name}"
-msgstr "Результат: {name}"
+msgid "Passed {stages}"
+msgstr "Прошло {stages}"
 
-#: pages/login.py:50
+#: web/routes/login/+page.svelte:62
 msgid "Password"
 msgstr "Пароль"
 
-#: app.py:134 app.py:291
+#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:106
+#: web/routes/settings/people/+page.svelte:74 web/routes/settings/people/+page.svelte:80
 msgid "People"
 msgstr "Люди"
 
-#: pages/step1_people.py:330
-msgid "People (select 2+)"
-msgstr "Люди (выберите не менее 2)"
+#: web/routes/create/+page.svelte:404
+msgid "People condition"
+msgstr "Условие по людям"
 
-#: pages/settings_people.py:530 pages/step1_config.py:224 pages/step1_people.py:272
-msgid "Person"
-msgstr "Человек"
+#: web/routes/create/+page.svelte:306
+msgid "Period (6m, 1y, 2w)"
+msgstr "Период (6m, 1y, 2w)"
 
-#: pages/step1_config.py:217
-msgid "Person Filter"
-msgstr "Фильтр людей"
-
-#: pages/memory_brief.py:33
+#: web/lib/labels.ts:7
 msgid "Person Spotlight"
 msgstr "Один человек в центре внимания"
 
-#: pages/clip_grid.py:200
-msgid "Photo"
-msgstr "Фото"
-
-#: pages/step4_export.py:157
-msgid "Photo Pool"
-msgstr "Доступные фотографии"
-
-#: pages/step3_options.py:188
+#: web/routes/create/+page.svelte:431
 msgid "Photo duration (seconds)"
 msgstr "Длительность фото (секунды)"
 
-#: pages/step2_loading.py:449
+#: web/lib/ShotInspector.svelte:33
+msgid "Picture review"
+msgstr "Просмотр изображения"
+
+#: web/lib/JobPanel.svelte:74
+msgid "Pictures just read"
+msgstr "Только что прочитанные изображения"
+
+#: web/routes/create/+page.svelte:411
+msgid "Pictures with"
+msgstr "Изображения с"
+
+#: web/routes/runs/[run_id]/+page.svelte:135 web/routes/runs/[run_id]/+page.svelte:190
+#: web/routes/settings/people/+page.svelte:118 web/routes/suggestions/+page.svelte:106
 #, python-brace-format
-msgid "Photo thumbnails: {value}/{count}"
-msgstr "Миниатюры фото: {value}/{count}"
+msgid "Pictures: {count}"
+msgstr "Изображения: {count}"
 
-#: pages/memory_brief.py:55
-msgid "Photographs join the pool as stills the editor can hold"
-msgstr "Фотографии добавляются как неподвижные кадры, которые монтаж может задержать на экране"
-
-#: pages/step3_options.py:183
-#, python-brace-format
-msgid "Photos enabled ({photos_count} found)"
-msgstr "Фотографии включены (найдено {photos_count})"
-
-#: pages/step1_presets.py:585
-msgid "Pick a day"
-msgstr "Выбрать день"
-
-#: pages/memory_brief.py:101
-msgid "Pick a memory type and a valid period first"
-msgstr "Сначала выберите тип воспоминания и допустимый период"
-
-#: pages/memory_brief.py:100
-msgid "Pick an album first"
-msgstr "Сначала выберите альбом"
-
-#: pages/clip_review.py:447
-msgid "Pick the seconds each video shows and preview it. Stills need no trimming."
-msgstr "Выберите секунды каждого видео и посмотрите предпросмотр. Фотографии обрезать не нужно."
-
-#: pages/film_length.py:71
-msgid "Pictures & video"
-msgstr "Фото и видео"
-
-#: pages/clip_pipeline.py:56
-#, python-brace-format
-msgid "Pipeline complete! Planned {planned_count} clips from {eligible_count} eligible media items."
-msgstr ""
-"Обработка завершена! Запланировано клипов: {planned_count}, подходящих медиа: "
-"{eligible_count}."
-
-#: pages/step1_config.py:157
+#: web/lib/labels.ts:69
 msgid "Please enter both URL and API key"
-msgstr "Введите адрес и ключ API"
+msgstr "Введите URL и ключ API"
 
-#: pages/clip_review.py:426
-msgid "Please select at least one clip"
-msgstr "Выберите хотя бы один клип"
-
-#: pages/memory_brief.py:172
+#: web/routes/runs/[run_id]/+page.svelte:177 web/routes/runs/[run_id]/pool/+page.svelte:99
+#: web/routes/runs/[run_id]/pool/+page.svelte:106 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Pool"
 msgstr "Доступные медиа"
 
-#: pages/step3_options.py:274
-msgid "Portrait (9:16)"
-msgstr "Вертикально (9:16)"
+#: web/lib/RenderPanel.svelte:162
+msgid "Portrait"
+msgstr "Вертикально"
 
-#: pages/memory_run.py:68
-msgid "Preparing the cut"
-msgstr "Подготовка монтажа"
+#: web/lib/RenderPanel.svelte:210
+msgid "Preview a track"
+msgstr "Прослушать трек"
 
-#: pages/clip_review.py:164
-msgid "Preview"
-msgstr "Предпросмотр"
-
-#: app.py:255
-msgid "Preview & Export"
-msgstr "Предпросмотр и экспорт"
-
-#: pages/step1_cache.py:178
+#: web/routes/settings/+page.svelte:29
 msgid "Preview cache"
-msgstr "Кэш предпросмотра"
+msgstr "Кэш превью"
 
-#: pages/settings_people.py:282
-msgid "Previous"
-msgstr "Назад"
+#: web/routes/runs/[run_id]/pool/+page.svelte:153
+msgid "Preview with these choices"
+msgstr "Превью с этим выбором"
 
-#: pages/runs.py:121
-msgid "Previous runs"
-msgstr "Предыдущие запуски"
+#: web/lib/RenderPanel.svelte:196
+msgid "Privacy mode: blur every picture and scramble names"
+msgstr "Режим приватности: размывает каждое изображение и скрывает имена"
 
-#: pages/memory_run.py:467
-msgid "Re-load media to export"
-msgstr "Перезагрузить медиа для экспорта"
+#: web/lib/JobPanel.svelte:57 web/lib/JobPanel.svelte:69
+msgid "Progress"
+msgstr "Прогресс"
 
-#: pages/runs.py:55
-msgid "Read the cut"
-msgstr "Посмотреть монтаж"
+#: web/lib/ShotInspector.svelte:50
+msgid "Put it back"
+msgstr "Вернуть"
 
-#: pages/settings_people.py:153
-msgid "Reading the library…"
-msgstr "Чтение библиотеки…"
+#: web/lib/RenderPanel.svelte:177
+msgid "Quality"
+msgstr "Качество"
 
-#: pages/memory_run.py:64
-msgid "Reading the pictures"
-msgstr "Чтение изображений"
+#: web/lib/labels.ts:82
+msgid "Reading picture facts"
+msgstr "Чтение сведений об изображениях"
 
-#: pages/runs.py:132
-msgid "Refresh runs"
-msgstr "Обновить запуски"
+#: web/lib/labels.ts:78
+msgid "Reading what each picture shows"
+msgstr "Чтение того, что показывает каждое изображение"
 
-#: pages/suggestions.py:95
+#: web/lib/ShotInspector.svelte:151
+msgid "Recorded alternative"
+msgstr "Записанная альтернатива"
+
+#: web/routes/create/+page.svelte:357
+msgid "Refresh"
+msgstr "Обновить"
+
+#: web/routes/suggestions/+page.svelte:79
 msgid "Refresh suggestions"
 msgstr "Обновить предложения"
 
-#: pages/_step3_music_preview.py:246
-msgid "Regenerate"
-msgstr "Создать заново"
+#: web/routes/create/+page.svelte:357
+msgid "Refreshing..."
+msgstr "Обновление..."
 
-#: pages/_step3_music_preview.py:275
-msgid "Regenerate Music"
-msgstr "Создать музыку заново"
+#: web/routes/settings/people/+page.svelte:155
+msgid "Relationship"
+msgstr "Связь"
 
-#: pages/settings_people.py:541
-msgid "Relationship confirmed"
-msgstr "Связь подтверждена"
-
-#: pages/settings_people.py:437
-msgid "Relationship removed"
-msgstr "Связь удалена"
-
-#: pages/settings_people.py:400
+#: web/routes/settings/people/+page.svelte:133
 msgid "Relationships"
 msgstr "Связи"
 
-#: pages/settings_config.py:174
+#: web/lib/SettingsEditor.svelte:66
 msgid "Reload from Disk"
 msgstr "Перечитать с диска"
 
-#: pages/clip_review.py:431
-msgid "Reload the pool"
-msgstr "Перезагрузить медиа"
+#: web/lib/ShotInspector.svelte:50
+msgid "Remove from this cut"
+msgstr "Убрать из монтажа"
 
-#: pages/settings_people.py:442
+#: web/routes/settings/people/+page.svelte:144
 msgid "Remove this relationship"
 msgstr "Удалить эту связь"
 
-#: pages/settings_people.py:165
+#: web/routes/runs/[run_id]/+page.svelte:224
+msgid "Removed"
+msgstr "Убрано"
+
+#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:234
+msgid "Render"
+msgstr "Рендер"
+
+#: web/lib/labels.ts:29
+msgid "Replaced a picture the model doubted."
+msgstr "Заменило изображение, в котором модель сомневалась."
+
+#: web/lib/RunReport.svelte:72
+msgid "Report preview"
+msgstr "Предпросмотр отчёта"
+
+#: web/routes/settings/people/+page.svelte:83
 msgid "Rescan the library"
 msgstr "Просканировать библиотеку снова"
 
-#: pages/step3_options.py:241 pages/step3_options.py:416
+#: web/lib/RenderPanel.svelte:165
 msgid "Resolution"
 msgstr "Разрешение"
 
-#: pages/step4_export.py:33
-msgid "Result"
-msgstr "Результат"
+#: web/lib/RunReport.svelte:68
+msgid "Review the report, then copy it. Nothing is sent automatically."
+msgstr "Проверьте отчёт, затем скопируйте его. Ничего не отправляется автоматически."
 
-#: pages/memory.py:104
-msgid "Review the pool"
-msgstr "Проверить медиа"
+#: web/lib/RenderPanel.svelte:139 web/routes/runs/[run_id]/+page.svelte:298
+#, python-brace-format
+msgid "Revision {number}"
+msgstr "Редакция {number}"
 
-#: pages/settings_people.py:378
+#: web/routes/runs/[run_id]/+page.svelte:294
+msgid "Revisions"
+msgstr "Редакции"
+
+#: web/routes/settings/people/+page.svelte:123
 msgid "Role (suggestions; type your own)"
 msgstr "Роль (подсказки или свой текст)"
 
-#: pages/clip_review.py:251
-msgid "Rotation"
-msgstr "Поворот"
+#: web/routes/runs/[run_id]/+page.svelte:314
+msgid "Run details"
+msgstr "Подробности запуска"
 
-#: pages/runs.py:23
-msgid "Run not found. It may have been removed."
-msgstr "Запуск не найден. Возможно, он был удалён."
-
-#: pages/suggestions.py:203
+#: web/routes/suggestions/+page.svelte:111
 msgid "Run this suggestion"
 msgstr "Выполнить это предложение"
 
-#: pages/suggestions.py:88
-msgid "Running a suggestion creates a video on the server. "
-msgstr "Выполнение предложения создаёт видео на сервере. "
-
-#: pages/suggestions.py:137
+#: web/routes/suggestions/+page.svelte:86
 #, python-brace-format
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "Выполняется на сервере: {phase}. Продолжится, даже если вы уйдёте со страницы."
 
-#: app.py:73 app.py:219
+#: web/routes/+layout.svelte:23 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
+#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:119
 msgid "Runs"
 msgstr "Запуски"
 
-#: pages/clip_grid.py:108 pages/clip_grid.py:320 pages/clip_grid.py:356
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
 msgid "Same episode"
 msgstr "Тот же эпизод"
 
-#: pages/step1_config.py:140
+#: web/lib/SettingsEditor.svelte:104
+msgid "Save"
+msgstr "Сохранить"
+
+#: web/routes/settings/+page.svelte:97
 msgid "Save Config"
 msgstr "Сохранить конфигурацию"
 
-#: pages/step1_config.py:72
-msgid "Saved - type a new key to replace it"
-msgstr "Сохранён: введите новый ключ для замены"
+#: web/routes/runs/[run_id]/+page.svelte:285
+msgid "Save revision"
+msgstr "Сохранить редакцию"
 
-#: pages/runs.py:38 pages/step4_export.py:34
+#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:93
+msgid "Saved - type a new key to replace it"
+msgstr "Сохранено. Введите новый ключ, чтобы заменить его"
+
+#: web/routes/runs/[run_id]/+page.svelte:288
+#, python-brace-format
+msgid "Saved as revision {number}."
+msgstr "Сохранено как редакция {number}."
+
+#: web/lib/SettingsEditor.svelte:40
+msgid "Saved here"
+msgstr "Сохранено здесь"
+
+#: web/lib/SettingsEditor.svelte:39
+#, python-brace-format
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Сохранено здесь, но {name} не может это расшифровать: используется значение по умолчанию"
+
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:63
+msgid "Saved to the database"
+msgstr "Сохранено в базе данных"
+
+#: web/routes/runs/[run_id]/+page.svelte:315
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "Сохранено в: {output_path}"
 
-#: pages/_step4_generate.py:650
-#, python-brace-format
-msgid "Saved to: {result_path} ({file_size})"
-msgstr "Сохранено в: {result_path} ({file_size})"
-
-#: pages/step3_options.py:289
+#: web/lib/RenderPanel.svelte:183
 msgid "Scaling Mode"
 msgstr "Режим масштабирования"
 
-#: pages/memory_brief.py:32 pages/step1_presets.py:165
+#: web/lib/labels.ts:23
+msgid "Scheduled"
+msgstr "По расписанию"
+
+#: web/lib/ShotInspector.svelte:62
+msgid "Screen time (seconds)"
+msgstr "Время на экране (секунды)"
+
+#: web/lib/labels.ts:6 web/routes/create/+page.svelte:286
 msgid "Season"
 msgstr "Время года"
 
-#: pages/step3_options.py:134
-msgid "Select a music file:"
-msgstr "Выберите музыкальный файл:"
-
-#: pages/step1_presets.py:431
-msgid "Select a trip"
-msgstr "Выбрать поездку"
-
-#: pages/step3_options.py:150
-msgid "Select music file"
-msgstr "Выбрать музыкальный файл"
-
-#: pages/clip_review.py:239
-msgid "Select range"
-msgstr "Выбрать период"
-
-#: pages/clip_review.py:354
-msgid "Selected Clips"
-msgstr "Выбранные клипы"
-
-#: pages/step3_options.py:157
+#: web/lib/SettingsEditor.svelte:76
 #, python-brace-format
-msgid "Selected: {value}"
-msgstr "Выбрано: {value}"
+msgid ""
+"Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
+"config.yaml."
+msgstr ""
+"Секреты нельзя сохранить здесь, пока не задано {name}. Задайте его или храните их в окружении"
+" либо в config.yaml."
 
-#: pages/step2_review.py:79
-msgid "Session expired — please reconfigure. The server restarted and lost your settings."
-msgstr "Сессия истекла: настройте заново. Сервер перезапустился и потерял настройки."
+#: web/lib/SettingsEditor.svelte:37
+#, python-brace-format
+msgid "Set by {name} (environment)"
+msgstr "Задано через {name} (окружение)"
 
-#: pages/clip_review.py:391
-msgid "Set all to first 5s"
-msgstr "Везде использовать первые 5 с"
+#: web/lib/SettingsEditor.svelte:38
+#, python-brace-format
+msgid "Set in config.yaml as {key}"
+msgstr "Задано в config.yaml как {key}"
 
-#: pages/clip_review.py:392
-msgid "Set all to middle 5s"
-msgstr "Везде использовать средние 5 с"
-
-#: app.py:75
+#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:77
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:79
 msgid "Settings"
 msgstr "Настройки"
 
-#: pages/memory_brief.py:74
+#: web/routes/create/+page.svelte:425
 msgid "Shareable"
 msgstr "Для публикации"
 
-#: pages/memory_brief.py:143
-msgid "Sharing"
-msgstr "Доступ"
+#: web/routes/runs/[run_id]/+page.svelte:166
+msgid "Show"
+msgstr "Показать"
 
-#: pages/login.py:80
+#: web/routes/settings/people/+page.svelte:171
+msgid "Show more"
+msgstr "Показать ещё"
+
+#: web/routes/login/+page.svelte:43 web/routes/login/+page.svelte:54
+#: web/routes/login/+page.svelte:66
 msgid "Sign in"
 msgstr "Войти"
 
-#: app.py:113
+#: web/routes/login/+page.svelte:69
+msgid "Sign in through the proxy in front of this server."
+msgstr "Войдите через прокси перед этим сервером."
+
+#: web/routes/+layout.svelte:54
 msgid "Sign out"
 msgstr "Выйти"
 
-#: pages/step3_options.py:301
-msgid "Smart (mix of fades & cuts)"
-msgstr "Умный (наплывы и склейки)"
+#: web/lib/labels.ts:58
+msgid "Small moment"
+msgstr "Небольшой момент"
 
-#: pages/step3_options.py:275
-msgid "Square (1:1)"
-msgstr "Квадрат (1:1)"
+#: web/lib/RenderPanel.svelte:144
+msgid "Smart (fades and cuts)"
+msgstr "Умный (затухания и склейки)"
 
-#: pages/step4_export.py:242
-msgid "Start New Project"
-msgstr "Новый проект"
+#: web/routes/create/+page.svelte:289
+msgid "South"
+msgstr "Юг"
 
-#: pages/step1_tabs.py:162
-msgid "Start date"
-msgstr "Дата начала"
+#: web/lib/labels.ts:14
+msgid "Special day"
+msgstr "Особый день"
 
-#: pages/step2_review.py:152
-msgid "Start over"
-msgstr "Начать заново"
+#: web/routes/create/+page.svelte:41
+msgid "Spring"
+msgstr "Весна"
 
-#: pages/step1_tabs.py:128
-msgid "Starting from"
-msgstr "Начиная с"
+#: web/lib/RenderPanel.svelte:162
+msgid "Square"
+msgstr "Квадрат"
 
-#: pages/_step4_generate.py:378
-msgid "Starting..."
-msgstr "Запуск..."
+#: web/lib/ShotInspector.svelte:57
+msgid "Start here"
+msgstr "Начать здесь"
 
-#: pages/runs.py:98
+#: web/lib/JobPanel.svelte:60
+msgid "Starting"
+msgstr "Запуск"
+
+#: web/routes/runs/+page.svelte:84
 msgid "Status"
 msgstr "Состояние"
 
-#: pages/memory.py:128
-msgid "Story"
-msgstr "История"
+#: web/lib/ShotInspector.svelte:76
+msgid "Still"
+msgstr "Статичное изображение"
 
-#: pages/memory_story.py:61
-msgid "Story weight"
-msgstr "Вес истории"
+#: web/lib/JobPanel.svelte:62
+msgid "Stopped."
+msgstr "Остановлено."
 
-#: pages/memory.py:127
-msgid "Storyboard"
-msgstr "Раскадровка"
+#: web/routes/runs/[run_id]/+page.svelte:183
+msgid "Stories"
+msgstr "Истории"
 
-#: pages/_step3_music_preview.py:212
+#: web/lib/RenderPanel.svelte:149
 msgid "Subtitle"
 msgstr "Подзаголовок"
 
-#: app.py:72 app.py:231
+#: web/routes/+layout.svelte:22 web/routes/suggestions/+page.svelte:69
+#: web/routes/suggestions/+page.svelte:74
 msgid "Suggestions"
 msgstr "Предложения"
 
-#: pages/step3_options.py:399 pages/step4_export.py:146
-msgid "Summary"
-msgstr "Сводка"
+#: web/routes/suggestions/+page.svelte:94
+msgid "Suggestions could not be loaded."
+msgstr "Не удалось загрузить предложения."
 
-#: pages/memory_brief.py:40
-msgid "Surprise me"
-msgstr "Удиви меня"
+#: web/routes/create/+page.svelte:42
+msgid "Summer"
+msgstr "Лето"
 
-#: theme.py:321
-msgid "System"
-msgstr "Системная"
+#: web/lib/labels.ts:57
+msgid "Supporting"
+msgstr "Второстепенная"
 
-#: pages/clip_review.py:366
-msgid "Target"
-msgstr "Цель"
+#: web/routes/runs/[run_id]/+page.svelte:226
+msgid "Swapped"
+msgstr "Заменено"
 
-#: pages/memory_duration.py:89
-msgid "Target duration (min)"
-msgstr "Целевая длительность (мин)"
+#: web/routes/runs/[run_id]/+page.svelte:264
+msgid "Take out"
+msgstr "Убрать"
 
-#: pages/step1_config.py:137
+#: web/routes/settings/+page.svelte:96
 msgid "Test Connection"
-msgstr "Проверить соединение"
+msgstr "Проверить подключение"
 
-#: pages/step1_config.py:89
-msgid "Testing connection..."
-msgstr "Проверка соединения..."
-
-#: pages/picture_decisions.py:89
-msgid "That didn't save. Try again, or use `pictures` in the CLI."
-msgstr "Не удалось сохранить. Повторите попытку или используйте `pictures` в командной строке."
-
-#: pages/step3_options.py:143
+#: web/lib/RenderPanel.svelte:110
 msgid "That file is not an MP3, M4A or WAV"
 msgstr "Этот файл не в формате MP3, M4A или WAV"
 
-#: pages/memory.py:123 pages/memory_story.py:96
-msgid "The editor left no thesis for this cut."
-msgstr "Монтаж не оставил описания главной идеи."
+#: web/lib/labels.ts:71
+msgid "That file is too large for a soundtrack"
+msgstr "Этот файл слишком велик для саундтрека"
 
-#: pages/memory_brief.py:60
-msgid "The editor may play a Live Photo's motion when it earns it"
-msgstr "Монтаж может использовать движение Live Photo, если оно что-то добавляет"
+#: web/routes/settings/+page.svelte:54
+msgid "The connection could not be checked."
+msgstr "Не удалось проверить подключение."
 
-#: pages/_step4_upload.py:74
-msgid "The generated video will be uploaded to your Immich instance and added to the specified album."
-msgstr "Готовое видео будет загружено в ваш Immich и добавлено в указанный альбом."
+#: web/lib/RenderPanel.svelte:138
+msgid "The cut as chosen"
+msgstr "Монтаж в выбранном виде"
 
-#: pages/memory_brief.py:77
+#: web/routes/create/+page.svelte:244
+msgid "The cut could not start."
+msgstr "Не удалось запустить монтаж."
+
+#: web/lib/JobPanel.svelte:61
+msgid "The cut is ready."
+msgstr "Монтаж готов."
+
+#: web/lib/RenderPanel.svelte:155
+msgid "The dates and places, never a model"
+msgstr "Даты и места, никогда модель"
+
+#: web/lib/SettingsEditor.svelte:73
+msgid ""
+"The environment wins, then config.yaml, then what is saved here, then the default. A setting "
+"either of the first two sets is greyed out: change it where its label says."
+msgstr ""
+"Окружение имеет приоритет, затем config.yaml, затем сохранённое здесь, затем значение по "
+"умолчанию. Настройка, заданная любым из первых двух, показана серым: измените её там, где "
+"указано в подписи."
+
+#: web/routes/runs/[run_id]/+page.svelte:143
+msgid "The film"
+msgstr "Фильм"
+
+#: web/lib/JobPanel.svelte:61
+msgid "The film is ready."
+msgstr "Фильм готов."
+
+#: web/routes/create/+page.svelte:34
 msgid "The household. Private moments a caption names, like a bath, play too."
 msgstr "Домочадцы. Включаются и личные моменты из описания, например купание."
 
-#: pages/memory.py:160
-#, python-brace-format
-msgid "The last cut ended as {status}."
-msgstr "Последний монтаж завершился со статусом {status}."
+#: web/lib/ShotInspector.svelte:137
+msgid "The model had nothing to say about this picture."
+msgstr "Модели нечего было сказать об этом изображении."
 
-#: pages/memory.py:44
-msgid "The last cut failed; the server log has the reason."
-msgstr "Последний монтаж не удался; причина есть в журнале сервера."
+#: web/lib/RenderPanel.svelte:154
+msgid "The model, when one is configured"
+msgstr "Модель, если она настроена"
 
-#: pages/memory.py:46
-msgid "The last cut stopped without a result."
-msgstr "Последний монтаж остановился без результата."
-
-#: pages/memory.py:43
-msgid "The last cut was cancelled before it finished."
-msgstr "Последний монтаж отменён до завершения."
-
-#: pages/memory.py:45
-msgid "The last cut was interrupted: the process that ran it is gone."
-msgstr "Последний монтаж прерван: выполнявший его процесс больше не существует."
-
-#: pages/memory_brief.py:176
+#: web/routes/settings/people/+page.svelte:81
 msgid ""
-"The media pool and the excerpt editor have their own page: exclude what may never be cut, and"
-" trim what was."
+"The people registry: who is close, their roles, and how they relate. `people scan` writes the"
+" guesses; your answers stay across scans. `people export` writes it out as YAML."
 msgstr ""
-"У медиа и редактора фрагментов своя страница: исключите то, что нельзя показывать, и "
-"настройте выбранные фрагменты."
+"Реестр людей: кто близок, их роли и как они связаны. `people scan` записывает предположения; "
+"ваши ответы сохраняются между сканированиями. `people export` экспортирует их в YAML."
 
-#: pages/step2_review.py:253
-#, python-brace-format
-msgid "The pool{value}"
-msgstr "Медиа{value}"
+#: web/lib/ShotInspector.svelte:141
+msgid "The picture it replaced"
+msgstr "Изображение, которое оно заменило"
 
-#: pages/settings_people.py:142
-msgid "The roster"
-msgstr "Список людей"
+#: web/lib/RenderPanel.svelte:193
+msgid ""
+"The place is Immich's. With geocoding on (Settings, network), it names the district in the "
+"film's language, through the public Nominatim or network.geocoding_url."
+msgstr ""
+"Место берётся из Immich. При включённом геокодировании (Настройки, сеть) оно называет район "
+"на языке фильма через публичный Nominatim или network.geocoding_url."
 
-#: pages/settings_people.py:158
-#, python-brace-format
-msgid "The scan could not finish: {exc}"
-msgstr "Сканирование не удалось завершить: {exc}"
+#: web/lib/RenderPanel.svelte:204
+msgid "The previewed track"
+msgstr "Прослушанный трек"
 
-#: pages/memory_story.py:94
-msgid "The story"
-msgstr "История"
+#: web/lib/labels.ts:45
+msgid "The previous automatic memory used this category."
+msgstr "Предыдущее автоматическое воспоминание использовало эту категорию."
 
-#: pages/memory_storyboard.py:100
-msgid "The storyboard"
-msgstr "Раскадровка"
+#: web/lib/RenderPanel.svelte:89
+msgid "The render could not start."
+msgstr "Не удалось запустить рендер."
 
-#: pages/memory_duration.py:69
-msgid "The type decides the length; turn off to set an exact target"
-msgstr "Тип определяет длительность; отключите, чтобы задать точную цель"
+#: web/lib/RunReport.svelte:48
+msgid "The report could not be loaded."
+msgstr "Не удалось загрузить отчёт."
 
-#: pages/memory.py:172
-msgid "This cut finished while the page was away. Re-load its media to export it."
-msgstr "Монтаж завершился, пока страница была закрыта. Перезагрузите медиа для экспорта."
+#: web/routes/runs/[run_id]/+page.svelte:63 web/routes/runs/[run_id]/pool/+page.svelte:81
+msgid "The revision could not be saved."
+msgstr "Не удалось сохранить редакцию."
 
-#: pages/step1_cache.py:167
+#: web/routes/runs/+page.svelte:126
+msgid "The runs could not be loaded."
+msgstr "Не удалось загрузить запуски."
+
+#: web/lib/labels.ts:68
+msgid "The server URL changed: enter the API key for the new server."
+msgstr "URL сервера изменился: введите ключ API для нового сервера."
+
+#: web/lib/SettingsEditor.svelte:52
+msgid "The settings could not be saved."
+msgstr "Не удалось сохранить настройки."
+
+#: web/lib/labels.ts:48
+msgid "These people appear in the last two people memories."
+msgstr "Эти люди встречаются в последних двух воспоминаниях о людях."
+
+#: web/routes/runs/[run_id]/+page.svelte:259
+msgid "They play in the order they were taken, prepared like the rest of the cut."
+msgstr ""
+"Они воспроизводятся в том порядке, в котором были сняты, подготовленные так же, как остальной"
+" монтаж."
+
+#: web/lib/labels.ts:46
+msgid "This category already appears twice in the last six memories."
+msgstr "Эта категория уже дважды встречается в последних шести воспоминаниях."
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:118
+msgid "This run kept no record of its pool. Cut again to see one."
+msgstr "Для этого запуска не сохранилось записи о его медиа. Смонтируйте заново, чтобы увидеть её."
+
+#: web/routes/settings/+page.svelte:28
 msgid "Thumbnail cache"
 msgstr "Кэш миниатюр"
 
-#: pages/step2_loading.py:403
-#, python-brace-format
-msgid "Thumbnails: {value}/{count}"
-msgstr "Миниатюры: {value}/{count}"
+#: web/lib/RenderPanel.svelte:148
+msgid "Title (decided as generate decides when empty)"
+msgstr "Название (определяется как решает generate, если не указано)"
 
-#: pages/clip_pipeline.py:76
-msgid "Time Elapsed"
-msgstr "Прошло времени"
+#: web/routes/create/+page.svelte:305
+msgid "To"
+msgstr "По"
 
-#: pages/_step3_music_preview.py:197 pages/step3_options.py:350
-msgid "Title"
-msgstr "Название"
+#: web/lib/labels.ts:31
+msgid "Took the seat of a picture a check refused."
+msgstr "Заняло место изображения, отклонённого проверкой."
 
-#: pages/memory_storyboard.py:110
-msgid "Titles and transitions make up the rest of the film."
-msgstr "Титры и переходы составляют оставшуюся часть фильма."
+#: web/lib/labels.ts:30
+msgid "Took the seat of a picture the model removed from this story."
+msgstr "Заняло место изображения, которое модель убрала из этой истории."
 
-#: pages/step1_people.py:32
-msgid "Together"
-msgstr "Вместе"
-
-#: pages/step1_people.py:181
-msgid ""
-"Together keeps the times everyone named was there, even if never in the same photo. Any of "
-"these people keeps the times any one of them was there."
-msgstr ""
-"«Вместе» оставляет время, когда рядом были все названные, даже если они ни разу не попали в "
-"один кадр. «Любой из них» оставляет время, когда был хотя бы один из них."
-
-#: pages/login.py:64
-msgid "Too many failed attempts. Try again later."
-msgstr "Слишком много неудачных попыток. Повторите позже."
-
-#: pages/clip_review.py:361
-msgid "Total Duration"
-msgstr "Общая длительность"
-
-#: pages/step3_options.py:307
+#: web/lib/RenderPanel.svelte:142
 msgid "Transition Style"
 msgstr "Стиль переходов"
 
-#: pages/clip_review.py:445 pages/step2_review.py:147
-msgid "Trim the video clips"
-msgstr "Обрезать видеоклипы"
-
-#: pages/memory_brief.py:38
+#: web/lib/labels.ts:12 web/routes/create/+page.svelte:353
 msgid "Trip"
 msgstr "Поездка"
 
-#: pages/step1_presets.py:394
-#, python-brace-format
-msgid "Trip detection failed: {exc}"
-msgstr "Не удалось обнаружить поездки: {exc}"
+#: web/routes/create/+page.svelte:166 web/routes/create/+page.svelte:170
+msgid "Trip detection failed."
+msgstr "Не удалось определить поездки."
 
-#: pages/_step3_music_preview.py:164
-#, python-brace-format
-msgid "Trip: {title_suggestion_trip_type}"
-msgstr "Поездка: {title_suggestion_trip_type}"
+#: web/routes/create/+page.svelte:365
+msgid "Trips"
+msgstr "Поездки"
 
-#: pages/login.py:35
+#: web/routes/runs/+page.svelte:127
+msgid "Try again"
+msgstr "Повторить"
+
+#: web/routes/login/+page.svelte:50
 msgid "Turn your photo library into video memories"
-msgstr "Превратите фотобиблиотеку в видеовоспоминания"
+msgstr "Превратите вашу фототеку в видеовоспоминания"
 
-#: pages/picture_decisions.py:138
+#: web/routes/runs/[run_id]/+page.svelte:282 web/routes/runs/[run_id]/pool/+page.svelte:139
 msgid "Undo"
 msgstr "Отменить решение"
 
-#: pages/step1_tabs.py:117
-msgid "Unit"
-msgstr "Единица"
-
-#: pages/_step4_upload.py:62
-msgid "Upload after generation"
-msgstr "Загрузить после создания"
-
-#: pages/step3_options.py:365
-msgid "Upload file"
-msgstr "Загрузить файл"
-
-#: pages/_step4_upload.py:116
+#: web/lib/ago.ts:13
 #, python-brace-format
-msgid "Uploaded to Immich! Album: {upload_album}"
-msgstr "Загружено в Immich! Альбом: {upload_album}"
+msgid "Updated {when}"
+msgstr "Обновлено {when}"
 
-#: pages/step3_options.py:147
-#, python-brace-format
-msgid "Uploaded: {name}"
-msgstr "Загружено: {name}"
+#: web/lib/RenderPanel.svelte:213
+msgid "Upload a track"
+msgstr "Загрузить трек"
 
-#: pages/_step4_upload.py:103
-msgid "Uploading to Immich..."
-msgstr "Загрузка в Immich..."
+#: web/lib/RenderPanel.svelte:230
+msgid "Upload the film to Immich"
+msgstr "Загрузить фильм в Immich"
 
-#: pages/step1_people.py:118
-msgid ""
-"Use quoted names, AND, OR and parentheses. AND requires the people in the same photo or "
-"video, not separate pictures from the same event. Changing the people picker replaces this "
-"condition."
+#: web/routes/create/+page.svelte:407
+msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr ""
-"Используйте имена в кавычках, AND, OR и скобки. AND требует людей на одном фото или видео, а "
-"не на разных изображениях одного события. Изменение выбора людей заменяет это условие."
+"Используйте точные имена из библиотеки; каждое изображение должно совпасть. Заменяет имена "
+"выше."
 
-#: pages/settings_people.py:486
-msgid ""
-"Use this for someone who is not face-tagged in Immich. You can connect them to the family "
-"immediately afterwards."
-msgstr "Для человека без отмеченного лица в Immich. Сразу после добавления можно связать его с семьёй."
+#: web/lib/ShotInspector.svelte:125
+msgid "Use this picture instead"
+msgstr "Использовать это изображение"
 
-#: pages/login.py:48
+#: web/routes/login/+page.svelte:59
 msgid "Username"
 msgstr "Имя пользователя"
 
-#: pages/step1_config.py:245
-#, python-brace-format
-msgid "Using {name}'s birthday: {value}"
-msgstr "Используется день рождения {name}: {value}"
+#: web/lib/ShotInspector.svelte:76 web/routes/runs/[run_id]/+page.svelte:200
+#: web/routes/runs/[run_id]/+page.svelte:230 web/routes/runs/[run_id]/pool/+page.svelte:127
+msgid "Video"
+msgstr "Видео"
 
-#: pages/step1_cache.py:144
+#: web/routes/settings/+page.svelte:27
 msgid "Video cache"
 msgstr "Кэш видео"
 
-#: pages/_step4_generate.py:631
-msgid "Video generated successfully!"
-msgstr "Видео успешно создано!"
+#: web/routes/runs/[run_id]/+page.svelte:136
+#, python-brace-format
+msgid "Videos: {count}"
+msgstr "Видео: {count}"
 
-#: pages/memory_brief.py:204
-msgid "What is it about"
-msgstr "О чём это"
+#: web/routes/runs/[run_id]/+page.svelte:158
+msgid "View"
+msgstr "Просмотр"
 
-#: pages/settings_people.py:134
+#: web/routes/suggestions/+page.svelte:75
 msgid ""
-"Who the library thinks is in it, read from counts and month curves alone. Everything the scan"
-" inferred is recomputed each time you rescan; everything you confirm here is yours and is "
-"never overwritten."
+"What automation would make next, the same list `auto suggest` prints. Run one as `auto run` "
+"would, or check it first without rendering."
 msgstr ""
-"Кого библиотека считает присутствующим, только по количествам и месячным кривым. Каждый скан "
-"пересчитывает выводы; ваши подтверждения никогда не перезаписываются."
+"Что автоматизация создала бы следующим — тот же список, что выводит `auto suggest`. Запустите"
+" так, как это сделал бы `auto run`, или сначала проверьте без рендеринга."
 
-#: pages/memory_brief.py:213
-msgid "Who will watch it"
-msgstr "Кто будет смотреть"
+#: web/lib/RenderPanel.svelte:136
+msgid "What to render"
+msgstr "Что рендерить"
 
-#: pages/suggestions.py:209
+#: web/routes/settings/+page.svelte:106
+msgid "Who is who, their roles and relationships."
+msgstr "Кто есть кто, их роли и связи."
+
+#: web/routes/create/+page.svelte:422
+msgid "Who may see it"
+msgstr "Кто может это увидеть"
+
+#: web/lib/RenderPanel.svelte:151
+msgid "Who names the film"
+msgstr "Кто называет фильм"
+
+#: web/routes/suggestions/+page.svelte:120
 msgid "Why other suggestions were skipped"
 msgstr "Почему другие предложения пропущены"
 
-#: pages/step4_export.py:197
-#, python-brace-format
-msgid "Will be saved to: {value}"
-msgstr "Будет сохранено в: {value}"
+#: web/lib/ShotInspector.svelte:144
+msgid "Why the model replaced the other picture"
+msgstr "Почему модель заменила другое изображение"
 
-#: pages/step1_config.py:261 pages/step1_people.py:250 pages/step1_people.py:312
-#: pages/step1_presets.py:133 pages/step1_presets.py:154 pages/step1_presets.py:203
-#: pages/step1_presets.py:443 pages/step1_tabs.py:67
+#: web/lib/ShotInspector.svelte:83
+msgid "Why this picture"
+msgstr "Почему это изображение"
+
+#: web/routes/create/+page.svelte:44
+msgid "Winter"
+msgstr "Зима"
+
+#: web/routes/settings/people/+page.svelte:160 web/routes/settings/people/+page.svelte:162
+msgid "With"
+msgstr "С"
+
+#: web/routes/create/+page.svelte:279
 msgid "Year"
 msgstr "Год"
 
-#: pages/memory_brief.py:31
+#: web/lib/labels.ts:5
 msgid "Year in Review"
 msgstr "Обзор года"
 
-#: pages/step1_tabs.py:80
-msgid "Year type"
-msgstr "Тип года"
+#: web/routes/create/+page.svelte:297
+msgid "Years back (all when empty)"
+msgstr "Лет назад (все, если не указано)"
 
-#: pages/step1_tabs.py:116
-msgid "Years"
-msgstr "Годы"
-
-#: pages/step1_presets.py:109
+#: web/routes/create/+page.svelte:297
 msgid "Years to span"
-msgstr "Количество лет"
+msgstr "Сколько лет охватить"
 
-#: pages/settings_people.py:475
+#: web/routes/settings/people/+page.svelte:139
 msgid "Yes, that is right"
 msgstr "Да, всё верно"
 
-#: pages/login.py:92
+#: web/routes/runs/[run_id]/pool/+page.svelte:93
+#, python-brace-format
+msgid "You cleared its hold for {level}."
+msgstr "Вы сняли ограничение для {level}."
+
+#: web/routes/login/+page.svelte:55
 msgid "You will be redirected to your identity provider"
-msgstr "Вы будете перенаправлены к провайдеру идентификации"
+msgstr "Вы будете перенаправлены к вашему провайдеру идентификации"
 
-#: pages/picture_decisions.py:114
-msgid "Your decision is gone; the app's own holds apply again."
-msgstr "Ваше решение удалено; снова действуют ограничения приложения."
+#: web/routes/runs/[run_id]/pool/+page.svelte:91
+msgid "You'll never use this picture."
+msgstr "Это изображение никогда не будет использовано."
 
-#: pages/_step4_generate.py:643
-msgid "Your memory video is ready!"
-msgstr "Ваше видео с воспоминаниями готово!"
-
-#: pages/memory_duration.py:22
-msgid "about 10 minutes per year of range, shorter if the media cannot fill it"
-msgstr "около 10 минут на каждый год периода, меньше при нехватке медиа"
-
-#: pages/runs.py:87
-msgid "all"
-msgstr "все"
-
-#: pages/runs.py:91
-msgid "cancelled"
-msgstr "отменено"
-
-#: pages/runs.py:88
-msgid "completed"
-msgstr "завершено"
-
-#: pages/settings_people.py:433
-msgid "confirmed"
-msgstr "подтверждено"
-
-#: pages/settings_people.py:337
-msgid "counts unreliable"
-msgstr "ненадёжные количества"
-
-#: pages/_step3_music_preview.py:214
-msgid "e.g. June – August 2025"
-msgstr "например, июнь – август 2025"
-
-#: pages/_step3_music_preview.py:199
-msgid "e.g. Summer in Saxony"
-msgstr "например, Лето в Саксонии"
-
-#: pages/settings_people.py:352
-msgid "edit in Immich"
-msgstr "изменить в Immich"
-
-#: pages/runs.py:89
-msgid "failed"
-msgstr "ошибка"
-
-#: pages/runs.py:92
-msgid "interrupted"
-msgstr "прервано"
-
-#: pages/settings_people.py:527
-msgid "is…"
-msgstr "является…"
-
-#: pages/step1_presets.py:177
-msgid "north"
-msgstr "север"
-
-#: pages/runs.py:90
-msgid "running"
-msgstr "выполняется"
-
-#: pages/step1_presets.py:177
-msgid "south"
-msgstr "юг"
-
-#: pages/memory_duration.py:24
-msgid "the type's default length, shorter if the media cannot fill it"
-msgstr "стандартная длительность типа, сокращённая при нехватке медиа"
-
-#: pages/runs.py:32
+#: web/routes/runs/[run_id]/+page.svelte:138
 #, python-brace-format
-msgid "{clips_selected} pictures selected · {total_duration_seconds:.1f}s recorded run time"
-msgstr "Выбрано изображений: {clips_selected} · {total_duration_seconds:.1f} с записанного материала"
+msgid "about {film} of film"
+msgstr "около {film} фильма"
 
-#: pages/memory_story.py:109
+#: web/routes/create/+page.svelte:412
+msgid "all of them together"
+msgstr "все вместе"
+
+#: web/routes/create/+page.svelte:412
+msgid "any of them"
+msgstr "любой из них"
+
+#: web/routes/suggestions/+page.svelte:86
+msgid "starting"
+msgstr "запуск"
+
+#: web/routes/runs/[run_id]/+page.svelte:137
 #, python-brace-format
-msgid "{count} stories, {carrier_count} pictures"
-msgstr "Историй: {count}, изображений: {carrier_count}"
+msgid "{content} of pictures and video"
+msgstr "{content} изображений и видео"
 
-#: pages/runs.py:114
+#: web/routes/runs/[run_id]/+page.svelte:277
+#, python-brace-format
+msgid "{content}: the film grows past its {budget} to hold them"
+msgstr "{content}: фильм превышает свой {budget}, чтобы вместить их"
+
+#: web/routes/runs/+page.svelte:72
 #, python-brace-format
 msgid "{date_range_start} to {date_range_end}"
 msgstr "{date_range_start} — {date_range_end}"
 
-#: pages/suggestions.py:188
+#: web/routes/create/+page.svelte:372
 #, python-brace-format
-msgid "{date_range_start} to {date_range_end} · {asset_count} pictures · {value}"
-msgstr "{date_range_start} — {date_range_end} · {asset_count} изображений · {value}"
+msgid "{days} days · {count} pictures"
+msgstr "{days} дней · {count} изображений"
 
-#: pages/step1_config.py:203
+#: web/lib/JobPanel.svelte:71
 #, python-brace-format
-msgid "{description} ({days} days)"
-msgstr "{description} ({days} дн.)"
+msgid "{done} of {total}"
+msgstr "{done} из {total}"
 
-#: pages/settings_people.py:160
+#: web/lib/ShotInspector.svelte:75
 #, python-brace-format
-msgid "{found} people in {path}"
-msgstr "{found} человек в {path}"
+msgid "{seconds} s on screen"
+msgstr "{seconds} с на экране"
 
-#: pages/cut_progress_view.py:166
+#: web/routes/create/+page.svelte:340
 #, python-brace-format
-msgid "{label} {value:,} of {value2:,}"
-msgstr "{label} {value:,} из {value2:,}"
+msgid "{years} years ago"
+msgstr "{years} лет назад"
 
-#: pages/settings_people.py:466
+#: web/lib/JobPanel.svelte:46
 #, python-brace-format
-msgid "{name} and {target_name}: {value}"
-msgstr "{name} и {target_name}: {value}"
+msgid "~{amount} left in this stage"
+msgstr "~{amount} осталось на этом этапе"
 
-#: pages/step4_export.py:103
-#, python-brace-format
-msgid "{photos_count} Photos Available (auto-selected at generation)"
-msgstr "Доступно фото: {photos_count} (выбираются автоматически при создании)"
-
-#: pages/memory_story.py:37 pages/memory_storyboard.py:79
-#, python-brace-format
-msgid "{seconds:g} s"
-msgstr "{seconds:g} с"
-
-#: pages/settings_config.py:147
-#, python-brace-format
-msgid "{title}  ({n_keys} keys)"
-msgstr "{title} (ключей: {n_keys})"
-
-#: pages/runs.py:45
-#, python-brace-format
-msgid "{value}: {duration_seconds:.1f}s"
-msgstr "{value}: {duration_seconds:.1f} с"
-
-
-msgid "Default"
-msgstr "По умолчанию"
-
-msgid "Nothing to save"
-msgstr "Нечего сохранять"
-
-msgid "Save"
-msgstr "Сохранить"
-
-msgid "Saved here"
-msgstr "Сохранено здесь"
-
-msgid "Saved to the database"
-msgstr "Сохранено в базе данных"
-
-msgid "Set by {name} (environment)"
-msgstr "Задано через {name} (окружение)"
-
-msgid "Set in config.yaml as {key}"
-msgstr "Задано в config.yaml как {key}"
-
-msgid "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
-msgstr "Настройки берутся из четырёх мест, от сильнейшего: переменные окружения, config.yaml, то, что вы сохраняете здесь (в базе данных), затем значения по умолчанию. Серая настройка задана окружением или config.yaml; меняйте её там."
-
-msgid "{count} set outside this page"
-msgstr "{count} задано вне этой страницы"
-
-msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
-msgstr "{name} не задан, поэтому API-ключи и пароли нельзя сохранить здесь. Задайте его или укажите эти секреты в окружении или config.yaml."
-
-msgid "{title}  ({n} key)"
-msgid_plural "{title}  ({n} keys)"
-msgstr[0] "{title}  ({n} ключ)"
-msgstr[1] "{title}  ({n} ключа)"
-msgstr[2] "{title}  ({n} ключей)"
-
-msgid "{n} set outside this page"
-msgid_plural "{n} set outside this page"
-msgstr[0] "{n} задан вне этой страницы"
-msgstr[1] "{n} задано вне этой страницы"
-msgstr[2] "{n} задано вне этой страницы"
-
-msgid "Saved here, but {name} cannot decrypt it: the default is in use"
-msgstr "Сохранено здесь, но {name} не может это расшифровать: используется значение по умолчанию"

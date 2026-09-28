@@ -18,7 +18,7 @@ install cuts each of them from what Immich already knows (dates, places, faces, 
 |---|---|---|---|
 | `year_in_review` | one calendar year | 10 min | nothing extra |
 | `monthly_highlights` | one month | 60 s | nothing extra |
-| `season` | one season of one year | 2 min 15 s in the web UI, about 3 min 15 s on the CLI | nothing extra |
+| `season` | one season of one year | about 3 min 15 s | nothing extra |
 | `person_spotlight` | a range, one person | 60 s a month, capped at 10 min | a named face in Immich |
 | `multi_person` | a range, several people | 60 s a month, capped at 10 min | named faces in Immich |
 | `on_this_day` | today's date in every earlier year | 45 s | a few years of library |
@@ -40,13 +40,14 @@ says what set the length:
 
 | What set it | When |
 |---|---|
-| `--duration` | you passed a number (or turned **Auto duration** off on the [Memory page](./web-ui.mdx)) |
+| `--duration` | you passed a number (or typed a length under **Length and pictures** in the [web UI](./web-ui.mdx)) |
 | `--short-form` | you picked a short-form preset and passed no `--duration` |
 | the material | neither flag, and the period holds pictures |
 | the preset floor | neither flag, and the period holds nothing to measure |
 
 A trip and an album count active days: 30 s plus 10 s a day, held between 60 s and 5 min. A special
-day counts active hours: 30 s plus 6 s an hour, held between 60 s and 3 min. Twelve one-minute months
+day counts active hours: 30 s plus 6 s an hour, held between 60 s and 3 min, and never fewer than
+30 s of pictures on top of its title and ending, however thin the day. Twelve one-minute months
 do not make a twelve-minute year: the year has its own ten-minute target. How the editor spends
 those seconds is in [Length, quiet weeks and filler](../how-it-chooses/length-and-filler.md).
 
@@ -98,9 +99,9 @@ immich-memories generate --memory-type person_spotlight --person "Riley" --year 
 immich-memories generate --memory-type multi_person --person "Riley" --person "Bob" --year 2025
 ```
 
-Season is the one type whose two surfaces start from different lengths on purpose: the web UI's
-card asks for 2 min 15 s, the CLI fits a curve through the date range (about 3 min 15 s for three
-months). Both are editable defaults. `--hemisphere south` maps summer onto December to February.
+Season fits a curve through the date range: about 3 min 15 s for three months, the same from the
+web UI and the CLI. `--duration` overrides it. `--hemisphere south` maps summer onto December to
+February.
 
 Person spotlight needs the person named in Immich's face recognition. What makes it a spotlight is
 the filter: the editor is the same one. Multi-person defaults to AND: an afternoon counts when
@@ -276,7 +277,9 @@ one phone carries it); the film still takes everything shot in the trip's window
 GPS, so a library shot on one can look full of holidays and find none.
 
 The name is the smallest place holding at least 85 % of the trip's located pictures, walking up from
-city to island, region, two regions, country. It comes from the place Immich already stored on each
+city to island, region, two regions, country. One step comes before the region: a town holding more
+than half of the pictures names the trip, so a seaside weekend with a walk to the next town is named
+after the town, not the province. It comes from the place Immich already stored on each
 picture, offline:
 
 | The trip | Its name |
@@ -303,7 +306,7 @@ immich-memories generate --from-album 59080965-22f0-46a4-be67-135692a9f584
 
 `--from-album` makes it an album memory, and cannot be combined with `--year`, `--start`/`--end`,
 `--period`, `--birthday`, `--season`, `--month`, `--person` or another `--memory-type`. The film is
-titled after the album and named `album_<slug>.mp4`. Two albums with one name stop the CLI with the
+titled after the album and named `album_<slug>.mp4` unless `--output` names the file. Two albums with one name stop the CLI with the
 candidates and their IDs; the web UI lists albums largest first and stores the choice by ID.
 
 Smart albums like *Recents* can hold tens of thousands of assets. Album mode reads at most

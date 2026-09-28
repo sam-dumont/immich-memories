@@ -80,10 +80,6 @@ mtime_ns  # unused variable (src/immich_memories/processing/probe_cache.py:27)
 _.get_field_value  # unused method (src/immich_memories/config_loader.py:197)
 _.settings_customise_sources  # unused method (src/immich_memories/config_loader.py:341)
 
-# NiceGUI Client.build_response calls this page override for the HTML lang and
-# Quasar widgets. The two-browser language E2E test exercises that library call.
-_.resolve_language  # library hook (src/immich_memories/ui/i18n.py)
-
 # Reached only from checked-in developer scripts, which vulture does not scan:
 # scripts/preview_trip_titles.py and scripts/demo_maps.py for the map frame,
 # scripts/validate_local_audio.py for the stem check, and
@@ -127,6 +123,10 @@ has_flagged_photos
 # tracking/__init__.py uses it to re-export lazily, so timing spans never load the
 # run database (and SQLAlchemy) into the API client and the renderer.
 __getattr__  # unused function (src/immich_memories/tracking/__init__.py:43)
+
+# The confirmed bind of a second account's person id (#1500 slice 1). Its callers, the
+# `people` CLI and the people editor, land in later slices of #1500; remove this line then.
+bind_alias  # unused function (src/immich_memories/people/companion.py:207)
 
 # nltk's WordNetCorpusReader calls map_wn from its own constructor; the override in
 # free_text/lexicon.py stops it loading a second copy of the corpus. No line here names it.

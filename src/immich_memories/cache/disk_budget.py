@@ -1,7 +1,7 @@
 """Keep a cache directory inside a size budget, oldest first.
 
-The video cache has enforced a cap since it was written; `preview-cache/`,
-`thumbnails/` and the pipeline's `previews/` never had one. On a real library
+The video cache has enforced a cap since it was written; `thumbnails/` and the
+old player's `preview-cache/` never had one. On a real library
 that was 9 GB of 19 unbounded, while the cache page reported thumbnails as
 "x / 500 MB" -- a limit nothing applied.
 

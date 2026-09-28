@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from immich_memories.ui.pages.memory_storyboard import read_storyboard, storyboard_from_plan
+from immich_memories.operations.storyboard import read_storyboard, storyboard_from_plan
 
 
 def _plan() -> dict:

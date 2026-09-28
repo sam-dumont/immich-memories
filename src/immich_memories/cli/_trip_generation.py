@@ -70,6 +70,24 @@ def resolve_music_arg(music: str | None) -> str | None:
     return music
 
 
+def trip_output_path(
+    output_path: Path, trip: DetectedTrip, container: str, *, explicit: bool, several: bool
+) -> Path:
+    """Where one trip's film goes.
+
+    An `--output` the user typed is honoured: one trip is written exactly there, several keep
+    its name as a prefix so each gets its own file beside it. Without one, a trip is named
+    after itself.
+    """
+    slug = safe_slug(trip.location_name, max_length=30) or "trip"
+    day = trip.start_date.isoformat()
+    if explicit and not several:
+        return output_path
+    if explicit:
+        return output_path.parent / f"{output_path.stem}-{slug}_{day}.{container}"
+    return output_path.parent / f"trip_{slug}_{day}.{container}"
+
+
 def _print_trip_result(
     *,
     dry_run: bool,
@@ -188,6 +206,7 @@ def handle_trip_generation(
     dry_run: bool = False,
     no_render: bool = False,
     accept_any_provenance: bool = False,
+    explicit_output: bool = False,
 ) -> None:
     """Detect trips, select, and generate video for each."""
     from immich_memories.cli._trip_display import (
@@ -239,9 +258,12 @@ def handle_trip_generation(
         trip_days = (trip.end_date - trip.start_date).days + 1
         trip_duration = float(duration) if duration is not None else None
 
-        trip_slug = safe_slug(trip.location_name, max_length=30) or "trip"
-        trip_output = output_path.parent / (
-            f"trip_{trip_slug}_{trip.start_date.isoformat()}.{output_selection.container}"
+        trip_output = trip_output_path(
+            output_path,
+            trip,
+            output_selection.container,
+            explicit=explicit_output,
+            several=len(selected) > 1,
         )
 
         console.print(

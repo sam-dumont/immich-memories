@@ -125,6 +125,12 @@ come back exactly as written, `manual:` ids included. A registry that already ho
 with `--replace`, so an old export can't silently undo newer answers. A scan never reads the file; only an
 import does.
 
+A person whose ids come from a second Immich account on the same server carries an `accounts:` map, id to
+account name, next to `ids:`. An id it doesn't list belongs to your main account, so a one-account export has
+no `accounts:` at all. An `accounts:` entry naming an id the person doesn't have is refused like any other
+mistake. One id belongs to one person, and ids are never matched by name. Reading a second account arrives in a
+later release.
+
 The scan also writes its measurements (every person's counts and the pairs seen together) to
 `~/.immich-memories/people-graph.json`. That one stays a file: each scan recomputes all of it from Immich and
 nothing reads it back.

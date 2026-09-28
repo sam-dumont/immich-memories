@@ -95,7 +95,9 @@ def legacy_files(home: Path) -> tuple[list[Path], list[Path]]:
     try:
         from immich_memories.config_loader import Config
 
-        config = Config.from_yaml(home / "config.yaml")
+        # stored={}: only the file's paths matter here, and reading saved settings would open
+        # the default store under `home`, not the one being imported into.
+        config = Config.from_yaml(home / "config.yaml", stored={})
         caches.append(config.cache.cache_path)
         annotations.append(config.editorial.resolve_annotation_database(config.cache.cache_path))
     except Exception as exc:  # WHY: a config that no longer loads still has default files

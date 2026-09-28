@@ -1,4 +1,4 @@
-"""One contract for what the CLI and the web UI must agree on.
+"""One contract for what the CLI and the memory presets must agree on.
 
     Same memory specification -> same date windows, person filter, target
     duration and fetch calls, regardless of entrypoint, unless explicitly
@@ -9,8 +9,9 @@ surface fits to the discovered pool is compared in
 ``test_surface_parity_after_discovery.py``.
 
 Every memory type is resolved twice from a single spec -- once the way
-``cli/generate.py`` resolves it, once the way ``ui/pages/step1_presets.py``
-does -- and the two answers are compared. A type with no entry in ``SPECS`` is
+``cli/generate.py`` resolves it, once through ``create_preset`` -- and the two
+answers are compared. The web client runs ``generate`` itself, so it has no
+resolution of its own to compare. A type with no entry in ``SPECS`` is
 a failure, so a new memory type cannot ship without declaring parity or an
 exception.
 
@@ -29,6 +30,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime
+from pathlib import Path
 
 import pytest
 
@@ -36,15 +38,12 @@ from immich_memories.api.models import Person
 from immich_memories.cli._asset_fetch import fetch_media
 from immich_memories.cli._date_resolution import (
     BIRTHDAY_FLAG_FORMAT,
-    default_duration_for_type,
     resolve_date_range,
 )
-from immich_memories.config import Config
 from immich_memories.memory_types.factory import create_preset
 from immich_memories.memory_types.registry import MemoryType
+from immich_memories.planning.memory_length import default_duration_for_type
 from immich_memories.timeperiod import DateRange
-from immich_memories.ui.pages import step2_loading
-from immich_memories.ui.state import AppState
 
 
 @dataclass(frozen=True)
@@ -182,14 +181,9 @@ class DocumentedDifference:
     recorded_at: str
 
 
-# The wizard's cards carry a fixed length; the CLI fits a curve through the
-# date range. Both numbers are editable defaults for the surface they belong
-# to, which is the product decision #630 wrote down. Asserted to the value, so
-# a change on either side still lands here.
-_SPLIT_RECORD = "docs-site/docs/make/memory-types.mdx#monthly-season-person-multi-person"
-DOCUMENTED_DURATION_SPLIT: dict[MemoryType, DocumentedDifference] = {
-    MemoryType.SEASON: DocumentedDifference(cli=195.02, ui=135, recorded_at=_SPLIT_RECORD),
-}
+# Differences the project decided on, and the record that allows each. None today: #1503 gave
+# every surface the CLI's date-range curve, and the web brief sends no length unless one is typed.
+DOCUMENTED_DURATION_SPLIT: dict[MemoryType, DocumentedDifference] = {}
 
 
 # ── Differences this file deliberately does not assert ────────────────────────
@@ -283,8 +277,15 @@ def ui_windows(memory_type: MemoryType, spec: MemorySpec) -> list[tuple[datetime
 
 
 def ui_duration(memory_type: MemoryType, spec: MemorySpec) -> float | None:
-    """The target length the wizard puts in the duration box for this spec."""
-    return create_preset(memory_type, **spec.as_preset_params()).default_duration_seconds
+    """The target length the web brief asks for: what it sends as --duration, and when it
+    sends none (the page's length box is empty) the one the CLI then fits (#1503)."""
+    from immich_memories.web.brief import CutBrief
+
+    argv = CutBrief(memory_type=str(memory_type)).argv(
+        executable="immich-memories", config=None, output=Path("/o/web.mp4")
+    )
+    sent = [arg.split("=", 1)[1] for arg in argv if arg.startswith("--duration=")]
+    return float(sent[0]) if sent else cli_duration(memory_type, spec)
 
 
 def _every_type_with_a_spec():
@@ -314,6 +315,15 @@ class TestRegistryCoverage:
         offered = {str(memory_type) for memory_type in SPECS} | {str(ALBUM_HAS_NO_PRESET)}
 
         assert offered == CLI_MEMORY_TYPE_CHOICES
+
+    def test_the_brief_offers_exactly_what_generate_accepts(self) -> None:
+        """The web brief's type list is the registry's; the CLI flag must accept each, in order."""
+        from immich_memories.cli import main
+        from immich_memories.memory_types.registry import OFFERED_MEMORY_TYPES
+
+        option = next(p for p in main.commands["generate"].params if p.name == "memory_type")
+
+        assert [str(t) for t in OFFERED_MEMORY_TYPES] == list(option.type.choices)
 
     def test_album_resolves_no_window_on_either_surface(self) -> None:
         with pytest.raises(ValueError, match="No preset factory"):
@@ -463,54 +473,6 @@ def cli_fetch_calls(
     return client.calls
 
 
-def _wizard_state(
-    memory_type: MemoryType, windows: list[DateRange], people: tuple[Person, ...]
-) -> AppState:
-    """The state the wizard leaves behind once a card has been filled in.
-
-    Every card ends at ``AppState.apply_preset``, which is where the preset's
-    windows, length and person filter become state -- so this builds the state
-    the same way ``step1_presets._apply_preset_to_state`` does rather than
-    imitating the widgets. ``people`` is the roster Immich returned, which is
-    what a filter's names resolve against.
-    """
-    spec = replace(SPECS[memory_type], people=people)
-    state = AppState()
-    # The wizard always has a config by the time it fetches: step 1 sets it.
-    # Without it the fetch cannot read the burst merge window, and the two
-    # surfaces would differ over a fixture gap rather than a real divergence.
-    state.config = Config()
-    state.people = list(people)
-    state.apply_preset(create_preset(memory_type, **spec.as_preset_params()))
-    assert _windows(state.date_ranges) == _windows(windows), (
-        "apply_preset disagreed with the windows the fetch was handed"
-    )
-    return state
-
-
-def ui_fetch_calls(
-    memory_type: MemoryType,
-    windows: list[DateRange],
-    people: tuple[Person, ...],
-    *,
-    include_photos: bool,
-    monkeypatch: pytest.MonkeyPatch,
-) -> list:
-    """What ``ui/pages/step2_loading`` asks Immich for, given the same inputs.
-
-    The page builds its own SyncImmichClient with no seam to inject one, so the
-    class is swapped for the recorder. Its two fetch helpers are private and
-    called here anyway: they are where the wizard's query is decided, and the
-    public route around them wants a running NiceGUI app to reach.
-    """
-    client = RecordingClient()
-    monkeypatch.setattr(step2_loading, "SyncImmichClient", lambda **_kwargs: client)
-    state = _wizard_state(memory_type, windows, people)
-    state.include_photos = include_photos
-    step2_loading._fetch_media(state)
-    return client.calls
-
-
 @dataclass(frozen=True)
 class FetchScenario:
     """A memory type and the people a user named, replayed on both surfaces."""
@@ -548,30 +510,26 @@ def _fetch_params():
 
 
 class TestFetchParity:
-    """Same windows and same people, same queries against Immich."""
+    """Every window of the memory, read once per kind, whoever the memory is about."""
 
     @pytest.mark.parametrize("scenario", _fetch_params())
     @pytest.mark.parametrize("include_photos", [False, True], ids=["videos", "videos+photos"])
-    def test_fetch_calls_match(
-        self,
-        scenario: FetchScenario,
-        include_photos: bool,
-        monkeypatch: pytest.MonkeyPatch,
+    def test_the_cli_asks_for_every_window_with_the_named_people(
+        self, scenario: FetchScenario, include_photos: bool
     ) -> None:
         spec = replace(SPECS[scenario.memory_type], people=scenario.people)
         windows = create_preset(scenario.memory_type, **spec.as_preset_params()).date_ranges
         cli = cli_fetch_calls(windows, scenario.people, include_photos=include_photos)
-        ui = ui_fetch_calls(
-            scenario.memory_type,
-            windows,
-            scenario.people,
-            include_photos=include_photos,
-            monkeypatch=monkeypatch,
-        )
-        # Two silent surfaces would agree on nothing at all; the contract is
-        # about queries that happen.
+
         assert cli, "the CLI asked Immich for nothing"
-        assert cli == ui
+        # The reads name nobody: the people rule is applied to what a window returns, across
+        # each episode, so a picture where a face went unrecognised still counts (#1438).
+        assert {people for _, people, _ in cli} == {()}
+        assert {window for _, _, window in cli} == set(_windows(windows))
+        # A memory about people reads both kinds: an episode mixes them, and the rule needs both.
+        assert {kind for kind, _, _ in cli} == (
+            {"videos", "photos"} if include_photos or scenario.people else {"videos"}
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -606,11 +564,11 @@ class CountingDisplay:
 
 
 class TestProgressParity:
-    """A counted stage reaches the terminal and the page with the same numbers.
+    """A counted stage reaches the terminal with its numbers.
 
-    The run publishes one record per stage. Both reporters read it, so a bar
-    on the page and the ``~N remaining`` estimate in the terminal describe the
-    same position, and neither has to parse the sentence the other shows.
+    The run publishes one record per stage and the terminal reads it, so the
+    ``~N remaining`` estimate never parses the sentence it shows. The web client
+    reads the same record from the attempt (operations.cut_progress).
     """
 
     def _run(self, on_stage) -> None:
@@ -627,23 +585,10 @@ class TestProgressParity:
         )
         on_stage(StageUpdate("Editing the memory"))
 
-    def test_both_surfaces_see_the_same_stage_sequence_and_counts(self) -> None:
+    def test_the_terminal_sees_every_stage_with_its_counts(self) -> None:
         from immich_memories.analysis.editorial_projection import EditorialStageReporter
         from immich_memories.analysis.progress import ProgressTracker
         from immich_memories.cli._pipeline_runner import _SourceProgressReporter
-        from immich_memories.ui.pages.clip_pipeline import _make_progress_callback
-
-        page: dict = {}
-        page_seen: list[tuple[str, int | None, int | None]] = []
-        update_page = _make_progress_callback(page)
-
-        def page_reporter(status: dict) -> None:
-            update_page(status)
-            page_seen.append(
-                (page["phase_label"], page.get("current_index"), page.get("total_items"))
-            )
-
-        self._run(EditorialStageReporter(ProgressTracker(), page_reporter))
 
         display = CountingDisplay()
         task = display.add_task("Selecting", total=None)
@@ -661,24 +606,14 @@ class TestProgressParity:
             ),
             ("Editing the memory", None, None),
         ]
-        assert page_seen == expected
         assert display.seen == expected
 
-    def test_the_page_can_draw_a_bar_and_the_terminal_can_estimate(self) -> None:
-        """The counted stage carries a fraction for the bar and a total for the estimate."""
+    def test_the_terminal_can_estimate_a_counted_stage(self) -> None:
+        """The counted stage carries a total for the estimate."""
         from immich_memories.analysis.editorial_projection import EditorialStageReporter
         from immich_memories.analysis.progress import ProgressTracker
         from immich_memories.cli._pipeline_runner import _SourceProgressReporter
         from immich_memories.operations.cut_progress import StageUpdate
-        from immich_memories.ui.pages.clip_pipeline import _make_progress_callback
-
-        page: dict = {}
-        EditorialStageReporter(ProgressTracker(), _make_progress_callback(page))(
-            StageUpdate("previews", phase="analysis", done=3, total=6)
-        )
-        assert page["indeterminate"] is False
-        assert page["progress_fraction"] == 0.5
-        assert page["current_phase"] == "analysis"
 
         display = CountingDisplay()
         task = display.add_task("Selecting", total=None)

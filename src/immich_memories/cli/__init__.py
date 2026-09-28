@@ -142,15 +142,14 @@ def main(
 )
 @click.pass_context
 def ui(ctx: click.Context, port: int | None, host: str | None, reload: bool) -> None:
-    """Launch the interactive NiceGUI UI."""
+    """Launch the web client: make, review, refine and render memories in the browser."""
     config: Config = ctx.obj["config"]
     host = host or config.server.effective_host(auth_enabled=config.auth.enabled)
     port = port or config.server.port
     _warn_about_unauthenticated_external_bind(config, host)
     print_info(f"Starting Immich Memories UI on http://{host}:{port}")
 
-    # Import the app module to register routes and run
-    from immich_memories.ui.app import main as ui_main  # noqa: F401
+    from immich_memories.web.server import main as ui_main
 
     try:
         ui_main(port=port, host=host, reload=reload, log_level=ctx.obj.get("log_level"))

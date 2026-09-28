@@ -40,20 +40,12 @@ def test_photos_are_withheld_when_photos_are_off() -> None:
     resolved = _resolve(include_photos=False, photo_assets=["a", "b"])
 
     assert resolved.photo_assets is None
-    assert resolved.has_photos is False
 
 
 def test_photos_are_present_when_enabled_and_supplied() -> None:
     resolved = _resolve(include_photos=True, photo_assets=["a", "b"])
 
     assert resolved.photo_assets == ["a", "b"]
-    assert resolved.has_photos is True
-
-
-def test_enabling_photos_without_any_is_not_having_photos() -> None:
-    resolved = _resolve(include_photos=True, photo_assets=[])
-
-    assert resolved.has_photos is False
 
 
 def test_a_dry_run_claims_no_automation_attempt() -> None:

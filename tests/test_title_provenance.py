@@ -77,14 +77,14 @@ def _resolve(*, title_override=None, memory_type="year", preset_params=None, ask
     from datetime import datetime
     from types import SimpleNamespace
 
-    from immich_memories.cli._llm_title import resolve_cli_title
     from immich_memories.timeperiod import DateRange
+    from immich_memories.titles.film_title import resolve_film_title
 
     def reader(**_kwargs):
         # WHY: the title reader is an LLM call, the one boundary this crosses.
         return SimpleNamespace(title="A summer by the sea", subtitle=None)
 
-    return resolve_cli_title(
+    return resolve_film_title(
         enabled=None,
         title_override=title_override,
         clips=[],

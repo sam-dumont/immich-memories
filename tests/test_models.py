@@ -36,16 +36,6 @@ class TestPerson:
         assert person.id == "123"
         assert person.name == "John Doe"
 
-    def test_display_name_with_name(self):
-        """Test display name when name is set."""
-        person = Person(id="123", name="John Doe")
-        assert person.display_name == "John Doe"
-
-    def test_display_name_without_name(self):
-        """Test display name when name is not set."""
-        person = Person(id="12345678-abcd-1234-abcd-123456789012")
-        assert person.display_name == "Person 12345678"
-
 
 class TestServerInfo:
     """Tests for supported Immich server version responses."""
@@ -193,7 +183,6 @@ class TestVideoClipInfo:
             color_primaries="bt2020",
         )
         assert clip.is_hdr
-        assert clip.hdr_format == "HDR10"
 
     def test_is_hdr_with_hlg(self):
         """Test HLG detection."""
@@ -211,7 +200,6 @@ class TestVideoClipInfo:
             color_transfer="arib-std-b67",  # HLG transfer function
         )
         assert clip.is_hdr
-        assert clip.hdr_format == "HLG"
 
     def test_is_hdr_sdr(self):
         """Test SDR detection."""
@@ -229,7 +217,6 @@ class TestVideoClipInfo:
             color_transfer="bt709",  # SDR transfer function
         )
         assert not clip.is_hdr
-        assert clip.hdr_format == "SDR"
 
     def test_is_hdr_none(self):
         """Test HDR detection with no color_transfer."""
@@ -246,7 +233,6 @@ class TestVideoClipInfo:
             height=1080,
         )
         assert not clip.is_hdr
-        assert clip.hdr_format == "SDR"
 
 
 class TestVideoClipInfoEdgeCases:
@@ -326,20 +312,19 @@ class TestHDRDetectionParametrized:
         )
 
     @pytest.mark.parametrize(
-        "transfer,primaries,expected_hdr,expected_format",
+        "transfer,primaries,expected_hdr",
         [
-            pytest.param("smpte2084", "bt2020", True, "HDR10", id="hdr10"),
-            pytest.param("arib-std-b67", None, True, "HLG", id="hlg"),
-            pytest.param("bt709", None, False, "SDR", id="bt709-sdr"),
-            pytest.param(None, None, False, "SDR", id="none-sdr"),
-            pytest.param("unknown_transfer", None, False, "SDR", id="unknown-sdr"),
+            pytest.param("smpte2084", "bt2020", True, id="hdr10"),
+            pytest.param("arib-std-b67", None, True, id="hlg"),
+            pytest.param("bt709", None, False, id="bt709-sdr"),
+            pytest.param(None, None, False, id="none-sdr"),
+            pytest.param("unknown_transfer", None, False, id="unknown-sdr"),
         ],
     )
-    def test_hdr_format_detection(self, transfer, primaries, expected_hdr, expected_format):
-        """HDR detection maps transfer function to correct format."""
+    def test_hdr_detection(self, transfer, primaries, expected_hdr):
+        """HDR detection maps transfer function to the correct flag."""
         clip = self._make_clip(color_transfer=transfer, color_primaries=primaries)
         assert clip.is_hdr is expected_hdr
-        assert clip.hdr_format == expected_format
 
 
 class TestDurationNormalization:
@@ -427,18 +412,7 @@ class TestRotationParametrized:
 
 
 class TestPersonDisplayName:
-    """Edge cases for Person.display_name."""
-
-    def test_empty_name(self):
-        """Empty name falls back to ID-based display name."""
-        person = Person(id="abc12345-rest", name="")
-        assert person.display_name == "Person abc12345"
-
-    def test_whitespace_name(self):
-        """Whitespace-only name is used as-is (not stripped)."""
-        person = Person(id="abc12345", name="  ")
-        # name is non-empty so it's used
-        assert person.display_name == "  "
+    """Edge cases for Person.name."""
 
     def test_default_name_is_empty(self):
         """Default name is empty string."""

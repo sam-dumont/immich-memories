@@ -26,6 +26,7 @@ from immich_memories.processing.output_contract import (
 )
 from immich_memories.tracking.run_database import RunDatabase
 from tests.e2e.conftest import _build_launch_environment
+from tests.e2e.web_flow import cut_june, films, render, wait_for_the_film
 
 pytestmark = pytest.mark.e2e
 
@@ -172,53 +173,12 @@ def _validate_and_record_output(
     return probe
 
 
-def _choose(page: Page, label: str, option: str) -> None:
-    """Choose one exact option from a NiceGUI/Quasar select, and wait for it to close.
-
-    Quasar unmounts the popup a beat after the value lands, so a caller that
-    opens the next select immediately can see two option lists at once and
-    every `get_by_role("option")` after it is a strict-mode violation.
-    """
-    select = page.get_by_role("combobox", name=label)
-    select.click()
-    page.get_by_role("option", name=option, exact=True).click()
-    expect(select).to_have_value(option)
-    expect(page.get_by_role("option")).to_have_count(0)
-
-
-def _drive_to_step4(page: Page, launch_app_url: str) -> None:
-    """Walk the default v3 monthly brief through a cut to the Step 4 'Generate Video' button."""
-    page.goto(launch_app_url, wait_until="domcontentloaded", timeout=30_000)
-    expect(page.get_by_role("combobox", name="Memory type")).to_be_visible(timeout=30_000)
-    _choose(page, "Memory type", "Monthly Highlights")
-    _choose(page, "Month", "June")
-    page.get_by_role("button", name="Cut", exact=True).click()
-
-    export = page.get_by_role("button", name="Export", exact=True)
-    expect(export).to_be_visible(timeout=180_000)
-    export.click()
-    page.wait_for_url("**/step4", timeout=30_000)
-    # WHY: the 720p the probe below asserts is chosen on the options page, which Export skips.
-    page.get_by_role("button", name="Back to Generation Options").click()
-    page.wait_for_url("**/step3", timeout=30_000)
-
-    _choose(page, "Resolution", "720p")
-    _choose(page, "Output Format", "MP4 (H.264)")
-    _choose(page, "Background music", "None")
-    page.get_by_role("button", name="Next: Preview & Export").click()
-    # The NiceGUI navigation can begin after click() returns.
-    page.wait_for_url("**/step4", timeout=30_000)
-    expect(page.get_by_role("button", name="Generate Video", exact=True)).to_be_visible(
-        timeout=30_000
-    )
-
-
 def test_launch_flow_renders_real_video(
     page: Page,
     launch_app_url: str,
     launch_workspace,
 ) -> None:
-    """The default v3 monthly flow must publish and record one real H.264 video."""
+    """The default monthly flow, cut then rendered in the browser, must publish one real H.264 video."""
     page.goto(launch_app_url, wait_until="domcontentloaded", timeout=30_000)
     readiness = page.request.get(f"{launch_app_url}/health/ready")
     assert readiness.status == 200
@@ -233,24 +193,24 @@ def test_launch_flow_renders_real_video(
     assert launch_config["advanced"]["musicgen"]["enabled"] is False
     assert launch_config["advanced"]["ace_step"]["enabled"] is False
 
-    _drive_to_step4(page, launch_app_url)
+    before = set(launch_workspace.output_dir.rglob("*.mp4"))
+    cut_june(page, launch_app_url)
     page.evaluate("""() => {
         window.exportProgress = [];
         new MutationObserver(() => {
-            const bar = document.querySelector('.q-linear-progress[role="progressbar"]');
+            const bar = document.querySelector('[role="progressbar"]');
             if (bar) window.exportProgress.push(Number(bar.getAttribute('aria-valuenow')));
-        }).observe(document.body, {subtree: true, attributes: true, attributeFilter: ['aria-valuenow']});
+        }).observe(document.body, {subtree: true, childList: true, attributes: true,
+                                   attributeFilter: ['aria-valuenow']});
     }""")
-    page.get_by_role("button", name="Generate Video").click()
+    render(page, resolution="720p")
 
-    expect(page.get_by_text("Your memory video is ready!", exact=True)).to_be_visible(
-        timeout=600_000
-    )
+    wait_for_the_film(page, timeout=600_000)
     fractions = page.evaluate("window.exportProgress")
     assert len(set(fractions)) > 2
     assert fractions == sorted(fractions)
 
-    outputs = sorted(launch_workspace.output_dir.rglob("*.mp4"))
+    outputs = sorted(set(launch_workspace.output_dir.rglob("*.mp4")) - before)
     assert len(outputs) == 1
     output_path = outputs[0]
     plan = EncodingPlan(
@@ -273,25 +233,23 @@ def test_launch_flow_renders_real_video(
     assert probe.size_bytes > 0
 
     database = RunDatabase(launch_workspace.store())
-    completed = database.list_runs(status="completed", source="manual")
-    assert len(completed) == 1
-    assert Path(completed[0].output_path or "") == output_path
+    rendered = films(database)[0]
+    assert Path(rendered.output_path or "") == output_path
+    assert rendered.source == "manual"
     assert database.list_runs(status="running") == []
-    assert any(event["elapsed_seconds"] > 0 for event in completed[0].phase_events)
-    assert completed[0].phase_events[-1]["phase"] == "complete"
     _verify_cli_timing(launch_workspace, database)
 
 
 def _verify_cli_timing(workspace, database: RunDatabase) -> None:
     """Run the same June cut through the terminal and retain its durable timing evidence."""
-    from tests.e2e.test_demo_assets import _TRIP_CLI_BOOTSTRAP
+    from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 
     root = Path(__file__).resolve().parents[2]
     result = subprocess.run(
         [
             str(root / ".venv/bin/python"),
             "-c",
-            _TRIP_CLI_BOOTSTRAP,
+            CLI_BOOTSTRAP,
             str(workspace.config_path),
             str(workspace.root / "state"),
             "generate",
@@ -317,38 +275,34 @@ def _verify_cli_timing(workspace, database: RunDatabase) -> None:
         transcript.replace(str(workspace.root), "<fixture-workspace>")
     )
     assert result.returncode == 0, transcript
-    runs = database.list_runs(status="completed", order_by_completion=True)
-    assert len(runs) == 2
-    assert runs[0].clips_selected == runs[1].clips_selected
-    for run in runs:
-        assert any(event["elapsed_seconds"] > 0 for event in run.phase_events)
-        assert run.phase_events[-1]["phase"] == "complete"
+    terminal = database.list_runs(status="completed", order_by_completion=True)[0]
+    assert terminal.output_path and Path(terminal.output_path).is_file()
+    assert any(event["elapsed_seconds"] > 0 for event in terminal.phase_events)
+    assert terminal.phase_events[-1]["phase"] == "complete"
 
 
-def test_reload_during_generation_recovers_the_finished_video(
+def test_reload_during_a_render_rejoins_it_and_plays_the_film(
     page: Page,
     launch_app_url: str,
     launch_workspace,
 ) -> None:
-    """A page reload mid-render must show the run is still going, then the result (#322)."""
+    """A reload mid-render must come back to the running job, then the film (#322)."""
     before = set(launch_workspace.output_dir.rglob("*.mp4"))
-    _drive_to_step4(page, launch_app_url)
-    page.get_by_role("button", name="Generate Video").click()
-    expect(page.locator(".q-linear-progress").first).to_be_visible(timeout=30_000)
+    cut_june(page, launch_app_url)
+    render(page, resolution="720p")
+    panel = page.get_by_role("region", name="Render")
+    expect(panel.get_by_role("region", name="Progress")).to_be_visible(timeout=30_000)
 
-    # WHY: a reload is what a user does when the progress bar seems stuck; it also deletes
-    # the NiceGUI client, so every later UI write from the running coroutine is dropped.
+    # WHY: a reload is what a user does when the progress bar seems stuck.
     page.reload(wait_until="domcontentloaded", timeout=30_000)
 
-    expect(page.get_by_text(re.compile(r"is still running \(run "))).to_be_visible(timeout=30_000)
-    expect(page.get_by_text(re.compile(r"^Saved to: "))).to_be_visible(timeout=600_000)
+    expect(panel.get_by_role("region", name="Progress")).to_be_visible(timeout=30_000)
+    wait_for_the_film(page, timeout=600_000)
 
     outputs = set(launch_workspace.output_dir.rglob("*.mp4")) - before
     assert len(outputs) == 1
-    completed = RunDatabase(launch_workspace.store()).list_runs(
-        status="completed", source="manual", order_by_completion=True
-    )
-    assert completed and Path(completed[0].output_path or "") == outputs.pop()
+    database = RunDatabase(launch_workspace.store())
+    assert Path(films(database)[0].output_path or "") == outputs.pop()
 
 
 def test_a_typed_url_never_receives_the_stored_key(page: Page, launch_app_url: str) -> None:
@@ -367,10 +321,8 @@ def test_a_typed_url_never_receives_the_stored_key(page: Page, launch_app_url: s
     listener = HTTPServer(("127.0.0.1", 0), Listener)
     threading.Thread(target=listener.serve_forever, daemon=True).start()
     try:
-        page.goto(launch_app_url, wait_until="domcontentloaded", timeout=30_000)
-        expect(page.get_by_role("combobox", name="Memory type")).to_be_visible(timeout=30_000)
-        page.get_by_text("Advanced", exact=True).click()
-        page.get_by_text(re.compile(r"^Immich Connection")).click()
+        page.goto(f"{launch_app_url}/app/settings", wait_until="domcontentloaded", timeout=30_000)
+        expect(page.get_by_label("Immich Server URL")).to_have_value(re.compile(r"^http"))
         page.get_by_label("Immich Server URL").fill(f"http://127.0.0.1:{listener.server_port}")
         page.get_by_role("button", name="Test Connection").click()
 
