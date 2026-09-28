@@ -32,14 +32,19 @@ def _stem(word):
 
 
 def grammar_says_subject(caption, core, not_this=()):
-    """True when a main-subject word names the caption's grammatical subject."""
+    """True when a main-subject phrase names the caption's grammatical subject: every word of the
+    phrase ("black cat" needs both) before the first verb form ("A man wearing a black t-shirt"
+    is a man, not a black cat; 09-28, the engine's picks showed it)."""
     text = (caption or "").lower()
     if not text or any(p.lower() in text for p in not_this or ()):
         return False
     end = SUBJECT_ENDS.search(text)
-    subject = {_stem(w) for w in re.findall(r"[a-z]+", text[:end.start()] if end else text)}
-    wanted = {_stem(w) for phrase in core for w in re.findall(r"[a-z]+", phrase.lower())}
-    return bool(subject & wanted)
+    head = text[:end.start()] if end else text
+    verb = re.search(r"\b[a-z]+ing\b", head)
+    head = head[:verb.start()] if verb else head
+    subject = {_stem(w) for w in re.findall(r"[a-z]+", head)}
+    return any((words := {_stem(w) for w in re.findall(r"[a-z]+", phrase.lower())}) and words <= subject
+               for phrase in core)
 
 
 def _captioner(config):
