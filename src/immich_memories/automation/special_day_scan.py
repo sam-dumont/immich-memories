@@ -90,7 +90,7 @@ class DiscoveredDay:
     app_version: str = ""
 
 
-def holidays_in(year: int, extra: Iterable[str] = ()) -> dict[date, str]:
+def holidays_in(year: int, extra: Iterable[str] = (), *, country: str = "US") -> dict[date, str]:
     """Dates a holiday memory already covers, each with the holiday's name.
 
     Nothing is defined here: date_builders owns which holidays exist and when
@@ -100,7 +100,7 @@ def holidays_in(year: int, extra: Iterable[str] = ()) -> dict[date, str]:
     covered: dict[date, str] = {}
     for name in (*KNOWN_HOLIDAYS, *extra):
         try:
-            covered[resolve_holiday(name, year)] = holiday_name(name)
+            covered[resolve_holiday(name, year, country=country)] = holiday_name(name)
         except ValueError:
             logger.debug("Not a holiday this build knows: %r", name)
     return covered
@@ -202,6 +202,7 @@ def scan_year(
     reader: Literal["model", "rules"] = "model",
     close_family: Mapping[str, str] | None = None,
     per_year: int = 6,
+    country: str = "US",
 ) -> list[DiscoveredDay]:
     """Find the days in one year's assets that were occasions, and name them.
 
@@ -254,7 +255,7 @@ def scan_year(
         if home
         else set()
     )
-    holidays = holidays_in(year, extra_holidays)
+    holidays = holidays_in(year, extra_holidays, country=country)
 
     off_trip = candidate_days(assets, away_days=away)
     candidates = _drop_the_holidays_it_actually_was(
