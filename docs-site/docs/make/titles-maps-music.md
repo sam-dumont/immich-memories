@@ -1,5 +1,4 @@
 ---
-sidebar_position: 7
 title: Title screens, maps and music
 ---
 
@@ -283,6 +282,5 @@ immich-memories music add compilation.mp4 output.mp4 --mood nostalgic
 `music search` reads `audio.local_music_dir` (`~/Music/Memories`). `music add` mixes a track under a video you
 already have, with the same ducking. Without `--music` it picks a track from that folder by `--mood`, and by
 `calm` when you give none. A standalone video has no cut text to read, and no command here sends a frame to a
-model: pictures are read once, at ingest. The old `music analyze` and `music add --analyze-frames` did, and are
-gone. Every flag is in the
+model: pictures are read once, at ingest. Every flag is in the
 [CLI reference](../reference/cli-reference.md#music).

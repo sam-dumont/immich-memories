@@ -1,5 +1,4 @@
 ---
-sidebar_position: 5
 title: runs
 ---
 
@@ -157,14 +156,8 @@ immich-memories runs storage --json
 
 ## Report a run
 
-`immich-memories report [RUN_ID]` prints a redacted report for a GitHub issue. Without an ID it uses the
-latest run. Add `--json` for tooling or `--bundle report.zip` for the full report and logs. Read it before
-sharing it. The command makes no network requests.
-
-Free-text memories (caption threads, #1436) will add their redacted request and selection funnel.
-No run records that section yet, so today's reports don't have it. Once they do, the captions of
-photos you flagged, and why they were flagged, stay out unless you pass `--include-flagged-captions`.
-Review that text before sharing. Pictures are never attached.
+To file an issue about a run, `immich-memories report` prints a redacted report of it:
+[report](./report.md).
 
 `runs show` also prints the saved span tree, rates per item, and the uncovered part of the run's wall
 clock. `prepare` records a run too. Older runs keep the timings they originally recorded.

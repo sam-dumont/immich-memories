@@ -1,5 +1,4 @@
 ---
-sidebar_position: 1
 title: generate
 ---
 
@@ -97,8 +96,9 @@ Four things the examples hide:
   one of its pictures could exist to today, read off the birth dates Immich holds (and the people registry
   where Immich holds none). See [memory types](../memory-types.mdx#a-people-memory-with-no-dates).
   With no birth date on record anywhere it still asks for `--year`, and says why.
-- Moving holidays are computed for each year (Easter, Thanksgiving, Mother's and Father's Day), with
-  a window of two days either side. A holiday cut runs 60 seconds unless you pass `--duration`.
+- Holidays follow your home base's country, and moving ones are computed for each year (Easter,
+  Thanksgiving, Mother's and Father's Day), with a window of two days either side
+  ([Holiday](../memory-types.mdx#holiday)). A holiday cut runs 60 seconds unless you pass `--duration`.
 - `special_day` works on any day, catalogued or not, and refuses only without `--day`. A day with a
   catalogue row is scoped and named by it; a day without one is scoped to itself, named by `--title`
   or by the model from the day's own facts, and never written back to the catalogue.

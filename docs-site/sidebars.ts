@@ -29,18 +29,19 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Make films',
       items: [
-        {type: 'doc', id: 'make/memory-types', label: 'Memory types'},
         {type: 'doc', id: 'make/web-ui', label: 'The web UI'},
+        {type: 'doc', id: 'make/memory-types', label: 'Memory types'},
+        {type: 'doc', id: 'make/automate', label: 'Automate it'},
         {type: 'doc', id: 'make/titles-maps-music', label: 'Titles, maps and music'},
         {type: 'doc', id: 'make/photos-and-live-photos', label: 'Photos, Live Photos and HDR'},
-        {type: 'doc', id: 'make/automate', label: 'Automate it'},
         {
           type: 'category',
           label: 'The CLI',
           items: [
             {type: 'doc', id: 'make/cli/generate', label: 'generate'},
-            {type: 'doc', id: 'make/cli/prepare', label: 'prepare'},
+            {type: 'doc', id: 'make/cli/prepare', label: 'prepare, people, discover-days'},
             {type: 'doc', id: 'make/cli/runs', label: 'runs'},
+            {type: 'doc', id: 'make/cli/report', label: 'report'},
             {type: 'doc', id: 'make/cli/pictures', label: 'pictures'},
           ],
         },
