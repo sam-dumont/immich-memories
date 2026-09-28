@@ -48,8 +48,10 @@ month, so the thesis and the weighing can read an arrival that the relation coun
 The family-viewing gate has two floors under the reader's answer and a list beside it. The exposure
 head `nsfw_marqo` decides a still on its preview and a video on up to eight frames
 across its length (`editorial_preparation_detector_frames.py`, through the motion line's byte-range
-keyframe reader), keeping the strongest frame: that is `det-v3`, so an existing bank re-reads that
-head for every source, and videos stay out of an inference-service offload for it. A Live Photo's
+keyframe reader), keeping the strongest frame: that is `det-v3`. A still's banked `det-v2` row is its
+`det-v3` answer and `carry_still_exposure` (`editorial_preparation_model_facts.py`) banks it as one
+before preparation counts what is owed, so an existing bank re-reads that head for videos only, and
+videos stay out of an inference-service offload for it. A Live Photo's
 clip is read the same way: it is no candidate, so `acquire_clip_companions`
 (`editorial_preparation_model_facts.py`) reads it for the exposure head alone and banks it under the
 clip's own id, and `load_detector_heads` puts those rows in the gate's `companion_detectors`, which

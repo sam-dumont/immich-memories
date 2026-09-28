@@ -29,6 +29,7 @@ from immich_memories.analysis.editorial_preparation_model_facts import (
     CLIP_COMPANION,
     acquire_clip_companions,
     acquire_model_facts,
+    carry_still_exposure,
     deferred_exposure,
 )
 from immich_memories.analysis.editorial_preparation_motion import (
@@ -656,6 +657,7 @@ def prepare_editorial_annotations(
 
     remember_assets(store, source)
     _ensure_sharpness_threshold(store, pixel_producer_key)
+    carry_still_exposure(store, source, head_versions)
     before, _ = outstanding()
     available = set(preview_paths)
 

@@ -54,10 +54,11 @@ MARQO_ONNX_ID = f"{MARQO_REPO}@{MARQO_REVISION[:8]}/onnx-384"
 MARQO_CLASSES = ("NSFW", "SFW")
 MARQO_SIDE = 384
 # det-v3: a video is decided on eight frames spread across its length and keeps the
-# strongest answer; a still is decided on its preview, exactly as det-v2 decided it. A
-# banked row does not say which kind of source it came from, so a store written by an
-# older version re-reads every `nsfw_marqo` row, pictures included.
+# strongest answer; a still is decided on its preview, exactly as det-v2 decided it. So a
+# still's banked det-v2 row is its det-v3 answer, and preparation carries it forward
+# rather than reading the still again. A video and a Live Photo's clip owe det-v3 a read.
 MARQO_VERSION = "det-v3"
+MARQO_STILL_EQUIVALENT = "det-v2"
 DOCLING_REPO = "docling-project/DocumentFigureClassifier-v2.0"
 DOCLING_REVISION = "2a12e02668b98ca40216eab41cdf19530577cba4"
 DOCLING_FILE = "model.onnx"
