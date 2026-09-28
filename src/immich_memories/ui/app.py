@@ -22,6 +22,7 @@ from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Re
 from immich_memories.automation.in_process_scheduler import automation_scheduler
 from immich_memories.config import get_config, init_config_dir
 from immich_memories.security import write_secret_file
+from immich_memories.tracking.report_api import router as report_router
 from immich_memories.ui.auth import (
     clear_session,
     client_ip_for_rate_limit,
@@ -317,6 +318,7 @@ def cache_page() -> None:
 
 # /health, /health/live and /health/ready — see ui/health_api.py.
 register_health_routes(app)
+app.include_router(report_router)
 
 # The URL an Immich workflow (or anything else) POSTs to. Off unless authentication
 # or `server.trigger_token` is configured — see ui/trigger_api.py.

@@ -128,3 +128,17 @@ directly in a root count as nothing.
 ```bash
 immich-memories runs storage --json
 ```
+
+## Report a run
+
+`immich-memories report [RUN_ID]` prints a redacted report for a GitHub issue. Without an ID it uses the
+latest run. Add `--json` for tooling or `--bundle report.zip` for the full report and logs. Read it before
+sharing it. The command makes no network requests.
+
+Free-text reports include the redacted request and selection funnel when the run recorded them.
+Captions stay out unless you pass `--include-flagged-captions`; this adds only the captions of photos
+you flagged. Review that text before sharing. Pictures are never attached.
+
+`runs show` also prints the saved span tree, rates per item, and the uncovered part of the run's wall
+clock. `prepare` records a run too. Older runs keep the timings they originally recorded.
+The setup matrix copies these same measurements from each attempt's `timings.private.json`.

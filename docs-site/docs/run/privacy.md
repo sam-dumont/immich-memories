@@ -180,3 +180,11 @@ sidebar; on, it blurs every image and video the UI shows.
 The move is the same every run, so repeated renders give nothing away by averaging. Two gaps: the
 output file name is built before anonymisation, so rename it before sharing, and privacy mode
 changes what the film shows, not what the app sends.
+
+## Diagnostic reports
+
+`immich-memories report` builds a local report from selected diagnostic fields. It removes configured
+credentials, known personal names, albums, places and paths from the included logs and errors. IDs
+become hashes that match within that report and change in the next one. Config appears as shape,
+without hostnames or values. Pictures are never included; flagged-photo captions require an explicit
+opt-in. Read the report before sharing it. Nothing is sent automatically.

@@ -666,6 +666,25 @@ immich-memories prepare [OPTIONS]
 | `--overviews` | boolean | false | Also bank each month's episode readings and the account a cut reads as its thesis |
 | `--library-size` | integer | 1000 | Project the measured rate onto a library of this many pictures |
 
+## `report`
+
+Print a privacy-safe GitHub issue report. Defaults to the latest run.
+
+Logs are included. Review the report before sharing it. Nothing is sent.
+
+```bash
+immich-memories report [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--json` | boolean | false | Print the redacted report as JSON |
+| `--bundle` | file | - | Write the full redacted report to a ZIP file |
+| `--include-flagged-captions` | boolean | false | Include captions of flagged free-text photos; review before sharing |
+
+**Arguments:**
+- `run_id` (text)
+
 ## `runs`
 
 Browse and manage pipeline run history.
