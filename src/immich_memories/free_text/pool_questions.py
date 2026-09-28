@@ -152,7 +152,8 @@ def one_particular_place(
             asker,
             _ONE,
             {"owner_request": reading.request, "subject": list(subject.main)},
-            [_ONE_OF_IT, _ANY_OF_IT],
+            # No majority falls back to the first option: any of the kind sets no filter.
+            [_ANY_OF_IT, _ONE_OF_IT],
         )
         one, how = answer == _ONE_OF_IT, f"{how}; the model says {answer} ({tally(votes)})"
     else:
@@ -195,6 +196,30 @@ def printed_words(request: str, asker: Asker) -> tuple[tuple[str, ...], Reason]:
     )
     rule = f"the model says these are printed on things ({tally(votes)}); OCR reads them"
     return tuple(picked), Reason(", ".join(picked), rule, ", ".join(picked) or "none")
+
+
+_OCCASIONS = """Does the request ask for the photos of one single occasion (one day, one event, one
+trip), or of many occasions? Pick one. Reason first. Return JSON."""
+_ONE_OCCASION, _MANY_OCCASIONS = "one single occasion", "many occasions"
+
+
+def one_occasion(
+    request: str, subject: Subject, lexicon: Lexicon, asker: Asker
+) -> tuple[bool, Reason]:
+    """Whether the request asks for one single occasion ("our wedding").
+
+    A plural subject is many ("brunches"), asked of no one; otherwise the model votes.
+    """
+    if any((lexicon.noun_base(head) or head) != head for head in subject.heads):
+        return False, Reason(", ".join(subject.heads), "grammar: a plural", _MANY_OCCASIONS)
+    answer, votes = choose(
+        # No majority falls back to the first option: many occasions sets no filter.
+        asker,
+        _OCCASIONS,
+        {"owner_request": request},
+        [_MANY_OCCASIONS, _ONE_OCCASION],
+    )
+    return answer == _ONE_OCCASION, Reason("", f"the model says ({tally(votes)})", answer)
 
 
 def tally(votes: Counter[str]) -> str:

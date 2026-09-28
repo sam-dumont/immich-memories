@@ -11,7 +11,7 @@ from __future__ import annotations
 import bisect
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Protocol
 
 from immich_memories.analysis.moment_grouping import EPISODE_WINDOW_MINUTES
@@ -22,6 +22,7 @@ from immich_memories.free_text.facts import (
     farthest_trip,
     first_pictures,
     last_pictures,
+    occasion_day,
 )
 from immich_memories.free_text.grammar import free_tier
 from immich_memories.free_text.lexicon import Lexicon
@@ -29,6 +30,7 @@ from immich_memories.free_text.library import LibraryPicture, LibraryView
 from immich_memories.free_text.linking import Household, Reason, WhenLink, WhereLink, WhoLink
 from immich_memories.free_text.pool_questions import (
     left_out,
+    one_occasion,
     one_particular_place,
     other_names,
     printed_words,
@@ -79,6 +81,10 @@ class Pool:
     # "possible", "thin" (a short film) or "not possible" (no film).
     verdict: str
     why: str
+    # The request asks for one single occasion: the special-day product films it.
+    one_occasion: bool = False
+    # The day an undated occasion's pictures show its people together.
+    day: date | None = None
 
 
 class _Funnel:
@@ -88,6 +94,8 @@ class _Funnel:
         self.computed = False
         # Pictures whose printed text the request names: evidence for the subject by themselves.
         self.anchors: set[str] = set()
+        self.one_occasion = False
+        self.day: date | None = None
         self.steps: list[Step] = [
             Step("library", len(self.pictures), Reason("", "every dated picture", "the library"))
         ]
@@ -130,7 +138,9 @@ def build_pool(
     if not (printed and _printed(funnel, translation.reading.request, printed, asker)):
         _where(funnel, translation, household, rules, lexicon, asker)
     _measured(funnel, translation.facts)
-    if not _computed(funnel, translation.facts, view, household, rules):
+    if not _computed(funnel, translation.facts, view, household, rules) and not _occasion(
+        funnel, translation, view, lexicon, asker
+    ):
         names, names_reason = other_names(
             translation.reading.request, translation.subject, funnel.pictures, lexicon, asker
         )
@@ -235,6 +245,41 @@ def _computed(
     rule = "a recognised face of anyone the request counted"
     funnel.keep("faces", kept, Reason(f"{len(wanted)} people", rule, "any of them"))
     return False
+
+
+def _occasion(
+    funnel: _Funnel, translation: Translation, view: LibraryView, lexicon: Lexicon, asker: Asker
+) -> bool:
+    # One undated occasion ("our wedding") is the day whose pictures of it show everyone it
+    # belongs to on the picture itself; that day is the film, whatever else it shows.
+    words = translation.subject.words
+    if not words:
+        return False
+    funnel.one_occasion, reason = one_occasion(
+        translation.reading.request, translation.subject, lexicon, asker
+    )
+    if not funnel.one_occasion or translation.when.start or translation.when.end:
+        return False
+    found = occasion_day(funnel.pictures, words, translation.who.anchors)
+    said = ", ".join(words)
+    if found.day is None:
+        seen = "; ".join(
+            f"{day} ({count} photos, showing {_names(view, people)})"
+            for day, count, people in found.found
+        )
+        outcome = found.reason + (f": found {seen}" if seen else "")
+        funnel.keep("occasion", [], Reason(said, reason.rule, outcome))
+        return True
+    funnel.day = found.day
+    kept = [picture for picture in funnel.pictures if picture.taken_at.date() == found.day]
+    funnel.keep("occasion", kept, Reason(said, reason.rule, found.reason))
+    funnel.computed = True
+    return True
+
+
+def _names(view: LibraryView, people: frozenset[str]) -> str:
+    known = sorted(view.people[person].name for person in people if person in view.people)
+    return ", ".join(known) or "nobody known"
 
 
 def _present(funnel: _Funnel, who: WhoLink) -> None:
@@ -347,4 +392,11 @@ def _verdict(funnel: _Funnel) -> Pool:
     else:
         verdict = THIN if len(kept) < THIN_BELOW and not funnel.computed else POSSIBLE
         why = f"{len(kept)} pictures in the pool; searched {path}"
-    return Pool(pictures=tuple(kept), funnel=tuple(funnel.steps), verdict=verdict, why=why)
+    return Pool(
+        pictures=tuple(kept),
+        funnel=tuple(funnel.steps),
+        verdict=verdict,
+        why=why,
+        one_occasion=funnel.one_occasion,
+        day=funnel.day,
+    )

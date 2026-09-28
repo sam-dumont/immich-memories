@@ -49,6 +49,11 @@ def _cats(count: int, start: str = "2020-01-01") -> list[LibraryPicture]:
     ]
 
 
+def _many() -> list[dict[str, str]]:
+    # Banked answers to "one single occasion or many?": many, three times.
+    return [{"reason": "banked", "choice": "many occasions"}] * 3
+
+
 def _ids(pool: Any) -> set[str]:
     return {picture.asset_id for picture in pool.pictures}
 
@@ -67,7 +72,8 @@ def test_the_pool_is_the_dated_pictures_whose_caption_is_about_the_subject(
         when=WhenLink(start=date(2020, 1, 1)),
     )
 
-    pool = build_pool(asked, view, NOBODY, lexicon, BankedAsker())
+    # WHY: stands in for the model server, asked whether a cat is one occasion.
+    pool = build_pool(asked, view, NOBODY, lexicon, BankedAsker(*_many()))
 
     assert _ids(pool) == {f"cat-{n}" for n in range(14)}
     assert [(step.name, step.kept) for step in pool.funnel] == [
@@ -82,20 +88,21 @@ def test_the_pool_is_the_dated_pictures_whose_caption_is_about_the_subject(
 def test_a_few_pictures_are_thin_and_none_is_not_possible_with_the_step_that_emptied_it(
     lexicon: Lexicon,
 ) -> None:
-    few = build_pool(
-        _asked("our cat", main=("cat",)), _view(*_cats(3)), NOBODY, lexicon, BankedAsker()
-    )
-    # WHY: stands in for the model server, asked whether "cat" (the captions' subject) is a brunch.
-    no_other_name = BankedAsker(*[{"reason": "banked", "choices": []}] * 3)
+    # WHY: stands in for the model server, asked whether a cat is one occasion.
+    one_cat = BankedAsker(*_many())
+    few = build_pool(_asked("our cat", main=("cat",)), _view(*_cats(3)), NOBODY, lexicon, one_cat)
+    # WHY: stands in for the model server, asked whether brunches are one occasion (no answer:
+    # many) and whether "cat" (the captions' subject) is a brunch.
+    no_other_name = BankedAsker(*[{"reason": "banked", "choices": []}] * 6)
     none = build_pool(
-        _asked("brunches", main=("brunch",)), _view(*_cats(3)), NOBODY, lexicon, no_other_name
+        _asked("brunches", main=("brunches",)), _view(*_cats(3)), NOBODY, lexicon, no_other_name
     )
 
     assert few.verdict == "thin"
     assert "3 pictures" in few.why
     assert none.verdict == "not possible"
     assert "subject" in none.why
-    assert "brunch" in none.why
+    assert "brunches" in none.why
 
 
 def _at(asset_id: str, when: str, **fields: Any) -> LibraryPicture:
@@ -130,8 +137,9 @@ def test_company_needs_a_caption_naming_people_of_that_kind(lexicon: Lexicon) ->
     children = _asked("at the park with kids", main=("park",), who=WhoLink(company="children"))
     people = _asked("the park with friends", main=("park",), who=WhoLink(company="people"))
 
-    with_kids = build_pool(children, view, NOBODY, lexicon, BankedAsker())
-    with_people = build_pool(people, view, NOBODY, lexicon, BankedAsker())
+    # WHY: stands in for the model server, asked whether a park is one occasion.
+    with_kids = build_pool(children, view, NOBODY, lexicon, BankedAsker(*_many()))
+    with_people = build_pool(people, view, NOBODY, lexicon, BankedAsker(*_many()))
 
     assert _ids(with_kids) == {"kids", "kid"}
     assert _ids(with_people) == {"kids", "kid", "friend"}
@@ -270,7 +278,7 @@ def test_only_what_follows_a_negation_can_be_left_out_and_the_request_keeps_its_
         _picture("toy", caption="A red toy car on a rug"),
         _picture("bike", caption="A motorcycle parked by a wall"),
     )
-    subject = Subject(heads=("car",), words=("car",), main=("car",), extent=("motorcycle",))
+    subject = Subject(heads=("cars",), words=("cars",), main=("car",), extent=("motorcycle",))
     asked = _asked("the cars I drove, no toy cars or motorcycles", subject=subject)
     # WHY: stands in for the model server; two of three answers leave out both phrases.
     asker = BankedAsker(
@@ -303,7 +311,7 @@ def test_other_names_for_the_subject_carry_its_stated_quality(lexicon: Lexicon) 
     )
     subject = Subject(heads=("cat",), words=("cat",), main=("black cat",))
     # WHY: stands in for the model server; only kitten gets two votes as another name.
-    asker = BankedAsker(_picks("kitten"), _picks("kitten", "dog"), _picks("kitten"))
+    asker = BankedAsker(*_many(), _picks("kitten"), _picks("kitten", "dog"), _picks("kitten"))
 
     pool = build_pool(_asked("our black cat", subject=subject), view, NOBODY, lexicon, asker)
 
@@ -312,7 +320,7 @@ def test_other_names_for_the_subject_carry_its_stated_quality(lexicon: Lexicon) 
         "A black cat is sleeping",
         "A black puss on a sofa",
     }
-    offered = asker.questions[0][1]["properties"]["choices"]["items"]["enum"]
+    offered = asker.questions[3][1]["properties"]["choices"]["items"]["enum"]
     assert sorted(offered) == ["dog", "kitten"]
 
 
@@ -343,7 +351,7 @@ def test_one_particular_place_at_home_needs_gps_and_any_of_a_kind_does_not(
         where=WhereLink(scope="home_at_time"),
     )
     # WHY: stands in for the model server; every answer says the house is a place.
-    asker = BankedAsker(*[_choice("a place")] * 3)
+    asker = BankedAsker(*[_choice("a place")] * 3, *_many())
 
     one = build_pool(ours, view, MOVED, lexicon, asker)
     any_kind = build_pool(houses, view, MOVED, lexicon, BankedAsker())
@@ -374,9 +382,8 @@ def test_printed_text_vouches_for_its_episode_and_the_subject_is_read_inside_it(
         _at("other-ride", "2020-05-04T10:00+00:00", caption="A cyclist on a road"),
     )
     request = "the wheelers club rides"
-    asked = _asked(
-        request, subject=Subject(heads=("cyclist",), words=("cyclist",), main=("cyclist",))
-    )
+    rides = Subject(heads=("rides",), words=("rides", "cyclist"), main=("cyclist",))
+    asked = _asked(request, subject=rides)
     # WHY: stands in for Immich's OCR search, a read of the server's text index.
     printed = _Printed(wheelers=frozenset({"jersey"}))
     # WHY: stands in for the model server; two of three answers say the club name is printed.
@@ -392,3 +399,48 @@ def test_printed_text_vouches_for_its_episode_and_the_subject_is_read_inside_it(
     assert printed.asked == ["wheelers"]
     assert lost.verdict == "not possible"
     assert "wheelers" in lost.why
+
+
+def _wedding() -> LibraryView:
+    us, pat = frozenset({"me", "pat"}), frozenset({"pat"})
+    toast = "A bride and groom at a wedding"
+    return _view(
+        _picture("ours-1", "2016-06-04", caption=toast, people=us),
+        _picture("ours-2", "2016-06-04", caption=toast, people=us),
+        _picture("ours-cake", "2016-06-04", caption="A cake on a table"),
+        *[_picture(f"guest-{n}", "2018-09-01", caption=toast, people=pat) for n in range(5)],
+        people={
+            "me": LibraryPerson("me", "Alex Example", None, None),
+            "pat": LibraryPerson("pat", "Pat Example", "partner", None),
+        },
+    )
+
+
+def test_an_undated_occasion_is_the_day_its_pictures_show_its_people_together(
+    lexicon: Lexicon,
+) -> None:
+    wedding = Subject(heads=("wedding",), words=("wedding",), main=("wedding",))
+    ours = _asked("our wedding", subject=wedding, who=WhoLink(anchors=("me", "pat")))
+    # WHY: stands in for the model server; every answer says one single occasion.
+    asker = BankedAsker(*[_choice("one single occasion")] * 3)
+
+    pool = build_pool(ours, _wedding(), NOBODY, lexicon, asker)
+
+    assert pool.day == date(2016, 6, 4)
+    assert _ids(pool) == {"ours-1", "ours-2", "ours-cake"}
+    assert pool.verdict == "possible"
+
+
+def test_an_occasion_no_day_shows_together_is_not_possible_with_what_was_found(
+    lexicon: Lexicon,
+) -> None:
+    wedding = Subject(heads=("wedding",), words=("wedding",), main=("wedding",))
+    theirs = _asked("our wedding", subject=wedding, who=WhoLink(anchors=("me", "sam")))
+    # WHY: stands in for the model server; every answer says one single occasion.
+    asker = BankedAsker(*[_choice("one single occasion")] * 3)
+
+    pool = build_pool(theirs, _wedding(), NOBODY, lexicon, asker)
+
+    assert pool.verdict == "not possible"
+    assert pool.day is None
+    assert "2018-09-01" in pool.why

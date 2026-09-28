@@ -13,6 +13,7 @@ from tests.free_text.wordnet_corpus import Sense, write_corpus
 VOCABULARY: dict[str, tuple[str | Sense, ...]] = {
     "cat": (Sense("noun.animal", also=("puss",)), "noun.person"),
     "kitten": ("noun.animal",),
+    "ride": ("noun.act",),
     "woman": (Sense("noun.person", kind_of="person.n.01"),),
     "dog": ("noun.animal",),
     "car": ("noun.artifact",),
