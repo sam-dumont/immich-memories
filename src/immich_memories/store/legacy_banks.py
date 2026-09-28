@@ -57,7 +57,9 @@ def bank_roots(home: Path) -> tuple[list[Path], list[Path]]:
     try:
         from immich_memories.config_loader import Config
 
-        config = Config.from_yaml(home / "config.yaml")
+        # stored={}: only the file's paths matter here, and reading saved settings would open
+        # the default store under `home`, not the one being imported into.
+        config = Config.from_yaml(home / "config.yaml", stored={})
         cache = _expand(home, config.cache.directory)
         roots += [cache, config.editorial.resolve_bank_root(cache)]
         outputs.append(_expand(home, config.output.directory))
