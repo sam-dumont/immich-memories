@@ -131,14 +131,22 @@ class _PipelineProgress:
             if history
             else []
         )
-        self._plan = SpanPlan(spans, items=clip_count)
+        # WHY: rough relative durations keep a first run's bar moving; measured stages
+        # replace them once a completed run exists. Zero marks a phase this run skips.
+        defaults = {
+            "download": clip_count * 3.0 + 20.0,
+            "assembly": 180.0 + clip_count * 8.0,
+            "music": 0.0 if params.no_music else 120.0,
+            "upload": 30.0 if params.upload_enabled else 0.0,
+        }
+        self._plan = SpanPlan(spans, items=clip_count, defaults=defaults)
         self._last = 0.0
         self.remaining_seconds: float | None = None
         self._phase = ""
         self._phase_started = 0.0
 
     def report(self, phase: str, pct: float, msg: str) -> None:
-        """Report one total from history; the first run promises no percentage or ETA."""
+        """Report one monotonic total; an ETA only once history measured what is left."""
         from immich_memories.tracking.timing import active
 
         if not self._params.progress_callback:
@@ -156,7 +164,7 @@ class _PipelineProgress:
         self.remaining_seconds = estimate.remaining_seconds if estimate else None
         if collected := active():
             collected.diagnostics["progress"] = {
-                "fraction": self._last if self._plan.weights or phase == "done" else None,
+                "fraction": self._last,
                 "remaining_seconds": self.remaining_seconds,
             }
         self._params.progress_callback(phase, self._last, msg)

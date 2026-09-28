@@ -54,3 +54,16 @@ def test_unseen_stage_keeps_the_measured_total_bar_without_inventing_an_eta():
     unseen = clock.measure(StageUpdate("New reader stage", "selection"))
     assert unseen.total_fraction == known.total_fraction
     assert unseen.total_remaining_seconds is None
+
+
+def test_defaults_fill_stages_history_never_measured_and_skipped_stages_stay_out():
+    defaults = {"download": 10.0, "assembly": 30.0, "music": 0.0}
+    plan = SpanPlan(
+        [Span(1, "assembly", None, 0, 90), Span(2, "music", None, 90, 60)], defaults=defaults
+    )
+    assert plan.weights == {"download": 10.0, "assembly": 90.0, "music": 0.0}
+    halfway = plan.estimate("download", fraction=0.5)
+    assert halfway.fraction == 5 / 100
+    assert halfway.remaining_seconds is None  # download itself is only a guess
+    measured = plan.estimate("assembly", fraction=0.5, remaining=45)
+    assert measured.remaining_seconds == 45

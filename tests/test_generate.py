@@ -895,8 +895,8 @@ class TestPhaseAllocation:
         cb(1.0, "Done")
 
         assert all(phase == "assembly" for phase, _, _ in calls)
-        assert calls[0][1] == 0.0  # No completed run yet: no fabricated phase weights.
-        assert calls[-1][1] < 1.0
+        assert calls[0][1] > 0.0  # Download precedes assembly, even on a first run.
+        assert calls[0][1] < calls[1][1] < calls[-1][1] < 1.0
         pcts = [pct for _, pct, _ in calls]
         assert pcts == sorted(pcts)
 

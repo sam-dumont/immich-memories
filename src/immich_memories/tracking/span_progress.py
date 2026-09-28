@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from immich_memories.tracking.timing import Span
@@ -24,15 +24,33 @@ def uncovered_seconds(spans: Sequence[Span], wall_seconds: float) -> float:
 @dataclass(frozen=True)
 class Estimate:
     fraction: float
-    remaining_seconds: float
+    remaining_seconds: float | None
 
 
 class SpanPlan:
-    def __init__(self, spans: Sequence[Span], *, items: int | None = None) -> None:
-        self.weights: dict[str, float] = {}
+    """Stage weights from the last completed run, over rough defaults where history is silent.
+
+    A stage with a default of zero is skipped this run, so history cannot revive it. The
+    remaining time is only promised when every stage still to come was measured.
+    """
+
+    def __init__(
+        self,
+        spans: Sequence[Span],
+        *,
+        items: int | None = None,
+        defaults: Mapping[str, float] | None = None,
+    ) -> None:
+        self.weights: dict[str, float] = dict(defaults or {})
+        measured: dict[str, float] = {}
         for span in sorted(spans, key=lambda value: value.start):
             weight = span.duration * items / span.items if items and span.items else span.duration
-            self.weights[span.name] = self.weights.get(span.name, 0.0) + weight
+            measured[span.name] = measured.get(span.name, 0.0) + weight
+        skipped = {name for name, weight in self.weights.items() if weight <= 0}
+        self.measured = set(measured) - skipped
+        self.weights.update(
+            {name: weight for name, weight in measured.items() if name not in skipped}
+        )
 
     def estimate(
         self,
@@ -52,7 +70,9 @@ class SpanPlan:
         done += current * fraction
         left = current * (1 - fraction) if remaining is None else max(0.0, remaining)
         left += sum(self.weights[key] for key in names[index + 1 :])
-        return Estimate(done / (done + left) if done + left else 1.0, left)
+        ahead = names[index + 1 :] if remaining is not None else names[index:]
+        known = all(key in self.measured or not self.weights[key] for key in ahead)
+        return Estimate(done / (done + left) if done + left else 1.0, left if known else None)
 
 
 def span_tree(spans: Sequence[Span], wall_seconds: float) -> list[str]:
