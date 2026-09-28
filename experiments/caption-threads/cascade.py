@@ -231,3 +231,53 @@ def _is_being(word):
     senses = wn.synsets(wn.morphy(word, wn.NOUN) or word, pos=wn.NOUN)[:1]
     beings = {"person.n.01", "animal.n.01"}
     return any(h.name() in beings for s in senses for path in s.hypernym_paths() for h in path)
+
+
+SAME = '''The first {n} photos show the owner's own {subject}. Is the {subject} in the last photo the same
+individual? Answer "different" only when it clearly is another one (other colour, markings, size or
+shape); "cannot_tell" when the photo does not let you decide. Reason first. Return JSON.'''
+
+
+def same_individual(library, kept, at_home, subject, ask, preview, config, key, refs_wanted=4):
+    """For one particular animal or thing (owner 09-28): photos away from home are checked, one per
+    moment, against reference photos taken at home; a moment leaves only on a clear "different".
+    ask(text, images, schema) -> answer. Returns (kept, report)."""
+    import hashlib
+
+    from experiment_data import ROOT, save
+
+    home = sorted((i for i in kept if i in at_home), key=lambda i: library.rows[i]["taken_at"])
+    if len(home) < 2:
+        return kept, {"checked": 0, "why": "too few reference photos at home"}
+    refs = [home[round(k * (len(home) - 1) / (refs_wanted - 1))] for k in range(refs_wanted)] if len(home) >= refs_wanted else home
+    away = [i for i in kept if i not in at_home]
+    by_moment = {}
+    for i in sorted(away, key=lambda i: library.rows[i]["taken_at"]):
+        t = library.rows[i]["taken_at"][:13]  # one moment per hour-ish block; episodes are 90 min
+        by_moment.setdefault(t, []).append(i)
+    images = [preview(config, library.rows[i]["asset_id"]) for i in refs]
+    schema = {"type": "object", "additionalProperties": False, "required": ["reason", "same"],
+              "properties": {"reason": {"type": "string", "maxLength": 200},
+                             "same": {"type": "string", "enum": ["same", "different", "cannot_tell"]}}}
+    cache = ROOT / "same-as"
+    cache.mkdir(exist_ok=True)
+    dropped, answers = set(), {}
+    text = SAME.format(n=len(refs), subject=subject)
+    for moment, refs_here in by_moment.items():
+        probe = refs_here[0]
+        aid = library.rows[probe]["asset_id"]
+        path = cache / (hashlib.sha256((text + "|".join(library.rows[i]["asset_id"] for i in refs) + aid).encode()).hexdigest()[:24] + ".json")
+        if path.exists():
+            answer = json.loads(path.read_text())
+        else:
+            try:
+                answer = ask(text, images + [preview(config, aid)], schema)
+            except Exception as exc:  # noqa: BLE001 - one unreadable photo keeps its moment
+                answer = {"same": "cannot_tell", "reason": f"error: {exc}"[:200]}
+            save(path, answer)
+        answers[moment] = answer.get("same")
+        if answer.get("same") == "different":
+            dropped |= set(refs_here)
+    report = {"references": [library.rows[i]["asset_id"] for i in refs], "moments_checked": len(by_moment),
+              "answers": dict(__import__("collections").Counter(answers.values())), "dropped": len(dropped)}
+    return [i for i in kept if i not in dropped], report

@@ -32,7 +32,8 @@ from immich_memories.analysis.llm_wire import openai_headers
 from immich_memories.api.models import Asset, ExifInfo
 from immich_memories.config import Config
 from model_reader import Reader
-from cascade import AGREE, MIN_PER_PERIOD, SMOL_SAMPLE, balance_years, banked_heads, fewer_poses, fill_pool, smol_yes
+from cascade import (AGREE, MIN_PER_PERIOD, SMOL_SAMPLE, balance_years, banked_heads, fewer_poses, fill_pool,
+                     same_individual, smol_yes)
 from spec import AT_HOME_KM, at_home_rows, build_spec, build_subject, homes, show
 from query import companion_terms, retrieve_plan, vocabulary
 from workflow import choose_sources
@@ -795,6 +796,15 @@ def main():
                 before = len(kept)
                 kept = balance_years(library, kept)
                 plan["fill"]["thinned_for_balance"] = before - len(kept)
+            if spec.get("one_particular") and spec["subject_kind"] in {"animal", "thing"} and lived and not stop:
+                # One particular animal or thing: photos away from home are checked against
+                # reference photos taken at home (owner 09-28, "we can CHECK if it's the same").
+                at_home = at_home_rows(library, assets, lived, require_gps=True)
+                kept, plan["fill"]["same_individual"] = same_individual(
+                    library, kept, at_home, (spec.get("core") or [brief])[0],
+                    lambda text, images, schema: ask_images(reader.llm, text, images, schema=schema),
+                    preview, config, key)
+                stages["same_checked"] = set(kept)
             stages |= filled
             decisions = [{"ref": i, "decision": "match"} for i in filled["caption_yes"]]
             unsure = sorted(filled["caption_unsure"])
