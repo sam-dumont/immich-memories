@@ -229,6 +229,11 @@ class PartitionedSlots:
         self.limit = limit
         self._voiced = voiced
 
+    @property
+    def voice_of(self) -> Callable[[str], str | None] | None:
+        """The partition of a capture time, for a product that gives every one a voice."""
+        return self._partition_of if self._voiced else None
+
     def _eras(self, choices: Mapping[str, Sequence[DepictedChoice]]) -> dict[str, str] | None:
         """The partition each story lies inside, for a product that gives every one a voice.
 
