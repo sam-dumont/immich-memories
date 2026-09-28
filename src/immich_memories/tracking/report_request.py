@@ -65,6 +65,8 @@ def request_section(record: dict, privacy: ReportPrivacy, *, include_captions: b
     keys = ("asset_id", "stage", "verdict") + (("reason", "caption") if include_captions else ())
     return {
         "request": record.get("request", ""),
+        # The translation as the owner read it: free text, so the aliases above redact it.
+        "trace": record.get("trace", ""),
         "spec": {
             field: _value(record["spec"][field])
             for field in _FIELDS

@@ -87,6 +87,8 @@ class Pool:
     day: date | None = None
     # Why the request is, or is not, one single occasion; None when it was not asked.
     occasion: Reason | None = None
+    # The words searched for as printed in the photos (OCR): private, like a place name.
+    printed: tuple[str, ...] = ()
 
 
 class _Funnel:
@@ -96,6 +98,7 @@ class _Funnel:
         self.computed = False
         # Pictures whose printed text the request names: evidence for the subject by themselves.
         self.anchors: set[str] = set()
+        self.printed: tuple[str, ...] = ()
         self.one_occasion = False
         self.occasion: Reason | None = None
         self.day: date | None = None
@@ -305,6 +308,7 @@ def _printed(funnel: _Funnel, request: str, printed: PrintedText, asker: Asker) 
     words, reason = printed_words(request, asker)
     if not words:
         return False
+    funnel.printed = words
     found = frozenset().union(*(printed.pictures_reading(word) for word in words))
     anchors = [picture for picture in funnel.pictures if picture.asset_id in found]
     funnel.anchors = {picture.asset_id for picture in anchors}
@@ -404,4 +408,5 @@ def _verdict(funnel: _Funnel) -> Pool:
         one_occasion=funnel.one_occasion,
         day=funnel.day,
         occasion=funnel.occasion,
+        printed=funnel.printed,
     )

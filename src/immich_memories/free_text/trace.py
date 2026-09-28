@@ -12,6 +12,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from immich_memories.free_text.handoff import Film
 from immich_memories.free_text.library import LibraryPerson
 from immich_memories.free_text.linking import Reason
+from immich_memories.free_text.pool import Translation
 from immich_memories.free_text.reading import PARTS, Reading
 from immich_memories.free_text.translate import Ask
 from immich_memories.tracking import timing
@@ -89,19 +90,41 @@ def save_with_run(
         "trace": trace,
         "verdict": pool.verdict,
         "film": film.route if film else None,
-        "spec": {
-            "people": [{"value": name} for name, _ in people_roles],
-            "when": {
-                "value": f"{translation.when.start or 'any time'} to {translation.when.end or 'open'}"
-            },
-            "where": {"value": translation.where.scope},
-            "subject": [{"word": word} for word in translation.subject.main],
-            "alongside": [{"word": word} for word in translation.subject.also],
-            "words": [{"word": word} for word in translation.subject.words],
-        },
+        "spec": _spec(translation, [name for name, _ in people_roles]),
         "funnel": {"in_scope": scoped[-1] if scoped else 0, "pool": len(pool.pictures)},
-        "privacy": {"people": dict(people_roles), "areas": places},
+        "privacy": {
+            "people": _roles_by_name(linked),
+            "areas": places,
+            "text": list(pool.printed),
+        },
     }
     collected.diagnostics.setdefault("attempt_files", {})[TRACE_FILE] = trace
     collected.private_terms.update(name for name, _ in people_roles)
     collected.private_terms.update(places)
+    collected.private_terms.update(pool.printed)
+    # An age or "since he was born" is dated from the birth date, which the trace then prints.
+    collected.private_terms.update(str(person.birth_date) for person in linked if person.birth_date)
+
+
+def _spec(translation: Translation, names: Sequence[str]) -> dict[str, object]:
+    when = translation.when
+    return {
+        "people": [{"value": name} for name in names],
+        "when": {"value": f"{when.start or 'any time'} to {when.end or 'open'}"},
+        "where": {"value": translation.where.scope},
+        "subject": [{"word": word} for word in translation.subject.main],
+        "alongside": [{"word": word} for word in translation.subject.also],
+        "words": [{"word": word} for word in translation.subject.words],
+    }
+
+
+def _roles_by_name(people: Sequence[LibraryPerson]) -> dict[str, str]:
+    # A request names people by their first name ("Cy at the beach"): each part of a full name
+    # gets the person's role too, the full name first so it is replaced whole.
+    roles: dict[str, str] = {}
+    for person in people:
+        roles.setdefault(person.name, person.role or "")
+    for person in people:
+        for part in person.name.split():
+            roles.setdefault(part, person.role or "")
+    return roles
