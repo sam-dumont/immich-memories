@@ -9,8 +9,13 @@ from __future__ import annotations
 
 import dataclasses
 from pathlib import Path
+from unittest.mock import MagicMock
 
-from immich_memories.processing.assembly_config import AssemblyClip
+from immich_memories.processing.assembly_config import (
+    AssemblyClip,
+    AssemblySettings,
+    standalone_assembly_encoding_plan,
+)
 from immich_memories.processing.title_inserter import TitleInserter
 
 
@@ -34,7 +39,9 @@ def _rich_clip() -> AssemblyClip:
 def test_trimming_the_first_clip_keeps_everything_it_did_not_change() -> None:
     clips = [_rich_clip()]
 
-    TitleInserter._trim_first_clip(clips, 2.0)
+    settings = AssemblySettings(encoding_plan=standalone_assembly_encoding_plan())
+    # WHY: the prober is never reached by a trim; it stands in for FFmpeg probing.
+    TitleInserter(settings, MagicMock())._trim_first_clip(clips, 2.0)
 
     trimmed = clips[0]
     assert trimmed.duration == 8.0, "the trim itself still applies"

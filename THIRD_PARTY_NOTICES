@@ -320,7 +320,7 @@ of public domain, BSD and GPL parts. Nothing here changes the project's MIT
 licence for its own code, but a downstream that vendors the environment
 should know.
 
-146 packages, computed from uv.lock: everything reachable from
+144 packages, computed from uv.lock: everything reachable from
 immich-memories through the runtime extras (never the dev tools). Regenerate
 with `make notices`; `make notices-check` fails when this list is stale.
 
@@ -403,10 +403,6 @@ cloudpickle 3.1.2
 colorama 0.4.6
   License: BSD
   URL: https://github.com/tartley/colorama
-
-croniter 6.0.0
-  License: MIT
-  URL: http://github.com/kiorky/croniter
 
 cryptography 50.0.0
   License: Apache-2.0 OR BSD-3-Clause
@@ -767,10 +763,6 @@ python-multipart 0.0.32
 python-socketio 5.16.4
   License: MIT
   URL: https://github.com/miguelgrinberg/python-socketio
-
-pytz 2026.1.post1
-  License: MIT
-  URL: http://pythonhosted.org/pytz
 
 pyyaml 6.0.3
   License: MIT

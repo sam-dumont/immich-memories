@@ -146,7 +146,7 @@ llm:
 ## Everyday keys and advanced keys
 
 Everyday sections sit at the top level: `immich`, `defaults`, `output`, `audio`, `title_screens`,
-`cache`, `database`, `upload`, `trips`, `network`, `photos`, `render`, `scheduler`, `title_llm`. Tuning sections
+`cache`, `database`, `upload`, `trips`, `network`, `photos`, `render`, `title_llm`. Tuning sections
 go under `advanced:`: `analysis`, `speech`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`, `automation`,
 `notifications`, `triage`, `editorial`, `inference`. Both placements work and merge key by key at
 every depth, and the top-level value wins a tie, so a hand-written
@@ -158,8 +158,10 @@ over the product tier.
 
 Unknown keys inside a section are ignored. The keys of the retired per-clip scorer
 (`content_analysis`, `audio_content`, `transcription`, `description_llm`,
-`analysis.max_refinement_passes`, `photos.max_ratio` and their family) are dropped by name with a
-warning, so an old file loads and tells you what it ignored. Unknown top-level keys and invalid
+`analysis.max_refinement_passes`, `photos.max_ratio` and their family), the retired `scheduler:`
+section and a few dials nothing read (`cache.max_age_days`, `title_screens.show_decorative_lines`,
+`triage.enabled`, `triage.bundle`) are dropped by name with a warning, so an old file loads and
+tells you what it ignored. Unknown top-level keys and invalid
 values (`codec: av1`) fail with a validation error.
 
 ## Paths in the config are host paths
@@ -176,8 +178,7 @@ path that is missing here, so a copied config fails up front instead of hours in
 | `database.url` | the store (banked facts and readings, your picture decisions and review edits, people, settings, run history, automation state, special days), when it is a SQLite file (`sqlite:///~/.immich-memories/store.db`) |
 | `advanced.editorial.annotation_database` | deprecated: a legacy `annotations.sqlite` the store imports once; its directory still holds `structure-banks/` (the thumbnail-hash and scene-print caches, and any legacy JSON banks the store imports) |
 | `advanced.triage.encoder` | the pinned DINOv2 ONNX export |
-| `advanced.triage.bundle` | a head bundle of your own |
-| `advanced.editorial.preparation.head_bundle` | the same, for the eight context heads |
+| `advanced.editorial.preparation.head_bundle` | a head bundle of your own, for the eight context heads |
 | `advanced.editorial.preparation.marqo_onnx` | the pinned sensitive-content export |
 | `advanced.editorial.preparation.detector_cache_dir` | the Hugging Face cache the detectors read |
 | `advanced.editorial.preparation.detector_python` | an interpreter for the detector worker |
@@ -263,12 +264,16 @@ Off by default. [What Immich sees](./privacy.md#what-immich-sees) lists every wr
 ```yaml
 network:
   geocoding: false        # nominatim.openstreetmap.org
+  geocoding_url: ""       # your own Nominatim instead, e.g. http://nominatim.lan:8080
   map_tiles: false        # server.arcgisonline.com
 ```
 
 Both off, so a default run reaches your Immich server, the endpoints named elsewhere in this file,
-and nothing else. `geocoding` buys place names in the film's language; `map_tiles` buys the trip
-fly-over and the map behind location cards. Fonts are never fetched at run time (see
+and nothing else. `geocoding` buys the right district's name where Immich names the neighbouring
+town (Wilrijk, not Hoboken), trip names from the map, and place names in the film's language. It
+sends rounded coordinates, about a kilometre, once per place; answers are kept in the store.
+`geocoding_url` points it at a self-hosted Nominatim. `map_tiles` buys the trip fly-over and the
+map behind location cards. Fonts are never fetched at run time (see
 [fonts](./privacy.md#fonts)). [Privacy](./privacy.md) says exactly what each host receives.
 
 ## Reader concurrency

@@ -318,11 +318,12 @@ def test_daily_auto_run_is_the_recommended_entry_point() -> None:
     assert "single daily entry point" in text
 
 
-def test_scheduler_docs_call_the_daemon_advanced_or_legacy() -> None:
-    text = _read("docs-site/docs/make/automate.md").lower()
+def test_automation_docs_send_a_fixed_date_film_to_cron_not_the_retired_scheduler() -> None:
+    text = _read("docs-site/docs/make/automate.md")
 
-    assert "advanced/legacy" in text
-    assert "auto" in text
+    assert "immich-memories generate --memory-type year_in_review" in text
+    assert "scheduler start" not in text
+    assert "upgrading.md#removed-commands" in text
 
 
 def test_health_docs_distinguish_liveness_from_readiness() -> None:

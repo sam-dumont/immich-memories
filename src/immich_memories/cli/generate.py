@@ -714,11 +714,6 @@ def register_generate_commands(main: click.Group) -> None:
             print_error(f"Error: {sanitize_error_message(described_error(e))}")
             sys.exit(1)
 
-    # Register analyze and export-project commands from separate module
-    from immich_memories.cli._analyze_export import register_analyze_export_commands
-
-    register_analyze_export_commands(main)
-
 
 def _holiday_country(memory_type: str | None, config) -> dict:
     """A holiday memory's dates are the home country's; no other type needs to ask Immich."""

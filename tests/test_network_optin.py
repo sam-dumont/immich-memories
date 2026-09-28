@@ -78,18 +78,46 @@ class TestTripNamingStaysOffline:
 
         assert [trip.location_name for trip in trips] == ["Lazio, Italy"]
 
-    def test_the_switch_decides_whether_a_geocoder_exists(self) -> None:
+    def test_the_switch_decides_whether_a_geocoder_exists(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         from immich_memories.analysis.trip_detection import geocoder_for
 
-        assert geocoder_for(enabled=False) is None
-        assert geocoder_for(enabled=True) is not None
+        assert geocoder_for(_config(tmp_path, monkeypatch)) is None
+        allowed = _config(tmp_path, monkeypatch, "network:\n  geocoding: true\n")
+        allowed.database.url = f"sqlite:///{tmp_path / 'store.db'}"
+        assert geocoder_for(allowed) is not None
+
+    def test_a_trip_is_named_once_and_read_back_from_the_store(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        asked: list[tuple[float, float]] = []
+
+        def nominatim(latitude: float, longitude: float) -> dict[str, str]:
+            asked.append((latitude, longitude))
+            return {"city": "Roma", "state": "Lazio", "country": "Italia"}
+
+        # WHY: Nominatim is the outside host; this answers for it and counts the requests.
+        monkeypatch.setattr(
+            "immich_memories.analysis.place_geocoder.nominatim_fetch",
+            lambda *_a, **_k: nominatim,
+        )
+        from immich_memories.analysis.trip_detection import detect_trips, geocoder_for
+
+        config = _config(tmp_path, monkeypatch, "network:\n  geocoding: true\n")
+        config.database.url = f"sqlite:///{tmp_path / 'store.db'}"
+        first = detect_trips(_ROME, *_PARIS, geocoder=geocoder_for(config))
+        again = detect_trips(_ROME, *_PARIS, geocoder=geocoder_for(config))
+
+        assert [trip.location_name for trip in first + again] == ["Roma, Italia"] * 2
+        assert asked == [(41.89, 12.49)]
 
     def test_year_discovery_passes_nothing_through_when_it_is_off(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         # WHY: Nominatim is the outside host under test; this stands in for it so
         # a regression that reaches the network fails loudly instead of quietly.
-        monkeypatch.setattr("immich_memories.analysis.trip_detection.reverse_geocode", _refuse)
+        monkeypatch.setattr("immich_memories.analysis.place_geocoder.nominatim_fetch", _refuse)
         from immich_memories.analysis.trip_discovery import discover_year_trips
         from immich_memories.config_models_automation import TripsConfig
 
@@ -129,13 +157,29 @@ class TestPreflightNamesTheHosts:
         # Exact rows, not substring probes: a bare host substring cannot stand in
         # for a URL check (CodeQL py/incomplete-url-substring-sanitization).
         assert (
-            "nominatim.openstreetmap.org will be contacted for trip names and "
+            "nominatim.openstreetmap.org will be contacted for district, trip and "
             "place names in the film's language"
         ) in messages
         assert (
             "server.arcgisonline.com will be contacted for the trip fly-over, "
             "the static map and location cards"
         ) in messages
+
+    def test_a_self_hosted_geocoder_is_the_host_named(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from immich_memories.preflight_network import outside_call_checks
+
+        config = _config(
+            tmp_path,
+            monkeypatch,
+            "network:\n  geocoding: true\n  geocoding_url: http://nominatim.lan:8080\n",
+        )
+
+        assert [check.message for check in outside_call_checks(config)] == [
+            "http://nominatim.lan:8080 will be contacted for district, trip and place names "
+            "in the film's language"
+        ]
 
 
 class TestTitleFontsComeFromTheWheel:

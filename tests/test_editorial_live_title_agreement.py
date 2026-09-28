@@ -88,7 +88,9 @@ def content(name):
 
 
 @pytest.mark.parametrize("certified_ids", [(), ("first",), ("last",), ("first", "last")])
-def test_actual_title_flow_preserves_only_certified_intervals(title_path, tmp_path, certified_ids):
+def test_titles_borrow_the_same_half_second_from_certified_clips(
+    title_path, tmp_path, certified_ids
+):
     _, build, generator = title_path
     certified = dict.fromkeys(certified_ids, (0.25, 4.25))
     inserter, clips, assemble, delivered = build(certified, [content("first"), content("last")])
@@ -96,10 +98,12 @@ def test_actual_title_flow_preserves_only_certified_intervals(title_path, tmp_pa
         inserter.assemble_with_titles(clips, tmp_path / "out.mp4", assemble) == tmp_path / "out.mp4"
     )
     by_id = {clip.asset_id: clip for clip in delivered}
-    assert by_id["first"].duration == (4.0 if "first" in certified_ids else 3.5)
-    assert by_id["first"].input_seek == (0.0 if "first" in certified_ids else 0.5)
-    assert by_id["last"].duration == (4.0 if "last" in certified_ids else 3.5)
-    assert by_id["last"].input_seek == 0.0
+    # WHY the same either way: the title plays the first clip's opening
+    # half-second in slow motion and the ending its last, so the clip gives
+    # those frames up. Certified or not, every second is shown exactly once;
+    # keeping them in the clip too replayed them and the picture jumped back.
+    assert (by_id["first"].duration, by_id["first"].input_seek) == (3.5, 0.5)
+    assert (by_id["last"].duration, by_id["last"].input_seek) == (3.5, 0.0)
     assert [clip.asset_id for clip in delivered] == [
         "title_screen",
         "first",
@@ -121,7 +125,8 @@ def test_single_certified_clip_survives_both_title_consumption_paths(title_path,
     inserter, clips, assemble, delivered = build({"only": (1.0, 5.0)}, [content("only")])
     inserter.assemble_with_titles(clips, tmp_path / "out.mp4", assemble)
     selected = [clip for clip in delivered if clip.asset_id == "only"]
-    assert len(selected) == 1 and selected[0].duration == 4.0 and selected[0].input_seek == 0.0
+    # The title shows 0-0.5 s, the clip 0.5-3.5 s, the ending 3.5-4 s.
+    assert len(selected) == 1 and selected[0].duration == 3.0 and selected[0].input_seek == 0.5
 
 
 @pytest.mark.parametrize(
@@ -138,11 +143,12 @@ def test_final_title_handoff_rejects_changed_certified_content(title_path, tmp_p
         elif mutation == "duplicate":
             final.insert(position, clip)
         else:
+            # Relative to what the titles legitimately borrowed from the clip.
             changes = {
                 "identity": {"asset_id": "other"},
-                "short": {"duration": 3.5},
-                "long": {"duration": 4.5},
-                "seek": {"input_seek": 0.5},
+                "short": {"duration": clip.duration - 0.5},
+                "long": {"duration": clip.duration + 0.5},
+                "seek": {"input_seek": clip.input_seek + 0.25},
                 "title": {"is_title_screen": True},
             }
             final[position] = replace(clip, **changes[mutation])
@@ -169,7 +175,7 @@ def test_settings_mutation_during_titles_cannot_remove_protection(title_path, tm
 
     def mutate(final):
         settings.certified_content_intervals.clear()
-        final[1] = replace(final[1], duration=3.5)
+        final[1] = replace(final[1], duration=final[1].duration - 0.5)
 
     inserter, clips, assemble, delivered = build(
         {"certified": (0.0, 4.0)}, [content("certified")], mutate

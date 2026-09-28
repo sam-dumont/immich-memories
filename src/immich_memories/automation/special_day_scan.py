@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import collections
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
@@ -36,7 +36,12 @@ from immich_memories.analysis.special_day_sequence import (
     read_in_sequence,
 )
 from immich_memories.analysis.special_day_title import honest_title
-from immich_memories.analysis.special_day_vocabulary import crowded_out, distinctive_days, telling
+from immich_memories.analysis.special_day_vocabulary import (
+    YearWords,
+    crowded_out,
+    distinctive_days,
+    telling,
+)
 from immich_memories.analysis.special_event_scope import SpecialEventAdmission
 from immich_memories.analysis.trip_detection import detect_trips, haversine_km
 from immich_memories.automation.special_day_facts import ranked_occasions
@@ -46,7 +51,7 @@ from immich_memories.config_models_render import PhotoConfig
 from immich_memories.memory_types.date_builders import holiday_name, holidays_of, resolve_holiday
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     from immich_memories.db import Store
 
@@ -295,6 +300,7 @@ def scan_year(
         captions=captions,
         judgments=judgments,
         told=words.told,
+        year_words=words.year,
         holidays=holidays,
         read_as_candidates=set(candidates),
         stills=stills,
@@ -368,13 +374,14 @@ def _standing_out(
         forwarded={day: _said(sent, captions) for day, sent in forwarded_on.items()},
     )
     told = {day: telling(forwarded_on.get(day, []), captions, said, keep=_TOLD) for day in standing}
-    return _Words(standing, told, said)
+    return _Words(standing, told, said, YearWords(said))
 
 
 class _Words(NamedTuple):
     standing: dict[date, str]
     told: dict[date, list]
     said: dict[date, list[str]]
+    year: YearWords | None = None
 
 
 def _held_holidays(
@@ -409,6 +416,7 @@ class _Judge:
     captions: Mapping[str, str] | None
     judgments: Store | None
     told: Mapping[date, list]
+    year_words: YearWords | None
     holidays: Mapping[date, str]
     read_as_candidates: set[date]
     stills: float
@@ -426,13 +434,42 @@ class _Judge:
             verdict = SpecialDay(
                 special=True, title=honest_title(items, what=what, evidence=""), what=what
             )
-        else:
-            verdict = _read_the_day(
-                items, self.llm_config, self.captions, self.judgments, self.told.get(day, [])
-            )
+            return _day_from(day, items, verdict, what)
+        ask = _Ask(self.llm_config, self.captions, self.judgments, self.told.get(day, []))
+        verdict, whole_day = _read_the_day(items, ask)
         if verdict.special and self._was_the_holiday(day, verdict):
             return None
+        if verdict.special and whole_day:
+            verdict = self._named_by_its_moment(items, verdict, ask)
         return _day_from(day, items, verdict, what)
+
+    def _named_by_its_moment(self, items: list, verdict: SpecialDay, ask: _Ask) -> SpecialDay:
+        """A confirmed day, named by the hours its own unusual words gather in, when those hours
+        are an occasion too.
+
+        A concert night came back "Baby's Day in Jette", a cycling race at a circuit "Day at the
+        Race Track": the reader, shown the whole day, named what it held first. Only a confirmed
+        day is renamed, and only when its name misses every word the day stood out by: asked
+        alone, a moment of an ordinary day came back an occasion too often, and "Night of the
+        Haunted Youth" came back "Under Purple Lights".
+        """
+        if self.year_words is None or not self.captions:
+            return verdict
+        day = items[0].file_created_at.date()
+        if self.year_words.names_its_own(day, f"{verdict.title} {verdict.what}"):
+            return verdict
+        moment = self.year_words.moment(items, self.captions)
+        if moment is None:
+            return verdict
+        start, end = moment
+        logger.info(
+            "%s: naming it by its moment, %s-%s",
+            day,
+            f"{start:%H:%M}",
+            f"{end:%H:%M}",
+        )
+        told = ask([a for a in items if start <= a.file_created_at <= end])
+        return replace(told, window=told.window or moment) if told.special else verdict
 
     def _was_the_holiday(self, day: date, verdict: SpecialDay) -> bool:
         if self.reader == "rules" or day not in self.holidays:
@@ -492,14 +529,32 @@ class YearNotRead(RuntimeError):
         super().__init__(f"{year}: {len(months)} month(s) could not be read ({', '.join(months)})")
 
 
-def _read_the_day(
-    items: list,
-    llm_config: Any,
-    captions: Mapping[str, str] | None,
-    judgments: Store | None,
-    forwarded: list,
-) -> SpecialDay:
-    """The day-level verdict, asked once more about the day's event when the day read ordinary.
+@dataclass(frozen=True)
+class _Ask:
+    """The day check for one day, asked about any of its pictures with its sent ones beside."""
+
+    llm_config: Any
+    captions: Mapping[str, str] | None
+    judgments: Store | None
+    forwarded: list
+
+    def __call__(self, pictures: list) -> SpecialDay:
+        return ask_if_special(
+            pictures,
+            self.llm_config,
+            captions={
+                a.id: self.captions[a.id]
+                for a in [*pictures, *self.forwarded]
+                if self.captions and self.captions.get(a.id)
+            },
+            judgments=self.judgments,
+            forwarded=self.forwarded,
+        )
+
+
+def _read_the_day(items: list, ask: _Ask) -> tuple[SpecialDay, bool]:
+    """The day-level verdict, asked once more about the day's event when the day read ordinary,
+    and whether it was read off the whole day.
 
     Some days contain an occasion rather than being one: a race day began with the cat at
     home and ended there, and the small reader, shown the whole day, named it after the cat.
@@ -507,26 +562,19 @@ def _read_the_day(
     (`event_window`), so an ordinary verdict is asked again about that stretch alone. A day
     with no such stretch, or one the reader already called an occasion, is asked once.
     """
-
-    def ask(pictures: list) -> SpecialDay:
-        return ask_if_special(
-            pictures,
-            llm_config,
-            captions={
-                a.id: captions[a.id]
-                for a in [*pictures, *forwarded]
-                if captions and captions.get(a.id)
-            },
-            judgments=judgments,
-            forwarded=forwarded,
-        )
-
     verdict = ask(items)
-    if verdict.special or not verdict.judged:
-        return verdict
+    if verdict.judged and not verdict.special:
+        placed = _asked_at_its_place(items, ask)
+        if placed is not None:
+            return placed, False
+    return verdict, True
+
+
+def _asked_at_its_place(items: list, ask: Callable[[list], SpecialDay]) -> SpecialDay | None:
+    """The occasion found in the stretch the day spent at one place, or None."""
     window = window_that_holds_the_day(event_window(items), items)
     if window is None:
-        return verdict
+        return None
     start, end = window
     logger.info(
         "%s read as ordinary; asking about its %s-%s stretch at one place",
@@ -535,7 +583,7 @@ def _read_the_day(
         f"{end:%H:%M}",
     )
     inside = ask([a for a in items if start <= a.file_created_at <= end])
-    return inside if inside.special else verdict
+    return inside if inside.special else None
 
 
 def _day_from(day: date, items: list, verdict: Any, what: str = "") -> DiscoveredDay | None:

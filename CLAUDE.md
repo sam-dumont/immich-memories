@@ -8,7 +8,12 @@
 ## Quick Start
 
 1. **Install dev dependencies first**: `make dev`
-2. Read `ARCHITECTURE.md` — it maps the full codebase structure, key classes,
+2. **Before any render with music on a Mac, run `make install-acestep`** in this checkout.
+   ACE-Step lives in a sibling `.venv-acestep`, so every new clone and **every git worktree**
+   starts without it; the owner's config uses `ace_step.mode: lib`, and without the install
+   every film silently gets a bundled track. `immich-memories preflight` shows a
+   **Music (ACE-Step)** warning when it is missing.
+3. Read `ARCHITECTURE.md` — it maps the full codebase structure, key classes,
    data flow, and composition architecture. This avoids needing to explore the repo.
 
 > **Important**: Always run `make dev` before running any other make target.

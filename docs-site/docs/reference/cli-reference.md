@@ -8,19 +8,6 @@ sidebar_label: Reference
 This page is auto-generated from the Click command definitions.
 Run `make docs-cli` to regenerate.
 
-## `analyze`
-
-Analyze videos and cache metadata.
-
-```bash
-immich-memories analyze [OPTIONS]
-```
-
-| Flag | Type | Default | Description |
-| --- | --- | --- | --- |
-| `--year`, `-y` | integer | - | Year to analyze |
-| `--force`, `-f` | boolean | false | Force re-analysis of cached videos |
-
 ## `auto`
 
 Automation -- detect and generate memory candidates.
@@ -107,55 +94,6 @@ Send a test notification to verify Apprise URL configuration.
 
 ```bash
 immich-memories auto test-notification [OPTIONS]
-```
-
-## `cache`
-
-Manage the analysis cache (LLM scores, video metadata).
-
-```bash
-immich-memories cache [OPTIONS]
-```
-
-### `cache backup`
-
-Backup the entire cache DB (safe SQLite backup API).
-
-```bash
-immich-memories cache backup [OPTIONS]
-```
-
-**Arguments:**
-- `output_path` (path)
-
-### `cache export`
-
-Export the banked asset scores to JSON.
-
-```bash
-immich-memories cache export [OPTIONS]
-```
-
-**Arguments:**
-- `output_path` (path)
-
-### `cache import`
-
-Import asset scores from JSON backup.
-
-```bash
-immich-memories cache import [OPTIONS]
-```
-
-**Arguments:**
-- `input_path` (path)
-
-### `cache stats`
-
-Show cache statistics.
-
-```bash
-immich-memories cache stats [OPTIONS]
 ```
 
 ## `config`
@@ -295,20 +233,6 @@ immich-memories discover-days [OPTIONS]
 | `--also-skip` | text | - | A holiday name or MM-DD this library keeps that the defaults miss |
 | `--rescan` | boolean | false | Start over, ignoring and replacing the existing catalogue |
 | `--replace` | boolean | false | Re-scan --since..--until and replace every row those years already hold, dropping days that no longer qualify. Rows outside the period are kept. |
-
-## `export-project`
-
-Export project state for later editing.
-
-```bash
-immich-memories export-project [OPTIONS]
-```
-
-| Flag | Type | Default | Description |
-| --- | --- | --- | --- |
-| `--year`, `-y` | integer | - | Year |
-| `--person`, `-p` | text | - | Person name |
-| `--output`, `-o` | path | - | Output JSON file |
 
 ## `generate`
 
@@ -795,42 +719,6 @@ immich-memories runs why [OPTIONS]
 
 **Arguments:**
 - `asset_id` (text)
-
-## `scheduler`
-
-Manage scheduled automatic memory generation.
-
-```bash
-immich-memories scheduler [OPTIONS]
-```
-
-### `scheduler list`
-
-List all configured schedules.
-
-```bash
-immich-memories scheduler list [OPTIONS]
-```
-
-### `scheduler start`
-
-Start the scheduler daemon.
-
-```bash
-immich-memories scheduler start [OPTIONS]
-```
-
-| Flag | Type | Default | Description |
-| --- | --- | --- | --- |
-| `--foreground` | boolean | false | Run in foreground (don't daemonize) |
-
-### `scheduler status`
-
-Show scheduler status.
-
-```bash
-immich-memories scheduler status [OPTIONS]
-```
 
 ## `store`
 

@@ -48,8 +48,10 @@ month, so the thesis and the weighing can read an arrival that the relation coun
 The family-viewing gate has two floors under the reader's answer and a list beside it. The exposure
 head `nsfw_marqo` decides a still on its preview and a video on up to eight frames
 across its length (`editorial_preparation_detector_frames.py`, through the motion line's byte-range
-keyframe reader), keeping the strongest frame: that is `det-v3`, so an existing bank re-reads that
-head for every source, and videos stay out of an inference-service offload for it. A Live Photo's
+keyframe reader), keeping the strongest frame: that is `det-v3`. A still's banked `det-v2` row is its
+`det-v3` answer and `carry_still_exposure` (`editorial_preparation_model_facts.py`) banks it as one
+before preparation counts what is owed, so an existing bank re-reads that head for videos only, and
+videos stay out of an inference-service offload for it. A Live Photo's
 clip is read the same way: it is no candidate, so `acquire_clip_companions`
 (`editorial_preparation_model_facts.py`) reads it for the exposure head alone and banks it under the
 clip's own id, and `load_detector_heads` puts those rows in the gate's `companion_detectors`, which
@@ -508,7 +510,7 @@ src/immich_memories/
 │   ├── progress.py             # ProgressTracker: the run clock the stage reporter reads
 │   ├── trip_detection.py       # GPS-based trip detection (clustering, injected geocoder)
 │   ├── trip_place.py           # Names a trip at the scale its pictures cover (city → country)
-│   ├── place_name_cache.py     # Localised names for the places one cut shows, one ask each
+│   ├── place_geocoder.py       # Opt-in Nominatim: district names per ~1 km cell, cached in the store
 │   ├── trip_discovery.py       # Shared UI/CLI all-asset discovery, including year-boundary trips
 │   ├── special_day.py          # Every run of activity, and a found day named from its own lines
 │   ├── special_day_sequence.py # Days read a month at a time in order (close family by role on each line); 30 s film floor
@@ -651,15 +653,12 @@ src/immich_memories/
 │   ├── generate.py             # `generate`
 │   ├── generate_options.py     # `generate`'s flags, grouped; group order is the --help order
 │   ├── generate_resolution.py  # What those flags mean against the config, presets and conflicts
-│   ├── _analyze_export.py      # `analyze`, `export-project`
 │   ├── config_cmd.py           # `config`, `years`, `preflight`
 │   ├── people_cmd.py           # `people` scan/show
 │   ├── models_cmd.py           # `models fetch`
 │   ├── prepare_cmd.py          # `prepare`
-│   ├── scheduler_cmd.py        # `scheduler list/status/start`
 │   ├── auto_cmd.py             # `auto suggest/run/history/status/install/test-notification`
 │   ├── special_days_cmd.py     # `discover-days`, `days-due`, `days-export`/`days-import`: the days worth a memory
-│   ├── cache_cmd.py            # `cache stats/export/import/backup`
 │   ├── store_cmd.py            # `store status/import/copy/backup/restore`
 │   ├── titles.py               # `titles test`, `titles fonts`
 │   ├── runs.py                 # `runs list/show/story/why/stats/storage/delete`
@@ -759,7 +758,8 @@ src/immich_memories/
 │   │                           # library overviews; 0004_annotations); operations.py (pipeline_runs,
 │   │                           # phase_stats, automation_attempts, notification_health, asset_scores,
 │   │                           # run_attempts, special_days; 0005_operations); banks.py (audience answers
-│   │                           # and holds, block vote entries, owner review edits; 0006_banks)
+│   │                           # and holds, block vote entries, owner review edits; 0006_banks); places.py
+│   │                           # (geocoded_places: opt-in reverse-geocode answers per cell; 0007)
 │   ├── legacy_import.py        # ImportOutcome: what one domain's import_legacy(store, home) did; the
 │   │                           # `legacy_import` records in store_meta (read_/write_import_record)
 │   ├── inventory.py            # row_counts, present_counts, recorded_revisions, digests: order-free,
@@ -783,19 +783,12 @@ src/immich_memories/
 │   ├── analysis_schema.py      # The cache's tables and PRAGMA user_version stamp: never migrated; a finished
 │   │                           # v25 ladder is adopted as is, any other layout rebuilt empty; the store's old
 │   │                           # tables in an old cache.db are left for the legacy import
-│   ├── asset_score_cache.py    # Banked asset scores (store table `asset_scores`), read by `cache stats/export/import`
 │   ├── judgment_cache.py       # Reasoning-mode LLM verdicts, keyed by the exact prompt asked (store table `judgments`)
 │   ├── editorial_verdicts.py   # Cull's standing per-picture verdicts (store table `editorial_verdicts`)
 │   ├── embedding_cache.py      # HeadFactStore: head answers (store table `head_facts`)
 │   ├── thumbnail_cache.py      # File-based thumbnail storage
 │   ├── disk_budget.py          # LRU-by-mtime eviction that holds a cache directory to a size cap
 │   └── video_cache.py          # Downloaded video file cache
-│
-├── scheduling/                 # Scheduled memory generation
-│   ├── engine.py               # Scheduler: cron parsing, next job calculation
-│   ├── executor.py             # resolve_schedule_params(): schedule entry -> generation params
-│   ├── daemon.py               # Daemon loop (foreground, SIGINT/SIGTERM)
-│   └── models.py               # Scheduling data models
 │
 ├── store/                      # Repositories over the store's annotation tables: every banked fact and reading
 │   ├── caption_provenance.py   # What served each caption (served /models row + control digest), grouped
@@ -1017,7 +1010,7 @@ Config is organized in 3 tiers (see `config_loader.py`):
 
 - **Tier 1** (top-level YAML): `tier`, `preset`, `immich`, `defaults`, `output`, `audio`, `title_screens`, `cache`, `upload`, `trips`, `network`, `photos`
 - **Tier 2** (under `advanced:` in YAML, `_TIER2_SECTIONS`): `analysis`, `speech`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`, `automation`, `notifications`, `triage`, `editorial`, `inference`
-- **Tier 3** (internal): `scheduler`, `title_llm`
+- **Tier 3** (internal): `title_llm`
 
 At runtime, all sections are flat fields on `Config` (e.g. `config.analysis`).
 Both flat and nested YAML formats are accepted.

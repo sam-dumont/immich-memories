@@ -102,7 +102,10 @@ left deepens the heavier stories one moment at a time.
 **Every year gets a shot.** A person film longer than 18 months (548 days) is split into calendar
 years, a person film over several date ranges into those ranges, and a custom film over several
 ranges likewise. Before any story takes a second shot, each year (or range) that holds a funded
-story gets one. The passes that cut for length or taste keep a year's only shot: the favourite
+story gets one, from its first story in funding order. When no picture that story offered stands
+on its own, the year's next story gets the shot, and so on down the year. A year where none stands
+stays quiet, and `quiet_partitions` in `derived-decisions/story-selection.private.json` names the
+year and the stories that were tried. The passes that cut for length or taste keep a year's only shot: the favourite
 readmission, the timing trim, the filler drop, and the model polish's vote and standing gate (see
 [Length, quiet weeks and filler](./length-and-filler.md)). The family-viewing gate still removes a
 shot it holds back, whatever year it carries. The finished-cut check reports a year left without

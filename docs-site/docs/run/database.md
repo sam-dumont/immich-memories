@@ -5,11 +5,12 @@ title: Database and the store
 # Database and the store
 
 The store holds the parts of a memory that are not files: people, aliases and confirmations,
-owner decisions, model answers someone paid for, run history, and settings the UI edits. It
+owner decisions, model answers someone paid for, run history, settings the UI edits, and
+the place names an opt-in geocoder answered. It
 defaults to a SQLite file next to `config.yaml`. Nothing else needs installing for that default,
 and it is not a fallback: SQLite is a first-class backend, and so is PostgreSQL when you want one.
 Media, previews, thumbnails and per-attempt artifacts stay files either way; the cache (derived
-analysis, hashes, scene prints, geocoding) is always local SQLite and is never migrated or backed
+analysis, hashes, scene prints) is always local SQLite and is never migrated or backed
 up.
 
 Four ways to point it, in increasing order of "I already run PostgreSQL for something else":

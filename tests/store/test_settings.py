@@ -15,7 +15,7 @@ import sqlalchemy as sa
 
 from immich_memories.config_loader import get_config, load_config, set_config
 from immich_memories.config_sources import describe_settings
-from immich_memories.db import StoreLocation, open_store
+from immich_memories.db import StoreLocation, close_stores, open_store
 from immich_memories.db.tables import settings
 from immich_memories.logging_config import SecretRedactionFilter
 from immich_memories.settings_edit import SettingRefused, move_to_database, save_settings
@@ -26,6 +26,7 @@ from immich_memories.settings_store import (
     SettingsStore,
     SettingsUnavailable,
 )
+from immich_memories.store.legacy_imports import IMPORT_FROM_ENV, enable_first_open_import
 
 SECRET_KEY = "test-only-secret-key-0123456789abcdef"  # noqa: S105 — synthetic
 API_KEY = "synthetic-" * 3  # low entropy on purpose: gitleaks reads test literals too
@@ -109,6 +110,26 @@ def test_env_beats_the_file_beats_the_database_beats_the_default(
         "env",
         env_name,
     )
+
+
+def test_a_store_first_opened_while_its_config_loads_stays_that_configs_store(
+    location, tmp_path, monkeypatch
+):
+    """Reading the saved settings opens the store; its first-open import loads the legacy
+    home's config.yaml in the middle of this load, and must not take this file's place."""
+    open_store(location=location)
+    close_stores()
+    for name in ("IMMICH_MEMORIES_DATABASE_URL", "IMMICH_MEMORIES_DATABASE_SCHEMA"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv(IMPORT_FROM_ENV, str(tmp_path / "legacy"))
+    path = tmp_path / "config.yaml"
+    path.write_text(f"database:\n  url: {location.url}\n  schema: {location.schema}\n")
+    enable_first_open_import()
+
+    config = load_config(path)
+
+    assert (config.database.url, config.database.schema_name) == (location.url, location.schema)
+    set_config(None)
 
 
 def test_a_tier_two_section_written_at_the_top_level_is_named_there(config_path):

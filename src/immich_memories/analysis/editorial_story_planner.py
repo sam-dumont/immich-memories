@@ -688,6 +688,8 @@ def select_story_first(
             "passes": admission.pass_records,
             "lookalike": admission.lookalike.record(),
             "failed_standing": admission.failed_standing,
+            # A partition the film promised a voice that ended without one, and why.
+            "quiet_partitions": parts.quiet(choices_of, admission.silent, admission.carriers),
             "kept_without_standing": admission.kept_without_standing,
             # Pictures nothing vouched for that gave their slot back to a starred picture.
             "displaced_for_a_favourite": [c["asset_id"] for c in admission.displaced],

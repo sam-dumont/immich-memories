@@ -100,7 +100,7 @@ IMMICH_MEMORIES_EDITORIAL__PEOPLE__SEAT_MIN_PICTURES=30
 ```
 
 List- and dict-valued fields take JSON: `auth.trusted_proxies`, `auth.allowed_emails`,
-`auth.allowed_domains`, `notifications.urls`, `scheduler.schedules`,
+`auth.allowed_domains`, `notifications.urls`,
 `analysis.exclude_filename_patterns`, `llm.drop_params`, `llm.extra_params`, `llm.thinking_params`
 and `editorial.head_versions`.
 
