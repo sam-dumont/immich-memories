@@ -21,6 +21,7 @@ from collections import Counter
 from datetime import UTC, datetime, timedelta
 
 import yaml
+from pathlib import Path
 
 from discovery import GLUE
 from experiment_data import ROOT
@@ -174,21 +175,27 @@ def _used(library, word, at_least=10):
 
 def lexicon(library, seeds, most=25):
     """Kinds and parts of the request's nouns, in their main sense, with the parts they inherit from
-    what they are (a house's rooms and floors are a building's), kept only when the owner's captions
-    use them: 'house' offers bathroom, kitchen, floor, wall, attic."""
+    what they are (a house's rooms and floors are a building's). A word is kept only when the owner's
+    captions use it and its own everyday meaning is that kind or part: WordNet lists "bus" (an old
+    car) as a kind of car, and a caption's "bus" is not one. Returns {word: "kind of X" | "part of X"}."""
     from nltk.corpus import wordnet as wn
 
-    found = []
+    found = {}
     for seed in seeds:
         head = wn.morphy(seed.split()[-1].lower(), wn.NOUN) or seed.split()[-1].lower()
-        senses = wn.synsets(head, pos=wn.NOUN)[:1]
-        for synset in senses:
+        for synset in wn.synsets(head, pos=wn.NOUN)[:1]:
             above = [h for path in synset.hypernym_paths() for h in path[-4:]]
             parts = [m for x in [synset, *above] for m in x.part_meronyms()]
-            related = list(synset.closure(lambda x: x.hyponyms(), depth=2)) + parts + [k for m in parts for k in m.hyponyms()]
-            found += [lemma.name().lower() for other in related for lemma in other.lemmas()
-                      if _used(library, lemma.name().lower()) and lemma.name().lower() != head]
-    return sorted(set(found), key=lambda w: (-len(library.posts[w]), w))[:most]
+            related = [(k, "kind") for k in synset.closure(lambda x: x.hyponyms(), depth=2)]
+            related += [(m, "part") for m in parts] + [(k, "part") for m in parts for k in m.hyponyms()]
+            for other, how in related:
+                for lemma in other.lemmas():
+                    word = lemma.name().lower()
+                    senses = wn.synsets(word, pos=wn.NOUN)
+                    if word != head and _used(library, word) and senses and senses[0] == other:
+                        found.setdefault(word, f"{how} of {head}")
+    keep = sorted(found, key=lambda w: (-len(library.posts[w]), w))[:most]
+    return {w: found[w] for w in keep}
 
 
 def lifted(library, rows, within=None, most=15):
@@ -207,8 +214,13 @@ def lifted(library, rows, within=None, most=15):
 
 
 PROPOSE = '''Which words would short photo captions use for the photos that belong in this film: the
-subject, its kinds, its parts and what happens to it (being built, repaired, used, fed)? Plain
-single words. Return JSON.'''
+subject, its kinds, its parts, and what is done to it or with it over the film? Plain single
+words. Return JSON.'''
+
+CORE = '''Of these words, which name what must be the main subject of a photo for it to belong in this
+film? relations says which words are a part or a kind of the subject: a photo of a part or a kind
+of the subject is a photo of the subject. The others may appear in a photo that belongs, but
+cannot make a photo belong on their own. Pick one to six. Return JSON.'''
 
 
 def near_phrases(library, rows, heads, most=30):
@@ -228,18 +240,30 @@ def near_phrases(library, rows, heads, most=30):
     return [p for p, c in sorted(around.items(), key=lambda x: (-x[1], x[0])) if c >= 2][:most], around
 
 
+def known_names():
+    path = Path.home() / ".immich-memories/people.yaml"
+    people = ((yaml.safe_load(path.read_text()) or {}).get("people") or []) if path.exists() else []
+    people = people.values() if isinstance(people, dict) else people
+    return [v.get("name") for v in people if isinstance(v, dict) and v.get("name")]
+
+
 def build_subject(reader, key, brief, library, spec, rows):
     """What the photos show, chosen by Gemma from candidates the lexicon and the library offer."""
-    seeds = [x.lower() for x in spec["seeds"]]
+    # Who someone is is the people filter's job (faces); a name is never a subject word.
+    names = {w for n in known_names() for w in re.findall(r"[a-z]+", n.lower())}
+    seeds = [x.lower() for x in spec["seeds"] if not set(re.findall(r"[a-z]+", x.lower())) <= names]
+    if not seeds:
+        seeds = [w for w in re.findall(r"[a-z]+", brief.lower()) if w not in names][:1]
     heads = {re.findall(r"[a-z]+", x)[-1] for x in seeds if re.findall(r"[a-z]+", x)}
     with_seed = {i for i in rows if heads & library.tokens[i] or {h + "s" for h in heads} & library.tokens[i]}
     proposed = _ask(reader, "spec_propose", key, PROPOSE, {"owner_request": brief, "subject": seeds},
                     _schema(words={"type": "array", "items": {"type": "string", "maxLength": 30}, "maxItems": 15})
                     ).get("words") or []
-    grounded = [w.lower() for w in proposed if _used(library, w.lower(), 5)]
-    offered = list(dict.fromkeys(seeds + grounded + lexicon(library, seeds) + lifted(library, with_seed, rows)
-                                 + lifted(library, rows)))[:60]
-    spec["sources"] = {"proposed": grounded, "lexicon": lexicon(library, seeds),
+    grounded = [w.lower() for w in proposed if _used(library, w.lower(), 5) and w.lower() not in names]
+    related = lexicon(library, seeds)
+    offered = [w for w in dict.fromkeys(seeds + grounded + list(related) + lifted(library, with_seed, rows)
+                                        + lifted(library, rows)) if w not in names][:60]
+    spec["sources"] = {"proposed": grounded, "lexicon": list(related),
                        "with_the_subject": lifted(library, with_seed, rows), "these_photos": lifted(library, rows)}
     picked = _ask(reader, "spec_pick_shows", key, PICK_SHOWS, {"owner_request": brief, "candidates": offered},
                   _schema(shows={"type": "array", "items": {"type": "string", "enum": offered or [""]}, "maxItems": 20}),
@@ -252,11 +276,29 @@ def build_subject(reader, key, brief, library, spec, rows):
                     _schema(not_this={"type": "array", "items": {"type": "string", "enum": near or [""]}, "maxItems": 15}),
                     400).get("not_this") or [] if near else []
     not_this = [x for x in not_this if x]
-    question = "Is the main subject of this photo " + " or ".join(shows[:6] or [brief]) + "?"
+    # Gemma decides which words make a photo belong; the rest only widen the search.
+    relations = {w: related[w] for w in shows if w in related}
+    core = [w for w in _ask(reader, "spec_core", key, CORE, {"owner_request": brief, "words": shows,
+                                                             "relations": relations},
+                            _schema(core={"type": "array", "items": {"type": "string", "enum": shows or [""]}, "maxItems": 6})
+                            ).get("core") or [] if w] or seeds or [brief]
+    # Logic, not judgement: once Gemma names the subject, its parts and kinds are the subject too.
+    from nltk.corpus import wordnet as wn
+
+    def base(word):
+        return wn.morphy(word, wn.NOUN) or word
+
+    heads_of_core = {base(re.findall(r"[a-z]+", c)[-1]) for c in core if re.findall(r"[a-z]+", c)}
+    extent = [w for w in shows if w not in core and relations.get(w, "").split(" of ")[-1] in heads_of_core]
+    question = "Is the main subject of this photo " + " or ".join(core) + (
+        " (or one of its parts or kinds: " + ", ".join(extent[:10]) + ")" if extent else "") + "?"
+    core = core + extent
     if not_this:
         question += " (Not " + " or ".join(not_this[:6]) + ".)"
-    spec |= {"offered": offered, "shows": shows, "not_this": not_this, "question": question,
-             "meaning": "Belongs: " + ", ".join(shows) + "." + (" Does not belong: " + ", ".join(not_this) + "." if not_this else ""),
+    also = [w for w in shows if w not in core]
+    spec |= {"offered": offered, "shows": shows, "core": core, "not_this": not_this, "question": question,
+             "meaning": "Main subject: " + ", ".join(core) + "." + (" It may also show: " + ", ".join(also) + "." if also else "")
+             + (" Does not belong: " + ", ".join(not_this) + "." if not_this else ""),
              "caption_words": shows}
     return spec
 
@@ -272,7 +314,8 @@ def show(spec):
              f'  where         {w["said"].split(":")[0]}',
              f'  text in photo {", ".join(spec["text_in_photo"]) or "none"}',
              f'  offered       {"; ".join(k + ": " + ", ".join(v) for k, v in spec.get("sources", {}).items() if v)}',
-             f'  shows         {", ".join(spec["shows"]) or "-"}',
+             f'  main subject  {", ".join(spec["core"]) or "-"}',
+             f'  also finds    {", ".join(w for w in spec["shows"] if w not in spec["core"]) or "-"}',
              f'  not this      {", ".join(spec["not_this"]) or "-"}',
              f'  question      {spec["question"]}',
              f'  caption words {", ".join(spec["caption_words"])}',

@@ -772,7 +772,7 @@ def main():
                         lambda a: isinstance(a["thesis"], str), 400) if kept else None
     for k in ("_per_item_questions", "_own", "_companions"):
         plan.pop(k, None)
-    record = {"brief": original, "english": brief, "plan": plan, "scope": scope_note,
+    record = {"brief": original, "english": brief, "spec": spec, "plan": plan, "scope": scope_note,
               "counts": {"window": len(in_window), "scope": len(pool_scope), "subject_matches": len(subject),
                          "ocr_anchors": len(anchors), "uncaptioned": len(uncaptioned & pool), "pool": len(pool),
                          "text_yes": sum(1 for d in decisions if d["decision"] == "match"),
