@@ -19,8 +19,6 @@ from typing import Any
 from immich_memories.analysis import llm_metrics
 from immich_memories.analysis.editorial_block_votes import (
     judge_worthiness,
-    load_vote_bank,
-    save_vote_bank,
     worth_criterion_v44,
 )
 from immich_memories.analysis.editorial_carrier_eligibility import excluded_carrier_sources
@@ -49,7 +47,6 @@ from immich_memories.analysis.editorial_story_planner import alternatives_pool, 
 from immich_memories.analysis.editorial_story_replies import film_close_family
 from immich_memories.analysis.editorial_story_trips import detect_film_trips
 from immich_memories.analysis.editorial_structure_audience import (
-    AUDIENCE_BANK_NAME,
     AudienceBank,
     AudienceGate,
 )
@@ -103,6 +100,7 @@ from immich_memories.analysis.subject_framing import framing_visibility
 from immich_memories.config_tiers import nas_draft_config
 from immich_memories.processing.editorial_timing import bind_editorial_timeline
 from immich_memories.security import write_secret_file
+from immich_memories.store.vote_banks import VoteBank
 
 SECONDS_PER_SLOT = NOMINAL_STILL_SECONDS
 STORY_RANK = {"central": 0, "supporting": 1}
@@ -298,20 +296,29 @@ def _plan_structure(
         final_content_cap=source.case.target_seconds - CONTENT_RESERVE_SECONDS,
         bind_stitch=material.builder.measured_stitch,
     )
+    reader = ports.laya.cache_identity if ports.laya else "rules"
+    library = AudienceBank(
+        source.bank_store, answerer=f"{source.config.editorial.preparation.tier}|{reader}"
+    )
     with llm_metrics.collecting() as counters:
-        outcome = _select(
-            source,
-            ports,
-            wall,
-            material,
-            run,
-            audit_dir=audit_dir,
-            contract=contract,
-            admission=admission,
-            admission_key=admission_key,
-            partition_limit=partition_limit,
-            prior_assets=prior_assets,
-        )
+        try:
+            outcome = _select(
+                source,
+                ports,
+                wall,
+                material,
+                run,
+                library,
+                audit_dir=audit_dir,
+                contract=contract,
+                admission=admission,
+                admission_key=admission_key,
+                partition_limit=partition_limit,
+                prior_assets=prior_assets,
+            )
+        finally:
+            # The holds this cut cast reach the store in one batch, even when the cut fails.
+            library.flush()
     metrics = provider_metrics(counters)
     if run.render_timeline is None:
         run.shaved += shave_content_duration(run.carriers, run.final_content_cap)
@@ -374,6 +381,7 @@ def _select(
     wall: Wall,
     material: Material,
     run: PlanRun,
+    library: AudienceBank,
     *,
     audit_dir,
     contract: str,
@@ -400,10 +408,7 @@ def _select(
         flag_rows=source.shareability_flags,
         lines=source.annotations,
         bank_path=audit_dir / "shareability.private.json",
-        library=AudienceBank(
-            source.bank_dir.parent / AUDIENCE_BANK_NAME,
-            answerer=f"{audience_tier}|" + (ports.laya.cache_identity if ports.laya else "rules"),
-        ),
+        library=library,
         check_audience=audience_check_for(
             audience_tier,
             strict_sharing=source.config.editorial.strict_sharing and source.audience == SHAREABLE,
@@ -614,8 +619,7 @@ def _worthiness_gate(
     if not marker:
         record("memory-worthy-gate", {"version": "story-importance-v1", "rounds": []})
         return {}, {}, ""
-    bank_path = source.bank_dir / "memory-worthy.private.json"
-    bank = load_vote_bank(bank_path)
+    bank = VoteBank(source.bank_store, "memory-worthy", source.case.key)
     gate_tier, gate_reason, gate_rounds = judge_worthiness(
         ports.judge,
         happenings=wall.fam_ids,
@@ -628,7 +632,7 @@ def _worthiness_gate(
         marker=marker,
         period_label=source.case.label,
         bank=bank,
-        save=lambda: save_vote_bank(bank_path, bank),
+        save=bank.save,
     )
     record(
         "memory-worthy-gate",
@@ -755,9 +759,8 @@ def _banked_facts(source, ports) -> BankedAnswers:
     if ports.rules is None:
         return NO_BANKED_FACTS
     return open_banked_facts(
-        bank_dir=source.bank_dir,
         attempts_dir=source.artifact_dir.parent,
-        store_path=source.store_path,
+        store=source.bank_store,
         audience=source.audience,
         episode_cards=source.episode_readings,
         own_producers=frozenset(

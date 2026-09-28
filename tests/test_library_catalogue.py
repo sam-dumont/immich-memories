@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import re
-from contextlib import closing
 from datetime import UTC, datetime
 
 import pytest
@@ -27,6 +26,7 @@ from immich_memories.store.episode_readings import (
 )
 from immich_memories.store.library_catalogue import CatalogueStore, LibraryAccount
 from immich_memories.store.library_overviews import library_period_account
+from tests.annotation_rows import annotation_store
 
 PRODUCER = "producer-key-a"
 DATES = {
@@ -96,8 +96,9 @@ def _two_episodes():
 
 
 def catalogued(bank, events, asked, *, producer: str = "model-a") -> dict:
-    with closing(CatalogueStore(bank)) as store:
-        return bank_month_accounts(events, store=store, requester=asked, producer=producer)
+    return bank_month_accounts(
+        events, store=CatalogueStore(bank), requester=asked, producer=producer
+    )
 
 
 def config_for(tmp_path, *, reader: str = "model") -> Config:
@@ -109,8 +110,7 @@ def config_for(tmp_path, *, reader: str = "model") -> Config:
 
 
 def banked_readings(bank, events) -> None:
-    with closing(EpisodeReadingStore(bank)) as store:
-        store.remember([event.reading for event in events])
+    EpisodeReadingStore(bank).remember([event.reading for event in events])
 
 
 class FencedReader(Reader):
@@ -123,14 +123,14 @@ class FencedReader(Reader):
 def test_a_fenced_account_reply_is_read_like_a_bare_one(tmp_path) -> None:
     asked = FencedReader()
 
-    months = catalogued(tmp_path / "annotations.sqlite", FEBRUARY, asked)
+    months = catalogued(annotation_store(), FEBRUARY, asked)
 
     assert months["2024-02"].account
     assert len(asked.prompts) == 1
 
 
 def test_a_month_account_is_written_where_a_film_reads_it(tmp_path) -> None:
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
 
     months = catalogued(bank, FEBRUARY, Reader())
 
@@ -140,7 +140,7 @@ def test_a_month_account_is_written_where_a_film_reads_it(tmp_path) -> None:
 
 
 def test_the_same_readings_are_never_paid_for_twice(tmp_path) -> None:
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     cold, warm = Reader(), Reader()
 
     catalogued(bank, FEBRUARY, cold)
@@ -151,7 +151,7 @@ def test_the_same_readings_are_never_paid_for_twice(tmp_path) -> None:
 
 
 def test_one_changed_reading_reopens_its_own_month_and_no_other(tmp_path) -> None:
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     march = (episode("e9", ("c1",)),)
     catalogued(bank, (*FEBRUARY, *march), Reader())
     again = Reader()
@@ -164,7 +164,7 @@ def test_one_changed_reading_reopens_its_own_month_and_no_other(tmp_path) -> Non
 
 
 def test_a_producer_change_is_a_new_account(tmp_path) -> None:
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     catalogued(bank, FEBRUARY, Reader(), producer="model-a")
     other = Reader()
 
@@ -176,8 +176,9 @@ def test_a_producer_change_is_a_new_account(tmp_path) -> None:
 def test_a_year_is_written_over_its_months_without_a_second_reading(tmp_path) -> None:
     asked = Reader()
 
-    with closing(CatalogueStore(tmp_path / "annotations.sqlite")) as store:
-        catalogue = build_catalogue(FEBRUARY, store=store, requester=asked, producer="model-a")
+    catalogue = build_catalogue(
+        FEBRUARY, store=CatalogueStore(annotation_store()), requester=asked, producer="model-a"
+    )
 
     assert set(catalogue.months) == {"2024-02"}
     assert set(catalogue.years) == {"2024"}
@@ -186,13 +187,13 @@ def test_a_year_is_written_over_its_months_without_a_second_reading(tmp_path) ->
 
 
 def test_a_run_banks_the_account_of_readings_it_has_already_paid_for(tmp_path) -> None:
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     banked_readings(bank, FEBRUARY)
     asked = Reader()
 
     catalogue_banked_episodes(
         [event.reading.identity for event in FEBRUARY],
-        store_path=bank,
+        store=bank,
         capture_dates=DATES,
         config=config_for(tmp_path),
         requester=asked,
@@ -203,13 +204,13 @@ def test_a_run_banks_the_account_of_readings_it_has_already_paid_for(tmp_path) -
 
 
 def test_an_episode_this_run_cannot_place_is_left_out_of_the_account(tmp_path) -> None:
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     banked_readings(bank, FEBRUARY)
     asked = Reader()
 
     catalogue_banked_episodes(
         [event.reading.identity for event in FEBRUARY],
-        store_path=bank,
+        store=bank,
         # "a2" is absent, so its episode has no capture date this run can vouch for.
         capture_dates={"b1": DATES["b1"]},
         config=config_for(tmp_path),
@@ -222,7 +223,7 @@ def test_an_episode_this_run_cannot_place_is_left_out_of_the_account(tmp_path) -
 
 
 def test_the_no_model_reader_writes_no_account(tmp_path) -> None:
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     banked_readings(bank, FEBRUARY)
     rules = config_for(tmp_path, reader="rules")
 
@@ -231,7 +232,7 @@ def test_the_no_model_reader_writes_no_account(tmp_path) -> None:
     with pytest.raises(ValueError, match="model reader"):
         catalogue_banked_episodes(
             [event.reading.identity for event in FEBRUARY],
-            store_path=bank,
+            store=bank,
             capture_dates=DATES,
             config=rules,
         )
@@ -278,7 +279,7 @@ def test_an_episode_the_reader_cannot_read_is_asked_once_across_two_runs(tmp_pat
     from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
     from immich_memories.store.episode_readings import EpisodeReadingProducer
 
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     producer = EpisodeReadingProducer(
         model_id="a-model",
         prompt_version="episode-prompt-v3",
@@ -290,40 +291,41 @@ def test_an_episode_the_reader_cannot_read_is_asked_once_across_two_runs(tmp_pat
     asked = OneEpisodeRefuses(refuses="b1")
 
     for _run in range(2):
-        with closing(EpisodeReadingStore(bank)) as store:
-            result = CachedTextEpisodeReader(
-                store=store, producer=producer, annotations=lines, requester=asked
-            ).read(projections)
+        result = CachedTextEpisodeReader(
+            store=EpisodeReadingStore(bank), producer=producer, annotations=lines, requester=asked
+        ).read(projections)
 
     readable = [e.reading for e in result.episodes if e.reading is not None]
     # Three rounds on the first run, and nothing at all on the second.
     assert len(asked.prompts) == 3
     assert len(readable) == 1
 
-    with closing(CatalogueStore(bank)) as store:
-        bank_month_accounts(
-            [
-                LibraryEpisode(reading=reading, taken_at=DATES[reading.full_asset_ids[0]])
-                for reading in readable
-            ],
-            store=store,
-            requester=Reader(),
-            producer="model-a",
-        )
+    bank_month_accounts(
+        [
+            LibraryEpisode(reading=reading, taken_at=DATES[reading.full_asset_ids[0]])
+            for reading in readable
+        ],
+        store=CatalogueStore(bank),
+        requester=Reader(),
+        producer="model-a",
+    )
 
     assert library_period_account(bank, "2024-02")
 
 
 def test_a_cut_s_account_reads_the_facts_of_the_episodes_it_did_not_read(tmp_path) -> None:
     """The rest of the month is told from what the no-model reader already knows, for free."""
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     asked = Reader()
     facts = LibraryAccount("facts-e2", "episode-facts", "2024-02", "a quiet day in the park", ())
 
-    with closing(CatalogueStore(bank)) as store:
-        months = bank_month_accounts(
-            FEBRUARY[:1], store=store, requester=asked, producer="model-a", unread_facts=(facts,)
-        )
+    months = bank_month_accounts(
+        FEBRUARY[:1],
+        store=CatalogueStore(bank),
+        requester=asked,
+        producer="model-a",
+        unread_facts=(facts,),
+    )
 
     assert len(asked.prompts) == 1
     assert "a quiet day in the park" in asked.prompts[0]
@@ -332,12 +334,15 @@ def test_a_cut_s_account_reads_the_facts_of_the_episodes_it_did_not_read(tmp_pat
 
 
 def test_a_reading_of_the_whole_month_replaces_a_cut_s_account_over_facts(tmp_path) -> None:
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     facts = LibraryAccount("facts-e2", "episode-facts", "2024-02", "a quiet day in the park", ())
-    with closing(CatalogueStore(bank)) as store:
-        bank_month_accounts(
-            FEBRUARY[:1], store=store, requester=Reader(), producer="model-a", unread_facts=(facts,)
-        )
+    bank_month_accounts(
+        FEBRUARY[:1],
+        store=CatalogueStore(bank),
+        requester=Reader(),
+        producer="model-a",
+        unread_facts=(facts,),
+    )
 
     whole = catalogued(bank, FEBRUARY, Reader())
 

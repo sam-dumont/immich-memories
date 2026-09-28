@@ -5,12 +5,12 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
-from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Literal
 
+from immich_memories.db import Store
 from immich_memories.people.assumptions import family_assumptions
-from immich_memories.people.companion import default_people_path, load_document, people_entries
+from immich_memories.people.companion import load_document, people_entries
 from immich_memories.people.relationships import relationship_label
 
 
@@ -43,12 +43,12 @@ class PersonPromptContext:
 
 
 def load_people_prompt_context(
-    path: Path | None = None,
+    store: Store | None = None,
     *,
     include_derived: bool = False,
 ) -> Mapping[str, PersonPromptContext]:
-    """Load one immutable lookup entry for every known Immich person ID."""
-    document = load_document(path or default_people_path())
+    """Load one immutable lookup entry for every known person ID from the people registry."""
+    document = load_document(store)
     entries = people_entries(document)
     ids_by_entry = [(_person_ids(entry), entry) for entry in entries]
     canonical_by_id = {

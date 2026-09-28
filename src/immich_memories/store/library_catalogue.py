@@ -1,4 +1,4 @@
-"""Write the library's own account of a period into the annotation database.
+"""Write the library's own account of a period into the store.
 
 The read side lives next door in `library_overviews.py` and never writes. This is the only
 writer: cataloguing owns the table. An account is content-addressed by everything that could
@@ -10,20 +10,14 @@ from __future__ import annotations
 import json
 from collections.abc import Sequence
 from dataclasses import dataclass
-from pathlib import Path
 
-from immich_memories.cache.sqlite_conn import ThreadOwnedConnections
+import sqlalchemy as sa
+
+from immich_memories.db import Store
+from immich_memories.db.tables import library_overviews
+from immich_memories.store.batches import bank_rows, id_in, in_chunks
 
 _KINDS = frozenset({"month", "year", "span", "month-part", "year-part", "span-part"})
-_SCHEMA = """
-CREATE TABLE IF NOT EXISTS library_overviews (
-    node_key TEXT PRIMARY KEY,
-    kind TEXT NOT NULL,
-    period TEXT NOT NULL,
-    account TEXT NOT NULL,
-    children TEXT NOT NULL
-)
-"""
 
 
 @dataclass(frozen=True)
@@ -40,25 +34,22 @@ class LibraryAccount:
 class CatalogueStore:
     """Bank neutral accounts independently of a film's brief or duration."""
 
-    def __init__(self, db_path: Path) -> None:
-        self._connections = ThreadOwnedConnections(db_path, _SCHEMA)
+    def __init__(self, store: Store) -> None:
+        self._store = store
 
     def accounts_for(self, keys: Sequence[str]) -> dict[str, LibraryAccount]:
-        """Read exact revisions in bounded SQL batches, including on older SQLite builds."""
+        """Read exact revisions in bounded batches."""
+        t = library_overviews
         found: dict[str, LibraryAccount] = {}
-        with self._connections.connection() as connection:
-            for start in range(0, len(keys), 300):
-                batch = keys[start : start + 300]
-                placeholders = ",".join("?" for _ in batch)
+        with self._store.connect() as connection:
+            for batch in in_chunks(connection, list(keys)):
                 rows = connection.execute(
-                    "SELECT node_key,kind,period,account,children FROM library_overviews "  # noqa: S608 -- bound keys only.
-                    f"WHERE node_key IN ({placeholders})",
-                    tuple(batch),
-                )
-                for key, kind, period, account, children in rows:
-                    found[key] = LibraryAccount(
-                        key, kind, period, account, tuple(json.loads(children))
+                    sa.select(t.c.node_key, t.c.kind, t.c.period, t.c.account, t.c.children).where(
+                        id_in(connection, t.c.node_key, batch)
                     )
+                )
+                for row in rows:
+                    found[str(row.node_key)] = _account(row)
         return found
 
     def fullest(self, kind: str, period: str) -> LibraryAccount | None:
@@ -67,17 +58,14 @@ class CatalogueStore:
         The same choice the film's own read makes, so a window reuses the account a month or
         a year film would have read.
         """
-        with self._connections.connection() as connection:
+        t = library_overviews
+        with self._store.connect() as connection:
             rows = connection.execute(
-                "SELECT node_key,kind,period,account,children FROM library_overviews "
-                "WHERE kind = ? AND period = ?",
-                (kind, period),
-            ).fetchall()
-        accounts = [
-            LibraryAccount(key, found, when, account, tuple(json.loads(children)))
-            for key, found, when, account, children in rows
-            if str(account or "").strip()
-        ]
+                sa.select(t.c.node_key, t.c.kind, t.c.period, t.c.account, t.c.children).where(
+                    t.c.kind == kind, t.c.period == period
+                )
+            ).all()
+        accounts = [_account(row) for row in rows if str(row.account or "").strip()]
         return max(
             accounts, key=lambda row: (len(row.children), len(row.account), row.key), default=None
         )
@@ -86,17 +74,24 @@ class CatalogueStore:
         """Keep the first validated account of each exact evidence revision."""
         if any(account.kind not in _KINDS for account in accounts):
             raise ValueError("only period overviews belong here; episodes use EpisodeReadingStore")
-        with self._connections.connection() as connection:
-            connection.executemany(
-                "INSERT INTO library_overviews VALUES (?, ?, ?, ?, ?) "
-                "ON CONFLICT(node_key) DO NOTHING",
-                [
-                    (row.key, row.kind, row.period, row.account, json.dumps(row.children))
-                    for row in accounts
-                ],
-            )
-            connection.commit()
+        rows = [
+            {
+                "node_key": row.key,
+                "kind": row.kind,
+                "period": row.period,
+                "account": row.account,
+                "children": json.dumps(row.children),
+            }
+            for row in accounts
+        ]
+        bank_rows(self._store, library_overviews, rows, keys=("node_key",), update=())
 
-    def close(self) -> None:
-        """Release the annotation database connections owned by this bank."""
-        self._connections.close()
+
+def _account(row: sa.Row) -> LibraryAccount:
+    return LibraryAccount(
+        str(row.node_key),
+        str(row.kind),
+        str(row.period),
+        str(row.account),
+        tuple(json.loads(str(row.children))),
+    )

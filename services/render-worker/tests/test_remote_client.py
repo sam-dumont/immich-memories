@@ -55,6 +55,7 @@ def test_remote_client_returns_a_validated_film_and_exact_cut_metadata(tmp_path)
 
 def test_normal_generation_uses_the_worker_and_completes_the_local_run(tmp_path, monkeypatch):
     from immich_memories.config_models_render import RenderWorkerConfig
+    from immich_memories.db import open_store
     from immich_memories.generate import generate_memory
     from immich_memories.processing import remote_render
     from immich_memories.tracking import RunTracker
@@ -84,9 +85,7 @@ def test_normal_generation_uses_the_worker_and_completes_the_local_run(tmp_path,
             )
 
     params.config.cache.cache_path.mkdir(parents=True)
-    tracker = RunTracker(
-        "app-worker-test", db_path=params.config.cache.database_path, capture_system=False
-    )
+    tracker = RunTracker("app-worker-test", store=open_store(params.config), capture_system=False)
     with TestClient(worker_app(tmp_path / "worker", Renderer())) as http:
         # WHY: keep the real authenticated API while replacing the TCP connection boundary.
         monkeypatch.setattr(remote_render.httpx, "Client", lambda **_kwargs: http)

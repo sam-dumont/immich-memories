@@ -922,10 +922,10 @@ msgstr "Obecnie brak odpowiednich propozycji."
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
 msgstr ""
-"Brak pliku osób. Przeskanuj bibliotekę ponownie: odczyta liczby i miesięczne wykresy każdej "
+"Brak osób. Przeskanuj bibliotekę ponownie: odczyta liczby i miesięczne wykresy każdej "
 "nazwanej osoby, bez analizy obrazów."
 
 #: pages/runs.py:105
@@ -1828,3 +1828,48 @@ msgstr "{title} (klucze: {n_keys})"
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}: {duration_seconds:.1f}s"
 
+
+msgid "Default"
+msgstr "Domyślne"
+
+msgid "Nothing to save"
+msgstr "Nic do zapisania"
+
+msgid "Save"
+msgstr "Zapisz"
+
+msgid "Saved here"
+msgstr "Zapisano tutaj"
+
+msgid "Saved to the database"
+msgstr "Zapisano w bazie danych"
+
+msgid "Set by {name} (environment)"
+msgstr "Ustawione przez {name} (środowisko)"
+
+msgid "Set in config.yaml as {key}"
+msgstr "Ustawione w config.yaml jako {key}"
+
+msgid "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
+msgstr "Ustawienia pochodzą z czterech miejsc, od najsilniejszego: zmienne środowiskowe, config.yaml, to co zapiszesz tutaj (w bazie danych), potem wartości domyślne. Wyszarzone ustawienie pochodzi ze środowiska lub config.yaml; zmień je tam."
+
+msgid "{count} set outside this page"
+msgstr "{count} ustawione poza tą stroną"
+
+msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
+msgstr "{name} nie jest ustawiony, więc kluczy API i haseł nie można tu zapisać. Ustaw go albo umieść te sekrety w środowisku lub config.yaml."
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  ({n} klucz)"
+msgstr[1] "{title}  ({n} klucze)"
+msgstr[2] "{title}  ({n} kluczy)"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} ustawiony poza tą stroną"
+msgstr[1] "{n} ustawione poza tą stroną"
+msgstr[2] "{n} ustawionych poza tą stroną"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Zapisano tutaj, ale {name} nie może tego odszyfrować: używana jest wartość domyślna"

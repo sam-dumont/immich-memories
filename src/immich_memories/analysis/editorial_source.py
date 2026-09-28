@@ -17,6 +17,7 @@ from immich_memories.api.person_scope import (
     photos_in_window,
     videos_in_window,
 )
+from immich_memories.db import open_store
 from immich_memories.timeperiod import DateRange
 
 if TYPE_CHECKING:
@@ -66,7 +67,7 @@ def library_source_scope(
                 generated_source_ids(
                     # A client that cannot answer leaves the receipts answering alone.
                     tagged=getattr(client, "generated_asset_ids", frozenset),
-                    cache_database=config.cache.database_path,
+                    store=open_store(config),
                 )
             )
         ),

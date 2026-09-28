@@ -34,7 +34,7 @@ flowchart LR
 | **Tier** | `nas` (CPU heads and detectors), `gpu` (adds captions and Laya), `full` (adds prose refinement); `auto` resolves from GPU inference and LLM configuration | `tier`, `config_tiers.py` |
 | **Scene print** | the pooled DINOv2 vector of a preview; two prints at a cosine of 0.65 or more are the same scene | `editorial_scene_prints.py` |
 | **Residual** | the motion left in a clip once the camera's own movement is removed; 1.5 or more plays as motion | `RESIDUAL_MIN`, `editorial_motion_facts.py` |
-| **Bank** | an answer stored under its exact inputs and producer version, so the next run asks nothing; no row means nobody asked | `annotations.sqlite`, `structure-banks/` |
+| **Bank** | an answer stored under its exact inputs and producer version, so the next run asks nothing; no row means nobody asked | the store |
 | **Banked picture evidence** | matching facts and captions are reused; missing evidence is acquired for selected shots and actual candidates; the prose reader receives text only | `editorial_runtime_evidence.py` |
 
 ## Building the cut
@@ -52,7 +52,7 @@ flowchart LR
 | **Look-alike** | a story's next shot must not repeat one it holds (hash within 10 bits) | `editorial_story_lookalike.py` |
 | **Depth** | a story with slots left spends them inside moments it already shows, up to 3 frames each | `editorial_story_depth.py` |
 | **Family seat** | one shot for a close family member the cut left out | `editorial_family_seat.py` |
-| **Close family** | partner or spouse, child, parent, as confirmed in `people.yaml`; in a person film, that person's too | `people/relationships.py` |
+| **Close family** | partner or spouse, child, parent, as confirmed in the people registry; in a person film, that person's too | `people/relationships.py` |
 | **Owner-required** | a picture you ticked; added after the draft, kept through the trim and the duplicate review | `editorial_owner_required.py` |
 
 ## The gate and the checks

@@ -1,11 +1,26 @@
 # CLI batch jobs. Optional: uncomment `- job.yaml` in kustomization.yaml or
 # `kubectl apply -f job.yaml`.
 #
-# The jobs share the three PVCs with the Deployment. With ReadWriteOnce storage a
-# job pod can only start on the node that already has the volumes mounted, so
-# either use ReadWriteMany storage or scale the Deployment to 0 first. If you
-# only want scheduled memories, prefer the in-process daily timer instead
-# (IMMICH_MEMORIES_AUTOMATION__ENABLED=true on the Deployment) — no job needed.
+# The store (config.yaml, cache.db, cache/annotations.sqlite) defaults to a
+# SQLite file on the `data` PVC, opened by one writer at a time. A second pod
+# writing that same file from another node over ReadWriteMany corrupts it: WAL
+# mode needs shared memory a network filesystem does not give two hosts. So:
+#
+# - One-off custom runs (the `generate` Job below, with your own
+#   --year/--person/...): the Deployment is already running the image with
+#   the volumes mounted, so
+#   `kubectl exec deploy/immich-memories -- immich-memories generate ...`
+#   runs the same command with no second pod and no PVC conflict — prefer
+#   that. The Job below is for a batch cluster where the Deployment stays
+#   scaled to 0 between runs; only start it while the Deployment is down.
+# - Scheduled runs (the two CronJobs below): they call the Deployment's HTTP
+#   trigger API instead of running the CLI in a second pod, so the Deployment
+#   stays the only writer and the CronJob pod never touches the PVCs. See
+#   `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN`, `src/immich_memories/ui/trigger_api.py`
+#   and docs-site/docs/make/automate.md#trigger-it-over-http. If the built-in
+#   decision (whatever `auto run` would have picked) is all you want, the
+#   in-process daily timer (`IMMICH_MEMORIES_AUTOMATION__ENABLED=true` on the
+#   Deployment) does the same job with no CronJob at all.
 #
 # CPU by default. For GPU nodes add the fields from ../overlays/gpu/deployment-gpu.yaml
 # (runtimeClassName, nvidia.com/gpu resources, nodeSelector, tolerations, NVIDIA_* env).
@@ -156,6 +171,21 @@ spec:
             sizeLimit: 4Gi
 ---
 # CronJob: last month's highlights, 5 minutes, on the 1st of each month.
+#
+# `POST /api/trigger` takes no parameters: it runs whatever decision `auto
+# run` would have made (the same rules, cooldown and history the daily timer
+# uses), not this fixed "last month" command. That is on purpose — the route
+# never runs an arbitrary command over HTTP. To keep this exact fixed
+# schedule, point your own cron at
+# `kubectl exec deploy/immich-memories -- immich-memories generate --start ... --end ...`
+# instead; the Deployment is already the only writer, so that command needs
+# no second pod. What is below is the common case: a schedule that is happy
+# with whatever `auto run` decides.
+#
+# Needs `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` set in base/secret.yaml (see
+# secret.yaml.example) so the route answers a caller with no browser session.
+# curl is pinned by digest, the same way docker-compose.yml pins the caption
+# model puller.
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -179,134 +209,53 @@ spec:
             app.kubernetes.io/component: cronjob
         spec:
           restartPolicy: OnFailure
-
           securityContext:
             runAsNonRoot: true
-            runAsUser: 1000
-            runAsGroup: 1000
-            fsGroup: 1000
+            runAsUser: 100
+            runAsGroup: 100
             seccompProfile:
               type: RuntimeDefault
-
-          # A fresh models claim is empty, and prepare is where that shows up: the
-          # first cut stopped naming three files nobody had been told to fetch. This
-          # is the same image running the same `models fetch` a Docker user runs after
-          # `up`, writing the pinned encoder, the pinned sensitive-content export and
-          # the detector snapshot onto the claim. The guard is what makes a restart
-          # free: a claim that already carries all three never goes back out.
-          initContainers:
-            - name: fetch-models
-              image: ghcr.io/sam-dumont/immich-video-memory-generator:latest
-              imagePullPolicy: Always
-              securityContext:
-                allowPrivilegeEscalation: false
-                readOnlyRootFilesystem: true
-                capabilities:
-                  drop:
-                    - ALL
-              command:
-                - /bin/sh
-                - -c
-                - >
-                  test -s /models/triage/dinov2-small.onnx
-                  && test -s /models/detectors/nsfw-marqo-384.onnx
-                  && test -d /models/huggingface
-                  || immich-memories models fetch
-              env:
-                - name: IMMICH_MEMORIES_TRIAGE__ENCODER
-                  value: /models/triage/dinov2-small.onnx
-                - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__MARQO_ONNX
-                  value: /models/detectors/nsfw-marqo-384.onnx
-                - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR
-                  value: /models/huggingface
-              resources:
-                requests:
-                  memory: "512Mi"
-                  cpu: "250m"
-                limits:
-                  memory: "2Gi"
-                  cpu: "2000m"
-              volumeMounts:
-                # `models fetch` loads the config before it downloads anything, and that
-                # wants HOME writable; the root filesystem here is not.
-                - name: data
-                  mountPath: /home/immich/.immich-memories
-                - name: models
-                  mountPath: /models
-                - name: tmp
-                  mountPath: /tmp
           containers:
-            - name: generate
-              image: ghcr.io/sam-dumont/immich-video-memory-generator:latest
-
+            - name: trigger
+              image: docker.io/curlimages/curl:8.11.1@sha256:c1fe1679c34d9784c1b0d1e5f62ac0a79fca01fb6377cdd33e90473c6f9f9a69
               securityContext:
                 allowPrivilegeEscalation: false
                 readOnlyRootFilesystem: true
                 capabilities:
                   drop:
                     - ALL
-
               command:
-                - /bin/sh
-                - -c
-                - |
-                  LAST_MONTH=$(date -d "last month" +%Y-%m-01)
-                  THIS_MONTH=$(date +%Y-%m-01)
-                  immich-memories generate \
-                    --start "$LAST_MONTH" \
-                    --end "$THIS_MONTH" \
-                    --duration 300 \
-                    --output "/app/output/monthly_$(date -d 'last month' +%Y_%m).mp4"
-
-              envFrom:
-                - secretRef:
-                    name: immich-memories-secrets
+                - curl
+                - -fsS
+                - -X
+                - POST
+                - http://immich-memories/api/trigger
+                - -H
+                - "x-api-key: $(TRIGGER_TOKEN)"
               env:
-                - name: IMMICH_MEMORIES_OUTPUT__DIRECTORY
-                  value: /app/output
-                - name: IMMICH_MEMORIES_TIER
-                  value: auto
-                - name: IMMICH_MEMORIES_TRIAGE__ENCODER
-                  value: /models/triage/dinov2-small.onnx
-                - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__MARQO_ONNX
-                  value: /models/detectors/nsfw-marqo-384.onnx
-                - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR
-                  value: /models/huggingface
-
+                - name: TRIGGER_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: immich-memories-secrets
+                      key: IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN
               resources:
                 requests:
-                  memory: "4Gi"
-                  cpu: "2000m"
+                  memory: "16Mi"
+                  cpu: "10m"
                 limits:
-                  memory: "16Gi"
-                  cpu: "8000m"
-
-              volumeMounts:
-                - name: data
-                  mountPath: /home/immich/.immich-memories
-                - name: output
-                  mountPath: /app/output
-                - name: models
-                  mountPath: /models
-                - name: tmp
-                  mountPath: /tmp
-
-          volumes:
-            - name: data
-              persistentVolumeClaim:
-                claimName: immich-memories-cache
-            - name: output
-              persistentVolumeClaim:
-                claimName: immich-memories-output
-            - name: models
-              persistentVolumeClaim:
-                claimName: immich-memories-models
-            - name: tmp
-              emptyDir:
-                sizeLimit: 4Gi
+                  memory: "32Mi"
+                  cpu: "100m"
 ---
 # CronJob: smart automation. `auto run` picks the best candidate (monthly,
-# yearly, trip, person spotlight...), skips duplicates and respects cooldown.
+# yearly, trip, person spotlight...), skips duplicates and respects cooldown —
+# exactly what the trigger API runs, so this CronJob is a curl to the running
+# Deployment, never a second pod running the CLI. Prefer the in-process daily
+# timer (`IMMICH_MEMORIES_AUTOMATION__ENABLED=true` on the Deployment) over
+# this CronJob unless you need a clock the Deployment's own process does not
+# have, or want the schedule outside the pod spec.
+#
+# Needs `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` set in base/secret.yaml (see
+# secret.yaml.example).
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -330,124 +279,39 @@ spec:
             app.kubernetes.io/component: cronjob-auto
         spec:
           restartPolicy: OnFailure
-
           securityContext:
             runAsNonRoot: true
-            runAsUser: 1000
-            runAsGroup: 1000
-            fsGroup: 1000
+            runAsUser: 100
+            runAsGroup: 100
             seccompProfile:
               type: RuntimeDefault
-
-          # A fresh models claim is empty, and prepare is where that shows up: the
-          # first cut stopped naming three files nobody had been told to fetch. This
-          # is the same image running the same `models fetch` a Docker user runs after
-          # `up`, writing the pinned encoder, the pinned sensitive-content export and
-          # the detector snapshot onto the claim. The guard is what makes a restart
-          # free: a claim that already carries all three never goes back out.
-          initContainers:
-            - name: fetch-models
-              image: ghcr.io/sam-dumont/immich-video-memory-generator:latest
-              imagePullPolicy: Always
-              securityContext:
-                allowPrivilegeEscalation: false
-                readOnlyRootFilesystem: true
-                capabilities:
-                  drop:
-                    - ALL
-              command:
-                - /bin/sh
-                - -c
-                - >
-                  test -s /models/triage/dinov2-small.onnx
-                  && test -s /models/detectors/nsfw-marqo-384.onnx
-                  && test -d /models/huggingface
-                  || immich-memories models fetch
-              env:
-                - name: IMMICH_MEMORIES_TRIAGE__ENCODER
-                  value: /models/triage/dinov2-small.onnx
-                - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__MARQO_ONNX
-                  value: /models/detectors/nsfw-marqo-384.onnx
-                - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR
-                  value: /models/huggingface
-              resources:
-                requests:
-                  memory: "512Mi"
-                  cpu: "250m"
-                limits:
-                  memory: "2Gi"
-                  cpu: "2000m"
-              volumeMounts:
-                # `models fetch` loads the config before it downloads anything, and that
-                # wants HOME writable; the root filesystem here is not.
-                - name: data
-                  mountPath: /home/immich/.immich-memories
-                - name: models
-                  mountPath: /models
-                - name: tmp
-                  mountPath: /tmp
           containers:
-            - name: auto-run
-              image: ghcr.io/sam-dumont/immich-video-memory-generator:latest
-
+            - name: trigger
+              image: docker.io/curlimages/curl:8.11.1@sha256:c1fe1679c34d9784c1b0d1e5f62ac0a79fca01fb6377cdd33e90473c6f9f9a69
               securityContext:
                 allowPrivilegeEscalation: false
                 readOnlyRootFilesystem: true
                 capabilities:
                   drop:
                     - ALL
-
               command:
-                - immich-memories
-                - auto
-                - run
-                - --quiet
-                - --cooldown
-                - "24"
-
-              envFrom:
-                - secretRef:
-                    name: immich-memories-secrets
+                - curl
+                - -fsS
+                - -X
+                - POST
+                - http://immich-memories/api/trigger
+                - -H
+                - "x-api-key: $(TRIGGER_TOKEN)"
               env:
-                - name: IMMICH_MEMORIES_OUTPUT__DIRECTORY
-                  value: /app/output
-                - name: IMMICH_MEMORIES_TIER
-                  value: auto
-                - name: IMMICH_MEMORIES_TRIAGE__ENCODER
-                  value: /models/triage/dinov2-small.onnx
-                - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__MARQO_ONNX
-                  value: /models/detectors/nsfw-marqo-384.onnx
-                - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR
-                  value: /models/huggingface
-
+                - name: TRIGGER_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: immich-memories-secrets
+                      key: IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN
               resources:
                 requests:
-                  memory: "4Gi"
-                  cpu: "2000m"
+                  memory: "16Mi"
+                  cpu: "10m"
                 limits:
-                  memory: "16Gi"
-                  cpu: "8000m"
-
-              volumeMounts:
-                - name: data
-                  mountPath: /home/immich/.immich-memories
-                - name: output
-                  mountPath: /app/output
-                - name: models
-                  mountPath: /models
-                - name: tmp
-                  mountPath: /tmp
-
-          volumes:
-            - name: data
-              persistentVolumeClaim:
-                claimName: immich-memories-cache
-            - name: output
-              persistentVolumeClaim:
-                claimName: immich-memories-output
-            - name: models
-              persistentVolumeClaim:
-                claimName: immich-memories-models
-            - name: tmp
-              emptyDir:
-                sizeLimit: 4Gi
+                  memory: "32Mi"
+                  cpu: "100m"

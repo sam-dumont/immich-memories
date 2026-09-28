@@ -1,10 +1,9 @@
-"""Saving config must not bake environment-provided secrets into config.yaml.
+"""Secrets supplied by the environment: the shortcut variables and `${VAR}` in config.yaml.
 
-Docker and Kubernetes users deliberately keep the Immich API key out of the
-config file and supply it through the environment, either as `${VAR}` inside the
-YAML or as `IMMICH_API_KEY`. Pressing Save in the UI dumped the *resolved*
-values, writing the secret to disk permanently and silently undoing that choice
--- and the file then outlives the container that had the env var.
+Docker and Kubernetes users keep the Immich API key out of the config file and supply
+it through the environment, either as `${VAR}` inside the YAML or as `IMMICH_API_KEY`.
+The app never writes config.yaml (#871), so these tests cover the read side: every
+variable reaches its field, and never another provider's.
 """
 
 from __future__ import annotations
@@ -13,80 +12,9 @@ from pathlib import Path
 
 import pytest
 
-from immich_memories.config_loader import _CREDENTIAL_ENV_ALIASES, Config, _apply_env_overrides
+from immich_memories.config_loader import Config, _apply_env_overrides
 
 FROM_ENV = "sk-do-not-write-me-to-disk"
-
-
-def test_a_templated_key_is_saved_as_its_template(tmp_path: Path, monkeypatch):
-    monkeypatch.setenv("MY_IMMICH_KEY", FROM_ENV)
-    source = tmp_path / "config.yaml"
-    source.write_text("immich:\n  url: http://immich.invalid\n  api_key: ${MY_IMMICH_KEY}\n")
-    config = Config.from_yaml(source)
-    assert config.immich.api_key == FROM_ENV, "expansion should still work in memory"
-
-    out = tmp_path / "saved.yaml"
-    config.save_yaml(out)
-
-    text = out.read_text()
-    assert FROM_ENV not in text, "the resolved secret was written to disk"
-    assert "${MY_IMMICH_KEY}" in text
-
-
-def test_a_key_supplied_by_an_env_var_is_not_written(tmp_path: Path, monkeypatch):
-    monkeypatch.setenv("IMMICH_API_KEY", FROM_ENV)
-    config = Config()
-    config.immich.api_key = FROM_ENV
-
-    out = tmp_path / "saved.yaml"
-    config.save_yaml(out)
-
-    text = out.read_text()
-    assert FROM_ENV not in text
-    assert "${IMMICH_API_KEY}" in text
-
-
-def test_a_key_typed_by_hand_is_preserved(tmp_path: Path, monkeypatch):
-    monkeypatch.delenv("IMMICH_API_KEY", raising=False)
-    config = Config()
-    config.immich.api_key = "typed-by-a-human"
-
-    out = tmp_path / "saved.yaml"
-    config.save_yaml(out)
-
-    assert "typed-by-a-human" in out.read_text()
-    assert Config.from_yaml(out).immich.api_key == "typed-by-a-human"
-
-
-def test_a_templated_secret_round_trips(tmp_path: Path, monkeypatch):
-    """Saving then loading must not lose the value."""
-    monkeypatch.setenv("MY_IMMICH_KEY", FROM_ENV)
-    source = tmp_path / "config.yaml"
-    source.write_text("immich:\n  api_key: ${MY_IMMICH_KEY}\n")
-
-    out = tmp_path / "saved.yaml"
-    Config.from_yaml(source).save_yaml(out)
-
-    assert Config.from_yaml(out).immich.api_key == FROM_ENV
-
-
-def test_an_ace_step_key_from_the_env_survives_save_and_reload(tmp_path: Path, monkeypatch):
-    """The ACE-Step alias was write-only: persisted as a template nothing expanded.
-
-    Saving wrote `${ACE_STEP_API_KEY}` because the alias is a feeder for the
-    field, but `ACEStepConfig` expanded `${VAR}` on `api_url` alone. The file
-    then held a placeholder that read back as the literal string, so a working
-    config lost its ACE-Step key the first time anyone pressed Save.
-    """
-    monkeypatch.setenv("ACE_STEP_API_KEY", FROM_ENV)
-    config = Config()
-    config.ace_step.api_key = FROM_ENV
-
-    out = tmp_path / "saved.yaml"
-    config.save_yaml(out)
-    assert "${ACE_STEP_API_KEY}" in out.read_text(), "the save path stopped writing the template"
-
-    assert Config.from_yaml(out).ace_step.api_key == FROM_ENV
 
 
 def test_the_ace_step_key_is_read_from_its_own_env_var(monkeypatch):
@@ -134,94 +62,32 @@ def test_the_configured_provider_decides_which_key_wins(monkeypatch):
     assert openai_side.llm.api_key == "the-openai-key"
 
 
-@pytest.mark.parametrize(
-    ("path", "alias"),
-    [(path, alias) for path, aliases in _CREDENTIAL_ENV_ALIASES.items() for alias in aliases],
-)
-def test_every_credential_alias_reads_back_from_the_file_it_was_persisted_into(
+_CREDENTIAL_ALIASES = [
+    ("immich.api_key", "IMMICH_API_KEY"),
+    ("llm.api_key", "OPENAI_API_KEY"),
+    ("llm.api_key", "ANTHROPIC_API_KEY"),
+    ("musicgen.api_key", "MUSICGEN_API_KEY"),
+    ("ace_step.api_key", "ACE_STEP_API_KEY"),
+    ("auth.password", "IMMICH_MEMORIES_AUTH_PASSWORD"),
+]
+
+
+@pytest.mark.parametrize(("path", "alias"), _CREDENTIAL_ALIASES)
+def test_every_credential_alias_expands_as_a_reference_in_the_file(
     path: str, alias: str, tmp_path: Path, monkeypatch
 ):
-    """Being a feeder for the save path obliges a variable to survive the load path.
+    """`${ALIAS}` in config.yaml must resolve on its own.
 
-    Membership in `_CREDENTIAL_ENV_ALIASES` is what makes `save_yaml` write
-    `${ALIAS}` in place of the secret, so every member owes the reverse: the file
-    it just produced has to resolve on its own. Asserted through `from_yaml`
-    alone, because `_apply_env_overrides` would answer the same variable a second
-    time and hide a field whose `${VAR}` expansion was never wired up -- which is
-    exactly how the ACE-Step key stayed broken.
+    Asserted through `from_yaml` alone, because `_apply_env_overrides` would answer
+    the same variable a second time and hide a field whose `${VAR}` expansion was
+    never wired up -- which is exactly how the ACE-Step key stayed broken.
     """
     section, field = path.split(".")
     monkeypatch.setenv(alias, FROM_ENV)
-    config = Config()
-    setattr(getattr(config, section), field, FROM_ENV)
-
-    out = tmp_path / "saved.yaml"
-    config.save_yaml(out)
-    assert FROM_ENV not in out.read_text(), f"{alias} is not feeding the save path any more"
-
-    assert getattr(getattr(Config.from_yaml(out), section), field) == FROM_ENV
-
-
-def test_other_credential_fields_are_covered_too(tmp_path: Path, monkeypatch):
-    """auth.password and the tier-2 api_keys are secrets by the same rule."""
-    monkeypatch.setenv("IMMICH_MEMORIES_AUTH_PASSWORD", FROM_ENV)
-    monkeypatch.setenv("OPENAI_API_KEY", FROM_ENV)
-    config = Config()
-    config.auth.password = FROM_ENV
-    config.llm.api_key = FROM_ENV
-
-    out = tmp_path / "saved.yaml"
-    config.save_yaml(out)
-
-    assert FROM_ENV not in out.read_text()
-
-
-def test_a_nested_key_supplied_by_an_env_var_is_not_written(tmp_path: Path, monkeypatch):
-    """Preparation's caption key sits two levels down; Save must still leave it in the env."""
-    monkeypatch.setenv("IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_API_KEY", FROM_ENV)
-    config = Config()
-    config.editorial.preparation.caption_api_key = FROM_ENV
-
-    out = tmp_path / "saved.yaml"
-    config.save_yaml(out)
-
-    text = out.read_text()
-    assert FROM_ENV not in text
-    assert "${IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_API_KEY}" in text
-
-
-def test_a_templated_nested_key_is_saved_as_its_template(tmp_path: Path, monkeypatch):
-    monkeypatch.setenv("MY_CAPTION_KEY", FROM_ENV)
     source = tmp_path / "config.yaml"
-    source.write_text(
-        "advanced:\n  editorial:\n    preparation:\n      caption_api_key: ${MY_CAPTION_KEY}\n"
-    )
-    config = Config.from_yaml(source)
-    assert config.editorial.preparation.caption_api_key == FROM_ENV
+    source.write_text(f"{section}:\n  {field}: ${{{alias}}}\n")
 
-    out = tmp_path / "saved.yaml"
-    config.save_yaml(out)
-
-    text = out.read_text()
-    assert FROM_ENV not in text
-    assert "${MY_CAPTION_KEY}" in text
-
-
-def test_an_unset_template_survives_a_save(tmp_path: Path, monkeypatch):
-    """The caption key resolves to empty when its variable is missing; Save must not
-    take that as permission to delete the reference the user wrote."""
-    monkeypatch.delenv("MY_CAPTION_KEY", raising=False)
-    source = tmp_path / "config.yaml"
-    source.write_text(
-        "advanced:\n  editorial:\n    preparation:\n      caption_api_key: ${MY_CAPTION_KEY}\n"
-    )
-    config = Config.from_yaml(source)
-    assert config.editorial.preparation.caption_api_key == ""
-
-    out = tmp_path / "saved.yaml"
-    config.save_yaml(out)
-
-    assert "${MY_CAPTION_KEY}" in out.read_text()
+    assert getattr(getattr(Config.from_yaml(source), section), field) == FROM_ENV
 
 
 @pytest.mark.parametrize(

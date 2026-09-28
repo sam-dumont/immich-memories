@@ -7,9 +7,10 @@ once, over the window Immich returns; the pool the owner reviews and the cut bot
 that one answer, so the cut never refuses a pool picture for who is in it.
 """
 
-import sqlite3
 from dataclasses import replace
 from datetime import timedelta
+
+import sqlalchemy as sa
 
 from immich_memories.analysis.editorial_planner import EditorialPlan
 from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
@@ -20,6 +21,7 @@ from immich_memories.api.models import Person
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.api.person_scope import people_in_window, window_condition
 from immich_memories.config_loader import Config
+from immich_memories.db.tables.annotations import head_facts
 from tests.test_editorial_preparation import preview, successful_ports
 from tests.test_editorial_runtime import _window
 from tests.test_editorial_source_route import photo
@@ -178,9 +180,11 @@ def test_the_cut_keeps_a_pool_picture_after_an_exclusion_splits_its_episode(tmp_
 
     def heads(**kwargs):
         providers.heads(**kwargs)
-        with sqlite3.connect(kwargs["store_path"]) as connection:
+        with kwargs["store"].begin() as connection:
             connection.execute(
-                "UPDATE head_facts SET label='yes' WHERE asset_id='screen' AND head='screen'"
+                sa.update(head_facts)
+                .where(head_facts.c.asset_id == "screen", head_facts.c.head == "screen")
+                .values(label="yes")
             )
 
     pool = selectable(

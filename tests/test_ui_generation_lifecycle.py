@@ -136,7 +136,7 @@ async def test_ui_finalizer_validates_exact_plan_and_completes_no_upload_once(
     params.editorial_duration_realization = (
         SHORTFALL | {"status": editorial_status} if editorial_status else None
     )
-    tracker = RunTracker("ui-finalize", db_path=db_path, capture_system=False)
+    tracker = RunTracker("ui-finalize", capture_system=False)
     tracker.start_run(source="manual")
     state = AppState(config=config, generation_options={"music_source": "None"})
     complete_calls = 0
@@ -172,7 +172,7 @@ async def test_ui_finalizer_validates_exact_plan_and_completes_no_upload_once(
         progress_bar=object(),
         status_label=object(),
     )
-    saved = RunDatabase(db_path).get_run("ui-finalize")
+    saved = RunDatabase().get_run("ui-finalize")
 
     assert budgets == [38_946.0]
     assert completed.status == "completed"
@@ -204,7 +204,7 @@ async def test_ui_music_failure_retains_music_as_last_phase(
     output_path.write_bytes(b"validated-base")
     prepared = PreparedGeneration(output_path, _h264_plan(), (), 1, 1)
     params = GenerationParams(clips=[make_clip("clip-1")], output_path=output_path, config=config)
-    tracker = RunTracker("ui-music-failure", db_path=db_path, capture_system=False)
+    tracker = RunTracker("ui-music-failure", capture_system=False)
     tracker.start_run(source="manual")
     state = AppState(config=config, generation_options={"music_source": "AI Generated"})
 
@@ -222,7 +222,7 @@ async def test_ui_music_failure_retains_music_as_last_phase(
             status_label=object(),
         )
 
-    saved = RunDatabase(db_path).get_run(tracker.run_id)
+    saved = RunDatabase().get_run(tracker.run_id)
     assert saved is not None
     assert saved.status == "running"
     assert saved.last_phase.value == "music"
@@ -242,7 +242,7 @@ async def test_ui_artifact_completion_survives_sidecar_mirror_failure(
     config = Config(cache={"database": str(db_path)})
     output_path = tmp_path / "memory.mp4"
     output_path.write_bytes(b"validated-video")
-    tracker = RunTracker("ui-sidecar", db_path=db_path, capture_system=False)
+    tracker = RunTracker("ui-sidecar", capture_system=False)
     tracker.start_run(source="manual")
     state = AppState(config=config, generation_options={"music_source": "None"})
 
@@ -270,7 +270,7 @@ async def test_ui_artifact_completion_survives_sidecar_mirror_failure(
         status_label=_Status(),
     )
 
-    saved = RunDatabase(db_path).get_run("ui-sidecar")
+    saved = RunDatabase().get_run("ui-sidecar")
     assert saved is not None
     assert completed.to_dict() == saved.to_dict()
     assert completed.status == "completed"
@@ -306,7 +306,7 @@ async def test_ui_music_warning_is_durable_and_final_validation_runs_after_music
         config=config,
         upload_enabled=False,
     )
-    tracker = RunTracker("ui-music-warning", db_path=db_path, capture_system=False)
+    tracker = RunTracker("ui-music-warning", capture_system=False)
     tracker.start_run(source="manual")
     state = AppState(
         config=config,
@@ -383,13 +383,13 @@ async def test_ui_successful_upload_uses_completed_pending_row_and_same_tracker(
     output_path.write_bytes(b"validated-base")
     plan = _h264_plan()
     prepared = PreparedGeneration(output_path, plan, (), 5, 4)
-    tracker = RunTracker("ui-upload-success", db_path=db_path, capture_system=False)
+    tracker = RunTracker("ui-upload-success", capture_system=False)
     tracker.start_run(source="manual")
     calls: list[str] = []
 
     class Client:
         def upload_memory(self, *, video_path: Path, album_name: str | None, captured_at=None):
-            before_call = RunDatabase(db_path).get_run("ui-upload-success")
+            before_call = RunDatabase().get_run("ui-upload-success")
             assert before_call is not None
             assert before_call.status == "completed"
             assert before_call.delivery_status is DeliveryStatus.PENDING
@@ -453,7 +453,7 @@ async def test_ui_success_toast_failure_preserves_delivered_state(
     config = Config(cache={"database": str(db_path)})
     output_path = tmp_path / "memory.mp4"
     output_path.write_bytes(b"validated-base")
-    tracker = RunTracker("ui-success-toast", db_path=db_path, capture_system=False)
+    tracker = RunTracker("ui-success-toast", capture_system=False)
     tracker.start_run(source="manual")
     params = GenerationParams(
         clips=[make_clip("clip-1")],
@@ -493,7 +493,7 @@ async def test_ui_success_toast_failure_preserves_delivered_state(
         status_label=_Status(),
     )
 
-    saved = RunDatabase(db_path).get_run("ui-success-toast")
+    saved = RunDatabase().get_run("ui-success-toast")
     assert saved is not None
     assert completed.delivery_status is DeliveryStatus.DELIVERED
     assert saved.delivery_status is DeliveryStatus.DELIVERED
@@ -515,7 +515,7 @@ async def test_ui_reloads_delivered_truth_when_mark_delivered_commits_then_raise
     config = Config(cache={"database": str(db_path)})
     output_path = tmp_path / "memory.mp4"
     output_path.write_bytes(b"validated-base")
-    tracker = RunTracker("ui-committed-delivery", db_path=db_path, capture_system=False)
+    tracker = RunTracker("ui-committed-delivery", capture_system=False)
     tracker.start_run(source="manual")
     params = GenerationParams(
         clips=[make_clip("clip-1")],
@@ -563,7 +563,7 @@ async def test_ui_reloads_delivered_truth_when_mark_delivered_commits_then_raise
         status_label=_Status(),
     )
 
-    saved = RunDatabase(db_path).get_run("ui-committed-delivery")
+    saved = RunDatabase().get_run("ui-committed-delivery")
     assert saved is not None
     assert completed.delivery_status is DeliveryStatus.DELIVERED
     assert saved.delivery_status is DeliveryStatus.DELIVERED
@@ -671,7 +671,7 @@ async def test_run_generation_does_not_restore_stale_pending_delivery_after_ambi
         output_container=_Container(),
     )
 
-    saved = RunDatabase(db_path).get_run("ui-stale-tracker")
+    saved = RunDatabase().get_run("ui-stale-tracker")
     assert saved is not None
     assert saved.delivery_status is DeliveryStatus.DELIVERED
     assert state.delivery_status is DeliveryStatus.DELIVERED
@@ -698,7 +698,7 @@ async def test_ui_unexpected_delivery_error_keeps_pending_video_and_redacts_conf
     output_path = tmp_path / "memory.mp4"
     output_path.write_bytes(b"validated-base")
     prepared = PreparedGeneration(output_path, _h264_plan(), (), 1, 1)
-    tracker = RunTracker("ui-upload-redaction", db_path=db_path, capture_system=False)
+    tracker = RunTracker("ui-upload-redaction", capture_system=False)
     tracker.start_run(source="manual")
     params = GenerationParams(
         clips=[make_clip("clip-1")],
@@ -775,7 +775,7 @@ async def test_ui_delivery_failure_preserves_retryable_artifact(
     )
     output_path = tmp_path / f"{client_kind}.mp4"
     output_path.write_bytes(b"validated-video")
-    tracker = RunTracker(f"ui-{client_kind}", db_path=db_path, capture_system=False)
+    tracker = RunTracker(f"ui-{client_kind}", capture_system=False)
     tracker.start_run(source="manual")
     calls = 0
 
@@ -823,7 +823,7 @@ async def test_ui_delivery_failure_preserves_retryable_artifact(
         status_label=_Status(),
     )
 
-    saved = RunDatabase(db_path).get_run(f"ui-{client_kind}")
+    saved = RunDatabase().get_run(f"ui-{client_kind}")
     assert saved is not None
     assert completed.to_dict() == saved.to_dict()
     assert completed.status == "completed"
@@ -1053,7 +1053,7 @@ async def test_post_completion_ui_error_cannot_downgrade_artifact_or_leak_config
         output_container=_Container(),
     )
 
-    saved = RunDatabase(db_path).get_run("ui-display-error")
+    saved = RunDatabase().get_run("ui-display-error")
     assert saved is not None
     assert saved.status == "completed"
     assert saved.output_path == str(output_path)
@@ -1143,7 +1143,7 @@ async def test_ui_observer_after_completion_recovers_persisted_session_truth(
         output_container=_Container(),
     )
 
-    saved = RunDatabase(db_path).get_run("ui-observer-recovery")
+    saved = RunDatabase().get_run("ui-observer-recovery")
     assert saved is not None
     assert saved.status == "completed"
     assert state.output_path == output_path

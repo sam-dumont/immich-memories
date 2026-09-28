@@ -320,7 +320,7 @@ of public domain, BSD and GPL parts. Nothing here changes the project's MIT
 licence for its own code, but a downstream that vendors the environment
 should know.
 
-140 packages, computed from uv.lock: everything reachable from
+145 packages, computed from uv.lock: everything reachable from
 immich-memories through the runtime extras (never the dev tools). Regenerate
 with `make notices`; `make notices-check` fails when this list is stale.
 
@@ -339,6 +339,10 @@ aiohttp 3.14.3
 aiosignal 1.4.0
   License: Apache-2.0
   URL: https://github.com/aio-libs/aiosignal
+
+alembic 1.20.0
+  License: MIT
+  URL: https://alembic.sqlalchemy.org
 
 annotated-doc 0.0.4
   License: MIT
@@ -532,6 +536,10 @@ lameenc 1.8.2
   License: GNU Lesser General Public License v3 (LGPLv3)
   URL: https://github.com/chrisstaite/lameenc
 
+mako 1.4.3
+  License: MIT
+  URL: https://www.makotemplates.org/
+
 markdown 3.10.2
   License: BSD-3-Clause
   URL: https://Python-Markdown.github.io/
@@ -684,6 +692,14 @@ protobuf 7.35.1
   License: 3-Clause BSD License
   URL: https://developers.google.com/protocol-buffers/
 
+psycopg 3.3.6
+  License: LGPL-3.0-only
+  URL: https://psycopg.org/
+
+psycopg-binary 3.3.6
+  License: LGPL-3.0-only
+  URL: https://psycopg.org/
+
 pycparser 3.0
   License: BSD-3-Clause
   URL: https://github.com/eliben/pycparser
@@ -791,6 +807,10 @@ six 1.17.0
 soundfile 0.13.1
   License: BSD
   URL: https://github.com/bastibe/python-soundfile
+
+sqlalchemy 2.1.1
+  License: MIT
+  URL: https://www.sqlalchemy.org
 
 starlette 1.6.0
   License: BSD-3-Clause

@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
     from immich_memories.analysis.editorial_story_planner import StorySelection
     from immich_memories.analysis.editorial_thin_layer import ThinPolish
+    from immich_memories.db import Store
 
 
 class StructureJudge(Protocol):
@@ -140,7 +141,7 @@ class StructurePlanningInput:
     bank_dir: Path
     artifact_dir: Path
     # The per-asset fact bank: where a cut's own measurements are read from and written back.
-    store_path: Path | None = None
+    store: Store | None = None
     # What a cut already measured of each clip's speech; a missing clip is not measured.
     speech_regions: Mapping[str, tuple[tuple[float, float], ...]] = field(default_factory=dict)
     motion_outcome_replay: MotionOutcomeReplay | None = None
@@ -168,9 +169,18 @@ class StructurePlanningInput:
     # Owner ticks after a cut: admitted after the read, so no prompt or digest input changes.
     owner_required_asset_ids: tuple[str, ...] = ()
     render_timing: EditorialTimingPolicy | None = None
-    # The people file's facts and links, so a film about people can tell who is close to them
+    # The people registry's facts and links, so a film about people can tell who is close to them
     # rather than to the owner. None reads as it always did: every relation is the owner's.
     people: EditorialPeople | None = None
+
+    @property
+    def bank_store(self) -> Store:
+        """Where the library's banks live: this run's store, else the configured one."""
+        if self.store is not None:
+            return self.store
+        from immich_memories.db import open_store
+
+        return open_store(self.config)
 
     def __post_init__(self) -> None:
         _check_render_timing(self.render_timing, self.case)

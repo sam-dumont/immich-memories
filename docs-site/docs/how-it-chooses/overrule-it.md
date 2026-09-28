@@ -27,7 +27,7 @@ flowchart TD
   req --> gate["family-viewing gate<br/>apply_audience_gate"]
   clear["Clear hold, or pictures clear-hold"] --> gate
   never["Never use, or pictures never-use"] --> out["never a carrier, any cut<br/>never_auto_ids"]
-  people["roles in people.yaml"] --> seat["family seat, big stories<br/>seat_in_film, _big_stories"]
+  people["roles in the people registry"] --> seat["family seat, big stories<br/>seat_in_film, _big_stories"]
   home["trips.homebase_*"] --> away["away stories<br/>editorial_home_radius"]
   gate --> film["the film"]
   rank --> film
@@ -149,7 +149,7 @@ duplicates](./family-audience-duplicates.md#your-word-on-a-picture).
 
 ## Tell it who's who
 
-Roles in `people.yaml` (**Settings > People**) are what the editor reads as close family: partner or
+Roles in the people registry (**Settings > People**) are what the editor reads as close family: partner or
 spouse, child, parent. Only what you confirmed counts, never the scan's guesses. They drive the
 [family seat](./family-audience-duplicates.md#the-family-seat), big stories, the strangers-only cap,
 and the polish never dropping a close relative's only shot. Siblings and grandparents are family and

@@ -12,6 +12,7 @@ from immich_memories.automation.runner import (
     StartedAutoRun,
 )
 from immich_memories.automation.state_store import AutomationStateStore
+from immich_memories.db import open_store
 from immich_memories.security import sanitize_error_message
 from immich_memories.tracking import RunDatabase
 from immich_memories.ui.components import im_card
@@ -54,7 +55,7 @@ def _submit(started: StartedAutoRun, *, candidate_key: str, dry_run: bool) -> No
 
 
 def _read_attempt(config, attempt_id: str) -> AutomationAttempt | None:
-    return AutomationStateStore(config.cache.database_path).get_attempt(attempt_id)
+    return AutomationStateStore(open_store(config)).get_attempt(attempt_id)
 
 
 def _run_id_for(config, attempt: AutomationAttempt) -> str | None:
@@ -65,7 +66,7 @@ def _run_id_for(config, attempt: AutomationAttempt) -> str | None:
     """
     if attempt.run_id:
         return attempt.run_id
-    record = RunDatabase(config.cache.database_path).get_run_by_automation_attempt(attempt.id)
+    record = RunDatabase(open_store(config)).get_run_by_automation_attempt(attempt.id)
     return record.run_id if record else None
 
 

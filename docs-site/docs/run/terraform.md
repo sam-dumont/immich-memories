@@ -26,7 +26,7 @@ dropped, `RuntimeDefault` seccomp, `read_only_root_filesystem = true`). Four wri
 
 | Mount | Backed by | Holds |
 |-------|-----------|-------|
-| `/home/immich/.immich-memories` | cache PVC | `config.yaml`, `cache/annotations.sqlite` (the editor's banks), `cache.db` (run history and automation state), video cache, projects |
+| `/home/immich/.immich-memories` | cache PVC | `config.yaml`, `store.db` (the store when it is SQLite: the editor's banks, your decisions, people, run history, automation state, special days), `cache.db` (derived analysis), video cache, projects |
 | `/app/output` | output PVC | generated videos (`IMMICH_MEMORIES_OUTPUT__DIRECTORY=/app/output`) |
 | `/models` | models PVC | pinned encoder and detector artifacts; `models_storage_size` defaults to `10Gi` |
 | `/tmp` | emptyDir (`tmp_size`, 4Gi) | FFmpeg intermediates: 8Gi for 4K |
@@ -101,6 +101,10 @@ module "immich_memories" {
 Which model to serve at `llm_base_url` is on [Readers](../better/reader.md). Preparation goes through the
 same `env` map: [editorial annotation setup](../being-rewritten/editorial-preparation.md).
 
+Setting `database_url` moves the store off the default SQLite file onto PostgreSQL. The four
+modes, and the SQL for a dedicated schema in Immich's own database, are on
+[Database and the store](./database.md).
+
 ## Variables
 
 `immich_url` and `immich_api_key` are required. Everything else has a default:
@@ -122,6 +126,7 @@ same `env` map: [editorial annotation setup](../being-rewritten/editorial-prepar
 | `ingress_tls_enabled`, `ingress_tls_secret_name`, `ingress_annotations` | TLS and extras for it | `false`, `"immich-memories-tls"`, `{}` |
 | `llm_base_url`, `llm_model`, `llm_api_key` | The reader (Ollama: append `/v1`). Empty leaves the editor without a model | `""` |
 | `musicgen_enabled`, `musicgen_base_url`, `musicgen_api_key` | AI music through a MusicGen server | `false`, the in-cluster service, `""` |
+| `database_url`, `database_schema` | The store on PostgreSQL instead of the default SQLite file. Empty stays SQLite | `""`, `"immich_memories"` |
 | `output_resolution` | `720p`, `1080p` or `4k` | `"1080p"` |
 
 `terraform output` gives the namespace, service name and endpoint, the ingress host, the deployment

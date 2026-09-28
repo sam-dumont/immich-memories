@@ -65,6 +65,7 @@ def _run_preparation(client, config: Config, assets) -> tuple[ProducerClock, Pre
     from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
     from immich_memories.analysis.subject_framing import face_boxes_of
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
+    from immich_memories.db import open_store
 
     thumbnail_cache = ThumbnailCache(
         cache_dir=config.cache.cache_path / "thumbnails",
@@ -74,7 +75,7 @@ def _run_preparation(client, config: Config, assets) -> tuple[ProducerClock, Pre
     clock = ProducerClock()
     result = prepare_editorial_annotations(
         assets=assets,
-        store_path=config.editorial.resolve_annotation_database(config.cache.cache_path),
+        store=open_store(config),
         thumbnail_cache=thumbnail_cache,
         preparation_config=config.editorial.preparation,
         triage_config=config.triage,

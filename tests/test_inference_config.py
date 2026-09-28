@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import pytest
-import yaml
 from pydantic import ValidationError
 
 from immich_memories.config_loader import Config
@@ -24,19 +23,18 @@ def test_inference_refuses_a_concurrency_outside_one_request_to_thirty_two(value
         Config(inference={"facts_concurrency": value})
 
 
-def test_inference_endpoint_survives_tiered_yaml_and_environment(
+def test_inference_endpoint_reads_from_tiered_yaml_and_environment(
     tmp_path: Path, monkeypatch
 ) -> None:
     monkeypatch.setenv("IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL", "http://facts.example:8092/")
     config = Config()
     assert config.inference.enabled is True
-    destination = tmp_path / "config.yaml"
-    config.save_yaml(destination)
-    saved = yaml.safe_load(destination.read_text())
-
-    assert saved["advanced"]["inference"]["facts_base_url"] == "http://facts.example:8092"
+    assert config.inference.facts_base_url == "http://facts.example:8092"
     monkeypatch.delenv("IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL")
-    assert Config.from_yaml(destination).inference.facts_base_url == "http://facts.example:8092"
+    source = tmp_path / "config.yaml"
+    source.write_text("advanced:\n  inference:\n    facts_base_url: http://facts.example:8092/\n")
+
+    assert Config.from_yaml(source).inference.facts_base_url == "http://facts.example:8092"
 
 
 @pytest.mark.parametrize(

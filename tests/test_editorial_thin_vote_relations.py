@@ -14,6 +14,7 @@ from immich_memories.analysis.editorial_picture_admission import PictureAdmissio
 from immich_memories.analysis.editorial_story_replies import film_close_family
 from immich_memories.analysis.editorial_thin_layer import ThinPolish
 from immich_memories.config_models_llm import LLMConfig
+from immich_memories.db import open_store
 from tests.editorial_subject_family import film_of, subject_people
 
 PARTNER = "with Person A (partner; aged 34; inner circle)"
@@ -83,7 +84,8 @@ def carrier(asset):
 def polish_of(tmp_path, lines, *, standing=None, subject="", record=lambda _n, _p: None, **film):
     judge = FitJudge()
     polish = ThinPolish(
-        bank_dir=tmp_path,
+        store=open_store(),
+        bank_scope="case",
         read_period=lambda _stories: ("A month of domestic life around a newborn.", {}),
     )
     cut = [carrier(asset) for asset in lines]
@@ -168,7 +170,7 @@ def test_the_vote_is_told_whose_film_it_is_and_each_shots_relation_to_the_owner(
 def test_a_person_film_holds_the_only_shot_of_its_subjects_father(tmp_path):
     """To the owner he is an in-law; in a film of his daughter he is her father, and a vote that
     calls his only shot filler cannot replace it. A month film can propose a replacement."""
-    _people, relation = subject_people(tmp_path)
+    _people, relation = subject_people()
     father = f"with Her Father ({relation['Her Father']})"
     lines = {
         "a1": f"2024-02-01 09:00 | a woman in a garden | {PARTNER}",
@@ -177,7 +179,7 @@ def test_a_person_film_holds_the_only_shot_of_its_subjects_father(tmp_path):
     }
     kept, rows = {}, {}
     for product in ("person_spotlight", "monthly_highlights"):
-        film = film_of(tmp_path / product, product)
+        film = film_of(product)
         kept[product], judge = polish_of(
             tmp_path / product, lines, close_family=film_close_family(film)
         )

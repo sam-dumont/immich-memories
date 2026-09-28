@@ -1,7 +1,6 @@
 """Explicit image producers own their caption bank and request accounting."""
 
 import json
-import sqlite3
 from contextlib import nullcontext
 
 import httpx
@@ -13,13 +12,13 @@ from immich_memories.analysis.llm_metrics import collecting
 from immich_memories.analysis.prepared_captions import prepared_captions
 from immich_memories.config_loader import Config
 from immich_memories.config_models_llm import LLMConfig
-from immich_memories.store.editorial_preparation import initialize
+from tests.annotation_rows import annotation_store
 from tests.test_editorial_preparation import preview
 
 
 @pytest.mark.parametrize("status", [200, 401, 403])
 def test_explicit_llm_writer_owns_its_caption_identity_and_accounts_for_image_requests(
-    monkeypatch, tmp_path, status
+    monkeypatch, status
 ):
     requests = []
     llm = LLMConfig(base_url="http://localhost:43210/v1", model="fixture-vision-model")
@@ -52,43 +51,35 @@ def test_explicit_llm_writer_owns_its_caption_identity_and_accounts_for_image_re
     monkeypatch.setattr(
         httpx, "AsyncClient", lambda **kw: client(transport=httpx.MockTransport(reply), **kw)
     )
-    database = tmp_path / "annotations.sqlite"
+    store = annotation_store()
     outcome = (
         pytest.raises(PermissionError, match=rf"HTTP {status}.*llm.api_key")
         if status != 200
         else nullcontext()
     )
-    with sqlite3.connect(database) as connection, collecting() as usage:
-        initialize(connection)
-        with outcome:
-            failures = prepare_captions(
-                connection=connection,
-                asset_ids=("one",),
-                preview_for=lambda _: preview(),
-                base_url="http://unused-smolvlm.invalid",
-                timeout=1,
-                concurrency=1,
-                check_cancelled=lambda: None,
-                progress=lambda *_: None,
-                llm_config=llm,
-            )
+    with collecting() as usage, outcome:
+        failures = prepare_captions(
+            store=store,
+            asset_ids=("one",),
+            preview_for=lambda _: preview(),
+            base_url="http://unused-smolvlm.invalid",
+            timeout=1,
+            concurrency=1,
+            check_cancelled=lambda: None,
+            progress=lambda *_: None,
+            llm_config=llm,
+        )
 
     if status != 200:
         assert len(requests) == 1
         return
 
-    config = Config(
-        tier="nas",
-        editorial={
-            "annotation_database": str(database),
-            "description_model": llm_caption_identity(llm),
-        },
-    )
+    config = Config(tier="nas", editorial={"description_model": llm_caption_identity(llm)})
     assert not failures
     assert len(requests) == 4
     assert usage.by_stage["caption_controls"].calls == 3
     assert usage.by_stage["caption"].calls == 1
     assert usage.preparation_calls == 4
     assert prepared_captions(config, ("one",)) == {"one": "A cat sleeps."}
-    smol = Config(tier="nas", editorial={"annotation_database": str(database)})
+    smol = Config(tier="nas")
     assert prepared_captions(smol, ("one",)) == {}

@@ -83,7 +83,7 @@ async def test_the_wizard_mixes_with_the_runs_mute_windows(
         music_path=music_file,
         no_music=False,
     )
-    tracker = RunTracker("ui-music-windows", db_path=db_path, capture_system=False)
+    tracker = RunTracker("ui-music-windows", capture_system=False)
     tracker.start_run(source="manual")
     state = AppState(config=config, generation_options={"music_source": "Upload file"})
 
@@ -137,7 +137,7 @@ async def test_choosing_no_music_never_reaches_the_music_phase(
     params = GenerationParams(
         clips=[make_clip("clip-1")], output_path=output_path, config=config, upload_enabled=False
     )
-    tracker = RunTracker("ui-music-none", db_path=db_path, capture_system=False)
+    tracker = RunTracker("ui-music-none", capture_system=False)
     tracker.start_run(source="manual")
     state = AppState(config=config, generation_options={"music_source": "None"})
 
@@ -195,7 +195,7 @@ async def test_choosing_bundled_asks_the_shared_phase_for_bundled(
     params = GenerationParams(
         clips=[make_clip("clip-1")], output_path=output_path, config=config, upload_enabled=False
     )
-    tracker = RunTracker("ui-music-bundled", db_path=db_path, capture_system=False)
+    tracker = RunTracker("ui-music-bundled", capture_system=False)
     tracker.start_run(source="manual")
     state = AppState(config=config, generation_options={"music_source": "Bundled"})
 

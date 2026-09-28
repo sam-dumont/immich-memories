@@ -3,9 +3,22 @@
 from contextlib import contextmanager
 from uuid import uuid4
 
+import pytest
+
 WORKER_TOKEN = uuid4().hex
 AUTH = {"Authorization": f"Bearer {WORKER_TOKEN}"}
 _PLACEHOLDER = {"policy": {}, "timeline": {}, "source_ids": ["x"], "sha256": "0" * 64}
+
+
+@pytest.fixture(autouse=True)
+def isolated_store(tmp_path_factory, monkeypatch):
+    """Point the store at a fresh file per test, never the developer's ~/.immich-memories."""
+    from immich_memories.db import close_stores
+
+    database = tmp_path_factory.mktemp("store") / "store.db"
+    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", f"sqlite:///{database}")
+    yield
+    close_stores()
 
 
 def render_request_body(

@@ -7,8 +7,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.editorial_moment_contract import Moment, MomentCard
 from immich_memories.analysis.llm_providers import resolved_llm_config
@@ -17,6 +16,9 @@ from immich_memories.analysis.moment_cards import MomentCard as ProductionMoment
 from immich_memories.analysis.special_event_scope import SpecialEventAdmission
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.timeperiod import DateRange
+
+if TYPE_CHECKING:
+    from immich_memories.db import Store
 
 
 @dataclass(frozen=True)
@@ -73,7 +75,7 @@ class TextCall:
 class TextRequest:
     prompt: str
     llm_config: Any
-    cache_path: Path
+    judgments: Store
     max_tokens: int
     timeout_seconds: int
     thinking: bool = False

@@ -30,6 +30,7 @@ from immich_memories.store.episode_readings import (
     EpisodeReadingStore,
     EpisodeRepresentative,
 )
+from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 from tests.test_text_episode_reader import _AnnotationLines
 
@@ -87,7 +88,7 @@ def test_a_lean_reading_asks_for_no_cull_and_one_representative_and_banks_the_an
             "representatives": [{"asset": 2, "reason": "the candles"}],
             "notable_moments": [{"asset": 2, "reason": "the first birthday candles"}]}]}"""
 
-    result = lean_reader(EpisodeReadingStore(tmp_path / "a.sqlite"), requester).read(projections())
+    result = lean_reader(EpisodeReadingStore(annotation_store()), requester).read(projections())
 
     assert len(asked) == 1
     assert "cull" not in asked[0].casefold()
@@ -118,7 +119,7 @@ def test_a_lean_reader_answers_from_a_full_reading_already_banked(tmp_path: Path
         cull_decisions=(),
         notable_moments=(EpisodeRepresentative("candles", "the first candles"),),
     )
-    store = EpisodeReadingStore(tmp_path / "a.sqlite")
+    store = EpisodeReadingStore(annotation_store())
     store.remember((full,))
 
     def forbidden(_prompt: str) -> str:

@@ -22,6 +22,7 @@ from immich_memories.store.episode_readings import (
     EpisodeReadingStore,
     EpisodeRepresentative,
 )
+from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 
 
@@ -90,7 +91,7 @@ def test_a_reading_banked_under_the_previous_prompt_is_read_again(tmp_path: Path
     identity = EpisodeReadingIdentity.from_annotations(
         group_id="e1", producer_key=stale.key(), annotation_lines=lines
     )
-    store = EpisodeReadingStore(tmp_path / "annotations.sqlite")
+    store = EpisodeReadingStore(annotation_store())
     store.remember(
         (
             BankedEpisodeReading(
@@ -159,7 +160,7 @@ def test_the_reader_shows_the_album_that_holds_the_episode(tmp_path: Path) -> No
         )
 
     CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(annotation_store()),
         producer=_producer(TEXT_EPISODE_PROMPT_VERSION),
         annotations=annotations,
         requester=requester,

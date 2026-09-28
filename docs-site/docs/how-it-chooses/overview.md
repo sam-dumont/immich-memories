@@ -92,7 +92,7 @@ flowchart TD
   demand --> clip["clip and Live Photo checks<br/>only where needed"]
   clip --> cap{"Captions enabled?"}
   cap -- yes --> captions["Missing captions and motion lines<br/>from the chosen provider"]
-  cap -- no --> store[("annotations.sqlite")]
+  cap -- no --> store[("the store")]
   captions --> store
   ev -.->|"facts still missing"| stop["Stop and report<br/>the missing inputs"]
 ```
@@ -106,7 +106,7 @@ document detector calling it a screenshot, a table or a QR code.
 
 The eight heads are small classifiers over one pinned DINOv2 encoder: `location`, `people`,
 `children`, `activity`, `venue`, `frame_kind`, `screen` and `uncovered_person`. The two detectors are
-`nsfw_marqo` (exposure) and `doc_docling` (documents). Every fact is banked in `annotations.sqlite`
+`nsfw_marqo` (exposure) and `doc_docling` (documents). Every fact is banked in the store
 under its producer's version, so the next cut asks nothing twice.
 
 Preparation follows the resolved product tier (`tier: auto` by default):

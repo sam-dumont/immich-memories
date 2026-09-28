@@ -45,7 +45,7 @@ Shots follow favourites and stories, so someone photographed all month and starr
 end up in no shot. The seat fixes that on every tier (`editorial_family_seat.py`).
 
 - **Who is owed one.** A close family member (partner, child or parent, as confirmed in
-  `people.yaml`) on at least 20 of the period's pictures, or 5 % of them, and in none of its shots.
+  the people registry) on at least 20 of the period's pictures, or 5 % of them, and in none of its shots.
   The two numbers are `advanced.editorial.people.seat_min_pictures` and `seat_min_share`. Only
   pictures the film could show count: someone whose every picture is refused as a shot is owed
   nothing, and the record says so.
@@ -126,7 +126,9 @@ flowchart TD
 across a video, and on a Live Photo's clip; the `uncovered_person` head as a second opinion; and the
 exposure chain: a five-minute capture run is held whole when at least half of it and at least three
 of its captures are flagged (`editorial_exposure_chains.py`). All of these give `family_only`.
-Nothing a later reading says lifts a detector's hold. Only you do, one picture at a time, after
+Nothing a later reading says lifts a detector's hold. The holds live in the store's audience bank
+(`audience_holds`), one per picture and per source: a detector's or a rule's is permanent, a text
+reading's lasts as long as the audience prompt it answered. Only you lift one, one picture at a time, after
 looking at it (see [Your word on a picture](#your-word-on-a-picture)). A false positive costs a shot
 in a wider film; a false negative puts the wrong picture in front of the wrong people.
 

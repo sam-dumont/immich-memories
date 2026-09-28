@@ -28,7 +28,6 @@ from immich_memories.analysis.editorial_runtime_backend import ProductionPostCar
 from immich_memories.analysis.editorial_runtime_evidence import (
     AnnotationReadings,
     EvidencePreparation,
-    ensure_annotation_store,
 )
 from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
 from immich_memories.analysis.editorial_source import FullEditorialSource, library_source_scope
@@ -65,11 +64,12 @@ from immich_memories.analysis.thumbnail_prefetch import cached_preview_bytes
 from immich_memories.api.models import Asset, VideoClipInfo
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.cache.editorial_verdicts import EditorialVerdicts
+from immich_memories.db import open_store
 from immich_memories.operations.cut_progress import ANALYSIS_PHASE, StageUpdate, announcing_stages
 from immich_memories.planning.auto_duration import DURATION_FROM_DURATION_FLAG
 from immich_memories.processing.editorial_timing import EditorialTimingPolicy
 from immich_memories.security import write_secret_file
-from immich_memories.store.episode_readings import EpisodeReadingProducer, EpisodeReadingStore
+from immich_memories.store.episode_readings import EpisodeReadingProducer
 from immich_memories.timeperiod import DateRange
 
 if TYPE_CHECKING:
@@ -238,13 +238,12 @@ def _projected_rendering(
 
 
 class RuntimeEditorialPlanner:
-    """Replayable planner whose thread-owned stores close after every planning attempt."""
+    """Replayable planner over the library's prepared evidence."""
 
     def __init__(
         self,
         planner: TextEditorialPlanner,
         *,
-        episode_store: EpisodeReadingStore,
         asset_ids: tuple[str, ...] | None = None,
         config: Config | None = None,
         backend: ProductionPostCardBackend | None = None,
@@ -252,7 +251,6 @@ class RuntimeEditorialPlanner:
         self._planner = planner
         self._config = config
         self._backend = backend
-        self._episode_store = episode_store
         self._asset_ids = frozenset(asset_ids) if asset_ids is not None else None
         self.last_attempt_directory: Path | None = None
         self._prepare_annotations: Callable[..., Any] | None = None
@@ -263,12 +261,9 @@ class RuntimeEditorialPlanner:
         *,
         trace: Trace,
     ) -> EditorialPlan:
-        try:
-            return self._planner.plan(
-                self._narrowed(candidates, lambda row: row.clip.asset), trace=trace
-            )
-        finally:
-            self.close()
+        return self._planner.plan(
+            self._narrowed(candidates, lambda row: row.clip.asset), trace=trace
+        )
 
     def _narrowed(
         self, rows: Sequence[_Row], asset_of: Callable[[_Row], Asset]
@@ -400,7 +395,6 @@ class RuntimeEditorialPlanner:
             )
         finally:
             backend.allow_live_motion = previous_live_motion
-            self.close()
 
     def _prepared_source(
         self,
@@ -427,10 +421,6 @@ class RuntimeEditorialPlanner:
             trace=trace, evidence_exclusions=exclusions, include_previews=False
         )
         return final, reach
-
-    def close(self) -> None:
-        """Release every thread-owned SQLite connection; later reads reopen safely."""
-        self._episode_store.close()
 
 
 def _recorded(requester, stage: str, directory: Callable[[], Path]):
@@ -470,12 +460,11 @@ def build_editorial_planner(
             "favourites and people only. Drop the subject to cut the date range as it is, "
             "or configure a model reader (llm.model) to cut it about the subject."
         )
-    store_path = config.editorial.resolve_annotation_database(config.cache.cache_path)
-    ensure_annotation_store(store_path)
+    store = open_store(config)
     runtime_ports = ports or EditorialRuntimePorts()
     context_by_id = runtime_ports.load_people()
     people = adapt_editorial_people(context_by_id)
-    episode_store = runtime_ports.episode_store_factory(store_path)
+    episode_store = runtime_ports.episode_store_factory(store)
     model_id, episode_requester = _reading_requesters(config, runtime_ports, reader_mode)
     scope = library_source_scope(
         client,
@@ -514,7 +503,7 @@ def build_editorial_planner(
         return source_snapshot
 
     readings = AnnotationReadings(
-        store_path=store_path, config=config, people=context_by_id, subjects=context.people
+        store=store, config=config, people=context_by_id, subjects=context.people
     )
 
     album_names = RunAlbumNames(
@@ -576,7 +565,8 @@ def build_editorial_planner(
         context=context,
         people=people,
         thumbnail_cache=thumbnail_cache,
-        store_path=store_path,
+        store=store,
+        bank_root=config.editorial.resolve_bank_root(config.cache.cache_path),
         ports=runtime_ports,
         fetch_preview=lambda asset_id: runtime_ports.fetch_preview(client, asset_id),
         attached_sources=lambda: source_snapshot or (),
@@ -588,23 +578,18 @@ def build_editorial_planner(
         return backend._context.artifact_dir
 
     episode_requester = _recorded(episode_requester, "episodes", attempt_directory)
-    try:
-        planner = TextEditorialPlanner(
-            selection_request=selection_request,
-            source_dependencies=EditorialDependencies(
-                source_fetcher=source_fetcher,
-                preview_jpeg=lambda asset: cached_preview_bytes(thumbnail_cache, asset.id),
-            ),
-            episode_reader_factory=episode_reader_factory,
-            backend=backend,
-            verdicts=EditorialVerdicts(store_path),
-        )
-    except BaseException:
-        episode_store.close()
-        raise
+    planner = TextEditorialPlanner(
+        selection_request=selection_request,
+        source_dependencies=EditorialDependencies(
+            source_fetcher=source_fetcher,
+            preview_jpeg=lambda asset: cached_preview_bytes(thumbnail_cache, asset.id),
+        ),
+        episode_reader_factory=episode_reader_factory,
+        backend=backend,
+        verdicts=EditorialVerdicts(store),
+    )
     runtime = RuntimeEditorialPlanner(
         planner,
-        episode_store=episode_store,
         asset_ids=scope.asset_ids,
         config=config,
         backend=backend,

@@ -15,13 +15,13 @@ if TYPE_CHECKING:
 SCHEMA_VERSION = 1
 
 
-def default_evidence_graph_path(people_path: Path | None = None) -> Path:
-    """The machine-owned graph beside the hand-editable people file."""
-    if people_path is None:
-        from immich_memories.people.companion import default_people_path
+def default_evidence_graph_path() -> Path:
+    """Where a scan writes its measurements.
 
-        people_path = default_people_path()
-    return people_path.with_name("people-graph.json")
+    A file, not a store table: every scan recomputes all of it from Immich, and nothing
+    reads it back at run time. It is there for a person reviewing relationships.
+    """
+    return Path.home() / ".immich-memories" / "people-graph.json"
 
 
 def save_evidence_graph(
@@ -54,7 +54,7 @@ def save_evidence_graph(
 
 
 def _derived_relationships(document: dict[str, Any] | None) -> list[dict[str, Any]]:
-    """Confirmed-path closure, labelled and kept outside the confirmed file."""
+    """Confirmed-path closure, labelled and kept outside the confirmed registry."""
     if document is None:
         return []
 

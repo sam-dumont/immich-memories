@@ -1,4 +1,4 @@
-"""A synthetic people file for a film about the owner's partner, whose parents are hers alone.
+"""A synthetic people registry for a film about the owner's partner, whose parents are hers alone.
 
 The owner calls them in-laws, so to the owner they are nobody close; to the film's subject they
 are her father and mother. Roles only.
@@ -6,11 +6,11 @@ are her father and mother. Roles only.
 
 from __future__ import annotations
 
-from pathlib import Path
 from types import SimpleNamespace
 
 from immich_memories.analysis.editorial_people import EditorialPeople, adapt_editorial_people
 from immich_memories.people.context import load_people_prompt_context
+from tests.people_registry_seed import seed_people
 
 PEOPLE_FILE = """
 version: 1
@@ -31,12 +31,9 @@ people:
 """
 
 
-def subject_people(folder: Path) -> tuple[EditorialPeople, dict[str, str]]:
-    """The people file's facts, and each person's relation to the owner as a line renders it."""
-    folder.mkdir(parents=True, exist_ok=True)
-    people_file = folder / "people.yaml"
-    people_file.write_text(PEOPLE_FILE)
-    context = load_people_prompt_context(people_file, include_derived=True)
+def subject_people() -> tuple[EditorialPeople, dict[str, str]]:
+    """The people registry's facts, and each person's relation to the owner as a line renders it."""
+    context = load_people_prompt_context(seed_people(PEOPLE_FILE), include_derived=True)
     return adapt_editorial_people(context), {c.name: c.relationship for c in context.values()}
 
 
@@ -47,9 +44,9 @@ def her_parents(relation: dict[str, str]) -> str:
     )
 
 
-def film_of(folder: Path, product: str) -> SimpleNamespace:
+def film_of(product: str) -> SimpleNamespace:
     """The parts of a planning source that say whose film it is."""
-    people, _relation = subject_people(folder)
+    people, _relation = subject_people()
     return SimpleNamespace(
         case=SimpleNamespace(product=product, people=("Subject",)), people=people
     )

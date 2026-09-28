@@ -29,6 +29,7 @@ from immich_memories.triage.heads import (
     PcaWeights,
 )
 from immich_memories.triage.preprocess import CROP_SIZE, preprocess_image_bytes
+from tests.annotation_rows import annotation_store
 
 PACK_KEY = encoder_key(DINOV2_SMALL_ID, "a" * 64)
 FEATURES = 8
@@ -196,16 +197,14 @@ def test_each_head_answers_with_its_own_label_and_a_real_probability():
 
 
 def test_a_bundle_never_runs_on_features_it_was_not_trained_on(tmp_path):
-    store = HeadFactStore(tmp_path / "triage.db")
+    store = HeadFactStore(annotation_store())
 
     with pytest.raises(ValueError, match="another encoder"):
         TriageEngine(encoder=Encoder(), bundle=bundle(key="c" * 64), store=store)
 
-    store.close()
-
 
 def test_every_asset_with_a_preview_is_decided_once_and_banked(tmp_path):
-    store = HeadFactStore(tmp_path / "triage.db")
+    store = HeadFactStore(annotation_store())
     encoder = Encoder()
     engine = TriageEngine(encoder=encoder, bundle=bundle(), store=store)
     previews = {"one": jpeg(), "two": jpeg()}
@@ -223,11 +222,10 @@ def test_every_asset_with_a_preview_is_decided_once_and_banked(tmp_path):
 
     assert (second.decided, second.banked) == (0, 2)
     assert encoder.batches == [2]
-    store.close()
 
 
 def test_an_asset_without_a_preview_is_counted_rather_than_decided(tmp_path):
-    store = HeadFactStore(tmp_path / "triage.db")
+    store = HeadFactStore(annotation_store())
     engine = TriageEngine(encoder=Encoder(), bundle=bundle(), store=store)
 
     run = engine.run(["seen", "no-preview"], {"seen": jpeg()}.get)
@@ -237,21 +235,19 @@ def test_an_asset_without_a_preview_is_counted_rather_than_decided(tmp_path):
     assert set(store.facts_for(["seen", "no-preview"], head="people", version="public-v1")) == {
         "seen"
     }
-    store.close()
 
 
 def test_a_run_with_nothing_to_decide_reports_no_rate(tmp_path):
-    store = HeadFactStore(tmp_path / "triage.db")
+    store = HeadFactStore(annotation_store())
     engine = TriageEngine(encoder=Encoder(), bundle=bundle(), store=store)
 
     run = engine.run([], {}.get)
 
     assert (run.requested, run.decided, run.ms_per_decided) == (0, 0, 0.0)
-    store.close()
 
 
 def test_previews_are_encoded_in_bounded_batches(tmp_path):
-    store = HeadFactStore(tmp_path / "triage.db")
+    store = HeadFactStore(annotation_store())
     encoder = Encoder()
     engine = TriageEngine(encoder=encoder, bundle=bundle(), store=store)
     previews = {f"asset-{n}": jpeg() for n in range(5)}
@@ -260,12 +256,13 @@ def test_previews_are_encoded_in_bounded_batches(tmp_path):
 
     assert run.decided == 5
     assert encoder.batches == [2, 2, 1]
-    store.close()
 
 
 def test_a_new_head_version_reopens_an_already_banked_asset(tmp_path):
-    store = HeadFactStore(tmp_path / "triage.db")
-    store.remember_facts("one", [HeadFact("people", "yes", 0.9, "public-v0")], encoder_key=PACK_KEY)
+    store = HeadFactStore(annotation_store())
+    store.remember_facts(
+        {"one": [HeadFact("people", "yes", 0.9, "public-v0")]}, encoder_key=PACK_KEY
+    )
     encoder = Encoder()
     engine = TriageEngine(encoder=encoder, bundle=bundle(), store=store)
 
@@ -273,7 +270,6 @@ def test_a_new_head_version_reopens_an_already_banked_asset(tmp_path):
 
     assert (run.decided, run.banked) == (1, 0)
     assert store.facts_for(["one"], head="people", version="public-v0")["one"].label == "yes"
-    store.close()
 
 
 class TestTheEncoderProviderChoice:

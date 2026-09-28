@@ -921,10 +921,10 @@ msgstr "Nessun suggerimento idoneo al momento."
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
 msgstr ""
-"Nessun file delle persone. Analizza di nuovo la libreria: legge conteggi e curve mensili di "
+"Ancora nessuna persona. Analizza di nuovo la libreria: legge conteggi e curve mensili di "
 "ogni persona con un nome, senza analizzare le immagini."
 
 #: pages/runs.py:105
@@ -1825,3 +1825,46 @@ msgstr "{title} ({n_keys} chiavi)"
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}: {duration_seconds:.1f}s"
 
+
+msgid "Default"
+msgstr "Predefinito"
+
+msgid "Nothing to save"
+msgstr "Niente da salvare"
+
+msgid "Save"
+msgstr "Salva"
+
+msgid "Saved here"
+msgstr "Salvato qui"
+
+msgid "Saved to the database"
+msgstr "Salvato nel database"
+
+msgid "Set by {name} (environment)"
+msgstr "Impostato da {name} (ambiente)"
+
+msgid "Set in config.yaml as {key}"
+msgstr "Impostato in config.yaml come {key}"
+
+msgid "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
+msgstr "Le impostazioni arrivano da quattro fonti, dalla più forte: variabili d'ambiente, config.yaml, ciò che salvi qui (nel database), poi i valori predefiniti. Un'impostazione in grigio è impostata dall'ambiente o da config.yaml; cambiala lì."
+
+msgid "{count} set outside this page"
+msgstr "{count} impostati fuori da questa pagina"
+
+msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
+msgstr "{name} non è impostata, quindi chiavi API e password non si possono salvare qui. Impostala, oppure metti questi segreti nell'ambiente o in config.yaml."
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  ({n} chiave)"
+msgstr[1] "{title}  ({n} chiavi)"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} impostata fuori da questa pagina"
+msgstr[1] "{n} impostate fuori da questa pagina"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Salvato qui, ma {name} non riesce a decifrarlo: è in uso il valore predefinito"

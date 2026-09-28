@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from contextlib import closing
 from dataclasses import replace
 from datetime import UTC, datetime
 
@@ -18,6 +17,7 @@ from immich_memories.store.episode_readings import (
 )
 from immich_memories.store.library_overviews import library_period_account
 from immich_memories.timeperiod import DateRange
+from tests.annotation_rows import annotation_store, read_rows
 from tests.test_editorial_duration_planner_integration import source
 from tests.test_library_catalogue import Reader
 
@@ -33,28 +33,26 @@ def whole_month(captured, bank, *, notable=()):
     """The same capture, presented as the whole calendar month a film of it would ask for."""
     identity = IDENTITY
     asset_ids = tuple(captured.assets)
-    with closing(EpisodeReadingStore(bank)) as store:
-        store.remember(
-            [
-                BankedEpisodeReading(
-                    identity=identity,
-                    full_asset_ids=asset_ids,
-                    what_happened="A household packed up and moved across town.",
-                    representatives=(
-                        EpisodeRepresentative(asset_id=asset_ids[0], reason="the first box"),
-                    ),
-                    cull_decisions=(),
-                    notable_moments=tuple(
-                        EpisodeRepresentative(asset_id=asset_ids[n], reason=why)
-                        for n, why in notable
-                    ),
-                )
-            ]
-        )
+    EpisodeReadingStore(bank).remember(
+        [
+            BankedEpisodeReading(
+                identity=identity,
+                full_asset_ids=asset_ids,
+                what_happened="A household packed up and moved across town.",
+                representatives=(
+                    EpisodeRepresentative(asset_id=asset_ids[0], reason="the first box"),
+                ),
+                cull_decisions=(),
+                notable_moments=tuple(
+                    EpisodeRepresentative(asset_id=asset_ids[n], reason=why) for n, why in notable
+                ),
+            )
+        ]
+    )
     return replace(
         captured,
         case=replace(captured.case, ranges=(MAY,)),
-        store_path=bank,
+        store=bank,
         lineage={
             **captured.lineage,
             "episode_readings": [
@@ -82,11 +80,11 @@ class BankedDemand:
 
     def readings_for(self, asset_ids):
         self.asked.append(tuple(asset_ids))
-        with closing(EpisodeReadingStore(self.bank)) as store:
-            return {
-                reading.identity.group_id: reading
-                for reading in store.readings_for((self.identity,)).values()
-            }
+        store = EpisodeReadingStore(self.bank)
+        return {
+            reading.identity.group_id: reading
+            for reading in store.readings_for((self.identity,)).values()
+        }
 
 
 def backend_for(captured, reader, demand=None):
@@ -103,7 +101,8 @@ def backend_for(captured, reader, demand=None):
         ),
         people=adapt_editorial_people({}),
         thumbnail_cache=object(),
-        store_path=captured.store_path,
+        store=captured.store,
+        bank_root=captured.bank_dir,
         ports=EditorialRuntimePorts(catalogue_requester_factory=lambda _config: reader),
         episode_demand=demand,
     )
@@ -117,7 +116,7 @@ def model_reader(config):
 
 def test_a_period_with_no_account_is_catalogued_when_the_draft_asks_for_it(tmp_path):
     """Nothing is read to set the layer up; the account arrives when the stories are known."""
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     captured = whole_month(source(tmp_path, seconds=60, pictures=3), bank)
     model_reader(captured.config)
     reader = Reader()
@@ -136,7 +135,7 @@ def test_a_period_with_no_account_is_catalogued_when_the_draft_asks_for_it(tmp_p
 
 
 def test_a_short_film_reads_more_through_the_demand_and_gets_its_records(tmp_path):
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     captured = whole_month(
         source(tmp_path, seconds=60, pictures=3), bank, notable=[(1, "the first box packed")]
     )
@@ -157,7 +156,7 @@ def test_a_short_film_whose_reading_fails_reads_no_records(tmp_path):
         def readings_for(self, asset_ids):
             raise RuntimeError("the reader is down")
 
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     captured = whole_month(source(tmp_path, seconds=60, pictures=3), bank)
     model_reader(captured.config)
 
@@ -168,7 +167,7 @@ def test_a_short_film_whose_reading_fails_reads_no_records(tmp_path):
 
 
 def test_the_no_model_reader_leaves_the_period_uncatalogued(tmp_path):
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     captured = whole_month(source(tmp_path, seconds=60, pictures=3), bank)
     captured.config.editorial.reader = "rules"
     captured.config.llm.model = ""
@@ -180,7 +179,7 @@ def test_the_no_model_reader_leaves_the_period_uncatalogued(tmp_path):
 
 
 def test_separate_date_windows_keep_the_same_on_demand_refinement_route(tmp_path):
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     captured = whole_month(source(tmp_path, seconds=60, pictures=3), bank)
     later = DateRange(
         datetime(2021, 5, 1, tzinfo=UTC).date(), datetime(2021, 5, 2, tzinfo=UTC).date()
@@ -201,21 +200,20 @@ def test_an_account_over_more_of_the_period_replaces_a_cut_s_partial_one(tmp_pat
     """`prepare --overviews` reads everything later; the fuller account is what a film reads."""
     from immich_memories.store.library_catalogue import CatalogueStore, LibraryAccount
 
-    bank = tmp_path / "annotations.sqlite"
-    with closing(CatalogueStore(bank)) as store:
-        store.remember(
-            [
-                LibraryAccount("partial", "month", "2020-05", "the stories one cut told", ("e1",)),
-                LibraryAccount("whole", "month", "2020-05", "the whole month", ("e1", "e2", "e3")),
-            ]
-        )
+    bank = annotation_store()
+    CatalogueStore(bank).remember(
+        [
+            LibraryAccount("partial", "month", "2020-05", "the stories one cut told", ("e1",)),
+            LibraryAccount("whole", "month", "2020-05", "the whole month", ("e1", "e2", "e3")),
+        ]
+    )
 
     assert library_period_account(bank, "2020-05") == "the whole month"
 
 
 def test_a_year_with_no_account_is_catalogued_when_the_draft_asks_for_it(tmp_path):
     """A year's account sits over its months: a year cut writes both from what it read."""
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     month = whole_month(source(tmp_path, seconds=60, pictures=3), bank)
     year = DateRange(
         start=datetime(2020, 1, 1, tzinfo=UTC).date(), end=datetime(2020, 12, 31, tzinfo=UTC).date()
@@ -235,7 +233,7 @@ def test_the_episodes_nobody_read_reach_the_account_as_their_facts(tmp_path):
     """The draft's own cards say what the rest of the month was, and cost nothing to pass on."""
     from immich_memories.analysis.editorial_structure_contract import EpisodeReadingCard
 
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     captured = whole_month(source(tmp_path, seconds=60, pictures=3), bank)
     quiet = EpisodeReadingCard(
         episode_id="quiet-episode",
@@ -258,13 +256,11 @@ def test_the_episodes_nobody_read_reach_the_account_as_their_facts(tmp_path):
 
 def test_a_person_film_over_twenty_years_is_polished_over_one_account_a_year(tmp_path):
     """A birth-date-to-today window reads on demand and asks no account per month."""
-    import sqlite3
-
     from immich_memories.analysis.editorial_structure_contract import EpisodeReadingCard
     from immich_memories.analysis.editorial_thin_layer import catalogued_period
     from tests.conftest import make_asset
 
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     month = whole_month(source(tmp_path, seconds=60, pictures=3), bank)
     lifetime = DateRange(
         start=datetime(2005, 12, 3, tzinfo=UTC), end=datetime(2026, 9, 23, 23, 59, tzinfo=UTC)
@@ -300,20 +296,17 @@ def test_a_person_film_over_twenty_years_is_polished_over_one_account_a_year(tmp
     assert demand.asked == [tuple(month.assets)]
     assert account and account == library_period_account(bank, period)
     assert len(reader.prompts) <= len(years) + 1
-    with closing(sqlite3.connect(bank)) as connection:
-        kinds = {kind for (kind,) in connection.execute("SELECT kind FROM library_overviews")}
+    kinds = {row["kind"] for row in read_rows(bank, "library_overviews")}
     assert not kinds & {"month", "month-part"}
 
 
 def test_a_season_is_polished_over_one_account_of_its_own_window(tmp_path):
     """A spring film reads one account for March to May, not a year's and a window's."""
-    import sqlite3
-
     from immich_memories.analysis.editorial_structure_contract import EpisodeReadingCard
     from immich_memories.analysis.editorial_thin_layer import catalogued_period
     from tests.conftest import make_asset
 
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     month = whole_month(source(tmp_path, seconds=60, pictures=3), bank)
     spring = DateRange(
         start=datetime(2020, 3, 1, tzinfo=UTC), end=datetime(2020, 5, 31, 23, 59, tzinfo=UTC)
@@ -342,8 +335,7 @@ def test_a_season_is_polished_over_one_account_of_its_own_window(tmp_path):
     assert period == "2020-03-01..2020-05-31"
     assert account and account == library_period_account(bank, period)
     assert len(reader.prompts) == 1
-    with closing(sqlite3.connect(bank)) as connection:
-        nodes = connection.execute("SELECT kind, period FROM library_overviews").fetchall()
+    nodes = [(row["kind"], row["period"]) for row in read_rows(bank, "library_overviews")]
     assert ("span", period) in nodes
     assert not {kind for kind, _period in nodes} & {"year", "year-part", "month", "month-part"}
 
@@ -358,7 +350,7 @@ def test_a_period_read_that_fails_once_is_asked_again(tmp_path):
                 raise RuntimeError("the reader dropped the call")
             return super().readings_for(asset_ids)
 
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     captured = whole_month(source(tmp_path, seconds=60, pictures=3), bank)
     model_reader(captured.config)
 

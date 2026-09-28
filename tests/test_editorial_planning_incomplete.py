@@ -21,6 +21,7 @@ from immich_memories.analysis.editorial_runtime_backend import (
 from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
 from immich_memories.analysis.editorial_structure_contract import StructurePlanningResult
 from immich_memories.analysis.selection_trace import Trace
+from tests.annotation_rows import annotation_store
 from tests.editorial_story_fixtures import ControlledStoryJudge
 from tests.test_editorial_duration_planner_integration import run, source
 
@@ -55,7 +56,8 @@ def backend_for(source_input, result):
         ),
         people=adapt_editorial_people({}),
         thumbnail_cache=object(),
-        store_path=source_input.bank_dir / "unused.sqlite",
+        store=annotation_store(),
+        bank_root=source_input.bank_dir,
         ports=EditorialRuntimePorts(
             structure_planner=lambda *_: result,
             structure_ports_factory=lambda *_: object(),

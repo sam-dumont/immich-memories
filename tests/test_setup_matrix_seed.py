@@ -8,7 +8,6 @@ facts cross, the judgements do not.
 
 from __future__ import annotations
 
-import sqlite3
 import sys
 from pathlib import Path
 
@@ -16,10 +15,23 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from setup_matrix_seed import ANNOTATION_STORE, seed_cache  # noqa: E402
+from setup_matrix_seed import STORE_FILES, seed_cache  # noqa: E402
 
 from immich_memories.cache.judgment_cache import JudgmentCache  # noqa: E402
-from immich_memories.store.editorial_preparation import initialize, now  # noqa: E402
+from immich_memories.db import Store, close_stores, open_store  # noqa: E402
+from immich_memories.db.bootstrap import StoreLocation  # noqa: E402
+from tests.annotation_rows import add_rows, count_rows  # noqa: E402
+
+STORE_FILE = STORE_FILES[0]
+
+
+def _open(path: Path) -> Store:
+    """A store at an exact file, independent of the per-test default store.
+
+    Never held across a `seed_cache` call: that replaces the file on disk, and a cached
+    connection pool would keep reading the file it opened, not the one now at that path.
+    """
+    return open_store(location=StoreLocation(url=f"sqlite:///{path}"))
 
 
 def _prepared_bank(directory: Path) -> Path:
@@ -30,23 +42,27 @@ def _prepared_bank(directory: Path) -> Path:
     quietly copying a table that is no longer there.
     """
     directory.mkdir(parents=True, exist_ok=True)
-    store = directory / ANNOTATION_STORE
-    with sqlite3.connect(store) as conn:
-        initialize(conn)
-        conn.execute(
-            "INSERT INTO descriptions (asset_id,model,text,source,written_at) VALUES (?,?,?,?,?)",
-            ("asset-1", "smolvlm2-500m", "a child on a beach", "caption", now()),
-        )
-        conn.commit()
-    banked = JudgmentCache(store)
-    banked.remember("a-judgment-key", '{"keep": ["M01"]}')
-    banked.close()
-    return store
+    store_path = directory / STORE_FILE
+    store = _open(store_path)
+    add_rows(
+        store,
+        "descriptions",
+        {
+            "asset_id": "asset-1",
+            "model": "smolvlm2-500m",
+            "text": "a child on a beach",
+            "source": "caption",
+        },
+    )
+    JudgmentCache(store).remember("a-judgment-key", '{"keep": ["M01"]}')
+    close_stores()
+    return store_path
 
 
-def _rows(store: Path, table: str) -> int:
-    with sqlite3.connect(store) as conn:
-        return int(conn.execute(f"SELECT count(*) FROM {table}").fetchone()[0])  # noqa: S608
+def _rows(store_path: Path, table: str) -> int:
+    count = count_rows(_open(store_path), table)
+    close_stores()
+    return count
 
 
 def test_seeding_keeps_the_preparation_and_drops_the_judgements(tmp_path: Path) -> None:
@@ -55,7 +71,7 @@ def test_seeding_keeps_the_preparation_and_drops_the_judgements(tmp_path: Path) 
 
     emptied = seed_cache(source.parent, destination)
 
-    seeded = destination / ANNOTATION_STORE
+    seeded = destination / STORE_FILE
     assert _rows(seeded, "descriptions") == 1, "the captions are what seeding is for"
     assert _rows(seeded, "judgments") == 0, "a reader must never inherit another reader's answer"
     assert "judgments" in emptied
@@ -66,20 +82,20 @@ def test_a_second_seed_replaces_what_the_last_run_banked(tmp_path: Path) -> None
     source = _prepared_bank(tmp_path / "mac-local" / "cache")
     destination = tmp_path / "mac-local-gemma4" / "cache"
     seed_cache(source.parent, destination)
-    own = JudgmentCache(destination / ANNOTATION_STORE)
-    own.remember("answered-during-the-first-run", "{}")
-    own.close()
+    JudgmentCache(_open(destination / STORE_FILE)).remember("answered-during-the-first-run", "{}")
+    close_stores()
 
     seed_cache(source.parent, destination)
 
-    assert _rows(destination / ANNOTATION_STORE, "judgments") == 0
+    assert _rows(destination / STORE_FILE, "judgments") == 0
 
 
 def test_a_judgment_database_beside_the_bank_does_not_cross(tmp_path: Path) -> None:
     """`verdicts_beside` puts them in a file of their own, which a copy carries whole."""
     source = tmp_path / "mac-local" / "cache"
     _prepared_bank(source)
-    JudgmentCache(source / "judgments.db").close()
+    JudgmentCache(_open(source / "judgments.db")).remember("k", "{}")
+    close_stores()
     destination = tmp_path / "mac-hosted-melious-muse-glimmer-30b" / "cache"
 
     seed_cache(source, destination)
@@ -91,3 +107,53 @@ def test_a_bank_that_is_not_there_is_named_rather_than_half_copied(tmp_path: Pat
     with pytest.raises(SystemExit) as refused:
         seed_cache(tmp_path / "never-prepared" / "cache", tmp_path / "target")
     assert "never-prepared" in str(refused.value)
+
+
+def test_bank_answers_and_text_holds_stay_behind_and_detector_holds_cross(tmp_path: Path) -> None:
+    import sqlalchemy as sa
+
+    from immich_memories.db.tables import audience_answers, audience_holds, vote_bank_entries
+
+    source = _prepared_bank(tmp_path / "mac-local" / "cache")
+    store = _open(source)
+    with store.begin() as connection:
+        connection.execute(
+            sa.insert(audience_answers),
+            {"answerer": "full|laya", "evidence_key": "k", "record": {"verdict": "share"}},
+        )
+        connection.execute(
+            sa.insert(vote_bank_entries),
+            {"bank": "memory-worthy", "scope": "m", "section": "", "entry_key": "e", "value": {}},
+        )
+        connection.execute(
+            sa.insert(audience_holds),
+            [
+                {"asset_id": "asset-1", "slot": "permanent", "hold": {"verdict": "do_not_show"}},
+                {"asset_id": "asset-1", "slot": "text", "hold": {"verdict": "family_only"}},
+            ],
+        )
+    close_stores()
+    destination = tmp_path / "mac-rules" / "cache"
+
+    seed_cache(source.parent, destination)
+
+    seeded = destination / STORE_FILE
+    assert _rows(seeded, "audience_answers") == _rows(seeded, "vote_bank_entries") == 0
+    store = _open(seeded)
+    with store.connect() as connection:
+        slots = connection.execute(sa.select(audience_holds.c.slot)).scalars().all()
+    close_stores()
+    assert slots == ["permanent"]
+
+
+def test_legacy_bank_files_never_reach_a_cell(tmp_path: Path) -> None:
+    """The cell's first-open import would read them; the seed hands over the store only."""
+    source = _prepared_bank(tmp_path / "mac-local" / "cache").parent
+    (source / "annotations.sqlite").write_bytes(b"legacy")
+    (source / "annotations.sqlite-wal").write_bytes(b"legacy")
+    destination = tmp_path / "mac-rules" / "cache"
+
+    seed_cache(source, destination)
+
+    assert not (destination / "annotations.sqlite").exists()
+    assert not (destination / "annotations.sqlite-wal").exists()

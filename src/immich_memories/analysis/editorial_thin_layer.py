@@ -19,14 +19,11 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from itertools import chain
 from operator import itemgetter
-from pathlib import Path
 from typing import Any
 
 from immich_memories.analysis.editorial_block_votes import (
     BLOCK_SIZE,
     balanced_groups,
-    load_vote_bank,
-    save_vote_bank,
 )
 from immich_memories.analysis.editorial_picture_admission import GateRefusal, PictureAdmission
 from immich_memories.analysis.editorial_shot_kinds import KindOf, kind_mix
@@ -61,6 +58,8 @@ from immich_memories.analysis.editorial_thin_vote import (
     sole_texture_shots,
     vote_thesis_fit,
 )
+from immich_memories.db import Store
+from immich_memories.store.vote_banks import VoteBank
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +111,9 @@ def _day(when: Any) -> str:
 class ThinPolish:
     """The model polish of a rules draft, over an account of the period it is a cut of."""
 
-    bank_dir: Path
+    # Where the thesis-fit votes are banked: the library's store, under the film's case key.
+    store: Store
+    bank_scope: str
     # The account of the period, and what its readings named as worth a record, given the
     # shots this draft chose, by story. Both arrive together, because both come from the same
     # readings and neither is worth paying for before the draft exists.
@@ -399,12 +400,9 @@ class ThinPolish:
         # A vote proposes a replacement; only a candidate that passes can take the seat.
         return carriers, verdicts, rounds
 
-    def _bank(self) -> dict:
-        """Both votes read and write one file, so neither is paid for twice."""
-        return load_vote_bank(self._bank_path())
-
-    def _bank_path(self) -> Path:
-        return self.bank_dir / "thesis-fit.private.json"
+    def _bank(self) -> VoteBank:
+        """Both votes read and write one bank, so neither is paid for twice."""
+        return VoteBank(self.store, "thesis-fit", self.bank_scope)
 
     def _ask(self, carriers, fit: _FitQuestion, held: Mapping[str, str], moving=None):
         """The vote over these shots; with `moving`, only those shots' answers are read.
@@ -434,7 +432,7 @@ class ThinPolish:
             close_family=fit.close_family,
             story_of=lambda asset: story_of(asset, "") or "",
             bank=bank,
-            save=lambda: save_vote_bank(self._bank_path(), bank),
+            save=bank.save,
         )
 
 

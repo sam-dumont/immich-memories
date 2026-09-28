@@ -23,6 +23,7 @@ from immich_memories.automation.runner import (
 )
 from immich_memories.automation.state_store import AutomationStateStore
 from immich_memories.config import get_config
+from immich_memories.db import open_store
 from immich_memories.tracking.run_database import RunDatabase
 from immich_memories.ui.auth import (
     is_auth_enabled,
@@ -104,13 +105,13 @@ def _start(config: Config) -> StartedAutoRun | None:
 
 def _active_attempt_id(config: Config) -> str | None:
     """The id of the run holding the lease, as far as durable history can tell."""
-    last = AutomationStateStore(config.cache.database_path).get_last_attempt()
+    last = AutomationStateStore(open_store(config)).get_last_attempt()
     return last.id if last is not None and last.outcome is AutoOutcome.RUNNING else None
 
 
 def _attempt_payload(config: Config, attempt_id: str) -> dict[str, Any] | None:
     """One attempt's live state, plus its run record once generation produced one."""
-    attempt = AutomationStateStore(config.cache.database_path).get_attempt(attempt_id)
+    attempt = AutomationStateStore(open_store(config)).get_attempt(attempt_id)
     if attempt is None:
         return None
     return {
@@ -132,7 +133,7 @@ def _attempt_payload(config: Config, attempt_id: str) -> dict[str, Any] | None:
 def _run_payload(config: Config, run_id: str | None) -> dict[str, Any] | None:
     if run_id is None:
         return None
-    run = RunDatabase(db_path=config.cache.database_path).get_run(run_id)
+    run = RunDatabase(open_store(config)).get_run(run_id)
     if run is None:
         return None
     record = run.to_dict()

@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 from nicegui import ui
 
 from immich_memories.config import get_config
+from immich_memories.db import open_store
 from immich_memories.operations.auto_output import output_log_path
 from immich_memories.operations.run_index import attempt_dir_for_run
 from immich_memories.operations.storyboard import read_storyboard, storyboard_lines
@@ -49,7 +50,7 @@ def _run_details(db: RunDatabase, run_id: str) -> None:
         )
         for error in phase.errors:
             ui.label(str(error)).classes("whitespace-pre-wrap break-all text-sm")
-    attempt = attempt_dir_for_run(config.cache.cache_path, record.run_id)
+    attempt = attempt_dir_for_run(record.run_id, store=db.store)
     board = read_storyboard(attempt) if attempt else None
     if board:
         with ui.expansion(tr("Read the cut"), value=True).classes("w-full"):
@@ -75,7 +76,7 @@ def _run_details(db: RunDatabase, run_id: str) -> None:
 
 def render_runs(run_id: str | None = None, status: str = "all", offset: int = 0) -> None:
     """List twenty durable runs at a time; details survive navigation and server restarts."""
-    db = RunDatabase(get_config().cache.database_path)
+    db = RunDatabase(open_store(get_config()))
     if run_id:
         _run_details(db, run_id)
         return

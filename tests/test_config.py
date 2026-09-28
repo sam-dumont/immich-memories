@@ -270,32 +270,11 @@ class TestConfig:
         assert loaded.server.host == "::"
         assert loaded.server.port == 9090
 
-    def test_yaml_roundtrip(self, tmp_path):
-        """Config survives a save-then-load cycle with values intact."""
+    def test_api_version_reads_from_plain_yaml_as_an_enum(self, tmp_path):
+        """The API-version override is plain YAML and restored as an enum."""
         config_path = tmp_path / "config.yaml"
+        config_path.write_text("immich:\n  api_version: v3\n")
 
-        original = Config(
-            immich=ImmichConfig(url="https://test.com", api_key="test_key"),
-            defaults=DefaultsConfig(transition_duration=0.9),
-        )
-
-        original.save_yaml(config_path)
-        loaded = Config.from_yaml(config_path)
-
-        assert loaded.immich.url == "https://test.com"
-        assert loaded.immich.api_key == "test_key"
-        assert loaded.defaults.transition_duration == 0.9
-
-    def test_api_version_yaml_roundtrip(self, tmp_path):
-        """The API-version override is stored as plain YAML and restored as an enum."""
-        config_path = tmp_path / "config.yaml"
-        Config(immich=ImmichConfig(api_version="v3")).save_yaml(config_path)
-
-        import yaml
-
-        with config_path.open() as f:
-            raw = yaml.safe_load(f)
-        assert raw["immich"]["api_version"] == "v3"
         assert Config.from_yaml(config_path).immich.api_version is ApiVersionPolicy.V3
 
     def test_missing_yaml_returns_defaults(self):
@@ -353,25 +332,6 @@ class TestConfig:
         assert loaded.analysis.max_album_assets == 2500
         assert loaded.server.port == 8080
 
-    def test_save_yaml_groups_tier2_under_advanced(self, tmp_path):
-        """save_yaml outputs tier 2 sections under advanced: namespace."""
-        config_path = tmp_path / "config.yaml"
-        config = Config(
-            immich=ImmichConfig(url="https://save.com"),
-            analysis=AnalysisConfig(max_album_assets=3000),
-        )
-        config.save_yaml(config_path)
-
-        import yaml
-
-        with config_path.open() as f:
-            raw = yaml.safe_load(f)
-        # Tier 1 at top level
-        assert raw["immich"]["url"] == "https://save.com"
-        # Tier 2 under advanced:
-        assert "analysis" not in raw
-        assert raw["advanced"]["analysis"]["max_album_assets"] == 3000
-
     def test_triage_is_a_tier2_section_off_by_default(self, tmp_path):
         config_path = tmp_path / "config.yaml"
         config_path.write_text("advanced:\n  triage:\n    enabled: true\n")
@@ -379,27 +339,6 @@ class TestConfig:
         assert Config().triage.enabled is False
         loaded = Config.from_yaml(config_path)
         assert loaded.triage.enabled is True
-
-        loaded.save_yaml(config_path)
-        import yaml
-
-        raw = yaml.safe_load(config_path.read_text())
-        assert "triage" not in raw
-        assert raw["advanced"]["triage"]["enabled"] is True
-
-    def test_tiered_roundtrip(self, tmp_path):
-        """Config survives save (tiered) → load cycle."""
-        config_path = tmp_path / "config.yaml"
-        original = Config(
-            immich=ImmichConfig(url="https://rt.com", api_key="key"),
-            analysis=AnalysisConfig(max_album_assets=2200),
-            server=ServerConfig(port=7070),
-        )
-        original.save_yaml(config_path)
-        loaded = Config.from_yaml(config_path)
-        assert loaded.immich.url == "https://rt.com"
-        assert loaded.analysis.max_album_assets == 2200
-        assert loaded.server.port == 7070
 
     def test_top_level_overrides_advanced(self, tmp_path):
         """If a section appears both at top level and under advanced:, top level wins."""

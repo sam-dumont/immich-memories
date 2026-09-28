@@ -5,65 +5,29 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import FrozenInstanceError
 from datetime import date
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import sqlalchemy as sa
+
+from tests.annotation_rows import add_rows, annotation_store
 
 
-def _create_store(path: Path, *, include_motion: bool = True) -> None:
-    with sqlite3.connect(path) as connection:
-        connection.executescript(
-            """
-            CREATE TABLE asset_people (
-                asset_id TEXT, person_name TEXT, person_id TEXT, birth_date TEXT
-            );
-            CREATE TABLE descriptions (asset_id TEXT, model TEXT, text TEXT);
-            CREATE TABLE description_fields (
-                asset_id TEXT, model TEXT, field TEXT, value TEXT
-            );
-            CREATE TABLE flags (asset_id TEXT, flag TEXT, evidence TEXT, source TEXT);
-            CREATE TABLE head_facts (
-                asset_id TEXT, head TEXT, version TEXT, label TEXT
-            );
-            CREATE TABLE pixel_facts (
-                asset_id TEXT, producer_key TEXT, sharpness REAL, brightness REAL,
-                contrast REAL, dark_fraction REAL, bright_fraction REAL,
-                needs_rotation INTEGER
-            );
-            CREATE TABLE pixel_facts_thresholds (
-                name TEXT, value REAL, producer_key TEXT
-            );
-            """
-        )
-        if include_motion:
-            connection.execute(
-                "CREATE TABLE motion_bursts ("
-                "asset_id TEXT, burst_id TEXT, still_ids TEXT, "
-                "duration_seconds REAL, beats_a_still INTEGER)"
-            )
-
-
-def test_description_selection_is_exact_and_preserves_requested_asset_order(
-    tmp_path: Path,
-) -> None:
+def test_description_selection_is_exact_and_preserves_requested_asset_order() -> None:
     from immich_memories.store.asset_annotations import (
         AssetAnnotationFactRepository,
     )
 
-    path = tmp_path / "annotations.sqlite"
-    _create_store(path)
-    with sqlite3.connect(path) as connection:
-        connection.executemany(
-            "INSERT INTO descriptions VALUES (?, ?, ?)",
-            (
-                ("asset-b", "wanted-model", "The selected description."),
-                ("asset-b", "stale-model", "The stale description."),
-            ),
-        )
+    store = annotation_store()
+    add_rows(
+        store,
+        "descriptions",
+        {"asset_id": "asset-b", "model": "wanted-model", "text": "The selected description."},
+        {"asset_id": "asset-b", "model": "stale-model", "text": "The stale description."},
+    )
 
     batch = AssetAnnotationFactRepository(
-        path,
+        store,
         description_model="wanted-model",
         head_versions={"activity": "activity-v1"},
         pixel_producer_key="pixel-v1",
@@ -75,7 +39,7 @@ def test_description_selection_is_exact_and_preserves_requested_asset_order(
     assert batch.as_mapping()["asset-a"].description is None
 
 
-def test_complete_snapshot_uses_only_the_selected_fact_producers(tmp_path: Path) -> None:
+def test_complete_snapshot_uses_only_the_selected_fact_producers() -> None:
     from immich_memories.store.asset_annotations import (
         AssetAnnotationFactRepository,
         StoredFlagFact,
@@ -84,74 +48,127 @@ def test_complete_snapshot_uses_only_the_selected_fact_producers(tmp_path: Path)
         StoredPixelFacts,
     )
 
-    path = tmp_path / "annotations.sqlite"
-    _create_store(path)
-    with sqlite3.connect(path) as connection:
-        connection.executemany(
-            "INSERT INTO asset_people VALUES (?, ?, ?, ?)",
-            (
-                ("asset-a", " Zoë  ", "person-z", "2001-02-03"),
-                ("asset-a", "alex", "person-a", "not-a-date"),
-            ),
-        )
-        connection.executemany(
-            "INSERT INTO descriptions VALUES (?, ?, ?)",
-            (
-                ("asset-a", "wanted-model", " A  complete description. "),
-                ("asset-a", "stale-model", "Stale description."),
-            ),
-        )
-        connection.executemany(
-            "INSERT INTO description_fields VALUES (?, ?, ?, ?)",
-            (
-                ("asset-a", "wanted-model", "setting", " city  street "),
-                ("asset-a", "wanted-model", "exposure", "underexposed"),
-                ("asset-a", "stale-model", "setting", "stale setting"),
-            ),
-        )
-        connection.executemany(
-            "INSERT INTO flags VALUES (?, ?, ?, ?)",
-            (
-                ("asset-a", "screen", '{"reason":"computer display"}', "docling"),
-                ("asset-a", "dark", '{"reason":"low exposure"}', "Exposure"),
-                (
-                    "asset-a",
-                    "review",
-                    '{"reason":"legacy public exposure"}',
-                    "public-exposure-v2",
-                ),
-            ),
-        )
-        connection.executemany(
-            "INSERT INTO head_facts VALUES (?, ?, ?, ?)",
-            (
-                ("asset-a", "activity", "activity-v1", "sport-active"),
-                ("asset-a", "activity", "activity-v0", "stale-label"),
-                ("asset-a", "venue", "venue-v1", "stadium"),
-            ),
-        )
-        connection.executemany(
-            "INSERT INTO pixel_facts VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (
-                ("asset-a", "pixel-v1", 5.0, 20.0, 10.0, 0.7, 0.1, 1),
-                ("asset-a", "pixel-v0", 99.0, 99.0, 99.0, 0.0, 0.0, 0),
-            ),
-        )
-        connection.executemany(
-            "INSERT INTO pixel_facts_thresholds VALUES (?, ?, ?)",
-            (
-                ("sharpness_p10", 7.5, "pixel-v1"),
-                ("sharpness_p10", 70.0, "pixel-v0"),
-            ),
-        )
-        connection.execute(
-            "INSERT INTO motion_bursts VALUES (?, ?, ?, ?, ?)",
-            ("asset-a", "burst-1", '["still-b","still-a"]', 4.4, 1),
-        )
+    store = annotation_store()
+    add_rows(
+        store,
+        "asset_people",
+        {
+            "asset_id": "asset-a",
+            "person_name": " Zoë  ",
+            "person_id": "person-z",
+            "birth_date": "2001-02-03",
+        },
+        {
+            "asset_id": "asset-a",
+            "person_name": "alex",
+            "person_id": "person-a",
+            "birth_date": "not-a-date",
+        },
+    )
+    add_rows(
+        store,
+        "descriptions",
+        {"asset_id": "asset-a", "model": "wanted-model", "text": " A  complete description. "},
+        {"asset_id": "asset-a", "model": "stale-model", "text": "Stale description."},
+    )
+    add_rows(
+        store,
+        "description_fields",
+        {
+            "asset_id": "asset-a",
+            "model": "wanted-model",
+            "field": "setting",
+            "value": " city  street ",
+        },
+        {
+            "asset_id": "asset-a",
+            "model": "wanted-model",
+            "field": "exposure",
+            "value": "underexposed",
+        },
+        {
+            "asset_id": "asset-a",
+            "model": "stale-model",
+            "field": "setting",
+            "value": "stale setting",
+        },
+    )
+    add_rows(
+        store,
+        "asset_flags",
+        {
+            "asset_id": "asset-a",
+            "flag": "screen",
+            "evidence": '{"reason":"computer display"}',
+            "source": "docling",
+        },
+        {
+            "asset_id": "asset-a",
+            "flag": "dark",
+            "evidence": '{"reason":"low exposure"}',
+            "source": "Exposure",
+        },
+        {
+            "asset_id": "asset-a",
+            "flag": "review",
+            "evidence": '{"reason":"legacy public exposure"}',
+            "source": "public-exposure-v2",
+        },
+    )
+    add_rows(
+        store,
+        "head_facts",
+        {
+            "asset_id": "asset-a",
+            "head": "activity",
+            "version": "activity-v1",
+            "label": "sport-active",
+        },
+        {
+            "asset_id": "asset-a",
+            "head": "activity",
+            "version": "activity-v0",
+            "label": "stale-label",
+        },
+        {"asset_id": "asset-a", "head": "venue", "version": "venue-v1", "label": "stadium"},
+    )
+    # pixel_facts is keyed on asset_id alone: a picture carries one producer's measurement at a
+    # time, unlike head_facts where several producer versions can coexist per asset.
+    add_rows(
+        store,
+        "pixel_facts",
+        {
+            "asset_id": "asset-a",
+            "producer_key": "pixel-v1",
+            "sharpness": 5.0,
+            "brightness": 20.0,
+            "contrast": 10.0,
+            "dark_fraction": 0.7,
+            "bright_fraction": 0.1,
+            "needs_rotation": True,
+        },
+    )
+    # pixel_facts_thresholds is keyed on name alone: one current threshold at a time.
+    add_rows(
+        store,
+        "pixel_facts_thresholds",
+        {"name": "sharpness_p10", "value": 7.5, "producer_key": "pixel-v1"},
+    )
+    add_rows(
+        store,
+        "motion_bursts",
+        {
+            "asset_id": "asset-a",
+            "burst_id": "burst-1",
+            "still_ids": '["still-b","still-a"]',
+            "duration_seconds": 4.4,
+            "beats_a_still": True,
+        },
+    )
 
     facts = (
         AssetAnnotationFactRepository(
-            path,
+            store,
             description_model="wanted-model",
             head_versions={"venue": "venue-v1", "activity": "activity-v1"},
             pixel_producer_key="pixel-v1",
@@ -187,16 +204,16 @@ def test_complete_snapshot_uses_only_the_selected_fact_producers(tmp_path: Path)
     )
 
 
-def test_store_without_legacy_motion_table_remains_a_complete_read(tmp_path: Path) -> None:
+def test_store_without_legacy_motion_table_remains_a_complete_read() -> None:
+    """A picture no motion pass has touched at all has no motion_bursts row, not a missing table."""
     from immich_memories.store.asset_annotations import (
         AssetAnnotationFactRepository,
     )
 
-    path = tmp_path / "annotations.sqlite"
-    _create_store(path, include_motion=False)
+    store = annotation_store()
 
     batch = AssetAnnotationFactRepository(
-        path,
+        store,
         description_model="wanted-model",
         head_versions={},
         pixel_producer_key="pixel-v1",
@@ -207,40 +224,24 @@ def test_store_without_legacy_motion_table_remains_a_complete_read(tmp_path: Pat
     assert batch.as_mapping()["asset-a"].motion is None
 
 
-def test_malformed_legacy_motion_table_does_not_look_like_complete_evidence(
-    tmp_path: Path,
-) -> None:
-    from immich_memories.store.asset_annotations import (
-        AssetAnnotationFactRepository,
-    )
-
-    path = tmp_path / "annotations.sqlite"
-    _create_store(path, include_motion=False)
-    with sqlite3.connect(path) as connection:
-        connection.execute("CREATE TABLE motion_bursts (asset_id TEXT)")
-
-    batch = AssetAnnotationFactRepository(
-        path,
-        description_model="wanted-model",
-        head_versions={},
-        pixel_producer_key="pixel-v1",
-    ).facts_for(("asset-a",))
-
-    assert batch.facts == ()
-    assert batch.unavailable_asset_ids == ("asset-a",)
-
-
 def test_unreadable_store_fails_open_without_disclosing_requested_ids(
-    tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
+    from immich_memories.db import Store
+    from immich_memories.db.bootstrap import StoreLocation
     from immich_memories.store.asset_annotations import (
         AssetAnnotationFactRepository,
     )
 
     private_id = "private-asset-that-must-not-be-logged"
+    # WHY: a Store whose engine cannot connect at all -- the boundary a real
+    # unreachable database or a permissions failure would present.
+    unreachable = Store(
+        location=StoreLocation(url="sqlite:////nonexistent-directory/store.db"),
+        engine=sa.create_engine("sqlite:////nonexistent-directory/store.db"),
+    )
     batch = AssetAnnotationFactRepository(
-        tmp_path / "missing.sqlite",
+        unreachable,
         description_model="wanted-model",
         head_versions={},
         pixel_producer_key="pixel-v1",
@@ -253,55 +254,47 @@ def test_unreadable_store_fails_open_without_disclosing_requested_ids(
     assert private_id not in " ".join(batch.warnings)
 
 
-def test_large_read_uses_one_query_per_fact_family_below_sqlite_variable_limit(
-    tmp_path: Path,
-) -> None:
+def test_a_lifetime_read_stays_under_the_oldest_sqlite_variable_limit() -> None:
     from immich_memories.store.asset_annotations import (
         AssetAnnotationFactRepository,
     )
 
-    path = tmp_path / "annotations.sqlite"
-    _create_store(path)
-    private_ids = tuple(f"private-asset-{index:03d}" for index in range(25))
-    statements: list[str] = []
+    store = annotation_store()
+    private_ids = tuple(f"private-asset-{index:04d}" for index in range(2000))
     real_connect = sqlite3.connect
 
     def limited_connect(*args: object, **kwargs: object) -> sqlite3.Connection:
         connection = real_connect(*args, **kwargs)
-        connection.setlimit(sqlite3.SQLITE_LIMIT_VARIABLE_NUMBER, 1)
-        connection.set_trace_callback(statements.append)
+        # SQLite builds before 3.32 bind at most 999 variables.
+        connection.setlimit(sqlite3.SQLITE_LIMIT_VARIABLE_NUMBER, 999)
         return connection
 
-    # WHY: SQLite is the boundary; its real lowered limit proves IDs never become bind slots.
-    with patch(
-        "immich_memories.store.asset_annotations.sqlite3.connect",
-        side_effect=limited_connect,
-    ):
+    # WHY: SQLite is the boundary; its real lowered limit proves every IN list is chunked.
+    # SQLAlchemy's pysqlite dialect connects through sqlite3.dbapi2, not sqlite3 itself, and
+    # the engine's pool must give up any connection opened before the limit was lowered.
+    store.engine.dispose()
+    with patch("sqlite3.dbapi2.connect", side_effect=limited_connect):
         batch = AssetAnnotationFactRepository(
-            path,
+            store,
             description_model="wanted-model",
             head_versions={"activity": "activity-v1"},
             pixel_producer_key="pixel-v1",
         ).facts_for(private_ids)
+    store.engine.dispose()
 
-    selects = [
-        statement for statement in statements if statement.lstrip().upper().startswith("SELECT")
-    ]
     assert batch.unavailable_asset_ids == ()
-    assert len(batch.facts) == 25
-    assert len(selects) == 8
+    assert len(batch.facts) == 2000
 
 
-def test_returned_fact_records_are_immutable(tmp_path: Path) -> None:
+def test_returned_fact_records_are_immutable() -> None:
     from immich_memories.store.asset_annotations import (
         AssetAnnotationFactRepository,
     )
 
-    path = tmp_path / "annotations.sqlite"
-    _create_store(path)
+    store = annotation_store()
     facts = (
         AssetAnnotationFactRepository(
-            path,
+            store,
             description_model="wanted-model",
             head_versions={},
             pixel_producer_key="pixel-v1",

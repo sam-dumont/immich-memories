@@ -16,7 +16,6 @@ import collections
 import logging
 from dataclasses import dataclass
 from datetime import date, datetime
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 from immich_memories.analysis.special_day import (
@@ -47,6 +46,8 @@ from immich_memories.memory_types.date_builders import KNOWN_HOLIDAYS, resolve_h
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
+
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -195,7 +196,7 @@ def scan_year(
     analysis_config: Any = None,
     trips_config: TripsConfig | None = None,
     captions: dict[str, str] | None = None,
-    judgment_cache_path: Path | None = None,
+    judgments: Store | None = None,
     still_seconds: float | None = None,
     reader: Literal["model", "rules"] = "model",
     close_family: Mapping[str, str] | None = None,
@@ -266,7 +267,7 @@ def scan_year(
         away_km=trips.min_distance_km,
         captions=captions,
         llm_config=llm_config,
-        cache_path=judgment_cache_path,
+        judgments=judgments,
         family=close_family or {},
         standing_out=standing_out,
     )
@@ -296,9 +297,7 @@ def scan_year(
         verdict = (
             SpecialDay(special=True, title=honest_title(items, what=what, evidence=""), what=what)
             if reader == "rules"
-            else _read_the_day(
-                items, llm_config, captions, judgment_cache_path, sent_to_judge.get(day, [])
-            )
+            else _read_the_day(items, llm_config, captions, judgments, sent_to_judge.get(day, []))
         )
         outcome = _day_from(day, items, verdict, what)
         if outcome is not None:
@@ -315,7 +314,7 @@ def _occasions(
     away_km: float,
     captions: dict[str, str] | None,
     llm_config: Any,
-    cache_path: Path | None,
+    judgments: Store | None,
     family: Mapping[str, str],
     standing_out: Mapping[date, str],
 ) -> dict[date, str]:
@@ -323,7 +322,7 @@ def _occasions(
     if reader == "rules":
         return ranked_occasions(candidates, home=home, away_km=away_km, family=family)
     reading = read_in_sequence(
-        candidates, captions=captions, llm_config=llm_config, cache_path=cache_path, family=family
+        candidates, captions=captions, llm_config=llm_config, judgments=judgments, family=family
     )
     logger.info(
         "%d: %d runs read, %d with nothing recorded beyond the clock",
@@ -414,7 +413,7 @@ def _read_the_day(
     items: list,
     llm_config: Any,
     captions: Mapping[str, str] | None,
-    cache_path: Path | None,
+    judgments: Store | None,
     forwarded: list,
 ) -> SpecialDay:
     """The day-level verdict, asked once more about the day's event when the day read ordinary.
@@ -435,7 +434,7 @@ def _read_the_day(
                 for a in [*pictures, *forwarded]
                 if captions and captions.get(a.id)
             },
-            judgment_cache_path=cache_path,
+            judgments=judgments,
             forwarded=forwarded,
         )
 

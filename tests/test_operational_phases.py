@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-import sqlite3
 from datetime import datetime
 from pathlib import Path
 
 import pytest
+from sqlalchemy.exc import OperationalError
 
 from immich_memories.analysis.smart_pipeline import ClipWithSegment, PipelineResult
 from immich_memories.automation.state_store import AutomationStateStore
-from immich_memories.cache import database as cache_database
-from immich_memories.cache.database import VideoAnalysisCache
 from immich_memories.config_loader import Config
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
 from immich_memories.tracking.run_tracker import RunTracker
@@ -53,55 +51,14 @@ def test_zero_work_phase_is_still_a_named_event() -> None:
     }
 
 
-def test_v14_adds_last_phase_without_rewriting_v13_rows(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    db_path = tmp_path / "v13.db"
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 13)
-    VideoAnalysisCache(db_path)
-    with sqlite3.connect(db_path) as conn:
-        conn.execute(
-            """
-            INSERT INTO pipeline_runs (run_id, created_at, status)
-            VALUES ('existing-run', '2026-08-12T08:00:00+00:00', 'running')
-            """
-        )
-        conn.execute(
-            """
-            INSERT INTO automation_attempts (id, started_at, outcome, reason)
-            VALUES ('existing-attempt', '2026-08-12T08:00:00+00:00', 'running', 'daily wake')
-            """
-        )
-        conn.commit()
-
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 14)
-    VideoAnalysisCache(db_path)
-    VideoAnalysisCache(db_path)
-
-    with sqlite3.connect(db_path) as conn:
-        run = conn.execute(
-            "SELECT run_id, last_phase FROM pipeline_runs WHERE run_id = 'existing-run'"
-        ).fetchone()
-        attempt = conn.execute(
-            "SELECT id, last_phase FROM automation_attempts WHERE id = 'existing-attempt'"
-        ).fetchone()
-        version = conn.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
-
-    assert run == ("existing-run", None)
-    assert attempt == ("existing-attempt", None)
-    assert version == 14
-
-
 def _event(phase: OperationalPhase, message: str | None = None) -> PhaseEvent:
     return PhaseEvent(phase, 0, 0, message or phase.label, 0.0)
 
 
 def test_run_phase_update_is_monotonic_and_mirrors_exact_attempt(tmp_path: Path) -> None:
-    db_path = tmp_path / "phases.db"
-    state = AutomationStateStore(db_path)
+    state = AutomationStateStore()
     attempt = state.start_attempt("daily wake")
-    tracker = RunTracker("phase-run", db_path=db_path, capture_system=False)
+    tracker = RunTracker("phase-run", capture_system=False)
     tracker.start_run(automation_attempt_id=attempt.id, source="auto")
 
     assert tracker.record_phase_event(_event(OperationalPhase.RENDER)) is True
@@ -129,7 +86,7 @@ def test_editorial_failure_retains_attempt_phase_without_creating_run(tmp_path: 
             "directory": str(tmp_path / "cache"),
         }
     )
-    state = AutomationStateStore(config.cache.database_path)
+    state = AutomationStateStore()
     attempt = state.start_attempt("daily wake")
     clip = make_clip("asset-1", file_created_at=datetime(2026, 1, 1))
 
@@ -166,15 +123,15 @@ def test_editorial_failure_retains_attempt_phase_without_creating_run(tmp_path: 
     assert persisted is not None
     assert persisted.last_phase is OperationalPhase.SELECTION
     build_pipeline.return_value.run_editorial_source.assert_called_once()
-    assert RunTracker("unused", db_path=config.cache.database_path).db.list_runs() == []
+    assert RunTracker("unused").db.list_runs() == []
 
 
 def test_run_continues_when_phase_database_write_fails(tmp_path: Path, monkeypatch) -> None:
-    tracker = RunTracker("telemetry-failure", db_path=tmp_path / "run.db", capture_system=False)
+    tracker = RunTracker("telemetry-failure", capture_system=False)
     tracker.start_run()
 
     def fail_write(*_args) -> bool:
-        raise sqlite3.OperationalError("database is busy")
+        raise OperationalError("UPDATE pipeline_runs", {}, Exception("database is busy"))
 
     monkeypatch.setattr(tracker.db, "update_operational_phase", fail_write)
 
@@ -194,7 +151,7 @@ def test_editorial_continues_when_attempt_phase_write_fails(tmp_path: Path) -> N
             "directory": str(tmp_path / "cache"),
         }
     )
-    state = AutomationStateStore(config.cache.database_path)
+    state = AutomationStateStore()
     attempt = state.start_attempt("daily wake")
     clip = make_clip("asset-1", file_created_at=datetime(2026, 1, 1))
     result = PipelineResult(
@@ -214,7 +171,7 @@ def test_editorial_continues_when_attempt_phase_write_fails(tmp_path: Path) -> N
         patch.object(
             AutomationStateStore,
             "update_phase",
-            side_effect=sqlite3.OperationalError("database is busy"),
+            side_effect=OperationalError("UPDATE automation_attempts", {}, Exception("busy")),
         ) as update_phase,
     ):
         candidate = ClipWithSegment(clip=clip, start_time=0.0, end_time=4.0, score=0.5)
