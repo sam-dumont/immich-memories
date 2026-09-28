@@ -30,12 +30,15 @@
     return minutes ? `${minutes}m ${String(seconds % 60).padStart(2, '0')}s` : `${seconds}s`;
   });
   const fraction = $derived(job.progress.fraction ?? null);
-  // One estimate for the whole cut or render, measured from saved spans.
+  // The whole job's estimate when a finished run measured it; a first cut only has its stage's.
+  // Rounded on purpose, as the terminal rounds it: an estimate, not a countdown.
   const remaining = $derived.by(() => {
-    const seconds = job.progress.remaining_seconds;
+    const total = job.progress.remaining_seconds;
+    const stage = job.progress.stage_remaining_seconds;
+    const seconds = total ?? stage;
     if (seconds == null) return '';
     const amount = seconds < 60 ? `${Math.ceil(seconds)}s` : `${Math.ceil(seconds / 60)}m`;
-    return t('About {amount} left', { amount });
+    return total != null ? t('About {amount} left', { amount }) : t('~{amount} left in this stage', { amount });
   });
 
   async function copy() {

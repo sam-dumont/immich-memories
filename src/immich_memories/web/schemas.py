@@ -209,6 +209,19 @@ class Job(BaseModel):
     result_run_id: str | None = None
 
 
+class JobProgress(BaseModel):
+    label: str = ""
+    phase: str = ""
+    done: int | None = None
+    total: int | None = None
+    # The whole job's share done when a finished run measured it, else the stage's own.
+    fraction: float | None = None
+    # Only ever a whole-job estimate; a first cut has none and shows the stage's instead.
+    remaining_seconds: float | None = None
+    stage_remaining_seconds: float | None = None
+    recent_asset_ids: list[str] = []
+
+
 class SessionView(BaseModel):
     auth_enabled: bool
     provider: str | None

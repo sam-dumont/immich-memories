@@ -194,7 +194,7 @@ def test_music_is_previewed_by_music_preview_uploaded_and_played_back(client):
     assert any(flag.startswith("--music=") and flag.endswith(".mp3") for flag in argv)
 
 
-def test_a_first_cut_does_not_promise_a_whole_cut_estimate(client, tmp_path):
+def test_a_first_cut_moves_its_bar_by_the_stage_without_a_whole_cut_estimate(client, tmp_path):
     from immich_memories.operations.cut_progress import StageUpdate
     from immich_memories.operations.editorial_attempt import EditorialAttempt
 
@@ -208,10 +208,29 @@ def test_a_first_cut_does_not_promise_a_whole_cut_estimate(client, tmp_path):
         attempt.stage(StageUpdate("previews", done=60, total=120))
         progress = client.get(f"/api/v1/jobs/{job_id}").json()["progress"]
 
-    assert (progress["done"], progress["total"], progress["fraction"]) == (60, 120, None)
+    # No finished run to measure the whole cut from: the bar follows the stage instead of 0%.
+    assert (progress["done"], progress["total"], progress["fraction"]) == (60, 120, 0.5)
     # 30 pictures took ~0.2 s, so the 60 left are ~0.4 s away.
     assert progress["remaining_seconds"] is None
     assert 0.2 < progress["stage_remaining_seconds"] < 5
+
+
+def test_a_measured_whole_cut_estimate_drives_the_bar_over_the_stage(client, tmp_path):
+    from immich_memories.operations.cut_progress import StageUpdate
+    from immich_memories.operations.editorial_attempt import EditorialAttempt
+
+    started = client.post("/api/v1/cuts", json={"memory_type": "year_in_review", "year": 2023})
+    job_id = started.json()["id"]
+    root = tmp_path / "cache" / "editorial-runs" / f"web-{job_id}"
+    with EditorialAttempt(root, request={"key": "k"}) as attempt:
+        attempt.stage(
+            StageUpdate(
+                "previews", done=60, total=120, total_fraction=0.2, total_remaining_seconds=300.0
+            )
+        )
+        progress = client.get(f"/api/v1/jobs/{job_id}").json()["progress"]
+
+    assert (progress["fraction"], progress["remaining_seconds"]) == (0.2, 300.0)
 
 
 def test_a_stage_that_counts_nothing_offers_no_time_left(client, tmp_path):

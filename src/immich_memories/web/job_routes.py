@@ -28,7 +28,7 @@ from immich_memories.tracking import RunDatabase
 from immich_memories.web.brief import CutBrief
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.jobs import JobBusy, JobRunner
-from immich_memories.web.schemas import Job
+from immich_memories.web.schemas import Job, JobProgress
 
 router = APIRouter(prefix="/api/v1", tags=["jobs"])
 
@@ -110,18 +110,6 @@ class RenderOptions(BaseModel):
         ]
 
 
-class JobProgress(BaseModel):
-    label: str = ""
-    phase: str = ""
-    done: int | None = None
-    total: int | None = None
-    fraction: float | None = None
-    # Overall timings are measured from the previous finished run's spans.
-    remaining_seconds: float | None = None
-    stage_remaining_seconds: float | None = None
-    recent_asset_ids: list[str] = []
-
-
 class JobView(Job):
     command: str
     progress: JobProgress
@@ -137,14 +125,19 @@ def _cut_progress(config: Config, job: Job) -> JobProgress:
     if record is None:
         return JobProgress(label="Preparing the pool")
     live = live_progress_of(record)
+    if live is None:
+        return JobProgress(
+            label=str(record.get("stage") or ""), recent_asset_ids=list(recent_pictures_of(record))
+        )
+    # A cold library has no finished run to measure the whole cut from: the stage carries the bar.
     return JobProgress(
         label=str(record.get("stage") or ""),
-        phase=live.phase if live else "",
-        done=live.done if live else None,
-        total=live.total if live else None,
-        fraction=live.total_fraction if live else None,
-        remaining_seconds=live.total_remaining_seconds if live else None,
-        stage_remaining_seconds=live.remaining_seconds if live and live.remaining_label else None,
+        phase=live.phase,
+        done=live.done,
+        total=live.total,
+        fraction=live.fraction if live.total_fraction is None else live.total_fraction,
+        remaining_seconds=live.total_remaining_seconds,
+        stage_remaining_seconds=live.remaining_seconds if live.remaining_label else None,
         recent_asset_ids=list(recent_pictures_of(record)),
     )
 
