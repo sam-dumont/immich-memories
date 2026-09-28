@@ -1,0 +1,57 @@
+{
+  "request": "best blurry pictures",
+  "shape": "the engine's own sharpness line",
+  "answers": {
+    "Split the owner's request": {
+      "who": [],
+      "when": [],
+      "where": [],
+      "what": [
+        "best blurry pictures"
+      ]
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": []
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "many occasions"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    }
+  },
+  "expect": {
+    "reading": {
+      "what": [
+        "best blurry pictures"
+      ]
+    },
+    "who": {
+      "present": [],
+      "anchors": [],
+      "company": null
+    },
+    "when": [
+      null,
+      null
+    ],
+    "where": "anywhere",
+    "subject": [],
+    "facts": {
+      "sharpness": "below"
+    },
+    "funnel": [
+      "library",
+      "kind of picture",
+      "sharpness"
+    ],
+    "pool": [
+      "blur"
+    ],
+    "verdict": "possible",
+    "film": "pool"
+  }
+}

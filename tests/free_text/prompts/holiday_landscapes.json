@@ -1,0 +1,75 @@
+{
+  "request": "holiday landscapes along the years",
+  "shape": "holiday in the phrase gives away from home",
+  "answers": {
+    "Split the owner's request": {
+      "who": [],
+      "when": [
+        "along the years"
+      ],
+      "where": [
+        "holiday"
+      ],
+      "what": [
+        "holiday landscapes"
+      ]
+    },
+    "Give the date range": {
+      "date_from": null,
+      "date_to": null
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": []
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "many occasions"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    },
+    "Which of these places": {
+      "reason": "banked",
+      "choice": "away from home"
+    }
+  },
+  "expect": {
+    "reading": {
+      "when": [
+        "along the years"
+      ],
+      "where": [
+        "holiday"
+      ],
+      "what": [
+        "holiday landscapes"
+      ]
+    },
+    "who": {
+      "present": [],
+      "anchors": [],
+      "company": null
+    },
+    "when": [
+      null,
+      null
+    ],
+    "where": "trips",
+    "subject": [
+      "landscapes"
+    ],
+    "funnel": [
+      "library",
+      "where",
+      "kind of picture",
+      "subject"
+    ],
+    "pool": [
+      "trip"
+    ],
+    "verdict": "possible",
+    "film": "pool"
+  }
+}

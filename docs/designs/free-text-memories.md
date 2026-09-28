@@ -254,6 +254,10 @@ in its own places (the translation, the pool, or the engine's picks from a good 
   only if the pictures are reached with the right audience and every bypass is reported.
 - The test households' sentence set (23 sentences) for regressions.
 - Every change is judged on the whole set, never on the one sentence being fixed.
+- The prompt shapes of the table below, recorded: `tests/free_text/prompts/`, one file per prompt
+  with the model's banked answers and what the translation must come to, run against an invented
+  household with no model (`make test`). Adding a prompt is adding a file; the owner's own
+  prompts and results stay in the private log.
 
 ## Probe results (aggregates only)
 

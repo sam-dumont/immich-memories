@@ -49,6 +49,7 @@ VOCABULARY: dict[str, tuple[str | Sense, ...]] = {
     "closed": ("adj.all",),
     "rose": ("noun.plant",),
     "black": ("adj.all",),
+    "best": ("adj.all",),
     "live": ("adj.all",),
     "concert": ("noun.event",),
     "sport": ("noun.act",),

@@ -41,7 +41,33 @@ class QuestionAsker:
 
     def ask(self, prompt: str, schema: Mapping[str, Any], *, max_tokens: int) -> Answer:
         self.questions.append(prompt)
+        # A recorded key is written on one line; the prompt wraps where its source does.
+        flat = " ".join(prompt.split())
         for key, answer in self._answers.items():
-            if key in prompt:
+            if key in prompt or key in flat:
                 return answer(schema) if callable(answer) else answer
         raise AssertionError(f"no banked answer for: {prompt[:80]}")
+
+
+def recorded(answers: Mapping[str, Answer]) -> QuestionAsker:
+    """A QuestionAsker over a recorded fixture's banked answers.
+
+    A recorded single `choice` may be the start of the option it picks ("anywhere"), as the
+    options are long sentences a fixture should not have to copy; it must match exactly one.
+    """
+    return QuestionAsker({key: _by_prefix(answer) for key, answer in answers.items()})
+
+
+def _by_prefix(answer: Answer) -> Answer | Callable[[Mapping[str, Any]], Answer]:
+    if answer is None or not isinstance(answer.get("choice"), str):
+        return answer
+    wanted = answer["choice"]
+
+    def expand(schema: Mapping[str, Any]) -> Answer:
+        options = schema["properties"]["choice"]["enum"]
+        matches = [option for option in options if option.startswith(wanted)]
+        if len(matches) != 1:
+            raise AssertionError(f"recorded choice {wanted!r} matches {matches} of {options}")
+        return {**answer, "choice": matches[0]}
+
+    return expand

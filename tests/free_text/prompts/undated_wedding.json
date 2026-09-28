@@ -1,0 +1,57 @@
+{
+  "request": "our wedding",
+  "shape": "an undated occasion no day shows with its people together",
+  "answers": {
+    "Split the owner's request": {
+      "who": [],
+      "when": [],
+      "where": [],
+      "what": [
+        "our wedding"
+      ]
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": []
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "one single occasion"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    }
+  },
+  "expect": {
+    "reading": {
+      "what": [
+        "our wedding"
+      ]
+    },
+    "who": {
+      "present": [],
+      "anchors": [
+        "p-owner",
+        "p-partner"
+      ],
+      "company": null
+    },
+    "when": [
+      null,
+      null
+    ],
+    "where": "anywhere",
+    "subject": [
+      "wedding"
+    ],
+    "funnel": [
+      "library",
+      "kind of picture",
+      "occasion"
+    ],
+    "pool": [],
+    "verdict": "not possible",
+    "film": "none"
+  }
+}
