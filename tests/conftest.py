@@ -76,6 +76,20 @@ def no_real_store_opened() -> Iterator[None]:
         pytest.fail(f"this test tried to open the developer's own store: {opened}")
 
 
+def _account_home() -> Path:
+    """The account's own home, whatever $HOME says.
+
+    Suites that point HOME at a disposable directory (the real-Immich gate, agents in a
+    worktree) keep their stores there; only the account's real home is protected.
+    """
+    try:
+        import pwd
+
+        return Path(pwd.getpwuid(os.getuid()).pw_dir).resolve()
+    except (ImportError, KeyError):  # WHY: no passwd database on Windows
+        return Path.home().resolve()
+
+
 def _refuse_the_developers_store() -> None:
     """Fail any test that opens a store under the developer's real ~/.immich-memories.
 
@@ -88,7 +102,7 @@ def _refuse_the_developers_store() -> None:
     from immich_memories.db import engine as engine_module
     from immich_memories.db import store as store_module
 
-    real_home = Path.home().resolve() / ".immich-memories"
+    real_home = _account_home() / ".immich-memories"
     create_engine = engine_module.create_store_engine
 
     def guarded(location: Any, *args: Any, **kwargs: Any) -> Any:
