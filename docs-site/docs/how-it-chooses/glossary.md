@@ -66,7 +66,7 @@ flowchart LR
 | **Exposure chain** | a capture run at least half flagged, with three or more flagged captures, held whole | `editorial_exposure_chains.py` |
 | **Laya** | an optional local model answering the audience check's activity question from the caption | `editorial_laya_reader.py` |
 | **Review list** | shots with an exposure probability between 0.2 and 0.5, listed for you; changes nothing | `review-before-sharing.private.json` |
-| **Filler** | a shot with no indicator that the `frame_kind` head reads as showing nothing; leaves a no-model film | `editorial_unvouched_filler.py` |
+| **Filler** | a shot with no indicator that the `frame_kind` head reads as showing nothing; leaves every rules-drafted film, polished or not | `editorial_unvouched_filler.py` |
 | **Finished-cut check** | the cut read once against every promise; warns, changes nothing | `editorial_cut_invariants.py` |
 
 ## The model tier
