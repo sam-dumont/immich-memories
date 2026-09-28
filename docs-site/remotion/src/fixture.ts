@@ -47,11 +47,11 @@ export const CUT_CONTENT_SECONDS = 56.09;
 export const CUT_CONTENT_BUDGET = 56.15;
 
 /** How long output-preview.mp4 runs, measured. */
-export const FILM_SECONDS = 61.57;
+export const FILM_SECONDS = 81.0;
 /** The last second of it that still shows a photograph, before the ending card. */
-export const FILM_PICTURES_END = 54.5;
+export const FILM_PICTURES_END = 74.0;
 /** Its size, in the words the completion page prints. */
-export const FILM_SIZE = "14 MB";
+export const FILM_SIZE = "17 MB";
 
 export const SHOTS: Shot[] = [
   {

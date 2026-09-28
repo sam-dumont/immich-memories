@@ -9,6 +9,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from immich_memories.analysis.editorial_source_snapshot import SNAPSHOT_NAME, sources_from_payload
+from immich_memories.analysis.picture_copies import picture_copies
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
 from immich_memories.config_loader import Config
 from immich_memories.db import open_store
@@ -76,8 +77,11 @@ def read_pool(
         raise HTTPException(404, "This run kept no record of its pool.")
     payload = json.loads(snapshot.read_text())
     people = _memory_people(payload)
+    every_file = [_asset(source) for source in sources_from_payload(payload)]
+    # One tile per picture: a copy (an album's downscale, a forwarded file) is its full-size file.
+    copies = picture_copies(every_file)
     assets = sorted(
-        (_asset(source) for source in sources_from_payload(payload)),
+        (asset for asset in every_file if asset.id not in copies),
         key=lambda asset: (asset.file_created_at, asset.id),
     )
     fates = CandidateFates.read(attempt)

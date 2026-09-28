@@ -170,7 +170,8 @@ def test_capture_trip_brief(
 def test_capture_the_pool_and_picture_decisions(
     page: Page, launch_app_url: str, launch_workspace, screenshot_dir: Path, theme: str
 ) -> None:
-    """The pool's outcomes, a held picture and its clear dialog, and Never use (#1324)."""
+    """The pool's outcomes, a held picture and its clear dialog, Never use (#1324), and the
+    ticks previewed as a revision of the same cut."""
     from immich_memories.store import owner_decisions
     from tests.e2e.test_picture_decisions import flag_by_the_detector, store_of
 
@@ -203,6 +204,16 @@ def test_capture_the_pool_and_picture_decisions(
         other.get_by_role("button", name="Never use").click()
         expect(other.get_by_text("You'll never use this picture.")).to_be_visible()
         _save_part(page, other, d, _name("pictures-pool-never-use", theme))
+
+        # The owner's last pass: tick the held picture in and preview it, nothing chosen again.
+        held.get_by_role("checkbox", name="In the film").check()
+        expect(page.get_by_text(re.compile(r"^Add: 1"))).to_be_visible()
+        _save(page, d, _name("memory-pool-choices", theme))
+        page.get_by_role("button", name="Preview with these choices").click()
+        added = page.get_by_role("list", name="Added from the pool")
+        expect(added.get_by_role("img")).to_have_count(1, timeout=30_000)
+        added.scroll_into_view_if_needed()
+        _save(page, d, _name("memory-pool-revision", theme))
     finally:
         for asset_id in (_HELD, ticked):
             owner_decisions.forget(store, asset_id)

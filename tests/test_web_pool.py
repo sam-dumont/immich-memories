@@ -124,3 +124,19 @@ def test_a_memory_about_nobody_marks_nothing(tmp_path):
     items = client.get(f"/api/v1/runs/{RUN}/pool").json()["items"]
 
     assert not any(item["same_episode"] for item in items)
+
+
+def test_one_picture_stored_twice_is_one_tile_its_full_size_file(tmp_path):
+    """A shared album's downscale of a camera file is the same picture (#1462)."""
+    config = config_in(tmp_path)
+    attempt = save_run(config, RUN, trace=selection_trace())
+    taken = datetime(2024, 6, 8, 11, 20, 40, 702000, tzinfo=UTC)
+    original = make_asset("garden-1", file_created_at=taken, original_file_name="IMG_5213.HEIC")
+    album = make_asset("album-copy", file_created_at=taken, original_file_name="IMG_5213.HEIC")
+    original.width, original.height, album.width, album.height = 3024, 4032, 1536, 2048
+    (attempt / SNAPSHOT_NAME).write_text(json.dumps(source_payload([album, original]), default=str))
+
+    pool = api_client(config).get(f"/api/v1/runs/{RUN}/pool").json()
+
+    assert [item["asset_id"] for item in pool["items"]] == ["garden-1"]
+    assert pool["total"] == 1

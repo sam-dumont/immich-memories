@@ -22,8 +22,8 @@ import { CUT_CONTENT_BUDGET, SHOTS } from "../fixture";
 /**
  * The cut is a draft: one shot swapped for another picture of the same moment
  * ("Other pictures of this moment", then "Use this picture instead"), one
- * removed, and the edit bar counts the changes and the seconds against what
- * the titles leave, until "Save revision" keeps them as revision 1.
+ * removed, and the edit bar counts the changes and the seconds, until
+ * "Save revision" keeps them as revision 1.
  */
 
 const SWAPPED = 1;

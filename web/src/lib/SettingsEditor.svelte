@@ -68,8 +68,8 @@
   {#if !view}
     <LoadingSpinner />
   {:else}
+    <p class="text-sm text-gray-600 dark:text-gray-400">{t('Config file: {config_path}', { config_path: view.config_path })}</p>
     <p class="text-sm text-gray-600 dark:text-gray-400">
-      {t('Config file: {config_path}', { config_path: view.config_path })} ·
       {t('The environment wins, then config.yaml, then what is saved here, then the default. A setting either of the first two sets is greyed out: change it where its label says.')}
     </p>
     {#if !view.can_store_secrets}

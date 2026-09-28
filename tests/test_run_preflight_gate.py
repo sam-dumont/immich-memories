@@ -131,5 +131,6 @@ def test_a_detector_interpreter_that_is_gone_stops_the_run_before_touching_immic
 
     assert result.exit_code == 1
     assert "detector_python" in result.output
-    assert str(gone) in result.output
+    # The console wraps long lines, and a long temporary path can break mid-word.
+    assert str(gone) in result.output.replace("\n", "")
     client.assert_not_called()
