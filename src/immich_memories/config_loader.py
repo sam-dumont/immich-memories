@@ -376,6 +376,10 @@ class Config(BaseSettings):
                 database (to check a save before it is written).
         """
         global _yaml_source_data, _database_source_data
+        # Restored, not cleared, on the way out: reading the stored settings can open a store
+        # whose first-open import loads another config.yaml, and clearing here would leave this
+        # load building from no file at all (#1484).
+        outer = _yaml_source_data, _database_source_data
         _yaml_source_data = _load_yaml_data(path)
         try:
             if stored is None:
@@ -388,8 +392,7 @@ class Config(BaseSettings):
             _arm_log_redaction(config)
             return config
         finally:
-            _yaml_source_data = {}
-            _database_source_data = {}
+            _yaml_source_data, _database_source_data = outer
 
     @classmethod
     def settings_customise_sources(
