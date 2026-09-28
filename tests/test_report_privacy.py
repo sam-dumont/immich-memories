@@ -46,18 +46,25 @@ def test_a_term_whose_case_folding_changes_length_is_still_redacted():
     assert ReportPrivacy(terms=["İzmir"]).text("trip to izmir") == "trip to [private]"
 
 
-def test_terms_match_whole_words_in_values_never_keys():
+def test_terms_match_whole_words_in_keys_and_values():
     privacy = ReportPrivacy(terms=["Spa", "Family picnic"])
-    cleaned = privacy.clean({"spans": "Spa spans; family picnic at noon"})
-    assert cleaned == {"spans": "[private] spans; [private] at noon"}
+    cleaned = privacy.clean(
+        {"spans": "Spa spans; family picnic at noon", "Family picnic render": 12.5}
+    )
+    assert cleaned == {"spans": "[private] spans; [private] at noon", "[private] render": 12.5}
+
+
+def test_a_two_letter_name_is_redacted_as_a_whole_word():
+    privacy = ReportPrivacy(terms=["Al"])
+    assert privacy.text("Al at the beach, Alarm set") == "[private] at the beach, Alarm set"
 
 
 def test_trivial_terms_and_a_root_home_are_ignored(monkeypatch):
     # WHY: a container user whose home is "/" must not turn every slash into a redaction.
     with monkeypatch.context() as patched:
         patched.setenv("HOME", "/")
-        privacy = ReportPrivacy(terms=["/", "Al", ""])
-    assert privacy.text("Alarm at 1/2 speed, s/item") == "Alarm at 1/2 speed, s/item"
+        privacy = ReportPrivacy(terms=["/", "A", ""])
+    assert privacy.text("A trip at 1/2 speed, s/item") == "A trip at 1/2 speed, s/item"
 
 
 def test_geocoder_and_tile_failures_log_no_coordinates(monkeypatch, caplog):

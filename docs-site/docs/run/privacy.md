@@ -186,8 +186,8 @@ changes what the film shows, not what the app sends.
 `immich-memories report` builds a local report from selected diagnostic fields. From the included
 logs and errors it removes configured credentials, known personal names, albums and places, GPS
 coordinates, IP addresses, hostnames with ports, URLs of any scheme (`postgresql://user:pw@host/db`
-too) and absolute paths. Names match as whole words, so a short one never eats part of another word;
-names under three characters are left alone. IDs become hashes that match within that report and
+too) and absolute paths, in field names as well as values. Names match as whole words, so "Al" goes
+but "Alarm" stays; only single letters are left alone. IDs become hashes that match within that report and
 change in the next one. Config appears as shape, without hostnames or values. Pictures are never
 included. Free-text memories (#1436) will add flagged-photo captions and reasons, behind an explicit
 opt-in; no run records them yet. Read the report before sharing it. Nothing is sent automatically.

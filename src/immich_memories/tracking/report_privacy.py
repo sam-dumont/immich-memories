@@ -33,8 +33,9 @@ _COORDINATES = re.compile(r"(?<![\w.])-?\d{1,3}\.\d+\s*,\s*-?\d{1,3}\.\d+(?![\w.
 _NAMED_COORDINATE = re.compile(
     r"\b(lat|lon|lng|latitude|longitude)(\s*[=:]\s*)-?\d+(?:\.\d+)?", re.IGNORECASE
 )
-# A term this short or without a letter or digit ("/", "Al") would hit ordinary words.
-_MIN_TERM = 3
+# One letter, or no letter or digit ("/", "A"), would hit ordinary text; a two-letter name
+# ("Al", "Jo") is still a name, and whole-word matching keeps it off "Alarm".
+_MIN_TERM = 2
 
 
 def _meaningful(term: str) -> bool:
@@ -101,11 +102,20 @@ class ReportPrivacy:
         return _UUID.sub(lambda match: self.hash_id(match[0]), value)
 
     def clean(self, value: Any) -> Any:
-        """Sanitize values; keys are the report's own field names and stay readable."""
+        """Sanitize keys and values; stage and model names can carry private words too."""
         if isinstance(value, str):
             return self.text(value)
         if isinstance(value, dict):
-            return {key: self.clean(item) for key, item in value.items()}
+            cleaned: dict[Any, Any] = {}
+            for key, item in value.items():
+                name = self.text(key) if isinstance(key, str) else key
+                # WHY: two keys can redact to the same name; numbering keeps both values.
+                unique, count = name, 1
+                while unique in cleaned:
+                    count += 1
+                    unique = f"{name} ({count})"
+                cleaned[unique] = self.clean(item)
+            return cleaned
         if isinstance(value, (tuple, list)):
             return [self.clean(item) for item in value]
         return value
