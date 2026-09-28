@@ -68,17 +68,17 @@ def test_trivial_terms_and_a_root_home_are_ignored(monkeypatch):
 
 
 def test_geocoder_and_tile_failures_log_no_coordinates(monkeypatch, caplog):
-    from immich_memories.analysis import trip_detection
+    from immich_memories.analysis.place_geocoder import PlaceGeocoder
+    from immich_memories.db import open_store
     from immich_memories.titles import map_animation
 
     def refuse(*_args, **_kwargs):
         raise ValueError("service declined")
 
     # WHY: the geocoder and the tile server are the external boundaries that fail here.
-    monkeypatch.setattr(trip_detection.Nominatim, "reverse", refuse)
     monkeypatch.setattr(map_animation._CachedStaticMap, "render", refuse)
     with caplog.at_level("DEBUG"):
-        assert trip_detection.reverse_geocode(50.850346, 4.351721) is None
+        assert PlaceGeocoder(open_store(), "en", refuse).address(50.850346, 4.351721) == {}
         map_animation._render_satellite(50.850346, 4.351721, 9.0, 16, 12)
     assert "service declined" in caplog.text
     assert "50.85" not in caplog.text

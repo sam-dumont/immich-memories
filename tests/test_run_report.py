@@ -199,22 +199,28 @@ def test_flagged_reasons_and_captions_come_only_with_the_opt_in():
     assert rows[True]["caption"] == "what"
 
 
-def test_geocoded_names_are_private_even_when_read_from_cache(tmp_path):
-    from immich_memories.analysis.place_name_cache import PlaceNameCache
+def test_geocoded_names_are_private_even_when_read_from_cache():
+    from immich_memories.analysis.place_geocoder import PlaceGeocoder, district_of
+    from immich_memories.analysis.trip_detection import trip_place_name
+    from immich_memories.db import open_store
     from immich_memories.tracking import timing
 
-    # WHY: replace the external geocoder; both calls use the real place-name cache.
-    cache = PlaceNameCache(tmp_path, "en", lambda _lat, _lon: "Brookhaven, Testland")
-    cache.name_for(1, 2, None)
+    answer = {"suburb": "Oldmarket", "town": "Brookhaven", "country": "Testland"}
+    # WHY: replace the external geocoder; the second read comes from the real store cache.
+    geocoder = PlaceGeocoder(open_store(), "en", lambda _lat, _lon: answer)
+    geocoder.address(1, 2)
     with timing.collecting() as collected:
-        assert cache.name_for(1, 2, None) == "Brookhaven, Testland"
+        address = geocoder.address(1, 2)
+        assert trip_place_name(address, spread_km=1.0) == "Brookhaven, Testland"
+        assert district_of(address)
     report = build_report(
-        RunMetadata("geo-run", datetime.now(UTC), warnings=["Brookhaven in Testland"]),
+        RunMetadata("geo-run", datetime.now(UTC), warnings=["Brookhaven in Testland, Oldmarket"]),
         collected,
         privacy=ReportPrivacy(terms=collected.private_terms),
     )
     assert "Brookhaven" not in report.json()
     assert "Testland" not in report.json()
+    assert "Oldmarket" not in report.json()
 
 
 def test_report_route_publishes_no_config_reload_parameter():

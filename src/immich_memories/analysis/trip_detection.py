@@ -2,22 +2,22 @@
 
 from __future__ import annotations
 
-import functools
 import logging
 import math
 import operator
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import date
-
-from geopy.exc import GeopyError
-from geopy.geocoders import Nominatim
+from typing import TYPE_CHECKING
 
 from immich_memories.analysis.trip_place import TripPlace, trip_place
 from immich_memories.api.models import Asset
 from immich_memories.place_names import short_place_name
 from immich_memories.tracking.report_context import private_place_name
+
+if TYPE_CHECKING:
+    from immich_memories.config_loader import Config
 
 logger = logging.getLogger(__name__)
 
@@ -162,26 +162,36 @@ _HomeBase = tuple[float, float, str, set[date]]
 _DailyStop = tuple[date, float, float, str, list[str]]
 
 
-def geocoder_for(*, enabled: bool, language: str = "en") -> Geocoder | None:
-    """The reverse geocoder this configuration allows, or None for EXIF-only names.
+def geocoder_for(config: Config) -> Geocoder | None:
+    """The trip namer this configuration allows, or None for names from the pictures' EXIF.
 
-    `enabled` is `network.geocoding`. Returning None rather than a no-op keeps
-    the outside call out of the code path instead of inside a branch of it.
+    `network.geocoding` is off by default. When it is on, every centroid goes through the
+    shared place geocoder: rounded, rate limited, answered in the film's language, and kept in
+    the store, so the next scan of the same year asks nobody.
     """
-    if not enabled:
+    from immich_memories.analysis.place_geocoder import place_geocoder_for
+
+    places = place_geocoder_for(config)
+    if places is None:
         return None
-    return functools.partial(reverse_geocode, language=language)
+
+    def name(lat: float, lon: float, spread_km: float | None = None) -> str | None:
+        return trip_place_name(places.address(lat, lon), spread_km)
+
+    return name
 
 
 # Below this spread a trip fits one town, and the geocoder names the town.
 _CITY_SPREAD_KM = 25.0
-_CITY_KEYS = ("city", "town", "village")
+# The village before the town or city it belongs to: in a merged municipality the village is
+# where the trip went. Never a district: a week in Barcelona is not a week in Gràcia.
+_CITY_KEYS = ("village", "town", "city")
 # Never "county": in some countries it is a regional unit with no name in the
 # film's language ("Περιφερειακή Ενότητα Ρεθύμνης" for a Crete trip).
 _REGION_KEYS = ("island", "state", "state_district", "province")
 
 
-def _place_at_scale(address: dict, spread_km: float | None) -> str | None:
+def _place_at_scale(address: Mapping[str, str], spread_km: float | None) -> str | None:
     keys: tuple[str, ...] = _REGION_KEYS
     if spread_km is not None and spread_km < _CITY_SPREAD_KM:
         keys = _CITY_KEYS + _REGION_KEYS
@@ -189,31 +199,17 @@ def _place_at_scale(address: dict, spread_km: float | None) -> str | None:
 
 
 @private_place_name
-def reverse_geocode(
-    lat: float, lon: float, spread_km: float | None = None, *, language: str = "en"
-) -> str | None:
-    """The trip's place at its scale: the town under `_CITY_SPREAD_KM`, else the region."""
-    try:
-        geolocator = Nominatim(user_agent="immich-memories")
-        location = geolocator.reverse(f"{lat}, {lon}", zoom=10, language=language)
-        if location is None:
-            return None
-        addr = location.raw.get("address", {})
-        country = addr.get("country")
-        place = _place_at_scale(addr, spread_km)
-        if place and country:
-            if place == country:  # Avoid "Cyprus, Cyprus"
-                return country
-            return f"{place}, {country}"
+def trip_place_name(address: Mapping[str, str], spread_km: float | None = None) -> str | None:
+    """The trip's place at its scale: the town under `_CITY_SPREAD_KM`, else the region.
+
+    None when the address has no country or no place at that scale, so the trip keeps the
+    name its own pictures give it.
+    """
+    country = address.get("country")
+    place = _place_at_scale(address, spread_km)
+    if not (place and country):
         return None
-    except (GeopyError, OSError, ValueError) as e:
-        # GeopyError as well as OSError: only GeocoderTimedOut and
-        # GeocoderUnavailable inherit from OSError. GeocoderServiceError
-        # itself does not, and neither does the 403 raised when the service
-        # declines — which used to travel out of a twenty-year scan.
-        # No coordinates in the line: logs travel into run reports and issues.
-        logger.debug("Reverse geocoding failed: %s", e)
-    return None
+    return country if place == country else f"{place}, {country}"
 
 
 def _compute_spread_km(assets: list[Asset]) -> float:

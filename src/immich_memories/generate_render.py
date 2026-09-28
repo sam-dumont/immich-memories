@@ -296,8 +296,12 @@ def render_local(
         assembly_clips = _apply_final_content_budget(params, assembly_clips)
         validate_certified_content(params, assembly_clips)
 
-        from immich_memories.generate_captions import prepare_location_captions
+        from immich_memories.generate_captions import (
+            district_place_names,
+            prepare_location_captions,
+        )
 
+        assembly_clips = district_place_names(params, assembly_clips)
         assembly_clips = prepare_location_captions(params, assembly_clips)
 
         # Phase 2: Assemble (includes title generation + streaming encode)

@@ -159,6 +159,9 @@ class CarrierAdmission:
         self.kept_without_standing: list[str] = []
         self.displaced: list[dict] = []
         self.failed_standing: list[str] = []
+        # Stories holding no shot whose every offered moment failed the standing gate: their
+        # partition's voice moves on to its next story.
+        self.silent: list[str] = []
         self.editorially_closed: set[tuple[str, str | None]] = set()
         self._taken: set[str] = set()
         self._used_choice_keys: set[str] = set()
@@ -406,7 +409,10 @@ class CarrierAdmission:
 
     def _pick_story(self, s, short_of, partition_grants) -> list[DepictedChoice]:
         chosen: list[DepictedChoice] = []
-        for part, eligible in self.parts.split(self._standing_moments(s, short_of)).items():
+        standing = self._standing_moments(s, short_of)
+        if not standing:
+            self._falls_silent(s, short_of)
+        for part, eligible in self.parts.split(standing).items():
             n = partition_grants[s["key"]].get(part, 0)
             if not eligible or not n:
                 continue
@@ -417,6 +423,19 @@ class CarrierAdmission:
                 self._picked_before[pick_key] = True
                 chosen.extend(self._ask_pick(s, part, eligible, n))
         return _spaced(chosen, self._unit_by_asset, already=self.carriers)
+
+    def _falls_silent(self, s, short_of) -> None:
+        """A story with no shot that offered moments and saw every one fail the standing gate
+        gives up its partition's voice, so the next pass grants it to the partition's next story
+        rather than to this one again."""
+        key = s["key"]
+        if (
+            self.parts.voice_of is not None
+            and short_of[key]
+            and not self.chosen_by_story[key]
+            and key not in self.silent
+        ):
+            self.silent.append(key)
 
     def _commit(self, picks, short_of, open_of) -> int:
         return sum(
@@ -506,6 +525,7 @@ class CarrierAdmission:
             self.slots - len(self.carriers),
             carriers=self.carriers,
             already={k: len(v) for k, v in self.chosen_by_story.items()},
+            silent=self.silent,
         )
         # The standing gate first, over every open moment of a funded story (all members of a thin
         # story, the primary of each moment otherwise), so the pick chooses among pictures that
@@ -546,11 +566,12 @@ class CarrierAdmission:
         """Pick the moments that tell each story, then one picture per moment that stands by
         itself. A picture carries at most one moment."""
         passes = 0
-        # A refusal for looking alike frees a slot, so it buys the pass that refills it.
-        while len(self.carriers) < self.slots and passes < MAX_PASSES + len(self.lookalike.refused):
+        # A refusal for looking alike frees a slot, so it buys the pass that refills it; so does
+        # a story falling silent, whose partition's voice the next pass gives to another story.
+        while len(self.carriers) < self.slots and passes < MAX_PASSES + self._retries():
             passes += 1
-            refused = len(self.lookalike.refused)
-            if self._one_pass(passes) == 0 and len(self.lookalike.refused) == refused:
+            retries = self._retries()
+            if self._one_pass(passes) == 0 and self._retries() == retries:
                 break
         self.calls["selection_passes"] = passes
         self._keep_occasions()
@@ -563,6 +584,9 @@ class CarrierAdmission:
         self.calls["kept_without_standing"] = len(self.kept_without_standing)
         self.carriers.sort(key=itemgetter("taken"))
 
+    def _retries(self) -> int:
+        return len(self.lookalike.refused) + len(self.silent)
+
     # -- the owner's star over a picture nothing vouches for ---------------------------
 
     def _favourites_before_the_unvouched(self) -> None:
@@ -571,12 +595,15 @@ class CarrierAdmission:
 
         The bound is about proportions; the star is the owner's own judgement, and a picture
         with no star, no recorded video and no person Immich knows has nothing to set against
-        it. Pictures that are vouched for keep the bound's variety.
+        it. Pictures that are vouched for keep the bound's variety. While the film has a free
+        slot the star can take, it takes that one and nobody gives up a place.
         """
         waiting = self.lookalike.waiting_for_their_place(
             lambda asset: bool(self._unit_by_asset.get(asset, (None, {}))[1].get("favourite"))
         )
         for row in waiting:
+            if len(self.carriers) < self.slots and self.lookalike.readmit_one(row):
+                continue
             victim = self._weakest_unvouched()
             if victim is None:
                 return
