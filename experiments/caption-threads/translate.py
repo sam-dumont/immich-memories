@@ -792,7 +792,7 @@ def main():
                 before = len(kept)
                 kept = fewer_poses(library, kept, heads, spec["shape"])
                 plan["fill"]["poses_held_back"] = before - len(kept)
-            if spec["shape"] == "along the years":
+            if spec["shape"] in {"along the years", "how something changed over time"}:
                 before = len(kept)
                 kept = balance_years(library, kept)
                 plan["fill"]["thinned_for_balance"] = before - len(kept)

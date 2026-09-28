@@ -280,8 +280,7 @@ def build_spec(reader, key, brief, library, people_named, lived, years):
     kind_of, kind_votes = _choose(reader, "spec_kind", key, KIND, {"owner_request": brief, "subject": shows}, KINDS)
     one, one_votes = (_choose(reader, "spec_one", key, ONE, {"owner_request": brief, "subject": shows}, ONES)
                       if kind_of in {"an animal", "a thing"} else (None, {}))
-    shape = _ask(reader, "spec_shape", key, SHAPE, {"owner_request": brief, "options": SHAPES},
-                 _schema(shape={"type": "string", "enum": SHAPES})).get("shape") or "along the years"
+    shape, shape_votes = _choose(reader, "spec_shape", key, SHAPE, {"owner_request": brief}, SHAPES)
     date = {"type": ["string", "null"], "pattern": "^[12][0-9]{3}-[01][0-9]-[0-3][0-9]$"}
     when = _ask(reader, "spec_when", key, FILTERS, {
         "owner_request": brief, "film_shape": shape, "today": datetime.now(UTC).date().isoformat(),
@@ -307,7 +306,7 @@ def build_spec(reader, key, brief, library, people_named, lived, years):
             "seeds": shows, "span": span,
             "subject_kind": {"an activity or event": "activity"}.get(kind_of, kind_of.split()[-1]),
             "one_particular": one == ONES[0],
-            "kind_votes": {"kind": kind_votes, "one": one_votes},
+            "kind_votes": {"kind": kind_votes, "one": one_votes, "shape": shape_votes},
             "shape": shape}
 
 
