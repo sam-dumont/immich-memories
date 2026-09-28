@@ -175,6 +175,10 @@ def fill_every_table(store: Store, home: Path) -> None:
         for table in metadata.sorted_tables:
             if connection.execute(sa.select(sa.func.count()).select_from(table)).scalar():
                 continue
-            connection.execute(
-                sa.insert(table), {c.name: _synthetic(c, table.name) for c in table.columns}
-            )
+            row = {c.name: _synthetic(c, table.name) for c in table.columns}
+            for column in table.columns:
+                for foreign_key in column.foreign_keys:
+                    row[column.name] = connection.execute(
+                        sa.select(foreign_key.column).limit(1)
+                    ).scalar_one()
+            connection.execute(sa.insert(table), row)

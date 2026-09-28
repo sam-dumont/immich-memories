@@ -55,6 +55,7 @@ from immich_memories.db.tables.people import (
 )
 from immich_memories.db.tables.settings import settings
 from immich_memories.db.tables.store_meta import store_meta
+from immich_memories.db.tables.timing import run_diagnostics, run_spans
 
 __all__ = [
     "SCHEMA",
@@ -93,6 +94,8 @@ __all__ = [
     "pixel_facts",
     "pixel_facts_thresholds",
     "run_attempts",
+    "run_diagnostics",
+    "run_spans",
     "settings",
     "special_days",
     "speech_regions",
