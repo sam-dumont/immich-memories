@@ -116,7 +116,7 @@ def period_of(row, shape):
     return row["taken_at"][:10] if shape == "one moment or event" else row["taken_at"][:4]
 
 
-def fill_pool(library, pool, core, not_this, shape, anchors, captionless, read, look=None):
+def fill_pool(library, pool, core, not_this, shape, anchors, captionless, read, look=None, place_words=()):
     """The free tier (captions whose subject is a main-subject word) is the pool; a thin period
     (fewer than MIN_PER_PERIOD) gets Gemma on its other captions, core word first, then a look at
     what no caption can settle. read(refs) -> decisions; look(refs) -> (confirmed, log).
@@ -126,6 +126,16 @@ def fill_pool(library, pool, core, not_this, shape, anchors, captionless, read, 
     caption = lambda i: library.rows[i].get("caption") or ""  # noqa: E731
     captioned = {i for i in pool if caption(i) and not library.rows[i].get("uncaptioned")}
     free = {i for i in captioned if grammar_says_subject(caption(i), core, not_this)}
+    if place_words:
+        # A place subject is proven by GPS; its caption only has to show the place or its change:
+        # at the house, "a ladder leaning against a wall" with "renovation" or "peeling" is the house
+        # changing (146 such works photos were left out when only the caption's subject counted).
+        wanted = {w for w in place_words}
+        # ...unless the caption's subject is a being: "a woman standing in a bathroom with white
+        # tiles" is about her (120 of 535 such photos entered through a room word, 09-28).
+        free |= {i for i in captioned if not any(p.lower() in caption(i).lower() for p in not_this)
+                 and wanted & set(re.findall(r"[a-z]+", caption(i).lower()))
+                 and not _is_being(subject_head(caption(i)))}
     wanted = {_stem(w) for phrase in core for w in re.findall(r"[a-z]+", phrase.lower())}
     periods = defaultdict(list)
     for i in pool:
@@ -210,3 +220,14 @@ def balance_years(library, kept):
     for refs in years.values():
         out += refs if len(refs) <= cap else [refs[round(k * len(refs) / cap)] for k in range(cap)]
     return sorted(out, key=lambda i: library.rows[i]["taken_at"])
+
+
+def _is_being(word):
+    """Whether a caption's subject word names a person or an animal (WordNet, main noun sense)."""
+    if not word:
+        return False
+    from nltk.corpus import wordnet as wn
+
+    senses = wn.synsets(wn.morphy(word, wn.NOUN) or word, pos=wn.NOUN)[:1]
+    beings = {"person.n.01", "animal.n.01"}
+    return any(h.name() in beings for s in senses for path in s.hypernym_paths() for h in path)

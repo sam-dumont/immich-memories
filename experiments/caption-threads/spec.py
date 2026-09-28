@@ -451,10 +451,9 @@ def build_subject(reader, key, brief, library, spec, rows):
     core_words = {w for c in core + extent for w in re.findall(r"[a-z]+", c)}
     with_core = {i for i in rows if core_words & library.tokens[i]}
     near_core = [w for w in lifted(library, with_core, rows, most=30) if w not in shows and w not in names]
-    alongside = [w for w in _ask(reader, "spec_alongside", key, ALONGSIDE, {
-        "owner_request": brief, "main_subject": core + extent, "film_shape": spec["shape"], "words": near_core},
-        _schema(words={"type": "array", "items": {"type": "string", "enum": near_core or [""]}, "maxItems": 15}),
-        300).get("words") or [] if w] if near_core else []
+    alongside = _vote(reader, "spec_alongside", key, ALONGSIDE, {
+        "owner_request": brief, "main_subject": core + extent, "film_shape": spec["shape"]},
+        "words", near_core, 15)
     shows = list(dict.fromkeys(shows + alongside))
     # Other names for the subject itself (a kitten is the cat, 09-28): Gemma picks them; the core's
     # stated qualities carry over ("black cat" + "kitten" -> "black kitten").

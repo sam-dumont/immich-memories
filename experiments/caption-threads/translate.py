@@ -785,7 +785,8 @@ def main():
             stop = os.environ.get("STOP_AFTER") == "captions" or os.environ.get("NO_LOOK")
             kept, looked, plan["fill"], filled = fill_pool(
                 library, pool, spec.get("core") or [], spec.get("not_this") or (), spec["shape"],
-                anchors & pool, uncaptioned & pool, read, None if stop else looker)
+                anchors & pool, uncaptioned & pool, read, None if stop else looker,
+                place_words=spec.get("alongside") or () if spec["subject_kind"] == "place" and kind != "any" else ())
             if not named:
                 before = len(kept)
                 kept = fewer_poses(library, kept, heads, spec["shape"])
