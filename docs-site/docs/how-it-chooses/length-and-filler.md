@@ -95,10 +95,11 @@ The draft tries to reach its length before it gives up the seconds:
   and must not look like its neighbours. A film of one repeated
   scene stays short.
 - **Readmission.** A frame refused for looking like another, or for crowding its place, comes back
-  when nothing else can fill the slot. A favourite refused for crowding its place comes back sooner:
-  before a shot nothing vouches for keeps the slot it freed. That shot leaves (the weakest first, a
-  story's only shot last, and never a year's only shot in a film that gives every year one) and is
-  listed under `displaced_for_a_favourite` in `derived-decisions/story-selection.private.json`.
+  when nothing else can fill the slot. A favourite refused for crowding its place comes back sooner.
+  While the film has a free slot it takes that one and nobody leaves. Once the film is full, it comes
+  back before a shot nothing vouches for keeps the slot it freed. That shot leaves (the weakest
+  first, a story's only shot last, and never a year's only shot in a film that gives every year one)
+  and is listed under `displaced_for_a_favourite` in `derived-decisions/story-selection.private.json`.
 - **With a model**, a film still short by S seconds reads up to 2 × ceil(S / 3.5) episodes it never
   reached, and seats the ones whose reading records something
   ([What a model adds](./what-a-model-adds.md#a-short-film-gets-one-more-look)).

@@ -430,7 +430,7 @@ def _standing_refused(decisions: Path) -> frozenset[str]:
 def _era_pictures(selection, units, era_of, may_carry) -> dict[str, list[str]]:
     """Each era's pictures that could carry it, from the stories that lie inside that era.
 
-    A story spanning two eras floors neither, as in the allocation (`PartitionedSlots._eras`).
+    A story spanning two eras floors neither, as in the allocation (`PartitionedSlots.eras`).
     """
     by_moment: dict[Any, list[Mapping[str, Any]]] = {}
     for unit in units.values():
