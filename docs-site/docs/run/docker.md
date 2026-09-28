@@ -224,9 +224,9 @@ docker inspect --format='{{.State.Health.Status}}' immich-memories
 
 `/home/immich/.immich-memories/store.db` is the expensive file: every fact, caption and reading
 the editor banked, every picture you cleared or ruled out, your people, run history, automation
-state and the special-days catalogue. Lose it and the next cut reads the library again. `cache.db`
-beside it holds derived analysis only and is rebuilt when lost. Both sit on the config volume, so
-moving host means copying that volume ([moving an install](./maintenance/health-logs-cache.md#moving-an-install)).
+state and the special-days catalogue. Lose it and the next cut reads the library again. A `cache.db`
+beside it is a leftover from before the store: nothing writes it, and once imported it can go. The
+store sits on the config volume, so moving host means copying that volume ([moving an install](./maintenance/health-logs-cache.md#moving-an-install)).
 
 Back the store up without stopping anything:
 

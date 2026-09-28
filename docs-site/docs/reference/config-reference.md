@@ -765,7 +765,8 @@ The video cache is not library-sized: it holds the originals being assembled, te
 
 Where the store lives: owner decisions, the people registry, model answers, run history, automation
 state, the special-days catalogue and the settings you edit in the UI, as they move out of loose files ([#871](https://github.com/sam-dumont/immich-video-memory-generator/issues/871)).
-The cache stays in `cache.database`.
+`cache.database` only names a pre-store `cache.db` for the one-time import, and the directory
+the run lock files sit in.
 
 ```yaml
 database:

@@ -125,7 +125,7 @@ def setup_runtime(
 
 
 def test_full_runtime_story_first_and_exact_warm_without_legacy_calls(
-    tmp_path, monkeypatch, mock_immich_client, mock_analysis_cache, mock_thumbnail_cache
+    tmp_path, monkeypatch, mock_immich_client, mock_thumbnail_cache
 ):
     sources, config, build, calls, captures, image_calls, warm = setup_runtime(
         tmp_path, monkeypatch
