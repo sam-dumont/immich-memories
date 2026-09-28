@@ -1,6 +1,6 @@
 """Public grouped-person requests retain same-asset scope and identity."""
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
@@ -37,14 +37,19 @@ class Client:
         self.media = {}
         for media in ("VIDEO", "IMAGE"):
             rows = []
-            for label, ids in (
-                ("a-child", {"a", "c"}),
-                ("hidden-child", {"a-hidden", "c"}),
-                ("b-child", {"b", "c"}),
-                ("child-only", {"c"}),
-                ("adults-only", {"a", "b"}),
+            # A day apart, so each label is its own episode, shared by its video and photo.
+            for day, (label, ids) in enumerate(
+                (
+                    ("a-child", {"a", "c"}),
+                    ("hidden-child", {"a-hidden", "c"}),
+                    ("b-child", {"b", "c"}),
+                    ("child-only", {"c"}),
+                    ("adults-only", {"a", "b"}),
+                )
             ):
-                asset = make_asset(f"{media}-{label}")
+                asset = make_asset(
+                    f"{media}-{label}", file_created_at=datetime(2024, 5, 1) + timedelta(days=day)
+                )
                 asset = asset.model_copy(
                     update={"type": AssetType(media), "people": [p for p in PEOPLE if p.id in ids]}
                 )
@@ -61,15 +66,16 @@ class Client:
         self.roster_reads.append(with_hidden)
         return self.people
 
-    def selected(self, media, person):
-        self.calls.append((media, person))
-        return [row for row in self.media[media] if person in {p.id for p in row.people}]
+    def window(self, media):
+        self.calls.append(media)
+        return list(self.media[media])
 
-    def get_videos_for_person_and_date_range(self, person_id, _window):
-        return self.selected("VIDEO", person_id)
+    def get_videos_for_date_range(self, _window):
+        return self.window("VIDEO")
 
-    def get_photos_for_date_range(self, _window, *, person_id=None, **_kwargs):
-        return self.selected("IMAGE", person_id)
+    def get_photos_for_date_range(self, _window, **people):
+        assert not any(people.values()), "a per-person photo read"
+        return self.window("IMAGE")
 
 
 def invoke(tmp_path, args, client=None):
@@ -93,7 +99,7 @@ def invoke(tmp_path, args, client=None):
     return result, constructor, pipeline
 
 
-def test_public_cli_queries_every_face_identity_once_and_passes_the_name_tree(tmp_path):
+def test_public_cli_reads_the_window_whatever_the_faces_and_passes_the_name_tree(tmp_path):
     client = Client()
     result, _, pipeline = invoke(
         tmp_path,
@@ -121,7 +127,8 @@ def test_public_cli_queries_every_face_identity_once_and_passes_the_name_tree(tm
     assert kwargs["memory_preset_params"]["person_expression"] == EXPRESSION.to_dict()
     assert kwargs["person_names"] == list(EXPRESSION.leaf_values)
     assert client.roster_reads == [True]
-    assert len(client.calls) == len(set(client.calls)) == 8
+    # One read per kind for the window, however many faces are named.
+    assert client.calls == ["VIDEO", "IMAGE"]
 
 
 @pytest.mark.parametrize("explicit_type", [False, True])
@@ -130,13 +137,13 @@ def test_grouped_people_custom_dates_reach_the_same_source_route_without_a_year(
 ):
     client = Client()
     windows = []
-    original = client.get_videos_for_person_and_date_range
+    original = client.get_videos_for_date_range
 
-    def record_window(person_id, window):
+    def record_window(window):
         windows.append(window)
-        return original(person_id, window)
+        return original(window)
 
-    client.get_videos_for_person_and_date_range = record_window
+    client.get_videos_for_date_range = record_window
     result, _, pipeline = invoke(
         tmp_path,
         [
@@ -224,13 +231,6 @@ def test_flat_person_cli_inference_is_unchanged(tmp_path, names, expected_type):
     class FlatClient(Client):
         def get_person_by_name(self, name):
             return next(person for person in PEOPLE if person.name == name)
-
-        def get_videos_for_all_persons(self, person_ids, _window):
-            return [
-                row
-                for row in self.media["VIDEO"]
-                if set(person_ids).issubset(person.id for person in row.people)
-            ]
 
     result, _, pipeline = invoke(
         tmp_path,
@@ -335,13 +335,13 @@ def test_a_dateless_people_memory_starts_where_its_people_could_first_be_photogr
     """Forever is a valid ask: the birth dates decide where forever begins."""
     client = Client()
     windows = []
-    original = client.get_videos_for_person_and_date_range
+    original = client.get_videos_for_date_range
 
-    def record_window(person_id, window):
+    def record_window(window):
         windows.append(window)
-        return original(person_id, window)
+        return original(window)
 
-    client.get_videos_for_person_and_date_range = record_window
+    client.get_videos_for_date_range = record_window
     result, _, pipeline = invoke(
         tmp_path,
         [
