@@ -31,6 +31,7 @@ from immich_memories.analysis.llm_wire import openai_headers
 from immich_memories.api.models import Asset, ExifInfo
 from immich_memories.config import Config
 from model_reader import Reader
+from cascade import AGREE, GRAMMAR_SAMPLE, SMOL_SAMPLE, grammar_says_subject, smol_yes
 from spec import AT_HOME_KM, at_home_rows, build_spec, build_subject, homes, show
 from query import companion_terms, retrieve_plan, vocabulary
 from workflow import choose_sources
@@ -216,6 +217,7 @@ it (dates and captions, in order). Two to four plain sentences: what the film is
 it moves through time. Use only the owner's words and what the captions show; invent no names,
 events or feelings. Return JSON {"thesis":string}.'''
 
+IMMICH_ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 EPISODE = timedelta(minutes=90)  # the product's episode gap (selection_source_groups)
 JUDGE_BUDGET = 220               # caption checks per request, spread over the pool's time scale
 
@@ -459,9 +461,23 @@ def look(reader, config, library, plan, candidates, anchors, score=None):
     reference = None
     ref_image = preview(config, reference) if reference else None
     kept, log = [], []
+    # CASCADE: SmolVLM and E4B both answer until SMOL_SAMPLE pairs exist for this request; SmolVLM
+    # then answers alone when they agreed on at least AGREE of them (cascade.py).
+    state = plan.setdefault("cascade", {"smol_trusted": None, "pairs": 0, "agreed": 0, "smol": 0, "e4b": 0}) \
+        if os.environ.get("CASCADE") else None
     for i in ordered:
         aid = library.rows[i]["asset_id"]
         questions = per_item.get(i) or general
+        if state and state["smol_trusted"] and questions:
+            small = [smol_yes(config, q, aid, preview) for q in questions]
+            if None not in small:
+                ok = all(small)
+                state["smol"] += 1
+                log.append({"date": library.rows[i]["taken_at"][:10], "caption": library.rows[i]["caption"][:80],
+                            "answers": small, "same": None, "why": "smolvlm", "kept": ok})
+                if ok:
+                    kept.append(i)
+                continue
         use_ref = ref_image is not None and aid != reference
         text = LOOK.format(ref=" (the first image is the reference, the second is the photo to judge)" if use_ref else "",
                            same=(f', and whether it shows the same {thing or " / ".join(plan.get("subject") or ["subject"])} '
@@ -481,6 +497,15 @@ def look(reader, config, library, plan, candidates, anchors, score=None):
             save(path, answer)
         ok = all(truthy(x) for x in (answer.get("answers") or [False])) if questions else True
         ok = ok and answer.get("same") != "different"
+        if state is not None:
+            state["e4b"] += 1
+            if state["smol_trusted"] is None and questions:
+                small = [smol_yes(config, q, aid, preview) for q in questions]
+                if None not in small:
+                    state["pairs"] += 1
+                    state["agreed"] += all(small) == ok
+                if state["pairs"] >= SMOL_SAMPLE:
+                    state["smol_trusted"] = state["agreed"] / state["pairs"] >= AGREE
         log.append({"date": library.rows[i]["taken_at"][:10], "caption": library.rows[i]["caption"][:80],
                     "answers": answer.get("answers"), "same": answer.get("same"), "why": answer.get("why", "")[:120],
                     "kept": ok})
@@ -578,11 +603,31 @@ Captions never know names or whose something is. Return JSON with one answer per
 COMPACT_BATCH = 24
 
 
-def choose_compact(reader, library, key, brief, refs, meaning=None):
+def choose_compact(reader, library, key, brief, refs, meaning=None, core=None, not_this=(), stats=None):
     """The cheap text check: one short enforced verdict per caption, no reasons (reasons were
-    ~90% of the time: 1.6 s per caption)."""
-    decisions = []
+    ~90% of the time: 1.6 s per caption). CASCADE: grammar's "belongs" stands for the captions it
+    names when Gemma agrees on a sample of them (cascade.py)."""
     refs = [i for i in refs if library.rows[i]["caption"]]
+    if os.environ.get("CASCADE") and core:
+        named = [i for i in refs if grammar_says_subject(library.rows[i]["caption"], core, not_this)]
+        if named:
+            import random as _random
+
+            sample = sorted(_random.Random(7).sample(named, min(GRAMMAR_SAMPLE, len(named))))
+            checked = _gemma_compact(reader, library, f"{key}:grammar", brief, sample, meaning)
+            agree = sum(d["decision"] == "match" for d in checked) / len(checked)
+            if stats is not None:
+                stats.update({"grammar_named": len(named), "grammar_agreement": round(agree, 2),
+                              "grammar_trusted": agree >= AGREE})
+            if agree >= AGREE:
+                taken = set(named)
+                return checked + [{"ref": i, "decision": "match", "by": "grammar"} for i in named if i not in set(sample)] \
+                    + _gemma_compact(reader, library, key, brief, [i for i in refs if i not in taken], meaning)
+    return _gemma_compact(reader, library, key, brief, refs, meaning)
+
+
+def _gemma_compact(reader, library, key, brief, refs, meaning):
+    decisions = []
     for start in range(0, len(refs), COMPACT_BATCH):
         part = refs[start:start + COMPACT_BATCH]
         schema = _schema(answers={"type": "array", "items": {"type": "string", "enum": ["yes", "no", "unsure"]},
@@ -617,8 +662,10 @@ def main():
             "firsts": spec["shape"] == "first times", "scope": spec["where"]["kind"], "title": brief[:60],
             "same_thing": None, "since": since, "until": until, "exclusions": [], "unverifiable": [],
             "unmapped": []}
+    # Test-fixture pictures ("home-breakfast-01") sit in the shared annotation store: only Immich
+    # assets can be a film's material (one aborted an album, 09-28).
     in_window = {i for i, r in enumerate(library.rows)
-                 if (since or 1) <= int(r["taken_at"][:4]) <= (until or 9999)}
+                 if (since or 1) <= int(r["taken_at"][:4]) <= (until or 9999) and IMMICH_ID.match(r["asset_id"])}
     kind = spec["where"]["kind"]
     if kind == "near_home":
         scope = at_home_rows(library, assets, lived, radius=HOME_RADIUS_KM)
@@ -720,7 +767,9 @@ def main():
             # so each first goes straight to its own photo question.
             decisions = [{"ref": i, "decision": "unknown"} for i in sorted(pool)]
         else:
-            decisions = choose_compact(reader, library, key, brief, meaning=plan.get("meaning"), refs=
+            decisions = choose_compact(reader, library, key, brief, meaning=plan.get("meaning"),
+                                       core=spec.get("core"), not_this=spec.get("not_this") or (),
+                                       stats=plan.setdefault("cascade_captions", {}), refs=
                                        sorted(set(offered) | {i for i in anchors & pool if not library.rows[i].get("uncaptioned")}))
         plan["budgets"] = {"text": len(decisions)}
         kept = sorted((d["ref"] for d in decisions if d["decision"] == "match"),
