@@ -36,6 +36,12 @@ class Home:
     since: date | None
     until: date | None
 
+    def held_on(self, day: date) -> bool:
+        """Whether this was home on that day."""
+        return (self.since is None or self.since <= day) and (
+            self.until is None or day < self.until
+        )
+
 
 def homes_over_time(
     pictures: Iterable[LibraryPicture], configured: _Point | None = None

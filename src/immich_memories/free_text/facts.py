@@ -22,7 +22,7 @@ from datetime import date
 from statistics import median
 from typing import Protocol
 
-from immich_memories.analysis.trip_detection import detect_trips, haversine_km
+from immich_memories.analysis.trip_detection import DetectedTrip, detect_trips, haversine_km
 from immich_memories.api.models import Asset, AssetType, ExifInfo
 from immich_memories.free_text.homes import Home
 from immich_memories.free_text.lexicon import Lexicon
@@ -308,6 +308,27 @@ class FarthestTrip:
         )
 
 
+def home_trips(
+    pictures: Iterable[LibraryPicture], homes: Sequence[Home], rules: TripRules
+) -> list[tuple[Home, DetectedTrip]]:
+    """The product's own trips, each detected over one home's years from that home."""
+    located = [p for p in pictures if p.latitude is not None and p.longitude is not None]
+    found: list[tuple[Home, DetectedTrip]] = []
+    for home in homes:
+        during = [p for p in located if home.held_on(p.taken_at.date())]
+        trips = detect_trips(
+            [_trip_asset(picture) for picture in during],
+            home.latitude,
+            home.longitude,
+            min_distance_km=rules.min_distance_km,
+            min_duration_days=rules.min_duration_days,
+            max_gap_days=rules.max_gap_days,
+            name_locations=False,
+        )
+        found += [(home, trip) for trip in trips]
+    return found
+
+
 def farthest_trip(
     pictures: Iterable[LibraryPicture], homes: Sequence[Home], rules: TripRules
 ) -> FarthestTrip | None:
@@ -316,31 +337,17 @@ def farthest_trip(
     Trips are the product's own trip detection, run over each home's years from that home. A
     trip is as far as its median photo, so one wrong GPS fix cannot make it the farthest.
     """
-    located = [p for p in pictures if p.latitude is not None and p.longitude is not None]
+    held = list(pictures)
+    by_id = {picture.asset_id: picture for picture in held}
     best: FarthestTrip | None = None
-    for home in homes:
-        during = {p.asset_id: p for p in located if _lived_in(home, p.taken_at.date())}
-        trips = detect_trips(
-            [_trip_asset(picture) for picture in during.values()],
-            home.latitude,
-            home.longitude,
-            min_distance_km=rules.min_distance_km,
-            min_duration_days=rules.min_duration_days,
-            max_gap_days=rules.max_gap_days,
-            name_locations=False,
+    for home, trip in home_trips(held, homes, rules):
+        far = median(
+            haversine_km(home.latitude, home.longitude, *_where(by_id[asset_id]))
+            for asset_id in trip.asset_ids
         )
-        for trip in trips:
-            far = median(
-                haversine_km(home.latitude, home.longitude, *_where(during[asset_id]))
-                for asset_id in trip.asset_ids
-            )
-            if best is None or far > best.distance_km:
-                best = FarthestTrip(trip.start_date, trip.end_date, far, frozenset(trip.asset_ids))
+        if best is None or far > best.distance_km:
+            best = FarthestTrip(trip.start_date, trip.end_date, far, frozenset(trip.asset_ids))
     return best
-
-
-def _lived_in(home: Home, day: date) -> bool:
-    return (home.since is None or home.since <= day) and (home.until is None or day < home.until)
 
 
 def _where(picture: LibraryPicture) -> tuple[float, float]:
