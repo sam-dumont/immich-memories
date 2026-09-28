@@ -415,11 +415,8 @@ def build_subject(reader, key, brief, library, spec, rows):
     shows = list(dict.fromkeys(seeds + [w for w in picked if w]))
     heads = {w for x in seeds for w in re.findall(r"[a-z]+", x)[-1:]}
     near, counts = near_phrases(library, rows, heads)
-    not_this = _ask(reader, "spec_pick_not", key, PICK_NOT, {"owner_request": brief,
-                    "phrases": [f"{p} ({counts[p]})" for p in near]},
-                    _schema(not_this={"type": "array", "items": {"type": "string", "enum": near or [""]}, "maxItems": 15}),
-                    400).get("not_this") or [] if near else []
-    not_this = [x for x in not_this if x]
+    not_this = _vote(reader, "spec_pick_not", key, PICK_NOT, {"owner_request": brief,
+                     "counts": {p: counts[p] for p in near}}, "not_this", near, 15, 400)
     # What the owner says to leave out, picked from the request's own phrases.
     # Only what follows a negation can be left out: asked over the whole request, E4B picked the
     # subject itself ("garden" out of "our garden").

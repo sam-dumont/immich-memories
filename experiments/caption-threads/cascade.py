@@ -20,31 +20,73 @@ from experiment_data import ROOT, save
 
 AGREE = 0.9
 SMOL_SAMPLE = 24
-# English grammar, not meaning: the first verb or preposition ends a caption's subject.
+# English grammar, not meaning: the first verb or preposition ends a caption's subject. Present-tense
+# verbs are listed because a small captioner writes "A child rides a toy car" (09-28).
 SUBJECT_ENDS = re.compile(
     r"\b(is|are|was|were|sits|sit|sitting|stands|standing|lies|lying|lays|laying|rests|resting|with|on|in|at|"
     r"near|next|inside|under|behind|beside|by|against|holding|holds|filled|displays|displayed|shows|showing|"
-    r"parked|driving|riding|walking|covered|surrounded|featuring|that|which|while|as|from|into|through)\b")
+    r"parked|driving|riding|walking|covered|surrounded|featuring|that|which|while|as|from|into|through|"
+    r"rides|drives|plays|walks|runs|looks|hugs|carries|pushes|pulls|eats|drinks|sleeps|jumps|climbs|poses|"
+    r"smiles|waves|hangs|leans|grazes|flies|swims|reads|watches|uses|wears|feeds|takes|gazes|peeks|peers|"
+    r"stares|reaches|kneels|crouches|cuddles|kisses|touches|points|enjoys|sits|perches|hides|seems|appears)\b")
 
 
 def _stem(word):
     return word[:-1] if word.endswith("s") and len(word) > 3 else word
 
 
-def grammar_says_subject(caption, core, not_this=()):
-    """True when a main-subject phrase names the caption's grammatical subject: every word of the
-    phrase ("black cat" needs both) before the first verb form ("A man wearing a black t-shirt"
-    is a man, not a black cat; 09-28, the engine's picks showed it)."""
+COLLECTIVES = {"group", "pair", "couple", "herd", "flock", "crowd", "team", "bunch", "pack", "litter",
+               "family", "row", "line", "pile", "collection", "set", "handful", "stack", "trio"}
+TRAILING = {"up", "down", "out", "away", "off", "together", "alone", "around", "back", "over", "outside",
+            "inside", "nearby", "there", "here"}
+
+
+def _subject_words(caption):
+    """The words of a caption's subject noun phrase: up to its first verb or preposition, the head
+    before 'of' unless that is a collective ('a group of cyclists' is cyclists), trailing
+    participles, particles and adverbs dropped ('a black cat curled up', 'a kitten nestled')."""
     text = (caption or "").lower()
-    if not text or any(p.lower() in text for p in not_this or ()):
-        return False
     end = SUBJECT_ENDS.search(text)
-    head = text[:end.start()] if end else text
-    verb = re.search(r"\b[a-z]+ing\b", head)
-    head = head[:verb.start()] if verb else head
-    subject = {_stem(w) for w in re.findall(r"[a-z]+", head)}
-    return any((words := {_stem(w) for w in re.findall(r"[a-z]+", phrase.lower())}) and words <= subject
-               for phrase in core)
+    span = text[:end.start()] if end else text
+    verb = re.search(r"\b[a-z]+ing\b", span)
+    span = span[:verb.start()] if verb else span
+    if " of " in f" {span} ":
+        left, right = f" {span} ".split(" of ", 1)
+        last = re.findall(r"[a-z]+", left)[-1:] or [""]
+        span = right if last[0] in COLLECTIVES else left
+    words = re.findall(r"[a-z]+(?:'s)?", span)
+    while len(words) > 1 and (words[-1].endswith(("ed", "ly")) or words[-1] in TRAILING):
+        words.pop()
+    return words
+
+
+def grammar_says_subject(caption, core, not_this=()):
+    """True when a main-subject phrase is the caption's grammatical subject: its last word is the
+    subject's head ("a car seat" is a seat, "a toy car set" a set), its other words sit in the
+    subject ("black cat" needs both), and the subject ends at the first verb ("A man wearing a
+    black t-shirt" is a man). A possessive keeps its owner: "a car's dashboard" is the car's."""
+    text = (caption or "").lower()
+    stems = lambda t: {_stem(w) for w in re.findall(r"[a-z]+", t)}  # noqa: E731
+    words = _subject_words(text)
+    if not text or not words:
+        return False
+    owners = {_stem(w[:-2]) for w in words if w.endswith("'s")}
+    head = _stem(words[-1].removesuffix("'s"))
+    held = {_stem(w.removesuffix("'s")) for w in words}
+    # An exclusion names the subject itself: "toy cars" rules out "a toy car with a girl inside".
+    if any(stems(p) and stems(p) <= held for p in not_this or ()):
+        return False
+    for phrase in core:
+        wanted = [_stem(w) for w in re.findall(r"[a-z]+", phrase.lower())]
+        if wanted and (wanted[-1] == head or wanted[-1] in owners) and set(wanted[:-1]) <= held:
+            return True
+    return False
+
+
+def subject_head(caption):
+    """The head of a caption's subject ("A small black kitten is..." -> "kitten")."""
+    words = _subject_words(caption)
+    return words[-1].removesuffix("'s") if words else None
 
 
 def _captioner(config):
@@ -194,15 +236,6 @@ def fewer_poses(library, kept, heads, shape, per=8):
         out += others + posed[:: max(1, len(posed) // room)][:room]
     return sorted(out, key=lambda i: library.rows[i]["taken_at"])
 
-
-def subject_head(caption):
-    """The last word of a caption's subject ("A small black kitten is..." -> "kitten")."""
-    text = (caption or "").lower()
-    end = SUBJECT_ENDS.search(text)
-    head = text[:end.start()] if end else text
-    verb = re.search(r"\b[a-z]+ing\b", head)
-    words = re.findall(r"[a-z]+", head[:verb.start()] if verb else head)
-    return words[-1] if words else None
 
 
 def balance_years(library, kept):
