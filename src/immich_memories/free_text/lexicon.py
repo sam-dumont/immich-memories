@@ -31,6 +31,10 @@ class Lexicon(Protocol):
         """The lexicographer file of the word's first noun sense ("noun.animal"), or None."""
         ...
 
+    def is_common_word(self, word: str) -> bool:
+        """Whether the word is also an ordinary English word, not only a name."""
+        ...
+
 
 class _EnglishWordNet(WordNetCorpusReader):
     # nltk maps every synset onto WordNet 3.0's own ids for the multilingual data, and to do
@@ -51,6 +55,16 @@ class WordNetLexicon:
         base = self._reader.morphy(folded, NOUN) or folded
         senses = self._reader.synsets(base, pos=NOUN)
         return str(senses[0].lexname()) if senses else None
+
+    def is_common_word(self, word: str) -> bool:
+        # WordNet stores an ordinary word lower-case and a proper name capitalised: "meadow"
+        # is a word, "Paris" a name.
+        folded = "_".join(word.strip().lower().split())
+        return any(
+            lemma.name() == folded
+            for synset in self._reader.synsets(folded)
+            for lemma in synset.lemmas()
+        )
 
 
 def load_wordnet(path: Path, *, sha256: str = WORDNET_SHA256) -> WordNetLexicon:

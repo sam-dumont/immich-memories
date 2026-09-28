@@ -19,6 +19,16 @@ def test_a_plural_reads_as_its_noun_and_answers_its_first_sense(tmp_path: Path) 
     assert lexicon.noun_file("cats") == "noun.animal"
 
 
+def test_a_word_is_common_only_when_wordnet_stores_it_lower_case(tmp_path: Path) -> None:
+    corpus = tmp_path / "wordnet.zip"
+    digest = write_corpus(corpus, {"meadow": ("noun.location",), "Northvale": ("noun.location",)})
+
+    lexicon = load_wordnet(corpus, sha256=digest)
+
+    assert lexicon.is_common_word("Meadow")
+    assert not lexicon.is_common_word("Northvale")
+
+
 def test_a_missing_corpus_names_the_command_that_fetches_it(tmp_path: Path) -> None:
     with pytest.raises(WordNetUnavailable, match="models fetch"):
         load_wordnet(tmp_path / "wordnet.zip")
