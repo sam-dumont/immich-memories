@@ -444,20 +444,10 @@ test-integration:  ## Run ALL integration tests per-suite (requires FFmpeg/Immic
 playwright-install:  ## Install Playwright browsers for E2E tests
 	uv run playwright install chromium
 
-# Two halves of about nine minutes each: the real render, and the pages. CI runs
-# them as parallel jobs (E2E_SUITE=smoke|pages); each pytest process builds its
-# own session fixtures, so neither half depends on the other having run.
-E2E_SMOKE_TESTS := tests/e2e/test_fake_immich.py tests/e2e/test_launch_smoke.py
-E2E_PAGE_TESTS := tests/e2e/test_memory_page.py tests/e2e/test_picture_decisions.py \
-	tests/e2e/test_sharing_levels.py tests/e2e/test_people_page.py tests/e2e/test_person_pool.py \
-	tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py
-E2E_SUITE ?= all
-E2E_TESTS = $(if $(filter smoke,$(E2E_SUITE)),$(E2E_SMOKE_TESTS),$(if $(filter pages,$(E2E_SUITE)),$(E2E_PAGE_TESTS),$(E2E_SMOKE_TESTS) $(E2E_PAGE_TESTS)))
-
-e2e:  ## Run required fake-service contracts and real hermetic browser render (E2E_SUITE=all|smoke|pages)
-	@case "$(E2E_SUITE)" in all|smoke|pages) ;; \
-		*) echo "E2E_SUITE must be all, smoke or pages"; exit 2 ;; esac
-	uv run pytest $(E2E_TESTS) -v \
+e2e:  ## Run required fake-service contracts and real hermetic browser render
+	uv run pytest tests/e2e/test_fake_immich.py tests/e2e/test_launch_smoke.py \
+		tests/e2e/test_memory_page.py tests/e2e/test_picture_decisions.py tests/e2e/test_sharing_levels.py \
+		tests/e2e/test_people_page.py tests/e2e/test_person_pool.py tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py -v \
 		-m "e2e and not visual" --log-cli-level=INFO --tb=short \
 		--junitxml=tests/e2e-junit.xml
 

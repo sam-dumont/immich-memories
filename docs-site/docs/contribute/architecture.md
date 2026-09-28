@@ -51,8 +51,7 @@ CI runs in tiers, cheap to expensive, and a pull request only runs the jobs its 
 - **Tier 3: build**, after tests. Package build, and the Docker image on pull requests.
 
 The docs build starts immediately. The hermetic launch check runs on pull requests off the cache
-setup alone, Playwright e2e against a fake Immich, in two parallel halves (`E2E_SUITE=smoke`, the
-real render, and `E2E_SUITE=pages`): `make launch-check-ci` on SQLite, and
+setup alone, Playwright e2e against a fake Immich: `make launch-check-ci` on SQLite, and
 `make launch-check-ci-postgres` too when the store changed. After the tests, the container e2e job
 builds the image and runs `make test-container` on each backend.
 

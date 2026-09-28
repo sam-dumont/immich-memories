@@ -137,16 +137,13 @@ def test_ci_runs_the_hermetic_launch_check_with_runtime_dependencies() -> None:
 
     # 40, not 30: the PostgreSQL leg runs the same suite against a real server.
     assert launch_job["timeout-minutes"] == 40
-    matrix = launch_job["strategy"]["matrix"]
-    assert matrix["suite"] == ["smoke", "pages"]
-    assert '["sqlite","postgresql"]' in matrix["database"]
+    assert '["sqlite","postgresql"]' in launch_job["strategy"]["matrix"]["database"]
     assert "ffmpeg" in commands
     assert "playwright install --with-deps chromium" in commands
     # Exact target: "make launch-check" is a substring of "make launch-check-ci",
     # so a loose check would pass whichever one CI pointed at.
-    suite = r"E2E_SUITE=\$\{\{ matrix\.suite \}\}"
-    assert re.search(rf"^\s*make launch-check-ci {suite}\s*$", commands, re.M)
-    assert re.search(rf"^\s*make launch-check-ci-postgres {suite}\s*$", commands, re.M)
+    assert re.search(r"^\s*make launch-check-ci\s*$", commands, re.M)
+    assert re.search(r"^\s*make launch-check-ci-postgres\s*$", commands, re.M)
     assert all("IMMICH_API_KEY" not in str(step) for step in steps)
 
     lfs_pull_index = next(
@@ -237,7 +234,7 @@ def test_ci_launch_gate_does_not_rerun_what_has_its_own_job() -> None:
         for step in workflow["jobs"]["launch-check"]["steps"]
         for command in [str(step.get("run", ""))]
         if "launch-check" in command
-    ).split()[1]
+    ).split()[-1]
 
     prerequisites = _make_target_prerequisites(target)
 

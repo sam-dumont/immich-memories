@@ -569,12 +569,12 @@ jobs:
       - run: cd docs-site && npm ci
       - run: make docs-check
 
-  # The launch check in two halves of about nine minutes each, the real render
-  # and the pages, run side by side instead of one after the other. The
-  # PostgreSQL leg runs when the store changes; SQLite covers everything else.
-  # `ci-success` reads this job's result, which is a failure when any leg fails.
+  # The same launch check with the app's store on each backend; the PostgreSQL
+  # leg runs when the store changes. One job, not a smoke/pages split: the page
+  # tests reuse what the render leaves in the session, and alone they took as
+  # long as the whole suite. `ci-success` fails when either leg fails.
   launch-check:
-    name: Hermetic Launch Check (${{ matrix.suite }}, ${{ matrix.database }})
+    name: Hermetic Launch Check (${{ matrix.database }})
     needs: [changes, setup]
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -585,7 +585,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [smoke, pages]
         database: ${{ fromJSON(needs.changes.outputs.store == 'true' && '["sqlite","postgresql"]' || '["sqlite"]') }}
     # Started on both legs (services cannot follow the matrix); only the
     # postgresql leg is given its URL. Pinned like the test-store job's.
@@ -634,17 +633,17 @@ jobs:
           cd docs-site && npm ci
       - name: Run launch readiness gate (SQLite)
         if: matrix.database == 'sqlite'
-        run: make launch-check-ci E2E_SUITE=${{ matrix.suite }}
+        run: make launch-check-ci
       - name: Run launch readiness gate (PostgreSQL)
         if: matrix.database == 'postgresql'
-        run: make launch-check-ci-postgres E2E_SUITE=${{ matrix.suite }}
+        run: make launch-check-ci-postgres
         env:
           IMMICH_MEMORIES_E2E_DATABASE_URL: postgresql://postgres:store-test@127.0.0.1:5432/postgres
       - name: Upload launch diagnostics
         if: failure()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
-          name: launch-check-diagnostics-${{ matrix.suite }}-${{ matrix.database }}
+          name: launch-check-diagnostics-${{ matrix.database }}
           if-no-files-found: ignore
           path: |
             tests/e2e-junit.xml
