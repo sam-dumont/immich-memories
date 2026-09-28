@@ -45,6 +45,16 @@ VOCABULARY: dict[str, tuple[str | Sense, ...]] = {
     "eye": ("noun.body",),
     "closed": ("adj.all",),
     "rose": ("noun.plant",),
+    "building": (Sense("noun.artifact", parts=("wall.n.01",)),),
+    "house": (Sense("noun.artifact", kind_of="building.n.01", parts=("kitchen.n.01",)),),
+    "cottage": (Sense("noun.artifact", kind_of="house.n.01"),),
+    "kitchen": ("noun.artifact",),
+    "wall": ("noun.artifact",),
+    "wheeled_vehicle": (Sense("noun.artifact", parts=("wheel.n.01",)),),
+    "bicycle": (Sense("noun.artifact", kind_of="wheeled_vehicle.n.01"),),
+    "wheel": ("noun.artifact",),
+    "team": (Sense("noun.artifact", parts=("player.n.01",)),),
+    "player": (Sense("noun.person", kind_of="person.n.01"),),
 }
 # Irregular plurals, as WordNet's noun.exc lists them.
 EXCEPTIONS = {"children": "child"}

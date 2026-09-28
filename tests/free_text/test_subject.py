@@ -6,7 +6,8 @@ from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryPerson
 from immich_memories.free_text.linking import Household
 from immich_memories.free_text.reading import Reading
-from immich_memories.free_text.subject import subject_words
+from immich_memories.free_text.subject import build_subject, subject_words
+from tests.free_text.banked import BankedAsker
 
 NOBODY = Household({})
 
@@ -70,3 +71,90 @@ def test_the_thing_made_is_the_subject_of_its_making(lexicon: Lexicon) -> None:
     )
 
     assert (bread.heads, bread.words) == (("bread",), ("bread",))
+
+
+def _picks(*words: str) -> dict[str, object]:
+    return {"reason": "", "choices": list(words)}
+
+
+def test_the_model_votes_the_main_subject_among_the_subject_words(lexicon: Lexicon) -> None:
+    reading = _reading("beaches and pools", what=("beaches and pools",))
+    # WHY: stands in for the model server; two of three answers pick beaches only.
+    asker = BankedAsker(_picks("beaches"), _picks("beaches", "pools"), _picks("beaches"))
+
+    subject = build_subject(reading, NOBODY, (), lexicon, asker)
+
+    assert subject.heads == ("beaches", "pools")
+    assert subject.main == ("beaches",)
+    assert subject.votes == {"beaches": 3, "pools": 1}
+    assert "beaches 3/3" in subject.reasons[-1].rule
+
+
+def test_nothing_kept_of_the_models_pick_falls_back_to_the_requests_own_words(
+    lexicon: Lexicon,
+) -> None:
+    reading = _reading("beaches and pools", what=("beaches and pools",))
+    # WHY: stands in for the model server; no option gets two votes.
+    asker = BankedAsker(_picks("beaches"), _picks("pools"), _picks())
+
+    subject = build_subject(reading, NOBODY, (), lexicon, asker)
+
+    assert subject.main == ("beaches", "pools")
+    assert "your own subject words" in subject.reasons[-1].outcome
+
+
+def test_one_subject_word_is_not_put_to_a_vote(lexicon: Lexicon) -> None:
+    reading = _reading("pictures of our cat", what=("pictures of our cat",))
+
+    # WHY: stands in for the model server; an empty bank fails any question asked.
+    subject = build_subject(reading, NOBODY, (), lexicon, BankedAsker())
+
+    assert subject.main == ("cat",)
+
+
+def _choice(word: str) -> dict[str, object]:
+    return {"reason": "", "choice": word}
+
+
+def test_its_own_parts_and_kinds_the_captions_use_count_as_the_subject(lexicon: Lexicon) -> None:
+    reading = _reading("our house", what=("our house",))
+    captions = ("A kitchen with a table", "a kitchen at night", "A cottage", "a cottage by a lake")
+    # WHY: stands in for the model server; every answer picks the house.
+    asker = BankedAsker(_picks("house"), _picks("house"), _picks("house"))
+
+    subject = build_subject(reading, NOBODY, captions, lexicon, asker)
+
+    assert subject.main == ("house",)
+    assert set(subject.extent) == {"kitchen", "cottage"}
+    assert subject.relatives == {"kitchen": "part of house", "cottage": "kind of house"}
+
+
+def test_an_inherited_part_counts_only_for_a_place(lexicon: Lexicon) -> None:
+    house = _reading("our house", what=("our house",))
+    bicycles = _reading("our bicycles", what=("our bicycles",))
+    walls = ("a white wall", "a wall with a clock")
+    wheels = ("a wheel in the mud", "a wheel")
+    # WHY: stands in for the model server; the main subject, then what kind of subject it is.
+    at_home = BankedAsker(*[_picks("house")] * 3, *[_choice("a place")] * 3)
+    # WHY: stands in for the model server; the same two questions for the bicycles.
+    riding = BankedAsker(*[_picks("bicycles")] * 3, *[_choice("a thing")] * 3)
+
+    place = build_subject(house, NOBODY, walls, lexicon, at_home)
+    thing = build_subject(bicycles, NOBODY, wheels, lexicon, riding)
+
+    assert place.kind == "a place"
+    assert place.extent == ("wall",)
+    assert place.relatives["wall"] == "part of any building (a house is one)"
+    assert thing.extent == ()
+    assert thing.also == ("wheel",)
+
+
+def test_a_word_for_people_the_request_does_not_say_is_never_offered(lexicon: Lexicon) -> None:
+    reading = _reading("our team", what=("our team",))
+    captions = ("a player kicks a ball", "a player on a field")
+
+    # WHY: stands in for the model server; an empty bank fails any question asked.
+    subject = build_subject(reading, NOBODY, captions, lexicon, BankedAsker())
+
+    assert subject.main == ("team",)
+    assert "player" not in subject.relatives

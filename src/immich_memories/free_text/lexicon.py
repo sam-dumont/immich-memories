@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import warnings
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -24,6 +25,30 @@ _TIME_PERIOD = "time_period.n.01"
 
 # nltk_data's `packages/corpora/wordnet.zip`, WordNet 3.0 as nltk distributes it.
 WORDNET_SHA256 = "cbda5ea6eef7f36a97a43d4a75f85e07fccbb4f23657d27b4ccbc93e2646ab59"
+
+
+# How far up a thing's kinds its inherited parts are looked for: a house's walls are a building's,
+# a structure's are too general to film.
+_INHERITED_LEVELS = 3
+# How far down its kinds go: a car's kinds and their kinds, not every model of every car.
+_KIND_DEPTH = 2
+
+
+@dataclass(frozen=True)
+class Relative:
+    """A word for a kind or a part of a noun, in the noun's first sense."""
+
+    word: str
+    how: str  # "kind" or "part"
+    of: str
+    # An inherited part belongs to what the noun is a kind of: a wheel is any wheeled vehicle's.
+    shared_with: str | None = None
+
+    def label(self) -> str:
+        """How the trace and the model's options name the relation."""
+        if self.shared_with:
+            return f"part of any {self.shared_with} (a {self.of} is one)"
+        return f"{self.how} of {self.of}"
 
 
 class WordNetUnavailable(RuntimeError):
@@ -63,6 +88,15 @@ class Lexicon(Protocol):
 
     def verb_base(self, word: str) -> str | None:
         """The verb a word is a form of ("hiking": "hike"), or None when it is no verb."""
+        ...
+
+    def relatives(self, word: str) -> tuple[Relative, ...]:
+        """The kinds and parts of the word's first noun sense, each word in its own first sense.
+
+        Its own kinds (two levels down), its own parts and their kinds, and the parts it
+        inherits from what it is a kind of (labelled with that). A word whose everyday meaning
+        is something else is left out: WordNet lists "bus" as a kind of car in an old sense.
+        """
         ...
 
     def is_adjective(self, word: str) -> bool:
@@ -137,6 +171,42 @@ class WordNetLexicon:
     def verb_base(self, word: str) -> str | None:
         base = self._reader.morphy(word.strip().lower(), VERB)
         return str(base) if base else None
+
+    def relatives(self, word: str) -> tuple[Relative, ...]:
+        head = self.noun_base(word) or word.strip().lower()
+        found: dict[str, Relative] = {}
+        for sense in self._reader.synsets(head, pos=NOUN)[:1]:
+            for other, how, shared in self._related(sense):
+                for name in self._everyday_names(other):
+                    if name != head:
+                        found.setdefault(name, Relative(name, how, head, shared))
+        return tuple(found.values())
+
+    def _everyday_names(self, synset: Any) -> list[str]:
+        # One-word names whose first noun sense is this synset; captions have no multi-words.
+        names = [str(lemma.name()).lower() for lemma in synset.lemmas()]
+        return [
+            name
+            for name in names
+            if "_" not in name and self._reader.synsets(name, pos=NOUN)[:1] == [synset]
+        ]
+
+    def _related(self, sense: Any) -> list[tuple[Any, str, str | None]]:
+        related: list[tuple[Any, str, str | None]] = [
+            (kind, "kind", None)
+            for kind in sense.closure(lambda s: s.hyponyms(), depth=_KIND_DEPTH)
+        ]
+        for part in sense.part_meronyms():
+            related += [(part, "part", None)] + [(kind, "part", None) for kind in part.hyponyms()]
+        above = {
+            ancestor
+            for path in sense.hypernym_paths()
+            for ancestor in path[-1 - _INHERITED_LEVELS : -1]
+        }
+        for ancestor in sorted(above, key=lambda s: s.name()):
+            shared = str(ancestor.lemmas()[0].name()).replace("_", " ")
+            related += [(part, "part", shared) for part in ancestor.part_meronyms()]
+        return related
 
     def is_adjective(self, word: str) -> bool:
         return bool(self._reader.synsets(word.strip().lower(), pos=ADJ))

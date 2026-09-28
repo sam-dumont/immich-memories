@@ -233,3 +233,37 @@ def choose(
             votes[got["choice"]] += 1
     top = votes.most_common(1)
     return (top[0][0] if top and top[0][1] >= 2 else options[0]), votes
+
+
+def choose_several(
+    asker: Asker,
+    instruction: str,
+    data: Mapping[str, Any],
+    options: Sequence[str],
+    *,
+    most: int,
+    max_tokens: int = 500,
+) -> tuple[list[str], Counter[str]]:
+    """Up to `most` options asked three times, in three orders: an option two answers pick is kept.
+
+    The kept options come in the order they were offered; none kept is an answer too (the
+    caller decides what stands instead).
+    """
+    votes: Counter[str] = Counter()
+    for order in three_orders(options):
+        got = ask_again_if_cut(
+            asker,
+            question(instruction, {**data, "options": order}),
+            object_schema(
+                reason={"type": "string", "maxLength": 200},
+                choices={
+                    "type": "array",
+                    "items": {"type": "string", "enum": order},
+                    "maxItems": most,
+                },
+            ),
+            max_tokens=max_tokens,
+        )
+        if got is not None:
+            votes.update({choice for choice in got.get("choices") or () if choice in options})
+    return [option for option in options if votes[option] >= 2], votes
