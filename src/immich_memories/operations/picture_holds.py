@@ -38,6 +38,7 @@ _CLEARED_FOR = {
 _DETECTOR = "a nudity detector flagged it"
 _CLIP = "a nudity detector flagged its motion clip"
 _FINDING_WORDS = {
+    "underwear_only": "its caption describes a person wearing only underwear",
     "exposure_evidence": _DETECTOR,
     "clip_exposure": _CLIP,
     "exposure_chain": "most of the pictures taken around it are flagged for nudity",

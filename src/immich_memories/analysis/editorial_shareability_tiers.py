@@ -12,7 +12,10 @@ from collections.abc import Callable, Mapping
 from typing import Any
 
 from immich_memories.analysis.editorial_shareability import REVIEW, check_audience
-from immich_memories.analysis.editorial_shareability_audience import exposure_members
+from immich_memories.analysis.editorial_shareability_audience import (
+    exposure_members,
+    underwear_only,
+)
 
 RULE_AUDIENCE_POLICY = "audience-rules-v1-detector-heads-and-flags"
 NO_EVIDENCE_AUDIENCE_POLICY = "audience-withheld-v1-no-content-evidence"
@@ -20,6 +23,7 @@ NO_EVIDENCE_AUDIENCE_POLICY = "audience-withheld-v1-no-content-evidence"
 AudienceCheck = Callable[[Any, Mapping[str, Any], str], dict[str, Any]]
 
 _HELD = {
+    "underwear_only": "the caption explicitly describes a person wearing only underwear",
     "exposure_evidence": "a detector or exposure flag marks this unit",
     "exposure_chain": "most of this capture run is flagged for exposure",
     "owner_review_flag": "the owner left a review flag on this unit",
@@ -36,6 +40,8 @@ def _flag_rows(evidence: Mapping[str, Any]) -> list[Mapping[str, Any]]:
 
 def _hold(evidence: Mapping[str, Any]) -> str:
     """The first deterministic reason to keep this unit in the family, or an empty string."""
+    if underwear_only(evidence):
+        return "underwear_only"
     if exposure_members(evidence):
         return "exposure_evidence"
     if evidence.get("exposure_chain"):
@@ -72,7 +78,11 @@ def rule_audience(_judge: Any, evidence: Mapping[str, Any], _stage: str) -> dict
         chain = evidence.get("exposure_chain")
         return (
             result
-            | {"finding": held, "why": _HELD[held]}
+            | {
+                "verdict": "just_us" if held == "underwear_only" else "family_only",
+                "finding": held,
+                "why": _HELD[held],
+            }
             | ({"exposure_chain": chain} if chain else {})
         )
     return result | {
