@@ -110,7 +110,7 @@ def object_schema(**properties: Mapping[str, Any]) -> dict[str, Any]:
     return {
         "type": "object",
         "additionalProperties": False,
-        "properties": dict(properties),
+        "properties": properties.copy(),
         "required": list(properties),
     }
 

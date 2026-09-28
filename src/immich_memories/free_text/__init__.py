@@ -38,6 +38,7 @@ from immich_memories.free_text.linking import (
     link_who,
     time_cut,
 )
+from immich_memories.free_text.pool import Pool, Step, Translation, build_pool
 from immich_memories.free_text.reading import Asker, Reading, WireAsker, read_request
 from immich_memories.free_text.subject import Subject, SubjectWords, build_subject, subject_words
 
@@ -53,11 +54,14 @@ __all__ = [
     "LibraryUnavailable",
     "LibraryView",
     "OccasionDay",
+    "Pool",
     "Reading",
     "Reason",
     "Relative",
+    "Step",
     "Subject",
     "SubjectWords",
+    "Translation",
     "TripRules",
     "WhenLink",
     "WhereLink",
@@ -65,6 +69,7 @@ __all__ = [
     "WireAsker",
     "WordNetLexicon",
     "WordNetUnavailable",
+    "build_pool",
     "build_subject",
     "farthest_trip",
     "first_pictures",

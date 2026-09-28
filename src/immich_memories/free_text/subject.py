@@ -106,8 +106,7 @@ def _is_doing(word: str, lexicon: Lexicon) -> bool:
 def _unknown(word: str, lexicon: Lexicon) -> bool:
     return (
         word.isalpha()
-        and lexicon.noun_base(word) is None
-        and lexicon.verb_base(word) is None
+        and not (lexicon.noun_base(word) or lexicon.verb_base(word))
         and not lexicon.is_adjective(word)
     )
 
@@ -207,25 +206,7 @@ def build_subject(
     reasons = list(found.reasons)
     allowed = _people_rule(reading, household, lexicon)
     index = _CaptionWords(captions)
-    relatives = {
-        relative.word: relative
-        for head in found.heads
-        for relative in lexicon.relatives(head)
-        if relative.word not in found.words and index.uses(relative.word)
-    }
-    offered = list(dict.fromkeys([*found.words, *relatives]))
-    if dropped := [word for word in offered if not allowed(word)]:
-        reasons.append(Reason(", ".join(dropped), _PEOPLE_RULE, "dropped"))
-    candidates = [word for word in offered if allowed(word)]
-    labels = {word: relatives[word].label() for word in candidates if word in relatives}
-    if labels:
-        reasons.append(
-            Reason(
-                ", ".join(found.heads),
-                "WordNet: its own kinds and parts your captions use; an inherited part says whose",
-                "; ".join(f"{word} = {label}" for word, label in labels.items()),
-            )
-        )
+    relatives, candidates, labels = _candidates(found, allowed, index, lexicon, reasons)
     main, votes = _vote_main(reading.request, candidates, labels, asker, reasons)
     if not main and (own := [word for word in found.words if allowed(word)]):
         main = own
@@ -247,6 +228,35 @@ def build_subject(
         votes=dict(votes),
         reasons=tuple(reasons),
     )
+
+
+def _candidates(
+    found: SubjectWords,
+    allowed: Callable[[str], bool],
+    index: _CaptionWords,
+    lexicon: Lexicon,
+    reasons: list[Reason],
+) -> tuple[dict[str, Relative], list[str], dict[str, str]]:
+    relatives = {
+        relative.word: relative
+        for head in found.heads
+        for relative in lexicon.relatives(head)
+        if relative.word not in found.words and index.uses(relative.word)
+    }
+    offered = list(dict.fromkeys([*found.words, *relatives]))
+    if dropped := [word for word in offered if not allowed(word)]:
+        reasons.append(Reason(", ".join(dropped), _PEOPLE_RULE, "dropped"))
+    candidates = [word for word in offered if allowed(word)]
+    labels = {word: relatives[word].label() for word in candidates if word in relatives}
+    if labels:
+        reasons.append(
+            Reason(
+                ", ".join(found.heads),
+                "WordNet: its own kinds and parts your captions use; an inherited part says whose",
+                "; ".join(f"{word} = {label}" for word, label in labels.items()),
+            )
+        )
+    return relatives, candidates, labels
 
 
 def _people_rule(reading: Reading, household: Household, lexicon: Lexicon) -> Callable[[str], bool]:

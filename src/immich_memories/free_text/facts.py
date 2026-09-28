@@ -79,11 +79,10 @@ _KINDS = {
 }
 # Words for the picture or the film itself, its kind and its sharpness: the facts above link
 # them, so they are never what a picture shows ("sport app screenshots" is about apps).
-PICTURE_WORDS = frozenset(
-    _ORDINARY
-    | {word for kind in _KINDS.values() for word in kind.words}
-    | {word for words in _SHARPNESS.values() for word in words}
-    | {"image", "images", "memory", "memories", "film", "films", "clip", "clips", "movie", "movies"}
+PICTURE_WORDS = _ORDINARY.union(
+    *(kind.words for kind in _KINDS.values()),
+    *_SHARPNESS.values(),
+    {"image", "images", "memory", "memories", "film", "films", "clip", "clips", "movie", "movies"},
 )
 
 
