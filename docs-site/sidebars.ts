@@ -9,6 +9,7 @@ const sidebars: SidebarsConfig = {
       items: [
         {type: 'doc', id: 'welcome/introduction', label: 'Introduction'},
         {type: 'doc', id: 'welcome/about', label: 'Why this exists'},
+        {type: 'doc', id: 'welcome/how-this-was-built', label: 'How this was built'},
       ],
     },
     {
