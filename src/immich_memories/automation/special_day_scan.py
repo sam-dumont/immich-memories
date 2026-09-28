@@ -74,6 +74,7 @@ class DiscoveredDay:
     asset_ids: tuple[str, ...] = ()
     event_admission: SpecialEventAdmission | None = None
     judged: bool = True
+    unjudged_because: str = ""
     # How many of the day's pictures the recorded window holds, against `photos`.
     # Zero means a scan from before #1067 that never counted, so its window is
     # taken as written; every other row can be checked without re-fetching the
@@ -375,6 +376,7 @@ def _day_from(day: date, items: list, verdict: Any, what: str = "") -> Discovere
             photos=len(items),
             window=None,
             judged=False,
+            unjudged_because=verdict.unjudged_because,
             prompt_version=SCAN_VERSION,
             app_version=__version__,
         )
