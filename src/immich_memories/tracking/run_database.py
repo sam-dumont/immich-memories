@@ -253,18 +253,6 @@ class RunDatabase:
             raise_invalid_delivery_transition,
         )
 
-    def mark_stale_runs_as_interrupted(self) -> int:
-        """Mark any 'running' runs as 'interrupted' (startup cleanup)."""
-        with self.store.begin() as conn:
-            count = conn.execute(
-                sa.update(pipeline_runs)
-                .where(_RUNS.status == "running")
-                .values(status="interrupted")
-            ).rowcount
-        if count > 0:
-            logger.info(f"Marked {count} stale run(s) as interrupted")
-        return count
-
     def _pending_deliveries(self, source: str) -> sa.Select:
         return sa.select(_RUNS.run_id, _RUNS.output_path).where(
             _RUNS.status == "completed",

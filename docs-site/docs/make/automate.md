@@ -179,28 +179,19 @@ the `immich-memories-secrets` Secret and shares the volumes of the [Kubernetes d
 kubectl apply -f deploy/kubernetes/base/job.yaml
 ```
 
-## A named memory on a named date: the scheduler daemon
+## A named memory on a named date
 
-The one thing `auto` cannot say is "a year in review every 15 January". The `scheduler` command group, the
-advanced/legacy cron daemon, does that, and nothing else in the app reads its `schedules:` section. It
-knows none of the rotation rules, back-off or upload retries above and needs `--foreground`, so prefer `auto`.
-
-```yaml
-scheduler:
-  enabled: true
-  timezone: "America/New_York"
-  schedules:
-    - name: "yearly-recap"
-      memory_type: "year_in_review"
-      cron: "0 9 15 1 *"          # 15 January, 9:00
-      upload_to_immich: true
-      album_name: "{year} Memories"
-```
+The one thing `auto` cannot say is "a year in review every 15 January". A cron line (or a Kubernetes
+CronJob like the monthly one above) that runs `generate` says it:
 
 ```bash
-immich-memories scheduler start --foreground
+# 15 January, 09:00: last year's review, uploaded to an album
+0 9 15 1 * immich-memories generate --memory-type year_in_review --year $(( $(date +\%Y) - 1 )) --upload-to-immich --album "Memories"
 ```
 
-Every `automation:`, `notifications:` and `scheduler:` key is in the
+The `scheduler` command group that used to do this is gone
+([Upgrading](../run/maintenance/upgrading.md#removed-commands)).
+
+Every `automation:` and `notifications:` key is in the
 [config reference](../reference/config-reference.md#automation), every flag in the
 [CLI reference](../reference/cli-reference.md#auto).

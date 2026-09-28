@@ -97,7 +97,6 @@ baseline_config:
   title_screens.locale: fr
   title_screens.style_mode: auto
   title_screens.animated_background: true
-  title_screens.show_decorative_lines: false
   title_screens.title_duration: 3.5
   title_screens.month_divider_duration: 2.0
   title_screens.ending_duration: 4.0

@@ -239,6 +239,4 @@ immich-memories preflight       # can it reach Immich, the models, the renderer
 Bare `people` lists names exactly as Immich holds them: "Emma" versus "Emma S." is the difference between a
 film and an empty pool. `years` saves you guessing at `--year` on a library imported from old backups.
 
-`analyze` and `export-project` are older commands. `analyze` counts a year's videos and prepares nothing (use
-`prepare`); `export-project` writes a JSON list of the videos in scope that nothing reads back. To see how a
-cut was reached, use [`runs why`](./runs.md#runs-why).
+To see how a cut was reached, use [`runs why`](./runs.md#runs-why).

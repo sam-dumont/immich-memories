@@ -119,7 +119,6 @@ OPERATOR_CONFIG = {
     "advanced": {
         "triage": {
             "encoder": "/Users/someone/.immich-memories/models/triage/dinov2-small.onnx",
-            "bundle": "/Users/someone/heads/private-v4.npz",
         },
         "editorial": {
             "annotation_database": "/Users/someone/.immich-memories/annotations.sqlite",

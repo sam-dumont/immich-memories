@@ -486,10 +486,8 @@ used, and any field you leave out takes the *built-in* default, not the one from
 
 ```yaml
 triage:
-  enabled: false                 # Legacy standalone triage hook; editorial preparation runs independently
   encoder: ~/.immich-memories/models/triage/dinov2-small.onnx  # DINOv2-small ONNX export (88 MB)
   encoder_url: https://github.com/...    # where `models fetch` downloads that export from
-  bundle: ""                     # Head weights (.npz); empty = the public bundle in the package
   provider: auto                 # ONNX Runtime provider for the encoder: auto, cpu, cuda, coreml
 ```
 
@@ -501,10 +499,7 @@ encoder key, so changing it re-derives nothing.
 
 Editorial preparation uses `triage.encoder` with the public eight-head bundle from
 `editorial.preparation.head_bundle`, and checks its digest on load. Missing required head facts
-stop selection; `triage.enabled: false` does not bypass preparation.
-
-Only `encoder` and `encoder_url` are read. `enabled` and `bundle` are left over from the standalone
-triage hook: they load, they validate, they do nothing.
+stop selection.
 
 ## Editorial planner
 
@@ -701,13 +696,12 @@ title_screens:
   locale: "auto"                 # en fr nl de es it pt-BR pt-PT pl sv ru ja zh-Hans ko, or auto
   style_mode: "auto"             # auto (mood-based) or random
   animated_background: true      # Gradient shift and colour pulse behind the text
-  show_decorative_lines: false   # Line accents around the title text
   show_month_dividers: true      # When the video spans several months (all-or-none)
   month_divider_threshold: 2     # Min clips in a month to show its divider (1-10)
   use_first_name_only: true      # "Riley" instead of "Riley Smith" in titles
 ```
 
-`animated_background` and `show_decorative_lines` are all the look-and-feel the config file
+`animated_background` is all the look-and-feel the config file
 exposes; the colour palette and custom fonts are not configurable today.
 `animated_background: false` keeps the gradient still
  (no rotation, colour pulse or vignette pulse), which is what `preset: fast` selects. The
@@ -752,7 +746,6 @@ for each switch you turn on, naming the host it will contact.
 cache:
   directory: "~/.immich-memories/cache"
   database: "~/.immich-memories/cache.db"
-  max_age_days: 30               # Analysis cache expiry (1-365)
   video_cache_enabled: true      # Cache downloaded videos locally
   video_cache_max_size_gb: 10.0  # Max disk usage for video cache (1-500 GB)
   video_cache_max_age_days: 7    # Auto-delete cached videos older than this (1-365)
@@ -841,25 +834,6 @@ upload:
 An uploaded memory is filed on the day of its last picture, in the timezone most of its pictures
 share, so it lands in your timeline where the memory ends instead of on the day it was rendered.
 The render day is what you get when no picture in the cut carries a usable time.
-
-## Scheduler
-
-```yaml
-scheduler:
-  enabled: false
-  timezone: "UTC"
-  job_timeout_minutes: 120  # Whole-job deadline, including preparation and rendering; must be positive
-  schedules:
-    - name: "yearly-recap"
-      memory_type: "year_in_review"
-      cron: "0 9 15 1 *"
-      enabled: true
-      upload_to_immich: false
-      album_name: "{year} Memories"
-      person_names: []
-      duration_minutes: null
-      params: {}
-```
 
 ## Automation
 

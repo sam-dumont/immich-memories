@@ -88,3 +88,31 @@ def test_the_description_llm_section_is_named_and_ignored(tmp_path: Path, caplog
         Config.from_yaml(path)
 
     assert "description_llm" in "\n".join(r.getMessage() for r in caplog.records)
+
+
+def test_the_retired_scheduler_and_dead_dials_are_named_and_ignored(tmp_path: Path, caplog) -> None:
+    """#973: the scheduler command went, and four dials nothing read went with it."""
+    path = _write(
+        tmp_path,
+        {
+            "scheduler": {"enabled": True, "schedules": [{"name": "y", "cron": "0 9 15 1 *"}]},
+            "cache": {"max_age_days": 30},
+            "title_screens": {"show_decorative_lines": True, "title_duration": 3.0},
+            "advanced": {"triage": {"enabled": True, "bundle": "/x.npz", "provider": "cpu"}},
+        },
+    )
+
+    with caplog.at_level(logging.WARNING):
+        config = Config.from_yaml(path)
+
+    message = "\n".join(r.getMessage() for r in caplog.records)
+    for key in (
+        "scheduler",
+        "cache.max_age_days",
+        "title_screens.show_decorative_lines",
+        "triage.enabled",
+        "triage.bundle",
+    ):
+        assert key in message
+    assert config.title_screens.title_duration == 3.0
+    assert config.triage.provider == "cpu"
