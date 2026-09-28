@@ -620,7 +620,6 @@ HOST_PATH_KEYS = (
     "editorial.preparation.head_bundle",
     "editorial.preparation.detector_python",
     "editorial.preparation.detector_cache_dir",
-    "triage.bundle",
 )
 
 

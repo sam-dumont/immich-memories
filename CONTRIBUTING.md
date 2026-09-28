@@ -118,7 +118,6 @@ src/immich_memories/
 ├── tracking/     # Run history and job management
 ├── operations/   # Lifecycle phases, storage report
 ├── planning/     # Auto-duration planning
-├── scheduling/   # Cron-based automatic generation
 ├── automation/   # auto suggest/run
 └── memory_types/ # Preset system (Year in Review, Trip, Person, etc.)
 ```
@@ -197,11 +196,12 @@ Do not try to commit coverage XMLs. They are gitignored deliberately, and
 
 ## Missing a holiday or a country?
 
-The holidays that move by country (Mother's Day, Father's Day, Thanksgiving) are one rule per line
-in `src/immich_memories/memory_types/date_builders.py`. If your country keeps one on another date,
-or your family keeps a holiday the list lacks, open a PR with the rule and a line in
-`tests/test_holiday_countries.py`. A date needs no design discussion first. Lunar-calendar holidays
-(Eid, Lunar New Year) are welcome too; they need a computed date rather than a fixed one.
+Public holidays come from the [`holidays`](https://github.com/vacanza/holidays) library, for the
+country the home base is in: a missing or wrong public holiday is best fixed there. The few family
+days no public calendar lists (Mother's Day, Father's Day and the like) are one rule per line in
+`src/immich_memories/memory_types/date_builders.py`. If your country keeps one on another date, or
+your family keeps a day the list lacks, open a PR with the rule and a line in
+`tests/test_holiday_countries.py`. A date needs no design discussion first.
 
 ## Getting Help
 

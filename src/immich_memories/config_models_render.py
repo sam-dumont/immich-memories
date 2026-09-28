@@ -69,14 +69,6 @@ class DefaultsConfig(BaseModel):
             "'family' (the default) or 'shareable' (anyone: only pictures nothing held)"
         ),
     )
-    country: str = Field(
-        default="US",
-        pattern=r"^[A-Za-z]{2}$",
-        description=(
-            "ISO 3166 country code. Sets the dates of the holidays that move by country: "
-            "Mother's Day, Father's Day, Thanksgiving"
-        ),
-    )
 
     @field_validator("scale_mode", mode="before")
     @classmethod
@@ -266,10 +258,6 @@ class TitleScreenConfig(BaseModel):
     animated_background: bool = Field(
         default=True,
         description="Enable subtle background animations (gradient shift, color pulse)",
-    )
-    show_decorative_lines: bool = Field(
-        default=False,
-        description="Show decorative line accents on title screens",
     )
 
     # Month dividers

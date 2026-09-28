@@ -51,7 +51,6 @@ from immich_memories.config_models_triage import TriageConfig
 from immich_memories.config_presets import PresetName, apply_preset
 from immich_memories.config_tiers import TierSetting, apply_tier
 from immich_memories.logging_config import install_secret_redaction
-from immich_memories.scheduling.models import SchedulerConfig
 from immich_memories.security import configured_secret_values
 
 # Tier 2 sections — grouped under `advanced:` in YAML, flat on Config at runtime.
@@ -86,6 +85,12 @@ _WENT_WITH_THE_SCORER = "went with the legacy clip scorer; story-first selection
 # warned about and dropped: section models ignore unknown keys, so without the
 # warning an old setting would silently do nothing after an upgrade.
 _REMOVED_CONFIG_KEYS: dict[str, str] = {
+    "scheduler": "the scheduler command is gone; use `auto`, or a cron job or Kubernetes "
+    "CronJob that runs `generate`",
+    "cache.max_age_days": "nothing expired the cache by age",
+    "title_screens.show_decorative_lines": "no shipped title style draws line accents",
+    "triage.enabled": "editorial.preparation.tier decides when the heads run",
+    "triage.bundle": "the head weights are editorial.preparation.head_bundle",
     "content_analysis": _WENT_WITH_THE_SCORER,
     "audio_content": _WENT_WITH_THE_SCORER,
     "transcription": "transcription " + _WENT_WITH_THE_SCORER + " (the transcribe extra is gone)",
@@ -296,7 +301,7 @@ class Config(BaseSettings):
                            cache, database, upload, trips, photos
       Tier 2 (advanced:):  analysis, hardware, llm, musicgen, ace_step,
                            server, auth, automation, notifications, triage, editorial, inference
-      Tier 3 (internal):   scheduler, title_llm
+      Tier 3 (internal):   title_llm
 
     At runtime, ALL sections are flat fields on Config (config.analysis, etc.).
     The tier grouping only affects YAML serialization.
@@ -341,7 +346,6 @@ class Config(BaseSettings):
     title_screens: TitleScreenConfig = Field(default_factory=TitleScreenConfig)
     upload: UploadConfig = Field(default_factory=UploadConfig)
     photos: PhotoConfig = Field(default_factory=PhotoConfig)
-    scheduler: SchedulerConfig = Field(default_factory=SchedulerConfig)
     trips: TripsConfig = Field(default_factory=TripsConfig)
     network: NetworkConfig = Field(default_factory=NetworkConfig)
     auth: AuthConfig = Field(default_factory=AuthConfig)

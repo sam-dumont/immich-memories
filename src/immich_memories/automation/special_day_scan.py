@@ -13,11 +13,13 @@ being remarkable on its own.
 from __future__ import annotations
 
 import collections
+import copy
 import logging
 from dataclasses import dataclass, replace
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
+from immich_memories.analysis.picture_copies import picture_copies, starred_keepers
 from immich_memories.analysis.special_day import (
     SpecialDay,
     active_hours,
@@ -29,7 +31,7 @@ from immich_memories.analysis.special_day import (
     run_extent,
     window_that_holds_the_day,
 )
-from immich_memories.analysis.special_day_holiday import holiday_name, was_the_holiday
+from immich_memories.analysis.special_day_holiday import was_the_holiday
 from immich_memories.analysis.special_day_sequence import (
     MIN_FILM_SECONDS,
     filmable_seconds,
@@ -48,7 +50,7 @@ from immich_memories.automation.special_day_facts import ranked_occasions
 from immich_memories.config_models_analysis import AnalysisConfig
 from immich_memories.config_models_automation import TripsConfig
 from immich_memories.config_models_render import PhotoConfig
-from immich_memories.memory_types.date_builders import KNOWN_HOLIDAYS, resolve_holiday
+from immich_memories.memory_types.date_builders import holiday_name, holidays_of, resolve_holiday
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
@@ -96,19 +98,47 @@ class DiscoveredDay:
 
 
 def holidays_in(year: int, extra: Iterable[str] = (), *, country: str = "US") -> dict[date, str]:
-    """Dates a holiday memory already covers, each with the holiday's name.
+    """The holidays of the home country, each with its name, and any the library adds.
 
     Nothing is defined here: date_builders owns which holidays exist and when
-    they fall, moving ones included. Adding one there is enough for it to be
-    skipped here too.
+    they fall, moving ones included: the country's public holidays and the few
+    family days no public calendar lists.
     """
-    covered: dict[date, str] = {}
-    for name in (*KNOWN_HOLIDAYS, *extra):
+    covered = holidays_of(year, country)
+    for name in extra:
         try:
-            covered[resolve_holiday(name, year, country=country)] = holiday_name(name)
+            covered.setdefault(resolve_holiday(name, year, country=country), holiday_name(name))
         except ValueError:
             logger.debug("Not a holiday this build knows: %r", name)
     return covered
+
+
+def _one_file_per_picture(assets: list) -> list:
+    """Each picture once, from its full-size file, with a star any of its files carries.
+
+    A shared album stores a curated picture twice, the camera's file and a smaller copy under
+    the same name at the same instant, and discovery counted both: a day looked twice its size.
+    The fold is the editor's own (`picture_copies`); a file with no name is never folded.
+    """
+    named = [asset for asset in assets if getattr(asset, "original_file_name", None)]
+    copies = picture_copies(named)
+    if not copies:
+        return assets
+    starred = starred_keepers(copies, named)
+    logger.info(
+        "%d of %d files are other files of a picture; each counts once", len(copies), len(assets)
+    )
+    return [
+        _with_star(asset) if asset.id in starred else asset
+        for asset in assets
+        if asset.id not in copies
+    ]
+
+
+def _with_star(asset: Any) -> Any:
+    starred = copy.copy(asset)
+    starred.is_favorite = True
+    return starred
 
 
 def _shot_here(assets: list, analysis_config: Any) -> tuple[list, list]:
@@ -238,6 +268,7 @@ def scan_year(
     if not assets:
         return []
 
+    assets = _one_file_per_picture(assets)
     assets, forwarded = _shot_here(assets, analysis_config)
     if not assets:
         return []

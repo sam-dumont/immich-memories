@@ -103,7 +103,6 @@ src/immich_memories/
   tracking/     # Run history
   operations/   # Lifecycle phases, storage report
   planning/     # Auto-duration planning
-  scheduling/   # Cron-based generation
   automation/   # auto suggest/run
   memory_types/ # Preset system
 ```

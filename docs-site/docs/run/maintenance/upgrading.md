@@ -75,7 +75,34 @@ startup. When a setting seems to have stopped working, look for its rename in th
 Keys of the retired per-clip scorer (`content_analysis`, `audio_content`, `transcription`,
 `analysis.max_refinement_passes`, `analysis.scene_threshold` and the other pacing dials,
 `photos.max_ratio`, `photos.read_moments`, `hardware.gpu_analysis` and their family) load with one
-warning listing each one. Delete them to silence it; nothing reads them.
+warning listing each one. Delete them to silence it; nothing reads them. The same goes for the
+`scheduler:` section (its command is gone, see below), `cache.max_age_days`,
+`title_screens.show_decorative_lines`, `triage.enabled` and `triage.bundle`: nothing read the last
+four. Head weights of your own go in `editorial.preparation.head_bundle`.
+
+## Removed commands
+
+These commands went in the release that closed
+[#973](https://github.com/sam-dumont/immich-video-memory-generator/issues/973). A script that still
+calls one fails with `No such command`.
+
+| Removed | Use instead |
+|---------|-------------|
+| `scheduler list/status/start` | `auto run` on a timer for the daily candidate ([Automation](../../make/automate.md)). For a fixed film on a fixed date, a cron job or Kubernetes CronJob that runs `generate` ([below](#a-fixed-film-on-a-fixed-date)) |
+| `analyze` | `prepare`. `analyze` only counted a year's videos; `years` lists the years |
+| `export-project` | Nothing. It wrote a JSON list of videos that nothing read back |
+| `cache stats`, `cache export`, `cache import` | `store status` for row counts, `store backup` / `store restore` to move data. They only read the retired scorer's asset scores, which nothing writes any more |
+| `cache backup` | `store backup`. It copied `cache.db`, which holds only a cache now |
+
+### A fixed film on a fixed date
+
+The old `scheduler:` block filled the date in for you (January fires a year in review of the year
+before). A cron line does it with `date`:
+
+```bash
+# 15 January, 09:00: last year's review, uploaded to an album
+0 9 15 1 * immich-memories generate --memory-type year_in_review --year $(( $(date +\%Y) - 1 )) --upload-to-immich --album "Memories"
+```
 
 ## Data compatibility
 

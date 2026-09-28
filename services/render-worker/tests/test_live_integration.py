@@ -81,7 +81,9 @@ def test_native_renders_live_sources_titles_and_audio(tmp_path, through_app, fal
             capture_output=True,
         )
         assert max(abs(value) for value in array.array("f", decoded.stdout)) > 0.05
-        assert artifact.probe.duration_seconds == pytest.approx(5.0, abs=0.15)
+        # 1 s title + two 2 s clips + 2 s ending, less the half-second the
+        # title and the ending each play from their clip in slow motion.
+        assert artifact.probe.duration_seconds == pytest.approx(4.5, abs=0.15)
         assert all(
             f"/api/assets/{video_id}/original" in [row[0] for row in calls]
             for video_id in material.video_ids
@@ -123,5 +125,6 @@ def _through_app(body, directory, *, fallback):
             )
             result = generate_memory(params, run_tracker=tracker, defer_finalization=True)
     assert result.assembly_clips[0].duration == 2.0
-    assert result.music_mute_windows == [(1.0, 3.0)]
+    # The first clip starts half a second in: the title played its opening.
+    assert result.music_mute_windows == [(1.0, 2.5)]
     return RenderArtifact(result.path, result.encoding_plan, probe=result.publish())

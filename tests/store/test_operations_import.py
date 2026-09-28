@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+import sqlalchemy as sa
 
 from immich_memories.automation.catalogue import load_catalogue
 from immich_memories.automation.notification_state import (
@@ -15,8 +16,8 @@ from immich_memories.automation.notification_state import (
     NotificationStateStore,
 )
 from immich_memories.automation.state_store import AutomationStateStore
-from immich_memories.cache.asset_score_cache import AssetScoreCache
 from immich_memories.config_loader import Config, set_config
+from immich_memories.db.tables import asset_scores
 from immich_memories.operations.run_index import attempt_dir_for_run
 from immich_memories.operations.store_import import import_legacy
 from immich_memories.tracking.models import DeliveryStatus, RunMetadata
@@ -35,6 +36,11 @@ def home(tmp_path) -> Path:
     set_config(config)
     yield tmp_path
     set_config(None)
+
+
+def _banked_scores(store) -> list[dict]:
+    with store.connect() as conn:
+        return [dict(row) for row in conn.execute(sa.select(asset_scores)).mappings()]
 
 
 def test_the_import_carries_every_record_and_identity_exactly(store, home, tmp_path):
@@ -67,7 +73,7 @@ def test_the_import_carries_every_record_and_identity_exactly(store, home, tmp_p
     assert attempts.consecutive_failures_by_key() == {}
     health = NotificationStateStore(store).get()
     assert health.failure_category is NotificationFailureCategory.QUOTA
-    (score,) = AssetScoreCache(store).all_scores()
+    (score,) = _banked_scores(store)
     assert (score["asset_id"], score["model_version"], score["llm_interest"]) == (
         "asset-1",
         "v2",
@@ -144,7 +150,6 @@ def test_a_score_banked_before_versions_is_found_under_the_empty_version(store, 
     import_legacy(store, home)
 
     served = {
-        (s["asset_id"], s["model_version"]): s["combined_score"]
-        for s in AssetScoreCache(store).all_scores()
+        (s["asset_id"], s["model_version"]): s["combined_score"] for s in _banked_scores(store)
     }
     assert served == {("current", "qwen#look2"): 0.81, ("unversioned", ""): 0.43}

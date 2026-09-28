@@ -653,15 +653,12 @@ src/immich_memories/
 │   ├── generate.py             # `generate`
 │   ├── generate_options.py     # `generate`'s flags, grouped; group order is the --help order
 │   ├── generate_resolution.py  # What those flags mean against the config, presets and conflicts
-│   ├── _analyze_export.py      # `analyze`, `export-project`
 │   ├── config_cmd.py           # `config`, `years`, `preflight`
 │   ├── people_cmd.py           # `people` scan/show
 │   ├── models_cmd.py           # `models fetch`
 │   ├── prepare_cmd.py          # `prepare`
-│   ├── scheduler_cmd.py        # `scheduler list/status/start`
 │   ├── auto_cmd.py             # `auto suggest/run/history/status/install/test-notification`
 │   ├── special_days_cmd.py     # `discover-days`, `days-due`, `days-export`/`days-import`: the days worth a memory
-│   ├── cache_cmd.py            # `cache stats/export/import/backup`
 │   ├── store_cmd.py            # `store status/import/copy/backup/restore`
 │   ├── titles.py               # `titles test`, `titles fonts`
 │   ├── runs.py                 # `runs list/show/story/why/stats/storage/delete`
@@ -789,19 +786,12 @@ src/immich_memories/
 │   ├── analysis_schema.py      # The cache's tables and PRAGMA user_version stamp: never migrated; a finished
 │   │                           # v25 ladder is adopted as is, any other layout rebuilt empty; the store's old
 │   │                           # tables in an old cache.db are left for the legacy import
-│   ├── asset_score_cache.py    # Banked asset scores (store table `asset_scores`), read by `cache stats/export/import`
 │   ├── judgment_cache.py       # Reasoning-mode LLM verdicts, keyed by the exact prompt asked (store table `judgments`)
 │   ├── editorial_verdicts.py   # Cull's standing per-picture verdicts (store table `editorial_verdicts`)
 │   ├── embedding_cache.py      # HeadFactStore: head answers (store table `head_facts`)
 │   ├── thumbnail_cache.py      # File-based thumbnail storage
 │   ├── disk_budget.py          # LRU-by-mtime eviction that holds a cache directory to a size cap
 │   └── video_cache.py          # Downloaded video file cache
-│
-├── scheduling/                 # Scheduled memory generation
-│   ├── engine.py               # Scheduler: cron parsing, next job calculation
-│   ├── executor.py             # resolve_schedule_params(): schedule entry -> generation params
-│   ├── daemon.py               # Daemon loop (foreground, SIGINT/SIGTERM)
-│   └── models.py               # Scheduling data models
 │
 ├── store/                      # Repositories over the store's annotation tables: every banked fact and reading
 │   ├── caption_provenance.py   # What served each caption (served /models row + control digest), grouped
@@ -1023,7 +1013,7 @@ Config is organized in 3 tiers (see `config_loader.py`):
 
 - **Tier 1** (top-level YAML): `tier`, `preset`, `immich`, `defaults`, `output`, `audio`, `title_screens`, `cache`, `upload`, `trips`, `network`, `photos`
 - **Tier 2** (under `advanced:` in YAML, `_TIER2_SECTIONS`): `analysis`, `speech`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`, `automation`, `notifications`, `triage`, `editorial`, `inference`
-- **Tier 3** (internal): `scheduler`, `title_llm`
+- **Tier 3** (internal): `title_llm`
 
 At runtime, all sections are flat fields on `Config` (e.g. `config.analysis`).
 Both flat and nested YAML formats are accepted.

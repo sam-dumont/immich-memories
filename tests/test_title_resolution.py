@@ -24,7 +24,6 @@ def _fake_title_settings(**overrides) -> SimpleNamespace:
         "show_month_dividers": True,
         "month_divider_threshold": 2,
         "animated_background": True,
-        "show_decorative_lines": False,
         "title_override": None,
         "subtitle_override": None,
         "memory_type": None,

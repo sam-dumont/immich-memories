@@ -413,15 +413,3 @@ class TestStyleSelection:
                 output_dir=tmp_output,
             )
         assert gen.style.name == "modern_warm"
-
-    def test_decorative_lines_disabled(self, tmp_output, mock_rendering, mock_ending, mock_trip):
-        with (
-            patch("immich_memories.titles.generator.RenderingService"),
-            patch("immich_memories.titles.generator.EndingService"),
-            patch("immich_memories.titles.generator.TripService"),
-        ):
-            gen = TitleScreenGenerator(
-                config=TitleScreenConfig(show_decorative_lines=False),
-                output_dir=tmp_output,
-            )
-        assert gen.style.use_line_accent is False

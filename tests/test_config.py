@@ -332,13 +332,13 @@ class TestConfig:
         assert loaded.analysis.max_album_assets == 2500
         assert loaded.server.port == 8080
 
-    def test_triage_is_a_tier2_section_off_by_default(self, tmp_path):
+    def test_triage_is_a_tier2_section(self, tmp_path):
         config_path = tmp_path / "config.yaml"
-        config_path.write_text("advanced:\n  triage:\n    enabled: true\n")
+        config_path.write_text("advanced:\n  triage:\n    provider: cpu\n")
 
-        assert Config().triage.enabled is False
+        assert Config().triage.provider == "auto"
         loaded = Config.from_yaml(config_path)
-        assert loaded.triage.enabled is True
+        assert loaded.triage.provider == "cpu"
 
     def test_top_level_overrides_advanced(self, tmp_path):
         """If a section appears both at top level and under advanced:, top level wins."""

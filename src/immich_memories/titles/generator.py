@@ -59,9 +59,6 @@ class TitleScreenConfig:
     style_mode: str = "auto"  # "auto", "random", or specific style name
     animated_background: bool = True  # Enable animated backgrounds by default
 
-    # Decorative elements
-    show_decorative_lines: bool = False
-
     # Performance
     use_gpu_rendering: bool = True  # Use the GPU kernels when available
 
@@ -146,10 +143,6 @@ class TitleScreenGenerator:
 
         # Determine style
         self._init_style(style)
-
-        # Apply decorative line preference
-        if not self.config.show_decorative_lines:
-            self.style.use_line_accent = False
 
         # Compose services
         self._rendering = RenderingService(self.config)

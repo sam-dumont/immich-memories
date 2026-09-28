@@ -92,7 +92,6 @@ def test_remote_render_retains_film_settings_and_source_audio_markers(tmp_path):
     params = manual_params(tmp_path)
     params.config.title_screens.enabled = True
     params.config.title_screens.animated_background = False
-    params.config.title_screens.show_decorative_lines = True
     params.config.title_screens.use_first_name_only = False
     params.config.output.hdr_mode = HdrMode.AUTO
     params.config.output.quality = "fast"
