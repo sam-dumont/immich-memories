@@ -10,7 +10,7 @@ import sys
 import tempfile
 from dataclasses import asdict
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from immich_memories.audio.generators.base import GenerationRequest, GenerationResult
 
@@ -54,13 +54,27 @@ async def generate_isolated(
     return result
 
 
+def request_from_payload(data: dict[str, Any]) -> GenerationRequest:
+    """The request the editor sent, whole again after its JSON crossing.
+
+    A nested dataclass comes back as a dict: the mood's `specific_style` then failed every local
+    ACE-Step track, and the film fell back to a bundled one.
+    """
+    from immich_memories.audio.mood_analyzer import VideoMood
+
+    request = GenerationRequest(**data)
+    request.output_dir = Path(request.output_dir)
+    if isinstance(request.mood_detail, dict):
+        request.mood_detail = VideoMood(**request.mood_detail)
+    return request
+
+
 async def _worker(result_path: Path) -> None:
     from immich_memories.audio.generators.ace_step_backend import ACEStepBackend, ACEStepConfig
 
     payload = json.load(sys.stdin)
     config = ACEStepConfig(**payload["config"])
-    request = GenerationRequest(**payload["request"])
-    request.output_dir = Path(request.output_dir)
+    request = request_from_payload(payload["request"])
     async with ACEStepBackend(config) as backend:
         # Direct call deliberately forbids falling through to a configured API server.
         result = await backend._generate_lib(request)

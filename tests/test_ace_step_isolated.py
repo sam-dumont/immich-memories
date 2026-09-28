@@ -89,3 +89,19 @@ async def test_worker_runs_the_library_without_api_fallback(tmp_path, monkeypatc
     destination = tmp_path / "result.json"
     await _worker(destination)
     assert json.loads(destination.read_text())["audio_path"] == str(track)
+
+
+def test_the_worker_receives_the_mood_the_editor_sent(tmp_path):
+    from immich_memories.audio.generators.ace_step_isolated import request_from_payload
+    from immich_memories.audio.mood_analyzer import VideoMood
+
+    sent = GenerationRequest(
+        output_dir=tmp_path,
+        mood_detail=VideoMood("joyful", specific_style="warm acoustic guitar"),
+    )
+    crossed = json.loads(json.dumps(asdict(sent), default=str))
+
+    received = request_from_payload(crossed)
+
+    assert received.mood_detail == sent.mood_detail
+    assert received.output_dir == tmp_path
