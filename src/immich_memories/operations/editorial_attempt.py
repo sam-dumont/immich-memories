@@ -50,23 +50,23 @@ class EditorialAttempt:
             "restart": "Run the same request; completed exact judgments remain reusable.",
         }
         self._lease = _attempt_lease(self.directory, self.attempt_id, store)
-        self._stage_clock = StageClock()
         from immich_memories.tracking.run_observations import current_tracker
         from immich_memories.tracking.span_progress import SpanPlan
         from immich_memories.tracking.span_store import SpanStore
 
+        pictures = len(request.get("requested_assets", [])) or None
+        plan = None
         tracker = current_tracker()
         if tracker is not None and tracker.current_run is not None:
             history = SpanStore(tracker.db.store).latest(
                 tracker.current_run.source, prefix="stage."
             )
             if history:
-                self._stage_clock = StageClock(
-                    plan=SpanPlan(
-                        [span for span in history.spans if span.name.startswith("stage.")],
-                        items=len(request.get("requested_assets", [])),
-                    )
+                plan = SpanPlan(
+                    [span for span in history.spans if span.name.startswith("stage.")],
+                    items=pictures,
                 )
+        self._stage_clock = StageClock(plan=plan, items=pictures)
         self._usage_scope = ExitStack()
         self._usage: LLMCounters | None = None
 

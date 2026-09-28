@@ -452,10 +452,10 @@ def _generate_memory_inner(
     pending_error: GenerationError | None = None
 
     try:
-        import time as _time
+        from immich_memories.tracking import timing
 
         _phase_times: dict[str, float] = {}
-        _phase_start = _time.monotonic()
+        _phase_start = timing.clock()
         pp = _PipelineProgress(params, len(params.clips))
         params = replace(params, progress_callback=pp.report)
 
@@ -483,8 +483,6 @@ def _generate_memory_inner(
         )
 
         # Phase 3: Music, mixed into the film before it is published
-        from immich_memories.tracking import timing
-
         with timing.span("render.music") as music_span:
             music_result = _complete_music_phase(
                 params,
@@ -523,7 +521,7 @@ def _generate_memory_inner(
             recheck=lambda: validate_output(result_path, plan, decode_check, verified=final_probe),
         )
 
-        _phase_times["total"] = _time.monotonic() - _phase_start
+        _phase_times["total"] = timing.clock() - _phase_start
         if collected := timing.active():
             collected.interval("generation", _phase_start, _phase_times["total"], len(params.clips))
         _log_phase_timing(_phase_times, len(assembly_clips))

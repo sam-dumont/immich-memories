@@ -11,7 +11,8 @@ from tests.test_surface_parity import CountingDisplay
 
 def test_estimate_uses_only_current_stage_and_survives_reload(tmp_path, monkeypatch):
     now = 100.0
-    monkeypatch.setattr("time.monotonic", lambda: now)
+    # WHY: advance the run clock without sleeping through a stage.
+    monkeypatch.setattr("immich_memories.tracking.timing.time.perf_counter", lambda: now)
     display = CountingDisplay()
     reporter = EditorialStageReporter(ProgressTracker(), _SourceProgressReporter(display, 0))
     with EditorialAttempt(tmp_path, request={}) as attempt:

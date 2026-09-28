@@ -77,6 +77,12 @@ class _RunLogHandler(logging.Handler):
             current.warnings.append(message)
 
 
+def clock() -> float:
+    """The run's one clock, so intervals folded in line up with the spans around them."""
+    collected = active()
+    return collected.now() if collected is not None else time.perf_counter()
+
+
 def active() -> Collector | None:
     """Return this task's buffer, or None outside an instrumented run."""
     return _active.get()

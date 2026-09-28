@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import contextlib
 import json
-import time
+import re
 from collections import deque
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
@@ -39,6 +39,8 @@ RECENT_ASSET_LIMIT = 12
 ANALYSIS_PHASE = "analysis"
 SELECTION_PHASE = "selection"
 
+_COUNTS = re.compile(r"\d+")
+
 
 @dataclass(frozen=True, slots=True)
 class StageUpdate:
@@ -55,6 +57,13 @@ class StageUpdate:
     remaining_seconds: float | None = None
     total_fraction: float | None = None
     total_remaining_seconds: float | None = None
+    # The name history keeps this stage under. Labels carry counts and months, which
+    # would give every run its own stage and leave nothing to estimate from.
+    key: str = ""
+
+    @property
+    def stage_key(self) -> str:
+        return self.key or _COUNTS.sub("#", self.label.split(":", 1)[0]).strip()
 
     @property
     def identity(self) -> tuple[str, str, str, int | None]:
@@ -122,13 +131,18 @@ class StageUpdate:
 
 
 class StageClock:
-    """Measure only work observed in this stage; never borrow another pass's rate."""
+    """Measure only work observed in this stage; never borrow another pass's rate.
 
-    def __init__(self, *, plan: SpanPlan | None = None) -> None:
+    ``items`` is the run's picture count. Stage spans are kept in that unit, whatever the
+    stage itself counts (packs, calls), so the next run can scale them by its own pictures.
+    """
+
+    def __init__(self, *, plan: SpanPlan | None = None, items: int | None = None) -> None:
         self._previous: StageUpdate | None = None
         self._started = 0.0
         self._baseline = 0
         self._plan = plan
+        self._items = items
         self._total_fraction = 0.0
 
     def finish(self, now: float | None = None) -> None:
@@ -136,15 +150,15 @@ class StageClock:
         if self._previous is not None and (collected := timing.active()) is not None:
             update = self._previous
             collected.interval(
-                f"stage.{update.phase}.{update.label}",
+                _span_name(update),
                 self._started,
-                (time.monotonic() if now is None else now) - self._started,
-                update.total,
+                (timing.clock() if now is None else now) - self._started,
+                self._items,
             )
         self._previous = None
 
     def measure(self, update: StageUpdate) -> StageUpdate:
-        now = time.monotonic()
+        now = timing.clock()
         previous = self._previous
         if (
             previous is None
@@ -161,7 +175,7 @@ class StageClock:
             remaining = (now - self._started) * max(0, update.total - update.done) / completed
         estimate = (
             self._plan.estimate(
-                f"stage.{update.phase}.{update.label}",
+                _span_name(update),
                 fraction=update.fraction if update.fraction is not None else 0.0,
                 remaining=remaining,
             )
@@ -176,6 +190,10 @@ class StageClock:
             total_fraction=self._total_fraction if self._plan and self._plan.weights else None,
             total_remaining_seconds=estimate.remaining_seconds if estimate else None,
         )
+
+
+def _span_name(update: StageUpdate) -> str:
+    return f"stage.{update.phase}.{update.stage_key}"
 
 
 # The run's stage sink, reachable from layers that never see the `on_stage`
