@@ -238,9 +238,8 @@ locally, CI will pass too. Use conventional commit message format (see above).
 
 **Coverage targets:**
 - Core (non-UI): **60%** — enforced by `fail_under = 55` (unit) + GPU runner integration pushes higher
-- UI pages are **excluded** from coverage (`pyproject.toml [tool.coverage.run].omit`) — NiceGUI
-  presentation code (widgets, progress bars, video player) needs a browser to test. Will be
-  covered when Playwright E2E tests are added (#37).
+- The web client is Svelte (`web/`), outside Python coverage; its behaviour is held by the
+  Playwright E2E suite (`make e2e`), its API by the unit tests of `src/immich_memories/web/`.
 - Diff-cover: **80%** on changed lines per PR
 
 **Coverage upload flow:**
@@ -365,4 +364,4 @@ After initial release, the project follows **trunk-based development** with smal
 - CLI: `src/immich_memories/cli/__init__.py` → `main()`
 - Pipeline: `src/immich_memories/analysis/smart_pipeline.py` → `SmartPipeline.run()`
 - Assembly: `src/immich_memories/processing/video_assembler.py` → `VideoAssembler.assemble()`
-- UI: `src/immich_memories/ui/app.py` → NiceGUI routes
+- Web: `src/immich_memories/web/server.py` → `create_app()` (FastAPI); the client is `web/` (SvelteKit)

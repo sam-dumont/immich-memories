@@ -171,3 +171,43 @@ def test_cli_auto_album_resolves_from_the_albums_media() -> None:
     resolved = _decide_trip(None, clips, photos, memory_type="album")
 
     assert resolved.seconds == 150.0
+
+
+def test_a_thin_special_day_still_gets_thirty_seconds_of_pictures() -> None:
+    # A few pictures on the day: the material alone would give about 20 s, a film too short to
+    # be a day. A special day keeps 30 s of pictures, its opening title and ending on top
+    # (owner, 28 Sep).
+    when = datetime(2016, 1, 1, 12, tzinfo=UTC)
+    photos = [_asset(f"p-{i}", when + timedelta(minutes=i), AssetType.IMAGE) for i in range(3)]
+
+    decision = decide_memory_duration(
+        [],
+        photos,
+        requested_seconds=None,
+        requested_source=DURATION_FROM_MATERIAL,
+        preset_seconds=60.0,
+        memory_type="special_day",
+        avg_clip_duration=5.0,
+        photo_duration=4.0,
+        title_duration=3.5,
+        ending_duration=4.0,
+    )
+
+    assert decision.seconds == 30.0 + 3.5 + 4.0
+
+
+def test_a_special_day_the_owner_timed_is_left_as_asked() -> None:
+    decision = decide_memory_duration(
+        [],
+        [],
+        requested_seconds=15.0,
+        requested_source=DURATION_FROM_DURATION_FLAG,
+        preset_seconds=60.0,
+        memory_type="special_day",
+        avg_clip_duration=5.0,
+        photo_duration=4.0,
+        title_duration=3.5,
+        ending_duration=4.0,
+    )
+
+    assert decision.seconds == 15.0

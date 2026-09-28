@@ -198,9 +198,9 @@ The compose file carries this block commented out; uncomment it:
       - /home/immich/.cache:size=1G
 ```
 
-Sessions live under `/home/immich/.immich-memories/.nicegui` on the config volume, so logins
-survive a read-only root; don't repoint `NICEGUI_STORAGE_PATH` at a tmpfs. For 4K, raise `/tmp` to
-8 GB or drop the entry: FFmpeg's intermediates pass 2 GB.
+A session is a signed cookie; the key that signs it is `/home/immich/.immich-memories/.storage_secret`
+on the config volume (or `IMMICH_MEMORIES_STORAGE_SECRET`), so logins survive a read-only root and a
+restart. For 4K, raise `/tmp` to 8 GB or drop the entry: FFmpeg's intermediates pass 2 GB.
 
 ## Daily automation
 
@@ -267,7 +267,7 @@ films live on the volume and the bind mount, so a recreate loses nothing.
 
 ## Custom music
 
-**Upload file** on the Generation Options page takes a track from the browser. For CLI runs,
+**Upload a track** in a cut's Render panel takes a track from the browser. For CLI runs,
 bind-mount a directory and pass `--music /app/music/track.mp3`.
 
 ## Building the image

@@ -138,6 +138,8 @@ def _launch_workspace(root: Path, fake_immich_server: FakeImmichServer) -> Launc
                     },
                     "musicgen": {"enabled": False},
                     "ace_step": {"enabled": False},
+                    # The demo-mode test needs the switch; the docs screenshots hide it.
+                    "server": {"enable_demo_mode": True},
                 },
             },
             sort_keys=False,
@@ -156,6 +158,7 @@ def _launch_workspace(root: Path, fake_immich_server: FakeImmichServer) -> Launc
 
 
 _LAUNCH_BOOTSTRAP = """
+import os
 import sys
 from pathlib import Path
 
@@ -171,13 +174,20 @@ from tests.e2e.fake_editorial import install_fake_editorial_route
 # WHY 1.5 s per stage: a browser reload takes a second or two, and the reload
 # test has to land while the six stages are still running.
 install_fake_editorial_route(stage_seconds=1.5, models_fetched=sys.argv[4] == "fetched")
+# The cuts the web client starts are CLI children: they read the same host from here.
+os.environ["E2E_MODELS"] = sys.argv[4]
+os.environ["E2E_STAGE_SECONDS"] = "0.5"
 
-from tests.e2e.fake_automation import install_fake_automation
+from tests.e2e.fake_automation import install_fake_automation, install_hermetic_web_jobs
 install_fake_automation(config_path, state_dir)
 
-from immich_memories.ui.app import main
+import uvicorn
 
-main(port=int(sys.argv[3]), host="127.0.0.1", reload=False)
+from immich_memories.web.server import create_app
+
+app = create_app()
+install_hermetic_web_jobs(app, config_path, state_dir)
+uvicorn.run(app, host="127.0.0.1", port=int(sys.argv[3]), log_config=None)
 """
 
 _PRODUCTION_SHORTCUT_ENV = frozenset(
@@ -200,7 +210,7 @@ def _build_launch_environment(home: Path | None = None) -> dict[str, str]:
     env = {
         key: value
         for key, value in os.environ.items()
-        if not key.startswith(("IMMICH_MEMORIES_", "NICEGUI_"))
+        if not key.startswith("IMMICH_MEMORIES_")
         and key not in _PRODUCTION_SHORTCUT_ENV
         and key != "PYTEST_CURRENT_TEST"
     }
@@ -228,6 +238,27 @@ def launch_app_url(
 ) -> Generator[str, None, None]:
     """Run the app against only the fake service and disposable local state."""
     yield from _serve_launch(launch_workspace, unused_tcp_port_factory(), models_fetched=True)
+
+
+@pytest.fixture(scope="session")
+def automation_workspace(
+    tmp_path_factory: pytest.TempPathFactory,
+    fake_immich_server: FakeImmichServer,
+) -> LaunchWorkspace:
+    """A host where nobody has filmed anything yet, so automation has the fixture month to offer.
+
+    The launch workspace fills up with the session's own June films, and a memory that has a
+    film is, rightly, never suggested again.
+    """
+    return _launch_workspace(tmp_path_factory.mktemp("automation"), fake_immich_server)
+
+
+@pytest.fixture(scope="session")
+def automation_app_url(
+    automation_workspace: LaunchWorkspace,
+    unused_tcp_port_factory,
+) -> Generator[str, None, None]:
+    yield from _serve_launch(automation_workspace, unused_tcp_port_factory(), models_fetched=True)
 
 
 @pytest.fixture(scope="session")
@@ -312,11 +343,7 @@ def app_url() -> Generator[str, None, None]:
         yield _BASE_URL
         return
 
-    env = {
-        k: v
-        for k, v in os.environ.items()
-        if not k.startswith("NICEGUI_") and k != "PYTEST_CURRENT_TEST"
-    }
+    env = {k: v for k, v in os.environ.items() if k != "PYTEST_CURRENT_TEST"}
     env["IMMICH_MEMORIES_AUTH__ENABLED"] = "false"
     # Don't enable demo mode via config — we inject the CSS class directly
     # in enable_demo_mode(). The toggle would show in screenshots otherwise.
@@ -380,16 +407,16 @@ def screenshot_dir() -> Path:
 
 
 def set_theme(page: Page, theme: str) -> None:
-    """Switch the NiceGUI app to the given theme ('light' or 'dark')."""
-    icon = "light_mode" if theme == "light" else "dark_mode"
-    btn = page.locator(f'button:has(i:text("{icon}"))')
-    if btn.is_visible(timeout=3000):
-        btn.click()
-        page.wait_for_load_state("networkidle")
-        page.wait_for_timeout(1500)
-        # Move mouse away from the button to clear hover state
+    """Switch the web client to the given theme ('light' or 'dark')."""
+    if "/app/" in page.url:
+        # @immich/ui keeps the choice in localStorage, JSON-encoded.
+        page.evaluate(
+            "theme => localStorage.setItem('immich-ui-theme', JSON.stringify(theme))", theme
+        )
+        page.reload(wait_until="networkidle")
         page.mouse.move(640, 450)
-        page.wait_for_timeout(200)
+        return
+    raise ValueError(f"set_theme needs a web client page, not {page.url}")
 
 
 def enable_demo_mode(page: Page) -> None:

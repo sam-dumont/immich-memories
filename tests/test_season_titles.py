@@ -89,13 +89,3 @@ def test_the_title_screen_names_the_season_its_home_has(tmp_path, monkeypatch):
     generator.generate_title_screen(start_date=date(2024, 12, 1), end_date=date(2025, 2, 28))
 
     assert drawn == ["Summer 2024–25"]
-
-
-def test_the_web_ui_template_names_an_exact_season_too():
-    from immich_memories.ui.pages.pipeline_title import generate_template_title
-
-    title, _ = generate_template_title(
-        memory_type="custom", start_date="2024-12-01", end_date="2025-02-28", hemisphere="south"
-    )
-
-    assert title == "Summer 2024–25"

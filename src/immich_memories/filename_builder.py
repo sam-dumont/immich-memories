@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import calendar
 import hashlib
 import json
 import re
@@ -15,6 +14,7 @@ from typing import TYPE_CHECKING, Literal
 from immich_memories.api.person_expression import PersonExpression
 
 if TYPE_CHECKING:
+    from immich_memories.analysis.editorial_planner import EditorialSelection
     from immich_memories.timeperiod import DateRange
 
 # 8 hex characters: short enough to read in a filename, and with a few hundred
@@ -95,45 +95,6 @@ def _event_filename_suffix(memory_type: str | None, event_id: str | None) -> str
     if memory_type != "special_day" or not event_id:
         return ""
     return "_event-" + hashlib.sha256(event_id.encode()).hexdigest()[:10]
-
-
-def build_output_filename(
-    memory_type: str | None,
-    preset_params: dict,
-    person_name: str | None,
-    date_start: date | None,
-    date_end: date | None,
-    container: Literal["mp4", "mov"] = "mp4",
-) -> str:
-    """Build a human-readable output filename from memory context.
-
-    Uses memory type, person names, and date range to produce filenames like:
-    - sam_noah_march_2026_memories.mp4 (multi-person, single month)
-    - noah_summer_2025_memories.mp4 (season preset)
-    - sam_2025_memories.mp4 (year in review)
-
-    Args:
-        memory_type: Memory type key (e.g. "year_in_review", "multi_person", "custom", None)
-        preset_params: Memory preset parameters dict (person_names, year, month, season, etc.)
-        person_name: Single selected person name (from state.selected_person), or None
-        date_start: Start date of the date range
-        date_end: End date of the date range
-
-    Returns:
-        Filename string ending in the resolved container suffix.
-    """
-    who = _build_who_part(memory_type, preset_params, person_name)
-    when = _build_when_part(memory_type, preset_params, date_start, date_end)
-
-    parts = [p for p in (who, when) if p]
-    slug = "_".join(parts) if parts else "memories"
-
-    event_suffix = _event_filename_suffix(memory_type, preset_params.get("event_id"))
-    raw_expression = preset_params.get("person_expression")
-    expression_suffix = _people_filename_suffix(
-        PersonExpression.from_dict(raw_expression) if raw_expression is not None else None
-    )
-    return f"{slug}_memories{event_suffix}{expression_suffix}.{container}"
 
 
 def build_title_person_name(
@@ -231,127 +192,6 @@ def get_divider_mode(
     return "month"
 
 
-def _build_who_part(
-    memory_type: str | None,
-    preset_params: dict,
-    person_name: str | None,
-) -> str:
-    """Build the 'who' portion of the filename."""
-    # Multi-person: join names from preset params
-    if memory_type == "multi_person":
-        names = preset_params.get("person_names", [])
-        if names:
-            joiner = "_or_" if preset_params.get("person_match", "and") == "or" else "_"
-            if len(names) <= 3:
-                return joiner.join(_person_slug(n) for n in names)
-            tail = "_or_others" if joiner == "_or_" else "_and_others"
-            return joiner.join(_person_slug(n) for n in names[:3]) + tail
-
-    # Trip: use "trip" as the who part
-    if memory_type == "trip":
-        return "trip"
-
-    # Single person from preset params or state
-    preset_names = preset_params.get("person_names", [])
-    if preset_names:
-        return _person_slug(preset_names[0])
-    if person_name:
-        return _person_slug(person_name)
-
-    return "everyone"
-
-
-def _when_trip(preset_params: dict, date_start: date | None, date_end: date | None) -> str:
-    """Build 'when' part for trip memory type."""
-    location = preset_params.get("location_name")
-    if location:
-        return safe_slug(location, max_length=60)
-    if date_start and date_end:
-        return _date_range_slug(date_start, date_end)
-    return str(preset_params.get("year", ""))
-
-
-def _when_season(preset_params: dict) -> str:
-    """Build 'when' part for season memory type."""
-    season = preset_params.get("season", "")
-    year = preset_params.get("year", "")
-    return f"{season}_{year}" if season and year else str(year or "")
-
-
-def _when_monthly(preset_params: dict) -> str:
-    """Build 'when' part for monthly highlights memory type."""
-    month = preset_params.get("month")
-    year = preset_params.get("year", "")
-    if month:
-        month_name = calendar.month_name[month].lower()
-        return f"{month_name}_{year}" if year else month_name
-    return str(year or "")
-
-
-def _build_when_part(
-    memory_type: str | None,
-    preset_params: dict,
-    date_start: date | None,
-    date_end: date | None,
-) -> str:
-    """Build the 'when' portion of the filename."""
-    if memory_type == "trip":
-        return _when_trip(preset_params, date_start, date_end)
-
-    if memory_type == "season":
-        return _when_season(preset_params)
-
-    if memory_type == "monthly_highlights":
-        return _when_monthly(preset_params)
-
-    # A special day is one day, and the range slug below rounds it up to its
-    # month -- which is the name that month's highlights already write to.
-    if memory_type == "special_day" and date_start:
-        return date_start.isoformat()
-
-    # On This Day: month + day (no year, it spans years)
-    if memory_type == "on_this_day" and date_start:
-        month_name = calendar.month_name[date_start.month].lower()
-        return f"{month_name}_{date_start.day}"
-
-    # Prefer date range when available (gives month-level detail)
-    if date_start and date_end:
-        return _date_range_slug(date_start, date_end)
-
-    # Fallback to year param from preset
-    year = preset_params.get("year")
-    if year:
-        return str(year)
-
-    return ""
-
-
-def _date_range_slug(start: date, end: date) -> str:
-    """Build a readable slug from a date range."""
-    # Full calendar year
-    if (
-        start.month == start.day == 1
-        and end.month == 12
-        and end.day == 31
-        and start.year == end.year
-    ):
-        return str(start.year)
-
-    # Same month
-    if start.year == end.year and start.month == end.month:
-        month_name = calendar.month_name[start.month].lower()
-        return f"{month_name}_{start.year}"
-
-    # Same year, different months: jan-apr_2026
-    if start.year == end.year:
-        start_abbr = calendar.month_abbr[start.month].lower()
-        end_abbr = calendar.month_abbr[end.month].lower()
-        return f"{start_abbr}-{end_abbr}_{start.year}"
-
-    # Different years
-    return f"{start.strftime('%Y%m%d')}-{end.strftime('%Y%m%d')}"
-
-
 def recipe_hash(
     *,
     memory_type: str | None,
@@ -395,3 +235,39 @@ def apply_recipe_hash(path: Path, digest: str) -> Path:
     """Return the path carrying this recipe hash, replacing any it already has."""
     stem = _RECIPE_HASH_SUFFIX.sub("", path.stem)
     return path.with_name(f"{stem}_{digest}{path.suffix}")
+
+
+def name_after_recipe(
+    output_path: Path,
+    *,
+    selected_clips: list,
+    clip_segments: dict,
+    editorial_selections: tuple[EditorialSelection, ...] = (),
+    memory_type: str | None,
+    date_range,
+    target_duration: float,
+) -> Path:
+    """Name the output after its recipe so an identical rerun replaces it.
+
+    The name can only be finalised after selection: the clips that define the edit
+    are not known before it, and a revision changes them again.
+    """
+    clips = []
+    for clip in selected_clips:
+        asset_id = clip.asset.id
+        start, end = clip_segments.get(asset_id, (0.0, 0.0))
+        clips.append((asset_id, start, end))
+    rendering = tuple(
+        (selection.asset_id, selection.render_mode, selection.render_frame_seconds)
+        for selection in editorial_selections
+    )
+
+    digest = recipe_hash(
+        memory_type=memory_type,
+        date_start=date_range.start.date() if date_range else None,
+        date_end=date_range.end.date() if date_range else None,
+        target_duration=target_duration,
+        clips=clips,
+        extras={"editorial_rendering": rendering} if rendering else None,
+    )
+    return apply_recipe_hash(output_path, digest)

@@ -63,17 +63,14 @@ class Shot:
     def timecode(self) -> str:
         return _clock(self.start)
 
-    @property
-    def kind_label(self) -> str:
-        """The badge word: a moving picture is a Video, everything else is held as a Still."""
-        return "Video" if self.motion else "Still"
-
 
 @dataclass(frozen=True)
 class Storyboard:
     thesis: str
     shots: tuple[Shot, ...]
     film_seconds: float | None = None
+    # The seconds of pictures and video the titles leave room for; an edit may not exceed it.
+    content_budget_seconds: float | None = None
 
     @property
     def total_seconds(self) -> float:
@@ -227,7 +224,10 @@ def storyboard_from_plan(
         start += held
         previous_day, previous_month = day, month
     return Storyboard(
-        thesis=str(story.get("thesis") or ""), shots=tuple(shots), film_seconds=film_seconds
+        thesis=str(story.get("thesis") or ""),
+        shots=tuple(shots),
+        film_seconds=film_seconds,
+        content_budget_seconds=_content_budget(plan, _recorded_timeline(plan)),
     )
 
 
@@ -236,9 +236,33 @@ def read_storyboard(attempt_dir: Path) -> Storyboard | None:
     plan_path = Path(attempt_dir) / PLAN_FILE
     if not plan_path.is_file():
         return None
-    projection_path = Path(attempt_dir) / PROJECTION_FILE
-    projection = json.loads(projection_path.read_text()) if projection_path.is_file() else None
-    return storyboard_from_plan(json.loads(plan_path.read_text()), projection)
+    return storyboard_from_plan(json.loads(plan_path.read_text()), _read_projection(attempt_dir))
+
+
+def _read_projection(attempt_dir: Path) -> dict[str, Any] | None:
+    path = Path(attempt_dir) / PROJECTION_FILE
+    return json.loads(path.read_text()) if path.is_file() else None
+
+
+def moment_alternatives(attempt_dir: Path) -> dict[str, list[str]]:
+    """Each carrier's other pictures of its moment, as the planner kept them for a later swap."""
+    path = Path(attempt_dir) / PLAN_FILE
+    if not path.is_file():
+        return {}
+    return {
+        str(row.get("asset_id")): [str(asset) for asset in row.get("moment_alternatives") or ()]
+        for row in json.loads(path.read_text()).get("carriers") or ()
+    }
+
+
+def source_intervals(attempt_dir: Path) -> dict[str, tuple[float, float]]:
+    """The stretch of each source the render plays, in the source's own seconds."""
+    intervals = (_read_projection(attempt_dir) or {}).get("intervals") or {}
+    return {
+        str(asset_id): (float(bounds[0]), float(bounds[1]))
+        for asset_id, bounds in intervals.items()
+        if isinstance(bounds, list | tuple) and len(bounds) == 2
+    }
 
 
 def storyboard_lines(board: Storyboard, *, limit: int | None = None) -> list[str]:

@@ -73,14 +73,10 @@ class MusicSource(StrEnum):
     """Which source a run asked for, when it has an opinion.
 
     ``AUTO`` is the historical precedence and the default: an explicit track,
-    else generation when a backend is configured, else the bundle. Bundled was
-    only ever reachable as a *fallback*, so a caller that genuinely wants a
-    bundled track -- someone picking it in the wizard -- had no way to say so
-    and would silently receive AI music instead.
+    else generation when a backend is configured, else the bundle.
     """
 
     AUTO = "auto"
-    BUNDLED = "bundled"
 
 
 def music_config_available(config: Config) -> bool:

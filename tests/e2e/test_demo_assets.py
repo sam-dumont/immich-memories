@@ -22,9 +22,14 @@ import pytest
 from PIL import Image, ImageStat
 from playwright.sync_api import Page, expect
 
+from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 from tests.e2e.conftest import _REPO_ROOT, _build_launch_environment
-from tests.e2e.fake_library import CARRIERS, THESIS, summary_line
-from tests.e2e.test_launch_smoke import _choose
+from tests.e2e.web_flow import (
+    cut_june,
+    preview_without_the_first_kept,
+    render,
+    the_film,
+)
 
 pytestmark = [pytest.mark.e2e, pytest.mark.visual, pytest.mark.demo, pytest.mark.slow]
 
@@ -41,40 +46,12 @@ def demo_public_dir() -> Path:
 
 
 def _render_at_1080p(page: Page, launch_app_url: str) -> None:
-    page.goto(launch_app_url, wait_until="domcontentloaded", timeout=30_000)
-    expect(page.get_by_role("combobox", name="Memory type")).to_be_visible(timeout=30_000)
-    _choose(page, "Memory type", "Monthly Highlights")
-    _choose(page, "Month", "June")
-    page.get_by_role("button", name="Cut", exact=True).click()
-
-    expect(page.get_by_text(THESIS)).to_be_visible(timeout=180_000)
-    # The Remotion owner unticks the first picture and cuts again before export.
-    page.get_by_role("button", name="Review the pool", exact=True).click()
-    box = page.get_by_role("checkbox", name="Include").first
-    expect(box).to_be_checked()
-    box.click()
-    expect(box).not_to_be_checked()
-    page.get_by_role("button", name="Cut again", exact=True).click()
-    tab = page.get_by_role("tab", name="Story", exact=True)
-    expect(tab).to_be_visible(timeout=120_000)
-    tab.click()
-    expected = summary_line().replace(f"{len(CARRIERS)} pictures", f"{len(CARRIERS) - 1} pictures")
-    expect(page.get_by_text(expected, exact=True)).to_be_visible(timeout=120_000)
-    page.get_by_role("button", name="Export", exact=True).click()
-    page.wait_for_url("**/step4", timeout=30_000)
-    page.get_by_role("button", name="Back to Generation Options").click()
-    page.wait_for_url("**/step3", timeout=30_000)
-
-    _choose(page, "Resolution", "1080p")
-    _choose(page, "Output Format", "MP4 (H.264)")
-    # WHY none: the demo composition lays its own track over this clip and mutes
-    # the video, and a hermetic launch has no music provider to ask anyway.
-    _choose(page, "Background music", "None")
-    page.get_by_role("button", name="Next: Preview & Export").click()
-    page.get_by_role("button", name="Generate Video").click()
-    expect(page.get_by_text("Your memory video is ready!", exact=True)).to_be_visible(
-        timeout=900_000
-    )
+    cut_june(page, launch_app_url)
+    # The Remotion owner unticks one kept picture and previews that revision before rendering.
+    preview_without_the_first_kept(page)
+    # WHY no music: the demo composition lays its own track over this clip and mutes the video.
+    render(page, resolution="1080p")
+    expect(the_film(page)).to_be_visible(timeout=900_000)
 
 
 def _poster_from(video: Path, destination: Path) -> None:
@@ -146,27 +123,6 @@ _TRIP_MAX_BYTES = 8 * 1024 * 1024
 # CRF 26 measured 6.3 MB against the 10.5 MB the renderer writes at quality
 # low. The docs site serves this file to every reader of the trip page.
 _TRIP_WEB_CRF = "26"
-
-_TRIP_CLI_BOOTSTRAP = """
-import sys
-from pathlib import Path
-
-import immich_memories.config_loader as config_loader
-
-config_path = Path(sys.argv[1])
-state_dir = Path(sys.argv[2])
-config_loader.Config.get_default_path = classmethod(lambda cls: config_path)
-config_loader.init_config_dir = lambda: state_dir
-
-from tests.e2e.fake_editorial import install_fake_editorial_route
-
-install_fake_editorial_route(stage_seconds=0.05)
-
-from immich_memories.cli import main
-
-sys.argv = ["immich-memories", *sys.argv[3:]]
-main()
-"""
 
 
 @pytest.fixture
@@ -275,7 +231,7 @@ def _run_trip_cli(workspace, output_dir: Path) -> Path:
         [
             str(_REPO_ROOT / ".venv" / "bin" / "python"),
             "-c",
-            _TRIP_CLI_BOOTSTRAP,
+            CLI_BOOTSTRAP,
             str(workspace.config_path),
             str(state_dir),
             "generate",

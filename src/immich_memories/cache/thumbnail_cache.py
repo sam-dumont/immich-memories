@@ -75,18 +75,6 @@ class ThumbnailCache:
             os.utime(path)
         return data
 
-    def has(self, asset_id: str, size: str) -> bool:
-        return self._path(asset_id, size).exists()
-
-    def cached_ids(self, asset_ids: set[str] | list[str], size: str) -> set[str]:
-        """Which of these assets have a cached thumbnail.
-
-        Existence only: callers that just need the set were using `get_batch`
-        and discarding the bytes, which reads the whole cache off disk to
-        answer a question `stat` already answers.
-        """
-        return {asset_id for asset_id in asset_ids if self.has(asset_id, size)}
-
     def put(self, asset_id: str, size: str, data: bytes) -> Path:
         path = self._path(asset_id, size)
         path.parent.mkdir(parents=True, exist_ok=True)

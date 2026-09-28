@@ -44,7 +44,7 @@ function HeroSection() {
                 <img
                   className={styles.heroScreenshot}
                   src={useBaseUrl('/img/demo-hero.gif')}
-                  alt="Choose a memory, review its storyboard, and watch the finished film"
+                  alt="Choose a memory, review and change its cut, and watch the finished film"
                   width="720"
                   height="405"
                   fetchPriority="high"
@@ -128,15 +128,15 @@ docker compose exec immich-memories \\
             <div className={styles.step}>
               <span className={styles.stepNumber}>3</span>
               <div>
-                <strong>Storyboard</strong>
-                <p>See every shot before it renders; untick what you disagree with</p>
+                <strong>Review</strong>
+                <p>See every shot before it renders; remove, trim or swap what you disagree with</p>
               </div>
             </div>
             <div className={styles.step}>
               <span className={styles.stepNumber}>4</span>
               <div>
-                <strong>Export</strong>
-                <p>Render with map animations, titles, music</p>
+                <strong>Render</strong>
+                <p>The reviewed cut, with map animations, titles, music</p>
               </div>
             </div>
           </div>
@@ -158,25 +158,25 @@ const showcaseItems: ShowcaseItem[] = [
     title: '10 memory types',
     description: 'Year in Review, Season, Person Spotlight, Multi-Person, Monthly Highlights, On This Day, Album, Trip, Holiday, and Surprise Me (a day your library says something happened on). Pick a type and it handles the rest, or take Custom date range and set the dates yourself.',
     image: '/img/screenshots/memory-brief.png',
-    alt: 'The brief: memory type, its parameters and the duration line',
+    alt: 'The brief: memory type, its parameters and the command it runs',
   },
   {
-    title: 'An editor, not a filter',
-    description: 'It groups the period into moments and stories, gives a trip or a birthday more room than an ordinary Tuesday, keeps your favourites, lets a video carry its moment, and plays everything in the order it happened. On the NAS, from your library alone. The rules are all written down.',
+    title: 'See the cut. Refine it.',
+    description: 'Make the same film from the CLI or the browser. The review puts the whole cut in a contact sheet: open a picture to read its reason and what a model said about it, remove it, trim it, or swap in another picture of the same moment, then save it as a revision and render that. The stories still play in the order they happened.',
     image: '/img/screenshots/memory-story.png',
-    alt: 'The story the cut produced, with a reason for every picture',
+    alt: 'The cut contact sheet and picture inspector',
   },
   {
     title: 'Cinematic title screens',
     description: 'Animated gradients, particle systems, satellite trip maps. The title kernels use a Metal, CUDA or Vulkan GPU when there is one and the CPU otherwise. The log says which one ran.',
     image: '/img/screenshots/memory-options.png',
-    alt: 'Generation options with title and music settings',
+    alt: 'The Render panel: title, music and output options',
   },
   {
     title: 'Music that ducks',
     description: 'Your own file or one of 28 bundled tracks, picked by the mood of the cut. A sidechain compressor ducks the music under the clips\' own sound. With a music server, ACE-Step or MusicGen writes an original track instead.',
     image: '/img/screenshots/memory-options.png',
-    alt: 'Music preview and generation options',
+    alt: 'The Render panel: music preview, upload and volume',
   },
 ];
 

@@ -18,9 +18,10 @@ The clips are pans over those stills, so their captions describe the visible sce
 `tests/test_fixture_library.py` pins
 the credits, the hashes and the 60 MB ceiling.
 
-The demo unticks the first picture and cuts again before export: 17 pictures in the
-finished 61.57-second film. The generated fixture carries both cuts' timeline positions;
-the duration cards include titles and transition overlap.
+The demo reviews the fixture's cut (18 pictures), swaps the rain on the window for another
+picture of the same moment, removes the garden table and saves that as revision 1 before it
+renders. The generated fixture carries the cut's timeline positions, its weighed stories and the
+seconds the titles leave the pictures.
 
 136 files on disk; the setup matrix reports 133 pictures for the same month, because the
 visibility and metadata rules drop a few before selection ever sees them. Both numbers are right
@@ -28,8 +29,8 @@ about different things, so do not reconcile them by editing one.
 
 | Command (repo root) | Produces |
 |---|---|
-| `make demo-ui` | `docs-site/static/demo/demo.mp4`, 1,436 video frames at 30 fps (about 48 s), 1920×1080 H.264; it ends on the film the product made |
-| `make demo-hero` | `docs-site/static/img/demo-hero.gif`, seconds 3.4 to 15.6 of `demo.mp4` (brief, cut, storyboard) then its last 3 s (the film), 720 px, 10 fps, 15.1 s, under 4 MB, the README hero |
+| `make demo-ui` | `docs-site/static/demo/demo.mp4`, 1,486 video frames at 30 fps (about 50 s), 1920×1080 H.264; it ends on the film the product made |
+| `make demo-hero` | `docs-site/static/img/demo-hero.gif`, the brief, the cut and the review from `demo.mp4` (the Makefile comment has the window) then its last 3 s (the film), 720 px, 10 fps, under 4 MB, the README hero |
 | `make demo-cli` | `docs-site/remotion/public/cli-demo.mp4`, VHS recording the real CLI: `scripts/demo-cli-hermetic.py` runs `generate`, `runs story` and `runs why` against the hermetic fakes from `tests/e2e` (`make demo-cli-run` plays the same session without recording) |
 | `make demo-output` | `docs-site/remotion/public/output-preview.mp4` and `output-frame.jpg`, cut on the hermetic launch |
 | `make demo-output-trip` | `docs-site/static/demo/trip-preview.mp4` and `docs-site/static/img/trip-map-flyover.jpg`, the fixture's lake week cut as a trip memory and the still of its map fly-over, both played by the trip memory page. Needs the network: the satellite tiles come from ArcGIS World Imagery and the trip's name from Nominatim, and neither has an offline stand-in |
@@ -38,9 +39,9 @@ about different things, so do not reconcile them by editing one.
 | `make screenshots` | the light and dark screenshots under `docs-site/static/img/screenshots/` |
 | `make demo-ui-dev` | Remotion Studio for a live preview |
 
-Two entries in `docs-site/remotion/public/` are symlinks, so the demo shows the same pictures as
-the tests and the docs: `library` points at `tests/e2e/fixtures/library` (credits in its
-`CREDITS.md`) and `screenshots` at `docs-site/static/img/screenshots`.
+`docs-site/remotion/public/library` is a symlink to `tests/e2e/fixtures/library` (credits in its
+`CREDITS.md`), so the demo shows the same pictures as the tests and the docs. The demo never
+shows a screenshot: every UI frame is the web client recreated in React.
 
 The order that keeps everything consistent after a UI or a fixture change: `make screenshots`,
 then `make demo-output` and `make demo-output-trip`, then `make demo-cli`, then `make demo-ui` (which runs `make demo-fixture`
@@ -57,12 +58,17 @@ The homepage and README show the hero GIF and link to the full demo with sound. 
 uses a still screenshot when the browser requests reduced motion. The finished trip film remains
 available beside the demo.
 
-The scenes live in `docs-site/remotion/src/scenes/`. When a page name or a button changes in the
-app, the scene changes with it: `tests/e2e/test_demo_assets.py` pins the button labels the demo
-shows against the real pages.
+The scenes live in `docs-site/remotion/src/scenes/`, the client's pieces (the app shell, the job
+panel, the run page, the render panel) in `docs-site/remotion/src/components/`. Each names the
+Svelte file under `web/src` it recreates. When a page name or a button changes in the client,
+the scene changes with it.
 
-Keep the UI workflow together: brief, cut, storyboard, pool correction, export, generation,
-finished file. Runs and Suggestions follow, then the CLI goes straight into the rendered film.
+Keep the UI workflow together: brief, cut in progress, review, the edit saved as a revision,
+render, the film on the page. Runs and Suggestions follow, then the CLI goes straight into the
+rendered film. The review scene shows the contact sheet and the picture inspector. Its pictures,
+reasons and stories come from the same fixture as the browser tests; it must not invent model
+proposals that the fixture did not record. Rebuild the Remotion demo and hero after changing the
+client's layout.
 The demo shows the product working: an error card, even a helpful one, reads as the product
 failing, so refusals live in the install docs, not in a scene.
 

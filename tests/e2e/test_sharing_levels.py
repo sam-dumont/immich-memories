@@ -9,19 +9,28 @@ from pathlib import Path
 import pytest
 from playwright.sync_api import Page, expect
 
+from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 from tests.e2e.conftest import _build_launch_environment
-from tests.e2e.test_demo_assets import _TRIP_CLI_BOOTSTRAP
-from tests.e2e.test_launch_smoke import _choose
-from tests.e2e.test_memory_page import (
-    _attempts,
-    _brief_for_june,
-    _newest_attempt,
-    _request_of_the_cut_after,
-)
+from tests.e2e.web_flow import contact_sheet
 
 pytestmark = pytest.mark.e2e
 
 _ROOT = Path(__file__).resolve().parents[2]
+
+
+def _attempts(launch_workspace) -> set[Path]:
+    return set(launch_workspace.cache_dir.glob("editorial-runs/*/attempts/*"))
+
+
+def _attempt_after(launch_workspace, before: set[Path]) -> Path:
+    """The attempt this cut wrote, not one an earlier cut is still writing into."""
+    written = _attempts(launch_workspace) - before
+    assert written, "the cut opened no attempt"
+    return max(written, key=lambda path: path.stat().st_mtime)
+
+
+def _request(attempt: Path) -> dict:
+    return json.loads((attempt / "status.private.json").read_text())["request"]
 
 
 def _cli(launch_workspace, *args: str) -> str:
@@ -29,7 +38,7 @@ def _cli(launch_workspace, *args: str) -> str:
         [
             str(_ROOT / ".venv/bin/python"),
             "-c",
-            _TRIP_CLI_BOOTSTRAP,
+            CLI_BOOTSTRAP,
             str(launch_workspace.config_path),
             str(launch_workspace.root / "state"),
             *args,
@@ -47,30 +56,37 @@ def _cli(launch_workspace, *args: str) -> str:
 def test_the_brief_asks_who_will_watch_and_the_cut_is_made_for_them(
     page: Page, launch_app_url: str, launch_workspace
 ) -> None:
-    _brief_for_june(page, launch_app_url)
-    who = page.get_by_role("combobox", name="Sharing")
-    expect(who).to_have_value("Family")
-    expect(page.get_by_text("Grandparents, siblings, the group chat.", exact=False)).to_be_visible()
+    page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
+    page.get_by_text("Monthly Highlights", exact=True).click()
+    page.get_by_label("Year", exact=True).fill("2024")
+    page.get_by_label("Month", exact=True).select_option("6")
+    page.get_by_text("Length and pictures").click()
+    who = page.get_by_label("Who may see it")
+    command = page.get_by_label("Command")
+    expect(who).to_have_value("")
+    expect(command).not_to_contain_text("--sharing")
 
-    _choose(page, "Sharing", "Just us")
+    who.select_option("family")
+    expect(page.get_by_text("Grandparents, siblings, the group chat.", exact=False)).to_be_visible()
+    who.select_option("just-us")
     expect(page.get_by_text("The household.", exact=False)).to_be_visible()
+    expect(command).to_contain_text("--sharing=just-us")
     before = _attempts(launch_workspace)
     page.get_by_role("button", name="Cut", exact=True).click()
-    expect(page.locator(".storyboard-shot").first).to_be_visible(timeout=120_000)
+    page.wait_for_url("**/app/runs/**", timeout=240_000)
+    expect(contact_sheet(page).first).to_be_visible(timeout=30_000)
 
-    assert _request_of_the_cut_after(launch_workspace, before)["audience"] == "just_us"
+    web_attempt = _attempt_after(launch_workspace, before)
+    assert _request(web_attempt)["audience"] == "just_us"
 
-    web_attempt = str(_newest_attempt(launch_workspace))
     before = _attempts(launch_workspace)
     month = ["--memory-type", "monthly_highlights", "--year", "2024", "--month", "6"]
     quiet = ["--no-render", "--no-music", "--quiet"]
     transcript = [_cli(launch_workspace, "generate", *month, "--sharing", "shareable", *quiet)]
-    assert _request_of_the_cut_after(launch_workspace, before)["audience"] == "shareable"
+    cli_attempt = _attempt_after(launch_workspace, before)
+    assert _request(cli_attempt)["audience"] == "shareable"
     assert "Sharing: shareable" in transcript[0]
-    cli_attempt = _newest_attempt(launch_workspace)
-    status = json.loads((cli_attempt / "status.private.json").read_text())
-    assert status["request"]["audience"] == "shareable"
-    web_story = _cli(launch_workspace, "runs", "story", web_attempt)
+    web_story = _cli(launch_workspace, "runs", "story", str(web_attempt))
     cli_story = _cli(launch_workspace, "runs", "story", str(cli_attempt))
     assert "Sharing: just us" in web_story
     assert "Sharing: shareable" in cli_story

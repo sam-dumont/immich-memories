@@ -20,7 +20,7 @@ of your camera roll:
 - **Trip map**: a satellite fly-over from home to the destination, in place of the intro. Off by default, see
   [The map fly-over](#the-map-fly-over).
 - **Location cards**: the city name between trip segments.
-- **Ending**: a fade to white, no text.
+- **Ending**: a fade to white, no text. Every film keeps it; a short film squeezes it to 2 s rather than dropping it.
 
 All of this works on a plain NAS. Titles come from templates, the special-day catalogue and your album names; a
 reader only rewrites people and occasion titles (see [When a model names the film](#when-a-model-names-the-film)).
@@ -142,8 +142,8 @@ non-Latin ones.
 ## Trip titles: the place at the right scale
 
 A trip is named after the smallest place that holds 85 % of its located pictures, counted per picture: the
-city, else the island, else the region, else two regions, else the country, else the countries in the order
-you crossed them. A day with forty pictures in one town weighs more than a travel day with two.
+city, else the island, else a town holding more than half of them, else the region, else two regions, else the
+country, else the countries in the order you crossed them. A day with forty pictures in one town weighs more than a travel day with two.
 
 The places are Immich's own reverse geocoding (GeoNames, offline) plus a small bundled table of islands,
 because GeoNames files most islands under a region. No outside call.
@@ -265,7 +265,7 @@ stems, vocals duck most and drums keep their rhythm. None of the ducking constan
 | Where | Switch |
 |---|---|
 | CLI | `--music PATH`, `--no-music`, `--music-volume` |
-| Web UI, Generation Options | **Background music**: None, Upload file, Bundled, AI Generated, and the volume slider |
+| Web UI, Render | **Music**: Automatic (as configured), No music, a previewed track, an uploaded one, and **Music volume** |
 | Config | `advanced.ace_step.enabled`, `advanced.musicgen.enabled` |
 
 ### Generated music {#install-locally-on-a-mac}

@@ -71,7 +71,7 @@ WHITELIST = Path(__file__).resolve().parent.parent / "vulture-whitelist.py"
 #   going and VideoAssembler dropped from six composed services to five. About
 #   8,000 lines, each with the tests that existed only to exercise it.
 #   Stated once as a mechanism instead of as a line each. Click callbacks,
-#   NiceGUI routes, Starlette middleware, pydantic validators and model_config
+#   web routes, Starlette middleware, pydantic validators and model_config
 #   are put where they are used by a decorator or a metaclass, so no source line
 #   names them; `make dead-code` now says that once. It is the same move as the
 #   @register_preset note above, applied to the rest of the family, and it means
@@ -92,6 +92,10 @@ WHITELIST = Path(__file__).resolve().parent.parent / "vulture-whitelist.py"
 # 55: NiceGUI's Client.build_response calls LocalizedPage.resolve_language.
 # Vulture scans our source, not NiceGUI's; the browser locale tests exercise
 # that framework callback and its per-browser HTML language.
+# 54: NiceGUI left (#1395), and with it LocalizedPage.resolve_language.
+# 54 still: the /api/v1 response models (web/schemas.py) have fields only the Svelte client
+# reads. Rather than list them, `make dead-code` excludes that one contract module, which
+# `make web-check` holds to the generated TypeScript types.
 # 56: the annotations slice's import_legacy (#871), called by `store import` and the
 # first-open import once the store slices are integrated.
 # 55: they are (the #871 cutover); the importers are reached through the import registry.

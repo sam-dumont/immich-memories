@@ -290,22 +290,3 @@ def parse_date(date_str: str) -> date:
             f"Cannot parse date: '{date_str}'. Dates are RFC 3339: YYYY-MM-DD "
             f"(for example 2024-02-07)."
         ) from None
-
-
-def available_years(
-    current_year: int | None = None,
-    years_back: int = 20,
-) -> list[int]:
-    """Get list of available years for selection.
-
-    Args:
-        current_year: Current year (defaults to now)
-        years_back: How many years back to include
-
-    Returns:
-        List of years in descending order
-    """
-    if current_year is None:
-        current_year = datetime.now().year
-
-    return list(range(current_year, current_year - years_back, -1))

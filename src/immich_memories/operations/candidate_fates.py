@@ -32,6 +32,7 @@ def _trace_outcomes(trace: Trace) -> dict[str, str]:
     outcomes = dict.fromkeys(trace.clips, _UNRECORDED)
     _pass_outcomes(trace, outcomes)
     _stage_outcomes(trace, outcomes)
+    _outside_outcomes(trace, outcomes)
     return outcomes
 
 
@@ -45,6 +46,23 @@ def _pass_outcomes(trace: Trace, outcomes: dict[str, str]) -> None:
         for decision in pass_trace.unresolved:
             outcomes[decision.asset_id] = (
                 f"Undecided at {stage_words(pass_trace.name)}: {decision.reason}"
+            )
+
+
+def _outside_outcomes(trace: Trace, outcomes: dict[str, str]) -> None:
+    """Name the pictures a pass kept that the editor was never given.
+
+    The editor receives only this memory's material (a spotlight's, say, holds only the pictures
+    its person is in); the rest stop after the last pass that saw them, with no stage to name.
+    """
+    last_pass: dict[str, str] = {}
+    for pass_trace in trace.editorial_passes:
+        for asset_id in pass_trace.input_ids:
+            last_pass[asset_id] = pass_trace.name
+    for asset_id, name in last_pass.items():
+        if asset_id not in trace.clips and outcomes.get(asset_id) == _UNRECORDED:
+            outcomes[asset_id] = (
+                f"Outside this memory: kept by {stage_words(name)}, never offered to the editor"
             )
 
 
@@ -88,6 +106,16 @@ class CandidateFates:
             outcomes[shot.asset_id] = f"In the cut at {shot.timecode}{reason}"
         fallback = "Not in this cut's pool" if trace else _UNRECORDED
         return cls(board, trace, outcomes, fallback)
+
+    def reachable(self, asset_id: str) -> bool:
+        """Whether a tick on this picture can reach the next cut: the editor received it.
+
+        Without a decision log (an older cut) every picture is given the benefit of the doubt.
+        """
+        if self.trace is None:
+            return True
+        in_cut = self.board is not None and any(s.asset_id == asset_id for s in self.board.shots)
+        return in_cut or asset_id in self.trace.clips
 
     def describe(self, asset_id: str) -> str:
         """This picture's final outcome, never inferred from the current ticks.

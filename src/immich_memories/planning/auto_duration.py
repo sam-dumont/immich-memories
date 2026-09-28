@@ -24,6 +24,9 @@ _SPECIAL_DAY_BASE_SECONDS = 30.0
 _SPECIAL_DAY_SECONDS_PER_ACTIVE_HOUR = 6.0
 _SPECIAL_DAY_MIN_EDITORIAL_SECONDS = 60.0
 _SPECIAL_DAY_MAX_EDITORIAL_SECONDS = 180.0
+# However thin the day, a special day keeps this much of its pictures, its titles on top: shorter
+# is not a day (owner, 28 Sep).
+SPECIAL_DAY_MIN_CONTENT_SECONDS = 30.0
 _MAX_DIVERSE_SECONDS_PER_DAY = 30.0
 _MAX_CAPACITY_PHOTOS_PER_DAY = 4
 _DURATION_ROUNDING_SECONDS = 5.0
@@ -193,6 +196,9 @@ def decide_memory_duration(
         title_seconds=max(0.0, title_duration) + max(0.0, ending_duration),
     )
     fitted_seconds = _rounded_down(min(editorial_seconds, capacity_seconds))
+    if memory_type == "special_day":
+        titles = max(0.0, title_duration) + max(0.0, ending_duration)
+        fitted_seconds = max(fitted_seconds, SPECIAL_DAY_MIN_CONTENT_SECONDS + titles)
     return DurationDecision(
         seconds=fitted_seconds if fitted_seconds > 0.0 else floor_seconds,
         source=DURATION_FROM_MATERIAL if fitted_seconds > 0.0 else DURATION_FROM_PRESET,

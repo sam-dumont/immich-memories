@@ -715,45 +715,13 @@ class TestCrossYearBoundary:
         assert trips[1].location_name == "Croatia"
 
 
-class TestFilterNearHome:
-    """GPS distance filter for removing near-home assets from trip clips."""
-
-    HOME_LAT = 50.8468
-    HOME_LON = 4.3525
-
-    def test_filters_out_near_home_assets(self):
-        """Assets within min_distance_km of home should be removed."""
-        from immich_memories.analysis.trip_detection import filter_near_home
-
-        assets = [
-            # Barcelona: ~1000km from Brussels → keep
-            _make_asset(41.39, 2.17, "2025-06-01T10:00:00"),
-            # Brussels suburb: ~10km from home → filter out
-            _make_asset(50.88, 4.40, "2025-06-01T18:00:00"),
-        ]
-        result = filter_near_home(assets, self.HOME_LAT, self.HOME_LON, min_distance_km=50)
-        assert len(result) == 1
-        assert result[0].exif_info.latitude == 41.39
-
-    def test_keeps_assets_without_gps(self):
-        """Assets with no GPS data should be kept (might be from trip)."""
-        from immich_memories.analysis.trip_detection import filter_near_home
-
-        assets = [
-            _make_asset(None, None, "2025-06-01T12:00:00"),  # No GPS
-            _make_asset(41.39, 2.17, "2025-06-01T14:00:00"),  # Far from home
-        ]
-        result = filter_near_home(assets, self.HOME_LAT, self.HOME_LON, min_distance_km=50)
-        assert len(result) == 2
-
-
 class TestTripInUI:
-    """Trip memory type appears in the brief's type select."""
+    """Trip is one of the memory types `generate` accepts and the brief offers."""
 
     def test_trip_is_offered_on_the_brief(self):
-        from immich_memories.ui.pages.memory_brief import MEMORY_TYPE_LABELS
+        from immich_memories.memory_types.registry import OFFERED_MEMORY_TYPES, MemoryType
 
-        assert "trip" in MEMORY_TYPE_LABELS
+        assert MemoryType.TRIP in OFFERED_MEMORY_TYPES
 
     def test_trip_render_params_branch(self):
         """_render_params should handle the TRIP memory type without error."""

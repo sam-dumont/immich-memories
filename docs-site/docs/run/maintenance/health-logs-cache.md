@@ -57,7 +57,7 @@ Everything lives under `~/.immich-memories/cache/` (or `cache.directory`):
 |---|---|---|
 | `thumbnails/` | one Immich preview per candidate a film can reach | `thumbnail_cache_max_size_mb`, 10 GB |
 | `video-cache/` | downloaded Immich clips | `video_cache_max_size_gb` 10 GB, `video_cache_max_age_days` 7 |
-| `preview-cache/`, `previews/` | clip previews for the web UI | `preview_cache_max_size_mb`, 2 GB |
+| `preview-cache/` | clip previews the old web pages played; nothing writes it now, and **Clear** on the Settings page removes it | none |
 | `../cache.db` (one level up) | derived video analysis; run history moved to the [store](../database.md) | none |
 
 The facts the app banked (head answers, detector verdicts, measurements, and captions and
@@ -74,7 +74,6 @@ cache:
   video_cache_max_size_gb: 10.0
   video_cache_max_age_days: 7
   thumbnail_cache_max_size_mb: 10000
-  preview_cache_max_size_mb: 2000
 ```
 
 ### What a second cut asks again

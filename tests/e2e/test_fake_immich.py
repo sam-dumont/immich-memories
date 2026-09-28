@@ -16,9 +16,8 @@ from immich_memories.analysis.duplicate_hashing import compute_thumbnail_hash, h
 from immich_memories.api.compatibility import ResolvedApiVersion
 from immich_memories.api.immich import ImmichAuthError, SyncImmichClient
 from immich_memories.api.models import AssetType
-from immich_memories.generate_clips import MIN_CLIP_DURATION
+from immich_memories.generate_clips import MIN_CLIP_DURATION, assets_to_clips
 from immich_memories.timeperiod import calendar_year
-from immich_memories.ui.pages.step2_loading import _build_clips
 from tests.e2e import fake_immich
 from tests.e2e.fake_immich import FakeImmichServer
 from tests.e2e.fake_library import CAST, LIBRARY
@@ -244,8 +243,8 @@ def test_search_uses_v3_millisecond_duration_on_the_wire(fake_immich_server) -> 
     assert all(type(duration) is int for duration in durations)
 
 
-def test_real_step2_duration_filter_keeps_selectable_fake_clips(fake_immich_server) -> None:
-    """The fake videos survive the same minimum-duration filter used by Step 2."""
+def test_the_generate_clip_conversion_keeps_every_fake_video(fake_immich_server) -> None:
+    """The fake videos all become clips the way `generate` converts them, each long enough to cut."""
     with SyncImmichClient(
         fake_immich_server.base_url,
         fake_immich_server.api_key,
@@ -253,9 +252,8 @@ def test_real_step2_duration_filter_keeps_selectable_fake_clips(fake_immich_serv
     ) as client:
         assets = client.get_videos_for_date_range(calendar_year(2024))
 
-    clips, skipped = _build_clips(assets)
+    clips = assets_to_clips(assets, min_duration=0.0)
 
-    assert skipped == 0
     assert [clip.asset.id for clip in clips] == _VIDEO_IDS
     assert all(clip.duration_seconds >= MIN_CLIP_DURATION for clip in clips)
 

@@ -3,7 +3,6 @@
 from copy import deepcopy
 from dataclasses import replace
 from datetime import UTC, datetime
-from unittest.mock import patch
 
 import pytest
 
@@ -224,99 +223,60 @@ def test_owner_edit_cannot_bypass_original_binding_or_live_validation(tmp_path):
         project(params, segments={"chosen-2": (1, 2)})
 
 
-def test_excess_hold_or_title_budget_is_rejected_without_shortening_other_clips(tmp_path):
+def test_a_hold_past_the_titles_budget_makes_the_film_longer_and_shortens_nothing(tmp_path):
     params = original_params(tmp_path)
     before = deepcopy(params)
-    with pytest.raises(ValueError, match="current titles leave"):
-        project(params, segments={**params.clip_segments, "chosen-0": (0, 60)})
-    tighter = replace(timing_policy_for_params(params), target_seconds=20)
-    with pytest.raises(ValueError, match="current titles leave"):
-        project(params, policy=tighter)
+
+    longer = project(params, segments={**params.clip_segments, "chosen-0": (0, 60)})
+
+    assert longer.segments["chosen-0"] == (0, 60)
+    assert all(longer.segments[key] == (0, 4) for key in ("chosen-1", "chosen-2", "chosen-3"))
+    assert longer.timeline.content_budget >= 60 + 3 * 4
+    assert longer.binding["policy"]["target_seconds"] > params.target_duration_seconds
     assert params == before
 
 
-def ui_state(params):
-    from immich_memories.ui.state import AppState
-
-    return AppState(
-        config=params.config,
-        immich_url="https://immich.example.com",
-        immich_api_key="test-key",
-        memory_type=params.memory_type,
-        target_duration=1,
-        pipeline_selected_clips=params.clips,
-        editorial_selections=params.editorial_selections,
-        selected_clip_ids={c.asset.id for c in params.clips},
-        clip_segments=params.clip_segments,
-        editorial_render_timing=params.editorial_render_timing,
-        timeline_plan=params.timeline_plan,
+def swap_project(params, sibling, *, siblings=None, selected_ids=None, segments=None):
+    return project_editorial_owner_edits(
+        original_clips=params.clips,
+        original_selections=params.editorial_selections,
+        original_binding=params.editorial_render_timing,
+        selected_ids=[c.asset.id for c in params.clips] if selected_ids is None else selected_ids,
+        requested_segments=params.clip_segments if segments is None else segments,
+        policy=timing_policy_for_params(params),
+        replacements={"chosen-0": sibling},
+        moment_siblings={"chosen-0": ["sibling-0"]} if siblings is None else siblings,
     )
 
 
-def test_ui_factory_keeps_original_plan_and_banks_the_review_edits(tmp_path):
-    from immich_memories.store.owner_edits import owner_edits_of_attempt
-    from immich_memories.ui.pages._step4_generate import _build_generation_params
-
+def test_a_recorded_sibling_takes_the_shot_s_place_and_passes_the_render_guards(tmp_path):
     params = original_params(tmp_path)
-    state = ui_state(params)
-    state.editorial_attempt_dir = tmp_path / "attempts" / "20260927T100000Z-0123456789ab"
-    binding = deepcopy(state.editorial_render_timing)
-    state.selected_clip_ids.remove("chosen-0")
-    state.clip_segments = {**state.clip_segments, "chosen-2": (1, 3)}
-    # WHY: avoids opening a real Immich connection; this test checks the edit record.
-    with patch("immich_memories.api.immich.SyncImmichClient"):
-        generated = _build_generation_params(state, params.clips[1:], params.output_path)
-    prepare_certified_timeline(generated)
-    _validated_render_directives(generated)
-    assert state.editorial_render_timing == binding
-    assert state.editorial_selections == params.editorial_selections
-    assert state.pipeline_selected_clips[2].editorial_live_manifest["selected_interval"] == [0, 4]
-    banked = owner_edits_of_attempt(open_store(), "20260927T100000Z-0123456789ab")
-    assert banked == [generated.editorial_owner_edits]
-    assert generated.editorial_owner_edits["removed_asset_ids"] == ["chosen-0"]
-    assert not list(tmp_path.glob("*.owner-edits-*.private.json"))
+    before = deepcopy(params)
+    sibling = make_clip("sibling-0", duration=12, file_created_at=datetime(2020, 1, 2, tzinfo=UTC))
+    sibling.asset.type = AssetType.IMAGE
+
+    result = swap_project(params, sibling)
+
+    assert [c.asset.id for c in result.clips] == ["sibling-0", "chosen-1", "chosen-2", "chosen-3"]
+    assert result.binding["source_ids"] == ["sibling-0", "chosen-1", "chosen-2", "chosen-3"]
+    assert result.segments["sibling-0"] == (0.0, 4.0)
+    assert result.record["replacements"] == [{"original": "chosen-0", "replacement": "sibling-0"}]
+    assert params == before
+    updated = rendered_params(params, result)
+    prepare_certified_timeline(updated)
+    directive = _validated_render_directives(updated)["sibling-0"]
+    assert directive.render_mode == "still"
 
 
-def test_ui_factory_no_op_preserves_binding_and_does_not_write_an_edit(tmp_path):
-    from immich_memories.store.owner_edits import owner_edits_of_attempt
-    from immich_memories.ui.pages._step4_generate import _build_generation_params
-
+@pytest.mark.parametrize(
+    ("replacement", "siblings"),
+    [("a-stranger", {"chosen-0": ["sibling-0"]}), ("chosen-3", {"chosen-0": ["chosen-3"]})],
+)
+def test_a_swap_to_anything_but_a_new_recorded_sibling_is_refused(tmp_path, replacement, siblings):
     params = original_params(tmp_path)
-    state = ui_state(params)
-    state.editorial_attempt_dir = tmp_path / "attempt"
-    # WHY: avoids opening a real Immich connection; the test never touches params.client.
-    with patch("immich_memories.api.immich.SyncImmichClient"):
-        generated = _build_generation_params(state, params.clips, params.output_path)
-    assert generated.editorial_render_timing is state.editorial_render_timing
-    assert generated.editorial_owner_edits is None
-    assert owner_edits_of_attempt(open_store(), "attempt") == []
+    clip = next((c for c in params.clips if c.asset.id == replacement), None) or make_clip(
+        replacement, duration=12, file_created_at=datetime(2020, 1, 2, tzinfo=UTC)
+    )
 
-
-def test_ui_factory_rebinds_explicit_transition_settings(tmp_path):
-    from immich_memories.ui.pages._step4_generate import _build_generation_params
-
-    params = original_params(tmp_path)
-    state = ui_state(params)
-    state.generation_options = {"transition": "Cut (no transition)"}
-    # WHY: avoids opening a real Immich connection while asserting on the rebinding.
-    with patch("immich_memories.api.immich.SyncImmichClient"):
-        generated = _build_generation_params(state, params.clips, params.output_path)
-    assert generated.editorial_owner_edits["timing_policy_changed"]
-    prepare_certified_timeline(generated)
-
-
-def test_ui_factory_rejects_invalid_edit_before_creating_client(tmp_path):
-    from immich_memories.ui.pages._step4_generate import _build_generation_params
-
-    params = original_params(tmp_path)
-    state = ui_state(params)
-    state.clip_segments = {**state.clip_segments, "chosen-2": None}
-    # WHY: guards that no real Immich client is built when validation fails first.
-    with (
-        # WHY: captures the constructor call so assert_not_called can confirm it never ran.
-        patch("immich_memories.api.immich.SyncImmichClient") as client,
-        pytest.raises(ValueError, match="Review trim"),
-    ):
-        _build_generation_params(state, params.clips, params.output_path)
-    client.assert_not_called()
-    assert not list(tmp_path.glob("*.owner-edits-*.private.json"))
+    with pytest.raises(ValueError, match="moment"):
+        swap_project(params, clip, siblings=siblings)

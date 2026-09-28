@@ -157,3 +157,9 @@ def test_an_album_with_no_usable_media_stops_the_run(monkeypatch):
         _run_album(monkeypatch, [], [])
 
     assert exc.value.code == 1
+
+
+def test_an_explicit_output_is_where_the_album_film_goes():
+    asked = Path("/films/holiday.mp4")
+
+    assert album_output_path(asked, "Trip 2025", "mp4", explicit=True) == asked

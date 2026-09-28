@@ -34,6 +34,7 @@ from immich_memories.cli._run_inputs import ResolvedRunInputs
 from immich_memories.cli._run_summary import render_run_summary
 from immich_memories.cli._run_timeline import configure_timeline, final_timeline
 from immich_memories.db import open_store
+from immich_memories.filename_builder import name_after_recipe
 from immich_memories.operations.auto_output import NOTHING_WORTH_A_FILM
 from immich_memories.operations.run_index import run_id_for_attempt
 from immich_memories.operations.storyboard import read_storyboard
@@ -45,7 +46,6 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from rich.progress import TaskID
 
-    from immich_memories.analysis.editorial_planner import EditorialSelection
     from immich_memories.analysis.smart_pipeline import PipelineResult
     from immich_memories.api.immich import SyncImmichClient
     from immich_memories.cli._live_display import ProgressDisplay
@@ -147,11 +147,13 @@ def _finish_without_rendering(
     task,
     title: str | None,
     subtitle: str | None,
+    cut_run: dict,
 ) -> tuple[Path, bool, str | None]:
-    """Print the resolved plan and return without crossing the render boundary.
+    """Print the resolved plan, keep the cut as a run, and return without rendering.
 
     Selection has completed through the production story-first route; only the
-    encode is missing.
+    encode is missing. The cut is recorded as a run so it can be reviewed, revised
+    and rendered later (`runs story`, the web client, `runs render`).
     """
     from immich_memories.api.models import AssetType
     from immich_memories.cli._generation_preview import (
@@ -182,16 +184,77 @@ def _finish_without_rendering(
     )
     print_generation_preview(preview)
     progress.update(task, completed=100)
-    from immich_memories.operations.run_index import record_run_attempt
+    run_id = _keep_cut_as_run(
+        config,
+        _attempt_dir_of(pipeline_result),
+        memory_type=memory_type,
+        date_range=date_range,
+        clips_analyzed=len(assets) + len(photo_assets or []),
+        clips_selected=len(selected_clips),
+        target_seconds=timeline_plan.target_duration,
+        cut_run=cut_run,
+    )
+    if run_id:
+        print_info(
+            f"Kept the cut as run {run_id}: `runs story {run_id}` reads it, "
+            f"`runs render {run_id}` renders it."
+        )
+    return output_path, should_upload, album_name
+
+
+def _keep_cut_as_run(
+    config: Config,
+    attempt: Path | None,
+    *,
+    memory_type: str | None,
+    date_range: DateRange,
+    clips_analyzed: int,
+    clips_selected: int,
+    target_seconds: float,
+    cut_run: dict,
+) -> str | None:
+    """Record a cut that stopped before rendering as a run with no film yet.
+
+    The CLI run opened before discovery is that run: it is described with the cut's scope,
+    completed without an output path (a memory is made by its film, not its cut), and linked to
+    the attempt the web client and `runs render` read. Without an observed run, a run of its
+    own is recorded instead.
+    """
+    from dataclasses import replace
+
+    from immich_memories.operations.run_index import record_cut_run, record_run_attempt
     from immich_memories.tracking.run_observations import current_tracker
 
-    if tracker := current_tracker():
-        tracker.complete_run(
-            clips_analyzed=len(assets) + len(photo_assets or []), clips_selected=len(selected_clips)
+    tracker = current_tracker()
+    if tracker is None or tracker.current_run is None:
+        if attempt is None:
+            return None
+        return record_cut_run(
+            config,
+            attempt,
+            memory_type=memory_type,
+            date_range=(date_range.start.date(), date_range.end.date()),
+            clips_selected=clips_selected,
+            target_duration_seconds=target_seconds,
+            **cut_run,
         )
-        if attempt := _attempt_dir_of(pipeline_result):
-            record_run_attempt(tracker.run_id, attempt, output_path, store=tracker.db.store)
-    return output_path, should_upload, album_name
+    tracker.db.describe_run(
+        replace(
+            tracker.current_run,
+            memory_type=memory_type,
+            memory_key=cut_run.get("memory_key"),
+            memory_people=tuple(cut_run.get("people") or ()),
+            person_name=cut_run.get("person_name"),
+            source=cut_run.get("source") or "manual",
+            date_range_start=date_range.start.date(),
+            date_range_end=date_range.end.date(),
+            target_duration_seconds=round(target_seconds),
+        )
+    )
+    tracker.complete_run(clips_analyzed=clips_analyzed, clips_selected=clips_selected)
+    if attempt is not None:
+        record_run_attempt(tracker.run_id, attempt, "", store=tracker.db.store)
+    return tracker.run_id
 
 
 def _finish_preparation(
@@ -305,6 +368,27 @@ class _SourceProgressReporter:
         self._progress.update(
             self._task, completed=int(status["current_index"]), description=description
         )
+
+
+def _keep_cut_titles(
+    pipeline_result: Any,
+    title: str | None,
+    subtitle: str | None,
+    source: Any,
+    preset_params: dict | None,
+) -> None:
+    """A render made later from this cut (`runs render`, the web client) names it the same."""
+    if (cut_attempt := _attempt_dir_of(pipeline_result)) is None:
+        return
+    from immich_memories.processing.render_inputs import write_cut_titles
+
+    write_cut_titles(
+        cut_attempt,
+        title=title,
+        subtitle=subtitle,
+        source=source,
+        preset_params=preset_params or {},
+    )
 
 
 @llm_metrics.counted
@@ -550,7 +634,7 @@ def run_pipeline_and_generate(
         config=config,
     )
 
-    output_path = _name_after_recipe(
+    output_path = name_after_recipe(
         output_path,
         selected_clips=selected_clips,
         clip_segments=clip_segments,
@@ -569,7 +653,7 @@ def run_pipeline_and_generate(
     album_name = album or config.upload.album_name
     person_name = resolved.person_name
 
-    from immich_memories.cli._llm_title import resolve_cli_title
+    from immich_memories.titles.film_title import resolve_film_title
 
     def album_of_the_cut() -> str | None:
         from immich_memories.api.album_service import FilmScope
@@ -580,7 +664,7 @@ def run_pipeline_and_generate(
             scope=FilmScope(start=date_range.start, end=date_range.end, pool=pool),
         )
 
-    resolved_title, resolved_subtitle, title_source = resolve_cli_title(
+    resolved_title, resolved_subtitle, title_source = resolve_film_title(
         enabled=llm_title,
         title_override=title_override,
         subtitle_override=subtitle_override,
@@ -591,6 +675,9 @@ def run_pipeline_and_generate(
         person_names=person_names,
         memory_preset_params=resolved.preset_params,
         album_lookup=album_of_the_cut,
+    )
+    _keep_cut_titles(
+        pipeline_result, resolved_title, resolved_subtitle, title_source, resolved.preset_params
     )
 
     if _stops_before_rendering(dry_run=dry_run, no_render=no_render):
@@ -612,6 +699,12 @@ def run_pipeline_and_generate(
             task=task,
             title=resolved_title,
             subtitle=resolved_subtitle,
+            cut_run={
+                "memory_key": memory_key,
+                "people": normalize_memory_people(person_names),
+                "person_name": person_name,
+                "source": source,
+            },
         )
 
     def gen_progress(phase: str, frac: float, msg: str) -> None:
@@ -756,41 +849,3 @@ def _send_notification(
         )
     except (OSError, RuntimeError):
         logging.getLogger(__name__).debug("Notification failed", exc_info=True)
-
-
-def _name_after_recipe(
-    output_path: Path,
-    *,
-    selected_clips: list,
-    clip_segments: dict,
-    editorial_selections: tuple[EditorialSelection, ...] = (),
-    memory_type: str | None,
-    date_range,
-    target_duration: float,
-) -> Path:
-    """Name the output after its recipe so an identical rerun replaces it.
-
-    The name can only be finalised here: the CLI builds it before analysis, and
-    the clips that define the edit are not known until selection has run.
-    """
-    from immich_memories.filename_builder import apply_recipe_hash, recipe_hash
-
-    clips = []
-    for clip in selected_clips:
-        asset_id = clip.asset.id
-        start, end = clip_segments.get(asset_id, (0.0, 0.0))
-        clips.append((asset_id, start, end))
-    rendering = tuple(
-        (selection.asset_id, selection.render_mode, selection.render_frame_seconds)
-        for selection in editorial_selections
-    )
-
-    digest = recipe_hash(
-        memory_type=memory_type,
-        date_start=date_range.start.date() if date_range else None,
-        date_end=date_range.end.date() if date_range else None,
-        target_duration=target_duration,
-        clips=clips,
-        extras={"editorial_rendering": rendering} if rendering else None,
-    )
-    return apply_recipe_hash(output_path, digest)

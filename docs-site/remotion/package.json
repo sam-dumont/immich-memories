@@ -6,6 +6,7 @@
   "license": "UNLICENSED",
   "private": true,
   "dependencies": {
+    "@mdi/js": "7.4.47",
     "@remotion/cli": "4.0.516",
     "@remotion/fonts": "4.0.516",
     "@remotion/google-fonts": "^4.0.516",

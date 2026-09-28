@@ -11,7 +11,7 @@ help:
 	@echo "Development:"
 	@echo "  install      Install production dependencies"
 	@echo "  dev          Install all dependencies (including dev)"
-	@echo "  run          Run the NiceGUI app"
+	@echo "  run          Run the web client (immich-memories ui)"
 	@echo "  cli          Run the CLI tool"
 	@echo "  preflight    Check all provider connections (Immich, Ollama, etc.)"
 	@echo ""
@@ -126,10 +126,10 @@ dev-mac:
 	uv sync --extra all-mac --extra dev
 
 run:
-	uv run python src/immich_memories/ui/app.py
+	uv run immich-memories ui
 
 run-debug:
-	NICEGUI_LOGGING_LEVEL=DEBUG uv run python src/immich_memories/ui/app.py
+	uv run immich-memories ui --log-level DEBUG
 
 cli:
 	uv run immich-memories --help
@@ -443,6 +443,7 @@ playwright-install:  ## Install Playwright browsers for E2E tests
 e2e:  ## Run required fake-service contracts and real hermetic browser render
 	uv run pytest tests/e2e/test_fake_immich.py tests/e2e/test_launch_smoke.py \
 		tests/e2e/test_memory_page.py tests/e2e/test_picture_decisions.py tests/e2e/test_sharing_levels.py \
+		tests/e2e/test_web_client.py \
 		tests/e2e/test_people_page.py tests/e2e/test_person_pool.py tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py -v \
 		-m "e2e and not visual" --log-cli-level=INFO --tb=short \
 		--junitxml=tests/e2e-junit.xml
@@ -561,17 +562,20 @@ dead-code:
 	# by name. Told once here, they stop producing whitelist lines forever:
 	#   @register_preset          puts the function in a preset dict
 	#   @*.command / @*.group     Click registers the callback on a group
-	#   @ui.page / @app.middleware NiceGUI/Starlette register the route
-	#   @LocalizedPage            ui.page subclass with per-request language
+	#   @router.get/post/put/delete, @app.middleware  FastAPI/Starlette register the route
 	#   @field_validator, @model_validator, @field_serializer
 	#                             pydantic runs these off the schema, never by name
 	# --ignore-names model_config: pydantic reads the ConfigDict class attribute
 	# off the model; nothing in src/ is meant to name it. down_revision,
 	# branch_labels, depends_on: Alembic reads them off every revision module it
 	# loads by path from db/migrations/versions/.
+	# --exclude web/schemas.py, web/brief.py: the /api/v1 contract, read by the Svelte client across
+	# JSON (and the brief's flags by name), which vulture cannot follow; `make web-check` and the
+	# brief's Click-tree parity test hold them instead.
 	uvx vulture src/ $(SERVICE_TREES) vulture-whitelist.py --min-confidence 60 \
+		--exclude "src/immich_memories/web/schemas.py,src/immich_memories/web/brief.py" \
 		--ignore-names "model_config,down_revision,branch_labels,depends_on" \
-		--ignore-decorators "@register_preset,@*.command,@*.group,@ui.page,@LocalizedPage,@app.middleware,@app.get,@app.post,@field_validator,@model_validator,@field_serializer"
+		--ignore-decorators "@register_preset,@*.command,@*.group,@ui.page,@LocalizedPage,@app.middleware,@app.get,@app.post,@router.get,@router.post,@router.put,@router.delete,@field_validator,@model_validator,@field_serializer"
 
 # Security lint (Bandit)
 security-lint:
@@ -813,7 +817,7 @@ launch-check-ci-postgres: ensure-dev
 	@echo "Hermetic launch check (PostgreSQL) passed!"
 
 # Full CI-equivalent pipeline (locally)
-ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check docs-voice notices-check compose-check test
+ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check docs-voice notices-check compose-check web-check test
 	@echo "Full CI pipeline passed!"
 
 # Self-critique for AI code smells
@@ -1038,6 +1042,39 @@ docs-install:
 ui-catalogues:  ## Extract UI labels and update the per-language PO files
 	uv run python scripts/update-ui-catalogues.py
 
+.PHONY: web-install web-build web-api web-check
+web-install:  ## Install the Svelte web client's pinned dependencies
+	cd web && npm ci
+
+web-api:  ## Regenerate the /api/v1 OpenAPI document and the client's TypeScript types from it
+	uv run python scripts/export-web-openapi.py
+	cd web && npm run -s api-types
+
+web-build:  ## Build the Svelte web client into the Python package (served at /app)
+	cd web && npm run build
+
+# The client is committed so an install needs no Node: a fresh build, the OpenAPI document and
+# the generated types must all match what is committed. The Immich logos in @immich/ui are
+# trademarks, not part of its MIT grant, and must never reach the bundle.
+web-check: web-install  ## Type-check the web client and fail on a stale bundle, contract or Immich logo
+	cd web && npm run -s check
+	@fresh=$$(mktemp -d); \
+	uv run python scripts/export-web-openapi.py --out "$$fresh/openapi.json" && \
+	diff -q "$$fresh/openapi.json" src/immich_memories/web/openapi.json >/dev/null || { \
+		rm -rf "$$fresh"; echo "web/openapi.json is stale: run make web-api"; exit 1; }; \
+	(cd web && npx openapi-typescript "$$fresh/openapi.json" -o "$$fresh/api-types.ts" >/dev/null) && \
+	diff -q "$$fresh/api-types.ts" web/src/lib/api-types.ts >/dev/null || { \
+		rm -rf "$$fresh"; echo "web/src/lib/api-types.ts is stale: run make web-api"; exit 1; }; \
+	rm -rf "$$fresh"
+	@fresh=$$(mktemp -d); cp -R src/immich_memories/web/client "$$fresh/committed"; \
+	(cd web && npm run -s build >/dev/null 2>&1) && \
+	diff -r "$$fresh/committed" src/immich_memories/web/client >/dev/null || { \
+		rm -rf src/immich_memories/web/client; cp -R "$$fresh/committed" src/immich_memories/web/client; \
+		rm -rf "$$fresh"; echo "src/immich_memories/web/client is stale: run make web-build"; exit 1; }; \
+	rm -rf "$$fresh"
+	uv run python scripts/check_web_brand.py
+	@echo "web client matches web/src, the contract and the types; no Immich logo shipped"
+
 docs-dev:
 	cd docs-site && npm start
 
@@ -1084,6 +1121,15 @@ demo-output-trip:  ## Cut the trip film + its map fly-over on the hermetic CLI (
 demo-ui-install:  ## Install Remotion demo dependencies
 	cd docs-site/remotion && npm ci
 
+.PHONY: demo-ui-check demo-ui-still
+demo-ui-check:  ## Check the Remotion scene types and code
+	cd docs-site/remotion && npm run lint
+
+DEMO_FRAME ?= 500
+DEMO_STILL ?= /tmp/immich-memories-demo.png
+demo-ui-still:  ## Render one demo frame for visual review
+	cd docs-site/remotion && npx remotion still src/index.ts DemoVideo $(DEMO_STILL) --frame=$(DEMO_FRAME)
+
 demo-ui-dev: demo-ui-install  ## Start Remotion Studio for live demo preview
 	cd docs-site/remotion && npm run dev
 
@@ -1097,21 +1143,23 @@ demo-soundtrack:  ## Rebuild the demo's music from a bundled MIT-licensed acoust
 	  -filter_complex "[0:a]asplit[a][b];[a][b]acrossfade=d=3:c1=tri:c2=tri,loudnorm=I=-18:TP=-2:LRA=9[music]" \
 	  -map "[music]" -t 60 -ar 48000 -ac 2 -c:a pcm_s16le docs-site/remotion/public/demo-music.wav
 
+DEMO_RENDER_ARGS ?=
 demo-ui: demo-ui-install demo-fixture demo-soundtrack  ## Render Remotion demo → docs-site/static/demo/demo.mp4
 	@mkdir -p docs-site/static/demo
-	cd docs-site/remotion && npx remotion render src/index.ts DemoVideo ../static/demo/demo.mp4 --codec h264 --crf 18
+	cd docs-site/remotion && npx remotion render src/index.ts DemoVideo ../static/demo/demo.mp4 --codec h264 --crf 18 $(DEMO_RENDER_ARGS)
 
-# The homepage and README hero is the brief → cut → storyboard stretch of the Remotion demo
-# (seconds 3.4 to 15.6) and then the last 3 s, the film it made: 720 px, 10 fps,
-# 15.1 s, under 4 MB. The README loads it from GitHub Pages on every visit, so 4 MB is
-# the ceiling. The film tail is what costs: full-bleed photography runs about
-# 1.4 MB per GIF second against the UI's 0.09, because LZW gets nothing on moving
-# photographs. Width and the cut window alone cannot pay for it, so the palette is
-# capped at 60 colours and a light hqdn3d takes the grain out before palettegen
-# sees it. sierra2_4a was measured worse than bayer here (+21%). Re-run after
-# `make demo-ui`, and re-check the size: the film's content sets it, not the code.
-demo-hero:  ## Cut the README hero GIF from docs-site/static/demo/demo.mp4: the brief, the cut and the storyboard, then the film it made
+# The homepage and README hero is the brief → cut → review stretch of the Remotion demo
+# (seconds 2.6 to 14.4: the brief, the cut's progress panel, the contact sheet with a
+# video shot opened) and then the last 3 s, the film it made: 720 px, 10 fps, 14.7 s,
+# 3.9 MB. The README loads it from GitHub Pages on every visit, so 4 MB is the ceiling.
+# The film tail is what costs: full-bleed photography runs about 0.6 MB per GIF second
+# against the light UI's 0.2, because LZW gets nothing on moving photographs. Width and
+# the cut window alone cannot pay for it, so the palette is capped at 60 colours and a
+# light hqdn3d takes the grain out before palettegen sees it. sierra2_4a was measured
+# worse than bayer here (+21%). Re-run after `make demo-ui`, and re-check the size: the
+# film's content sets it, not the code.
+demo-hero:  ## Cut the README hero GIF from docs-site/static/demo/demo.mp4: the brief, the cut and the review, then the film it made
 	$(eval DEMO_END := $(shell ffprobe -v error -show_entries format=duration -of csv=p=0 docs-site/static/demo/demo.mp4))
 	ffmpeg -y -loglevel error -i docs-site/static/demo/demo.mp4 \
-	  -filter_complex "[0:v]trim=3.4:15.6,setpts=PTS-STARTPTS[a];[0:v]trim=start=$$(python3 -c 'print($(DEMO_END)-3.0)'),setpts=PTS-STARTPTS[b];[a][b]concat=n=2:v=1:a=0,fps=10,scale=720:-1:flags=lanczos,hqdn3d,split[x][y];[y]palettegen=max_colors=60:stats_mode=diff[p];[x][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \
+	  -filter_complex "[0:v]trim=2.6:14.4,setpts=PTS-STARTPTS[a];[0:v]trim=start=$$(python3 -c 'print($(DEMO_END)-3.0)'),setpts=PTS-STARTPTS[b];[a][b]concat=n=2:v=1:a=0,fps=10,scale=720:-1:flags=lanczos,hqdn3d,split[x][y];[y]palettegen=max_colors=60:stats_mode=diff[p];[x][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \
 	  docs-site/static/img/demo-hero.gif

@@ -152,10 +152,8 @@ def _season(
         description=f"{season_cap} highlights of {year}",
         date_ranges=[date_range],
         person_filter=person_filter_for(person_names, person_match=person_match),
-        # WHY not the season's length: planning.memory_length fits the date-range
-        # curve (~195s for a full season, #1503). Only the NiceGUI wizard still
-        # reads this number, and #1398 deletes it.
-        default_duration_seconds=135,
+        # No default length: planning.memory_length fits the date-range curve (~195 s for a
+        # full season) on every surface (#1503).
     )
 
 
@@ -337,13 +335,13 @@ def holiday_label(holiday: str, year: int, locale: str = "en", *, country: str =
     return resolved.strftime("%-d %B")
 
 
-def holiday_choices() -> dict[str, str]:
-    """Every holiday the pipeline resolves, with a printable name.
+def holiday_choices(locale: str = "en") -> dict[str, str]:
+    """Every holiday the pipeline resolves, with a printable name in `locale`.
 
     Keyed off KNOWN_HOLIDAYS so adding one there reaches the picker without a
     second list to keep in step.
     """
-    return {key: holiday_label(key, date.today().year) for key in KNOWN_HOLIDAYS}
+    return {key: holiday_label(key, date.today().year, locale) for key in KNOWN_HOLIDAYS}
 
 
 @register_preset(

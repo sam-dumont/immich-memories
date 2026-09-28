@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Immich Memories</title>
+    <script>
+      // @immich/ui applies the theme only when it changes; apply the saved one before first paint.
+      try {
+        const saved = JSON.parse(localStorage.getItem('immich-ui-theme') ?? '"system"');
+        const dark = saved === 'dark' || (saved !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.add(dark ? 'dark' : 'light');
+      } catch {}
+    </script>
+    <link href="/app/_app/immutable/entry/start.COYSucFY.js" rel="modulepreload">
+		<link href="/app/_app/immutable/chunks/m7BacUVE.js" rel="modulepreload">
+		<link href="/app/_app/immutable/chunks/sKcILq5F.js" rel="modulepreload">
+		<link href="/app/_app/immutable/chunks/DK3Fl9T5.js" rel="modulepreload">
+		<link href="/app/_app/immutable/chunks/Dt-HX3Vu.js" rel="modulepreload">
+		<link href="/app/_app/immutable/entry/app.Bgd-PMKM.js" rel="modulepreload">
+		<link href="/app/_app/immutable/chunks/xihTtKlq.js" rel="modulepreload">
+		<link href="/app/_app/immutable/nodes/0.DRNGUPNB.js" rel="modulepreload">
+		<link href="/app/_app/immutable/chunks/BH0eLYNF.js" rel="modulepreload">
+		<link href="/app/_app/immutable/chunks/DnejHPWL.js" rel="modulepreload">
+		<link href="/app/_app/immutable/chunks/peNpMSJA.js" rel="modulepreload">
+		<link href="/app/_app/immutable/chunks/Jq5710rB.js" rel="modulepreload">
+		<link href="/app/_app/immutable/chunks/AvcrC8pR.js" rel="modulepreload">
+		
+		<link href="/app/_app/immutable/assets/mdi.DuTtR4gv.css" rel="stylesheet">
+		<link href="/app/_app/immutable/assets/0.DUiXXerH.css" rel="stylesheet">
+  </head>
+  <body class="bg-light text-dark" data-sveltekit-preload-data="hover">
+    <div style="display: contents">
+			<script>
+				{
+					__sveltekit_3gwzs4 = {
+						base: "/app",
+						assets: "/app"
+					};
+
+					const element = document.currentScript.parentElement;
+
+					Promise.all([
+						import("/app/_app/immutable/entry/start.COYSucFY.js"),
+						import("/app/_app/immutable/entry/app.Bgd-PMKM.js")
+					]).then(([kit, app]) => {
+						kit.start(app, element);
+					});
+				}
+			</script>
+		</div>
+  </body>
+</html>
