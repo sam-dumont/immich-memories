@@ -7,12 +7,83 @@ title: Config File
 
 Reader: power user.
 
-`~/.immich-memories/config.yaml`, written the first time you save the connection (Advanced on the
-Memory page, or `immich-memories config`), with permissions `600` because it holds API keys. The
-annotated example is
+`~/.immich-memories/config.yaml` is yours: the app reads it and never writes it, except when you
+run `immich-memories config move-to-db`. Keep it at permissions `600` if it holds API keys. What
+you save from the web UI or `immich-memories config` goes to the database instead (see
+[where a setting comes from](#where-a-setting-comes-from)). The annotated example is
 [`examples/config.example.yaml`](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/examples/config.example.yaml),
 and every key with its default is in the [config reference](../reference/config-reference.md). In
 Docker you can skip the file entirely and use [environment variables](./environment-variables.md).
+
+## Where a setting comes from
+
+Four sources, strongest first:
+
+```mermaid
+flowchart LR
+    E["Environment<br/>IMMICH_MEMORIES_LLM__MODEL"] --> F["config.yaml<br/>advanced.llm.model"]
+    F --> D["Database<br/>saved from the UI or CLI"]
+    D --> X["Default"]
+```
+
+1. **Environment**: `IMMICH_MEMORIES_<SECTION>__<FIELD>` and the shortcuts in
+   [environment variables](./environment-variables.md) (`IMMICH_URL`, `IMMICH_API_KEY`, ...).
+2. **`config.yaml`**: this file, which only you write.
+3. **Database**: what the settings page, **Save Config** on the Memory page, and
+   `immich-memories config --url/--api-key` saved. One row per key; a key you never saved has no
+   row, so a new default still reaches you after an upgrade.
+4. **Default**: the value in the [config reference](../reference/config-reference.md).
+
+If a store is configured (a PostgreSQL URL, or a SQLite file that exists) and its settings cannot
+be read, the app does not start: the CLI exits with the error and the web UI refuses to start.
+The message names the store (password masked) and the cause, such as a refused connection or a
+corrupt file. Starting anyway on half the settings could send an automated run somewhere you did
+not mean. Fix the database or its URL, or set `IMMICH_MEMORIES_SKIP_STORED_SETTINGS=1` to start on
+env, `config.yaml` and defaults only. A SQLite store that does not exist yet is a fresh install and
+starts silently.
+
+The first source that sets a key wins, key by key: `advanced.llm.model` in the file and `llm.base_url`
+in the database work together. The web UI greys out every setting the environment or the file sets
+and names the variable or the file key; saving under it would do nothing.
+
+`immich-memories config show` prints the same report: every key, its value, its source, and the
+exact variable or file key that sets it. Secrets print as `***`. Give prefixes to narrow it:
+
+```bash
+immich-memories config show llm immich.url
+```
+
+### Moving a key out of the file
+
+Nothing moves from `config.yaml` into the database on its own; an upgrade leaves your file in charge.
+To hand a key to the UI:
+
+```bash
+immich-memories config move-to-db llm.model automation.cooldown_hours
+```
+
+Keys are runtime paths, without `advanced.`. Each value is saved to the database, then its line is
+removed from the file, wherever it was written (top level or under `advanced:`). The rest of the file
+keeps its values and its `${VAR}` references, but not its comments, so the previous file is kept
+as `config.yaml.bak`. A key whose value is a `${VAR}` reference is refused: it already comes from
+the environment. `database.url` and `database.schema` never move, because the app reads them before
+the database opens.
+
+### Secrets in the database
+
+Keys named `api_key`, `caption_api_key`, `password`, `client_secret`, `trigger_token`,
+`worker_token`, `token`, `secret`, `api_keys` or `urls` (notification URLs carry credentials) are
+secrets. In the database they are encrypted with Fernet, under a key derived (HKDF-SHA256) from
+`IMMICH_MEMORIES_SECRET_KEY`. Any string of at least 32 characters works; generate one with
+
+```bash
+openssl rand -base64 32
+```
+
+and keep it with your other secrets. Without it the UI and the CLI refuse to store a secret and say
+so; put the secret in the environment or `config.yaml` instead. Change or lose the key and the
+stored secrets stop opening: the app logs which ones and falls back to their defaults, `config show`
+and the settings page mark each one, and you save them again. Logs never print a secret, whichever source it came from.
 
 ## Compute tier
 
@@ -24,6 +95,12 @@ An LLM without GPU capability still works for titles and music mood; selection s
 and explains what is missing. A video encoder alone does not count as GPU inference. Explicit
 `nas`, `gpu` and `full` values remain available for controlled comparisons. See the
 [tier reference](../reference/config-reference.md#tier) for the requirements.
+
+To use a vision-capable LLM for captions, explicitly set
+`advanced.editorial.preparation.caption_provider: llm`. This does not upgrade NAS selection.
+It sends image tiles and candidate video frames to your configured LLM, reusing existing
+SmolVLM captions first. It is less efficient and can cost much more, especially on hosted
+infrastructure. See [LLM captions](../better/captions.md#explicit-llm-captions).
 
 ## Quick start config
 
@@ -69,18 +146,22 @@ llm:
 ## Everyday keys and advanced keys
 
 Everyday sections sit at the top level: `immich`, `defaults`, `output`, `audio`, `title_screens`,
-`cache`, `upload`, `trips`, `network`, `photos`, `render`, `scheduler`, `title_llm`. Tuning sections
+`cache`, `database`, `upload`, `trips`, `network`, `photos`, `render`, `title_llm`. Tuning sections
 go under `advanced:`: `analysis`, `speech`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`, `automation`,
-`notifications`, `triage`, `editorial`, `inference`. The app writes them that way. On read both
-placements work and merge key by key at every depth, and the top-level value wins a tie, so a
-hand-written `editorial: {preparation: {caption_concurrency: 4}}` changes concurrency and keeps
-the rest of the app-written block. Preparation's former tier override no longer takes precedence
+`notifications`, `triage`, `editorial`, `inference`. Both placements work and merge key by key at
+every depth, and the top-level value wins a tie, so a hand-written
+`editorial: {preparation: {caption_concurrency: 4}}` changes concurrency and keeps the rest of an
+`advanced.editorial` block. The database, `config show` and `config move-to-db` use the runtime
+path without `advanced.` (`llm.model`); the UI and `config show` name a file key the way you wrote
+it (`advanced.llm.model`). Preparation's former tier override no longer takes precedence
 over the product tier.
 
 Unknown keys inside a section are ignored. The keys of the retired per-clip scorer
 (`content_analysis`, `audio_content`, `transcription`, `description_llm`,
-`analysis.max_refinement_passes`, `photos.max_ratio` and their family) are dropped by name with a
-warning, so an old file loads and tells you what it ignored. Unknown top-level keys and invalid
+`analysis.max_refinement_passes`, `photos.max_ratio` and their family), the retired `scheduler:`
+section and a few dials nothing read (`cache.max_age_days`, `title_screens.show_decorative_lines`,
+`triage.enabled`, `triage.bundle`) are dropped by name with a warning, so an old file loads and
+tells you what it ignored. Unknown top-level keys and invalid
 values (`codec: av1`) fail with a validation error.
 
 ## Paths in the config are host paths
@@ -93,19 +174,21 @@ path that is missing here, so a copied config fails up front instead of hours in
 |---|---|
 | `output.directory` | where finished films are written |
 | `cache.directory` | previews, thumbnails, downloaded clips |
-| `cache.database` | run history and automation state |
-| `advanced.editorial.annotation_database` | every banked fact and reading |
+| `cache.database` | derived analysis (safe to lose; it is rebuilt) |
+| `database.url` | the store (banked facts and readings, your picture decisions and review edits, people, settings, run history, automation state, special days), when it is a SQLite file (`sqlite:///~/.immich-memories/store.db`) |
+| `advanced.editorial.annotation_database` | deprecated: a legacy `annotations.sqlite` the store imports once; its directory still holds `structure-banks/` (the thumbnail-hash and scene-print caches, and any legacy JSON banks the store imports) |
 | `advanced.triage.encoder` | the pinned DINOv2 ONNX export |
-| `advanced.triage.bundle` | a head bundle of your own |
-| `advanced.editorial.preparation.head_bundle` | the same, for the eight context heads |
+| `advanced.editorial.preparation.head_bundle` | a head bundle of your own, for the eight context heads |
 | `advanced.editorial.preparation.marqo_onnx` | the pinned sensitive-content export |
 | `advanced.editorial.preparation.detector_cache_dir` | the Hugging Face cache the detectors read |
 | `advanced.editorial.preparation.detector_python` | an interpreter for the detector worker |
 | `audio.local_music_dir` | your own music, read by `immich-memories music` |
 
 Blank is the default for `head_bundle`, `detector_python` and `detector_cache_dir`, and the portable
-value: it means "work it out here". A Mac venv path carried into a NAS container is how
-`detector_python` ends in `detectors: FileNotFoundError` and no film. Containers already pin most of these: the image sets
+value: it means "work it out here". A `detector_python` that is not on this host (a Mac venv
+path carried into a NAS container, or a venv deleted since) stops a cut before it reads a picture,
+naming the key; `doctor` shows the same row. Remove the key and the detectors run on the app's own
+Python. Containers already pin most of these: the image sets
 `output.directory` to `/app/output`, and the [Kubernetes manifests](./kubernetes.md) put the model
 paths on the `/models` claim.
 
@@ -183,12 +266,16 @@ Off by default. [What Immich sees](./privacy.md#what-immich-sees) lists every wr
 ```yaml
 network:
   geocoding: false        # nominatim.openstreetmap.org
+  geocoding_url: ""       # your own Nominatim instead, e.g. http://nominatim.lan:8080
   map_tiles: false        # server.arcgisonline.com
 ```
 
 Both off, so a default run reaches your Immich server, the endpoints named elsewhere in this file,
-and nothing else. `geocoding` buys place names in the film's language; `map_tiles` buys the trip
-fly-over and the map behind location cards. Fonts are never fetched at run time (see
+and nothing else. `geocoding` buys the right district's name where Immich names the neighbouring
+town (Wilrijk, not Hoboken), trip names from the map, and place names in the film's language. It
+sends rounded coordinates, about a kilometre, once per place; answers are kept in the store.
+`geocoding_url` points it at a self-hosted Nominatim. `map_tiles` buys the trip fly-over and the
+map behind location cards. Fonts are never fetched at run time (see
 [fonts](./privacy.md#fonts)). [Privacy](./privacy.md) says exactly what each host receives.
 
 ## Reader concurrency

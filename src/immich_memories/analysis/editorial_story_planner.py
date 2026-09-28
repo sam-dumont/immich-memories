@@ -15,6 +15,7 @@ from datetime import date
 from operator import itemgetter
 from typing import Any
 
+from immich_memories.analysis.editorial_carrier import carrier_row
 from immich_memories.analysis.editorial_person_period_facts import (
     arrival_notes,
     person_period_facts,
@@ -485,6 +486,7 @@ def select_story_first(
     partition_of: Callable[[str], str | None] | None = None,
     partition_limit: int | None = None,
     voice_per_partition: bool = False,
+    context_without_life: bool = False,
     motion_line: Callable[[Mapping[str, Any]], str] | None = None,
     episode_readings: Mapping[str, Any] | None = None,
     rules=None,
@@ -512,7 +514,8 @@ def select_story_first(
     `banked` answers what a model already said about these pictures on an earlier run; it asks
     nothing, and on a library nothing has read it answers nothing and the draft is unchanged.
     `voice_per_partition` gives every partition (`partition_of`) that holds a story one picture
-    before any story takes a second.
+    before any story takes a second. `context_without_life` lets a picture with nobody in it
+    serve its story, in a film whose material was chosen for a written subject.
     """
     calls = {
         "story_pages": 0,
@@ -636,6 +639,7 @@ def select_story_first(
         life=life,
         unit_by_asset=unit_by_asset,
         pictures_of={s["key"]: s["seen"]["pictures"] for s in stories},
+        context_without_life=context_without_life,
     )
     admission = CarrierAdmission(
         judge,
@@ -684,6 +688,8 @@ def select_story_first(
             "passes": admission.pass_records,
             "lookalike": admission.lookalike.record(),
             "failed_standing": admission.failed_standing,
+            # A partition the film promised a voice that ended without one, and why.
+            "quiet_partitions": parts.quiet(choices_of, admission.silent, admission.carriers),
             "kept_without_standing": admission.kept_without_standing,
             # Pictures nothing vouched for that gave their slot back to a starred picture.
             "displaced_for_a_favourite": [c["asset_id"] for c in admission.displaced],
@@ -710,12 +716,7 @@ def alternatives_pool(
     carrier can come from another moment, family or even story, and a row that named the
     refused carrier there would misdescribe the picture the film then shows.
     """
-    unit_by_asset = {u["asset_id"]: u for units in event_units.values() for u in units}
-    context_of_asset = {
-        u["asset_id"]: {"event": family, "anchor": anchor_label.get(family, family)}
-        for family, units in event_units.items()
-        for u in units
-    }
+    unit_by_asset = {u["asset_id"]: (f, u) for f, units in event_units.items() for u in units}
     # A unit row's moment is a loosely-typed field; the map keys are the story's moment ids.
     chapter_of_moment: dict[Any, int] = {
         moment: number
@@ -723,19 +724,27 @@ def alternatives_pool(
         for episode in row["day_episodes"]
         for moment in _moments_of(selection, episode)
     }
+    story_of_moment = {
+        moment: story
+        for story in selection.story.stories
+        for episode in story["episodes"]
+        for moment in _moments_of(selection, episode)
+    }
 
     def pool_for(carrier: Mapping[str, Any]) -> list[dict]:
         return [
-            unit
-            | context_of_asset[a]
-            | {
-                "chapter": chapter_of_moment.get(unit.get("moment")),
-                # The page and the sheet print this under the thumbnail. A replacement
-                # describes itself; it never borrows the refused picture's description.
-                "line": selection.lines.get(a) or "Replaces a picture the audience gate refused",
-            }
+            carrier_row(
+                unit,
+                family=family,
+                anchor=anchor_label.get(family, family),
+                story=story_of_moment[unit["moment"]],
+                chapter=chapter_of_moment[unit["moment"]],
+                line=selection.lines.get(a, ""),
+            )
             for a in selection.alternatives_of.get(carrier["asset_id"], [])
-            if (unit := unit_by_asset.get(a)) is not None
+            if a in unit_by_asset
+            for family, unit in (unit_by_asset[a],)
+            if unit.get("moment") in story_of_moment
         ]
 
     return pool_for

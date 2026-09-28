@@ -106,7 +106,6 @@ def run_trip_detection(
     """Discover the same photo and video trips offered by the Memory page."""
     from immich_memories.analysis.trip_detection import geocoder_for
     from immich_memories.cli._helpers import print_success
-    from immich_memories.processing.clip_caption import resolve_caption_locale
 
     task = progress.add_task(f"Finding trips from photos and videos for {year}...", total=None)
     trips = discover_year_trips(
@@ -114,10 +113,7 @@ def run_trip_detection(
         config.trips,
         year,
         person_names=person_names,
-        geocoder=geocoder_for(
-            enabled=config.network.geocoding,
-            language=resolve_caption_locale(config.title_screens.locale),
-        ),
+        geocoder=geocoder_for(config),
     )
     progress.update(task, completed=True)
     print_success(f"Detected {len(trips)} trip(s)")

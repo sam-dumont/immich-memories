@@ -96,7 +96,10 @@ WHITELIST = Path(__file__).resolve().parent.parent / "vulture-whitelist.py"
 # 54 still: the /api/v1 response models (web/schemas.py) have fields only the Svelte client
 # reads. Rather than list them, `make dead-code` excludes that one contract module, which
 # `make web-check` holds to the generated TypeScript types.
-MAX_WHITELISTED_SYMBOLS = 54
+# 56: the annotations slice's import_legacy (#871), called by `store import` and the
+# first-open import once the store slices are integrated.
+# 55: they are (the #871 cutover); the importers are reached through the import registry.
+MAX_WHITELISTED_SYMBOLS = 55
 
 
 def test_the_dead_code_whitelist_never_grows() -> None:

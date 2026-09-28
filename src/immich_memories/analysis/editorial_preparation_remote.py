@@ -6,11 +6,11 @@ import logging
 from collections.abc import Callable, Generator, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing, nullcontext
-from pathlib import Path
 
 from immich_memories.analysis.remote_facts import FactsAnswer, RemoteFactsClient
-from immich_memories.cache.embedding_cache import HeadFactStore
+from immich_memories.cache.embedding_cache import HeadFactStore, PendingHeadFacts
 from immich_memories.config_models_inference import InferenceConfig
+from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ STAGE = "remote_facts"
 def prepare_remote_facts(
     *,
     pending: Mapping[str, Mapping[str, str]],
-    store_path: Path,
+    store: Store,
     preview_for: Callable[[str], bytes],
     check_cancelled: Callable[[], None],
     progress: Callable[[str, int, int], None],
@@ -51,11 +51,12 @@ def prepare_remote_facts(
     charged = 0.0
     measured = 0
     # The answers are closed before the client they ride on, which is what the
-    # order of these three buys: a stop raises out of the loop, and the requests
-    # still outstanding have to be let go of while there is still a client.
+    # order of these three buys: a stop raises out of the loop, the requests still
+    # outstanding are let go of while there is still a client, and what was already
+    # answered is banked on the way out.
     with (
+        PendingHeadFacts(HeadFactStore(store)) as bank,
         opened as remote,
-        closing(HeadFactStore(store_path)) as bank,
         closing(_in_order(remote, pending, preview_for, check_cancelled, in_flight)) as answers,
     ):
         for index, (asset_id, answer) in enumerate(answers, 1):
@@ -63,7 +64,7 @@ def prepare_remote_facts(
             # Neither execution provider nor endpoint belongs in model identity:
             # the encoder key is the one the service computed over the artifact.
             for result in answer.producers.values():
-                bank.remember_facts(asset_id, result.bank_facts(), encoder_key=result.encoder_key)
+                bank.add(asset_id, result.bank_facts(), encoder_key=result.encoder_key)
             if answer.service_seconds is not None:
                 charged += answer.service_seconds
                 measured += 1

@@ -142,14 +142,18 @@ def test_the_run_logs_and_records_which_source_titled_the_film(tmp_path, caplog)
     from immich_memories.processing.assembly_config import TitleScreenSettings
     from immich_memories.tracking import RunTracker
 
-    tracker = RunTracker("20250701_100000_abcd", db_path=tmp_path / "runs.db", capture_system=False)
+    tracker = RunTracker("20250701_100000_abcd", capture_system=False)
     tracker.start_run(memory_type="trip")
     settings = TitleScreenSettings(title_source="place", trip_title_text="A WEEK IN CRETE, GREECE")
 
     with caplog.at_level(logging.INFO, logger="immich_memories.generate_settings"):
         announce_title_source(settings, tracker)
 
-    lines = [r.getMessage() for r in caplog.records if "title" in r.getMessage().lower()]
+    lines = [
+        r.getMessage()
+        for r in caplog.records
+        if r.name == "immich_memories.generate_settings" and "title" in r.getMessage().lower()
+    ]
     assert lines == ["Opening title from place: 'A WEEK IN CRETE, GREECE'"]
     run = tracker.db.get_run(tracker.run_id)
     assert run is not None
@@ -163,7 +167,7 @@ def test_a_template_title_says_so_rather_than_quoting_a_title_it_has_not_built(t
     from immich_memories.processing.assembly_config import TitleScreenSettings
     from immich_memories.tracking import RunTracker
 
-    tracker = RunTracker("20250701_100000_abce", db_path=tmp_path / "runs.db", capture_system=False)
+    tracker = RunTracker("20250701_100000_abce", capture_system=False)
     tracker.start_run(memory_type="year")
 
     with caplog.at_level(logging.INFO, logger="immich_memories.generate_settings"):

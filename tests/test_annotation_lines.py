@@ -2,20 +2,21 @@
 The source-preparation variants arrive with the slice that ports `selection_source`.
 """
 
-import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
-from pathlib import Path
 
 import pytest
+import sqlalchemy as sa
 
 from immich_memories.analysis.annotation_lines import StoredAnnotationLineReader
 from immich_memories.analysis.editorial_contracts import EditorialCandidate
 from immich_memories.api.models import ExifInfo, Person
+from immich_memories.db import Store
 from immich_memories.store.asset_annotations import (
     AssetAnnotationFactBatch,
     StoredAssetAnnotationFacts,
 )
+from tests.annotation_rows import add_rows, annotation_store
 from tests.conftest import make_asset
 
 CAPTURED = datetime(2026, 8, 25, 12, tzinfo=UTC)
@@ -35,32 +36,39 @@ class OwnerPersonContext:
     birth_date: date | None = None
 
 
-_SCHEMA = """
-CREATE TABLE asset_people (asset_id, person_name, person_id, birth_date);
-CREATE TABLE descriptions (asset_id, model, text);
-CREATE TABLE description_fields (asset_id, model, field, value);
-CREATE TABLE flags (asset_id, flag, evidence, source);
-CREATE TABLE head_facts (asset_id, head, version, label);
-CREATE TABLE pixel_facts (asset_id, producer_key, sharpness, brightness, contrast,
-    dark_fraction, bright_fraction, needs_rotation);
-CREATE TABLE pixel_facts_thresholds (name, value, producer_key);
-CREATE TABLE motion_bursts (asset_id, burst_id, still_ids, duration_seconds, beats_a_still);
-CREATE TABLE face_boxes (asset_id, named, x1, y1, x2, y2);
-"""
+# The columns this file's fixtures state, in the order it always states them; a column a
+# fixture leaves unstated is NULL, as `add_rows` gives it. `flags` is `asset_flags` in the
+# store; every other name is unchanged.
+_COLUMNS = {
+    "asset_people": ("asset_id", "person_name", "person_id", "birth_date"),
+    "descriptions": ("asset_id", "model", "text"),
+    "description_fields": ("asset_id", "model", "field", "value"),
+    "flags": ("asset_id", "flag", "evidence", "source"),
+    "head_facts": ("asset_id", "head", "version", "label"),
+    "pixel_facts": (
+        "asset_id",
+        "producer_key",
+        "sharpness",
+        "brightness",
+        "contrast",
+        "dark_fraction",
+        "bright_fraction",
+        "needs_rotation",
+    ),
+    "pixel_facts_thresholds": ("name", "value", "producer_key"),
+    "motion_bursts": ("asset_id", "burst_id", "still_ids", "duration_seconds", "beats_a_still"),
+    "face_boxes": ("asset_id", "named", "x1", "y1", "x2", "y2"),
+}
+_TABLE_NAMES = {"flags": "asset_flags"}
 
 
-def store_with(tmp_path: Path, **tables: tuple[tuple, ...]) -> Path:
-    store_path = tmp_path / "annotations.sqlite"
-    with sqlite3.connect(store_path) as connection:
-        connection.executescript(_SCHEMA)
-        for table, rows in tables.items():
-            placeholders = ",".join("?" for _ in rows[0])
-            # Only the table name from this file's own keyword is interpolated.
-            connection.executemany(
-                f"INSERT INTO {table} VALUES ({placeholders})",  # noqa: S608
-                rows,
-            )
-    return store_path
+def store_with(**tables: tuple[tuple, ...]) -> Store:
+    store = annotation_store()
+    for table, rows in tables.items():
+        columns = _COLUMNS[table]
+        target = _TABLE_NAMES.get(table, table)
+        add_rows(store, target, *(dict(zip(columns, row, strict=True)) for row in rows))
+    return store
 
 
 def candidate(asset_id: str, **overrides) -> EditorialCandidate:
@@ -83,9 +91,9 @@ def candidate(asset_id: str, **overrides) -> EditorialCandidate:
     return EditorialCandidate(asset_id=asset_id, taken_at=CAPTURED, source=source, **fields)
 
 
-def reader(store_path: Path, *candidates: EditorialCandidate, **overrides):
+def reader(store: Store | None, *candidates: EditorialCandidate, **overrides):
     return StoredAnnotationLineReader(
-        store_path=store_path,
+        store=store,
         candidates=candidates,
         description_model="student-v1",
         head_versions=overrides.pop("head_versions", {"activity": "public-v1"}),
@@ -94,11 +102,10 @@ def reader(store_path: Path, *candidates: EditorialCandidate, **overrides):
     )
 
 
-def test_a_line_renders_every_available_fact_without_stable_asset_ids(tmp_path: Path) -> None:
+def test_a_line_renders_every_available_fact_without_stable_asset_ids() -> None:
     """Everything the editor may read, and nothing that could identify the library."""
     asset = "asset-private-001"
-    store_path = store_with(
-        tmp_path,
+    store = store_with(
         asset_people=((asset, "Stale Name", "person-private-001", "1999-01-01"),),
         descriptions=((asset, "student-v1", "A runner crosses a city street."),),
         description_fields=(
@@ -131,7 +138,7 @@ def test_a_line_renders_every_available_fact_without_stable_asset_ids(tmp_path: 
     )
 
     batch = reader(
-        store_path,
+        store,
         subject,
         people_context={
             "person-private-001": OwnerPersonContext(relationship="friend", tier="inner")
@@ -183,15 +190,14 @@ def test_a_line_renders_every_available_fact_without_stable_asset_ids(tmp_path: 
     ],
 )
 def test_a_persons_age_is_stated_at_the_precision_the_capture_deserves(
-    tmp_path: Path, born: str, expected: str
+    born: str, expected: str
 ) -> None:
     """A newborn and a thirty-five-year-old are not the same editorial fact."""
-    store_path = store_with(
-        tmp_path,
+    store = store_with(
         asset_people=(("asset-private-002", "Robin", "person-private-002", born),),
     )
 
-    batch = reader(store_path, candidate("asset-private-002")).lines_for(("asset-private-002",))
+    batch = reader(store, candidate("asset-private-002")).lines_for(("asset-private-002",))
 
     assert f"Robin ({expected})" in batch.as_mapping()["asset-private-002"]
 
@@ -205,15 +211,14 @@ def test_a_persons_age_is_stated_at_the_precision_the_capture_deserves(
     ],
 )
 def test_pixel_warnings_only_fire_on_the_measurement_that_earns_them(
-    tmp_path: Path, pixels: tuple, expected: tuple[str, ...]
+    pixels: tuple, expected: tuple[str, ...]
 ) -> None:
-    store_path = store_with(
-        tmp_path,
+    store = store_with(
         pixel_facts=(("a-picture", "pixel-v1", *pixels),),
         pixel_facts_thresholds=(("sharpness_p10", 10.0, "pixel-v1"),),
     )
 
-    line = reader(store_path, candidate("a-picture")).lines_for(("a-picture",)).lines[0].text
+    line = reader(store, candidate("a-picture")).lines_for(("a-picture",)).lines[0].text
 
     warned = tuple(w for w in ("SOFT (blurry)", "DARK", "BLOWN OUT") if w in line)
     assert warned == expected
@@ -230,29 +235,27 @@ def test_pixel_warnings_only_fire_on_the_measurement_that_earns_them(
     ],
 )
 def test_the_line_says_what_the_material_will_actually_render_as(
-    tmp_path: Path, kind: str, duration: float, motion: tuple | None, expected: str
+    kind: str, duration: float, motion: tuple | None, expected: str
 ) -> None:
     bursts = {"motion_bursts": (("a-picture", "b", *motion),)} if motion else {}
-    store_path = store_with(tmp_path, **bursts)
+    store = store_with(**bursts)
 
     subject = candidate("a-picture", media_kind=kind, shippable_duration=duration)
-    line = reader(store_path, subject).lines_for(("a-picture",)).lines[0].text
+    line = reader(store, subject).lines_for(("a-picture",)).lines[0].text
 
     assert expected in line
 
 
-def test_a_place_without_names_falls_back_to_the_recorded_coordinates(tmp_path: Path) -> None:
+def test_a_place_without_names_falls_back_to_the_recorded_coordinates() -> None:
     """A GPS fix still tells the editor two pictures were taken somewhere apart."""
     subject = candidate("a-picture", exif=ExifInfo(latitude=12.3456, longitude=65.4321))
 
-    line = reader(store_with(tmp_path), subject).lines_for(("a-picture",)).lines[0].text
+    line = reader(store_with(), subject).lines_for(("a-picture",)).lines[0].text
 
     assert "at 12.346,65.432" in line
 
 
-def test_a_line_that_would_carry_a_private_identifier_is_withheld_without_logging_it(
-    tmp_path: Path,
-) -> None:
+def test_a_line_that_would_carry_a_private_identifier_is_withheld_without_logging_it() -> None:
     private_id = "12345678-1234-4234-8234-123456789abc"
 
     class ContaminatedFacts:
@@ -269,7 +272,7 @@ def test_a_line_that_would_carry_a_private_identifier_is_withheld_without_loggin
             )
 
     batch = reader(
-        tmp_path / "unused.sqlite",
+        None,
         candidate(private_id),
         head_versions={},
         fact_repository=ContaminatedFacts(),
@@ -283,41 +286,40 @@ def test_a_line_that_would_carry_a_private_identifier_is_withheld_without_loggin
     assert "12345678" not in " ".join(batch.warnings)
 
 
-def test_an_unreadable_store_yields_no_partial_evidence(tmp_path: Path) -> None:
+def test_an_unreadable_store_yields_no_partial_evidence() -> None:
     """Half a fact surface reads as a different picture, so none of it ships."""
-    batch = reader(tmp_path / "never-written.sqlite", candidate("a-picture")).lines_for(
-        ("a-picture",)
-    )
+    store = annotation_store()
+    with store.begin() as connection:
+        connection.execute(sa.text("DROP TABLE asset_people"))
+
+    batch = reader(store, candidate("a-picture")).lines_for(("a-picture",))
 
     assert batch.lines == ()
     assert batch.missing_asset_ids == ("a-picture",)
     assert batch.warnings == ("!! annotation fact store unavailable",)
 
 
-def test_an_asset_outside_the_prepared_source_is_never_rendered(tmp_path: Path) -> None:
-    batch = reader(store_with(tmp_path), candidate("a-picture")).lines_for(("another-picture",))
+def test_an_asset_outside_the_prepared_source_is_never_rendered() -> None:
+    batch = reader(store_with(), candidate("a-picture")).lines_for(("another-picture",))
 
     assert batch.lines == ()
     assert batch.warnings == ("!! requested annotation source unavailable",)
 
 
-def test_a_reader_built_on_duplicate_candidates_refuses_to_answer(tmp_path: Path) -> None:
+def test_a_reader_built_on_duplicate_candidates_refuses_to_answer() -> None:
     with pytest.raises(ValueError, match="unique candidate IDs"):
-        reader(store_with(tmp_path), candidate("a-picture"), candidate("a-picture"))
+        reader(store_with(), candidate("a-picture"), candidate("a-picture"))
 
 
-def test_a_reader_asked_for_nothing_refuses_rather_than_returning_everything(
-    tmp_path: Path,
-) -> None:
+def test_a_reader_asked_for_nothing_refuses_rather_than_returning_everything() -> None:
     with pytest.raises(ValueError, match="at least one requested asset"):
-        reader(store_with(tmp_path), candidate("a-picture")).lines_for(())
+        reader(store_with(), candidate("a-picture")).lines_for(())
 
 
-def test_a_line_says_how_the_named_subject_sits_in_the_frame(tmp_path: Path) -> None:
+def test_a_line_says_how_the_named_subject_sits_in_the_frame() -> None:
     """Without this the pick cannot tell a picture of somebody from one he is lost in."""
     asset = "asset-private-002"
-    store_path = store_with(
-        tmp_path,
+    store = store_with(
         asset_people=((asset, "Robin", "person-private-002", None),),
         face_boxes=(
             (asset, 1, 0.955, 0.40, 0.99, 0.46),
@@ -325,37 +327,32 @@ def test_a_line_says_how_the_named_subject_sits_in_the_frame(tmp_path: Path) -> 
         ),
     )
 
-    [line] = reader(store_path, candidate(asset)).lines_for((asset,)).lines
+    [line] = reader(store, candidate(asset)).lines_for((asset,)).lines
 
     assert "subject-framing:1" in line.text
     assert "at the frame's edge" in line.text and "not the largest face" in line.text
 
 
-def test_a_line_for_a_picture_with_no_banked_face_is_the_line_it_always_was(
-    tmp_path: Path,
-) -> None:
+def test_a_line_for_a_picture_with_no_banked_face_is_the_line_it_always_was() -> None:
     asset = "asset-private-003"
-    store_path = store_with(tmp_path, asset_people=((asset, "Robin", "person-private-003", None),))
+    store = store_with(asset_people=((asset, "Robin", "person-private-003", None),))
 
-    [line] = reader(store_path, candidate(asset)).lines_for((asset,)).lines
+    [line] = reader(store, candidate(asset)).lines_for((asset,)).lines
 
     assert "subject-framing" not in line.text
 
 
-def test_a_box_banked_before_identities_is_nobody_in_particular_to_a_memory_about_someone(
-    tmp_path: Path,
-) -> None:
+def test_a_box_banked_before_identities_is_nobody_in_particular_to_a_memory_about_someone() -> None:
     """The box knows a name was matched, not whose; a memory about Robin must not guess."""
     asset = "asset-private-004"
-    store_path = store_with(
-        tmp_path,
+    store = store_with(
         asset_people=((asset, "Robin", "person-private-004", None),),
         face_boxes=((asset, 1, 0.40, 0.40, 0.46, 0.48),),
     )
     people = [Person(id="person-private-004", name="Robin")]
 
     [line] = (
-        reader(store_path, candidate(asset, people=people), subjects=("Robin",))
+        reader(store, candidate(asset, people=people), subjects=("Robin",))
         .lines_for((asset,))
         .lines
     )
@@ -363,7 +360,7 @@ def test_a_box_banked_before_identities_is_nobody_in_particular_to_a_memory_abou
     assert "subject-framing" not in line.text
 
 
-def test_a_clip_whose_frames_often_miss_its_subject_says_so_on_its_line(tmp_path: Path) -> None:
+def test_a_clip_whose_frames_often_miss_its_subject_says_so_on_its_line() -> None:
     """Whatever head versions a caller asks for, the clip's own frame reading is read too."""
     from immich_memories.analysis.editorial_clip_frames import (
         CLIP_FRAMES_HEAD,
@@ -373,15 +370,14 @@ def test_a_clip_whose_frames_often_miss_its_subject_says_so_on_its_line(tmp_path
         subject_often_missing,
     )
 
-    store_path = store_with(
-        tmp_path,
+    store = store_with(
         head_facts=(
             ("clip-a", CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION, SUBJECT_OFTEN_MISSING),
             ("clip-b", CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION, SHOWS_ITS_MOMENT),
         ),
     )
     batch = reader(
-        store_path, candidate("clip-a", media_kind="video"), candidate("clip-b", media_kind="video")
+        store, candidate("clip-a", media_kind="video"), candidate("clip-b", media_kind="video")
     ).lines_for(("clip-a", "clip-b"))
     text = {line.asset_id: line.text for line in batch.lines}
 

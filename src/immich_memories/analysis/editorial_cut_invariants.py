@@ -22,6 +22,7 @@ from typing import Any
 from immich_memories.analysis import editorial_shareability as _share
 from immich_memories.analysis.editorial_clip_frames import clips_miss_subject
 from immich_memories.analysis.editorial_family_seat import FamilySeatPolicy, film_refusal
+from immich_memories.analysis.editorial_intent import voiced_era_of
 from immich_memories.analysis.editorial_rule_banked_facts import withheld_by_bank
 from immich_memories.analysis.editorial_story_replies import film_close_family
 from immich_memories.analysis.editorial_structure_budget import RESIDUAL_MIN
@@ -158,6 +159,10 @@ def _favourites_passed_over(cut: FinishedCut) -> list[Violation]:
     for unit in cut.units.values():
         by_moment.setdefault(unit.get("moment"), []).append(unit)
     shown = cut.shows()
+    # A keeper may itself be collapsed in a later review. Only chains rooted
+    # in an actually shown picture count; missing keepers and cycles do not.
+    while represented := {a for a, keeper in cut.collapsed_into.items() if keeper in shown} - shown:
+        shown.update(represented)
     out = []
     for c in cut.carriers:
         if c.get("favourite") or c["asset_id"] in cut.owner_required or c.get("moment") is None:
@@ -168,7 +173,6 @@ def _favourites_passed_over(cut: FinishedCut) -> list[Violation]:
             for u in by_moment.get(c["moment"], ())
             if u.get("favourite")
             and not {u["asset_id"], *(u.get("members") or ())} & shown
-            and cut.collapsed_into.get(u["asset_id"]) not in shown
             and cut.may_carry(u["asset_id"])
             # A family seat carries a person: only a favourite that shows them could have won.
             and (not seated or seated & set(cut.close_family_of(u["asset_id"])))
@@ -362,9 +366,9 @@ def _finished_cut(source, selection, material, run, gate, banked, share_log) -> 
             for row in (run.final_duplicates or {}).get("collapsed_favourites") or ()
         },
     )
-    if not source.intent.voice_per_partition:
+    era_of = voiced_era_of(source.intent)
+    if era_of is None:
         return cut
-    era_of = _era_of(source.intent)
     return replace(
         cut,
         era_of=era_of,
@@ -423,18 +427,10 @@ def _standing_refused(decisions: Path) -> frozenset[str]:
     )
 
 
-def _era_of(intent) -> Callable[[str], str | None]:
-    def era_of(taken: str) -> str | None:
-        part = intent.partition_for(datetime.fromisoformat(taken).date())
-        return part.key if part is not None else None
-
-    return era_of
-
-
 def _era_pictures(selection, units, era_of, may_carry) -> dict[str, list[str]]:
     """Each era's pictures that could carry it, from the stories that lie inside that era.
 
-    A story spanning two eras floors neither, as in the allocation (`PartitionedSlots._eras`).
+    A story spanning two eras floors neither, as in the allocation (`PartitionedSlots.eras`).
     """
     by_moment: dict[Any, list[Mapping[str, Any]]] = {}
     for unit in units.values():

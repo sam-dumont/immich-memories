@@ -2,29 +2,29 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import { Button, Heading, LoadingSpinner, Modal, ModalBody, ModalFooter, Text } from '@immich/ui';
-  import { mdiArrowLeft, mdiRefresh, mdiShieldCheckOutline } from '@mdi/js';
-  import { api, ApiError, post, thumbnail, type JobView } from '$lib/api';
+  import { mdiArrowLeft, mdiEyeOutline, mdiShieldCheckOutline } from '@mdi/js';
+  import { api, ApiError, post, thumbnail } from '$lib/api';
   import type { components } from '$lib/api-types';
   import { N_, t } from '$lib/i18n.svelte';
-  import { followJob } from '$lib/job.svelte';
-  import JobPanel from '$lib/JobPanel.svelte';
 
   type Pool = components['schemas']['Pool'];
   type Item = components['schemas']['PoolItem'];
   type Hold = components['schemas']['Hold'];
+  type Revision = components['schemas']['Revision'];
 
   const runId = $derived(page.params.run_id ?? '');
   let items = $state<Item[]>([]);
   let total = $state<number | null>(null);
   let outside = $state(0);
-  // This memory's own pictures by default: the others can't be ticked into its next cut.
+  // This memory's own pictures by default; the rest can still be ticked into the film.
   let showOutside = $state(false);
   let loading = $state(false);
   let missing = $state(false);
   let ticks = $state<Record<string, boolean>>({});
   let clearing = $state<Item | null>(null);
   let level = $state<'anyone' | 'family' | 'just-us'>('family');
-  let job = $state<JobView | null>(null);
+  let previewing = $state(false);
+  let refusal = $state('');
   let sentinel = $state<HTMLElement>();
 
   async function more() {
@@ -71,19 +71,17 @@
     clearing = null;
   }
 
-  async function cutAgain() {
-    const { status, body } = await post<JobView>(`/runs/${encodeURIComponent(runId)}/recut`, { include, exclude });
-    const started = status === 202 ? body : status === 409 ? body.job : null;
-    if (!started) return;
-    job = started;
-    followJob(started.id, (update) => {
-      job = update;
-      if (update.status === 'succeeded' && update.result_run_id) void goto(`/app/runs/${encodeURIComponent(update.result_run_id)}`);
-    });
-  }
-
-  async function cancel() {
-    if (job) job = (await post<JobView>(`/jobs/${encodeURIComponent(job.id)}/cancel`, {})).body;
+  // The ticks are the owner's last pass over this cut: saved as a revision, never a recut.
+  async function preview() {
+    previewing = true;
+    refusal = '';
+    const { status, body } = await post<Revision>(`/runs/${encodeURIComponent(runId)}/revisions`, { added: include, removed: exclude });
+    previewing = false;
+    if (status !== 201) {
+      refusal = body.detail ?? t('The revision could not be saved.');
+      return;
+    }
+    void goto(`/app/runs/${encodeURIComponent(runId)}?revision=${body.number}`);
   }
 
   const LEVELS: Record<string, string> = { 'just-us': N_('Just us'), family: N_('Family'), anyone: N_('Anyone') };
@@ -106,7 +104,7 @@
       <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true"><path d={mdiArrowLeft} /></svg>{t('Back to the cut')}
     </a>
     <Heading size="large" tag="h1">{t('Pool')}</Heading>
-    <Text color="muted">{t('Every picture this cut saw, in the order they were taken. Tick or untick, then cut again: the ticks become the next cut’s must-keeps and leave-outs. Never use and Clear hold last across every run.')}</Text>
+    <Text color="muted">{t('Every picture this cut saw, in the order they were taken. Tick or untick, then preview: your ticks go into the film as they are, with nothing chosen again. Never use and Clear hold last across every run.')}</Text>
   </div>
 
   {#if outside}
@@ -118,20 +116,22 @@
 
   {#if missing}
     <Text color="muted">{t('This run kept no record of its pool. Cut again to see one.')}</Text>
-  {:else if job && job.status === 'running'}
-    <JobPanel {job} onCancel={cancel} />
   {:else}
     <ul class="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-x-3 gap-y-5" aria-label={t('Pool')}>
       {#each items as item (item.asset_id)}
         <li class="flex flex-col gap-1.5">
-          <label class={['relative block overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-900', item.reachable ? 'cursor-pointer' : 'cursor-not-allowed opacity-40', ticked(item) ? 'ring-2 ring-primary' : 'opacity-70']}
-            title={item.reachable ? undefined : t('The editor never received this picture, so a tick cannot bring it into the next cut.')}>
+          <label class={['relative block cursor-pointer overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-900', ticked(item) ? 'ring-2 ring-primary' : 'opacity-70']}>
             <img src={thumbnail(item.asset_id)} alt={item.fate} loading="lazy" decoding="async" class="aspect-[4/3] w-full object-contain" />
-            <input type="checkbox" class="absolute top-2 left-2 size-5 accent-[var(--color-primary)]" checked={ticked(item)} disabled={!item.reachable}
-              aria-label={t('In the next cut')} onchange={(event) => (ticks = { ...ticks, [item.asset_id]: event.currentTarget.checked })} />
+            <input type="checkbox" class="absolute top-2 left-2 size-5 accent-[var(--color-primary)]" checked={ticked(item)}
+              aria-label={t('In the film')} onchange={(event) => (ticks = { ...ticks, [item.asset_id]: event.currentTarget.checked })} />
             {#if item.kind !== 'photo'}<span class="absolute right-1 bottom-1 rounded bg-black/60 px-1.5 text-[11px] text-white">{item.kind === 'video' ? t('Video') : t('Live')}</span>{/if}
           </label>
-          <p class="text-[11px] text-gray-600 tabular-nums dark:text-gray-400">{item.taken.slice(0, 10)}{item.favourite ? ' ★' : ''}</p>
+          <p class="flex flex-wrap items-center gap-1.5 text-[11px] text-gray-600 tabular-nums dark:text-gray-400">
+            {item.taken.slice(0, 10)}{item.favourite ? ' ★' : ''}
+            {#if item.same_episode}
+              <span class="rounded bg-primary/10 px-1.5 text-primary" title={t('Nobody this memory is about was recognised here; they were, elsewhere in the same episode.')}>{t('Same episode')}</span>
+            {/if}
+          </p>
           <p class="line-clamp-3 text-xs">{item.fate}</p>
           {#if holdLine(item.hold)}<p class="text-xs text-warning">{holdLine(item.hold)}</p>{/if}
           <div class="flex flex-wrap gap-1">
@@ -149,8 +149,9 @@
 
     {#if include.length || exclude.length}
       <div class="sticky bottom-20 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 bg-light/95 p-3 shadow-lg backdrop-blur md:bottom-4 dark:border-gray-800">
-        <p class="text-sm">{t('Keep: {include} · Leave out: {exclude}', { include: include.length, exclude: exclude.length })}</p>
-        <Button size="small" class="ml-auto" leadingIcon={mdiRefresh} onclick={cutAgain}>{t('Cut again with these choices')}</Button>
+        <p class="text-sm">{t('Add: {include} · Take out: {exclude}', { include: include.length, exclude: exclude.length })}</p>
+        <Button size="small" class="ml-auto" leadingIcon={mdiEyeOutline} loading={previewing} onclick={preview}>{t('Preview with these choices')}</Button>
+        {#if refusal}<p class="w-full text-sm text-danger" role="alert">{refusal}</p>{/if}
       </div>
     {/if}
   {/if}

@@ -1,27 +1,27 @@
-"""Settings: the configuration actually running, and the caches on disk."""
+"""Settings: every setting with its source, edited into the database, and the caches on disk."""
 
 from __future__ import annotations
 
+import json
 import shutil
+from itertools import groupby
+from pathlib import Path
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from immich_memories.config import get_config, get_config_path
+from immich_memories.config import get_config
 from immich_memories.config_loader import Config
-from immich_memories.security import redact_config
-from immich_memories.web.dependencies import current_config
+from immich_memories.config_sources import SettingSource, describe_settings
+from immich_memories.settings_edit import SettingRefused, save_settings
+from immich_memories.settings_store import secret_key_from_env
+from immich_memories.web.dependencies import config_file, current_config
+from immich_memories.web.schemas import SettingRow, SettingsForm, SettingsSection, SettingsView
 
 router = APIRouter(prefix="/api/v1", tags=["settings"])
 
 CacheName = Literal["analysis", "video", "thumbnail", "preview"]
-
-
-class ActiveConfig(BaseModel):
-    path: str
-    preset: str | None
-    sections: dict[str, Any]
 
 
 class CacheStats(BaseModel):
@@ -35,15 +35,93 @@ class Cleared(BaseModel):
     removed: int
 
 
-@router.get("/config", response_model=ActiveConfig)
-def active_config() -> ActiveConfig:
-    """The configuration this server runs with, env overrides applied, secrets masked."""
-    config = get_config(reload=True)
-    return ActiveConfig(
-        path=str(get_config_path()),
-        preset=config.preset,
-        sections=redact_config(config.model_dump(mode="json")),
-    )
+def _as_text(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, (list, dict)):
+        return json.dumps(value)
+    return str(value)
+
+
+def form_changes(entries: list[SettingSource], values: dict[str, Any]) -> dict[str, Any]:
+    """The form values that differ from what the page showed, ready for `save_settings`.
+
+    A blank secret keeps the stored one; lists and mappings are edited as JSON. A setting the
+    environment or config.yaml sets is never saved. Raises `SettingRefused` when a JSON field
+    does not parse.
+    """
+    changes: dict[str, Any] = {}
+    for entry in entries:
+        if entry.key not in values or not entry.editable:
+            continue
+        raw = values[entry.key]
+        if entry.secret:
+            if raw:
+                changes[entry.key] = raw
+            continue
+        if raw in (entry.value, _as_text(entry.value)):
+            continue
+        if isinstance(entry.value, (list, dict)):
+            try:
+                raw = json.loads(raw)
+            except json.JSONDecodeError:
+                raise SettingRefused(f"{entry.key}: not valid JSON") from None
+        changes[entry.key] = raw
+    return changes
+
+
+def save_form(
+    entries: list[SettingSource], values: dict[str, Any], *, path: Path | None = None
+) -> str | None:
+    """Save the edited values to the database; the refusal to show, or None when saved."""
+    try:
+        if changes := form_changes(entries, values):
+            save_settings(changes, path=path)
+    except SettingRefused as refusal:
+        return str(refusal)
+    return None
+
+
+def _settings_view(path: Path) -> SettingsView:
+    entries = describe_settings(get_config(reload=True), path=path)
+    can_store = secret_key_from_env() is not None
+    rows = [
+        SettingRow(
+            key=entry.key,
+            value=entry.value,
+            source=entry.source,
+            override=entry.override,
+            secret=entry.secret,
+            unreadable=entry.unreadable,
+            editable=entry.editable and (can_store or not entry.secret),
+        )
+        for entry in entries
+    ]
+    sections = [
+        SettingsSection(name=name, settings=list(grouped))
+        for name, grouped in groupby(rows, key=lambda row: row.key.split(".", 1)[0])
+    ]
+    return SettingsView(config_path=str(path), can_store_secrets=can_store, sections=sections)
+
+
+@router.get("/settings", response_model=SettingsView)
+def read_settings(path: Annotated[Path, Depends(config_file)]) -> SettingsView:
+    """Every setting with its live value and its source, re-read from disk; secrets masked."""
+    return _settings_view(path)
+
+
+@router.post("/settings", response_model=SettingsView, responses={422: {}})
+def save_settings_form(
+    form: SettingsForm, path: Annotated[Path, Depends(config_file)]
+) -> SettingsView:
+    """Save the changed values to the database; config.yaml and the environment are never written.
+
+    422 names the setting refused and why; nothing is saved then.
+    """
+    entries = describe_settings(get_config(reload=True), path=path)
+    if refusal := save_form(entries, form.values, path=path):
+        raise HTTPException(422, refusal)
+    return _settings_view(path)
 
 
 def _preview_dir(config: Config):

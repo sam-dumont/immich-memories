@@ -25,9 +25,8 @@ def _run(tmp_path: Path, answers: str):
     config.write_text(f"immich:\n  url: http://immich.test:2283\n  api_key: {_KEY}\n")
     # WHY: the real home and the real Immich server
     with (
-        # WHY: this command writes config. Pinning home as well as --config means
-        # a regression in the save path cannot reach a real one -- an earlier
-        # version of this test overwrote mine.
+        # WHY: pinning home as well as --config means a regression in the save
+        # path cannot reach a real one -- an earlier version of this test overwrote mine.
         patch.object(Path, "home", classmethod(lambda _cls: tmp_path / "home")),
         # WHY: the command offers to contact Immich after saving.
         patch("immich_memories.api.immich.SyncImmichClient"),
@@ -56,9 +55,33 @@ def test_the_user_is_told_a_key_is_already_set(tmp_path: Path):
     assert "configured" in result.output.lower()
 
 
-def test_a_new_key_replaces_the_old_one(tmp_path: Path):
-    _, config = _run(tmp_path, answers="\nsk-replacement\nn\n")
+def test_a_new_key_replaces_the_old_one_in_the_database(tmp_path: Path, monkeypatch):
+    """The key is saved where the UI saves it; the file that held nothing is left alone."""
+    from immich_memories.config_loader import set_config
+    from immich_memories.db import close_stores, open_store, resolve_location
+    from immich_memories.settings_store import SettingsStore
 
-    saved = config.read_text()
-    assert "sk-replacement" in saved
-    assert _KEY not in saved
+    secret_key = "test-only-secret-key-0123456789abcdef"  # noqa: S105 — synthetic
+    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", f"sqlite:///{tmp_path / 'store.db'}")
+    monkeypatch.setenv("IMMICH_MEMORIES_SECRET_KEY", secret_key)
+    config = tmp_path / "config.yaml"
+    config.write_text("immich:\n  url: http://immich.test:2283\n")
+    try:
+        with (
+            # WHY: the real home and the real Immich server
+            patch.object(Path, "home", classmethod(lambda _cls: tmp_path / "home")),
+            patch("immich_memories.api.immich.SyncImmichClient"),
+        ):
+            runner = CliRunner()
+            runner.invoke(main, ["--config", str(config), "config", "--api-key", _KEY])
+            result = runner.invoke(
+                main, ["--config", str(config), "config"], input="\nsk-replacement\nn\n"
+            )
+        store = SettingsStore(open_store(location=resolve_location()), secret_key)
+
+        assert result.exit_code == 0, result.output
+        assert store.values() == {"immich.api_key": "sk-replacement"}
+        assert config.read_text() == "immich:\n  url: http://immich.test:2283\n"
+    finally:
+        set_config(None)
+        close_stores()

@@ -8,7 +8,12 @@
 ## Quick Start
 
 1. **Install dev dependencies first**: `make dev`
-2. Read `ARCHITECTURE.md` — it maps the full codebase structure, key classes,
+2. **Before any render with music on a Mac, run `make install-acestep`** in this checkout.
+   ACE-Step lives in a sibling `.venv-acestep`, so every new clone and **every git worktree**
+   starts without it; the owner's config uses `ace_step.mode: lib`, and without the install
+   every film silently gets a bundled track. `immich-memories preflight` shows a
+   **Music (ACE-Step)** warning when it is missing.
+3. Read `ARCHITECTURE.md` — it maps the full codebase structure, key classes,
    data flow, and composition architecture. This avoids needing to explore the repo.
 
 > **Important**: Always run `make dev` before running any other make target.
@@ -30,6 +35,19 @@ make test
 
 # Run only what the torch-family extras unlock (demucs/editorial)
 make test-extras
+
+# The store suite on SQLite, then on PostgreSQL (throwaway postgres:16 in Docker)
+make test-store
+
+# Hermetic launch check (Playwright + fake Immich), store on SQLite / on PostgreSQL
+make launch-check-ci
+make launch-check-ci-postgres
+
+# Real Immich in Docker + CC0 fixture library, on either store backend
+make test-immich-gate IMMICH_GATE_VERSION=v3 IMMICH_GATE_DATABASE=postgresql
+
+# The built image from docker-compose.yml: legacy-volume upgrade, store backup/restore, trigger API
+make test-container CONTAINER_E2E_DATABASE=postgresql
 
 # Lint (ruff check)
 make lint
@@ -101,6 +119,9 @@ make arch-check
 
 # Diff coverage for PRs (≥80% on changed lines)
 make diff-cover
+
+# Which CI jobs this branch's changes run (the same scope the PR's jobs read)
+make ci-scope
 
 # Commit message lint (conventional commits)
 make commitlint
@@ -210,6 +231,10 @@ locally, CI will pass too. Use conventional commit message format (see above).
 | Extras | CI + local | `make test-extras` | Only paths the torch family unlocks (`-m extras`) | torch/demucs/face |
 | Integration | Local only | `make test-integration` | Real FFmpeg assembly, real Immich reads, real pipeline | FFmpeg + Immich |
 | Integration | GPU runner | `make test-integration` | Real FFmpeg assembly, Immich reads, pipeline | FFmpeg + Immich |
+| Store | CI + local | `make test-store` | `tests/store/` on SQLite and PostgreSQL | Docker (postgres:16) |
+| Launch | CI + local | `make launch-check-ci`, `make launch-check-ci-postgres` | Playwright against the real app and a fake Immich, store on each backend | Playwright + FFmpeg (+ Docker) |
+| Immich gate | CI + local | `make test-immich-gate` | Real Immich v2/v3 × store SQLite/PostgreSQL: reads, upload, generation, what runs leave in the store | Docker + FFmpeg |
+| Container | CI + local | `make test-container` | The built image via `docker-compose.yml`: legacy-volume upgrade, `store backup`/`restore`, trigger API, per backend (`-m container`) | Docker |
 
 **Coverage targets:**
 - Core (non-UI): **60%** — enforced by `fail_under = 55` (unit) + GPU runner integration pushes higher

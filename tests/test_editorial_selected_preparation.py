@@ -1,12 +1,15 @@
 """Film-time enrichment belongs to the NAS draft, not its whole source pool (#1397)."""
 
 import json
+import os
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from immich_memories.analysis.editorial_description_contract import validate_envelope
 from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
-from immich_memories.analysis.editorial_preparation_captions import _remember_caption
+from immich_memories.analysis.editorial_preparation_captions import _remember_captions
 from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
 from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
 from immich_memories.analysis.smart_pipeline import SmartPipeline
@@ -39,7 +42,7 @@ def _model_effects(source, calls):
         judge=PolishJudge(),
         rules=RuleStructureReader(source),
         thumbnail_hash=lambda _asset: None,
-        thin=ThinPolish(bank_dir=source.bank_dir, read_period=context),
+        thin=ThinPolish(store=source.bank_store, bank_scope=source.case.key, read_period=context),
     )
 
 
@@ -54,6 +57,11 @@ def _film(
     frame_reader=None,
 ):
     calls = []
+    # A distinct store per `directory`, so two calls with different directories in the same
+    # test see two annotation banks -- as two real runs with separate cache directories
+    # would -- while calls that reuse the same directory keep sharing warm facts.
+    directory.mkdir(parents=True, exist_ok=True)
+    os.environ["IMMICH_MEMORIES_DATABASE_URL"] = f"sqlite:///{(directory / 'store.db').resolve()}"
     # WHY: local model providers are external boundaries. Keep acquisition, SQLite,
     # annotation reading and the complete production selector real.
     providers = successful_ports(calls)
@@ -63,17 +71,18 @@ def _film(
 
         def captions(**kwargs):
             calls.append(("captions", tuple(kwargs["asset_ids"])))
-            for asset_id in kwargs["asset_ids"]:
-                _remember_caption(
-                    kwargs["connection"],
-                    asset_id,
-                    validate_envelope(
+            _remember_captions(
+                kwargs["store"],
+                {
+                    asset_id: validate_envelope(
                         {
                             "description": descriptions.get(asset_id, "People sit together."),
                             "setting": "a room",
                         }
-                    ),
-                )
+                    )
+                    for asset_id in kwargs["asset_ids"]
+                },
+            )
             return {}
 
         providers = replace(providers, captions=captions)
@@ -138,6 +147,26 @@ def test_full_refinement_reuses_gpu_captions_instead_of_recaptioning(tmp_path):
     assert full == gpu
     assert [ids for producer, ids in calls if producer == "effects-tier"] == [("nas",), ("full",)]
     assert any(producer == "period-context" for producer, _ in calls)
+    assert not any(producer == "captions" for producer, _ in calls)
+
+
+@pytest.mark.parametrize("tier", ["nas", "gpu", "full"])
+def test_banked_captions_do_not_change_the_initial_nas_draft(tmp_path, tier):
+    first = datetime(2024, 2, 1, 12, tzinfo=UTC)
+    sources = [photo(f"picture-{n:02}", at=first + timedelta(days=n)) for n in range(24)]
+    for asset in sources:
+        asset.is_favorite = True
+    _film(tmp_path, sources, tier="gpu")
+    drafts = set((tmp_path / "artifacts").glob("**/nas-draft/plan.private.json"))
+    assert len(drafts) == 1
+    cold = json.loads(next(iter(drafts)).read_text())["carriers"]
+
+    _, calls = _film(tmp_path, sources, tier=tier)
+
+    new_drafts = set((tmp_path / "artifacts").glob("**/nas-draft/plan.private.json")) - drafts
+    assert len(new_drafts) == 1
+    warm = json.loads(new_drafts.pop().read_text())["carriers"]
+    assert [(c["asset_id"], c["line"]) for c in warm] == [(c["asset_id"], c["line"]) for c in cold]
     assert not any(producer == "captions" for producer, _ in calls)
 
 
@@ -260,14 +289,11 @@ def test_fresh_video_frame_facts_are_applied_before_the_nas_cut_ships(tmp_path):
         # WHY: the frame classifier is external; real acquisition and FFmpeg supply
         # its sampled frames, and the stored facts must affect the actual finished cut.
         def read(**kwargs):
-            store = HeadFactStore(kwargs["store_path"])
-            try:
-                for asset_id in kwargs["frame_paths"]:
-                    store.remember_facts(
-                        asset_id, [clip_frames_fact([kind] * 8)], encoder_key="test"
-                    )
-            finally:
-                store.close()
+            store = HeadFactStore(kwargs["store"])
+            store.remember_facts(
+                {asset_id: [clip_frames_fact([kind] * 8)] for asset_id in kwargs["frame_paths"]},
+                encoder_key="test",
+            )
             return {}
 
         return read

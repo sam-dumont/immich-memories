@@ -134,6 +134,7 @@ def test_the_brief_picks_from_the_library_s_named_people_and_albums(tmp_path):
     # WHY: Immich is the external boundary; the unit tier has no library to read.
     client.app.dependency_overrides[immich_client] = lambda: Library()
 
+    # Before a people scan there is no count to go by: alphabetical.
     assert [p["name"] for p in client.get("/api/v1/people").json()] == ["Ana", "zoé"]
     # Largest first, each with its id: two albums may share a name, and --from-album takes either.
     assert [(a["id"], a["asset_count"]) for a in client.get("/api/v1/albums").json()] == [
@@ -150,18 +151,6 @@ def test_the_page_shows_the_command_its_brief_stands_for_before_running_it(clien
     assert shown.json() == {
         "command": "immich-memories generate --memory-type=year_in_review --year=2023 --no-render"
     }
-
-
-def test_cut_again_from_a_terminal_made_run_keeps_its_scope_and_adds_the_ticks(client):
-    started = client.post(
-        f"/api/v1/runs/{RUN}/recut", json={"include": ["garden-2"], "exclude": ["lake-1"]}
-    )
-
-    job = _finished(client, started.json()["id"])
-    argv = json.loads(client.recorded.read_text())
-    assert job["status"] == "succeeded"
-    assert "--memory-type=monthly_highlights" in argv
-    assert "--include=garden-2" in argv and "--exclude=lake-1" in argv
 
 
 def test_rescanning_people_runs_people_scan(client):
@@ -215,19 +204,25 @@ def test_a_first_cut_moves_its_bar_by_the_stage_without_a_whole_cut_estimate(cli
     assert 0.2 < progress["stage_remaining_seconds"] < 5
 
 
-def test_a_measured_whole_cut_estimate_drives_the_bar_over_the_stage(client, tmp_path):
-    from immich_memories.operations.cut_progress import StageUpdate
+def test_a_measured_whole_cut_estimate_drives_the_bar_over_the_stage(client, tmp_path, monkeypatch):
+    from dataclasses import replace
+
+    from immich_memories.operations.cut_progress import StageClock, StageUpdate
     from immich_memories.operations.editorial_attempt import EditorialAttempt
 
+    # WHY: the whole-cut numbers come from the previous run's spans, which the clock reads
+    # from the store (tests/test_span_progress.py covers that arithmetic); this test is
+    # about the job route carrying a measured record to the client.
+    monkeypatch.setattr(
+        StageClock,
+        "measure",
+        lambda _clock, update: replace(update, total_fraction=0.2, total_remaining_seconds=300.0),
+    )
     started = client.post("/api/v1/cuts", json={"memory_type": "year_in_review", "year": 2023})
     job_id = started.json()["id"]
     root = tmp_path / "cache" / "editorial-runs" / f"web-{job_id}"
     with EditorialAttempt(root, request={"key": "k"}) as attempt:
-        attempt.stage(
-            StageUpdate(
-                "previews", done=60, total=120, total_fraction=0.2, total_remaining_seconds=300.0
-            )
-        )
+        attempt.stage(StageUpdate("previews", done=60, total=120))
         progress = client.get(f"/api/v1/jobs/{job_id}").json()["progress"]
 
     assert (progress["fraction"], progress["remaining_seconds"]) == (0.2, 300.0)
@@ -245,3 +240,37 @@ def test_a_stage_that_counts_nothing_offers_no_time_left(client, tmp_path):
         progress = client.get(f"/api/v1/jobs/{job_id}").json()["progress"]
 
     assert progress["remaining_seconds"] is None
+
+
+def test_the_brief_offers_the_people_with_the_most_pictures_first(tmp_path):
+    from types import SimpleNamespace
+
+    from immich_memories.db import open_store
+    from immich_memories.people.transfer import import_document
+    from immich_memories.web.library import immich_client
+
+    class Library:
+        def get_all_people(self):
+            return [
+                SimpleNamespace(id=i, name=n) for i, n in (("1", "Ana"), ("2", "Zoé"), ("3", "Bo"))
+            ]
+
+    config = config_in(tmp_path)
+    import_document(
+        open_store(config),
+        {
+            "version": 1,
+            "people": [
+                {"ids": ["2"], "name": "Zoé", "inferred": {"evidence": {"count": 900}}},
+                {"ids": ["3"], "name": "Bo", "inferred": {"evidence": {"count": 40}}},
+            ],
+        },
+        replace=True,
+    )
+    client = api_client(config)
+    # WHY: Immich is the external boundary; the registry holds the scan's count of each face.
+    client.app.dependency_overrides[immich_client] = lambda: Library()
+
+    found = client.get("/api/v1/people").json()
+
+    assert [(p["name"], p["pictures"]) for p in found] == [("Zoé", 900), ("Bo", 40), ("Ana", None)]

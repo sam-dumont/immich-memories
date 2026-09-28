@@ -5,7 +5,6 @@ which picture carries a moment and which pictures are offered at all.
 """
 
 import json
-import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -21,7 +20,9 @@ from immich_memories.analysis.editorial_rule_banked_facts import (
 )
 from immich_memories.analysis.editorial_rule_quality import rule_representative_rank
 from immich_memories.analysis.editorial_story_shortlist import _capture_group_moments
-from immich_memories.analysis.editorial_structure_audience import AUDIENCE_BANK_NAME, AudienceBank
+from immich_memories.analysis.editorial_structure_audience import AudienceBank
+from immich_memories.db import open_store
+from tests.annotation_rows import add_rows, annotation_store
 
 
 def _asset(asset_id, *, minute=0, favourite=False, people=()):
@@ -157,9 +158,8 @@ def test_a_banked_reading_s_representative_leads_its_episode():
 def _open(tmp_path, **overrides):
     return open_banked_facts(
         **{
-            "bank_dir": tmp_path / "this-case",
             "attempts_dir": None,
-            "store_path": None,
+            "store": None,
             "audience": "family",
             "episode_cards": {},
             **overrides,
@@ -207,10 +207,11 @@ def test_a_refusal_cast_for_another_audience_is_not_carried_over(tmp_path):
 
 
 def test_a_picture_the_library_holds_is_refused_in_any_case_of_it(tmp_path, monkeypatch):
-    library = AudienceBank(tmp_path / AUDIENCE_BANK_NAME, answerer="full|reader-a")
+    library = AudienceBank(open_store(), answerer="full|reader-a")
     library.hold("body", {"verdict": "family_only", "finding": "nudity_shirtless_or_underwear"})
     library.hold("bath", {"verdict": "do_not_show", "finding": "private_activity"})
-    case = {"bank_dir": tmp_path / "some-other-case", "audience": "shareable"}
+    library.flush()
+    case = {"store": open_store(), "audience": "shareable"}
 
     assert _open(tmp_path, **case).refused_for_audience("bath")
     # WHY: a release that rewrites the audience prompt retires the text model's holds.
@@ -223,37 +224,23 @@ def test_a_picture_the_library_holds_is_refused_in_any_case_of_it(tmp_path, monk
     )
 
 
-def _write_readings(store: Path, rows):
-    connection = sqlite3.connect(store)
-    connection.execute(
-        "CREATE TABLE editorial_episode_readings (group_id TEXT, producer_key TEXT, "
-        "evidence_key TEXT, full_asset_ids TEXT, what_happened TEXT, representatives TEXT, "
-        "cull_decisions TEXT, answered_at TEXT)"
-    )
-    connection.executemany(
-        "INSERT INTO editorial_episode_readings VALUES (?, ?, ?, ?, ?, ?, ?, ?)", rows
-    )
-    connection.commit()
-    connection.close()
-
-
 @pytest.fixture
-def read_store(tmp_path):
-    store = tmp_path / "annotations.sqlite"
-    _write_readings(
+def read_store():
+    store = annotation_store()
+    add_rows(
         store,
-        [
-            (
-                "G01",
-                "a-model-that-is-not-the-rules-reader",
-                "E01",
-                '["lead","dropped"]',
-                "something happened",
-                '[{"asset_id":"lead","reason":"carries it"}]',
-                '[{"asset_id":"dropped","bucket":"alike"}]',
-                "2026-09-01",
-            )
-        ],
+        "editorial_episode_readings",
+        {
+            "group_id": "G01",
+            "producer_key": "a-model-that-is-not-the-rules-reader",
+            "evidence_key": "E01",
+            "full_asset_ids": '["lead","dropped"]',
+            "what_happened": "something happened",
+            "representatives": '[{"asset_id":"lead","reason":"carries it"}]',
+            "cull_decisions": '[{"asset_id":"dropped","bucket":"alike"}]',
+            "notable_moments": "[]",
+            "answered_at": "2026-09-01",
+        },
     )
     return store
 
@@ -263,7 +250,7 @@ def test_a_reading_by_another_producer_still_names_this_episode_s_representative
 ):
     cards = {"M01": SimpleNamespace(episode_id="G01", evidence_key="E01")}
 
-    banked = _open(tmp_path, store_path=read_store, episode_cards=cards)
+    banked = _open(tmp_path, store=read_store, episode_cards=cards)
 
     assert banked.episode_representatives("M01") == ("lead",)
 
@@ -271,7 +258,7 @@ def test_a_reading_by_another_producer_still_names_this_episode_s_representative
 def test_a_reading_s_culled_picture_is_culled_for_the_draft_too(tmp_path, read_store):
     cards = {"M01": SimpleNamespace(episode_id="G01", evidence_key="E01")}
 
-    banked = _open(tmp_path, store_path=read_store, episode_cards=cards)
+    banked = _open(tmp_path, store=read_store, episode_cards=cards)
 
     assert (banked.culled("dropped"), banked.culled("lead")) == (True, False)
 
@@ -281,7 +268,7 @@ def test_a_run_is_not_handed_its_own_reading_back_as_a_banked_one(tmp_path, read
 
     banked = _open(
         tmp_path,
-        store_path=read_store,
+        store=read_store,
         episode_cards=cards,
         own_producers=frozenset({"a-model-that-is-not-the-rules-reader"}),
     )
@@ -292,7 +279,7 @@ def test_a_run_is_not_handed_its_own_reading_back_as_a_banked_one(tmp_path, read
 def test_a_reading_of_other_evidence_is_not_this_episode_s_reading(tmp_path, read_store):
     cards = {"M01": SimpleNamespace(episode_id="G01", evidence_key="the-pictures-changed")}
 
-    banked = _open(tmp_path, store_path=read_store, episode_cards=cards)
+    banked = _open(tmp_path, store=read_store, episode_cards=cards)
 
     assert banked.episode_representatives("M01") == ()
 
@@ -300,6 +287,6 @@ def test_a_reading_of_other_evidence_is_not_this_episode_s_reading(tmp_path, rea
 def test_nothing_owns_an_episode_s_record_until_the_bank_carries_the_field(tmp_path, read_store):
     cards = {"M01": SimpleNamespace(episode_id="G01", evidence_key="E01")}
 
-    banked = _open(tmp_path, store_path=read_store, episode_cards=cards)
+    banked = _open(tmp_path, store=read_store, episode_cards=cards)
 
     assert banked.record_owning("M01") == ()

@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import calendar
 import logging
-import sqlite3
 import sys
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.analysis import llm_metrics
 from immich_memories.analysis.editorial_duration_advisory import editorial_duration_warning
@@ -32,11 +33,13 @@ from immich_memories.cli._helpers import (
 from immich_memories.cli._run_inputs import ResolvedRunInputs
 from immich_memories.cli._run_summary import render_run_summary
 from immich_memories.cli._run_timeline import configure_timeline, final_timeline
+from immich_memories.db import open_store
 from immich_memories.filename_builder import name_after_recipe
 from immich_memories.operations.auto_output import NOTHING_WORTH_A_FILM
 from immich_memories.operations.run_index import run_id_for_attempt
 from immich_memories.operations.storyboard import read_storyboard
 from immich_memories.timeperiod import DateRange
+from immich_memories.tracking.timed import timed
 
 logger = logging.getLogger(__name__)
 
@@ -181,24 +184,77 @@ def _finish_without_rendering(
     )
     print_generation_preview(preview)
     progress.update(task, completed=100)
-    attempt = _attempt_dir_of(pipeline_result)
-    if attempt is not None:
-        from immich_memories.operations.run_index import record_cut_run
-
-        run_id = record_cut_run(
-            config,
-            attempt,
-            memory_type=memory_type,
-            date_range=(date_range.start.date(), date_range.end.date()),
-            clips_selected=len(selected_clips),
-            target_duration_seconds=timeline_plan.target_duration,
-            **cut_run,
-        )
+    run_id = _keep_cut_as_run(
+        config,
+        _attempt_dir_of(pipeline_result),
+        memory_type=memory_type,
+        date_range=date_range,
+        clips_analyzed=len(assets) + len(photo_assets or []),
+        clips_selected=len(selected_clips),
+        target_seconds=timeline_plan.target_duration,
+        cut_run=cut_run,
+    )
+    if run_id:
         print_info(
             f"Kept the cut as run {run_id}: `runs story {run_id}` reads it, "
             f"`runs render {run_id}` renders it."
         )
     return output_path, should_upload, album_name
+
+
+def _keep_cut_as_run(
+    config: Config,
+    attempt: Path | None,
+    *,
+    memory_type: str | None,
+    date_range: DateRange,
+    clips_analyzed: int,
+    clips_selected: int,
+    target_seconds: float,
+    cut_run: dict,
+) -> str | None:
+    """Record a cut that stopped before rendering as a run with no film yet.
+
+    The CLI run opened before discovery is that run: it is described with the cut's scope,
+    completed without an output path (a memory is made by its film, not its cut), and linked to
+    the attempt the web client and `runs render` read. Without an observed run, a run of its
+    own is recorded instead.
+    """
+    from dataclasses import replace
+
+    from immich_memories.operations.run_index import record_cut_run, record_run_attempt
+    from immich_memories.tracking.run_observations import current_tracker
+
+    tracker = current_tracker()
+    if tracker is None or tracker.current_run is None:
+        if attempt is None:
+            return None
+        return record_cut_run(
+            config,
+            attempt,
+            memory_type=memory_type,
+            date_range=(date_range.start.date(), date_range.end.date()),
+            clips_selected=clips_selected,
+            target_duration_seconds=target_seconds,
+            **cut_run,
+        )
+    tracker.db.describe_run(
+        replace(
+            tracker.current_run,
+            memory_type=memory_type,
+            memory_key=cut_run.get("memory_key"),
+            memory_people=tuple(cut_run.get("people") or ()),
+            person_name=cut_run.get("person_name"),
+            source=cut_run.get("source") or "manual",
+            date_range_start=date_range.start.date(),
+            date_range_end=date_range.end.date(),
+            target_duration_seconds=round(target_seconds),
+        )
+    )
+    tracker.complete_run(clips_analyzed=clips_analyzed, clips_selected=clips_selected)
+    if attempt is not None:
+        record_run_attempt(tracker.run_id, attempt, "", store=tracker.db.store)
+    return tracker.run_id
 
 
 def _finish_preparation(
@@ -219,19 +275,15 @@ def _finish_preparation(
     import click
 
     from immich_memories.cli._generation_preview import music_policy
+    from immich_memories.db import resolve_location
 
-    store = config.editorial.resolve_annotation_database(config.cache.cache_path)
+    store = resolve_location(config)
     click.echo("Dry-run preparation (selection was not run; no video will be created)")
     click.echo(f"Memory: {context.product}")
     click.echo(f"Date range: {context.label}")
     click.echo(f"Candidates: {len(assets)} video, {len(photos)} photo")
     click.echo(f"Target duration: {context.target_seconds:.1f}s")
-    readiness = (
-        "store available; coverage checked at selection"
-        if store.is_file()
-        else "preparation required"
-    )
-    click.echo(f"Annotations: {readiness}")
+    click.echo(f"Annotations: in the store at {store}; coverage checked at selection")
     click.echo("Selection: pending (use --no-render to run story-first selection)")
     click.echo(
         f"Canvas: {output_canvas.width}x{output_canvas.height} ({output_canvas.orientation})"
@@ -251,7 +303,7 @@ class _AttemptPhaseReporter:
         from immich_memories.automation.state_store import AutomationStateStore
 
         self._attempt_id = attempt_id
-        self._store = AutomationStateStore(config.cache.database_path) if attempt_id else None
+        self._store = AutomationStateStore(open_store(config)) if attempt_id else None
         self._progress = progress
         self._task = task
         self._started = time.monotonic()
@@ -265,7 +317,7 @@ class _AttemptPhaseReporter:
         if self._store is not None and self._attempt_id is not None:
             try:
                 self._store.update_phase(self._attempt_id, event)
-            except (KeyError, OSError, RuntimeError, sqlite3.Error):
+            except (KeyError, OSError, RuntimeError, SQLAlchemyError):
                 logging.getLogger(__name__).warning(
                     "Could not persist operational phase %s", phase.value
                 )
@@ -318,7 +370,29 @@ class _SourceProgressReporter:
         )
 
 
+def _keep_cut_titles(
+    pipeline_result: Any,
+    title: str | None,
+    subtitle: str | None,
+    source: Any,
+    preset_params: dict | None,
+) -> None:
+    """A render made later from this cut (`runs render`, the web client) names it the same."""
+    if (cut_attempt := _attempt_dir_of(pipeline_result)) is None:
+        return
+    from immich_memories.processing.render_inputs import write_cut_titles
+
+    write_cut_titles(
+        cut_attempt,
+        title=title,
+        subtitle=subtitle,
+        source=source,
+        preset_params=preset_params or {},
+    )
+
+
 @llm_metrics.counted
+@timed("pipeline")
 def run_pipeline_and_generate(
     *,
     assets: list,
@@ -368,6 +442,9 @@ def run_pipeline_and_generate(
 
     Returns (result_path, should_upload, album_name).
     """
+    from immich_memories.tracking.report_context import record_assets
+
+    record_assets([*assets, *(photo_assets or [])])
     from immich_memories.analysis.editorial_runtime import build_smart_pipeline
     from immich_memories.analysis.smart_pipeline import PipelineConfig
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
@@ -599,6 +676,9 @@ def run_pipeline_and_generate(
         memory_preset_params=resolved.preset_params,
         album_lookup=album_of_the_cut,
     )
+    _keep_cut_titles(
+        pipeline_result, resolved_title, resolved_subtitle, title_source, resolved.preset_params
+    )
 
     if _stops_before_rendering(dry_run=dry_run, no_render=no_render):
         return _finish_without_rendering(
@@ -751,7 +831,10 @@ def _send_notification(
     ):
         return
     try:
-        from immich_memories.automation.notifications import notify_job_complete
+        from immich_memories.automation.notifications import (
+            notification_store,
+            notify_job_complete,
+        )
 
         notify_job_complete(
             memory_type=memory_type or "unknown",
@@ -760,7 +843,7 @@ def _send_notification(
             output_path=output_path,
             error=error,
             urls=notif.urls,
-            db_path=config.cache.database_path,
+            store=notification_store(config),
             attach_thumbnail=notif.attach_thumbnail,
             cooldown_hours=notif.cooldown_hours,
         )

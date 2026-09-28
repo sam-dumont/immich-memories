@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import io
 import os
-import sqlite3
 import tempfile
-import time
 from collections.abc import Callable, Iterator, Mapping, Sequence
-from contextlib import closing, contextmanager, suppress
-from dataclasses import dataclass, field
+from contextlib import contextmanager, suppress
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Any
 
+import sqlalchemy as sa
 from PIL import Image
 
 from immich_memories.analysis.editorial_clip_frames import (
@@ -28,22 +28,22 @@ from immich_memories.analysis.editorial_preparation_model_facts import (
     CLIP_COMPANION,
     acquire_clip_companions,
     acquire_model_facts,
+    carry_still_exposure,
     deferred_exposure,
 )
 from immich_memories.analysis.editorial_preparation_motion import (
-    MOTION_PRODUCER,
+    MotionScope,
     MotionSource,
-    banked_residuals,
-    missing_motion,
-    motion_sources,
+    motion_producer,
     playback_sampler,
     prepare_motion_lines,
     seat_asker,
 )
 from immich_memories.analysis.editorial_preparation_pixels import (
     PRODUCER_KEY,
+    pixel_row,
     refresh_threshold,
-    remember_pixel,
+    remember_pixels,
 )
 from immich_memories.analysis.editorial_preparation_remote import prepare_remote_facts
 from immich_memories.analysis.editorial_video_motion import (
@@ -53,23 +53,28 @@ from immich_memories.analysis.editorial_video_motion import (
     bank_video_motion,
     videos_owing_motion,
 )
+from immich_memories.analysis.llm_caption_identity import llm_caption_identity
+from immich_memories.analysis.llm_providers import resolved_llm_config
 from immich_memories.analysis.remote_facts import RemoteFactsError
 from immich_memories.analysis.subject_framing import FaceBox
 from immich_memories.api.models import Asset
 from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
 from immich_memories.config_models_inference import InferenceConfig
+from immich_memories.config_models_llm import LLMConfig
 from immich_memories.config_models_triage import TriageConfig
+from immich_memories.db import Store
+from immich_memories.db.tables import pixel_facts_thresholds
 from immich_memories.operations.cancellation import check_cancelled as current_check_cancelled
-from immich_memories.store.caption_provenance import origins_for
+from immich_memories.store.caption_provenance import CaptionOrigin, origins_for
+from immich_memories.store.caption_selection import conflicting_caption_ids
 from immich_memories.store.editorial_preparation import (
     faces_unread,
     heads_missing_for,
-    initialize,
     missing_facts,
-    private_database_path,
     remember_assets,
     remember_faces,
 )
+from immich_memories.tracking import timing
 
 
 @dataclass(frozen=True)
@@ -178,6 +183,8 @@ class PreparationPorts:
 
 
 PREVIEW_UNAVAILABLE = "preview unavailable at Immich (HTTP 404)"
+# Pictures per write while a producer banks as it goes: a crash costs at most this many.
+BANK_BATCH = 256
 
 
 def _preview_refused(exc: BaseException) -> bool:
@@ -248,7 +255,7 @@ class _Acquisition:
     preparation_config: EditorialPreparationConfig
     triage_config: TriageConfig
     inference_config: InferenceConfig
-    store_path: Path
+    store: Store
     preview_for: Callable[[str], bytes]
     check: Callable[[], None]
     report: Callable[[str, int, int], None]
@@ -257,6 +264,7 @@ class _Acquisition:
     # `report` is also handed work in batches they cannot name.
     note: Callable[[str], None]
     failures: dict[str, str]
+    llm_config: LLMConfig | None = None
     # Sources the server refused by name, kept apart from `failures` so the
     # completeness check never reads them as a producer that went down.
     unservable: dict[str, str] = field(default_factory=dict)
@@ -277,6 +285,9 @@ class _Acquisition:
         if still_missing := [a for a in preview_missing if a not in self.unservable]:
             after["preview"] = tuple(still_missing)
         demanded = _demanded_producers(self.preparation_config)
+        if collected := timing.active():
+            collected.diagnostics["cache"] = "cold" if any(produced.values()) else "warm"
+            collected.diagnostics["missing_capabilities"] = list(self.failures)
         return PreparationResult(
             requested,
             {key: value for key, value in after.items() if demanded(key)},
@@ -293,12 +304,12 @@ class _Acquisition:
 
     @contextmanager
     def timed(self, stage: str, pictures: int) -> Iterator[None]:
-        started = time.perf_counter()
-        try:
-            yield
-        finally:
-            self.seconds[stage] = self.seconds.get(stage, 0.0) + time.perf_counter() - started
-            self.pictures[stage] = self.pictures.get(stage, 0) + pictures
+        with timing.span(f"preparation.{stage}", items=pictures) as measured:
+            try:
+                yield
+            finally:
+                self.pictures[stage] = self.pictures.get(stage, 0) + pictures
+        self.seconds[stage] = self.seconds.get(stage, 0.0) + measured.duration
 
     def previews(
         self, ids: Sequence[str], cache_path: Path, fetch_preview
@@ -323,19 +334,27 @@ class _Acquisition:
                 self.report("previews", index, len(ids))
         return paths, unusable
 
-    def pixels(self, connection: sqlite3.Connection, asset_ids: Sequence[str]) -> None:
+    def pixels(self, asset_ids: Sequence[str]) -> None:
+        measured: list[dict[str, Any]] = []
         with self.timed("pixels", len(asset_ids)):
-            for index, asset_id in enumerate(asset_ids, 1):
-                self.check()
-                try:
-                    remember_pixel(connection, asset_id, self.preview_for(asset_id))
-                    self.note(asset_id)
-                except Exception as exc:
-                    self.failures[f"pixel:{asset_id}"] = f"{type(exc).__name__}: {exc}"
-                self.report("pixels", index, len(asset_ids))
-        refresh_threshold(connection)
+            try:
+                for index, asset_id in enumerate(asset_ids, 1):
+                    self.check()
+                    try:
+                        measured.append(pixel_row(asset_id, self.preview_for(asset_id)))
+                        self.note(asset_id)
+                    except Exception as exc:
+                        self.failures[f"pixel:{asset_id}"] = f"{type(exc).__name__}: {exc}"
+                    if len(measured) >= BANK_BATCH:
+                        remember_pixels(self.store, measured)
+                        measured.clear()
+                    self.report("pixels", index, len(asset_ids))
+            finally:
+                # A stop keeps what was measured, as a per-picture commit kept it.
+                remember_pixels(self.store, measured)
+        refresh_threshold(self.store)
 
-    def faces(self, connection: sqlite3.Connection, source: Sequence[Asset], fetch_faces) -> None:
+    def faces(self, source: Sequence[Asset], fetch_faces) -> None:
         """Bank where each face sits in the pictures that name somebody.
 
         Only those pictures: a frame naming nobody has no subject to be framed well
@@ -344,16 +363,22 @@ class _Acquisition:
         """
         if fetch_faces is None:
             return
-        asset_ids = faces_unread(connection, _naming_somebody(source))
+        asset_ids = faces_unread(self.store, _naming_somebody(source))
+        read: dict[str, Sequence[FaceBox]] = {}
         with self.timed("faces", len(asset_ids)):
-            for index, asset_id in enumerate(asset_ids, 1):
-                self.check()
-                try:
-                    remember_faces(connection, asset_id, fetch_faces(asset_id))
-                except Exception as exc:
-                    self.failures[f"faces:{asset_id}"] = f"{type(exc).__name__}: {exc}"
-                self.report("faces", index, len(asset_ids))
-        connection.commit()
+            try:
+                for index, asset_id in enumerate(asset_ids, 1):
+                    self.check()
+                    try:
+                        read[asset_id] = fetch_faces(asset_id)
+                    except Exception as exc:
+                        self.failures[f"faces:{asset_id}"] = f"{type(exc).__name__}: {exc}"
+                    if len(read) >= BANK_BATCH:
+                        remember_faces(self.store, read)
+                        read.clear()
+                    self.report("faces", index, len(asset_ids))
+            finally:
+                remember_faces(self.store, read)
 
     def public_heads(self, asset_ids: Sequence[str], head_versions: Mapping[str, str]) -> None:
         self.check()
@@ -361,7 +386,7 @@ class _Acquisition:
             with self.timed("public_heads", len(asset_ids)):
                 self.providers.heads(
                     asset_ids=asset_ids,
-                    store_path=self.store_path,
+                    store=self.store,
                     bundle_path=self.preparation_config.head_bundle_path,
                     encoder_path=self.triage_config.encoder_path,
                     head_versions=head_versions,
@@ -389,7 +414,7 @@ class _Acquisition:
             with self.timed("remote_facts", len(pending)):
                 charged = prepare_remote_facts(
                     pending=pending,
-                    store_path=self.store_path,
+                    store=self.store,
                     config=self.inference_config,
                     preview_for=self.preview_for,
                     check_cancelled=self.check,
@@ -423,7 +448,7 @@ class _Acquisition:
             with self.timed("detectors", demanded):
                 errors = self.providers.detectors(
                     pending=pending,
-                    store_path=self.store_path,
+                    store=self.store,
                     preview_paths=preview_paths,
                     frame_paths=frame_paths,
                     python=self.preparation_config.detector_python,
@@ -446,7 +471,7 @@ class _Acquisition:
             with self.timed(CLIP_FRAMES_HEAD, len(frame_paths)):
                 errors = self.providers.clip_frames(
                     frame_paths=frame_paths,
-                    store_path=self.store_path,
+                    store=self.store,
                     bundle_path=self.preparation_config.head_bundle_path,
                     encoder_path=self.triage_config.encoder_path,
                     check_cancelled=self.check,
@@ -465,18 +490,23 @@ class _Acquisition:
         try:
             with self.timed(VIDEO_MOTION, len(frame_paths)):
                 errors = self.providers.video_motion(
-                    store_path=self.store_path, videos=videos, frame_paths=frame_paths
+                    store=self.store, videos=videos, frame_paths=frame_paths
                 )
             self.failures.update({f"{VIDEO_MOTION}:{k}": v for k, v in errors.items()})
         except Exception as exc:
             self.failures[VIDEO_MOTION] = f"{type(exc).__name__}: {exc}"
 
-    def captions(self, connection: sqlite3.Connection, asset_ids: Sequence[str]) -> None:
+    def captions(self, asset_ids: Sequence[str]) -> None:
         self.check()
         try:
+            options = {}
+            if self.preparation_config.caption_provider == "llm":
+                if self.llm_config is None:
+                    raise ValueError("LLM captioning needs the configured LLM")
+                options = {"llm_config": self.llm_config}
             with self.timed("captions", len(asset_ids)):
                 errors = self.providers.captions(
-                    connection=connection,
+                    store=self.store,
                     asset_ids=tuple(asset_ids),
                     preview_for=self.preview_for,
                     base_url=self.preparation_config.caption_base_url,
@@ -486,38 +516,62 @@ class _Acquisition:
                     concurrency=self.preparation_config.caption_concurrency,
                     check_cancelled=self.check,
                     progress=self.report,
+                    **options,
                 )
             self.failures.update({f"caption:{key}": value for key, value in errors.items()})
         except PermissionError as exc:
             # The endpoint answered and asked for a credential; repointing the URL is not the fix.
             self.failures["captions"] = str(exc)
         except Exception as exc:
-            self.failures["captions"] = (
-                f"{type(exc).__name__}: {exc}; configure caption_base_url with the compact-v3 public model endpoint"
+            hint = (
+                "check the configured LLM's image and structured-output support"
+                if self.preparation_config.caption_provider == "llm"
+                else "configure caption_base_url with the compact-v3 public model endpoint"
             )
+            self.failures["captions"] = f"{type(exc).__name__}: {exc}; {hint}"
 
     def motion(
         self,
-        connection: sqlite3.Connection,
+        store: Store,
         sources: Sequence[MotionSource],
         read_playback: Callable[[str, int, int], tuple[bytes, int]],
     ) -> None:
         self.check()
         config = self.preparation_config
         try:
+            llm = None
+            options = {}
+            if config.caption_provider == "llm":
+                if self.llm_config is None:
+                    raise ValueError("LLM captioning needs the configured LLM")
+                llm = resolved_llm_config(self.llm_config)
+                options = {
+                    "producer": motion_producer(
+                        llm_caption_identity(llm, config.caption_artifact_id)
+                    ),
+                    "caption_origin": asdict(
+                        CaptionOrigin(
+                            model_id=llm.model,
+                            endpoint=llm.base_url,
+                            artifact_id=config.caption_artifact_id,
+                        )
+                    ),
+                }
             with self.timed("motion", len(sources)):
                 outcome = self.providers.motion(
-                    connection=connection,
+                    store=store,
                     sources=tuple(sources),
                     sample=playback_sampler(read_playback),
                     ask=seat_asker(
                         config.caption_base_url,
                         api_key=config.caption_api_key,
                         timeout=config.caption_timeout_seconds,
+                        llm_config=llm,
                     ),
                     concurrency=config.caption_concurrency,
                     check_cancelled=self.check,
                     progress=self.report,
+                    **options,
                 )
         except PermissionError as exc:
             self.failures["motion"] = str(exc)
@@ -536,12 +590,13 @@ class _Acquisition:
 def prepare_editorial_annotations(
     *,
     assets: Sequence[Asset],
-    store_path: Path,
+    store: Store,
     thumbnail_cache,
     preparation_config: EditorialPreparationConfig,
     triage_config: TriageConfig,
     head_versions: Mapping[str, str],
     inference_config: InferenceConfig | None = None,
+    llm_config: LLMConfig | None = None,
     description_model: str = DESCRIPTION_MODEL,
     pixel_producer_key: str = PRODUCER_KEY,
     fetch_preview: Callable[[str], bytes | None] | None = None,
@@ -565,7 +620,6 @@ def prepare_editorial_annotations(
     ``inspect_clips=False`` defers playback and video exposure until candidate inspection.
     """
     cache_path = Path(getattr(thumbnail_cache, "cache_dir", thumbnail_cache))
-    store_path = Path(store_path)
     source = tuple({asset.id: asset for asset in assets}.values())
     if not inspect_clips:
         read_playback = None
@@ -575,7 +629,8 @@ def prepare_editorial_annotations(
         preparation_config=preparation_config,
         triage_config=triage_config,
         inference_config=inference_config or InferenceConfig(),
-        store_path=store_path,
+        llm_config=llm_config,
+        store=store,
         preview_for=lambda asset_id: cached_preview(cache_path, asset_id),
         check=check_cancelled or current_check_cancelled,
         report=progress or _noop_progress,
@@ -583,7 +638,6 @@ def prepare_editorial_annotations(
         failures={},
     )
     stage.check()
-    store_path.parent.mkdir(parents=True, exist_ok=True)
     preview_paths, preview_missing = stage.previews(ids, cache_path, fetch_preview)
     # This stage writes into the cache layout directly rather than through `put`,
     # so the periodic check `put` performs never sees the previews a scope brings
@@ -592,109 +646,70 @@ def prepare_editorial_annotations(
     enforce_budget = getattr(thumbnail_cache, "enforce_budget", None)
     if callable(enforce_budget):
         enforce_budget()
-    with closing(sqlite3.connect(private_database_path(store_path), timeout=60)) as connection:
 
-        def outstanding() -> tuple[dict[str, tuple[str, ...]], tuple[str, ...]]:
-            missing, unavailable = missing_facts(
-                connection,
-                ids,
-                description_model=description_model,
-                head_versions=head_versions,
-                pixel_producer_key=pixel_producer_key,
-                preview_for=stage.preview_for,
-            )
-            return (missing if inspect_clips else deferred_exposure(missing, source)), unavailable
-
-        initialize(connection)
-        remember_assets(connection, source)
-        _ensure_sharpness_threshold(connection, pixel_producer_key)
-        before, _ = outstanding()
-        connection.commit()
-        available = set(preview_paths)
-
-        def pending(key: str) -> tuple[str, ...]:
-            return tuple(asset_id for asset_id in before.get(key, ()) if asset_id in available)
-
-        _acquire_pixels(
-            stage, connection, pending(f"pixel:{pixel_producer_key}"), pixel_producer_key
+    def outstanding() -> tuple[dict[str, tuple[str, ...]], tuple[str, ...]]:
+        missing, unavailable = missing_facts(
+            store,
+            ids,
+            description_model=description_model,
+            head_versions=head_versions,
+            pixel_producer_key=pixel_producer_key,
+            preview_for=stage.preview_for,
         )
-        stage.faces(connection, source, fetch_faces)
-        if preparation_config.demands_models:
-            frames = DetectorFrames(source, read_playback)
-            clips = heads_missing_for(
-                connection, sorted(frames.video_ids), CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
-            )
-            connection.commit()
-            motion_owed = videos_owing_motion(connection, source, frames.video_ids)
-            acquire_model_facts(
-                stage,
-                before,
-                ids,
-                available,
-                pending,
-                head_versions,
-                preview_paths,
-                frames,
-                clips,
-                motion_owed,
-            )
-            acquire_clip_companions(
-                stage, connection, frames, cache_path, fetch_preview, head_versions
-            )
-        if preparation_config.demands_captions:
-            _acquire_captions(
-                stage, connection, pending(f"description:{description_model}"), description_model
-            )
-        motion = _MotionScope(
-            source, store_path, read_playback, demanded=preparation_config.demands_captions
+        return (missing if inspect_clips else deferred_exposure(missing, source)), unavailable
+
+    remember_assets(store, source)
+    _ensure_sharpness_threshold(store, pixel_producer_key)
+    carry_still_exposure(store, source, head_versions)
+    before, _ = outstanding()
+    available = set(preview_paths)
+
+    def pending(key: str) -> tuple[str, ...]:
+        return tuple(asset_id for asset_id in before.get(key, ()) if asset_id in available)
+
+    _acquire_pixels(stage, pending(f"pixel:{pixel_producer_key}"), pixel_producer_key)
+    stage.faces(source, fetch_faces)
+    if preparation_config.demands_models:
+        frames = DetectorFrames(source, read_playback)
+        clips = heads_missing_for(
+            store, sorted(frames.video_ids), CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
         )
-        motion.acquire(stage, connection, before)
-        stage.check()
-        after, _unavailable = outstanding()
-        motion.report(connection, after)
-        return stage.result(
+        motion_owed = videos_owing_motion(store, source, frames.video_ids)
+        acquire_model_facts(
+            stage,
             before,
-            after,
-            preview_missing,
-            requested=len(ids),
-            caption_provenance=origins_for(connection, ids, description_model)
-            if preparation_config.demands_captions
-            else {},
+            ids,
+            available,
+            pending,
+            head_versions,
+            preview_paths,
+            frames,
+            clips,
+            motion_owed,
         )
-
-
-class _MotionScope:
-    """The videos this pass owes a motion line: true videos, and Live Photos that play.
-
-    Nothing is owed without a playback reader, or when the tier has no caption seat.
-    """
-
-    key = f"motion:{MOTION_PRODUCER}"
-
-    def __init__(
-        self,
-        assets: Sequence[Asset],
-        store_path: Path,
-        read_playback: Callable[[str, int, int], tuple[bytes, int]] | None,
-        *,
-        demanded: bool,
-    ) -> None:
-        self._read_playback = read_playback
-        self._sources = (
-            motion_sources(assets, residual_of=banked_residuals(store_path))
-            if read_playback and demanded
-            else ()
-        )
-
-    def acquire(self, stage: _Acquisition, connection: sqlite3.Connection, before: dict) -> None:
-        owed = missing_motion(connection, self._sources) if self._sources else ()
-        if owed and self._read_playback is not None:
-            before[self.key] = tuple(source.asset_id for source in owed)
-            stage.motion(connection, owed, self._read_playback)
-
-    def report(self, connection: sqlite3.Connection, after: dict) -> None:
-        if self._sources and (owed := missing_motion(connection, self._sources)):
-            after[self.key] = tuple(source.asset_id for source in owed)
+        acquire_clip_companions(stage, frames, cache_path, fetch_preview, head_versions)
+    if preparation_config.demands_captions:
+        _acquire_captions(stage, pending(f"description:{description_model}"), description_model)
+    motion = MotionScope(
+        source,
+        store,
+        read_playback,
+        demanded=preparation_config.demands_captions,
+        producer=motion_producer(description_model),
+    )
+    motion.acquire(stage.motion, store, before)
+    stage.check()
+    after, _unavailable = outstanding()
+    motion.report(store, after)
+    return stage.result(
+        before,
+        after,
+        preview_missing,
+        requested=len(ids),
+        caption_provenance=origins_for(store, ids, description_model)
+        if preparation_config.demands_captions
+        else {},
+    )
 
 
 def _without(
@@ -721,20 +736,20 @@ def _demanded_producers(
     return demanded
 
 
-def _ensure_sharpness_threshold(connection: sqlite3.Connection, pixel_producer_key: str) -> None:
+def _ensure_sharpness_threshold(store: Store, pixel_producer_key: str) -> None:
     if pixel_producer_key != PRODUCER_KEY:
         return
-    banked = connection.execute(
-        "SELECT 1 FROM pixel_facts_thresholds WHERE name='sharpness_p10' AND producer_key=?",
-        (PRODUCER_KEY,),
-    ).fetchone()
+    t = pixel_facts_thresholds
+    with store.connect() as connection:
+        banked = connection.execute(
+            sa.select(t.c.name).where(t.c.name == "sharpness_p10", t.c.producer_key == PRODUCER_KEY)
+        ).first()
     if not banked:
-        refresh_threshold(connection)
+        refresh_threshold(store)
 
 
 def _acquire_pixels(
     stage: _Acquisition,
-    connection: sqlite3.Connection,
     asset_ids: Sequence[str],
     pixel_producer_key: str,
 ) -> None:
@@ -745,51 +760,35 @@ def _acquire_pixels(
             f"no packaged producer for {pixel_producer_key}; accepted producer is {PRODUCER_KEY}"
         )
         return
-    stage.pixels(connection, asset_ids)
-
-
-def _conflicting_caption_rows(
-    connection: sqlite3.Connection, asset_id: str, description_model: str
-) -> bool:
-    touched = connection.execute(
-        "SELECT 1 FROM descriptions WHERE asset_id=? AND model=? UNION ALL "
-        "SELECT 1 FROM description_fields WHERE asset_id=? AND model=?",
-        (asset_id, description_model, asset_id, description_model),
-    ).fetchone()
-    outcome_table = connection.execute(
-        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='description_unavailable'"
-    ).fetchone()
-    stale = (
-        outcome_table
-        and connection.execute(
-            "SELECT 1 FROM description_unavailable WHERE asset_id=? AND model=?",
-            (asset_id, description_model),
-        ).fetchone()
-    )
-    return bool(touched or stale)
+    stage.pixels(asset_ids)
 
 
 def _acquire_captions(
     stage: _Acquisition,
-    connection: sqlite3.Connection,
     asset_ids: Sequence[str],
     description_model: str,
 ) -> None:
     if not asset_ids:
         return
-    if description_model != DESCRIPTION_MODEL:
+    accepted = DESCRIPTION_MODEL
+    if stage.preparation_config.caption_provider == "llm" and stage.llm_config is not None:
+        accepted = llm_caption_identity(
+            stage.llm_config, stage.preparation_config.caption_artifact_id
+        )
+    if description_model != accepted:
         stage.failures["caption_provider"] = (
-            f"no packaged producer for {description_model}; accepted producer is {DESCRIPTION_MODEL}"
+            f"no packaged producer for {description_model}; accepted producer is {accepted}"
         )
         return
     # Do not pay for captions that would collide with malformed immutable rows.
+    conflicting = conflicting_caption_ids(stage.store, asset_ids, description_model)
     clean_ids = []
     for asset_id in asset_ids:
-        if _conflicting_caption_rows(connection, asset_id, description_model):
+        if asset_id in conflicting:
             stage.failures[f"caption:{asset_id}"] = (
                 "invalid or conflicting existing compact caption evidence; store repair is required"
             )
         else:
             clean_ids.append(asset_id)
     if clean_ids:
-        stage.captions(connection, clean_ids)
+        stage.captions(clean_ids)

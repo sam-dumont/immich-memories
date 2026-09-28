@@ -30,6 +30,7 @@ from immich_memories.store.episode_readings import (
     EpisodeReadingStore,
     EpisodeRepresentative,
 )
+from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 
 
@@ -105,7 +106,7 @@ def test_scoped_episode_reuses_full_membership_reading_without_a_model_call(
         ),
         cull_decisions=(),
     )
-    store = EpisodeReadingStore(tmp_path / "annotations.sqlite")
+    store = EpisodeReadingStore(annotation_store())
     store.remember((reading,))
 
     def forbidden_request(_prompt: str) -> str:
@@ -166,7 +167,7 @@ def test_a_cold_episode_is_read_once_then_reused_from_the_bank(tmp_path: Path) -
           }]
         }"""
 
-    store = EpisodeReadingStore(tmp_path / "annotations.sqlite")
+    store = EpisodeReadingStore(annotation_store())
     first = CachedTextEpisodeReader(
         store=store,
         producer=producer,
@@ -251,7 +252,7 @@ def test_cold_episodes_are_packed_below_the_serialized_prompt_limit(
             }
         )
 
-    store = EpisodeReadingStore(tmp_path / "annotations.sqlite")
+    store = EpisodeReadingStore(annotation_store())
     announced: list[StageUpdate] = []
     with announcing_stages(announced.append):
         first = CachedTextEpisodeReader(
@@ -340,7 +341,7 @@ def test_an_oversized_episode_is_paged_then_banked_as_one_full_reading(
             }
         )
 
-    store = EpisodeReadingStore(tmp_path / "annotations.sqlite")
+    store = EpisodeReadingStore(annotation_store())
     result = CachedTextEpisodeReader(
         store=store,
         producer=producer,
@@ -424,7 +425,7 @@ def test_episode_pages_shrink_to_the_serialized_prompt_limit(tmp_path: Path) -> 
         )
 
     result = CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(annotation_store()),
         producer=producer,
         annotations=lines,
         requester=requester,
@@ -492,7 +493,7 @@ def test_an_episode_omitted_from_a_pack_is_reasked_alone(
         )
 
     result = CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(annotation_store()),
         producer=producer,
         annotations=lines,
         requester=requester,
@@ -536,7 +537,7 @@ def test_an_invalid_episode_answer_retains_full_membership_and_is_not_banked(
         annotation_renderer_version="annotation-line-v1",
         annotation_versions=("description:student-v1",),
     )
-    store = EpisodeReadingStore(tmp_path / "annotations.sqlite")
+    store = EpisodeReadingStore(annotation_store())
     invalid_prompts: list[str] = []
 
     def invalid_requester(prompt: str) -> str:
@@ -622,7 +623,7 @@ def test_one_schema_envelope_remains_usable_when_followed_by_model_prose(
     answer = envelope + "\nAdditional prose that was not requested."
 
     result = CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(annotation_store()),
         producer=producer,
         annotations=lines,
         requester=lambda _prompt: answer,
@@ -685,7 +686,7 @@ def test_invalid_or_conflicting_cull_rows_are_discarded_without_becoming_cuts(
     )
 
     result = CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(annotation_store()),
         producer=producer,
         annotations=lines,
         requester=lambda _prompt: answer,
@@ -739,7 +740,7 @@ def test_invalid_representative_rows_are_discarded_when_one_grounded_row_survive
     )
 
     result = CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(annotation_store()),
         producer=EpisodeReadingProducer(
             model_id="qwen3-vl-30b",
             prompt_version="episode-prompt-v1",
@@ -808,7 +809,7 @@ def test_output_packing_and_transport_budget_share_one_bounded_estimate(tmp_path
             )
 
     result = CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(annotation_store()),
         producer=EpisodeReadingProducer(
             model_id="qwen3-vl-30b",
             prompt_version="episode-prompt-v1",
@@ -858,7 +859,7 @@ def test_a_provider_failure_retains_the_episode_and_leaves_the_bank_cold(
         annotation_renderer_version="annotation-line-v1",
         annotation_versions=("description:student-v1",),
     )
-    store = EpisodeReadingStore(tmp_path / "annotations.sqlite")
+    store = EpisodeReadingStore(annotation_store())
 
     failed = CachedTextEpisodeReader(
         store=store,
@@ -920,7 +921,7 @@ def test_an_episode_with_incomplete_annotations_is_retained_without_being_sent(
         raise AssertionError("an incomplete episode must not be sent as complete evidence")
 
     result = CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(annotation_store()),
         producer=producer,
         annotations=_AnnotationLines({"in-scope": "friend at a party"}),
         requester=forbidden_request,
@@ -965,7 +966,7 @@ def test_text_cull_evidence_uses_the_existing_favourite_and_trace_policy(
         annotation_versions=("description:student-v1",),
     )
     episode_result = CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(annotation_store()),
         producer=producer,
         annotations=_AnnotationLines(
             {
@@ -1041,7 +1042,7 @@ def test_text_representatives_drive_structure_without_reducing_the_reservoir(
         annotation_versions=("description:student-v1",),
     )
     episode_result = CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(annotation_store()),
         producer=producer,
         annotations=_AnnotationLines(
             {
@@ -1110,7 +1111,7 @@ def test_a_swallowed_provider_failure_names_the_rejecting_check_once_in_the_log(
 
     with caplog.at_level(_logging.WARNING, logger="immich_memories.analysis.text_episode_reader"):
         result = CachedTextEpisodeReader(
-            store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+            store=EpisodeReadingStore(annotation_store()),
             producer=producer,
             annotations=lines,
             requester=lambda _prompt: (_ for _ in ()).throw(
@@ -1215,7 +1216,7 @@ def test_a_cold_episode_can_be_read_from_a_provider_batch(tmp_path: Path) -> Non
         ),
     )
     result = CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(annotation_store()),
         producer=producer,
         annotations=lines,
         requester=SyncTextPromptRequester(
@@ -1278,7 +1279,7 @@ def test_a_reading_names_the_moment_worth_a_record_and_it_survives_the_cull(
             }
         )
 
-    store = EpisodeReadingStore(tmp_path / "annotations.sqlite")
+    store = EpisodeReadingStore(annotation_store())
     reading = (
         CachedTextEpisodeReader(store=store, producer=producer, annotations=lines, requester=answer)
         .read(projections)

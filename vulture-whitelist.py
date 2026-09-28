@@ -59,7 +59,6 @@ output_names  # unused variable (src/immich_memories/triage/encoder.py:33)
 # C module reads when it materialises rows.
 _.row_factory  # unused attribute (src/immich_memories/automation/notification_state.py:103)
 _.row_factory  # unused attribute (src/immich_memories/automation/state_store.py:64)
-_.row_factory  # unused attribute (src/immich_memories/cache/asset_score_cache.py:32)
 _.row_factory  # unused attribute (src/immich_memories/cache/database.py:36)
 _.row_factory  # unused attribute (src/immich_memories/operations/storage_report.py:36)
 _.row_factory  # unused attribute (src/immich_memories/tracking/run_database.py:72)
@@ -113,8 +112,14 @@ unreadable_or_omitted_pages  # unused variable (src/immich_memories/analysis/tex
 get_active_display  # unused function (src/immich_memories/cli/_helpers.py:38)
 _.render_final  # unused method (src/immich_memories/cli/_live_display.py:343)
 validate_image_path  # unused function (src/immich_memories/security.py:178)
-_.complete_run  # unused method (src/immich_memories/tracking/run_tracker.py:212)
-_.cancel_run  # unused method (src/immich_memories/tracking/run_tracker.py:378)
 PACK_DIM  # unused variable (src/immich_memories/triage/encoder.py:23)
 reset_rate_limiter  # unused function (src/immich_memories/ui/auth.py:63)
 reset_oidc_client  # unused function (src/immich_memories/ui/auth_oidc.py:144)
+
+# Serialized by FastAPI; the Svelte report preview uses this to offer caption opt-in.
+has_flagged_photos
+
+# PEP 562: Python calls a module-level __getattr__ for names the module lacks.
+# tracking/__init__.py uses it to re-export lazily, so timing spans never load the
+# run database (and SQLAlchemy) into the API client and the renderer.
+__getattr__  # unused function (src/immich_memories/tracking/__init__.py:43)

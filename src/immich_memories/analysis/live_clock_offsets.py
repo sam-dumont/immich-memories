@@ -10,17 +10,16 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import sqlite3
 from collections.abc import Callable, Mapping, Sequence
-from contextlib import closing
-from pathlib import Path
 
 import httpx
 import numpy as np
+from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.api.models import Asset
+from immich_memories.db import Store
 from immich_memories.processing.stitch_alignment import (
     OFFSET_METHOD,
     CompanionUndecodable,
@@ -28,10 +27,8 @@ from immich_memories.processing.stitch_alignment import (
     pairwise_clock_offset,
 )
 from immich_memories.store.cut_measurements import (
-    banked_clock_offsets,
-    open_cut_measurements,
-    reading_cut_measurements,
-    remember_clock_offset,
+    PendingMeasurements,
+    measured_clock_offsets,
 )
 
 logger = logging.getLogger(__name__)
@@ -48,32 +45,37 @@ class _Unavailable(Exception):
 class BankedClockOffsets:
     """The clock-offset probe a cut measures kept bursts with (see `ClockOffsetProbe`).
 
-    Each companion of a burst is downloaded and decoded at most once per call, and each
-    answer is banked the moment it is measured, so an interrupted cut keeps its work.
+    Each companion of a burst is downloaded and decoded at most once per call, and the
+    call's answers are banked together as it returns, so an interrupted cut keeps its work.
     """
 
     def __init__(
         self,
         *,
-        store_path: Path | None,
+        store: Store | None,
         companions: Mapping[str, Asset],
         fetch: Callable[[str], bytes],
         frames: Callable[[bytes], np.ndarray] = companion_frames,
     ) -> None:
-        self.store_path = store_path
+        self.store = store
         self.companions = companions
         self.fetch = fetch
         self.frames = frames
         self.memo: dict[Pair, float | None] = {}
         self.metrics = {"banked_pairs": 0, "measured_pairs": 0, "downloads": 0}
+        self._measured: dict[Pair, tuple[str, float | None]] | None = None
 
     def __call__(self, video_ids: Sequence[str]) -> list[float | None]:
         pairs = list(zip(video_ids, video_ids[1:], strict=False))
         self._read_bank([pair for pair in pairs if pair not in self.memo])
         decoded: dict[str, np.ndarray | None] = {}
-        for pair in pairs:
-            if pair not in self.memo:
-                self._measure(pair, decoded)
+        measured: dict[Pair, float | None] = {}
+        try:
+            for pair in pairs:
+                if pair not in self.memo:
+                    self._measure(pair, decoded, measured)
+        finally:
+            self._remember(measured)
         return [self.memo.get(pair) for pair in pairs]
 
     def _digest(self, pair: Pair) -> str | None:
@@ -84,12 +86,17 @@ class BankedClockOffsets:
         return hashlib.sha256(joined.encode()).hexdigest()
 
     def _read_bank(self, pairs: list[Pair]) -> None:
-        if self.store_path is None or not pairs:
+        if self.store is None or not pairs:
             return
-        digests = {pair: digest for pair in pairs if (digest := self._digest(pair)) is not None}
-        banked = reading_cut_measurements(
-            self.store_path, lambda c: banked_clock_offsets(c, digests, OFFSET_PRODUCER)
-        )
+        if self._measured is None:
+            self._measured = measured_clock_offsets(self.store, OFFSET_PRODUCER)
+        banked = {
+            pair: seconds
+            for pair in pairs
+            if (row := self._measured.get(pair)) is not None
+            for digest, seconds in (row,)
+            if digest == self._digest(pair)
+        }
         self.memo.update(banked)
         self.metrics["banked_pairs"] += len(banked)
 
@@ -108,7 +115,12 @@ class BankedClockOffsets:
                 raise _Unavailable(type(error).__name__) from error
         return decoded[video_id]
 
-    def _measure(self, pair: Pair, decoded: dict[str, np.ndarray | None]) -> None:
+    def _measure(
+        self,
+        pair: Pair,
+        decoded: dict[str, np.ndarray | None],
+        measured_now: dict[Pair, float | None],
+    ) -> None:
         try:
             first, second = (self._decoded(video_id, decoded) for video_id in pair)
         except _Unavailable:
@@ -122,21 +134,21 @@ class BankedClockOffsets:
         )
         self.memo[pair] = measured.seconds if measured is not None else None
         self.metrics["measured_pairs"] += 1
-        self._remember(pair, self.memo[pair])
+        measured_now[pair] = self.memo[pair]
 
-    def _remember(self, pair: Pair, seconds: float | None) -> None:
-        digest = self._digest(pair)
-        if self.store_path is None or digest is None:
+    def _remember(self, measured: Mapping[Pair, float | None]) -> None:
+        if self.store is None or not measured:
             return
         try:
-            with closing(open_cut_measurements(self.store_path)) as connection:
-                remember_clock_offset(
-                    connection,
-                    pair=pair,
-                    producer=OFFSET_PRODUCER,
-                    source_digest=digest,
-                    seconds=seconds,
-                )
-        except (OSError, sqlite3.Error) as error:
+            with PendingMeasurements(self.store, size=len(measured) + 1) as pending:
+                for pair, seconds in measured.items():
+                    if (digest := self._digest(pair)) is not None:
+                        pending.clock_offset(
+                            pair=pair,
+                            producer=OFFSET_PRODUCER,
+                            source_digest=digest,
+                            seconds=seconds,
+                        )
+        except SQLAlchemyError as error:
             # An unwritable bank costs the next cut a measurement, never this cut.
-            logger.debug("Clock offset for %s was not banked: %s", pair, type(error).__name__)
+            logger.debug("Clock offsets were not banked: %s", type(error).__name__)

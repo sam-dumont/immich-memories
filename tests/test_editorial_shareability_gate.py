@@ -3,26 +3,28 @@
 from __future__ import annotations
 
 import json
-import sqlite3
 
 import pytest
 
 from immich_memories.analysis import editorial_shareability as share
+from tests.annotation_rows import add_rows, annotation_store
 
 
-def flag_store(tmp_path, rows):
-    path = tmp_path / "annotations.sqlite"
-    con = sqlite3.connect(path)
-    con.execute("create table flags (asset_id text, flag text, evidence text, source text)")
-    con.executemany("insert into flags values (?, ?, ?, ?)", rows)
-    con.commit()
-    con.close()
-    return path
+def flag_store(rows):
+    store = annotation_store()
+    add_rows(
+        store,
+        "asset_flags",
+        *(
+            {"asset_id": asset_id, "flag": flag, "evidence": evidence, "source": source}
+            for asset_id, flag, evidence, source in rows
+        ),
+    )
+    return store
 
 
-def test_flags_are_read_for_the_asked_assets_with_readable_detector_evidence(tmp_path):
-    path = flag_store(
-        tmp_path,
+def test_flags_are_read_for_the_asked_assets_with_readable_detector_evidence():
+    store = flag_store(
         [
             ("one", "never_auto", json.dumps({"exposure": "partial", "score": 0.9}), "detector"),
             ("one", "review", "  needs   a look  ", "detector"),
@@ -31,7 +33,7 @@ def test_flags_are_read_for_the_asked_assets_with_readable_detector_evidence(tmp
         ],
     )
 
-    flags = share.load_flags(path, ["one", "two", "one"])
+    flags = share.load_flags(store, ["one", "two", "one"])
 
     assert set(flags) == {"one", "two"}
     assert [row.flag for row in flags["one"]] == ["never_auto", "review"]
@@ -40,8 +42,8 @@ def test_flags_are_read_for_the_asked_assets_with_readable_detector_evidence(tmp
     assert flags["two"][0].reason == ""
 
 
-def test_no_asked_assets_reads_nothing(tmp_path):
-    assert share.load_flags(tmp_path / "absent.sqlite", []) == {}
+def test_no_asked_assets_reads_nothing():
+    assert share.load_flags(annotation_store(), []) == {}
 
 
 def test_an_owner_clearance_lifts_the_exclusion_a_detector_wrote(tmp_path):

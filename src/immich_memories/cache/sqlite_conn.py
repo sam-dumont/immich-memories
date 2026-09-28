@@ -1,4 +1,4 @@
-"""One SQLite connection per thread, WAL where the filesystem allows it.
+"""One SQLite connection per thread, opened by the shared connection factory.
 
 The per-call connect this replaces was the thread-safety story: every call paid
 mkdir + connect + DDL + close, and the default rollback journal serialized
@@ -15,6 +15,8 @@ import sqlite3
 import threading
 from collections.abc import Iterator
 from pathlib import Path
+
+from immich_memories.db.sqlite_files import connect_sqlite
 
 
 class ThreadOwnedConnections:
@@ -47,12 +49,7 @@ class ThreadOwnedConnections:
             raise
 
     def _open(self) -> sqlite3.Connection:
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(self.db_path, timeout=5.0, check_same_thread=False)
-        # WAL lets readers and the writer proceed together. Some filesystems
-        # (network mounts) refuse it; whatever mode comes back still works.
-        with contextlib.suppress(sqlite3.Error):
-            conn.execute("PRAGMA journal_mode=WAL")
+        conn = connect_sqlite(self.db_path, private=False, check_same_thread=False)
         conn.execute(self._schema)
         self._local.conn = conn
         self._local.generation = self._generation

@@ -34,7 +34,7 @@ def _june_command(page, launch_app_url: str, labels: dict[str, str]) -> str:
     page.goto(launch_app_url + "/app/create")
     page.get_by_text(labels["type"], exact=True).click()
     page.get_by_label(labels["year"], exact=True).fill("2024")
-    page.get_by_label(labels["month"], exact=True).fill("6")
+    page.get_by_label(labels["month"], exact=True).select_option("6")
     command = page.get_by_label(labels["command"])
     expect(command).to_contain_text("--month=6")
     return command.inner_text()

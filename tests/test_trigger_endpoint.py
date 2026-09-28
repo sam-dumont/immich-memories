@@ -71,12 +71,14 @@ class TestTriggerTokenIsASecret:
 
         assert "workflow-token-secret" in configured_secret_values(config)
 
-    def test_the_config_viewer_masks_it_like_every_other_secret(self) -> None:
-        from immich_memories.security import redact_config
+    def test_the_settings_report_masks_it_like_every_other_secret(self, tmp_path) -> None:
+        from immich_memories.config_sources import describe_settings
 
-        redacted = redact_config({"server": {"trigger_token": "workflow-token-secret"}})
+        config = Config(server={"trigger_token": "workflow-token-secret"})
+        entries = describe_settings(config, path=tmp_path / "absent.yaml", stored_keys=set())
 
-        assert redacted["server"]["trigger_token"] == "***"  # noqa: S105
+        token = next(entry for entry in entries if entry.key == "server.trigger_token")
+        assert token.value == "***"  # noqa: S105
 
 
 class TestTriggerIsOffUntilSomethingAuthenticatesIt:
@@ -167,7 +169,7 @@ class TestPostEnqueuesOneDecision:
         assert body["status_url"] == f"/api/trigger/{body['attempt_id']}"
         assert [started.attempt.id for started in worker.submitted] == [body["attempt_id"]]
 
-        stored = AutomationStateStore(config.cache.database_path).get_attempt(body["attempt_id"])
+        stored = AutomationStateStore().get_attempt(body["attempt_id"])
         assert stored is not None
         assert stored.outcome is AutoOutcome.RUNNING
         assert stored.reason == "http trigger"
@@ -232,7 +234,7 @@ class TestStatusReportsWhatTheRunIsDoing:
         from immich_memories.operations.phases import OperationalPhase, PhaseEvent
 
         config = _config(tmp_path)
-        store = AutomationStateStore(config.cache.database_path)
+        store = AutomationStateStore()
         attempt = store.start_attempt(reason="http trigger")
         store.update_phase(attempt.id, PhaseEvent(OperationalPhase.ANALYSIS, 3, 10, "scoring", 0.3))
 
@@ -253,7 +255,7 @@ class TestStatusReportsWhatTheRunIsDoing:
         from immich_memories.tracking.run_database import RunDatabase
 
         config = _config(tmp_path)
-        RunDatabase(db_path=config.cache.database_path).save_run(
+        RunDatabase().save_run(
             RunMetadata(
                 run_id="20260824_120000_abcd",
                 created_at=datetime.now(tz=UTC),
@@ -263,7 +265,7 @@ class TestStatusReportsWhatTheRunIsDoing:
                 output_duration_seconds=182.5,
             )
         )
-        store = AutomationStateStore(config.cache.database_path)
+        store = AutomationStateStore()
         attempt = store.start_attempt(reason="http trigger")
         store.finish_attempt(
             attempt.id,

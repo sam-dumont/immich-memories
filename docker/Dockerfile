@@ -118,6 +118,9 @@ WORKDIR /app
 # would silently ship the broken image again.
 # WHY libfribidi0: Pillow's wheels carry HarfBuzz but load FriBiDi from the
 # system; without it an Arabic or Hebrew title is drawn unshaped (#1101).
+# WHY postgresql-client: `store backup` / `store restore` run pg_dump and
+# pg_restore when the store is on PostgreSQL (#871). Debian's client (17 on
+# this base) dumps any server up to its own major.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libfribidi0 \
@@ -126,6 +129,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsm6 \
     libxext6 \
     libxrender1 \
+    postgresql-client \
     && if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
          apt-get install -y --no-install-recommends \
            intel-media-va-driver \

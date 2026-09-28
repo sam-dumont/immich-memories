@@ -52,8 +52,11 @@ def _client(photos: list[Asset]) -> MagicMock:
 def _prepared(**kwargs) -> PreparationResult:
     """Stand in for the producers, reporting the stages they report."""
     total = len(kwargs["assets"])
+    from immich_memories.tracking.timing import span
+
     for stage in ("previews", "pixels", "public_heads", "detectors"):
-        kwargs["progress"](stage, total, total)
+        with span(f"preparation.{stage}", items=total):
+            kwargs["progress"](stage, total, total)
     return PreparationResult(
         requested=total, missing_by_producer={}, failures={}, produced={"pixel": total}
     )

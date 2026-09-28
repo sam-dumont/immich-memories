@@ -73,6 +73,27 @@ def _pod_specs() -> list[tuple[str, dict]]:
     return specs
 
 
+def _is_trigger_pod(pod: dict) -> bool:
+    """A pod that only calls POST /api/trigger on the running Deployment.
+
+    It never runs the app image, never touches the store, and so is exempt
+    from the assertions that only make sense for a pod that does (models,
+    config volume, Immich secret, output directory, app tier).
+    """
+    containers = pod.get("containers", [])
+    return bool(containers) and containers[0]["name"] == "trigger"
+
+
+def _app_pod_specs() -> list[tuple[str, dict]]:
+    """Pods that run the app image: the Deployment and the one-off `generate` Job."""
+    return [(name, pod) for name, pod in _pod_specs() if not _is_trigger_pod(pod)]
+
+
+def _trigger_pod_specs() -> list[tuple[str, dict]]:
+    """CronJob pods whose only job is curling the trigger route (#871)."""
+    return [(name, pod) for name, pod in _pod_specs() if _is_trigger_pod(pod)]
+
+
 def _deploy_texts() -> dict[str, str]:
     return {
         str(path.relative_to(REPO_ROOT)): path.read_text()
@@ -129,7 +150,7 @@ def test_the_two_inference_overlays_name_the_same_release() -> None:
 def test_every_app_pod_starts_without_a_caption_service() -> None:
     from immich_memories.config_loader import Config
 
-    for name, pod in _pod_specs():
+    for name, pod in _app_pod_specs():
         for container in pod["containers"]:
             env = {row["name"]: row.get("value") for row in container.get("env", [])}
             assert env["IMMICH_MEMORIES_TIER"] == "auto", name
@@ -171,6 +192,10 @@ def test_only_the_kustomization_pin_names_a_concrete_version() -> None:
             text = re.sub(r"(?m)^\s*newTag:.*$", "", text)
         # A dotted quad is an address, not a release: the captioner binds 0.0.0.0.
         text = re.sub(r"\b\d{1,3}(?:\.\d{1,3}){3}\b", "", text)
+        # A digest-pinned third-party image (the trigger pods' curl) is pinned by
+        # the digest, not the tag beside it: that tag cannot drift out of sync
+        # with anything, unlike a copied-around app release number.
+        text = re.sub(r"\S+:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}", "", text)
         if found := re.findall(r"\d+\.\d+\.\d+", text):
             offenders[name] = found
 
@@ -179,7 +204,7 @@ def test_only_the_kustomization_pin_names_a_concrete_version() -> None:
 
 def test_config_directory_is_a_writable_persistent_volume() -> None:
     """The app writes cache/, projects/, cache.db and .storage_secret at startup."""
-    for label, pod in _pod_specs():
+    for label, pod in _app_pod_specs():
         container = pod["containers"][0]
         mounts = {mount["mountPath"]: mount for mount in container["volumeMounts"]}
         volumes = {volume["name"]: volume for volume in pod["volumes"]}
@@ -200,14 +225,14 @@ def test_config_directory_is_a_writable_persistent_volume() -> None:
 
 
 def test_pods_write_output_to_the_mounted_directory() -> None:
-    for label, pod in _pod_specs():
+    for label, pod in _app_pod_specs():
         env = {item["name"]: item.get("value") for item in pod["containers"][0].get("env", [])}
         assert env.get("IMMICH_MEMORIES_OUTPUT__DIRECTORY") == OUTPUT_DIR, label
         assert "HOME" not in env, label
 
 
 def test_pods_read_immich_credentials_from_the_secret() -> None:
-    for label, pod in _pod_specs():
+    for label, pod in _app_pod_specs():
         container = pod["containers"][0]
         secret_refs = {ref["secretRef"]["name"] for ref in container.get("envFrom", [])}
         assert "immich-memories-secrets" in secret_refs, label
@@ -248,13 +273,63 @@ def test_gpu_overlay_adds_nvidia_scheduling_to_the_deployment() -> None:
 
 
 def test_security_context_is_kept() -> None:
-    for label, pod in _pod_specs():
+    for label, pod in _app_pod_specs():
         assert pod["securityContext"]["runAsUser"] == 1000, label
         assert pod["securityContext"]["fsGroup"] == 1000, label
         assert pod["securityContext"]["seccompProfile"]["type"] == "RuntimeDefault", label
         container = pod["containers"][0]
+        assert container["securityContext"]["readOnlyRootFilesystem"] is True, label
         assert container["securityContext"]["capabilities"]["drop"] == ["ALL"], label
         assert container["securityContext"]["allowPrivilegeEscalation"] is False, label
+
+
+def test_trigger_pods_keep_a_minimal_security_context() -> None:
+    """The curl pod (#871) never touches the store, but it keeps the same hardening.
+
+    No `fsGroup` here on purpose: that field exists to make a mounted volume
+    group-writable, and a trigger pod mounts nothing (see
+    test_trigger_pods_mount_no_store_volumes).
+    """
+    trigger_pods = _trigger_pod_specs()
+    assert trigger_pods, "expected at least one trigger CronJob in job.yaml"
+    for label, pod in trigger_pods:
+        assert pod["securityContext"]["runAsNonRoot"] is True, label
+        assert pod["securityContext"]["seccompProfile"]["type"] == "RuntimeDefault", label
+        container = pod["containers"][0]
+        assert container["securityContext"]["readOnlyRootFilesystem"] is True, label
+        assert container["securityContext"]["capabilities"]["drop"] == ["ALL"], label
+        assert container["securityContext"]["allowPrivilegeEscalation"] is False, label
+
+
+def test_trigger_pods_mount_no_store_volumes() -> None:
+    """The corruption guard #871 asks for: no PVC, so no second writer on the store."""
+    trigger_pods = _trigger_pod_specs()
+    assert trigger_pods, "expected at least one trigger CronJob in job.yaml"
+    for label, pod in trigger_pods:
+        assert "volumes" not in pod, label
+        assert "volumeMounts" not in pod["containers"][0], label
+
+
+def test_trigger_pods_pin_the_curl_image_by_digest() -> None:
+    for label, pod in _trigger_pod_specs():
+        image = pod["containers"][0]["image"]
+        assert re.search(r"@sha256:[0-9a-f]{64}$", image), label
+
+
+def test_trigger_pods_read_the_token_from_a_secret() -> None:
+    for label, pod in _trigger_pod_specs():
+        env = {item["name"]: item for item in pod["containers"][0].get("env", [])}
+        key_ref = env["TRIGGER_TOKEN"]["valueFrom"]["secretKeyRef"]
+        assert key_ref["key"] == "IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN", label
+
+
+def test_trigger_pods_call_the_in_cluster_trigger_route() -> None:
+    """The URL, and the path it hits, are the real contract `web/trigger.py` serves."""
+    from immich_memories.web.trigger import TRIGGER_PATH
+
+    for label, pod in _trigger_pod_specs():
+        command = " ".join(pod["containers"][0]["command"])
+        assert f"http://immich-memories{TRIGGER_PATH}" in command, label
 
 
 def test_network_policy_allows_the_immich_port() -> None:
@@ -278,12 +353,16 @@ def test_service_file_ships_no_ingress() -> None:
 
 
 def test_batch_jobs_use_realistic_durations_and_current_flags() -> None:
-    """`--duration` is seconds: 10 produced a ten-second video."""
+    """`--duration` is seconds: 10 produced a ten-second video.
+
+    The scheduled CronJobs no longer pass `--cooldown`: they call the trigger
+    route, which takes its cooldown from `automation.cooldown_hours` (#871).
+    """
     text = (K8S_DIR / "job.yaml").read_text()
 
     for match in re.finditer(r"--duration\s+\"?(\d+)", text):
         assert int(match.group(1)) >= 60, match.group(0)
-    assert "--cooldown" in text
+    assert "--cooldown" not in text
     assert "/output/" not in text.replace(OUTPUT_DIR, "")
 
 
@@ -434,7 +513,7 @@ def test_the_lan_overlay_adds_a_service_and_changes_nothing_else() -> None:
 
 def test_every_pod_can_reach_the_pinned_encoder_and_the_detector_cache() -> None:
     """A first cut stops without the encoder, and the root filesystem is read-only."""
-    for label, pod in _pod_specs():
+    for label, pod in _app_pod_specs():
         for container in pod.get("initContainers", []) + pod["containers"]:
             where = f"{label}:{container['name']}"
             mounts = {mount["name"]: mount["mountPath"] for mount in container["volumeMounts"]}
@@ -453,7 +532,7 @@ def test_every_pod_fetches_the_pinned_models_before_its_first_cut() -> None:
     `models fetch` the docs give a Docker user, so an empty claim fills itself
     and a warm one costs a `test`.
     """
-    for label, pod in _pod_specs():
+    for label, pod in _app_pod_specs():
         fetch = next(
             (item for item in pod.get("initContainers", []) if item["name"] == "fetch-models"),
             None,

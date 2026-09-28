@@ -164,7 +164,7 @@ def test_a_phase_records_only_the_llm_spend_that_happened_during_it(tmp_path) ->
     from immich_memories.analysis import llm_metrics
     from immich_memories.tracking import RunTracker
 
-    tracker = RunTracker("metrics-phases", db_path=tmp_path / "runs.db", capture_system=False)
+    tracker = RunTracker("metrics-phases", capture_system=False)
     tracker.start_run(source="manual")
 
     with llm_metrics.collecting():
@@ -175,7 +175,7 @@ def test_a_phase_records_only_the_llm_spend_that_happened_during_it(tmp_path) ->
         llm_metrics.record_truncation()
         tracker.complete_phase()
 
-    phases = {p.phase_name: p.extra_metrics for p in tracker.db.get_phase_stats(tracker.run_id)}
+    phases = {p.phase_name: p.extra_metrics for p in tracker.db.get_run(tracker.run_id).phases}
 
     assert phases["analysis"]["llm_calls"] == 1
     assert phases["analysis"]["llm_prompt_tokens"] == 100
@@ -190,14 +190,14 @@ def test_a_phase_with_no_llm_work_carries_no_llm_keys(tmp_path) -> None:
     from immich_memories.analysis import llm_metrics
     from immich_memories.tracking import RunTracker
 
-    tracker = RunTracker("metrics-quiet", db_path=tmp_path / "runs.db", capture_system=False)
+    tracker = RunTracker("metrics-quiet", capture_system=False)
     tracker.start_run(source="manual")
 
     with llm_metrics.collecting():
         tracker.start_phase("assembly", 1)
         tracker.complete_phase()
 
-    stats = tracker.db.get_phase_stats(tracker.run_id)[0]
+    stats = tracker.db.get_run(tracker.run_id).phases[0]
 
     assert not any(key.startswith("llm_") for key in stats.extra_metrics)
 
@@ -213,8 +213,7 @@ def test_the_run_row_carries_the_whole_runs_llm_spend(tmp_path) -> None:
     from immich_memories.analysis import llm_metrics
     from immich_memories.tracking import RunDatabase, RunTracker
 
-    db_path = tmp_path / "runs.db"
-    tracker = RunTracker("metrics-run-total", db_path=db_path, capture_system=False)
+    tracker = RunTracker("metrics-run-total", capture_system=False)
     tracker.start_run(source="manual")
 
     with llm_metrics.collecting():
@@ -226,7 +225,7 @@ def test_the_run_row_carries_the_whole_runs_llm_spend(tmp_path) -> None:
         tracker.complete_phase()
         tracker.complete_run(clips_analyzed=9, clips_selected=4)
 
-    run = RunDatabase(db_path).get_run("metrics-run-total")
+    run = RunDatabase().get_run("metrics-run-total")
 
     assert run is not None
     assert run.llm_metrics["llm_calls"] == 2
@@ -237,12 +236,11 @@ def test_the_run_row_carries_the_whole_runs_llm_spend(tmp_path) -> None:
 def test_a_run_that_never_used_the_model_stores_no_llm_metrics(tmp_path) -> None:
     from immich_memories.tracking import RunDatabase, RunTracker
 
-    db_path = tmp_path / "runs.db"
-    tracker = RunTracker("metrics-run-quiet", db_path=db_path, capture_system=False)
+    tracker = RunTracker("metrics-run-quiet", capture_system=False)
     tracker.start_run(source="manual")
     tracker.complete_run()
 
-    run = RunDatabase(db_path).get_run("metrics-run-quiet")
+    run = RunDatabase().get_run("metrics-run-quiet")
 
     assert run is not None
     assert run.llm_metrics == {}
@@ -319,3 +317,29 @@ async def test_two_models_in_one_run_are_billed_apart() -> None:
     assert set(counters.by_model) == {"glm-5.3-flash", "qwen3-vl-8b"}
     assert counters.by_model["glm-5.3-flash"].prompt_tokens == 900
     assert counters.by_model["qwen3-vl-8b"].prompt_tokens == 120
+
+
+def test_model_and_stage_keep_rates_and_cache_hits():
+    from immich_memories.analysis import llm_metrics
+
+    with llm_metrics.collecting() as counters, llm_metrics.recording_stage("episode"):
+        llm_metrics.record_reply(model="fixture-model", completion_tokens=20)
+        llm_metrics.record_wall(2, model="fixture-model")
+        llm_metrics.record_cache_hit(model="fixture-model")
+    assert counters.by_model["fixture-model"].wall_seconds == 2
+    assert counters.by_model["fixture-model"].cache_hits == 1
+    assert counters.by_stage["episode"].wall_seconds == 2
+
+
+@pytest.mark.asyncio
+async def test_a_served_model_is_not_charged_for_work_after_its_request() -> None:
+    from immich_memories.analysis import llm_metrics
+    from immich_memories.analysis.llm_query import query_llm
+
+    reply = _openai_response(model="glm-5.3-flash")
+    # WHY: the LLM server is the external boundary naming the model that served.
+    with collecting() as counters, patch("httpx.AsyncClient.post", return_value=reply):
+        await query_llm("Judge this cut", _thinking_config(thinking=False))
+        llm_metrics.record_truncation()
+    assert counters.truncated == 1
+    assert counters.by_model["glm-5.3-flash"].truncated == 0

@@ -1,16 +1,17 @@
 <script lang="ts">
-  import { Button, Heading, LoadingSpinner, Text } from '@immich/ui';
-  import { mdiAccountGroupOutline, mdiCheckCircleOutline, mdiContentSaveOutline, mdiDeleteOutline, mdiRefresh, mdiWifi } from '@mdi/js';
+  import { Button, Heading, Text } from '@immich/ui';
+  import { mdiAccountGroupOutline, mdiCheckCircleOutline, mdiContentSaveOutline, mdiDeleteOutline, mdiWifi } from '@mdi/js';
   import { onMount } from 'svelte';
   import { api, post } from '$lib/api';
   import type { components } from '$lib/api-types';
   import { N_, t } from '$lib/i18n.svelte';
+  import SettingsEditor from '$lib/SettingsEditor.svelte';
 
-  type ActiveConfig = components['schemas']['ActiveConfig'];
   type CacheStats = components['schemas']['CacheStats'];
   type Connection = components['schemas']['Connection'];
 
-  let config = $state<ActiveConfig | null>(null);
+  // Bumped after the connection saves, so the settings below show where its values now come from.
+  let reloads = $state(0);
   let caches = $state<CacheStats[]>([]);
   let note = $state('');
 
@@ -28,11 +29,8 @@
     preview: N_('Preview cache'),
   };
 
-  async function load() {
-    [config, caches] = await Promise.all([api<ActiveConfig>('/config'), api<CacheStats[]>('/caches')]);
-  }
   onMount(() => {
-    void load();
+    void api<CacheStats[]>('/caches').then((found) => (caches = found));
     void api<Connection>('/connection').then((found) => {
       connection = found;
       // Someone who started typing before the answer came keeps what they typed.
@@ -62,8 +60,8 @@
     }
     connection = body;
     key = '';
-    greeting = t('Configuration saved!');
-    await load();
+    greeting = t('Saved to the database');
+    reloads += 1;
   }
 
   async function clear(name: string) {
@@ -74,8 +72,6 @@
 
   const size = (bytes: number) =>
     bytes < 1024 ** 2 ? `${(bytes / 1024).toFixed(1)} KB` : bytes < 1024 ** 3 ? `${(bytes / 1024 ** 2).toFixed(1)} MB` : `${(bytes / 1024 ** 3).toFixed(2)} GB`;
-  const show = (value: unknown) =>
-    Array.isArray(value) ? (value.length ? value.join(', ') : '—') : value === null || value === '' ? '—' : typeof value === 'object' ? JSON.stringify(value) : String(value);
 </script>
 
 <svelte:head><title>{t('Settings')} · Immich Memories</title></svelte:head>
@@ -83,7 +79,7 @@
 <div class="flex flex-col gap-8">
   <div class="flex flex-col gap-1">
     <Heading size="large" tag="h1">{t('Settings')}</Heading>
-    <Text color="muted">{t('What this server runs with. The file is the source; environment overrides apply; secrets are masked.')}</Text>
+    <Text color="muted">{t('Every setting and where its value comes from. What you save here goes to the database; config.yaml and the environment are never written, and they win over it.')}</Text>
   </div>
 
   <section class="flex max-w-3xl flex-col gap-3" aria-label={t('Immich Connection')}>
@@ -110,34 +106,7 @@
     <span><span class="block font-medium">{t('People')}</span><span class="text-sm text-gray-600 dark:text-gray-400">{t('Who is who, their roles and relationships.')}</span></span>
   </a>
 
-  <section class="flex flex-col gap-3" aria-label={t('Configuration')}>
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <Heading size="small" tag="h2">{t('Configuration')}</Heading>
-      <Button size="small" variant="outline" leadingIcon={mdiRefresh} onclick={load}>{t('Reload from Disk')}</Button>
-    </div>
-    {#if !config}
-      <LoadingSpinner />
-    {:else}
-      <p class="text-sm text-gray-600 dark:text-gray-400">
-        {t('Config file: {config_path}', { config_path: config.path })}{config.preset ? ` · ${t('Preset: {preset}', { preset: config.preset })}` : ''}
-      </p>
-      {#each Object.entries(config.sections).filter(([, v]) => v && typeof v === 'object' && !Array.isArray(v)) as [section, values] (section)}
-        <details class="rounded-xl border border-gray-200 dark:border-gray-800">
-          <summary class="cursor-pointer px-4 py-2 font-medium capitalize">{section.replaceAll('_', ' ')}</summary>
-          <table class="w-full text-sm">
-            <tbody>
-              {#each Object.entries(values as Record<string, unknown>) as [key, value] (key)}
-                <tr class="border-t border-gray-200 dark:border-gray-800">
-                  <th class="w-1/3 px-4 py-1.5 text-left font-normal text-gray-600 dark:text-gray-400">{key}</th>
-                  <td class="px-4 py-1.5 break-all">{show(value)}</td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </details>
-      {/each}
-    {/if}
-  </section>
+  <SettingsEditor {reloads} />
 
   <section class="flex flex-col gap-3" aria-label={t('Caches')}>
     <Heading size="small" tag="h2">{t('Caches')}</Heading>

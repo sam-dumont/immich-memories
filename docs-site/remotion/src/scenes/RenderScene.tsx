@@ -10,8 +10,8 @@ import { EDITED } from "./EditScene";
 import { CUT_CONTENT_BUDGET } from "../fixture";
 
 /**
- * Below the sheet, the render panel: revision 1 picked as what to render, the
- * date overlay ticked, Render. The form gives way to the render job, which
+ * Below the sheet, the render panel: revision 1 picked as what to render (the
+ * date and place overlays are on already), Render. The form gives way to the render job, which
  * reports its own stages the way `runs render --progress-file` writes them.
  */
 
@@ -25,7 +25,6 @@ export const JOB_SCROLL = 860;
 
 const OPEN_SELECT = 38;
 const PICK_REVISION = 54;
-const TICK_DATE = 70;
 const RENDER = 108;
 const JOB_START = RENDER + 4;
 
@@ -34,7 +33,6 @@ const REVISION_XY = onScreen(
   MAIN_X + 120,
   FORM_Y + 70 + 4 + 34 + 17 - PANEL_SCROLL,
 );
-const DATE_XY = onScreen(MAIN_X + 8, FORM_Y + 5 * 82 + 7 - PANEL_SCROLL);
 // The privacy checkbox wraps to two lines at this width: the checks take 96 px, not 76.
 const RENDER_XY = onScreen(
   MAIN_X + 40,
@@ -45,7 +43,6 @@ const cursorSteps = [
   { frame: 30, ...SELECT_XY },
   { frame: OPEN_SELECT, ...SELECT_XY, click: true },
   { frame: PICK_REVISION, ...REVISION_XY, click: true },
-  { frame: TICK_DATE, ...DATE_XY, click: true },
   { frame: RENDER, ...RENDER_XY, click: true },
 ];
 
@@ -125,7 +122,7 @@ export const RenderScene: React.FC<Props> = ({ bassIntensity }) => {
               render: {
                 revision: frame >= PICK_REVISION,
                 open,
-                addDate: frame >= TICK_DATE,
+                addDate: true,
                 renderPressed: press,
                 job: frame >= JOB_START ? renderJobAt(frame) : undefined,
               },

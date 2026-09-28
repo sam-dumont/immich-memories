@@ -20,11 +20,12 @@ class FixtureDate(date):
 
 def _child_that_opened_its_run_then_failed(command: list[str]) -> ProcessResult:
     from immich_memories.config import get_config
+    from immich_memories.db import open_store
     from immich_memories.tracking import RunDatabase
     from immich_memories.tracking.models import RunMetadata
 
     values = dict(arg.split("=", 1) for arg in command if arg.startswith("--") and "=" in arg)
-    RunDatabase(get_config().cache.database_path).save_run(
+    RunDatabase(open_store(get_config())).save_run(
         RunMetadata(
             run_id="fixture-failed-child",
             created_at=datetime.now(),
@@ -40,13 +41,19 @@ def _child_that_opened_its_run_then_failed(command: list[str]) -> ProcessResult:
 
 def install_fake_automation(config_path: Path, state_dir: Path) -> None:
     """Use a fixed calendar and fixture geocoder; only the editorial model is scripted."""
-    from immich_memories.analysis import trip_detection
+    from immich_memories.analysis import place_geocoder
     from immich_memories.automation import candidate_discovery, runner
+    from immich_memories.self_command import self_command
     from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 
     candidate_discovery.date = FixtureDate
     # WHY: naming the fixture's lake must not contact the public Nominatim service.
-    trip_detection.reverse_geocode = lambda *_args, **_kwargs: "Annecy, France"
+    place_geocoder.nominatim_fetch = lambda *_args, **_kwargs: (
+        lambda *_point: {
+            "town": "Annecy",
+            "country": "France",
+        }
+    )
 
     def execute(command):
         marker = state_dir / FAIL_MARKER
@@ -60,7 +67,8 @@ def install_fake_automation(config_path: Path, state_dir: Path) -> None:
                 CLI_BOOTSTRAP,
                 str(config_path),
                 str(state_dir),
-                *command[1:],
+                # The runner's argv starts with this install's own CLI prefix (#1466).
+                *command[len(self_command()) :],
             ],
             capture_output=True,
             text=True,

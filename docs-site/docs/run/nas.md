@@ -6,7 +6,8 @@ title: On a NAS
 
 Reader: newcomer.
 
-The NAS that runs Immich runs this too, on its own; a GPU or a model makes it better later. The install is the
+The NAS that runs Immich runs this too, on its own. NAS is a good default; optional GPU and model
+layers can add small refinements. Compare the pictures before upgrading. The install is the
 [Docker Compose](./docker.md) one; this page is what is different on a Synology, QNAP, TrueNAS or
 Unraid box. Tested on a Synology DS423+ (Celeron J4125, four cores).
 
@@ -22,8 +23,8 @@ sudo docker compose exec immich-memories immich-memories models fetch
 sudo docker compose exec immich-memories immich-memories preflight
 ```
 
-The NAS tier is `no_captions`, which the compose file already pins: the eight context heads and
-the two detectors run on the NAS CPU, and nothing leaves the box. That is the whole setup.
+The compose file uses `tier: auto`, which selects `nas` without GPU inference. The eight context
+heads and two detectors run on the NAS CPU; no caption or LLM service is required.
 
 Set the home base in `.env` before the first cut
 (`IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE` and `..._LONGITUDE`). Without it no day counts as
@@ -67,8 +68,8 @@ to that port.
 ## What to expect
 
 The first cut of a month reads every picture it can reach once, on the NAS CPU, and banks the
-answers. Run it in the evening. The second cut of the same month reads nothing again, and what is
-left is mostly the render. `docker compose logs immich-memories | grep "preparation tier"` shows
+answers. Run it in the evening. Later cuts reuse matching facts; new pictures and changed producers
+can require more work. `docker compose logs immich-memories | grep "preparation tier"` shows
 what each producer cost this box. Numbers per host are on [Measured](../better/measured.md).
 
 Start with one month, not a year: preparation grows with the pictures in the window, not with the
@@ -117,11 +118,13 @@ the [config reference](../reference/config-reference.md#size-the-thumbnail-cache
 
 ## What a NAS can't do
 
-- Hold a reader. A model is optional; if you want one, it goes on a Mac, a GPU box or a hosted
-  API: [Add a reader](../better/reader.md).
-- Captions at a useful speed. A caption per picture on four Celeron cores is about 30 seconds, so
-  `full` on a NAS alone is days for a year. The compose file has a captioner profile if you are
-  patient: [Add captions](../better/captions.md).
+- Run GPU selection without GPU inference. A render-only GPU does not count. A configured LLM
+  alone leaves selection on NAS, while still supplying titles and music mood:
+  [Add a reader](../better/reader.md).
+- Caption quickly on a small CPU. Use a GPU caption service for the selected shots and actual
+  candidates. Captioning a whole library is a separate `prepare` job. An LLM can supply captions
+  only with explicit opt-in, which is less efficient and can cost much more on hosted services:
+  [Add captions](../better/captions.md).
 - Generate music: MusicGen and ACE-Step want a GPU. The bundled tracks and your own uploads work.
 
 ## Every night

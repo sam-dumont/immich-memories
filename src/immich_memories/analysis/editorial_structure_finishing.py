@@ -9,18 +9,15 @@ that build one.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import partial
 from typing import Any
 
 from immich_memories.analysis import editorial_shareability as _share
-from immich_memories.analysis.editorial_completion import (
-    ACCEPTED_SHORTFALL_FRACTION,
-    RetainedMotion,
-)
-from immich_memories.analysis.editorial_final_hash_review import review_cut_by_cached_hashes
+from immich_memories.analysis.editorial_completion import RetainedMotion
+from immich_memories.analysis.editorial_final_hash_review import Admits, review_cut_by_cached_hashes
+from immich_memories.analysis.editorial_intent import voiced_era_of
 from immich_memories.analysis.editorial_intent_validation import MIN_CARRIERS, MIN_CONTENT_SHARE
 from immich_memories.analysis.editorial_source_route import retire_unprojectable
 from immich_memories.analysis.editorial_story_planner import alternatives_pool
@@ -48,7 +45,9 @@ from immich_memories.operations.cut_progress import StageUpdate, announce_stage
 
 def announce_count(pictures: int, point: str) -> None:
     """The edit's own counts, said out loud instead of only written to a record."""
-    announce_stage(StageUpdate(f"Editing the memory: {pictures} pictures {point}"))
+    announce_stage(
+        StageUpdate(f"Editing the memory: {pictures} pictures {point}", key="Editing the memory")
+    )
 
 
 @dataclass
@@ -70,8 +69,6 @@ class PlanRun:
     )
     # Binds a kept carrier's unmeasured Live stitch to its measurement (`measured_stitch`).
     bind_stitch: Callable[[dict], dict] | None = None
-    # Whether the model polish ran on the rules draft; a draft it did not touch is the no-model film.
-    polished: bool = False
 
 
 def resolve_motion_and_timing(
@@ -103,6 +100,7 @@ def resolve_motion_and_timing(
         MIN_CARRIER_SECONDS,
         protected=frozenset(source.owner_required_asset_ids),
         vouched=partial(owner_vouches_for, evidence=filler_evidence(source)),
+        era_of=voiced_era_of(source.intent),
     )
     run.cut_carriers.extend(dropped)
     run.render_timeline = timing.resolve(run.carriers, source.assets)
@@ -176,7 +174,7 @@ def final_duplicate_review(
     replacements_for: Callable[[Mapping[str, Any]], Sequence[tuple[str, Mapping[str, Any]]]]
     | None = None,
     close_family_of: Callable[[str], Collection[str]] = lambda _asset: (),
-    gate: AudienceGate | None = None,
+    admits: Admits,
     frame_quality: Callable[[str], tuple[int, float] | None] = lambda _asset: None,
     requested_seconds: float = 0.0,
 ) -> None:
@@ -184,14 +182,14 @@ def final_duplicate_review(
     resolved render kinds. Nothing may refill a removed duplicate afterward.
 
     A close family member's only shot never leaves: the review keeps it ahead of its
-    look-alike. A refill arrives after the audience gate ran, so `gate` judges it like any
-    other carrier: its banked verdict when there is one, a new question otherwise, and a
-    refused refill leaves the slot to the next offer or empty."""
+    look-alike. Every refill passes shared candidate admission against the actual cut,
+    including fresh standing and audience facts. A refusal leaves the next offer its turn."""
     protected = sorted(
         (prior_assets - set(prior.get("review_proposed_assets", [])) if prior else set())
         | set(owner_required)
     )
     before_duplicates = run.carriers.copy()
+    earlier_collapses = run.final_duplicates.get("collapsed_favourites", ())
     # The preview hashes the burst pass already cached and the scene prints ingest banked ask
     # the repetition question over the whole finished cut, whatever the reader is. No tier
     # sends the pair's pixels to a model: pictures are read once, at ingest.
@@ -202,16 +200,20 @@ def final_duplicate_review(
         replacements_for=replacements_for,
         scene_print=ports.scene_print,
         close_family_of=close_family_of,
-        admits=_admitted_by(gate),
+        admits=admits,
         frame_quality=frame_quality,
         # Folding starred twins never takes a film under the floor where it abstains.
         film_floor=(MIN_CARRIERS, MIN_CONTENT_SHARE * requested_seconds),
-        # A scene repeat nothing replaces leaves only while the film still reaches its target
-        # within the shortfall the owner accepts: a film short of material keeps it.
-        content_floor=run.final_content_cap * (1 - ACCEPTED_SHORTFALL_FRACTION)
-        if run.final_content_cap > 0
-        else math.inf,
+        # Requested duration is a ceiling. A repeated scene cannot earn its place just
+        # because distinct replacements ran out; the intent check reports the shortfall.
+        content_floor=0.0,
     )
+    # Refinement must retain the draft's explicit starred-twin history. The
+    # invariant checker still requires its keeper to survive in the final cut.
+    run.final_duplicates["collapsed_favourites"] = [
+        *earlier_collapses,
+        *run.final_duplicates["collapsed_favourites"],
+    ]
     known = {carrier["asset_id"] for carrier in before_duplicates}
     refilled = [c for c in run.carriers if c["asset_id"] not in known]
     run.final_duplicates["status"] = (
@@ -245,22 +247,6 @@ def frame_quality_of(source) -> Callable[[str], tuple[int, float] | None]:
         return faces, float(sharpness or 0.0)
 
     return quality
-
-
-def _admitted_by(gate: AudienceGate | None) -> Callable[[Mapping[str, Any]], bool]:
-    if gate is None:
-        return lambda _row: True
-    return lambda row: _share.allowed(gate.verdict_of(row), gate.audience)
-
-
-def held_by_gate(gate: AudienceGate, unit_of: Mapping[str, Mapping[str, Any]]):
-    """Whether the audience gate refuses a picture for this film, asked one picture at a time."""
-
-    def held(asset_id: str) -> bool:
-        verdict = gate.verdict_of(unit_of[asset_id])
-        return verdict is not None and not _share.allowed(verdict, gate.audience)
-
-    return held
 
 
 def seat_again_after_review(
@@ -304,12 +290,14 @@ def trim_to_timing(
         MIN_CARRIER_SECONDS,
         protected=protected,
         vouched=partial(owner_vouches_for, evidence=filler_evidence(source)),
+        era_of=voiced_era_of(source.intent),
     )
+    run.cut_carriers.extend(dropped)
     record("timing-trim", {"dropped": [c["asset_id"] for c in dropped], "kept": len(run.carriers)})
 
 
 def apply_audience_gate(
-    run: PlanRun, gate: AudienceGate, selection, material: Material, wall: Wall
+    run: PlanRun, gate: AudienceGate, selection, material: Material, wall: Wall, *, admits: Admits
 ) -> dict:
     before_privacy = run.carriers.copy()
     run.carriers, share_log = _share.apply_gate(
@@ -321,6 +309,7 @@ def apply_audience_gate(
         # the only replacements a held carrier can have.
         pool_for=alternatives_pool(selection, material.units, wall.anchor_label),
         audience=gate.audience,
+        admits=admits,
     )
     open_share_log(share_log, funded_acquisition={})
     run.selection_stages["after_shareability"] = len(run.carriers)
@@ -336,7 +325,7 @@ def apply_audience_gate(
 
 
 def drop_filler_nothing_vouches_for(run: PlanRun, evidence: FillerEvidence, record) -> None:
-    """The no-model film's last pass: filler that shows nothing leaves, and no pass refills it."""
+    """Every rules-drafted film's last pass: filler that shows nothing leaves, and no pass refills it."""
     run.carriers, dropped = drop_unvouched_filler(run.carriers, evidence)
     run.cut_carriers.extend(
         carrier

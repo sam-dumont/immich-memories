@@ -42,7 +42,8 @@ measured) drops whole shots, lightest story first: `none` and `glimpse` stories,
 shots of the lightest story, then its only shot, and the heaviest story's only shot last. Inside one
 story the latest shot goes first. A picture you ticked is never dropped, and a favourite is never
 dropped while a shot nothing vouches for (no star, no recorded video, nobody Immich knows, not ticked)
-is still in the film.
+is still in the film. In a film that gives every year a shot (a long person film, a custom film over
+several ranges), a year's only shot goes after every other one.
 
 **The shave** takes 0.5 s off the longest hold, over and over, while the film is over length. It
 never takes a hold under 3.5 s (or under the shot's own length, if that was shorter) and never
@@ -64,7 +65,7 @@ that holds something you care about is never quiet to the editor.
 ## Filler nothing vouches for
 
 A quiet month can still have more slots than shots anyone vouches for, and the leftover slots go to
-whatever stands. So a no-model film gets one last removal pass (`drop_filler_nothing_vouches_for`,
+whatever stands. So every film drafted from the rules gets one last removal pass (`drop_filler_nothing_vouches_for`,
 PR #1250), after the duplicate review:
 
 ```mermaid
@@ -76,8 +77,11 @@ flowchart TD
   fk -- yes --> drop["leaves; nothing takes its place"]
 ```
 
-It runs on the no-model film, and on a model film whose polish did not run. A polished film skips
-it: the model's vote already asked which shots add nothing. What left is listed by id and head label
+It runs on the no-model film and on a polished one alike. The polish refines the no-model film,
+so it never keeps what that film would drop: a caption that misreads a printed recipe as a posed
+child does not get it past this pass. A screen that plays as a Live Photo, or shows someone Immich
+knows, still stays. So does one shot of a year this pass would leave empty, in a film that gives
+every year a shot: the one that stands best. What left is listed by id and head label
 in `derived-decisions/unvouched-filler.private.json`.
 
 ## Going short, on purpose
@@ -91,16 +95,20 @@ The draft tries to reach its length before it gives up the seconds:
   and must not look like its neighbours. A film of one repeated
   scene stays short.
 - **Readmission.** A frame refused for looking like another, or for crowding its place, comes back
-  when nothing else can fill the slot. A favourite refused for crowding its place comes back sooner:
-  before a shot nothing vouches for keeps the slot it freed. That shot leaves (the weakest first, a
-  story's only shot last) and is listed under `displaced_for_a_favourite` in
-  `derived-decisions/story-selection.private.json`.
+  when nothing else can fill the slot. A favourite refused for crowding its place comes back sooner.
+  While the film has a free slot it takes that one and nobody leaves. Once the film is full, it comes
+  back before a shot nothing vouches for keeps the slot it freed. That shot leaves (the weakest
+  first, a story's only shot last, and never a year's only shot in a film that gives every year one)
+  and is listed under `displaced_for_a_favourite` in `derived-decisions/story-selection.private.json`.
 - **With a model**, a film still short by S seconds reads up to 2 × ceil(S / 3.5) episodes it never
   reached, and seats the ones whose reading records something
   ([What a model adds](./what-a-model-adds.md#a-short-film-gets-one-more-look)).
 
 What never happens: a slot filled with a frame nothing vouches for, a filler frame dropped by the
 pass above refilled, or a film padded with a still repeated for time.
+The final scene-duplicate check also accepts a shorter film: falling below the target's 15 %
+tolerance does not protect a repeated scene. Owner-required shots and someone's only family
+appearance keep their existing protections.
 
 The run record says how it landed: `near_target` when the film is within 15 % of its content length,
 `search_limited` or `editorial_shortfall` when it ran shorter, with the seconds behind it.

@@ -237,6 +237,7 @@ def _refill(
     offers: Sequence[tuple[str, Mapping[str, Any]]],
     *,
     kept: Sequence[Mapping[str, Any]],
+    company: Sequence[Mapping[str, Any]],
     taken: set[str],
     repeats: _Repeats,
     thumbnail_hash: Callable[[str], str | None],
@@ -259,20 +260,20 @@ def _refill(
         repeats.hashes[asset_id] = digest
         candidate = _replacement_row(carrier, unit)
         repeated, _similarity = repeats.of(candidate, kept)
-        if repeated is None and admits(candidate):
+        if repeated is None and admits(candidate, company):
             return rung, candidate
     return None, None
 
 
 FamilyOf = Callable[[str], Collection[str]]
-Admits = Callable[[Mapping[str, Any]], bool]
+Admits = Callable[[Mapping[str, Any], Sequence[Mapping[str, Any]]], bool]
 
 
 def _no_family(_asset_id: str) -> Collection[str]:
     return ()
 
 
-def _admit_all(_row: Mapping[str, Any]) -> bool:
+def _admit_all(_row: Mapping[str, Any], _cut: Sequence[Mapping[str, Any]]) -> bool:
     return True
 
 
@@ -300,6 +301,7 @@ class _Cut:
         self.content_floor = content_floor
         self.content = sum(_seconds(c) for c in carriers)
         self.taken = {c["asset_id"] for c in carriers}
+        self.pending = {c["asset_id"]: c for c in carriers}
         self.kept: list[Mapping[str, Any]] = []
         self.added: list[dict[str, Any]] = []
         self.removals: list[dict[str, Any]] = []
@@ -307,6 +309,7 @@ class _Cut:
         self.rungs: Counter[str] = Counter()
 
     def settle(self, carrier, offers: Sequence[tuple[str, Mapping[str, Any]]]) -> None:
+        self.pending.pop(carrier["asset_id"])
         keeper, similarity = self.repeats.of(carrier, self.kept)
         if keeper is None:
             self.kept.append(carrier)
@@ -364,6 +367,7 @@ class _Cut:
             carrier,
             offers,
             kept=self.kept,
+            company=[*self.kept, *self.pending.values()],
             taken=self.taken,
             repeats=self.repeats,
             thumbnail_hash=self.thumbnail_hash,

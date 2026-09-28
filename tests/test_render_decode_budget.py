@@ -87,8 +87,6 @@ def render_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         config=config,
         no_music=True,
     )
-    # WHY: an eleven-hour encode is measured on a clock only the fake assembler moves.
-    monkeypatch.setattr(generate_render_module, "_time", clock)
     # WHY: extraction downloads the sources from Immich.
     monkeypatch.setattr(generate_render_module, "extract_clips", lambda *_a, **_k: [clip])
     # WHY: settings and the assembler are the FFmpeg-backed encode; the fake one only takes time.
@@ -100,7 +98,11 @@ def render_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(generate_render_module, "create_assembler", lambda *_a, **_k: Assembler())
     tracker = MagicMock()
     tracker.run_id = "fixed-run"
-    return params, tracker, tmp_path / "memory_fixed-run"
+    from immich_memories.tracking.timing import collecting
+
+    # WHY: an eleven-hour encode is measured on a clock only the fake assembler moves.
+    with collecting(now=clock.monotonic):
+        yield params, tracker, tmp_path / "memory_fixed-run"
 
 
 class _Tools:

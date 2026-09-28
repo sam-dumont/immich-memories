@@ -30,7 +30,7 @@ class FilmPreparation:
         self._prepared, self._on_stage = prepared, on_stage
         self._round = 0
         readings = self._evidence.readings
-        nas = replace(readings, config=nas_draft_config(readings.config))
+        nas = replace(readings, config=nas_draft_config(readings.config), include_captions=False)
         return replace(self._evidence, readings=nas, inspect_clips=False)(prepared, on_stage, reach)
 
     def refine(self, source: StructurePlanningInput, carriers) -> StructurePlanningInput:
@@ -49,8 +49,8 @@ class FilmPreparation:
         readings = evidence.readings
         batch = readings.reader(self._prepared).lines_for(tuple(sorted(ids)))
         if batch.missing_asset_ids:
-            raise EditorialInputsRequired(readings.store_path, detail="unreadable refinement facts")
-        store = readings.store_path
+            raise EditorialInputsRequired(readings.store, detail="unreadable refinement facts")
+        store = readings.store
         assets = [source.assets[asset_id] for asset_id in ids]
         companions = {
             str(asset.live_photo_video_id) for asset in assets if asset.live_photo_video_id

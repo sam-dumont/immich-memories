@@ -98,3 +98,31 @@ def test_the_old_player_s_preview_budget_is_named_and_ignored(tmp_path: Path, ca
 
     assert "cache.preview_cache_max_size_mb" in "\n".join(r.getMessage() for r in caplog.records)
     assert not hasattr(config.cache, "preview_cache_max_size_mb")
+
+
+def test_the_retired_scheduler_and_dead_dials_are_named_and_ignored(tmp_path: Path, caplog) -> None:
+    """#973: the scheduler command went, and four dials nothing read went with it."""
+    path = _write(
+        tmp_path,
+        {
+            "scheduler": {"enabled": True, "schedules": [{"name": "y", "cron": "0 9 15 1 *"}]},
+            "cache": {"max_age_days": 30},
+            "title_screens": {"show_decorative_lines": True, "title_duration": 3.0},
+            "advanced": {"triage": {"enabled": True, "bundle": "/x.npz", "provider": "cpu"}},
+        },
+    )
+
+    with caplog.at_level(logging.WARNING):
+        config = Config.from_yaml(path)
+
+    message = "\n".join(r.getMessage() for r in caplog.records)
+    for key in (
+        "scheduler",
+        "cache.max_age_days",
+        "title_screens.show_decorative_lines",
+        "triage.enabled",
+        "triage.bundle",
+    ):
+        assert key in message
+    assert config.title_screens.title_duration == 3.0
+    assert config.triage.provider == "cpu"

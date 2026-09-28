@@ -46,7 +46,8 @@ says what set the length:
 | the preset floor | neither flag, and the period holds nothing to measure |
 
 A trip and an album count active days: 30 s plus 10 s a day, held between 60 s and 5 min. A special
-day counts active hours: 30 s plus 6 s an hour, held between 60 s and 3 min. Twelve one-minute months
+day counts active hours: 30 s plus 6 s an hour, held between 60 s and 3 min, and never fewer than
+30 s of pictures on top of its title and ending, however thin the day. Twelve one-minute months
 do not make a twelve-minute year: the year has its own ten-minute target. How the editor spends
 those seconds is in [Length, quiet weeks and filler](../how-it-chooses/length-and-filler.md).
 
@@ -61,8 +62,11 @@ immich-memories generate --memory-type multi_person --year 2025 \
   --people-expression '"Riley" AND ("Casey" OR "Bob")'
 ```
 
-`AND` binds tighter than `OR`, and `AND` means the same picture, not the same afternoon. The
-expression replaces `--person` and `--person-match`. The web UI has it under **Advanced people
+`AND` binds tighter than `OR`. A person counts as in every picture of an episode (a block of
+pictures with no 90-minute gap) where Immich recognised their face at least once, so the back of a
+head or a baby asleep on a chest still belongs to a person film. `AND` means everybody recognised
+somewhere in the same episode, not in one frame. The expression replaces `--person` and
+`--person-match`. The web UI has it under **Advanced people
 condition**. Trips, albums and a single-person birthday refuse it.
 
 ## Year in review
@@ -100,9 +104,11 @@ card asks for 2 min 15 s, the CLI fits a curve through the date range (about 3 m
 months). Both are editable defaults. `--hemisphere south` maps summer onto December to February.
 
 Person spotlight needs the person named in Immich's face recognition. What makes it a spotlight is
-the filter: the editor is the same one. Multi-person defaults to AND, so two people never in the
-same frame give an empty memory rather than two solo reels. Titles and default filenames say AND or
-OR, so two runs never overwrite each other.
+the filter: the editor is the same one. Multi-person defaults to AND: an afternoon counts when
+both were recognised somewhere in it, even if never in one frame. Two people who never share an
+episode give an empty memory rather than two solo reels. Each window is read once for videos and
+once for photos, however many people are named. Titles and default filenames say AND or OR, so two
+runs never overwrite each other.
 
 ### A people memory with no dates
 
@@ -114,7 +120,7 @@ immich-memories generate --memory-type multi_person \
   --people-expression '("Riley" OR "Bob") AND "Sam"'
 ```
 
-The start comes from the birth dates Immich holds, and from `birth_date` in `people.yaml` where
+The start comes from the birth dates Immich holds, and from `birth_date` in the people registry where
 Immich has none. An AND waits for the youngest person it needs; an OR opens with the oldest it
 accepts, and bounds nothing when one of them has no birth date. Two grandparents AND a child born
 in 2024 covers 2024 onward, because no older picture can hold the child. `runs why` on an earlier
@@ -174,10 +180,10 @@ immich-memories generate --memory-type holiday --holiday christmas --years-back 
 | `new_year` | 1 January |
 | `valentines` | 14 February |
 | `easter` | Western Easter Sunday, computed |
-| `mothers_day` | second Sunday of May |
-| `fathers_day` | third Sunday of June |
+| `mothers_day` | second Sunday of May, or where your home country keeps it |
+| `fathers_day` | third Sunday of June, or where your home country keeps it |
 | `halloween` | 31 October |
-| `thanksgiving` | fourth Thursday of November |
+| `thanksgiving` | where the country's public calendar has it (the US: fourth Thursday of November) |
 | `christmas_eve` | 24 December |
 | `christmas` | 25 December |
 | `new_years_eve` | 31 December |
@@ -186,6 +192,35 @@ Anything else is read as `MM-DD`, for a household's own occasion (`--holiday 09-
 moved in). Without `--year`, the starting year steps back when this year's occasion has not happened
 yet. The title is the occasion's name, subtitled "Through the Years" in the film's language, on both
 the CLI and the web UI.
+
+The holidays follow the country your home base is in (`trips.homebase_latitude` and
+`trips.homebase_longitude`); Immich's own geodata says which country that is, so nothing leaves your
+server. Each country's public holidays come from the [`holidays`](https://github.com/vacanza/holidays)
+library, and `--holiday` accepts their names too (`--holiday "ascension day"` in Belgium). Without a
+home base the US holidays apply, as they always did.
+
+A few family days no public calendar lists are added on top: Valentine's Day, Halloween, Christmas
+Eve, New Year's Eve, and Mother's and Father's Day, which move by country:
+
+| Country | Mother's Day | Father's Day |
+|---|---|---|
+| `US`, and any country not listed | second Sunday of May | third Sunday of June |
+| `BE`, `AT` | second Sunday of May | second Sunday of June |
+| `DE` | second Sunday of May | Ascension Day |
+| `IT` | second Sunday of May | 19 March |
+| `ES`, `PT` | first Sunday of May | 19 March |
+| `FR` | last Sunday of May, a week later on Pentecost | third Sunday of June |
+| `GB`, `IE` | three weeks before Easter | third Sunday of June |
+| `AU`, `NZ` | second Sunday of May | first Sunday of September |
+| `MX` | 10 May | third Sunday of June |
+
+Only national holidays are read: a holiday kept in one region (a German state, a Canadian province)
+is not. A holiday only some families keep, like Eid, is not a public holiday in most countries and
+is not in their calendar; give its date as `MM-DD`.
+
+**Something missing?** A public holiday belongs in the `holidays` library upstream. A family day, or a
+country whose Mother's or Father's Day differs: open a pull request against
+`memory_types/date_builders.py`, one rule per line.
 
 ## Trip
 
@@ -242,7 +277,9 @@ one phone carries it); the film still takes everything shot in the trip's window
 GPS, so a library shot on one can look full of holidays and find none.
 
 The name is the smallest place holding at least 85 % of the trip's located pictures, walking up from
-city to island, region, two regions, country. It comes from the place Immich already stored on each
+city to island, region, two regions, country. One step comes before the region: a town holding more
+than half of the pictures names the trip, so a seaside weekend with a walk to the next town is named
+after the town, not the province. It comes from the place Immich already stored on each
 picture, offline:
 
 | The trip | Its name |
@@ -253,7 +290,8 @@ picture, offline:
 | A road trip, mostly Utah and Nevada | `Utah and Nevada, United States` |
 | Four states, none of them most of it | `United States` |
 
-`network.geocoding: true` lets Nominatim name a one-city or one-region trip in the film's language.
+`network.geocoding: true` lets Nominatim name a one-city or one-region trip in the film's language,
+and a trip to a village inside a merged municipality after the village.
 It is off by default: it sends coordinates to a third party.
 
 ## Album
@@ -292,7 +330,8 @@ favourites, it is mostly video, or it ran long (20 pictures over 6 hours or more
 in it. Each year keeps its strongest `automation.special_days_per_year` (6), away days first. The
 title comes from the day's own place.
 
-The catalogue is `~/.immich-memories/special-days.json`. A film covers the day's **run**, the stretch
+The catalogue lives in the [store](../run/database.md); `days-export` writes it to a JSON file you can
+edit and `days-import` reads it back. A film covers the day's **run**, the stretch
 of pictures the occasion left, split at five hours of silence rather than at midnight, so a long
 night out is not cut at 00:00. It never reaches past its own first and last picture, and a run longer
 than 48 hours is not one occasion. `window_origin` in the run record says what bounded the film.

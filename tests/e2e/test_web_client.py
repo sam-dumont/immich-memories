@@ -15,6 +15,7 @@ from immich_memories.operations.storyboard import PLAN_FILE, PROJECTION_FILE
 from immich_memories.tracking import RunDatabase
 from immich_memories.tracking.models import RunMetadata
 from tests.e2e.fake_library import CARRIERS, LIBRARY
+from tests.e2e.web_flow import contact_sheet, render, the_film
 
 pytestmark = pytest.mark.e2e
 
@@ -118,7 +119,7 @@ def test_a_first_cut_shows_its_stage_s_share_and_time_left(page, launch_app_url)
 
 
 def _seed(workspace) -> None:
-    db = RunDatabase(workspace.database_path)
+    db = RunDatabase(workspace.store())
     if db.get_run("20240630_web_cut"):
         return  # the launch workspace lives for the whole session
     now = datetime.now(UTC)
@@ -163,7 +164,7 @@ def _seed(workspace) -> None:
     (attempt / PROJECTION_FILE).write_text(
         json.dumps({"intervals": {shots[-1].asset_id: [1.0, 2.5]}})
     )
-    record_run_attempt(workspace.cache_dir, "20240630_web_cut", attempt, attempt / "film.mp4")
+    record_run_attempt("20240630_web_cut", attempt, attempt / "film.mp4", store=workspace.store())
 
 
 @pytest.fixture(autouse=True)
@@ -304,7 +305,7 @@ def test_a_memory_made_in_the_browser_is_cut_reviewed_revised_rendered_and_playe
     page.goto(f"{launch_app_url}/app/create")
     page.get_by_text("Monthly Highlights", exact=True).click()
     page.get_by_label("Year", exact=True).fill("2024")
-    page.get_by_label("Month", exact=True).fill("6")
+    page.get_by_label("Month", exact=True).select_option("6")
     # WHY two minutes: the fixture editor keeps all eighteen carriers (79 s) whatever the
     # length; a real cut fits its budget, so the brief asks for one this cut fits.
     page.get_by_text("Length and pictures").click()
@@ -347,16 +348,16 @@ def _cut_in_the_browser(page: Page, launch_app_url: str) -> str:
     page.goto(f"{launch_app_url}/app/create")
     page.get_by_text("Monthly Highlights", exact=True).click()
     page.get_by_label("Year", exact=True).fill("2024")
-    page.get_by_label("Month", exact=True).fill("6")
+    page.get_by_label("Month", exact=True).select_option("6")
     page.get_by_role("button", name="Cut", exact=True).click()
     page.wait_for_url("**/app/runs/**", timeout=240_000)
     return page.url.rsplit("/", 1)[-1]
 
 
-def test_the_pool_of_a_cut_takes_the_owner_s_word_and_cuts_again(
+def test_the_pool_s_ticks_go_into_the_film_as_a_revision_without_a_recut(
     page: Page, launch_app_url: str
 ) -> None:
-    first = _cut_in_the_browser(page, launch_app_url)
+    run = _cut_in_the_browser(page, launch_app_url)
     page.get_by_role("link", name="Pool", exact=True).click()
     pool = page.get_by_role("list", name="Pool")
     expect(pool.get_by_role("listitem").first).to_be_visible(timeout=30_000)
@@ -371,8 +372,16 @@ def test_the_pool_of_a_cut_takes_the_owner_s_word_and_cuts_again(
     expect(tiles.nth(kept_at).get_by_text("You'll never use this picture.")).to_be_visible()
     expect(boxes[kept_at]).not_to_be_checked()
     boxes[left_at].check()
-    expect(page.get_by_text("Keep: 1 · Leave out: 1")).to_be_visible()
+    expect(page.get_by_text("Add: 1 · Take out: 1")).to_be_visible()
     _shoot(page, "web-pool")
 
-    page.get_by_role("button", name="Cut again with these choices").click()
-    page.wait_for_url(lambda url: "/app/runs/" in url and first not in url, timeout=240_000)
+    page.get_by_role("button", name="Preview with these choices").click()
+    # The same run, with the ticks opened as its first revision: nothing was cut again.
+    page.wait_for_url(f"**/app/runs/{run}?revision=1", timeout=30_000)
+    expect(page.get_by_role("list", name="Added from the pool").get_by_role("img")).to_have_count(1)
+    expect(contact_sheet(page).get_by_text("Removed", exact=True)).to_have_count(1)
+    panel = page.get_by_role("region", name="Render")
+    expect(panel.get_by_label("What to render")).to_have_value("1")
+
+    render(page, resolution="720p")
+    expect(the_film(page)).to_be_visible(timeout=900_000)

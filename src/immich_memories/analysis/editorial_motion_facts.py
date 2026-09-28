@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-import sqlite3
 import tempfile
 import time
-from contextlib import closing
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -17,10 +15,10 @@ import httpx
 from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
 from immich_memories.analysis.editorial_motion_outcomes import MotionAttemptOutcomes
 from immich_memories.api.immich import ImmichAPIError
+from immich_memories.db import Store
 from immich_memories.store.cut_measurements import (
+    PendingMeasurements,
     banked_motion_residuals,
-    open_cut_measurements,
-    remember_motion_residual,
 )
 
 METHOD = "median-flow-v1-12frames-320x240"
@@ -117,8 +115,10 @@ def _unavailable_outcome(exc: Exception, phase: str) -> dict:
 class _MotionAttempt:
     """One call's open bank, running metrics and the sources it actually sampled."""
 
-    connection: sqlite3.Connection
+    pending: PendingMeasurements
     metrics: dict
+    # What the bank already held for every candidate, read once, and what this call measured.
+    banked: dict[str, dict] = field(default_factory=dict)
     sampled_keys: set[str] = field(default_factory=set)
 
 
@@ -129,7 +129,7 @@ class DemandedMotionResolver:
         self,
         *,
         assets,
-        cache_path: Path,
+        store: Store,
         fetch_video,
         measure=measure_motion,
         threshold=1.5,
@@ -138,7 +138,7 @@ class DemandedMotionResolver:
         outcomes: MotionAttemptOutcomes | None = None,
     ) -> None:
         self.assets = assets
-        self.cache_path = cache_path
+        self.store = store
         self.fetch_video = fetch_video
         self.measure = measure
         self.threshold = threshold
@@ -164,13 +164,23 @@ class DemandedMotionResolver:
             "decode_seconds": 0.0,
             "sample_limit_per_carrier": self.sample_limit,
         }
-        with closing(open_cut_measurements(self.cache_path)) as connection:
-            attempt = _MotionAttempt(connection, metrics)
+        with PendingMeasurements(self.store) as pending:
+            attempt = _MotionAttempt(pending, metrics, banked=self._banked(carriers))
             output = [self._resolved_carrier(carrier, attempt) for carrier in carriers]
         metrics["sampled_sources"] = len(attempt.sampled_keys)
         metrics["decode_seconds"] = round(metrics["decode_seconds"], 3)
         metrics["wall_seconds"] = round(time.monotonic() - started, 3)
         return output, metrics
+
+    def _banked(self, carriers) -> dict[str, dict]:
+        stills = {
+            key: source_metadata_digest(self.assets[key])
+            for carrier in carriers
+            if carrier.get("motion_candidate")
+            for key in carrier["members"]
+            if key in self.assets and self.assets[key].live_photo_video_id
+        }
+        return banked_motion_residuals(self.store, stills, RESIDUAL_PRODUCER)
 
     def _resolved_carrier(self, carrier, attempt: _MotionAttempt) -> dict:
         current = dict(carrier)
@@ -226,11 +236,8 @@ class DemandedMotionResolver:
             self.outcomes.observed(unit_key, source_key, fact, error=prior)
             metrics["unavailable_sources"] += 1
             return fact
-        banked = banked_motion_residuals(
-            attempt.connection, {asset.id: source_metadata_digest(asset)}, RESIDUAL_PRODUCER
-        )
-        if asset.id in banked:
-            fact = banked[asset.id]
+        if asset.id in attempt.banked:
+            fact = attempt.banked[asset.id]
             metrics["cache_hits"] += 1
             if self.outcomes is not None:
                 self.outcomes.observed(unit_key, source_key, fact)
@@ -272,9 +279,10 @@ class DemandedMotionResolver:
                     unit_key, source_key, fact, error=_unavailable_outcome(exc, phase)
                 )
             return fact
-        # Each completed measurement survives an interrupted run, and answers the next plan.
-        remember_motion_residual(
-            attempt.connection,
+        # A completed measurement survives an interrupted run (up to one pending batch), and
+        # answers the rest of this call and the next plan.
+        attempt.banked[asset.id] = json.loads(json.dumps(fact, sort_keys=True))
+        attempt.pending.motion_residual(
             asset_id=asset.id,
             producer=RESIDUAL_PRODUCER,
             source_digest=source_metadata_digest(asset),
@@ -338,7 +346,7 @@ def production_motion_resolver(source, *, on_playback=None):
         try:
             return DemandedMotionResolver(
                 assets=source.assets,
-                cache_path=source.store_path,
+                store=source.store,
                 fetch_video=fetch,
                 threshold=threshold,
                 sample_limit=sample_limit,

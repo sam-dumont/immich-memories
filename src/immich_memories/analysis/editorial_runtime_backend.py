@@ -55,6 +55,7 @@ if TYPE_CHECKING:
     from immich_memories.analysis.editorial_runtime import EditorialRunContext
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
     from immich_memories.config_loader import Config
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +70,8 @@ class ProductionPostCardBackend:
         context: EditorialRunContext,
         people: EditorialPeople,
         thumbnail_cache: ThumbnailCache,
-        store_path: Path,
+        store: Store,
+        bank_root: Path,
         ports: EditorialRuntimePorts,
         fetch_preview: Callable[[str], bytes | None] | None = None,
         attached_sources: Callable[[], Sequence[Asset | VideoClipInfo]] | None = None,
@@ -87,7 +89,8 @@ class ProductionPostCardBackend:
         self._context = context
         self._people = people
         self._thumbnail_cache = thumbnail_cache
-        self._store_path = store_path
+        self._store = store
+        self._bank_root = bank_root
         self._ports = ports
         self.last_structure_result: StructurePlanningResult | None = None
         self.last_companion_assets: dict[str, Asset] = {}
@@ -149,6 +152,16 @@ class ProductionPostCardBackend:
             result.plan["reader"] = "rules-v1"
             result.plan.setdefault("lineage", {})["reader"] = "rules-v1"
             result.plan["semantic_reuse"] = "none; rules are recomputed from captured facts"
+        if self._episode_demand is not None:
+            health = self._episode_demand.reading_health()
+            result.plan["episode_reading_health"] = health
+            if health["unavailable_episodes"]:
+                warning = (
+                    f"!! {health['unavailable_episodes']} demanded episode(s) unread; "
+                    "using factual fallback"
+                )
+                trace.warnings.append(warning)
+                logger.warning(warning)
         return self._adopt(result, source.artifact_dir, allowed_ids)
 
     def _effects(self, source, resources):
@@ -203,7 +216,8 @@ class ProductionPostCardBackend:
             case=case,
             config=self._config,
             people=self._people,
-            store_path=self._store_path,
+            store=self._store,
+            bank_root=self._bank_root,
             artifact_dir=context.artifact_dir,
             motion_outcome_replay=context.motion_outcome_replay,
             attached_sources=self._attached_sources() if self._attached_sources else (),
@@ -285,9 +299,9 @@ class ProductionPostCardBackend:
             )
         # The model reads text only. Pictures were read once, at ingest, by the caption model
         # and the heads; nothing below sends a picture to it.
-        story_motion = production_story_motion(source, cache_path=self._store_path)
+        story_motion = production_story_motion(source, store=self._store)
         return StructurePlannerPorts(
-            judge=StructureTextJudge(config, source.artifact_dir, cache_path=self._store_path),
+            judge=StructureTextJudge(config, source.artifact_dir, judgments=self._store),
             thumbnail_hash=thumbnail_hasher,
             scene_print=scene_prints,
             thumbnail_metrics=thumbnail_metrics,
@@ -306,7 +320,7 @@ class ProductionPostCardBackend:
         the layer asks for its account -- by then the draft has chosen its stories, and only
         those stories' episodes are ever read.
         """
-        if not self._config.editorial.thin_model_layer or source.store_path is None:
+        if not self._config.editorial.thin_model_layer or source.store is None:
             return {}
         period = catalogued_period(source.case.ranges)
         config = self._config
@@ -326,7 +340,8 @@ class ProductionPostCardBackend:
             "rules": rules,
             "laya": laya_reader_for(config.editorial),
             "thin": ThinPolish(
-                bank_dir=source.bank_dir,
+                store=source.bank_store,
+                bank_scope=source.case.key,
                 read_period=lambda asset_ids_of: self._read_period(source, period, asset_ids_of),
                 short=self._short_reads(source, rules.standing),
             ),
@@ -354,11 +369,11 @@ class ProductionPostCardBackend:
         """
         from immich_memories.analysis.catalogue_runtime import banked_notable_records
 
-        assert source.store_path is not None and self._episode_demand is not None
+        assert source.store is not None and self._episode_demand is not None
         try:
             readings = self._episode_demand.readings_for(list(asset_ids))
             return banked_notable_records(
-                [reading.identity for reading in readings.values()], store_path=source.store_path
+                [reading.identity for reading in readings.values()], store=source.store
             )
         except (OSError, ValueError, RuntimeError) as exc:
             logger.warning("Could not read more of this period for a short film (%s)", exc)
@@ -390,23 +405,23 @@ class ProductionPostCardBackend:
             catalogue_banked_episodes,
         )
 
-        assert source.store_path is not None
+        assert source.store is not None
         readings = self._demand_readings(asset_ids_of)
         identities = [reading.identity for reading in readings.values()]
-        account = library_period_account(source.store_path, period)
+        account = library_period_account(source.store, period)
         facts = _unread_facts(source, set(readings))
         if not account and (identities or facts):
             catalogue_banked_episodes(
                 identities,
-                store_path=source.store_path,
+                store=source.store,
                 capture_dates={key: asset.file_created_at for key, asset in source.assets.items()},
                 config=self._config,
                 requester=self._ports.catalogue_requester_factory(self._config),
                 unread_facts=facts,
                 period=period,
             )
-            account = library_period_account(source.store_path, period)
-        return account, banked_notable_records(identities, store_path=source.store_path)
+            account = library_period_account(source.store, period)
+        return account, banked_notable_records(identities, store=source.store)
 
     def _demand_readings(self, asset_ids_of: Mapping[str, Sequence[str]]) -> dict[str, Any]:
         """Read the episodes the draft's shots sit in, and nothing else."""

@@ -10,7 +10,7 @@ import click
 
 from immich_memories.analysis.editorial_shareability_tiers import sharing_refusal
 from immich_memories.analysis.live_photo_pipeline import drop_live_photo_components
-from immich_memories.cli._asset_fetch import fetch_photos, fetch_videos
+from immich_memories.cli._asset_fetch import fetch_media
 from immich_memories.cli._date_resolution import (
     BIRTHDAY_FLAG_FORMAT,
     default_duration_for_type,
@@ -62,6 +62,7 @@ from immich_memories.planning.auto_duration import (
 )
 from immich_memories.processing.encoding_plan import resolve_output_selection
 from immich_memories.timeperiod import DateRange
+from immich_memories.tracking.run_observations import observed_command
 
 
 def _apply_sharing(config, sharing: str | None) -> None:
@@ -91,6 +92,7 @@ def register_generate_commands(main: click.Group) -> None:
         help="Silence the live progress display and print log lines instead (cron, logs); -v sets the log level",
     )
     @click.pass_context
+    @observed_command("manual")
     def generate(
         ctx: click.Context,
         year: int | None,
@@ -304,7 +306,7 @@ def register_generate_commands(main: click.Group) -> None:
             years_back=years_back,
             on_this_day_target=exact_on_this_day,
             holiday=holiday,
-            preset_params=special_day,
+            preset_params=special_day or _holiday_country(memory_type, config),
             people_window=derived_window,
         )
         window_record = announce_people_window(derived_window, date_range)
@@ -603,32 +605,18 @@ def register_generate_commands(main: click.Group) -> None:
                     # A birthday memory's flashback windows are single days years
                     # apart, so most of them are empty and #661's per-window
                     # warning would bury the one that matters — the rolling year.
-                    assets = fetch_videos(
+                    assets, fetched_photos = fetch_media(
                         history_from=BIRTHDAY_HISTORY_FROM if birthday else None,
                         client=client,
                         progress=progress,
                         date_ranges=date_ranges,
                         person_ids=person_ids,
                         person_match=person_match,
-                        **({"person_expression": id_condition} if id_condition is not None else {}),
+                        person_expression=id_condition,
+                        include_photos=use_photos,
                     )
-
-                    # Fetch photos (if enabled)
-                    fetched_photos: list = []
-                    if use_photos:
-                        fetched_photos = fetch_photos(
-                            client=client,
-                            date_ranges=date_ranges,
-                            person_ids=person_ids,
-                            person_match=person_match,
-                            **(
-                                {"person_expression": id_condition}
-                                if id_condition is not None
-                                else {}
-                            ),
-                        )
-                        if fetched_photos:
-                            print_info(f"Found {len(fetched_photos)} photos")
+                    if fetched_photos:
+                        print_info(f"Found {len(fetched_photos)} photos")
 
                     # A Live Photo's video half is part of a photograph, not
                     # footage: it must not compete as a video against its own still.
@@ -730,7 +718,11 @@ def register_generate_commands(main: click.Group) -> None:
             print_error(f"Error: {sanitize_error_message(described_error(e))}")
             sys.exit(1)
 
-    # Register analyze and export-project commands from separate module
-    from immich_memories.cli._analyze_export import register_analyze_export_commands
 
-    register_analyze_export_commands(main)
+def _holiday_country(memory_type: str | None, config) -> dict:
+    """A holiday memory's dates are the home country's; no other type needs to ask Immich."""
+    if memory_type != "holiday":
+        return {}
+    from immich_memories.home_country import home_country
+
+    return {"country": home_country(config)}

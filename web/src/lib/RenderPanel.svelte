@@ -11,9 +11,13 @@
 
   type Revision = components['schemas']['Revision'];
 
-  let { runId, revisions }: { runId: string; revisions: Revision[] } = $props();
+  let { runId, revisions, current = null }: { runId: string; revisions: Revision[]; current?: number | null } = $props();
 
   let from = $state<number | null>(null);
+  // The revision just saved or opened is the one the owner means to render.
+  $effect(() => {
+    if (current != null) from = current;
+  });
   let title = $state('');
   let subtitle = $state('');
   let transition = $state('');
@@ -22,8 +26,9 @@
   let format = $state('');
   let quality = $state('');
   let scaleMode = $state('');
-  let addDate = $state(false);
-  let addPlace = $state(false);
+  // On unless the owner unticks them: a film reads better with its dates and places (owner, 28 Sep).
+  let addDate = $state(true);
+  let addPlace = $state(true);
   let privacy = $state(false);
   let naming = $state<'' | 'model' | 'rules'>('');
   let music = $state<string>('auto');
@@ -183,6 +188,11 @@
       <div class="flex flex-col gap-2 text-sm">
         <label class="flex items-center gap-2"><input type="checkbox" bind:checked={addDate} />{t('Add date overlay')}</label>
         <label class="flex items-center gap-2"><input type="checkbox" bind:checked={addPlace} />{t('Caption clips with their place')}</label>
+        {#if addPlace}
+          <p class="-mt-1 ml-6 text-xs text-gray-600 dark:text-gray-400">
+            {t("The place is Immich's. With geocoding on (Settings, network), it names the district in the film's language, through the public Nominatim or network.geocoding_url.")}
+          </p>
+        {/if}
         <label class="flex items-center gap-2"><input type="checkbox" bind:checked={privacy} />{t('Privacy mode: blur every picture and scramble names')}</label>
       </div>
 
@@ -199,7 +209,7 @@
           {#if page.data.session?.music_preview_offered}
             <Button size="small" variant="outline" leadingIcon={mdiMusicNote} disabled={preview?.status === 'running'} onclick={makePreview}>{t('Preview a track')}</Button>
           {/if}
-          <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-1.5 text-sm dark:border-gray-700">
+          <label class="relative inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-1.5 text-sm dark:border-gray-700">
             <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true"><path d={mdiUpload} /></svg>{t('Upload a track')}
             <input type="file" accept=".mp3,.m4a,.wav,audio/*" class="sr-only" onchange={sendFile} />
           </label>

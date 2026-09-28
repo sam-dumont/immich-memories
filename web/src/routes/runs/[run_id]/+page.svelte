@@ -32,7 +32,17 @@
     revisions = [];
     saved = null;
     refusal = '';
-    if (hasCut) void api<Revision[]>(`/runs/${encodeURIComponent(id)}/revisions`).then((found) => (revisions = found));
+    // The pool's Preview lands here with the revision it saved, opened and ready to render.
+    const asked = Number(new URLSearchParams(location.search).get('revision'));
+    if (hasCut)
+      void api<Revision[]>(`/runs/${encodeURIComponent(id)}/revisions`).then((found) => {
+        revisions = found;
+        const opened = found.find((revision) => revision.number === asked);
+        if (opened && editor) {
+          editor.load(opened);
+          saved = { number: opened.number, edits: JSON.stringify(editor.edits) };
+        }
+      });
   });
 
   async function save() {
@@ -243,20 +253,35 @@
         </div>
       {/if}
     </div>
+    {#if editor?.current.added.length}
+      <section class="flex flex-col gap-2">
+        <Heading size="tiny" tag="h2">{t('Added from the pool')}</Heading>
+        <Text size="small" color="muted">{t('They play in the order they were taken, prepared like the rest of the cut.')}</Text>
+        <ul class="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-3" aria-label={t('Added from the pool')}>
+          {#each editor.current.added as assetId (assetId)}
+            <li class="flex flex-col gap-1.5">
+              <img src={thumbnail(assetId)} alt={t('Added from the pool')} loading="lazy" decoding="async" class="aspect-[4/3] w-full rounded-lg bg-gray-100 object-contain dark:bg-gray-900" />
+              <Button size="tiny" variant="ghost" onclick={() => editor?.unadd(assetId)}>{t('Take out')}</Button>
+            </li>
+          {/each}
+        </ul>
+      </section>
+    {/if}
+
     {#if editor && (editor.count || editor.history.length)}
       <div class="sticky bottom-20 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 bg-light/95 p-3 shadow-lg backdrop-blur md:bottom-4 dark:border-gray-800">
         <p class="text-sm tabular-nums">
           {t('Changes: {count}', { count: editor.count })} ·
-          <span class={editor.fits ? '' : 'font-semibold text-danger'}>
-            {cut.content_budget_seconds != null
-              ? t('{content} of {budget} the titles leave', { content: clock(editor.contentSeconds), budget: clock(cut.content_budget_seconds) })
+          <span>
+            {editor.grows && cut.content_budget_seconds != null
+              ? t('{content}: the film grows past its {budget} to hold them', { content: clock(editor.contentSeconds), budget: clock(cut.content_budget_seconds) })
               : clock(editor.contentSeconds)}
           </span>
         </p>
         <div class="ml-auto flex gap-2">
           <Button size="small" variant="ghost" leadingIcon={mdiUndo} disabled={!editor.history.length} onclick={() => editor.undo()}>{t('Undo')}</Button>
           <Button size="small" variant="ghost" disabled={!editor.count} onclick={() => editor.discard()}>{t('Discard changes')}</Button>
-          <Button size="small" leadingIcon={mdiContentSaveOutline} loading={saving} disabled={!editor.count || !editor.fits || !unsaved}
+          <Button size="small" leadingIcon={mdiContentSaveOutline} loading={saving} disabled={!editor.count || !unsaved}
             onclick={save}>{t('Save revision')}</Button>
         </div>
         {#if refusal}<p class="w-full text-sm text-danger" role="alert">{refusal}</p>{/if}
@@ -283,7 +308,7 @@
     <Text color="muted">{t('No saved cut is available for this run.')}</Text>
   {/if}
 
-  {#if cut}<RenderPanel runId={run.run_id} {revisions} />{/if}
+  {#if cut}<RenderPanel runId={run.run_id} {revisions} current={saved?.number ?? null} />{/if}
 
   <section class="flex flex-col gap-3 border-t border-gray-200 pt-6 dark:border-gray-800">
     <Heading size="tiny" tag="h2">{t('Run details')}</Heading>

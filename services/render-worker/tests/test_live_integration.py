@@ -81,7 +81,9 @@ def test_native_renders_live_sources_titles_and_audio(tmp_path, through_app, fal
             capture_output=True,
         )
         assert max(abs(value) for value in array.array("f", decoded.stdout)) > 0.05
-        assert artifact.probe.duration_seconds == pytest.approx(5.0, abs=0.15)
+        # 1 s title + two 2 s clips + 2 s ending, less the half-second the
+        # title and the ending each play from their clip in slow motion.
+        assert artifact.probe.duration_seconds == pytest.approx(4.5, abs=0.15)
         assert all(
             f"/api/assets/{video_id}/original" in [row[0] for row in calls]
             for video_id in material.video_ids
@@ -102,6 +104,7 @@ def _through_app(body, directory, *, fallback):
     from conftest import WORKER_TOKEN, running_worker
     from immich_memories.api.sync_client import SyncImmichClient
     from immich_memories.config_models_render import RenderWorkerConfig
+    from immich_memories.db import open_store
     from immich_memories.generate import generate_memory
     from immich_memories.tracking import RunTracker
 
@@ -115,14 +118,13 @@ def _through_app(body, directory, *, fallback):
             RenderRequest.model_validate(body), directory, client, lambda *_: None
         )
         params.clips[0].audio_categories = ["speech", "music"]
-        tracker = RunTracker(
-            "app-live-test", db_path=params.config.cache.database_path, capture_system=False
-        )
+        tracker = RunTracker("app-live-test", store=open_store(params.config), capture_system=False)
         with worker as url:
             params.config.render = RenderWorkerConfig(
                 worker_base_url=url, worker_token=WORKER_TOKEN, fallback_to_local=fallback
             )
             result = generate_memory(params, run_tracker=tracker, defer_finalization=True)
     assert result.assembly_clips[0].duration == 2.0
-    assert result.music_mute_windows == [(1.0, 3.0)]
+    # The first clip starts half a second in: the title played its opening.
+    assert result.music_mute_windows == [(1.0, 2.5)]
     return RenderArtifact(result.path, result.encoding_plan, probe=result.publish())

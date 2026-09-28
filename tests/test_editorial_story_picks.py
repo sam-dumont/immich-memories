@@ -674,3 +674,48 @@ def test_a_reader_that_answers_with_every_label_still_leaves_a_film():
     assert all(len(trim["keep"]) <= MAX_LABELS_PER_ASK for trim in trims)
     assert len(selected) == 65
     assert [c.taken for c in selected] == sorted(c.taken for c in selected)
+
+
+class UnreadableJudge:
+    # WHY: the model boundary. This scripted reader answers the way two real films died:
+    # prose where the JSON object belongs, again after the repair ask.
+    def __init__(self):
+        self.calls = []
+
+    def ask(self, stage, _prompt, **_kwargs):
+        self.calls.append(stage)
+        return "I would keep the second moment, it shows everyone."
+
+
+def _pick_unanswered(**kwargs):
+    choices = [
+        DepictedChoice(f"choice-{i}", "K01", f"2030-05-0{i + 1}T10:00", f"Day {i}", f"asset-{i}")
+        for i in range(5)
+    ]
+    records = {}
+    selected = pick_story_moments(
+        UnreadableJudge(),
+        story={"key": "K01", "title": "A week away"},
+        choices=choices,
+        starred=lambda _c: False,
+        contract="Show the week",
+        record=lambda name, value: records.__setitem__(name, value),
+        **kwargs,
+    )
+    return [c.key for c in selected], records["story-pick-K01"]
+
+
+def test_a_reader_that_never_answers_leaves_the_moments_the_rules_pick():
+    selected, record = _pick_unanswered(
+        count=2, rules_order=lambda choices, _count: [choices[4], choices[2], *choices[:2]]
+    )
+
+    assert selected == ["choice-2", "choice-4"]
+    stages = {vote["review_stage"] for vote in record["vote_records"]}
+    assert stages == {"pick-rules-fallback"}
+
+
+def test_without_rules_of_its_own_a_pick_falls_back_on_the_order_it_offered():
+    selected, _record = _pick_unanswered(count=1, orders=1)
+
+    assert selected == ["choice-0"]

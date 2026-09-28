@@ -90,6 +90,9 @@ sensitive-content detector read for it and the hold it sits under:
   worth a look before sharing: the exposure head read 0.35, under the 0.5 hold
 ```
 
+When you trimmed or removed the picture while reviewing the cut before rendering it, a line says so:
+`Your review: you trimmed it to 1-3.5 s.` The web UI keeps each review's edits in the store.
+
 The last line is your own word on the picture as it stands today, which may be newer than the run:
 `Your word on it now: You cleared its hold (a nudity detector flagged it).`, or, where a hold stands
 and you haven't answered it, the hold and the [`pictures clear-hold`](./pictures.md) command that
@@ -107,15 +110,16 @@ immich-memories runs render 20260927_080000_cafe --revision 2 --no-music
 
 Renders a finished cut again, or one of the revisions the web client saved, without selecting
 anything: no model is asked and no rule runs again. The cut's own render inputs are read back
-from its attempt directory, the revision's removals, trims, screen times and swaps are applied
+from its attempt directory, the revision's removals, trims, screen times, swaps and added pool
+pictures are applied
 the way the web export applies them, and the film goes through the same engine as `generate`.
 It lands in your output folder and shows up in `runs list` as a new run.
 
 It takes `generate`'s output flags under the same names: `--title`, `--subtitle`,
 `--llm-title/--no-llm-title`, `--transition`, `--resolution`, `--orientation`, `--scale-mode`,
 `--format`, `--quality`, `--music`, `--no-music`, `--music-volume`, `--add-date`, `--add-place`,
-`--privacy-mode`, `--upload-to-immich`, `--album`. The length is the cut's: a revision can only
-shorten it or keep it within what the titles leave.
+`--privacy-mode`, `--upload-to-immich`, `--album`. The length is the cut's, unless a revision
+keeps more than the titles left room for: then the film grows to hold it.
 
 `generate --no-render` and then `runs render` is a cut and its film in two steps. A cut made
 before this version kept no render inputs; `runs render` says so, and `generate` cuts it again.
@@ -152,3 +156,18 @@ directly in a root count as nothing.
 ```bash
 immich-memories runs storage --json
 ```
+
+## Report a run
+
+`immich-memories report [RUN_ID]` prints a redacted report for a GitHub issue. Without an ID it uses the
+latest run. Add `--json` for tooling or `--bundle report.zip` for the full report and logs. Read it before
+sharing it. The command makes no network requests.
+
+Free-text memories (caption threads, #1436) will add their redacted request and selection funnel.
+No run records that section yet, so today's reports don't have it. Once they do, the captions of
+photos you flagged, and why they were flagged, stay out unless you pass `--include-flagged-captions`.
+Review that text before sharing. Pictures are never attached.
+
+`runs show` also prints the saved span tree, rates per item, and the uncovered part of the run's wall
+clock. `prepare` records a run too. Older runs keep the timings they originally recorded.
+The setup matrix copies these same measurements from each attempt's `timings.private.json`.

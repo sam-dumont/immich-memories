@@ -318,7 +318,7 @@ class TestSendTestNotification:
             memory_type="test",
             status="completed",
             urls=["slack://token"],
-            db_path=None,
+            store=None,
             attach_thumbnail=False,
             cooldown_hours=24,
             bypass_cooldown=True,

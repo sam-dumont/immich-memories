@@ -21,6 +21,7 @@ from immich_memories.analysis.provider_health import (
 )
 from immich_memories.api.compatibility import UnsupportedImmichVersion
 from immich_memories.config import Config
+from immich_memories.db import open_store
 from immich_memories.security import sanitize_error_message
 
 logger = logging.getLogger(__name__)
@@ -547,6 +548,16 @@ def check_caption_endpoint(config: Config) -> CheckResult:
             status=CheckStatus.SKIPPED,
             message=f"Not required by {config.editorial.preparation.tier}",
         )
+    if config.editorial.preparation.caption_provider == "llm":
+        from immich_memories.config_models_editorial_preparation import LLM_CAPTION_WARNING
+
+        return CheckResult(
+            name="Captions",
+            status=CheckStatus.WARNING,
+            message=f"Explicit LLM captioning: {config.llm.model}",
+            details=LLM_CAPTION_WARNING
+            + " Image schema controls run before missing captions are acquired.",
+        )
     from immich_memories.analysis.editorial_description_contract import API_MODEL
     from immich_memories.analysis.editorial_preparation_captions import (
         CAPTION_KEY_HINT,
@@ -609,7 +620,6 @@ HOST_PATH_KEYS = (
     "editorial.preparation.head_bundle",
     "editorial.preparation.detector_python",
     "editorial.preparation.detector_cache_dir",
-    "triage.bundle",
 )
 
 
@@ -663,10 +673,12 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
         List of check results.
     """
     from immich_memories.preflight_homebase import check_homebase
+    from immich_memories.preflight_music import check_music
     from immich_memories.preflight_network import outside_call_checks
     from immich_memories.preflight_render import check_render_worker
     from immich_memories.preflight_run import (
         check_detector_export,
+        check_detector_interpreter,
         check_encoder,
         check_output_directory,
     )
@@ -678,11 +690,13 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
         check_title_rendering(config),
         check_encoder(config),
         check_detector_export(config),
+        check_detector_interpreter(config),
         check_caption_endpoint(config),
         check_host_paths(config),
         check_output_directory(config.output.output_path),
         check_notifications(config),
         check_render_worker(config),
+        check_music(config),
         check_hardware(),
         *outside_call_checks(config),
     ]
@@ -706,7 +720,7 @@ def check_notifications(config: Config) -> CheckResult:
     from immich_memories.automation.notification_state import NotificationStateStore
 
     try:
-        health = NotificationStateStore(config.cache.database_path).get()
+        health = NotificationStateStore(open_store(config)).get()
     except Exception:  # WHY: optional health telemetry cannot fail provider preflight
         return CheckResult(
             name="Notifications",

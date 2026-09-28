@@ -19,15 +19,13 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from itertools import chain
 from operator import itemgetter
-from pathlib import Path
 from typing import Any
 
 from immich_memories.analysis.editorial_block_votes import (
     BLOCK_SIZE,
     balanced_groups,
-    load_vote_bank,
-    save_vote_bank,
 )
+from immich_memories.analysis.editorial_picture_admission import GateRefusal, PictureAdmission
 from immich_memories.analysis.editorial_shot_kinds import KindOf, kind_mix
 from immich_memories.analysis.editorial_story_replies import close_family_on
 from immich_memories.analysis.editorial_thin_catalogue import (
@@ -35,7 +33,6 @@ from immich_memories.analysis.editorial_thin_catalogue import (
     ThinCatalogue,
     banked_catalogue,
 )
-from immich_memories.analysis.editorial_thin_gates import GateRefusal, ThinGates
 from immich_memories.analysis.editorial_thin_refill import (
     REMOVALS,
     ThinRefill,
@@ -61,6 +58,8 @@ from immich_memories.analysis.editorial_thin_vote import (
     sole_texture_shots,
     vote_thesis_fit,
 )
+from immich_memories.db import Store
+from immich_memories.store.vote_banks import VoteBank
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +111,9 @@ def _day(when: Any) -> str:
 class ThinPolish:
     """The model polish of a rules draft, over an account of the period it is a cut of."""
 
-    bank_dir: Path
+    # Where the thesis-fit votes are banked: the library's store, under the film's case key.
+    store: Store
+    bank_scope: str
     # The account of the period, and what its readings named as worth a record, given the
     # shots this draft chose, by story. Both arrive together, because both come from the same
     # readings and neither is worth paying for before the draft exists.
@@ -155,7 +156,7 @@ class ThinPolish:
         carriers: Sequence[dict[str, Any]],
         *,
         judge,
-        gates: ThinGates,
+        gates: PictureAdmission,
         catalogue: ThinCatalogue | None,
         contract: str,
         unread: str = "",
@@ -188,6 +189,7 @@ class ThinPolish:
         first_call = len(judge.calls)
         tier_of = {story.key: story.tier for story in catalogue.stories}
         admitted, refused = gates.admit(carriers, tier_of=tier_of, protected=protected)
+        admitted, refused = _years_kept_past_standing(carriers, admitted, refused, era_of)
         fit = _FitQuestion(
             judge, catalogue, contract, line_of, subject, close_family, era_of, kind_of
         )
@@ -357,8 +359,9 @@ class ThinPolish:
         joins the block its capture time falls in, so a few newcomers re-ask a few blocks and
         not the whole cut. Only the newcomers' verdicts are read. Banked by the block, never by
         the row, so a second run replays it, and a newcomer is never the only row left to ask.
-        A revoked newcomer does not take the shot it replaced with it: that shot comes back and
-        the film is where it started.
+        A newcomer must be kept, not merely avoid a two-order rejection: a weak candidate has
+        not earned a weak draft shot's place. A revoked newcomer does not take the shot it
+        replaced with it: that shot comes back and the film is where it started.
         """
         held = {row["asset_id"] for row in before}
         fresh = [row for row in filled if row["asset_id"] not in held]
@@ -373,7 +376,7 @@ class ThinPolish:
             block_votes, _rounds = self._ask(block, fit, family | eras | textures, moving=newcomers)
             votes.update(block_votes)
         verdicts = classify_fit(fresh, votes, family, eras, textures)
-        revoked = {row["asset_id"] for row in fresh if verdicts[row["asset_id"]]["state"] == "bad"}
+        revoked = {row["asset_id"] for row in fresh if verdicts[row["asset_id"]]["state"] != "kept"}
         if not revoked:
             return filled, set()
         snapshot = {row["asset_id"]: dict(row) for row in before}
@@ -398,12 +401,9 @@ class ThinPolish:
         # A vote proposes a replacement; only a candidate that passes can take the seat.
         return carriers, verdicts, rounds
 
-    def _bank(self) -> dict:
-        """Both votes read and write one file, so neither is paid for twice."""
-        return load_vote_bank(self._bank_path())
-
-    def _bank_path(self) -> Path:
-        return self.bank_dir / "thesis-fit.private.json"
+    def _bank(self) -> VoteBank:
+        """Both votes read and write one bank, so neither is paid for twice."""
+        return VoteBank(self.store, "thesis-fit", self.bank_scope)
 
     def _ask(self, carriers, fit: _FitQuestion, held: Mapping[str, str], moving=None):
         """The vote over these shots; with `moving`, only those shots' answers are read.
@@ -433,7 +433,7 @@ class ThinPolish:
             close_family=fit.close_family,
             story_of=lambda asset: story_of(asset, "") or "",
             bank=bank,
-            save=lambda: save_vote_bank(self._bank_path(), bank),
+            save=bank.save,
         )
 
 
@@ -550,6 +550,32 @@ def _with_records(
         record = catalogue.notable_record_of(row["asset_id"])
         marked.append(dict(row) | {"notable_record": record} if record else dict(row))
     return marked
+
+
+def _years_kept_past_standing(
+    carriers: Sequence[dict[str, Any]],
+    admitted: list[dict[str, Any]],
+    refused: list[GateRefusal],
+    era_of: Callable[[str], str | None] | None,
+) -> tuple[list[dict[str, Any]], list[GateRefusal]]:
+    """A year the film gives a voice keeps its last shot through the standing gate.
+
+    The draft stood that shot, and the slot a refusal opens can be refilled from any other year.
+    The family-viewing gate, a source rule and the repetition checks still take it.
+    """
+    if era_of is None:
+        return admitted, refused
+    voiced = {era_of(str(row["taken"])) for row in admitted}
+    by_asset = {row["asset_id"]: row for row in carriers}
+    kept, still = admitted.copy(), []
+    for refusal in refused:
+        era = era_of(str(by_asset[refusal.asset_id]["taken"]))
+        if refusal.rule == "standing" and era is not None and era not in voiced:
+            voiced.add(era)
+            kept.append(by_asset[refusal.asset_id])
+        else:
+            still.append(refusal)
+    return sorted(kept, key=itemgetter("taken", "asset_id")), still
 
 
 def _removed(carriers: Sequence[Mapping[str, Any]], kept: Sequence[Mapping[str, Any]]):

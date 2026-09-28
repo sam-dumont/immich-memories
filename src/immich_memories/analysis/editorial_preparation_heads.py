@@ -7,9 +7,10 @@ import numpy as np
 from PIL import UnidentifiedImageError
 
 from immich_memories.analysis.editorial_clip_frames import clip_frames_fact
-from immich_memories.cache.embedding_cache import HeadFactStore
+from immich_memories.cache.embedding_cache import HeadFactStore, PendingHeadFacts
+from immich_memories.db import Store
 from immich_memories.triage.encoder import DinoEncoder
-from immich_memories.triage.engine import TriageEngine
+from immich_memories.triage.engine import BANK_PICTURES, TriageEngine
 from immich_memories.triage.heads import HeadBundle
 from immich_memories.triage.preprocess import preprocess_image_bytes
 
@@ -40,7 +41,7 @@ def missing_encoder_message(encoder_path: Path) -> str:
 def prepare_heads(
     *,
     asset_ids: Sequence[str],
-    store_path: Path,
+    store: Store,
     bundle_path: Path,
     encoder_path: Path,
     head_versions: Mapping[str, str],
@@ -61,22 +62,26 @@ def prepare_heads(
         raise FileNotFoundError(missing_encoder_message(encoder_path))
     check_cancelled()
     encoder = DinoEncoder.open(encoder_path, provider=provider)
-    store = HeadFactStore(store_path)
-    try:
-        engine = TriageEngine(encoder=encoder, bundle=bundle, store=store)
-        for start in range(0, len(asset_ids), batch_size):
-            check_cancelled()
-            chunk = asset_ids[start : start + batch_size]
-            engine.run(chunk, preview_for, batch_size=batch_size)
-            progress("public_heads", start + len(chunk), len(asset_ids))
-    finally:
-        store.close()
+    engine = TriageEngine(encoder=encoder, bundle=bundle, store=HeadFactStore(store))
+
+    def checked(asset_id: str) -> bytes:
+        # A stop is honoured picture by picture; the engine banks what it decided first.
+        check_cancelled()
+        return preview_for(asset_id)
+
+    # Each step is one write to the store; the encoder still sees `batch_size` at a time.
+    step = max(batch_size, BANK_PICTURES // batch_size * batch_size)
+    for start in range(0, len(asset_ids), step):
+        check_cancelled()
+        chunk = asset_ids[start : start + step]
+        engine.run(chunk, checked, batch_size=batch_size)
+        progress("public_heads", start + len(chunk), len(asset_ids))
 
 
 def prepare_clip_frames(
     *,
     frame_paths: Mapping[str, Sequence[Path]],
-    store_path: Path,
+    store: Store,
     bundle_path: Path,
     encoder_path: Path,
     check_cancelled: Callable[[], None],
@@ -92,9 +97,8 @@ def prepare_clip_frames(
     encoder = open_encoder(encoder_path, provider=provider)
     if bundle.encoder_key != encoder.key:
         raise ValueError("head bundle was trained on another encoder")
-    store = HeadFactStore(store_path)
     failures: dict[str, str] = {}
-    try:
+    with PendingHeadFacts(HeadFactStore(store)) as bank:
         for asset_id, paths in frame_paths.items():
             check_cancelled()
             try:
@@ -104,7 +108,5 @@ def prepare_clip_frames(
                 continue
             kinds = [fact.label for fact in bundle.decide(encoder.embed(pixels))["frame_kind"]]
             if fact := clip_frames_fact(kinds):
-                store.remember_facts(asset_id, [fact], encoder_key=encoder.key)
-    finally:
-        store.close()
+                bank.add(asset_id, [fact], encoder_key=encoder.key)
     return failures

@@ -18,13 +18,14 @@ from datetime import datetime
 from operator import itemgetter
 from typing import Any
 
+from immich_memories.analysis.editorial_carrier import carrier_row
+from immich_memories.analysis.editorial_picture_admission import PictureAdmission
 from immich_memories.analysis.editorial_story_depth import depth_ladder, neighbours
 from immich_memories.analysis.editorial_story_lookalike import LookAlikeCheck
 from immich_memories.analysis.editorial_story_pick_contract import (
     carries_motion,
 )
 from immich_memories.analysis.editorial_story_places import PlaceShares
-from immich_memories.analysis.editorial_story_replies import WEIGHT_ROLE
 from immich_memories.analysis.editorial_story_shortlist import (
     DepictedChoice,
     _spaced,
@@ -38,6 +39,7 @@ from immich_memories.analysis.editorial_story_standing import (
     WEIGHED_STORY_WEIGHTS,
     StandingGate,
 )
+from immich_memories.analysis.editorial_thin_vote import sole_era_shots
 
 MAX_PASSES = 3
 
@@ -140,6 +142,7 @@ class CarrierAdmission:
         self._anchor_label = anchor_label
         self.parts = parts
         self.gate = gate
+        self.pictures = PictureAdmission(gate, None, None, excluded=excluded)
         self._line_of = line_of
         self._life = life
         self._excluded = excluded
@@ -156,6 +159,9 @@ class CarrierAdmission:
         self.kept_without_standing: list[str] = []
         self.displaced: list[dict] = []
         self.failed_standing: list[str] = []
+        # Stories holding no shot whose every offered moment failed the standing gate: their
+        # partition's voice moves on to its next story.
+        self.silent: list[str] = []
         self.editorially_closed: set[tuple[str, str | None]] = set()
         self._taken: set[str] = set()
         self._used_choice_keys: set[str] = set()
@@ -207,27 +213,14 @@ class CarrierAdmission:
         ]
         return _spaced(open_, self._unit_by_asset, already=self.carriers, among_choices=False)
 
-    def carrier_for(self, choice, s, index, candidates):
+    def carrier_for(self, choice, s, index, candidates, *, recovering=False):
         for asset in candidates:
-            # Recovery may keep a weak still, not override rejected motion or source context.
-            if self.gate.rejected_motion(asset) or not self.gate.has_required_context(
-                asset, s["weight"], s["key"]
-            ):
-                continue
-            # Other stories may have committed carriers since picks were compared.
-            # Recovery and an alternate source must obey the actual capture clock too.
-            actual = DepictedChoice(
-                choice.key,
-                choice.episode,
-                self._unit_by_asset[asset][1]["taken"],
-                choice.content,
-                asset,
-            )
-            if not _spaced([actual], self._unit_by_asset, already=self.carriers):
-                continue
             if not self.free(asset):
                 continue
             family, unit = self._unit_by_asset[asset]
+            row = self._carrier_row(unit, family, s, choice, index, asset)
+            if self.pictures.admits(row, cut=self.carriers, tier_of={}, recovering=recovering):
+                continue
             rest = [
                 a
                 for a in choice.members
@@ -237,20 +230,19 @@ class CarrierAdmission:
                     self.parts.limit is None or self.parts.of_asset(a) == self.parts.of_asset(asset)
                 )
             ]
-            return asset, self._carrier_row(unit, family, s, choice, index, asset), rest
+            return asset, row, rest
         return None, None, []
 
     def _carrier_row(self, unit, family, s, choice, index, asset) -> dict:
-        return unit | {
-            "event": family,
-            "anchor": self._anchor_label.get(family, family),
-            "chapter": index,
+        return carrier_row(
+            unit,
+            family=family,
+            anchor=self._anchor_label.get(family, family),
+            story=s,
+            chapter=index,
+            line=self._line_of(asset),
+        ) | {
             "why": f"{s['title']}: {choice.content[:80]}",
-            "event_intention": s.get("purpose") or "",
-            "line": self._line_of(asset),
-            "story_episode": s["key"],
-            "story_role": WEIGHT_ROLE[s["weight"]],
-            "story_weight": s["weight"],
             "depicted_moment": choice.key,
             # The rest of this moment, so a later stage can swap the frame without
             # losing it. Written by the reader that keeps a moment's siblings.
@@ -386,12 +378,13 @@ class CarrierAdmission:
             motion_of=_unit_reader(self._motion_line, self._unit_by_asset),
             plays=lambda c: carries_motion(self._unit_by_asset[c.primary][1]),
             replacement_allowed=allows_replacement,
+            rules_order=self._rules_order,
         )
         self.calls["pick_calls"] += len(self._judge.calls) - calls_before
         return picked
 
-    def _repeat_pick(self, eligible, n, chosen) -> list[DepictedChoice]:
-        """A story already asked in this partition refills mechanically, never with a new call.
+    def _rules_order(self, eligible, n) -> list[DepictedChoice]:
+        """Every moment, in the order the rules take them for a grant of ``n``, asking nobody.
 
         A story with more favourites than its grant spends it across the story's whole span;
         the favourites the spread passes over stay behind it, for when one cannot be placed.
@@ -403,8 +396,12 @@ class CarrierAdmission:
         strangers = [c for c in eligible if not self.starred_choice(c) and self.of_strangers(c)]
         preferred = [*_spread(stars, n), *_spread(rest, max(0, n - len(stars)))]
         preferred.extend(_spread(strangers, max(0, n - len(preferred))))
+        return [*preferred, *(c for c in (*stars, *rest, *strangers) if c not in preferred)]
+
+    def _repeat_pick(self, eligible, n, chosen) -> list[DepictedChoice]:
+        """A story already asked in this partition refills mechanically, never with a new call."""
         local: list[DepictedChoice] = []
-        for c in (*preferred, *(c for c in (*stars, *rest, *strangers) if c not in preferred)):
+        for c in self._rules_order(eligible, n):
             if len(local) >= n or not self.compatible(c, [*chosen, *local]):
                 continue
             local.append(c)
@@ -412,7 +409,10 @@ class CarrierAdmission:
 
     def _pick_story(self, s, short_of, partition_grants) -> list[DepictedChoice]:
         chosen: list[DepictedChoice] = []
-        for part, eligible in self.parts.split(self._standing_moments(s, short_of)).items():
+        standing = self._standing_moments(s, short_of)
+        if not standing:
+            self._falls_silent(s, short_of)
+        for part, eligible in self.parts.split(standing).items():
             n = partition_grants[s["key"]].get(part, 0)
             if not eligible or not n:
                 continue
@@ -423,6 +423,19 @@ class CarrierAdmission:
                 self._picked_before[pick_key] = True
                 chosen.extend(self._ask_pick(s, part, eligible, n))
         return _spaced(chosen, self._unit_by_asset, already=self.carriers)
+
+    def _falls_silent(self, s, short_of) -> None:
+        """A story with no shot that offered moments and saw every one fail the standing gate
+        gives up its partition's voice, so the next pass grants it to the partition's next story
+        rather than to this one again."""
+        key = s["key"]
+        if (
+            self.parts.voice_of is not None
+            and short_of[key]
+            and not self.chosen_by_story[key]
+            and key not in self.silent
+        ):
+            self.silent.append(key)
 
     def _commit(self, picks, short_of, open_of) -> int:
         return sum(
@@ -512,6 +525,7 @@ class CarrierAdmission:
             self.slots - len(self.carriers),
             carriers=self.carriers,
             already={k: len(v) for k, v in self.chosen_by_story.items()},
+            silent=self.silent,
         )
         # The standing gate first, over every open moment of a funded story (all members of a thin
         # story, the primary of each moment otherwise), so the pick chooses among pictures that
@@ -552,11 +566,12 @@ class CarrierAdmission:
         """Pick the moments that tell each story, then one picture per moment that stands by
         itself. A picture carries at most one moment."""
         passes = 0
-        # A refusal for looking alike frees a slot, so it buys the pass that refills it.
-        while len(self.carriers) < self.slots and passes < MAX_PASSES + len(self.lookalike.refused):
+        # A refusal for looking alike frees a slot, so it buys the pass that refills it; so does
+        # a story falling silent, whose partition's voice the next pass gives to another story.
+        while len(self.carriers) < self.slots and passes < MAX_PASSES + self._retries():
             passes += 1
-            refused = len(self.lookalike.refused)
-            if self._one_pass(passes) == 0 and len(self.lookalike.refused) == refused:
+            retries = self._retries()
+            if self._one_pass(passes) == 0 and self._retries() == retries:
                 break
         self.calls["selection_passes"] = passes
         self._keep_occasions()
@@ -569,6 +584,9 @@ class CarrierAdmission:
         self.calls["kept_without_standing"] = len(self.kept_without_standing)
         self.carriers.sort(key=itemgetter("taken"))
 
+    def _retries(self) -> int:
+        return len(self.lookalike.refused) + len(self.silent)
+
     # -- the owner's star over a picture nothing vouches for ---------------------------
 
     def _favourites_before_the_unvouched(self) -> None:
@@ -577,12 +595,15 @@ class CarrierAdmission:
 
         The bound is about proportions; the star is the owner's own judgement, and a picture
         with no star, no recorded video and no person Immich knows has nothing to set against
-        it. Pictures that are vouched for keep the bound's variety.
+        it. Pictures that are vouched for keep the bound's variety. While the film has a free
+        slot the star can take, it takes that one and nobody gives up a place.
         """
         waiting = self.lookalike.waiting_for_their_place(
             lambda asset: bool(self._unit_by_asset.get(asset, (None, {}))[1].get("favourite"))
         )
         for row in waiting:
+            if len(self.carriers) < self.slots and self.lookalike.readmit_one(row):
+                continue
             victim = self._weakest_unvouched()
             if victim is None:
                 return
@@ -593,10 +614,14 @@ class CarrierAdmission:
     def _weakest_unvouched(self) -> dict | None:
         stories = Counter(c["story_episode"] for c in self.carriers)
         order = {id(c): i for i, c in enumerate(self.carriers)}
+        # A year the film gives a voice keeps its only shot, the one its allocation granted.
+        voices = sole_era_shots(self.carriers, self.parts.voice_of)
         unvouched = [
             c
             for c in self.carriers
-            if not self._vouched(c) and c["asset_id"] not in self.kept_without_standing
+            if not self._vouched(c)
+            and c["asset_id"] not in self.kept_without_standing
+            and c["asset_id"] not in voices
         ]
         # A story keeps its only picture while another story can give one up; inside that,
         # the weakest standing goes first, and the latest admitted before an earlier one.
@@ -700,8 +725,11 @@ class CarrierAdmission:
             row = self._carrier_row(unit, family, s, choice, index, asset)
             kept = [c for c in self.carriers if c["story_episode"] == s["key"]]
             if self.lookalike.shows_something_new(s["key"], row, neighbours(row, kept)):
+                row = row | {"depth": True}
+                if self.pictures.admits(row, cut=self.carriers, tier_of={}):
+                    continue
                 self._used_choice_keys.add(choice.key)
-                self._admit(s, choice, row | {"depth": True}, [])
+                self._admit(s, choice, row, [])
                 added = True
         return added
 
@@ -752,7 +780,7 @@ class CarrierAdmission:
                         not self._unit_by_asset[a][1].get("favourite"),
                     ),
                 )
-                asset, carrier, rest = self.carrier_for(c, s, index, members)
+                asset, carrier, rest = self.carrier_for(c, s, index, members, recovering=True)
                 if carrier is None:
                     continue
                 self._taken.add(asset)

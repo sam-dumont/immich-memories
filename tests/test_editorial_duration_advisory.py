@@ -126,7 +126,7 @@ def test_direct_generation_persists_advisory_without_changing_completed_artifact
     from tests.test_generate import _h264_output_plan
 
     config = _config(tmp_path)
-    tracker = RunTracker("shortfall-test", db_path=config.cache.database_path, capture_system=False)
+    tracker = RunTracker("shortfall-test", capture_system=False)
     clips = [make_clip(f"clip-{number}", duration=4.0) for number in range(8)]
     source = tmp_path / "source.mp4"
     source.write_bytes(b"source")
@@ -178,7 +178,7 @@ def test_direct_generation_persists_advisory_without_changing_completed_artifact
     ):
         path = generate_memory(params, run_tracker=tracker)
 
-    saved = RunDatabase(config.cache.database_path).get_run(tracker.run_id)
+    saved = RunDatabase().get_run(tracker.run_id)
     assert saved.status == "completed"
     assert saved.output_duration_seconds == 41.3
     assert saved.target_duration_seconds == 90

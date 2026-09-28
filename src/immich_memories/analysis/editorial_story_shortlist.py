@@ -437,6 +437,7 @@ def _vote_both_orders(
     allow_fewer: bool,
     sampled_motion: bool,
     vote_records: list,
+    fallback: Sequence[str],
     suffix: str = "",
     orders: int = 2,
 ) -> list[list[str]]:
@@ -457,6 +458,7 @@ def _vote_both_orders(
             prompt,
             labels=set(by_label),
             count=count,
+            fallback=[label for label in fallback if label in by_label],
             allow_fewer=allow_fewer,
             record=vote_records.append,
         )
@@ -470,7 +472,7 @@ class _PickRequest:
     """What every page of one story's pick shares: its rendered rows and its question.
 
     ``rows``, ``labels`` and ``keys`` are parallel to the shortlist, so a page is a run of
-    positions in it.
+    positions in it. ``fallback`` is every label in the order the caller's rules keep them.
     """
 
     story: Mapping[str, Any]
@@ -481,6 +483,7 @@ class _PickRequest:
     allow_fewer: bool
     sampled_motion: bool
     paged: bool
+    fallback: Sequence[str]
     orders: int = 2
 
 
@@ -515,6 +518,7 @@ def _vote_every_page(
                 allow_fewer=request.allow_fewer,
                 sampled_motion=request.sampled_motion,
                 vote_records=vote_records,
+                fallback=request.fallback,
                 suffix=f"-page-{number}" if request.paged else "",
                 orders=request.orders,
             )
@@ -556,6 +560,7 @@ def _vote_the_shortlist(
     plays: Callable[[DepictedChoice], bool],
     contract: str,
     vote_records: list,
+    fallback: Sequence[str],
     orders: int = 2,
 ) -> tuple[list[list[str]], list[dict]]:
     """Ask the shortlist in as few requests as the budget carries, splitting the grant between them.
@@ -592,6 +597,7 @@ def _vote_the_shortlist(
         allow_fewer=allow_fewer,
         sampled_motion=sampled_motion,
         paged=len(groups) > 1,
+        fallback=fallback,
         orders=orders,
     )
     return _vote_every_page(judge, request, groups, shares, vote_records=vote_records)
@@ -736,12 +742,15 @@ def pick_story_moments(
     motion_of: Callable[[DepictedChoice], str] | None = None,
     plays: Callable[[DepictedChoice], bool] = lambda _c: False,
     orders: int = 2,
+    rules_order: Callable[[Sequence[DepictedChoice], int], Sequence[DepictedChoice]] | None = None,
 ) -> list[DepictedChoice]:
     """Compare contributions within a ceiling; only one offered moment leaves nothing to ask.
 
     Both orders may explicitly decline repetitive depth. Their larger complete
     vote caps the result; disagreement about identity cannot manufacture depth.
     `orders=1` asks the source order alone, for a caller whose pick the gates check afterwards.
+    A reader whose answer stays invalid after its repair costs its rows the pick the caller's
+    ``rules_order`` makes for this grant without a reader, or else the order they were offered in.
     """
     # A grant that reaches the only moment offered has nothing to ask. Everything else is a
     # question: which moments tell the story, and whether a further view earns a slot at all.
@@ -755,6 +764,7 @@ def pick_story_moments(
     chosen = _Chosen(by_key, compatible, count)
     labels, motions = _pick_material(choices, motion_of=motion_of, plays=plays)
     vote_records: list = []
+    by_rules = rules_order(choices, count) if rules_order is not None else choices
     kept_by_order, page_audit = _vote_the_shortlist(
         judge,
         story=story,
@@ -767,6 +777,7 @@ def pick_story_moments(
         plays=plays,
         contract=contract,
         vote_records=vote_records,
+        fallback=[labels[c.key] for c in by_rules],
         orders=orders,
     )
     # Respect the larger complete vote, never more.

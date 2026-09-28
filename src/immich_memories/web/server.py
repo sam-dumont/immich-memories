@@ -237,11 +237,33 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
         "Application initialized (auth=%s)", "enabled" if config.auth.enabled else "disabled"
     )
     scheduler = asyncio.ensure_future(automation_scheduler.run_forever())
+    _warm_answers(config)
     try:
         yield
     finally:
         scheduler.cancel()
         logger.info("Application shutting down")
+
+
+def _warm_answers(config: Any) -> None:
+    """Start the slow answers the pages read (suggestions, this year's and last year's trips).
+
+    They run behind the server as its first minutes pass, so opening Suggestions or the trip
+    picker finds them ready instead of starting them.
+    """
+    if not config.immich.url or not config.immich.api_key:
+        return
+    from immich_memories.automation.runner import AutoRunner
+    from immich_memories.web.answer_cache import answer_cache
+    from immich_memories.web.library import trip_finder, trips_answer
+    from immich_memories.web.suggestions import suggestions_answer
+
+    cache = answer_cache(config)
+    suggestions_answer(cache, AutoRunner(config))
+    find = trip_finder(config)
+    this_year = datetime.now(UTC).year
+    for year in (this_year, this_year - 1):
+        trips_answer(cache, find, year, [])
 
 
 def _moved(target: str):
@@ -301,6 +323,19 @@ def main(
     from immich_memories.logging_config import configure_logging
 
     configure_logging(level=log_level)
+    from immich_memories.settings_store import SettingsUnavailable
+
+    try:
+        config = get_config()
+    except SettingsUnavailable as unavailable:
+        logger.error("Not starting the UI: %s", unavailable)
+        sys.exit(1)
+    from immich_memories.db import open_store
+    from immich_memories.store.legacy_imports import enable_first_open_import
+
+    enable_first_open_import()
+    # Open the store now, so a first-open import runs at startup and not inside a request.
+    open_store(config)
     if not _is_port_free(host, port):
         logger.error(
             "Port %s is already in use. Stop the existing process: lsof -ti :%s | xargs kill",
@@ -308,7 +343,7 @@ def main(
             port,
         )
         sys.exit(1)
-    proxy = reverse_proxy_run_kwargs(get_config(), os.environ)
+    proxy = reverse_proxy_run_kwargs(config, os.environ)
     uvicorn.run(
         "immich_memories.web.server:create_app",
         factory=True,

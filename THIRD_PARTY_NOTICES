@@ -347,9 +347,13 @@ of public domain, BSD and GPL parts. Nothing here changes the project's MIT
 licence for its own code, but a downstream that vendors the environment
 should know.
 
-115 packages, computed from uv.lock: everything reachable from
+119 packages, computed from uv.lock: everything reachable from
 immich-memories through the runtime extras (never the dev tools). Regenerate
 with `make notices`; `make notices-check` fails when this list is stale.
+
+alembic 1.20.0
+  License: MIT
+  URL: https://alembic.sqlalchemy.org
 
 annotated-doc 0.0.4
   License: MIT
@@ -402,10 +406,6 @@ cloudpickle 3.1.2
 colorama 0.4.6
   License: BSD
   URL: https://github.com/tartley/colorama
-
-croniter 6.0.0
-  License: MIT
-  URL: http://github.com/kiorky/croniter
 
 cryptography 50.0.0
   License: Apache-2.0 OR BSD-3-Clause
@@ -475,6 +475,10 @@ hf-xet 1.6.0
   License: Apache-2.0
   URL: https://github.com/huggingface/xet-core
 
+holidays 0.105
+  License: MIT
+  URL: https://github.com/vacanza/holidays/
+
 httpcore 1.0.9
   License: BSD-3-Clause
   URL: https://www.encode.io/httpcore/
@@ -518,6 +522,10 @@ kaldi-native-fbank 1.22.3
 lameenc 1.8.2
   License: GNU Lesser General Public License v3 (LGPLv3)
   URL: https://github.com/chrisstaite/lameenc
+
+mako 1.4.3
+  License: MIT
+  URL: https://www.makotemplates.org/
 
 markdown 3.10.2
   License: BSD-3-Clause
@@ -651,6 +659,14 @@ protobuf 7.35.1
   License: 3-Clause BSD License
   URL: https://developers.google.com/protocol-buffers/
 
+psycopg 3.3.6
+  License: LGPL-3.0-only
+  URL: https://psycopg.org/
+
+psycopg-binary 3.3.6
+  License: LGPL-3.0-only
+  URL: https://psycopg.org/
+
 pycparser 3.0
   License: BSD-3-Clause
   URL: https://github.com/eliben/pycparser
@@ -707,10 +723,6 @@ python-multipart 0.0.32
   License: Apache-2.0
   URL: https://github.com/Kludex/python-multipart
 
-pytz 2026.1.post1
-  License: MIT
-  URL: http://pythonhosted.org/pytz
-
 pyyaml 6.0.3
   License: MIT
   URL: https://github.com/yaml/pyyaml
@@ -746,6 +758,10 @@ six 1.17.0
 soundfile 0.13.1
   License: BSD
   URL: https://github.com/bastibe/python-soundfile
+
+sqlalchemy 2.1.1
+  License: MIT
+  URL: https://www.sqlalchemy.org
 
 starlette 1.6.0
   License: BSD-3-Clause

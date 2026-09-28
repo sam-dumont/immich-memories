@@ -12,12 +12,14 @@ being remarkable on its own.
 
 from __future__ import annotations
 
+import collections
+import copy
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
+from immich_memories.analysis.picture_copies import picture_copies, starred_keepers
 from immich_memories.analysis.special_day import (
     SpecialDay,
     active_hours,
@@ -29,22 +31,31 @@ from immich_memories.analysis.special_day import (
     run_extent,
     window_that_holds_the_day,
 )
+from immich_memories.analysis.special_day_holiday import was_the_holiday
 from immich_memories.analysis.special_day_sequence import (
     MIN_FILM_SECONDS,
     filmable_seconds,
     read_in_sequence,
 )
 from immich_memories.analysis.special_day_title import honest_title
+from immich_memories.analysis.special_day_vocabulary import (
+    YearWords,
+    crowded_out,
+    distinctive_days,
+    telling,
+)
 from immich_memories.analysis.special_event_scope import SpecialEventAdmission
 from immich_memories.analysis.trip_detection import detect_trips, haversine_km
 from immich_memories.automation.special_day_facts import ranked_occasions
 from immich_memories.config_models_analysis import AnalysisConfig
 from immich_memories.config_models_automation import TripsConfig
 from immich_memories.config_models_render import PhotoConfig
-from immich_memories.memory_types.date_builders import KNOWN_HOLIDAYS, resolve_holiday
+from immich_memories.memory_types.date_builders import holiday_name, holidays_of, resolve_holiday
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
+
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +85,7 @@ class DiscoveredDay:
     asset_ids: tuple[str, ...] = ()
     event_admission: SpecialEventAdmission | None = None
     judged: bool = True
+    unjudged_because: str = ""
     # How many of the day's pictures the recorded window holds, against `photos`.
     # Zero means a scan from before #1067 that never counted, so its window is
     # taken as written; every other row can be checked without re-fetching the
@@ -85,42 +97,86 @@ class DiscoveredDay:
     app_version: str = ""
 
 
-def holidays_in(year: int, extra: Iterable[str] = ()) -> set[date]:
-    """Dates a holiday memory already covers.
+def holidays_in(year: int, extra: Iterable[str] = (), *, country: str = "US") -> dict[date, str]:
+    """The holidays of the home country, each with its name, and any the library adds.
 
     Nothing is defined here: date_builders owns which holidays exist and when
-    they fall, moving ones included. Adding one there is enough for it to be
-    skipped here too.
+    they fall, moving ones included: the country's public holidays and the few
+    family days no public calendar lists.
     """
-    covered: set[date] = set()
-    for name in (*KNOWN_HOLIDAYS, *extra):
+    covered = holidays_of(year, country)
+    for name in extra:
         try:
-            covered.add(resolve_holiday(name, year))
+            covered.setdefault(resolve_holiday(name, year, country=country), holiday_name(name))
         except ValueError:
             logger.debug("Not a holiday this build knows: %r", name)
     return covered
 
 
-def _shot_here(assets: list, analysis_config: Any) -> list:
-    """Whatever of this year the library's own camera actually made."""
-    from immich_memories.analysis.source_filter import not_shot_here
+def _one_file_per_picture(assets: list) -> list:
+    """Each picture once, from its full-size file, with a star any of its files carries.
+
+    A shared album stores a curated picture twice, the camera's file and a smaller copy under
+    the same name at the same instant, and discovery counted both: a day looked twice its size.
+    The fold is the editor's own (`picture_copies`); a file with no name is never folded.
+    """
+    named = [asset for asset in assets if getattr(asset, "original_file_name", None)]
+    copies = picture_copies(named)
+    if not copies:
+        return assets
+    starred = starred_keepers(copies, named)
+    logger.info(
+        "%d of %d files are other files of a picture; each counts once", len(copies), len(assets)
+    )
+    return [
+        _with_star(asset) if asset.id in starred else asset
+        for asset in assets
+        if asset.id not in copies
+    ]
+
+
+def _with_star(asset: Any) -> Any:
+    starred = copy.copy(asset)
+    starred.is_favorite = True
+    return starred
+
+
+def _shot_here(assets: list, analysis_config: Any) -> tuple[list, list]:
+    """Whatever of this year the library's own camera made, and the pictures forwarded to it.
+
+    Forwarded pictures (sent by someone else, or saved) are what a messaging app or a race's
+    photographers left behind. They are evidence of a day the camera already made, never a day
+    of their own: their time is when they were saved, and a film cannot use them. Screen
+    recordings and the other excluded sources are neither.
+    """
+    from immich_memories.analysis.source_filter import from_an_excluded_source, not_shot_here
 
     if analysis_config is None:
-        return assets
+        return assets, []
     patterns = getattr(analysis_config, "exclude_filename_patterns", ())
     stills_need_a_camera = getattr(analysis_config, "exclude_stills_without_camera_exif", False)
-    kept = [
-        asset
-        for asset in assets
-        if not not_shot_here(asset, patterns=patterns, stills_need_a_camera=stills_need_a_camera)
-    ]
+    kept: list = []
+    forwarded: list = []
+    for asset in assets:
+        if not not_shot_here(asset, patterns=patterns, stills_need_a_camera=stills_need_a_camera):
+            kept.append(asset)
+        elif not from_an_excluded_source(getattr(asset, "original_file_name", None), patterns):
+            forwarded.append(asset)
     if len(kept) < len(assets):
         logger.info(
-            "Source filter: %d of %d assets were not shot here",
+            "Source filter: %d of %d assets were not shot here; %d forwarded kept as evidence",
             len(assets) - len(kept),
             len(assets),
+            len(forwarded),
         )
-    return kept
+    return kept, forwarded
+
+
+# Three or more files stamped with one exact second were saved together: the stamp is when they
+# were saved, not when anything happened (measured: 0.9% of camera photos, 26% of stripped ones).
+_ONE_SAVE = 3
+# How many sent pictures a day that stands out is judged with.
+_TOLD = 3
 
 
 def _kept_away_from_home(items: list, home: tuple[float, float], min_km: float) -> bool:
@@ -176,11 +232,12 @@ def scan_year(
     analysis_config: Any = None,
     trips_config: TripsConfig | None = None,
     captions: dict[str, str] | None = None,
-    judgment_cache_path: Path | None = None,
+    judgments: Store | None = None,
     still_seconds: float | None = None,
     reader: Literal["model", "rules"] = "model",
     close_family: Mapping[str, str] | None = None,
     per_year: int = 6,
+    country: str = "US",
 ) -> list[DiscoveredDay]:
     """Find the days in one year's assets that were occasions, and name them.
 
@@ -203,12 +260,16 @@ def scan_year(
     day the scan called special: 37 of its 223 assets were received or
     downloaded rather than shot, and they counted toward the day's volume and
     its active hours and could be sampled into the prompt — so the model
-    narrated pictures nobody in the library had taken.
+    narrated pictures nobody in the library had taken. Forwarded pictures come
+    back only as marked evidence of a day the camera made: an obstacle race
+    whose 123 pictures were saved from its photographers read, on the owner's
+    25 alone, as a jog on a path.
     """
     if not assets:
         return []
 
-    assets = _shot_here(assets, analysis_config)
+    assets = _one_file_per_picture(assets)
+    assets, forwarded = _shot_here(assets, analysis_config)
     if not assets:
         return []
 
@@ -230,10 +291,14 @@ def scan_year(
         if home
         else set()
     )
-    holidays = holidays_in(year, extra_holidays)
+    holidays = holidays_in(year, extra_holidays, country=country)
 
     off_trip = candidate_days(assets, away_days=away)
-    candidates = _drop_the_holidays_it_actually_was(off_trip, holidays, home, trips.min_distance_km)
+    candidates = _drop_the_holidays_it_actually_was(
+        off_trip, set(holidays), home, trips.min_distance_km
+    )
+    forwarded_on = _by_day(forwarded, candidates)
+    words = _standing_out(assets, captions, candidates, forwarded_on, reader)
     occasions = _occasions(
         candidates,
         year=year,
@@ -242,8 +307,10 @@ def scan_year(
         away_km=trips.min_distance_km,
         captions=captions,
         llm_config=llm_config,
-        cache_path=judgment_cache_path,
+        judgments=judgments,
         family=close_family or {},
+        standing_out=words.standing,
+        held=_held_holidays(off_trip, candidates, holidays),
     )
     logger.info(
         "%d: %d occasions, %d dates covered by trips, %d dropped as the holiday they fell on",
@@ -258,30 +325,25 @@ def scan_year(
     # The no-model tier walks its occasions strongest first and stops at the year's few; the
     # model tier names every one it read.
     limit = per_year if reader == "rules" else len(occasions)
+    judge = _Judge(
+        reader=reader,
+        llm_config=llm_config,
+        captions=captions,
+        judgments=judgments,
+        told=words.told,
+        year_words=words.year,
+        holidays=holidays,
+        read_as_candidates=set(candidates),
+        stills=stills,
+        clip_seconds=clip_seconds,
+    )
     found: list[DiscoveredDay] = []
     for day, what in occasions.items():
         if len(found) >= limit:
             break
-        items = candidates[day]
-        if filmable_seconds(items, still_seconds=stills, clip_seconds=clip_seconds) < (
-            MIN_FILM_SECONDS
-        ):
-            logger.info("%s read as %r, dropped for want of material to film", day, what)
-            continue
-        verdict = (
-            SpecialDay(special=True, title=honest_title(items, what=what, evidence=""), what=what)
-            if reader == "rules"
-            else ask_if_special(
-                items,
-                llm_config,
-                captions={a.id: captions[a.id] for a in items if captions and captions.get(a.id)},
-                judgment_cache_path=judgment_cache_path,
-            )
-        )
-        outcome = _day_from(day, items, verdict, what)
-        if outcome is not None:
+        if (outcome := judge.day(day, off_trip[day], what)) is not None:
             found.append(outcome)
-    return sorted(found, key=lambda entry: entry.day)
+    return sorted(_thinned(found, words), key=lambda entry: entry.day)
 
 
 def _occasions(
@@ -293,14 +355,16 @@ def _occasions(
     away_km: float,
     captions: dict[str, str] | None,
     llm_config: Any,
-    cache_path: Path | None,
+    judgments: Store | None,
     family: Mapping[str, str],
+    standing_out: Mapping[date, str],
+    held: Mapping[date, str],
 ) -> dict[date, str]:
     """The occasions among these runs and what each was: read by the model, or by the facts."""
     if reader == "rules":
         return ranked_occasions(candidates, home=home, away_km=away_km, family=family)
     reading = read_in_sequence(
-        candidates, captions=captions, llm_config=llm_config, cache_path=cache_path, family=family
+        candidates, captions=captions, llm_config=llm_config, judgments=judgments, family=family
     )
     logger.info(
         "%d: %d runs read, %d with nothing recorded beyond the clock",
@@ -310,7 +374,183 @@ def _occasions(
     )
     if reading.unread_months:
         raise YearNotRead(year, reading.unread_months)
-    return dict(sorted(reading.found.items()))
+    # The month reading compares a month's days and misses some; what a day's own words make
+    # stand out from its year goes to the same day check.
+    added = {day: f"a day of {words}" for day, words in standing_out.items()}
+    added = {day: what for day, what in added.items() if day not in reading.found}
+    logger.info("%d: %d more days stand out by their words", year, len(added))
+    # A holiday spent at home is judged like any day, then asked whether it was the holiday.
+    return dict(sorted((dict(held) | reading.found | added).items()))
+
+
+def _standing_out(
+    assets: list,
+    captions: Mapping[str, str] | None,
+    candidates: Mapping[date, list],
+    forwarded_on: Mapping[date, list],
+    reader: str,
+) -> _Words:
+    """The candidate days whose own words, and half of what was sent from them, stand out, and
+    what of the sent pictures each will be judged with.
+
+    Only a day that stands out hears what was sent from it, and only the pictures that say
+    most of what the year does not: a day the month reading proposed is judged on its own.
+    """
+    if reader == "rules" or not captions:
+        return _Words({}, {}, {})
+    said = _said_by_day(assets, captions)
+    standing = distinctive_days(
+        said,
+        candidates,
+        forwarded={day: _said(sent, captions) for day, sent in forwarded_on.items()},
+    )
+    told = {day: telling(forwarded_on.get(day, []), captions, said, keep=_TOLD) for day in standing}
+    return _Words(standing, told, said, YearWords(said))
+
+
+class _Words(NamedTuple):
+    standing: dict[date, str]
+    told: dict[date, list]
+    said: dict[date, list[str]]
+    year: YearWords | None = None
+
+
+def _held_holidays(
+    off_trip: Mapping[date, list], candidates: Mapping[date, list], holidays: Mapping[date, str]
+) -> dict[date, str]:
+    """The holidays spent at home, proposed to the day check under their own name."""
+    return {
+        day: f"a day that fell on {name}"
+        for day, name in holidays.items()
+        if day in off_trip and day not in candidates
+    }
+
+
+def _thinned(found: list[DiscoveredDay], words: _Words) -> list[DiscoveredDay]:
+    """The confirmed days, less those that only repeat the crowd of confirmed days around them."""
+    crowd = crowded_out([entry.day for entry in found], words.said, exempt=words.standing)
+    if crowd:
+        logger.info(
+            "%d confirmed days only repeat the days around them: %s",
+            len(crowd),
+            ", ".join(str(day) for day in sorted(crowd)),
+        )
+    return [entry for entry in found if entry.day not in crowd]
+
+
+@dataclass(frozen=True)
+class _Judge:
+    """Everything the scan needs to judge one proposed day."""
+
+    reader: str
+    llm_config: Any
+    captions: Mapping[str, str] | None
+    judgments: Store | None
+    told: Mapping[date, list]
+    year_words: YearWords | None
+    holidays: Mapping[date, str]
+    read_as_candidates: set[date]
+    stills: float
+    clip_seconds: float
+
+    def day(self, day: date, items: list, what: str) -> DiscoveredDay | None:
+        """The day's row, or None when it cannot be filmed, is not an occasion, or was the
+        holiday it fell on."""
+        if filmable_seconds(items, still_seconds=self.stills, clip_seconds=self.clip_seconds) < (
+            MIN_FILM_SECONDS
+        ):
+            logger.info("%s read as %r, dropped for want of material to film", day, what)
+            return None
+        if self.reader == "rules":
+            verdict = SpecialDay(
+                special=True, title=honest_title(items, what=what, evidence=""), what=what
+            )
+            return _day_from(day, items, verdict, what)
+        ask = _Ask(self.llm_config, self.captions, self.judgments, self.told.get(day, []))
+        verdict, whole_day = _read_the_day(items, ask)
+        if verdict.special and self._was_the_holiday(day, verdict):
+            return None
+        if verdict.special and whole_day:
+            verdict = self._named_by_its_moment(items, verdict, ask)
+        return _day_from(day, items, verdict, what)
+
+    def _named_by_its_moment(self, items: list, verdict: SpecialDay, ask: _Ask) -> SpecialDay:
+        """A confirmed day, named by the hours its own unusual words gather in, when those hours
+        are an occasion too.
+
+        A concert night came back "Baby's Day in Jette", a cycling race at a circuit "Day at the
+        Race Track": the reader, shown the whole day, named what it held first. Only a confirmed
+        day is renamed, and only when its name misses every word the day stood out by: asked
+        alone, a moment of an ordinary day came back an occasion too often, and "Night of the
+        Haunted Youth" came back "Under Purple Lights".
+        """
+        if self.year_words is None or not self.captions:
+            return verdict
+        day = items[0].file_created_at.date()
+        if self.year_words.names_its_own(day, f"{verdict.title} {verdict.what}"):
+            return verdict
+        moment = self.year_words.moment(items, self.captions)
+        if moment is None:
+            return verdict
+        start, end = moment
+        logger.info(
+            "%s: naming it by its moment, %s-%s",
+            day,
+            f"{start:%H:%M}",
+            f"{end:%H:%M}",
+        )
+        told = ask([a for a in items if start <= a.file_created_at <= end])
+        return replace(told, window=told.window or moment) if told.special else verdict
+
+    def _was_the_holiday(self, day: date, verdict: SpecialDay) -> bool:
+        if self.reader == "rules" or day not in self.holidays:
+            return False
+        holiday = self.holidays[day]
+        answer = was_the_holiday(
+            holiday, verdict.title, verdict.what, self.llm_config, self.judgments
+        )
+        # No answer keeps what the scan did before: a holiday at home is its holiday's.
+        the_holiday = answer if answer is not None else day not in self.read_as_candidates
+        if the_holiday:
+            logger.info("%s was %s itself; the holiday's own memory has it", day, holiday)
+        return the_holiday
+
+
+def _said(pictures: list, captions: Mapping[str, str]) -> list[str]:
+    return [captions[a.id] for a in pictures if captions.get(a.id)]
+
+
+def _said_by_day(assets: list, captions: Mapping[str, str]) -> dict[date, list[str]]:
+    """What was written about each day's own pictures, for the year they stand out from."""
+    said: dict[date, list[str]] = collections.defaultdict(list)
+    for asset in assets:
+        if text := captions.get(asset.id):
+            said[asset.file_created_at.date()].append(text)
+    return said.copy()
+
+
+def _by_day(forwarded: list, candidates: Mapping[date, list]) -> dict[date, list]:
+    """The forwarded pictures each candidate day can be said to hold.
+
+    A day of forwards alone is not a candidate. A batch saved in one second is dated by the save,
+    so it counts only inside the day's own run, while the camera was out too: on a race day 47
+    of 58 such pictures were the race's own photographs; over its year, 118 of 243 counted.
+    """
+    second = collections.Counter(a.file_created_at.replace(microsecond=0) for a in forwarded)
+    runs = {day: run_extent(items) for day, items in candidates.items()}
+    on: dict[date, list] = collections.defaultdict(list)
+    for asset in forwarded:
+        day = asset.file_created_at.date()
+        if day in runs and (
+            second[asset.file_created_at.replace(microsecond=0)] < _ONE_SAVE
+            or _during(asset, runs[day])
+        ):
+            on[day].append(asset)
+    return on.copy()
+
+
+def _during(asset: Any, run: tuple[datetime, datetime] | None) -> bool:
+    return run is not None and run[0] <= asset.file_created_at <= run[1]
 
 
 class YearNotRead(RuntimeError):
@@ -318,6 +558,63 @@ class YearNotRead(RuntimeError):
 
     def __init__(self, year: int, months: list[str]) -> None:
         super().__init__(f"{year}: {len(months)} month(s) could not be read ({', '.join(months)})")
+
+
+@dataclass(frozen=True)
+class _Ask:
+    """The day check for one day, asked about any of its pictures with its sent ones beside."""
+
+    llm_config: Any
+    captions: Mapping[str, str] | None
+    judgments: Store | None
+    forwarded: list
+
+    def __call__(self, pictures: list) -> SpecialDay:
+        return ask_if_special(
+            pictures,
+            self.llm_config,
+            captions={
+                a.id: self.captions[a.id]
+                for a in [*pictures, *self.forwarded]
+                if self.captions and self.captions.get(a.id)
+            },
+            judgments=self.judgments,
+            forwarded=self.forwarded,
+        )
+
+
+def _read_the_day(items: list, ask: _Ask) -> tuple[SpecialDay, bool]:
+    """The day-level verdict, asked once more about the day's event when the day read ordinary,
+    and whether it was read off the whole day.
+
+    Some days contain an occasion rather than being one: a race day began with the cat at
+    home and ended there, and the small reader, shown the whole day, named it after the cat.
+    Where the pictures were taken already says which stretch the day was spent on
+    (`event_window`), so an ordinary verdict is asked again about that stretch alone. A day
+    with no such stretch, or one the reader already called an occasion, is asked once.
+    """
+    verdict = ask(items)
+    if verdict.judged and not verdict.special:
+        placed = _asked_at_its_place(items, ask)
+        if placed is not None:
+            return placed, False
+    return verdict, True
+
+
+def _asked_at_its_place(items: list, ask: Callable[[list], SpecialDay]) -> SpecialDay | None:
+    """The occasion found in the stretch the day spent at one place, or None."""
+    window = window_that_holds_the_day(event_window(items), items)
+    if window is None:
+        return None
+    start, end = window
+    logger.info(
+        "%s read as ordinary; asking about its %s-%s stretch at one place",
+        items[0].file_created_at.date(),
+        f"{start:%H:%M}",
+        f"{end:%H:%M}",
+    )
+    inside = ask([a for a in items if start <= a.file_created_at <= end])
+    return inside if inside.special else None
 
 
 def _day_from(day: date, items: list, verdict: Any, what: str = "") -> DiscoveredDay | None:
@@ -343,6 +640,7 @@ def _day_from(day: date, items: list, verdict: Any, what: str = "") -> Discovere
             photos=len(items),
             window=None,
             judged=False,
+            unjudged_because=verdict.unjudged_because,
             prompt_version=SCAN_VERSION,
             app_version=__version__,
         )

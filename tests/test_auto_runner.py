@@ -30,21 +30,8 @@ from immich_memories.automation.runner import (
 )
 from immich_memories.cli.auto_cmd import _candidates_to_json, _print_candidates_table
 from immich_memories.config_loader import Config
+from immich_memories.self_command import self_command
 from immich_memories.tracking.models import RunMetadata
-
-
-@pytest.fixture(autouse=True)
-def _no_machine_catalogue(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """Point discovery at an absent catalogue instead of this machine's real one.
-
-    discover() reads the special-days catalogue from the user's home; on a
-    developer machine that file holds real discovered days, and these tests
-    would count candidates that CI never sees.
-    """
-    monkeypatch.setattr(
-        "immich_memories.automation.candidate_discovery.default_catalogue_path",
-        lambda: tmp_path / "no-catalogue.json",
-    )
 
 
 @pytest.fixture
@@ -1652,7 +1639,7 @@ class TestBuildGenerateCommand:
         )
         cmd = _build_generate_command(candidate, upload=False)
         assert cmd == [
-            "immich-memories",
+            *self_command(),
             "generate",
             "--memory-type",
             "monthly_highlights",
@@ -1695,7 +1682,7 @@ class TestBuildGenerateCommand:
         )
         cmd = _build_generate_command(candidate, upload=False)
         assert cmd == [
-            "immich-memories",
+            *self_command(),
             "generate",
             "--memory-type",
             "year_in_review",

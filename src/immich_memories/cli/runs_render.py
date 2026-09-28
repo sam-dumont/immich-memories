@@ -74,12 +74,13 @@ def register_render_command(runs: click.Group) -> None:
         """
         from immich_memories.api.sync_client import SyncImmichClient
         from immich_memories.config import get_config
+        from immich_memories.db import open_store
         from immich_memories.tracking import RunDatabase
 
         config = get_config()
-        db = RunDatabase(db_path=config.cache.database_path)
+        db = RunDatabase(open_store(config))
         try:
-            resolved, attempt = resolve_attempt(config.cache.cache_path, db, run_id)
+            resolved, attempt = resolve_attempt(db, run_id)
         except RunNotFound as exc:
             print_error(str(exc))
             sys.exit(1)

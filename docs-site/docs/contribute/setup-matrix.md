@@ -5,6 +5,15 @@ title: Setup matrix
 
 # Running the setup matrix
 
+:::caution Historical evaluation runner
+The profiles below predate automatic product tiers and include retired reader comparisons.
+Their preparation-tier and reader overrides do not define a current NAS/GPU/Full comparison.
+Do not use this recipe as a current install guide or model recommendation. Before another run,
+update its profiles and verify the resolved product tier and matched inputs for every cell.
+The current local default is Gemma 4 E4B; setup and capability checks are on
+[Requirements and tiers](../run/requirements.md#which-tier-you-get).
+:::
+
 The setup matrix varies the machine rather than the request: twenty-one setups, one memory each, the
 same month of the same library. It answers "how do the same pictures come out under each mode, and
 what does each mode tax", and the answer is a table of preparation, selection and render seconds,
@@ -87,8 +96,10 @@ The facts warm-up reports its attempt, last failure and remaining budget every 3
 A service loading models gets 15 minutes; a port-forward that cannot start a listener stops
 after three attempts (about one minute), with the last `kubectl` error.
 
-**One cache per cell.** The runner pins `cache.directory`, `cache.database` and the annotation bank
-per cell, so nothing one cell derived and nothing one cell decided reaches the next. This is not a
+**One cache per cell.** The runner pins `cache.directory`, `cache.database` and the store
+(`database.url`, a `store.db` inside the cell's cache directory) per cell, so nothing one cell
+derived and nothing one cell decided reaches the next. Any other per-profile run gets the same
+isolation the same way: give each profile its own `IMMICH_MEMORIES_DATABASE_URL`. This is not a
 tidiness rule: the first Mac lane run shared the operator's cache across both cells, and `mac-rules`
 published losses in the model's words because `mac-local` had filled the bank minutes earlier. Its
 cold preparation came in at one second against fifteen. Both rows were the second cell reading the
@@ -105,7 +116,7 @@ numbers are the point of the second prepare of the same run.
 facts come from, not on who reads afterwards. Mac cells that vary only the reader carry
 `seed_cache_from: mac-local` and copy that cell's bank. What crosses is preparation (captions, head
 facts, pixel facts, motion); what does not is anything a reader decided, and the copy is followed by
-a delete over every table in the annotation store that holds a model's answer. A seeded cell's
+a delete over every table in the cell's store that holds a model's answer. A seeded cell's
 `prep cold` column holds `= mac-local` rather than a number.
 
 **The cluster's config is pins only.** A Job's ConfigMap is built from `baseline_config` and the

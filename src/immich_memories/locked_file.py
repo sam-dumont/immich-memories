@@ -1,8 +1,8 @@
-"""One writer at a time for a file that several runs read, change and write back.
+"""One writer at a time for a file that several processes read, change and write back.
 
-The pipeline lock covers assembly only, so two cuts, a cut and idle fill, or the web UI and the
-CLI read and rewrite the same bank files at once. A rewrite from a stale read drops whatever the
-other writer added in between; holding this lock across read, merge and replace closes that gap.
+The banks moved to the store, which has transactions. Two files still need this: the place-name
+cache, which two cuts may extend at once (a rewrite from a stale read would drop the other's
+names), and the SQLite store's migration lock, which must hold before the database is open.
 """
 
 from __future__ import annotations

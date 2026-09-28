@@ -6,7 +6,6 @@ All UI interaction is replaced by a progress callback.
 
 from __future__ import annotations
 
-import io
 import logging
 import shutil
 from collections.abc import Callable
@@ -15,6 +14,8 @@ from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, overload
 
+from immich_memories.db import Store, open_store
+from immich_memories.db.leases import Lease, LeaseHeldError
 from immich_memories.generate_clips import cleanup_temp_clips, cleanup_temp_dirs
 from immich_memories.generate_delivery import (
     _deliver_with_operational_progress,
@@ -194,38 +195,27 @@ class DeliveryError(GenerationError):
 
 
 class PipelineLock:
-    """File-based lock preventing concurrent pipeline runs.
+    """Lease preventing concurrent pipeline runs.
 
-    Uses fcntl.flock() for cross-process exclusion. Non-blocking —
-    raises GenerationError immediately if another instance holds the lock.
+    A lock file on a SQLite store, an advisory lock on PostgreSQL (so it holds across hosts).
+    Non-blocking: raises GenerationError immediately if another instance holds it.
     """
 
-    def __init__(self, lock_path: Path) -> None:
+    def __init__(self, lock_path: Path, store: Store | None = None) -> None:
         self._lock_path = lock_path
-        self._fd: io.TextIOWrapper | None = None
+        self._lease = Lease("pipeline", lock_path, store)
 
     def __enter__(self) -> PipelineLock:
-        import fcntl
-
-        self._lock_path.parent.mkdir(parents=True, exist_ok=True)
-        self._fd = self._lock_path.open("w")
         try:
-            fcntl.flock(self._fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError:
-            self._fd.close()
-            self._fd = None
+            self._lease.acquire()
+        except (LeaseHeldError, OSError):
             raise GenerationError(
                 f"Another instance is already running. Lock file: {self._lock_path}"
-            )
+            ) from None
         return self
 
     def __exit__(self, *exc: object) -> None:
-        import fcntl
-
-        if self._fd is not None:
-            fcntl.flock(self._fd, fcntl.LOCK_UN)
-            self._fd.close()
-            self._fd = None
+        self._lease.release()
 
 
 # Minimum free disk space before starting generation
@@ -276,9 +266,13 @@ def generate_memory(
     if defer_finalization and run_tracker is None:
         raise ValueError("Deferred finalization requires a caller-owned RunTracker")
 
+    from immich_memories.tracking.report_context import record_assets
+    from immich_memories.tracking.run_observations import observe_render
+
     # Single-instance lock: prevent concurrent pipeline runs from corrupting state
     lock_path = params.config.cache.database_path.parent / ".lock"
-    with PipelineLock(lock_path):
+    with PipelineLock(lock_path, open_store(params.config)), observe_render(params.config):
+        record_assets(params.clips)
         if run_tracker is None and not defer_finalization:
             return _generate_memory_inner(params)
         return _generate_memory_inner(
@@ -392,7 +386,13 @@ def _generate_memory_inner(
     prepare_certified_timeline(params)
     from immich_memories.security import sanitize_filename
     from immich_memories.tracking import RunTracker, generate_run_id
+    from immich_memories.tracking.run_observations import current_tracker
 
+    observed = current_tracker()
+    run_tracker = run_tracker or observed
+    observed_run = (
+        observed.current_run if observed is not None and run_tracker is observed else None
+    )
     run_id = run_tracker.run_id if run_tracker is not None else generate_run_id()
 
     # Tag all log lines with run_id for correlation
@@ -401,7 +401,7 @@ def _generate_memory_inner(
     set_current_run_id(run_id)
 
     if run_tracker is None:
-        run_tracker = RunTracker(run_id, db_path=params.config.cache.database_path)
+        run_tracker = RunTracker(run_id, store=open_store(params.config))
 
     # Create output directory structure
     dir_slug = params.output_path.stem
@@ -412,19 +412,36 @@ def _generate_memory_inner(
     check_disk_space(run_output_dir)
     requested_output_path = run_output_dir / sanitize_filename(params.output_path.name)
 
-    run_tracker.start_run(
-        person_name=params.person_name,
-        date_range=None,
-        target_duration_seconds=round(
-            params.target_duration_seconds or _total_clip_duration(params)
-        ),
-        memory_type=params.memory_type,
-        memory_key=build_memory_key(params),
-        memory_category=params.memory_category,
-        memory_people=params.memory_people,
-        source=params.source,
-        automation_attempt_id=params.automation_attempt_id,
-    )
+    if observed_run is None:
+        run_tracker.start_run(
+            person_name=params.person_name,
+            date_range=None,
+            target_duration_seconds=round(
+                params.target_duration_seconds or _total_clip_duration(params)
+            ),
+            memory_type=params.memory_type,
+            memory_key=build_memory_key(params),
+            memory_category=params.memory_category,
+            memory_people=params.memory_people,
+            source=params.source,
+            automation_attempt_id=params.automation_attempt_id,
+        )
+    else:
+        run_tracker.db.describe_run(
+            replace(
+                observed_run,
+                person_name=params.person_name,
+                target_duration_seconds=round(
+                    params.target_duration_seconds or _total_clip_duration(params)
+                ),
+                memory_type=params.memory_type,
+                memory_key=build_memory_key(params),
+                memory_category=params.memory_category,
+                memory_people=params.memory_people,
+                source=params.source,
+                automation_attempt_id=params.automation_attempt_id,
+            )
+        )
     operational = _OperationalProgress(params, run_tracker)
     operational.emit_unperformed_prerequisites(OperationalPhase.DISCOVERY)
 
@@ -432,10 +449,10 @@ def _generate_memory_inner(
     pending_error: GenerationError | None = None
 
     try:
-        import time as _time
+        from immich_memories.tracking import timing
 
         _phase_times: dict[str, float] = {}
-        _phase_start = _time.monotonic()
+        _phase_start = timing.clock()
         pp = _PipelineProgress(params, len(params.clips))
         params = replace(params, progress_callback=pp.report)
 
@@ -463,19 +480,19 @@ def _generate_memory_inner(
         )
 
         # Phase 3: Music, mixed into the film before it is published
-        _t = _time.monotonic()
-        music_result = _complete_music_phase(
-            params,
-            assembly_clips,
-            prepared.current_path,
-            run_output_dir,
-            run_tracker,
-            plan,
-            operational,
-            pp,
-            mute_windows=prepared.music_mute_windows,
-        )
-        _phase_times["music"] = _time.monotonic() - _t
+        with timing.span("render.music") as music_span:
+            music_result = _complete_music_phase(
+                params,
+                assembly_clips,
+                prepared.current_path,
+                run_output_dir,
+                run_tracker,
+                plan,
+                operational,
+                pp,
+                mute_windows=prepared.music_mute_windows,
+            )
+        _phase_times["music"] = music_span.duration
 
         final_probe = prepared.publish(decode_check)
         artifact_warnings = _artifact_warnings(params, duration_warning, music_result.warning)
@@ -489,7 +506,7 @@ def _generate_memory_inner(
             clips_selected=len(assembly_clips),
         )
         record_run_attempt(
-            params.config.cache.cache_path, run_id, params.editorial_attempt_dir, result_path
+            run_id, params.editorial_attempt_dir, result_path, store=run_tracker.db.store
         )
 
         # Phase 4: Upload (if requested)
@@ -501,7 +518,9 @@ def _generate_memory_inner(
             recheck=lambda: validate_output(result_path, plan, decode_check, verified=final_probe),
         )
 
-        _phase_times["total"] = _time.monotonic() - _phase_start
+        _phase_times["total"] = timing.clock() - _phase_start
+        if collected := timing.active():
+            collected.interval("generation", _phase_start, _phase_times["total"], len(params.clips))
         _log_phase_timing(_phase_times, len(assembly_clips))
 
         _report(params, "done", 1.0, "Complete!")

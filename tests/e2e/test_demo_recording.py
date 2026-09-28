@@ -52,7 +52,7 @@ def test_record_memory_walkthrough(
     page.get_by_text("Monthly Highlights", exact=True).click()
     page.get_by_label("Year", exact=True).fill("2024")
     page.wait_for_timeout(600)
-    page.get_by_label("Month", exact=True).fill("6")
+    page.get_by_label("Month", exact=True).select_option("6")
     page.get_by_text("Length and pictures").click()
     page.get_by_label("Length in minutes", exact=False).fill("2")
     page.wait_for_timeout(1500)

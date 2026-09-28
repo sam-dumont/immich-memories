@@ -61,3 +61,38 @@ def test_the_cut_is_rendered_as_saved_with_the_request_s_title(cut, monkeypatch)
     assert [c.asset.id for c in handed.clips] == [c.asset.id for c in params.clips]
     assert handed.title == "Winter"
     assert handed.editorial_attempt_dir == attempt
+
+
+def test_the_render_keeps_the_title_and_memory_generate_worked_out_for_the_cut(cut, monkeypatch):  # noqa: F811
+    from datetime import date as day
+
+    from immich_memories.processing.render_inputs import write_cut_titles
+    from immich_memories.titles.title_source import TitleSource
+
+    params, attempt = cut
+    # A special day is named from its catalogue entry when the cut is made; a render made later
+    # must not fall back to the month ("Janvier 2016").
+    write_cut_titles(
+        attempt,
+        title="Le marathon",
+        subtitle="1 janvier 2016",
+        source=TitleSource.OCCASION,
+        preset_params={"trip_start": day(2016, 1, 1), "location_name": "Bruges"},
+    )
+
+    handed = _render(params, attempt, monkeypatch, CutRenderRequest())
+
+    assert (handed.title, handed.subtitle) == ("Le marathon", "1 janvier 2016")
+    assert handed.title_source == TitleSource.OCCASION.value
+    assert handed.memory_preset_params == {"trip_start": day(2016, 1, 1), "location_name": "Bruges"}
+
+
+def test_a_title_typed_at_render_still_wins(cut, monkeypatch):  # noqa: F811
+    from immich_memories.processing.render_inputs import write_cut_titles
+
+    params, attempt = cut
+    write_cut_titles(attempt, title="Le marathon", subtitle=None, source=None, preset_params={})
+
+    handed = _render(params, attempt, monkeypatch, CutRenderRequest(title="Winter"))
+
+    assert handed.title == "Winter"

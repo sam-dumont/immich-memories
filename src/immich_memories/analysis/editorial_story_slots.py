@@ -9,7 +9,7 @@ reserves that physical capacity in the same order.
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from typing import Any
 
 from immich_memories.analysis.editorial_story_shortlist import DepictedChoice, _spaced
@@ -229,19 +229,55 @@ class PartitionedSlots:
         self.limit = limit
         self._voiced = voiced
 
-    def _eras(self, choices: Mapping[str, Sequence[DepictedChoice]]) -> dict[str, str] | None:
+    @property
+    def voice_of(self) -> Callable[[str], str | None] | None:
+        """The partition of a capture time, for a product that gives every one a voice."""
+        return self._partition_of if self._voiced else None
+
+    def eras(
+        self, choices: Mapping[str, Sequence[DepictedChoice]], silent: Collection[str] = ()
+    ) -> dict[str, str] | None:
         """The partition each story lies inside, for a product that gives every one a voice.
 
-        A story spanning two partitions is left out: its one picture could land in either.
+        A story spanning two partitions is left out: its one picture could land in either. So is
+        a `silent` story, one whose every offered moment failed the standing gate: its
+        partition's voice goes to the partition's next story.
         """
         if not self._voiced or self._partition_of is None:
             return None
         eras: dict[str, str] = {}
         for key, story_choices in choices.items():
+            if key in silent:
+                continue
             parts = {self._partition_of(c.taken) for c in story_choices}
             if len(parts) == 1 and (part := parts.pop()) is not None:
                 eras[key] = part
         return eras
+
+    def quiet(
+        self,
+        choices: Mapping[str, Sequence[DepictedChoice]],
+        silent: Sequence[str],
+        carriers: Sequence[Mapping[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """The partitions promised a voice that ended with no shot because every story of theirs
+        granted one fell silent (see `eras`), with those stories."""
+        if self.voice_of is None:
+            return []
+        eras = self.eras(choices) or {}
+        voiced = {self.voice_of(str(c["taken"])) for c in carriers}
+        quiet: dict[str, list[str]] = {}
+        for key in silent:
+            if (era := eras.get(key)) is not None and era not in voiced:
+                quiet.setdefault(era, []).append(key)
+        return [
+            {
+                "partition": era,
+                "stories": keys,
+                "reason": "no picture of these stories stands on its own",
+            }
+            for era, keys in sorted(quiet.items())
+        ]
 
     def of_asset(self, asset: str) -> str | None:
         if self.limit is None or self._partition_of is None:
@@ -278,6 +314,7 @@ class PartitionedSlots:
         *,
         carriers: Sequence[Mapping[str, Any]] = (),
         already: Mapping[str, int] | None = None,
+        silent: Collection[str] = (),
     ) -> tuple[dict[str, int], dict[str, dict[str | None, int]]]:
         # Nearby alternatives compete for the same physical slot, but remain in
         # the candidate pool until the pick. Counting them as depth would overfund it.
@@ -291,7 +328,7 @@ class PartitionedSlots:
                 budget,
                 {k: len(v) for k, v in capacity_choices.items()},
                 already=already,
-                era_of=self._eras(capacity_choices),
+                era_of=self.eras(capacity_choices, silent),
             )
             return counts, {key: {None: count} for key, count in counts.items()}
         used: dict[str | None, int] = {}

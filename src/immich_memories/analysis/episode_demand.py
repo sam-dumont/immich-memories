@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.selection_source_groups import project_episode_groups
 from immich_memories.store.episode_readings import BankedEpisodeReading, EpisodeReadingProducer
@@ -26,7 +26,10 @@ if TYPE_CHECKING:
     from immich_memories.analysis.editorial_rule_episodes import EpisodeReader
     from immich_memories.analysis.selection_source import PreparedEditorialSource
     from immich_memories.analysis.selection_source_groups import EditorialGroupProjection
-    from immich_memories.analysis.text_episode_reader import TextEpisodeReadResult
+    from immich_memories.analysis.text_episode_reader import (
+        EpisodeEditorialEvidence,
+        TextEpisodeReadResult,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,8 @@ class DemandEpisodeReadings:
         self._on_demand = on_demand
         self._prepared: PreparedEditorialSource | None = None
         self.demanded: list[str] = []
+        self._outcomes: dict[str, EpisodeEditorialEvidence] = {}
+        self._unavailable: set[str] = set()
 
     @property
     def producer(self) -> EpisodeReadingProducer:
@@ -104,10 +109,46 @@ class DemandEpisodeReadings:
             len(prepared.episode_groups),
         )
         result = self._reader(self._on_demand).read(projections)
+        self._outcomes.update(
+            (evidence.projection.group.group_id, evidence) for evidence in result.episodes
+        )
+        self._unavailable.update(
+            evidence.projection.group.group_id
+            for evidence in result.episodes
+            if evidence.reading is None
+        )
         return {
             evidence.projection.group.group_id: evidence.reading
             for evidence in result.episodes
             if evidence.reading is not None
+        }
+
+    def reading_health(self) -> dict[str, Any]:
+        """Latest availability and exact identities for this run's demanded episodes."""
+        episodes = []
+        for group_id, evidence in self._outcomes.items():
+            identity = evidence.identity
+            episodes.append(
+                {
+                    "group_id": group_id,
+                    "producer_key": identity.producer_key if identity else "",
+                    "evidence_key": identity.evidence_key if identity else "",
+                    "status": (
+                        "unavailable"
+                        if evidence.reading is None
+                        else "recovered"
+                        if group_id in self._unavailable
+                        else "read"
+                    ),
+                    "reason": evidence.unavailable_reason,
+                    "cache_hit": evidence.cache_hit,
+                }
+            )
+        unavailable = sum(row["status"] == "unavailable" for row in episodes)
+        return {
+            "status": "degraded" if unavailable else "complete",
+            "unavailable_episodes": unavailable,
+            "episodes": episodes,
         }
 
 

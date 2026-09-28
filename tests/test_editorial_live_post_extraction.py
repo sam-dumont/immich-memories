@@ -18,7 +18,12 @@ from tests.conftest import make_asset
 
 
 @pytest.fixture(autouse=True)
-def no_external_work(monkeypatch):
+def no_external_work(monkeypatch, isolated_store):
+    from immich_memories.db import open_store
+
+    # The store checks the local mount before media work; this guard forbids media tools.
+    open_store()
+
     def forbidden(*_args, **_kwargs):
         pytest.fail("post-extraction guards must not run media tools or services")
 

@@ -6,8 +6,9 @@ one run, and a seat chose a non-favourite over the favourite of the same moment.
 
 from __future__ import annotations
 
-from immich_memories.analysis.editorial_thin_gates import ThinGates
+from immich_memories.analysis.editorial_picture_admission import PictureAdmission
 from immich_memories.analysis.editorial_thin_layer import ThinPolish
+from immich_memories.db import open_store
 from tests.test_editorial_thin_vote_relations import STORY, Audience, FitJudge, Standing
 
 
@@ -28,13 +29,16 @@ def carrier(asset: str, taken: str, **extra) -> dict:
     }
 
 
-def polish_years(tmp_path, shots, *, era_of=year_of, record=lambda _n, _p: None):
+def polish_years(
+    tmp_path, shots, *, era_of=year_of, record=lambda _n, _p: None, standing=None, audience=None
+):
     """`shots` maps asset -> (taken, line); a line containing `filler` is named by both orders.
 
     # WHY: FitJudge stands in for the model's thesis-fit vote, the boundary under test.
     """
     polish = ThinPolish(
-        bank_dir=tmp_path,
+        store=open_store(),
+        bank_scope="case",
         read_period=lambda _stories: ("A life, year by year.", {}),
     )
     cut = [carrier(asset, taken) for asset, (taken, _line) in shots.items()]
@@ -42,7 +46,9 @@ def polish_years(tmp_path, shots, *, era_of=year_of, record=lambda _n, _p: None)
     kept = polish.polish(
         cut,
         judge=FitJudge(),
-        gates=ThinGates(Standing(), Audience(), thumbnail_hash=lambda _a: None),
+        gates=PictureAdmission(
+            standing or Standing(), audience or Audience(), thumbnail_hash=lambda _a: None
+        ),
         catalogue=polish.catalogue_of(STORY, {"m1": list(shots)}, drafted=cut),
         contract="contract",
         line_of=lines.get,
@@ -86,6 +92,43 @@ def test_a_year_whose_every_shot_is_named_keeps_its_draft_without_replacements(t
     )
 
     assert kept == ["a1", "a2", "a3", "a4"]
+
+
+def test_a_years_only_shot_survives_the_standing_gate_the_polish_puts_it_to(tmp_path):
+    """The draft admitted 2007's one shot; the polish reads its story lighter and the standing
+    gate refuses it. A refill could come from any other year, so the year keeps its shot."""
+    kept = polish_years(
+        tmp_path,
+        {
+            "a1": ("2006-05-01T09:00:00", "a child on a swing"),
+            "a2": ("2007-05-01T09:00:00", "a child with a toy"),
+            "a3": ("2008-05-01T09:00:00", "a child at the beach"),
+        },
+        standing=Standing({"a2": 0}),
+    )
+
+    assert kept == ["a1", "a2", "a3"]
+
+
+class _HoldsBack(Audience):
+    """# WHY: the audience gate's verdict is the boundary; this one holds one picture back."""
+
+    def verdict_of(self, unit):
+        return "do_not_show" if unit["asset_id"] == "a2" else "share"
+
+
+def test_the_family_viewing_gate_still_takes_a_years_only_shot(tmp_path):
+    kept = polish_years(
+        tmp_path,
+        {
+            "a1": ("2006-05-01T09:00:00", "a child on a swing"),
+            "a2": ("2007-05-01T09:00:00", "a child with a toy"),
+            "a3": ("2008-05-01T09:00:00", "a child at the beach"),
+        },
+        audience=_HoldsBack(),
+    )
+
+    assert "a2" not in kept
 
 
 def test_a_seat_takes_the_favourite_of_the_moment_it_picked(tmp_path):

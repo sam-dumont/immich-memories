@@ -5,6 +5,7 @@
   import { api, post } from '$lib/api';
   import type { components } from '$lib/api-types';
   import { t } from '$lib/i18n.svelte';
+  import { updatedAgo } from '$lib/ago';
   import { memoryTypeLabel, ruleLabel } from '$lib/labels';
 
   type Suggestions = components['schemas']['Suggestions'];
@@ -17,11 +18,12 @@
   let busy = $state('');
   let checking = $state<string | null>(null);
 
-  async function load() {
-    loading = true;
+  // The server answers with its last discovery at once and works out a fresh one behind it.
+  async function load(refresh = false) {
+    loading = data === null;
     failed = false;
     try {
-      data = await api<Suggestions>('/suggestions');
+      data = await api<Suggestions>(`/suggestions${refresh ? '?refresh=true' : ''}`);
     } catch {
       failed = true;
     } finally {
@@ -30,6 +32,17 @@
   }
 
   onMount(() => void load());
+
+  $effect(() => {
+    if (!data?.refreshing) return;
+    const timer = setTimeout(() => void load(), 3000);
+    return () => clearTimeout(timer);
+  });
+
+  // A finished run changes what automation would make next.
+  $effect(() => {
+    if (attempt && attempt.outcome !== 'running') void load(true);
+  });
 
   // The attempt is the automation store's record; the page follows it until it settles.
   $effect(() => {
@@ -61,7 +74,10 @@
       <Heading size="large" tag="h1">{t('Suggestions')}</Heading>
       <Text color="muted">{t('What automation would make next, the same list `auto suggest` prints. Run one as `auto run` would, or check it first without rendering.')}</Text>
     </div>
-    <Button size="small" variant="outline" leadingIcon={mdiRefresh} loading={loading} onclick={load}>{t('Refresh suggestions')}</Button>
+    <div class="flex items-center gap-3">
+      {#if data?.computed_at}<Text size="small" color="muted">{updatedAgo(data.computed_at)}</Text>{/if}
+      <Button size="small" variant="outline" leadingIcon={mdiRefresh} loading={loading || !!data?.refreshing} onclick={() => load(true)}>{t('Refresh suggestions')}</Button>
+    </div>
   </div>
 
   {#if attempt}
@@ -78,8 +94,8 @@
   {#if failed}<Text color="danger">{t('Suggestions could not be loaded.')}</Text>{/if}
   {#if data?.error}<Text color="danger">{t('Discovery failed: {error}', { error: data.error })}</Text>{/if}
 
-  {#if !data && loading}
-    <LoadingSpinner />
+  {#if (!data && loading) || (data && !data.computed_at && data.refreshing)}
+    <span class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"><LoadingSpinner size="small" />{t('Looking through your library for memories to suggest...')}</span>
   {:else if data}
     <ul class="grid gap-4 md:grid-cols-2">
       {#each data.candidates as candidate (candidate.memory_key)}

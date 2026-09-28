@@ -2,11 +2,11 @@
 
 import json
 import logging
-import sqlite3
 from dataclasses import replace
 from datetime import timedelta
 
 import pytest
+import sqlalchemy as sa
 
 from immich_memories.analysis.editorial_planner import EditorialPlan
 from immich_memories.analysis.editorial_preparation import prepare_editorial_annotations
@@ -19,6 +19,7 @@ from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePor
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.api.immich import ImmichAPIError, ImmichNotFoundError
 from immich_memories.config_loader import Config
+from immich_memories.db.tables import head_facts
 from immich_memories.operations.cut_progress import read_stage_progress
 from immich_memories.operations.editorial_attempt import read_editorial_attempt
 from tests.test_editorial_preparation import preview, successful_ports
@@ -76,9 +77,11 @@ def test_cold_cheap_facts_gate_before_the_draft_and_warm_reuses_them(tmp_path, m
 
     def heads(**kwargs):
         providers.heads(**kwargs)
-        with sqlite3.connect(kwargs["store_path"]) as connection:
+        with kwargs["store"].begin() as connection:
             connection.execute(
-                "UPDATE head_facts SET label='yes' WHERE asset_id='display' AND head='screen'"
+                sa.update(head_facts)
+                .where(head_facts.c.asset_id == "display", head_facts.c.head == "screen")
+                .values(label="yes")
             )
 
     planner, sources, acquired = build(

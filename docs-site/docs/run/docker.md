@@ -128,11 +128,14 @@ Immich over the internal network. `immich-server` listens on 2283 in every Immic
 release. An unknown major version stops the run:
 [Immich API compatibility](./config-file.md#immich-api-compatibility).
 
-## The preparation tier in compose
+## The product tier in compose {#the-preparation-tier-in-compose}
 
-The compose file pins `IMMICH_MEMORIES_EDITORIAL__PREPARATION__TIER: "no_captions"`, and an
-environment variable beats `config.yaml`: editing `tier:` in the config file inside the container
-changes nothing until you edit the compose file too. What each tier runs is on
+The compose file sets `IMMICH_MEMORIES_TIER: "auto"`. Without GPU inference, that resolves to
+NAS. A usable GPU inference service selects GPU; adding a configured LLM selects Full.
+Caption and Laya services must also be ready. Preparation follows the same product tier.
+
+An environment variable beats `config.yaml`: remove the Compose tier variable if you want the
+file to control an explicit tier. Do not set a separate preparation tier. What each tier runs is on
 [Requirements and tiers](./requirements.md#the-preparation-tier).
 
 `IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` puts the document classifier on the
@@ -225,11 +228,30 @@ docker inspect --format='{{.State.Health.Status}}' immich-memories
 
 ## What to keep
 
-`/home/immich/.immich-memories/cache/annotations.sqlite` is the expensive file: every fact,
-caption and reading the editor banked. Lose it and the next cut reads the library again.
-`cache.db` beside it holds run history and automation state. Both sit on the config volume, so
-moving host means copying that volume, and
-[the `cache` CLI commands will not do it for you](./maintenance/health-logs-cache.md#the-cli-cache-commands-are-not-for-the-banks).
+`/home/immich/.immich-memories/store.db` is the expensive file: every fact, caption and reading
+the editor banked, every picture you cleared or ruled out, your people, run history, automation
+state and the special-days catalogue. Lose it and the next cut reads the library again. `cache.db`
+beside it holds derived analysis only and is rebuilt when lost. Both sit on the config volume, so
+moving host means copying that volume ([moving an install](./maintenance/health-logs-cache.md#moving-an-install)).
+
+Back the store up without stopping anything:
+
+```bash
+docker compose exec immich-memories immich-memories store backup
+```
+
+It lands in `/home/immich/.immich-memories/backups/` with a manifest beside it. The image ships the
+PostgreSQL client tools, so the same command works when the store is on PostgreSQL
+([backup and restore](./database.md#managing-the-store)).
+
+## The store: SQLite or PostgreSQL
+
+The compose file defaults to a SQLite file on the config volume, one host, one writer, which is
+right for the single container this file runs. The commented `postgres` service and
+`IMMICH_MEMORIES_DATABASE_URL` line switch the store to PostgreSQL instead: a separate service, a
+separate database on your own PostgreSQL instance, or a dedicated schema inside an instance you
+already run (Immich's, for example). See [Database and the store](./database.md) for the four
+modes and the SQL for the dedicated-schema one.
 
 ## Updating
 

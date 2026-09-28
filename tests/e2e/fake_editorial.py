@@ -400,10 +400,17 @@ class _FakeEditorialPipeline:
                 )
                 from immich_memories.security import write_secret_file
 
-                # The production route records the pool it read; the pool page reads it back.
+                # The production route records the pool it read, and who the memory is about;
+                # the pool page reads both back (`AttemptSourceSnapshots.capture`).
+                context = self._context
+                payload = source_payload(
+                    list(sources), person_expression=getattr(context, "person_expression", None)
+                ) | {
+                    "people": list(getattr(context, "people", ())),
+                    "person_match": getattr(context, "person_match", "and"),
+                }
                 write_secret_file(
-                    attempt.directory / SNAPSHOT_NAME,
-                    json.dumps(source_payload(list(sources)), default=str),
+                    attempt.directory / SNAPSHOT_NAME, json.dumps(payload, default=str)
                 )
                 self._prepare_previews(sources, attempt, report_stage, check_cancelled)
                 for label in STAGES:
@@ -570,14 +577,14 @@ def install_fake_editorial_route(
     that skipped it, which the run's install check must refuse.
     """
     import immich_memories.analysis.editorial_runtime as editorial_runtime
-    import immich_memories.analysis.trip_detection as trip_detection
+    import immich_memories.analysis.place_geocoder as place_geocoder
 
     if models_fetched:
         _stand_in_for_models_fetch()
 
     # WHY: fixture trips already have public place names in EXIF. A hermetic
     # browser or CLI run must not ask Nominatim to name them over the internet.
-    trip_detection.reverse_geocode = lambda *_args, **_kwargs: None
+    place_geocoder.nominatim_fetch = lambda *_args, **_kwargs: lambda *_point: None
 
     def build_smart_pipeline(
         client: Any,

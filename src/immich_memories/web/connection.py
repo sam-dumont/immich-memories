@@ -13,9 +13,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 from immich_memories.api.immich import ImmichAPIError
-from immich_memories.config import set_config
 from immich_memories.config_loader import Config
 from immich_memories.security import sanitize_error_message
+from immich_memories.settings_edit import SettingRefused, save_settings
 from immich_memories.web.dependencies import Greeter, config_file, current_config, immich_greeter
 from immich_memories.web.schemas import Connection, ConnectionEntry, Greeting
 
@@ -39,6 +39,17 @@ def _resolved(entry: ConnectionEntry, config: Config) -> tuple[str, str]:
     if not url or not key:
         raise HTTPException(422, "Please enter both URL and API key")
     return url, key
+
+
+def connection_changes(config: Config, *, url: str, key: str) -> dict[str, str]:
+    """The connection fields that differ from the loaded config, keyed for `save_settings`.
+
+    An unchanged key is left out, so saving a new URL never re-stores (or needs the secret key
+    for) the API key it already has.
+    """
+    typed = {"immich.url": url, "immich.api_key": key}
+    loaded = {"immich.url": config.immich.url, "immich.api_key": config.immich.api_key}
+    return {name: value for name, value in typed.items() if value != loaded[name]}
 
 
 @router.get("", response_model=Connection)
@@ -67,10 +78,15 @@ def save_connection(
     config: Annotated[Config, Depends(current_config)],
     path: Annotated[Path, Depends(config_file)],
 ) -> Connection:
-    """Keep the server and key in the config file the process reads."""
+    """Save the server and key to the database, only the ones that changed.
+
+    config.yaml and the environment are never written: a value either of them sets is refused
+    with the name of what sets it, and a key needs IMMICH_MEMORIES_SECRET_KEY to be stored.
+    """
     url, key = _resolved(entry, config)
-    config.immich.url = url
-    config.immich.api_key = key
-    config.save_yaml(path)
-    set_config(config, path=path)
-    return read_connection(config)
+    changes = connection_changes(config, url=url, key=key)
+    try:
+        saved = save_settings(changes, path=path) if changes else config
+    except SettingRefused as refused:
+        raise HTTPException(422, str(refused)) from refused
+    return read_connection(saved)

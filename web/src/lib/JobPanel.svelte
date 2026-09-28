@@ -3,6 +3,7 @@
   import { mdiContentCopy, mdiStop } from '@mdi/js';
   import { thumbnail, type JobView } from './api';
   import { t } from './i18n.svelte';
+  import { stageLabel } from './labels';
 
   let { job, onCancel }: { job: JobView; onCancel: () => void } = $props();
 
@@ -30,16 +31,21 @@
     return minutes ? `${minutes}m ${String(seconds % 60).padStart(2, '0')}s` : `${seconds}s`;
   });
   const fraction = $derived(job.progress.fraction ?? null);
+  const heading = $derived(
+    job.progress.stage_name && stageLabel(job.progress.stage_name) !== job.progress.stage_name
+      ? stageLabel(job.progress.stage_name)
+      : job.progress.label,
+  );
+  const clockText = (seconds: number) => (seconds < 60 ? `${Math.ceil(seconds)}s` : `${Math.ceil(seconds / 60)} min`);
   // The whole job's estimate when a finished run measured it; a first cut only has its stage's.
   // Rounded on purpose, as the terminal rounds it: an estimate, not a countdown.
   const remaining = $derived.by(() => {
     const total = job.progress.remaining_seconds;
+    if (total != null) return t('About {amount} left', { amount: clockText(total) });
     const stage = job.progress.stage_remaining_seconds;
-    const seconds = total ?? stage;
-    if (seconds == null) return '';
-    const amount = seconds < 60 ? `${Math.ceil(seconds)}s` : `${Math.ceil(seconds / 60)}m`;
-    return total != null ? t('About {amount} left', { amount }) : t('~{amount} left in this stage', { amount });
+    return stage == null ? '' : t('~{amount} left in this stage', { amount: clockText(stage) });
   });
+
 
   async function copy() {
     await navigator.clipboard.writeText(job.command);
@@ -51,7 +57,7 @@
 <section class="flex flex-col gap-4 rounded-2xl border border-gray-200 p-5 dark:border-gray-800" aria-live="polite" aria-label={t('Progress')}>
   <div class="flex flex-wrap items-center justify-between gap-3">
     <p class="font-medium">
-      {#if job.status === 'running'}{job.progress.label || t('Starting')}
+      {#if job.status === 'running'}{heading || t('Starting')}
       {:else if job.status === 'succeeded'}{job.kind === 'cut' ? t('The cut is ready.') : t('The film is ready.')}
       {:else if job.status === 'cancelled'}{t('Stopped.')}
       {:else}{t('It did not finish.')}{/if}
@@ -60,13 +66,10 @@
   </div>
 
   {#if job.status === 'running'}
-    <ProgressBar value={fraction ?? 0} valueLabel={fraction == null ? job.progress.label : `${Math.round(fraction * 100)}%`} aria-label={t('Progress')} />
-    {#if remaining}<p class="text-sm text-gray-600 dark:text-gray-400">{remaining}</p>{/if}
-    {#if job.progress.total}
-      <p class="text-sm text-gray-600 tabular-nums dark:text-gray-400">
-        {t('{done} of {total}', { done: job.progress.done ?? 0, total: job.progress.total })}
-      </p>
-    {/if}
+    <ProgressBar value={fraction ?? 0} valueLabel={fraction == null ? heading : `${Math.round(fraction * 100)}%`} aria-label={t('Progress')} />
+    <p class="text-sm text-gray-600 tabular-nums dark:text-gray-400">
+      {#if job.progress.total}{t('{done} of {total}', { done: job.progress.done ?? 0, total: job.progress.total })}{#if remaining} · {/if}{/if}{remaining}
+    </p>
     {#if job.progress.recent_asset_ids.length}
       <ul class="flex gap-2 overflow-hidden" aria-label={t('Pictures just read')}>
         {#each job.progress.recent_asset_ids.slice(-8) as asset (asset)}

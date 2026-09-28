@@ -8,11 +8,12 @@ from types import SimpleNamespace
 
 import pytest
 
+from immich_memories.analysis.editorial_picture_admission import PictureAdmission
 from immich_memories.analysis.editorial_standing_facts import carries_nothing
 from immich_memories.analysis.editorial_story_standing import StandingGate
-from immich_memories.analysis.editorial_thin_gates import ThinGates
 from immich_memories.analysis.editorial_thin_layer import ThinPolish
 from immich_memories.config_models_llm import LLMConfig
+from immich_memories.db import open_store
 
 ACCOUNT = "The month a family found its feet."
 JUNK = "an empty worktop"
@@ -152,11 +153,15 @@ def standing_gate():
 
 def polish_once(tmp_path, judge):
     standing = standing_gate()
-    layer = ThinPolish(bank_dir=tmp_path, read_period=lambda _stories: (ACCOUNT, {}))
+    layer = ThinPolish(
+        store=open_store(), bank_scope="case", read_period=lambda _stories: (ACCOUNT, {})
+    )
     return layer.polish(
         DRAFT,
         judge=judge,
-        gates=ThinGates(standing=standing, audience=Audience(), thumbnail_hash=lambda _a: None),
+        gates=PictureAdmission(
+            standing=standing, audience=Audience(), thumbnail_hash=lambda _a: None
+        ),
         catalogue=layer.catalogue_of(STORY, MOMENTS, {"n1": "the first of them"}, drafted=DRAFT),
         contract="contract",
         line_of=LINES.get,
@@ -180,6 +185,37 @@ def test_one_polish_drops_the_junk_keeps_the_star_and_refills_what_the_gates_too
     # the story the catalogue records something about, silent in the draft, now speaks
     assert "n1" in kept
     assert kept == sorted(kept, key=lambda asset: LINES[asset])
+
+
+@pytest.mark.parametrize("depth_time", ["09:29:00", "09:31:00"])
+def test_polish_keeps_a_representative_and_its_accepted_depth_in_either_capture_order(
+    tmp_path, depth_time
+):
+    representative = unit("g2", "S2", moment="q1")
+    depth = dict(unit("g3", "S2", moment="q1"), depth=True, taken=f"2024-02-05T{depth_time}")
+    draft = [representative, depth]
+    layer = ThinPolish(
+        store=open_store(), bank_scope="case", read_period=lambda _stories: (ACCOUNT, {})
+    )
+    records = {}
+
+    cut = layer.polish(
+        draft,
+        judge=PolishJudge(),
+        gates=PictureAdmission(
+            standing=standing_gate(), audience=Audience(), thumbnail_hash=lambda _a: None
+        ),
+        catalogue=layer.catalogue_of(STORY, MOMENTS, {}, drafted=draft),
+        contract="accepted-depth",
+        line_of=LINES.get,
+        record=lambda name, payload: records.update({name: payload}),
+        candidates_of=lambda _key: [],
+        content_cap=8.0,
+    )
+
+    assert {row["asset_id"] for row in cut} == {"g2", "g3"}
+    assert [row["taken"] for row in cut] == sorted(row["taken"] for row in cut)
+    assert records["thin-polish"]["refused_by_the_gates"] == []
 
 
 def test_the_polish_spends_one_vote_one_pick_and_one_check_and_no_standing_question(tmp_path):
@@ -207,8 +243,7 @@ def test_a_second_run_over_the_same_bank_asks_nothing_and_cuts_the_same_film(tmp
 
 def banked_records(tmp_path):
     """The record the reading of S3's episode left behind, read back the way a run reads it."""
-    from contextlib import closing
-
+    del tmp_path  # kept for call-site symmetry; the store is the one this test's env names
     from immich_memories.analysis.catalogue_runtime import banked_notable_records
     from immich_memories.store.episode_readings import (
         BankedEpisodeReading,
@@ -216,25 +251,25 @@ def banked_records(tmp_path):
         EpisodeReadingStore,
         EpisodeRepresentative,
     )
+    from tests.annotation_rows import annotation_store
 
-    bank = tmp_path / "annotations.sqlite"
+    store = annotation_store()
     identity = EpisodeReadingIdentity(
         group_id="e3", producer_key="producer-a", evidence_key="evidence-a"
     )
-    with closing(EpisodeReadingStore(bank)) as store:
-        store.remember(
-            [
-                BankedEpisodeReading(
-                    identity=identity,
-                    full_asset_ids=("n1",),
-                    what_happened="A first.",
-                    representatives=(EpisodeRepresentative("n1", "the only frame"),),
-                    cull_decisions=(),
-                    notable_moments=(EpisodeRepresentative("n1", "the first of them"),),
-                )
-            ]
-        )
-    return banked_notable_records([identity], store_path=bank)
+    EpisodeReadingStore(store).remember(
+        [
+            BankedEpisodeReading(
+                identity=identity,
+                full_asset_ids=("n1",),
+                what_happened="A first.",
+                representatives=(EpisodeRepresentative("n1", "the only frame"),),
+                cull_decisions=(),
+                notable_moments=(EpisodeRepresentative("n1", "the first of them"),),
+            )
+        ]
+    )
+    return banked_notable_records([identity], store=store)
 
 
 def test_a_story_the_bank_records_something_about_is_seated_from_the_bank(tmp_path):
@@ -242,12 +277,16 @@ def test_a_story_the_bank_records_something_about_is_seated_from_the_bank(tmp_pa
     judge = PolishJudge()
     standing = standing_gate()
     records = banked_records(tmp_path)
-    layer = ThinPolish(bank_dir=tmp_path, read_period=lambda _stories: (ACCOUNT, records))
+    layer = ThinPolish(
+        store=open_store(), bank_scope="case", read_period=lambda _stories: (ACCOUNT, records)
+    )
 
     cut = layer.polish(
         DRAFT,
         judge=judge,
-        gates=ThinGates(standing=standing, audience=Audience(), thumbnail_hash=lambda _a: None),
+        gates=PictureAdmission(
+            standing=standing, audience=Audience(), thumbnail_hash=lambda _a: None
+        ),
         catalogue=layer.catalogue_of(STORY, MOMENTS, drafted=DRAFT),
         contract="contract",
         line_of=LINES.get,
@@ -263,7 +302,7 @@ def test_every_vote_including_the_newcomers_re_check_is_banked_for_the_next_run(
     """The re-check over a refilled cut is a paid answer like any other, so it is read back.
 
     Both runs get their own judge with an empty bank of its own, so the only thing that can
-    keep the second one from voting again is the layer's own `thesis-fit.private.json`. The
+    keep the second one from voting again is the layer's own thesis-fit vote bank. The
     picks that remain are the judgment cache's to answer, which production keeps in SQLite and
     this fixture's judge stands in for.
     """

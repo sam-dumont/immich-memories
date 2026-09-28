@@ -94,6 +94,38 @@ def check_detector_export(config: Config) -> CheckResult:
     )
 
 
+def check_detector_interpreter(config: Config) -> CheckResult:
+    """Report a configured detector interpreter that is not on this host.
+
+    Blank runs the detectors on this app's own Python. A path someone wrote down
+    (a separate detector venv) that has since been deleted used to fail only when
+    the worker started, after every picture was already prepared.
+    """
+    configured = config.editorial.preparation.detector_python.strip()
+    if not configured:
+        return CheckResult(
+            name="Detector interpreter", status=CheckStatus.OK, message="This app's own Python"
+        )
+    path = Path(configured).expanduser()
+    if path.is_file() and os.access(path, os.X_OK):
+        return CheckResult(
+            name="Detector interpreter",
+            status=CheckStatus.OK,
+            message="Configured interpreter found",
+            details=str(path),
+        )
+    return CheckResult(
+        name="Detector interpreter",
+        status=CheckStatus.ERROR,
+        message="Configured detector interpreter is not on this host",
+        details=(
+            f"advanced.editorial.preparation.detector_python={path} does not exist or cannot "
+            "run. Remove the key to use this app's own Python, or point it at a Python that has "
+            "onnxruntime, huggingface-hub, numpy and Pillow"
+        ),
+    )
+
+
 def _unwritable(directory: Path, error: OSError) -> CheckResult:
     # The Docker case: a bind-mounted ./output that the daemon created as root,
     # written by a container that runs as uid 1000.
@@ -143,6 +175,15 @@ def run_blockers(config: Config, *, output_directory: Path | None) -> list[Check
         checks.append(check_encoder(config))
     if "nsfw_marqo" not in served:
         checks.append(check_detector_export(config))
+        if config.editorial.preparation.demands_models:
+            checks.append(check_detector_interpreter(config))
     if output_directory is not None:
         checks.append(check_output_directory(output_directory))
+    from immich_memories.tracking.timing import active
+
+    if collected := active():
+        collected.diagnostics["preflight"] = [
+            {"name": check.name, "status": check.status.value, "message": check.message}
+            for check in checks
+        ]
     return [check for check in checks if check.status is CheckStatus.ERROR]

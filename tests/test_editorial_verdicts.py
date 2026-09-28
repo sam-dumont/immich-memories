@@ -16,6 +16,7 @@ from immich_memories.analysis.selection_source import (
     prepare_editorial_source,
 )
 from immich_memories.store.episode_readings import EpisodeReadingProducer
+from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 
 # Bandit reads a "..._version" keyword as a credential; these are pass identities.
@@ -65,13 +66,13 @@ def test_a_verdict_about_the_picture_survives_into_another_memory(tmp_path: Path
     """A photographed receipt is a receipt in every memory it could appear in."""
     from immich_memories.cache.editorial_verdicts import EditorialVerdicts
 
-    store = EditorialVerdicts(tmp_path / "verdicts.db")
+    store = EditorialVerdicts(annotation_store())
     store.remember(
         (("a-receipt", "notes"), ("a-smear", "failed")),
         pass_version=CULL_V1,
     )
 
-    recalled = EditorialVerdicts(tmp_path / "verdicts.db").recall(
+    recalled = EditorialVerdicts(annotation_store()).recall(
         ("a-receipt", "a-smear", "never-seen"), pass_version=CULL_V1
     )
 
@@ -87,7 +88,7 @@ def test_changing_what_a_bucket_means_forgets_the_old_verdicts(tmp_path: Path) -
     """
     from immich_memories.cache.editorial_verdicts import EditorialVerdicts
 
-    store = EditorialVerdicts(tmp_path / "verdicts.db")
+    store = EditorialVerdicts(annotation_store())
     store.remember((("a-receipt", "notes"),), pass_version=CULL_V1)
 
     assert store.recall(("a-receipt",), pass_version=CULL_V2) == {}
@@ -98,7 +99,7 @@ def test_a_later_verdict_replaces_an_earlier_one(tmp_path: Path) -> None:
     """One asset, one standing verdict; the most recent look wins."""
     from immich_memories.cache.editorial_verdicts import EditorialVerdicts
 
-    store = EditorialVerdicts(tmp_path / "verdicts.db")
+    store = EditorialVerdicts(annotation_store())
     store.remember((("argued-over", "notes"),), pass_version=CULL_V1)
     store.remember((("argued-over", "failed"),), pass_version=CULL_V1)
 
@@ -109,7 +110,7 @@ def test_nothing_to_remember_or_recall_touches_no_rows(tmp_path: Path) -> None:
     """An empty pass is free; recalling nothing never widens into everything."""
     from immich_memories.cache.editorial_verdicts import EditorialVerdicts
 
-    store = EditorialVerdicts(tmp_path / "verdicts.db")
+    store = EditorialVerdicts(annotation_store())
     store.remember((), pass_version=CULL_V1)
     store.remember((("a-receipt", "notes"),), pass_version=CULL_V1)
 
@@ -127,7 +128,7 @@ def test_a_bumped_reading_prompt_does_not_union_with_the_old_reading_s_rejects(
     """
     from immich_memories.cache.editorial_verdicts import EditorialVerdicts
 
-    store = EditorialVerdicts(tmp_path / "verdicts.db")
+    store = EditorialVerdicts(annotation_store())
     old, new = _reading("episode-prompt-v1"), _reading("episode-prompt-v2-names-from-facts")
 
     first = _prepared("a-screen", "a-blur", "a-keeper")
@@ -153,7 +154,7 @@ def test_the_same_reading_still_lends_its_verdict_to_the_next_memory(tmp_path: P
     """Retiring on a prompt bump must not retire on every run: a screen stays a screen."""
     from immich_memories.cache.editorial_verdicts import EditorialVerdicts
 
-    store = EditorialVerdicts(tmp_path / "verdicts.db")
+    store = EditorialVerdicts(annotation_store())
     reading = _reading("episode-prompt-v1")
 
     first = _prepared("a-screen", "a-keeper")
@@ -174,7 +175,7 @@ def test_the_pass_remembers_the_pictures_it_kept(tmp_path: Path) -> None:
     """A bank of rejects only can never withdraw one; the pass's answer can."""
     from immich_memories.cache.editorial_verdicts import EditorialVerdicts
 
-    store = EditorialVerdicts(tmp_path / "verdicts.db")
+    store = EditorialVerdicts(annotation_store())
     reading = _reading("episode-prompt-v1")
     prepared = _prepared("a-screen", "a-keeper")
 
@@ -196,7 +197,7 @@ def test_a_picture_the_reading_never_judged_stays_unasked(tmp_path: Path) -> Non
     """An episode that failed to read leaves no answer, which is not a keep."""
     from immich_memories.cache.editorial_verdicts import EditorialVerdicts
 
-    store = EditorialVerdicts(tmp_path / "verdicts.db")
+    store = EditorialVerdicts(annotation_store())
     reading = _reading("episode-prompt-v1")
     prepared = _prepared("a-screen", "a-keeper", "unread")
 
@@ -215,7 +216,7 @@ def test_a_kept_verdict_is_never_replayed_as_a_reject(tmp_path: Path) -> None:
     """The bank removes pictures; a remembered keep must remove nothing."""
     from immich_memories.cache.editorial_verdicts import EditorialVerdicts
 
-    store = EditorialVerdicts(tmp_path / "verdicts.db")
+    store = EditorialVerdicts(annotation_store())
     reading = _reading("episode-prompt-v1")
 
     first = _prepared("a-keeper", "another-keeper")
@@ -252,7 +253,7 @@ def test_a_newer_reading_withdraws_a_reject_the_bank_was_holding(tmp_path: Path)
     """
     from immich_memories.cache.editorial_verdicts import EditorialVerdicts
 
-    store = EditorialVerdicts(tmp_path / "verdicts.db")
+    store = EditorialVerdicts(annotation_store())
     reading = _reading("episode-prompt-v1")
 
     first = _prepared("argued-over", "a-keeper")
@@ -290,7 +291,7 @@ def test_verdicts_are_recalled_for_a_lifetime_of_pictures(tmp_path: Path):
     """A lifetime window admits 66k pictures, more than one SQLite statement may bind."""
     from immich_memories.cache.editorial_verdicts import EditorialVerdicts
 
-    verdicts = EditorialVerdicts(tmp_path / "verdicts.sqlite")
+    verdicts = EditorialVerdicts(annotation_store())
     verdicts.remember([("picture-39999", "screenshot")], pass_version=CULL_V2)
 
     recalled = verdicts.recall([f"picture-{n}" for n in range(40_000)], pass_version=CULL_V2)

@@ -2,7 +2,7 @@
 # Uses uv for fast Python package management
 export PYTHONUNBUFFERED=1
 
-.PHONY: workflow-guard docs-voice notices notices-check help install dev dev-ci dev-test run preflight parity docs-cli-check docs-config-check test test-extras test-cov test-cov-xml test-integration test-integration-auth test-integration-photos test-integration-audio test-integration-audio-mixing test-integration-titles test-fast benchmark benchmark-perf benchmark-steps benchmark-assembly benchmark-titles benchmark-titles-json benchmark-pipeline benchmark-json benchmark-submit lint format typecheck check launch-check clean clean-cache clean-all build build-check docker docker-run docker-shell compose-check file-length complexity cognitive-complexity security-lint bandit-ci semgrep dead-code duplication refurb dep-check arch-check diff-cover diff-cover-ci integration-coverage-for-diff ci critique ensure-dev commitlint privacy-gate pip-audit docs-install docs-dev docs-build docs-check docs-cli demo-video playwright-install e2e e2e-full screenshots demo-output demo-output-trip diagrams capability-matrix
+.PHONY: workflow-guard docs-voice notices notices-check help install dev dev-ci dev-test run preflight parity docs-cli-check docs-config-check test test-extras test-cov test-cov-xml test-integration test-integration-auth test-integration-photos test-integration-audio test-integration-audio-mixing test-integration-titles test-fast benchmark benchmark-perf benchmark-steps benchmark-assembly benchmark-titles benchmark-titles-json benchmark-pipeline benchmark-json benchmark-submit lint format typecheck check launch-check launch-check-ci launch-check-ci-postgres clean clean-cache clean-all build build-check docker docker-run docker-shell compose-check file-length complexity cognitive-complexity security-lint bandit-ci semgrep dead-code duplication refurb dep-check arch-check diff-cover diff-cover-ci integration-coverage-for-diff ci-scope ci critique ensure-dev commitlint privacy-gate pip-audit docs-install docs-dev docs-build docs-check docs-cli demo-video playwright-install e2e e2e-full screenshots demo-output demo-output-trip diagrams capability-matrix
 
 # Default target
 help:
@@ -40,6 +40,7 @@ help:
 	@echo "  pip-audit    Check dependencies for known vulnerabilities"
 	@echo "  check        Run all checks (lint + format + type + length + complexity + test)"
 	@echo "  launch-check Run every local launch gate (check + package + docs + E2E)"
+	@echo "  launch-check-ci-postgres  The hermetic launch check with the store on PostgreSQL"
 	@echo "  ci           Full CI pipeline (check + dead-code + security-lint)"
 	@echo ""
 	@echo "Building:"
@@ -50,10 +51,6 @@ help:
 	@echo "  workflow-guard Check every workflow job skips in the private GPU mirror"
 	@echo ""
 	@echo "Cache Management:"
-	@echo "  cache-stats           Show analysis cache stats"
-	@echo "  video-cache-stats     Show video download cache stats"
-	@echo "  thumbnail-cache-stats Show thumbnail cache stats"
-	@echo "  all-cache-stats       Show all cache stats"
 	@echo "  clean-cache           Clear analysis cache (SQLite)"
 	@echo "  clean-video-cache     Clear video file cache"
 	@echo "  clean-thumbnail-cache Clear thumbnail cache"
@@ -146,6 +143,57 @@ preflight:
 
 test:
 	uv run pytest -v
+
+# The store suite (tests/store/) on each backend it supports. `make test` runs it on SQLite
+# already; these run it alone, and `test-store` adds PostgreSQL. With
+# IMMICH_MEMORIES_TEST_DATABASE_URL unset it starts a throwaway postgres:16 on a free port
+# (data on tmpfs) and removes it however the run ends. Each test uses its own schema.
+STORE_TEST_POSTGRES_IMAGE := docker.io/library/postgres:16@sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54
+STORE_TEST_PYTEST = uv run pytest tests/store/ -v -rs -p no:cacheprovider
+
+.PHONY: test-store test-store-sqlite test-store-pg-client
+test-store-sqlite:  ## Run the store suite on SQLite only (fast, no Docker)
+	env -u IMMICH_MEMORIES_TEST_DATABASE_URL $(STORE_TEST_PYTEST)
+
+# The backup drill runs pg_dump/pg_restore against that server: the client must be at least
+# its major. CI installs exactly 16 and says so; a Mac gets a new enough one from Homebrew.
+STORE_TEST_PG_MAJOR := 16
+test-store-pg-client:
+	@version=$$(pg_dump --version 2>/dev/null | sed -E 's/[^0-9]*([0-9]+).*/\1/'); \
+	if [ -z "$$version" ] || [ "$$version" -lt $(STORE_TEST_PG_MAJOR) ]; then \
+		echo "test-store needs pg_dump $(STORE_TEST_PG_MAJOR)+ on PATH for the backup drill (found: $${version:-none})."; \
+		echo "On a Mac: brew install libpq, then run: PATH=\"\$$(brew --prefix libpq)/bin:\$$PATH\" make test-store"; \
+		echo "On Debian/Ubuntu: install postgresql-client-$(STORE_TEST_PG_MAJOR) and put /usr/lib/postgresql/$(STORE_TEST_PG_MAJOR)/bin first on PATH."; \
+		exit 1; \
+	fi
+
+test-store: test-store-pg-client  ## Run the store suite on SQLite and PostgreSQL (starts postgres:16 in Docker unless IMMICH_MEMORIES_TEST_DATABASE_URL is set)
+	scripts/with_throwaway_postgres.sh IMMICH_MEMORIES_TEST_DATABASE_URL $(STORE_TEST_POSTGRES_IMAGE) -- \
+		$(STORE_TEST_PYTEST)
+
+# The built image, run the way a self-hoster runs it (tests/container/): the repo's
+# docker-compose.yml on a volume a pre-store install left, upgraded on first start,
+# `store backup`/`restore` inside the image, and the trigger API called the way the
+# Kubernetes CronJob calls it. CONTAINER_E2E_DATABASE=sqlite|postgresql picks the store;
+# postgresql switches on the compose file's own PostgreSQL example. CONTAINER_E2E_BUILD=0
+# reuses an image already built or loaded under CONTAINER_E2E_IMAGE.
+CONTAINER_E2E_IMAGE ?= immich-memories:container-e2e
+CONTAINER_E2E_DATABASE ?= sqlite
+CONTAINER_E2E_BUILD ?= 1
+
+.PHONY: test-container test-container-image
+test-container-image:  ## Build the image the container suite runs (editorial extra only)
+	docker build -f docker/Dockerfile -t $(CONTAINER_E2E_IMAGE) \
+		--build-arg APP_VERSION=0+g$$(git rev-parse --short HEAD) \
+		--build-arg INSTALL_EXTRAS=editorial .
+
+test-container:  ## Run the built image from docker-compose.yml: upgrade, store backup/restore, trigger API (CONTAINER_E2E_DATABASE=sqlite|postgresql)
+	@case "$(CONTAINER_E2E_DATABASE)" in sqlite|postgresql) ;; \
+		*) echo "CONTAINER_E2E_DATABASE must be sqlite or postgresql"; exit 2 ;; esac
+	@[ "$(CONTAINER_E2E_BUILD)" = 0 ] || $(MAKE) --no-print-directory test-container-image
+	IMMICH_MEMORIES_CONTAINER_IMAGE=$(CONTAINER_E2E_IMAGE) IMMICH_MEMORIES_CONTAINER_DATABASE=$(CONTAINER_E2E_DATABASE) \
+		uv run pytest tests/container/ -v -m container --tb=short -p no:cacheprovider \
+		--junitxml=tests/container-$(CONTAINER_E2E_DATABASE)-junit.xml
 
 # Only what the torch-family extras unlock. The plain `test` matrix already
 # runs the whole suite on three Pythons and two OSes; running it again here
@@ -275,7 +323,6 @@ IMMICH_GATE_SERVER_v2 := ghcr.io/immich-app/immich-server:v2.7.5@sha256:c15bff75
 IMMICH_GATE_VALKEY_v2 := docker.io/valkey/valkey:9@sha256:3b55fbaa0cd93cf0d9d961f405e4dfcc70efe325e2d84da207a0a8e6d8fde4f9
 IMMICH_GATE_SERVER_v3 := ghcr.io/immich-app/immich-server:v3.2.2@sha256:79cc1623323d5894922686d8743b4780181428f98eecbfb58ce12c41ef02d1ea
 IMMICH_GATE_VALKEY_v3 := docker.io/valkey/valkey:9@sha256:70739f85ad2ee01a726a965584a0f94895f01b0c60b3cc8b0aeef11eaa6888cf
-IMMICH_GATE_HOME = $(CURDIR)/$(IMMICH_GATE_DIR)/home-$(IMMICH_GATE_VERSION)
 IMMICH_GATE_COMPOSE = IMMICH_GATE_SERVER_IMAGE=$(IMMICH_GATE_SERVER_$(IMMICH_GATE_VERSION)) \
 	IMMICH_GATE_VALKEY_IMAGE=$(IMMICH_GATE_VALKEY_$(IMMICH_GATE_VERSION)) \
 	IMMICH_GATE_PORT=$(IMMICH_GATE_PORT) \
@@ -310,23 +357,45 @@ immich-gate-down:  ## Stop the gate Immich (tmpfs only: nothing is left behind)
 immich-gate-logs:
 	$(IMMICH_GATE_COMPOSE) logs --no-color --timestamps
 
-test-immich-gate:  ## Real Immich in Docker + CC0 fixture library + gate tests (IMMICH_GATE_VERSION=v2|v3, ~5 min)
+# The store backend the gate's runs use: sqlite (a file in the gate home) or postgresql
+# (the server IMMICH_GATE_DATABASE_URL names, else a throwaway postgres:16 in Docker).
+IMMICH_GATE_DATABASE ?= sqlite
+IMMICH_GATE_RUN_HOME = $(CURDIR)/$(IMMICH_GATE_DIR)/home-$(IMMICH_GATE_VERSION)-$(IMMICH_GATE_DATABASE)
+IMMICH_GATE_JUNIT = tests/immich-gate-$(IMMICH_GATE_VERSION)-$(IMMICH_GATE_DATABASE)-junit.xml
+
+test-immich-gate:  ## Real Immich in Docker + CC0 fixture library + gate tests (IMMICH_GATE_VERSION=v2|v3, IMMICH_GATE_DATABASE=sqlite|postgresql, ~5 min)
+	@case "$(IMMICH_GATE_DATABASE)" in sqlite|postgresql) ;; \
+		*) echo "IMMICH_GATE_DATABASE must be sqlite or postgresql"; exit 2 ;; esac
 	$(MAKE) immich-gate-up
-	@mkdir -p $(IMMICH_GATE_DIR); rm -rf $(IMMICH_GATE_HOME); status=0; \
-	uv run python -m tests.integration.immich_gate.seed \
-		--url http://127.0.0.1:$(IMMICH_GATE_PORT) \
-		--media $(IMMICH_GATE_DIR)/media --home $(IMMICH_GATE_HOME) \
-	&& uv run env HOME=$(IMMICH_GATE_HOME) immich-memories models fetch \
-	&& REQUIRE_IMMICH=1 IMMICH_GATE_VERSION=$(IMMICH_GATE_VERSION) uv run env HOME=$(IMMICH_GATE_HOME) \
-		pytest tests/integration/immich_gate/ -v -m integration --tb=short -p no:cacheprovider \
-		--junitxml=tests/immich-gate-$(IMMICH_GATE_VERSION)-junit.xml \
-	|| status=$$?; \
+	@status=0; \
+	if [ "$(IMMICH_GATE_DATABASE)" = postgresql ]; then \
+		scripts/with_throwaway_postgres.sh IMMICH_GATE_DATABASE_URL $(STORE_TEST_POSTGRES_IMAGE) -- \
+			$(MAKE) --no-print-directory immich-gate-run || status=$$?; \
+	else \
+		IMMICH_GATE_DATABASE_URL=sqlite:///$(IMMICH_GATE_RUN_HOME)/.immich-memories/store.db \
+			$(MAKE) --no-print-directory immich-gate-run || status=$$?; \
+	fi; \
 	if [ $$status -ne 0 ]; then \
 		$(MAKE) --no-print-directory immich-gate-logs > $(IMMICH_GATE_DIR)/immich-$(IMMICH_GATE_VERSION).log 2>&1 || true; \
 		echo "Immich logs: $(IMMICH_GATE_DIR)/immich-$(IMMICH_GATE_VERSION).log"; \
 	fi; \
 	[ -n "$(IMMICH_GATE_KEEP)" ] || $(MAKE) --no-print-directory immich-gate-down; \
 	exit $$status
+
+# Seed the running gate Immich, then run the gate tests against the store named in
+# IMMICH_GATE_DATABASE_URL. Called by test-immich-gate, which owns the Immich and the database.
+.PHONY: immich-gate-run
+immich-gate-run:
+	@test -n "$$IMMICH_GATE_DATABASE_URL" || { echo "IMMICH_GATE_DATABASE_URL is not set"; exit 2; }
+	@mkdir -p $(IMMICH_GATE_DIR); rm -rf $(IMMICH_GATE_RUN_HOME)
+	uv run python -m tests.integration.immich_gate.seed \
+		--url http://127.0.0.1:$(IMMICH_GATE_PORT) \
+		--media $(IMMICH_GATE_DIR)/media --home $(IMMICH_GATE_RUN_HOME)
+	uv run env HOME=$(IMMICH_GATE_RUN_HOME) IMMICH_MEMORIES_DATABASE_URL=$$IMMICH_GATE_DATABASE_URL \
+		immich-memories models fetch
+	REQUIRE_IMMICH=1 IMMICH_GATE_VERSION=$(IMMICH_GATE_VERSION) uv run env HOME=$(IMMICH_GATE_RUN_HOME) \
+		pytest tests/integration/immich_gate/ -v -m integration --tb=short -p no:cacheprovider \
+		--junitxml=$(IMMICH_GATE_JUNIT)
 
 test-integration:  ## Run ALL integration tests per-suite (requires FFmpeg/Immich), saves per-suite coverage XMLs
 	$(MAKE) test-integration-auth
@@ -375,7 +444,7 @@ e2e:  ## Run required fake-service contracts and real hermetic browser render
 	uv run pytest tests/e2e/test_fake_immich.py tests/e2e/test_launch_smoke.py \
 		tests/e2e/test_memory_page.py tests/e2e/test_picture_decisions.py tests/e2e/test_sharing_levels.py \
 		tests/e2e/test_web_client.py \
-		tests/e2e/test_people_page.py tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py -v \
+		tests/e2e/test_people_page.py tests/e2e/test_person_pool.py tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py -v \
 		-m "e2e and not visual" --log-cli-level=INFO --tb=short \
 		--junitxml=tests/e2e-junit.xml
 
@@ -497,13 +566,15 @@ dead-code:
 	#   @field_validator, @model_validator, @field_serializer
 	#                             pydantic runs these off the schema, never by name
 	# --ignore-names model_config: pydantic reads the ConfigDict class attribute
-	# off the model; nothing in src/ is meant to name it.
+	# off the model; nothing in src/ is meant to name it. down_revision,
+	# branch_labels, depends_on: Alembic reads them off every revision module it
+	# loads by path from db/migrations/versions/.
 	# --exclude web/schemas.py, web/brief.py: the /api/v1 contract, read by the Svelte client across
 	# JSON (and the brief's flags by name), which vulture cannot follow; `make web-check` and the
 	# brief's Click-tree parity test hold them instead.
 	uvx vulture src/ $(SERVICE_TREES) vulture-whitelist.py --min-confidence 60 \
 		--exclude "src/immich_memories/web/schemas.py,src/immich_memories/web/brief.py" \
-		--ignore-names "model_config" \
+		--ignore-names "model_config,down_revision,branch_labels,depends_on" \
 		--ignore-decorators "@register_preset,@*.command,@*.group,@ui.page,@LocalizedPage,@app.middleware,@app.get,@app.post,@router.get,@router.post,@router.put,@router.delete,@field_validator,@model_validator,@field_serializer"
 
 # Security lint (Bandit)
@@ -609,6 +680,9 @@ diff-cover:
 
 # Dependency vulnerability audit
 # Fails closed: a truncated export or a crashed pip-audit must not read as a clean audit.
+# The export is fully pinned, so pip-audit audits it as-is (--no-deps --disable-pip).
+# Without those flags it builds a virtualenv and re-resolves all ~165 packages from
+# PyPI's index on every run, and a slow index then fails the audit with nothing audited.
 pip-audit:  ## Check dependencies for known vulnerabilities (warns on unfixable, fails on fixable)
 	@set -eu; \
 	REQS=$$(mktemp "$${TMPDIR:-/tmp}/pip-audit-reqs.XXXXXX"); \
@@ -621,7 +695,7 @@ pip-audit:  ## Check dependencies for known vulnerabilities (warns on unfixable,
 		exit 2; \
 	fi; \
 	echo "auditing $$COUNT pinned packages"; \
-	set +e; uvx pip-audit -r "$$REQS" --strict > "$$OUT" 2>&1; AUDIT_EXIT=$$?; set -e; \
+	set +e; uvx pip-audit -r "$$REQS" --no-deps --disable-pip --timeout 60 --strict > "$$OUT" 2>&1; AUDIT_EXIT=$$?; set -e; \
 	python3 scripts/pip_audit_smart.py --audit-exit "$$AUDIT_EXIT" < "$$OUT"
 
 diff-cover-local:  ## Check diff-cover locally before pushing (runs tests + merges integration coverage)
@@ -670,6 +744,13 @@ integration-coverage-for-diff:  ## Run only the local integration suites the dif
 			$(MAKE) test-integration-$$s || exit 1; \
 		done; \
 	fi
+
+# Which CI jobs this branch's changes can break. CI's `changes` job runs it and
+# every job reads the answer in its `if:`; locally it shows what a push would run.
+CI_SCOPE_EVENT ?= pull_request
+CI_SCOPE_BASE ?= origin/main
+ci-scope:  ## Print which CI jobs this branch's changes run (CI_SCOPE_BASE=origin/main)
+	python3 scripts/ci_scope.py --event $(CI_SCOPE_EVENT) --base $(CI_SCOPE_BASE)
 
 # Diff coverage for PRs. CI runs integration-coverage-for-diff first, so the
 # FFmpeg-only suites covering the changed paths have written their XMLs here.
@@ -725,6 +806,15 @@ launch-check: check build build-check docs-check e2e
 launch-check-ci: ENSURE_DEV_COMMAND = echo "Using preinstalled launch-check dependencies"
 launch-check-ci: ensure-dev e2e
 	@echo "Hermetic launch check passed!"
+
+# The same hermetic launch check with the app's store on PostgreSQL: every launch
+# workspace gets its own schema in IMMICH_MEMORIES_E2E_DATABASE_URL, dropped afterwards.
+# Unset, a throwaway postgres:16 starts in Docker for the run.
+launch-check-ci-postgres: ENSURE_DEV_COMMAND = echo "Using preinstalled launch-check dependencies"
+launch-check-ci-postgres: ensure-dev
+	scripts/with_throwaway_postgres.sh IMMICH_MEMORIES_E2E_DATABASE_URL $(STORE_TEST_POSTGRES_IMAGE) -- \
+		$(MAKE) --no-print-directory e2e
+	@echo "Hermetic launch check (PostgreSQL) passed!"
 
 # Full CI-equivalent pipeline (locally)
 ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check docs-voice notices-check compose-check web-check test
@@ -896,21 +986,6 @@ info:
 # Open cache database with sqlite3
 db:
 	sqlite3 ~/.immich-memories/cache.db
-
-# Show analysis cache stats
-cache-stats:
-	@uv run python -c "from immich_memories.cache import VideoAnalysisCache; c = VideoAnalysisCache(); import json; print(json.dumps(c.get_stats(), indent=2))"
-
-# Show video cache stats
-video-cache-stats:
-	@uv run python -c "from immich_memories.cache import VideoDownloadCache; c = VideoDownloadCache(); import json; print(json.dumps(c.get_stats(), indent=2, default=str))"
-
-# Show thumbnail cache stats
-thumbnail-cache-stats:
-	@uv run python -c "from immich_memories.cache import ThumbnailCache; c = ThumbnailCache(); import json; print(json.dumps(c.get_stats(), indent=2, default=str))"
-
-# Show all cache stats
-all-cache-stats: cache-stats video-cache-stats thumbnail-cache-stats
 
 # Generate version info
 version:

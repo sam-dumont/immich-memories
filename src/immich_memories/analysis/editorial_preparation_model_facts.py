@@ -1,14 +1,14 @@
 """Which model producer still owes a fact, and who is allowed to answer for it.
 
-Four decisions live here, in this order: what the inference service may be asked for,
-which pictures the packaged public heads still owe, which sources the detector worker
-must read, and which attached clips owe the exposure head a row of their own. A head
-nothing packages is named rather than silently skipped.
+Five decisions live here, in this order: which stills an earlier exposure answer still
+covers, what the inference service may be asked for, which pictures the packaged public
+heads still owe, which sources the detector worker must read, and which attached clips
+owe the exposure head a row of their own. A head nothing packages is named rather than
+silently skipped.
 """
 
 from __future__ import annotations
 
-import sqlite3
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import AbstractContextManager
 from pathlib import Path
@@ -21,12 +21,15 @@ from immich_memories.analysis.editorial_preparation_detector_frames import (
 from immich_memories.analysis.editorial_preparation_detectors import (
     DETECTOR_VERSIONS,
     MARQO_HEAD,
+    MARQO_ONNX_ID,
+    MARQO_STILL_EQUIVALENT,
 )
 from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VERSIONS
 from immich_memories.analysis.remote_facts import offloaded_versions
 from immich_memories.api.models import Asset
 from immich_memories.config_models_inference import InferenceConfig
-from immich_memories.store.editorial_preparation import heads_missing_for
+from immich_memories.db import Store
+from immich_memories.store.editorial_preparation import carry_head_answers, heads_missing_for
 
 
 class ModelFactStage(Protocol):
@@ -34,6 +37,9 @@ class ModelFactStage(Protocol):
 
     @property
     def failures(self) -> dict[str, str]: ...
+
+    @property
+    def store(self) -> Store: ...
 
     @property
     def inference_config(self) -> InferenceConfig: ...
@@ -74,6 +80,28 @@ class ModelFactStage(Protocol):
 CLIP_COMPANION = "clip_companion"
 
 
+def carry_still_exposure(
+    store: Store, source: Sequence[Asset], head_versions: Mapping[str, str]
+) -> None:
+    """Bank a still's earlier exposure answer as the current one instead of reading it again.
+
+    The current version changed how a video is read and nothing about a still, which is
+    still decided on its preview by the same export. A video, and a Live Photo's clip
+    (never in ``source``), keep owing the current version a read of their own.
+    """
+    version = head_versions.get(MARQO_HEAD, "")
+    if version != DETECTOR_VERSIONS[MARQO_HEAD]:
+        return
+    carry_head_answers(
+        store,
+        [asset.id for asset in source if not asset.is_video],
+        MARQO_HEAD,
+        banked_version=MARQO_STILL_EQUIVALENT,
+        version=version,
+        encoder_key=MARQO_ONNX_ID,
+    )
+
+
 def deferred_exposure(
     missing: Mapping[str, tuple[str, ...]], source: Sequence[Asset]
 ) -> dict[str, tuple[str, ...]]:
@@ -94,7 +122,6 @@ def deferred_exposure(
 
 def acquire_clip_companions(
     stage: ModelFactStage,
-    connection: sqlite3.Connection,
     frames: DetectorFrames,
     cache_path: Path,
     fetch_preview: Any,
@@ -112,10 +139,7 @@ def acquire_clip_companions(
     version = head_versions.get(MARQO_HEAD, "")
     if not frames.companion_ids or DETECTOR_VERSIONS.get(MARQO_HEAD) != version:
         return
-    owed = heads_missing_for(connection, sorted(frames.companion_ids), MARQO_HEAD, version)
-    # The worker is another process writing this same file: staging the question must not
-    # leave a transaction open across it, or it meets a locked database.
-    connection.commit()
+    owed = heads_missing_for(stage.store, sorted(frames.companion_ids), MARQO_HEAD, version)
     if not owed:
         return
     refused = set(stage.unservable)

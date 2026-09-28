@@ -1,22 +1,25 @@
-"""SQLite persistence for smart automation attempts."""
+"""Automation attempts, kept in the store: what the nightly runner tried and how it ended."""
 
 from __future__ import annotations
 
-import json
 import logging
-import sqlite3
-from collections.abc import Iterator
-from contextlib import contextmanager
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
+import sqlalchemy as sa
+
 from immich_memories.automation.models import AutomationAttempt, AutoOutcome
-from immich_memories.cache.database import VideoAnalysisCache
+from immich_memories.db import Store, from_db, open_store, to_db
+from immich_memories.db.tables import automation_attempts
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
+from immich_memories.tracking.phase_rows import advance_phase
 
 logger = logging.getLogger(__name__)
+
+_ATTEMPTS = automation_attempts.c
 
 
 @dataclass(frozen=True)
@@ -31,20 +34,13 @@ class AttemptAlreadyFinishedError(RuntimeError):
     """Raised when a caller tries to replace an attempt's terminal result."""
 
 
-def _row_to_attempt(row: sqlite3.Row) -> AutomationAttempt:
-    try:
-        last_phase = row["last_phase"]
-    except IndexError:
-        # Older additive schemas have no operational telemetry column.
-        last_phase = None
-    try:
-        phase_events = json.loads(row["phase_events"])
-    except IndexError:
-        phase_events = []
+def _row_to_attempt(row: Mapping[Any, Any]) -> AutomationAttempt:
+    started_at = from_db(row["started_at"])
+    assert started_at is not None
     return AutomationAttempt(
         id=row["id"],
-        started_at=datetime.fromisoformat(row["started_at"]),
-        finished_at=(datetime.fromisoformat(row["finished_at"]) if row["finished_at"] else None),
+        started_at=started_at,
+        finished_at=from_db(row["finished_at"]),
         outcome=AutoOutcome(row["outcome"]),
         reason=row["reason"],
         candidate_category=row["candidate_category"],
@@ -52,27 +48,16 @@ def _row_to_attempt(row: sqlite3.Row) -> AutomationAttempt:
         memory_key=row["memory_key"],
         run_id=row["run_id"],
         error=row["error"],
-        last_phase=OperationalPhase(last_phase) if last_phase else None,
-        phase_events=phase_events,
+        last_phase=OperationalPhase(row["last_phase"]) if row["last_phase"] else None,
+        phase_events=list(row["phase_events"] or []),
     )
 
 
 class AutomationStateStore:
     """Read and update automation attempt state without replacing start rows."""
 
-    def __init__(self, db_path: Path):
-        self.db_path = Path(db_path)
-        VideoAnalysisCache(self.db_path)
-
-    @contextmanager
-    def _get_connection(self) -> Iterator[sqlite3.Connection]:
-        conn = sqlite3.connect(self.db_path, timeout=5.0)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON")
-        try:
-            yield conn
-        finally:
-            conn.close()
+    def __init__(self, store: Store | None = None):
+        self.store = store or open_store()
 
     def start_attempt(
         self,
@@ -93,48 +78,35 @@ class AutomationStateStore:
             memory_type=memory_type,
             memory_key=memory_key,
         )
-        with self._get_connection() as conn:
+        with self.store.begin() as conn:
             conn.execute(
-                """
-                INSERT INTO automation_attempts (
-                    id, started_at, finished_at, outcome, reason,
-                    candidate_category, memory_type, memory_key, run_id, error
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    attempt.id,
-                    attempt.started_at.isoformat(),
-                    None,
-                    attempt.outcome.value,
-                    attempt.reason,
-                    attempt.candidate_category,
-                    attempt.memory_type,
-                    attempt.memory_key,
-                    None,
-                    None,
-                ),
+                sa.insert(automation_attempts),
+                [
+                    {
+                        "id": attempt.id,
+                        "started_at": to_db(attempt.started_at),
+                        "finished_at": None,
+                        "outcome": attempt.outcome.value,
+                        "reason": attempt.reason,
+                        "candidate_category": attempt.candidate_category,
+                        "memory_type": attempt.memory_type,
+                        "memory_key": attempt.memory_key,
+                        "run_id": None,
+                        "error": None,
+                        "last_phase": None,
+                        "phase_events": [],
+                    }
+                ],
             )
-            conn.commit()
         return attempt
 
     def update_phase(self, attempt_id: str, event: PhaseEvent) -> bool:
         """Persist a forward-only phase update for one exact automation attempt."""
-        with self._get_connection() as conn:
-            row = conn.execute(
-                "SELECT last_phase FROM automation_attempts WHERE id = ?", (attempt_id,)
-            ).fetchone()
-            if row is None:
-                raise KeyError(f"Unknown automation attempt: {attempt_id}")
-            previous = OperationalPhase(row["last_phase"]) if row["last_phase"] else None
-            if previous is not None and event.phase.order < previous.order:
-                return False
-            conn.execute(
-                """UPDATE automation_attempts SET last_phase = ?,
-                   phase_events = json_insert(phase_events, '$[#]', json(?)) WHERE id = ?""",
-                (event.phase.value, json.dumps(event.to_dict()), attempt_id),
-            )
-            conn.commit()
-        return True
+        with self.store.begin() as conn:
+            advanced = advance_phase(conn, automation_attempts, _ATTEMPTS.id, attempt_id, event)
+        if advanced is None:
+            raise KeyError(f"Unknown automation attempt: {attempt_id}")
+        return advanced
 
     def record_discovery(self, attempt_id: str) -> None:
         """Start candidate discovery without making telemetry decision-critical."""
@@ -172,66 +144,56 @@ class AutomationStateStore:
             raise ValueError("RUNNING is not a terminal automation outcome")
 
         finished_at = datetime.now(tz=UTC)
-        with self._get_connection() as conn:
-            cursor = conn.execute(
-                """
-                UPDATE automation_attempts
-                SET finished_at = ?, outcome = ?, reason = ?,
-                    candidate_category = COALESCE(?, candidate_category),
-                    memory_type = COALESCE(?, memory_type),
-                    memory_key = COALESCE(?, memory_key),
-                    run_id = COALESCE(?, run_id),
-                    error = ?
-                WHERE id = ? AND outcome = ?
-                """,
-                (
-                    finished_at.isoformat(),
-                    outcome.value,
-                    reason,
-                    candidate_category,
-                    memory_type,
-                    memory_key,
-                    run_id,
-                    error,
-                    attempt_id,
-                    AutoOutcome.RUNNING.value,
-                ),
+        # A field the finish does not name keeps what the start recorded.
+        kept = {
+            "candidate_category": candidate_category,
+            "memory_type": memory_type,
+            "memory_key": memory_key,
+            "run_id": run_id,
+        }
+        values = {
+            "finished_at": to_db(finished_at),
+            "outcome": outcome.value,
+            "reason": reason,
+            "error": error,
+        } | {name: value for name, value in kept.items() if value is not None}
+        with self.store.begin() as conn:
+            result = conn.execute(
+                sa.update(automation_attempts)
+                .where(_ATTEMPTS.id == attempt_id, _ATTEMPTS.outcome == AutoOutcome.RUNNING.value)
+                .values(values)
             )
-            if cursor.rowcount != 1:
+            if result.rowcount != 1:
                 existing = conn.execute(
-                    "SELECT outcome FROM automation_attempts WHERE id = ?", (attempt_id,)
-                ).fetchone()
+                    sa.select(_ATTEMPTS.outcome).where(_ATTEMPTS.id == attempt_id)
+                ).scalar()
                 if existing is None:
                     raise KeyError(f"Unknown automation attempt: {attempt_id}")
                 raise AttemptAlreadyFinishedError(
-                    f"Automation attempt already finished: {attempt_id} ({existing['outcome']})"
+                    f"Automation attempt already finished: {attempt_id} ({existing})"
                 )
-            row = conn.execute(
-                "SELECT * FROM automation_attempts WHERE id = ?", (attempt_id,)
-            ).fetchone()
-            conn.commit()
-
-        assert row is not None
+            row = (
+                conn.execute(sa.select(automation_attempts).where(_ATTEMPTS.id == attempt_id))
+                .mappings()
+                .one()
+            )
         return _row_to_attempt(row)
 
     def get_attempt(self, attempt_id: str) -> AutomationAttempt | None:
         """Return one attempt by id, or None when nothing was ever started under it."""
-        with self._get_connection() as conn:
-            row = conn.execute(
-                "SELECT * FROM automation_attempts WHERE id = ?", (attempt_id,)
-            ).fetchone()
-        return _row_to_attempt(row) if row else None
+        return self._first(sa.select(automation_attempts).where(_ATTEMPTS.id == attempt_id))
 
     def get_last_attempt(self) -> AutomationAttempt | None:
         """Return the most recently started automation attempt."""
-        with self._get_connection() as conn:
-            row = conn.execute(
-                """
-                SELECT * FROM automation_attempts
-                ORDER BY started_at DESC, rowid DESC
-                LIMIT 1
-                """
-            ).fetchone()
+        return self._first(
+            sa.select(automation_attempts)
+            .order_by(_ATTEMPTS.started_at.desc(), _ATTEMPTS.seq.desc())
+            .limit(1)
+        )
+
+    def _first(self, query: sa.Select) -> AutomationAttempt | None:
+        with self.store.connect() as conn:
+            row = conn.execute(query).mappings().first()
         return _row_to_attempt(row) if row else None
 
     def consecutive_failures_by_key(self) -> dict[str, FailureStreak]:
@@ -242,29 +204,26 @@ class AutomationStateStore:
         means the runner declined the candidate, which says nothing about
         whether it would have rendered.
         """
-        with self._get_connection() as conn:
-            rows = conn.execute(
-                """
-                SELECT memory_key, outcome, finished_at
-                FROM automation_attempts
-                WHERE memory_key IS NOT NULL
-                  AND outcome IN (?, ?)
-                ORDER BY started_at ASC, rowid ASC
-                """,
-                (AutoOutcome.FAILED.value, AutoOutcome.COMPLETED.value),
-            ).fetchall()
+        query = (
+            sa.select(_ATTEMPTS.memory_key, _ATTEMPTS.outcome, _ATTEMPTS.finished_at)
+            .where(
+                _ATTEMPTS.memory_key.is_not(None),
+                _ATTEMPTS.outcome.in_([AutoOutcome.FAILED.value, AutoOutcome.COMPLETED.value]),
+            )
+            .order_by(_ATTEMPTS.started_at, _ATTEMPTS.seq)
+        )
+        with self.store.connect() as conn:
+            rows = conn.execute(query).all()
 
         streaks: dict[str, FailureStreak] = {}
         for row in rows:
-            key = row["memory_key"]
-            if row["outcome"] == AutoOutcome.COMPLETED.value:
+            key: str = row.memory_key
+            if row.outcome == AutoOutcome.COMPLETED.value:
                 streaks.pop(key, None)
                 continue
             previous = streaks.get(key)
             streaks[key] = FailureStreak(
                 count=(previous.count if previous else 0) + 1,
-                last_failed_at=(
-                    datetime.fromisoformat(row["finished_at"]) if row["finished_at"] else None
-                ),
+                last_failed_at=from_db(row.finished_at),
             )
         return streaks

@@ -8,6 +8,12 @@ name: Immich Gate
 #
 # The library is the CC0 fixture month (tests/e2e/fixtures/library) plus
 # synthesized paging pictures; never anyone's photos.
+#
+# Each Immich version runs twice: the app's store on SQLite, and on PostgreSQL
+# (a throwaway postgres:16 the Makefile starts, pinned like the test-store
+# job's). Not a job service: the containerd step below restarts the Docker
+# daemon, which kills any service container started before it. The same gate
+# tests read back what the runs left in whichever store they had.
 
 on:
   pull_request:
@@ -26,15 +32,36 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  immich:
-    name: Real Immich (${{ matrix.immich }})
+  # Scoped like CI (scripts/ci_scope.py): a docs-only change skips the gate,
+  # and the PostgreSQL legs run when the store changes. A push to main runs all.
+  changes:
+    name: Change Scope
     if: github.repository == 'sam-dumont/immich-video-memory-generator'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    outputs:
+      docs_only: ${{ steps.scope.outputs.docs_only }}
+      store: ${{ steps.scope.outputs.store }}
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0  # the diff needs the base branch
+      - id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: origin/${{ github.base_ref }}
+        run: make ci-scope CI_SCOPE_EVENT="$EVENT" CI_SCOPE_BASE="$BASE"
+
+  immich:
+    name: Real Immich (${{ matrix.immich }}, ${{ matrix.database }})
+    needs: [changes]
+    if: github.repository == 'sam-dumont/immich-video-memory-generator' && needs.changes.outputs.docs_only != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
         immich: [v2, v3]
+        database: ${{ fromJSON(needs.changes.outputs.store == 'true' && '["sqlite","postgresql"]' || '["sqlite"]') }}
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
@@ -110,8 +137,8 @@ jobs:
           cat "$RUNNER_TEMP/pull.log"
           exit "$(cat "$RUNNER_TEMP/pull.status")"
 
-      - name: Real-Immich gate (${{ matrix.immich }})
-        run: make test-immich-gate IMMICH_GATE_VERSION=${{ matrix.immich }}
+      - name: Real-Immich gate (${{ matrix.immich }}, ${{ matrix.database }})
+        run: make test-immich-gate IMMICH_GATE_VERSION=${{ matrix.immich }} IMMICH_GATE_DATABASE=${{ matrix.database }}
 
       # Saved after the tests so a cold run's tests do not wait on docker save.
       # A failed save only costs the next run a pull; it never fails the gate.
@@ -132,23 +159,35 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
-          name: immich-gate-${{ matrix.immich }}-logs
+          name: immich-gate-${{ matrix.immich }}-${{ matrix.database }}-logs
           if-no-files-found: ignore
           path: |
             .immich-gate/*.log
             tests/immich-gate-*-junit.xml
 
   # The one check branch protection requires. A matrix job reports one check
-  # per version; this folds them into a name that survives adding a version.
+  # per leg; this folds them into a name that survives adding a version or a backend.
   gate:
     name: Immich Gate
-    needs: [immich]
+    needs: [changes, immich]
     if: always() && github.repository == 'sam-dumont/immich-video-memory-generator'
     runs-on: ubuntu-latest
     steps:
-      - name: Every Immich version passed
+      - name: Every Immich version passed on every store backend
+        env:
+          SCOPE: ${{ needs.changes.result }}
+          IMMICH: ${{ needs.immich.result }}
+          DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
         run: |
-          if [[ "${{ needs.immich.result }}" != "success" ]]; then
-            echo "Real-Immich gate did not pass: ${{ needs.immich.result }}"
+          if [[ "$SCOPE" != "success" ]]; then
+            echo "Change scope did not succeed: $SCOPE"
+            exit 1
+          fi
+          if [[ "$IMMICH" == "skipped" && "$DOCS_ONLY" == "true" ]]; then
+            echo "Docs-only change: no real-Immich run needed"
+            exit 0
+          fi
+          if [[ "$IMMICH" != "success" ]]; then
+            echo "Real-Immich gate did not pass: $IMMICH"
             exit 1
           fi

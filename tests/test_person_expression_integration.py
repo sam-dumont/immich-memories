@@ -1,4 +1,4 @@
-"""Grouped people conditions survive production boundaries without widening demand.
+"""Grouped people conditions survive production boundaries, read per episode.
 
 The matrix replays stay on the probe branch.
 
@@ -7,16 +7,14 @@ The wall-source and period-card probe replays stay on the probe branch.
 
 from __future__ import annotations
 
-from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
 
 from immich_memories.analysis.editorial_case import Case
 from immich_memories.analysis.editorial_runtime import EditorialRunContext
-from immich_memories.analysis.editorial_source import (
-    filter_named_expression,
-)
+from immich_memories.analysis.editorial_source import resolve_named_expression
+from immich_memories.analysis.person_presence import episodes_of, present_in_episodes
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.api.models import AssetType, Person
 from immich_memories.api.person_expression import PersonExpression
@@ -26,7 +24,6 @@ from immich_memories.memory_types.registry import MemoryType
 from immich_memories.timeperiod import DateRange
 from tests import test_editorial_source_route_integration as source_fixture
 from tests.conftest import make_asset
-from tests.test_editorial_duration_planner_integration import source as captured_source
 
 EXPRESSION = PersonExpression.parse('("Adult A" OR "Adult B") AND "Child"')
 WINDOW = DateRange(datetime(2024, 1, 1, tzinfo=UTC), datetime(2024, 12, 31, tzinfo=UTC))
@@ -115,16 +112,13 @@ def test_case_and_context_reject_inconsistent_names_and_untyped_expression(tmp_p
             )
 
 
-def test_named_filter_requires_cooccurrence_in_one_asset_not_across_the_window():
-    sources = [_asset("adult", [_person("a", "Adult A")]), _asset("child", [_person("c", "Child")])]
-    assert filter_named_expression(sources, EXPRESSION) == ()
-
-
 @pytest.mark.parametrize("matching", [True, False])
-def test_actual_runtime_filters_demand_but_keeps_full_canonical_context(
+def test_actual_runtime_reads_the_condition_per_episode_and_keeps_full_canonical_context(
     tmp_path, monkeypatch, matching
 ):
+    """Nobody shares a frame here: an adult and the child each appear alone in one afternoon."""
     real_context = source_fixture.EditorialRunContext
+    # WHY: the shared runtime fixture builds a month film; this adds the grouped condition to it.
     monkeypatch.setattr(
         source_fixture,
         "EditorialRunContext",
@@ -133,15 +127,19 @@ def test_actual_runtime_filters_demand_but_keeps_full_canonical_context(
     sources, _config, build, calls, captures, _images, _warm = source_fixture.setup_runtime(
         tmp_path, monkeypatch
     )
-    child = _person("child", "Child")
-    sources[0].people = [_person("a-old", "Adult A"), child] if matching else []
-    sources[1].people = [_person("a-new", "Adult A"), child] if matching else []
-    sources[2].people = [_person("b", "Adult B"), child] if matching else []
     sources[3].people = [_person("a-alone", "Adult A")]
-    sources[4].people = [child]
+    sources[4].people = [_person("child", "Child")] if matching else []
     source_bytes = [a.model_dump(mode="json") for a in sources]
-    result = build().plan_source(sources, trace=Trace(), include_live_photos=False)
-    expected = {a.id for a in sources[:3]} if matching else set()
+    # The pool the fetch hands over: the episodes the condition holds in, every name
+    # resolved to all of its faces the way the fetch resolves it.
+    roster = [_person("a", "Adult A"), _person("b", "Adult B"), _person("child", "Child")]
+    roster += [person for asset in sources for person in asset.people]
+    present = present_in_episodes(
+        episodes_of(sources), resolve_named_expression(EXPRESSION, roster)
+    )
+    pool = [asset for asset in sources if asset.id in present]
+    result = build().plan_source(pool, trace=Trace(), include_live_photos=False)
+    expected = {a.id for a in sources} if matching else set()
     assert {row.clip.asset.id for row in result.candidates} == expected
     assert set(result.plan.selected_asset_ids).issubset(expected)
     assert len(calls["acquire"]) == 1
@@ -154,21 +152,6 @@ def test_actual_runtime_filters_demand_but_keeps_full_canonical_context(
     else:
         assert not result.plan.selections
     assert [a.model_dump(mode="json") for a in sources] == source_bytes
-
-
-def test_structure_input_rejects_unmatching_selected_asset_but_allows_context(tmp_path):
-    captured = captured_source(tmp_path, seconds=60, pictures=2)
-    first, second = captured.assets.values()
-    first = first.model_copy(update={"people": [_person("a", "Adult A"), _person("c", "Child")]})
-    second = second.model_copy(update={"people": [_person("a", "Adult A")]})
-    case = replace(captured.case, person_expression=EXPRESSION)
-    assets = {first.id: first, second.id: second}
-    with pytest.raises(ValueError, match="outside the grouped people condition"):
-        replace(captured, case=case, assets=assets)
-    alias = next(iter(captured.moment_asset_ids))
-    narrowed = replace(captured, case=case, assets=assets, moment_asset_ids={alias: (first.id,)})
-    assert set(narrowed.assets) == {first.id, second.id}
-    assert narrowed.moment_asset_ids == {alias: (first.id,)}
 
 
 def test_flat_preset_filters_keep_existing_and_or_behavior():

@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.operations.candidate_fates import CandidateFates
 from immich_memories.operations.cut_review import model_polish_ran, read_cut_decisions
 from immich_memories.operations.cut_revisions import (
@@ -108,7 +109,7 @@ def _shot(position: int, shot: Shot, evidence: _Evidence) -> CutShot:
 @router.get("/{run_id}/cut", response_model=Cut)
 def read_cut(run_id: str, config: Annotated[Config, Depends(current_config)]) -> Cut:
     """The cut in the order it plays, each shot with every reason the run recorded for it."""
-    attempt = attempt_dir_for_run(config.cache.cache_path, run_id)
+    attempt = attempt_dir_for_run(run_id, store=open_store(config))
     board = read_storyboard(attempt) if attempt else None
     if attempt is None or board is None:
         raise HTTPException(404, "This run left no saved cut.")
@@ -166,7 +167,7 @@ def read_story(run_id: str, config: Annotated[Config, Depends(current_config)]) 
 
 
 def _attempt(config: Config, run_id: str) -> Path:
-    attempt = attempt_dir_for_run(config.cache.cache_path, run_id)
+    attempt = attempt_dir_for_run(run_id, store=open_store(config))
     if attempt is None:
         raise HTTPException(404, "This run left no saved cut.")
     return attempt
@@ -180,6 +181,7 @@ def _revision(revision: CutRevision) -> Revision:
         removed=list(revision.edits.removed),
         segments=dict(revision.edits.segments),
         swaps=dict(revision.edits.swaps),
+        added=list(revision.edits.added),
     )
 
 
@@ -199,7 +201,12 @@ def create_revision(
     try:
         revision = save_revision(
             _attempt(config, run_id),
-            CutEdits(removed=tuple(edits.removed), segments=edits.segments, swaps=edits.swaps),
+            CutEdits(
+                removed=tuple(edits.removed),
+                segments=edits.segments,
+                swaps=edits.swaps,
+                added=tuple(edits.added),
+            ),
         )
     except RevisionRefused as refusal:
         raise HTTPException(422, str(refusal)) from refusal

@@ -1,37 +1,6 @@
 {
   "components": {
     "schemas": {
-      "ActiveConfig": {
-        "properties": {
-          "path": {
-            "title": "Path",
-            "type": "string"
-          },
-          "preset": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Preset"
-          },
-          "sections": {
-            "additionalProperties": true,
-            "title": "Sections",
-            "type": "object"
-          }
-        },
-        "required": [
-          "path",
-          "preset",
-          "sections"
-        ],
-        "title": "ActiveConfig",
-        "type": "object"
-      },
       "AlbumChoice": {
         "properties": {
           "asset_count": {
@@ -914,6 +883,11 @@
             ],
             "title": "Remaining Seconds"
           },
+          "stage_name": {
+            "default": "",
+            "title": "Stage Name",
+            "type": "string"
+          },
           "stage_remaining_seconds": {
             "anyOf": [
               {
@@ -1217,6 +1191,17 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "pictures": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pictures"
           }
         },
         "required": [
@@ -1361,6 +1346,11 @@
             "title": "Reachable",
             "type": "boolean"
           },
+          "same_episode": {
+            "default": false,
+            "title": "Same Episode",
+            "type": "boolean"
+          },
           "taken": {
             "title": "Taken",
             "type": "string"
@@ -1377,29 +1367,6 @@
           "hold"
         ],
         "title": "PoolItem",
-        "type": "object"
-      },
-      "Recut": {
-        "description": "The pool's ticks: pictures the next cut must keep, and pictures it must leave out.",
-        "properties": {
-          "exclude": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Exclude",
-            "type": "array"
-          },
-          "include": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Include",
-            "type": "array"
-          }
-        },
-        "title": "Recut",
         "type": "object"
       },
       "Relationship": {
@@ -1604,6 +1571,14 @@
       },
       "Revision": {
         "properties": {
+          "added": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Added",
+            "type": "array"
+          },
           "content_seconds": {
             "title": "Content Seconds",
             "type": "number"
@@ -1660,8 +1635,16 @@
         "type": "object"
       },
       "RevisionEdits": {
-        "description": "What the owner changed; every id must be in the cut, or a recorded sibling for a swap.",
+        "description": "What the owner changed: removals and swaps name the cut's shots, additions its pool.",
         "properties": {
+          "added": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Added",
+            "type": "array"
+          },
           "removed": {
             "default": [],
             "items": {
@@ -2306,6 +2289,124 @@
         "title": "SessionView",
         "type": "object"
       },
+      "SettingRow": {
+        "description": "One setting as the page shows it: its value, where that value comes from, and whether\nthis page may change it. A secret's value is masked (`***`, or empty when none is stored).",
+        "properties": {
+          "editable": {
+            "title": "Editable",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "override": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override"
+          },
+          "secret": {
+            "title": "Secret",
+            "type": "boolean"
+          },
+          "source": {
+            "enum": [
+              "env",
+              "file",
+              "database",
+              "default"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "unreadable": {
+            "title": "Unreadable",
+            "type": "boolean"
+          },
+          "value": {
+            "title": "Value"
+          }
+        },
+        "required": [
+          "key",
+          "value",
+          "source",
+          "override",
+          "secret",
+          "unreadable",
+          "editable"
+        ],
+        "title": "SettingRow",
+        "type": "object"
+      },
+      "SettingsForm": {
+        "description": "The edited values, keyed by runtime path (`llm.model`); lists and mappings as JSON text.",
+        "properties": {
+          "values": {
+            "additionalProperties": true,
+            "title": "Values",
+            "type": "object"
+          }
+        },
+        "required": [
+          "values"
+        ],
+        "title": "SettingsForm",
+        "type": "object"
+      },
+      "SettingsSection": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "settings": {
+            "items": {
+              "$ref": "#/components/schemas/SettingRow"
+            },
+            "title": "Settings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "settings"
+        ],
+        "title": "SettingsSection",
+        "type": "object"
+      },
+      "SettingsView": {
+        "properties": {
+          "can_store_secrets": {
+            "title": "Can Store Secrets",
+            "type": "boolean"
+          },
+          "config_path": {
+            "title": "Config Path",
+            "type": "string"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/SettingsSection"
+            },
+            "title": "Sections",
+            "type": "array"
+          }
+        },
+        "required": [
+          "config_path",
+          "can_store_secrets",
+          "sections"
+        ],
+        "title": "SettingsView",
+        "type": "object"
+      },
       "ShownCommand": {
         "properties": {
           "command": {
@@ -2584,6 +2685,18 @@
             "title": "Candidates",
             "type": "array"
           },
+          "computed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Computed At"
+          },
           "error": {
             "anyOf": [
               {
@@ -2594,6 +2707,11 @@
               }
             ],
             "title": "Error"
+          },
+          "refreshing": {
+            "default": false,
+            "title": "Refreshing",
+            "type": "boolean"
           },
           "skipped": {
             "items": {
@@ -2649,6 +2767,59 @@
           "pictures"
         ],
         "title": "TripChoice",
+        "type": "object"
+      },
+      "Trips": {
+        "properties": {
+          "computed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Computed At"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "refreshing": {
+            "title": "Refreshing",
+            "type": "boolean"
+          },
+          "trips": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TripChoice"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trips"
+          }
+        },
+        "required": [
+          "trips",
+          "computed_at",
+          "refreshing",
+          "error"
+        ],
+        "title": "Trips",
         "type": "object"
       },
       "ValidationError": {
@@ -2945,28 +3116,6 @@
         ]
       }
     },
-    "/api/v1/config": {
-      "get": {
-        "description": "The configuration this server runs with, env overrides applied, secrets masked.",
-        "operationId": "active_config_api_v1_config_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ActiveConfig"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Active Config",
-        "tags": [
-          "settings"
-        ]
-      }
-    },
     "/api/v1/connection": {
       "get": {
         "description": "The server this install reads, and whether a key is stored for it.",
@@ -2989,7 +3138,7 @@
         ]
       },
       "put": {
-        "description": "Keep the server and key in the config file the process reads.",
+        "description": "Save the server and key to the database, only the ones that changed.\n\nconfig.yaml and the environment are never written: a value either of them sets is refused\nwith the name of what sets it, and a key needs IMMICH_MEMORIES_SECRET_KEY to be stored.",
         "operationId": "save_connection_api_v1_connection_put",
         "requestBody": {
           "content": {
@@ -3160,7 +3309,7 @@
     },
     "/api/v1/holidays": {
       "get": {
-        "description": "The holidays the pipeline resolves, named in the page's language; any MM-DD works too.",
+        "description": "The holidays the pipeline resolves: the known ones, named in the page's language, then\nthe home country's other public holidays by their own name. Any MM-DD works too.",
         "operationId": "holidays_api_v1_holidays_get",
         "parameters": [
           {
@@ -3538,7 +3687,7 @@
     },
     "/api/v1/people": {
       "get": {
-        "description": "Everyone Immich has a name for, alphabetically: the names `--person` takes.",
+        "description": "Everyone Immich has a name for, the names `--person` takes: most pictured first.\n\nThe counts are the last people scan's; anyone it has not counted follows alphabetically.",
         "operationId": "people_api_v1_people_get",
         "responses": {
           "200": {
@@ -3653,7 +3802,7 @@
     },
     "/api/v1/roster": {
       "get": {
-        "description": "Everyone in the people file, inner circle first, with what needs curating.",
+        "description": "Everyone in the people registry, inner circle first, with what needs curating.",
         "operationId": "roster_api_v1_roster_get",
         "responses": {
           "200": {
@@ -3844,7 +3993,7 @@
         ]
       },
       "post": {
-        "description": "Record one relationship; the file keeps its reciprocal.",
+        "description": "Record one relationship; the registry keeps its reciprocal.",
         "operationId": "relate_api_v1_roster__person_id__relationships_post",
         "parameters": [
           {
@@ -4255,62 +4404,6 @@
         ]
       }
     },
-    "/api/v1/runs/{run_id}/recut": {
-      "post": {
-        "description": "Cut the same brief again with the owner's ticks, as `generate --include/--exclude` does.",
-        "operationId": "recut_api_v1_runs__run_id__recut_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "run_id",
-            "required": true,
-            "schema": {
-              "title": "Run Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Recut"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "202": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobView"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "409": {
-            "description": "Conflict"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Recut",
-        "tags": [
-          "jobs"
-        ]
-      }
-    },
     "/api/v1/runs/{run_id}/renders": {
       "post": {
         "description": "Render this run's cut, or one revision of it, with `runs render`.",
@@ -4388,16 +4481,6 @@
             "schema": {
               "default": false,
               "title": "Include Flagged Captions",
-              "type": "boolean"
-            }
-          },
-          {
-            "in": "query",
-            "name": "reload",
-            "required": false,
-            "schema": {
-              "default": false,
-              "title": "Reload",
               "type": "boolean"
             }
           }
@@ -4593,6 +4676,61 @@
         ]
       }
     },
+    "/api/v1/settings": {
+      "get": {
+        "description": "Every setting with its live value and its source, re-read from disk; secrets masked.",
+        "operationId": "read_settings_api_v1_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Settings",
+        "tags": [
+          "settings"
+        ]
+      },
+      "post": {
+        "description": "Save the changed values to the database; config.yaml and the environment are never written.\n\n422 names the setting refused and why; nothing is saved then.",
+        "operationId": "save_settings_form_api_v1_settings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Save Settings Form",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
     "/api/v1/special-days": {
       "get": {
         "description": "The days `discover-days` catalogued, anniversaries due first, then the rest.\n\nA scheduled run only proposes a day on its anniversary; someone at the brief wants a memory\nnow, so every catalogued day is offered below the due ones. A day the model could not name\nis left out: there is nothing truthful to put on its title card.",
@@ -4621,8 +4759,20 @@
     },
     "/api/v1/suggestions": {
       "get": {
-        "description": "Up to twenty candidates, and why the others were set aside.",
+        "description": "Up to twenty candidates and why the others were set aside, from the last discovery.\n\nDiscovery reads the library and takes a while; the last list comes back at once and a fresh\none is worked out behind it when it is a day old or `refresh` asks.",
         "operationId": "suggestions_api_v1_suggestions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "refresh",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Refresh",
+              "type": "boolean"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -4633,6 +4783,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Suggestions",
@@ -4688,7 +4848,7 @@
     },
     "/api/v1/trips": {
       "get": {
-        "description": "The trips that overlap a year, as `generate` lists them before it cuts one.",
+        "description": "The trips that overlap a year, as `generate` lists them before it cuts one.\n\nDiscovery reads the year's GPS and takes a while; the last answer for the year comes back at\nonce, and a fresh one is worked out behind it when it is a day old or `refresh` asks.",
         "operationId": "trips_api_v1_trips_get",
         "parameters": [
           {
@@ -4718,6 +4878,16 @@
               ],
               "title": "Person"
             }
+          },
+          {
+            "in": "query",
+            "name": "refresh",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Refresh",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -4725,11 +4895,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/TripChoice"
-                  },
-                  "title": "Response Trips Api V1 Trips Get",
-                  "type": "array"
+                  "$ref": "#/components/schemas/Trips"
                 }
               }
             },

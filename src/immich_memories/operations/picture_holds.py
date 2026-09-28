@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 from immich_memories.analysis.editorial_shareability import (
@@ -23,8 +22,8 @@ from immich_memories.analysis.editorial_shareability_audience import exposure_fl
 from immich_memories.analysis.editorial_structure_audience import (
     CARRIER_RULE_SOURCE,
     AudienceBank,
-    library_bank_path,
 )
+from immich_memories.db import Store, open_store
 from immich_memories.store import owner_decisions
 from immich_memories.store.owner_decisions import NEVER_USE, clearance_for, is_clearance
 
@@ -38,6 +37,7 @@ _CLEARED_FOR = {
 _DETECTOR = "a nudity detector flagged it"
 _CLIP = "a nudity detector flagged its motion clip"
 _FINDING_WORDS = {
+    "underwear_only": "its caption describes a person wearing only underwear",
     "exposure_evidence": _DETECTOR,
     "clip_exposure": _CLIP,
     "exposure_chain": "most of the pictures taken around it are flagged for nudity",
@@ -72,12 +72,8 @@ class PictureHold:
         return f"Held: {held}." if held else ""
 
 
-def store_of(config: Any) -> Path:
-    return config.editorial.resolve_annotation_database(config.cache.cache_path)
-
-
-def audience_bank_of(config: Any) -> Path:
-    return library_bank_path(store_of(config))
+def store_of(config: Any) -> Store:
+    return open_store(config)
 
 
 def read(
@@ -92,13 +88,9 @@ def read(
     store = store_of(config)
     clips = owner_decisions.live_clips(store, ids) | {a: c for a, c in (clips or {}).items() if c}
     decided = owner_decisions.decisions(store, ids)
-    heads = (
-        load_detector_heads(store, [*ids, *clips.values()], config.editorial.head_versions)
-        if store.is_file()
-        else {}
-    )
+    heads = load_detector_heads(store, [*ids, *clips.values()], config.editorial.head_versions)
     flags = _producer_never_auto(store, ids)
-    bank = AudienceBank(audience_bank_of(config), answerer="")
+    bank = AudienceBank(store, answerer="")
     out = {}
     for asset_id in ids:
         reasons, detector = _reasons(asset_id, clips.get(asset_id), heads, bank)
@@ -131,9 +123,7 @@ def _reasons(
     return reasons, detector
 
 
-def _producer_never_auto(store: Path, ids: list[str]) -> dict[str, str]:
-    if not store.is_file():
-        return {}
+def _producer_never_auto(store: Store, ids: list[str]) -> dict[str, str]:
     return {
         asset_id: row.source
         for asset_id, rows in load_flags(store, ids).items()

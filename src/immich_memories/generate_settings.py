@@ -35,6 +35,7 @@ from immich_memories.processing.hdr_utilities import (
     quality_encoder_preset,
 )
 from immich_memories.titles.title_source import TitleSource
+from immich_memories.tracking.timed import timed
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -200,7 +201,6 @@ def build_title_settings(
         month_divider_threshold=config.title_screens.month_divider_threshold,
         use_first_name_only=config.title_screens.use_first_name_only,
         animated_background=config.title_screens.animated_background,
-        show_decorative_lines=config.title_screens.show_decorative_lines,
         memory_type=params.memory_type,
         hemisphere=config.trips.hemisphere,
         trip_locations=trip_locations,
@@ -321,6 +321,7 @@ def _complete_music_failure(
     return MusicPhaseResult(applied=False, warning=warning)
 
 
+@timed("render.music.generate")
 def run_music_phase(
     params: GenerationParams,
     assembly_clips: list[AssemblyClip],
@@ -395,6 +396,7 @@ def run_music_phase(
     return MusicPhaseResult(applied=True, warning=selection.warning)
 
 
+@timed("delivery")
 def upload_to_immich(
     client: SyncImmichClient,
     video_path: Path,

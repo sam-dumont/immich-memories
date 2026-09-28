@@ -196,13 +196,12 @@ def _register_preview(music: click.Group) -> None:
         from immich_memories.cli._runs_reading import RunNotFound, resolve_attempt
         from immich_memories.cli.progress_file import write_progress
         from immich_memories.config import get_config
+        from immich_memories.db import open_store
         from immich_memories.tracking import RunDatabase
 
         config = get_config()
         try:
-            resolved, attempt = resolve_attempt(
-                config.cache.cache_path, RunDatabase(db_path=config.cache.database_path), run_id
-            )
+            resolved, attempt = resolve_attempt(RunDatabase(open_store(config)), run_id)
         except RunNotFound as exc:
             print_error(str(exc))
             sys.exit(1)

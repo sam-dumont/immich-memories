@@ -16,6 +16,7 @@ from immich_memories.analysis.editorial_json_completion import (
 )
 from immich_memories.analysis.editorial_text_gateway import QueryTextRequester
 from immich_memories.config_models_llm import LLMConfig
+from tests.annotation_rows import annotation_store
 
 
 def test_complete_revision_survives_unfinished_trailing_explanation():
@@ -59,7 +60,7 @@ def test_failed_field_repair_never_banks_partial_result(tmp_path):
     request = TextRequest(
         "schema",
         LLMConfig(model="synthetic"),
-        tmp_path / "bank.sqlite",
+        annotation_store(),
         400,
         30,
         json_object=True,
@@ -73,18 +74,15 @@ def test_failed_field_repair_never_banks_partial_result(tmp_path):
     ):
         asyncio.run(QueryTextRequester().request(request))
     assert budgets == [400, 800]
-    cache = JudgmentCache(request.cache_path)
-    try:
-        assert cache.answer_for(request.judgment_key) is None
-    finally:
-        cache.close()
+    cache = JudgmentCache(request.judgments)
+    assert cache.answer_for(request.judgment_key) is None
 
 
 def test_field_identity_changes_with_contract_but_not_field_order(tmp_path):
     request = TextRequest(
         "schema",
         LLMConfig(model="synthetic"),
-        tmp_path / "bank.sqlite",
+        annotation_store(),
         400,
         30,
         json_object=True,
@@ -110,7 +108,7 @@ def test_complete_disjoint_field_sequence_preserves_values_without_model_retry(t
     request = TextRequest(
         "original evidence",
         LLMConfig(model="synthetic"),
-        tmp_path / "bank.sqlite",
+        annotation_store(),
         400,
         30,
         json_object=True,
@@ -160,7 +158,7 @@ def test_field_sequence_encoding_policy_is_part_of_only_field_request_identity(
     request = TextRequest(
         "evidence",
         LLMConfig(model="synthetic"),
-        tmp_path / "bank.sqlite",
+        annotation_store(),
         400,
         30,
         json_object=True,
@@ -183,7 +181,7 @@ def test_json_contract_retries_only_incomplete_decision_then_warm_is_exact(tmp_p
     request = TextRequest(
         "same evidence",
         LLMConfig(model="synthetic"),
-        tmp_path / "bank.sqlite",
+        annotation_store(),
         400,
         30,
         json_object=True,
@@ -211,7 +209,7 @@ def test_short_malformed_fields_get_one_format_correction_and_only_valid_result_
     request = TextRequest(
         "evidence and schema",
         LLMConfig(model="synthetic"),
-        tmp_path / "bank.sqlite",
+        annotation_store(),
         400,
         30,
         json_object=True,
@@ -244,7 +242,7 @@ def test_failed_format_repair_is_preserved_and_never_banked_as_a_decision(tmp_pa
     request = TextRequest(
         "evidence",
         LLMConfig(model="synthetic"),
-        tmp_path / "bank.sqlite",
+        annotation_store(),
         400,
         30,
         json_object=True,
@@ -258,11 +256,8 @@ def test_failed_format_repair_is_preserved_and_never_banked_as_a_decision(tmp_pa
         asyncio.run(QueryTextRequester(json_failure_observer=failures.append).request(request))
     assert budgets == [400, 800]
     assert len(failures) == 2
-    cache = JudgmentCache(request.cache_path)
-    try:
-        assert cache.answer_for(request.judgment_key) is None
-    finally:
-        cache.close()
+    cache = JudgmentCache(request.judgments)
+    assert cache.answer_for(request.judgment_key) is None
 
 
 def test_json_recovery_policy_splits_only_json_request_identity(tmp_path, monkeypatch):
@@ -271,7 +266,7 @@ def test_json_recovery_policy_splits_only_json_request_identity(tmp_path, monkey
     request = TextRequest(
         "evidence",
         LLMConfig(model="synthetic"),
-        tmp_path / "bank.sqlite",
+        annotation_store(),
         400,
         30,
         json_object=True,
@@ -293,7 +288,7 @@ def test_the_repair_request_names_the_field_the_reply_left_out(tmp_path):
     request = TextRequest(
         "schema",
         LLMConfig(model="synthetic"),
-        tmp_path / "bank.sqlite",
+        annotation_store(),
         400,
         30,
         json_object=True,

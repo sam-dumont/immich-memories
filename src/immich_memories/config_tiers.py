@@ -18,7 +18,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, Literal
 
+from immich_memories.analysis.llm_caption_identity import llm_caption_identity
 from immich_memories.config_compute import inference_acceleration
+from immich_memories.config_models_editorial_preparation import LLM_CAPTION_WARNING
 
 if TYPE_CHECKING:
     from immich_memories.config_loader import Config
@@ -46,6 +48,7 @@ def nas_draft_config(config: Config) -> Config:
     draft.tier = "nas"
     draft.editorial.reader = "rules"
     draft.editorial.laya_audience = False
+    draft.editorial.preparation.caption_provider = "smolvlm"
     if draft.editorial.preparation.demands_captions:
         draft.editorial.preparation.tier = "no_captions"
     return draft
@@ -60,7 +63,7 @@ def _section(config: Config, path: tuple[str, ...]) -> Any:
 
 def apply_tier(config: Config) -> dict[str, Any]:
     """Resolve one product tier and apply its preparation and reader contract."""
-    applied = {}
+    applied = _apply_caption_provider(config)
     if config.tier == "auto":
         accelerated, reason = inference_acceleration(config.inference)
         config.tier = "nas"
@@ -90,6 +93,18 @@ def apply_tier(config: Config) -> dict[str, Any]:
     return applied
 
 
+def _apply_caption_provider(config: Config) -> dict[str, Any]:
+    if config.editorial.preparation.caption_provider != "llm":
+        return {}
+    if not _llm_configured(config):
+        raise ValueError("caption_provider: llm needs a configured LLM endpoint and model")
+    logger.warning(LLM_CAPTION_WARNING)
+    config.editorial.description_model = llm_caption_identity(
+        config.llm, config.editorial.preparation.caption_artifact_id
+    )
+    return {"editorial.description_model": config.editorial.description_model}
+
+
 # Providers that name their own host, so stating one of them states the endpoint.
 _HOSTED_PROVIDERS = frozenset({"openai", "anthropic", "zai"})
 
@@ -110,14 +125,3 @@ def _require_llm_endpoint(config: Config) -> None:
             "to the server that answers it, or choose tier: gpu for every light model "
             "and no LLM"
         )
-
-
-def forget_applied(data: dict[str, Any], applied: dict[str, Any]) -> None:
-    """Persist the chosen product tier without a second set of preparation switches."""
-    for key, value in applied.items():
-        *path, field = key.split(".")
-        section = data
-        for name in path:
-            section = section.get(name, {})
-        if key != "tier" or section.get(field) == value:
-            section.pop(field, None)

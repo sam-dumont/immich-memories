@@ -902,7 +902,7 @@ export const RunPage: React.FC<{ state: RunPageState }> = ({ state }) => (
       {state.revision && <Revisions seconds={contentSeconds(state.removed)} />}
       <RenderPanel
         runId={RUN_ID}
-        state={state.render ?? { revision: false, addDate: false }}
+        state={state.render ?? { revision: false, addDate: true }}
       />
       <RunDetails />
     </div>
@@ -996,7 +996,10 @@ export const EditBar: React.FC<{
     }}
   >
     <span style={{ fontSize: 14, fontVariantNumeric: "tabular-nums" }}>
-      Changes: {count} · {clock(seconds)} of {clock(budget)} the titles leave
+      Changes: {count} ·{" "}
+      {seconds > budget
+        ? `${clock(seconds)}: the film grows past its ${clock(budget)} to hold them`
+        : clock(seconds)}
     </span>
     <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
       <Button size="small" variant="ghost" icon={mdiUndo}>

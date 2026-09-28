@@ -149,7 +149,6 @@ def remote_path_pins(*, out: str, models: str) -> dict[str, str]:
         # about the file naming no directory of the operator's, not about music.
         "audio.local_music_dir": f"{out}/music",
         "triage.encoder": f"{models}/triage/dinov2-small.onnx",
-        "triage.bundle": "",
         "editorial.preparation.head_bundle": "",
         "editorial.preparation.detector_python": "",
         "editorial.preparation.detector_cache_dir": f"{models}/huggingface",

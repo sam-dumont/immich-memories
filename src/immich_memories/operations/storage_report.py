@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import sqlite3
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -19,37 +18,6 @@ class RunReader(Protocol):
     """Small read seam required by the storage inventory."""
 
     def list_runs(self, limit: int = 50, offset: int = 0) -> list[RunMetadata]: ...
-
-
-class ReadOnlyRunStore:
-    """SQLite run reader that never creates or migrates the configured database."""
-
-    def __init__(self, db_path: Path):
-        self.db_path = Path(db_path)
-
-    def list_runs(self, limit: int = 50, offset: int = 0) -> list[RunMetadata]:
-        if not self.db_path.is_file():
-            return []
-        uri = f"{self.db_path.resolve(strict=True).as_uri()}?mode=ro"
-        try:
-            with sqlite3.connect(uri, uri=True, timeout=5.0) as conn:
-                conn.row_factory = sqlite3.Row
-                conn.execute("PRAGMA query_only = ON")
-                table = conn.execute(
-                    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'pipeline_runs'"
-                ).fetchone()
-                if table is None:
-                    return []
-                rows = conn.execute(
-                    "SELECT * FROM pipeline_runs ORDER BY created_at DESC LIMIT ? OFFSET ?",
-                    (limit, offset),
-                ).fetchall()
-        except sqlite3.Error:
-            return []
-
-        from immich_memories.tracking.run_database_rows import row_to_run
-
-        return [row_to_run(row) for row in rows]
 
 
 class StorageClass(StrEnum):

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 14:05+0200\n"
+"POT-Creation-Date: 2026-09-28 18:13+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -19,16 +19,16 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "이번 달 월간 검토가 이미 완료되었습니다."
 
-#: web/routes/settings/+page.svelte:95
+#: web/routes/settings/+page.svelte:91
 msgid "API Key"
 msgstr "API 키"
 
-#: web/lib/JobPanel.svelte:41
+#: web/lib/JobPanel.svelte:44
 #, python-brace-format
 msgid "About {amount} left"
 msgstr "약 {amount} 남음"
 
-#: web/routes/create/+page.svelte:373
+#: web/routes/create/+page.svelte:432
 msgid "Accept forwarded and downloaded media"
 msgstr "전달되거나 다운로드된 미디어 허용"
 
@@ -40,7 +40,7 @@ msgstr "추가"
 msgid "Add a relationship"
 msgstr "관계 추가"
 
-#: web/lib/RenderPanel.svelte:184
+#: web/lib/RenderPanel.svelte:189
 msgid "Add date overlay"
 msgstr "날짜 표시"
 
@@ -48,23 +48,33 @@ msgstr "날짜 표시"
 msgid "Add someone not in Immich"
 msgstr "Immich에 없는 인물 추가"
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:152
+#, python-brace-format
+msgid "Add: {include} · Take out: {exclude}"
+msgstr "추가: {include} · 제외: {exclude}"
+
 #: web/lib/labels.ts:32
 msgid "Added for a moment the catalogue records as notable."
 msgstr "카탈로그가 주목할 만한 순간으로 기록해 추가되었습니다."
 
-#: web/routes/create/+page.svelte:254
+#: web/routes/runs/[run_id]/+page.svelte:258 web/routes/runs/[run_id]/+page.svelte:260
+#: web/routes/runs/[run_id]/+page.svelte:263
+msgid "Added from the pool"
+msgstr "후보에서 추가됨"
+
+#: web/routes/create/+page.svelte:302
 msgid "After a period"
 msgstr "기간 후"
 
-#: web/lib/labels.ts:11 web/routes/create/+page.svelte:269
+#: web/lib/labels.ts:11 web/routes/create/+page.svelte:317
 msgid "Album"
 msgstr "앨범"
 
-#: web/lib/RenderPanel.svelte:221
+#: web/lib/RenderPanel.svelte:231
 msgid "Album name"
 msgstr "앨범 이름"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:115
+#: web/routes/runs/[run_id]/pool/+page.svelte:113
 #, python-brace-format
 msgid "Also show the {count} pictures outside this memory"
 msgstr "이 추억 밖의 사진 {count}장도 보기"
@@ -73,43 +83,43 @@ msgstr "이 추억 밖의 사진 {count}장도 보기"
 msgid "Alternatives considered"
 msgstr "검토한 대안"
 
-#: web/routes/settings/+page.svelte:25
+#: web/routes/settings/+page.svelte:26
 msgid "Analysis cache"
 msgstr "분석 캐시"
 
-#: web/routes/create/+page.svelte:284
+#: web/routes/create/+page.svelte:332
 msgid ""
 "Anniversaries first, then the rest. A scheduled run only proposes a day on its anniversary; "
 "here you can pick any day the catalogue holds."
 msgstr "기념일을 먼저, 나머지는 그다음에 표시합니다. 예약된 작업은 기념일에만 날짜를 제안합니다. 여기서는 카탈로그에 있는 어떤 날짜든 선택할 수 있습니다."
 
-#: web/routes/create/+page.svelte:263
+#: web/routes/create/+page.svelte:311
 msgid "Another day (MM-DD)"
 msgstr "다른 날 (MM-DD)"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:89 web/routes/runs/[run_id]/pool/+page.svelte:167
+#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Anyone"
 msgstr "누구나"
 
-#: web/routes/create/+page.svelte:35
+#: web/routes/create/+page.svelte:36
 msgid "Anyone. Only pictures nothing held back: no detector flag, no private moment."
 msgstr "누구나. 감지기 표시나 사적인 순간 등 제한이 없는 이미지만 사용합니다."
 
-#: web/lib/RenderPanel.svelte:139 web/lib/RenderPanel.svelte:162 web/lib/RenderPanel.svelte:168
-#: web/lib/RenderPanel.svelte:174 web/lib/RenderPanel.svelte:180 web/lib/RenderPanel.svelte:221
-#: web/routes/create/+page.svelte:365
+#: web/lib/RenderPanel.svelte:144 web/lib/RenderPanel.svelte:167 web/lib/RenderPanel.svelte:173
+#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:231
+#: web/routes/create/+page.svelte:424
 msgid "As configured"
 msgstr "설정대로"
 
-#: web/lib/RenderPanel.svelte:148
+#: web/lib/RenderPanel.svelte:153
 msgid "As generate decides"
 msgstr "생성 시 결정되는 대로"
 
-#: web/lib/RenderPanel.svelte:156 web/lib/labels.ts:23
+#: web/lib/RenderPanel.svelte:161 web/lib/labels.ts:23
 msgid "Automatic"
 msgstr "자동"
 
-#: web/lib/RenderPanel.svelte:192
+#: web/lib/RenderPanel.svelte:202
 msgid "Automatic (as configured)"
 msgstr "자동(설정대로)"
 
@@ -117,31 +127,35 @@ msgstr "자동(설정대로)"
 msgid "Automatic (browser)"
 msgstr "자동(브라우저)"
 
-#: web/routes/suggestions/+page.svelte:47
+#: web/routes/suggestions/+page.svelte:60
 msgid "Automation is already running. Open Runs to follow it."
 msgstr "자동화가 이미 실행 중입니다. 작업 내역을 열어 확인하세요."
 
-#: web/routes/runs/[run_id]/+page.svelte:240
+#: web/routes/create/+page.svelte:43
+msgid "Autumn"
+msgstr "가을"
+
+#: web/routes/runs/[run_id]/+page.svelte:250
 msgid "Back to pictures"
 msgstr "이미지로 돌아가기"
 
-#: web/routes/runs/[run_id]/+page.svelte:115
+#: web/routes/runs/[run_id]/+page.svelte:125
 msgid "Back to runs"
 msgstr "작업 목록으로 돌아가기"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:106
+#: web/routes/runs/[run_id]/pool/+page.svelte:104
 msgid "Back to the cut"
 msgstr "편집 결과로 돌아가기"
 
-#: web/routes/create/+page.svelte:246
+#: web/routes/create/+page.svelte:294
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
 msgstr "생일 (MM-DD, 비워두면 Immich의 생년월일)"
 
-#: web/routes/create/+page.svelte:245
+#: web/routes/create/+page.svelte:293
 msgid "Birthday to birthday, with earlier birthdays"
 msgstr "생일부터 생일까지, 이전 생일 포함"
 
-#: web/lib/RenderPanel.svelte:180
+#: web/lib/RenderPanel.svelte:185
 msgid "Blurred background"
 msgstr "흐린 배경"
 
@@ -149,58 +163,62 @@ msgstr "흐린 배경"
 msgid "Browse the whole pool"
 msgstr "전체 후보 보기"
 
-#: web/routes/settings/+page.svelte:142 web/routes/settings/+page.svelte:143
+#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
 msgid "Caches"
 msgstr "캐시"
 
-#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:173
+#: web/lib/JobPanel.svelte:90 web/routes/runs/[run_id]/pool/+page.svelte:174
 msgid "Cancel"
 msgstr "취소"
 
-#: web/routes/suggestions/+page.svelte:92
+#: web/routes/suggestions/+page.svelte:108
 msgid "Candidate key"
 msgstr "후보 키"
 
-#: web/lib/RenderPanel.svelte:185
+#: web/lib/RenderPanel.svelte:190
 msgid "Caption clips with their place"
 msgstr "클립에 장소 표시"
 
-#: web/routes/create/+page.svelte:280 web/routes/create/+page.svelte:285
+#: web/routes/create/+page.svelte:328 web/routes/create/+page.svelte:333
 msgid "Catalogued days"
 msgstr "기록된 날"
 
-#: web/routes/runs/[run_id]/+page.svelte:249
+#: web/routes/runs/[run_id]/+page.svelte:274
 #, python-brace-format
 msgid "Changes: {count}"
 msgstr "변경: {count}"
 
-#: web/routes/suggestions/+page.svelte:94
+#: web/routes/suggestions/+page.svelte:110
 msgid "Check eligibility"
 msgstr "사용 가능 여부 확인"
 
-#: web/routes/create/+page.svelte:271
+#: web/lib/labels.ts:79
+msgid "Checking pictures for the family audience"
+msgstr "가족 시청에 적합한지 확인하는 중"
+
+#: web/routes/create/+page.svelte:319
 msgid "Choose an album"
 msgstr "앨범을 선택하세요"
 
-#: web/routes/create/+page.svelte:216
+#: web/routes/create/+page.svelte:260
 msgid ""
 "Choose what the film covers. The cut is made the way the command below makes it; you review "
 "it before anything renders."
 msgstr "영상이 다룰 범위를 선택하세요. 편집은 아래 명령어가 만드는 방식대로 이루어지며, 렌더링 전에 검토할 수 있습니다."
 
-#: web/routes/settings/+page.svelte:148
+#: web/routes/settings/+page.svelte:117
 msgid "Clear"
 msgstr "지우기"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:142 web/routes/runs/[run_id]/pool/+page.svelte:174
+#: web/routes/runs/[run_id]/pool/+page.svelte:142 web/routes/runs/[run_id]/pool/+page.svelte:175
 msgid "Clear hold"
 msgstr "제한 해제"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:160
+#: web/routes/runs/[run_id]/pool/+page.svelte:161
 msgid "Clear this hold?"
 msgstr "이 제한을 해제할까요?"
 
-#: web/routes/settings/+page.svelte:71
+#: web/routes/settings/+page.svelte:69
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{cache}에서 {count}개 항목을 지웠습니다."
@@ -209,24 +227,20 @@ msgstr "{cache}에서 {count}개 항목을 지웠습니다."
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "클립보드를 사용할 수 없습니다. 아래 보고서를 선택해 복사하세요."
 
-#: web/routes/create/+page.svelte:378
+#: web/routes/create/+page.svelte:437
 msgid "Command"
 msgstr "명령어"
 
-#: web/routes/settings/+page.svelte:122
+#: web/lib/SettingsEditor.svelte:71
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "설정 파일: {config_path}"
 
-#: web/routes/settings/+page.svelte:113 web/routes/settings/+page.svelte:115
+#: web/lib/SettingsEditor.svelte:63 web/lib/SettingsEditor.svelte:65
 msgid "Configuration"
 msgstr "설정"
 
-#: web/routes/settings/+page.svelte:65
-msgid "Configuration saved!"
-msgstr "설정이 저장되었습니다!"
-
-#: web/routes/settings/+page.svelte:60
+#: web/routes/settings/+page.svelte:58
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "{name}(으)로 연결됨"
@@ -235,11 +249,11 @@ msgstr "{name}(으)로 연결됨"
 msgid "Considered by the model"
 msgstr "모델이 검토함"
 
-#: web/lib/JobPanel.svelte:85 web/lib/RunReport.svelte:73
+#: web/lib/JobPanel.svelte:88 web/lib/RunReport.svelte:73
 msgid "Copied"
 msgstr "복사됨"
 
-#: web/lib/JobPanel.svelte:85
+#: web/lib/JobPanel.svelte:88
 msgid "Copy as CLI command"
 msgstr "CLI 명령어로 복사"
 
@@ -247,7 +261,7 @@ msgstr "CLI 명령어로 복사"
 msgid "Copy report"
 msgstr "보고서 복사"
 
-#: web/lib/RenderPanel.svelte:140
+#: web/lib/RenderPanel.svelte:145
 msgid "Crossfade"
 msgstr "크로스페이드"
 
@@ -259,44 +273,48 @@ msgstr "정리"
 msgid "Custom date range"
 msgstr "직접 지정한 기간"
 
-#: web/lib/RenderPanel.svelte:140 web/routes/create/+page.svelte:381
+#: web/lib/RenderPanel.svelte:145 web/routes/create/+page.svelte:440
 msgid "Cut"
 msgstr "편집하기"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:153
-msgid "Cut again with these choices"
-msgstr "이 선택으로 다시 편집"
-
-#: web/routes/runs/[run_id]/+page.svelte:201
+#: web/routes/runs/[run_id]/+page.svelte:211
 msgid "Cut contact sheet"
 msgstr "편집본 이미지 모음"
 
-#: web/routes/create/+page.svelte:243
+#: web/routes/create/+page.svelte:291
 msgid "Day"
 msgstr "날짜"
 
-#: web/routes/create/+page.svelte:266
+#: web/routes/create/+page.svelte:314
 msgid "Day (MM-DD)"
 msgstr "날짜 (MM-DD)"
+
+#: web/lib/SettingsEditor.svelte:41
+msgid "Default"
+msgstr "기본값"
 
 #: web/routes/+layout.svelte:46 web/routes/+layout.svelte:47
 msgid "Demo mode"
 msgstr "데모 모드"
 
-#: web/routes/create/+page.svelte:307
+#: web/lib/labels.ts:81
+msgid "Describing the pictures"
+msgstr "이미지를 설명하는 중"
+
+#: web/routes/create/+page.svelte:361
 msgid "Detecting trips from GPS data..."
 msgstr "GPS 데이터로 여행을 감지하는 중…"
 
-#: web/routes/runs/[run_id]/+page.svelte:258
+#: web/routes/runs/[run_id]/+page.svelte:283
 msgid "Discard changes"
 msgstr "변경 취소"
 
-#: web/routes/suggestions/+page.svelte:79
+#: web/routes/suggestions/+page.svelte:95
 #, python-brace-format
 msgid "Discovery failed: {error}"
 msgstr "검색 실패: {error}"
 
-#: web/routes/runs/[run_id]/+page.svelte:301
+#: web/routes/runs/[run_id]/+page.svelte:326
 msgid "Download child output"
 msgstr "연결된 결과 다운로드"
 
@@ -318,7 +336,7 @@ msgstr "설명 없이 편집됨: 이미지 내용은 분류만 되었고 읽히�
 msgid "Eligible when this shot was chosen. Open one to compare."
 msgstr "이 장면이 선택될 때 후보였습니다. 열어서 비교하세요."
 
-#: web/routes/suggestions/+page.svelte:52
+#: web/routes/suggestions/+page.svelte:65
 msgid "Eligible. No video was generated."
 msgstr "대상입니다. 영상은 생성되지 않았습니다."
 
@@ -326,50 +344,64 @@ msgstr "대상입니다. 영상은 생성되지 않았습니다."
 msgid "End here"
 msgstr "여기서 끝"
 
-#: web/routes/create/+page.svelte:253
+#: web/routes/create/+page.svelte:301
 msgid "Ends"
 msgstr "종료"
 
-#: web/routes/settings/+page.svelte:147
+#: web/routes/settings/+page.svelte:116
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "항목: {count}"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:109
+#: web/routes/runs/[run_id]/pool/+page.svelte:107
 msgid ""
-"Every picture this cut saw, in the order they were taken. Tick or untick, then cut again: the"
-" ticks become the next cut’s must-keeps and leave-outs. Never use and Clear hold last across "
-"every run."
+"Every picture this cut saw, in the order they were taken. Tick or untick, then preview: your "
+"ticks go into the film as they are, with nothing chosen again. Never use and Clear hold last "
+"across every run."
 msgstr ""
-"이 편집이 살펴본 모든 사진을, 촬영 순서대로 보여줍니다. 체크하거나 해제한 뒤 다시 편집하세요. 체크 표시는 다음 편집에서 반드시 유지하거나 제외할 항목이 됩니다. "
-"'절대 사용 안 함'과 '제한 해제'는 모든 작업에서 계속 유지됩니다."
+"이 편집이 본 모든 사진을 촬영 순서대로 표시합니다. 체크하거나 해제한 다음 미리보기: 체크한 항목은 다시 선택되지 않고 그대로 영상에 들어갑니다. '사용하지 않기'와"
+" '제한 해제'는 모든 실행에서 유지됩니다."
 
-#: web/routes/create/+page.svelte:323
+#: web/routes/settings/+page.svelte:82
+msgid ""
+"Every setting and where its value comes from. What you save here goes to the database; "
+"config.yaml and the environment are never written, and they win over it."
+msgstr "각 설정과 값이 어디서 오는지. 여기서 저장한 내용은 데이터베이스로 이동합니다. config.yaml과 환경 변수는 절대 기록되지 않으며, 이 값보다 우선합니다."
+
+#: web/routes/create/+page.svelte:377
 msgid "Every trip of the year"
 msgstr "그 해의 모든 여행"
 
-#: web/routes/create/+page.svelte:366 web/routes/runs/[run_id]/pool/+page.svelte:89
-#: web/routes/runs/[run_id]/pool/+page.svelte:167
+#: web/routes/create/+page.svelte:425 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Family"
 msgstr "가족"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:165
+#: web/lib/labels.ts:75
+msgid "Fetching picture previews"
+msgstr "이미지 미리보기를 가져오는 중"
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:166
 msgid "Films that may use it"
 msgstr "이를 사용할 수 있는 영상"
 
-#: web/routes/settings/people/+page.svelte:99
+#: web/routes/create/+page.svelte:388 web/routes/settings/people/+page.svelte:99
 msgid "Find a name"
 msgstr "이름 검색"
 
-#: web/lib/RenderPanel.svelte:180
+#: web/lib/labels.ts:77
+msgid "Finding faces"
+msgstr "얼굴을 찾는 중"
+
+#: web/lib/RenderPanel.svelte:185
 msgid "Fit with bars"
 msgstr "여백을 두고 맞춤"
 
-#: web/lib/RenderPanel.svelte:166
+#: web/lib/RenderPanel.svelte:171
 msgid "Format"
 msgstr "형식"
 
-#: web/routes/create/+page.svelte:251
+#: web/routes/create/+page.svelte:299
 msgid "From"
 msgstr "시작"
 
@@ -377,28 +409,28 @@ msgstr "시작"
 msgid "Full name"
 msgstr "전체 이름"
 
-#: web/routes/create/+page.svelte:34
+#: web/routes/create/+page.svelte:35
 msgid "Grandparents, siblings, the group chat. Private moments stay out."
 msgstr "조부모, 형제자매, 단체 대화방. 사적인 순간은 제외합니다."
 
-#: web/routes/create/+page.svelte:344
+#: web/routes/create/+page.svelte:403
 msgid "Grouped condition"
 msgstr "그룹 조건"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:97
+#: web/routes/runs/[run_id]/pool/+page.svelte:95
 #, python-brace-format
 msgid "Held: {reasons}."
 msgstr "제한됨: {reasons}."
 
-#: web/routes/create/+page.svelte:241
+#: web/routes/create/+page.svelte:289
 msgid "Hemisphere"
 msgstr "반구"
 
-#: web/lib/RenderPanel.svelte:174
+#: web/lib/RenderPanel.svelte:179
 msgid "High"
 msgstr "높음"
 
-#: web/lib/labels.ts:13 web/routes/create/+page.svelte:260
+#: web/lib/labels.ts:13 web/routes/create/+page.svelte:308
 msgid "Holiday"
 msgstr "명절·기념일"
 
@@ -406,15 +438,15 @@ msgstr "명절·기념일"
 msgid "How the rules got here"
 msgstr "규칙이 여기까지 온 과정"
 
-#: web/routes/settings/+page.svelte:89 web/routes/settings/+page.svelte:90
+#: web/routes/settings/+page.svelte:85 web/routes/settings/+page.svelte:86
 msgid "Immich Connection"
 msgstr "Immich 연결"
 
-#: web/routes/settings/+page.svelte:92
+#: web/routes/settings/+page.svelte:88
 msgid "Immich Server URL"
 msgstr "Immich 서버 URL"
 
-#: web/routes/runs/[run_id]/+page.svelte:291
+#: web/routes/runs/[run_id]/+page.svelte:316
 #, python-brace-format
 msgid "Immich delivery: {value}"
 msgstr "Immich 전송: {value}"
@@ -427,11 +459,11 @@ msgstr "중요"
 msgid "In the cut"
 msgstr "편집에 포함"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:131
-msgid "In the next cut"
-msgstr "다음 편집에서"
+#: web/routes/runs/[run_id]/pool/+page.svelte:126
+msgid "In the film"
+msgstr "영상에 포함"
 
-#: web/routes/create/+page.svelte:371
+#: web/routes/create/+page.svelte:430
 msgid "Include Live Photos"
 msgstr "Live Photos 포함"
 
@@ -439,7 +471,7 @@ msgstr "Live Photos 포함"
 msgid "Include captions of flagged photos"
 msgstr "표시된 사진의 캡션 포함"
 
-#: web/routes/create/+page.svelte:370
+#: web/routes/create/+page.svelte:429
 msgid "Include photos"
 msgstr "사진 포함"
 
@@ -447,23 +479,18 @@ msgstr "사진 포함"
 msgid "Interface language"
 msgstr "화면 언어"
 
-#: web/lib/JobPanel.svelte:57
+#: web/lib/JobPanel.svelte:63
 msgid "It did not finish."
 msgstr "완료되지 않았습니다."
 
-#: web/routes/create/+page.svelte:365 web/routes/runs/[run_id]/pool/+page.svelte:89
-#: web/routes/runs/[run_id]/pool/+page.svelte:167
+#: web/routes/create/+page.svelte:424 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Just us"
 msgstr "우리끼리"
 
 #: web/lib/ShotInspector.svelte:52
 msgid "Keep the original"
 msgstr "원본 유지"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:152
-#, python-brace-format
-msgid "Keep: {include} · Leave out: {exclude}"
-msgstr "유지: {include} · 제외: {exclude}"
 
 #: web/lib/ShotInspector.svelte:92
 #, python-brace-format
@@ -474,23 +501,27 @@ msgstr "{stage}에서 유지됨"
 msgid "Kept because"
 msgstr "유지한 이유"
 
-#: web/lib/RenderPanel.svelte:156
+#: web/lib/RenderPanel.svelte:161
 msgid "Landscape"
 msgstr "가로"
 
-#: web/routes/create/+page.svelte:360
+#: web/routes/create/+page.svelte:419
 msgid "Length and pictures"
 msgstr "길이와 이미지"
 
-#: web/routes/create/+page.svelte:362
+#: web/routes/create/+page.svelte:421
 msgid "Length in minutes (fitted to the pictures when empty)"
 msgstr "길이(분, 비워두면 이미지에 맞춰 조정)"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:132
+#: web/routes/runs/[run_id]/pool/+page.svelte:127
 msgid "Live"
 msgstr "Live"
 
-#: web/lib/RenderPanel.svelte:175
+#: web/routes/suggestions/+page.svelte:98
+msgid "Looking through your library for memories to suggest..."
+msgstr "라이브러리에서 추천할 추억을 찾는 중..."
+
+#: web/lib/RenderPanel.svelte:180
 msgid "Low"
 msgstr "낮음"
 
@@ -510,11 +541,19 @@ msgstr "수동"
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr "실패한 작업을 포함한 수동·자동 작업입니다. 작업을 열어 편집 결과와 소요 시간을 확인하세요."
 
-#: web/lib/RenderPanel.svelte:162
+#: web/lib/RenderPanel.svelte:167
 msgid "Match the sources"
 msgstr "원본 해상도에 맞춤"
 
-#: web/lib/RenderPanel.svelte:175
+#: web/lib/labels.ts:80
+msgid "Measuring motion in the videos"
+msgstr "동영상의 움직임을 측정하는 중"
+
+#: web/lib/labels.ts:76
+msgid "Measuring the pictures"
+msgstr "이미지를 측정하는 중"
+
+#: web/lib/RenderPanel.svelte:180
 msgid "Medium"
 msgstr "중간"
 
@@ -522,7 +561,7 @@ msgstr "중간"
 msgid "Memory"
 msgstr "추억"
 
-#: web/routes/create/+page.svelte:224
+#: web/routes/create/+page.svelte:268
 msgid "Memory type"
 msgstr "추억 유형"
 
@@ -534,7 +573,7 @@ msgstr "모델의 다듬기"
 msgid "Model suggestion"
 msgstr "모델의 제안"
 
-#: web/routes/create/+page.svelte:236
+#: web/routes/create/+page.svelte:281 web/routes/create/+page.svelte:282
 msgid "Month"
 msgstr "월"
 
@@ -546,11 +585,11 @@ msgstr "이달의 하이라이트"
 msgid "Multi-Person"
 msgstr "여러 인물"
 
-#: web/lib/RenderPanel.svelte:190
+#: web/lib/RenderPanel.svelte:200
 msgid "Music"
 msgstr "음악"
 
-#: web/lib/RenderPanel.svelte:213
+#: web/lib/RenderPanel.svelte:223
 msgid "Music volume:"
 msgstr "음악 음량:"
 
@@ -558,17 +597,17 @@ msgstr "음악 음량:"
 msgid "Never use"
 msgstr "사용하지 않기"
 
-#: web/routes/create/+page.svelte:211 web/routes/create/+page.svelte:215
+#: web/routes/create/+page.svelte:255 web/routes/create/+page.svelte:259
 msgid "New memory"
 msgstr "새 추억"
 
-#: web/routes/create/+page.svelte:298
+#: web/routes/create/+page.svelte:346
 msgid ""
 "No catalogued days yet. Run immich-memories discover-days to find them, or film any day by "
 "its date."
 msgstr "아직 기록된 날이 없습니다. `immich-memories discover-days`를 실행해 찾거나, 날짜를 지정해 어떤 날이든 촬영하세요."
 
-#: web/routes/runs/[run_id]/+page.svelte:303
+#: web/routes/runs/[run_id]/+page.svelte:328
 msgid "No child output was retained for this run."
 msgstr "이 작업에 연결된 결과가 저장되지 않았습니다."
 
@@ -576,11 +615,15 @@ msgstr "이 작업에 연결된 결과가 저장되지 않았습니다."
 msgid "No model read this cut: the rules chose every picture."
 msgstr "이 편집은 모델이 읽지 않았습니다. 모든 이미지를 규칙이 골랐습니다."
 
-#: web/lib/RenderPanel.svelte:193
+#: web/lib/RenderPanel.svelte:203
 msgid "No music"
 msgstr "음악 없음"
 
-#: web/routes/create/+page.svelte:339
+#: web/routes/create/+page.svelte:398
+msgid "No name matches."
+msgstr "일치하는 이름이 없습니다."
+
+#: web/routes/create/+page.svelte:398
 msgid "No named people in Immich yet."
 msgstr "Immich에 아직 이름이 지정된 인물이 없습니다."
 
@@ -588,7 +631,7 @@ msgstr "Immich에 아직 이름이 지정된 인물이 없습니다."
 msgid "No outcome recorded."
 msgstr "기록된 결과가 없습니다."
 
-#: web/routes/runs/[run_id]/+page.svelte:231
+#: web/routes/runs/[run_id]/+page.svelte:241
 msgid "No pictures match this filter."
 msgstr "이 필터에 맞는 이미지가 없습니다."
 
@@ -600,15 +643,15 @@ msgstr "이 이미지를 선택한 이유가 기록되지 않았습니다."
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
 msgstr "이 보기에 해당하는 작업이 없습니다. 추억 또는 제안에서 추억을 만드세요."
 
-#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:283
+#: web/routes/runs/+page.svelte:104 web/routes/runs/[run_id]/+page.svelte:308
 msgid "No saved cut is available for this run."
 msgstr "이 작업에는 저장된 편집 결과가 없습니다."
 
-#: web/routes/suggestions/+page.svelte:99
+#: web/routes/suggestions/+page.svelte:115
 msgid "No suggestions right now."
 msgstr "현재 제안이 없습니다."
 
-#: web/routes/create/+page.svelte:325
+#: web/routes/create/+page.svelte:379
 msgid "No trips detected for this year."
 msgstr "이 해에 감지된 여행이 없습니다."
 
@@ -616,15 +659,19 @@ msgstr "이 해에 감지된 여행이 없습니다."
 msgid "No, they are not"
 msgstr "아니요, 아닙니다"
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
+msgid "Nobody this memory is about was recognised here; they were, elsewhere in the same episode."
+msgstr "이 추억에 나오는 사람이 여기서는 인식되지 않았지만, 같은 에피소드의 다른 곳에서 인식되었습니다."
+
 #: web/routes/settings/people/+page.svelte:107
 msgid "Nobody yet. Rescan the library to read who is in it."
 msgstr "아직 아무도 없습니다. 라이브러리를 다시 스캔하면 누가 있는지 알 수 있습니다."
 
-#: web/lib/RenderPanel.svelte:140
+#: web/lib/RenderPanel.svelte:145
 msgid "None"
 msgstr "없음"
 
-#: web/routes/create/+page.svelte:241
+#: web/routes/create/+page.svelte:289
 msgid "North"
 msgstr "북반구"
 
@@ -640,31 +687,31 @@ msgstr "아직 기록이 없습니다."
 msgid "On This Day"
 msgstr "이날"
 
-#: web/routes/create/+page.svelte:254
+#: web/routes/create/+page.svelte:302
 msgid "On a date"
 msgstr "특정 날짜에"
 
-#: web/routes/create/+page.svelte:332
+#: web/routes/create/+page.svelte:386
 msgid "Only with (optional)"
 msgstr "다음만 포함 (선택)"
 
-#: web/routes/runs/[run_id]/+page.svelte:276
+#: web/routes/runs/[run_id]/+page.svelte:301
 msgid "Open"
 msgstr "열기"
 
-#: web/routes/suggestions/+page.svelte:73
+#: web/routes/suggestions/+page.svelte:89
 msgid "Open run"
 msgstr "작업 열기"
 
-#: web/lib/RenderPanel.svelte:126
+#: web/lib/RenderPanel.svelte:131
 msgid "Open the film run"
 msgstr "영상 작업 열기"
 
-#: web/routes/runs/[run_id]/+page.svelte:166
+#: web/routes/runs/[run_id]/+page.svelte:176
 msgid "Order and timecodes from the saved cut."
 msgstr "저장된 편집본의 순서와 타임코드입니다."
 
-#: web/lib/RenderPanel.svelte:154
+#: web/lib/RenderPanel.svelte:159
 msgid "Orientation"
 msgstr "방향"
 
@@ -685,16 +732,16 @@ msgstr "{stages} 통과"
 msgid "Password"
 msgstr "비밀번호"
 
-#: web/routes/create/+page.svelte:332 web/routes/settings/+page.svelte:110
+#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:106
 #: web/routes/settings/people/+page.svelte:74 web/routes/settings/people/+page.svelte:80
 msgid "People"
 msgstr "인물"
 
-#: web/routes/create/+page.svelte:345
+#: web/routes/create/+page.svelte:404
 msgid "People condition"
 msgstr "인물 조건"
 
-#: web/routes/create/+page.svelte:258
+#: web/routes/create/+page.svelte:306
 msgid "Period (6m, 1y, 2w)"
 msgstr "기간 (6m, 1y, 2w)"
 
@@ -702,7 +749,7 @@ msgstr "기간 (6m, 1y, 2w)"
 msgid "Person Spotlight"
 msgstr "한 인물 집중"
 
-#: web/routes/create/+page.svelte:372
+#: web/routes/create/+page.svelte:431
 msgid "Photo duration (seconds)"
 msgstr "사진 표시 시간(초)"
 
@@ -710,16 +757,16 @@ msgstr "사진 표시 시간(초)"
 msgid "Picture review"
 msgstr "이미지 검토"
 
-#: web/lib/JobPanel.svelte:71
+#: web/lib/JobPanel.svelte:74
 msgid "Pictures just read"
 msgstr "방금 읽은 이미지"
 
-#: web/routes/create/+page.svelte:352
+#: web/routes/create/+page.svelte:411
 msgid "Pictures with"
 msgstr "다음 인물이 있는 이미지"
 
-#: web/routes/runs/[run_id]/+page.svelte:125 web/routes/runs/[run_id]/+page.svelte:180
-#: web/routes/settings/people/+page.svelte:118 web/routes/suggestions/+page.svelte:90
+#: web/routes/runs/[run_id]/+page.svelte:135 web/routes/runs/[run_id]/+page.svelte:190
+#: web/routes/settings/people/+page.svelte:118 web/routes/suggestions/+page.svelte:106
 #, python-brace-format
 msgid "Pictures: {count}"
 msgstr "이미지: {count}"
@@ -728,33 +775,32 @@ msgstr "이미지: {count}"
 msgid "Please enter both URL and API key"
 msgstr "URL과 API 키를 모두 입력하세요"
 
-#: web/routes/runs/[run_id]/+page.svelte:167 web/routes/runs/[run_id]/pool/+page.svelte:101
-#: web/routes/runs/[run_id]/pool/+page.svelte:108 web/routes/runs/[run_id]/pool/+page.svelte:124
+#: web/routes/runs/[run_id]/+page.svelte:177 web/routes/runs/[run_id]/pool/+page.svelte:99
+#: web/routes/runs/[run_id]/pool/+page.svelte:106 web/routes/runs/[run_id]/pool/+page.svelte:120
 msgid "Pool"
 msgstr "후보 미디어"
 
-#: web/lib/RenderPanel.svelte:157
+#: web/lib/RenderPanel.svelte:162
 msgid "Portrait"
 msgstr "세로"
 
-#: web/routes/settings/+page.svelte:122
-#, python-brace-format
-msgid "Preset: {preset}"
-msgstr "프리셋: {preset}"
-
-#: web/lib/RenderPanel.svelte:200
+#: web/lib/RenderPanel.svelte:210
 msgid "Preview a track"
 msgstr "트랙 미리듣기"
 
-#: web/routes/settings/+page.svelte:28
+#: web/routes/settings/+page.svelte:29
 msgid "Preview cache"
 msgstr "미리보기 캐시"
 
-#: web/lib/RenderPanel.svelte:186
+#: web/routes/runs/[run_id]/pool/+page.svelte:153
+msgid "Preview with these choices"
+msgstr "이 선택으로 미리보기"
+
+#: web/lib/RenderPanel.svelte:196
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "개인정보 보호 모드: 모든 이미지를 흐리게 하고 이름을 가립니다"
 
-#: web/lib/JobPanel.svelte:51 web/lib/JobPanel.svelte:63
+#: web/lib/JobPanel.svelte:57 web/lib/JobPanel.svelte:69
 msgid "Progress"
 msgstr "진행 상황"
 
@@ -762,17 +808,33 @@ msgstr "진행 상황"
 msgid "Put it back"
 msgstr "되돌리기"
 
-#: web/lib/RenderPanel.svelte:172
+#: web/lib/RenderPanel.svelte:177
 msgid "Quality"
 msgstr "화질"
+
+#: web/lib/labels.ts:82
+msgid "Reading picture facts"
+msgstr "이미지 정보를 읽는 중"
+
+#: web/lib/labels.ts:78
+msgid "Reading what each picture shows"
+msgstr "각 이미지가 보여주는 내용을 읽는 중"
 
 #: web/lib/ShotInspector.svelte:151
 msgid "Recorded alternative"
 msgstr "기록된 대안"
 
-#: web/routes/suggestions/+page.svelte:64
+#: web/routes/create/+page.svelte:357
+msgid "Refresh"
+msgstr "새로고침"
+
+#: web/routes/suggestions/+page.svelte:79
 msgid "Refresh suggestions"
 msgstr "제안 새로고침"
+
+#: web/routes/create/+page.svelte:357
+msgid "Refreshing..."
+msgstr "새로고침 중..."
 
 #: web/routes/settings/people/+page.svelte:155
 msgid "Relationship"
@@ -782,7 +844,7 @@ msgstr "관계"
 msgid "Relationships"
 msgstr "관계"
 
-#: web/routes/settings/+page.svelte:116
+#: web/lib/SettingsEditor.svelte:66
 msgid "Reload from Disk"
 msgstr "디스크에서 다시 불러오기"
 
@@ -794,11 +856,11 @@ msgstr "이 편집에서 빼기"
 msgid "Remove this relationship"
 msgstr "이 관계 삭제"
 
-#: web/routes/runs/[run_id]/+page.svelte:214
+#: web/routes/runs/[run_id]/+page.svelte:224
 msgid "Removed"
 msgstr "뺌"
 
-#: web/lib/RenderPanel.svelte:119 web/lib/RenderPanel.svelte:120 web/lib/RenderPanel.svelte:224
+#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:234
 msgid "Render"
 msgstr "렌더링"
 
@@ -814,7 +876,7 @@ msgstr "보고서 미리보기"
 msgid "Rescan the library"
 msgstr "라이브러리 다시 스캔"
 
-#: web/lib/RenderPanel.svelte:160
+#: web/lib/RenderPanel.svelte:165
 msgid "Resolution"
 msgstr "해상도"
 
@@ -822,12 +884,12 @@ msgstr "해상도"
 msgid "Review the report, then copy it. Nothing is sent automatically."
 msgstr "보고서를 검토한 뒤 복사하세요. 자동으로 전송되는 것은 없습니다."
 
-#: web/lib/RenderPanel.svelte:134 web/routes/runs/[run_id]/+page.svelte:273
+#: web/lib/RenderPanel.svelte:139 web/routes/runs/[run_id]/+page.svelte:298
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "리비전 {number}"
 
-#: web/routes/runs/[run_id]/+page.svelte:269
+#: web/routes/runs/[run_id]/+page.svelte:294
 msgid "Revisions"
 msgstr "리비전"
 
@@ -835,47 +897,68 @@ msgstr "리비전"
 msgid "Role (suggestions; type your own)"
 msgstr "역할(제안 선택 또는 직접 입력)"
 
-#: web/routes/runs/[run_id]/+page.svelte:289
+#: web/routes/runs/[run_id]/+page.svelte:314
 msgid "Run details"
 msgstr "실행 세부 정보"
 
-#: web/routes/suggestions/+page.svelte:95
+#: web/routes/suggestions/+page.svelte:111
 msgid "Run this suggestion"
 msgstr "이 제안 실행"
 
-#: web/routes/suggestions/+page.svelte:70
+#: web/routes/suggestions/+page.svelte:86
 #, python-brace-format
 msgid "Running on the server: {phase}. It continues if you leave this page."
 msgstr "서버에서 실행 중: {phase}. 이 페이지를 떠나도 계속됩니다."
 
 #: web/routes/+layout.svelte:23 web/routes/runs/+page.svelte:76 web/routes/runs/+page.svelte:80
-#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:109
+#: web/routes/runs/+page.svelte:93 web/routes/runs/[run_id]/+page.svelte:119
 msgid "Runs"
 msgstr "작업 내역"
 
-#: web/routes/settings/+page.svelte:101
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
+msgid "Same episode"
+msgstr "같은 에피소드"
+
+#: web/lib/SettingsEditor.svelte:104
+msgid "Save"
+msgstr "저장"
+
+#: web/routes/settings/+page.svelte:97
 msgid "Save Config"
 msgstr "설정 저장"
 
-#: web/routes/runs/[run_id]/+page.svelte:260
+#: web/routes/runs/[run_id]/+page.svelte:285
 msgid "Save revision"
 msgstr "리비전 저장"
 
-#: web/routes/settings/+page.svelte:97
+#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:93
 msgid "Saved - type a new key to replace it"
 msgstr "저장됨. 교체하려면 새 키를 입력하세요"
 
-#: web/routes/runs/[run_id]/+page.svelte:263
+#: web/routes/runs/[run_id]/+page.svelte:288
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "리비전 {number}(으)로 저장했습니다."
 
-#: web/routes/runs/[run_id]/+page.svelte:290
+#: web/lib/SettingsEditor.svelte:40
+msgid "Saved here"
+msgstr "여기에 저장됨"
+
+#: web/lib/SettingsEditor.svelte:39
+#, python-brace-format
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "여기에 저장되어 있지만 {name}(으)로 복호화할 수 없어 기본값을 사용 중입니다"
+
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:63
+msgid "Saved to the database"
+msgstr "데이터베이스에 저장했습니다"
+
+#: web/routes/runs/[run_id]/+page.svelte:315
 #, python-brace-format
 msgid "Saved to: {output_path}"
 msgstr "저장 위치: {output_path}"
 
-#: web/lib/RenderPanel.svelte:178
+#: web/lib/RenderPanel.svelte:183
 msgid "Scaling Mode"
 msgstr "크기 조절 방식"
 
@@ -887,20 +970,37 @@ msgstr "예약됨"
 msgid "Screen time (seconds)"
 msgstr "화면 표시 시간(초)"
 
-#: web/lib/labels.ts:6 web/routes/create/+page.svelte:238
+#: web/lib/labels.ts:6 web/routes/create/+page.svelte:286
 msgid "Season"
 msgstr "계절"
 
-#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:81
-#: web/routes/settings/+page.svelte:85 web/routes/settings/people/+page.svelte:79
+#: web/lib/SettingsEditor.svelte:76
+#, python-brace-format
+msgid ""
+"Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
+"config.yaml."
+msgstr "{name}이(가) 설정되기 전에는 여기에 비밀 값을 저장할 수 없습니다. 설정하거나, 환경 변수나 config.yaml에 보관하세요."
+
+#: web/lib/SettingsEditor.svelte:37
+#, python-brace-format
+msgid "Set by {name} (environment)"
+msgstr "{name}(환경 변수)로 설정됨"
+
+#: web/lib/SettingsEditor.svelte:38
+#, python-brace-format
+msgid "Set in config.yaml as {key}"
+msgstr "config.yaml의 {key}로 설정됨"
+
+#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:77
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:79
 msgid "Settings"
 msgstr "설정"
 
-#: web/routes/create/+page.svelte:366
+#: web/routes/create/+page.svelte:425
 msgid "Shareable"
 msgstr "공유 가능"
 
-#: web/routes/runs/[run_id]/+page.svelte:156
+#: web/routes/runs/[run_id]/+page.svelte:166
 msgid "Show"
 msgstr "표시"
 
@@ -925,11 +1025,11 @@ msgstr "로그아웃"
 msgid "Small moment"
 msgstr "작은 순간"
 
-#: web/lib/RenderPanel.svelte:139
+#: web/lib/RenderPanel.svelte:144
 msgid "Smart (fades and cuts)"
 msgstr "스마트(페이드와 컷)"
 
-#: web/routes/create/+page.svelte:241
+#: web/routes/create/+page.svelte:289
 msgid "South"
 msgstr "남반구"
 
@@ -937,7 +1037,11 @@ msgstr "남반구"
 msgid "Special day"
 msgstr "특별한 날"
 
-#: web/lib/RenderPanel.svelte:157
+#: web/routes/create/+page.svelte:41
+msgid "Spring"
+msgstr "봄"
+
+#: web/lib/RenderPanel.svelte:162
 msgid "Square"
 msgstr "정사각형"
 
@@ -945,7 +1049,7 @@ msgstr "정사각형"
 msgid "Start here"
 msgstr "여기서 시작"
 
-#: web/lib/JobPanel.svelte:54
+#: web/lib/JobPanel.svelte:60
 msgid "Starting"
 msgstr "시작 중"
 
@@ -957,40 +1061,48 @@ msgstr "상태"
 msgid "Still"
 msgstr "정지 이미지"
 
-#: web/lib/JobPanel.svelte:56
+#: web/lib/JobPanel.svelte:62
 msgid "Stopped."
 msgstr "중지되었습니다."
 
-#: web/routes/runs/[run_id]/+page.svelte:173
+#: web/routes/runs/[run_id]/+page.svelte:183
 msgid "Stories"
 msgstr "이야기"
 
-#: web/lib/RenderPanel.svelte:144
+#: web/lib/RenderPanel.svelte:149
 msgid "Subtitle"
 msgstr "부제목"
 
-#: web/routes/+layout.svelte:22 web/routes/suggestions/+page.svelte:56
-#: web/routes/suggestions/+page.svelte:61
+#: web/routes/+layout.svelte:22 web/routes/suggestions/+page.svelte:69
+#: web/routes/suggestions/+page.svelte:74
 msgid "Suggestions"
 msgstr "제안"
 
-#: web/routes/suggestions/+page.svelte:78
+#: web/routes/suggestions/+page.svelte:94
 msgid "Suggestions could not be loaded."
 msgstr "제안을 불러올 수 없습니다."
+
+#: web/routes/create/+page.svelte:42
+msgid "Summer"
+msgstr "여름"
 
 #: web/lib/labels.ts:57
 msgid "Supporting"
 msgstr "보조"
 
-#: web/routes/runs/[run_id]/+page.svelte:216
+#: web/routes/runs/[run_id]/+page.svelte:226
 msgid "Swapped"
 msgstr "교체됨"
 
-#: web/routes/settings/+page.svelte:100
+#: web/routes/runs/[run_id]/+page.svelte:264
+msgid "Take out"
+msgstr "빼기"
+
+#: web/routes/settings/+page.svelte:96
 msgid "Test Connection"
 msgstr "연결 테스트"
 
-#: web/lib/RenderPanel.svelte:105
+#: web/lib/RenderPanel.svelte:110
 msgid "That file is not an MP3, M4A or WAV"
 msgstr "이 파일은 MP3, M4A 또는 WAV가 아닙니다"
 
@@ -998,39 +1110,43 @@ msgstr "이 파일은 MP3, M4A 또는 WAV가 아닙니다"
 msgid "That file is too large for a soundtrack"
 msgstr "이 파일은 배경음악으로 쓰기에 너무 큽니다"
 
-#: web/routes/settings/+page.svelte:56
+#: web/routes/settings/+page.svelte:54
 msgid "The connection could not be checked."
 msgstr "연결을 확인할 수 없습니다."
 
-#: web/lib/RenderPanel.svelte:133
+#: web/lib/RenderPanel.svelte:138
 msgid "The cut as chosen"
 msgstr "선택한 그대로의 편집"
 
-#: web/routes/create/+page.svelte:200
+#: web/routes/create/+page.svelte:244
 msgid "The cut could not start."
 msgstr "편집을 시작할 수 없습니다."
 
-#: web/lib/JobPanel.svelte:55
+#: web/lib/JobPanel.svelte:61
 msgid "The cut is ready."
 msgstr "편집이 준비되었습니다."
 
-#: web/lib/RenderPanel.svelte:150
+#: web/lib/RenderPanel.svelte:155
 msgid "The dates and places, never a model"
 msgstr "날짜와 장소만, 모델은 사용하지 않음"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:128
-msgid "The editor never received this picture, so a tick cannot bring it into the next cut."
-msgstr "편집기가 이 사진을 받은 적이 없으므로 체크해도 다음 컷에 넣을 수 없습니다."
+#: web/lib/SettingsEditor.svelte:73
+msgid ""
+"The environment wins, then config.yaml, then what is saved here, then the default. A setting "
+"either of the first two sets is greyed out: change it where its label says."
+msgstr ""
+"환경 변수가 우선하고, 그다음 config.yaml, 그다음 여기에 저장된 값, 마지막으로 기본값이 적용됩니다. 앞의 두 가지 중 하나로 설정된 항목은 회색으로 "
+"표시되며, 레이블에 적힌 위치에서 변경하세요."
 
-#: web/routes/runs/[run_id]/+page.svelte:133
+#: web/routes/runs/[run_id]/+page.svelte:143
 msgid "The film"
 msgstr "이 영상"
 
-#: web/lib/JobPanel.svelte:55
+#: web/lib/JobPanel.svelte:61
 msgid "The film is ready."
 msgstr "영상이 준비되었습니다."
 
-#: web/routes/create/+page.svelte:33
+#: web/routes/create/+page.svelte:34
 msgid "The household. Private moments a caption names, like a bath, play too."
 msgstr "집안 식구. 설명에 언급된 목욕 같은 사적인 순간도 포함합니다."
 
@@ -1038,21 +1154,31 @@ msgstr "집안 식구. 설명에 언급된 목욕 같은 사적인 순간도 포
 msgid "The model had nothing to say about this picture."
 msgstr "모델이 이 이미지에 대해 남긴 말이 없습니다."
 
-#: web/lib/RenderPanel.svelte:149
+#: web/lib/RenderPanel.svelte:154
 msgid "The model, when one is configured"
 msgstr "설정된 경우 모델"
 
 #: web/routes/settings/people/+page.svelte:81
 msgid ""
-"The people file (`people.yaml`): who is close, their roles, and how they relate. `people "
-"scan` writes the guesses; your answers stay across scans."
-msgstr "인물 파일(`people.yaml`): 누가 가까운 사람인지, 역할, 관계를 담습니다. `people scan`이 추측을 기록하며, 답변은 스캔 사이에도 유지됩니다."
+"The people registry: who is close, their roles, and how they relate. `people scan` writes the"
+" guesses; your answers stay across scans. `people export` writes it out as YAML."
+msgstr ""
+"인물 등록부: 누가 가깝고, 그들의 역할, 서로 어떻게 관계되는지. `people scan`이 추측을 기록하고, 답변은 스캔 후에도 유지됩니다. `people "
+"export`는 이를 YAML로 내보냅니다."
 
 #: web/lib/ShotInspector.svelte:141
 msgid "The picture it replaced"
 msgstr "대체된 이미지"
 
-#: web/lib/RenderPanel.svelte:194
+#: web/lib/RenderPanel.svelte:193
+msgid ""
+"The place is Immich's. With geocoding on (Settings, network), it names the district in the "
+"film's language, through the public Nominatim or network.geocoding_url."
+msgstr ""
+"장소는 Immich의 것입니다. 지오코딩을 켜면(설정, 네트워크) 공개 Nominatim 또는 network.geocoding_url을 통해 영상의 언어로 동네 이름을"
+" 표시합니다."
+
+#: web/lib/RenderPanel.svelte:204
 msgid "The previewed track"
 msgstr "미리 들은 트랙"
 
@@ -1060,7 +1186,7 @@ msgstr "미리 들은 트랙"
 msgid "The previous automatic memory used this category."
 msgstr "이전 자동 추억은 이 카테고리를 사용했습니다."
 
-#: web/lib/RenderPanel.svelte:84
+#: web/lib/RenderPanel.svelte:89
 msgid "The render could not start."
 msgstr "렌더링을 시작할 수 없습니다."
 
@@ -1068,7 +1194,7 @@ msgstr "렌더링을 시작할 수 없습니다."
 msgid "The report could not be loaded."
 msgstr "보고서를 불러오지 못했습니다."
 
-#: web/routes/runs/[run_id]/+page.svelte:53
+#: web/routes/runs/[run_id]/+page.svelte:63 web/routes/runs/[run_id]/pool/+page.svelte:81
 msgid "The revision could not be saved."
 msgstr "리비전을 저장하지 못했습니다."
 
@@ -1080,27 +1206,35 @@ msgstr "실행 기록을 불러오지 못했습니다."
 msgid "The server URL changed: enter the API key for the new server."
 msgstr "서버 URL이 변경되었습니다. 새 서버의 API 키를 입력하세요."
 
+#: web/lib/SettingsEditor.svelte:52
+msgid "The settings could not be saved."
+msgstr "설정을 저장하지 못했습니다."
+
 #: web/lib/labels.ts:48
 msgid "These people appear in the last two people memories."
 msgstr "이 인물들은 최근 두 개의 인물 추억에 등장합니다."
+
+#: web/routes/runs/[run_id]/+page.svelte:259
+msgid "They play in the order they were taken, prepared like the rest of the cut."
+msgstr "촬영된 순서대로 재생되며, 편집의 나머지 부분과 동일하게 준비됩니다."
 
 #: web/lib/labels.ts:46
 msgid "This category already appears twice in the last six memories."
 msgstr "이 카테고리는 최근 여섯 개의 추억에 이미 두 번 등장했습니다."
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:120
+#: web/routes/runs/[run_id]/pool/+page.svelte:118
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "이 작업은 후보 기록을 남기지 않았습니다. 다시 편집하면 확인할 수 있습니다."
 
-#: web/routes/settings/+page.svelte:27
+#: web/routes/settings/+page.svelte:28
 msgid "Thumbnail cache"
 msgstr "썸네일 캐시"
 
-#: web/lib/RenderPanel.svelte:143
+#: web/lib/RenderPanel.svelte:148
 msgid "Title (decided as generate decides when empty)"
 msgstr "제목(비워두면 generate가 결정)"
 
-#: web/routes/create/+page.svelte:257
+#: web/routes/create/+page.svelte:305
 msgid "To"
 msgstr "종료"
 
@@ -1112,19 +1246,19 @@ msgstr "검사에서 거부된 이미지의 자리를 차지했습니다."
 msgid "Took the seat of a picture the model removed from this story."
 msgstr "모델이 이 이야기에서 뺀 이미지의 자리를 차지했습니다."
 
-#: web/lib/RenderPanel.svelte:137
+#: web/lib/RenderPanel.svelte:142
 msgid "Transition Style"
 msgstr "전환 스타일"
 
-#: web/lib/labels.ts:12 web/routes/create/+page.svelte:305
+#: web/lib/labels.ts:12 web/routes/create/+page.svelte:353
 msgid "Trip"
 msgstr "여행"
 
-#: web/routes/create/+page.svelte:138
+#: web/routes/create/+page.svelte:166 web/routes/create/+page.svelte:170
 msgid "Trip detection failed."
 msgstr "여행 감지에 실패했습니다."
 
-#: web/routes/create/+page.svelte:311
+#: web/routes/create/+page.svelte:365
 msgid "Trips"
 msgstr "여행"
 
@@ -1136,19 +1270,24 @@ msgstr "다시 시도"
 msgid "Turn your photo library into video memories"
 msgstr "사진 보관함을 영상 추억으로 만들어보세요"
 
-#: web/routes/runs/[run_id]/+page.svelte:257 web/routes/runs/[run_id]/pool/+page.svelte:139
+#: web/routes/runs/[run_id]/+page.svelte:282 web/routes/runs/[run_id]/pool/+page.svelte:139
 msgid "Undo"
 msgstr "되돌리기"
 
-#: web/lib/RenderPanel.svelte:203
+#: web/lib/ago.ts:13
+#, python-brace-format
+msgid "Updated {when}"
+msgstr "{when} 업데이트됨"
+
+#: web/lib/RenderPanel.svelte:213
 msgid "Upload a track"
 msgstr "트랙 업로드"
 
-#: web/lib/RenderPanel.svelte:220
+#: web/lib/RenderPanel.svelte:230
 msgid "Upload the film to Immich"
 msgstr "영상을 Immich에 업로드"
 
-#: web/routes/create/+page.svelte:348
+#: web/routes/create/+page.svelte:407
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "보관함의 이름을 정확히 사용하세요. 각 이미지가 일치해야 합니다. 위의 이름을 대체합니다."
 
@@ -1160,53 +1299,47 @@ msgstr "대신 이 이미지 사용"
 msgid "Username"
 msgstr "사용자 이름"
 
-#: web/lib/ShotInspector.svelte:76 web/routes/runs/[run_id]/+page.svelte:190
-#: web/routes/runs/[run_id]/+page.svelte:220 web/routes/runs/[run_id]/pool/+page.svelte:132
+#: web/lib/ShotInspector.svelte:76 web/routes/runs/[run_id]/+page.svelte:200
+#: web/routes/runs/[run_id]/+page.svelte:230 web/routes/runs/[run_id]/pool/+page.svelte:127
 msgid "Video"
 msgstr "동영상"
 
-#: web/routes/settings/+page.svelte:26
+#: web/routes/settings/+page.svelte:27
 msgid "Video cache"
 msgstr "동영상 캐시"
 
-#: web/routes/runs/[run_id]/+page.svelte:126
+#: web/routes/runs/[run_id]/+page.svelte:136
 #, python-brace-format
 msgid "Videos: {count}"
 msgstr "동영상: {count}"
 
-#: web/routes/runs/[run_id]/+page.svelte:148
+#: web/routes/runs/[run_id]/+page.svelte:158
 msgid "View"
 msgstr "보기"
 
-#: web/routes/suggestions/+page.svelte:62
+#: web/routes/suggestions/+page.svelte:75
 msgid ""
 "What automation would make next, the same list `auto suggest` prints. Run one as `auto run` "
 "would, or check it first without rendering."
 msgstr "자동화가 다음에 만들 내용으로, `auto suggest`가 출력하는 목록과 같습니다. `auto run`처럼 실행하거나, 렌더링 없이 먼저 확인할 수 있습니다."
 
-#: web/routes/settings/+page.svelte:86
-msgid ""
-"What this server runs with. The file is the source; environment overrides apply; secrets are "
-"masked."
-msgstr "이 서버가 실행 중인 설정입니다. 파일이 원본이며, 환경 변수가 우선 적용되고, 비밀값은 가려집니다."
-
-#: web/lib/RenderPanel.svelte:131
+#: web/lib/RenderPanel.svelte:136
 msgid "What to render"
 msgstr "렌더링 대상"
 
-#: web/routes/settings/+page.svelte:110
+#: web/routes/settings/+page.svelte:106
 msgid "Who is who, their roles and relationships."
 msgstr "누가 누구인지, 역할과 관계입니다."
 
-#: web/routes/create/+page.svelte:363
+#: web/routes/create/+page.svelte:422
 msgid "Who may see it"
 msgstr "볼 수 있는 사람"
 
-#: web/lib/RenderPanel.svelte:146
+#: web/lib/RenderPanel.svelte:151
 msgid "Who names the film"
 msgstr "누가 영화 제목을 정하는지"
 
-#: web/routes/suggestions/+page.svelte:104
+#: web/routes/suggestions/+page.svelte:120
 msgid "Why other suggestions were skipped"
 msgstr "다른 제안이 제외된 이유"
 
@@ -1218,11 +1351,15 @@ msgstr "모델이 다른 이미지를 대체한 이유"
 msgid "Why this picture"
 msgstr "이 이미지를 선택한 이유"
 
+#: web/routes/create/+page.svelte:44
+msgid "Winter"
+msgstr "겨울"
+
 #: web/routes/settings/people/+page.svelte:160 web/routes/settings/people/+page.svelte:162
 msgid "With"
 msgstr "상대"
 
-#: web/routes/create/+page.svelte:235
+#: web/routes/create/+page.svelte:279
 msgid "Year"
 msgstr "연도"
 
@@ -1230,11 +1367,11 @@ msgstr "연도"
 msgid "Year in Review"
 msgstr "한 해 돌아보기"
 
-#: web/routes/create/+page.svelte:249
+#: web/routes/create/+page.svelte:297
 msgid "Years back (all when empty)"
 msgstr "지난 연수(비워두면 전체)"
 
-#: web/routes/create/+page.svelte:249
+#: web/routes/create/+page.svelte:297
 msgid "Years to span"
 msgstr "포함할 연도 수"
 
@@ -1242,7 +1379,7 @@ msgstr "포함할 연도 수"
 msgid "Yes, that is right"
 msgstr "네, 맞습니다"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:95
+#: web/routes/runs/[run_id]/pool/+page.svelte:93
 #, python-brace-format
 msgid "You cleared its hold for {level}."
 msgstr "{level}에 대한 제한을 해제했습니다."
@@ -1251,48 +1388,48 @@ msgstr "{level}에 대한 제한을 해제했습니다."
 msgid "You will be redirected to your identity provider"
 msgstr "ID 제공자로 리디렉션됩니다"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:93
+#: web/routes/runs/[run_id]/pool/+page.svelte:91
 msgid "You'll never use this picture."
 msgstr "이 사진은 다시는 사용되지 않습니다."
 
-#: web/routes/runs/[run_id]/+page.svelte:128
+#: web/routes/runs/[run_id]/+page.svelte:138
 #, python-brace-format
 msgid "about {film} of film"
 msgstr "영상 약 {film}"
 
-#: web/routes/create/+page.svelte:353
+#: web/routes/create/+page.svelte:412
 msgid "all of them together"
 msgstr "모두 함께"
 
-#: web/routes/create/+page.svelte:353
+#: web/routes/create/+page.svelte:412
 msgid "any of them"
 msgstr "그중 한 명이라도"
 
-#: web/routes/suggestions/+page.svelte:70
+#: web/routes/suggestions/+page.svelte:86
 msgid "starting"
 msgstr "시작 중"
 
-#: web/routes/runs/[run_id]/+page.svelte:127
+#: web/routes/runs/[run_id]/+page.svelte:137
 #, python-brace-format
 msgid "{content} of pictures and video"
 msgstr "이미지와 동영상 {content}"
 
-#: web/routes/runs/[run_id]/+page.svelte:252
+#: web/routes/runs/[run_id]/+page.svelte:277
 #, python-brace-format
-msgid "{content} of {budget} the titles leave"
-msgstr "제목이 남긴 {budget} 중 {content}"
+msgid "{content}: the film grows past its {budget} to hold them"
+msgstr "{content}: 이것들을 담기 위해 영상이 {budget}을 넘어 길어집니다"
 
 #: web/routes/runs/+page.svelte:72
 #, python-brace-format
 msgid "{date_range_start} to {date_range_end}"
 msgstr "{date_range_start}부터 {date_range_end}까지"
 
-#: web/routes/create/+page.svelte:318
+#: web/routes/create/+page.svelte:372
 #, python-brace-format
 msgid "{days} days · {count} pictures"
 msgstr "{days}일 · 이미지 {count}장"
 
-#: web/lib/JobPanel.svelte:67
+#: web/lib/JobPanel.svelte:71
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done} / {total}"
@@ -1302,12 +1439,12 @@ msgstr "{done} / {total}"
 msgid "{seconds} s on screen"
 msgstr "화면에 {seconds}초"
 
-#: web/routes/create/+page.svelte:292
+#: web/routes/create/+page.svelte:340
 #, python-brace-format
 msgid "{years} years ago"
 msgstr "{years}년 전"
 
-#: web/lib/JobPanel.svelte:41
+#: web/lib/JobPanel.svelte:46
 #, python-brace-format
 msgid "~{amount} left in this stage"
 msgstr "이 단계에 약 {amount} 남음"

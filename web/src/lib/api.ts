@@ -15,6 +15,7 @@ export type RenderOptions = components['schemas']['RenderOptions'];
 export type NamedPerson = components['schemas']['NamedPerson'];
 export type AlbumChoice = components['schemas']['AlbumChoice'];
 export type TripChoice = components['schemas']['TripChoice'];
+export type Trips = components['schemas']['Trips'];
 export type SpecialDay = components['schemas']['SpecialDay'];
 
 export class ApiError extends Error {

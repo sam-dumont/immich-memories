@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -61,4 +62,74 @@ def read_render_inputs(attempt_dir: Path) -> RenderInputs | None:
         selections=tuple(EditorialSelection(**row) for row in record["selections"]),
         segments={key: (float(a), float(b)) for key, (a, b) in record["segments"].items()},
         binding=record["binding"],
+    )
+
+
+CUT_TITLES_FILE = "cut-titles.private.json"
+
+
+@dataclass(frozen=True)
+class CutTitles:
+    """What `generate` decided about the film's title and memory when it made the cut."""
+
+    title: str | None
+    subtitle: str | None
+    source: str | None
+    preset_params: dict[str, Any]
+
+
+def _encode(value: Any) -> Any:
+    # Dates are tagged so they come back as dates: a trip's title counts its days from them.
+    if isinstance(value, datetime):
+        return {"__datetime__": value.isoformat()}
+    if isinstance(value, date):
+        return {"__date__": value.isoformat()}
+    if isinstance(value, Mapping):
+        return {str(k): _encode(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_encode(v) for v in value]
+    return value if value is None or isinstance(value, (str, int, float, bool)) else str(value)
+
+
+def _decode(value: Any) -> Any:
+    if isinstance(value, dict):
+        if set(value) == {"__datetime__"}:
+            return datetime.fromisoformat(value["__datetime__"])
+        if set(value) == {"__date__"}:
+            return date.fromisoformat(value["__date__"])
+        return {k: _decode(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_decode(v) for v in value]
+    return value
+
+
+def write_cut_titles(
+    attempt_dir: Path,
+    *,
+    title: str | None,
+    subtitle: str | None,
+    source: Any,
+    preset_params: Mapping[str, Any],
+) -> None:
+    """Keep the title the cut was given and its memory parameters, for a render made later."""
+    record = {
+        "title": title,
+        "subtitle": subtitle,
+        "source": getattr(source, "value", source),
+        "preset_params": _encode(dict(preset_params)),
+    }
+    write_secret_file(Path(attempt_dir) / CUT_TITLES_FILE, json.dumps(record, indent=2))
+
+
+def read_cut_titles(attempt_dir: Path) -> CutTitles | None:
+    """The cut's titles, or None for a cut made before they were kept."""
+    try:
+        record = json.loads((Path(attempt_dir) / CUT_TITLES_FILE).read_text())
+    except (OSError, ValueError):
+        return None
+    return CutTitles(
+        title=record.get("title"),
+        subtitle=record.get("subtitle"),
+        source=record.get("source"),
+        preset_params=_decode(record.get("preset_params") or {}),
     )

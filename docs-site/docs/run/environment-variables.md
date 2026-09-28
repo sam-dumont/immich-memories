@@ -7,7 +7,9 @@ title: Environment variables
 
 Reader: power user.
 
-Every config key has an environment variable, and an environment variable beats the config file.
+Every config key has an environment variable, and an environment variable beats the config file
+and whatever the web UI saved to the database. The UI greys out a setting a variable sets and names
+the variable; `immich-memories config show` lists them all ([where a setting comes from](./config-file.md#where-a-setting-comes-from)).
 On Docker, the ones you set live in `.env` beside `docker-compose.yml`.
 
 ## `.env` and `example.env`
@@ -56,6 +58,10 @@ whether the shipped compose file already passes it.
 | Variable | Config key | Default | Tier | Compose | What it does |
 |---|---|---|---|---|---|
 | `IMMICH_MEMORIES_AUTH_USERNAME`, `IMMICH_MEMORIES_AUTH_PASSWORD` | `auth.username`, `auth.password` | empty | advanced | yes, `.env` | Set both to turn on basic auth. Either alone is ignored |
+| `IMMICH_MEMORIES_DATABASE_URL` | The store's database, beating `database.url`: `sqlite:////data/store.db` or `postgresql://user:pass@host/db`. Read before the store opens, so never from the store |
+| `IMMICH_MEMORIES_DATABASE_SCHEMA` | The PostgreSQL schema for the store, beating `database.schema` (default `immich_memories`) |
+| `IMMICH_MEMORIES_IMPORT_FROM` | Where the one-time import of pre-store files (`people.yaml`, `cache.db` history, `annotations.sqlite`, ...) looks, and the default of `store import --from`, beating `database.import_from`. Default `~/.immich-memories` ([upgrading](./maintenance/upgrading.md#data-compatibility)) |
+| `IMMICH_MEMORIES_ALLOW_NETWORK_SQLITE` | `1` opens a SQLite file on NFS, SMB or CIFS with a warning instead of refusing. WAL needs shared memory those filesystems cannot give two hosts, so set it only when one host ever opens the file |
 | `IMMICH_MEMORIES_STORAGE_SECRET` | none | generated | none | commented | Session secret. Generated once onto the config volume, so sessions survive a recreate without it |
 | `IMMICH_MEMORIES_AUTOMATION__ENABLED` | `automation.enabled` | `false` | advanced | commented | The daily memory, inside the UI process |
 | `IMMICH_MEMORIES_AUTOMATION__DAILY_AT` | `automation.daily_at` | `09:00` | advanced | commented | When, in the `TZ` zone |
@@ -66,7 +72,8 @@ whether the shipped compose file already passes it.
 |---|---|---|---|---|---|
 | `IMMICH_MEMORIES_TIER` | `tier` | `auto` | 1 | `auto` | Resolves NAS, GPU or Full from inference capability and the configured LLM; preparation follows it |
 | `IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` | `editorial.preparation.detector_cache_dir` | the Hugging Face cache | advanced | the config volume | Where the document classifier lives. Keep it on a volume |
-| `IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL` | `editorial.preparation.caption_base_url` | `http://localhost:8092/v1` | advanced | commented | The caption server, for `tier: full` |
+| `IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL` | `editorial.preparation.caption_base_url` | `http://localhost:8092/v1` | advanced | commented | The SmolVLM caption server, for GPU and Full |
+| `IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_PROVIDER` | `editorial.preparation.caption_provider` | `smolvlm` | advanced | no | `llm` explicitly sends images to the configured LLM on any tier; less efficient and potentially much more expensive, especially hosted |
 | `IMMICH_MEMORIES_OUTPUT__DIRECTORY` | `output.directory` | `~/Videos/Memories`; `/app/output` in the image | 1 | set by the image | Where films land. In a container, set this, not `output.directory` |
 | `IMMICH_MEMORIES_PRESET` | `preset` | none | 1 | no | `fast`: 1080p H.264, fast encoder preset, static titles. Explicit settings win |
 | `IMMICH_MEMORIES_HARDWARE__BACKEND` | `hardware.backend` | `auto` | advanced | no | `none`, `nvidia`, `apple`, `vaapi` or `qsv` to name one encoder instead of probing |
@@ -93,7 +100,7 @@ IMMICH_MEMORIES_EDITORIAL__PEOPLE__SEAT_MIN_PICTURES=30
 ```
 
 List- and dict-valued fields take JSON: `auth.trusted_proxies`, `auth.allowed_emails`,
-`auth.allowed_domains`, `notifications.urls`, `scheduler.schedules`,
+`auth.allowed_domains`, `notifications.urls`,
 `analysis.exclude_filename_patterns`, `llm.drop_params`, `llm.extra_params`, `llm.thinking_params`
 and `editorial.head_versions`.
 
@@ -153,6 +160,8 @@ replace a key that is in the file, use `IMMICH_MEMORIES_LLM__API_KEY`.
 | Variable | Effect |
 |----------|--------|
 | `IMMICH_MEMORIES_STORAGE_SECRET` | Secret for the web UI session store. Priority: this variable, then `~/.immich-memories/.storage_secret`, then generated on first start |
+| `IMMICH_MEMORIES_SKIP_STORED_SETTINGS` | `1` starts without the settings saved in the database (env, `config.yaml` and defaults only). Without it, a store that is configured but unreadable stops the app ([where a setting comes from](./config-file.md#where-a-setting-comes-from)) |
+| `IMMICH_MEMORIES_SECRET_KEY` | Encrypts the secrets saved to the database from the UI or CLI (API keys, passwords). Any string of 32+ characters, e.g. `openssl rand -base64 32`. Unset: secrets cannot be saved there, only in env or `config.yaml`. Read from the environment only, never from the store ([secrets in the database](./config-file.md#secrets-in-the-database)) |
 | `IMMICH_MEMORIES_LOG_FORMAT` | `text` (default) or `json` |
 | `IMMICH_MEMORIES_LOG_LEVEL` | `INFO` (default), `DEBUG`, `WARNING` or `ERROR`. The CLI's `-v` and `--log-level` win for one run |
 | `IMMICH_MEMORIES_LOG_FILE` | Also write logs to this file |

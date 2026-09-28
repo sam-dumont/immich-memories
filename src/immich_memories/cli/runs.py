@@ -12,6 +12,7 @@ from rich.table import Table
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
 from immich_memories.cli._runs_reading import register_reading_commands
 from immich_memories.cli.runs_render import register_render_command
+from immich_memories.db import Store, open_store
 
 
 def _print_storage_report(report) -> None:
@@ -46,12 +47,13 @@ def _print_storage_report(report) -> None:
 
 
 def _run_storage_report(as_json: bool) -> None:
-    """Build the report through a genuinely read-only database adapter."""
+    """Build the report from the run history and the directories on disk."""
     from immich_memories.config import get_config
-    from immich_memories.operations.storage_report import ReadOnlyRunStore, build_storage_report
+    from immich_memories.operations.storage_report import build_storage_report
+    from immich_memories.tracking import RunDatabase
 
     config = get_config()
-    report = build_storage_report(config, ReadOnlyRunStore(config.cache.database_path))
+    report = build_storage_report(config, RunDatabase(open_store(config)))
     if as_json:
         click.echo(json_mod.dumps(report.to_dict()))
         return
@@ -102,22 +104,22 @@ def _print_run_details_table(run, format_duration) -> None:
     console.print(table)
 
 
-def _print_cut_checks(cache_dir: Path, run_id: str) -> None:
+def _print_cut_checks(store: Store, run_id: str) -> None:
     """How many promises the run's finished cut broke, when its cut recorded the check."""
     from immich_memories.analysis.editorial_cut_invariants import broken_promises
     from immich_memories.operations.run_index import attempt_dir_for_run
 
-    count = broken_promises(attempt_dir_for_run(cache_dir, run_id))
+    count = broken_promises(attempt_dir_for_run(run_id, store=store))
     if count is None:
         return
     style = "green" if count == 0 else "yellow"
     console.print(f"Cut checks: [{style}]{count} broken promise(s)[/{style}]")
 
 
-def _print_sharing(cache_dir: Path, run_id: str) -> None:
+def _print_sharing(store: Store, run_id: str) -> None:
     from immich_memories.operations.run_index import attempt_dir_for_run, sharing_line
 
-    line = sharing_line(attempt_dir_for_run(cache_dir, run_id))
+    line = sharing_line(attempt_dir_for_run(run_id, store=store))
     if line:
         console.print(line)
 
@@ -205,6 +207,17 @@ def _print_run_system_info(si) -> None:
         console.print(f"  FFmpeg: {si.ffmpeg_version}")
 
 
+def _print_run_spans(store, run) -> None:
+    from immich_memories.tracking.span_progress import span_tree
+    from immich_memories.tracking.span_store import SpanStore
+
+    spans = SpanStore(store).load(run.run_id).spans
+    if spans:
+        console.print("\nStage spans")
+        for line in span_tree(spans, run.total_duration_seconds):
+            console.print(line, markup=False)
+
+
 def register_runs_commands(main: click.Group) -> None:
     """Register the runs command group on the main CLI group."""
 
@@ -244,7 +257,7 @@ def register_runs_commands(main: click.Group) -> None:
         from immich_memories.config import get_config
         from immich_memories.tracking import RunDatabase, format_duration
 
-        runs_data = RunDatabase(db_path=get_config().cache.database_path).list_runs(
+        runs_data = RunDatabase(open_store(get_config())).list_runs(
             limit=limit, person_name=person, status=status
         )
 
@@ -296,7 +309,7 @@ def register_runs_commands(main: click.Group) -> None:
         from immich_memories.config import get_config
         from immich_memories.tracking import RunDatabase, format_duration
 
-        db = RunDatabase(db_path=get_config().cache.database_path)
+        db = RunDatabase(open_store(get_config()))
         run = db.get_run(run_id)
 
         if not run:
@@ -318,12 +331,13 @@ def register_runs_commands(main: click.Group) -> None:
         console.print()
 
         _print_run_details_table(run, format_duration)
-        _print_cut_checks(get_config().cache.cache_path, run.run_id)
-        _print_sharing(get_config().cache.cache_path, run.run_id)
+        _print_cut_checks(db.store, run.run_id)
+        _print_sharing(db.store, run.run_id)
 
         if run.phases:
             _print_run_phases_table(run, format_duration)
         _print_run_llm_totals(run)
+        _print_run_spans(db.store, run)
 
         if run.system_info:
             _print_run_system_info(run.system_info)
@@ -337,7 +351,7 @@ def register_runs_commands(main: click.Group) -> None:
         from immich_memories.config import get_config
         from immich_memories.tracking import RunDatabase, format_duration
 
-        stats = RunDatabase(db_path=get_config().cache.database_path).get_aggregate_stats()
+        stats = RunDatabase(open_store(get_config())).get_aggregate_stats()
 
         console.print()
         console.print("[bold]Aggregate Statistics[/bold]")
@@ -386,7 +400,7 @@ def register_runs_commands(main: click.Group) -> None:
         from immich_memories.config import get_config
         from immich_memories.tracking import RunDatabase
 
-        db = RunDatabase(db_path=get_config().cache.database_path)
+        db = RunDatabase(open_store(get_config()))
         run = db.get_run(run_id)
 
         if not run:

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import sqlite3
 import subprocess
 from pathlib import Path
 
@@ -11,6 +10,8 @@ import pytest
 from playwright.sync_api import Page, expect
 
 from immich_memories.config_loader import Config
+from immich_memories.db import Store, upsert
+from immich_memories.db.tables import head_facts
 from immich_memories.store import owner_decisions
 from tests.e2e.cli_bootstrap import CLI_BOOTSTRAP
 from tests.e2e.conftest import _build_launch_environment
@@ -22,20 +23,16 @@ pytestmark = pytest.mark.e2e
 _ROOT = Path(__file__).resolve().parents[2]
 
 
-def store_of(launch_workspace) -> Path:
-    return launch_workspace.cache_dir / "annotations.sqlite"
+def store_of(launch_workspace) -> Store:
+    return launch_workspace.store()
 
 
-def flag_by_the_detector(store: Path, asset_id: str) -> None:
+def flag_by_the_detector(store: Store, asset_id: str) -> None:
     """Bank a nudity-detector `yes` for one stock picture, as ingest would."""
-    owner_decisions.forget(store, "nobody")  # the store and its schema
     version = Config().editorial.head_versions["nsfw_marqo"]
-    with sqlite3.connect(store) as connection:
-        connection.execute(
-            "INSERT OR REPLACE INTO head_facts (asset_id, head, version, label) "
-            "VALUES (?, 'nsfw_marqo', ?, 'yes')",
-            (asset_id, version),
-        )
+    row = {"asset_id": asset_id, "head": "nsfw_marqo", "version": version, "label": "yes"}
+    with store.begin() as connection:
+        upsert(connection, head_facts, [row], keys=["asset_id", "head", "version"])
 
 
 def _frame(locator, name: str) -> None:
@@ -116,10 +113,10 @@ def test_never_use_and_clear_a_hold_from_the_pool(
 
         # Ruling out a ticked picture unticks it: the pool never says both.
         ticked = _tile(page, kept)
-        expect(ticked.get_by_role("checkbox", name="In the next cut")).to_be_checked()
+        expect(ticked.get_by_role("checkbox", name="In the film")).to_be_checked()
         ticked.get_by_role("button", name="Never use").click()
         expect(ticked.get_by_text("You'll never use this picture.")).to_be_visible()
-        expect(ticked.get_by_role("checkbox", name="In the next cut")).not_to_be_checked()
+        expect(ticked.get_by_role("checkbox", name="In the film")).not_to_be_checked()
         assert owner_decisions.decisions(store, [kept]) == {kept: owner_decisions.NEVER_USE}
         _frame(ticked, "1324-pool-never-use-unticks")
         ticked.get_by_role("button", name="Undo").click()

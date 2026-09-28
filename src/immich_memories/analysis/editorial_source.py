@@ -17,6 +17,7 @@ from immich_memories.api.person_scope import (
     photos_in_window,
     videos_in_window,
 )
+from immich_memories.db import open_store
 from immich_memories.timeperiod import DateRange
 
 if TYPE_CHECKING:
@@ -66,7 +67,7 @@ def library_source_scope(
                 generated_source_ids(
                     # A client that cannot answer leaves the receipts answering alone.
                     tagged=getattr(client, "generated_asset_ids", frozenset),
-                    cache_database=config.cache.database_path,
+                    store=open_store(config),
                 )
             )
         ),
@@ -119,17 +120,3 @@ def resolve_named_expression(expression: PersonExpression, people) -> PersonExpr
         return leaves[0] if len(leaves) == 1 else PersonExpression("any", children=leaves)
 
     return expression.map_leaves(resolve)
-
-
-def filter_named_expression(sources, expression: PersonExpression | None):
-    """Apply same-asset co-occurrence; surrounding context remains separate."""
-    sources = tuple(sources)
-    if expression is None:
-        return sources
-    by_name: dict[str, set[str]] = {}
-    for source in sources:
-        asset = _asset(source)
-        for person in asset.people:
-            by_name.setdefault(person.name, set()).add(asset.id)
-    selected = expression.evaluate(lambda name: by_name.get(name, ()))
-    return tuple(source for source in sources if _asset(source).id in selected)

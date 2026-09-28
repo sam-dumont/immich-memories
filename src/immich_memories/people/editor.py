@@ -1,8 +1,8 @@
-"""The companion editor's model — the people file as a page can show it.
+"""The companion editor's model — the people registry as a page can show it.
 
 The settings page renders these and writes them back; none of it knows about
-the web server, which is what lets the confirm flow be tested on a real file rather
-than through a browser. The rule the whole module exists to serve is the file's
+the web server, which is what lets the confirm flow be tested on a real store rather
+than through a browser. The rule the whole module exists to serve is the registry's
 own: the user's answer is the answer, so nothing here ever discards a
 `confirmed:` field it did not understand.
 """
@@ -10,9 +10,9 @@ own: the user's answer is the answer, so nothing here ever discards a
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
+from immich_memories.db import Store
 from immich_memories.people.companion import (
     add_confirmed_person,
     load_document,
@@ -44,7 +44,7 @@ TIER_ORDER = tuple(tier.value for tier in Tier)
 CONFIRMED = "confirmed"
 REJECTED = "rejected"
 
-_GONE = "someone no longer in the file"
+_GONE = "someone no longer in the registry"
 
 _LINK_PROMPTS = {
     "tight-dyad": "appears in a large share of their pictures, both ways",
@@ -114,27 +114,26 @@ class CurationFlag:
     message: str
 
 
-def load_people(path: Path) -> list[PersonView]:
-    """The people file as a roster, inner circle first and busiest first within.
+def load_people(store: Store) -> list[PersonView]:
+    """The people registry as a roster, inner circle first and busiest first within.
 
-    A missing or damaged file reads as an empty roster: somebody opening the
-    page before their first scan should be told to run one, not shown a stack
-    trace.
+    An empty registry reads as an empty roster: somebody opening the page before
+    their first scan should be told to run one, not shown a stack trace.
     """
-    entries = people_entries(load_document(path))
+    entries = people_entries(load_document(store))
     names = _names_by_id(entries)
     people = [_view(entry, names) for entry in entries]
     return sorted(people, key=lambda person: (_tier_rank(person.tier), -person.count))
 
 
-def save_person(path: Path, person: PersonView) -> None:
-    """Write one person's answers back, through the file's own writer.
+def save_person(store: Store, person: PersonView) -> None:
+    """Write one person's answers back, through the registry's own writer.
 
     Only decided links are written down. An edge nobody has answered yet is
     the graph's opinion, and the graph's opinions live under `inferred:`.
     """
     save_confirmed(
-        path,
+        store,
         person.person_id,
         {
             "role": _cleaned(person.role),
@@ -155,25 +154,25 @@ def _confirmed_link_block(link: LinkView) -> dict[str, str]:
     return block
 
 
-def add_person(path: Path, name: str) -> str:
+def add_person(store: Store, name: str) -> str:
     """Add an off-camera or not-yet-tagged person from the settings page."""
     cleaned = name.strip()
     if not cleaned:
         raise ValueError("A person needs a name")
-    return add_confirmed_person(path, cleaned)
+    return add_confirmed_person(store, cleaned)
 
 
-def add_relationship(path: Path, source_id: str, kind: str, target_id: str) -> None:
-    """Save one human answer; the file writer maintains its reciprocal."""
+def add_relationship(store: Store, source_id: str, kind: str, target_id: str) -> None:
+    """Save one human answer; the registry writer maintains its reciprocal."""
     valid = {choice.kind for choice in RELATIONSHIP_CHOICES}
     if kind not in valid:
         raise ValueError(f"Unknown relationship kind: {kind}")
-    save_confirmed_relationship(path, source_id, kind, target_id)
+    save_confirmed_relationship(store, source_id, kind, target_id)
 
 
-def remove_relationship(path: Path, source_id: str, kind: str, target_id: str) -> None:
+def remove_relationship(store: Store, source_id: str, kind: str, target_id: str) -> None:
     """Remove one relationship created by the user and its reciprocal."""
-    remove_confirmed_relationship(path, source_id, kind, target_id)
+    remove_confirmed_relationship(store, source_id, kind, target_id)
 
 
 def curation_flags(people: list[PersonView]) -> list[CurationFlag]:
@@ -240,7 +239,7 @@ def _links(
 ) -> list[LinkView]:
     """Every edge this person has, whether the scan found it or the user wrote it.
 
-    A link somebody typed into the file by hand has no inferred counterpart, and
+    A link somebody typed into an import by hand has no inferred counterpart, and
     an editor that only rendered what the scan found would delete it the next
     time the user pressed a button on this person.
     """
@@ -277,7 +276,7 @@ def _link_view(
 
 
 def _hand_written_link(raw: dict[str, Any], names: dict[str, str]) -> LinkView:
-    """An edge nobody inferred, because somebody wrote it into the file."""
+    """An edge nobody inferred, because somebody wrote it into an import."""
     target_id = str(raw["with"])
     return LinkView(
         kind=str(raw.get("kind") or "link"),

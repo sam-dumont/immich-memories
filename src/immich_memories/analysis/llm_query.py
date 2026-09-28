@@ -16,7 +16,6 @@ from __future__ import annotations
 import asyncio
 import base64
 import logging
-import time
 from dataclasses import replace
 from functools import partial
 from typing import TYPE_CHECKING, Any
@@ -64,10 +63,12 @@ from immich_memories.analysis.llm_wire import (
 )
 from immich_memories.config_models_llm import LLMConfig
 from immich_memories.operations.cancellation import check_cancelled
+from immich_memories.tracking.timing import span
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
-    from pathlib import Path
+
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +173,7 @@ def build_llm_timeout(read_timeout: float) -> httpx.Timeout:
     )
 
 
+@llm_metrics.scoped_model
 async def query_llm(
     prompt: str,
     llm_config: LLMConfig,
@@ -181,14 +183,14 @@ async def query_llm(
     thinking: bool = False,
     images: Sequence[bytes] = (),
     image_detail: str = "low",
-    cache_path: Path | None = None,
+    judgments: Store | None = None,
     transport_observer: Callable[[LLMTransportAttempt], None] | None = None,
     require_complete: bool = False,
     response_format: Mapping[str, Any] | None = None,
 ) -> str:
     """Send a prompt, optionally with JPEG images, and return the response.
 
-    cache_path opts this call into reuse: an identical question to an identical
+    judgments opts this call into reuse: an identical question to an identical
     model gets the answer it got before, rather than being paid for again.
     Deliberately opt-in — a health probe must reach the server every time — and
     deliberately refused for image-bearing calls, whose pictures a prompt hash
@@ -202,6 +204,7 @@ async def query_llm(
     """
     check_cancelled()
     llm_config = resolved_llm_config(llm_config)
+    llm_metrics.begin_request(llm_config.model)
     # A prompt hash cannot see the pictures, so an image-bearing call with a
     # fixed prompt template — "one line per picture, in order" — would key
     # identically for two entirely different days and serve one the other's
@@ -221,10 +224,10 @@ async def query_llm(
         if not images
         else None
     )
-    remembered = _remembered(cache_path, key) if key is not None else None
+    remembered = _remembered(judgments, key) if key is not None else None
     if remembered is not None:
         logger.debug("Reusing the answer to an identical question")
-        llm_metrics.record_cache_hit()
+        llm_metrics.record_cache_hit(model=llm_config.model)
         return remembered
     attempt_number = 0
 
@@ -234,59 +237,50 @@ async def query_llm(
         if transport_observer is not None:
             transport_observer(replace(attempt, attempt=attempt_number))
 
-    started = time.monotonic()
     effective_thinking = bool(thinking and llm_config.reasons and not images)
     total_timeout = float(timeout_seconds)
     if effective_thinking:
         total_timeout = max(total_timeout, float(THINKING_MIN_TIMEOUT_SECONDS))
     try:
-        async with asyncio.timeout(total_timeout):
-            answer = await _dispatch(
-                prompt,
-                llm_config,
-                temperature,
-                max_tokens,
-                timeout_seconds,
-                thinking,
-                images,
-                image_detail,
-                watch,
-                require_complete,
-                response_format,
-            )
+        with span("reader.call") as measured:
+            async with asyncio.timeout(total_timeout):
+                answer = await _dispatch(
+                    prompt,
+                    llm_config,
+                    temperature,
+                    max_tokens,
+                    timeout_seconds,
+                    thinking,
+                    images,
+                    image_detail,
+                    watch,
+                    require_complete,
+                    response_format,
+                )
     finally:
         # In `finally` so a failed call still shows the time it burned; a run
         # that spent four minutes on a dead server should not read as free.
-        llm_metrics.record_wall(time.monotonic() - started)
+        llm_metrics.record_wall(measured.duration)
     if key is not None:
-        _remember(cache_path, key, answer)
+        _remember(judgments, key, answer)
     return answer
 
 
-def _remembered(cache_path: Path | None, key: str) -> str | None:
-    """Read the exact transport request, closing the connection on every path."""
-    if cache_path is None:
+def _remembered(judgments: Store | None, key: str) -> str | None:
+    if judgments is None:
         return None
     from immich_memories.cache.judgment_cache import JudgmentCache
 
-    cache = JudgmentCache(cache_path)
-    try:
-        return cache.answer_for(key)
-    finally:
-        cache.close()
+    return JudgmentCache(judgments).answer_for(key)
 
 
-def _remember(cache_path: Path | None, key: str, answer: str) -> None:
+def _remember(judgments: Store | None, key: str, answer: str) -> None:
     """Keep an answer. Silence is never kept — a failed call must not stick."""
-    if cache_path is None or not answer:
+    if judgments is None or not answer:
         return
     from immich_memories.cache.judgment_cache import JudgmentCache
 
-    cache = JudgmentCache(cache_path)
-    try:
-        cache.remember(key, answer)
-    finally:
-        cache.close()
+    JudgmentCache(judgments).remember(key, answer)
 
 
 async def _dispatch(

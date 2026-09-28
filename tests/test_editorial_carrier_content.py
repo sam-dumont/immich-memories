@@ -7,7 +7,6 @@ its line, and the medical-care rule once refused every one of them as a picture 
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from pathlib import Path
 
 import pytest
 
@@ -18,11 +17,10 @@ from tests.test_annotation_lines import OwnerPersonContext, candidate, reader, s
 ASSET = "asset-private-001"
 
 
-def _rendered(tmp_path: Path, caption: str) -> str:
+def _rendered(caption: str) -> str:
     """A burst line with every tag the renderer writes: media, place, people, framing, heads,
     star, nominator flag, pixel warnings and the source's technical facts."""
-    store_path = store_with(
-        tmp_path,
+    store = store_with(
         descriptions=((ASSET, "student-v1", caption),),
         description_fields=((ASSET, "student-v1", "setting", "living room"),),
         flags=((ASSET, "review", '{"reason":"a swollen eye, stitches, a rash"}', "nominator"),),
@@ -30,7 +28,7 @@ def _rendered(tmp_path: Path, caption: str) -> str:
         pixel_facts=((ASSET, "pixel-v1", 5.0, 20.0, 10.0, 0.7, 0.9, 1),),
         pixel_facts_thresholds=(("sharpness_p10", 10.0, "pixel-v1"),),
         motion_bursts=((ASSET, "burst-1", '["still-a","still-b","still-c"]', 3.2, 1),),
-        face_boxes=((ASSET, "Rash Infection", 0.1, 0.1, 0.4, 0.5),),
+        face_boxes=((ASSET, 1, 0.1, 0.1, 0.4, 0.5),),
     )
     burst = candidate(
         ASSET,
@@ -42,7 +40,7 @@ def _rendered(tmp_path: Path, caption: str) -> str:
     )
     line = (
         reader(
-            store_path,
+            store,
             burst,
             people_context={"person-private-001": OwnerPersonContext(relationship="partner")},
         )
@@ -53,8 +51,8 @@ def _rendered(tmp_path: Path, caption: str) -> str:
     return line
 
 
-def test_a_stitched_burst_is_not_a_picture_of_stitches(tmp_path: Path) -> None:
-    line = _rendered(tmp_path, "Two children blowing out candles on a birthday cake.")
+def test_a_stitched_burst_is_not_a_picture_of_stitches() -> None:
+    line = _rendered("Two children blowing out candles on a birthday cake.")
 
     assert excluded_carrier_sources({ASSET: line}) == {}
 
@@ -66,8 +64,8 @@ def test_a_stitched_burst_is_not_a_picture_of_stitches(tmp_path: Path) -> None:
         "A child with a bandage on her knee.",
     ],
 )
-def test_real_care_in_the_caption_still_holds_a_burst(tmp_path: Path, caption: str) -> None:
-    line = _rendered(tmp_path, caption)
+def test_real_care_in_the_caption_still_holds_a_burst(caption: str) -> None:
+    line = _rendered(caption)
 
     assert excluded_carrier_sources({ASSET: line}) == {ASSET: "medical-care"}
 

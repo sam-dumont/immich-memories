@@ -9,8 +9,16 @@ Reader: anyone whose run stopped.
 **Help, in four steps:** read the table below and the [FAQ](./faq.md); check the
 [release notes](https://github.com/sam-dumont/immich-video-memory-generator/releases) for your version;
 [search the issues](https://github.com/sam-dumont/immich-video-memory-generator/issues?q=is%3Aissue); then open
-one with the command, the version (`immich-memories --version`) and the last 50 lines of `-v` output. API keys
-are redacted from logs, but check for names before you paste.
+one with the output of `immich-memories report`. It defaults to the latest run, including failed runs.
+Pass a run ID to report an older one. Review the report before pasting it.
+
+The report includes redacted run logs, system details, stage timings, model usage and the selection
+funnel when the run recorded them. Names, places, albums, coordinates, hosts, IP addresses, URLs, paths
+and credentials are removed; IDs become
+randomized hashes that agree inside one report. `--json` prints structured data, and
+`--bundle report.zip` writes the full report and logs as an attachment. Nothing is sent automatically.
+A run keeps its last 5,000 log lines and a count of every line per level. Long pasted logs keep
+their last complete lines; the ZIP keeps all 5,000.
 
 Two commands answer most questions: `immich-memories -v <command>` logs at DEBUG for one run, and
 `immich-memories preflight` checks Immich, the model files, the output directory and every configured server in
@@ -23,7 +31,7 @@ one go. In Docker, prefix both with `docker compose exec immich-memories`.
 | `public heads need the pinned DINOv2 ONNX export at …` | Run `immich-memories models fetch` once. It puts the encoder and detectors on the models volume |
 | `nsfw_marqo has no model: …` or `doc_docling has no model: …` | Same: `models fetch` |
 | `Output directory is not writable` | In Docker the container runs as uid 1000: `mkdir output` before `up`, or `sudo chown 1000:1000 output` |
-| `Story-first selection needs prepared annotations at …` | The annotation store moved. Point `editorial.annotation_database` at it |
+| `Story-first selection needs prepared annotations in the store at …` | The store this run opened has no prepared facts for these pictures: check `IMMICH_MEMORIES_DATABASE_URL` / `database.url` names the store you prepared into, or run `prepare` |
 | `editorial runtime needs a nonblank LLM model` | `reader: model` with an empty `llm.model`. Set the model, or go back to `reader: auto` |
 | `Waiting for the reader at host:port` | A configured model server stopped answering. See [below](#waiting-for-a-model-server) |
 | `caption endpoint must advertise smolvlm2-500m-base-public` | Right weights, wrong name: alias it. See [Add captions](../better/captions.md) |
@@ -87,6 +95,9 @@ caption each) and banks them. The second cut over the same period is mostly the 
 keep the cache volume, prepare ahead with [`prepare`](../make/cli/prepare.md) overnight, and move the heads to a
 faster box with [the inference service](../better/inference.md). Numbers per host are on
 [Measured](../better/measured.md).
+
+During preparation, the CLI and saved progress advance by batches of new work, even when a detector ends
+with a partial batch. Stage changes, counter resets and completion appear immediately.
 
 ## Waiting for a model server
 

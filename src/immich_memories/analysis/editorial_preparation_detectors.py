@@ -15,21 +15,23 @@ import json
 import logging
 import os
 import signal
-import sqlite3
 import subprocess
 import sys
 import tempfile
 import time
 from collections.abc import Callable, Mapping, Sequence
-from contextlib import closing, suppress
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from operator import itemgetter
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from PIL import Image
+
+if TYPE_CHECKING:
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +54,11 @@ MARQO_ONNX_ID = f"{MARQO_REPO}@{MARQO_REVISION[:8]}/onnx-384"
 MARQO_CLASSES = ("NSFW", "SFW")
 MARQO_SIDE = 384
 # det-v3: a video is decided on eight frames spread across its length and keeps the
-# strongest answer; a still is decided on its preview, exactly as det-v2 decided it. A
-# banked row does not say which kind of source it came from, so a store written by an
-# older version re-reads every `nsfw_marqo` row, pictures included.
+# strongest answer; a still is decided on its preview, exactly as det-v2 decided it. So a
+# still's banked det-v2 row is its det-v3 answer, and preparation carries it forward
+# rather than reading the still again. A video and a Live Photo's clip owe det-v3 a read.
 MARQO_VERSION = "det-v3"
+MARQO_STILL_EQUIVALENT = "det-v2"
 DOCLING_REPO = "docling-project/DocumentFigureClassifier-v2.0"
 DOCLING_REVISION = "2a12e02668b98ca40216eab41cdf19530577cba4"
 DOCLING_FILE = "model.onnx"
@@ -325,10 +328,9 @@ def decide(head: str, scores: Mapping[str, float]) -> tuple[str, float]:
     raise ValueError(f"unsupported detector head: {head}")
 
 
-_INSERT_FACT = (
-    "INSERT OR REPLACE INTO head_facts "
-    "(asset_id,head,version,label,confidence,encoder_key,decided_at) VALUES (?,?,?,?,?,?,?)"
-)
+# The worker runs in a detector-only interpreter that cannot reach the store, so it appends
+# each decided batch here and the parent banks what it finds while the worker runs.
+_FACT_COLUMNS = ("asset_id", "head", "version", "label", "confidence", "encoder_key", "decided_at")
 
 
 @dataclass
@@ -424,15 +426,16 @@ def _open_detector(head: str, job: dict) -> Marqo | Docling:
     return Docling(allow_downloads=job["allow_downloads"], cache_dir=job["cache_dir"])
 
 
-def _bank(connection: sqlite3.Connection, progress: _WorkerProgress, rows: Sequence[Any]) -> None:
-    connection.executemany(_INSERT_FACT, rows)
-    connection.commit()
+def _bank(facts_path: str, progress: _WorkerProgress, rows: Sequence[Any]) -> None:
+    with open(facts_path, "a", encoding="utf-8") as spool:
+        spool.write(
+            "".join(json.dumps(dict(zip(_FACT_COLUMNS, row, strict=True))) + "\n" for row in rows)
+        )
     progress.record(len(rows))
 
 
 def _run_head(
     job: dict,
-    connection: sqlite3.Connection,
     detector: Marqo | Docling,
     asset_ids: Sequence[str],
     failures: dict[str, str],
@@ -447,7 +450,9 @@ def _run_head(
             job["previews"], plain[start : start + job["batch_size"]], detector.head, failures
         )
         if images:
-            _bank(connection, progress, _decided_rows(detector, keep, detector.batch(images)))
+            _bank(
+                job["facts_path"], progress, _decided_rows(detector, keep, detector.batch(images))
+            )
     for asset_id in sampled:
         # One clip at a time: nine pictures already fill a batch, and a clip whose frames
         # cannot be opened must not take the rest of a chunk down with it. The preview is
@@ -458,7 +463,7 @@ def _run_head(
         images = _open_frames(paths, asset_id, detector.head, failures)
         if images:
             decided = _strictest(detector.batch(images))
-            _bank(connection, progress, _decided_rows(detector, [asset_id], [decided]))
+            _bank(job["facts_path"], progress, _decided_rows(detector, [asset_id], [decided]))
 
 
 def _failure_text(head: str, exc: Exception) -> str:
@@ -485,21 +490,20 @@ def _worker(job: dict) -> dict[str, str]:
         except Exception as exc:
             progress.refuse(head, _failure_text(head, exc))
     failures.update(progress.refusals)
-    with closing(sqlite3.connect(job["store_path"], timeout=60)) as connection:
-        for head, asset_ids in job["pending"].items():
-            if head not in loaded:
-                continue
-            try:
-                _run_head(job, connection, loaded[head], asset_ids, failures, progress)
-            except Exception as exc:
-                failures[head] = _failure_text(head, exc)
+    for head, asset_ids in job["pending"].items():
+        if head not in loaded:
+            continue
+        try:
+            _run_head(job, loaded[head], asset_ids, failures, progress)
+        except Exception as exc:
+            failures[head] = _failure_text(head, exc)
     return failures
 
 
 def prepare_detectors(
     *,
     pending: Mapping[str, Sequence[str]],
-    store_path: Path,
+    store: Store,
     preview_paths: Mapping[str, Path],
     python: str,
     cache_dir: str,
@@ -522,11 +526,12 @@ def prepare_detectors(
         job_path = Path(directory) / "job.json"
         result_path = Path(directory) / "result.json"
         progress_path = Path(directory) / "progress.json"
+        spool = _FactSpool(Path(directory) / "facts.jsonl", store)
         job_path.write_text(
             json.dumps(
                 {
                     "pending": pending,
-                    "store_path": str(store_path.resolve()),
+                    "facts_path": str(spool.path),
                     "previews": {key: str(path.resolve()) for key, path in preview_paths.items()},
                     "frames": {
                         key: [str(Path(frame).resolve()) for frame in frames]
@@ -552,7 +557,7 @@ def prepare_detectors(
                 stderr=log,
                 start_new_session=True,
             )
-            watch = _WorkerWatch(progress_path, progress)
+            watch = _WorkerWatch(progress_path, progress, spool.drain)
             try:
                 _await_worker(process, watch, check_cancelled)
                 check_cancelled()
@@ -566,6 +571,31 @@ def prepare_detectors(
                 return result
             finally:
                 _stop_worker(process)
+                # Whatever the worker decided before it stopped is kept, as a commit was.
+                spool.drain()
+
+
+@dataclass
+class _FactSpool:
+    """The worker's decided rows, banked in the store as complete lines appear."""
+
+    path: Path
+    store: Store
+    offset: int = 0
+
+    def drain(self) -> None:
+        if not self.path.is_file():
+            return
+        with self.path.open("rb") as spool:
+            spool.seek(self.offset)
+            data = spool.read()
+        complete = data[: data.rfind(b"\n") + 1]
+        if not complete:
+            return
+        from immich_memories.store.editorial_preparation import remember_head_rows
+
+        remember_head_rows(self.store, [json.loads(line) for line in complete.splitlines()])
+        self.offset += len(complete)
 
 
 def _worker_env(cache_dir: str, allow_downloads: bool) -> dict[str, str]:
@@ -585,10 +615,12 @@ class _WorkerWatch:
 
     path: Path
     progress: Callable[[str, int, int], None]
+    drain: Callable[[], None]
     done: int = 0
     announced: set[str] = field(default_factory=set)
 
     def poll(self) -> None:
+        self.drain()
         if not self.path.is_file():
             return
         published = json.loads(self.path.read_text())

@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 import logging
-import sqlite3
 import subprocess
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.operations.phases import PhaseEvent
 from immich_memories.tracking.models import PhaseStats, RunMetadata
@@ -18,6 +19,7 @@ from immich_memories.tracking.run_id import generate_run_id
 from immich_memories.tracking.system_info import capture_system_info
 
 if TYPE_CHECKING:
+    from immich_memories.db import Store
     from immich_memories.processing.output_contract import OutputProbe
     from immich_memories.timeperiod import DateRange
 
@@ -31,18 +33,18 @@ class RunTracker:
         self,
         run_id: str | None = None,
         *,
-        db_path: Path,
+        store: Store | None = None,
         capture_system: bool = True,
     ):
         """Initialize a run tracker.
 
         Args:
             run_id: Optional run ID. Generated if not provided.
-            db_path: Database path for run storage.
+            store: The store the run is recorded in; the configured one when omitted.
             capture_system: Whether to capture system info on start.
         """
         self.run_id = run_id or generate_run_id()
-        self.db = RunDatabase(db_path)
+        self.db = RunDatabase(store)
         self._capture_system = capture_system
 
         # Current state
@@ -116,6 +118,10 @@ class RunTracker:
 
         self.db.save_run(run)
         self._run = run
+        from immich_memories.tracking.timing import active
+
+        if collected := active():
+            collected.run_id = self.run_id
         logger.info(f"Started run {self.run_id}")
 
         return self.run_id
@@ -206,7 +212,7 @@ class RunTracker:
         self._require_started()
         try:
             updated = self.db.update_operational_phase(self.run_id, event)
-        except (OSError, RuntimeError, sqlite3.Error):
+        except (OSError, RuntimeError, SQLAlchemyError):
             logger.warning("Could not persist operational phase '%s'", event.phase.value)
             return False
         if updated and self._run is not None:
@@ -446,6 +452,11 @@ class RunTracker:
             logger.debug(f"Saved run metadata to {metadata_path}")
         except (OSError, ValueError):
             logger.warning("Failed to refresh run metadata sidecar")
+
+    @property
+    def current_run(self) -> RunMetadata | None:
+        """Get the current run metadata."""
+        return self._run
 
 
 def format_duration(seconds: float) -> str:

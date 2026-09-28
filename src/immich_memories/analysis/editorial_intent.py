@@ -10,16 +10,16 @@ from __future__ import annotations
 
 import calendar
 import hashlib
-from collections.abc import Collection, Sequence
+from collections.abc import Callable, Collection, Sequence
 from dataclasses import dataclass, replace
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from operator import itemgetter
 
 from immich_memories.analysis.editorial_product_brief import written_subject
 from immich_memories.analysis.special_event_scope import SpecialEventAdmission
 from immich_memories.timeperiod import DateRange
 
-__all__ = ["EditorialIntent", "IntentPartition", "build_editorial_intent"]
+__all__ = ["EditorialIntent", "IntentPartition", "build_editorial_intent", "voiced_era_of"]
 
 ERA_THRESHOLD_DAYS = (
     548  # a person span longer than ~18 months is read as eras, one per calendar year
@@ -67,6 +67,10 @@ class EditorialIntent:
     # lifetime or a works period over years is about the span, and a year that holds her is
     # part of it however few stars it has.
     voice_per_partition: bool = False
+    # A custom film about what its owner wrote: its material was chosen for that subject, so a
+    # frame of it with nobody in it (a stripped wall, a room under construction) is still one
+    # its story can show.
+    context_without_life: bool = False
 
     def partition_for(self, when: date) -> IntentPartition | None:
         return next((part for part in self.partitions if part.covers(when)), None)
@@ -126,6 +130,19 @@ class EditorialIntent:
             partitions=_per_range(spans, "occurrence", required=True),
             max_carriers_per_partition=None,
         ).prompt_block()
+
+
+def voiced_era_of(intent: EditorialIntent) -> Callable[[str], str | None] | None:
+    """The partition key of a capture time (ISO text), for a film that gives every partition a
+    voice; None for a film that promises none. A time outside every partition has no key."""
+    if not intent.voice_per_partition:
+        return None
+
+    def era_of(taken: str) -> str | None:
+        part = intent.partition_for(datetime.fromisoformat(taken).date())
+        return part.key if part is not None else None
+
+    return era_of
 
 
 def build_editorial_intent(
@@ -360,6 +377,7 @@ def _custom(product, spans, whole, *, brief, who):
         abstention_policy="the subject is not visible in the material: insufficient_material, not a film about something else",
         subject=subject,
         voice_per_partition=len(spans) > 1,
+        context_without_life=True,
     )
 
 

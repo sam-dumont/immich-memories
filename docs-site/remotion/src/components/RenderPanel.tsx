@@ -102,7 +102,7 @@ const Form: React.FC<{ state: RenderState }> = ({ state }) => (
     <Field label="Scaling Mode" value="As configured" select />
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <Check label="Add date overlay" checked={state.addDate} />
-      <Check label="Caption clips with their place" />
+      <Check label="Caption clips with their place" checked />
       <Check label="Privacy mode: blur every picture and scramble names" />
     </div>
     <div />

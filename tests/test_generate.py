@@ -88,8 +88,8 @@ def test_cli_generate_passes_configured_api_version_to_client(tmp_path: Path) ->
         patch("immich_memories.cli.get_config", return_value=config),
         patch("immich_memories.api.immich.SyncImmichClient", return_value=client) as client_factory,
         patch(
-            "immich_memories.cli.generate.fetch_videos",
-            return_value=[],
+            "immich_memories.cli.generate.fetch_media",
+            return_value=([], []),
         ),
     ):
         result = CliRunner().invoke(
@@ -895,8 +895,8 @@ class TestPhaseAllocation:
         cb(1.0, "Done")
 
         assert all(phase == "assembly" for phase, _, _ in calls)
-        assert calls[0][1] > 0.0
-        assert calls[-1][1] < 1.0
+        assert calls[0][1] > 0.0  # Download precedes assembly, even on a first run.
+        assert calls[0][1] < calls[1][1] < calls[-1][1] < 1.0
         pcts = [pct for _, pct, _ in calls]
         assert pcts == sorted(pcts)
 
@@ -1056,8 +1056,8 @@ class TestBirthdayFlagNamesTheWindowItRenders:
             patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
             # WHY: asset discovery needs a live Immich library.
             patch(
-                "immich_memories.cli.generate.fetch_videos",
-                return_value=[make_asset("a1")],
+                "immich_memories.cli.generate.fetch_media",
+                return_value=([make_asset("a1")], []),
             ),
             # WHY: rendering a real video is minutes of FFmpeg; we want its arguments.
             patch(
@@ -1147,8 +1147,8 @@ class TestChosenDayNamesTheAnniversary:
             # WHY: asset discovery needs a live Immich library; the windows it is
             # asked for are the whole point of the test.
             patch(
-                "immich_memories.cli.generate.fetch_videos",
-                return_value=[make_asset("a1")],
+                "immich_memories.cli.generate.fetch_media",
+                return_value=([make_asset("a1")], []),
             ) as fetch,
             # WHY: rendering a real video is minutes of FFmpeg.
             patch(

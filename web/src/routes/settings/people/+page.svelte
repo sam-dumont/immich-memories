@@ -78,7 +78,7 @@
     <div class="flex flex-col gap-1">
       <a href="/app/settings" class="text-sm text-gray-600 hover:text-primary dark:text-gray-400">{t('Settings')}</a>
       <Heading size="large" tag="h1">{t('People')}</Heading>
-      <Text color="muted">{t('The people file (`people.yaml`): who is close, their roles, and how they relate. `people scan` writes the guesses; your answers stay across scans.')}</Text>
+      <Text color="muted">{t('The people registry: who is close, their roles, and how they relate. `people scan` writes the guesses; your answers stay across scans. `people export` writes it out as YAML.')}</Text>
     </div>
     <Button size="small" variant="outline" leadingIcon={mdiRefresh} onclick={rescan} disabled={scan?.status === 'running'}>{t('Rescan the library')}</Button>
   </div>

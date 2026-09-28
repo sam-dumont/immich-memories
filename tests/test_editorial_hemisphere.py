@@ -17,6 +17,7 @@ from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePor
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.config_loader import Config
 from immich_memories.memory_types.date_builders import build_season
+from tests.annotation_rows import annotation_store
 from tests.conftest import make_clip
 
 
@@ -36,7 +37,8 @@ def _runtime_brief(context, config):
         context=context,
         people=adapt_editorial_people({}),
         thumbnail_cache=object(),
-        store_path=context.artifact_dir / "unused.sqlite",
+        store=annotation_store(),
+        bank_root=context.artifact_dir,
         ports=EditorialRuntimePorts(),
     )
     # WHY: capture_structure_input feeds the LLM prompt builder; intercepted to read its case arg
@@ -125,8 +127,8 @@ def test_actual_cli_hemisphere_flag_survives_the_generation_handoff(tmp_path):
         patch("immich_memories.cli.get_config", return_value=config),
         # WHY: SyncImmichClient is the Immich HTTP client; replaced so no server connection is made
         patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
-        # WHY: fetch_videos would call Immich for real assets; stubbed to return the test clip
-        patch("immich_memories.cli.generate.fetch_videos", return_value=[clip.asset]),
+        # WHY: fetch_media would call Immich for real assets; stubbed to return the test clip
+        patch("immich_memories.cli.generate.fetch_media", return_value=([clip.asset], [])),
         # WHY: run_pipeline_and_generate is the FFmpeg render entrypoint; captured, not executed
         patch(
             "immich_memories.cli.generate.run_pipeline_and_generate",

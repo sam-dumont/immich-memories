@@ -26,6 +26,7 @@ from immich_memories.store.episode_readings import (
     EpisodeReadingProducer,
     EpisodeReadingStore,
 )
+from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 
 
@@ -105,7 +106,7 @@ def test_scope_changes_selectable_members_without_changing_the_full_moment_card(
         }"""
 
     episode_result = CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(annotation_store()),
         producer=producer,
         annotations=annotations,
         requester=requester,
@@ -197,7 +198,7 @@ def test_card_rolls_up_typed_heads_and_unique_stitching_bursts(tmp_path: Path) -
         annotation_versions=("description:student-v1", "heads:public-v1"),
     )
     episode_result = CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(annotation_store()),
         producer=producer,
         annotations=annotations,
         requester=lambda _prompt: (

@@ -11,16 +11,17 @@ import contextlib
 import logging
 import os
 import stat
-from collections.abc import Iterator
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import Field, PrivateAttr, model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 from immich_memories.config_models import (
     CacheConfig,
+    DatabaseConfig,
     HardwareAccelConfig,
     ImmichConfig,
     has_unresolved_env_reference,
@@ -48,14 +49,9 @@ from immich_memories.config_models_server import WILDCARD_HOST, ServerConfig
 from immich_memories.config_models_soundtrack import ACEStepConfig, AudioConfig, MusicGenConfig
 from immich_memories.config_models_triage import TriageConfig
 from immich_memories.config_presets import PresetName, apply_preset
-from immich_memories.config_tiers import TierSetting, apply_tier, forget_applied
+from immich_memories.config_tiers import TierSetting, apply_tier
 from immich_memories.logging_config import install_secret_redaction
-from immich_memories.scheduling.models import SchedulerConfig
-from immich_memories.security import (
-    CREDENTIAL_FIELD_NAMES,
-    configured_secret_values,
-    write_secret_file,
-)
+from immich_memories.security import configured_secret_values
 
 # Tier 2 sections — grouped under `advanced:` in YAML, flat on Config at runtime.
 _TIER2_SECTIONS = frozenset(
@@ -89,6 +85,12 @@ _WENT_WITH_THE_SCORER = "went with the legacy clip scorer; story-first selection
 # warned about and dropped: section models ignore unknown keys, so without the
 # warning an old setting would silently do nothing after an upgrade.
 _REMOVED_CONFIG_KEYS: dict[str, str] = {
+    "scheduler": "the scheduler command is gone; use `auto`, or a cron job or Kubernetes "
+    "CronJob that runs `generate`",
+    "cache.max_age_days": "nothing expired the cache by age",
+    "title_screens.show_decorative_lines": "no shipped title style draws line accents",
+    "triage.enabled": "editorial.preparation.tier decides when the heads run",
+    "triage.bundle": "the head weights are editorial.preparation.head_bundle",
     "content_analysis": _WENT_WITH_THE_SCORER,
     "audio_content": _WENT_WITH_THE_SCORER,
     "transcription": "transcription " + _WENT_WITH_THE_SCORER + " (the transcribe extra is gone)",
@@ -233,87 +235,64 @@ def _load_yaml_data(path: Path) -> dict:
 
 
 _yaml_source_data: dict = {}
+_database_source_data: dict = {}
 
 
-class _YamlSettingsSource(PydanticBaseSettingsSource):
-    """Pydantic-settings source backed by a YAML dict.
+class _MappingSettingsSource(PydanticBaseSettingsSource):
+    """A pydantic-settings source over an already-loaded nested dict (YAML or the database)."""
 
-    Sits below env vars in the priority chain so that
-    IMMICH_MEMORIES_FOO__BAR=x always overrides foo.bar in config.yaml.
-    """
+    def __init__(self, settings_cls: type[BaseSettings], data: dict) -> None:
+        super().__init__(settings_cls)
+        self._data = data
 
     def get_field_value(self, field, field_name):  # noqa: ANN001
-        val = _yaml_source_data.get(field_name)
+        val = self._data.get(field_name)
         return val, field_name, val is not None
 
     def __call__(self) -> dict:
-        return _yaml_source_data.copy()
+        return self._data.copy()
 
 
-# Environment variables the loader reads for a credential beyond the mechanical
-# IMMICH_MEMORIES_<SECTION>__<FIELD> form (see _apply_env_overrides).
-_CREDENTIAL_ENV_ALIASES: dict[str, tuple[str, ...]] = {
-    "immich.api_key": ("IMMICH_API_KEY",),
-    "llm.api_key": ("OPENAI_API_KEY", "ANTHROPIC_API_KEY"),
-    "musicgen.api_key": ("MUSICGEN_API_KEY",),
-    "ace_step.api_key": ("ACE_STEP_API_KEY",),
-    "auth.password": ("IMMICH_MEMORIES_AUTH_PASSWORD",),
+def _stored_settings(yaml_data: dict) -> dict:
+    """The database source, opened with nothing but env and the file's `database:` block.
+
+    Never through `get_config()`: the store's location is a bootstrap key, so reading the
+    database while the config is still being built must not ask the config where it is.
+    """
+    from immich_memories.settings_store import load_stored_settings, nest_dotted
+
+    database = dict(yaml_data.get("database") or {})
+    for field in ("url", "schema"):
+        if value := _env_value(f"IMMICH_MEMORIES_DATABASE__{field.upper()}"):
+            database[field] = value
+    bootstrap = Config.model_construct(database=DatabaseConfig.model_validate(database))
+    return nest_dotted(load_stored_settings(bootstrap))
+
+
+def _env_value(name: str) -> str | None:
+    """An environment variable read the way pydantic-settings does: case-insensitively."""
+    wanted = name.upper()
+    return next((v for k, v in os.environ.items() if k.upper() == wanted and v), None)
+
+
+def _truthy(raw: str) -> bool:
+    return raw.lower() in ("true", "1", "yes")
+
+
+# Shortcut variables beyond IMMICH_MEMORIES_<SECTION>__<FIELD>, applied after load by
+# `_apply_env_overrides`: runtime key path -> (variable, parser; None ignores the value).
+_ENV_ALIASES: dict[str, tuple[str, Callable[[str], Any]]] = {
+    "immich.url": ("IMMICH_URL", str),
+    "immich.api_key": ("IMMICH_API_KEY", str),
+    "musicgen.enabled": ("MUSICGEN_ENABLED", _truthy),
+    "musicgen.base_url": ("MUSICGEN_BASE_URL", str),
+    "musicgen.api_key": ("MUSICGEN_API_KEY", str),
+    "ace_step.enabled": ("ACE_STEP_ENABLED", _truthy),
+    "ace_step.mode": ("ACE_STEP_MODE", lambda raw: raw if raw in ("lib", "api") else None),
+    "ace_step.api_url": ("ACE_STEP_API_URL", str),
+    "ace_step.api_key": ("ACE_STEP_API_KEY", str),
 }
-
-
-def _feeder_env_vars(path: str) -> tuple[str, ...]:
-    settings_name = "IMMICH_MEMORIES_" + path.upper().replace(".", "__")
-    return (*_CREDENTIAL_ENV_ALIASES.get(path, ()), settings_name)
-
-
-def _credential_sites(data: dict, prefix: str = "") -> Iterator[tuple[str, dict, str]]:
-    """Every credential field in the tree: its dotted path, the dict holding it, its name.
-
-    Nested, because a section can own a section: the caption key lives at
-    `editorial.preparation.caption_api_key`, and a walk one level deep would
-    write it to disk with everything else.
-    """
-    for field, value in data.items():
-        if isinstance(value, dict):
-            yield from _credential_sites(value, f"{prefix}{field}.")
-        elif field in CREDENTIAL_FIELD_NAMES and isinstance(value, str):
-            yield f"{prefix}{field}", data, field
-
-
-def _credential_templates(data: dict) -> dict[str, str]:
-    """Record the `${VAR}` forms written in the file before expansion loses them."""
-    templates: dict[str, str] = {}
-    for path, holder, field in _credential_sites(data):
-        if "$" in holder[field]:
-            templates[path] = holder[field]
-    return templates
-
-
-def _text_to_persist(path: str, value: str, templates: dict[str, str]) -> str | None:
-    """What to write for a credential, or None to write the value verbatim."""
-    # Template first, because a reference whose variable is unset resolves to
-    # nothing for fields that refuse a literal `${VAR}`, and Save must not read
-    # that emptiness as permission to drop the line the user wrote.
-    if template := templates.get(path):
-        return template
-    if not value:
-        return None
-    for name in _feeder_env_vars(path):
-        if os.environ.get(name) == value:
-            return f"${{{name}}}"
-    return None
-
-
-def _keep_env_secrets_out(data: dict, templates: dict[str, str]) -> None:
-    """Replace env-provided credentials with the reference that supplied them.
-
-    A key the user deliberately kept in the environment must not be written to
-    disk by pressing Save -- the file outlives the container that had the env
-    var, and it is the one artifact most likely to be copied or backed up.
-    """
-    for path, holder, field in _credential_sites(data):
-        if replacement := _text_to_persist(path, holder[field], templates):
-            holder[field] = replacement
+_AUTH_SHORTCUT = ("IMMICH_MEMORIES_AUTH_USERNAME", "IMMICH_MEMORIES_AUTH_PASSWORD")
 
 
 class Config(BaseSettings):
@@ -321,10 +300,10 @@ class Config(BaseSettings):
 
     Config tiers (YAML layout; not the product `tier`, which picks nas, gpu or full):
       Tier 1 (top level): tier, immich, defaults, output, audio, title_screens,
-                           cache, upload, trips, photos
+                           cache, database, upload, trips, photos
       Tier 2 (advanced:):  analysis, hardware, llm, musicgen, ace_step,
                            server, auth, automation, notifications, triage, editorial, inference
-      Tier 3 (internal):   scheduler, title_llm
+      Tier 3 (internal):   title_llm
 
     At runtime, ALL sections are flat fields on Config (config.analysis, etc.).
     The tier grouping only affects YAML serialization.
@@ -357,6 +336,7 @@ class Config(BaseSettings):
     output: OutputConfig = Field(default_factory=OutputConfig)
     render: RenderWorkerConfig = Field(default_factory=RenderWorkerConfig)
     cache: CacheConfig = Field(default_factory=CacheConfig)
+    database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     hardware: HardwareAccelConfig = Field(default_factory=HardwareAccelConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
     title_llm: LLMConfig | None = Field(
@@ -368,7 +348,6 @@ class Config(BaseSettings):
     title_screens: TitleScreenConfig = Field(default_factory=TitleScreenConfig)
     upload: UploadConfig = Field(default_factory=UploadConfig)
     photos: PhotoConfig = Field(default_factory=PhotoConfig)
-    scheduler: SchedulerConfig = Field(default_factory=SchedulerConfig)
     trips: TripsConfig = Field(default_factory=TripsConfig)
     network: NetworkConfig = Field(default_factory=NetworkConfig)
     auth: AuthConfig = Field(default_factory=AuthConfig)
@@ -378,12 +357,6 @@ class Config(BaseSettings):
     editorial: EditorialConfig = Field(default_factory=EditorialConfig)
     inference: InferenceConfig = Field(default_factory=InferenceConfig)
 
-    # `${VAR}` forms as written in config.yaml, so Save can put them back
-    # instead of the secrets they expanded to.
-    _credential_templates: dict[str, str] = PrivateAttr(default_factory=dict)
-    # The knobs `tier` set, so Save writes the tier and not what it decided.
-    _tier_applied: dict[str, Any] = PrivateAttr(default_factory=dict)
-
     @model_validator(mode="after")
     def _apply_preset(self) -> Config:
         apply_preset(self)
@@ -391,26 +364,41 @@ class Config(BaseSettings):
 
     @model_validator(mode="after")
     def _apply_tier(self) -> Config:
-        self._tier_applied = apply_tier(self)
+        apply_tier(self)
         return self
 
     @classmethod
-    def from_yaml(cls, path: Path) -> Config:
-        """Load configuration from a YAML file.
+    def from_yaml(cls, path: Path, *, stored: dict[str, Any] | None = None) -> Config:
+        """Load configuration from a YAML file and the settings saved in the database.
 
-        Priority order (highest wins): env vars > YAML file > defaults.
+        Priority order (highest wins): env vars > YAML file > database > defaults.
         This ensures IMMICH_MEMORIES_AUTH__ENABLED=false always overrides
-        auth.enabled: true in config.yaml.
+        auth.enabled: true in config.yaml, and a line in config.yaml always beats
+        what the UI saved.
+
+        Args:
+            path: The config file; a missing file reads as empty.
+            stored: Saved settings as runtime key paths, used instead of reading the
+                database (to check a save before it is written).
         """
-        global _yaml_source_data
+        global _yaml_source_data, _database_source_data
+        # Restored, not cleared, on the way out: reading the stored settings can open a store
+        # whose first-open import loads another config.yaml, and clearing here would leave this
+        # load building from no file at all (#1484).
+        outer = _yaml_source_data, _database_source_data
         _yaml_source_data = _load_yaml_data(path)
         try:
+            if stored is None:
+                _database_source_data = _stored_settings(_yaml_source_data)
+            else:
+                from immich_memories.settings_store import nest_dotted
+
+                _database_source_data = nest_dotted(stored)
             config = cls()
-            config._credential_templates = _credential_templates(_yaml_source_data)
             _arm_log_redaction(config)
             return config
         finally:
-            _yaml_source_data = {}
+            _yaml_source_data, _database_source_data = outer
 
     @classmethod
     def settings_customise_sources(
@@ -421,34 +409,17 @@ class Config(BaseSettings):
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
-        yaml_source = _YamlSettingsSource(settings_cls)
+        yaml_source = _MappingSettingsSource(settings_cls, _yaml_source_data)
+        database_source = _MappingSettingsSource(settings_cls, _database_source_data)
         # dotenv_settings intentionally excluded — YAML source replaces it
-        return (init_settings, env_settings, yaml_source, dotenv_settings, file_secret_settings)
-
-    def save_yaml(self, path: Path) -> None:
-        """Save configuration to a YAML file (tiered format).
-
-        Every value is written, so what you see in the file is what runs -- with
-        one exception. `server.host` is left out unless the operator set it:
-        writing the wildcard default would make the next load read it as a
-        deliberate LAN bind and silently retire the localhost default (#507).
-        """
-        path.parent.mkdir(parents=True, exist_ok=True)
-        data = self.model_dump()
-        if "host" not in self.server.model_fields_set:
-            data["server"].pop("host", None)
-        _keep_env_secrets_out(data, self._credential_templates)
-        forget_applied(data, self._tier_applied)
-
-        # Group tier 2 sections under advanced:
-        advanced: dict = {}
-        for key in _TIER2_SECTIONS:
-            if key in data:
-                advanced[key] = data.pop(key)
-        if advanced:
-            data["advanced"] = advanced
-
-        write_secret_file(path, yaml.dump(data, default_flow_style=False, sort_keys=False))
+        return (
+            init_settings,
+            env_settings,
+            yaml_source,
+            database_source,
+            dotenv_settings,
+            file_secret_settings,
+        )
 
     @classmethod
     def get_default_path(cls) -> Path:
@@ -492,46 +463,54 @@ def _llm_key_from_env(llm: LLMConfig) -> str | None:
     """
     if llm.api_key and not has_unresolved_env_reference(llm.api_key):
         return None
-    messages_api = llm.provider in ("anthropic", "zai")
-    name = "ANTHROPIC_API_KEY" if messages_api else "OPENAI_API_KEY"
-    return os.environ.get(name) or None
+    return os.environ.get(_llm_key_variable(llm)) or None
+
+
+def _llm_key_variable(llm: LLMConfig) -> str:
+    return "ANTHROPIC_API_KEY" if llm.provider in ("anthropic", "zai") else "OPENAI_API_KEY"
 
 
 def _apply_env_overrides(config: Config) -> None:
-    """Apply environment variable overrides to a Config instance."""
-    if url := os.environ.get("IMMICH_URL"):
-        config.immich.url = url
-    if api_key := os.environ.get("IMMICH_API_KEY"):
-        config.immich.api_key = api_key
+    """Apply the shortcut environment variables (`_ENV_ALIASES`, LLM key, auth pair)."""
+    for path, (name, parse) in _ENV_ALIASES.items():
+        if (raw := os.environ.get(name)) and (value := parse(raw)) is not None:
+            section, field = path.split(".")
+            setattr(getattr(config, section), field, value)
     if llm_key := _llm_key_from_env(config.llm):
         config.llm.api_key = llm_key
 
-    # MusicGen env var overrides (also supported via IMMICH_MEMORIES_MUSICGEN__*)
-    if musicgen_enabled := os.environ.get("MUSICGEN_ENABLED"):
-        config.musicgen.enabled = musicgen_enabled.lower() in ("true", "1", "yes")
-    if musicgen_url := os.environ.get("MUSICGEN_BASE_URL"):
-        config.musicgen.base_url = musicgen_url
-    if musicgen_key := os.environ.get("MUSICGEN_API_KEY"):
-        config.musicgen.api_key = musicgen_key
-
-    # ACE-Step env var overrides (also supported via IMMICH_MEMORIES_ACE_STEP__*)
-    if ace_step_enabled := os.environ.get("ACE_STEP_ENABLED"):
-        config.ace_step.enabled = ace_step_enabled.lower() in ("true", "1", "yes")
-    if (ace_step_mode := os.environ.get("ACE_STEP_MODE")) and ace_step_mode in ("lib", "api"):
-        config.ace_step.mode = ace_step_mode  # type: ignore[assignment]
-    if ace_step_url := os.environ.get("ACE_STEP_API_URL"):
-        config.ace_step.api_url = ace_step_url
-    if ace_step_key := os.environ.get("ACE_STEP_API_KEY"):
-        config.ace_step.api_key = ace_step_key
-
     # Auth shortcut: set both USERNAME + PASSWORD to auto-enable basic auth
-    if (auth_user := os.environ.get("IMMICH_MEMORIES_AUTH_USERNAME")) and (
-        auth_pass := os.environ.get("IMMICH_MEMORIES_AUTH_PASSWORD")
-    ):
+    auth_user, auth_pass = (os.environ.get(name) for name in _AUTH_SHORTCUT)
+    if auth_user and auth_pass:
         config.auth.enabled = True
         config.auth.provider = "basic"
         config.auth.username = auth_user
         config.auth.password = auth_pass
+
+
+def env_alias_overrides(config: Config) -> dict[str, str]:
+    """Runtime key paths a shortcut environment variable set, and the variable's name.
+
+    The mechanical `IMMICH_MEMORIES_<SECTION>__<FIELD>` names are not listed here; these
+    are the shorter names `_apply_env_overrides` reads after the config is built.
+    """
+    applied = {
+        path: name
+        for path, (name, parse) in _ENV_ALIASES.items()
+        if (raw := os.environ.get(name)) and parse(raw) is not None
+    }
+    name = _llm_key_variable(config.llm)
+    if os.environ.get(name) and os.environ[name] == config.llm.api_key:
+        applied["llm.api_key"] = name
+    user_var, password_var = _AUTH_SHORTCUT
+    if os.environ.get(user_var) and os.environ.get(password_var):
+        applied |= {
+            "auth.enabled": user_var,
+            "auth.provider": user_var,
+            "auth.username": user_var,
+            "auth.password": password_var,
+        }
+    return applied
 
 
 def get_config(reload: bool = False) -> Config:

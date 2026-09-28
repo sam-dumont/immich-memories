@@ -67,7 +67,8 @@ def scope_options(command: FC) -> FC:
             type=str,
             default=None,
             help='Grouped people condition, e.g. ("Person A" OR "Person B") AND "Person C". '
-            "Use exact library names; each asset must match.",
+            "Use exact library names; read per episode: a person recognised once "
+            "in an episode counts in all of its pictures.",
         ),
         click.option(
             "--person-match",
@@ -75,8 +76,8 @@ def scope_options(command: FC) -> FC:
             default="and",
             show_default=True,
             help=(
-                "With several --person values, require everyone in each asset "
-                "(and) or accept any named person (or)"
+                "With several --person values, require everyone recognised somewhere "
+                "in the same episode (and) or accept any named person (or)"
             ),
         ),
         click.option(

@@ -402,17 +402,6 @@ class TestTitleScreenGeneratorStyleInit:
                 )
                 assert gen.style.name == "custom_test"
 
-    def test_decorative_lines_disabled(self):
-        from immich_memories.titles.generator import TitleScreenConfig, TitleScreenGenerator
-        from immich_memories.titles.styles import TitleStyle
-
-        style = TitleStyle(name="test", use_line_accent=True)
-        with tempfile.TemporaryDirectory() as tmpdir:
-            config = TitleScreenConfig(show_decorative_lines=False)
-            with patch("immich_memories.titles.generator.RenderingService"):
-                gen = TitleScreenGenerator(config=config, style=style, output_dir=Path(tmpdir))
-                assert not gen.style.use_line_accent
-
 
 class TestGenerateTitleScreenWithOverride:
     """Test title generation with LLM-generated title override."""

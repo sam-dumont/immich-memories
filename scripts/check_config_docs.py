@@ -84,7 +84,9 @@ def schema_sections() -> dict[str, SectionSchema]:
             # A plain top-level switch (`preset`) still has to appear on the page.
             sections[name] = SectionSchema(name, frozenset())
         else:
-            sections[name] = SectionSchema(model.__name__, frozenset(model.model_fields))
+            # YAML spells a field by its alias when it has one (`database.schema`).
+            keys = frozenset(f.alias or key for key, f in model.model_fields.items())
+            sections[name] = SectionSchema(model.__name__, keys)
     return sections
 
 

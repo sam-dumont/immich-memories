@@ -20,6 +20,7 @@ overlays/inference-cuda/ the same service on an NVIDIA card (patch + `-cuda` ima
 overlays/inference-lan/  a second Service, type LoadBalancer, for callers outside the cluster
 overlays/captioner/    llama.cpp serving the pinned SmolVLM2-500M under the alias `tier: full` wants
 overlays/captioner-cuda/ the same server with its layers on an NVIDIA card
+overlays/postgres/     optional: point the store at PostgreSQL instead of the default SQLite file
 ```
 
 ## Prerequisites
@@ -94,11 +95,18 @@ kubectl logs -n immich-memories -f job/immich-memories-generate
 kubectl exec -n immich-memories deployment/immich-memories -- ls -la /app/output/
 ```
 
-`--duration` is seconds (`600` = 10 minutes). The jobs mount the same three PVCs as the
-Deployment, and carry the same `fetch-models` init container; with `ReadWriteOnce` storage the job
-pod has to land on the same node, so use
-`ReadWriteMany` storage or scale the Deployment to 0 first. If you only want scheduled memories,
-`IMMICH_MEMORIES_AUTOMATION__ENABLED=true` on the Deployment does that in-process without a job.
+`--duration` is seconds (`600` = 10 minutes). The store defaults to a SQLite file on the `data`
+PVC, opened by one writer at a time; a second pod writing that file from another node over
+`ReadWriteMany` corrupts it (WAL mode needs shared memory a network filesystem does not give two
+hosts). So the two CronJobs never mount the PVCs at all: they `curl` the Deployment's
+`POST /api/trigger` route, which runs whatever decision `auto run` would have made — set
+`IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in `base/secret.yaml` first. If the built-in decision is
+all you want, `IMMICH_MEMORIES_AUTOMATION__ENABLED=true` on the Deployment does the same job
+in-process, with no CronJob needed. The one-off `generate` Job still mounts the PVCs directly (the
+trigger route takes no `--year`/`--person`/... parameters), so run
+`kubectl exec deploy/immich-memories -- immich-memories generate ...` against the running
+Deployment instead when you can; keep the Job itself only for a batch cluster where the Deployment
+stays scaled to 0 between runs.
 
 ## GPU
 
@@ -182,6 +190,24 @@ to Immich. Point the app at `http://captioner:8092/v1` in the same namespace.
 The recipe, the flags that carry the contract and the measured per-picture cost are on the
 [caption server page](https://sam-dumont.github.io/immich-video-memory-generator/docs/better/captions).
 
+## PostgreSQL
+
+`overlays/postgres` is not referenced by `base/kustomization.yaml`; the base keeps running on the
+default SQLite file with no change. It patches `IMMICH_MEMORIES_DATABASE_URL` (and
+`IMMICH_MEMORIES_DATABASE_SCHEMA`) onto the Deployment from a second Secret, so the store opens a
+PostgreSQL database instead — a separate service, a separate database on your Immich instance, or a
+dedicated schema inside Immich's own database. It does not run PostgreSQL for you.
+
+```bash
+cd deploy/kubernetes/overlays/postgres
+cp database-secret.yaml.example database-secret.yaml
+vim database-secret.yaml   # IMMICH_MEMORIES_DATABASE_URL
+kubectl apply -k .
+```
+
+The four modes, and the exact SQL for the dedicated-schema one, are on
+[Database and the store](https://sam-dumont.github.io/immich-video-memory-generator/docs/run/database).
+
 ## Ingress
 
 Not shipped by default because auth is off. Enable auth first (basic auth keys in the Secret, or
@@ -203,6 +229,5 @@ kubectl apply -f base/sealed-secret.yaml
 detector verdict and reading the editor has banked. Lose it and the next cut re-reads the library.
 Back up the PVC.
 
-`immich-memories cache backup|export|import` are not the tool for it. Those three move the retired
-per-clip scorer's table out of `cache.db`, which nothing writes any more, and leave the banks
-behind.
+`immich-memories store backup` copies the store (decisions, model answers, run history) to one
+file; `store restore` puts it back.

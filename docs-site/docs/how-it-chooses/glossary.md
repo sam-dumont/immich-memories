@@ -30,12 +30,12 @@ flowchart LR
 | **Producer** | anything that writes a fact about a picture: heads, detectors, caption server, pixel and motion readers | `editorial_preparation*.py` |
 | **Heads** | eight small classifiers over one pinned DINOv2 encoder: location, people, children, activity, venue, frame_kind, screen, uncovered_person | `editorial_preparation_heads.py` |
 | **Detectors** | `nsfw_marqo` (exposure, read on up to eight frames of a video) and `doc_docling` (documents) | `editorial_preparation_detectors.py` |
-| **Caption** | one description per picture and one motion line per video, written at ingest by SmolVLM2 500M on the `full` tier | `editorial_description_contract.py` |
-| **Tier** | `no_captions` (heads and detectors, the default with no model), `full` (plus captions), `metadata_only` (no heads) | `advanced.editorial.preparation.tier` |
+| **Caption** | a banked description or motion line, acquired for selected shots and candidates by SmolVLM2 500M or an explicitly approved LLM provider | `editorial_description_contract.py` |
+| **Tier** | `nas` (CPU heads and detectors), `gpu` (adds captions and Laya), `full` (adds prose refinement); `auto` resolves from GPU inference and LLM configuration | `tier`, `config_tiers.py` |
 | **Scene print** | the pooled DINOv2 vector of a preview; two prints at a cosine of 0.65 or more are the same scene | `editorial_scene_prints.py` |
 | **Residual** | the motion left in a clip once the camera's own movement is removed; 1.5 or more plays as motion | `RESIDUAL_MIN`, `editorial_motion_facts.py` |
-| **Bank** | an answer stored under its exact inputs and producer version, so the next run asks nothing; no row means nobody asked | `annotations.sqlite`, `structure-banks/` |
-| **Pictures are read once** | a model looks at a picture only at ingest; no film-time step sends a picture to any model, on any tier | `tests/test_editorial_demanded_previews.py` |
+| **Bank** | an answer stored under its exact inputs and producer version, so the next run asks nothing; no row means nobody asked | the store |
+| **Banked picture evidence** | matching facts and captions are reused; missing evidence is acquired for selected shots and actual candidates; the prose reader receives text only | `editorial_runtime_evidence.py` |
 
 ## Building the cut
 
@@ -52,7 +52,7 @@ flowchart LR
 | **Look-alike** | a story's next shot must not repeat one it holds (hash within 10 bits) | `editorial_story_lookalike.py` |
 | **Depth** | a story with slots left spends them inside moments it already shows, up to 3 frames each | `editorial_story_depth.py` |
 | **Family seat** | one shot for a close family member the cut left out | `editorial_family_seat.py` |
-| **Close family** | partner or spouse, child, parent, as confirmed in `people.yaml`; in a person film, that person's too | `people/relationships.py` |
+| **Close family** | partner or spouse, child, parent, as confirmed in the people registry; in a person film, that person's too | `people/relationships.py` |
 | **Owner-required** | a picture you ticked; added after the draft, kept through the trim and the duplicate review | `editorial_owner_required.py` |
 
 ## The gate and the checks
@@ -66,7 +66,7 @@ flowchart LR
 | **Exposure chain** | a capture run at least half flagged, with three or more flagged captures, held whole | `editorial_exposure_chains.py` |
 | **Laya** | an optional local model answering the audience check's activity question from the caption | `editorial_laya_reader.py` |
 | **Review list** | shots with an exposure probability between 0.2 and 0.5, listed for you; changes nothing | `review-before-sharing.private.json` |
-| **Filler** | a shot with no indicator that the `frame_kind` head reads as showing nothing; leaves a no-model film | `editorial_unvouched_filler.py` |
+| **Filler** | a shot with no indicator that the `frame_kind` head reads as showing nothing; leaves every rules-drafted film, polished or not | `editorial_unvouched_filler.py` |
 | **Finished-cut check** | the cut read once against every promise; warns, changes nothing | `editorial_cut_invariants.py` |
 
 ## The model tier

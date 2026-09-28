@@ -69,3 +69,17 @@ N_('The server URL changed: enter the API key for the new server.');
 N_('Please enter both URL and API key');
 // The music upload's refusals (web/job_routes.py).
 N_('That file is too large for a soundtrack');
+
+// The preparation passes report under their engine names; readers get what each pass looks at.
+const PREPARATION_PASSES: Record<string, string> = {
+  previews: N_('Fetching picture previews'),
+  pixels: N_('Measuring the pictures'),
+  faces: N_('Finding faces'),
+  public_heads: N_('Reading what each picture shows'),
+  detectors: N_('Checking pictures for the family audience'),
+  motion: N_('Measuring motion in the videos'),
+  captions: N_('Describing the pictures'),
+  remote_facts: N_('Reading picture facts'),
+};
+
+export const stageLabel = (label: string) => (PREPARATION_PASSES[label] ? t(PREPARATION_PASSES[label]) : label);

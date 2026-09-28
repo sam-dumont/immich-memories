@@ -9,6 +9,7 @@ import pytest
 from immich_memories.analysis.editorial_planner import EditorialSelection
 from immich_memories.api.models import AssetType
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_clips import _validated_render_directives
 from immich_memories.processing.editorial_live_render import validate_editorial_live_clip
@@ -24,6 +25,10 @@ from tests.conftest import make_clip
 
 @pytest.fixture(autouse=True)
 def no_external_work(monkeypatch):
+    # The store the review edits are banked in is opened first: opening it checks, once, that
+    # its file is not on a network mount, which is local bookkeeping and not a service.
+    open_store()
+
     def forbidden(*_args, **_kwargs):
         pytest.fail("owner review projection must not call models, media tools or services")
 
@@ -218,14 +223,16 @@ def test_owner_edit_cannot_bypass_original_binding_or_live_validation(tmp_path):
         project(params, segments={"chosen-2": (1, 2)})
 
 
-def test_excess_hold_or_title_budget_is_rejected_without_shortening_other_clips(tmp_path):
+def test_a_hold_past_the_titles_budget_makes_the_film_longer_and_shortens_nothing(tmp_path):
     params = original_params(tmp_path)
     before = deepcopy(params)
-    with pytest.raises(ValueError, match="current titles leave"):
-        project(params, segments={**params.clip_segments, "chosen-0": (0, 60)})
-    tighter = replace(timing_policy_for_params(params), target_seconds=20)
-    with pytest.raises(ValueError, match="current titles leave"):
-        project(params, policy=tighter)
+
+    longer = project(params, segments={**params.clip_segments, "chosen-0": (0, 60)})
+
+    assert longer.segments["chosen-0"] == (0, 60)
+    assert all(longer.segments[key] == (0, 4) for key in ("chosen-1", "chosen-2", "chosen-3"))
+    assert longer.timeline.content_budget >= 60 + 3 * 4
+    assert longer.binding["policy"]["target_seconds"] > params.target_duration_seconds
     assert params == before
 
 

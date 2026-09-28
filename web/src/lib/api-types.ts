@@ -124,26 +124,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Active Config
-         * @description The configuration this server runs with, env overrides applied, secrets masked.
-         */
-        get: operations["active_config_api_v1_config_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/connection": {
         parameters: {
             query?: never;
@@ -158,7 +138,10 @@ export interface paths {
         get: operations["read_connection_api_v1_connection_get"];
         /**
          * Save Connection
-         * @description Keep the server and key in the config file the process reads.
+         * @description Save the server and key to the database, only the ones that changed.
+         *
+         *     config.yaml and the environment are never written: a value either of them sets is refused
+         *     with the name of what sets it, and a key needs IMMICH_MEMORIES_SECRET_KEY to be stored.
          */
         put: operations["save_connection_api_v1_connection_put"];
         post?: never;
@@ -237,7 +220,8 @@ export interface paths {
         };
         /**
          * Holidays
-         * @description The holidays the pipeline resolves, named in the page's language; any MM-DD works too.
+         * @description The holidays the pipeline resolves: the known ones, named in the page's language, then
+         *     the home country's other public holidays by their own name. Any MM-DD works too.
          */
         get: operations["holidays_api_v1_holidays_get"];
         put?: never;
@@ -417,7 +401,9 @@ export interface paths {
         };
         /**
          * People
-         * @description Everyone Immich has a name for, alphabetically: the names `--person` takes.
+         * @description Everyone Immich has a name for, the names `--person` takes: most pictured first.
+         *
+         *     The counts are the last people scan's; anyone it has not counted follows alphabetically.
          */
         get: operations["people_api_v1_people_get"];
         put?: never;
@@ -477,7 +463,7 @@ export interface paths {
         };
         /**
          * Roster
-         * @description Everyone in the people file, inner circle first, with what needs curating.
+         * @description Everyone in the people registry, inner circle first, with what needs curating.
          */
         get: operations["roster_api_v1_roster_get"];
         put?: never;
@@ -543,7 +529,7 @@ export interface paths {
         put?: never;
         /**
          * Relate
-         * @description Record one relationship; the file keeps its reciprocal.
+         * @description Record one relationship; the registry keeps its reciprocal.
          */
         post: operations["relate_api_v1_roster__person_id__relationships_post"];
         /**
@@ -696,26 +682,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/runs/{run_id}/recut": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Recut
-         * @description Cut the same brief again with the owner's ticks, as `generate --include/--exclude` does.
-         */
-        post: operations["recut_api_v1_runs__run_id__recut_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/runs/{run_id}/renders": {
         parameters: {
             query?: never;
@@ -820,6 +786,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Settings
+         * @description Every setting with its live value and its source, re-read from disk; secrets masked.
+         */
+        get: operations["read_settings_api_v1_settings_get"];
+        put?: never;
+        /**
+         * Save Settings Form
+         * @description Save the changed values to the database; config.yaml and the environment are never written.
+         *
+         *     422 names the setting refused and why; nothing is saved then.
+         */
+        post: operations["save_settings_form_api_v1_settings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/special-days": {
         parameters: {
             query?: never;
@@ -853,7 +845,10 @@ export interface paths {
         };
         /**
          * Suggestions
-         * @description Up to twenty candidates, and why the others were set aside.
+         * @description Up to twenty candidates and why the others were set aside, from the last discovery.
+         *
+         *     Discovery reads the library and takes a while; the last list comes back at once and a fresh
+         *     one is worked out behind it when it is a day old or `refresh` asks.
          */
         get: operations["suggestions_api_v1_suggestions_get"];
         put?: never;
@@ -894,6 +889,9 @@ export interface paths {
         /**
          * Trips
          * @description The trips that overlap a year, as `generate` lists them before it cuts one.
+         *
+         *     Discovery reads the year's GPS and takes a while; the last answer for the year comes back at
+         *     once, and a fresh one is worked out behind it when it is a day old or `refresh` asks.
          */
         get: operations["trips_api_v1_trips_get"];
         put?: never;
@@ -908,17 +906,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** ActiveConfig */
-        ActiveConfig: {
-            /** Path */
-            path: string;
-            /** Preset */
-            preset: string | null;
-            /** Sections */
-            sections: {
-                [key: string]: unknown;
-            };
-        };
         /** AlbumChoice */
         AlbumChoice: {
             /** Asset Count */
@@ -1204,6 +1191,11 @@ export interface components {
             recent_asset_ids: string[];
             /** Remaining Seconds */
             remaining_seconds?: number | null;
+            /**
+             * Stage Name
+             * @default
+             */
+            stage_name: string;
             /** Stage Remaining Seconds */
             stage_remaining_seconds?: number | null;
             /** Total */
@@ -1312,6 +1304,8 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Pictures */
+            pictures?: number | null;
         };
         /** NewPerson */
         NewPerson: {
@@ -1369,24 +1363,13 @@ export interface components {
             kind: "photo" | "video" | "live";
             /** Reachable */
             reachable: boolean;
+            /**
+             * Same Episode
+             * @default false
+             */
+            same_episode: boolean;
             /** Taken */
             taken: string;
-        };
-        /**
-         * Recut
-         * @description The pool's ticks: pictures the next cut must keep, and pictures it must leave out.
-         */
-        Recut: {
-            /**
-             * Exclude
-             * @default []
-             */
-            exclude: string[];
-            /**
-             * Include
-             * @default []
-             */
-            include: string[];
         };
         /** Relationship */
         Relationship: {
@@ -1462,6 +1445,11 @@ export interface components {
         };
         /** Revision */
         Revision: {
+            /**
+             * Added
+             * @default []
+             */
+            added: string[];
             /** Content Seconds */
             content_seconds: number;
             /** Created At */
@@ -1493,9 +1481,14 @@ export interface components {
         };
         /**
          * RevisionEdits
-         * @description What the owner changed; every id must be in the cut, or a recorded sibling for a swap.
+         * @description What the owner changed: removals and swaps name the cut's shots, additions its pool.
          */
         RevisionEdits: {
+            /**
+             * Added
+             * @default []
+             */
+            added: string[];
             /**
              * Removed
              * @default []
@@ -1699,6 +1692,56 @@ export interface components {
             /** Username */
             username: string | null;
         };
+        /**
+         * SettingRow
+         * @description One setting as the page shows it: its value, where that value comes from, and whether
+         *     this page may change it. A secret's value is masked (`***`, or empty when none is stored).
+         */
+        SettingRow: {
+            /** Editable */
+            editable: boolean;
+            /** Key */
+            key: string;
+            /** Override */
+            override: string | null;
+            /** Secret */
+            secret: boolean;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "env" | "file" | "database" | "default";
+            /** Unreadable */
+            unreadable: boolean;
+            /** Value */
+            value: unknown;
+        };
+        /**
+         * SettingsForm
+         * @description The edited values, keyed by runtime path (`llm.model`); lists and mappings as JSON text.
+         */
+        SettingsForm: {
+            /** Values */
+            values: {
+                [key: string]: unknown;
+            };
+        };
+        /** SettingsSection */
+        SettingsSection: {
+            /** Name */
+            name: string;
+            /** Settings */
+            settings: components["schemas"]["SettingRow"][];
+        };
+        /** SettingsView */
+        SettingsView: {
+            /** Can Store Secrets */
+            can_store_secrets: boolean;
+            /** Config Path */
+            config_path: string;
+            /** Sections */
+            sections: components["schemas"]["SettingsSection"][];
+        };
         /** ShownCommand */
         ShownCommand: {
             /** Command */
@@ -1799,8 +1842,15 @@ export interface components {
         Suggestions: {
             /** Candidates */
             candidates: components["schemas"]["Suggestion"][];
+            /** Computed At */
+            computed_at?: string | null;
             /** Error */
             error: string | null;
+            /**
+             * Refreshing
+             * @default false
+             */
+            refreshing: boolean;
             /** Skipped */
             skipped: components["schemas"]["Skipped"][];
         };
@@ -1824,6 +1874,17 @@ export interface components {
              * Format: date
              */
             start: string;
+        };
+        /** Trips */
+        Trips: {
+            /** Computed At */
+            computed_at: string | null;
+            /** Error */
+            error: string | null;
+            /** Refreshing */
+            refreshing: boolean;
+            /** Trips */
+            trips: components["schemas"]["TripChoice"][] | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -2007,26 +2068,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    active_config_api_v1_config_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ActiveConfig"];
                 };
             };
         };
@@ -2955,48 +2996,6 @@ export interface operations {
             };
         };
     };
-    recut_api_v1_runs__run_id__recut_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Recut"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["JobView"];
-                };
-            };
-            /** @description Conflict */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     start_render_api_v1_runs__run_id__renders_post: {
         parameters: {
             query?: never;
@@ -3043,7 +3042,6 @@ export interface operations {
         parameters: {
             query?: {
                 include_flagged_captions?: boolean;
-                reload?: boolean;
             };
             header?: never;
             path: {
@@ -3190,6 +3188,57 @@ export interface operations {
             };
         };
     };
+    read_settings_api_v1_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsView"];
+                };
+            };
+        };
+    };
+    save_settings_form_api_v1_settings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsForm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsView"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     special_days_api_v1_special_days_get: {
         parameters: {
             query?: never;
@@ -3212,7 +3261,9 @@ export interface operations {
     };
     suggestions_api_v1_suggestions_get: {
         parameters: {
-            query?: never;
+            query?: {
+                refresh?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3226,6 +3277,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Suggestions"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -3275,6 +3335,7 @@ export interface operations {
             query: {
                 year: number;
                 person?: string[] | null;
+                refresh?: boolean;
             };
             header?: never;
             path?: never;
@@ -3288,7 +3349,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TripChoice"][];
+                    "application/json": components["schemas"]["Trips"];
                 };
             };
             /** @description Validation Error */

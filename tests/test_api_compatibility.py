@@ -202,7 +202,9 @@ async def test_auto_version_resolution_logs_server_policy_and_result(
         await client.get_api_version()
 
     expected_server = "2.9.1" if expected is ResolvedApiVersion.V2 else "3.1.0"
-    assert caplog.messages == [
+    # Only this module's lines: an earlier CLI test in the same worker can leave the root
+    # logger at INFO, and then httpx's request line is captured too.
+    assert [r.getMessage() for r in caplog.records if r.name == "immich_memories.api.immich"] == [
         f"Immich API compatibility: server={expected_server} mode=auto resolved={expected.value}"
     ]
 

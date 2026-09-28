@@ -41,6 +41,7 @@ from immich_memories.analysis.text_episode_reader import (
     TextEpisodeReadResult,
 )
 from immich_memories.operations.cut_progress import StageUpdate
+from immich_memories.tracking.timed import timed
 
 if TYPE_CHECKING:
     from immich_memories.analysis.smart_pipeline import ClipWithSegment
@@ -110,6 +111,7 @@ class TextEditorialPlanner:
         prepared = self.prepare_source(trace=trace)
         return self.plan_prepared(candidates, prepared=prepared, trace=trace)
 
+    @timed("selection.source")
     def prepare_source(
         self,
         *,
@@ -232,6 +234,7 @@ class TextEditorialPlanner:
             cards=build_moment_cards(moment_projections, episodes=episodes),
         )
 
+    @timed("selection.edit")
     def _scoped_plan(self, workprint: TextEditorialWorkprint, *, trace: Trace) -> EditorialPlan:
         plan = self._backend.edit(workprint, trace=trace)
         if not isinstance(plan, EditorialPlan):

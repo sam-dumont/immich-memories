@@ -5,6 +5,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+import sqlalchemy as sa
 
 from immich_memories.analysis.duplicate_hashing import compute_thumbnail_hash
 from immich_memories.analysis.editorial_preparation import PreparationResult
@@ -18,11 +19,12 @@ from immich_memories.analysis.editorial_structure_contract import StructurePlann
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.analysis.smart_pipeline import PipelineConfig, SmartPipeline
 from immich_memories.config_loader import Config
+from tests.annotation_rows import annotation_store
 from tests.editorial_story_fixtures import ControlledStoryJudge
 from tests.no_pictures import refuse_pictures
 from tests.test_editorial_duration_planner_integration import semantic_plan
 from tests.test_editorial_rule_reader import _distinct_preview
-from tests.test_editorial_runtime import _create_annotation_store, _window
+from tests.test_editorial_runtime import _seed_descriptions, _window
 from tests.test_editorial_source_route import photo
 
 
@@ -44,19 +46,16 @@ def setup_runtime(
     # The NAS draft needs distinct depicted moments; missing hashes used to let the
     # scripted model invent distinctions between identical fixture descriptions.
     hashes = {source.id: compute_thumbnail_hash(_distinct_preview(source.id)) for source in sources}
-    store = tmp_path / "annotations.sqlite"
-    _create_annotation_store(
-        store,
+    _seed_descriptions(
         {}
         if missing_store
-        else {a.id: "A clothed person carries furniture during a move." for a in sources},
+        else {a.id: "A clothed person carries furniture during a move." for a in sources}
     )
     config = Config(
         tier="full",
         llm={"model": "text-model", "base_url": "http://localhost:9999/v1"},
         editorial={
             "enabled": True,
-            "annotation_database": str(store),
             "description_model": "student-v1",
             # Disabling polish must not switch back to reading the whole source pool.
             "thin_model_layer": False,
@@ -227,10 +226,8 @@ def test_unavailable_canonical_evidence_does_not_trigger_legacy_selection(tmp_pa
     sources, _config, build, calls, _captures, _images, _warm = setup_runtime(tmp_path, monkeypatch)
     planner = build()
     # A missing required table is a real unavailable native fact snapshot.
-    import sqlite3
-
-    with sqlite3.connect(tmp_path / "annotations.sqlite") as connection:
-        connection.execute("drop table descriptions")
+    with annotation_store().begin() as connection:
+        connection.execute(sa.text("DROP TABLE descriptions"))
     with pytest.raises(
         EditorialInputsRequired, match="unreadable annotation lines.*fact store unavailable"
     ):

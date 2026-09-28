@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -23,13 +25,44 @@ _BY_WEIGHT = [
     if any(picture.story_key == story.key for picture in CARRIERS)
 ]
 
-# The Boolean override, and the fixture pictures holding both named faces.
+
+def _episodes_of_the_fixture() -> list[list]:
+    """The fixture's episodes, cut by hand at every gap over 90 minutes.
+
+    Written out here rather than borrowed from `person_presence`, so the cut's pool is
+    checked against the rule and not against the code it tests. The fixture has no two
+    places inside one 90-minute run, so time alone cuts the same episodes.
+    """
+    episodes: list[list] = []
+    last = None
+    for picture in sorted(LIBRARY, key=lambda item: (item.taken_at, item.asset_id)):
+        when = datetime.fromisoformat(picture.taken_at.replace("Z", "+00:00"))
+        if last is None or when - last > timedelta(minutes=90):
+            episodes.append([])
+        episodes[-1].append(picture)
+        last = when
+    return episodes
+
+
+def _present(holds) -> set[str]:
+    """Every picture of an episode whose recognised names satisfy ``holds``."""
+    return {
+        picture.asset_id
+        for episode in _episodes_of_the_fixture()
+        if holds({name for picture in episode for name in picture.people})
+        for picture in episode
+    }
+
+
+# The Boolean override: both named people recognised somewhere in the same episode.
 _CONDITION = '"Robin" AND "Kit"'
-_CONDITION_ASSETS = {
+_CONDITION_ASSETS = _present(lambda names: {"Robin", "Kit"} <= names)
+# The same two names read the plain way: any one of them is enough.
+_EITHER_ASSETS = _present(lambda names: bool({"Robin", "Kit"} & names))
+# The frames holding both faces themselves: the old, narrower rule.
+_SAME_FRAME_ASSETS = {
     picture.asset_id for picture in LIBRARY if {"Robin", "Kit"} <= set(picture.people)
 }
-# The same two names read the plain way: any one of them is enough.
-_EITHER_ASSETS = {picture.asset_id for picture in LIBRARY if {"Robin", "Kit"} & set(picture.people)}
 
 
 @pytest.fixture(autouse=True)
@@ -56,7 +89,7 @@ def _brief_for_june(page: Page, launch_app_url: str) -> None:
     page.goto(f"{launch_app_url}/app/create", wait_until="domcontentloaded", timeout=30_000)
     page.get_by_text("Monthly Highlights", exact=True).click()
     page.get_by_label("Year", exact=True).fill("2024")
-    page.get_by_label("Month", exact=True).fill("6")
+    page.get_by_label("Month", exact=True).select_option("6")
 
 
 def _brief_for_trips(page: Page, launch_app_url: str, year: int) -> None:
@@ -84,7 +117,11 @@ def test_the_brief_offers_every_memory_type_generate_takes(page: Page, launch_ap
     assert sorted(offered) == sorted([*choices, "custom"])
 
 
-def test_the_trip_picker_finds_the_lake_week_and_cuts_it(page: Page, launch_app_url: str) -> None:
+def test_the_trip_picker_finds_the_lake_week_and_cuts_it(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    # Another test may have left a swapped library's trips in the server's cache.
+    shutil.rmtree(launch_workspace.cache_dir / "web-answers", ignore_errors=True)
     _brief_for_trips(page, launch_app_url, 2024)
     cut = page.get_by_role("button", name="Cut", exact=True)
     # Without a trip, generate only lists the year's trips: the form will not send that.
@@ -107,7 +144,7 @@ def test_the_trip_picker_finds_the_lake_week_and_cuts_it(page: Page, launch_app_
 
 @pytest.mark.parametrize("middle_type", ["IMAGE", "VIDEO"])
 def test_the_trip_picker_keeps_new_year_trips_whole_and_drops_buffer_only_trips(
-    page: Page, launch_app_url: str, monkeypatch, middle_type: str
+    page: Page, launch_app_url: str, monkeypatch, middle_type: str, launch_workspace
 ) -> None:
     from tests.e2e import fake_immich
 
@@ -137,6 +174,8 @@ def test_the_trip_picker_keeps_new_year_trips_whole_and_drops_buffer_only_trips(
     )
     # WHY: replace the HTTP fixture's library, keeping the real client and GPS detector.
     monkeypatch.setattr(fake_immich, "TIMELINE_ASSETS", (*assets, home_video))
+    # The server keeps each year's trips; this library is new, so its answer must be too.
+    shutil.rmtree(launch_workspace.cache_dir / "web-answers", ignore_errors=True)
 
     _brief_for_trips(page, launch_app_url, 2024)
 
@@ -147,7 +186,7 @@ def test_the_trip_picker_keeps_new_year_trips_whole_and_drops_buffer_only_trips(
 
 @pytest.mark.parametrize("only_photos", [False, True])
 def test_the_trip_picker_offers_a_year_with_only_photos(
-    page: Page, launch_app_url: str, monkeypatch, only_photos: bool
+    page: Page, launch_app_url: str, monkeypatch, only_photos: bool, launch_workspace
 ) -> None:
     from tests.e2e import fake_immich
 
@@ -164,6 +203,8 @@ def test_the_trip_picker_offers_a_year_with_only_photos(
     # WHY: cover both a photo-only year in a mixed library and a photo-only library.
     existing = () if only_photos else fake_immich.TIMELINE_ASSETS
     monkeypatch.setattr(fake_immich, "TIMELINE_ASSETS", (*existing, *photos))
+    # The server keeps each year's trips; this library is new, so its answer must be too.
+    shutil.rmtree(launch_workspace.cache_dir / "web-answers", ignore_errors=True)
 
     _brief_for_trips(page, launch_app_url, 2018)
 
@@ -213,6 +254,10 @@ def test_the_cut_opens_as_a_contact_sheet_in_the_order_the_film_plays(
     newest = max(_attempts(launch_workspace) - before, key=lambda path: path.stat().st_mtime)
     provenance = json.loads((newest / "evidence-hashes.json").read_text())
     assert "IMG_" not in json.dumps(provenance)
+    # What generate named the cut from is kept for a render made later (`runs render`):
+    # its own title, or the preset the template title is built from (a None title).
+    titles = json.loads((newest / "cut-titles.private.json").read_text())
+    assert titles["title"] or titles["preset_params"]
 
 
 def test_the_stories_view_weighs_the_stories_in_reader_words(
@@ -391,6 +436,8 @@ def test_the_people_condition_reaches_the_cut(
 
     request = _request_of_the_cut_after(launch_workspace, before)
     assert set(request["requested_assets"]) == _CONDITION_ASSETS
+    # The unrecognised views of those afternoons come with them (#1437).
+    assert _CONDITION_ASSETS > _SAME_FRAME_ASSETS
 
 
 def test_two_names_ask_together_or_any_of_them(

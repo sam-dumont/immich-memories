@@ -139,7 +139,46 @@ h1, h2, h3, h4, h5, h6 {
   border-top: 1px solid rgba(255,255,255,0.08);
 }
 
+.docs-diagram {
+  margin: 1.5rem 0;
+}
+
+.docs-diagram-hint {
+  display: none;
+}
+
+.docs-diagram-viewport:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+}
+
+.markdown .docusaurus-mermaid-container > svg {
+  height: auto;
+}
+
 @media screen and (max-width: 996px) {
+  .docs-diagram-hint {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--ifm-color-emphasis-700);
+    font-size: 0.875rem;
+  }
+
+  .docs-diagram-viewport {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .markdown .docusaurus-mermaid-container {
+    max-width: none;
+    width: max-content;
+  }
+
+  /* Keep diagram labels readable; contain wide diagrams inside their own scroller. */
+  .markdown .docusaurus-mermaid-container > svg {
+    max-width: none;
+  }
+
   .navbar__toggle,
   .navbar-sidebar__close {
     width: 44px;

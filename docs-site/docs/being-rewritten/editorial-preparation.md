@@ -4,9 +4,14 @@ title: Editorial annotation setup
 unlisted: true
 ---
 
-:::note[Being rewritten]
+:::caution[Historical preparation contract]
 
 This page is being split into the new docs. Its text moves to [Requirements and tiers](../run/requirements.md), [Caption server](../better/captions.md), [Picking each shot](../how-it-chooses/picking-shots.md), [Family, audience and duplicates](../how-it-chooses/family-audience-duplicates.md).
+
+The preparation-tier switches and whole-period captioning flow below predate automatic product
+tiers. Use the linked pages for current installation and sharing behavior. Film generation now
+acquires missing captions and clip evidence for selected shots and actual candidates; a wider
+scope is an explicit `prepare` job.
 
 :::
 
@@ -101,8 +106,8 @@ over 3,564 photographs it answered `yes` on 551 where the reader saw swimwear on
 
 Two ONNX graphs on the same provider as the encoder. The worker reads previews locally and commits
 each batch; nothing is uploaded to Hugging Face. `doc_docling` produces `det-v2`, `nsfw_marqo`
-produces `det-v3`; saved `det-v1` facts, and saved `det-v2` exposure facts, migrate on load and are
-recomputed on the next run.
+produces `det-v3`; saved `det-v1` facts, and saved `det-v2` exposure facts for videos, migrate on
+load and are recomputed on the next run. A still keeps its `det-v2` exposure answer (see below).
 
 | Producer | Artifact | Pinned by |
 |---|---|---|
@@ -122,10 +127,10 @@ optimizer produced wrong labels on a Celeron J4125. A separate `detector_python`
 For `nsfw_marqo`, `det-v3` names the version that reads a video on up to eight frames across its
 length instead of on the single preview frame Immich serves for it, keeping the strongest answer.
 The frames arrive as files from the process that can reach Immich, so the detector worker still
-needs nothing but the four packages above. A still is read exactly as `det-v2` read it. Because the
-banked row does not record which kind of source it came from, an existing store recomputes this head
-for every source. Videos also stay out of an inference-service offload for this head: the service
-takes one picture per source and cannot take eight.
+needs nothing but the four packages above. A still is read exactly as `det-v2` read it, so
+preparation keeps a still's banked `det-v2` row as its `det-v3` answer, and an existing store
+recomputes this head for videos only. Videos also stay out of an inference-service offload for this
+head: the service takes one picture per source and cannot take eight.
 
 A Live Photo's attached clip is read by this head too, under its own asset id, and by nothing else:
 no caption, no context head, no pixel fact. A clip with no preview is read on its frames alone. It

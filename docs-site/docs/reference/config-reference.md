@@ -5,12 +5,15 @@ sidebar_label: Config Reference
 
 # Config Reference
 
-Every key with its built-in default. Add the ones you want to `~/.immich-memories/config.yaml`.
+Every key with its built-in default. Set one in `~/.immich-memories/config.yaml`, as an environment
+variable, or from the web UI's settings page (saved to the database). Environment beats the file,
+the file beats the database, the database beats these defaults; `immich-memories config show` says
+which one set each key ([where a setting comes from](../run/config-file.md#where-a-setting-comes-from)).
 
 :::tip Config tiers
 Tier 2 sections (`analysis`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`,
-`automation`, `notifications`, `triage`, `editorial`, `inference`) go under an `advanced:` key when
-the app saves the file:
+`automation`, `notifications`, `triage`, `editorial`, `inference`) go under an `advanced:` key in
+the file:
 
 ```yaml
 advanced:
@@ -476,10 +479,8 @@ used, and any field you leave out takes the *built-in* default, not the one from
 
 ```yaml
 triage:
-  enabled: false                 # Legacy standalone triage hook; editorial preparation runs independently
   encoder: ~/.immich-memories/models/triage/dinov2-small.onnx  # DINOv2-small ONNX export (88 MB)
   encoder_url: https://github.com/...    # where `models fetch` downloads that export from
-  bundle: ""                     # Head weights (.npz); empty = the public bundle in the package
   provider: auto                 # ONNX Runtime provider for the encoder: auto, cpu, cuda, coreml
 ```
 
@@ -491,10 +492,7 @@ encoder key, so changing it re-derives nothing.
 
 Editorial preparation uses `triage.encoder` with the public eight-head bundle from
 `editorial.preparation.head_bundle`, and checks its digest on load. Missing required head facts
-stop selection; `triage.enabled: false` does not bypass preparation.
-
-Only `encoder` and `encoder_url` are read. `enabled` and `bundle` are left over from the standalone
-triage hook: they load, they validate, they do nothing.
+stop selection.
 
 ## Editorial planner
 
@@ -503,7 +501,7 @@ editorial:
   reader: rules                 # derived from the product tier; not an independent choice
   thin_model_layer: true         # the model polishes a rules draft; false makes it plan the film
   strict_sharing: true           # anything a head or exposure flag marked stays out of shared films
-  annotation_database: ""        # defaults to annotations.sqlite inside the configured cache directory
+  annotation_database: ""        # deprecated: a legacy annotations.sqlite imported into the store once; blank = the cache directory
   laya_audience: false           # derived: off for NAS, on for GPU and Full
   # Apple silicon defaults below; elsewhere the ONNX archive and threshold 0.185 are used.
   laya_checkpoint: "~/.immich-memories/models/laya/laya-audience-a79ad9fa.tar"
@@ -524,6 +522,7 @@ editorial:
     venue: oi-v3
   preparation:
     tier: no_captions            # internal producer mode, derived from the product tier
+    caption_provider: smolvlm    # llm explicitly opts into images sent to advanced.llm; higher cost
     caption_base_url: http://localhost:8092/v1
     caption_artifact_id: ""   # optional artifact/revision label; existing captions stay banked
     caption_api_key: ""          # bearer token for a caption server that requires one
@@ -545,7 +544,7 @@ editorial:
 
 Tier 2: lives under `advanced:` when the app writes the file.
 
-`people` is how the people file's close family (partner, child, parent) reach the selection. A close
+`people` is how the people registry's close family (partner, child, parent) reach the selection. A close
 family member on at least `seat_min_pictures` of the period's pictures, or `seat_min_share` of them,
 who is in none of the film's shots gets one seat: see
 [the family seat](../how-it-chooses/family-audience-duplicates.md#the-family-seat). A story without three favourites is floored
@@ -560,9 +559,9 @@ and refreshes dependent readings; other head facts stay reusable.
 
 `nsfw_marqo` uses `det-v3`, which reads a video on up to eight frames across its length rather than
 on the single early frame Immich serves as its preview, and keeps the strongest answer. A still is
-read exactly as `det-v2` read it, but the banked row does not say which kind of source it came from,
-so saved `det-v1` and `det-v2` settings upgrade on load and the next run recomputes that head for
-every source. Everything else it banked stays reusable.
+read exactly as `det-v2` read it, so saved `det-v1` and `det-v2` settings upgrade on load, a still
+keeps its banked `det-v2` answer as its `det-v3` one, and the next run recomputes that head for
+videos only. Everything else it banked stays reusable.
 
 `frame_kind`, `screen` and `uncovered_person` were distilled from a typed picture reader onto the
 same encoder the other five heads run on, so a library prepared before they existed is owed only
@@ -690,13 +689,12 @@ title_screens:
   locale: "auto"                 # en fr nl de es it pt-BR pt-PT pl sv ru ja zh-Hans ko, or auto
   style_mode: "auto"             # auto (mood-based) or random
   animated_background: true      # Gradient shift and colour pulse behind the text
-  show_decorative_lines: false   # Line accents around the title text
   show_month_dividers: true      # When the video spans several months (all-or-none)
   month_divider_threshold: 2     # Min clips in a month to show its divider (1-10)
   use_first_name_only: true      # "Riley" instead of "Riley Smith" in titles
 ```
 
-`animated_background` and `show_decorative_lines` are all the look-and-feel the config file
+`animated_background` is all the look-and-feel the config file
 exposes; the colour palette and custom fonts are not configurable today.
 `animated_background: false` keeps the gradient still
  (no rotation, colour pulse or vignette pulse), which is what `preset: fast` selects. The
@@ -721,12 +719,14 @@ wrote down yourself, and nothing else.
 ```yaml
 network:
   geocoding: false        # nominatim.openstreetmap.org
+  geocoding_url: ""       # a self-hosted Nominatim instead of the public one
   map_tiles: false        # server.arcgisonline.com (World Imagery)
 ```
 
 | Key | What it sends | What you get |
 |---|---|---|
-| `geocoding` | each trip cluster's centroid, and the rounded coordinates of the places on the cut | trip names from the map instead of from EXIF, and place names in the film's language |
+| `geocoding` | each trip cluster's centroid, and the coordinates of every clip on the cut, rounded to about a kilometre, once per place (answers are kept in the store) | the district's name where Immich names a neighbouring town, trip names from the map instead of from EXIF, and place names in the film's language |
+| `geocoding_url` | the same requests, to this host instead (`http://nominatim.lan:8080`); empty means `nominatim.openstreetmap.org`. Only read with `geocoding: true` | your own Nominatim, nothing sent outside |
 | `map_tiles` | tile coordinates covering the trip area and your home base | the trip fly-over, the static trip map, and a satellite background behind location cards |
 
 Fonts are not a switch: a render never downloads one, and `titles fonts --install` is the one
@@ -739,7 +739,6 @@ for each switch you turn on, naming the host it will contact.
 cache:
   directory: "~/.immich-memories/cache"
   database: "~/.immich-memories/cache.db"
-  max_age_days: 30               # Analysis cache expiry (1-365)
   video_cache_enabled: true      # Cache downloaded videos locally
   video_cache_max_size_gb: 10.0  # Max disk usage for video cache (1-500 GB)
   video_cache_max_age_days: 7    # Auto-delete cached videos older than this (1-365)
@@ -761,6 +760,27 @@ A scope of ten thousand candidates wants about 3.4 GB; the `0.35` leaves a littl
 If the run's working set does not fit, nothing is lost mid-run: previews still in use are never deleted and the cache overflows the limit instead. The *next* run reclaims them, so the next overlapping memory re-downloads every preview. You get one `WARNING` per run saying how far over you are. Raise it rather than ignoring it.
 
 The video cache is not library-sized: it holds the originals being assembled, tens of files per run however big your library is. `preview_cache_max_size_mb` is gone: it capped the clip previews the old web pages played, and the web client streams Immich's own renditions. An old config that still sets it loads with a warning.
+
+## Store database
+
+Where the store lives: owner decisions, the people registry, model answers, run history, automation
+state, the special-days catalogue and the settings you edit in the UI, as they move out of loose files ([#871](https://github.com/sam-dumont/immich-video-memory-generator/issues/871)).
+The cache stays in `cache.database`.
+
+```yaml
+database:
+  url: "sqlite:///~/.immich-memories/store.db"  # or postgresql://user:${PGPASSWORD}@host/db
+  schema: "immich_memories"                     # PostgreSQL only: the schema holding every table
+  import_from: ""                               # where the one-time import of pre-store files looks;
+                                                # blank = ~/.immich-memories
+```
+
+`IMMICH_MEMORIES_DATABASE_URL`, `IMMICH_MEMORIES_DATABASE_SCHEMA` and `IMMICH_MEMORIES_IMPORT_FROM`
+beat the file. Both are read
+before the store opens, so the UI can never change them. SQLite on local disk is the default and
+fits a single-host install; point `url` at PostgreSQL 14+ (no extensions) to share a server,
+including Immich's own, in a schema of its own. A SQLite file on NFS, SMB or CIFS is refused:
+see [Environment variables](../run/environment-variables.md#not-config-keys).
 
 ## Server (UI)
 
@@ -806,25 +826,6 @@ upload:
 An uploaded memory is filed on the day of its last picture, in the timezone most of its pictures
 share, so it lands in your timeline where the memory ends instead of on the day it was rendered.
 The render day is what you get when no picture in the cut carries a usable time.
-
-## Scheduler
-
-```yaml
-scheduler:
-  enabled: false
-  timezone: "UTC"
-  job_timeout_minutes: 120  # Whole-job deadline, including preparation and rendering; must be positive
-  schedules:
-    - name: "yearly-recap"
-      memory_type: "year_in_review"
-      cron: "0 9 15 1 *"
-      enabled: true
-      upload_to_immich: false
-      album_name: "{year} Memories"
-      person_names: []
-      duration_minutes: null
-      params: {}
-```
 
 ## Automation
 

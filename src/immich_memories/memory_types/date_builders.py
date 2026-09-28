@@ -7,6 +7,8 @@ and "on this day" lookbacks.
 from __future__ import annotations
 
 import calendar
+import re
+from collections.abc import Callable
 from datetime import date, datetime, timedelta
 
 from immich_memories.timeperiod import DateRange, birthday_year, same_day_in_year
@@ -367,24 +369,142 @@ def _nth_weekday(year: int, month: int, weekday: int, nth: int) -> date:
     return date(year, month, 1 + offset + 7 * (nth - 1))
 
 
-def resolve_holiday(holiday: str, year: int) -> date:
-    """The date a holiday falls on in a given year.
+def _last_weekday(year: int, month: int, weekday: int) -> date:
+    """The last given weekday of a month."""
+    last = date(year, month + 1, 1) - timedelta(days=1) if month < 12 else date(year, 12, 31)
+    return last - timedelta(days=(last.weekday() - weekday) % 7)
 
-    Accepts a known name or an explicit ``MM-DD``. Moving holidays are computed,
-    so they stay correct in years nobody has thought about yet.
+
+_SUNDAY = 6
+
+
+def _french_mothers_day(year: int) -> date:
+    """The last Sunday of May, moved a week on when Pentecost takes it."""
+    last = _last_weekday(year, 5, _SUNDAY)
+    return last + timedelta(weeks=1) if last == _easter(year) + timedelta(days=49) else last
+
+
+# The family holidays that move by country, as ISO 3166 codes. A country not named keeps the
+# first rule; a holiday a country does not keep at all is simply absent from its table.
+_MOTHERS_DAY: dict[str, Callable[[int], date]] = {
+    "": lambda y: _nth_weekday(y, 5, weekday=_SUNDAY, nth=2),
+    "FR": _french_mothers_day,
+    "GB": lambda y: _easter(y) - timedelta(days=21),
+    "IE": lambda y: _easter(y) - timedelta(days=21),
+    "ES": lambda y: _nth_weekday(y, 5, weekday=_SUNDAY, nth=1),
+    "PT": lambda y: _nth_weekday(y, 5, weekday=_SUNDAY, nth=1),
+    "MX": lambda y: date(y, 5, 10),
+}
+_FATHERS_DAY: dict[str, Callable[[int], date]] = {
+    "": lambda y: _nth_weekday(y, 6, weekday=_SUNDAY, nth=3),
+    "BE": lambda y: _nth_weekday(y, 6, weekday=_SUNDAY, nth=2),
+    "AT": lambda y: _nth_weekday(y, 6, weekday=_SUNDAY, nth=2),
+    "DE": lambda y: _easter(y) + timedelta(days=39),
+    "IT": lambda y: date(y, 3, 19),
+    "ES": lambda y: date(y, 3, 19),
+    "PT": lambda y: date(y, 3, 19),
+    "AU": lambda y: _nth_weekday(y, 9, weekday=_SUNDAY, nth=1),
+    "NZ": lambda y: _nth_weekday(y, 9, weekday=_SUNDAY, nth=1),
+}
+_BY_COUNTRY = {
+    "mothers_day": _MOTHERS_DAY,
+    "fathers_day": _FATHERS_DAY,
+}
+
+# The few family days no public calendar lists, added on top of the country's public holidays.
+_FAMILY_DAYS = (
+    "valentines",
+    "mothers_day",
+    "fathers_day",
+    "halloween",
+    "christmas_eve",
+    "new_years_eve",
+)
+_NAMES = {
+    "new_year": "New Year's Day",
+    "valentines": "Valentine's Day",
+    "halloween": "Halloween",
+    "christmas_eve": "Christmas Eve",
+    "christmas": "Christmas",
+    "new_years_eve": "New Year's Eve",
+    "easter": "Easter",
+    "thanksgiving": "Thanksgiving",
+    "mothers_day": "Mother's Day",
+    "fathers_day": "Father's Day",
+}
+
+
+def holiday_name(key: str) -> str:
+    """How a holiday is written for a reader: its name, or the MM-DD it was given as."""
+    return _NAMES.get(key, key)
+
+
+def holidays_of(year: int, country: str) -> dict[date, str]:
+    """Every holiday a family in ``country`` may keep in ``year``, each with its name.
+
+    The country's public holidays come from the ``holidays`` library, which keeps some 250
+    countries' calendars; on top of them, the few family days no public calendar lists.
+    """
+    days = _public_holidays(year, country)
+    for key in _FAMILY_DAYS:
+        days.setdefault(resolve_holiday(key, year, country=country), holiday_name(key))
+    return days
+
+
+def _public_holidays(year: int, country: str) -> dict[date, str]:
+    import holidays as calendars
+
+    try:
+        kept = calendars.country_holidays(country.strip().upper(), years=year)
+    except NotImplementedError:
+        return {}
+    if "en_US" in kept.supported_languages:
+        kept = calendars.country_holidays(country.strip().upper(), years=year, language="en_US")
+    return dict(kept.items())
+
+
+def _key(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", name.strip().lower()).strip("_")
+
+
+def _public_named(key: str, year: int, country: str) -> date | None:
+    for day, name in _public_holidays(year, country).items():
+        written = _key(name)
+        if key in (written, written.removesuffix("_day")):
+            return day
+    return None
+
+
+def _kept_in(key: str, year: int, country: str) -> date:
+    rules = _BY_COUNTRY[key]
+    rule = rules.get(country) or rules.get("")
+    if rule is None:
+        raise ValueError(f"{key} is not kept in {country}")
+    return rule(year)
+
+
+def resolve_holiday(holiday: str, year: int, *, country: str = "US") -> date:
+    """The date a holiday falls on in a given year, as ``country`` keeps it.
+
+    Accepts a known name, the name of one of the country's public holidays (from the
+    ``holidays`` library, e.g. "ascension day"), or an explicit ``MM-DD``. Moving holidays are
+    computed, so they stay correct in years nobody has thought about yet. Mother's Day and
+    Father's Day move by country; a holiday the country does not keep raises ``ValueError``.
     """
     key = holiday.strip().lower().replace("-", "_").replace(" ", "_")
+    # A known holiday named the way `holidays_of` writes it ("Valentine's Day") is that holiday.
+    key = next((known for known, name in _NAMES.items() if _key(name) == _key(holiday)), key)
     if key in _FIXED_HOLIDAYS:
         month, day = _FIXED_HOLIDAYS[key]
         return date(year, month, day)
     if key == "easter":
         return _easter(year)
-    if key == "thanksgiving":
-        return _nth_weekday(year, 11, weekday=3, nth=4)
-    if key == "mothers_day":
-        return _nth_weekday(year, 5, weekday=6, nth=2)
-    if key == "fathers_day":
-        return _nth_weekday(year, 6, weekday=6, nth=3)
+    if key in _BY_COUNTRY:
+        return _kept_in(key, year, country.strip().upper())
+    # The calendar's own names carry punctuation ("All Saints' Day"): compare them the way
+    # `_public_named` writes them.
+    if (public := _public_named(_key(holiday), year, country)) is not None:
+        return public
 
     try:
         month_str, day_str = holiday.strip().split("-")
@@ -392,7 +512,8 @@ def resolve_holiday(holiday: str, year: int) -> date:
     except (ValueError, TypeError) as exc:
         known = ", ".join(sorted(KNOWN_HOLIDAYS))
         raise ValueError(
-            f"Unknown holiday {holiday!r}. Use one of: {known}, or a MM-DD date."
+            f"{holiday!r} is not kept in {country}. Use one of: {known}, one of the country's "
+            "public holidays, or a MM-DD date."
         ) from exc
 
 
@@ -402,8 +523,9 @@ def build_holiday(
     years_back: int = 5,
     window_days: int = 2,
     today: date | None = None,
+    country: str = "US",
 ) -> list[DateRange]:
-    """One window per year around a holiday, most recent first.
+    """One window per year around a holiday, most recent first, as ``country`` keeps it.
 
     A holiday is the date a library is most likely to have every single year, so
     it is worth spanning years the way On This Day does rather than covering one
@@ -418,12 +540,12 @@ def build_holiday(
     if years_back <= 0:
         return []
 
-    if today is not None and resolve_holiday(holiday, year) > today:
+    if today is not None and resolve_holiday(holiday, year, country=country) > today:
         year -= 1
 
     ranges: list[DateRange] = []
     for offset in range(years_back):
-        centre = resolve_holiday(holiday, year - offset)
+        centre = resolve_holiday(holiday, year - offset, country=country)
         start = centre - timedelta(days=window_days)
         end = centre + timedelta(days=window_days)
         ranges.append(

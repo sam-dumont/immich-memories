@@ -39,7 +39,6 @@ import operator
 import re
 from dataclasses import dataclass
 from datetime import timedelta
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.trip_detection import haversine_km
@@ -49,7 +48,9 @@ if TYPE_CHECKING:
     from datetime import date, datetime
 
     from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.db import Store
 
+from immich_memories.analysis.editorial_json_completion import complete_final_json
 from immich_memories.analysis.llm_failures import stop_if_this_is_our_bug
 from immich_memories.analysis.special_day_title import (
     honest_title,
@@ -219,23 +220,25 @@ def sample_across_day(assets: list, count: int = 8) -> list:
     """Spread the sample over the day's hours, not its busiest minutes.
 
     Taking the first N would describe one burst, which is the very thing the
-    question is meant to see past.
+    question is meant to see past, so every hour gets one picture first (the
+    busiest hours, when there are more hours than pictures to take). What is
+    left goes where the day was spent: the hour with the most pictures still
+    untaken. Handing it back to the earliest hours described a race day by the
+    cat at home before leaving, and the day read as ordinary.
     """
     by_hour: dict[int, list] = collections.defaultdict(list)
-    for asset in assets:
+    for asset in sorted(assets, key=lambda a: a.file_created_at):
         by_hour[asset.file_created_at.hour].append(asset)
 
+    def take(hour: int) -> None:
+        bucket = by_hour[hour]
+        picked.append(bucket.pop(len(bucket) // 2))
+
     picked: list = []
-    hours = sorted(by_hour)
-    while hours and len(picked) < count:
-        for hour in hours.copy():
-            if len(picked) >= count:
-                break
-            bucket = by_hour[hour]
-            if bucket:
-                picked.append(bucket.pop(len(bucket) // 2))
-            if not bucket:
-                hours.remove(hour)
+    for hour in sorted(by_hour, key=lambda h: (-len(by_hour[h]), h))[:count]:
+        take(hour)
+    while len(picked) < count and any(by_hour.values()):
+        take(max(by_hour, key=lambda h: (len(by_hour[h]), -h)))
     return sorted(picked, key=lambda a: a.file_created_at)
 
 
@@ -439,6 +442,24 @@ def _described_by(asset: Any, captions: Mapping[str, str] | None) -> str | None:
     return prepared or getattr(asset, "llm_description", None)
 
 
+# Pictures someone else took say less about a day than its own, so fewer of them are shown.
+_FORWARDED_LINES = 3
+
+
+def _forwarded_lines(forwarded: list, captions: Mapping[str, str] | None) -> str:
+    """The day's forwarded pictures, marked as sent rather than taken, or nothing."""
+    described = [a for a in forwarded if _described_by(a, captions)]
+    if not described:
+        return ""
+    lines = [
+        _line_for(asset, _described_by(asset, captions))
+        for asset in sample_across_day(described, count=_FORWARDED_LINES)
+    ]
+    return "\n  forwarded that day (sent by someone else or saved, not taken here):\n" + "\n".join(
+        lines
+    )
+
+
 def _describe(assets: list, captions: Mapping[str, str] | None = None) -> str:
     """The day as text: one line per sampled picture, in the order they were taken.
 
@@ -493,6 +514,8 @@ _THINKING_TIMEOUT_SECONDS = 300
 # over. Whatever the host spends thinking is budgeted beside this, per endpoint,
 # by the transport; the answer is all the call site sizes.
 _CAPTION_ANSWER_TOKENS = 500
+_DAY_FIELDS = ("special", "title", "subtitle", "what", "window")
+_DAY_OPTIONAL_FIELDS = ("title", "subtitle", "what", "window")
 
 
 def _asked_again(
@@ -558,6 +581,13 @@ class SpecialDay:
     what: str = ""
     window: tuple[datetime, datetime] | None = None
     judged: bool = True
+    # Why nobody could say, when `judged` is false: the scan prints it instead of a guess.
+    unjudged_because: str = ""
+
+
+def _unjudged(because: str) -> SpecialDay:
+    logger.warning("Special day left unjudged: %s", because)
+    return SpecialDay(special=False, judged=False, unjudged_because=because)
 
 
 def ask_if_special(
@@ -566,9 +596,13 @@ def ask_if_special(
     *,
     timeout_seconds: int = 30,
     captions: Mapping[str, str] | None = None,
-    judgment_cache_path: Path | None = None,
+    judgments: Store | None = None,
+    forwarded: list | None = None,
 ) -> SpecialDay:
     """Ask the model whether a day was an occasion, and name it.
+
+    Pictures `forwarded` to the library that day follow the day's own lines, marked as sent
+    rather than taken: evidence of what happened, never a line of the day itself.
 
     Text, and only text. A day the caption bank has been over (see
     `day_is_prepared`) is answered from that text against the bank's own
@@ -585,16 +619,16 @@ def ask_if_special(
     if not assets:
         return SpecialDay(special=False)
 
+    sent = _forwarded_lines(forwarded or [], captions)
     described = _captioned_assets(assets, captions)
     if described:
         return _ask_from_captions(
-            assets, described, captions, llm_config, timeout_seconds, judgment_cache_path
+            assets, described, captions, llm_config, timeout_seconds, judgments, sent
         )
     sampled = sample_across_day(assets)
     if not _has_text_to_read(sampled, captions):
-        logger.info("Not enough written about this day to judge it; leaving it unjudged")
-        return SpecialDay(special=False, judged=False)
-    return _ask_from_facts(assets, sampled, captions, llm_config, timeout_seconds)
+        return _unjudged("nothing written about its pictures")
+    return _ask_from_facts(assets, sampled, captions, llm_config, timeout_seconds, sent)
 
 
 def _ask_from_facts(
@@ -603,6 +637,7 @@ def _ask_from_facts(
     captions: Mapping[str, str] | None,
     llm_config: LLMConfig,
     timeout_seconds: int,
+    sent: str = "",
 ) -> SpecialDay:
     """The day judged from its own recorded facts, in one text call.
 
@@ -611,27 +646,36 @@ def _ask_from_facts(
     to refuse: thinking is the transport's to budget, exactly as the caption
     route leaves it.
     """
-    lines = _describe(sampled, captions)
-    try:
-        raw = _ask(_PROMPT.format(lines=lines), llm_config, timeout_seconds)
-    except Exception as exc:  # noqa: BLE001 - an unreachable model is not a verdict
-        stop_if_this_is_our_bug(exc, "special-day question")
-        logger.debug("Special-day question failed: %s", type(exc).__name__)
-        return SpecialDay(special=False, judged=False)
-
-    # A null content is documented mlx-vlm behaviour, which is why llm_query
-    # retries. Silence is not a verdict either, and reading it as one ended a
-    # multi-hour scan on a TypeError.
-    if not raw:
-        logger.debug("Special-day question came back empty")
-        return SpecialDay(special=False, judged=False)
-
-    answer = _json_in(raw)
+    lines = _describe(sampled, captions) + sent
+    prompt = _PROMPT.format(lines=lines)
+    answer: dict | None = None
+    because = ""
+    # A small model sometimes answers in prose, or not at all. Neither is a verdict on the
+    # day, so the question is asked once more before the day is left unjudged.
+    for _attempt in range(2):
+        try:
+            raw = _ask(prompt, llm_config, timeout_seconds)
+        except Exception as exc:  # noqa: BLE001 - an unreachable model is not a verdict
+            stop_if_this_is_our_bug(exc, "special-day question")
+            return _unjudged(f"the reader failed ({type(exc).__name__})")
+        # A null content is documented mlx-vlm behaviour, which is why llm_query
+        # retries. Silence is not a verdict either, and reading it as one ended a
+        # multi-hour scan on a TypeError.
+        if not raw:
+            because = "the reader answered nothing"
+            continue
+        try:
+            answer = _day_answer(raw)
+            break
+        except ValueError:
+            because = "the reader's answer could not be read"
     if answer is None:
-        return SpecialDay(special=False, judged=False)
-    special = bool(answer.get("special"))
-    written = str(answer.get("title", "")).strip()
-    what = str(answer.get("what", ""))[:80].strip()
+        return _unjudged(because)
+    special = answer["special"]
+    if not special:
+        return SpecialDay(special=False)
+    written = answer["title"].strip()
+    what = answer["what"].strip()
     title = title_the_day_can_keep(written, assets, evidence=lines)
     # Only for a day that is going to be kept. An ordinary day is discarded
     # whatever it is called, and a second live call to name it better is spent
@@ -641,9 +685,7 @@ def _ask_from_facts(
     return SpecialDay(
         special=special,
         title=title or honest_title(assets, what=what, evidence=lines),
-        subtitle=line_the_day_can_keep(
-            str(answer.get("subtitle", ""))[:90].strip(), assets, evidence=lines
-        ),
+        subtitle=line_the_day_can_keep(answer["subtitle"].strip(), assets, evidence=lines),
         what=what,
         window=_window_the_model_gave(answer, assets),
     )
@@ -670,28 +712,48 @@ def _captioned_assets(assets: list, captions: Mapping[str, str] | None) -> list:
     return described
 
 
-def _caption_answer(raw: str) -> dict:
-    # Read leniently, exactly as the image branch does: the banked route arrives
-    # pre-decoded through the JSON contract, but the uncached route gets the
-    # model's raw text, and a fenced or prefaced object is still an answer.
-    answer = _json_in(raw)
-    if answer is None or not isinstance(answer.get("special"), bool):
+def _day_answer(raw: str) -> dict:
+    answer = json.loads(
+        complete_final_json(raw, fields=_DAY_FIELDS, optional_fields=_DAY_OPTIONAL_FIELDS)
+    )
+    if not isinstance(answer.get("special"), bool):
         raise ValueError("special-day verdict needs a Boolean")
-    for field, limit in (("title", 90), ("subtitle", 90), ("what", 80)):
-        if not isinstance(answer.get(field), str) or len(answer[field]) > limit:
-            raise ValueError(f"special-day {field} is not bounded text")
+    if not answer["special"]:
+        return {"special": False, "title": "", "subtitle": "", "what": "", "window": None}
+    if answer.get("subtitle") is None:
+        answer["subtitle"] = ""
+    # A grounded title can stand alone; facts-only answers already omit the summary.
+    answer.setdefault("what", "")
+    for field in ("title", "subtitle", "what"):
+        if not isinstance(answer.get(field), str):
+            raise ValueError(f"special-day {field} is not text")
+    if len(answer["title"]) > 90:
+        raise ValueError("special-day title is not bounded text")
+    # The verdict and the title are the answer. A small reader asked for an 80-character
+    # description of a race day wrote 170 of them three times in three; the day was lost.
+    answer["subtitle"] = _cut_at_a_word(answer["subtitle"], 90)
+    answer["what"] = _cut_at_a_word(answer["what"], 80)
     return answer
 
 
-def _accepts_caption_answer(raw: str) -> bool:
+def _cut_at_a_word(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    cut = text[: limit + 1].rsplit(" ", 1)[0] if " " in text[:limit] else text[:limit]
+    return cut[:limit].rstrip(" ,;:-")
+
+
+def _accepts_day_answer(raw: str) -> bool:
     try:
-        _caption_answer(raw)
+        _day_answer(raw)
     except (ValueError, TypeError):
         return False
     return True
 
 
-def _ask_from_captions(assets, described, captions, llm_config, timeout_seconds, cache_path):
+def _ask_from_captions(  # noqa: PLR0913 - the day, its text, and where the answer is kept
+    assets, described, captions, llm_config, timeout_seconds, judgments, sent=""
+):
     """A prepared day, judged against the text bank's own contract."""
     from immich_memories.analysis.editorial_case import TextRequest
     from immich_memories.analysis.editorial_text_gateway import QueryTextRequester
@@ -703,9 +765,12 @@ def _ask_from_captions(assets, described, captions, llm_config, timeout_seconds,
     # "not special".
     timeout_seconds = max(timeout_seconds, _THINKING_TIMEOUT_SECONDS)
     sampled = sample_across_day(described)
-    lines = "\n".join(
-        f"{asset.file_created_at.isoformat()} {_line_for(asset, captions[asset.id])}"
-        for asset in sampled
+    lines = (
+        "\n".join(
+            f"{asset.file_created_at.isoformat()} {_line_for(asset, captions[asset.id])}"
+            for asset in sampled
+        )
+        + sent
     )
     prompt = (
         f"{PROMPT_VERSION}\nThese are prepared captions with capture times, "
@@ -729,27 +794,27 @@ def _ask_from_captions(assets, described, captions, llm_config, timeout_seconds,
     # (deepseek-v4.1-flash 6,256, muse-glimmer 13,469), so asking to think is
     # what starves this answer rather than what pays for it.
     try:
-        if cache_path is None:
+        if judgments is None:
             raw = _ask(prompt, llm_config, timeout_seconds, thinking=False)
         else:
             request = TextRequest(
                 prompt=prompt,
                 llm_config=llm_config,
-                cache_path=cache_path,
+                judgments=judgments,
                 max_tokens=_CAPTION_ANSWER_TOKENS,
                 timeout_seconds=timeout_seconds,
                 thinking=False,
                 json_object=True,
-                json_fields=("special", "title", "subtitle", "what", "window"),
+                json_fields=_DAY_FIELDS,
+                json_optional_fields=_DAY_OPTIONAL_FIELDS,
             )
             raw = asyncio.run(
-                QueryTextRequester().request(request, accepts=_accepts_caption_answer)
+                QueryTextRequester().request(request, accepts=_accepts_day_answer)
             ).raw
-        answer = _caption_answer(raw)
+        answer = _day_answer(raw)
     except Exception as exc:  # WHY: an unavailable text model must not trigger an image send.
         stop_if_this_is_our_bug(exc, "special-day caption question")
-        logger.warning("Special-day caption question failed (%s)", type(exc).__name__)
-        return SpecialDay(special=False, judged=False)
+        return _unjudged(f"the caption question failed ({type(exc).__name__})")
     what = answer["what"].strip()
     return SpecialDay(
         special=answer["special"],

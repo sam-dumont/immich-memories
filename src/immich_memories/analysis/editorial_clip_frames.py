@@ -15,12 +15,19 @@ moment in fewer than three frames of four does not stand on its own, whatever it
 
 from __future__ import annotations
 
-import sqlite3
 from collections.abc import Iterable, Mapping, Sequence
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+import sqlalchemy as sa
+from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.analysis.editorial_carrier_eligibility import CARRYING_KINDS
+from immich_memories.db.tables import head_facts
+from immich_memories.store.batches import id_in, in_chunks
 from immich_memories.triage.heads import HeadFact
+
+if TYPE_CHECKING:
+    from immich_memories.db import Store
 
 CLIP_FRAMES_HEAD = "clip_frames"
 # The head that reads each frame, and how many frames it reads: a new frame head or a new
@@ -63,27 +70,26 @@ def unusable_video(unit: Mapping, line: str) -> bool:
     return unit.get("kind") == "video" and not unit.get("favourite") and subject_often_missing(line)
 
 
-def load_clip_frames(store_path: Path | str | None, clip_ids: Iterable[str]) -> dict[str, str]:
+def load_clip_frames(store: Store | None, clip_ids: Iterable[str]) -> dict[str, str]:
     """The banked `clip_frames` label of each of these clips; a clip never read is absent."""
     ids = sorted(set(clip_ids))
-    if store_path is None or not ids or not Path(store_path).exists():
+    if store is None or not ids:
         return {}
-    con = sqlite3.connect(f"file:{store_path}?mode=ro", uri=True)
+    h = head_facts
     out: dict[str, str] = {}
     try:
-        for start in range(0, len(ids), 500):
-            chunk = ids[start : start + 500]
-            marks = ",".join("?" * len(chunk))
-            rows = con.execute(
-                f"select asset_id, label from head_facts where asset_id in ({marks}) "  # noqa: S608
-                "and head = ? and version = ?",
-                [*chunk, CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION],
-            )
-            out.update({str(asset_id): str(label) for asset_id, label in rows})
-    except sqlite3.OperationalError:
+        with store.connect() as connection:
+            for chunk in in_chunks(connection, ids):
+                rows = connection.execute(
+                    sa.select(h.c.asset_id, h.c.label).where(
+                        id_in(connection, h.c.asset_id, chunk),
+                        h.c.head == CLIP_FRAMES_HEAD,
+                        h.c.version == CLIP_FRAMES_VERSION,
+                    )
+                )
+                out.update({str(asset_id): str(label) for asset_id, label in rows})
+    except SQLAlchemyError:
         return {}
-    finally:
-        con.close()
     return out
 
 
