@@ -59,6 +59,65 @@ def pytest_configure(config: pytest.Config) -> None:
     os.environ[_STORE_URL_ENV] = f"sqlite:///{_TEST_ROOT / 'store.db'}"
 
     _pin_the_cli_width()
+    _refuse_the_developers_store()
+
+
+_REAL_STORE_OPENS: list[str] = []
+
+
+@pytest.fixture(autouse=True)
+def no_real_store_opened() -> Iterator[None]:
+    """Fail the test that tried to open the developer's own store, even if the error was caught."""
+    _REAL_STORE_OPENS.clear()
+    yield
+    if _REAL_STORE_OPENS:
+        opened = sorted(set(_REAL_STORE_OPENS))
+        _REAL_STORE_OPENS.clear()
+        pytest.fail(f"this test tried to open the developer's own store: {opened}")
+
+
+def _account_home() -> Path:
+    """The account's own home, whatever $HOME says.
+
+    Suites that point HOME at a disposable directory (the real-Immich gate, agents in a
+    worktree) keep their stores there; only the account's real home is protected.
+    """
+    try:
+        import pwd
+
+        return Path(pwd.getpwuid(os.getuid()).pw_dir).resolve()
+    except (ImportError, KeyError):  # WHY: no passwd database on Windows
+        return Path.home().resolve()
+
+
+def _refuse_the_developers_store() -> None:
+    """Fail any test that opens a store under the developer's real ~/.immich-memories.
+
+    The environment URL above covers `open_store()`, but a test that clears it (a CliRunner
+    `env={"IMMICH_MEMORIES_DATABASE_URL": None}`) and loads a config without `database.url`
+    falls back to `~/.immich-memories/store.db`. Opening a store migrates it, so a branch
+    with a new revision upgraded the owner's live store past what main can read. Every
+    engine goes through this check first; a test that sets HOME to a temp dir still passes.
+    """
+    from immich_memories.db import engine as engine_module
+    from immich_memories.db import store as store_module
+
+    real_home = _account_home() / ".immich-memories"
+    create_engine = engine_module.create_store_engine
+
+    def guarded(location: Any, *args: Any, **kwargs: Any) -> Any:
+        # The default URL is `sqlite:///~/...`: compare the expanded path, not the text.
+        path = location.sqlite_path
+        if path is not None and path.expanduser().resolve().is_relative_to(real_home):
+            # Recorded as well as raised: config loading swallows store errors, and a
+            # leak that only raises would pass silently.
+            _REAL_STORE_OPENS.append(str(path))
+            raise RuntimeError(f"a test opened the developer's own store: {path}")
+        return create_engine(location, *args, **kwargs)
+
+    # Both names: store.py bound it at import, migrations/env.py looks it up at call time.
+    _TERMINAL_PATCHES.setattr(engine_module, "create_store_engine", guarded)
+    _TERMINAL_PATCHES.setattr(store_module, "create_store_engine", guarded)
 
 
 def _pin_the_cli_width() -> None:
