@@ -266,16 +266,20 @@ def _validate_album_scope(
     month: int | None,
     memory_type: str | None,
     person_names: list[str] | tuple[str, ...],
+    subject: str | None = None,
 ) -> None:
     """The album is the whole scope, read in both directions.
 
     With an album, date scoping is meaningless because album mode replaces
     date-range discovery. Without one, --memory-type album has nothing to
-    select from -- it is the one type that resolves no window of its own.
+    select from -- it is the one type that resolves no window of its own,
+    and --subject has no pool to describe: a date range is not curated.
     """
     if not from_album:
         if memory_type == "album":
             raise click.UsageError("--memory-type album needs --from-album to name the album")
+        if subject:
+            raise click.UsageError("--subject describes an album's pool; it needs --from-album")
         return
     conflicts = {
         "--year": year,

@@ -487,6 +487,7 @@ def select_story_first(
     partition_limit: int | None = None,
     voice_per_partition: bool = False,
     context_without_life: bool = False,
+    pool_is_subject: bool = False,
     motion_line: Callable[[Mapping[str, Any]], str] | None = None,
     episode_readings: Mapping[str, Any] | None = None,
     rules=None,
@@ -516,6 +517,9 @@ def select_story_first(
     `voice_per_partition` gives every partition (`partition_of`) that holds a story one picture
     before any story takes a second. `context_without_life` lets a picture with nobody in it
     serve its story, in a film whose material was chosen for a written subject.
+    `pool_is_subject` is a film whose material is a pool curated for its written subject: a pool
+    picture stands on that subject whatever its standing score, and every partition holding
+    pool pictures gets its voice; the record lists the pictures that stood on the subject.
     """
     calls = {
         "story_pages": 0,
@@ -529,6 +533,7 @@ def select_story_first(
         partition_of=partition_of,
         limit=partition_limit,
         voiced=voice_per_partition,
+        pool_is_subject=pool_is_subject,
     )
     units = _MomentUnits(event_units, family_of_moment, dict(family_tier or {}))
     place_of_moment = {
@@ -640,6 +645,7 @@ def select_story_first(
         unit_by_asset=unit_by_asset,
         pictures_of={s["key"]: s["seen"]["pictures"] for s in stories},
         context_without_life=context_without_life,
+        pool_is_subject=pool_is_subject,
     )
     admission = CarrierAdmission(
         judge,
@@ -691,6 +697,8 @@ def select_story_first(
             # A partition the film promised a voice that ended without one, and why.
             "quiet_partitions": parts.quiet(choices_of, admission.silent, admission.carriers),
             "kept_without_standing": admission.kept_without_standing,
+            # Owner ruling 2026-09-28: a pool picture stands on the subject, never silently.
+            "stood_on_subject": gate.stood_on_subject_rows(admission.carriers),
             # Pictures nothing vouched for that gave their slot back to a starred picture.
             "displaced_for_a_favourite": [c["asset_id"] for c in admission.displaced],
             "editorially_closed": [

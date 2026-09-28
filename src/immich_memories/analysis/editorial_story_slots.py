@@ -84,8 +84,10 @@ class _Grants:
             while self.take(s, wanted):
                 pass
 
-    def take_one_per_era(self, era_of: Mapping[str, str]) -> None:
-        """One picture per era, from the era's first story that can still take one."""
+    def take_one_per_era(self, era_of: Mapping[str, str], *, pool_is_subject: bool = False) -> None:
+        """One picture per era, from the era's first story that can still take one. A story
+        weighed "none" takes its era's voice only in a pool chosen for the film's subject, where
+        every year that holds pictures gets a shot."""
         voiced = {
             era_of.get(s["key"])
             for s in self.stories
@@ -93,7 +95,8 @@ class _Grants:
         }
         for s in self.stories:
             era = era_of.get(s["key"])
-            if era is not None and era not in voiced and s["weight"] != "none" and self.take(s, 1):
+            speaks = pool_is_subject or s["weight"] != "none"
+            if era is not None and era not in voiced and speaks and self.take(s, 1):
                 voiced.add(era)
 
     def take_one_per_day(self, weight: str, cap: int = 1) -> None:
@@ -150,18 +153,20 @@ def allocate_slots(
     *,
     reserve_slot: Callable[[Mapping[str, Any]], bool] | None = None,
     era_of: Mapping[str, str] | None = None,
+    pool_is_subject: bool = False,
 ) -> dict[str, int]:
     """Slots per story from its weight, capped by the moments it holds. Stories come in weight
     order. With `era_of` (a story's era, for the stories that lie inside one), every era first
     gets one picture, from its first story in that order, before any story takes a second. A dominant or major story with a `reserve` (a trip) takes that many where the others
     take their first picture. Leftover slots deepen dominant, then major, then minor stories one
     moment at a time while they have moments; a glimpse stays one picture and "none" is never
-    funded."""
+    funded, except as its era's voice in a pool chosen for the film's subject
+    (`pool_is_subject`)."""
     counted = dict(already or {})
     plan = _Grants(stories, slots, capacity, counted, reserve_slot)
     caps = weight_caps(slots + sum(counted.values()))
     if era_of:
-        plan.take_one_per_era(era_of)
+        plan.take_one_per_era(era_of, pool_is_subject=pool_is_subject)
     plan.take_each("dominant", 1)
     plan.take_each("major", 1)
     plan.fill("dominant", caps["dominant"])
@@ -223,11 +228,13 @@ class PartitionedSlots:
         partition_of: Callable[[str], str | None] | None = None,
         limit: int | None = None,
         voiced: bool = False,
+        pool_is_subject: bool = False,
     ) -> None:
         self._unit_by_asset = unit_by_asset
         self._partition_of = partition_of
         self.limit = limit
         self._voiced = voiced
+        self._pool_is_subject = pool_is_subject
 
     @property
     def voice_of(self) -> Callable[[str], str | None] | None:
@@ -329,6 +336,7 @@ class PartitionedSlots:
                 {k: len(v) for k, v in capacity_choices.items()},
                 already=already,
                 era_of=self.eras(capacity_choices, silent),
+                pool_is_subject=self._pool_is_subject,
             )
             return counts, {key: {None: count} for key, count in counts.items()}
         used: dict[str | None, int] = {}

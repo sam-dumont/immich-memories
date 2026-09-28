@@ -114,6 +114,9 @@ class EditorialRunContext:
     # preset floor. Carried so a run record can say why a film is this long.
     duration_source: str = DURATION_FROM_DURATION_FLAG
     base_brief: str | None = None
+    # The album is a pool curated for `base_brief`, its written subject: its pictures stand on
+    # that subject (`EditorialIntent.pool_is_subject`). Set by `generate --from-album --subject`.
+    pool_is_subject: bool = False
     motion_outcome_replay: MotionOutcomeReplay | None = None
     person_expression: PersonExpression | None = None
     render_timing: EditorialTimingPolicy | None = None
@@ -160,6 +163,15 @@ class EditorialRunContext:
             raise ValueError("editorial run identity cannot be blank")
         if self.target_seconds <= 0:
             raise ValueError("editorial target duration must be positive")
+        if self.pool_is_subject and (
+            self.product != "album" or not (self.base_brief or "").strip()
+        ):
+            raise ValueError("a subject pool is an album handed over with its written subject")
+
+    @property
+    def pool_subject(self) -> str | None:
+        """The written subject this run's album was curated for, or None for any other run."""
+        return self.base_brief if self.pool_is_subject else None
 
     def _adopt_special_event_members(self) -> None:
         members = validate_special_event_scope(

@@ -131,6 +131,7 @@ def register_generate_commands(main: click.Group) -> None:
         upload_to_immich: bool,
         album: str | None,
         from_album: str | None,
+        subject: str | None,
         add_date: bool,
         add_place: bool,
         keep_intermediates: bool,
@@ -210,6 +211,7 @@ def register_generate_commands(main: click.Group) -> None:
 
         _validate_album_scope(
             from_album=from_album,
+            subject=subject,
             year=year,
             start=start,
             end=end,
@@ -480,6 +482,7 @@ def register_generate_commands(main: click.Group) -> None:
                             owner_required_asset_ids=include_asset,
                             owner_excluded_asset_ids=exclude_asset,
                             no_render=no_render,
+                            subject=subject,
                         )
                         return
 

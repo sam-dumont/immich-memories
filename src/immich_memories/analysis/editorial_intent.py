@@ -71,6 +71,11 @@ class EditorialIntent:
     # frame of it with nobody in it (a stripped wall, a room under construction) is still one
     # its story can show.
     context_without_life: bool = False
+    # The film's material is a pool curated for its written subject (an album of loaves handed
+    # over with "bread making along the years"). Owner ruling 2026-09-28: a pool picture stands
+    # on the subject, so its standing score can't veto it, and every year that holds pool
+    # pictures gets a shot. A plain custom range with a brief is not a curated pool.
+    pool_is_subject: bool = False
 
     def partition_for(self, when: date) -> IntentPartition | None:
         return next((part for part in self.partitions if part.covers(when)), None)
@@ -153,12 +158,17 @@ def build_editorial_intent(
     people: Sequence[str] = (),
     event_admission: SpecialEventAdmission | None = None,
     material: Collection[date] | None = None,
+    pool_subject: str | None = None,
 ) -> EditorialIntent:
     """Derive the contract from the product, its date ranges, and (for a custom memory) its brief.
 
     `material` is the days the film's own pictures were taken. A person film read as eras then
     names only the years that hold some: a window from a birth date holds many years with no
-    picture of the person, and those are not parts of her film.
+    picture of the person, and those are not parts of her film. A curated pool's years are
+    named the same way.
+
+    `pool_subject` is the written subject a curated pool was chosen for: the film then binds that
+    subject, gives every year of the pool a voice, and carries `pool_is_subject`.
     """
     if not product.strip():
         raise ValueError("editorial intent needs a product")
@@ -169,11 +179,17 @@ def build_editorial_intent(
     who = ", ".join(p for p in people if p.strip())
     if event_admission is not None and product != "special_day":
         raise ValueError("event admission requires the special_day product")
+    if pool_subject is not None and not pool_subject.strip():
+        raise ValueError("a curated pool needs the written subject it was chosen for")
     builder = (
-        _accepted_special_day if event_admission is not None else _BUILDERS.get(product, _generic)
+        _accepted_special_day
+        if event_admission is not None
+        else _subject_pool
+        if pool_subject is not None
+        else _BUILDERS.get(product, _generic)
     )
-    intent = builder(product, spans, whole, brief=brief, who=who)
-    if material is None or builder is not _person:
+    intent = builder(product, spans, whole, brief=pool_subject or brief, who=who)
+    if material is None or builder not in (_person, _subject_pool):
         return intent
     years = {day.year for day in material}
     kept = tuple(
@@ -338,17 +354,21 @@ def _accepted_special_day(product, spans, whole, *, brief, who):
     )
 
 
-def _custom(product, spans, whole, *, brief, who):
+def _subject_pool(product, spans, whole, *, brief, who):
+    return _custom(product, spans, whole, brief=brief, who=who, pool=True)
+
+
+def _custom(product, spans, whole, *, brief, who, pool=False):
     subject = written_subject(brief)
     scope = f"{whole[0].isoformat()}..{whole[1].isoformat()}" + (
         f" in {len(spans)} ranges" if len(spans) > 1 else ""
     )
     # owner ruling 2026-09-05: a multi-range custom memory (works periods across years) must give every
-    # year of its span a voice; one year of a ten-year renovation is not the memory that was asked for
-    partitions = _per_year(whole, required=True) if len(spans) > 1 else _single(whole)
-    every_year = (
-        ("every year of the span that holds material has a voice",) if len(spans) > 1 else ()
-    )
+    # year of its span a voice; one year of a ten-year renovation is not the memory that was asked for.
+    # A curated pool gives every year it holds a voice however it arrives (an album is one span).
+    yearly = len(spans) > 1 or pool
+    partitions = _per_year(whole, required=True) if yearly else _single(whole)
+    every_year = ("every year of the span that holds material has a voice",) if yearly else ()
     if subject is None:
         period = _generic(product, spans, whole, brief=brief, who=who)
         return replace(
@@ -356,7 +376,7 @@ def _custom(product, spans, whole, *, brief, who):
             scope=scope,
             partitions=partitions,
             coverage_requirements=period.coverage_requirements + every_year,
-            voice_per_partition=len(spans) > 1,
+            voice_per_partition=yearly,
         )
     return EditorialIntent(
         product=product,
@@ -376,8 +396,9 @@ def _custom(product, spans, whole, *, brief, who):
         allowed_texture="only what concerns the subject",
         abstention_policy="the subject is not visible in the material: insufficient_material, not a film about something else",
         subject=subject,
-        voice_per_partition=len(spans) > 1,
+        voice_per_partition=yearly,
         context_without_life=True,
+        pool_is_subject=pool,
     )
 
 
@@ -473,7 +494,7 @@ _STORY_PART_DEFAULT = (
 )
 
 
-_BUILDERS = {
+_BUILDERS: dict[str, Callable[..., EditorialIntent]] = {
     "on_this_day": _recurring,
     "holiday": _recurring,
     "person_spotlight": _person,

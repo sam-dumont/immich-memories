@@ -14,6 +14,10 @@ from immich_memories.analysis.editorial_clip_frames import unusable_video
 from immich_memories.analysis.editorial_story_pick_contract import carries_motion
 
 WEIGHED_STORY_WEIGHTS = ("dominant", "major", "minor")
+STOOD_ON_SUBJECT = (
+    "in the pool chosen for the film's written subject: stands on that subject, its standing "
+    "score is no veto"
+)
 
 
 class StandingGate:
@@ -28,6 +32,7 @@ class StandingGate:
         unit_by_asset: Mapping[str, Any],
         pictures_of: Mapping[str, int],
         context_without_life: bool = False,
+        pool_is_subject: bool = False,
     ) -> None:
         self._score_of = score_of
         self._line_of = line_of
@@ -35,8 +40,11 @@ class StandingGate:
         self._unit_by_asset = unit_by_asset
         self._pictures_of = pictures_of
         self._context_without_life = context_without_life
+        self._pool_is_subject = pool_is_subject
         self.scores: dict[str, int] = {}
         self.context_rejected: set[tuple[str, str]] = set()
+        # Pictures a score under 1 would have refused that stood on the film's subject instead.
+        self.stood_on_subject: set[str] = set()
 
     def ensure(self, assets: Sequence[str], needs: Mapping[str, int] | None = None) -> None:
         """Score every picture not yet scored; with `needs`, skip one no answer can move."""
@@ -74,9 +82,12 @@ class StandingGate:
     def rejected_motion(self, asset: str) -> bool:
         """Playing motion cannot override missing or unanimously weak standing evidence, nor
         frames that often miss the subject: a clip is judged on what it shows across its
-        length, not on the one frame its preview and its row were read from."""
-        moving = carries_motion(self._unit_by_asset[asset][1])
-        return moving and (self.scores.get(asset, 0) == 0 or self._frames_miss(asset))
+        length, not on the one frame its preview and its row were read from. In a pool chosen
+        for the film's subject only the frames refuse it: its score is no veto there."""
+        if not carries_motion(self._unit_by_asset[asset][1]):
+            return False
+        weak = self.scores.get(asset, 0) == 0 and not self._pool_is_subject
+        return weak or self._frames_miss(asset)
 
     def _frames_miss(self, asset: str) -> bool:
         # Only a real video is refused on its frames, and never a favourite: a favourite
@@ -95,6 +106,19 @@ class StandingGate:
             or (weight in WEIGHED_STORY_WEIGHTS and self._pictures_of.get(story_key, 0) > 2)
         )
 
+    def stood_on_subject_rows(self, carriers: Sequence[Mapping[str, Any]]) -> list[dict]:
+        """The shots in `carriers` that stood on the film's subject rather than on their score."""
+        return [
+            {
+                "asset_id": c["asset_id"],
+                "story": c.get("story_episode"),
+                "standing": self.scores.get(c["asset_id"], 0),
+                "reason": STOOD_ON_SUBJECT,
+            }
+            for c in carriers
+            if c["asset_id"] in self.stood_on_subject
+        ]
+
     def has_required_context(self, asset: str, weight: str, story_key: str) -> bool:
         """The existing context requirement is eligibility, not a recoverable weak score."""
         allowed = self._context_allowed(asset, weight, story_key)
@@ -109,15 +133,18 @@ class StandingGate:
         with context and is only ORDERED by the gate, never removed, unless the story is a
         glimpse or holds one or two pictures, which leaves it no context to serve. A moving clip
         needs a score like any other picture, and a picture with no context to serve is refused
-        whatever its score."""
+        whatever its score. A picture of a pool chosen for the film's subject stands on that
+        subject whatever its score, and is kept in `stood_on_subject` for the run record."""
         score = self.scores.get(asset, 0)
         if self.rejected_motion(asset):
             return False
         if not self.has_required_context(asset, weight, story_key):
             return False
-        if self._ordered_only(asset, weight, story_key):
+        if self._ordered_only(asset, weight, story_key) or score >= 1:
             return True
-        return score >= 1
+        if self._pool_is_subject:
+            self.stood_on_subject.add(asset)
+        return self._pool_is_subject
 
     def _ordered_only(self, asset: str, weight: str, story_key: str) -> bool:
         """A picture with life in a dominant or major story of more than two pictures: the gate

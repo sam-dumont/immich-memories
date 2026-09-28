@@ -95,6 +95,8 @@ def _check_case_scope(case: Case, assets: Mapping[str, Asset]) -> None:
 def _check_contract(case: Case, intent: EditorialIntent) -> None:
     if case.product != intent.product:
         raise ValueError("captured product and editorial contract disagree")
+    if (case.pool_subject is not None) != intent.pool_is_subject:
+        raise ValueError("captured subject pool and editorial contract disagree")
     if case.product == "special_day":
         expected = build_editorial_intent(
             case.product,

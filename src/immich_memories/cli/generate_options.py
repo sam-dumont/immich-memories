@@ -60,6 +60,16 @@ def scope_options(command: FC) -> FC:
             default=None,
             help="Generate from an Immich album (name or ID) instead of a date range",
         ),
+        click.option(
+            "--subject",
+            type=str,
+            default=None,
+            help=(
+                "With --from-album: what the album was curated for, in your words. Every "
+                "picture then stands on that subject, a loaf in a bread album included, and "
+                "every year the album holds gets a shot. Needs a model reader"
+            ),
+        ),
         click.option("--person", "-p", type=str, multiple=True, help="Person name (repeatable)"),
         click.option(
             "--people-expression",

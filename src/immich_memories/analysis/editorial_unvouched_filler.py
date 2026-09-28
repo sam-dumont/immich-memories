@@ -30,6 +30,8 @@ class FillerEvidence:
     protected: frozenset[str] = frozenset()
     # The partition of a capture time, for a film that gives every partition a voice.
     era_of: Callable[[str], str | None] | None = None
+    # A pool chosen for the film's subject: the request vouches for every picture in it.
+    pool_is_subject: bool = False
 
 
 def owner_vouches_for(carrier: Mapping[str, Any], evidence: FillerEvidence) -> bool:
@@ -59,7 +61,10 @@ def drop_unvouched_filler(
 
     Only removes: a shot with any indicator, or with no frame reading, is kept as it is. A film
     that promised every partition a voice keeps one shot of a partition the drop would silence.
+    A pool chosen for the film's subject holds no filler: a loaf in a bread film is the subject.
     """
+    if evidence.pool_is_subject:
+        return list(carriers), []
     filler = {
         c["asset_id"]
         for c in carriers
@@ -106,4 +111,5 @@ def filler_evidence(source) -> FillerEvidence:
         known_person=known_person,
         protected=frozenset(source.owner_required_asset_ids),
         era_of=voiced_era_of(source.intent),
+        pool_is_subject=source.intent.pool_is_subject,
     )
