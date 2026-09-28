@@ -44,7 +44,7 @@ Kubernetes cluster. Timings per host are on [Measured](../better/measured.md).
 | Setup | What you run | What it adds |
 |---|---|---|
 | **A plain NAS** (the default) | This container and one `models fetch` | The film: the rules editor, eight context heads and two detectors on every picture the film can reach, the family-viewing gate, titles, maps, music |
-| **+ GPU inference** (optional) | The [inference service](../better/inference.md) reporting CUDA, or a local CUDA/MLX runtime; the caption service and Laya must also be ready | The GPU tier adds captions and Laya for selected shots and replacement candidates. Existing captions stay banked |
+| **+ GPU inference** (optional) | The [inference service](../better/inference.md) reporting CUDA, or a local CUDA runtime, or a Mac's Metal GPU; the caption service and Laya must also be ready | The GPU tier adds captions and Laya for selected shots and replacement candidates. Existing captions stay banked |
 | **+ an LLM** (optional) | A text model with a 32k context, such as local Gemma 4 E4B | Titles and other text features on every tier. With GPU inference too, Full adds prose and refinement of the NAS draft. [What a model adds](../better/overview.md) |
 
 On Full, the rules editor still makes the draft. A preference vote keeps the original shot until
@@ -79,7 +79,9 @@ NAS library can add captions later.
 ### Which tier you get
 
 Without a supported local GPU runtime or a healthy GPU inference service, automatic selection
-stays on NAS. GPU capability selects GPU; a configured LLM alongside it selects Full.
+stays on NAS. GPU capability selects GPU; a configured LLM alongside it selects Full. On a Mac the `mac` extra's
+Metal bindings find the GPU, so an `all-mac` install gets the whole tier without MLX in the app's
+own environment: the caption server and the reader run as their own processes.
 An LLM alone still supplies titles and other text features, and the app explains the missing GPU
 capability. It does not start captioning through that LLM.
 

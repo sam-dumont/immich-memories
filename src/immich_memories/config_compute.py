@@ -46,4 +46,9 @@ def local_inference_acceleration() -> tuple[bool, str]:
         mlx = import_module("mlx.core")
         if mlx.metal.is_available():
             return True, "The local MLX runtime supports Metal"
+    # MLX is installed out of band; the `mac` extra ships the Metal bindings. A Mac's light
+    # models run as local servers on this GPU, so the device is the capability.
+    with suppress(ImportError, OSError):
+        if import_module("Metal").MTLCreateSystemDefaultDevice() is not None:
+            return True, "This Mac has a Metal GPU"
     return False, "No supported local GPU runtime or GPU inference service is available"
