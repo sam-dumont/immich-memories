@@ -40,19 +40,19 @@ Timings are on [Measured](../better/measured.md).
 
 ## Supported and tested
 
-**Tested** means run end to end on the current code, with the date and what was run.
-**Supported** means the code path exists and worked on an earlier release, but has not been checked
-again since the last big changes (the store and the web UI both landed on 2026-09-28): it probably
-works, and a report is welcome if it doesn't. **Untested** means nobody has run it; it may work.
+**Tested** means run end to end, with the date and the commit or release it ran on: check the
+date against your version. **Supported** means the code path exists and worked on an earlier
+release, but has not been checked since: it probably works, and a report is welcome if it doesn't.
+**Untested** means nobody has run it; it may work.
 
-The last release on PyPI is 0.103.0, from 2026-09-17. Everything below that says "current code" is
-`main` and the Docker image built from it, not a `pip install` yet.
+The last release on PyPI is 0.103.0, from 2026-09-17. Rows tested after that date ran on `main`
+and the Docker image built from it, not on a `pip install`.
 
 | Area | What | State | Evidence |
 |---|---|---|---|
-| Setup | Plain NAS (`nas` tier) | Tested | Every pull request cuts a month on a real Immich (v2 and v3); a cut, an edit and a render in the browser on 2026-09-27 |
-| Setup | GPU and model (`full` tier) | Tested | A July film on the maintainer's library, Apple Silicon, 2026-09-28 |
-| Setup | GPU (`gpu` tier) | Supported | Last run 2026-09-27 |
+| Setup | Plain NAS (`nas` tier) | Tested | Every pull request cuts a month on a real Immich (v2 and v3); a cut, an edit and a render in the browser, 2026-09-27; 28 films on the maintainer's library (years, months, trips, seasons, people, special days), 2026-09-27, commit [`9eb16812`](https://github.com/sam-dumont/immich-video-memory-generator/commit/9eb168126c0f24f6cced39a0316f0045132e56c8) |
+| Setup | GPU and model (`full` tier) | Tested | A July film on the maintainer's library, on `main`, Apple Silicon, 2026-09-28; 28 films on the maintainer's library (years, months, trips, seasons, people, special days), 2026-09-27, commit [`9eb16812`](https://github.com/sam-dumont/immich-video-memory-generator/commit/9eb168126c0f24f6cced39a0316f0045132e56c8) |
+| Setup | GPU (`gpu` tier) | Tested | 28 films on the maintainer's library (years, months, trips, seasons, people, special days), 2026-09-27, commit [`9eb16812`](https://github.com/sam-dumont/immich-video-memory-generator/commit/9eb168126c0f24f6cced39a0316f0045132e56c8) |
 | Immich | v2.7.5 and v3.2.2 | Tested | Checked on every pull request |
 | Immich | 3.1.0 | Tested | The maintainer's library, 2026-09-28 |
 | Immich | Other 2.x and 3.x releases | Supported | The version is detected at runtime; only the three above are exercised |
@@ -68,17 +68,18 @@ The last release on PyPI is 0.103.0, from 2026-09-17. Everything below that says
 | GPU | Intel VA-API and Quick Sync | Supported | 2026-09-11, on the DS423+ |
 | GPU | AMD VA-API | Untested | The drivers ship in the image |
 | Render worker | The service's own test suite | Tested | Every pull request that touches it; no dated deployment on a real GPU box |
-| Reader | Local: oMLX with Gemma 4 E4B | Supported | Last run 2026-09-27 |
+| Reader | Local: oMLX with Gemma 4 E4B (6-bit) | Tested | 2026-09-27, commit [`9eb16812`](https://github.com/sam-dumont/immich-video-memory-generator/commit/9eb168126c0f24f6cced39a0316f0045132e56c8), the `full` films above |
 | Reader | Local: llama.cpp, Ollama | Supported | Films on earlier releases |
 | Reader | Local: vLLM, mlx-vlm served directly | Untested | |
 | Reader | Hosted: z.ai (glm-5.3-flash) and OpenAI (gpt-5.6-luna) | Supported | Last run 2026-09-17; re-test: [#1513](https://github.com/sam-dumont/immich-video-memory-generator/issues/1513) |
 | Reader | Hosted: Melious (DeepSeek, deepseek-v4.1-flash) | Supported | Last run 2026-09-15; re-test: [#1513](https://github.com/sam-dumont/immich-video-memory-generator/issues/1513) |
 | Reader | Hosted: Anthropic's own API | Untested | The same code path only ran through z.ai's Anthropic-compatible route |
 | Reader | Hosted: Melious gemma-4-31b | Not supported | Its API refused every image (HTTP 400), 2026-09-15 |
-| Captions | SmolVLM2 500M, on a Mac | Supported | Last run 2026-09-27 |
+| Captions | SmolVLM2 500M, on a Mac | Tested | 2026-09-27, commit [`9eb16812`](https://github.com/sam-dumont/immich-video-memory-generator/commit/9eb168126c0f24f6cced39a0316f0045132e56c8), the `gpu` and `full` films above |
 | Captions | SmolVLM2 500M, on the CUDA inference service | Supported | 2026-09-17, release 0.102.0 |
 | Captions | SmolVLM2 under llama.cpp | Untested | |
-| Laya | The family-viewing pre-screen, on a Mac or on CUDA | Supported | Films on earlier releases; the Mac path last on 2026-09-27 |
+| Laya | The family-viewing pre-screen, on a Mac | Tested | 2026-09-27, commit [`9eb16812`](https://github.com/sam-dumont/immich-video-memory-generator/commit/9eb168126c0f24f6cced39a0316f0045132e56c8), the `gpu` and `full` films above |
+| Laya | The family-viewing pre-screen, on CUDA | Supported | Films on earlier releases |
 
 ## The three tiers {#the-preparation-tier}
 
