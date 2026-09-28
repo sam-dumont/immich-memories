@@ -10,6 +10,7 @@ import pytest
 
 from immich_memories.analysis.editorial_runtime_ports import production_speech_resolver
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.processing.assembly_config import (
     AssemblyClip,
     AssemblySettings,
@@ -92,7 +93,9 @@ def test_production_speech_cuts_use_real_detector_and_reuse_facts(
         companion_assets={},
         bank_dir=tmp_path / "banks",
         # The speech facts are banked per asset since #1070, so the port reads the store.
-        store_path=tmp_path / "annotations.sqlite",
+        # #1430 moved that bank onto the migrated Store rather than a bare sqlite path;
+        # the autouse `isolated_store` fixture routes this to a fresh per-test database.
+        store=open_store(),
     )
     carrier = {"asset_id": "video", "kind": "video", "seconds": 1.0, "raw_seconds": 3.0}
     with ExitStack() as resources:

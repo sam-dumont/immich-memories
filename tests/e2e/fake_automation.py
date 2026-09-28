@@ -43,6 +43,7 @@ def install_fake_automation(config_path: Path, state_dir: Path) -> None:
     """Use a fixed calendar and fixture geocoder; only the editorial model is scripted."""
     from immich_memories.analysis import trip_detection
     from immich_memories.automation import candidate_discovery, runner
+    from immich_memories.self_command import self_command
     from tests.e2e.test_demo_assets import _TRIP_CLI_BOOTSTRAP
 
     candidate_discovery.date = FixtureDate
@@ -61,7 +62,8 @@ def install_fake_automation(config_path: Path, state_dir: Path) -> None:
                 _TRIP_CLI_BOOTSTRAP,
                 str(config_path),
                 str(state_dir),
-                *command[1:],
+                # The runner's argv starts with this install's own CLI prefix (#1466).
+                *command[len(self_command()) :],
             ],
             capture_output=True,
             text=True,
