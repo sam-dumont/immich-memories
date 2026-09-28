@@ -27,6 +27,7 @@ import httpx
 from experiment_data import ROOT, load_library, save
 from immich_memories.analysis.editorial_home_radius import HOME_RADIUS_KM, home_of, near_home_of
 from immich_memories.analysis.trip_detection import detect_trips
+from immich_memories.planning.auto_duration import trip_editorial_duration_seconds
 from immich_memories.analysis.llm_wire import openai_headers
 from immich_memories.api.models import Asset, ExifInfo
 from immich_memories.config import Config
@@ -839,14 +840,24 @@ def main():
     if os.environ.get("FILM_DRY") or verdict == "not possible":
         return
     intent = ROOT / "translations" / f"{key[10:]}.intent.json"
+    days = sorted({library.rows[i]["taken_at"][:10] for i in kept})
+    years = sorted({d[:4] for d in days})
+    # The engine's custom contract with a written subject is this film's contract: "exactly what
+    # was asked for, chronologically", "people only when the subject is visible with them", and,
+    # over several ranges, every year a voice (owner ruling 2026-09-05). One range per year the
+    # pool covers; the pool is the only material (the reach hook); the length is the album
+    # curve over the pool's photographed days (a multi-year custom range clamps to 30 s).
+    ranges = [[max(days[0], f"{y}-01-01"), min(days[-1], f"{y}-12-31")] for y in years]
+    seconds = int(trip_editorial_duration_seconds(len(days)))
     intent.write_text(json.dumps({"name": plan.get("title") or brief[:60], "thesis": record["thesis"] or brief,
-                                  "asset_ids": [library.rows[i]["asset_id"] for i in kept]}))
-    # The pool is the film's whole material, as an album is: no date window around it, and the
-    # album length curve over its photographed days (a multi-year date range clamps to 30 s).
+                                  "asset_ids": [library.rows[i]["asset_id"] for i in kept],
+                                  "ranges": [[a + "T00:00:00", b + "T23:59:59"] for a, b in ranges]}))
     # Owner ruling: free-text films keep forwarded pictures (a club's photos arrive by chat).
-    subprocess.run(["/private/tmp/imm-threads/.venv/bin/immich-memories", "generate", "--from-album",
-                    f"file:{intent}", "--accept-any-provenance", "--no-render",
-                    "--trace-selection", str(intent.with_suffix(".trace.json"))], check=False)
+    subprocess.run(["/private/tmp/imm-threads/.venv/bin/immich-memories", "generate", "--start", days[0],
+                    "--end", days[-1], "--duration", str(seconds), "--title", plan.get("title") or brief[:60],
+                    "--accept-any-provenance", "--no-render",
+                    "--trace-selection", str(intent.with_suffix(".trace.json"))],
+                   env=os.environ | {"IMMICH_MEMORIES_INTENT": str(intent)}, check=False)
 
 
 if __name__ == "__main__":

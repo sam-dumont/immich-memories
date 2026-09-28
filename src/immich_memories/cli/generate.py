@@ -307,6 +307,9 @@ def register_generate_commands(main: click.Group) -> None:
             preset_params=special_day,
             people_window=derived_window,
         )
+        from immich_memories.cli._editorial_context import intent_ranges
+
+        date_range, date_ranges = intent_ranges(date_range, date_ranges)  # PROBE: per-year ranges
         window_record = announce_people_window(derived_window, date_range)
 
         # Determine output path
@@ -725,6 +728,10 @@ def register_generate_commands(main: click.Group) -> None:
         except Exception as e:  # WHY: CLI top-level error boundary — sanitizes and displays error
             from immich_memories.security import sanitize_error_message
 
+            import logging as _l, os as _os
+
+            if _os.environ.get("IMMICH_MEMORIES_INTENT"):  # PROBE: keep the traceback
+                _l.getLogger(__name__).exception("PROBE traceback")
             print_error(f"Error: {sanitize_error_message(described_error(e))}")
             sys.exit(1)
 

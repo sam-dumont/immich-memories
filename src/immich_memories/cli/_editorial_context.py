@@ -49,6 +49,34 @@ def narrow_to_special_event(
     return narrowed, list(select_source_members(photo_assets, members))
 
 
+def intent_ranges(
+    date_range: DateRange, date_ranges: list[DateRange]
+) -> tuple[DateRange, list[DateRange]]:
+    """PROBE (semantic translation): a request whose pool spans years arrives as one range per
+    year, so the custom contract with its written subject gives every year a voice."""
+    import json
+    import os
+    from datetime import datetime
+    from pathlib import Path
+
+    path = os.environ.get("IMMICH_MEMORIES_INTENT")
+    ranges = json.loads(Path(path).read_text()).get("ranges") if path else None
+    if not ranges:
+        return date_range, date_ranges
+    spans = [DateRange(start=datetime.fromisoformat(a), end=datetime.fromisoformat(b)) for a, b in ranges]
+    return DateRange(start=spans[0].start, end=spans[-1].end), spans
+
+
+def _intent_thesis() -> str | None:
+    """PROBE: the free-text thesis, when the run carries an intent file (custom runs have no preset)."""
+    import json
+    import os
+    from pathlib import Path
+
+    path = os.environ.get("IMMICH_MEMORIES_INTENT")
+    return json.loads(Path(path).read_text()).get("thesis") if path else None
+
+
 def narrow_to_intent(
     *, assets: list, photo_assets: list | None, memory_preset_params: dict | None
 ) -> tuple[list, list | None]:
@@ -131,7 +159,7 @@ def build_editorial_context(
         owner_required_asset_ids=owner_required_asset_ids,
         owner_excluded_asset_ids=owner_excluded_asset_ids,
         # PROBE (caption threads): the intent layer's thesis is the film's written subject.
-        base_brief=resolved.preset_params.get("thesis"),
+        base_brief=resolved.preset_params.get("thesis") or _intent_thesis(),
         trip=product == "trip",
         album_ref=album_ref,
         album_sources=album_sources,
