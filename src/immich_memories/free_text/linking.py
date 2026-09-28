@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 
@@ -53,6 +53,19 @@ _ISO_DATE = {"type": ["string", "null"], "pattern": "^[12][0-9]{3}-[01][0-9]-[0-
 _TIME_PREPOSITIONS = frozenset(
     {"along", "over", "through", "across", "during", "throughout", "since", "in", "for"}
 )
+
+_WHERE_OF = """The request says where its photos were taken (where_the_request_says). Which of these
+places does that mean? Pick one. Reason first. Return JSON."""
+# Words that carry no place of their own: once the subject's nouns are gone, a phrase of only
+# these ("at the", "and") says nowhere.
+_ARTICLES = frozenset(
+    {"a", "an", "the", "some", "and", "or", "my", "our", "his", "her", "their", "its", "your"}
+)
+_PLACE_GLUE = _ARTICLES | frozenset(
+    {"at", "in", "on", "to", "from", "of", "by", "with", "near", "around"}
+)
+# Nested scopes, narrowest first: several phrases give the widest one.
+_NESTED = ("home", "home_at_time", "near_home", "anywhere")
 
 _WHICH_PERSON = "Which of these people does the owner's request mean? Pick one. Return JSON."
 
@@ -419,3 +432,102 @@ def time_cut(phrase: str, lexicon: Lexicon) -> str:
         if tokens[index].lower() in _TIME_PREPOSITIONS:
             return " ".join(tokens[:index])
     return phrase
+
+
+@dataclass(frozen=True)
+class WhereLink:
+    """Where the request's photos were taken.
+
+    `scope` is "anywhere", "home_at_time" (wherever the owner lived when the photo was taken),
+    "near_home" (around that home), "home" (one particular home: `home`) or "trips" (away
+    from home, on trips).
+    """
+
+    scope: str = "anywhere"
+    home: Home | None = None
+    reasons: tuple[Reason, ...] = ()
+
+
+def _place_options(homes: Sequence[Home]) -> dict[str, tuple[str, Home | None]]:
+    # Each option says what it means, as a semantic layer describes its fields: the model
+    # picks by meaning, not by a label.
+    options: dict[str, tuple[str, Home | None]] = {
+        "anywhere: the request does not tie the photos to a place": ("anywhere", None)
+    }
+    if homes:
+        options[
+            "at home, wherever the owner lived when the photo was taken: what belongs to the "
+            "owner's household and moves with them (their pets, life at home)"
+        ] = ("home_at_time", None)
+        options[
+            "near home: around where the owner lived at the time, the neighbourhood and town, "
+            "not only the house"
+        ] = ("near_home", None)
+    for home in homes:
+        since = str(home.since.year) if home.since else "the start"
+        until = str(home.until.year) if home.until else "now"
+        options[
+            f"at the home lived in from {since} to {until} only: that house or flat itself, "
+            "or what happened in it"
+        ] = ("home", home)
+    options["away from home: only when the request says holidays, trips or travel"] = (
+        "trips",
+        None,
+    )
+    return options
+
+
+def link_where(
+    request: str,
+    where: Sequence[str],
+    subject_heads: Collection[str],
+    household: Household,
+    asker: Asker,
+) -> WhereLink:
+    """Where the request's photos were taken: one voted place per phrase, several combined.
+
+    A phrase counts only by its words beyond the subject's own nouns ("beaches and pools"
+    says no place: the beaches are the subject). Each remaining phrase is one choice between
+    the places code built from the homes, voted three times; several phrases are their union,
+    so nested places give the widest and home with away gives anywhere. Nothing said is
+    anywhere, asked of no one.
+    """
+    said = " | ".join(where)
+    heads = {head.lower() for head in subject_heads}
+    phrases = [phrase for span in where if (phrase := _beyond_subject(span, heads))]
+    if not phrases:
+        rule = "nothing beyond the subject's own nouns" if where else "no place words"
+        return WhereLink(reasons=(Reason(said, rule, "anywhere"),))
+    options = _place_options(household.homes)
+    picks = [
+        choose(
+            asker,
+            _WHERE_OF,
+            {"owner_request": request, "where_the_request_says": phrase},
+            list(options),
+        )
+        for phrase in phrases
+    ]
+    chosen = [options[option] for option, _ in picks]
+    scope, home = _union(chosen)
+    asked = "; ".join(
+        f'"{phrase}": {option.split(":")[0]} ({_tally(votes)})'
+        for phrase, (option, votes) in zip(phrases, picks, strict=True)
+    )
+    return WhereLink(scope, home, (Reason(said, f"the model picked, per phrase: {asked}", scope),))
+
+
+def _beyond_subject(span: str, heads: Collection[str]) -> str:
+    words = [word for word in words_of(span) if word not in heads and word not in _ARTICLES]
+    return " ".join(words) if any(word not in _PLACE_GLUE for word in words) else ""
+
+
+def _union(chosen: Sequence[tuple[str, Home | None]]) -> tuple[str, Home | None]:
+    scopes = {scope for scope, _ in chosen}
+    if len(set(chosen)) == 1:
+        return chosen[0]
+    if "trips" in scopes or "anywhere" in scopes:
+        return "anywhere", None
+    widest = max(scopes, key=_NESTED.index)
+    # Two particular homes are wider than either: the home of each photo's time.
+    return ("home_at_time", None) if widest == "home" else (widest, None)

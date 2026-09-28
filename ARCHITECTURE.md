@@ -834,11 +834,23 @@ src/immich_memories/
 │   └── editor.py               # The companion editor's model: the registry as rows, and back
 │
 ├── free_text/                  # A film asked for in a sentence (#1436, being built; design in
-│   │                           # docs/designs/free-text-memories.md). No LLM in these modules
+│   │                           # docs/designs/free-text-memories.md). Only reading.py and the
+│   │                           # model's picks in linking.py reach an LLM
 │   ├── __init__.py             # The package API (the pool, the reading and the CLI build on it)
 │   ├── lexicon.py              # Lexicon Protocol; load_wordnet(): the pinned WordNet 3.0 zip that
 │   │                           # `models fetch` writes (free_text.wordnet), digest-checked, read through
-│   │                           # nltk; never downloaded at run time
+│   │                           # nltk; never downloaded at run time. Noun files, plurals, people words,
+│   │                           # young people, time periods, roles through their kinds
+│   ├── reading.py              # read_request(): the model picks who/when/where/what from an enum of the
+│   │                           # request's own n-grams, 3 field orders, 2-of-3 token votes, where+what
+│   │                           # voted as content; choose() (one option, 3 orders); Asker Protocol and
+│   │                           # WireAsker (llm_query.query_llm with the answer's json_schema)
+│   ├── linking.py              # Code links the spans: link_who (I = the owner for dates, never a face;
+│   │                           # we adds the partner; names/roles need faces; plural people = company),
+│   │                           # link_when (an age read as numbers, calendar in code; dates question only
+│   │                           # with time words, years or people), link_where (one voted place per
+│   │                           # phrase beyond the subject's nouns, widest of several), time_cut; each
+│   │                           # decision keeps a Reason for the trace
 │   ├── library.py              # read_library(): per picture, Immich's date/media kind/places/GPS from
 │   │                           # annotation_assets, and the configured producers' caption, doc_docling
 │   │                           # label, sharpness and people-file faces via AssetAnnotationFactRepository

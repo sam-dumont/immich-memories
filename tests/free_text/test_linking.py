@@ -2,11 +2,21 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import date
+from typing import Any
 
+from immich_memories.free_text.homes import Home
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryPerson
-from immich_memories.free_text.linking import Household, WhoLink, link_when, link_who, time_cut
+from immich_memories.free_text.linking import (
+    Household,
+    WhoLink,
+    link_when,
+    link_where,
+    link_who,
+    time_cut,
+)
 from tests.free_text.banked import BankedAsker
 
 OWNER = LibraryPerson("p-owner", "Ada Example", None, date(1990, 6, 15))
@@ -167,3 +177,77 @@ def test_a_trailing_time_phrase_is_cut_from_the_subject_side(lexicon: Lexicon) -
     assert time_cut("closed eyes along the years", lexicon) == "closed eyes"
     assert time_cut("kids in the park over the years", lexicon) == "kids in the park"
     assert time_cut("cars in the park", lexicon) == "cars in the park"
+
+
+FIRST_HOME = Home(50.0, 4.0, since=None, until=date(2016, 3, 1))
+SECOND_HOME = Home(50.1, 4.1, since=date(2016, 3, 1), until=None)
+AT_HOMES = Household(PEOPLE, "p-owner", (FIRST_HOME, SECOND_HOME))
+
+
+def _picks(scope_words: str) -> dict[str, Any]:
+    return {"reason": "", "choice": scope_words}
+
+
+def _option(schema: Mapping[str, Any], starts: str) -> str:
+    return next(o for o in schema["properties"]["choice"]["enum"] if o.startswith(starts))
+
+
+def test_a_place_phrase_is_one_voted_place() -> None:
+    def at_home(schema: Mapping[str, Any]) -> dict[str, Any]:
+        return _picks(_option(schema, "at home, wherever"))
+
+    # WHY: stands in for the model server; three votes for the home of the time.
+    asker = BankedAsker(at_home, at_home, at_home)
+
+    where = link_where("our cat at home", ("at home",), {"cat"}, AT_HOMES, asker)
+
+    assert (where.scope, where.home) == ("home_at_time", None)
+    assert "3/3" in where.reasons[0].rule
+
+
+def test_a_place_phrase_of_only_the_subjects_nouns_says_nowhere() -> None:
+    beaches = link_where(
+        "beaches and pools", ("beaches and pools",), {"beaches", "pools"}, AT_HOMES, _unasked()
+    )
+    park = link_where("at the park with kids", ("at the park",), {"park"}, AT_HOMES, _unasked())
+    silent = link_where("our cat", (), {"cat"}, AT_HOMES, _unasked())
+
+    assert beaches.scope == park.scope == silent.scope == "anywhere"
+    assert beaches.reasons[0].rule == "nothing beyond the subject's own nouns"
+    assert silent.reasons[0].rule == "no place words"
+
+
+def test_home_and_away_together_are_anywhere() -> None:
+    def at_home(schema: Mapping[str, Any]) -> dict[str, Any]:
+        return _picks(_option(schema, "at home, wherever"))
+
+    def away(schema: Mapping[str, Any]) -> dict[str, Any]:
+        return _picks(_option(schema, "away from home"))
+
+    # WHY: stands in for the model server; the first phrase votes home, the second away.
+    asker = BankedAsker(at_home, at_home, at_home, away, away, away)
+
+    where = link_where(
+        "brunches at home or outside", ("at home", "outside"), {"brunches"}, AT_HOMES, asker
+    )
+
+    assert where.scope == "anywhere"
+
+
+def test_nested_places_give_the_widest_and_one_home_is_that_home() -> None:
+    def second_home(schema: Mapping[str, Any]) -> dict[str, Any]:
+        return _picks(_option(schema, "at the home lived in from 2016"))
+
+    def near(schema: Mapping[str, Any]) -> dict[str, Any]:
+        return _picks(_option(schema, "near home"))
+
+    # WHY: stands in for the model server; one phrase votes a home, the other its town.
+    nested = BankedAsker(second_home, second_home, second_home, near, near, near)
+    # WHY: as above; one phrase, three votes for the second home.
+    one = BankedAsker(second_home, second_home, second_home)
+
+    widest = link_where("x", ("in the house", "around town"), (), AT_HOMES, nested)
+    house = link_where("x", ("in the new house",), (), AT_HOMES, one)
+
+    assert widest.scope == "near_home"
+    assert (house.scope, house.home) == ("home", SECOND_HOME)
