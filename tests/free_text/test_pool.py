@@ -254,3 +254,33 @@ def test_the_farthest_trip_is_the_pool_whatever_the_subject(lexicon: Lexicon) ->
     assert _ids(pool) == {"far-1", "far-2", "far-3"}
     assert "subject" not in [step.name for step in pool.funnel]
     assert unknown.verdict == "not possible"
+
+
+def _picks(*choices: str) -> dict[str, Any]:
+    return {"reason": "banked", "choices": list(choices)}
+
+
+def test_only_what_follows_a_negation_can_be_left_out_and_the_request_keeps_its_own_subject(
+    lexicon: Lexicon,
+) -> None:
+    view = _view(
+        *[_picture(f"car-{n}", caption="A blue car parked on a street") for n in range(3)],
+        _picture("toy", caption="A red toy car on a rug"),
+        _picture("bike", caption="A motorcycle parked by a wall"),
+    )
+    subject = Subject(heads=("car",), words=("car",), main=("car",), extent=("motorcycle",))
+    asked = _asked("the cars I drove, no toy cars or motorcycles", subject=subject)
+    asker = BankedAsker(
+        _picks("toy cars", "motorcycles"), _picks("toy cars", "motorcycles"), _picks("toy cars")
+    )
+
+    pool = build_pool(asked, view, NOBODY, lexicon, asker)
+    plain = build_pool(
+        _asked("the cars I drove", subject=subject), view, NOBODY, lexicon, BankedAsker()
+    )
+
+    assert _ids(pool) == {"car-0", "car-1", "car-2"}
+    offered = asker.questions[0][1]["properties"]["choices"]["items"]["enum"]
+    assert "toy cars" in offered
+    assert "the cars" not in offered
+    assert _ids(plain) == {"car-0", "car-1", "car-2", "toy", "bike"}

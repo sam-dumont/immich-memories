@@ -26,6 +26,7 @@ from immich_memories.free_text.grammar import free_tier
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryPicture, LibraryView
 from immich_memories.free_text.linking import Household, Reason, WhenLink, WhereLink, WhoLink
+from immich_memories.free_text.pool_questions import left_out
 from immich_memories.free_text.reading import Asker, Reading, words_of
 from immich_memories.free_text.scopes import in_place
 from immich_memories.free_text.subject import Subject
@@ -101,13 +102,14 @@ def build_pool(
     (the config's defaults when not given).
     """
     funnel = _Funnel(view.pictures)
+    excluded, left_out_reason = left_out(translation.reading.request, asker)
     _when(funnel, translation.when)
     _present(funnel, translation.who)
     rules = trips or TripsConfig()
     _where(funnel, translation, household, rules)
     _measured(funnel, translation.facts)
     if not _computed(funnel, translation.facts, view, household, rules):
-        _subject(funnel, translation.subject, lexicon)
+        _subject(funnel, translation.subject, excluded, lexicon, left_out_reason)
     _company(funnel, translation.who, lexicon)
     return _verdict(funnel)
 
@@ -232,17 +234,38 @@ def _company(funnel: _Funnel, who: WhoLink, lexicon: Lexicon) -> None:
     funnel.keep("company", kept, Reason(who.company, rule, f"{who.company} in the photos"))
 
 
-def _subject(funnel: _Funnel, subject: Subject, lexicon: Lexicon) -> None:
-    phrases = list(dict.fromkeys((*subject.main, *subject.extent)))
+def _subject(
+    funnel: _Funnel,
+    subject: Subject,
+    excluded: Sequence[str],
+    lexicon: Lexicon,
+    left_out_reason: Reason | None,
+) -> None:
+    # Nothing is both the subject and left out, but the request's own nouns stay: "our cat, not
+    # the neighbour's cats" still films a cat.
+    own = {_head(word, lexicon) for word in subject.heads}
+    gone = {_head(phrase, lexicon) for phrase in excluded} - own
+    phrases = [
+        phrase
+        for phrase in dict.fromkeys((*subject.main, *subject.extent))
+        if _head(phrase, lexicon) not in gone
+    ]
     if not phrases:
         return
-    kept = free_tier(funnel.pictures, phrases, lexicon)
+    kept = free_tier(funnel.pictures, phrases, lexicon, excluded)
     rule = "caption grammar: a thing is the caption's subject, a scene counts anywhere"
     if subject.also:
         rule += f"; a photo may also show {', '.join(subject.also)}, which alone does not count"
+    if left_out_reason is not None:
+        rule += f"; {left_out_reason.rule}: {left_out_reason.outcome}"
     funnel.keep(
         "subject", kept, Reason(", ".join(phrases), rule, f"captions about {', '.join(phrases)}")
     )
+
+
+def _head(phrase: str, lexicon: Lexicon) -> str:
+    last = words_of(phrase)[-1:]
+    return (lexicon.noun_base(last[0]) or last[0]) if last else ""
 
 
 def _verdict(funnel: _Funnel) -> Pool:
