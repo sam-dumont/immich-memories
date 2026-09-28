@@ -8,9 +8,11 @@ prove those.
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from itertools import pairwise
 
 from immich_memories.free_text.facts import PICTURE_WORDS
 from immich_memories.free_text.lexicon import Lexicon, Relative
@@ -33,6 +35,14 @@ _PEOPLE_RULE = (
     "you asked for counts"
 )
 _CAPTIONS_PER_USE = 8000
+_QUALITY = """The owner's request puts a quality word before its subject. Does that quality narrow
+which ones belong in the film, or would every one the request means have it anyway? Pick one.
+Reason first. Return JSON."""
+_NARROWS = "it narrows which ones belong"
+_QUALITIES = (_NARROWS, "every one the request means has it anyway")
+# A quality filters captions only when enough of them say it: "black cat" is written hundreds of
+# times, "live concert" hardly ever (a concert caption says "a band on stage").
+_QUALITY_CAPTIONS = 3
 
 
 @dataclass(frozen=True)
@@ -71,7 +81,8 @@ def subject_words(reading: Reading, household: Household, lexicon: Lexicon) -> S
 
 
 def _head_of(words: Sequence[str], lexicon: Lexicon) -> tuple[list[str], list[str]]:
-    nouns = [word for word in words if lexicon.noun_base(word)]
+    # A word WordNet does not hold is a noun, as in caption grammar: "app" is newer than 2006.
+    nouns = [word for word in words if lexicon.noun_base(word) or _unknown(word, lexicon)]
     # "bread making": the -ing word names the doing and the noun before it what is photographed;
     # the making itself adds nothing (a maker is no subject).
     doing_of = None
@@ -83,9 +94,8 @@ def _head_of(words: Sequence[str], lexicon: Lexicon) -> tuple[list[str], list[st
         if word != doing_of and _is_doing(word, lexicon)
         for noun in sorted(lexicon.derived_nouns(word) - {word})
     ]
-    # With no noun, the last word that is a verb or unknown to WordNet names the subject:
-    # "breastfeeding" is asked for even when WordNet has no noun for it.
-    doing = [w for w in words if lexicon.verb_base(w) or not _known(w, lexicon)]
+    # With no noun, the last verb names the subject: "partying" is asked for as it is written.
+    doing = [word for word in words if lexicon.verb_base(word)]
     return (nouns[-1:] or doing[-1:]), activity
 
 
@@ -93,8 +103,13 @@ def _is_doing(word: str, lexicon: Lexicon) -> bool:
     return word.endswith("ing") and lexicon.verb_base(word) is not None
 
 
-def _known(word: str, lexicon: Lexicon) -> bool:
-    return lexicon.noun_base(word) is not None or lexicon.is_adjective(word)
+def _unknown(word: str, lexicon: Lexicon) -> bool:
+    return (
+        word.isalpha()
+        and lexicon.noun_base(word) is None
+        and lexicon.verb_base(word) is None
+        and not lexicon.is_adjective(word)
+    )
 
 
 def people_words(reading: Reading, household: Household, lexicon: Lexicon) -> frozenset[str]:
@@ -131,6 +146,19 @@ class _CaptionWords:
         self._counts = Counter(word for caption in said for word in set(words_of(caption)))
         # Scaled to the library: 2 captions of a few thousand, 10 of eighty thousand.
         self._floor = max(2, len(said) // _CAPTIONS_PER_USE)
+        self._said = said
+
+    def says(self, quality: str, noun: str) -> bool:
+        # Either word order ("closed eyes" is written "eyes closed"), the noun in either number.
+        said = re.escape(quality.lower())
+        thing = rf"{re.escape(noun.lower())}(?:e?s)?"
+        form = re.compile(rf"\b(?:{said} {thing}|{thing} {said})\b")
+        seen = 0
+        for caption in self._said:
+            seen += form.search(caption) is not None
+            if seen >= _QUALITY_CAPTIONS:
+                return True
+        return False
 
     def uses(self, word: str) -> bool:
         return sum(self._counts[form] for form in (word, f"{word}s", f"{word}es")) >= self._floor
@@ -206,6 +234,7 @@ def build_subject(
                 "", "nothing left of the model's pick", f"your own subject words: {', '.join(own)}"
             )
         )
+    main = _qualities(reading.request, main, index, lexicon, asker, reasons)
     extent, kind = _extent(reading.request, main, relatives, candidates, lexicon, asker, reasons)
     return Subject(
         heads=found.heads,
@@ -259,6 +288,47 @@ def _vote_main(
         )
     )
     return main, votes
+
+
+def _qualities(
+    request: str,
+    main: Sequence[str],
+    index: _CaptionWords,
+    lexicon: Lexicon,
+    asker: Asker,
+    reasons: list[Reason],
+) -> list[str]:
+    # A stated quality narrows the subject only when the model says it narrows which ones belong
+    # ("black cat"; every concert is live) and the captions say it: both, or it sets nothing.
+    tokens = words_of(request)
+    kept: list[str] = []
+    for word in main:
+        phrase = _stated_quality(tokens, word, lexicon)
+        if phrase is None:
+            kept.append(word)
+        elif not index.says(phrase.split()[0], lexicon.noun_base(word.split()[-1]) or word):
+            reasons.append(Reason(phrase, "your captions do not say it", word))
+            kept.append(word)
+        else:
+            answer, votes = choose(
+                asker,
+                _QUALITY,
+                {"owner_request": request, "quality": phrase.split()[0], "subject": word},
+                list(_QUALITIES),
+            )
+            kept.append(phrase if answer == _NARROWS else word)
+            reasons.append(Reason(phrase, f"the model says {answer} ({_tally(votes)})", kept[-1]))
+    return list(dict.fromkeys(kept))
+
+
+def _stated_quality(tokens: Sequence[str], word: str, lexicon: Lexicon) -> str | None:
+    # The adjective written right before the word's noun in the request, as written.
+    head = word.split()[-1]
+    base = lexicon.noun_base(head) or head
+    for before, token in pairwise(tokens):
+        if (lexicon.noun_base(token) or token) == base and before not in GLUE:
+            return f"{before} {token}" if lexicon.is_adjective(before) else None
+    return None
 
 
 def _extent(

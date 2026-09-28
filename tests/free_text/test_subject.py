@@ -158,3 +158,47 @@ def test_a_word_for_people_the_request_does_not_say_is_never_offered(lexicon: Le
 
     assert subject.main == ("team",)
     assert "player" not in subject.relatives
+
+
+def test_a_stated_quality_stays_when_it_narrows_and_the_captions_say_it(lexicon: Lexicon) -> None:
+    cat = _reading("our cat, black cat", what=("our cat", "black cat"))
+    eyes = _reading("closed eyes along the years", what=("closed eyes along the years",))
+    cats = ("a black cat asleep", "A black cat on a sofa", "black cat by a window")
+    closed = ("a woman with eyes closed", "a baby, eyes closed", "eyes closed in the sun")
+    # WHY: stands in for the model server; the quality narrows which ones belong, 3 of 3.
+    narrows = [_choice("it narrows which ones belong")] * 3
+
+    black = build_subject(cat, NOBODY, cats, lexicon, BankedAsker(*narrows))
+    shut = build_subject(eyes, NOBODY, closed, lexicon, BankedAsker(*narrows))
+
+    assert black.main == ("black cat",)
+    assert shut.main == ("closed eyes",)
+
+
+def test_a_quality_every_one_has_anyway_is_dropped(lexicon: Lexicon) -> None:
+    reading = _reading("a lifetime of live concerts", what=("live concerts",))
+    captions = ("a live concert", "live concert crowd", "a band at a live concert")
+    # WHY: stands in for the model server; every concert the request means is live, 3 of 3.
+    asker = BankedAsker(*[_choice("every one the request means has it anyway")] * 3)
+
+    subject = build_subject(reading, NOBODY, captions, lexicon, asker)
+
+    assert subject.main == ("concerts",)
+    assert "has it anyway" in subject.reasons[-1].rule
+
+
+def test_a_quality_the_captions_never_say_or_a_noun_before_the_head_asks_nothing(
+    lexicon: Lexicon,
+) -> None:
+    cat = _reading("black cat", what=("black cat",))
+    apps = _reading("sport apps", what=("sport apps",))
+
+    # WHY: stands in for the model server; an empty bank fails any question asked.
+    black = build_subject(cat, NOBODY, ("a cat",), lexicon, BankedAsker())
+    # WHY: stands in for the model server; an empty bank fails any question asked.
+    sport = build_subject(
+        apps, NOBODY, ("sport apps", "sport apps", "sport apps"), lexicon, BankedAsker()
+    )
+
+    assert black.main == ("cat",)
+    assert sport.main == ("apps",)
