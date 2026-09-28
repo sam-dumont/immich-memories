@@ -9,6 +9,8 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from typing import Any
 
+from immich_memories.analysis.editorial_thin_vote import sole_era_shots
+
 
 def trim_to_timing_budget(
     carriers: list[dict],
@@ -16,6 +18,7 @@ def trim_to_timing_budget(
     min_seconds: float,
     protected: frozenset[str] = frozenset(),
     vouched: Callable[[Mapping[str, Any]], bool] = lambda _carrier: True,
+    era_of: Callable[[str], str | None] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """Drop carriers until their minimum content fits the production content budget of what remains.
 
@@ -24,8 +27,9 @@ def trim_to_timing_budget(
     picture; a story's only picture goes only when no lighter story still has one. A protected
     carrier (one the owner required) is never a victim; when only those remain the trim stops.
     A favourite is never a victim while a picture nothing vouches for (`vouched`) remains: the
-    owner's star outranks the allocation's order. A dropped carrier carries the reason it was
-    cut, which the selection sheet prints.
+    owner's star outranks the allocation's order. In a film that gives every partition a voice
+    (`era_of`), a partition's only shot goes after every other. A dropped carrier carries the
+    reason it was cut, which the selection sheet prints.
     """
     from immich_memories.speech.cuts import minimum_duration
 
@@ -42,9 +46,20 @@ def trim_to_timing_budget(
         if not open_:
             break
         shield = any(not vouched(c) for c in open_)
-        ranked = [((shield and bool(c.get("favourite")), _drop_rank(c, counts)), c) for c in open_]
+        voices = sole_era_shots(kept, era_of)
+        ranked = [
+            (
+                (
+                    c["asset_id"] in voices,
+                    shield and bool(c.get("favourite")),
+                    _drop_rank(c, counts),
+                ),
+                c,
+            )
+            for c in open_
+        ]
         best = min(rank for rank, _c in ranked)
-        if best[1] >= 14 and len(kept) == 1:
+        if best[-1] >= 14 and len(kept) == 1:
             break  # the dominant story's only picture stays whatever the budget says
         victim = max(
             (c for rank, c in ranked if rank == best), key=lambda c: c.get("taken") or ""
