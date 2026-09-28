@@ -1,5 +1,4 @@
 ---
-sidebar_position: 3
 title: Kubernetes
 ---
 
@@ -101,7 +100,7 @@ read-only. Four writable paths:
 
 | Mount | Backed by | Holds |
 |---|---|---|
-| `/home/immich/.immich-memories` | PVC `immich-memories-cache` | `config.yaml`, `store.db` (the store when it is SQLite: banked facts, readings, your picture decisions, people, run history, automation state, special days), `cache.db` (derived analysis), video cache |
+| `/home/immich/.immich-memories` | PVC `immich-memories-cache` | `config.yaml`, `store.db` (the store when it is SQLite: banked facts, readings, your picture decisions, people, run history, automation state, special days), video cache (a `cache.db` there is a pre-store leftover, imported once) |
 | `/app/output` | PVC `immich-memories-output` | generated videos |
 | `/models` | PVC `immich-memories-models` | the four artifacts `immich-memories models fetch` writes, at `IMMICH_MEMORIES_TRIAGE__ENCODER`, `..._MARQO_ONNX`, `..._DETECTOR_CACHE_DIR` and `IMMICH_MEMORIES_FREE_TEXT__WORDNET` |
 | `/tmp` | emptyDir 4Gi | FFmpeg intermediates; 8Gi for 4K |
@@ -183,7 +182,7 @@ allows egress on 8092. What each overlay patches, and what a card is worth per p
 `base/job.yaml` holds a one-off `generate` Job and two CronJobs (monthly highlights on the 1st,
 `auto run` daily). Uncomment `- job.yaml` in the kustomization.
 
-The store defaults to a SQLite file on the `data` PVC, one writer at a time; a second pod on
+The store defaults to a SQLite file on the `immich-memories-cache` PVC, one writer at a time; a second pod on
 another node writing that file over `ReadWriteMany` corrupts it (WAL mode needs shared memory a
 network filesystem does not give two hosts). So the two CronJobs never mount the PVCs: they `curl`
 the Deployment's `POST /api/trigger` route instead, running whatever decision `auto run` would have

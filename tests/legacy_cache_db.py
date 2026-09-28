@@ -1,9 +1,10 @@
-"""A `cache.db` as the app wrote it before the store: history tables beside the analysis cache.
+"""A `cache.db` as the app wrote it before the store: the history the legacy import reads.
 
 The migration ladder that built these files is gone. What it left is frozen here: the
-layout of its last step (v25) for the tables that moved to the store, the analysis tables
-exactly as the cache still builds them, and a `schema_migrations` ledger claiming `version`.
-Below v22 `asset_scores` keeps its old single-asset key, which could hold a NULL version.
+layout of its last step (v25) for the tables that moved to the store, and a
+`schema_migrations` ledger claiming `version`. The analysis tables that sat beside them are
+left out: nothing reads them any more. Below v22 `asset_scores` keeps its old single-asset
+key, which could hold a NULL version.
 """
 
 from __future__ import annotations
@@ -11,8 +12,6 @@ from __future__ import annotations
 import sqlite3
 from contextlib import closing
 from pathlib import Path
-
-from immich_memories.cache.analysis_schema import ensure_cache_schema
 
 _HISTORY = """
 CREATE TABLE schema_migrations (
@@ -132,9 +131,6 @@ def write_legacy_cache_db(path: Path, version: int = 25) -> Path:
     """Create the pre-store `cache.db` at `path`, its ledger claiming `version`."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with closing(sqlite3.connect(path)) as conn:
-        ensure_cache_schema(conn)
-        # The ladder never stamped user_version; only the cache does, now.
-        conn.execute("PRAGMA user_version = 0")
         conn.executescript(_HISTORY + (_SCORES_V22 if version >= 22 else _SCORES_BEFORE_V22))
         conn.executemany(
             "INSERT INTO schema_migrations (version, description) VALUES (?, ?)",

@@ -91,8 +91,8 @@ cut again. Every lever is on [Overrule it](../how-it-chooses/overrule-it.md).
 A cut prepares the pictures it can reach once (previews, pixel facts, heads, detectors, and on the `gpu` and
 `full` tiers a caption for the pictures it selects and their candidates) and banks them. The second cut over the same period is mostly the render. The levers, in order:
 keep the cache volume, prepare ahead with [`prepare`](../make/cli/prepare.md) overnight, and move the heads to a
-faster box with [the inference service](../better/inference.md). Numbers per host are on
-[Measured](../better/measured.md).
+faster box with [the inference service](../better/inference.md). `immich-memories runs show` prints where
+a run spent its time, and `immich-memories report` puts the same phase table in a shareable report.
 
 During preparation, the CLI and saved progress advance by batches of new work, even when a detector ends
 with a partial batch. Stage changes, counter resets and completion appear immediately.

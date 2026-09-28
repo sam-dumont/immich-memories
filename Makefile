@@ -2,7 +2,7 @@
 # Uses uv for fast Python package management
 export PYTHONUNBUFFERED=1
 
-.PHONY: workflow-guard docs-voice notices notices-check help install dev dev-ci dev-test run preflight parity docs-cli-check docs-config-check test test-extras test-cov test-cov-xml test-integration test-integration-auth test-integration-photos test-integration-audio test-integration-audio-mixing test-integration-titles test-fast benchmark benchmark-perf benchmark-steps benchmark-assembly benchmark-titles benchmark-titles-json benchmark-pipeline benchmark-json benchmark-submit lint format typecheck check launch-check launch-check-ci launch-check-ci-postgres clean clean-cache clean-all build build-check docker docker-run docker-shell compose-check file-length complexity cognitive-complexity security-lint bandit-ci semgrep dead-code duplication refurb dep-check arch-check diff-cover diff-cover-ci integration-coverage-for-diff ci-scope ci critique ensure-dev commitlint privacy-gate pip-audit docs-install docs-dev docs-build docs-check docs-cli demo-video playwright-install e2e e2e-full screenshots demo-output demo-output-trip diagrams capability-matrix
+.PHONY: workflow-guard docs-voice notices notices-check help install dev dev-ci dev-test run preflight parity docs-cli-check docs-config-check test test-extras test-cov test-cov-xml test-integration test-integration-auth test-integration-photos test-integration-audio test-integration-audio-mixing test-integration-titles test-fast benchmark benchmark-perf benchmark-steps benchmark-assembly benchmark-titles benchmark-titles-json benchmark-pipeline benchmark-json benchmark-submit lint format typecheck check launch-check launch-check-ci launch-check-ci-postgres clean clean-all build build-check docker docker-run docker-shell compose-check file-length complexity cognitive-complexity security-lint bandit-ci semgrep dead-code duplication refurb dep-check arch-check diff-cover diff-cover-ci integration-coverage-for-diff ci-scope ci critique ensure-dev commitlint privacy-gate pip-audit docs-install docs-dev docs-build docs-check docs-cli demo-video playwright-install e2e e2e-full screenshots demo-output demo-output-trip diagrams capability-matrix
 
 # Default target
 help:
@@ -51,7 +51,6 @@ help:
 	@echo "  workflow-guard Check every workflow job skips in the private GPU mirror"
 	@echo ""
 	@echo "Cache Management:"
-	@echo "  clean-cache           Clear analysis cache (SQLite)"
 	@echo "  clean-video-cache     Clear video file cache"
 	@echo "  clean-thumbnail-cache Clear thumbnail cache"
 	@echo "  clean-all-cache       Clear all caches"
@@ -487,9 +486,6 @@ test-watch:
 # Run specific test file
 test-one:  ## Run one test file or node id: make test-one T=tests/test_foo.py
 	uv run pytest $(T) -v
-
-test-cache:
-	uv run pytest tests/test_cache.py -v
 
 test-scoring:
 	uv run pytest tests/test_scoring.py -v
@@ -946,10 +942,6 @@ clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 
-clean-cache:
-	rm -f ~/.immich-memories/cache.db
-	@echo "Analysis cache cleared"
-
 clean-video-cache:
 	rm -rf ~/.immich-memories/cache/video-cache
 	@echo "Video cache cleared"
@@ -962,7 +954,7 @@ clean-preview-cache:
 	rm -rf ~/.immich-memories/cache/preview-cache
 	@echo "Preview cache cleared"
 
-clean-all-cache: clean-cache clean-video-cache clean-thumbnail-cache clean-preview-cache
+clean-all-cache: clean-video-cache clean-thumbnail-cache clean-preview-cache
 	@echo "All caches cleared"
 
 clean-all: clean clean-all-cache
@@ -980,12 +972,8 @@ info:
 	@echo "Python: $(shell uv run python --version)"
 	@echo "Location: $(shell pwd)"
 	@echo ""
-	@echo "Cache location: ~/.immich-memories/cache.db"
+	@echo "Store location: ~/.immich-memories/store.db (SQLite default)"
 	@echo "Config location: ~/.immich-memories/config.yaml"
-
-# Open cache database with sqlite3
-db:
-	sqlite3 ~/.immich-memories/cache.db
 
 # Generate version info
 version:

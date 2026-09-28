@@ -1,5 +1,4 @@
 ---
-sidebar_position: 2
 sidebar_label: "prepare, people, discover-days"
 title: Preparing a library
 ---

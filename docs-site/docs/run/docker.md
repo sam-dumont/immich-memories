@@ -1,5 +1,4 @@
 ---
-sidebar_position: 1
 title: Docker Compose
 ---
 
@@ -12,7 +11,8 @@ on a plain NAS; a GPU or a model makes it better. The shortest path through it i
 ## Install
 
 You need Docker Engine with Compose v2 (`docker compose version` answers), Immich v2 or v3, and
-the hardware on [Requirements](./requirements.md).
+the hardware on [Requirements](./requirements.md). What the image has been checked on, and when:
+[Supported and tested](./requirements.md#supported-and-tested).
 
 **1. Download the compose file and `example.env`** into an empty directory:
 
@@ -23,7 +23,7 @@ curl -O https://raw.githubusercontent.com/sam-dumont/immich-video-memory-generat
 cp example.env .env
 ```
 
-**2. Fill in `.env`.** Two values are required, and the home base makes trips work:
+**2. Fill in `.env`.** Two values are required, and the home base makes trips and your country's public holidays work:
 
 ```bash
 IMMICH_URL=http://192.168.1.10:2283       # your Immich, as the container reaches it
@@ -224,9 +224,9 @@ docker inspect --format='{{.State.Health.Status}}' immich-memories
 
 `/home/immich/.immich-memories/store.db` is the expensive file: every fact, caption and reading
 the editor banked, every picture you cleared or ruled out, your people, run history, automation
-state and the special-days catalogue. Lose it and the next cut reads the library again. `cache.db`
-beside it holds derived analysis only and is rebuilt when lost. Both sit on the config volume, so
-moving host means copying that volume ([moving an install](./maintenance/health-logs-cache.md#moving-an-install)).
+state and the special-days catalogue. Lose it and the next cut reads the library again. A `cache.db`
+beside it is a leftover from before the store: nothing writes it, and once imported it can go. The
+store sits on the config volume, so moving host means copying that volume ([moving an install](./maintenance/health-logs-cache.md#moving-an-install)).
 
 Back the store up without stopping anything:
 

@@ -99,7 +99,7 @@ def _candidate(
             _candidate(
                 CandidateCategory.PERSON_SPOTLIGHT,
                 "person_spotlight",
-                people=["Alice"],
+                people=["Ada"],
             ),
             [
                 *self_command(),
@@ -108,7 +108,7 @@ def _candidate(
                 "person_spotlight",
                 "--year",
                 "2025",
-                "--person=Alice",
+                "--person=Ada",
                 "--source=auto",
                 "--memory-key=key:person_spotlight",
                 "--memory-category=person_spotlight",
@@ -120,7 +120,7 @@ def _candidate(
                 "person_spotlight",
                 start=date(2024, 3, 1),
                 end=date(2025, 2, 28),
-                people=["Alice"],
+                people=["Ada"],
             ),
             [
                 *self_command(),
@@ -130,7 +130,7 @@ def _candidate(
                 "--year",
                 "2025",
                 "--birthday",
-                "--person=Alice",
+                "--person=Ada",
                 "--source=auto",
                 "--memory-key=key:birthday",
                 "--memory-category=birthday",
@@ -140,7 +140,7 @@ def _candidate(
             _candidate(
                 CandidateCategory.MULTI_PERSON,
                 "multi_person",
-                people=["Alice", "--Bob"],
+                people=["Ada", "--Bob"],
             ),
             [
                 *self_command(),
@@ -149,7 +149,7 @@ def _candidate(
                 "multi_person",
                 "--year",
                 "2025",
-                "--person=Alice",
+                "--person=Ada",
                 "--person=--Bob",
                 "--source=auto",
                 "--memory-key=key:multi_person",

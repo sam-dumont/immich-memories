@@ -28,7 +28,7 @@ Keep your extras, or the upgrade comes back without the ONNX runtime:
 ```bash
 uv tool upgrade immich-memories
 # or
-pip install --upgrade "immich-memories[editorial]"
+pip install --upgrade "immich-memories[all]"
 immich-memories models fetch
 ```
 
@@ -128,10 +128,8 @@ Importing the legacy files under /home/immich/.immich-memories into sqlite:////h
 - `IMMICH_MEMORIES_IMPORT_FROM` (or `database.import_from` in `config.yaml`) points it at another
   directory, for a container that mounts an old data volume somewhere other than `~/.immich-memories`.
 
-`cache.db` itself stays: it now holds only the analysis cache, which is never migrated. A cache the
-previous release finished building is kept as it is; one from an older layout is emptied and
-rebuilt, which costs re-analysis, not decisions. The store's old tables inside it are left for the
-import. The video cache is safe to delete at any time; it costs a re-download. Finished MP4s depend
+`cache.db` itself stays where it is: the import reads it and never writes it, and nothing else
+opens it any more. Once `store import --verify` passes you can delete it. The video cache is safe to delete at any time; it costs a re-download. Finished MP4s depend
 on nothing.
 
 ## Rollback
@@ -150,9 +148,9 @@ docker compose up -d
 **uv / pip:**
 
 ```bash
-uv tool install --force "immich-memories[editorial]==X.Y.Z"
+uv tool install --force "immich-memories[all]==X.Y.Z"
 # or
-pip install "immich-memories[editorial]==X.Y.Z"
+pip install "immich-memories[all]==X.Y.Z"
 ```
 
 Take a backup before an upgrade you might undo:
@@ -172,4 +170,4 @@ revisions can go down as well as up (`0005_operations` to `0001_foundation`), bu
 drops the tables that revision added, rows and all: operations history, then model answers and owner
 decisions, then settings, then people. A backup is the rollback; a downgrade is for development.
 
-The analysis cache needs nothing: if an old release cannot read `cache.db`, delete it.
+`cache.db` needs nothing: this release never writes it, so an old release finds it as it left it.

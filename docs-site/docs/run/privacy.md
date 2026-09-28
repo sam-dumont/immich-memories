@@ -1,12 +1,12 @@
 ---
-sidebar_position: 10
 title: "Privacy: what leaves your network"
 ---
 
 # Privacy: what leaves your network
 
 **A NAS run with no optional services talks to your Immich server only.** No telemetry, no update check, no
-analytics, no font or model download while a film renders. Every other host on this page is a
+analytics, and no font or model download while a film renders (ACE-Step and Demucs fetch their
+weights once, the first time you turn them on). Every other host on this page is a
 switch you turn on, and each one says below what it sends. The list comes from a sweep of the
 source and is kept by hand: if you find a call that is not here,
 [open an issue](https://github.com/sam-dumont/immich-video-memory-generator/issues).
@@ -200,5 +200,11 @@ coordinates, IP addresses, hostnames with ports, URLs of any scheme (`postgresql
 too) and absolute paths, in field names as well as values. Names match as whole words, so "Al" goes
 but "Alarm" stays; only single letters are left alone. IDs become hashes that match within that report and
 change in the next one. Config appears as shape, without hostnames or values. Pictures are never
-included. Free-text memories (#1436) will add flagged-photo captions and reasons, behind an explicit
-opt-in; no run records them yet. Read the report before sharing it. Nothing is sent automatically.
+included. Read the report before sharing it. Nothing is sent automatically.
+
+## Files on disk, and cancellation
+
+The annotation database and its SQLite sidecars are restricted to the current user. Previews are
+replaced atomically at mode `0600`; a corrupt preview gets one fresh fetch. Cancellation stops
+before the next caption request and terminates the detector worker's process group; committed
+facts stay for the next run.

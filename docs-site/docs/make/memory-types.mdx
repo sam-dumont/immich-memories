@@ -1,5 +1,4 @@
 ---
-sidebar_position: 3
 sidebar_label: "Memory types"
 ---
 
@@ -187,8 +186,8 @@ immich-memories generate --memory-type holiday --holiday christmas --years-back 
 | `christmas` | 25 December |
 | `new_years_eve` | 31 December |
 
-Anything else is read as `MM-DD`, for a household's own occasion (`--holiday 09-14`, the day you
-moved in). Without `--year`, the starting year steps back when this year's occasion has not happened
+`--holiday` also takes any public holiday of your country by name (see below), and anything else is
+read as `MM-DD`, for a household's own occasion (`--holiday 09-14`, the day you moved in). Without `--year`, the starting year steps back when this year's occasion has not happened
 yet. The title is the occasion's name, subtitled "Through the Years" in the film's language, on both
 the CLI and the web UI.
 
@@ -363,10 +362,9 @@ passes `--day` alone and `generate` re-reads the title. What automation prints i
 via special-days catalogue
 ```
 
-## Make it better (optional)
+## With a model
 
-A reader (a local or hosted text model) changes three things here, and nothing else about the
-types:
+A text model adds three things here, and changes nothing else about the types:
 
 - `discover-days` first reads each month's days together, then checks each proposed occasion
   against that day's own picture descriptions. Both readings must agree it was an occasion;

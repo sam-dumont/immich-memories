@@ -408,15 +408,6 @@ def mock_immich_client() -> MagicMock:
 
 
 @pytest.fixture()
-def mock_analysis_cache(tmp_path: Path) -> MagicMock:
-    """Mock VideoAnalysisCache with empty defaults."""
-    cache = MagicMock()
-    cache.get_cached_analysis.return_value = None
-    cache.db_path = tmp_path / "test_cache.db"
-    return cache
-
-
-@pytest.fixture()
 def mock_thumbnail_cache(tmp_path: Path) -> MagicMock:
     """Mock ThumbnailCache with empty defaults."""
     cache = MagicMock()

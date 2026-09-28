@@ -1,8 +1,5 @@
 import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 
-// Pages under docs/being-rewritten/ are the old text the new pages are written
-// from. They are unlisted, on purpose absent from this tree, and each one goes
-// away with the PR that finishes its last destination (epic #1276).
 const sidebars: SidebarsConfig = {
   docsSidebar: [
     {
@@ -29,18 +26,19 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Make films',
       items: [
-        {type: 'doc', id: 'make/memory-types', label: 'Memory types'},
         {type: 'doc', id: 'make/web-ui', label: 'The web UI'},
+        {type: 'doc', id: 'make/memory-types', label: 'Memory types'},
+        {type: 'doc', id: 'make/automate', label: 'Automate it'},
         {type: 'doc', id: 'make/titles-maps-music', label: 'Titles, maps and music'},
         {type: 'doc', id: 'make/photos-and-live-photos', label: 'Photos, Live Photos and HDR'},
-        {type: 'doc', id: 'make/automate', label: 'Automate it'},
         {
           type: 'category',
           label: 'The CLI',
           items: [
             {type: 'doc', id: 'make/cli/generate', label: 'generate'},
-            {type: 'doc', id: 'make/cli/prepare', label: 'prepare'},
+            {type: 'doc', id: 'make/cli/prepare', label: 'prepare, people, discover-days'},
             {type: 'doc', id: 'make/cli/runs', label: 'runs'},
+            {type: 'doc', id: 'make/cli/report', label: 'report'},
             {type: 'doc', id: 'make/cli/pictures', label: 'pictures'},
           ],
         },
@@ -51,12 +49,12 @@ const sidebars: SidebarsConfig = {
       label: 'How it chooses',
       items: [
         'how-it-chooses/overview',
+        'how-it-chooses/overrule-it',
         'how-it-chooses/moments-and-stories',
         'how-it-chooses/picking-shots',
         'how-it-chooses/family-audience-duplicates',
         'how-it-chooses/length-and-filler',
         'how-it-chooses/what-a-model-adds',
-        'how-it-chooses/overrule-it',
         'how-it-chooses/glossary',
       ],
     },
@@ -65,17 +63,29 @@ const sidebars: SidebarsConfig = {
       label: 'Run it',
       items: [
         'run/requirements',
-        {type: 'doc', id: 'run/docker', label: 'Docker Compose [Recommended]'},
-        {type: 'doc', id: 'run/nas', label: 'On a NAS (Synology, Unraid)'},
-        {type: 'doc', id: 'run/uv-pip', label: 'pip / uv [Advanced]'},
-        {type: 'doc', id: 'run/kubernetes', label: 'Kubernetes [Advanced]'},
-        {type: 'doc', id: 'run/terraform', label: 'Terraform [Advanced]'},
-        {type: 'doc', id: 'run/database', label: 'Database and the store'},
-        {type: 'doc', id: 'run/config-file', label: 'Configuration file'},
-        {type: 'doc', id: 'run/environment-variables', label: 'Environment variables'},
-        {type: 'doc', id: 'run/authentication', label: 'Authentication'},
         {type: 'doc', id: 'run/privacy', label: 'Privacy: what leaves your network'},
-        {type: 'doc', id: 'run/hardware', label: 'Hardware encoding'},
+        {
+          type: 'category',
+          label: 'Install',
+          collapsed: false,
+          items: [
+            {type: 'doc', id: 'run/docker', label: 'Docker Compose [Recommended]'},
+            {type: 'doc', id: 'run/nas', label: 'On a NAS (Synology, Unraid)'},
+            {type: 'doc', id: 'run/uv-pip', label: 'pip / uv [Advanced]'},
+            {type: 'doc', id: 'run/kubernetes', label: 'Kubernetes [Advanced]'},
+            {type: 'doc', id: 'run/terraform', label: 'Terraform [Advanced]'},
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Configure',
+          items: [
+            {type: 'doc', id: 'run/config-file', label: 'Configuration file'},
+            {type: 'doc', id: 'run/environment-variables', label: 'Environment variables'},
+            {type: 'doc', id: 'run/authentication', label: 'Authentication'},
+            {type: 'doc', id: 'run/database', label: 'Database and the store'},
+          ],
+        },
         {
           type: 'category',
           label: 'Upgrading, health, logs, cache',
@@ -95,6 +105,7 @@ const sidebars: SidebarsConfig = {
         {type: 'doc', id: 'better/captions', label: 'Add captions'},
         {type: 'doc', id: 'better/inference', label: 'Inference on a GPU box'},
         'better/gpu-render',
+        {type: 'doc', id: 'run/hardware', label: 'Hardware encoding'},
         'better/music',
         'better/measured',
       ],

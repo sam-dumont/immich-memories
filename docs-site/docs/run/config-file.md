@@ -1,5 +1,4 @@
 ---
-sidebar_position: 1
 title: Config File
 ---
 
@@ -12,6 +11,48 @@ you save from the web UI or `immich-memories config` goes to the database instea
 [`examples/config.example.yaml`](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/examples/config.example.yaml),
 and every key with its default is in the [config reference](../reference/config-reference.md). In
 Docker you can skip the file entirely and use [environment variables](./environment-variables.md).
+
+## Quick start config
+
+A full plain-NAS setup. Everything not listed keeps its default: Immich, where home is (which makes
+trips work and picks your country's public holidays), and where the films go.
+
+```yaml
+immich:
+  url: "https://photos.example.com"
+  api_key: "${IMMICH_API_KEY}"
+  api_version: auto  # auto | v2 | v3
+
+trips:
+  homebase_latitude: 50.85      # without these, no trip is ever a trip
+  homebase_longitude: 4.35
+
+output:
+  directory: "~/Videos/Memories"
+  resolution: "1080p"            # 720p, 1080p, 4k
+  codec: h264                     # the default; h265 keeps HDR
+  hdr_mode: auto                  # keep HLG/PQ when present, otherwise SDR
+```
+
+Everything else has a default. With `codec: h265` and `hdr_mode: auto`, HLG or PQ footage gives a
+10-bit HDR film and SDR clips, photos and titles are converted to the same transfer. H.264 is
+always SDR and tone-maps HDR sources.
+
+Trip detection needs both home coordinates. Preflight warns when either is missing or left at
+`(0, 0)`, and trips stay off until you set them.
+
+### Make it better (optional)
+
+A text model is one block. Leave it out and the app edits on a plain NAS; add it and it writes the
+titles and picks the music, and with the GPU tier it polishes the cut:
+[What a GPU or a model adds](../get-started/what-a-gpu-or-a-model-adds.md).
+
+```yaml
+llm:
+  provider: "openai-compatible"
+  base_url: "http://localhost:8000/v1"
+  model: "gemma-4-e4b-it-6bit"
+```
 
 ## Where a setting comes from
 
@@ -27,7 +68,7 @@ flowchart LR
 1. **Environment**: `IMMICH_MEMORIES_<SECTION>__<FIELD>` and the shortcuts in
    [environment variables](./environment-variables.md) (`IMMICH_URL`, `IMMICH_API_KEY`, ...).
 2. **`config.yaml`**: this file, which only you write.
-3. **Database**: what the settings page, **Save Config** on the Memory page, and
+3. **Database**: what the settings page, **Save Config** on the Settings page, and
    `immich-memories config --url/--api-key` saved. One row per key; a key you never saved has no
    row, so a new default still reaches you after an upgrade.
 4. **Default**: the value in the [config reference](../reference/config-reference.md).
@@ -90,47 +131,6 @@ How it decides: [The three tiers](./requirements.md#the-preparation-tier). Capti
 vision-capable LLM instead of the caption server are a separate, explicit switch:
 [LLM captions](../better/captions.md#explicit-llm-captions).
 
-## Quick start config
-
-A full plain-NAS setup, every default kept except the two values that make a cut good
-(where home is, and where films go).
-
-```yaml
-immich:
-  url: "https://photos.example.com"
-  api_key: "${IMMICH_API_KEY}"
-  api_version: auto  # auto | v2 | v3
-
-trips:
-  homebase_latitude: 50.85      # without these, no trip is ever a trip
-  homebase_longitude: 4.35
-
-output:
-  directory: "~/Videos/Memories"
-  resolution: "1080p"            # 720p, 1080p, 4k
-  codec: h264                     # the default; h265 keeps HDR
-  hdr_mode: auto                  # keep HLG/PQ when present, otherwise SDR
-```
-
-Everything else has a default. With `codec: h265` and `hdr_mode: auto`, HLG or PQ footage gives a
-10-bit HDR film and SDR clips, photos and titles are converted to the same transfer. H.264 is
-always SDR and tone-maps HDR sources.
-
-Trip detection needs both home coordinates. Preflight warns when either is missing or left at
-`(0, 0)`, and trips stay off until you set them.
-
-### Make it better (optional)
-
-A reader is one block. Leave it out and the app edits on a plain NAS, which is the default and the
-tier most installs run; a model makes the cut better. What a model adds and costs is on [the overview](../better/overview.md).
-
-```yaml
-llm:
-  provider: "openai-compatible"
-  base_url: "http://localhost:8000/v1"
-  model: "gemma-4-e4b-it-6bit"
-```
-
 ## Everyday keys and advanced keys
 
 Everyday sections sit at the top level: `immich`, `defaults`, `output`, `audio`, `title_screens`,
@@ -162,7 +162,7 @@ path that is missing here, so a copied config fails up front instead of hours in
 |---|---|
 | `output.directory` | where finished films are written |
 | `cache.directory` | previews, thumbnails, downloaded clips |
-| `cache.database` | derived analysis (safe to lose; it is rebuilt) |
+| `cache.database` | a pre-store `cache.db` the store imports once; its directory holds the run lock files |
 | `database.url` | the store (banked facts and readings, your picture decisions and review edits, people, settings, run history, automation state, special days), when it is a SQLite file (`sqlite:///~/.immich-memories/store.db`) |
 | `advanced.editorial.annotation_database` | deprecated: a legacy `annotations.sqlite` the store imports once; its directory still holds `structure-banks/` (the thumbnail-hash and scene-print caches, and any legacy JSON banks the store imports) |
 | `advanced.triage.encoder` | the pinned DINOv2 ONNX export |
@@ -175,7 +175,7 @@ path that is missing here, so a copied config fails up front instead of hours in
 Blank is the default for `head_bundle`, `detector_python` and `detector_cache_dir`, and the portable
 value: it means "work it out here". A `detector_python` that is not on this host (a Mac venv
 path carried into a NAS container, or a venv deleted since) stops a cut before it reads a picture,
-naming the key; `doctor` shows the same row. Remove the key and the detectors run on the app's own
+naming the key; `immich-memories preflight` shows the same row. Remove the key and the detectors run on the app's own
 Python. Containers already pin most of these: the image sets
 `output.directory` to `/app/output`, and the [Kubernetes manifests](./kubernetes.md) put the model
 paths on the `/models` claim.

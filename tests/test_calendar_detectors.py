@@ -205,7 +205,7 @@ class TestYearlyDetector:
 # ---------------------------------------------------------------------------
 class TestPersonSpotlightDetector:
     def test_produces_candidates_for_top_people(self):
-        people = [_make_person("Alice"), _make_person("Bob"), _make_person("Carol")]
+        people = [_make_person("Ada"), _make_person("Bob"), _make_person("Carol")]
         today = date(2026, 3, 1)
 
         result = PersonSpotlightDetector().detect({}, people, set(), _make_config(), today)
@@ -213,18 +213,16 @@ class TestPersonSpotlightDetector:
         assert len(result) == 3
         assert result[0].memory_type == "person_spotlight"
         assert result[0].category is CandidateCategory.PERSON_SPOTLIGHT
-        assert result[0].person_names == ["Alice"]
+        assert result[0].person_names == ["Ada"]
         assert result[0].date_range_start == date(2025, 1, 1)
         assert result[0].date_range_end == date(2025, 12, 31)
 
     def test_skips_already_generated(self):
-        people = [_make_person("Alice"), _make_person("Bob")]
+        people = [_make_person("Ada"), _make_person("Bob")]
         today = date(2026, 3, 1)
-        alice_key = make_memory_key(
-            "person_spotlight", date(2025, 1, 1), date(2025, 12, 31), ["alice"]
-        )
+        ada_key = make_memory_key("person_spotlight", date(2025, 1, 1), date(2025, 12, 31), ["ada"])
 
-        result = PersonSpotlightDetector().detect({}, people, {alice_key}, _make_config(), today)
+        result = PersonSpotlightDetector().detect({}, people, {ada_key}, _make_config(), today)
 
         assert len(result) == 1
         assert result[0].person_names == ["Bob"]
@@ -250,7 +248,7 @@ class TestOnThisDayDetector:
 # ---------------------------------------------------------------------------
 class TestBirthdayDetector:
     def test_uses_just_completed_birthday_year_and_exact_memory_key(self):
-        person = _make_person("Alice", birth_date=date(2000, 3, 1))
+        person = _make_person("Ada", birth_date=date(2000, 3, 1))
 
         result = BirthdayDetector().detect(
             {},
@@ -270,7 +268,7 @@ class TestBirthdayDetector:
             "person_spotlight",
             date(2025, 3, 2),
             date(2026, 3, 1),
-            ["alice"],
+            ["ada"],
         )
 
     def test_uses_existing_leap_day_birthday_rule(self):
@@ -318,17 +316,17 @@ class TestBirthdayDetector:
         assert result == []
 
     def test_skips_unnamed_people(self):
-        people = [_make_person(""), _make_person("Alice")]
+        people = [_make_person(""), _make_person("Ada")]
 
         result = PersonSpotlightDetector().detect(
             {}, people, set(), _make_config(), date(2026, 3, 1)
         )
 
         assert len(result) == 1
-        assert result[0].person_names == ["Alice"]
+        assert result[0].person_names == ["Ada"]
 
     def test_skips_people_without_thumbnail(self):
-        people = [_make_person("Alice", thumbnail=None), _make_person("Bob")]
+        people = [_make_person("Ada", thumbnail=None), _make_person("Bob")]
 
         result = PersonSpotlightDetector().detect(
             {}, people, set(), _make_config(), date(2026, 3, 1)
@@ -347,7 +345,7 @@ class TestBirthdayDetector:
         assert len(result) == 5
 
     def test_first_person_scores_highest_with_counts(self):
-        people = [_make_person("Alice"), _make_person("Bob"), _make_person("Carol")]
+        people = [_make_person("Ada"), _make_person("Bob"), _make_person("Carol")]
         counts = {people[0].id: 1000, people[1].id: 500, people[2].id: 100}
 
         result = PersonSpotlightDetector().detect(
@@ -364,7 +362,7 @@ class TestBirthdayDetector:
         assert scores[0] > scores[-1]
 
     def test_reason_includes_ordinal(self):
-        people = [_make_person("Alice"), _make_person("Bob")]
+        people = [_make_person("Ada"), _make_person("Bob")]
 
         result = PersonSpotlightDetector().detect(
             {}, people, set(), _make_config(), date(2026, 3, 1)
@@ -374,18 +372,18 @@ class TestBirthdayDetector:
         assert "2nd most featured" in result[1].reason
 
     def test_memory_key_uses_lowercase_name(self):
-        people = [_make_person("Alice")]
+        people = [_make_person("Ada")]
 
         result = PersonSpotlightDetector().detect(
             {}, people, set(), _make_config(), date(2026, 3, 1)
         )
 
-        assert "alice" in result[0].memory_key
+        assert "ada" in result[0].memory_key
 
     def test_skips_upcoming_birthday_people(self):
         """PersonSpotlightDetector skips people with upcoming birthdays."""
-        people = [_make_person("Alice"), _make_person("Bob")]
-        # Alice has an upcoming birthday — should be suppressed
+        people = [_make_person("Ada"), _make_person("Bob")]
+        # Ada has an upcoming birthday — should be suppressed
         upcoming = {people[0].id}
 
         result = PersonSpotlightDetector().detect(

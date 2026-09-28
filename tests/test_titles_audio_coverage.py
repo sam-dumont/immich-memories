@@ -943,34 +943,34 @@ class TestBuildTitlePersonName:
         from immich_memories.filename_builder import build_title_person_name
 
         result = build_title_person_name(
-            "multi_person", {"person_names": ["Alice Smith", "Bob Jones"]}, None
+            "multi_person", {"person_names": ["Ada Smith", "Bob Jones"]}, None
         )
-        assert result == "Alice & Bob"
+        assert result == "Ada & Bob"
 
     def test_multi_person_three_names(self):
         from immich_memories.filename_builder import build_title_person_name
 
         result = build_title_person_name(
-            "multi_person", {"person_names": ["Alice Smith", "Bob Jones", "Charlie Brown"]}, None
+            "multi_person", {"person_names": ["Ada Smith", "Bob Jones", "Charlie Brown"]}, None
         )
-        assert result == "Alice, Bob & Charlie"
+        assert result == "Ada, Bob & Charlie"
 
     def test_single_person_from_preset(self):
         from immich_memories.filename_builder import build_title_person_name
 
-        result = build_title_person_name("year_in_review", {"person_names": ["Alice Smith"]}, None)
-        assert result == "Alice"
+        result = build_title_person_name("year_in_review", {"person_names": ["Ada Smith"]}, None)
+        assert result == "Ada"
 
     def test_single_person_full_name(self):
         from immich_memories.filename_builder import build_title_person_name
 
         result = build_title_person_name(
             "year_in_review",
-            {"person_names": ["Alice Smith"]},
+            {"person_names": ["Ada Smith"]},
             None,
             use_first_name_only=False,
         )
-        assert result == "Alice Smith"
+        assert result == "Ada Smith"
 
     def test_person_from_state(self):
         from immich_memories.filename_builder import build_title_person_name

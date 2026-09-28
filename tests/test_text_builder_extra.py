@@ -46,8 +46,8 @@ class TestGenerateDateRangeTitle:
 
     def test_with_person_name(self):
         """Person name is passed through as subtitle."""
-        result = _generate_date_range_title(date(2024, 1, 1), date(2024, 12, 31), "Alice", "en")
-        assert result.subtitle == "Alice"
+        result = _generate_date_range_title(date(2024, 1, 1), date(2024, 12, 31), "Ada", "en")
+        assert result.subtitle == "Ada"
 
     def test_french_writes_a_month_inside_a_title_in_lower_case(self):
         # French capitalises no month mid-sentence: "de mars à août", never "à Août".
@@ -205,40 +205,40 @@ class TestMemoryTypeTitles:
             SelectionType.SEASON,
             season="spring",
             year=2024,
-            person_name="Alice",
+            person_name="Ada",
         )
         assert result.main_title == "Spring 2024"
-        assert result.subtitle == "Alice"
+        assert result.subtitle == "Ada"
 
     def test_person_spotlight(self):
         """Person spotlight generates year title with person subtitle."""
         result = generate_title(
             SelectionType.PERSON_SPOTLIGHT,
             year=2024,
-            person_name="Alice",
+            person_name="Ada",
         )
         assert result.main_title == "2024"
-        assert result.subtitle == "Your Year with Alice"
+        assert result.subtitle == "Your Year with Ada"
 
     def test_multi_person(self):
         """Multi-person generates year title with joined names subtitle."""
         result = generate_title(
             SelectionType.MULTI_PERSON,
             year=2024,
-            person_names=["Alice", "Bob"],
+            person_names=["Ada", "Bob"],
         )
         assert result.main_title == "2024"
-        assert result.subtitle == "Alice & Bob"
+        assert result.subtitle == "Ada & Bob"
 
     def test_multi_person_three_people(self):
         """Multi-person with 3+ people joins with commas and ampersand."""
         result = generate_title(
             SelectionType.MULTI_PERSON,
             year=2024,
-            person_names=["Alice", "Bob", "Charlie"],
+            person_names=["Ada", "Bob", "Charlie"],
         )
         assert result.main_title == "2024"
-        assert result.subtitle == "Alice, Bob & Charlie"
+        assert result.subtitle == "Ada, Bob & Charlie"
 
     def test_on_this_day(self):
         """On This Day generates date title with 'Through the Years' subtitle."""

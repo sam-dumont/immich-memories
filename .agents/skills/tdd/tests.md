@@ -47,15 +47,15 @@ Red flags:
 ```typescript
 // BAD: Bypasses interface to verify
 test("createUser saves to database", async () => {
-  await createUser({ name: "Alice" });
-  const row = await db.query("SELECT * FROM users WHERE name = ?", ["Alice"]);
+  await createUser({ name: "Ada" });
+  const row = await db.query("SELECT * FROM users WHERE name = ?", ["Ada"]);
   expect(row).toBeDefined();
 });
 
 // GOOD: Verifies through interface
 test("createUser makes user retrievable", async () => {
-  const user = await createUser({ name: "Alice" });
+  const user = await createUser({ name: "Ada" });
   const retrieved = await getUser(user.id);
-  expect(retrieved.name).toBe("Alice");
+  expect(retrieved.name).toBe("Ada");
 });
 ```

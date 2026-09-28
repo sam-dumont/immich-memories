@@ -641,8 +641,8 @@ procedures, sexual content, exposed adult changing and identifying records never
 Preparation fills missing descriptions, public heads, detectors and pixel measurements in the
 annotation database, and skips provider calls where the facts are complete. Missing previews or
 providers stop selection with an explicit incomplete result. See
-[Editorial annotation setup](../being-rewritten/editorial-preparation.md) for the runtime
-extra, the exact model artifacts and the caption endpoint requirements.
+[Add captions](../better/captions.md) for the caption endpoint requirements and
+[Inference on a GPU box](../better/inference.md) for the model artifacts.
 
 ## Inference service
 
@@ -780,7 +780,8 @@ The video cache is not library-sized: it holds the originals being assembled, te
 
 Where the store lives: owner decisions, the people registry, model answers, run history, automation
 state, the special-days catalogue and the settings you edit in the UI, as they move out of loose files ([#871](https://github.com/sam-dumont/immich-video-memory-generator/issues/871)).
-The cache stays in `cache.database`.
+`cache.database` only names a pre-store `cache.db` for the one-time import, and the directory
+the run lock files sit in.
 
 ```yaml
 database:

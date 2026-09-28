@@ -40,7 +40,7 @@ flowchart LR
 
 | Word | Meaning | Where |
 |---|---|---|
-| **Reader** | who plans the film: `rules` (no model), `model`, or `auto` (rules when `llm.model` is blank) | `advanced.editorial.reader` |
+| **Reader** | who plans the film: `rules` (no model) on the `nas` and `gpu` tiers, `model` on `full`. The tier sets it; an explicit value is ignored with a warning | `config_tiers.py` |
 | **Draft** | the film the no-model reader cuts from facts; with no model, it is the film | `editorial_rule_reader.py` |
 | **Worthiness** | remarkable, maybe or background, read per happening from facts | `RuleStructureReader.worthiness` |
 | **Weight** | a story's size: `dominant`, `major`, `minor`, `glimpse`, `none`; `none` gets no shot | `editorial_story_slots.weight_caps` |
@@ -80,4 +80,4 @@ flowchart LR
 | **Block vote** | every model yes or no: at most 12 rows, asked in two orders; both orders is firm, one is a maybe | `editorial_block_votes.py` |
 | **Seat** | a slot the polish may fill: N (a record with no shot), R (replaces a voted-out shot), T (replaces a gate refusal), D (a swap) | `editorial_thin_refill.py` |
 | **Fill on demand** | a film reads only the episodes its shots sit in; reading a whole scope ahead is optional | `episode_demand.py`, `prepare --overviews` |
-| **Route** | A: no model; B: draft plus polish, for any one-window film; C: the model plans a multi-window film whole | [What a model adds](./what-a-model-adds.md) |
+| **Route** | A: rules only (`nas`, `gpu`); B: the rules draft plus the model's polish (`full`, the default); C: the model plans the whole film (`full` with `thin_model_layer: false`) | [What a model adds](./what-a-model-adds.md) |

@@ -47,6 +47,23 @@ match what CI runs, so local results are consistent. Use
 The test tiers, what each needs, and what to do when diff-cover fails on your PR are in the
 [Testing guide](./testing.md).
 
+## The web client
+
+The web UI is a SvelteKit client in `web/` at the repository root, built into the Python package
+and served by the app at `/app`. Working on it needs Node 22 (what CI uses) on top of the Python
+setup above.
+
+```bash
+make web-install        # the client's pinned dependencies (npm ci)
+cd web && npm run dev   # the Vite dev server, with hot reload
+make web-build          # build the client into the package, as the app serves it
+make web-check          # type-check, and fail on a stale bundle or API contract
+```
+
+The client talks to the app through `/api/v1`. After changing an endpoint, run `make web-api`: it
+regenerates the OpenAPI document and the client's TypeScript types from it, and `make web-check`
+fails while they are stale.
+
 ## Merging and releasing
 
 PRs are squash-merged. Before merging a large integration branch, preserve its individual
@@ -99,7 +116,7 @@ src/immich_memories/
   audio/        # Music generation, audio ducking
   web/          # The web server: /api/v1, sign-in, health (the Svelte client is web/ at the repo root)
   cli/          # Click commands
-  cache/        # Preview, video and run-history caching
+  cache/        # Thumbnail, judgment and embedding caches
   tracking/     # Run history
   operations/   # Lifecycle phases, storage report
   planning/     # Auto-duration planning
@@ -112,17 +129,17 @@ has the full module map with class relationships.
 
 ## Interface translations
 
-UI labels use `tr("Text")` from `immich_memories.ui.i18n`. For inserted values, keep a named
-placeholder in the template: `tr("Connected as: {name}", name=username)`. Mark labels stored in
-constants with `N_("Text")`, then translate them when rendering. Translating at import time
-would freeze the language for every browser. Select boxes keep their original values and
-translate only their labels with `tr_options`.
+Web client labels use `t('Text')` from `web/src/lib/i18n.svelte.ts`. For inserted values, keep a
+named placeholder in the template: `t('Connected as: {name}', {name: username})`. Mark labels
+stored in tables with `N_('Text')`, then translate them with `t` where they are shown.
 
-Run `make ui-catalogues` after changing labels. It updates `ui.po` beside each language's
-film-text `messages.po`, preserving translations and leaving new messages for translation.
+Run `make ui-catalogues` after changing labels. It reads the literal first argument of every `t`
+and `N_` in `web/src` and updates `ui.po` beside each language's film-text `messages.po`,
+preserving translations and leaving new messages for translation. The app serves the same
+catalogues to the client at `/api/v1/i18n`.
 Keep placeholders and their format specifications intact. The catalogue test checks every
 supported language for missing messages and mismatched placeholders. Non-English catalogues
 are marked AI-drafted until reviewed; native-speaker corrections are welcome.
 
-The app reads the shipped PO files directly and caches their translators. No separate
-compilation step is needed. Restart the app after editing a catalogue.
+The app reads the shipped PO files directly and caches them. No separate compilation step is
+needed. Restart the app after editing a catalogue.

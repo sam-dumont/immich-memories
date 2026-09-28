@@ -68,7 +68,7 @@ def test_album_mode_rejects_flags_that_would_scope_it_differently():
             season=None,
             month=None,
             memory_type=None,
-            person_names=["Alice"],
+            person_names=["Ada"],
         )
 
     assert "--year" in str(exc.value)
