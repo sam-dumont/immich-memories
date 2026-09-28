@@ -73,6 +73,14 @@ def the_film(page: Page):
     return page.get_by_role("region", name="Render").locator("video")
 
 
+def wait_for_the_film(page: Page, *, timeout: float) -> None:
+    """Wait for the rendered film, but stop as soon as the render says it failed, with why."""
+    panel = page.get_by_role("region", name="Render")
+    failed = panel.get_by_text("It did not finish.")
+    expect(the_film(page).or_(failed)).to_be_visible(timeout=timeout)
+    assert not failed.is_visible(), panel.inner_text()
+
+
 def films(database: RunDatabase) -> list[RunMetadata]:
     """Completed runs that left a film, newest first: a cut run keeps the cut, not a file."""
     return [

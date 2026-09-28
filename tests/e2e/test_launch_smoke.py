@@ -26,7 +26,7 @@ from immich_memories.processing.output_contract import (
 )
 from immich_memories.tracking.run_database import RunDatabase
 from tests.e2e.conftest import _build_launch_environment
-from tests.e2e.web_flow import cut_june, films, render, the_film
+from tests.e2e.web_flow import cut_june, films, render, wait_for_the_film
 
 pytestmark = pytest.mark.e2e
 
@@ -205,7 +205,7 @@ def test_launch_flow_renders_real_video(
     }""")
     render(page, resolution="720p")
 
-    expect(the_film(page)).to_be_visible(timeout=600_000)
+    wait_for_the_film(page, timeout=600_000)
     fractions = page.evaluate("window.exportProgress")
     assert len(set(fractions)) > 2
     assert fractions == sorted(fractions)
@@ -297,7 +297,7 @@ def test_reload_during_a_render_rejoins_it_and_plays_the_film(
     page.reload(wait_until="domcontentloaded", timeout=30_000)
 
     expect(panel.get_by_role("region", name="Progress")).to_be_visible(timeout=30_000)
-    expect(the_film(page)).to_be_visible(timeout=600_000)
+    wait_for_the_film(page, timeout=600_000)
 
     outputs = set(launch_workspace.output_dir.rglob("*.mp4")) - before
     assert len(outputs) == 1
