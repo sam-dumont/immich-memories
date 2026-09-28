@@ -835,13 +835,14 @@ src/immich_memories/
 │
 ├── free_text/                  # A film asked for in a sentence (#1436, being built; design in
 │   │                           # docs/designs/free-text-memories.md). Only reading.py and the
-│   │                           # model's picks in linking.py and subject.py reach an LLM
+│   │                           # model's picks in linking.py, subject.py and pool_questions.py reach an LLM
 │   ├── __init__.py             # The package API (the pool, the reading and the CLI build on it)
 │   ├── lexicon.py              # Lexicon Protocol; load_wordnet(): the pinned WordNet 3.0 zip that
 │   │                           # `models fetch` writes (free_text.wordnet), digest-checked, read through
 │   │                           # nltk; never downloaded at run time. Noun files, plurals, people words,
 │   │                           # young people, time periods, roles through their kinds, verb bases,
-│   │                           # adjectives, derived nouns, relatives() (own kinds/parts, inherited parts)
+│   │                           # adjectives, derived nouns, relatives() (own kinds/parts, inherited parts),
+│   │                           # synonyms() (the first sense's other everyday names)
 │   ├── reading.py              # read_request(): the model picks who/when/where/what from an enum of the
 │   │                           # request's own n-grams, 3 field orders, 2-of-3 token votes, where+what
 │   │                           # voted as content; choose() (one option, 3 orders), choose_several()
@@ -854,7 +855,24 @@ src/immich_memories/
 │   │                           # said or formed from the request; the model votes the main subject (2-of-3,
 │   │                           # fallback: the request's words); a quality stays when the model says it
 │   │                           # narrows AND captions say it; own parts/kinds are the subject, inherited
-│   │                           # parts only for a place. Subject.heads feed link_where
+│   │                           # parts only for a place. Subject.heads feed link_where; subject_kind()
+│   │                           # (the model's place/animal/thing/activity vote)
+│   ├── pool.py                 # build_pool(Translation, LibraryView, ...): the funnel, each Step keeps a
+│   │                           # count and a Reason: when; who (a face in the picture's 90-min episode);
+│   │                           # printed text (PrintedText port = Immich OCR: anchors' episodes replace
+│   │                           # where); where (scopes.py) or Immich's place names; kind of picture
+│   │                           # (photographs and videos unless a kind is named); sharpness; computed
+│   │                           # selections (farthest trip, first/last per frequent person, faces over N);
+│   │                           # one undated occasion's day; subject by caption grammar (main + extent +
+│   │                           # other names, minus left-out); company from captions. Verdict possible /
+│   │                           # thin (<12) / not possible, naming the filter that emptied it. No model
+│   │                           # looks at a picture
+│   ├── pool_questions.py       # Text-only votes the pool asks, each gated by grammar: left_out (only what
+│   │                           # follows a negation), other_names (WordNet synonyms + caption subject-slot
+│   │                           # words the model picks; quality carried), one_particular_place (GPS
+│   │                           # required), printed_words (for OCR), one_occasion (a plural is many)
+│   ├── scopes.py               # in_place(): at a home (150 m), home of the picture's time, near it (home
+│   │                           # radius), or trips detected per home; no GPS stays unless one place
 │   ├── linking.py              # Code links the spans: link_who (I = the owner for dates, never a face;
 │   │                           # we adds the partner; names/roles need faces; plural people = company),
 │   │                           # link_when (an age read as numbers, calendar in code; dates question only
@@ -865,12 +883,14 @@ src/immich_memories/
 │   │                           # annotation_assets, and the configured producers' caption, doc_docling
 │   │                           # label, sharpness and people-file faces via AssetAnnotationFactRepository
 │   ├── grammar.py              # Caption grammar: is_about (the subject up to the first verb), is_thing
-│   │                           # (WordNet's noun file), free_tier (captions about the subject)
+│   │                           # (WordNet's noun file), free_tier (captions about the subject),
+│   │                           # subject_head (the caption subject's head noun)
 │   ├── facts.py                # link_facts(): request words -> places, picture kinds, the sharpness line,
 │   │                           # faces over N, first/last/farthest; first_pictures (the onset, never
-│   │                           # before birth), last_pictures, farthest_trip, occasion_day
+│   │                           # before birth), last_pictures, home_trips (trips per home of the time),
+│   │                           # farthest_trip, occasion_day; LibraryFacts.placed/of_kind/sharp_enough
 │   └── homes.py                # homes_over_time(): each year's most-photographed ~200 m cell, a new
-│                               # home past 300 m; the configured home base when none shows
+│                               # home past 300 m; the configured home base when none shows; Home.held_on
 │
 ├── automation/                 # Smart automation (auto suggest/run)
 │   ├── __init__.py             # Public API re-exports
