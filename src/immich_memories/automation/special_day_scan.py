@@ -272,12 +272,7 @@ def scan_year(
         verdict = (
             SpecialDay(special=True, title=honest_title(items, what=what, evidence=""), what=what)
             if reader == "rules"
-            else ask_if_special(
-                items,
-                llm_config,
-                captions={a.id: captions[a.id] for a in items if captions and captions.get(a.id)},
-                judgment_cache_path=judgment_cache_path,
-            )
+            else _read_the_day(items, llm_config, captions, judgment_cache_path)
         )
         outcome = _day_from(day, items, verdict, what)
         if outcome is not None:
@@ -319,6 +314,43 @@ class YearNotRead(RuntimeError):
 
     def __init__(self, year: int, months: list[str]) -> None:
         super().__init__(f"{year}: {len(months)} month(s) could not be read ({', '.join(months)})")
+
+
+def _read_the_day(
+    items: list, llm_config: Any, captions: Mapping[str, str] | None, cache_path: Path | None
+) -> SpecialDay:
+    """The day-level verdict, asked once more about the day's event when the day read ordinary.
+
+    Some days contain an occasion rather than being one: a race day began with the cat at
+    home and ended there, and the small reader, shown the whole day, named it after the cat.
+    Where the pictures were taken already says which stretch the day was spent on
+    (`event_window`), so an ordinary verdict is asked again about that stretch alone. A day
+    with no such stretch, or one the reader already called an occasion, is asked once.
+    """
+
+    def ask(pictures: list) -> SpecialDay:
+        return ask_if_special(
+            pictures,
+            llm_config,
+            captions={a.id: captions[a.id] for a in pictures if captions and captions.get(a.id)},
+            judgment_cache_path=cache_path,
+        )
+
+    verdict = ask(items)
+    if verdict.special or not verdict.judged:
+        return verdict
+    window = window_that_holds_the_day(event_window(items), items)
+    if window is None:
+        return verdict
+    start, end = window
+    logger.info(
+        "%s read as ordinary; asking about its %s-%s stretch at one place",
+        items[0].file_created_at.date(),
+        f"{start:%H:%M}",
+        f"{end:%H:%M}",
+    )
+    inside = ask([a for a in items if start <= a.file_created_at <= end])
+    return inside if inside.special else verdict
 
 
 def _day_from(day: date, items: list, verdict: Any, what: str = "") -> DiscoveredDay | None:
