@@ -1,5 +1,4 @@
 ---
-sidebar_position: 3
 title: Kubernetes
 ---
 
@@ -183,7 +182,7 @@ allows egress on 8092. What each overlay patches, and what a card is worth per p
 `base/job.yaml` holds a one-off `generate` Job and two CronJobs (monthly highlights on the 1st,
 `auto run` daily). Uncomment `- job.yaml` in the kustomization.
 
-The store defaults to a SQLite file on the `data` PVC, one writer at a time; a second pod on
+The store defaults to a SQLite file on the `immich-memories-cache` PVC, one writer at a time; a second pod on
 another node writing that file over `ReadWriteMany` corrupts it (WAL mode needs shared memory a
 network filesystem does not give two hosts). So the two CronJobs never mount the PVCs: they `curl`
 the Deployment's `POST /api/trigger` route instead, running whatever decision `auto run` would have

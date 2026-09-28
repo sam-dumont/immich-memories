@@ -1,5 +1,4 @@
 ---
-sidebar_position: 1
 title: Docker Compose
 ---
 
@@ -12,7 +11,8 @@ on a plain NAS; a GPU or a model makes it better. The shortest path through it i
 ## Install
 
 You need Docker Engine with Compose v2 (`docker compose version` answers), Immich v2 or v3, and
-the hardware on [Requirements](./requirements.md).
+the hardware on [Requirements](./requirements.md). What the image has been checked on, and when:
+[Supported and tested](./requirements.md#supported-and-tested).
 
 **1. Download the compose file and `example.env`** into an empty directory:
 
@@ -23,7 +23,7 @@ curl -O https://raw.githubusercontent.com/sam-dumont/immich-video-memory-generat
 cp example.env .env
 ```
 
-**2. Fill in `.env`.** Two values are required, and the home base makes trips work:
+**2. Fill in `.env`.** Two values are required, and the home base makes trips and your country's public holidays work:
 
 ```bash
 IMMICH_URL=http://192.168.1.10:2283       # your Immich, as the container reaches it

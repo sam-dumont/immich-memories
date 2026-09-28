@@ -22,7 +22,7 @@ person names and paths); a probe gets the status and the version. A degraded sta
 the app: the UI still serves.
 
 ```json
-{"status": "ready", "immich_reachable": true, "last_successful_run": "2025-12-15T10:30:00", "version": "0.77.2"}
+{"status": "ready", "immich_reachable": true, "last_successful_run": "2025-12-15T10:30:00", "version": "<the running version>"}
 ```
 
 ## Logging
@@ -116,7 +116,7 @@ runs at the start of every run, size eviction after each download and once at th
 
 ### Clearing
 
-The Cache page in the web UI shows usage, with a **Clear** button per cache and **Clear all**. From
+The **Caches** section of the Settings page shows each cache's usage, with a **Clear** button per cache. From
 a shell, the video and thumbnail caches are plain directories, safe to delete while the app is
 idle:
 
