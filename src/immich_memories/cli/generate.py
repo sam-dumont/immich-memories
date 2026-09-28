@@ -133,6 +133,7 @@ def register_generate_commands(main: click.Group) -> None:
         from_album: str | None,
         subject: str | None,
         ask: str | None,
+        ask_trace: Path | None,
         add_date: bool,
         add_place: bool,
         keep_intermediates: bool,
@@ -228,7 +229,9 @@ def register_generate_commands(main: click.Group) -> None:
 
         typed = RunScope(memory_type, day, event_id, from_album, subject, accept_any_provenance)
         memory_type, day, event_id, from_album, subject, accept_any_provenance, curated = (
-            scope_of_ask(ctx, config, ask, dry_run=dry_run, typed=typed).fields()
+            scope_of_ask(
+                ctx, config, ask, dry_run=dry_run, typed=typed, trace_file=ask_trace
+            ).fields()
         )
 
         # Read the memory from the date flags when it was not named. Without

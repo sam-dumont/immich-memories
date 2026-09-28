@@ -17,6 +17,8 @@ export type AlbumChoice = components['schemas']['AlbumChoice'];
 export type TripChoice = components['schemas']['TripChoice'];
 export type Trips = components['schemas']['Trips'];
 export type SpecialDay = components['schemas']['SpecialDay'];
+export type AskAvailability = components['schemas']['AskAvailability'];
+export type AskPreview = components['schemas']['AskPreview'];
 
 export class ApiError extends Error {
   constructor(

@@ -26,20 +26,49 @@ _SCOPE_STEPS = frozenset({"library", "when", "who", "where", "place names", "pri
 
 def explain(ask: Ask, *, film: Film | None = None) -> str:
     """The trace: READING, WHO, WHEN, WHERE, WHAT, FACTS, POOL, VERDICT, then FILM when given."""
+    lines = [f'"{ask.request}"']
+    for head, said in trace_blocks(ask, film=film):
+        lines += [f"{head if n == 0 else '':<8} {line}" for n, line in enumerate(said)]
+    return "\n".join(lines)
+
+
+def trace_blocks(ask: Ask, *, film: Film | None = None) -> list[tuple[str, list[str]]]:
+    """The trace's parts in order, each head with its lines; a part with nothing to say is left out."""
     translation, pool = ask.translation, ask.pool
-    lines = [f'"{ask.request}"', *_reading(translation.reading)]
-    lines += _block("WHO", _said(translation.who.reasons) or ["nothing said -> anyone"])
-    lines += _block("WHEN", _said(translation.when.reasons))
-    lines += _block("WHERE", _said(translation.where.reasons))
-    lines += _block("WHAT", _said(translation.subject.reasons))
-    lines += _block("FACTS", list(translation.facts.reasons))
     path = " -> ".join(f"{step.name} {step.kept}" for step in pool.funnel)
     steps = [f"{step.name}: {step.reason.line()}" for step in pool.funnel]
     occasion = [f"one occasion? {pool.occasion.line()}"] if pool.occasion else []
-    lines += _block("POOL", [path, *steps, *occasion])
-    lines += _block("VERDICT", [f"{pool.verdict}: {pool.why}"])
-    lines += _block("FILM", [film.line()] if film else [])
-    return "\n".join(lines)
+    blocks = [
+        ("READING", _reading(translation.reading)),
+        ("WHO", _said(translation.who.reasons) or ["nothing said -> anyone"]),
+        ("WHEN", _said(translation.when.reasons)),
+        ("WHERE", _said(translation.where.reasons)),
+        ("WHAT", _said(translation.subject.reasons)),
+        ("FACTS", list(translation.facts.reasons)),
+        ("POOL", [path, *steps, *occasion]),
+        ("VERDICT", [f"{pool.verdict}: {pool.why}"]),
+        ("FILM", [film.line()] if film else []),
+    ]
+    return [(head, said) for head, said in blocks if said]
+
+
+def pool_counts(ask: Ask) -> dict[str, int]:
+    """How many pictures the pool holds, and how many of them are photos and videos."""
+    pictures = ask.pool.pictures
+    videos = sum(picture.media_kind == "video" for picture in pictures)
+    return {"pictures": len(pictures), "photos": len(pictures) - videos, "videos": videos}
+
+
+def trace_record(ask: Ask, film: Film) -> dict[str, object]:
+    """The trace as data for a watcher such as the web client: the parts, the pool, the verdict."""
+    return {
+        "request": ask.request,
+        "blocks": [{"head": head, "lines": said} for head, said in trace_blocks(ask, film=film)],
+        "pool": pool_counts(ask),
+        "verdict": ask.pool.verdict,
+        "why": ask.pool.why,
+        "film": {"route": film.route, "line": film.line(), "outcome": film.reason.outcome},
+    }
 
 
 def _reading(reading: Reading) -> list[str]:
@@ -48,7 +77,7 @@ def _reading(reading: Reading) -> list[str]:
         f"answer {n}: {_parts(answer) or 'empty'}" if answer else f"answer {n}: cut off twice"
         for n, answer in enumerate(reading.answers, 1)
     ]
-    return _block("READING", [f"{_READ_RULE} -> {agreed}", *answers])
+    return [f"{_READ_RULE} -> {agreed}", *answers]
 
 
 def _parts(said: Mapping[str, Sequence[str]]) -> str:
@@ -57,10 +86,6 @@ def _parts(said: Mapping[str, Sequence[str]]) -> str:
 
 def _said(reasons: Iterable[Reason]) -> list[str]:
     return [reason.line() for reason in reasons]
-
-
-def _block(head: str, lines: Sequence[str]) -> list[str]:
-    return [f"{head if n == 0 else '':<8} {line}" for n, line in enumerate(lines)]
 
 
 def save_with_run(

@@ -711,6 +711,8 @@ src/immich_memories/
 │   ├── job_routes.py           # POST /cuts (generate --no-render), /runs/{id}/renders (runs render),
 │   │                           #   /runs/{id}/music-preview, /music uploads, /roster/scan,
 │   │                           #   /jobs/{id}[/events|/cancel|/output] (SSE progress), /runs/{id}/film
+│   │                           #   /ask (tier: full?), /ask/preview[/{id}] (generate --ask --dry-run
+│   │                           #   --ask-trace: the translation as JSON); the film is a /cuts brief with `ask`
 │   ├── library.py              # GET /people, /albums, /trips, /special-days for the brief's pickers
 │   ├── connection.py           # /connection: the Immich URL + key saved to the database; never follows a new URL
 │   ├── suggestions.py          # /suggestions: what `auto suggest` offers, generate one as `auto run` would
@@ -1151,7 +1153,7 @@ version and capabilities first); deployment files are `services/render-worker/co
 
 The web sidebar links Memory, Suggestions, Runs and Settings. Every action in the client is the
 CLI: a cut is `generate --no-render`, a render is `runs render [--revision N]`, a people scan is
-`people scan`, a music preview is `music preview`, each run by `web/jobs.py` as a child process
+`people scan`, a music preview is `music preview`, a sentence's preview is `generate --ask --dry-run`, each run by `web/jobs.py` as a child process
 whose progress the page follows over SSE. The review page (`web/src/routes/runs/[run_id]`) reads
 the saved cut (`operations/storyboard.py`, `cut_review.py`, `story_view.py`), keeps the owner's
 edits as numbered revisions in the attempt directory (`operations/cut_revisions.py`), and renders

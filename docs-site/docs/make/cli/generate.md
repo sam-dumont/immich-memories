@@ -123,7 +123,8 @@ immich-memories generate --ask "our cat along the years" --duration 120
 faces and place names `prepare` banked, plus the letters Immich's OCR found. It prints the
 translation before anything runs, one line per decision (which words went where, the rule or
 the question behind each, the votes, and how many pictures each filter kept). With `--dry-run`
-it stops there.
+it stops there. `--ask-trace FILE` keeps the same translation as JSON, which is where the web UI's
+preview reads it from.
 
 The sentence is the whole scope, so `--year`, `--person`, `--from-album` and the other scope flags
 are refused next to it. The pool it finds is filmed like an album whose subject is your sentence,

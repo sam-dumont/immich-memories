@@ -14,7 +14,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from immich_memories.config import get_config_path
 from immich_memories.config_loader import Config
@@ -29,7 +29,7 @@ from immich_memories.tracking import RunDatabase
 from immich_memories.web.brief import CutBrief
 from immich_memories.web.dependencies import current_config
 from immich_memories.web.jobs import JobBusy, JobRunner
-from immich_memories.web.schemas import Job, JobProgress
+from immich_memories.web.schemas import AskPreview, Job, JobProgress
 
 router = APIRouter(prefix="/api/v1", tags=["jobs"])
 
@@ -165,6 +165,8 @@ def _view(config: Config, job: Job) -> JobView:
         progress = _cut_progress(config, job)
     elif job.kind in {"render", "music"}:
         progress = _render_progress(job)
+    elif job.kind == "ask":
+        progress = JobProgress(label="Reading your sentence")
     else:
         progress = JobProgress(label="Reading the library")
     shown = str(job.meta.get("shown") or shlex.join(job.argv))
@@ -225,6 +227,77 @@ def start_cut(
 ) -> JobView | JSONResponse:
     """Cut this brief with `generate --no-render`; the job ends with the run the cut became."""
     return _start_cut(brief, config, runner, executable)
+
+
+_NEEDS_MODEL_TIER = (
+    "A film from a sentence needs the model tier: set advanced.llm.base_url and "
+    "advanced.llm.model to the reader that answers it (tier: full)"
+)
+
+
+class AskAvailability(BaseModel):
+    available: bool
+    tier: str
+
+
+@router.get("/ask", response_model=AskAvailability)
+def ask_availability(config: Annotated[Config, Depends(current_config)]) -> AskAvailability:
+    """Whether a film can be asked for in a sentence: the model tier reads it (`generate --ask`)."""
+    return AskAvailability(available=config.tier == "full", tier=config.tier)
+
+
+class AskRequest(BaseModel):
+    sentence: str = Field(min_length=1, max_length=500)
+
+
+@router.post("/ask/preview", response_model=JobView, status_code=202, responses={409: {}})
+def start_ask_preview(
+    request: AskRequest,
+    config: Annotated[Config, Depends(current_config)],
+    runner: Annotated[JobRunner, Depends(job_runner)],
+    executable: Annotated[str, Depends(cli_executable)],
+) -> JobView | JSONResponse:
+    """Translate a sentence with `generate --ask --dry-run`; nothing is filmed.
+
+    The CLI keeps the translation in a JSON file beside the job, which the preview reads.
+    """
+    from uuid import uuid4
+
+    if config.tier != "full":
+        raise HTTPException(422, _NEEDS_MODEL_TIER)
+    sentence = request.sentence.strip()
+    if not sentence:
+        raise HTTPException(422, "Describe the film you want.")
+    job_id = uuid4().hex
+    trace_file = runner.progress_path(job_id)
+    config_flag = _config_flag()
+    flags = [f"--ask={sentence}", "--dry-run"]
+    argv = [
+        executable,
+        *(["--config", str(config_flag)] if config_flag else []),
+        "generate",
+        *flags,
+        "--ask-trace",
+        str(trace_file),
+    ]
+    shown = shlex.join(["immich-memories", "generate", *flags])
+    try:
+        job = runner.start(
+            "ask", argv, meta={"shown": shown, "trace_file": str(trace_file)}, job_id=job_id
+        )
+    except JobBusy as busy:
+        return _busy(busy, config)
+    return _view(config, job)
+
+
+@router.get("/ask/preview/{job_id}", response_model=AskPreview)
+def ask_preview(job_id: str, runner: Annotated[JobRunner, Depends(job_runner)]) -> AskPreview:
+    """The translation a finished preview kept; 404 until it has one."""
+    job = _job(runner, job_id)
+    path = Path(str(job.meta.get("trace_file") or ""))
+    if job.kind != "ask" or not path.is_file():
+        raise HTTPException(404, "This preview kept no translation.")
+    return AskPreview.model_validate_json(path.read_text())
 
 
 @router.post("/runs/{run_id}/renders", response_model=JobView, status_code=202, responses={409: {}})

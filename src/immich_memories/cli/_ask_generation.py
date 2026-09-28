@@ -9,9 +9,11 @@ the pool filmed like an album whose written subject is the sentence, or a specia
 from __future__ import annotations
 
 import hashlib
+import json
 import sys
 from dataclasses import dataclass
 from datetime import date
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import click
@@ -23,8 +25,9 @@ from immich_memories.free_text.lexicon import WordNetUnavailable, load_wordnet
 from immich_memories.free_text.library import LibraryUnavailable, read_library
 from immich_memories.free_text.printed import ImmichPrintedText
 from immich_memories.free_text.reading import WireAsker
-from immich_memories.free_text.trace import explain, save_with_run
-from immich_memories.free_text.translate import Ask, household_of, translate
+from immich_memories.free_text.trace import explain, pool_counts, save_with_run, trace_record
+from immich_memories.free_text.translate import household_of, translate
+from immich_memories.security import write_secret_file
 
 if TYPE_CHECKING:
     from immich_memories.config_loader import Config
@@ -85,7 +88,13 @@ class RunScope:
 
 
 def scope_of_ask(
-    ctx: click.Context, config: Config, request: str | None, *, dry_run: bool, typed: RunScope
+    ctx: click.Context,
+    config: Config,
+    request: str | None,
+    *,
+    dry_run: bool,
+    typed: RunScope,
+    trace_file: Path | None = None,
 ) -> RunScope:
     """The run's scope: as typed without `--ask`, else the one its sentence asks for.
 
@@ -101,7 +110,7 @@ def scope_of_ask(
     ]
     if given:
         raise click.UsageError(f"--ask is the whole scope; drop {', '.join(given)}")
-    film = translate_ask(config, request, dry_run=dry_run)
+    film = translate_ask(config, request, dry_run=dry_run, trace_file=trace_file)
     if film is None:
         sys.exit(0)
     # A requested film keeps forwarded pictures: a club's photos arrive by group chat.
@@ -117,11 +126,13 @@ def scope_of_ask(
     return RunScope(from_album=ref, subject=film.subject, accept_any_provenance=True, curated=pool)
 
 
-def translate_ask(config: Config, request: str, *, dry_run: bool) -> Film | None:
+def translate_ask(
+    config: Config, request: str, *, dry_run: bool, trace_file: Path | None = None
+) -> Film | None:
     """Translate the sentence and print its trace; the film to make, or None for no film.
 
     A dry run stops after the trace and the pool's counts. A request the library cannot
-    show is no film, and the trace says why.
+    show is no film, and the trace says why. `trace_file` keeps the same as JSON.
     """
     from immich_memories.api.immich import SyncImmichClient
     from immich_memories.db import open_store
@@ -161,8 +172,14 @@ def translate_ask(config: Config, request: str, *, dry_run: bool) -> Film | None
     trace = explain(asked, film=film)
     click.echo(trace)
     save_with_run(asked, film, trace, people=view.people)
+    if trace_file is not None:
+        write_secret_file(trace_file, json.dumps(trace_record(asked, film)))
     if dry_run:
-        print_info(f"Pool: {_counts(asked)}; dry run, nothing filmed")
+        counts = pool_counts(asked)
+        print_info(
+            f"Pool: {counts['pictures']} pictures ({counts['photos']} photos, "
+            f"{counts['videos']} videos); dry run, nothing filmed"
+        )
         return None
     if film.route == "none":
         print_info(f"Not possible, no film: {film.reason.outcome}")
@@ -186,9 +203,3 @@ def _home_base(config: Config) -> tuple[float, float] | None:
     if trips.homebase_latitude == trips.homebase_longitude == 0.0:
         return None
     return trips.homebase_latitude, trips.homebase_longitude
-
-
-def _counts(asked: Ask) -> str:
-    pictures = asked.pool.pictures
-    videos = sum(picture.media_kind == "video" for picture in pictures)
-    return f"{len(pictures)} pictures ({len(pictures) - videos} photos, {videos} videos)"

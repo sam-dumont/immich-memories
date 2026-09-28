@@ -93,6 +93,22 @@ def test_a_dry_run_prints_the_translation_and_the_pool_and_films_nothing(ask) ->
     assert "14 pictures (14 photos, 0 videos)" in result.output
 
 
+def test_a_dry_run_keeps_its_translation_for_a_watcher(ask, tmp_path: Path) -> None:
+    import json
+
+    kept = tmp_path / "ask.json"
+
+    result = ask("--ask", "our cat along the years", "--dry-run", "--ask-trace", str(kept))
+
+    assert result.exit_code == 0, result.output
+    record = json.loads(kept.read_text())
+    assert record["request"] == "our cat along the years"
+    assert [block["head"] for block in record["blocks"]][:2] == ["READING", "WHO"]
+    assert record["pool"] == {"pictures": 14, "photos": 14, "videos": 0}
+    assert record["verdict"] == "possible"
+    assert record["film"]["route"] == "pool"
+
+
 def test_without_the_model_tier_the_ask_says_what_it_needs(ask) -> None:
     result = ask("--ask", "our cat along the years", "--dry-run", config=IMMICH)
 

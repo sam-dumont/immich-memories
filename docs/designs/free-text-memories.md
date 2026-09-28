@@ -403,7 +403,10 @@ reference, not the code: every piece is rebuilt as product code with tests and e
     CLI reference (`generate --ask`, `report --wrong/--missing/--include-flagged-captions`).
 11. **Evaluation**: the dev and held-out prompts as recorded fixtures (banked Gemma answers), so the
     translation is tested without a model; the private prompt log stays outside git.
-12. **UI**: the sentence box lands with the Svelte rewrite (#1398), not in the NiceGUI pages.
+12. **UI** (done): the sentence box on the Svelte client's Memory page (`web/src/lib/AskPanel.svelte`),
+    on `tier: full` only. **Preview** runs `generate --ask --dry-run --ask-trace FILE` as a job and
+    shows the trace by part (`trace_blocks`/`trace_record`), the pool counts and the verdict;
+    **Make the film** is an ordinary cut brief with `ask`, so the same `translate_ask` runs both.
 
 ## Documentation (owner 2026-09-28)
 

@@ -31,7 +31,8 @@ What it needs:
   checked against a pinned digest. Nothing downloads it at run time.
 
 Nothing leaves your network except the calls to your Immich and your reader. The flags are on the
-[generate page](./cli/generate.md#a-film-from-a-sentence).
+[generate page](./cli/generate.md#a-film-from-a-sentence). The web UI has the same thing as a box on
+the **Memory** page, with a preview before any film: [The web UI](./web-ui.mdx#a-film-from-a-sentence).
 
 ## How it works
 
@@ -167,7 +168,6 @@ out thin or not possible.
   cases: a list of one picture per person is cut to the film's length, and blurry pictures still
   lose to sharp ones.
 - **English first.** Other languages go through the model and may lose meaning.
-- **No web UI yet.** The sentence box comes with the new UI.
 
 ## When a result is bad
 

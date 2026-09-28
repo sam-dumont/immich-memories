@@ -80,6 +80,15 @@ def scope_options(command: FC) -> FC:
                 "the translation is printed first. Needs tier: full"
             ),
         ),
+        click.option(
+            "--ask-trace",
+            type=click.Path(dir_okay=False, path_type=Path),
+            default=None,
+            help=(
+                "With --ask: keep the translation (the trace, the pool counts, the verdict) in "
+                "this JSON file, for a watcher such as the web client"
+            ),
+        ),
         click.option("--person", "-p", type=str, multiple=True, help="Person name (repeatable)"),
         click.option(
             "--people-expression",
