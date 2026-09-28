@@ -18,7 +18,7 @@ install cuts each of them from what Immich already knows (dates, places, faces, 
 |---|---|---|---|
 | `year_in_review` | one calendar year | 10 min | nothing extra |
 | `monthly_highlights` | one month | 60 s | nothing extra |
-| `season` | one season of one year | 2 min 15 s in the web UI, about 3 min 15 s on the CLI | nothing extra |
+| `season` | one season of one year | about 3 min 15 s | nothing extra |
 | `person_spotlight` | a range, one person | 60 s a month, capped at 10 min | a named face in Immich |
 | `multi_person` | a range, several people | 60 s a month, capped at 10 min | named faces in Immich |
 | `on_this_day` | today's date in every earlier year | 45 s | a few years of library |
@@ -99,9 +99,9 @@ immich-memories generate --memory-type person_spotlight --person "Riley" --year 
 immich-memories generate --memory-type multi_person --person "Riley" --person "Bob" --year 2025
 ```
 
-Season is the one type whose two surfaces start from different lengths on purpose: the web UI's
-card asks for 2 min 15 s, the CLI fits a curve through the date range (about 3 min 15 s for three
-months). Both are editable defaults. `--hemisphere south` maps summer onto December to February.
+Season fits a curve through the date range: about 3 min 15 s for three months, the same from the
+web UI and the CLI. `--duration` overrides it. `--hemisphere south` maps summer onto December to
+February.
 
 Person spotlight needs the person named in Immich's face recognition. What makes it a spotlight is
 the filter: the editor is the same one. Multi-person defaults to AND: an afternoon counts when

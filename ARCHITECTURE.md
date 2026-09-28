@@ -875,7 +875,8 @@ src/immich_memories/
 │   └── storage_report.py       # build_storage_report(): output + cache storage inventory (`runs storage`)
 │
 ├── planning/                   # Media-aware duration planning
-│   └── auto_duration.py        # decide_memory_duration(): Auto length fitted to discovered media, CLI and UI
+│   ├── auto_duration.py        # decide_memory_duration(): Auto length fitted to discovered media, CLI and UI
+│   └── memory_length.py        # default_duration_for_type(): the length a memory type asks for, one resolver for every surface
 │
 ├── config.py                   # YAML configuration management (re-exports)
 ├── config_loader.py            # Config loading: env > config.yaml > database > default (pydantic-settings sources)

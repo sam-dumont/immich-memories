@@ -30,6 +30,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime
+from pathlib import Path
 
 import pytest
 
@@ -37,11 +38,11 @@ from immich_memories.api.models import Person
 from immich_memories.cli._asset_fetch import fetch_media
 from immich_memories.cli._date_resolution import (
     BIRTHDAY_FLAG_FORMAT,
-    default_duration_for_type,
     resolve_date_range,
 )
 from immich_memories.memory_types.factory import create_preset
 from immich_memories.memory_types.registry import MemoryType
+from immich_memories.planning.memory_length import default_duration_for_type
 from immich_memories.timeperiod import DateRange
 
 
@@ -180,14 +181,9 @@ class DocumentedDifference:
     recorded_at: str
 
 
-# The wizard's cards carry a fixed length; the CLI fits a curve through the
-# date range. Both numbers are editable defaults for the surface they belong
-# to, which is the product decision #630 wrote down. Asserted to the value, so
-# a change on either side still lands here.
-_SPLIT_RECORD = "docs-site/docs/make/memory-types.mdx#monthly-season-person-multi-person"
-DOCUMENTED_DURATION_SPLIT: dict[MemoryType, DocumentedDifference] = {
-    MemoryType.SEASON: DocumentedDifference(cli=195.02, ui=135, recorded_at=_SPLIT_RECORD),
-}
+# Differences the project decided on, and the record that allows each. None today: #1503 gave
+# every surface the CLI's date-range curve, and the web brief sends no length unless one is typed.
+DOCUMENTED_DURATION_SPLIT: dict[MemoryType, DocumentedDifference] = {}
 
 
 # ── Differences this file deliberately does not assert ────────────────────────
@@ -281,8 +277,15 @@ def ui_windows(memory_type: MemoryType, spec: MemorySpec) -> list[tuple[datetime
 
 
 def ui_duration(memory_type: MemoryType, spec: MemorySpec) -> float | None:
-    """The target length the wizard puts in the duration box for this spec."""
-    return create_preset(memory_type, **spec.as_preset_params()).default_duration_seconds
+    """The target length the web brief asks for: what it sends as --duration, and when it
+    sends none (the page's length box is empty) the one the CLI then fits (#1503)."""
+    from immich_memories.web.brief import CutBrief
+
+    argv = CutBrief(memory_type=str(memory_type)).argv(
+        executable="immich-memories", config=None, output=Path("/o/web.mp4")
+    )
+    sent = [arg.split("=", 1)[1] for arg in argv if arg.startswith("--duration=")]
+    return float(sent[0]) if sent else cli_duration(memory_type, spec)
 
 
 def _every_type_with_a_spec():

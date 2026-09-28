@@ -152,7 +152,8 @@ def _season(
         description=f"{season_cap} highlights of {year}",
         date_ranges=[date_range],
         person_filter=person_filter_for(person_names, person_match=person_match),
-        default_duration_seconds=135,  # ~45s per month × 3
+        # No default length: planning.memory_length fits the date-range curve (~195 s for a
+        # full season) on every surface (#1503).
     )
 
 

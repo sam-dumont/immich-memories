@@ -84,3 +84,15 @@ def test_every_flag_a_brief_can_emit_is_one_generate_accepts():
     emitted = {flag.split("=")[0] for flag in everything._flags()}
 
     assert emitted <= accepted, emitted - accepted
+
+
+def test_a_season_brief_leaves_its_length_to_the_cli_s_date_range_curve():
+    """The web and the CLI give a season the same length (#1503): the brief sends none."""
+    brief = CutBrief(memory_type="season", year=2024, season="summer")
+
+    argv = brief.argv(
+        executable="immich-memories", config=Path("/c.yaml"), output=Path("/o/web-1.mp4")
+    )
+
+    assert "--memory-type=season" in argv and "--season=summer" in argv
+    assert not any(arg.startswith("--duration") for arg in argv)
