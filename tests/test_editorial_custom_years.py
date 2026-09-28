@@ -147,3 +147,49 @@ def test_the_timing_trim_takes_a_years_only_shot_last():
 
     assert [c["asset_id"] for c in dropped] == ["m2"]
     assert [c["asset_id"] for c in kept] == ["g", "m0", "m1"]
+
+
+def _works_years(tmp_path, *, second_stands: bool):
+    """2018 holds two stories: first in funding order a works day with the partner whose frames
+    mostly miss their subject, then a later visit. Ten starred 2019 days fill the other slots."""
+    failing = Day(date(2018, 4, 7), "Garden works", moments=3, company="Robin (partner)")
+    later = (
+        Day(date(2018, 5, 19), "Garden works again", starred=True)
+        if second_stands
+        else Day(date(2018, 5, 19), "Garden works again", company="Robin (partner)")
+    )
+    busy = [
+        Day(date(2019, 3, 2) + timedelta(days=7 * n), f"Works day {n + 1}", moments=3, starred=True)
+        for n in range(10)
+    ]
+    source = _renovation(tmp_path, [failing, later, *busy])
+    missing = ("d000",) if second_stands else ("d000", "d001")
+    for asset_id, row in list(source.audience_annotations.items()):
+        if asset_id.startswith(missing):
+            heads = (*row.heads, ("clip_frames", "subject_often_missing"))
+            source.audience_annotations[asset_id] = replace(row, heads=heads)
+    return source
+
+
+def test_a_year_whose_first_story_fails_the_standing_gate_is_voiced_by_its_next(tmp_path):
+    years = _years(_works_years(tmp_path, second_stands=True))
+
+    assert years.count(2018) == 1
+
+
+def test_a_year_where_no_story_stands_stays_quiet_and_the_record_says_why(tmp_path):
+    source = _works_years(tmp_path, second_stands=False)
+
+    years = _years(source)
+
+    selection = json.loads(
+        (source.artifact_dir / "derived-decisions" / "story-selection.private.json").read_text()
+    )
+    assert 2018 not in years
+    assert selection["quiet_partitions"] == [
+        {
+            "partition": "year-2018",
+            "stories": ["S001", "S002"],
+            "reason": "no picture of these stories stands on its own",
+        }
+    ]

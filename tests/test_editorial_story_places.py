@@ -138,3 +138,30 @@ def test_the_place_bound_still_holds_against_pictures_of_known_people(tmp_path):
 
     inside = _at(plan, "Churchtown")
     assert 0 < len(inside) < len(plan["carriers"]) / 2
+
+
+HILLTOWN = (47.0, 2.0, "Hilltown", "Homeland")
+
+
+def test_a_starred_picture_back_from_the_bound_takes_a_free_slot_before_anyones_place(tmp_path):
+    """April: a starred week away at two places, and two days out at Hilltown nobody vouches
+    for. The bound holds stars back while the film still has room for them."""
+    away = [
+        Day(date(2030, 4, 8) + timedelta(days=n), f"Day {n + 1} away", where, 1, starred=True)
+        for n, where in enumerate([*[CHURCH] * 4, *STOPS[:2]])
+    ]
+    days = [Day(date(2030, 4, 2), "Hill day", HILLTOWN), *away]
+    source = film_source(
+        tmp_path,
+        [*days, Day(date(2030, 4, 24), "Hill day 2", HILLTOWN)],
+        seconds=40,
+        span=(date(2030, 4, 1), date(2030, 4, 30)),
+    )
+
+    plan = run(source, FilmJudge())
+
+    selection = json.loads(
+        (source.artifact_dir / "derived-decisions" / "story-selection.private.json").read_text()
+    )
+    assert selection["displaced_for_a_favourite"] == []
+    assert len(_at(plan, "Hilltown")) == 2
