@@ -30,6 +30,7 @@ from experiment_data import ROOT
 # 200 m, then the street starts (20,848 at 1 km, 29,450 at the trip detector's 10 km).
 AT_HOME_KM = 0.15
 INFERRED_HOME_KM = 0.3
+PHOTOGRAPHED_WITHIN_KM = 0.3  # owner 09-28: 500 m is a lot
 ARTICLES = {"a", "an", "the", "some", "two", "three", "several", "his", "her", "their", "its"}
 SHAPES = ["one moment or event", "along the years", "how something changed over time",
           "first times", "a collection of one kind of thing"]
@@ -85,14 +86,14 @@ def homes(library, assets):
         points = [where]
         # Where the phone put the photos taken there: indoors GPS settles away from the address pin
         # (the owner's pin was 180 m from the photos of that home, 09-28). The densest ~100 m cell of
-        # photo days within 500 m during the stay joins the home's points.
+        # photo days within 300 m during the stay joins the home's points.
         days, near = {}, {}
         for r in library.rows:
             a = assets.get(r["asset_id"])
             if not a or not (str(h["since"]) <= r["taken_at"][:10] < (until or "9999")):
                 continue
             spot = (a.exif_info.latitude, a.exif_info.longitude)
-            if km(where, spot) <= 0.5:
+            if km(where, spot) <= PHOTOGRAPHED_WITHIN_KM:
                 cell = (round(spot[0] / 0.001), round(spot[1] / 0.001))
                 days.setdefault(cell, set()).add(r["taken_at"][:10])
                 near.setdefault(cell, []).append(spot)
