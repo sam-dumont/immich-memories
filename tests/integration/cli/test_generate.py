@@ -996,7 +996,7 @@ class TestPipelineRunner:
                 output_resolution="720p",
                 output_orientation="landscape",
                 memory_type="year_in_review",
-                person_names=[" Alice ", "BOB\tJones"],
+                person_names=[" Ada ", "BOB\tJones"],
                 date_range=dr,
                 upload_to_immich=False,
                 album=None,
@@ -1017,7 +1017,7 @@ class TestPipelineRunner:
         assert gen_params.memory_key_override == "candidate:key"
         assert gen_params.memory_category == "birthday"
         assert gen_params.automation_attempt_id == "attempt-pipeline-1"
-        assert gen_params.memory_people == ("alice", "bob jones")
+        assert gen_params.memory_people == ("ada", "bob jones")
         assert gen_params.target_duration_seconds == 60.0
         assert gen_params.timeline_plan.target_duration == 60.0
         assert gen_params.timeline_plan.content_budget >= 48.0

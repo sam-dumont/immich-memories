@@ -126,7 +126,7 @@ class TestHeaderProvider:
         run_kwargs = reverse_proxy_run_kwargs(config, environ={})
 
         request = _request_after_proxy(
-            run_kwargs, _PROXY, {"X-Forwarded-For": _VISITOR, "Remote-User": "alice"}
+            run_kwargs, _PROXY, {"X-Forwarded-For": _VISITOR, "Remote-User": "ada"}
         )
         request.scope["session"] = {}
         _try_header_auth(request, config.auth)

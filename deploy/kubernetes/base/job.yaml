@@ -117,11 +117,11 @@ spec:
             - --year
             - "2024"
             - --person
-            - "Alice"
+            - "Ada"
             - --duration
             - "600"
             - --output
-            - /app/output/alice_2024_memories.mp4
+            - /app/output/ada_2024_memories.mp4
 
           envFrom:
             - secretRef:

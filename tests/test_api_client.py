@@ -542,14 +542,14 @@ class TestPersonMethods:
         mock_response = httpx.Response(
             200,
             request=httpx.Request("GET", "/people"),
-            json={"people": [{"id": "p1", "name": "Alice"}]},
+            json={"people": [{"id": "p1", "name": "Ada"}]},
             headers={"content-type": "application/json"},
         )
         client._client.request = AsyncMock(return_value=mock_response)
 
         people = await client.get_all_people()
         assert len(people) == 1
-        assert people[0].name == "Alice"
+        assert people[0].name == "Ada"
 
     @pytest.mark.asyncio
     async def test_get_all_people_list_format(self, _mock_config):
@@ -578,14 +578,14 @@ class TestPersonMethods:
         mock_response = httpx.Response(
             200,
             request=httpx.Request("GET", "/people"),
-            json={"people": [{"id": "p1", "name": "Alice"}]},
+            json={"people": [{"id": "p1", "name": "Ada"}]},
             headers={"content-type": "application/json"},
         )
         client._client.request = AsyncMock(return_value=mock_response)
 
-        person = await client.get_person_by_name("ALICE")
+        person = await client.get_person_by_name("ADA")
         assert person is not None
-        assert person.name == "Alice"
+        assert person.name == "Ada"
 
     @pytest.mark.asyncio
     async def test_get_person_by_name_not_found(self, _mock_config):

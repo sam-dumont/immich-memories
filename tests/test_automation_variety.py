@@ -63,12 +63,12 @@ def test_same_category_cannot_repeat() -> None:
 
 
 def test_first_matching_rule_has_stable_precedence() -> None:
-    monthly = _candidate(CandidateCategory.MONTHLY_REVIEW, people=["Alice"])
+    monthly = _candidate(CandidateCategory.MONTHLY_REVIEW, people=["Ada"])
     history = [
-        _completed(CandidateCategory.MONTHLY_REVIEW, people=("Alice",)),
+        _completed(CandidateCategory.MONTHLY_REVIEW, people=("Ada",)),
         _completed(
             CandidateCategory.MONTHLY_REVIEW,
-            people=("Alice",),
+            people=("Ada",),
             created_at=datetime(2026, 8, 9, 9, 0),
             completed_at=datetime(2026, 8, 9, 10, 0),
         ),
@@ -130,13 +130,13 @@ def test_monthly_review_cannot_complete_twice_in_calendar_month() -> None:
 def test_person_cannot_repeat_across_last_two_person_bearing_runs() -> None:
     history = [
         _completed(CandidateCategory.TRIP),
-        _completed(CandidateCategory.PERSON_SPOTLIGHT, people=("Alice Smith",)),
+        _completed(CandidateCategory.PERSON_SPOTLIGHT, people=("Ada Smith",)),
         _completed(CandidateCategory.ON_THIS_DAY),
         _completed(CandidateCategory.BIRTHDAY, people=("Bob",)),
     ]
 
     decision = apply_variety_rules(
-        [_candidate(CandidateCategory.MULTI_PERSON, people=["  ALICE\tSMITH ", "Carol"])],
+        [_candidate(CandidateCategory.MULTI_PERSON, people=["  ADA\tSMITH ", "Carol"])],
         history,
         TODAY,
     )
@@ -178,7 +178,7 @@ def test_activity_burst_is_independent_from_monthly_review_cadence() -> None:
 
 def test_person_outside_last_two_person_runs_is_eligible() -> None:
     history = [
-        _completed(CandidateCategory.PERSON_SPOTLIGHT, people=("Alice",)),
+        _completed(CandidateCategory.PERSON_SPOTLIGHT, people=("Ada",)),
         _completed(CandidateCategory.ON_THIS_DAY),
         _completed(CandidateCategory.BIRTHDAY, people=("Bob",)),
         _completed(CandidateCategory.TRIP),

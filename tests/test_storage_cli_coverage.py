@@ -144,12 +144,12 @@ class TestRunDatabaseCRUD:
 
     def test_save_and_get_run(self, db):
         """A saved run can be retrieved by ID with all fields."""
-        run = _make_run(person_name="Alice", memory_type="year_in_review", source="auto")
+        run = _make_run(person_name="Ada", memory_type="year_in_review", source="auto")
         db.save_run(run)
         loaded = db.get_run(run.run_id)
         assert loaded is not None
         assert loaded.run_id == run.run_id
-        assert loaded.person_name == "Alice"
+        assert loaded.person_name == "Ada"
         assert loaded.memory_type == "year_in_review"
         assert loaded.source == "auto"
         assert loaded.status == "running"
@@ -232,11 +232,11 @@ class TestRunDatabaseListRuns:
 
     def test_list_filter_by_person(self, db):
         """Filtering by person_name returns only matching runs."""
-        db.save_run(_make_run(run_id="r1", person_name="Alice"))
+        db.save_run(_make_run(run_id="r1", person_name="Ada"))
         db.save_run(_make_run(run_id="r2", person_name="Bob"))
-        runs = db.list_runs(person_name="Alice")
+        runs = db.list_runs(person_name="Ada")
         assert len(runs) == 1
-        assert runs[0].person_name == "Alice"
+        assert runs[0].person_name == "Ada"
 
     def test_list_filter_by_status(self, db):
         """Filtering by status returns only matching runs."""
@@ -509,7 +509,7 @@ class TestRunsListCommand:
         config = Config()
         config.cache.database = str(tmp_path / "test.db")
         db = RunDatabase()
-        run = _make_run(run_id="20260101_120000_abcd", person_name="Alice", status="completed")
+        run = _make_run(run_id="20260101_120000_abcd", person_name="Ada", status="completed")
         run.output_path = "/out/video.mp4"
         db.save_run(run)
         result = _invoke(["runs", "list"], config=config)
@@ -521,9 +521,9 @@ class TestRunsListCommand:
         config = Config()
         config.cache.database = str(tmp_path / "test.db")
         db = RunDatabase()
-        db.save_run(_make_run(run_id="r1", person_name="Alice"))
+        db.save_run(_make_run(run_id="r1", person_name="Ada"))
         db.save_run(_make_run(run_id="r2", person_name="Bob"))
-        result = _invoke(["runs", "list", "--person", "Alice"], config=config)
+        result = _invoke(["runs", "list", "--person", "Ada"], config=config)
         assert result.exit_code == 0
 
 
@@ -545,7 +545,7 @@ class TestRunsShowCommand:
         config = Config()
         config.cache.database = str(tmp_path / "test.db")
         db = RunDatabase()
-        run = _make_run(run_id="20260101_120000_abcd", status="completed", person_name="Alice")
+        run = _make_run(run_id="20260101_120000_abcd", status="completed", person_name="Ada")
         run.completed_at = datetime(2026, 1, 1, 12, 30)
         run.clips_analyzed = 100
         run.clips_selected = 20
@@ -566,7 +566,7 @@ class TestRunsShowCommand:
         )
         result = _invoke(["runs", "show", "20260101_120000_abcd"], config=config)
         assert result.exit_code == 0
-        assert "Alice" in result.output
+        assert "Ada" in result.output
         assert "analysis" in result.output.lower() or "Phase" in result.output
 
     def test_runs_show_partial_match(self, tmp_path):
@@ -842,7 +842,7 @@ class TestGenerateBuildParamsTable:
                 start=datetime(2024, 1, 1),
                 end=datetime(2024, 12, 31),
             ),
-            person_names=["Alice"],
+            person_names=["Ada"],
             duration=600.0,
             orientation="landscape",
             scale_mode="blur",
@@ -986,7 +986,7 @@ class TestGenerateInfersMemoryType:
         config.immich.url = "http://immich:2283"
         config.immich.api_key = "test-key"
         result = _invoke_planned_generation(
-            ["generate", "--year", "2024", "--person", "Alice", "--dry-run"],
+            ["generate", "--year", "2024", "--person", "Ada", "--dry-run"],
             config,
         )
         assert result.exit_code == 0
@@ -1002,7 +1002,7 @@ class TestGenerateInfersMemoryType:
                 "--year",
                 "2024",
                 "--person",
-                "Alice",
+                "Ada",
                 "--person",
                 "Bob",
                 "--dry-run",

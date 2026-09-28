@@ -129,7 +129,7 @@ class TestRunTrackerStartRun:
         """start_run captures system info when enabled."""
         mock_capture.return_value = MagicMock()
         tracker = RunTracker(capture_system=True)
-        run_id = tracker.start_run(person_name="Alice")
+        run_id = tracker.start_run(person_name="Ada")
         assert run_id == tracker.run_id
         mock_capture.assert_called_once()
         tracker.db.save_run.assert_called_once()
@@ -193,7 +193,7 @@ class TestRunTrackerMemoryFields:
             memory_type="year_in_review",
             memory_key="year_in_review:2025-01-01:2025-12-31:",
             memory_category="birthday",
-            memory_people=(" Alice ", "BOB\tJones"),
+            memory_people=(" Ada ", "BOB\tJones"),
             source="auto",
             automation_attempt_id="attempt-tracker-1",
         )
@@ -201,7 +201,7 @@ class TestRunTrackerMemoryFields:
         assert saved_run.memory_type == "year_in_review"
         assert saved_run.memory_key == "year_in_review:2025-01-01:2025-12-31:"
         assert saved_run.memory_category == "birthday"
-        assert saved_run.memory_people == ("alice", "bob jones")
+        assert saved_run.memory_people == ("ada", "bob jones")
         assert saved_run.source == "auto"
         assert saved_run.automation_attempt_id == "attempt-tracker-1"
 
@@ -227,13 +227,13 @@ class TestRunTrackerMemoryFields:
             run_id="identity-json",
             created_at=datetime(2026, 8, 11, 9, 0),
             memory_category="multi_person",
-            memory_people=(" alice ", "BOB\tJones"),
+            memory_people=(" ada ", "BOB\tJones"),
         )
 
         restored = RunMetadata.from_dict(json.loads(run.to_json()))
 
         assert restored.memory_category == "multi_person"
-        assert restored.memory_people == ("alice", "bob jones")
+        assert restored.memory_people == ("ada", "bob jones")
 
     def test_run_metadata_treats_null_memory_people_as_empty(self):
         """Explicit JSON null from older or external metadata loads as no people."""
