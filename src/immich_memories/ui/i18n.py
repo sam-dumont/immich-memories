@@ -77,6 +77,14 @@ def tr(message: str, *, locale_code: str | None = None, **values: object) -> str
     return translated.format(**values) if values else translated
 
 
+def tr_plural(
+    singular: str, plural: str, n: int, *, locale_code: str | None = None, **values: object
+) -> str:
+    """Translate a count-dependent template with the locale's own plural rule; `{n}` is the count."""
+    translator = get_translator(locale_code or current_ui_locale(), domain="ui")
+    return translator.ngettext(singular, plural, n).format(n=n, **values)
+
+
 def N_(message: str) -> str:
     """Mark a stored label for extraction; translate it only when a browser renders it."""
     return message

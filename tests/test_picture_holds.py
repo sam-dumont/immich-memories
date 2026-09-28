@@ -2,25 +2,30 @@
 
 from __future__ import annotations
 
-import sqlite3
-
 from immich_memories.analysis.editorial_structure_audience import AudienceBank
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.operations import picture_holds as holds
+from tests.annotation_rows import add_rows
 
 
 def config_at(tmp_path):
-    return Config(editorial={"annotation_database": str(tmp_path / "annotations.sqlite")})
+    del tmp_path  # kept for call-site symmetry; the store is the one this test's env names
+    return Config()
 
 
 def bank_a_head(config, asset_id, label="yes"):
     store = holds.store_of(config)
-    holds.forget(config, "nobody")  # the store with its schema
-    with sqlite3.connect(store) as connection:
-        connection.execute(
-            "INSERT INTO head_facts (asset_id, head, version, label) VALUES (?, ?, ?, ?)",
-            (asset_id, "nsfw_marqo", config.editorial.head_versions["nsfw_marqo"], label),
-        )
+    add_rows(
+        store,
+        "head_facts",
+        {
+            "asset_id": asset_id,
+            "head": "nsfw_marqo",
+            "version": config.editorial.head_versions["nsfw_marqo"],
+            "label": label,
+        },
+    )
 
 
 def test_a_picture_nothing_holds_offers_no_clearance(tmp_path):
@@ -53,9 +58,9 @@ def test_a_live_photo_is_held_by_its_clip_too(tmp_path):
 
 def test_a_hold_an_earlier_cut_banked_is_named(tmp_path):
     config = config_at(tmp_path)
-    AudienceBank(holds.audience_bank_of(config), answerer="full|reader").hold(
-        "bath", {"verdict": "do_not_show", "finding": "private_activity", "policy": "v17"}
-    )
+    banked = AudienceBank(open_store(), answerer="full|reader")
+    banked.hold("bath", {"verdict": "do_not_show", "finding": "private_activity", "policy": "v17"})
+    banked.flush()
 
     hold = holds.read(config, ["bath"])["bath"]
 
@@ -85,10 +90,11 @@ def test_never_use_says_so_whatever_holds_it(tmp_path):
 def test_the_store_knows_a_live_photo_s_clip_without_being_told(tmp_path):
     config = config_at(tmp_path)
     bank_a_head(config, "clip")
-    with sqlite3.connect(holds.store_of(config)) as connection:
-        connection.execute(
-            "INSERT INTO assets (asset_id, live_photo_video_id) VALUES ('s', 'clip')"
-        )
+    add_rows(
+        holds.store_of(config),
+        "annotation_assets",
+        {"asset_id": "s", "live_photo_video_id": "clip"},
+    )
 
     assert holds.read(config, ["s"])["s"].can_clear
 

@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
+from immich_memories.db import Store, open_store
 from immich_memories.people.editor import PersonView
 from immich_memories.ui.pages.settings_people import (
     ROSTER_PAGE_SIZE,
@@ -45,17 +44,18 @@ def test_a_page_past_the_end_clamps_to_the_last_one():
     assert label == "Showing 1–5 of 5"
 
 
-def test_settle_writes_once_per_real_change(tmp_path: Path):
+def test_settle_writes_once_per_real_change():
+    store = open_store()
     person = _person(1)
     writes: list[tuple[str | None, str | None]] = []
 
-    def save(_path: Path, view: PersonView) -> None:
+    def save(_store: Store, view: PersonView) -> None:
         writes.append((view.role, view.notes))
 
-    assert settle(tmp_path / "people.yaml", person, notes="Grand", save=save) is True
-    assert settle(tmp_path / "people.yaml", person, notes="Grand", save=save) is False
-    assert settle(tmp_path / "people.yaml", person, notes="Grandma", save=save) is True
-    assert settle(tmp_path / "people.yaml", person, role="aunt", save=save) is True
-    assert settle(tmp_path / "people.yaml", person, role="aunt", save=save) is False
+    assert settle(store, person, notes="Grand", save=save) is True
+    assert settle(store, person, notes="Grand", save=save) is False
+    assert settle(store, person, notes="Grandma", save=save) is True
+    assert settle(store, person, role="aunt", save=save) is True
+    assert settle(store, person, role="aunt", save=save) is False
 
     assert writes == [(None, "Grand"), (None, "Grandma"), ("aunt", "Grandma")]

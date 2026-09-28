@@ -11,6 +11,7 @@ import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from io import BytesIO
+from itertools import chain
 from pathlib import Path
 from typing import Protocol
 
@@ -74,8 +75,9 @@ class _CaptureStore:
         self.facts: list[HeadFact] = []
         self.encoder_key = ""
 
-    def remember_facts(self, asset_id: str, facts: Sequence[HeadFact], *, encoder_key: str) -> None:
-        self.facts = list(facts)
+    def remember_facts(self, facts: Mapping[str, Sequence[HeadFact]], *, encoder_key: str) -> None:
+        # The service decides one picture per request, so a batch holds that picture.
+        self.facts = list(chain.from_iterable(facts.values()))
         self.encoder_key = encoder_key
 
     def facts_for(

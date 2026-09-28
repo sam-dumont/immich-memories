@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 19:10+0200\n"
+"POT-Creation-Date: 2026-09-27 22:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -202,7 +202,7 @@ msgstr "Automatisch (zoals de clips)"
 msgid "Auto duration"
 msgstr "Automatische duur"
 
-#: i18n.py:101
+#: i18n.py:102
 msgid "Automatic (browser)"
 msgstr "Automatisch (browser)"
 
@@ -415,7 +415,7 @@ msgstr ""
 msgid "Connected as: {name}"
 msgstr "Verbonden als: {name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:454 pages/step2_loading.py:307
 msgid "Connecting to Immich..."
 msgstr "Verbinden met Immich..."
 
@@ -504,7 +504,7 @@ msgstr "Verschil"
 msgid "Discovery failed: {error}"
 msgstr "Zoeken mislukt: {error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:66 pages/step2_loading.py:366
 msgid "Done"
 msgstr "Klaar"
 
@@ -547,7 +547,7 @@ msgstr "Fouten ({error_count})"
 msgid "Export"
 msgstr "Exporteren"
 
-#: pages/step2_loading.py:336
+#: pages/step2_loading.py:324
 #, python-brace-format
 msgid "Failed to load videos: {value}"
 msgstr "Video's laden mislukt: {value}"
@@ -576,10 +576,6 @@ msgstr ""
 "titelachtergronden, geen spraakanalyse, minder foto's, favorieten eerst. Ingesteld met "
 "`preset: fast` in config.yaml of IMMICH_MEMORIES_PRESET=fast; onderstaande keuzes blijven "
 "voor deze uitvoering leidend."
-
-#: pages/step2_loading.py:252
-msgid "Fetching photos..."
-msgstr "Foto's ophalen..."
 
 #: pages/_step3_music_preview.py:232
 msgid "Film language"
@@ -710,7 +706,7 @@ msgstr "Levering aan Immich: {delivery_label}"
 msgid "Immich delivery: {value}"
 msgstr "Levering aan Immich: {value}"
 
-#: pages/clip_grid.py:170 pages/clip_grid.py:224
+#: pages/clip_grid.py:177 pages/clip_grid.py:232
 msgid "Include"
 msgstr "Opnemen"
 
@@ -726,7 +722,7 @@ msgstr "Foto's opnemen"
 msgid "Include in compilation"
 msgstr "In compilatie opnemen"
 
-#: i18n.py:109
+#: i18n.py:110
 msgid "Interface language"
 msgstr "Interfacetaal"
 
@@ -788,7 +784,7 @@ msgstr "Albums laden..."
 msgid "Loading thumbnails"
 msgstr "Miniaturen laden"
 
-#: pages/step2_loading.py:313
+#: pages/step2_loading.py:301
 msgid "Loading videos..."
 msgstr "Video's laden..."
 
@@ -929,10 +925,10 @@ msgstr "Momenteel geen geschikte suggesties."
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
 msgstr ""
-"Nog geen personenbestand. Scan de bibliotheek opnieuw: dit leest aantallen en maandcurves van"
+"Nog geen personen. Scan de bibliotheek opnieuw: dit leest aantallen en maandcurves van"
 " elke benoemde persoon, zonder beeldanalyse."
 
 #: pages/runs.py:105
@@ -1069,7 +1065,7 @@ msgstr "Personenfilter"
 msgid "Person Spotlight"
 msgstr "Persoon in beeld"
 
-#: pages/clip_grid.py:193
+#: pages/clip_grid.py:200
 msgid "Photo"
 msgstr "Foto"
 
@@ -1081,7 +1077,7 @@ msgstr "Beschikbare foto's"
 msgid "Photo duration (seconds)"
 msgstr "Fotoduur (seconden)"
 
-#: pages/step2_loading.py:461
+#: pages/step2_loading.py:449
 #, python-brace-format
 msgid "Photo thumbnails: {value}/{count}"
 msgstr "Fotominiaturen: {value}/{count}"
@@ -1260,6 +1256,10 @@ msgstr "Actief op de server: {phase}. Dit gaat door als je deze pagina verlaat."
 #: app.py:73 app.py:219
 msgid "Runs"
 msgstr "Uitvoeringen"
+
+#: pages/clip_grid.py:108 pages/clip_grid.py:320 pages/clip_grid.py:356
+msgid "Same episode"
+msgstr "Zelfde episode"
 
 #: pages/step1_config.py:140
 msgid "Save Config"
@@ -1517,7 +1517,7 @@ msgstr ""
 msgid "Thumbnail cache"
 msgstr "Miniaturencache"
 
-#: pages/step2_loading.py:415
+#: pages/step2_loading.py:403
 #, python-brace-format
 msgid "Thumbnails: {value}/{count}"
 msgstr "Miniaturen: {value}/{count}"
@@ -1540,11 +1540,11 @@ msgstr "Samen"
 
 #: pages/step1_people.py:181
 msgid ""
-"Together keeps only the moments holding everyone named. Any of these people keeps a moment "
-"holding any one of them."
+"Together keeps the times everyone named was there, even if never in the same photo. Any of "
+"these people keeps the times any one of them was there."
 msgstr ""
-"Samen bewaart alleen momenten met alle genoemde personen. Een van deze personen bewaart "
-"momenten waar minstens één van hen in voorkomt."
+"Samen houdt de momenten waarop iedereen die je noemt erbij was, ook als ze nooit op dezelfde "
+"foto staan. Een van deze mensen houdt de momenten waarop een van hen erbij was."
 
 #: pages/login.py:64
 msgid "Too many failed attempts. Try again later."
@@ -1833,3 +1833,46 @@ msgstr "{title} ({n_keys} sleutels)"
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}: {duration_seconds:.1f}s"
 
+
+msgid "Default"
+msgstr "Standaard"
+
+msgid "Nothing to save"
+msgstr "Niets om op te slaan"
+
+msgid "Save"
+msgstr "Opslaan"
+
+msgid "Saved here"
+msgstr "Hier opgeslagen"
+
+msgid "Saved to the database"
+msgstr "Opgeslagen in de database"
+
+msgid "Set by {name} (environment)"
+msgstr "Ingesteld door {name} (omgeving)"
+
+msgid "Set in config.yaml as {key}"
+msgstr "Ingesteld in config.yaml als {key}"
+
+msgid "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
+msgstr "Instellingen komen uit vier bronnen, sterkste eerst: omgevingsvariabelen, config.yaml, wat je hier opslaat (in de database), daarna de standaardwaarden. Een grijze instelling komt uit de omgeving of config.yaml; wijzig hem daar."
+
+msgid "{count} set outside this page"
+msgstr "{count} buiten deze pagina ingesteld"
+
+msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
+msgstr "{name} is niet ingesteld, dus API-sleutels en wachtwoorden kunnen hier niet worden opgeslagen. Stel hem in, of zet die geheimen in de omgeving of config.yaml."
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  ({n} sleutel)"
+msgstr[1] "{title}  ({n} sleutels)"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} buiten deze pagina ingesteld"
+msgstr[1] "{n} buiten deze pagina ingesteld"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Hier opgeslagen, maar {name} kan het niet ontsleutelen: de standaardwaarde geldt"

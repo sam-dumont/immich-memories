@@ -7,6 +7,7 @@ import pytest
 
 from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VERSIONS, prepare_heads
 from immich_memories.triage.heads import HeadBundle, HeadWeights, PcaWeights
+from tests.annotation_rows import annotation_store
 
 PACK_DIM = 6 * 384
 
@@ -35,7 +36,7 @@ def bundle_at(path, versions):
 def prepare(tmp_path, versions, *, encoder=None):
     return prepare_heads(
         asset_ids=["one"],
-        store_path=tmp_path / "triage.db",
+        store=annotation_store(),
         bundle_path=bundle_at(tmp_path / "heads.npz", versions),
         encoder_path=encoder if encoder is not None else tmp_path / "absent.onnx",
         head_versions=PUBLIC_HEAD_VERSIONS,

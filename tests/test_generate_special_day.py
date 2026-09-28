@@ -8,7 +8,6 @@ Every day here is invented -- the real catalogue names real people and places.
 
 from __future__ import annotations
 
-import json
 from datetime import date
 from pathlib import Path
 from unittest.mock import patch
@@ -16,7 +15,7 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from immich_memories.automation.catalogue import SCOPE_FROM_RUN
+from immich_memories.automation.catalogue import SCOPE_FROM_RUN, save_catalogue
 from immich_memories.cli.generate_resolution import name_from_catalogue, resolve_special_day
 from immich_memories.memory_types.factory import create_preset
 from immich_memories.memory_types.registry import MemoryType
@@ -116,19 +115,10 @@ def _immich_payload_for(date_range) -> dict:
 
 @pytest.fixture
 def catalogue_at(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """Point the shared catalogue reader at a file this test wrote.
+    """Put these entries in this test's store; the reader itself is the real one."""
 
-    The path resolves from the home directory, which is the one thing a test
-    has to move; the reader itself is the real one.
-    """
-
-    def _install(*entries: dict) -> Path:
-        path = tmp_path / "special-days.json"
-        path.write_text(json.dumps(list(entries)))
-        monkeypatch.setattr(
-            "immich_memories.automation.catalogue.default_catalogue_path", lambda: path
-        )
-        return path
+    def _install(*entries: dict) -> None:
+        save_catalogue(list(entries))
 
     return _install
 

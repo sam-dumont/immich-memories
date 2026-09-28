@@ -5,6 +5,8 @@ from __future__ import annotations
 import pytest
 
 from immich_memories.analysis import editorial_shareability as share
+from immich_memories.db import open_store
+from tests.annotation_rows import annotation_store
 
 
 @pytest.mark.parametrize(
@@ -56,7 +58,7 @@ def gate(tmp_path, caption, finding, level, *, heads=(("nsfw_marqo", "no"),)):
         flag_rows={},
         lines={"solo": caption},
         bank_path=tmp_path / "shareability.private.json",
-        library=AudienceBank(tmp_path / "audience.private.json", answerer="full|reader"),
+        library=AudienceBank(open_store(), answerer="full|reader"),
     )
 
 
@@ -85,7 +87,8 @@ def test_a_detector_floor_under_a_household_moment_still_holds_it(tmp_path):
 
 
 def test_a_household_hold_banked_before_levels_existed_plays_in_a_just_us_film(tmp_path):
-    AudienceBank(tmp_path / "audience.private.json", answerer="full|reader").hold(
+    banked = AudienceBank(open_store(), answerer="full|reader")
+    banked.hold(
         "solo",
         {
             "verdict": "do_not_show",
@@ -93,12 +96,14 @@ def test_a_household_hold_banked_before_levels_existed_plays_in_a_just_us_film(t
             "policy": share.AUDIENCE_PROMPT_VERSION,
         },
     )
+    banked.flush()
 
     assert gate(tmp_path, BATH, "bathing", "just_us").verdict_of(UNIT) == "just_us"
 
 
 def test_an_older_refusal_the_current_reading_cannot_place_stays_refused(tmp_path):
-    AudienceBank(tmp_path / "audience.private.json", answerer="full|reader").hold(
+    banked = AudienceBank(open_store(), answerer="full|reader")
+    banked.hold(
         "solo",
         {
             "verdict": "do_not_show",
@@ -106,6 +111,7 @@ def test_an_older_refusal_the_current_reading_cannot_place_stays_refused(tmp_pat
             "policy": share.AUDIENCE_PROMPT_VERSION,
         },
     )
+    banked.flush()
 
     assert gate(tmp_path, BATH, "none", "just_us").verdict_of(UNIT) == "do_not_show"
 
@@ -357,7 +363,7 @@ def owner_gate(tmp_path, store, level, caption="A person on a beach.", finding="
         flag_rows=share.load_flags(store, ["solo"]),
         lines={"solo": caption},
         bank_path=tmp_path / f"{level}-shareability.private.json",
-        library=AudienceBank(tmp_path / "audience.private.json", answerer="full|reader"),
+        library=AudienceBank(open_store(), answerer="full|reader"),
     )
 
 
@@ -366,7 +372,7 @@ def owner_gate(tmp_path, store, level, caption="A person on a beach.", finding="
     [("anyone", "share"), ("family", "family_only"), ("just-us", "just_us")],
 )
 def test_a_hold_cleared_for_a_level_plays_up_to_that_level(tmp_path, cleared_for, verdict):
-    store = tmp_path / "annotations.sqlite"
+    store = annotation_store()
     owner.decide(store, "solo", owner.clearance_for(cleared_for), via="cli")
 
     plays = {
@@ -380,7 +386,7 @@ def test_a_hold_cleared_for_a_level_plays_up_to_that_level(tmp_path, cleared_for
 
 
 def test_clearing_for_the_family_lifts_a_caption_hold_the_reader_keeps_casting(tmp_path):
-    store = tmp_path / "annotations.sqlite"
+    store = annotation_store()
     owner.decide(store, "solo", owner.clearance_for("family"), via="web")
 
     verdict = owner_gate(tmp_path, store, "family", BATH, "bathing").verdict_of(UNIT)
@@ -389,7 +395,7 @@ def test_clearing_for_the_family_lifts_a_caption_hold_the_reader_keeps_casting(t
 
 
 def test_a_burst_the_owner_cleared_at_two_levels_takes_the_stricter(tmp_path):
-    store = tmp_path / "annotations.sqlite"
+    store = annotation_store()
     owner.decide(store, "a", owner.clearance_for("anyone"), via="cli")
     owner.decide(store, "b", owner.clearance_for("just-us"), via="cli")
     flags = share.load_flags(store, ["a", "b"])
@@ -400,20 +406,19 @@ def test_a_burst_the_owner_cleared_at_two_levels_takes_the_stricter(tmp_path):
 
 def test_the_no_model_draft_lifts_a_banked_refusal_only_where_the_clearance_reaches(tmp_path):
     from immich_memories.analysis.editorial_rule_banked_facts import open_banked_facts
-    from immich_memories.analysis.editorial_structure_audience import AUDIENCE_BANK_NAME
 
-    store = tmp_path / "annotations.sqlite"
-    bank_dir = tmp_path / "structure-banks" / "case"
-    AudienceBank(bank_dir.parent / AUDIENCE_BANK_NAME, answerer="full|reader").hold(
+    store = annotation_store()
+    banked = AudienceBank(store, answerer="full|reader")
+    banked.hold(
         "held", {"verdict": "family_only", "finding": "exposure_evidence", "policy": "heads"}
     )
+    banked.flush()
     owner.decide(store, "held", owner.clearance_for("family"), via="cli")
 
     def refused(level):
         return open_banked_facts(
-            bank_dir=bank_dir,
             attempts_dir=None,
-            store_path=store,
+            store=store,
             audience=level,
             episode_cards={},
         ).refused_for_audience("held")

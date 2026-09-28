@@ -51,8 +51,8 @@ The people the editor knows come from Immich's face recognition, so name the fac
 Immich first. Then, in this app, open **Settings > People**:
 
 1. Press **Rescan the library**. It reads each named person's picture count and month curve from
-   Immich (never a pixel) and writes `~/.immich-memories/people.yaml`. The roster lists the inner
-   circle first.
+   Immich (never a pixel) and keeps the result in the people registry, in the app's store. The
+   roster lists the inner circle first.
 2. On the cards of your partner, your children and your parents, set **Role** to `partner`,
    `child` or `parent`. It saves the moment you pick it.
 3. Under **Relationships**, confirm the links the scan proposed (the check) or reject them (the

@@ -9,8 +9,6 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import sqlite3
-from contextlib import closing
 from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
@@ -28,6 +26,7 @@ from immich_memories_inference.app import create_app
 from immich_memories_inference.producers import HEADS, HeadsProducer
 from immich_memories_inference.runtime import ProducerRuntime
 from immich_memories_inference.settings import InferenceSettings
+from tests.annotation_rows import annotation_store, read_rows
 
 BUNDLED_HEADS = (
     Path(__file__).resolve().parents[1]
@@ -71,21 +70,17 @@ def bundle() -> HeadBundle:
     return HeadBundle.load(BUNDLED_HEADS)
 
 
-def banked_in_process(bundle: HeadBundle, encoder: DinoEncoder, image: bytes, store_path: Path):
+def banked_in_process(bundle: HeadBundle, encoder: DinoEncoder, image: bytes):
     """The rows preparation writes to the bank for this picture, read back."""
-    store = HeadFactStore(store_path)
-    try:
-        TriageEngine(encoder=encoder, bundle=bundle, store=store).run(
-            ["asset"], lambda _asset_id: image
-        )
-    finally:
-        store.close()
-    with closing(sqlite3.connect(store_path)) as connection:
-        rows = connection.execute(
-            "SELECT head, version, label, confidence, encoder_key FROM head_facts"
-            " WHERE asset_id = ?",
-            ("asset",),
-        ).fetchall()
+    store = annotation_store()
+    TriageEngine(encoder=encoder, bundle=bundle, store=HeadFactStore(store)).run(
+        ["asset"], lambda _asset_id: image
+    )
+    rows = [
+        (row["head"], row["version"], row["label"], row["confidence"], row["encoder_key"])
+        for row in read_rows(store, "head_facts")
+        if row["asset_id"] == "asset"
+    ]
     order = [head.name for head in bundle.heads]
     return sorted(rows, key=lambda row: order.index(row[0]))
 
@@ -105,13 +100,11 @@ def served(bundle: HeadBundle, encoder: DinoEncoder, image: bytes):
     ]
 
 
-def test_the_service_returns_the_rows_the_in_process_path_banks(tmp_path, bundle):
+def test_the_service_returns_the_rows_the_in_process_path_banks(bundle):
     image = photograph()
     encoder = DinoEncoder(session=PinnedGraph(), key=bundle.encoder_key)
 
-    assert served(bundle, encoder, image) == banked_in_process(
-        bundle, encoder, image, tmp_path / "triage.db"
-    )
+    assert served(bundle, encoder, image) == banked_in_process(bundle, encoder, image)
 
 
 def test_every_head_in_the_bundle_answers_at_its_own_version(bundle):

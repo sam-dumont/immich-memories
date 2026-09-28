@@ -88,9 +88,7 @@ class TestGenerateMemoryValidation:
         from tests.conftest import make_clip
 
         config = Config(cache={"directory": str(tmp_path / "cache"), "video_cache_enabled": False})
-        tracker = RunTracker(
-            "missing-source", db_path=tmp_path / "runs.sqlite", capture_system=False
-        )
+        tracker = RunTracker("missing-source", capture_system=False)
         clip = make_clip()
         params = GenerationParams(
             clips=[clip], output_path=tmp_path / "film.mp4", config=config, no_music=True

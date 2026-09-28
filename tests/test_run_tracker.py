@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -44,7 +45,7 @@ class TestRunTrackerInit:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_generates_run_id_when_none(self, mock_db_cls: MagicMock):
         """RunTracker generates an ID when none provided."""
-        tracker = RunTracker(db_path=_TEST_DB_PATH)
+        tracker = RunTracker()
         assert tracker.run_id is not None
         assert len(tracker.run_id) == 20
 
@@ -52,14 +53,14 @@ class TestRunTrackerInit:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_uses_provided_run_id(self, mock_db_cls: MagicMock):
         """RunTracker uses the provided run ID."""
-        tracker = RunTracker(run_id="20250101_000000_abcd", db_path=_TEST_DB_PATH)
+        tracker = RunTracker(run_id="20250101_000000_abcd")
         assert tracker.run_id == "20250101_000000_abcd"
 
     # WHY: RunDatabase opens a SQLite connection — isolate tracker logic from disk I/O
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_current_run_is_none_initially(self, mock_db_cls: MagicMock):
         """current_run is None before start_run."""
-        tracker = RunTracker(db_path=_TEST_DB_PATH)
+        tracker = RunTracker()
         assert tracker.current_run is None
 
 
@@ -70,7 +71,7 @@ class TestRunTrackerPhases:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_start_phase_sets_state(self, mock_db_cls: MagicMock):
         """start_phase records the phase name and time."""
-        tracker = RunTracker(db_path=_TEST_DB_PATH)
+        tracker = RunTracker()
         tracker.start_run()
         tracker.start_phase("discovery", total_items=100)
         assert tracker._current_phase == "discovery"
@@ -81,7 +82,7 @@ class TestRunTrackerPhases:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_start_phase_completes_previous(self, mock_db_cls: MagicMock):
         """Starting a new phase completes the previous one."""
-        tracker = RunTracker(db_path=_TEST_DB_PATH)
+        tracker = RunTracker()
         tracker.start_run()
         tracker.start_phase("phase1", total_items=10)
         tracker.start_phase("phase2", total_items=20)
@@ -94,7 +95,7 @@ class TestRunTrackerPhases:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_complete_phase_resets_state(self, mock_db_cls: MagicMock):
         """complete_phase clears phase state."""
-        tracker = RunTracker(db_path=_TEST_DB_PATH)
+        tracker = RunTracker()
         tracker.start_run()
         tracker.start_phase("analysis", total_items=50)
         tracker.complete_phase(items_processed=50)
@@ -106,7 +107,7 @@ class TestRunTrackerPhases:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_complete_phase_noop_without_active_phase(self, mock_db_cls: MagicMock):
         """complete_phase does nothing if no phase is active."""
-        tracker = RunTracker(db_path=_TEST_DB_PATH)
+        tracker = RunTracker()
         tracker.start_run()
         tracker.complete_phase()  # Should not raise
         tracker.db.save_phase_stats.assert_not_called()
@@ -115,7 +116,7 @@ class TestRunTrackerPhases:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_complete_phase_defaults_items_to_total(self, mock_db_cls: MagicMock):
         """complete_phase defaults items_processed to total_items."""
-        tracker = RunTracker(db_path=_TEST_DB_PATH)
+        tracker = RunTracker()
         tracker.start_run()
         tracker.start_phase("export", total_items=25)
         tracker.complete_phase()
@@ -134,7 +135,7 @@ class TestRunTrackerStartRun:
     def test_start_run_captures_system_info(self, mock_db_cls: MagicMock, mock_capture: MagicMock):
         """start_run captures system info when enabled."""
         mock_capture.return_value = MagicMock()
-        tracker = RunTracker(db_path=_TEST_DB_PATH, capture_system=True)
+        tracker = RunTracker(capture_system=True)
         run_id = tracker.start_run(person_name="Alice")
         assert run_id == tracker.run_id
         mock_capture.assert_called_once()
@@ -148,7 +149,7 @@ class TestRunTrackerStartRun:
         self, mock_db_cls: MagicMock, mock_capture: MagicMock
     ):
         """start_run skips system info capture when disabled."""
-        tracker = RunTracker(db_path=_TEST_DB_PATH, capture_system=False)
+        tracker = RunTracker(capture_system=False)
         tracker.start_run()
         mock_capture.assert_not_called()
 
@@ -161,14 +162,14 @@ class TestRunTrackerStartRun:
     ):
         """start_run continues if system info capture fails."""
         mock_capture.side_effect = RuntimeError("no GPU")
-        tracker = RunTracker(db_path=_TEST_DB_PATH, capture_system=True)
+        tracker = RunTracker(capture_system=True)
         run_id = tracker.start_run()  # Should not raise
         assert run_id is not None
 
     # WHY: RunDatabase opens a SQLite connection — inspect persisted timestamps without disk I/O
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_lifecycle_timestamps_are_aware_utc(self, mock_db_cls: MagicMock):
-        tracker = RunTracker(db_path=_TEST_DB_PATH, capture_system=False)
+        tracker = RunTracker(capture_system=False)
 
         tracker.start_run()
         saved_run = tracker.db.save_run.call_args.args[0]
@@ -194,7 +195,7 @@ class TestRunTrackerMemoryFields:
     def test_start_run_passes_memory_fields(self, mock_db_cls: MagicMock, mock_capture: MagicMock):
         """start_run stores memory_type, memory_key, and source on RunMetadata."""
         mock_capture.return_value = MagicMock()
-        tracker = RunTracker(db_path=_TEST_DB_PATH, capture_system=True)
+        tracker = RunTracker(capture_system=True)
         tracker.start_run(
             memory_type="year_in_review",
             memory_key="year_in_review:2025-01-01:2025-12-31:",
@@ -215,7 +216,7 @@ class TestRunTrackerMemoryFields:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_start_run_defaults_source_to_manual(self, mock_db_cls: MagicMock):
         """start_run defaults source to 'manual' when not specified."""
-        tracker = RunTracker(db_path=_TEST_DB_PATH, capture_system=False)
+        tracker = RunTracker(capture_system=False)
         tracker.start_run()
         saved_run = tracker.db.save_run.call_args[0][0]
         assert saved_run.source == "manual"
@@ -236,7 +237,7 @@ class TestRunTrackerMemoryFields:
             memory_people=(" alice ", "BOB\tJones"),
         )
 
-        restored = RunMetadata.from_json(run.to_json())
+        restored = RunMetadata.from_dict(json.loads(run.to_json()))
 
         assert restored.memory_category == "multi_person"
         assert restored.memory_people == ("alice", "bob jones")
@@ -265,7 +266,7 @@ class TestRunTrackerFailCancel:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_fail_run_updates_status(self, mock_db_cls: MagicMock):
         """fail_run marks the run as failed in the database."""
-        tracker = RunTracker(db_path=_TEST_DB_PATH)
+        tracker = RunTracker()
         tracker.start_run()
         tracker.fail_run("out of memory", errors_count=3)
         tracker.db.update_run_status.assert_called_once()
@@ -277,7 +278,7 @@ class TestRunTrackerFailCancel:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_fail_run_completes_active_phase(self, mock_db_cls: MagicMock):
         """fail_run completes any active phase before failing."""
-        tracker = RunTracker(db_path=_TEST_DB_PATH)
+        tracker = RunTracker()
         tracker.start_run()
         tracker.start_phase("analysis")
         tracker.fail_run("crash")
@@ -289,7 +290,7 @@ class TestRunTrackerFailCancel:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_cancel_run_updates_status(self, mock_db_cls: MagicMock):
         """cancel_run marks the run as cancelled."""
-        tracker = RunTracker(db_path=_TEST_DB_PATH)
+        tracker = RunTracker()
         tracker.start_run()
         tracker.cancel_run()
         call_kwargs = tracker.db.update_run_status.call_args[1]

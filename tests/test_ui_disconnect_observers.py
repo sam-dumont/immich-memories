@@ -274,7 +274,7 @@ async def test_completion_disconnect_preserves_pending_delivery_truth(
         output_container=_Container(),
     )
 
-    saved = RunDatabase(db_path).get_run("ui-disconnect-completed")
+    saved = RunDatabase().get_run("ui-disconnect-completed")
     assert saved is not None
     assert saved.status == "completed"
     assert saved.delivery_status is DeliveryStatus.PENDING
@@ -390,7 +390,7 @@ async def test_failure_notification_disconnect_preserves_failed_run(
         output_container=_Container(),
     )
 
-    saved = RunDatabase(db_path).get_run("ui-disconnect-failed")
+    saved = RunDatabase().get_run("ui-disconnect-failed")
     assert saved is not None
     assert saved.status == "failed"
     assert saved.errors_count == 1

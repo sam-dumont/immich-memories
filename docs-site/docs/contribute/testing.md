@@ -12,8 +12,11 @@ services. `uv run pytest tests/ --collect-only -q` prints the current split.
 | Unit | `make test` | FFmpeg on the `PATH`: a handful of unit tests encode real media |
 | Extras | `make test-extras` | The torch-family extras (demucs/editorial). CI's extras job installs neither, so a green CI run does not prove the torch paths ran |
 | Integration | `make test-integration` | FFmpeg, an Immich server in `~/.immich-memories/config.yaml`, and at least two clips under 30s in that library |
-| Real-Immich gate | `make test-immich-gate IMMICH_GATE_VERSION=v2` (or `v3`) | Docker and FFmpeg. It starts its own Immich and fixture library, and fails when Immich does not come up |
+| Store | `make test-store-sqlite`, `make test-store` | `tests/store/` on SQLite, then on PostgreSQL too. `make test-store` starts a throwaway `postgres:16` in Docker unless `IMMICH_MEMORIES_TEST_DATABASE_URL` names one; each test gets its own schema. `make test` runs the SQLite half |
+| Real-Immich gate | `make test-immich-gate IMMICH_GATE_VERSION=v2` (or `v3`), plus `IMMICH_GATE_DATABASE=postgresql` for the store on PostgreSQL | Docker and FFmpeg. It starts its own Immich and fixture library, and fails when Immich does not come up |
 | E2E | `make e2e` (`make e2e-full` for the generation flow) | `make playwright-install`; no Immich, it runs against a fake server |
+| Launch check | `make launch-check-ci`, `make launch-check-ci-postgres` | The required E2E set. The PostgreSQL one gives each launch its own schema in `IMMICH_MEMORIES_E2E_DATABASE_URL`, or starts a throwaway `postgres:16` when that is unset |
+| Container | `make test-container` (`CONTAINER_E2E_DATABASE=postgresql` for PostgreSQL) | Docker. Builds the image and runs it; see below |
 
 `make test` takes about 3 minutes on an M-series Mac; `make test-fast` skips the slow ones.
 Integration suites skip rather than fail when their services aren't there, unless `REQUIRE_IMMICH=1` (the gate below sets it). `make help` lists every
@@ -49,6 +52,13 @@ does, on every PR, for both majors:
 | albums | story albums list and resolve by name with their counts |
 | upload | a re-rendered film lands in its album and trashes the earlier copy (v2 by device identity, v3 by the provenance tag) |
 | generate | `generate --memory-type monthly_highlights --no-render` on the rules tier picks a cut from the fixture month |
+| store | a `people scan` and a `pictures never-use` read back from the store, a second `prepare` of the month changes no banked fact, and a rendered film is in the run history with its phases |
+
+Every test runs twice per major: the app's store on SQLite, and on PostgreSQL.
+`IMMICH_GATE_DATABASE=postgresql` starts a throwaway `postgres:16` for the run, in CI too (a job
+service would not survive the workflow's Docker daemon restart), unless
+`IMMICH_GATE_DATABASE_URL` names a server. The runs get the store through `IMMICH_MEMORIES_DATABASE_URL`, the same variable a
+deployment uses.
 
 The gate is deliberately small and stable. Wider real-Immich coverage stays in the other
 integration folders. `IMMICH_GATE_KEEP=1` leaves the stack running after the tests; a failed run
@@ -59,6 +69,33 @@ major, keyed on the exact refs. `make immich-gate-fetch` loads it, and pulls wha
 three attempts of three minutes each; `make immich-gate-save` writes it back after a cold run. A
 registry that stalls then costs one attempt instead of the whole job, and an image that never
 arrives still fails the gate.
+
+## The container suite
+
+CI builds the Docker image on every PR; `make test-container` is what runs it. It builds the
+image with the `editorial` extra (`CONTAINER_E2E_BUILD=0` reuses one already built), then drives
+the repo's own `docker-compose.yml` from `tests/container/`:
+
+1. **Upgrade.** A volume laid out the way a pre-store install left `~/.immich-memories`
+   (`tests/store/legacy_home.py`: people, runs, automation attempts, owner decisions, model
+   answers, banks, all synthetic) goes on the config volume before the new image first starts.
+   The first start imports it, and `store import --verify` finds every legacy record.
+2. **Store commands.** `store status`, `store backup`, and `store restore --force` into a scratch
+   store inside the container, with every table's count equal. On PostgreSQL that is the image's
+   own `pg_dump` and `pg_restore` against a `postgres:16` server, restoring into a second database
+   on it: a restore renames the backup's schema, so it cannot share a database with the schema it
+   came from.
+3. **Trigger API.** The app runs with a trigger token and uploads off. The Kubernetes CronJob's
+   own pinned curl image sends its exact `POST /api/trigger` from another container on the
+   network: the answer is `accepted` and the attempt lands in the store's automation history. No
+   Immich answers, so the attempt is recorded as failed, which is the point: the record is what
+   is under test. A wrong token gets a 401.
+
+`CONTAINER_E2E_DATABASE=postgresql` switches on the compose file's commented PostgreSQL example,
+exactly as a user would uncomment it, so that example is tested too. Why the volume is written by
+the fixture and not by the previous release's image: that image cannot write owner decisions or
+model answers without a live Immich and a model endpoint, and the fixture covers every legacy
+file the import reads.
 
 ## Coverage and diff-cover
 

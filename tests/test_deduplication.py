@@ -10,7 +10,7 @@ from immich_memories.tracking.run_database import RunDatabase
 
 @pytest.fixture
 def db(tmp_path):
-    return RunDatabase(db_path=tmp_path / "test.db")
+    return RunDatabase()
 
 
 def _make_run(

@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import calendar
 import logging
-import sqlite3
 import sys
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.analysis import llm_metrics
 from immich_memories.analysis.editorial_duration_advisory import editorial_duration_warning
@@ -33,6 +34,7 @@ from immich_memories.cli._helpers import (
 from immich_memories.cli._run_inputs import ResolvedRunInputs
 from immich_memories.cli._run_summary import render_run_summary
 from immich_memories.cli._run_timeline import configure_timeline, final_timeline
+from immich_memories.db import open_store
 from immich_memories.operations.auto_output import NOTHING_WORTH_A_FILM
 from immich_memories.operations.run_index import run_id_for_attempt
 from immich_memories.operations.storyboard import read_storyboard
@@ -201,19 +203,15 @@ def _finish_preparation(
     import click
 
     from immich_memories.cli._generation_preview import music_policy
+    from immich_memories.db import resolve_location
 
-    store = config.editorial.resolve_annotation_database(config.cache.cache_path)
+    store = resolve_location(config)
     click.echo("Dry-run preparation (selection was not run; no video will be created)")
     click.echo(f"Memory: {context.product}")
     click.echo(f"Date range: {context.label}")
     click.echo(f"Candidates: {len(assets)} video, {len(photos)} photo")
     click.echo(f"Target duration: {context.target_seconds:.1f}s")
-    readiness = (
-        "store available; coverage checked at selection"
-        if store.is_file()
-        else "preparation required"
-    )
-    click.echo(f"Annotations: {readiness}")
+    click.echo(f"Annotations: in the store at {store}; coverage checked at selection")
     click.echo("Selection: pending (use --no-render to run story-first selection)")
     click.echo(
         f"Canvas: {output_canvas.width}x{output_canvas.height} ({output_canvas.orientation})"
@@ -233,7 +231,7 @@ class _AttemptPhaseReporter:
         from immich_memories.automation.state_store import AutomationStateStore
 
         self._attempt_id = attempt_id
-        self._store = AutomationStateStore(config.cache.database_path) if attempt_id else None
+        self._store = AutomationStateStore(open_store(config)) if attempt_id else None
         self._progress = progress
         self._task = task
         self._started = time.monotonic()
@@ -247,7 +245,7 @@ class _AttemptPhaseReporter:
         if self._store is not None and self._attempt_id is not None:
             try:
                 self._store.update_phase(self._attempt_id, event)
-            except (KeyError, OSError, RuntimeError, sqlite3.Error):
+            except (KeyError, OSError, RuntimeError, SQLAlchemyError):
                 logging.getLogger(__name__).warning(
                     "Could not persist operational phase %s", phase.value
                 )
@@ -730,7 +728,10 @@ def _send_notification(
     ):
         return
     try:
-        from immich_memories.automation.notifications import notify_job_complete
+        from immich_memories.automation.notifications import (
+            notification_store,
+            notify_job_complete,
+        )
 
         notify_job_complete(
             memory_type=memory_type or "unknown",
@@ -739,7 +740,7 @@ def _send_notification(
             output_path=output_path,
             error=error,
             urls=notif.urls,
-            db_path=config.cache.database_path,
+            store=notification_store(config),
             attach_thumbnail=notif.attach_thumbnail,
             cooldown_hours=notif.cooldown_hours,
         )

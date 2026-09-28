@@ -10,7 +10,7 @@ import click
 
 from immich_memories.analysis.editorial_shareability_tiers import sharing_refusal
 from immich_memories.analysis.live_photo_pipeline import drop_live_photo_components
-from immich_memories.cli._asset_fetch import fetch_photos, fetch_videos
+from immich_memories.cli._asset_fetch import fetch_media
 from immich_memories.cli._date_resolution import (
     BIRTHDAY_FLAG_FORMAT,
     default_duration_for_type,
@@ -604,32 +604,18 @@ def register_generate_commands(main: click.Group) -> None:
                     # A birthday memory's flashback windows are single days years
                     # apart, so most of them are empty and #661's per-window
                     # warning would bury the one that matters — the rolling year.
-                    assets = fetch_videos(
+                    assets, fetched_photos = fetch_media(
                         history_from=BIRTHDAY_HISTORY_FROM if birthday else None,
                         client=client,
                         progress=progress,
                         date_ranges=date_ranges,
                         person_ids=person_ids,
                         person_match=person_match,
-                        **({"person_expression": id_condition} if id_condition is not None else {}),
+                        person_expression=id_condition,
+                        include_photos=use_photos,
                     )
-
-                    # Fetch photos (if enabled)
-                    fetched_photos: list = []
-                    if use_photos:
-                        fetched_photos = fetch_photos(
-                            client=client,
-                            date_ranges=date_ranges,
-                            person_ids=person_ids,
-                            person_match=person_match,
-                            **(
-                                {"person_expression": id_condition}
-                                if id_condition is not None
-                                else {}
-                            ),
-                        )
-                        if fetched_photos:
-                            print_info(f"Found {len(fetched_photos)} photos")
+                    if fetched_photos:
+                        print_info(f"Found {len(fetched_photos)} photos")
 
                     # A Live Photo's video half is part of a photograph, not
                     # footage: it must not compete as a video against its own still.

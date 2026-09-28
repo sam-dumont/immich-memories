@@ -12,9 +12,7 @@ without a reader.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from contextlib import closing
 from datetime import datetime
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.editorial_text_gateway import (
@@ -30,6 +28,7 @@ from immich_memories.analysis.library_catalogue import (
     window_bounds,
 )
 from immich_memories.analysis.text_episode_paging import TEXT_EPISODE_MAX_OUTPUT_TOKENS
+from immich_memories.db import Store, open_store
 from immich_memories.store.episode_readings import (
     EpisodeReadingIdentity,
     EpisodeReadingStore,
@@ -70,25 +69,23 @@ def catalogue_prepared_window(
     membership and simply contributes nothing to its month's account.
     """
     prepared = _admitted(sources, scope, _screen_documents(sources, scope, config, unservable))
-    store_path = config.editorial.resolve_annotation_database(config.cache.cache_path)
     ask = requester or catalogue_requester(config)
     episodes, unread = _banked_readings(prepared, config=config, requester=ask, albums=albums)
     if not episodes:
         return LibraryCatalogue((), {}, {}), unread
-    with closing(CatalogueStore(store_path)) as store:
-        catalogue = build_catalogue(
-            episodes,
-            store=store,
-            requester=ask,
-            producer=semantic_text_model_identity(config.llm, thinking=False),
-        )
+    catalogue = build_catalogue(
+        episodes,
+        store=CatalogueStore(open_store(config)),
+        requester=ask,
+        producer=semantic_text_model_identity(config.llm, thinking=False),
+    )
     return catalogue, unread
 
 
 def catalogue_banked_episodes(
     identities: Sequence[EpisodeReadingIdentity],
     *,
-    store_path: Path,
+    store: Store,
     capture_dates: Mapping[str, datetime],
     config: Config,
     requester: Callable[[str], str] | None = None,
@@ -103,8 +100,7 @@ def catalogue_banked_episodes(
     year over those months. A window over several years ("2005-12-03..2026-09-23") banks one
     account per year it touches and one for the window, never one per month.
     """
-    with closing(EpisodeReadingStore(store_path)) as bank:
-        readings = bank.readings_for(tuple(identities))
+    readings = EpisodeReadingStore(store).readings_for(tuple(identities))
     episodes = [
         LibraryEpisode(reading=reading, taken_at=taken)
         for reading in readings.values()
@@ -117,25 +113,24 @@ def catalogue_banked_episodes(
         "producer": semantic_text_model_identity(config.llm, thinking=False),
         "unread_facts": unread_facts,
     }
-    with closing(CatalogueStore(store_path)) as store:
-        if window_bounds(period) is not None:
-            return bank_window_accounts(episodes, store=store, period=period, **options)
-        if len(period) != 4:
-            return bank_month_accounts(episodes, store=store, **options)
-        catalogue = build_catalogue(episodes, store=store, **options)
+    accounts = CatalogueStore(store)
+    if window_bounds(period) is not None:
+        return bank_window_accounts(episodes, store=accounts, period=period, **options)
+    if len(period) != 4:
+        return bank_month_accounts(episodes, store=accounts, **options)
+    catalogue = build_catalogue(episodes, store=accounts, **options)
     return {**catalogue.months, **catalogue.years}
 
 
 def banked_notable_records(
-    identities: Sequence[EpisodeReadingIdentity], *, store_path: Path
+    identities: Sequence[EpisodeReadingIdentity], *, store: Store
 ) -> dict[str, str]:
     """What these readings recorded as a moment worth a place of its own, by picture.
 
     A reading that named none is an episode nothing stood out in. A bank written before the
     reading was asked the question has an empty lane and reads the same way.
     """
-    with closing(EpisodeReadingStore(store_path)) as bank:
-        readings = bank.readings_for(tuple(identities))
+    readings = EpisodeReadingStore(store).readings_for(tuple(identities))
     return {
         moment.asset_id: moment.reason
         for reading in readings.values()
@@ -190,7 +185,7 @@ def _annotations(prepared: PreparedEditorialSource, config: Config):
 
     editorial = config.editorial
     return StoredAnnotationLineReader(
-        store_path=editorial.resolve_annotation_database(config.cache.cache_path),
+        store=open_store(config),
         candidates=prepared.candidates,
         description_model=editorial.description_model,
         head_versions=editorial.head_versions,
@@ -221,15 +216,13 @@ def _banked_readings(
         annotation_renderer_version=contract.renderer_version,
         annotation_versions=contract.producer_versions,
     )
-    store_path = config.editorial.resolve_annotation_database(config.cache.cache_path)
-    with closing(EpisodeReadingStore(store_path)) as store:
-        result = CachedTextEpisodeReader(
-            store=store,
-            producer=producer,
-            annotations=annotations,
-            requester=requester,
-            albums=albums,
-        ).read(project_episode_groups(prepared, prepared.candidate_ids))
+    result = CachedTextEpisodeReader(
+        store=EpisodeReadingStore(open_store(config)),
+        producer=producer,
+        annotations=annotations,
+        requester=requester,
+        albums=albums,
+    ).read(project_episode_groups(prepared, prepared.candidate_ids))
     dates = {candidate.asset_id: candidate.taken_at for candidate in prepared.candidates}
     episodes = [
         LibraryEpisode(

@@ -2,7 +2,7 @@
 date: 2026-08-31
 status: design — not implemented, no code in src/ yet
 issue: none-yet
-builds-on: 2026-08-30-fast-lane-licensing.md, 2026-08-30-bulk-visual-analysis-alternatives.md, 2026-08-30-card-model-distillation.md, implementation-plans/2026-08-27-visual-analysis-inventory.md, designs/2026-08-31-the-per-asset-index.md
+builds-on: 2026-08-30-fast-lane-licensing.md, 2026-08-30-bulk-visual-analysis-alternatives.md, 2026-08-30-card-model-distillation.md, implementation-plans/2026-08-27-visual-analysis-inventory.md
 replaces: the "train a bigger VLM student" direction (owner ruling, 2026-08-31 evening)
 ---
 

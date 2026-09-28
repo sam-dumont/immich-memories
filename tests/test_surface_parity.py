@@ -33,7 +33,7 @@ from datetime import date, datetime
 import pytest
 
 from immich_memories.api.models import Person
-from immich_memories.cli._asset_fetch import fetch_photos, fetch_videos
+from immich_memories.cli._asset_fetch import fetch_media
 from immich_memories.cli._date_resolution import (
     BIRTHDAY_FLAG_FORMAT,
     default_duration_for_type,
@@ -453,15 +453,13 @@ def cli_fetch_calls(
     """What ``cli/_asset_fetch`` asks Immich for, given windows and people."""
     client = RecordingClient()
     person_ids = [person.id for person in people]
-    fetch_videos(
+    fetch_media(
         client=client,
-        # Read only on the live-photo branch, which use_live_photos closes.
         progress=SilentProgress(),
         date_ranges=windows,
         person_ids=person_ids,
+        include_photos=include_photos,
     )
-    if include_photos:
-        fetch_photos(client=client, date_ranges=windows, person_ids=person_ids)
     return client.calls
 
 
@@ -508,9 +506,8 @@ def ui_fetch_calls(
     client = RecordingClient()
     monkeypatch.setattr(step2_loading, "SyncImmichClient", lambda **_kwargs: client)
     state = _wizard_state(memory_type, windows, people)
-    step2_loading._fetch_assets(state)
-    if include_photos:
-        step2_loading._fetch_photos(state)
+    state.include_photos = include_photos
+    step2_loading._fetch_media(state)
     return client.calls
 
 

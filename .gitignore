@@ -74,6 +74,7 @@ complexipy_results_*.json
 /cache/
 /deploy/kubernetes/base/secret.yaml
 /deploy/kubernetes/base/ingress.yaml
+/deploy/kubernetes/overlays/postgres/database-secret.yaml
 # Auto-generated version file
 # Byte-compiled / optimized / DLL files
 # C extensions

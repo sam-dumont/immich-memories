@@ -5,23 +5,22 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import sqlite3
 import tempfile
 from collections.abc import Callable, Iterable, Mapping
-from contextlib import closing
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
 from immich_memories.api.models import Asset
+from immich_memories.db import Store
 from immich_memories.processing.probe_cache import ProbeCache, ProbeError
 from immich_memories.speech.fireredvad import FireRedSpeechDetector
 from immich_memories.speech.vad import VAD_SAMPLE_RATE, extract_audio_16k
 from immich_memories.store.cut_measurements import (
+    PendingMeasurements,
     banked_speech_regions,
-    open_cut_measurements,
-    reading_cut_measurements,
-    remember_speech_regions,
 )
 
 logger = logging.getLogger(__name__)
@@ -38,15 +37,13 @@ def speech_producer(config: Any) -> str:
 
 
 def read_speech_regions(
-    store_path: Path, assets: Iterable[Asset], producer: str
+    store: Store, assets: Iterable[Asset], producer: str
 ) -> dict[str, tuple[tuple[float, float], ...]]:
     """The speech a cut already measured in these clips, keyed by clip."""
     digests = {asset.id: source_metadata_digest(asset) for asset in assets}
     if not digests:
         return {}
-    return reading_cut_measurements(
-        store_path, lambda c: banked_speech_regions(c, digests, producer)
-    )
+    return banked_speech_regions(store, digests, producer)
 
 
 class SpeechMeasurementUnavailable(RuntimeError):
@@ -65,42 +62,51 @@ class SpeechFacts:
         self,
         *,
         assets: Mapping[str, Asset],
-        store_path: Path,
+        store: Store,
         fetch,
         config,
         measure: Callable[[str], Regions] | None = None,
     ):
-        self.assets, self.store_path, self.fetch = assets, Path(store_path), fetch
+        self.assets, self.store, self.fetch = assets, store, fetch
         self.detector = FireRedSpeechDetector(config.vad_threshold, config.min_silence_ms)
         self.producer = speech_producer(config)
         self.memo: dict[tuple[str, str], Regions] = {}
         self._measure_source = measure or self._measure
+        self._banked: dict[str, tuple[tuple[float, float], ...]] | None = None
+        self._pending = PendingMeasurements(store)
 
     def __call__(self, asset_id: str) -> Regions:
         digest = source_metadata_digest(self.assets[asset_id])
         if (asset_id, digest) in self.memo:
             return self.memo[(asset_id, digest)]
-        banked = read_speech_regions(self.store_path, (self.assets[asset_id],), self.producer)
-        if asset_id in banked:
-            regions = list(banked[asset_id])
+        if self._banked is None:
+            # Every clip this cut could ask about, read once.
+            self._banked = read_speech_regions(self.store, self.assets.values(), self.producer)
+        if asset_id in self._banked:
+            regions = list(self._banked[asset_id])
         else:
             regions = self._measure_source(asset_id)
             self._remember(asset_id, digest, regions)
         self.memo[(asset_id, digest)] = regions
         return regions
 
+    def flush(self) -> None:
+        """Bank what this cut measured and has not written yet."""
+        try:
+            self._pending.flush()
+        except SQLAlchemyError as error:
+            # An unwritable bank costs the next cut a measurement, never this cut.
+            logger.debug("Speech regions were not banked: %s", type(error).__name__)
+
     def _remember(self, asset_id: str, digest: str, regions: Regions) -> None:
         try:
-            with closing(open_cut_measurements(self.store_path)) as connection:
-                remember_speech_regions(
-                    connection,
-                    asset_id=asset_id,
-                    producer=self.producer,
-                    source_digest=digest,
-                    regions=regions,
-                )
-        except (OSError, sqlite3.Error) as error:
-            # An unwritable bank costs the next cut a measurement, never this cut.
+            self._pending.speech_regions(
+                asset_id=asset_id,
+                producer=self.producer,
+                source_digest=digest,
+                regions=regions,
+            )
+        except SQLAlchemyError as error:
             logger.debug(
                 "Speech regions for %s were not banked: %s", asset_id, type(error).__name__
             )

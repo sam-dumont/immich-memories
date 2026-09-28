@@ -22,11 +22,11 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-import sqlite3
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+import sqlalchemy as sa
 
 from immich_memories.analysis.annotation_line_fields import content_of
 from immich_memories.analysis.editorial_exposure_chains import ChainHold
@@ -40,9 +40,15 @@ from immich_memories.analysis.editorial_shareability_audience import (
     exposure_flagged,
     exposure_members,
     parse_audience_verdict,
+    underwear_only,
 )
 from immich_memories.analysis.editorial_story_shortlist import capture_space_available
 from immich_memories.analysis.editorial_text_failures import TextCompletionFailure
+from immich_memories.db.tables import asset_flags, head_facts
+from immich_memories.store.batches import id_in, in_chunks
+
+if TYPE_CHECKING:
+    from immich_memories.db import Store
 
 NEVER_AUTO = "never_auto"
 REVIEW = "review"
@@ -89,37 +95,39 @@ class FlagRow:
     source: str
 
 
-def load_flags(store_path: Path | str, asset_ids: Iterable[str]) -> dict[str, tuple[FlagRow, ...]]:
+def load_flags(store: Store, asset_ids: Iterable[str]) -> dict[str, tuple[FlagRow, ...]]:
     """Every flag row for the given assets, exposure sources included.
 
     The production line renderer hides exposure-source flags on purpose (they are noisy on
     landscapes); the shareability check must see them, so this reads the table directly.
     """
     ids = list(dict.fromkeys(asset_ids))
-    out: dict[str, list[FlagRow]] = {}
-    if not ids:
-        return {}
-    con = sqlite3.connect(f"file:{store_path}?mode=ro", uri=True)
-    try:
-        for start in range(0, len(ids), 500):
-            chunk = ids[start : start + 500]
-            marks = ",".join("?" * len(chunk))
-            rows = con.execute(
-                f"select asset_id, flag, evidence, source from flags where asset_id in ({marks}) "  # noqa: S608
-                "order by asset_id, flag, source",
-                chunk,
-            )
-            for asset_id, flag, evidence, source in rows:
-                out.setdefault(str(asset_id), []).append(
-                    FlagRow(str(asset_id), _clean(flag), _reason(evidence), _clean(source))
+    f = asset_flags
+    rows: list[Any] = []
+    with store.connect() as connection:
+        for chunk in in_chunks(connection, ids):
+            rows.extend(
+                connection.execute(
+                    sa.select(f.c.asset_id, f.c.flag, f.c.evidence, f.c.source).where(
+                        id_in(connection, f.c.asset_id, chunk)
+                    )
                 )
-    finally:
-        con.close()
+            )
+    out: dict[str, list[FlagRow]] = {}
+    for asset_id, flag, evidence, source in sorted(rows, key=_flag_order):
+        out.setdefault(str(asset_id), []).append(
+            FlagRow(str(asset_id), _clean(flag), _reason(evidence), _clean(source))
+        )
     return {k: tuple(v) for k, v in out.items()}
 
 
+def _flag_order(row: tuple) -> tuple:
+    asset_id, flag, _evidence, source = row
+    return (str(asset_id), str(flag or ""), str(source or ""))
+
+
 def load_detector_heads(
-    store_path: Path | str, asset_ids: Iterable[str], head_versions: Mapping[str, str]
+    store: Store, asset_ids: Iterable[str], head_versions: Mapping[str, str]
 ) -> dict[str, dict[str, str]]:
     """The audience heads banked for these sources, at the versions this run reads.
 
@@ -132,21 +140,17 @@ def load_detector_heads(
     out: dict[str, dict[str, str]] = {}
     if not ids or not wanted:
         return out
-    con = sqlite3.connect(f"file:{store_path}?mode=ro", uri=True)
-    try:
-        for start in range(0, len(ids), 500):
-            chunk = ids[start : start + 500]
-            marks = ",".join("?" * len(chunk))
-            rows = con.execute(
-                f"select asset_id, head, version, label from head_facts where asset_id in ({marks}) "  # noqa: S608
-                "order by asset_id, head, version",
-                chunk,
+    h = head_facts
+    with store.connect() as connection:
+        for chunk in in_chunks(connection, ids):
+            rows = connection.execute(
+                sa.select(h.c.asset_id, h.c.head, h.c.version, h.c.label).where(
+                    id_in(connection, h.c.asset_id, chunk), h.c.head.in_(list(wanted))
+                )
             )
             for asset_id, head, version, label in rows:
                 if wanted.get(str(head)) == str(version) and _clean(label):
                     out.setdefault(str(asset_id), {})[str(head)] = _clean(label)
-    finally:
-        con.close()
     return out
 
 
@@ -404,6 +408,12 @@ def floors_under(evidence: Mapping[str, Any], result: dict[str, Any]) -> dict[st
     prefers a false positive to a miss. Nor can the reader see the three minutes around a
     capture. All of these only ever take a unit further from `share`.
     """
+    if allowed(result["verdict"], FAMILY) and underwear_only(evidence):
+        return result | {
+            "verdict": "just_us",
+            "finding": "underwear_only",
+            "why": "the caption explicitly describes a person wearing only underwear",
+        }
     if result["verdict"] != "share":
         return result
     if finding := _head_hold(evidence):
@@ -637,6 +647,7 @@ def _first_shareable(
     verdict_of: Callable[[Mapping[str, Any]], str | None],
     audience: str,
     occupied: Sequence[Mapping[str, Any]],
+    admits: Callable[[Mapping[str, Any], Sequence[Mapping[str, Any]]], bool] | None,
 ) -> tuple[Mapping[str, Any] | None, int]:
     """The first unused pool unit that passes its own gate, and the checks it cost."""
     checked = 0
@@ -646,7 +657,9 @@ def _first_shareable(
         verdict = verdict_of(unit)
         if verdict is not None:
             checked += 1
-        if verdict is None or allowed(verdict, audience):
+        if (verdict is None or allowed(verdict, audience)) and (
+            admits is None or admits(unit, occupied)
+        ):
             return unit, checked
     return None, checked
 
@@ -664,6 +677,7 @@ def apply_gate(
     verdict_of: Callable[[Mapping[str, Any]], str | None],
     pool_for: Callable[[Mapping[str, Any]], Sequence[Mapping[str, Any]]],
     audience: str = "family",
+    admits: Callable[[Mapping[str, Any], Sequence[Mapping[str, Any]]], bool] | None = None,
 ) -> tuple[list[dict], dict[str, Any]]:
     """Keep, replace or drop each carrier by its shareability verdict.
 
@@ -693,7 +707,9 @@ def apply_gate(
         log["tightened"].append(
             {"asset_id": carrier.get("asset_id"), "event": carrier.get("event"), "verdict": verdict}
         )
-        replacement, checked = _first_shareable(pool_for(carrier), used, verdict_of, audience, kept)
+        replacement, checked = _first_shareable(
+            pool_for(carrier), used, verdict_of, audience, kept, admits
+        )
         log["checked"] += checked
         if replacement is None:
             log["dropped"].append(

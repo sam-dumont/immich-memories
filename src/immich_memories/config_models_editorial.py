@@ -42,7 +42,7 @@ def _default_head_versions() -> dict[str, str]:
 
 
 class EditorialPeopleConfig(BaseModel):
-    """How the people file's close family (partner, child, parent) reach the selection."""
+    """How the people registry's close family (partner, child, parent) reach the selection."""
 
     seat_min_pictures: int = Field(
         default=20,
@@ -121,8 +121,10 @@ class EditorialConfig(BaseModel):
     annotation_database: str = Field(
         default="",
         description=(
-            "SQLite annotation facts and editorial banks; defaults to annotations.sqlite "
-            "inside the configured cache directory"
+            "Deprecated: facts and readings live in the store now. A legacy annotations.sqlite "
+            "here is imported into the store once, and its directory still holds "
+            "structure-banks/ (thumbnail-hash and scene-print caches). Blank means the "
+            "configured cache directory"
         ),
     )
     description_model: str = Field(
@@ -212,5 +214,9 @@ class EditorialConfig(BaseModel):
         return Path(raw).expanduser() if raw else None
 
     def resolve_annotation_database(self, cache_path: Path) -> Path:
-        """Use the product store without consulting private evaluation datasets."""
+        """The legacy annotations.sqlite the store imports from; nothing else reads it."""
         return self.annotation_database_path or cache_path / "annotations.sqlite"
+
+    def resolve_bank_root(self, cache_path: Path) -> Path:
+        """The directory a library's file caches (structure-banks/) live in."""
+        return self.resolve_annotation_database(cache_path).parent

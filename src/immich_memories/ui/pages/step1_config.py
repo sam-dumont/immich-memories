@@ -9,8 +9,8 @@ from datetime import date
 from nicegui import ui
 
 from immich_memories.api.immich import ImmichAPIError, SyncImmichClient
-from immich_memories.config import get_config_path, set_config
 from immich_memories.security import sanitize_error_message
+from immich_memories.settings_edit import SettingRefused, save_settings
 from immich_memories.timeperiod import (
     birthday_year,
     calendar_year,
@@ -158,18 +158,33 @@ def _connection_problem(state) -> str | None:
     return None
 
 
+def connection_changes(state) -> dict[str, str]:
+    """The connection fields that differ from the loaded config, keyed for `save_settings`.
+
+    An unchanged key is left out, so saving a new URL never re-stores (or needs the
+    secret key for) the API key it already has.
+    """
+    current = state.config.immich
+    typed = {"immich.url": state.immich_url, "immich.api_key": state.immich_api_key}
+    loaded = {"immich.url": current.url, "immich.api_key": current.api_key}
+    return {key: value for key, value in typed.items() if value != loaded[key]}
+
+
 def _save_connection(state) -> None:
     refusal = apply_connection_entry(state)
     if refusal:
         ui.notify(refusal, type="negative")
         return
-    config = state.config
-    config.immich.url = state.immich_url
-    config.immich.api_key = state.immich_api_key
-    config_path = get_config_path()
-    config.save_yaml(config_path)
-    set_config(config, path=config_path)
-    ui.notify(tr("Configuration saved!"), type="positive")
+    changes = connection_changes(state)
+    if not changes:
+        ui.notify(tr("Nothing to save"), type="info")
+        return
+    try:
+        state.config = save_settings(changes)
+    except SettingRefused as refused:
+        ui.notify(str(refused), type="negative", multi_line=True)
+        return
+    ui.notify(tr("Saved to the database"), type="positive")
 
 
 def _compute_date_range(state):

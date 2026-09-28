@@ -1,11 +1,13 @@
-"""The people file — the graph's findings, written where a person can argue.
+"""The people registry: the graph's findings, kept where a person can argue with them.
 
-One YAML file per library, auto-populated and hand-editable, holding what the
-inference read off the numbers next to an empty space the user fills in. The
-contract that makes it safe to regenerate: **confirmed beats inferred**. A
-refresh recomputes every `inferred:` block and copies every `confirmed:` block
-through untouched, and a person somebody has annotated is never dropped, even
-when they fall off the roster.
+The registry lives in the store (#871). A scan fills every person's `inferred:` block and
+the owner fills `confirmed:`. The contract that makes it safe to regenerate: **confirmed
+beats inferred**. A refresh recomputes every `inferred:` block and copies every
+`confirmed:` block through untouched, and a person somebody has annotated is never dropped,
+even when they fall off the roster.
+
+Callers speak the document `people.yaml` always had; `people.registry_store` maps it to rows
+and `people.transfer` turns it into a YAML export and back.
 """
 
 from __future__ import annotations
@@ -16,14 +18,11 @@ import logging
 import uuid
 from collections.abc import Callable
 from datetime import date, datetime
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
-import yaml
-
-from immich_memories.locked_file import file_lock
+from immich_memories.db import Store, open_store
+from immich_memories.people.registry_store import lock_registry, read_document, write_document
 from immich_memories.people.relationships import owner_role, reciprocal_kind
-from immich_memories.security import write_secret_file
 
 if TYPE_CHECKING:
     from immich_memories.people.graph import PeopleGraph, PersonNode
@@ -36,47 +35,18 @@ SCHEMA_VERSION = 1
 _P = ParamSpec("_P")
 _R = TypeVar("_R")
 
-_FILE_HEADER = """\
-# Who is in this library, as the people graph reads it.
-#
-# Everything under `inferred:` is recomputed by `immich-memories people scan`
-# and your edits there will be overwritten. Everything under `confirmed:` is
-# yours: the scan copies it through untouched, forever, and prefers it to its
-# own reading. Confirmed beats inferred.
-"""
 
-
-def default_people_path() -> Path:
-    """Where the people file lives when nobody said otherwise.
-
-    Resolved per call rather than at import, so a test, a container or a
-    service account can move the home directory underneath us.
-    """
-    return Path.home() / ".immich-memories" / "people.yaml"
-
-
-def load_document(path: Path) -> dict[str, Any]:
-    """The people file as it stands, or an empty document.
-
-    Nothing raises. A damaged file must not cost somebody the roster they
-    curated by hand, so it reads as absent and the scan writes a new one.
-    """
-    if not path.exists():
-        return {}
-    try:
-        loaded = yaml.safe_load(path.read_text())
-    except (OSError, yaml.YAMLError):
-        logger.warning("%s is not readable as a people file; starting fresh", path)
-        return {}
-    return loaded if isinstance(loaded, dict) else {}
+def load_document(store: Store | None = None) -> dict[str, Any]:
+    """The registry as a document, or an empty one before the first scan."""
+    with (store or open_store()).connect() as connection:
+        return read_document(connection)
 
 
 def people_entries(document: dict[str, Any]) -> list[dict[str, Any]]:
     """The person entries in a document, skipping anything malformed.
 
-    An entry has to carry a list of ids to be an entry at all. The file is
-    meant to be hand-edited, and `ids: 5f2c…` written without the brackets is
-    a string that reads as a list of characters everywhere downstream.
+    An entry has to carry a list of ids to be an entry at all. The store only holds valid
+    entries, but a document handed over from elsewhere (an import) may not.
     """
     people = document.get("people")
     if not isinstance(people, list):
@@ -98,61 +68,60 @@ def retained_immich_ids(document: dict[str, Any]) -> set[str]:
     return retained
 
 
-def _one_writer(write: Callable[Concatenate[Path, _P], _R]) -> Callable[Concatenate[Path, _P], _R]:
-    """Hold the file's lock from the read to the replace.
+def _one_writer(
+    change: Callable[Concatenate[dict[str, Any], _P], _R],
+) -> Callable[Concatenate[Store, _P], _R]:
+    """Read, change and write the registry in one transaction, holding its lock throughout.
 
-    A scan from the CLI and a confirmation from the web UI both rewrite the whole file from
+    A scan from the CLI and a confirmation from the web UI both rewrite the registry from
     what they read; without the lock, the later write drops the earlier one's change.
     """
 
-    @functools.wraps(write)
-    def locked(path: Path, *args: _P.args, **kwargs: _P.kwargs) -> _R:
-        with file_lock(path):
-            return write(path, *args, **kwargs)
+    @functools.wraps(change)
+    def locked(store: Store, *args: _P.args, **kwargs: _P.kwargs) -> _R:
+        with store.begin() as connection:
+            lock_registry(connection)
+            document = read_document(connection)
+            before = copy.deepcopy(document)
+            result = change(document, *args, **kwargs)
+            if document != before:
+                write_document(connection, document)
+        return result
 
     return locked
 
 
 @_one_writer
-def save_graph(path: Path, graph: PeopleGraph) -> None:
-    """Write the graph, preserving every confirmed field already on disk."""
-    standing = load_document(path)
-    kept = _confirmed_by_id(standing)
+def save_graph(document: dict[str, Any], graph: PeopleGraph) -> None:
+    """Write the graph, preserving every confirmed field already in the registry."""
+    kept = _confirmed_by_id(document)
     entries = [_entry_for(node, kept) for node in graph.people]
-    entries.extend(_annotated_strangers(standing, graph))
-    _write(
-        path,
+    entries.extend(_annotated_strangers(document, graph))
+    document.clear()
+    document.update(
         {
             "version": SCHEMA_VERSION,
             "generated": (graph.built_at or datetime.now()).isoformat(timespec="seconds"),
             "owner": _owner_block(graph),
             "people": entries,
-        },
+        }
     )
 
 
 @_one_writer
-def save_confirmed(path: Path, person_id: str, confirmed: dict[str, Any]) -> None:
-    """Replace one person's confirmed block, leaving the rest of the file alone.
-
-    The settings page's write path, and the only other one there is. It reads
-    the file, swaps one block and writes the whole document back through the
-    same writer, so a confirmation cannot arrive with different permissions or
-    a different header than a scan's.
-    """
-    document = load_document(path)
+def save_confirmed(document: dict[str, Any], person_id: str, confirmed: dict[str, Any]) -> None:
+    """Replace one person's confirmed block, leaving everybody else alone."""
     entries = [entry for entry in people_entries(document) if person_id in entry["ids"]]
     if not entries:
-        logger.warning("Nothing in %s to confirm for that person; the file moved underneath", path)
+        logger.warning("Nothing in the people registry to confirm for that person")
         return
     for entry in entries:
         entry["confirmed"] = copy.deepcopy(confirmed)
-    _write(path, document)
 
 
 @_one_writer
 def add_confirmed_person(
-    path: Path,
+    document: dict[str, Any],
     name: str,
     *,
     person_id: str | None = None,
@@ -163,14 +132,18 @@ def add_confirmed_person(
     A real Immich id may be supplied for a below-threshold face. Somebody who
     has no Immich face record gets a local id and remains a first-class graph
     node; being off camera is not evidence that a relative does not exist.
+    An id the registry already holds answers with that person's id.
     """
-    document = load_document(path)
-    matches = [entry for entry in people_entries(document) if entry.get("name") == name]
+    entries = people_entries(document)
+    matches = [entry for entry in entries if entry.get("name") == name]
     if len(matches) > 1:
         msg = f"More than one person is named {name!r}; use a person id"
         raise ValueError(msg)
     if matches:
         return str(matches[0]["ids"][0])
+    holder = next((entry for entry in entries if person_id in entry["ids"]), None)
+    if holder is not None:
+        return str(holder["ids"][0])
 
     local_id = person_id or f"manual:{uuid.uuid4()}"
     document.setdefault("people", []).append(
@@ -188,16 +161,16 @@ def add_confirmed_person(
             "origin": "immich" if person_id else "manual",
         }
     )
-    _write(path, document)
     return local_id
 
 
 @_one_writer
-def save_confirmed_relationship(path: Path, source_id: str, kind: str, target_id: str) -> None:
-    """Write one user relationship and its reciprocal as one file operation."""
+def save_confirmed_relationship(
+    document: dict[str, Any], source_id: str, kind: str, target_id: str
+) -> None:
+    """Write one user relationship and its reciprocal as one transaction."""
     if source_id == target_id:
         raise ValueError("A person cannot have a relationship with themselves")
-    document = load_document(path)
     source = _entry_with_id(document, source_id)
     target = _entry_with_id(document, target_id)
     reverse = reciprocal_kind(kind)
@@ -205,13 +178,13 @@ def save_confirmed_relationship(path: Path, source_id: str, kind: str, target_id
     _upsert_confirmed_link(target, reverse, source_id, kind)
     _fill_owner_role(document, source, kind, target_id)
     _fill_owner_role(document, target, reverse, source_id)
-    _write(path, document)
 
 
 @_one_writer
-def remove_confirmed_relationship(path: Path, source_id: str, kind: str, target_id: str) -> None:
+def remove_confirmed_relationship(
+    document: dict[str, Any], source_id: str, kind: str, target_id: str
+) -> None:
     """Remove one confirmed relationship and the reciprocal written with it."""
-    document = load_document(path)
     source = _entry_with_id(document, source_id)
     target = _entry_with_id(document, target_id)
     source_link = _confirmed_link(source, kind, target_id)
@@ -222,12 +195,6 @@ def remove_confirmed_relationship(path: Path, source_id: str, kind: str, target_
     )
     _remove_confirmed_link(source, kind, target_id)
     _remove_confirmed_link(target, reverse, source_id)
-    _write(path, document)
-
-
-def _write(path: Path, document: dict[str, Any]) -> None:
-    body = yaml.dump(document, sort_keys=False, allow_unicode=True, default_flow_style=False)
-    write_secret_file(path, _FILE_HEADER + body)
 
 
 def _entry_with_id(document: dict[str, Any], person_id: str) -> dict[str, Any]:
@@ -332,10 +299,8 @@ def _entry_for(node: PersonNode, kept: dict[str, dict[str, Any]]) -> dict[str, A
             "evidence": _evidence_block(node),
             "links": [_link_block(link) for link in node.links],
         },
-        # Copied, not referenced: one entry can name several ids, and handing
-        # the same object to two people makes yaml emit an anchor and an alias.
-        # In a file people edit by hand that is a trap — changing one person
-        # changes the other, and deleting the anchor breaks both.
+        # Copied, not referenced: one entry can name several ids, and two people sharing
+        # one block would share every later edit to it.
         "confirmed": copy.deepcopy(kept.get(person.person_id)) or _blank_confirmed(),
     }
 
@@ -374,7 +339,7 @@ def _link_block(link: Link) -> dict[str, Any]:
 def _blank_confirmed() -> dict[str, Any]:
     """The space reserved for the user, and never filled by the scan.
 
-    Written out empty rather than omitted: the file is meant to be edited by
+    Written out empty rather than omitted: an export is meant to be edited by
     hand, and a field nobody can see is a field nobody fills in.
     """
     return {"role": None, "links": [], "notes": None}

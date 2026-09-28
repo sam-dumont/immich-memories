@@ -9,11 +9,11 @@ import pytest
 import yaml
 
 from immich_memories.people.context import load_people_prompt_context
+from tests.people_registry_seed import seed_people
 
 
-def test_every_merged_immich_id_resolves_the_same_person_context(tmp_path):
-    path = tmp_path / "people.yaml"
-    path.write_text(
+def test_every_merged_immich_id_resolves_the_same_person_context():
+    store = seed_people(
         yaml.safe_dump(
             {
                 "people": [
@@ -30,7 +30,7 @@ def test_every_merged_immich_id_resolves_the_same_person_context(tmp_path):
         )
     )
 
-    context = load_people_prompt_context(path)
+    context = load_people_prompt_context(store)
 
     assert tuple(context) == ("person-current", "person-merged")
     assert context["person-current"] is context["person-merged"]
@@ -40,9 +40,8 @@ def test_every_merged_immich_id_resolves_the_same_person_context(tmp_path):
     assert context["person-current"].birth_date == "1992-06-14"
 
 
-def test_confirmed_and_derived_relationships_keep_their_provenance(tmp_path):
-    path = tmp_path / "people.yaml"
-    path.write_text(
+def test_confirmed_and_derived_relationships_keep_their_provenance():
+    store = seed_people(
         yaml.safe_dump(
             {
                 "owner": {
@@ -111,7 +110,7 @@ def test_confirmed_and_derived_relationships_keep_their_provenance(tmp_path):
         )
     )
 
-    casey = load_people_prompt_context(path, include_derived=True)["child-merged"]
+    casey = load_people_prompt_context(store, include_derived=True)["child-merged"]
 
     assert casey.relationship == "niece or nephew of library owner"
     assert casey.relationship_source == "derived"
@@ -125,16 +124,15 @@ def test_confirmed_and_derived_relationships_keep_their_provenance(tmp_path):
     }
 
 
-def test_the_lookup_and_each_person_context_are_immutable(tmp_path):
-    path = tmp_path / "people.yaml"
-    path.write_text(
+def test_the_lookup_and_each_person_context_are_immutable():
+    store = seed_people(
         "people:\n"
         "  - ids: [person-one]\n"
         "    name: Taylor Example\n"
         "    inferred: {tier: inner, evidence: {}}\n"
         "    confirmed: {role: friend, links: []}\n"
     )
-    context = load_people_prompt_context(path)
+    context = load_people_prompt_context(store)
     person = context["person-one"]
 
     with pytest.raises(TypeError):
@@ -144,9 +142,8 @@ def test_the_lookup_and_each_person_context_are_immutable(tmp_path):
         setattr(person, attribute, "sibling")
 
 
-def test_a_face_match_before_the_recorded_birth_is_not_prompt_context(tmp_path):
-    path = tmp_path / "people.yaml"
-    path.write_text(
+def test_a_face_match_before_the_recorded_birth_is_not_prompt_context():
+    store = seed_people(
         "people:\n"
         "  - ids: [person-one]\n"
         "    name: Taylor Example\n"
@@ -157,16 +154,15 @@ def test_a_face_match_before_the_recorded_birth_is_not_prompt_context(tmp_path):
         "    confirmed: {role: child, links: []}\n"
     )
 
-    person = load_people_prompt_context(path)["person-one"]
+    person = load_people_prompt_context(store)["person-one"]
 
     assert person.birth_date == "2024-02-07"
     assert person.first_month is None
     assert person.onset == "2024-03"
 
 
-def test_a_confirmed_role_beats_an_owner_relative_relationship(tmp_path):
-    path = tmp_path / "people.yaml"
-    path.write_text(
+def test_a_confirmed_role_beats_an_owner_relative_relationship():
+    store = seed_people(
         "owner: {person_id: owner-one, identified: account}\n"
         "people:\n"
         "  - ids: [owner-one]\n"
@@ -182,7 +178,7 @@ def test_a_confirmed_role_beats_an_owner_relative_relationship(tmp_path):
         "        - {kind: friend-of, with: owner-one, decision: confirmed}\n"
     )
 
-    person = load_people_prompt_context(path)["person-one"]
+    person = load_people_prompt_context(store)["person-one"]
 
     assert (person.relationship, person.relationship_source) == ("godchild", "confirmed")
     assert person.relationships[0].source == "confirmed"

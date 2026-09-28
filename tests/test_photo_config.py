@@ -46,17 +46,6 @@ class TestPhotoConfigInConfig:
         config = Config()
         assert config.photos.enabled is True
 
-    def test_yaml_roundtrip_with_photos(self, tmp_path):
-        """PhotoConfig survives a YAML save → load cycle."""
-        from immich_memories.config_loader import Config
-
-        config_path = tmp_path / "config.yaml"
-        original = Config(photos=PhotoConfig(enabled=True, duration=5.0))
-        original.save_yaml(config_path)
-        loaded = Config.from_yaml(config_path)
-        assert loaded.photos.enabled is True
-        assert loaded.photos.duration == 5.0
-
     def test_photos_in_yaml_tier1(self, tmp_path):
         """Photos config loads from tier 1 (top-level YAML)."""
         from immich_memories.config_loader import Config

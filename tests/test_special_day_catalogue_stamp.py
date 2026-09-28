@@ -7,7 +7,6 @@ which. The owner's only way to clean it was to edit JSON by hand.
 
 from __future__ import annotations
 
-import json
 from datetime import UTC, date, datetime
 
 import pytest
@@ -16,8 +15,10 @@ from immich_memories.analysis.special_day_sequence import SCAN_VERSION
 from immich_memories.automation.catalogue import (
     entries_from,
     judged_by_this_build,
+    load_catalogue,
     record_for,
     rows_outside,
+    save_catalogue,
 )
 from immich_memories.automation.special_day_scan import DiscoveredDay
 
@@ -64,14 +65,11 @@ def test_a_day_the_scan_judged_says_which_scan_judged_it(tmp_path, monkeypatch) 
         "immich_memories.automation.special_day_scan.ask_if_special",
         lambda *_a, **_k: SpecialDay(special=True, title="Music by the lake", what="a festival"),
     )
-    path = tmp_path / "special-days.json"
-    path.write_text(
-        json.dumps(
-            [record_for(day) for day in scan_year(_a_busy_day(), llm_config=None, home=None)]
-        )
+    save_catalogue(
+        [record_for(day) for day in scan_year(_a_busy_day(), llm_config=None, home=None)]
     )
 
-    entry = entries_from(path)[0]
+    entry = entries_from(load_catalogue())[0]
 
     assert entry.prompt_version == SCAN_VERSION
     assert entry.app_version == __version__
@@ -80,10 +78,9 @@ def test_a_day_the_scan_judged_says_which_scan_judged_it(tmp_path, monkeypatch) 
 
 def test_a_row_from_an_older_scan_reads_as_stale(tmp_path) -> None:
     """Rows written before #1065 have no stamp at all, and there is no rescuing them."""
-    path = tmp_path / "special-days.json"
-    path.write_text(json.dumps([{"day": "2024-08-09", "title": "A pleasant afternoon"}]))
+    save_catalogue([{"day": "2024-08-09", "title": "A pleasant afternoon"}])
 
-    entry = entries_from(path)[0]
+    entry = entries_from(load_catalogue())[0]
 
     assert entry.prompt_version == ""
     assert not judged_by_this_build(entry)
@@ -91,13 +88,12 @@ def test_a_row_from_an_older_scan_reads_as_stale(tmp_path) -> None:
 
 def test_a_day_nobody_could_judge_is_recorded_as_unjudged_not_as_a_day(tmp_path) -> None:
     """Recorded so the next scan knows it was reached, never offered as a memory."""
-    path = tmp_path / "special-days.json"
     row = record_for(_a_day(judged=False))
-    path.write_text(json.dumps([row]))
+    save_catalogue([row])
 
     assert row["unjudged"] == "2024-08-09"
     assert "day" not in row
-    assert entries_from(path) == []
+    assert entries_from(load_catalogue()) == []
 
 
 def test_rebuilding_a_period_keeps_everything_outside_it() -> None:

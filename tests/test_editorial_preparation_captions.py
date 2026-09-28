@@ -4,7 +4,6 @@ import contextlib
 import http.server
 import io
 import json
-import sqlite3
 import threading
 from dataclasses import asdict
 
@@ -28,7 +27,7 @@ from immich_memories.operations.cancellation import (
 )
 from immich_memories.operations.caption_origins import caption_origin_summary
 from immich_memories.store.caption_provenance import CaptionOrigin, origins_for
-from immich_memories.store.editorial_preparation import initialize
+from tests.annotation_rows import annotation_store, count_rows, read_rows
 
 
 def preview():
@@ -58,9 +57,9 @@ def _probed():
     return CaptionOrigin(model_id=API_MODEL, endpoint="http://localhost:8092/v1")
 
 
-def run(connection, **kwargs):
+def run(store, **kwargs):
     return captions.prepare_captions(
-        connection=connection,
+        store=store,
         preview_for=lambda _: preview(),
         timeout=5,
         concurrency=2,
@@ -79,13 +78,13 @@ def test_two_actual_invalid_completions_become_bound_unavailable(monkeypatch):
         return outcome(image)
 
     monkeypatch.setattr(captions, "_ask_one", ask)
-    with sqlite3.connect(":memory:") as connection:
-        initialize(connection)
-        assert run(connection) == {}
-        assert len(calls) == 2
+    store = annotation_store()
+    assert run(store) == {}
+    assert len(calls) == 2
+    with store.connect() as connection:
         found = unavailable_for(connection, ("a",), preview_for=lambda _: preview())
-        assert tuple(found) == ("a",)
-        assert connection.execute("SELECT count(*) FROM descriptions").fetchone() == (0,)
+    assert tuple(found) == ("a",)
+    assert count_rows(store, "descriptions") == 0
 
 
 def test_transport_failures_never_fabricate_terminal_unavailable(monkeypatch):
@@ -95,9 +94,9 @@ def test_transport_failures_never_fabricate_terminal_unavailable(monkeypatch):
         "_ask_one",
         lambda _url, image, **_: outcome(image, error="TimeoutError", finish_reason=None),
     )
-    with sqlite3.connect(":memory:") as connection:
-        initialize(connection)
-        assert run(connection) == {"a": "TimeoutError"}
+    store = annotation_store()
+    assert run(store) == {"a": "TimeoutError"}
+    with store.connect() as connection:
         assert unavailable_for(connection, ("a",), preview_for=lambda _: preview()) == {}
 
 
@@ -110,16 +109,12 @@ def test_success_uses_exact_wire_and_writes_only_description_and_setting(monkeyp
         return outcome(image, envelope=envelope, error=None)
 
     monkeypatch.setattr(captions, "_ask_one", ask)
-    with sqlite3.connect(":memory:") as connection:
-        initialize(connection)
-        assert run(connection) == {}
-        assert connection.execute("SELECT model,text FROM descriptions").fetchone() == (
-            DESCRIPTION_MODEL,
-            "People sit together.",
-        )
-        assert connection.execute("SELECT field,value FROM description_fields").fetchall() == [
-            ("setting", "a room")
-        ]
+    store = annotation_store()
+    assert run(store) == {}
+    (row,) = read_rows(store, "descriptions")
+    assert (row["model"], row["text"]) == (DESCRIPTION_MODEL, "People sit together.")
+    fields = read_rows(store, "description_fields")
+    assert [(row["field"], row["value"]) for row in fields] == [("setting", "a room")]
 
 
 def test_thread_worker_inherits_cancellation_context_and_does_not_retry(monkeypatch):
@@ -136,10 +131,9 @@ def test_thread_worker_inherits_cancellation_context_and_does_not_retry(monkeypa
         if requested:
             raise PipelineCancelled()
 
-    with sqlite3.connect(":memory:") as connection:
-        initialize(connection)
-        with pytest.raises(PipelineCancelled), cancellation_scope(check):
-            run(connection)
+    store = annotation_store()
+    with pytest.raises(PipelineCancelled), cancellation_scope(check):
+        run(store)
     assert len(requested) == 1
 
 
@@ -149,10 +143,9 @@ def test_actual_call_outcome_keys_match_durable_failure_contract():
 
 
 def test_controls_and_worker_captions_reach_attempt_and_run_totals(open_endpoint):
-    with sqlite3.connect(":memory:") as connection:
-        initialize(connection)
-        with collecting() as run_usage, collecting() as attempt_usage:
-            assert run(connection, base_url=open_endpoint.base_url) == {}
+    store = annotation_store()
+    with collecting() as run_usage, collecting() as attempt_usage:
+        assert run(store, base_url=open_endpoint.base_url) == {}
 
     for usage in (attempt_usage, run_usage):
         assert usage.calls == 4
@@ -161,10 +154,9 @@ def test_controls_and_worker_captions_reach_attempt_and_run_totals(open_endpoint
 
 
 def test_usage_report_separates_controls_from_captions(tmp_path, open_endpoint):
-    with sqlite3.connect(":memory:") as connection:
-        initialize(connection)
-        with collecting() as usage:
-            assert run(connection, base_url=open_endpoint.base_url) == {}
+    store = annotation_store()
+    with collecting() as usage:
+        assert run(store, base_url=open_endpoint.base_url) == {}
     write_llm_usage(tmp_path, usage)
 
     report = json.loads((tmp_path / USAGE_FILE).read_text())
@@ -191,10 +183,9 @@ def test_invalid_reply_is_counted_and_missing_usage_is_not_reported_as_free(tmp_
     invalid = {**reply, "choices": [{"finish_reason": "stop", "message": {"content": "bad JSON"}}]}
     server = _CaptionServer(None, replies=[reply] * 3 + [invalid, {**reply, "usage": None}])
     try:
-        with sqlite3.connect(":memory:") as connection:
-            initialize(connection)
-            with collecting() as usage:
-                assert run(connection, base_url=server.base_url) == {}
+        store = annotation_store()
+        with collecting() as usage:
+            assert run(store, base_url=server.base_url) == {}
         write_llm_usage(tmp_path, usage)
     finally:
         server.close()
@@ -309,43 +300,39 @@ def open_endpoint():
 
 
 def test_configured_key_authorizes_the_probe_and_the_completion(token_gated_endpoint):
-    with sqlite3.connect(":memory:") as connection:
-        initialize(connection)
-        failures = run(
-            connection,
-            base_url=token_gated_endpoint.base_url,
-            api_key="caption-token",
-        )
+    store = annotation_store()
+    failures = run(
+        store,
+        base_url=token_gated_endpoint.base_url,
+        api_key="caption-token",
+    )
 
-        assert failures == {}
-        assert token_gated_endpoint.unauthorized == 0
-        assert connection.execute("SELECT text FROM descriptions").fetchone() == (
-            "Two people walk a dog.",
-        )
+    assert failures == {}
+    assert token_gated_endpoint.unauthorized == 0
+    (row,) = read_rows(store, "descriptions")
+    assert row["text"] == "Two people walk a dog."
 
 
 def test_no_configured_key_leaves_the_request_headers_untouched(open_endpoint):
-    with sqlite3.connect(":memory:") as connection:
-        initialize(connection)
-        failures = run(connection, base_url=open_endpoint.base_url)
+    store = annotation_store()
+    failures = run(store, base_url=open_endpoint.base_url)
 
-        assert failures == {}
-        assert connection.execute("SELECT count(*) FROM descriptions").fetchone() == (1,)
+    assert failures == {}
+    assert count_rows(store, "descriptions") == 1
     assert set(open_endpoint.seen_authorization) == {None}
 
 
 def test_each_caption_keeps_what_the_endpoint_said_about_its_weights(open_endpoint):
-    with sqlite3.connect(":memory:") as connection:
-        initialize(connection)
-        assert (
-            run(
-                connection,
-                base_url=open_endpoint.base_url,
-                artifact_id="SmolVLM2-Q8_0@revision-one",
-            )
-            == {}
+    store = annotation_store()
+    assert (
+        run(
+            store,
+            base_url=open_endpoint.base_url,
+            artifact_id="SmolVLM2-Q8_0@revision-one",
         )
-        origin = origins_for(connection, ("a",), DESCRIPTION_MODEL)["origins"][0]
+        == {}
+    )
+    origin = origins_for(store, ("a",), DESCRIPTION_MODEL)["origins"][0]
 
     assert origin["model_id"] == API_MODEL
     assert origin["endpoint"] == open_endpoint.base_url
@@ -376,11 +363,10 @@ def test_two_captioners_behind_one_alias_leave_two_origins_in_the_bank():
         answer={"description": "A dog crosses grass.", "setting": "an open field"},
     )
     try:
-        with sqlite3.connect(":memory:") as connection:
-            initialize(connection)
-            assert run(connection, asset_ids=("a",), base_url=mlx.base_url) == {}
-            assert run(connection, asset_ids=("b",), base_url=gguf.base_url) == {}
-            grouped = origins_for(connection, ("a", "b"), DESCRIPTION_MODEL)
+        store = annotation_store()
+        assert run(store, asset_ids=("a",), base_url=mlx.base_url) == {}
+        assert run(store, asset_ids=("b",), base_url=gguf.base_url) == {}
+        grouped = origins_for(store, ("a", "b"), DESCRIPTION_MODEL)
     finally:
         mlx.close()
         gguf.close()
@@ -412,9 +398,9 @@ def test_the_same_server_probed_twice_is_the_same_origin(open_endpoint):
 def test_an_endpoint_advertising_another_model_is_refused():
     server = _CaptionServer(None, served={"id": "some-other-captioner"})
     try:
-        with sqlite3.connect(":memory:") as connection, pytest.raises(ValueError) as refused:
-            initialize(connection)
-            run(connection, base_url=server.base_url)
+        store = annotation_store()
+        with pytest.raises(ValueError) as refused:
+            run(store, base_url=server.base_url)
     finally:
         server.close()
 
@@ -422,16 +408,14 @@ def test_an_endpoint_advertising_another_model_is_refused():
 
 
 def test_a_run_with_no_pictures_at_all_groups_nothing():
-    with sqlite3.connect(":memory:") as connection:
-        initialize(connection)
-        assert origins_for(connection, (), DESCRIPTION_MODEL) == {}
+    store = annotation_store()
+    assert origins_for(store, (), DESCRIPTION_MODEL) == {}
 
 
 def test_one_captioner_over_two_pictures_is_one_origin_and_names_no_asset(open_endpoint):
-    with sqlite3.connect(":memory:") as connection:
-        initialize(connection)
-        assert run(connection, asset_ids=("a", "b"), base_url=open_endpoint.base_url) == {}
-        grouped = origins_for(connection, ("a", "b"), DESCRIPTION_MODEL)
+    store = annotation_store()
+    assert run(store, asset_ids=("a", "b"), base_url=open_endpoint.base_url) == {}
+    grouped = origins_for(store, ("a", "b"), DESCRIPTION_MODEL)
 
     assert grouped["by_asset"] == {}
     assert [origin["assets"] for origin in grouped["origins"]] == [2]
@@ -439,10 +423,9 @@ def test_one_captioner_over_two_pictures_is_one_origin_and_names_no_asset(open_e
 
 
 def test_a_refused_probe_names_the_setting_that_carries_the_token(token_gated_endpoint):
-    with sqlite3.connect(":memory:") as connection:
-        initialize(connection)
-        with pytest.raises(PermissionError) as refused:
-            run(connection, base_url=token_gated_endpoint.base_url)
+    store = annotation_store()
+    with pytest.raises(PermissionError) as refused:
+        run(store, base_url=token_gated_endpoint.base_url)
 
     assert "401" in str(refused.value)
     assert "caption_api_key" in str(refused.value)
@@ -452,10 +435,9 @@ def test_a_gate_on_completions_alone_still_names_the_setting():
     """Plenty of gateways leave `/models` open and charge for inference."""
     server = _CaptionServer("caption-token", open_probe=True)
     try:
-        with sqlite3.connect(":memory:") as connection:
-            initialize(connection)
-            with pytest.raises(PermissionError) as refused:
-                run(connection, base_url=server.base_url)
+        store = annotation_store()
+        with pytest.raises(PermissionError) as refused:
+            run(store, base_url=server.base_url)
     finally:
         server.close()
 
@@ -495,12 +477,11 @@ def test_the_caption_key_does_not_follow_a_redirect_to_another_host(open_endpoin
     other_host = open_endpoint.base_url.replace("127.0.0.1", "localhost")
     redirector = _Redirector(other_host)
     try:
-        with sqlite3.connect(":memory:") as connection:
-            initialize(connection)
-            # The completion POST comes back as a GET that answers the inventory,
-            # which fails the schema control; only the headers matter here.
-            with contextlib.suppress(ValueError):
-                run(connection, base_url=redirector.base_url, api_key="caption-token")
+        store = annotation_store()
+        # The completion POST comes back as a GET that answers the inventory,
+        # which fails the schema control; only the headers matter here.
+        with contextlib.suppress(ValueError):
+            run(store, base_url=redirector.base_url, api_key="caption-token")
     finally:
         redirector.close()
 

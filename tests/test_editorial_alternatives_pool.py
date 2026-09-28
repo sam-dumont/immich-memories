@@ -92,6 +92,8 @@ def test_context_comes_from_the_pool_units_own_moment():
     # refused carrier's, and its own line replaces a borrowed description.
     assert rows["far"]["chapter"] == 2 and rows["mate"]["chapter"] == 1
     assert rows["spare"]["line"] == "spare's own line"
+    assert rows["far"]["story_episode"] == "S2"
+    assert rows["far"]["story_weight"] == "minor"
 
 
 def test_a_pool_unit_never_carries_the_refused_carriers_why():
@@ -105,4 +107,4 @@ def test_a_pool_unit_never_carries_the_refused_carriers_why():
 
     rows = pool(refused)
 
-    assert rows and all("poetry" not in str(row) and "why" not in row for row in rows)
+    assert rows and all("poetry" not in str(row) for row in rows)

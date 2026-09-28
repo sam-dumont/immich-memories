@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 19:10+0200\n"
+"POT-Creation-Date: 2026-09-27 22:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -196,7 +196,7 @@ msgstr "自動（クリップに合わせる）"
 msgid "Auto duration"
 msgstr "長さを自動設定"
 
-#: i18n.py:101
+#: i18n.py:102
 msgid "Automatic (browser)"
 msgstr "自動（ブラウザー）"
 
@@ -407,7 +407,7 @@ msgstr "続けるには Immich サーバーに接続してください。上に�
 msgid "Connected as: {name}"
 msgstr "接続中のユーザー：{name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:454 pages/step2_loading.py:307
 msgid "Connecting to Immich..."
 msgstr "Immich に接続中..."
 
@@ -496,7 +496,7 @@ msgstr "差分"
 msgid "Discovery failed: {error}"
 msgstr "検索に失敗しました：{error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:66 pages/step2_loading.py:366
 msgid "Done"
 msgstr "完了"
 
@@ -539,7 +539,7 @@ msgstr "エラー（{error_count} 件）"
 msgid "Export"
 msgstr "書き出し"
 
-#: pages/step2_loading.py:336
+#: pages/step2_loading.py:324
 #, python-brace-format
 msgid "Failed to load videos: {value}"
 msgstr "動画を読み込めませんでした：{value}"
@@ -566,10 +566,6 @@ msgid ""
 msgstr ""
 "高速 NAS プリセットが有効です。1080p H.264、高速エンコード、静止したタイトル背景、音声分析なし、写真少なめ、お気に入りを優先して分析します。config.yaml の "
 "`preset: fast` または IMMICH_MEMORIES_PRESET=fast で設定します。今回の実行では下の選択を優先します。"
-
-#: pages/step2_loading.py:252
-msgid "Fetching photos..."
-msgstr "写真を取得中..."
 
 #: pages/_step3_music_preview.py:232
 msgid "Film language"
@@ -700,7 +696,7 @@ msgstr "Immich への送信：{delivery_label}"
 msgid "Immich delivery: {value}"
 msgstr "Immich への送信：{value}"
 
-#: pages/clip_grid.py:170 pages/clip_grid.py:224
+#: pages/clip_grid.py:177 pages/clip_grid.py:232
 msgid "Include"
 msgstr "含める"
 
@@ -716,7 +712,7 @@ msgstr "写真を含める"
 msgid "Include in compilation"
 msgstr "まとめ動画に含める"
 
-#: i18n.py:109
+#: i18n.py:110
 msgid "Interface language"
 msgstr "画面の言語"
 
@@ -778,7 +774,7 @@ msgstr "アルバムを読み込み中..."
 msgid "Loading thumbnails"
 msgstr "サムネイルを読み込み中"
 
-#: pages/step2_loading.py:313
+#: pages/step2_loading.py:301
 msgid "Loading videos..."
 msgstr "動画を読み込み中..."
 
@@ -915,9 +911,9 @@ msgstr "現在、対象となる提案はありません。"
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
-msgstr "人物ファイルがまだありません。ライブラリを再スキャンしてください。名前のある人物ごとの件数と月別推移を読み取り、画像自体は分析しません。"
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
+msgstr "人物はまだいません。ライブラリを再スキャンしてください。名前のある人物ごとの件数と月別推移を読み取り、画像自体は分析しません。"
 
 #: pages/runs.py:105
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
@@ -1051,7 +1047,7 @@ msgstr "人物フィルター"
 msgid "Person Spotlight"
 msgstr "一人の人物に注目"
 
-#: pages/clip_grid.py:193
+#: pages/clip_grid.py:200
 msgid "Photo"
 msgstr "写真"
 
@@ -1063,7 +1059,7 @@ msgstr "利用可能な写真"
 msgid "Photo duration (seconds)"
 msgstr "写真の表示時間（秒）"
 
-#: pages/step2_loading.py:461
+#: pages/step2_loading.py:449
 #, python-brace-format
 msgid "Photo thumbnails: {value}/{count}"
 msgstr "写真のサムネイル：{value}/{count}"
@@ -1242,6 +1238,10 @@ msgstr "サーバーで実行中：{phase}。このページを離れても続�
 #: app.py:73 app.py:219
 msgid "Runs"
 msgstr "実行履歴"
+
+#: pages/clip_grid.py:108 pages/clip_grid.py:320 pages/clip_grid.py:356
+msgid "Same episode"
+msgstr "同じエピソード"
 
 #: pages/step1_config.py:140
 msgid "Save Config"
@@ -1491,7 +1491,7 @@ msgstr "ページを離れている間に編集が完了しました。書き出
 msgid "Thumbnail cache"
 msgstr "サムネイルキャッシュ"
 
-#: pages/step2_loading.py:415
+#: pages/step2_loading.py:403
 #, python-brace-format
 msgid "Thumbnails: {value}/{count}"
 msgstr "サムネイル：{value}/{count}"
@@ -1514,9 +1514,9 @@ msgstr "全員一緒"
 
 #: pages/step1_people.py:181
 msgid ""
-"Together keeps only the moments holding everyone named. Any of these people keeps a moment "
-"holding any one of them."
-msgstr "「全員一緒」は指定した全員が写る場面のみを残します。「いずれかの人物」はそのうち一人以上が写る場面を残します。"
+"Together keeps the times everyone named was there, even if never in the same photo. Any of "
+"these people keeps the times any one of them was there."
+msgstr "「一緒」は、名前を挙げた全員がその場にいた時間を残します。同じ写真に写っていなくてもかまいません。「このうちの誰か」は、誰か一人でもいた時間を残します。"
 
 #: pages/login.py:64
 msgid "Too many failed attempts. Try again later."
@@ -1800,3 +1800,44 @@ msgstr "{title}（{n_keys} 項目）"
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}：{duration_seconds:.1f} 秒"
 
+
+msgid "Default"
+msgstr "既定値"
+
+msgid "Nothing to save"
+msgstr "保存する変更はありません"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Saved here"
+msgstr "ここで保存"
+
+msgid "Saved to the database"
+msgstr "データベースに保存しました"
+
+msgid "Set by {name} (environment)"
+msgstr "{name} で設定（環境変数）"
+
+msgid "Set in config.yaml as {key}"
+msgstr "config.yaml の {key} で設定"
+
+msgid "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
+msgstr "設定は強い順に4か所から決まります：環境変数、config.yaml、ここで保存した値（データベース）、既定値。グレーの設定は環境変数か config.yaml で設定されています。そちらで変更してください。"
+
+msgid "{count} set outside this page"
+msgstr "{count} 件はこのページの外で設定"
+
+msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
+msgstr "{name} が設定されていないため、API キーとパスワードはここに保存できません。設定するか、これらの秘密は環境変数か config.yaml に置いてください。"
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  （{n} 件）"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} 件はこのページの外で設定"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "ここに保存されていますが、{name} で復号できません。既定値を使用中です"

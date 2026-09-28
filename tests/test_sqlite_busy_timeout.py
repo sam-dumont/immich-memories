@@ -1,12 +1,16 @@
-"""Tests for SQLite busy_timeout on all database connections.
+"""Tests for SQLite busy_timeout on the cache's database connections.
 
 WHY: Without busy_timeout, concurrent access (scheduler + UI + CLI) raises
-'database is locked' immediately instead of retrying for up to 5 seconds.
+'database is locked' immediately instead of retrying. Every connection comes from
+the shared factory, which waits up to 30 seconds (#871). The store sets its own on
+every connection; tests/store covers that.
 """
 
 from __future__ import annotations
 
 import pytest
+
+from immich_memories.db.sqlite_files import BUSY_TIMEOUT_MS
 
 
 @pytest.fixture
@@ -15,7 +19,7 @@ def temp_db(tmp_path):
 
 
 class TestSqliteBusyTimeout:
-    """All database connections must set busy_timeout = 5000ms."""
+    """All database connections must set the shared busy_timeout."""
 
     def test_video_analysis_cache_sets_busy_timeout(self, temp_db):
         from immich_memories.cache.database import VideoAnalysisCache
@@ -23,21 +27,4 @@ class TestSqliteBusyTimeout:
         cache = VideoAnalysisCache(temp_db)
         with cache._get_connection() as conn:
             result = conn.execute("PRAGMA busy_timeout").fetchone()
-            assert result[0] == 5000
-
-    def test_asset_score_cache_sets_busy_timeout(self, temp_db):
-        from immich_memories.cache.asset_score_cache import AssetScoreCache
-
-        cache = AssetScoreCache(temp_db)
-        with cache._get_connection() as conn:
-            result = conn.execute("PRAGMA busy_timeout").fetchone()
-            assert result[0] == 5000
-
-    def test_run_database_sets_busy_timeout(self, temp_db):
-        from immich_memories.tracking.run_database import RunDatabase
-
-        # WHY: RunDatabase triggers migrations via VideoAnalysisCache — needs a real path
-        db = RunDatabase(temp_db)
-        with db._get_connection() as conn:
-            result = conn.execute("PRAGMA busy_timeout").fetchone()
-            assert result[0] == 5000
+            assert result[0] == BUSY_TIMEOUT_MS

@@ -44,6 +44,13 @@ module "immich_memories" {
   llm_model    = var.llm_model
   llm_api_key  = var.llm_api_key
 
+  # The store (optional; empty keeps the default SQLite file on the cache PVC).
+  # A separate PostgreSQL service, a separate database on your Immich
+  # PostgreSQL instance, or a dedicated schema and role inside Immich's own
+  # database all work here; see docs-site/docs/run/database.md.
+  database_url    = var.database_url
+  database_schema = var.database_schema
+
   # MusicGen AI music generation
   musicgen_enabled  = var.musicgen_enabled
   musicgen_base_url = var.musicgen_base_url

@@ -15,6 +15,7 @@ from datetime import date
 from operator import itemgetter
 from typing import Any
 
+from immich_memories.analysis.editorial_carrier import carrier_row
 from immich_memories.analysis.editorial_person_period_facts import (
     arrival_notes,
     person_period_facts,
@@ -710,12 +711,7 @@ def alternatives_pool(
     carrier can come from another moment, family or even story, and a row that named the
     refused carrier there would misdescribe the picture the film then shows.
     """
-    unit_by_asset = {u["asset_id"]: u for units in event_units.values() for u in units}
-    context_of_asset = {
-        u["asset_id"]: {"event": family, "anchor": anchor_label.get(family, family)}
-        for family, units in event_units.items()
-        for u in units
-    }
+    unit_by_asset = {u["asset_id"]: (f, u) for f, units in event_units.items() for u in units}
     # A unit row's moment is a loosely-typed field; the map keys are the story's moment ids.
     chapter_of_moment: dict[Any, int] = {
         moment: number
@@ -723,19 +719,27 @@ def alternatives_pool(
         for episode in row["day_episodes"]
         for moment in _moments_of(selection, episode)
     }
+    story_of_moment = {
+        moment: story
+        for story in selection.story.stories
+        for episode in story["episodes"]
+        for moment in _moments_of(selection, episode)
+    }
 
     def pool_for(carrier: Mapping[str, Any]) -> list[dict]:
         return [
-            unit
-            | context_of_asset[a]
-            | {
-                "chapter": chapter_of_moment.get(unit.get("moment")),
-                # The page and the sheet print this under the thumbnail. A replacement
-                # describes itself; it never borrows the refused picture's description.
-                "line": selection.lines.get(a) or "Replaces a picture the audience gate refused",
-            }
+            carrier_row(
+                unit,
+                family=family,
+                anchor=anchor_label.get(family, family),
+                story=story_of_moment[unit["moment"]],
+                chapter=chapter_of_moment[unit["moment"]],
+                line=selection.lines.get(a, ""),
+            )
             for a in selection.alternatives_of.get(carrier["asset_id"], [])
-            if (unit := unit_by_asset.get(a)) is not None
+            if a in unit_by_asset
+            for family, unit in (unit_by_asset[a],)
+            if unit.get("moment") in story_of_moment
         ]
 
     return pool_for

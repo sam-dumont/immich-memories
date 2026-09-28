@@ -48,8 +48,8 @@ immich-memories generate --memory-type monthly_highlights --year 2024 --month 6 
 
 `just-us` plays the household's private moments a caption names (a bath, a nappy change) as well,
 `family` keeps them out, and `shareable` plays only what nothing held back. The planned-run summary
-and `runs show` print the level. A shareable film needs the detectors, so on `metadata_only` it is
-refused before anything is fetched. The rules:
+and `runs show` print the level. Every product tier uses the picture detectors; GPU and Full add
+Laya over captions, and sharing never asks the prose LLM. The rules:
 [Sharing levels](../../how-it-chooses/family-audience-duplicates.md#sharing-levels).
 
 Two root options go before `generate`: `-v` (or `--log-level DEBUG`) for verbose logs, and
@@ -96,7 +96,7 @@ Four things the examples hide:
 - `--people-expression` takes exact library names, binds `AND` tighter than `OR`, and works on
   date-range memories (months, years, seasons). Trips, albums and single-person presets refuse it.
 - A person or multi-person memory with no dates at all is not an error. It runs from the first day
-  one of its pictures could exist to today, read off the birth dates Immich holds (and `people.yaml`
+  one of its pictures could exist to today, read off the birth dates Immich holds (and the people registry
   where Immich holds none). See [memory types](../memory-types.mdx#a-people-memory-with-no-dates).
   With no birth date on record anywhere it still asks for `--year`, and says why.
 - Moving holidays are computed for each year (Easter, Thanksgiving, Mother's and Father's Day), with

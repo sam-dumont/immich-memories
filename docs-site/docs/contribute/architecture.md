@@ -29,8 +29,9 @@ clips and it raises rather than going to find some.
 The editorial route has Protocol-typed ports rather than services: the providers and the people
 loader, the structure planner, the judges it calls out to, and `EditorialAttempt` in `operations/`
 for the durable attempt tree and its OS lease. On disk each attempt is
-`<cache>/editorial-runs/<key>/attempts/<id>/`, and the annotation store is
-`<cache>/annotations.sqlite`.
+`<cache>/editorial-runs/<key>/attempts/<id>/`, and the banked facts and
+answers live in the store (`immich_memories.db`, tables in `db/tables/annotations.py` and
+`db/tables/model_answers.py`).
 [ARCHITECTURE.md](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/ARCHITECTURE.md)
 names every port and the file it lives in, with the full module map.
 
@@ -48,7 +49,9 @@ CI runs in tiers, cheap to expensive.
 - **Tier 3: build**, after tests. Package build, and the Docker image on pull requests.
 
 The docs build depends on nothing and starts immediately. The hermetic launch check runs on pull
-requests off the cache setup alone: `make launch-check-ci`, Playwright e2e against a fake Immich.
+requests off the cache setup alone, once per store backend: `make launch-check-ci` (SQLite) and
+`make launch-check-ci-postgres`, Playwright e2e against a fake Immich. After the tests, the
+container e2e job builds the image and runs `make test-container` on each backend.
 
 `make ci` runs the same gates locally plus the unit tests; the Makefile is the list. CI adds what
 needs a remote or a diff: commitlint, pip-audit, gitleaks, hadolint.

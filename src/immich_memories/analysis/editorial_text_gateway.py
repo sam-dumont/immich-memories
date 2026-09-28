@@ -112,21 +112,16 @@ class QueryTextRequester:
         """
         check_cancelled()
         started = self._monotonic()
-        cache = JudgmentCache(request.cache_path)
-        try:
-            banked = self._usable_banked_answer(cache, request, accepts)
-            if banked is None:
-                # Overlapping readers can carry the same question. Only one of them
-                # pays for it; the rest wait here and read what it banked.
-                with TEXT_JUDGMENTS.key(request.judgment_key):
-                    banked = self._usable_banked_answer(cache, request, accepts)
-                    raw = (
-                        banked if banked is not None else await self._paid(cache, request, accepts)
-                    )
-            else:
-                raw = banked
-        finally:
-            cache.close()
+        cache = JudgmentCache(request.judgments)
+        banked = self._usable_banked_answer(cache, request, accepts)
+        if banked is None:
+            # Overlapping readers can carry the same question. Only one of them
+            # pays for it; the rest wait here and read what it banked.
+            with TEXT_JUDGMENTS.key(request.judgment_key):
+                banked = self._usable_banked_answer(cache, request, accepts)
+                raw = banked if banked is not None else await self._paid(cache, request, accepts)
+        else:
+            raw = banked
         return TextCall(
             prompt=request.prompt,
             raw=raw,
@@ -158,6 +153,20 @@ class QueryTextRequester:
         if request.refresh:
             return None
         raw = cache.answer_for(request.judgment_key)
+        if raw is None and request.json_optional_fields:
+            # An older complete answer still answers this exact question. New optional
+            # answers have their own identity and cannot satisfy the stricter contract.
+            strict = replace(request, json_optional_fields=())
+            raw = cache.answer_for(strict.judgment_key)
+            if raw is not None:
+                try:
+                    raw = complete_final_json(
+                        raw,
+                        fields=strict.json_fields,
+                        empty_array_pairs=strict.json_empty_array_pairs,
+                    )
+                except ValueError:
+                    raw = None
         if raw is None:
             return None
         if accepts is not None and not accepts(raw):
@@ -228,7 +237,7 @@ class QueryTextRequester:
                     max_tokens=max_tokens,
                     timeout_seconds=request.timeout_seconds,
                     thinking=request.thinking,
-                    cache_path=None,  # The gateway banks the complete bounded-recovery request.
+                    judgments=None,  # The gateway banks the complete bounded-recovery request.
                     transport_observer=watch,
                     require_complete=not request.json_object,
                 )
@@ -249,6 +258,7 @@ class QueryTextRequester:
                     raw,
                     fields=request.json_fields,
                     empty_array_pairs=request.json_empty_array_pairs,
+                    optional_fields=request.json_optional_fields,
                 )
                 if request.json_fields and decoded != raw and self._json_decoding_observer:
                     self._json_decoding_observer(
@@ -432,7 +442,7 @@ class SyncTextPromptRequester:
                 max_tokens=max_tokens,
                 timeout_seconds=self.timeout_seconds,
                 thinking=self.thinking,
-                cache_path=None,
+                judgments=None,
                 transport_observer=billed.watching(watch_provider("reader", self.llm_config)),
                 require_complete=True,
                 response_format=shape,

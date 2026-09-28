@@ -7,8 +7,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.editorial_moment_contract import Moment, MomentCard
 from immich_memories.analysis.llm_providers import resolved_llm_config
@@ -17,6 +16,9 @@ from immich_memories.analysis.moment_cards import MomentCard as ProductionMoment
 from immich_memories.analysis.special_event_scope import SpecialEventAdmission
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.timeperiod import DateRange
+
+if TYPE_CHECKING:
+    from immich_memories.db import Store
 
 
 @dataclass(frozen=True)
@@ -73,7 +75,7 @@ class TextCall:
 class TextRequest:
     prompt: str
     llm_config: Any
-    cache_path: Path
+    judgments: Store
     max_tokens: int
     timeout_seconds: int
     thinking: bool = False
@@ -81,19 +83,25 @@ class TextRequest:
     refresh: bool = False
     json_fields: tuple[str, ...] = ()
     json_empty_array_pairs: tuple[tuple[str, str], ...] = ()
+    json_optional_fields: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        from immich_memories.analysis.editorial_json_completion import validate_empty_array_pairs
+        from immich_memories.analysis.editorial_json_completion import (
+            validate_empty_array_pairs,
+            validate_optional_fields,
+        )
 
         if self.json_fields and not self.json_object:
             raise ValueError("JSON fields require the JSON response contract")
         validate_empty_array_pairs(self.json_fields, self.json_empty_array_pairs)
+        validate_optional_fields(self.json_fields, self.json_optional_fields)
 
     @property
     def judgment_key(self) -> str:
         from immich_memories.analysis.editorial_json_completion import (
             JSON_EMPTY_ARRAY_POLICY,
             JSON_FIELDS_POLICY,
+            JSON_OPTIONAL_FIELDS_POLICY,
             JSON_RECOVERY_POLICY,
         )
 
@@ -114,6 +122,12 @@ class TextRequest:
             + (
                 f"/{JSON_EMPTY_ARRAY_POLICY}:" + json.dumps(sorted(self.json_empty_array_pairs))
                 if self.json_empty_array_pairs
+                else ""
+            )
+            + (
+                f"/{JSON_OPTIONAL_FIELDS_POLICY}:"
+                + json.dumps(sorted(set(self.json_optional_fields)))
+                if self.json_optional_fields
                 else ""
             ),
         )

@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import io
 import json
-import sqlite3
 import threading
-from contextlib import closing
 from datetime import UTC, datetime
 
 import httpx
@@ -28,11 +26,8 @@ from immich_memories.analysis.llm_usage_record import USAGE_FILE, write_llm_usag
 from immich_memories.api.models import Asset, AssetType
 from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
 from immich_memories.processing.playback_keyframes import SampledKeyframes
-from immich_memories.store.cut_measurements import (
-    open_cut_measurements,
-    remember_motion_residual,
-)
-from immich_memories.store.editorial_preparation import initialize, private_database_path
+from immich_memories.store.cut_measurements import PendingMeasurements
+from tests.annotation_rows import annotation_store
 from tests.test_editorial_preparation_captions import _CaptionServer
 
 
@@ -84,24 +79,20 @@ class Seat:
 
 
 @pytest.fixture
-def store(tmp_path):
-    path = private_database_path(tmp_path / "annotations.sqlite")
-    with sqlite3.connect(path) as connection:
-        initialize(connection)
-    return path
+def store():
+    return annotation_store()
 
 
 def produce(store, sources, *, sample=sampled, seat):
-    with sqlite3.connect(store) as connection:
-        return prepare_motion_lines(
-            connection=connection,
-            sources=sources,
-            sample=sample,
-            ask=seat,
-            concurrency=1,
-            check_cancelled=lambda: None,
-            progress=lambda *_: None,
-        )
+    return prepare_motion_lines(
+        store=store,
+        sources=sources,
+        sample=sample,
+        ask=seat,
+        concurrency=1,
+        check_cancelled=lambda: None,
+        progress=lambda *_: None,
+    )
 
 
 def test_motion_retries_report_usage_before_validation_and_warm_reuse_is_free(store, tmp_path):
@@ -123,8 +114,7 @@ def test_motion_retries_report_usage_before_validation_and_warm_reuse_is_free(st
         with collecting() as usage:
             assert produce(store, sources, seat=ask).described == 1
         write_llm_usage(tmp_path, usage)
-        with sqlite3.connect(store) as connection:
-            remaining = missing_motion(connection, sources)
+        remaining = missing_motion(store, sources)
         with collecting() as warm:
             produce(store, remaining, seat=ask)
     finally:
@@ -179,8 +169,7 @@ def test_refused_motion_request_still_records_an_unmetered_attempt(tmp_path):
 
 
 def still_missing(store, sources):
-    with sqlite3.connect(store) as connection:
-        return [s.asset_id for s in missing_motion(connection, sources)]
+    return [s.asset_id for s in missing_motion(store, sources)]
 
 
 def test_true_videos_and_live_photos_that_play_are_the_only_sources():
@@ -212,7 +201,7 @@ def test_a_cold_video_is_described_once_and_a_warm_one_asks_nothing(store):
     with Image.open(io.BytesIO(seat.strips[0])) as strip:
         assert strip.width == 3 * strip.height  # three frames side by side, in time order
     assert still_missing(store, sources) == []
-    reader = BankedMotionLines(store_path=store, assets={"clip": video("clip")}, described=True)
+    reader = BankedMotionLines(store=store, assets={"clip": video("clip")}, described=True)
     line = reader.observe({"asset_id": "clip", "kind": "video", "raw_seconds": 8.0})
     assert line.startswith("A child throws a ball, then runs after it (3 frames")
 
@@ -267,7 +256,7 @@ def test_two_invalid_answers_are_settled_and_one_is_repaired(store):
     assert repaired.described == 1
     assert still_missing(store, first + second) == []
     lines = BankedMotionLines(
-        store_path=store, assets={"one": video("one"), "two": video("two")}, described=True
+        store=store, assets={"one": video("one"), "two": video("two")}, described=True
     )
     assert lines.observe({"asset_id": "one", "kind": "video", "raw_seconds": 12.0}).startswith(
         "not described"
@@ -281,7 +270,7 @@ def test_a_miss_or_a_tier_without_captions_reads_the_plain_facts(store):
     live = {"asset_id": "live", "kind": "live-motion", "raw_seconds": 5.5, "residual": 2.25}
     assets = {"clip": video("clip"), "live": picture("live")}
 
-    without_captions = BankedMotionLines(store_path=store, assets=assets, described=False)
+    without_captions = BankedMotionLines(store=store, assets=assets, described=False)
 
     assert without_captions.observe({"asset_id": "clip", "kind": "video", "raw_seconds": 31.8}) == (
         "not described; 32 s of video"
@@ -304,22 +293,19 @@ def test_a_refused_seat_credential_stops_the_stage_rather_than_one_video(store):
         produce(store, sources, seat=Seat(PermissionError("HTTP 401")))
 
 
-def test_a_live_photo_plays_by_the_residual_its_last_cut_measured(tmp_path):
+def test_a_live_photo_plays_by_the_residual_its_last_cut_measured(store):
     moving, quiet = picture("moving", live="c1"), picture("quiet", live="c2")
-    bank = tmp_path / "annotations.sqlite"
-    with closing(open_cut_measurements(bank)) as connection:
-        remember_motion_residual(
-            connection,
+    with PendingMeasurements(store) as pending:
+        pending.motion_residual(
             asset_id=moving.id,
             producer=RESIDUAL_PRODUCER,
             source_digest=source_metadata_digest(moving),
             measured={"residual": 1.9},
         )
 
-    residual_of = banked_residuals(bank)
+    residual_of = banked_residuals(store, [moving, quiet])
 
     assert (residual_of(moving), residual_of(quiet)) == (1.9, None)
-    assert banked_residuals(tmp_path / "absent.sqlite")(moving) is None
 
 
 def banking_motion(calls, *, fail=False):
@@ -333,24 +319,27 @@ def banking_motion(calls, *, fail=False):
         from immich_memories.store.motion_lines import (
             DESCRIBED,
             MotionLine,
-            initialize_motion_lines,
-            remember_motion_line,
+            motion_line_row,
+            remember_motion_lines,
         )
 
         sources = kwargs["sources"]
         calls.append(("motion", tuple(s.asset_id for s in sources)))
         if fail:
             return MotionPreparation(failures={s.asset_id: "OSError: reset" for s in sources})
-        initialize_motion_lines(kwargs["connection"])
-        for source in sources:
-            remember_motion_line(
-                kwargs["connection"],
-                asset_id=source.asset_id,
-                producer=MOTION_PRODUCER,
-                source_digest=source.digest,
-                line=MotionLine(DESCRIBED, "A child runs", 3),
-                bytes_read=250_000,
-            )
+        remember_motion_lines(
+            kwargs["store"],
+            [
+                motion_line_row(
+                    asset_id=source.asset_id,
+                    producer=MOTION_PRODUCER,
+                    source_digest=source.digest,
+                    line=MotionLine(DESCRIBED, "A child runs", 3),
+                    bytes_read=250_000,
+                )
+                for source in sources
+            ],
+        )
         return MotionPreparation(described=len(sources), bytes_read=250_000, requests=4)
 
     return motion

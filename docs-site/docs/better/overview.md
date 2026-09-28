@@ -7,15 +7,15 @@ title: What a model adds, what it costs
 Reader: newcomer and power user.
 
 Immich Memories works on a plain NAS: one container, one `models fetch`, and the whole film gets
-made there. Each add-on on this page makes it better or faster. None is required, they all plug
-into the same install, and what each one works out is banked beside what the NAS already has, so
-turning one off later loses nothing and re-reads nothing.
+made there. That is a good default. Optional models can add small refinements; compare the
+pictures and decide whether the extra time, memory or API cost is worth it. They can also leave
+the cut unchanged. Existing captions and other facts stay banked when you change the setup.
 
 ```mermaid
 flowchart LR
     nas["The NAS makes the film<br/><small>rules editor, heads, detectors, render</small>"]
-    reader(["A reader model<br/><small>prose and a polish</small>"]) -.-> nas
-    captions(["A caption server<br/><small>one sentence per picture</small>"]) -.-> nas
+    reader(["A reader model<br/><small>titles; Full refinement</small>"]) -.-> nas
+    captions(["A caption server<br/><small>selected shots and candidates</small>"]) -.-> nas
     inference(["Inference on a GPU box<br/><small>the same facts, sooner</small>"]) -.-> nas
     render(["A render worker<br/><small>the encode off the NAS</small>"]) -.-> nas
     music(["Generated music<br/><small>ACE-Step or MusicGen</small>"]) -.-> nas
@@ -25,8 +25,8 @@ flowchart LR
 
 | Add-on | What it buys | What it needs | What leaves the box |
 |---|---|---|---|
-| [A reader](./reader.md) | Prose (what happened in each episode, an account of the period, the title, the music's mood) and a polish of the draft | A text model with a 32k context: local (Gemma 4 E4B by default: 6.7 GB at its peak, a 16 GB Mac) or a hosted API key | The candidates' annotation lines, people and place names included, to the model. Never a picture |
-| [Captions](./captions.md) | One sentence under every picture. The reader reads it, and a caption lets the family-viewing check see the private moments no detector does, before a picture goes into a shareable film | A 500M vision model behind any OpenAI-compatible server, 1 to 2 GB | A 400 px tile of each picture, once, to your caption server |
+| [A reader](./reader.md) | Titles and music mood on every tier; on Full, an account of the period and refinement of the NAS draft | A text model with a 32k context, such as local Gemma 4 E4B. Selection refinement also needs GPU capability, captions and Laya | The candidates' annotation lines, people and place names included, to the model. Never a picture |
+| [Captions](./captions.md) | Descriptions for selected pictures and replacement candidates, used by the reader and Laya | The supported 500M vision model, or explicit opt-in to a vision-capable LLM | A 400 px tile of each requested picture, once per caption generation, to the chosen provider |
 | [Inference on a GPU box](./inference.md) | The encoder, its eight heads and the two detectors on a card or a bigger CPU | A second machine, CPU or NVIDIA | A preview of each picture, once, to your service |
 | [A render worker](./gpu-render.md) | The encode on a GPU box instead of the NAS | An NVIDIA box running the same app version | The chosen cut and your Immich key; the worker fetches the originals itself |
 | [Generated music](./music.md) | An original track per film instead of a bundled one | ACE-Step on a Mac or an NVIDIA box (7 to 29 GB free for its weights), or a MusicGen server | A text prompt (mood, tempo, length) to your music server |
@@ -36,45 +36,49 @@ and [Privacy](../run/privacy.md) lists every switch.
 
 ## What the model does, and what it doesn't
 
-The rules editor makes the film on every tier. With a reader configured it still builds the draft,
-from dates, places, favourites, known people and what the heads said. The model then does two
-things with it:
+The rules editor builds the draft from dates, places, favourites, known people and inexpensive
+CPU classifier results. `tier: auto` selects NAS without GPU inference, GPU with it, and Full
+with GPU inference plus a configured LLM. Preparation follows the same tier. An LLM alone can
+still write titles and music mood; it does not enable selection refinement.
+
+On Full, the model does two things with the draft:
 
 - **It writes the prose.** It reads the episodes the draft's shots sit in (only those, not the
   whole period), says what happened in each, then writes an account of the period, a title and a
-  mood for the music. All of it is banked, so the next film over the same weeks reads nothing again.
+  mood for the music. Banked readings are reused when their inputs and producer still match.
 - **It polishes.** It reads the finished draft in blocks of 12 shots and names the ones that add
-  nothing. A shot both of its readings name leaves, one named once is offered a better replacement
-  from its own story, and favourites, a close relative's only shot and a record the catalogue holds
+  nothing. A named shot stays until a replacement passes the shared checks and its final fit
+  vote. An ordinary replacement still marked weak leaves the original in place. Favourites,
+  a close relative's only shot and a record the catalogue holds
   stay put. So does a year's only shot in a film that gives every year a voice, and a year whose
   every shot is named keeps one. A refill that picks a picture takes its moment's favourite instead
-  when the page has one. It drops and refills; it never re-plans the film or adds a story. On the `full` tier it
-  also answers the family-viewing check's activity question (a bath, a nappy change) from each
-  shot's caption.
+  when the page has one. Sharing and unusable-picture checks can still remove a shot outright.
+  Final duplicate review can also leave a shorter cut when no suitable replacement exists.
 
-No model looks at a picture while a film is cut, on any tier. A model looks at each picture once,
-at ingest (the caption model on `full`, the heads and the detectors), and everything after that is
-text over what ingest banked. So the reader needs no vision.
+The prose reader gets text only and never decides sharing. Rules and picture classifiers make
+those decisions on NAS; GPU and Full add Laya over the captions. Laya cannot lift a detector hold.
+GPU and Full acquire missing captions and clip evidence for selected shots and actual replacement
+candidates. Captioning the whole library is a separate, explicit `prepare` job.
 
-Two cases skip the polish, and the log says which:
+The [LLM caption option](./captions.md#explicit-llm-captions) is separate from the prose reader.
+It sends image inputs only with explicit config approval, is less efficient than SmolVLM, and
+can cost much more on hosted infrastructure. It can supply captions on NAS without enabling
+Full selection.
 
-- A film over several windows (the same day across years) has no single period to polish over. The
-  model plans it whole with the story planner.
-- A period account the model can't read, asked twice, ships the rules draft with the passes a
-  no-model film gets, and one line: `The model polish did not run (<reason>); the film is the rules draft`.
+Separate date windows also use the NAS draft and bounded refinement. If the model cannot read
+the period account after two attempts, the rules draft ships with the passes a no-model film gets,
+and the log says: `The model polish did not run (<reason>); the film is the rules draft`.
 
 `advanced.editorial.thin_model_layer: false` makes the model plan every film whole instead. How the
 polish decides, with diagrams: [What a model adds](../how-it-chooses/what-a-model-adds.md).
 
 ## What it costs
 
-Time, memory and euros per setup (cold month, warm month, cold year) go on
-[Measured](./measured.md), from one measurement of today's code. The sizes that don't move with the
-code:
+Time, memory and euros per setup belong on [Measured](./measured.md), with the code revision,
+hardware and cache state. Plan for these costs:
 
-- A reader holds its weights for as long as its server is up: 6.7 GB at its peak for the default
-  Gemma 4 E4B, so a 16 GB Mac beside the caption server.
-- A caption on four Celeron cores takes about 31 s, and well under a second on a Mac or a GPU.
-  That is why the NAS default is `no_captions`.
+- The reader and caption server need memory alongside the app. Reader memory also depends on
+  context length and concurrent requests, not just the model's weight size.
+- NAS does not require a caption server. GPU and Full need a caption provider and reuse existing captions.
 - A hosted reader bills tokens, and the prose is banked, so a week is paid for once, not once per
   film.

@@ -90,6 +90,9 @@ sensitive-content detector read for it and the hold it sits under:
   worth a look before sharing: the exposure head read 0.35, under the 0.5 hold
 ```
 
+When you trimmed or removed the picture while reviewing the cut before rendering it, a line says so:
+`Your review: you trimmed it to 1-3.5 s.` The web UI keeps each review's edits in the store.
+
 The last line is your own word on the picture as it stands today, which may be newer than the run:
 `Your word on it now: You cleared its hold (a nudity detector flagged it).`, or, where a hold stands
 and you haven't answered it, the hold and the [`pictures clear-hold`](./pictures.md) command that

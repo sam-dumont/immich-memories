@@ -173,7 +173,6 @@ def test_runtime_captures_once_per_attempt_without_refetch_or_mutation(tmp_path,
         assert stat.S_IMODE(path.parent.stat().st_mode) == 0o700
         assert load_sources(path) == sources
     assert [source.model_dump(mode="json") for source in sources] == original_dtos
-    planner.close()
 
 
 def test_failed_atomic_write_does_not_mark_attempt_as_captured(tmp_path):

@@ -6,7 +6,6 @@ none of that belongs in a test file.
 
 from __future__ import annotations
 
-import json
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -14,6 +13,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from immich_memories.automation.catalogue import save_catalogue
 from immich_memories.automation.special_day_scan import DiscoveredDay
 from immich_memories.memory_types.registry import MemoryType
 from immich_memories.ui.pages import step1_presets
@@ -34,10 +34,9 @@ _A_LONG_EVENING = {
 
 
 def _catalogue(home: Path, *entries: dict) -> None:
-    """Write a catalogue where `discover-days` would have left one."""
-    folder = home / ".immich-memories"
-    folder.mkdir(parents=True, exist_ok=True)
-    (folder / "special-days.json").write_text(json.dumps(list(entries)))
+    """Record a catalogue where `discover-days` would have left one: this test's store."""
+    del home
+    save_catalogue(list(entries))
 
 
 def _render_card(monkeypatch, home: Path, pick: int | None = None) -> tuple[AppState, MagicMock]:
@@ -153,7 +152,7 @@ def test_with_no_catalogue_the_card_asks_for_one_instead_of_picking_a_day(
 
     A library nobody has scanned has no special days, and offering a random
     one would be the tool inventing an occasion. Step 1 stays incomplete and
-    the card says which file was missing and what builds it.
+    the card says nothing was found and what builds it.
     """
     state, ui_stub = _render_card(monkeypatch, tmp_path)
 
@@ -162,7 +161,7 @@ def test_with_no_catalogue_the_card_asks_for_one_instead_of_picking_a_day(
     ui_stub.select.assert_not_called()
     drawn = _drawn_text(ui_stub)
     assert "discover-days" in drawn
-    assert str(tmp_path / ".immich-memories" / "special-days.json") in drawn
+    assert "No special days found yet" in drawn
 
 
 def test_the_title_is_the_day_the_catalogue_named_not_its_span() -> None:

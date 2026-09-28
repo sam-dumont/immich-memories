@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 19:10+0200\n"
+"POT-Creation-Date: 2026-09-27 22:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -196,7 +196,7 @@ msgstr "자동(클립과 동일)"
 msgid "Auto duration"
 msgstr "자동 길이"
 
-#: i18n.py:101
+#: i18n.py:102
 msgid "Automatic (browser)"
 msgstr "자동(브라우저)"
 
@@ -407,7 +407,7 @@ msgstr "계속하려면 Immich 서버에 연결하세요. 위에 서버 URL과 A
 msgid "Connected as: {name}"
 msgstr "연결된 사용자: {name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:454 pages/step2_loading.py:307
 msgid "Connecting to Immich..."
 msgstr "Immich에 연결 중..."
 
@@ -496,7 +496,7 @@ msgstr "차이"
 msgid "Discovery failed: {error}"
 msgstr "검색 실패: {error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:66 pages/step2_loading.py:366
 msgid "Done"
 msgstr "완료"
 
@@ -539,7 +539,7 @@ msgstr "오류({error_count}개)"
 msgid "Export"
 msgstr "내보내기"
 
-#: pages/step2_loading.py:336
+#: pages/step2_loading.py:324
 #, python-brace-format
 msgid "Failed to load videos: {value}"
 msgstr "영상을 불러오지 못했습니다: {value}"
@@ -566,10 +566,6 @@ msgid ""
 msgstr ""
 "빠른 NAS 프리셋이 활성화되어 있습니다. 1080p H.264, 빠른 인코딩, 정적인 제목 배경, 음성 분석 없음, 적은 사진, 즐겨찾기 우선 분석을 사용합니다. "
 "config.yaml의 `preset: fast` 또는 IMMICH_MEMORIES_PRESET=fast로 설정하며, 이번 작업에서는 아래 선택이 우선합니다."
-
-#: pages/step2_loading.py:252
-msgid "Fetching photos..."
-msgstr "사진 가져오는 중..."
 
 #: pages/_step3_music_preview.py:232
 msgid "Film language"
@@ -700,7 +696,7 @@ msgstr "Immich 전송: {delivery_label}"
 msgid "Immich delivery: {value}"
 msgstr "Immich 전송: {value}"
 
-#: pages/clip_grid.py:170 pages/clip_grid.py:224
+#: pages/clip_grid.py:177 pages/clip_grid.py:232
 msgid "Include"
 msgstr "포함"
 
@@ -716,7 +712,7 @@ msgstr "사진 포함"
 msgid "Include in compilation"
 msgstr "모음 영상에 포함"
 
-#: i18n.py:109
+#: i18n.py:110
 msgid "Interface language"
 msgstr "화면 언어"
 
@@ -778,7 +774,7 @@ msgstr "앨범 불러오는 중..."
 msgid "Loading thumbnails"
 msgstr "미리 보기 이미지 불러오는 중"
 
-#: pages/step2_loading.py:313
+#: pages/step2_loading.py:301
 msgid "Loading videos..."
 msgstr "영상 불러오는 중..."
 
@@ -915,9 +911,9 @@ msgstr "현재 사용 가능한 제안이 없습니다."
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
-msgstr "아직 인물 파일이 없습니다. 라이브러리를 다시 스캔하세요. 이름이 있는 각 인물의 수량과 월별 추이를 읽으며, 이미지 자체는 분석하지 않습니다."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
+msgstr "아직 인물이 없습니다. 라이브러리를 다시 스캔하세요. 이름이 있는 각 인물의 수량과 월별 추이를 읽으며, 이미지 자체는 분석하지 않습니다."
 
 #: pages/runs.py:105
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
@@ -1051,7 +1047,7 @@ msgstr "인물 필터"
 msgid "Person Spotlight"
 msgstr "한 인물 집중"
 
-#: pages/clip_grid.py:193
+#: pages/clip_grid.py:200
 msgid "Photo"
 msgstr "사진"
 
@@ -1063,7 +1059,7 @@ msgstr "사용 가능한 사진"
 msgid "Photo duration (seconds)"
 msgstr "사진 표시 시간(초)"
 
-#: pages/step2_loading.py:461
+#: pages/step2_loading.py:449
 #, python-brace-format
 msgid "Photo thumbnails: {value}/{count}"
 msgstr "사진 미리 보기: {value}/{count}"
@@ -1242,6 +1238,10 @@ msgstr "서버에서 실행 중: {phase}. 이 페이지를 떠나도 계속됩�
 #: app.py:73 app.py:219
 msgid "Runs"
 msgstr "작업 내역"
+
+#: pages/clip_grid.py:108 pages/clip_grid.py:320 pages/clip_grid.py:356
+msgid "Same episode"
+msgstr "같은 에피소드"
 
 #: pages/step1_config.py:140
 msgid "Save Config"
@@ -1491,7 +1491,7 @@ msgstr "페이지를 떠나 있는 동안 편집이 끝났습니다. 내보내�
 msgid "Thumbnail cache"
 msgstr "썸네일 캐시"
 
-#: pages/step2_loading.py:415
+#: pages/step2_loading.py:403
 #, python-brace-format
 msgid "Thumbnails: {value}/{count}"
 msgstr "미리 보기 이미지: {value}/{count}"
@@ -1514,9 +1514,9 @@ msgstr "함께"
 
 #: pages/step1_people.py:181
 msgid ""
-"Together keeps only the moments holding everyone named. Any of these people keeps a moment "
-"holding any one of them."
-msgstr "함께는 지정한 인물이 모두 나오는 순간만 남깁니다. 이 중 누구나는 그중 한 명 이상이 나오는 순간을 남깁니다."
+"Together keeps the times everyone named was there, even if never in the same photo. Any of "
+"these people keeps the times any one of them was there."
+msgstr "함께는 이름을 넣은 모두가 그 자리에 있던 시간을 남깁니다. 같은 사진에 함께 찍히지 않았어도 됩니다. 이 중 누구든은 그중 한 명이라도 있던 시간을 남깁니다."
 
 #: pages/login.py:64
 msgid "Too many failed attempts. Try again later."
@@ -1800,3 +1800,44 @@ msgstr "{title} (설정 항목 {n_keys}개)"
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}: {duration_seconds:.1f}초"
 
+
+msgid "Default"
+msgstr "기본값"
+
+msgid "Nothing to save"
+msgstr "저장할 내용이 없습니다"
+
+msgid "Save"
+msgstr "저장"
+
+msgid "Saved here"
+msgstr "여기에 저장됨"
+
+msgid "Saved to the database"
+msgstr "데이터베이스에 저장했습니다"
+
+msgid "Set by {name} (environment)"
+msgstr "{name}(환경 변수)로 설정됨"
+
+msgid "Set in config.yaml as {key}"
+msgstr "config.yaml의 {key}로 설정됨"
+
+msgid "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
+msgstr "설정은 강한 순서대로 네 곳에서 옵니다: 환경 변수, config.yaml, 여기서 저장한 값(데이터베이스), 기본값. 회색 설정은 환경 변수나 config.yaml이 정한 것이니 그곳에서 바꾸세요."
+
+msgid "{count} set outside this page"
+msgstr "{count}개는 이 페이지 밖에서 설정됨"
+
+msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
+msgstr "{name}이(가) 설정되지 않아 API 키와 비밀번호를 여기에 저장할 수 없습니다. 설정하거나 이 비밀을 환경 변수나 config.yaml에 두세요."
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  ({n}개)"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n}개는 이 페이지 밖에서 설정됨"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "여기에 저장되어 있지만 {name}(으)로 복호화할 수 없어 기본값을 사용 중입니다"

@@ -21,6 +21,7 @@ import pytest
 from immich_memories.analysis.editorial_page_recovery import PAGE_READ_SCHEMA, PageReadFailure
 from immich_memories.analysis.editorial_story_reading import read_period_story
 from immich_memories.analysis.editorial_story_replies import read_episode_page
+from tests.annotation_rows import annotation_store
 
 RECORDED_PAGE = (Path(__file__).parent / "fixtures" / "story_episodes_unquoted_key.txt").read_text()
 
@@ -363,7 +364,7 @@ def test_the_production_judge_leaves_the_failure_beside_the_calls(tmp_path, monk
     )
     out = tmp_path / "out"
     out.mkdir()
-    judge = StructureTextJudge(config, out, cache_path=tmp_path / "judgments.sqlite")
+    judge = StructureTextJudge(config, out, judgments=annotation_store())
 
     with pytest.raises(PageReadFailure):
         read_period_story(judge, evidence=[fragment(0)], contract="Test contract.", prior={})
@@ -409,7 +410,7 @@ def test_a_connection_that_dies_mid_call_is_named_and_recorded(tmp_path, monkeyp
     )
     out = tmp_path / "out"
     out.mkdir()
-    judge = StructureTextJudge(config, out, cache_path=tmp_path / "judgments.sqlite")
+    judge = StructureTextJudge(config, out, judgments=annotation_store())
 
     with pytest.raises(StageCallFailure) as failure:
         judge.ask("story-weighing-reversed", "Weigh these stories.", max_tokens=1200)
@@ -467,7 +468,7 @@ def test_a_refused_text_call_names_the_provider_and_what_had_already_answered(
     )
     out = tmp_path / "out"
     out.mkdir()
-    judge = StructureTextJudge(config, out, cache_path=tmp_path / "judgments.sqlite")
+    judge = StructureTextJudge(config, out, judgments=annotation_store())
     judge.ask("story-episodes-1", "Read this page.", max_tokens=300)
     answered = 1
 
@@ -536,7 +537,7 @@ def test_a_throttled_text_reader_waits_instead_of_ending_the_run(tmp_path, monke
     )
     out = tmp_path / "out"
     out.mkdir()
-    judge = StructureTextJudge(config, out, cache_path=tmp_path / "judgments.sqlite")
+    judge = StructureTextJudge(config, out, judgments=annotation_store())
 
     assert judge.ask("story-episodes-1", "Read this page.", max_tokens=300)
 
@@ -589,7 +590,7 @@ def test_one_503_does_not_end_a_run_that_has_answered_187_calls(tmp_path, monkey
     )
     out = tmp_path / "out"
     out.mkdir()
-    judge = StructureTextJudge(config, out, cache_path=tmp_path / "judgments.sqlite")
+    judge = StructureTextJudge(config, out, judgments=annotation_store())
 
     assert judge.ask("story-episodes-1", "Read this page.", max_tokens=300)
 
@@ -636,7 +637,7 @@ def test_a_provider_that_stays_down_names_itself_on_the_text_leg(tmp_path, monke
     )
     out = tmp_path / "out"
     out.mkdir()
-    judge = StructureTextJudge(config, out, cache_path=tmp_path / "judgments.sqlite")
+    judge = StructureTextJudge(config, out, judgments=annotation_store())
 
     with pytest.raises(StageCallFailure) as failure:
         judge.ask("story-episodes-1", "Read this page.", max_tokens=300)

@@ -68,6 +68,21 @@ def test_the_sample_spreads_over_the_day_not_the_busiest_minute() -> None:
     assert len(hours) >= 4, f"sample collapsed onto {hours}"
 
 
+def test_the_sample_leans_on_the_hours_the_day_was_spent_in() -> None:
+    """A race day: a few pictures at home either side, most of them at the circuit. Covering
+    every hour once is right; the samples left over belong to the circuit, not to the first
+    hour of the morning again."""
+    home = [_asset(7, m) for m in (0, 5, 10)] + [_asset(17, m) for m in (0, 5)]
+    circuit = [_asset(10, m) for m in range(60)] + [_asset(9, m) for m in range(0, 60, 6)]
+    day = [*home, *circuit]
+
+    sampled = sample_across_day(list(reversed(day)), count=8)
+
+    assert sum(a.file_created_at.hour == 7 for a in sampled) == 1
+    assert sum(a.file_created_at.hour == 10 for a in sampled) >= 4
+    assert sampled == sample_across_day(day, count=8)
+
+
 def test_an_unreachable_model_is_not_a_verdict() -> None:
     """A failed question must not silently mark every day special."""
     # WHY: the LLM is the external boundary; here it is simply down.
@@ -540,3 +555,68 @@ def test_the_prompt_grounds_every_specific_and_not_only_places() -> None:
     guidance = _PROMPT.split("{lines}")[0]
 
     assert "distance" in guidance and "count" in guidance
+
+
+def _answers(monkeypatch, *replies):
+    from immich_memories.analysis import special_day
+
+    asked = []
+
+    # WHY: the model call is the network boundary; each reply is what it sent back.
+    def _reply(prompt, _llm_config, _timeout, thinking=False):
+        asked.append(prompt)
+        return replies[min(len(asked), len(replies)) - 1]
+
+    monkeypatch.setattr(special_day, "_ask", _reply)
+    return asked
+
+
+def test_an_answer_that_cannot_be_read_is_asked_again(monkeypatch) -> None:
+    """A small model sometimes answers a day in prose. That is not a verdict on the day."""
+    asked = _answers(
+        monkeypatch,
+        "It looks like a lovely day out.",
+        '{"special": true, "title": "Race day", "subtitle": null, "what": "a race", "window": null}',
+    )
+    day = [_asset(h, m) for h in range(9, 15) for m in (0, 30)]
+
+    verdict = ask_if_special(day, llm_config=SimpleNamespace())
+
+    assert len(asked) == 2
+    assert verdict.judged and verdict.special and verdict.title == "Race day"
+
+
+def test_a_day_left_unjudged_says_why(monkeypatch) -> None:
+    _answers(monkeypatch, "It looks like a lovely day out.")
+    day = [_asset(h, m) for h in range(9, 15) for m in (0, 30)]
+
+    verdict = ask_if_special(day, llm_config=SimpleNamespace())
+
+    assert not verdict.judged
+    assert "could not be read" in verdict.unjudged_because
+
+
+def test_the_day_question_hears_what_was_sent_from_the_day_marked_as_sent(monkeypatch) -> None:
+    from immich_memories.analysis import special_day
+
+    seen = {}
+
+    # WHY: the model call is the network boundary; the prompt it is handed is under test.
+    def _capture(prompt, _llm_config, _timeout, thinking=False):
+        seen["prompt"] = prompt
+        return '{"special": false, "title": "", "subtitle": null, "what": "", "window": null}'
+
+    monkeypatch.setattr(special_day, "_ask", _capture)
+    own = [_asset(h, m) for h in range(9, 15) for m in (0, 30)]
+    sent = [_asset(h, 5) for h in range(9, 14)]
+    for n, asset in enumerate(own + sent):
+        asset.id = f"p{n}"
+    captions = {a.id: "a runner on a path" for a in own} | {
+        a.id: "runners in an obstacle race" for a in sent
+    }
+
+    ask_if_special(own, llm_config=SimpleNamespace(), captions=captions, forwarded=sent)
+
+    forwarded = seen["prompt"].split("forwarded", 1)[1]
+    assert "obstacle race" in forwarded
+    assert "obstacle race" not in seen["prompt"].split("forwarded", 1)[0]

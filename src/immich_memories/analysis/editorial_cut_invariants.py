@@ -158,6 +158,10 @@ def _favourites_passed_over(cut: FinishedCut) -> list[Violation]:
     for unit in cut.units.values():
         by_moment.setdefault(unit.get("moment"), []).append(unit)
     shown = cut.shows()
+    # A keeper may itself be collapsed in a later review. Only chains rooted
+    # in an actually shown picture count; missing keepers and cycles do not.
+    while represented := {a for a, keeper in cut.collapsed_into.items() if keeper in shown} - shown:
+        shown.update(represented)
     out = []
     for c in cut.carriers:
         if c.get("favourite") or c["asset_id"] in cut.owner_required or c.get("moment") is None:
@@ -168,7 +172,6 @@ def _favourites_passed_over(cut: FinishedCut) -> list[Violation]:
             for u in by_moment.get(c["moment"], ())
             if u.get("favourite")
             and not {u["asset_id"], *(u.get("members") or ())} & shown
-            and cut.collapsed_into.get(u["asset_id"]) not in shown
             and cut.may_carry(u["asset_id"])
             # A family seat carries a person: only a favourite that shows them could have won.
             and (not seated or seated & set(cut.close_family_of(u["asset_id"])))

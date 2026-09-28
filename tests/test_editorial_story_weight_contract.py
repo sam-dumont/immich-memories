@@ -15,6 +15,7 @@ from immich_memories.analysis.editorial_structure_io import StructureTextJudge
 from immich_memories.cache.judgment_cache import JudgmentCache
 from immich_memories.config import Config
 from immich_memories.config_models_llm import LLMConfig
+from tests.annotation_rows import annotation_store
 from tests.test_editorial_story_reading import ScriptedJudge
 from tests.test_editorial_story_weight_audit import weigh
 
@@ -157,14 +158,14 @@ def test_cached_incomplete_reply_is_validated_then_repaired_and_reused_offline(
             provider="openai-compatible", base_url="http://editor.test/v1", model="synthetic-editor"
         )
     )
-    cache_path = tmp_path / "judgments.sqlite"
-    cache = JudgmentCache(cache_path)
+    store = annotation_store()
+    cache = JudgmentCache(store)
     requests = []
     for call in scripted.asked:
         request = TextRequest(
             prompt=call["prompt"],
             llm_config=config.llm,
-            cache_path=cache_path,
+            judgments=store,
             max_tokens=1200,
             timeout_seconds=int(config.llm.timeout_seconds),
         )
@@ -173,7 +174,6 @@ def test_cached_incomplete_reply_is_validated_then_repaired_and_reused_offline(
             request.judgment_key,
             '{"about":[],"weights":{}}' if call["stage"].endswith("source") else valid,
         )
-    cache.close()
     sent = []
 
     async def synthetic_completion(prompt, _config, **kwargs):
@@ -185,8 +185,8 @@ def test_cached_incomplete_reply_is_validated_then_repaired_and_reused_offline(
     monkeypatch.setattr(gateway, "query_llm", synthetic_completion)
     (tmp_path / "cold").mkdir()
     (tmp_path / "warm").mkdir()
-    cold = StructureTextJudge(config, tmp_path / "cold", cache_path=cache_path)
-    warm = StructureTextJudge(config, tmp_path / "warm", cache_path=cache_path)
+    cold = StructureTextJudge(config, tmp_path / "cold", judgments=store)
+    warm = StructureTextJudge(config, tmp_path / "warm", judgments=store)
 
     first = weigh(cold)
     second = weigh(warm)

@@ -22,13 +22,13 @@
 # nothing outside this container. All ten standard memory types work; a custom
 # free-text subject needs a model.
 #
-# The preparation tier below is pinned to no_captions: run `models fetch` inside
-# the container once (about 130 MB of pinned ONNX) and a cut finishes with no
-# second service. Raise the tier to full for a caption under every picture,
-# which wants a caption server, or drop it to metadata_only, which fetches nothing.
+# The product tier defaults to auto. Without GPU inference it selects NAS:
+# run `models fetch` inside the container once, then no second service is needed.
+# GPU inference enables captions and Laya for selected shots and candidates;
+# their services and checkpoints must also be ready.
 #
-# A model is optional: point LLM__BASE_URL and LLM__MODEL at a vision model you
-# host and it polishes the draft this container already makes. See
+# An optional text LLM can supply titles on any tier. With GPU inference too,
+# it refines the NAS draft on Full. It needs no vision for that role. See
 # https://sam-dumont.github.io/immich-video-memory-generator/docs/better/overview
 services:
   immich-memories:
@@ -55,6 +55,12 @@ services:
       IMMICH_MEMORIES_AUTH_PASSWORD: "${IMMICH_MEMORIES_AUTH_PASSWORD:-}"
       # Optional: session secret (auto-generated if not set; set to preserve sessions on restart)
       # IMMICH_MEMORIES_STORAGE_SECRET: "${IMMICH_MEMORIES_STORAGE_SECRET}"
+      # Optional: the store (human decisions, model answers, run history, UI
+      # settings) on PostgreSQL instead of the default SQLite file on the
+      # config volume. Uncomment this and the postgres service below, or point
+      # it at a separate database on your own PostgreSQL instance. A schema
+      # name only matters if that instance is shared; default: immich_memories.
+      # IMMICH_MEMORIES_DATABASE_URL: "postgresql+psycopg://immich_memories:${POSTGRES_PASSWORD:-change-me}@postgres:5432/immich_memories"
       # The model editor's text reader. Left unset, as it ships, the rules
       # reader cuts instead. Set both keys to switch.
       # "localhost" here means this container, so use a real hostname.
@@ -311,7 +317,42 @@ services:
     # environment:
     #   LLAMA_ARG_N_GPU_LAYERS: "99"
 
+  # ── Optional: PostgreSQL for the store ──────────────────────────────────
+  # The store defaults to a SQLite file on the config volume, which is the
+  # right choice for one host with one writer. Uncomment this service and the
+  # commented IMMICH_MEMORIES_DATABASE_URL line on the app service above to
+  # put the store on PostgreSQL instead — the owner's preferred deployment,
+  # and useful once you also run `psql` for other things. Set POSTGRES_PASSWORD
+  # in .env; it has to match the password in IMMICH_MEMORIES_DATABASE_URL.
+  # Plain PostgreSQL 14+, no extensions required.
+  #
+  #   docker compose --profile postgres up -d
+  #
+  # postgres:
+  #   image: postgres:16@sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54
+  #   container_name: immich-memories-postgres
+  #   profiles:
+  #     - postgres
+  #   environment:
+  #     POSTGRES_USER: immich_memories
+  #     POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-change-me}"
+  #     POSTGRES_DB: immich_memories
+  #   volumes:
+  #     - immich-memories-postgres-data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U immich_memories -d immich_memories"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 10
+  #   restart: unless-stopped
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 512M
+
 volumes:
   immich-memories-config:
   immich-memories-model-cache:
   immich-memories-caption-models:
+  # Only used when the commented postgres service above is on.
+  # immich-memories-postgres-data:

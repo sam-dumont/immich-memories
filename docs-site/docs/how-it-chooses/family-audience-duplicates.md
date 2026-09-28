@@ -12,8 +12,8 @@ leaves and another frame of the same moment takes its place. Two near-identical 
 sunset, or the same hiking trail filmed twice twenty minutes apart, become one. Then the finished
 cut is checked against everything the passes promised.
 
-All of it runs on a plain NAS, and no model is asked anything to do it. A model tier adds one
-reading: the audience check over the ingest caption.
+NAS runs these passes with rules and inexpensive picture classifiers. GPU and Full add Laya
+over the selected shots' captions. No tier asks the prose LLM to decide sharing.
 
 ## After the draft
 
@@ -21,7 +21,7 @@ The order, as `_select` in `editorial_structure_planner.py` runs it:
 
 ```mermaid
 flowchart TD
-  draft["the draft<br/>select_story_first"] --> polish["model polish, when a model is set<br/>polish_the_draft"]
+  draft["the draft<br/>select_story_first"] --> polish["model polish on Full<br/>polish_the_draft"]
   polish --> seat["family seat<br/>seat_in_film"]
   seat --> ticks["your ticks go in<br/>admit_owner_required"]
   ticks --> trim["fit the length<br/>trim_to_timing"]
@@ -30,7 +30,7 @@ flowchart TD
   sort --> gate["family-viewing gate<br/>apply_audience_gate"]
   gate --> motion["Live motion, speech, second trim<br/>resolve_motion_and_timing"]
   motion --> dup["duplicate review<br/>final_duplicate_review"]
-  dup --> filler["filler nothing vouches for, no-model film only<br/>drop_filler_nothing_vouches_for"]
+  dup --> filler["filler nothing vouches for, every tier<br/>drop_filler_nothing_vouches_for"]
   filler --> again["family seat again<br/>seat_again_after_review"]
   again --> check["finished-cut check<br/>check_finished_cut"]
   check --> review["review list, 0.2 to 0.5<br/>editorial_review_list.write_for_cut"]
@@ -45,7 +45,7 @@ Shots follow favourites and stories, so someone photographed all month and starr
 end up in no shot. The seat fixes that on every tier (`editorial_family_seat.py`).
 
 - **Who is owed one.** A close family member (partner, child or parent, as confirmed in
-  `people.yaml`) on at least 20 of the period's pictures, or 5 % of them, and in none of its shots.
+  the people registry) on at least 20 of the period's pictures, or 5 % of them, and in none of its shots.
   The two numbers are `advanced.editorial.people.seat_min_pictures` and `seat_min_share`. Only
   pictures the film could show count: someone whose every picture is refused as a shot is owed
   nothing, and the record says so.
@@ -53,7 +53,8 @@ end up in no shot. The seat fixes that on every tier (`editorial_family_seat.py`
   of your partner, their parents count, though to you they're in-laws. The same set drives big
   stories, the duplicate review and the model polish.
 - **Which frame.** Their best frame by standing, in the story that holds most of their pictures,
-  that clears the story's standing bar and that no hold refuses.
+  that clears the story's standing bar and that no hold refuses. Equal standing favours your
+  starred frame. If admission refuses it, the next eligible frame gets its chance.
 - **Whose place.** Added when the film has a slot and the time for one more shot. Otherwise it
   replaces the weakest shot of that story, or else the film's weakest shot in a story that keeps
   another one. A favourite, another seat, or someone's only close-family shot is never displaced.
@@ -89,6 +90,12 @@ brief, `generate --sharing`), and `defaults.sharing` is the default, `family` un
 | **Family** (`family`, the default) | grandparents, siblings, the group chat | `share`, `family_only` |
 | **Shareable** (`shareable`) | anyone | `share` only, with `strict_sharing` |
 
+A caption that explicitly describes a person wearing only underwear holds the picture to
+**Just us**, including when an older cached verdict allowed Family viewing. Swimwear and babies
+in nappies are separate; an uncovered-person flag alone does not identify underwear. A NAS run
+without that caption cannot make this distinction. Use **Never use** for a picture you want out
+of every future film, or clear its hold yourself after reviewing it.
+
 The attempt's `request` records the level, `runs show` and `runs story` print it (`Sharing: family`),
 and `runs why` reads the gate's verdicts against it.
 
@@ -104,13 +111,11 @@ flowchart TD
   rule -- no --> owner{"you cleared it?<br/>owner_verdict"}
   owner -- "for just us, family, anyone" --> ov["just_us, family_only or share,<br/>nothing asked"]
   owner -- no --> floor["detector holds<br/>floors_under: nsfw_marqo on the still, its frames,<br/>its Live clip; uncovered_person; exposure chain"]
-  floor --> tier{"preparation tier<br/>editorial_shareability_tiers.audience_check_for"}
-  tier -- "no_captions" --> ra["rule_audience<br/>share only on clean evidence, in a shareable film"]
-  tier -- "metadata_only" --> wa["withheld_audience<br/>family_only for all"]
-  tier -- "full, with captions" --> laya["Laya, no prose LLM<br/>editorial_laya_reader"]
+  floor --> tier{"resolved product tier<br/>editorial_shareability_tiers.audience_check_for"}
+  tier -- "NAS" --> ra["rule_audience<br/>share only on clean evidence, in a shareable film"]
+  tier -- "GPU or Full, with captions" --> laya["Laya, no prose LLM<br/>editorial_laya_reader"]
   laya --> ca["activity question over the caption<br/>check_audience, audience-evidence-v17;<br/>a household moment is just_us"]
   ra --> strict["strictest wins<br/>tighten, with banked holds"]
-  wa --> strict
   ca --> strict
   strict --> allowed{"allowed at this film's level?<br/>allowed(verdict, level)"}
   allowed -- yes --> keep["plays"]
@@ -121,11 +126,13 @@ flowchart TD
 across a video, and on a Live Photo's clip; the `uncovered_person` head as a second opinion; and the
 exposure chain: a five-minute capture run is held whole when at least half of it and at least three
 of its captures are flagged (`editorial_exposure_chains.py`). All of these give `family_only`.
-Nothing a later reading says lifts a detector's hold. Only you do, one picture at a time, after
+Nothing a later reading says lifts a detector's hold. The holds live in the store's audience bank
+(`audience_holds`), one per picture and per source: a detector's or a rule's is permanent, a text
+reading's lasts as long as the audience prompt it answered. Only you lift one, one picture at a time, after
 looking at it (see [Your word on a picture](#your-word-on-a-picture)). A false positive costs a shot
 in a wider film; a false negative puts the wrong picture in front of the wrong people.
 
-**Without captions** (`no_captions`), the answer is `family_only` for every
+**On NAS**, the answer is `family_only` for every
 shot, with the finding that holds it: the heads can't see the private moments only a written
 description names. So a just-us and a family film on a NAS are the same film, and what leaves them
 is what the carrier rules catch. A shareable film is the one exception, under `strict_sharing` (on by
@@ -139,10 +146,11 @@ default): a shot is `share` when its evidence is clean, which means all of these
 
 Anything else stays `family_only` and leaves the shareable film (`clean_evidence` in
 `editorial_shareability_tiers.py`). A private moment that no detector sees and no caption names can
-still pass. That is the price of a shareable film without captions, and a caption tier closes it.
+still pass. Captions and Laya add an activity check, but cannot guarantee that every private
+moment is recognised.
 
-**With captions** (`full` preparation), Laya answers the activity question from each shot's
-ingest caption. This works with either reader: a prose LLM is never asked about sharing.
+**On GPU and Full**, Laya answers the activity question from each shot's caption, acquired when
+needed and then banked. This works with either reader: a prose LLM is never asked about sharing.
 - Four findings are a household's private moments and give `just_us`: breastfeeding, bathing,
   toileting or changing, and intimate hygiene. They play in a just-us film automatically.
 - Four give `do_not_show` and never play at any level: a graphic medical procedure, an identifying
@@ -153,10 +161,10 @@ the caption states the activity: a pool or the sea is never a bath, a race bib n
 record. A detector or exposure flag holds the shot without a further model question. A missing
 caption or missing Laya answer stays `family_only`; nothing falls back to the prose reader.
 
-**Laya** is a 0.4B local text classifier reading the compact ingest caption. On Apple silicon,
-turn it on with `advanced.editorial.laya_audience` after `pip install laya-mlx` and
-`immich-memories models fetch --laya`. It runs on the rules route too, without a polish step.
-Detector and owner holds still apply.
+**Laya** is a 0.4B local text classifier reading the compact caption. GPU and Full enable it
+automatically. `immich-memories models fetch --laya` downloads the pinned checkpoint for the
+platform; see [Laya setup](../better/reader.md#the-laya-audience-pre-screen) for the runtime.
+It runs on the GPU rules route too, without a polish step. Detector and owner holds still apply.
 
 Cached Laya answers belong to the checkpoint's file contents, runtime and threshold. Changing
 any of those makes the next cut read the captions again. Existing detector, owner and private
@@ -214,10 +222,9 @@ No tier asks a model to compare two pictures.
 Which frame stays: one you ticked, then the favourite, then the one that moves (a video before a Live
 Photo), then a close family member's only shot, then (between two favourites) the one with more
 faces Immich found and then the sharper, then the earlier one. A moving frame is never a
-repeat of a still. A scene repeat is less certain than a hash repeat, so it leaves only when a
-replacement takes its slot or the film still reaches 85 % of its length without it. Two starred
-twins are the exception: the second leaves either way, and its slot goes to a refill when there is
-one. The one limit: a twin never leaves unreplaced when the film would then hold fewer than 3 shots
+repeat of a still. A scene repeat leaves even when no distinct replacement remains and the film
+is short of its requested duration. Its slot goes to an eligible refill when there is one.
+The one limit for two starred twins: a twin never leaves unreplaced when the film would then hold fewer than 3 shots
 or under 20 % of its length, the point where it gives up and makes no film. The record names each such pair under `collapsed_favourites`. Every
 replacement passes the family-viewing gate first. The `final_duplicate_review` record lists each
 removal, the distance or cosine behind it, and who kept the slot.

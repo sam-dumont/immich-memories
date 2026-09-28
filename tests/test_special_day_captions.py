@@ -11,6 +11,7 @@ import pytest
 from immich_memories.analysis.special_day import PROMPT_VERSION, ask_if_special
 from immich_memories.automation.special_day_scan import scan_year
 from immich_memories.config_models_llm import LLMConfig
+from tests.annotation_rows import annotation_store
 
 
 def test_a_prepared_day_is_answered_once_and_then_from_the_bank(tmp_path):
@@ -50,14 +51,14 @@ def test_a_prepared_day_is_answered_once_and_then_from_the_bank(tmp_path):
             llm_config=config,
             home=None,
             captions=captions,
-            judgment_cache_path=tmp_path / "judgments.db",
+            judgments=annotation_store(),
         )
         repeated = scan_year(
             assets,
             llm_config=config,
             home=None,
             captions=captions,
-            judgment_cache_path=tmp_path / "judgments.db",
+            judgments=annotation_store(),
         )
     assert found == repeated
     assert len(found) == 1
@@ -119,7 +120,7 @@ def test_a_day_the_bank_barely_touched_is_not_guessed_at(tmp_path):
             llm_config=LLMConfig(model="text-reader", provider="ollama"),
             home=None,
             captions=captions,
-            judgment_cache_path=tmp_path / "judgments.db",
+            judgments=annotation_store(),
         )
     assert post.call_count == 0
     assert [(day.day.isoformat(), day.judged) for day in found] == [("2021-04-13", False)]
@@ -152,7 +153,7 @@ def test_the_caption_ask_leaves_reasoning_to_the_transport(tmp_path):
             assets,
             config,
             captions=captions,
-            judgment_cache_path=tmp_path / "judgments.db",
+            judgments=annotation_store(),
         )
     payload = post.call_args.kwargs["json"]
     assert payload["reasoning_effort"] == "low"

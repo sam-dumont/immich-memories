@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import calendar
 import json
+import sys
 from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -11,14 +12,14 @@ from typing import TYPE_CHECKING
 import click
 
 from immich_memories.automation.catalogue import (
-    default_catalogue_path,
     entries_from,
     judged_by_this_build,
     load_catalogue,
     record_for,
     rows_outside,
+    save_catalogue,
 )
-from immich_memories.cli._helpers import console, print_success
+from immich_memories.cli._helpers import console, print_error, print_success
 
 if TYPE_CHECKING:
     from immich_memories.automation.special_day_scan import DiscoveredDay
@@ -29,6 +30,7 @@ def register_special_day_commands(main: click.Group) -> None:
     """Register the special-days commands on the main CLI group."""
     _register_discover(main)
     _register_due(main)
+    _register_transfer(main)
 
 
 def _register_discover(main: click.Group) -> None:
@@ -40,12 +42,6 @@ def _register_discover(main: click.Group) -> None:
         multiple=True,
         metavar="HOLIDAY",
         help="A holiday name or MM-DD this library keeps that the defaults miss",
-    )
-    @click.option(
-        "--out",
-        type=click.Path(dir_okay=False, path_type=Path),
-        default=default_catalogue_path(),
-        help="Where to write the catalogue",
     )
     @click.option(
         "--rescan",
@@ -62,7 +58,6 @@ def _register_discover(main: click.Group) -> None:
         since: int,
         until: int,
         also_skip: tuple[str, ...],
-        out: Path,
         rescan: bool,
         replace: bool,
     ) -> None:
@@ -89,11 +84,13 @@ def _register_discover(main: click.Group) -> None:
         can be cleaned without editing JSON by hand. It says how many rows it
         will replace before it starts, and it never touches a year outside the
         period.
+
+        The catalogue lives in the store; `days-export` writes it to a file.
         """
-        found = _scan_library(since, until, also_skip, out, rescan=rescan, replace=replace)
-        _write_catalogue(out, found, rescan=rescan or replace)
+        found = _scan_library(since, until, also_skip, rescan=rescan, replace=replace)
+        _write_catalogue(found, rescan=rescan or replace)
         days = sum(1 for entry in found if entry.get("day"))
-        print_success(f"{days} special days in {out}")
+        print_success(f"{days} special days in the catalogue")
 
 
 def _register_due(main: click.Group) -> None:
@@ -104,17 +101,12 @@ def _register_due(main: click.Group) -> None:
         default=None,
         help="The date to look around (default today)",
     )
-    @click.option(
-        "--catalogue",
-        type=click.Path(exists=True, dir_okay=False, path_type=Path),
-        default=default_catalogue_path(),
-    )
-    def days_due(on: object, catalogue: Path) -> None:
+    def days_due(on: object) -> None:
         """Show which discovered days have an anniversary about now."""
         from immich_memories.automation.special_day_scan import anniversaries_due
 
         when = on.date() if on is not None else date.today()  # type: ignore[attr-defined]
-        entries = entries_from(catalogue)
+        entries = entries_from(load_catalogue())
 
         for entry, years in anniversaries_due(entries, when):
             _print_anniversary(entry, years)
@@ -125,6 +117,50 @@ def _register_due(main: click.Group) -> None:
                 f"[yellow]{stale} of them were judged by an older scan. "
                 f"discover-days --replace --since YYYY --until YYYY re-asks a period.[/yellow]"
             )
+
+
+def _register_transfer(main: click.Group) -> None:
+    @main.command("days-export")
+    @click.option(
+        "--to",
+        "target",
+        type=click.Path(dir_okay=False, path_type=Path),
+        default=None,
+        help="Write to this file instead of standard output",
+    )
+    def days_export(target: Path | None) -> None:
+        """Write the special-days catalogue as JSON, for a backup or a hand edit."""
+        text = json.dumps(load_catalogue(), indent=1)
+        if target is None:
+            click.echo(text)
+            return
+        target.write_text(text + "\n")
+        print_success(f"Catalogue written to {target}")
+
+    @main.command("days-import")
+    @click.option(
+        "--from",
+        "source",
+        type=click.Path(exists=True, dir_okay=False, path_type=Path),
+        required=True,
+        help="A JSON catalogue, as days-export writes it",
+    )
+    def days_import(source: Path) -> None:
+        """Replace the special-days catalogue with a JSON file's.
+
+        Every record is kept as written, so an edited export comes back exactly. A file
+        whose records do not read as a catalogue changes nothing.
+        """
+        try:
+            records = json.loads(source.read_text())
+            if not isinstance(records, list) or not all(isinstance(r, dict) for r in records):
+                raise ValueError("a catalogue is a JSON list of objects")
+            entries_from(records)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            print_error(f"{source} is not a catalogue: {exc}")
+            sys.exit(1)
+        save_catalogue(records)
+        print_success(f"{len(records)} catalogue records imported from {source}")
 
 
 def _print_anniversary(entry: DiscoveredDay, years: int) -> None:
@@ -155,20 +191,20 @@ def _years_in(catalogue: list[dict]) -> set[int]:
     return {int(entry["scanned"]) for entry in catalogue if isinstance(entry.get("scanned"), int)}
 
 
-def _write_catalogue(path: Path, found: list[dict], *, rescan: bool) -> None:
+def _write_catalogue(found: list[dict], *, rescan: bool) -> None:
     """Write the catalogue, refusing to put nothing over something.
 
     `found` starts empty, and with the monthly errors that used to be
     swallowed an unreachable Immich wrote [] over twenty years of scanning
     and called it a success.
     """
-    if not found and not rescan and load_catalogue(path):
+    if not found and not rescan and load_catalogue():
         console.print(
-            f"[yellow]Found nothing; leaving {path} as it was. "
-            f"Pass --rescan to replace it.[/yellow]"
+            "[yellow]Found nothing; leaving the catalogue as it was. "
+            "Pass --rescan to replace it.[/yellow]"
         )
         return
-    path.write_text(json.dumps(found, indent=1))
+    save_catalogue(found)
 
 
 def _homebase(config: object) -> tuple[float, float] | None:
@@ -185,13 +221,11 @@ def _homebase(config: object) -> tuple[float, float] | None:
     return (trips.homebase_latitude, trips.homebase_longitude)
 
 
-def _carried_forward(
-    out: Path, since: int, until: int, *, rescan: bool, replace: bool
-) -> list[dict]:
+def _carried_forward(since: int, until: int, *, rescan: bool, replace: bool) -> list[dict]:
     """What survives this run, and a word to the operator about what does not."""
     if rescan:
         return []
-    existing = load_catalogue(out)
+    existing = load_catalogue()
     if not replace:
         return existing
     kept, dropped = rows_outside(existing, since, until)
@@ -206,7 +240,6 @@ def _scan_one_year(
     year: int,
     assets: list,
     found: list[dict],
-    out: Path,
     also_skip: tuple[str, ...],
     home: tuple[float, float] | None,
     config: Config,
@@ -214,7 +247,7 @@ def _scan_one_year(
     """Ask about one year's standout days, appending each answer to the catalogue."""
     from immich_memories.analysis.prepared_captions import prepared_captions
     from immich_memories.automation.special_day_scan import scan_year
-    from immich_memories.cache.judgment_cache import verdicts_beside
+    from immich_memories.cache.judgment_cache import judgment_bank
 
     for day in scan_year(
         assets,
@@ -224,7 +257,7 @@ def _scan_one_year(
         analysis_config=config.analysis,
         trips_config=config.trips,
         captions=prepared_captions(config, tuple(asset.id for asset in assets)),
-        judgment_cache_path=verdicts_beside(config.cache.cache_path),
+        judgments=judgment_bank(config),
         still_seconds=config.photos.duration,
         reader=config.editorial.resolve_reader(config.llm.model),
         close_family=_close_family(),
@@ -234,20 +267,21 @@ def _scan_one_year(
         if day.judged:
             console.print(f"  [green]{day.day}[/green]  {day.title or day.what}")
         else:
-            console.print(f"  [dim]{day.day}  nothing written about it; left unjudged[/dim]")
+            because = day.unjudged_because or "nobody could say"
+            console.print(f"  [dim]{day.day}  left unjudged: {because}[/dim]")
         # Written as we go: a scan this long is worth keeping in pieces, and
         # `found` already carries the earlier catalogue.
-        out.write_text(json.dumps(found, indent=1))
+        save_catalogue(found)
 
     # Only here, with every month of the year read and asked about. A year
     # interrupted or partly refused says nothing, and gets scanned again rather
     # than standing as half an answer.
     found.append({"scanned": year})
-    out.write_text(json.dumps(found, indent=1))
+    save_catalogue(found)
 
 
 def _close_family() -> dict[str, str]:
-    """The owner's close family by Immich person id, as the people file confirms it."""
+    """The owner's close family by Immich person id, as the people registry confirms it."""
     from immich_memories.analysis.special_day_sequence import close_family_roles
     from immich_memories.people.context import load_people_prompt_context
 
@@ -258,7 +292,6 @@ def _scan_library(
     since: int,
     until: int,
     also_skip: tuple[str, ...],
-    out: Path,
     *,
     rescan: bool = False,
     replace: bool = False,
@@ -274,7 +307,7 @@ def _scan_library(
 
     config = get_config()
     home = _homebase(config)
-    found = _carried_forward(out, since, until, rescan=rescan, replace=replace)
+    found = _carried_forward(since, until, rescan=rescan, replace=replace)
     already = _years_in(found)
 
     with SyncImmichClient(base_url=config.immich.url, api_key=config.immich.api_key) as client:
@@ -288,7 +321,7 @@ def _scan_library(
                 continue
             console.print(f"[dim]{year}: {len(assets)} assets[/dim]")
             try:
-                _scan_one_year(year, assets, found, out, also_skip, home, config)
+                _scan_one_year(year, assets, found, also_skip, home, config)
             except YearNotRead as exc:
                 # The months it did read are banked; the next run asks only the rest.
                 console.print(f"[yellow]{exc}; left for the next run[/yellow]")

@@ -1,12 +1,17 @@
 """The accepted pixel-facts-v1 recipe (its JPEG quality is deliberately 85)."""
 
 import io
-import sqlite3
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 import numpy as np
+import sqlalchemy as sa
 from PIL import Image, ImageOps
 
-from immich_memories.store.editorial_preparation import now
+from immich_memories.db import Store, now_db
+from immich_memories.db.tables import pixel_facts as pixel_fact_rows
+from immich_memories.db.tables import pixel_facts_thresholds
+from immich_memories.store.batches import bank_rows
 
 PRODUCER_KEY = "pixel-facts-v1"  # gitleaks:allow
 
@@ -49,27 +54,37 @@ def pixel_facts(preview: bytes) -> dict[str, object]:
     }
 
 
-def remember_pixel(connection: sqlite3.Connection, asset_id: str, preview: bytes) -> None:
+def pixel_row(asset_id: str, preview: bytes) -> dict[str, Any]:
+    """One picture's pixel facts as the store keeps them."""
     values = pixel_facts(preview)
-    connection.execute(
-        "INSERT OR REPLACE INTO pixel_facts (asset_id,producer_key,sharpness,brightness,contrast,"
-        "dark_fraction,bright_fraction,width,height,orientation,needs_rotation,computed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-        (asset_id, PRODUCER_KEY, *values.values(), now()),
-    )
-    connection.commit()
+    row = {"asset_id": asset_id, "producer_key": PRODUCER_KEY, **values, "computed_at": now_db()}
+    row["needs_rotation"] = bool(row["needs_rotation"])
+    return row
 
 
-def refresh_threshold(connection: sqlite3.Connection) -> None:
-    values = [
-        row[0]
-        for row in connection.execute(
-            "SELECT sharpness FROM pixel_facts WHERE producer_key=?", (PRODUCER_KEY,)
+def remember_pixels(store: Store, rows: Sequence[Mapping[str, Any]]) -> None:
+    """Bank a batch of measured pictures in one transaction."""
+    latest = list({row["asset_id"]: row for row in rows}.values())
+    if latest:
+        bank_rows(store, pixel_fact_rows, latest, keys=("asset_id",))
+
+
+def refresh_threshold(store: Store) -> None:
+    with store.connect() as connection:
+        sharpness: list[Any] = list(
+            connection.execute(
+                sa.select(pixel_fact_rows.c.sharpness).where(
+                    pixel_fact_rows.c.producer_key == PRODUCER_KEY
+                )
+            ).scalars()
         )
-        if isinstance(row[0], (int, float)) and np.isfinite(row[0])
-    ]
+    values = [v for v in sharpness if isinstance(v, (int, float)) and np.isfinite(v)]
     if values:
-        connection.execute(
-            "INSERT OR REPLACE INTO pixel_facts_thresholds (name,value,producer_key,n,computed_at) VALUES (?,?,?,?,?)",
-            ("sharpness_p10", float(np.percentile(values, 10)), PRODUCER_KEY, len(values), now()),
-        )
-        connection.commit()
+        row = {
+            "name": "sharpness_p10",
+            "value": float(np.percentile(values, 10)),
+            "producer_key": PRODUCER_KEY,
+            "n": len(values),
+            "computed_at": now_db(),
+        }
+        bank_rows(store, pixel_facts_thresholds, [row], keys=("name",))

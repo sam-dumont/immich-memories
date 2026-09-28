@@ -80,8 +80,9 @@ The rules: [Sharing levels](../how-it-chooses/family-audience-duplicates.md#shar
 
 What each type covers is on [Memory types](./memory-types.mdx). Three carry no person filter: Album
 (the album decides), Trip (its window is taken whole) and Surprise me (the occasion, not its guest
-list). **Surprise me** offers only days in `~/.immich-memories/special-days.json`, anniversaries
-first; with no catalogue it says which command builds one rather than offering a random day.
+list). **Surprise me** offers only days in the special-days catalogue that `discover-days` keeps in the
+store, anniversaries first; with no catalogue it says which command builds one rather than offering a
+random day.
 
 **Custom date range** has three tabs: **Year** (then **Calendar Year** or **From Birthday**),
 **Duration** (1 to 24 months or years from a start date) and **Custom Range**.
@@ -92,8 +93,11 @@ Every person picker is filled from Immich's face recognition, so only named face
 Spotlight** takes one, **Multi-Person** two or more, and every other dated type has an optional
 **Only with** picker.
 
-With two names or more, **Together** keeps pictures holding everyone (repeating `--person`) and **Any
-of these people** keeps pictures holding one of them (`--person-match or`). **Advanced people
+With two names or more, **Together** keeps the episodes where everyone was recognised somewhere
+(repeating `--person`) and **Any of these people** keeps the episodes holding one of them
+(`--person-match or`). A person recognised once in an episode counts in all of its pictures, so
+the pool shows those pictures too, marked **Same episode**: untick any that are not really about
+them. **Advanced people
 condition** takes quoted names with AND, OR and parentheses, like `--people-expression`. It opens by
 itself when a condition is set, so a filter never narrows a memory with nothing on screen saying so.
 
@@ -103,8 +107,8 @@ itself when a condition is set, so a filter never narrows a memory with nothing 
 
 **Advanced**, at the bottom of the brief, holds the **Immich connection** panel, four pool switches
 (**Include Photos**, **Include Live Photos**, **Accept Forwarded Media**, **HDR clips only**) and
-**Open the media pool**. Read [Saving config](#saving-config-from-the-memory-page) before pressing
-**Save Config**: it writes the whole configuration.
+**Open the media pool**. **Save Config** there saves the URL and key you changed to the database,
+exactly like the settings page (see [Saving config](#saving-config-from-the-memory-page)).
 
 ### The media pool
 
@@ -243,13 +247,13 @@ output of an automatic run, with credentials removed.
 
 ## People: confirming who's who
 
-`/settings/people` edits `~/.immich-memories/people.yaml`, the same file
-[`immich-memories people`](./cli/prepare.md) writes. The scan reads each named person's picture count
+`/settings/people` edits the people registry in the store, the same one
+[`immich-memories people`](./cli/prepare.md) writes and `people export` writes out as YAML. The scan reads each named person's picture count
 and month curve from Immich, never a pixel. This page is what turns "people in the picture" into
 "your family" for the editor: the family seat and big stories read it
 ([Teach it your family](../get-started/who-is-who.md)).
 
-A fresh install shows "No people file yet". **Rescan the library** writes the file and draws the
+A fresh install shows "No people yet". **Rescan the library** fills the registry and draws the
 roster. What the scan infers goes under `inferred:` and is recomputed each scan; what you confirm
 goes under `confirmed:` and a scan never touches it.
 
@@ -264,22 +268,38 @@ records, each linked to the record in Immich.
 
 ## Config: what is actually running
 
-`/settings/config` is a **read-only view** of the live configuration: `config.yaml` after environment
-overrides and after any preset filled in the keys you did not set. It answers "is the default the
-docs mention what this install is using?". **Reload from Disk** re-reads the file after a hand edit.
-Every key is in the [configuration reference](../reference/config-reference.md).
+`/settings/config` lists every setting, grouped by section, with its live value and where that value
+comes from:
+
+| Label | Source |
+|---|---|
+| Set by `IMMICH_MEMORIES_LLM__MODEL` (environment) | an environment variable, named exactly |
+| Set in config.yaml as `advanced.llm.model` | `config.yaml`, named the way the file writes it |
+| Saved here | the database, saved from this page or the CLI |
+| Default | nothing set it |
+
+The strongest source wins: environment, then `config.yaml`, then the database, then the default
+([precedence](../run/config-file.md#where-a-setting-comes-from)). A setting the environment or
+`config.yaml` sets is **greyed out**: saving under it would change nothing, so change it where the
+label says, or move it out of the file with `immich-memories config move-to-db KEY`.
+
+Everything else is editable. Each section's **Save** writes only the keys you changed, to the
+database. The page never writes `config.yaml` or the environment. Lists and mappings are edited as
+JSON. **Reload from Disk** re-reads the file after a hand edit. Every key is in the
+[configuration reference](../reference/config-reference.md).
 
 Any key named `api_key`, `api_keys`, `caption_api_key`, `client_secret`, `password`, `secret`,
-`token`, `trigger_token` or `urls` shows as `***`, masked on the server, so a screenshot of this page
-leaks nothing.
+`token`, `trigger_token` or `urls` is a secret. It shows as `***`, masked on the server, so a
+screenshot of this page leaks nothing; an empty field keeps the stored value. Secrets are
+encrypted in the database with `IMMICH_MEMORIES_SECRET_KEY`. Without that variable the page greys
+secrets out and says so: set the key, or keep those secrets in the environment or `config.yaml`.
 
 ### Saving config from the Memory page
 
-**Save Config**, in the connection panel under **Advanced** on the Memory page, writes the Immich URL
-and key, but it saves the **whole configuration**, so every value becomes explicitly set. A preset
-only fills what you have not chosen, so after a save it owns nothing: delete keys from `config.yaml`
-by hand to hand them back. Two exceptions: `server.host` is left out unless you set it, and
-credentials from environment variables stay in the environment.
+**Save Config**, in the connection panel under **Advanced** on the Memory page, saves the Immich
+URL and key to the database, only the ones you changed. A URL or key that the environment or
+`config.yaml` sets is refused with the name of what sets it. The key is a secret, so saving it needs
+`IMMICH_MEMORIES_SECRET_KEY`; **Test Connection** works without it.
 
 ## Cache: what is on disk
 
@@ -292,7 +312,7 @@ credentials from environment variables stay in the environment.
 | **Thumbnail** | Immich previews, read back for pixel facts, heads, contact sheets and the grid | re-fetched on demand |
 | **Preview** | the `.mp4` previews the review page plays | regenerated on the next preview |
 
-The expensive thing on disk is not behind those buttons. The editor's bank, `annotations.sqlite`
-under the cache directory, holds every fact it read about your pictures. **Clear all caches** leaves
-it alone. Delete it and the next cut reads your library from scratch. More on
+The expensive thing on disk is not behind those buttons. The editor's bank lives in the store
+(`store.db`), not under the cache directory, and holds every fact it read about your pictures.
+**Clear all caches** leaves it alone. Delete it and the next cut reads your library from scratch. More on
 [Health, logs and caches](../run/maintenance/health-logs-cache.md).

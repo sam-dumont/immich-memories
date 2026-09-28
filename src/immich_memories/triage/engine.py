@@ -15,6 +15,10 @@ from immich_memories.triage.preprocess import preprocess_image_bytes
 
 logger = logging.getLogger(__name__)
 
+# Pictures per write to the fact store: one transaction per this many, and the most a crash
+# can cost.
+BANK_PICTURES = 256
+
 
 @dataclass(frozen=True)
 class TriageRun:
@@ -55,16 +59,24 @@ class TriageEngine:
         started = time.monotonic()
         pending = self._unbanked(asset_ids)
         decided = missing = 0
-        for start in range(0, len(pending), batch_size):
-            chunk: list[tuple[str, np.ndarray]] = []
-            for asset_id in pending[start : start + batch_size]:
-                payload = images(asset_id)
-                if payload is None:
-                    missing += 1
-                    continue
-                chunk.append((asset_id, preprocess_image_bytes(payload)))
-            if chunk:
-                decided += self._decide_batch(chunk)
+        facts: dict[str, list[HeadFact]] = {}
+        try:
+            for start in range(0, len(pending), batch_size):
+                chunk: list[tuple[str, np.ndarray]] = []
+                for asset_id in pending[start : start + batch_size]:
+                    payload = images(asset_id)
+                    if payload is None:
+                        missing += 1
+                        continue
+                    chunk.append((asset_id, preprocess_image_bytes(payload)))
+                if chunk:
+                    facts |= self._decide_batch(chunk)
+                    decided += len(chunk)
+                if len(facts) >= BANK_PICTURES:
+                    self._bank(facts)
+        finally:
+            # What was decided before a stop is kept; at most one bank batch is ever at risk.
+            self._bank(facts)
         run = TriageRun(
             requested=len(asset_ids),
             decided=decided,
@@ -81,10 +93,15 @@ class TriageEngine:
         )
         return run
 
-    def _decide_batch(self, chunk: list[tuple[str, np.ndarray]]) -> int:
+    def _decide_batch(self, chunk: list[tuple[str, np.ndarray]]) -> dict[str, list[HeadFact]]:
         packs = self._encoder.embed(np.stack([pixels for _asset_id, pixels in chunk]))
         facts_by_head = self._bundle.decide(packs)
-        for row, (asset_id, _pixels) in enumerate(chunk):
-            facts: list[HeadFact] = [facts_by_head[head.name][row] for head in self._bundle.heads]
-            self._store.remember_facts(asset_id, facts, encoder_key=self._encoder.key)
-        return len(chunk)
+        return {
+            asset_id: [facts_by_head[head.name][row] for head in self._bundle.heads]
+            for row, (asset_id, _pixels) in enumerate(chunk)
+        }
+
+    def _bank(self, facts: dict[str, list[HeadFact]]) -> None:
+        if facts:
+            self._store.remember_facts(facts.copy(), encoder_key=self._encoder.key)
+            facts.clear()

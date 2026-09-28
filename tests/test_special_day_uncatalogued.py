@@ -15,13 +15,11 @@ Every day here is invented; the real catalogue names real people and places.
 
 from __future__ import annotations
 
-import json
 from datetime import date
-from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
+from immich_memories.automation.catalogue import load_catalogue, save_catalogue
 from immich_memories.cli.generate_resolution import name_from_catalogue, resolve_special_day
 from immich_memories.memory_types.factory import create_preset
 from immich_memories.memory_types.registry import MemoryType
@@ -39,13 +37,9 @@ _ROW = {
 
 
 @pytest.fixture
-def catalogue(tmp_path: Path):
-    """A catalogue file holding one day, in place of the owner's own."""
-    path = tmp_path / "special-days.json"
-    path.write_text(json.dumps([_ROW]))
-    # WHY: the catalogue lives in the real home directory, which a unit test must not read.
-    with patch("immich_memories.automation.catalogue.default_catalogue_path", lambda: path):
-        yield path
+def catalogue():
+    """A catalogue holding one day, in this test's own store."""
+    save_catalogue([_ROW])
 
 
 def test_a_day_the_catalogue_never_found_still_resolves(catalogue) -> None:
@@ -56,7 +50,7 @@ def test_a_day_the_catalogue_never_found_still_resolves(catalogue) -> None:
     assert params["day"] == _DAY
     assert params["window"] is None, "with no row there is no occasion inside the day"
     assert not params["title"]
-    assert json.loads(catalogue.read_text()) == [_ROW], "filming a day catalogues nothing"
+    assert load_catalogue() == [_ROW], "filming a day catalogues nothing"
 
 
 def test_an_uncatalogued_day_is_named_by_its_date_when_nothing_else_names_it(catalogue) -> None:
@@ -92,17 +86,14 @@ def test_an_uncatalogued_day_leaves_the_naming_to_the_model(catalogue) -> None:
     assert memory_title_facts(params).occasion_name is None, "no row, no occasion to claim"
 
 
-def test_a_catalogued_day_with_nothing_written_on_it_is_not_refused(tmp_path) -> None:
+def test_a_catalogued_day_with_nothing_written_on_it_is_not_refused() -> None:
     """A row the scan could not name is a gap in the file, not a reason to stop.
 
     It used to error with "nothing truthful to call the memory", which is the
     right instinct and the wrong remedy: the day is still the day.
     """
-    path = tmp_path / "special-days.json"
-    path.write_text(json.dumps([{"day": "2016-06-12", "title": "  ", "what": "", "photos": 210}]))
-    # WHY: the catalogue lives in the real home directory, which a unit test must not read.
-    with patch("immich_memories.automation.catalogue.default_catalogue_path", lambda: path):
-        params = resolve_special_day(_CATALOGUED, "special_day")
+    save_catalogue([{"day": "2016-06-12", "title": "  ", "what": "", "photos": 210}])
+    params = resolve_special_day(_CATALOGUED, "special_day")
 
     assert not params["title"]
     assert create_preset(MemoryType.SPECIAL_DAY, **params).name == "12 June 2016"
@@ -120,13 +111,9 @@ _UNNAMED_ROW = {
 
 
 @pytest.fixture
-def unnamed_catalogue(tmp_path: Path):
+def unnamed_catalogue():
     """A row the scan described but never named."""
-    path = tmp_path / "special-days.json"
-    path.write_text(json.dumps([_UNNAMED_ROW]))
-    # WHY: the catalogue lives in the real home directory, which a unit test must not read.
-    with patch("immich_memories.automation.catalogue.default_catalogue_path", lambda: path):
-        yield path
+    save_catalogue([_UNNAMED_ROW])
 
 
 def test_a_row_the_scan_described_but_never_named_hands_its_words_over_as_a_fact(

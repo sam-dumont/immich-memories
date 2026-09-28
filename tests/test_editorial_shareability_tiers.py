@@ -10,6 +10,7 @@ from immich_memories.analysis.editorial_shareability_tiers import (
     rule_audience,
     withheld_audience,
 )
+from tests.annotation_rows import add_rows, annotation_store
 
 
 class Annotation:
@@ -321,26 +322,38 @@ def test_a_clip_nothing_has_read_reads_as_it_always_did():
     assert share.check_audience(ClearingJudge(), evidence, "unit-1")["verdict"] == "share"
 
 
-def test_a_clips_detector_rows_are_read_at_the_version_this_run_reads(tmp_path):
-    import sqlite3
-
-    store = tmp_path / "annotations.sqlite"
-    with sqlite3.connect(store) as connection:
-        connection.execute(
-            "CREATE TABLE head_facts (asset_id TEXT, head TEXT, version TEXT, label TEXT, "
-            "confidence REAL, encoder_key TEXT, decided_at TEXT)"
-        )
-        connection.executemany(
-            "INSERT INTO head_facts VALUES (?, ?, ?, ?, 0.9, 'k', 't')",
-            [
-                ("clip", "nsfw_marqo", "det-v3", "yes"),
-                # A row from the one-preview read no longer answers for the clip.
-                ("other", "nsfw_marqo", "det-v2", "yes"),
-                # Not an audience head: the gate never asks it.
-                ("clip", "aesthetic", "det-v3", "high"),
-            ],
-        )
-    connection.close()
+def test_a_clips_detector_rows_are_read_at_the_version_this_run_reads():
+    store = annotation_store()
+    add_rows(
+        store,
+        "head_facts",
+        {
+            "asset_id": "clip",
+            "head": "nsfw_marqo",
+            "version": "det-v3",
+            "label": "yes",
+            "confidence": 0.9,
+            "encoder_key": "k",
+        },
+        {
+            # A row from the one-preview read no longer answers for the clip.
+            "asset_id": "other",
+            "head": "nsfw_marqo",
+            "version": "det-v2",
+            "label": "yes",
+            "confidence": 0.9,
+            "encoder_key": "k",
+        },
+        {
+            # Not an audience head: the gate never asks it.
+            "asset_id": "clip",
+            "head": "aesthetic",
+            "version": "det-v3",
+            "label": "high",
+            "confidence": 0.9,
+            "encoder_key": "k",
+        },
+    )
 
     heads = share.load_detector_heads(
         store, ["clip", "other", "unread"], {"nsfw_marqo": "det-v3", "aesthetic": "det-v3"}

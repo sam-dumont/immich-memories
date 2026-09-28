@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 19:10+0200\n"
+"POT-Creation-Date: 2026-09-27 22:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -203,7 +203,7 @@ msgstr "Автоматически (как в клипах)"
 msgid "Auto duration"
 msgstr "Автоматическая длительность"
 
-#: i18n.py:101
+#: i18n.py:102
 msgid "Automatic (browser)"
 msgstr "Автоматически (браузер)"
 
@@ -416,7 +416,7 @@ msgstr ""
 msgid "Connected as: {name}"
 msgstr "Подключено как: {name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:454 pages/step2_loading.py:307
 msgid "Connecting to Immich..."
 msgstr "Подключение к Immich..."
 
@@ -505,7 +505,7 @@ msgstr "Разница"
 msgid "Discovery failed: {error}"
 msgstr "Поиск не удался: {error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:66 pages/step2_loading.py:366
 msgid "Done"
 msgstr "Готово"
 
@@ -548,7 +548,7 @@ msgstr "Ошибки ({error_count})"
 msgid "Export"
 msgstr "Экспорт"
 
-#: pages/step2_loading.py:336
+#: pages/step2_loading.py:324
 #, python-brace-format
 msgid "Failed to load videos: {value}"
 msgstr "Не удалось загрузить видео: {value}"
@@ -577,10 +577,6 @@ msgstr ""
 "анализа речи, меньше фото, избранное анализируется первым. Задаётся через `preset: fast` в "
 "config.yaml или IMMICH_MEMORIES_PRESET=fast; параметры ниже имеют приоритет для этого "
 "запуска."
-
-#: pages/step2_loading.py:252
-msgid "Fetching photos..."
-msgstr "Получение фотографий..."
 
 #: pages/_step3_music_preview.py:232
 msgid "Film language"
@@ -711,7 +707,7 @@ msgstr "Передача в Immich: {delivery_label}"
 msgid "Immich delivery: {value}"
 msgstr "Передача в Immich: {value}"
 
-#: pages/clip_grid.py:170 pages/clip_grid.py:224
+#: pages/clip_grid.py:177 pages/clip_grid.py:232
 msgid "Include"
 msgstr "Включить"
 
@@ -727,7 +723,7 @@ msgstr "Включить фотографии"
 msgid "Include in compilation"
 msgstr "Включить в подборку"
 
-#: i18n.py:109
+#: i18n.py:110
 msgid "Interface language"
 msgstr "Язык интерфейса"
 
@@ -789,7 +785,7 @@ msgstr "Загрузка альбомов..."
 msgid "Loading thumbnails"
 msgstr "Загрузка миниатюр"
 
-#: pages/step2_loading.py:313
+#: pages/step2_loading.py:301
 msgid "Loading videos..."
 msgstr "Загрузка видео..."
 
@@ -930,10 +926,10 @@ msgstr "Сейчас нет подходящих предложений."
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
 msgstr ""
-"Файла людей пока нет. Просканируйте библиотеку снова: будут прочитаны количества и месячные "
+"Людей пока нет. Просканируйте библиотеку снова: будут прочитаны количества и месячные "
 "кривые каждого человека с именем, без анализа изображений."
 
 #: pages/runs.py:105
@@ -1072,7 +1068,7 @@ msgstr "Фильтр людей"
 msgid "Person Spotlight"
 msgstr "Один человек в центре внимания"
 
-#: pages/clip_grid.py:193
+#: pages/clip_grid.py:200
 msgid "Photo"
 msgstr "Фото"
 
@@ -1084,7 +1080,7 @@ msgstr "Доступные фотографии"
 msgid "Photo duration (seconds)"
 msgstr "Длительность фото (секунды)"
 
-#: pages/step2_loading.py:461
+#: pages/step2_loading.py:449
 #, python-brace-format
 msgid "Photo thumbnails: {value}/{count}"
 msgstr "Миниатюры фото: {value}/{count}"
@@ -1265,6 +1261,10 @@ msgstr "Выполняется на сервере: {phase}. Продолжит�
 #: app.py:73 app.py:219
 msgid "Runs"
 msgstr "Запуски"
+
+#: pages/clip_grid.py:108 pages/clip_grid.py:320 pages/clip_grid.py:356
+msgid "Same episode"
+msgstr "Тот же эпизод"
 
 #: pages/step1_config.py:140
 msgid "Save Config"
@@ -1516,7 +1516,7 @@ msgstr "Монтаж завершился, пока страница была з
 msgid "Thumbnail cache"
 msgstr "Кэш миниатюр"
 
-#: pages/step2_loading.py:415
+#: pages/step2_loading.py:403
 #, python-brace-format
 msgid "Thumbnails: {value}/{count}"
 msgstr "Миниатюры: {value}/{count}"
@@ -1539,11 +1539,11 @@ msgstr "Вместе"
 
 #: pages/step1_people.py:181
 msgid ""
-"Together keeps only the moments holding everyone named. Any of these people keeps a moment "
-"holding any one of them."
+"Together keeps the times everyone named was there, even if never in the same photo. Any of "
+"these people keeps the times any one of them was there."
 msgstr ""
-"«Вместе» оставляет только моменты со всеми указанными людьми. «Любой из этих людей» оставляет"
-" моменты хотя бы с одним из них."
+"«Вместе» оставляет время, когда рядом были все названные, даже если они ни разу не попали в "
+"один кадр. «Любой из них» оставляет время, когда был хотя бы один из них."
 
 #: pages/login.py:64
 msgid "Too many failed attempts. Try again later."
@@ -1829,3 +1829,48 @@ msgstr "{title} (ключей: {n_keys})"
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}: {duration_seconds:.1f} с"
 
+
+msgid "Default"
+msgstr "По умолчанию"
+
+msgid "Nothing to save"
+msgstr "Нечего сохранять"
+
+msgid "Save"
+msgstr "Сохранить"
+
+msgid "Saved here"
+msgstr "Сохранено здесь"
+
+msgid "Saved to the database"
+msgstr "Сохранено в базе данных"
+
+msgid "Set by {name} (environment)"
+msgstr "Задано через {name} (окружение)"
+
+msgid "Set in config.yaml as {key}"
+msgstr "Задано в config.yaml как {key}"
+
+msgid "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
+msgstr "Настройки берутся из четырёх мест, от сильнейшего: переменные окружения, config.yaml, то, что вы сохраняете здесь (в базе данных), затем значения по умолчанию. Серая настройка задана окружением или config.yaml; меняйте её там."
+
+msgid "{count} set outside this page"
+msgstr "{count} задано вне этой страницы"
+
+msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
+msgstr "{name} не задан, поэтому API-ключи и пароли нельзя сохранить здесь. Задайте его или укажите эти секреты в окружении или config.yaml."
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  ({n} ключ)"
+msgstr[1] "{title}  ({n} ключа)"
+msgstr[2] "{title}  ({n} ключей)"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} задан вне этой страницы"
+msgstr[1] "{n} задано вне этой страницы"
+msgstr[2] "{n} задано вне этой страницы"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Сохранено здесь, но {name} не может это расшифровать: используется значение по умолчанию"

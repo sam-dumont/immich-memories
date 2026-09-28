@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from immich_memories.analysis.editorial_picture_admission import GateRefusal
 from immich_memories.analysis.editorial_thin_catalogue import BankedCatalogue, ThinStory
-from immich_memories.analysis.editorial_thin_gates import GateRefusal
 from immich_memories.analysis.editorial_thin_refill import openable_slots, plan_slots, seat
 
 
@@ -19,8 +19,8 @@ def shot(asset, story, *, day="01", seconds=4.0, moment=None, kind="still"):
 
 
 def test_the_picker_reads_fresh_captions_only_for_its_bounded_candidate_page():
+    from immich_memories.analysis.editorial_picture_admission import PictureAdmission
     from immich_memories.analysis.editorial_story_standing import StandingGate
-    from immich_memories.analysis.editorial_thin_gates import ThinGates
     from immich_memories.analysis.editorial_thin_refill import PAGE_ROWS, ThinRefill, ThinSlot
     from tests.test_editorial_thin_polish_end_to_end import Audience, PolishJudge
 
@@ -50,7 +50,9 @@ def test_the_picker_reads_fresh_captions_only_for_its_bounded_candidate_page():
     )
     refill = ThinRefill(
         judge=Reader(),
-        gates=ThinGates(standing, Audience(), lambda _asset: None, prepare_candidates=inspect),
+        gates=PictureAdmission(
+            standing, Audience(), lambda _asset: None, prepare_candidates=inspect
+        ),
         contract="A family film",
         line_of=lines.get,
         record=lambda *_: None,

@@ -8,7 +8,6 @@ nothing packages is named rather than silently skipped.
 
 from __future__ import annotations
 
-import sqlite3
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import AbstractContextManager
 from pathlib import Path
@@ -26,6 +25,7 @@ from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VER
 from immich_memories.analysis.remote_facts import offloaded_versions
 from immich_memories.api.models import Asset
 from immich_memories.config_models_inference import InferenceConfig
+from immich_memories.db import Store
 from immich_memories.store.editorial_preparation import heads_missing_for
 
 
@@ -34,6 +34,9 @@ class ModelFactStage(Protocol):
 
     @property
     def failures(self) -> dict[str, str]: ...
+
+    @property
+    def store(self) -> Store: ...
 
     @property
     def inference_config(self) -> InferenceConfig: ...
@@ -94,7 +97,6 @@ def deferred_exposure(
 
 def acquire_clip_companions(
     stage: ModelFactStage,
-    connection: sqlite3.Connection,
     frames: DetectorFrames,
     cache_path: Path,
     fetch_preview: Any,
@@ -112,10 +114,7 @@ def acquire_clip_companions(
     version = head_versions.get(MARQO_HEAD, "")
     if not frames.companion_ids or DETECTOR_VERSIONS.get(MARQO_HEAD) != version:
         return
-    owed = heads_missing_for(connection, sorted(frames.companion_ids), MARQO_HEAD, version)
-    # The worker is another process writing this same file: staging the question must not
-    # leave a transaction open across it, or it meets a locked database.
-    connection.commit()
+    owed = heads_missing_for(stage.store, sorted(frames.companion_ids), MARQO_HEAD, version)
     if not owed:
         return
     refused = set(stage.unservable)

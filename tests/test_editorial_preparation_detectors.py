@@ -1,8 +1,8 @@
 """Detector portability, refusal reporting and cancellation, on synthetic probabilities."""
 
+import json
 import logging
 import signal
-import sqlite3
 import sys
 from types import ModuleType, SimpleNamespace
 
@@ -12,7 +12,7 @@ from PIL import Image
 
 from immich_memories.analysis import editorial_preparation_detectors as detectors
 from immich_memories.operations.cancellation import PipelineCancelled
-from immich_memories.store.editorial_preparation import initialize
+from tests.annotation_rows import annotation_store
 
 
 class FakeDocling:
@@ -31,11 +31,9 @@ class FakeDocling:
 def _job(tmp_path, pending):
     path = tmp_path / "preview.jpg"
     Image.new("RGB", (80, 60), "white").save(path)
-    database = tmp_path / "store.sqlite"
-    with sqlite3.connect(database) as connection:
-        initialize(connection)
-    return database, {
-        "store_path": str(database),
+    facts_path = tmp_path / "facts.jsonl"
+    return facts_path, {
+        "facts_path": str(facts_path),
         "pending": pending,
         "previews": {"a": str(path)},
         "batch_size": 16,
@@ -45,20 +43,26 @@ def _job(tmp_path, pending):
     }
 
 
+def _banked_facts(facts_path):
+    if not facts_path.is_file():
+        return []
+    return [json.loads(line) for line in facts_path.read_text().splitlines()]
+
+
 def test_one_missing_detector_preserves_other_completed_facts(monkeypatch, tmp_path):
-    database, job = _job(tmp_path, {"nsfw_marqo": ["a"], "doc_docling": ["a"]})
+    facts_path, job = _job(tmp_path, {"nsfw_marqo": ["a"], "doc_docling": ["a"]})
     # WHY: the real Docling seat downloads a pinned snapshot from Hugging Face.
     monkeypatch.setattr(detectors, "Docling", FakeDocling)
 
     errors = detectors._worker(job)
 
     assert "doc_docling" not in errors
-    with sqlite3.connect(database) as connection:
-        assert connection.execute(
-            "SELECT head,version,label,confidence,encoder_key FROM head_facts"
-        ).fetchall() == [
-            ("doc_docling", "det-v2", "photograph", 0.8, detectors.DOCLING_REPO),
-        ]
+    assert [
+        (row["head"], row["version"], row["label"], row["confidence"], row["encoder_key"])
+        for row in _banked_facts(facts_path)
+    ] == [
+        ("doc_docling", "det-v2", "photograph", 0.8, detectors.DOCLING_REPO),
+    ]
 
 
 def test_the_torch_free_transform_produces_the_tensor_the_export_expects():
@@ -98,7 +102,7 @@ def test_the_document_detector_without_its_snapshot_names_the_repository(monkeyp
 
 
 def test_a_producer_without_its_model_names_the_model_and_the_fix(tmp_path):
-    _database, job = _job(tmp_path, {"nsfw_marqo": ["a"]})
+    _facts_path, job = _job(tmp_path, {"nsfw_marqo": ["a"]})
 
     reason = detectors._worker(job)["nsfw_marqo"]
 
@@ -108,7 +112,7 @@ def test_a_producer_without_its_model_names_the_model_and_the_fix(tmp_path):
 
 
 def test_a_graph_that_is_not_the_pinned_export_is_refused_by_digest(tmp_path):
-    _database, job = _job(tmp_path, {"nsfw_marqo": ["a"]})
+    _facts_path, job = _job(tmp_path, {"nsfw_marqo": ["a"]})
     present = tmp_path / "nsfw-marqo-384.onnx"
     present.write_bytes(b"not the pinned graph")
     job["marqo_onnx"] = str(present)
@@ -121,7 +125,7 @@ def test_a_graph_that_is_not_the_pinned_export_is_refused_by_digest(tmp_path):
 
 def test_a_refusal_is_published_before_the_other_producer_runs(monkeypatch, tmp_path):
     """The worker loads every producer first, so its refusal is readable at once."""
-    database, job = _job(tmp_path, {"nsfw_marqo": ["a"], "doc_docling": ["a"]})
+    facts_path, job = _job(tmp_path, {"nsfw_marqo": ["a"], "doc_docling": ["a"]})
     progress_path = tmp_path / "progress.json"
     job["progress_path"] = str(progress_path)
     published = []
@@ -138,8 +142,7 @@ def test_a_refusal_is_published_before_the_other_producer_runs(monkeypatch, tmp_
 
     assert published, "the surviving producer never ran"
     assert detectors.MARQO_ONNX_ID in published[0]
-    with sqlite3.connect(database) as connection:
-        assert connection.execute("SELECT count(*) FROM head_facts").fetchone() == (1,)
+    assert len(_banked_facts(facts_path)) == 1
 
 
 def test_the_parent_logs_each_refusal_once_while_the_worker_is_still_running(tmp_path, caplog):
@@ -147,7 +150,7 @@ def test_the_parent_logs_each_refusal_once_while_the_worker_is_still_running(tmp
     progress = detectors._WorkerProgress(str(progress_path), total=2)
     progress.refuse("nsfw_marqo", "nsfw_marqo has no model: run models fetch")
     progress.record(1)
-    watch = detectors._WorkerWatch(progress_path, lambda *_: None)
+    watch = detectors._WorkerWatch(progress_path, lambda *_: None, lambda: None)
 
     with caplog.at_level(logging.WARNING):
         watch.poll()
@@ -183,13 +186,17 @@ def test_cancellation_terminates_detector_process_group(monkeypatch, tmp_path):
         if len(checks) == 2:
             raise PipelineCancelled()
 
+    # The store is opened before the subprocess boundary is replaced: opening it
+    # checks the mount table through subprocess.run, which the same module-level
+    # patch would otherwise catch too.
+    store = annotation_store()
     # WHY: both replace the detector subprocess boundary itself.
     monkeypatch.setattr(detectors.subprocess, "Popen", popen)
     monkeypatch.setattr(detectors.os, "killpg", lambda *args: killed.append(args))
     with pytest.raises(PipelineCancelled):
         detectors.prepare_detectors(
             pending={"nsfw_marqo": ["a"]},
-            store_path=tmp_path / "store",
+            store=store,
             preview_paths={"a": tmp_path / "preview"},
             python="/configured/python",
             cache_dir="/configured/cache",
@@ -347,7 +354,7 @@ def test_the_in_process_worker_takes_the_card_where_there_is_one(monkeypatch, tm
     opened: list[list[str]] = []
     _fake_onnxruntime(monkeypatch, ("CUDAExecutionProvider", "CPUExecutionProvider"), opened)
     _fake_snapshot(monkeypatch, tmp_path)
-    _database, job = _job(tmp_path, {"doc_docling": ["a"]})
+    _facts_path, job = _job(tmp_path, {"doc_docling": ["a"]})
 
     detectors._open_detector("doc_docling", job)
 
@@ -383,7 +390,7 @@ def _frames(tmp_path, widths):
 
 def test_a_clip_is_held_when_any_one_of_its_eight_frames_is(monkeypatch, tmp_path):
     """A hold anywhere in a clip holds the clip: the head keeps the strongest frame."""
-    database, job = _job(tmp_path, {detectors.MARQO_HEAD: ["a"]})
+    facts_path, job = _job(tmp_path, {detectors.MARQO_HEAD: ["a"]})
     widths = [80 + step for step in range(1, 9)]
     job["frames"] = {"a": _frames(tmp_path, widths)}
     scores = dict.fromkeys([*widths, 80], 0.02)
@@ -393,29 +400,27 @@ def test_a_clip_is_held_when_any_one_of_its_eight_frames_is(monkeypatch, tmp_pat
 
     assert detectors._worker(job) == {}
 
-    with sqlite3.connect(database) as connection:
-        assert connection.execute("SELECT label,confidence FROM head_facts").fetchall() == [
-            ("yes", 0.93)
-        ]
+    assert [(row["label"], row["confidence"]) for row in _banked_facts(facts_path)] == [
+        ("yes", 0.93)
+    ]
 
 
 def test_a_still_keeps_its_one_preview_read(monkeypatch, tmp_path):
-    database, job = _job(tmp_path, {detectors.MARQO_HEAD: ["a"]})
+    facts_path, job = _job(tmp_path, {detectors.MARQO_HEAD: ["a"]})
     # WHY: the real seat loads a 384px ONNX export from a digest-pinned file on disk.
     monkeypatch.setattr(detectors, "Marqo", lambda **_: FakeMarqo({80: 0.04}))
 
     assert detectors._worker(job) == {}
 
-    with sqlite3.connect(database) as connection:
-        assert connection.execute("SELECT label,confidence FROM head_facts").fetchall() == [
-            ("no", 0.04)
-        ]
+    assert [(row["label"], row["confidence"]) for row in _banked_facts(facts_path)] == [
+        ("no", 0.04)
+    ]
 
 
 def test_a_clip_the_preview_alone_holds_stays_held(monkeypatch, tmp_path):
     """Immich renders the preview rather than serving a keyframe, so the sampler never
     sees it. A version that reads more frames must never hold fewer clips."""
-    database, job = _job(tmp_path, {detectors.MARQO_HEAD: ["a"]})
+    facts_path, job = _job(tmp_path, {detectors.MARQO_HEAD: ["a"]})
     widths = [80 + step for step in range(1, 9)]
     job["frames"] = {"a": _frames(tmp_path, widths)}
     scores = dict.fromkeys(widths, 0.02) | {80: 0.61}
@@ -424,7 +429,6 @@ def test_a_clip_the_preview_alone_holds_stays_held(monkeypatch, tmp_path):
 
     assert detectors._worker(job) == {}
 
-    with sqlite3.connect(database) as connection:
-        assert connection.execute("SELECT label,confidence FROM head_facts").fetchall() == [
-            ("yes", 0.61)
-        ]
+    assert [(row["label"], row["confidence"]) for row in _banked_facts(facts_path)] == [
+        ("yes", 0.61)
+    ]

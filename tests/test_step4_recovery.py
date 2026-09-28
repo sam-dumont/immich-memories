@@ -17,7 +17,7 @@ def _state(tmp_path: Path) -> AppState:
 
 
 def _tracker(state: AppState, run_id: str) -> RunTracker:
-    return RunTracker(run_id, db_path=state.config.cache.database_path)
+    return RunTracker(run_id)
 
 
 def _complete(tracker: RunTracker, output_path: Path) -> None:
@@ -74,7 +74,7 @@ def test_running_run_is_reported_as_in_progress(tmp_path: Path) -> None:
 def test_run_that_has_not_written_its_row_yet_still_counts_as_running(tmp_path: Path) -> None:
     state = _state(tmp_path)
     state.active_run_id = "run-starting"
-    RunDatabase(state.config.cache.database_path)  # schema only, no row
+    RunDatabase()  # schema only, no row
 
     recovered = recover_active_run(state)
 
@@ -106,7 +106,7 @@ def test_running_row_older_than_the_stale_window_is_reported_stale_and_forgotten
 
     state = _state(tmp_path)
     state.active_run_id = "run-orphan"
-    RunDatabase(state.config.cache.database_path).save_run(
+    RunDatabase().save_run(
         RunMetadata(
             run_id="run-orphan",
             created_at=datetime.now(tz=UTC) - timedelta(hours=5),

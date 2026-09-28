@@ -7,9 +7,10 @@ import re
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
-from immich_memories.analysis.editorial_thin_gates import ThinGates
+from immich_memories.analysis.editorial_picture_admission import PictureAdmission
 from immich_memories.analysis.editorial_thin_layer import ThinPolish, catalogued_period
 from immich_memories.config_models_llm import LLMConfig
+from immich_memories.db import open_store
 from immich_memories.timeperiod import DateRange
 
 
@@ -86,7 +87,7 @@ def run(polish, carriers, judge, lines, *, gates=None, record=lambda _n, _p: Non
     return polish.polish(
         carriers,
         judge=judge,
-        gates=gates or ThinGates(Standing(), Audience(), thumbnail_hash=lambda _a: None),
+        gates=gates or PictureAdmission(Standing(), Audience(), thumbnail_hash=lambda _a: None),
         catalogue=polish.catalogue_of(STORY, MOMENTS, drafted=carriers),
         contract="contract",
         line_of=lines.get,
@@ -96,7 +97,7 @@ def run(polish, carriers, judge, lines, *, gates=None, record=lambda _n, _p: Non
 
 def test_a_period_the_library_has_no_account_of_is_not_polished(tmp_path):
     judge = FitJudge()
-    polish = ThinPolish(bank_dir=tmp_path, read_period=period(""))
+    polish = ThinPolish(store=open_store(), bank_scope="case", read_period=period(""))
     cut = [carrier("a1", "S001"), carrier("a2", "S002")]
     assert run(polish, cut, judge, {"a1": "filler", "a2": "the afternoon"}) == cut
     assert judge.calls == []
@@ -104,7 +105,9 @@ def test_a_period_the_library_has_no_account_of_is_not_polished(tmp_path):
 
 def test_a_shot_the_vote_named_stays_when_no_replacement_is_available(tmp_path):
     judge = FitJudge()
-    polish = ThinPolish(bank_dir=tmp_path, read_period=period("the month a family moved"))
+    polish = ThinPolish(
+        store=open_store(), bank_scope="case", read_period=period("the month a family moved")
+    )
     written: dict[str, dict] = {}
     cut = [carrier("a1", "S001"), carrier("a2", "S002"), carrier("a3", "S002")]
     kept = run(
@@ -120,7 +123,9 @@ def test_a_shot_the_vote_named_stays_when_no_replacement_is_available(tmp_path):
 
 def test_a_starred_shot_the_vote_named_keeps_its_place(tmp_path):
     judge = FitJudge()
-    polish = ThinPolish(bank_dir=tmp_path, read_period=period("the month a family moved"))
+    polish = ThinPolish(
+        store=open_store(), bank_scope="case", read_period=period("the month a family moved")
+    )
     cut = [carrier("a1", "S001", favourite=True), carrier("a2", "S002")]
     kept = run(polish, cut, judge, {"a1": "filler", "a2": "the afternoon"})
     assert [c["asset_id"] for c in kept] == ["a1", "a2"]
@@ -128,7 +133,9 @@ def test_a_starred_shot_the_vote_named_keeps_its_place(tmp_path):
 
 def test_a_shot_the_gates_refuse_never_reaches_the_vote(tmp_path):
     judge = FitJudge()
-    polish = ThinPolish(bank_dir=tmp_path, read_period=period("the month a family moved"))
+    polish = ThinPolish(
+        store=open_store(), bank_scope="case", read_period=period("the month a family moved")
+    )
     written: dict[str, dict] = {}
     cut = [carrier("a1", "S001"), carrier("a2", "S002")]
     kept = run(
@@ -136,7 +143,7 @@ def test_a_shot_the_gates_refuse_never_reaches_the_vote(tmp_path):
         cut,
         judge,
         {"a1": "the morning", "a2": "the afternoon"},
-        gates=ThinGates(Standing({"a1": 0}), Audience(), thumbnail_hash=lambda _a: None),
+        gates=PictureAdmission(Standing({"a1": 0}), Audience(), thumbnail_hash=lambda _a: None),
         record=lambda name, payload: written.__setitem__(name, dict(payload)),
     )
     assert [c["asset_id"] for c in kept] == ["a2"]
@@ -148,7 +155,9 @@ def test_a_shot_the_gates_refuse_never_reaches_the_vote(tmp_path):
 
 def test_the_polish_records_what_it_asked_and_what_it_held(tmp_path):
     judge = FitJudge()
-    polish = ThinPolish(bank_dir=tmp_path, read_period=period("the month a family moved"))
+    polish = ThinPolish(
+        store=open_store(), bank_scope="case", read_period=period("the month a family moved")
+    )
     written: dict[str, dict] = {}
     cut = [carrier("a1", "S001", favourite=True), carrier("a2", "S002")]
     run(
@@ -166,7 +175,9 @@ def test_the_polish_records_what_it_asked_and_what_it_held(tmp_path):
 
 
 def test_a_second_run_over_the_same_bank_asks_the_model_nothing(tmp_path):
-    polish = ThinPolish(bank_dir=tmp_path, read_period=period("the month a family moved"))
+    polish = ThinPolish(
+        store=open_store(), bank_scope="case", read_period=period("the month a family moved")
+    )
     cut = [carrier("a1", "S001"), carrier("a2", "S002")]
     lines = {"a1": "filler", "a2": "the afternoon"}
     first = FitJudge()
@@ -178,9 +189,9 @@ def test_a_second_run_over_the_same_bank_asks_the_model_nothing(tmp_path):
 
 
 def test_story_membership_follows_the_episodes_own_moments(tmp_path):
-    catalogue = ThinPolish(bank_dir=tmp_path, read_period=period("an account")).catalogue_of(
-        STORY, MOMENTS, drafted=[]
-    )
+    catalogue = ThinPolish(
+        store=open_store(), bank_scope="case", read_period=period("an account")
+    ).catalogue_of(STORY, MOMENTS, drafted=[])
     assert catalogue is not None
     assert {story.key: story.asset_ids for story in catalogue.stories} == {
         "S001": ("a1",),

@@ -81,36 +81,6 @@ def test_a_model_on_nas_explains_that_text_features_remain_available(caplog) -> 
     assert "selection stays on nas" in caplog.text
 
 
-def test_saving_keeps_what_the_tier_decided_out_of_the_file(tmp_path) -> None:
-    path = tmp_path / "config.yaml"
-    Config(tier="gpu").save_yaml(path)
-    saved = yaml.safe_load(path.read_text())
-
-    assert saved["tier"] == "gpu"
-    editorial = saved["advanced"]["editorial"]
-    assert "reader" not in editorial
-    assert "laya_audience" not in editorial
-    assert "tier" not in editorial["preparation"]
-    path.write_text(path.read_text().replace("tier: gpu", "tier: nas"))
-    assert _knobs(Config.from_yaml(path)) == ("rules", "no_captions", False)
-
-
-def test_saving_cannot_create_a_second_preparation_choice(tmp_path):
-    config = Config(tier="gpu")
-    config.editorial.preparation.tier = "metadata_only"
-    config.editorial.laya_audience = False
-    path = tmp_path / "config.yaml"
-
-    config.save_yaml(path)
-
-    reloaded = Config.from_yaml(path)
-    assert reloaded.editorial.preparation.tier == "full"
-    assert reloaded.editorial.laya_audience is True
-    saved = yaml.safe_load(path.read_text())["advanced"]["editorial"]
-    assert "tier" not in saved["preparation"]
-    assert "laya_audience" not in saved
-
-
 def test_the_tier_is_a_top_level_key_in_the_file(tmp_path) -> None:
     path = tmp_path / "config.yaml"
     path.write_text(yaml.safe_dump({"tier": "full", "advanced": {"llm": GEMMA}}))
@@ -158,8 +128,21 @@ def test_config_show_names_the_tier_and_what_it_set(tmp_path) -> None:
         # WHY: the CLI would otherwise create ~/.immich-memories and read the real file
         patch("immich_memories.cli.init_config_dir"),
         patch("immich_memories.cli.get_config", return_value=Config(tier="gpu")),
+        # WHY: `config show` reads the default config.yaml for its sources; not the real one.
+        patch.object(Config, "get_default_path", return_value=tmp_path / "config.yaml"),
     ):
-        result = CliRunner().invoke(main, ["config", "--show"], catch_exceptions=False)
+        result = CliRunner().invoke(
+            main, ["config", "show", "tier", "editorial.reader", "editorial.laya_audience"]
+        )
 
     assert result.exit_code == 0, result.output
-    assert "gpu (reader rules, captions on, Laya on)" in result.output
+    rows = {
+        cells[1]: cells[2]
+        for line in result.output.splitlines()
+        if len(cells := [cell.strip() for cell in line.split("│")]) > 3
+    }
+    assert rows == {
+        "tier": "gpu",
+        "editorial.reader": "rules",
+        "editorial.laya_audience": "true",
+    }

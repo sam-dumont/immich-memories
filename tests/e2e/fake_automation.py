@@ -20,11 +20,12 @@ class FixtureDate(date):
 
 def _child_that_opened_its_run_then_failed(command: list[str]) -> ProcessResult:
     from immich_memories.config import get_config
+    from immich_memories.db import open_store
     from immich_memories.tracking import RunDatabase
     from immich_memories.tracking.models import RunMetadata
 
     values = dict(arg.split("=", 1) for arg in command if arg.startswith("--") and "=" in arg)
-    RunDatabase(get_config().cache.database_path).save_run(
+    RunDatabase(open_store(get_config())).save_run(
         RunMetadata(
             run_id="fixture-failed-child",
             created_at=datetime.now(),

@@ -16,6 +16,7 @@ import pytest
 from PIL import Image
 
 from immich_memories.triage.heads import HeadBundle, HeadFact, HeadWeights, PcaWeights
+from tests.annotation_rows import annotation_store
 
 
 def _tiny_bundle() -> HeadBundle:
@@ -53,12 +54,13 @@ class TestHeadFactStore:
     def test_facts_are_keyed_by_asset_head_and_version(self, tmp_path) -> None:
         from immich_memories.cache.embedding_cache import HeadFactStore
 
-        store = HeadFactStore(tmp_path / "triage.db")
+        store = HeadFactStore(annotation_store())
         store.remember_facts(
-            "asset-1", [HeadFact("location", "outdoor", 0.98, "v1")], encoder_key="k" * 64
-        )
-        store.remember_facts(
-            "asset-2", [HeadFact("location", "indoor", 0.71, "v1")], encoder_key="k" * 64
+            {
+                "asset-1": [HeadFact("location", "outdoor", 0.98, "v1")],
+                "asset-2": [HeadFact("location", "indoor", 0.71, "v1")],
+            },
+            encoder_key="k" * 64,
         )
 
         banked = store.facts_for(["asset-1", "asset-2", "asset-3"], head="location", version="v1")
@@ -99,9 +101,9 @@ class TestTriageEngine:
         from immich_memories.cache.embedding_cache import HeadFactStore
         from immich_memories.triage.engine import TriageEngine
 
-        store = HeadFactStore(tmp_path / "triage.db")
+        store = HeadFactStore(annotation_store())
         store.remember_facts(
-            "banked", [HeadFact("location", "indoor", 0.9, "test-v1")], encoder_key="k" * 64
+            {"banked": [HeadFact("location", "indoor", 0.9, "test-v1")]}, encoder_key="k" * 64
         )
         previews = {"bright": _jpeg(250), "dark": _jpeg(5), "banked": _jpeg(128)}
         encoder = _StubEncoder()
@@ -127,5 +129,5 @@ class TestTriageEngine:
         )
         with pytest.raises(ValueError, match="encoder"):
             TriageEngine(
-                encoder=_StubEncoder(), bundle=bundle, store=HeadFactStore(tmp_path / "t.db")
+                encoder=_StubEncoder(), bundle=bundle, store=HeadFactStore(annotation_store())
             )

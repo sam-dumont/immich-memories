@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
     from immich_memories.analysis.editorial_story_planner import StorySelection
     from immich_memories.analysis.editorial_thin_layer import ThinPolish
+    from immich_memories.db import Store
 
 
 class StructureJudge(Protocol):
@@ -83,16 +84,10 @@ def _check_companions(companion_assets: Mapping[str, Asset], assets: Mapping[str
         raise ValueError("captured companion metadata must describe a declared attached video")
 
 
-def _check_case_scope(case: Case, assets: Mapping[str, Asset], members: list[str]) -> None:
-    if case.person_expression is not None:
-        from immich_memories.analysis.editorial_source import filter_named_expression
-
-        matching = {
-            asset.id
-            for asset in filter_named_expression(tuple(assets.values()), case.person_expression)
-        }
-        if not set(members).issubset(matching):
-            raise ValueError("captured wall selects outside the grouped people condition")
+def _check_case_scope(case: Case, assets: Mapping[str, Asset]) -> None:
+    # Who is in a picture was settled by the fetch, over the episodes the owner reviewed
+    # (`person_presence.py`); regrouping the admitted source here could refuse a pool
+    # picture whose episode an exclusion split.
     if case.special_event_id is not None and not set(assets).issubset(case.event_asset_ids):
         raise ValueError("captured source exceeds exact special event membership")
 
@@ -146,7 +141,7 @@ class StructurePlanningInput:
     bank_dir: Path
     artifact_dir: Path
     # The per-asset fact bank: where a cut's own measurements are read from and written back.
-    store_path: Path | None = None
+    store: Store | None = None
     # What a cut already measured of each clip's speech; a missing clip is not measured.
     speech_regions: Mapping[str, tuple[tuple[float, float], ...]] = field(default_factory=dict)
     motion_outcome_replay: MotionOutcomeReplay | None = None
@@ -174,15 +169,24 @@ class StructurePlanningInput:
     # Owner ticks after a cut: admitted after the read, so no prompt or digest input changes.
     owner_required_asset_ids: tuple[str, ...] = ()
     render_timing: EditorialTimingPolicy | None = None
-    # The people file's facts and links, so a film about people can tell who is close to them
+    # The people registry's facts and links, so a film about people can tell who is close to them
     # rather than to the owner. None reads as it always did: every relation is the owner's.
     people: EditorialPeople | None = None
 
+    @property
+    def bank_store(self) -> Store:
+        """Where the library's banks live: this run's store, else the configured one."""
+        if self.store is not None:
+            return self.store
+        from immich_memories.db import open_store
+
+        return open_store(self.config)
+
     def __post_init__(self) -> None:
         _check_render_timing(self.render_timing, self.case)
-        members = _check_wall_membership(self.wall_bytes, self.moment_asset_ids, self.assets)
+        _check_wall_membership(self.wall_bytes, self.moment_asset_ids, self.assets)
         _check_companions(self.companion_assets, self.assets)
-        _check_case_scope(self.case, self.assets, members)
+        _check_case_scope(self.case, self.assets)
         _check_contract(self.case, self.intent)
         if not isinstance(self.allow_live_motion, bool):
             raise ValueError("Live motion request must be boolean")
@@ -206,6 +210,7 @@ class RulesDraft:
     removed: list[dict[str, Any]]
     tiers: dict[str, int]
     reasons: dict[str, str]
+    collapsed_favourites: tuple[dict[str, Any], ...] = ()
 
 
 @dataclass(frozen=True)

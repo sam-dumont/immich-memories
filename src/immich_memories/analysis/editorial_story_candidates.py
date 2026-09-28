@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from typing import Any
 
-from immich_memories.analysis.editorial_story_replies import WEIGHT_ROLE
+from immich_memories.analysis.editorial_carrier import carrier_row
 from immich_memories.analysis.editorial_structure_material import Wall
 
 
@@ -46,16 +46,11 @@ def _carrier(entry, story, selection, chapter_of, wall: Wall) -> dict[str, Any]:
     family, unit = entry
     asset = unit["asset_id"]
     line = selection.lines.get(asset, "")
-    return unit | {
-        "event": family,
-        "anchor": wall.anchor_label.get(family, family),
-        "chapter": chapter_of.get(story["key"], 1),
-        "why": f"{story['title']}: {line[:80]}",
-        "event_intention": story.get("purpose") or "",
-        "line": line,
-        "story_episode": story["key"],
-        "story_role": WEIGHT_ROLE[story["weight"]],
-        "story_weight": story["weight"],
-        "depicted_moment": f"source:{asset}",
-        "moment_alternatives": [],
-    }
+    return carrier_row(
+        unit,
+        family=family,
+        anchor=wall.anchor_label.get(family, family),
+        story=story,
+        chapter=chapter_of.get(story["key"], 1),
+        line=line,
+    )

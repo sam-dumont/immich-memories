@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 19:10+0200\n"
+"POT-Creation-Date: 2026-09-27 22:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -202,7 +202,7 @@ msgstr "Automatiskt (som klippen)"
 msgid "Auto duration"
 msgstr "Automatisk längd"
 
-#: i18n.py:101
+#: i18n.py:102
 msgid "Automatic (browser)"
 msgstr "Automatiskt (webbläsare)"
 
@@ -415,7 +415,7 @@ msgstr ""
 msgid "Connected as: {name}"
 msgstr "Ansluten som: {name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:454 pages/step2_loading.py:307
 msgid "Connecting to Immich..."
 msgstr "Ansluter till Immich..."
 
@@ -504,7 +504,7 @@ msgstr "Skillnad"
 msgid "Discovery failed: {error}"
 msgstr "Sökningen misslyckades: {error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:66 pages/step2_loading.py:366
 msgid "Done"
 msgstr "Klart"
 
@@ -547,7 +547,7 @@ msgstr "Fel ({error_count})"
 msgid "Export"
 msgstr "Exportera"
 
-#: pages/step2_loading.py:336
+#: pages/step2_loading.py:324
 #, python-brace-format
 msgid "Failed to load videos: {value}"
 msgstr "Kunde inte läsa in videor: {value}"
@@ -575,10 +575,6 @@ msgstr ""
 "Det snabba NAS-förvalet är aktivt: 1080p H.264 med snabb kodning, stilla titelbakgrunder, "
 "ingen talanalys, färre foton och favoriter först. Anges med `preset: fast` i config.yaml "
 "eller IMMICH_MEMORIES_PRESET=fast; valen nedan gäller före förvalet för den här körningen."
-
-#: pages/step2_loading.py:252
-msgid "Fetching photos..."
-msgstr "Hämtar foton..."
 
 #: pages/_step3_music_preview.py:232
 msgid "Film language"
@@ -709,7 +705,7 @@ msgstr "Överföring till Immich: {delivery_label}"
 msgid "Immich delivery: {value}"
 msgstr "Överföring till Immich: {value}"
 
-#: pages/clip_grid.py:170 pages/clip_grid.py:224
+#: pages/clip_grid.py:177 pages/clip_grid.py:232
 msgid "Include"
 msgstr "Ta med"
 
@@ -725,7 +721,7 @@ msgstr "Ta med foton"
 msgid "Include in compilation"
 msgstr "Ta med i sammanställningen"
 
-#: i18n.py:109
+#: i18n.py:110
 msgid "Interface language"
 msgstr "Gränssnittets språk"
 
@@ -787,7 +783,7 @@ msgstr "Läser in album..."
 msgid "Loading thumbnails"
 msgstr "Läser in miniatyrer"
 
-#: pages/step2_loading.py:313
+#: pages/step2_loading.py:301
 msgid "Loading videos..."
 msgstr "Läser in videor..."
 
@@ -926,10 +922,10 @@ msgstr "Inga lämpliga förslag just nu."
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
 msgstr ""
-"Ingen personfil ännu. Läs igenom biblioteket igen: antal och månadskurvor läses för varje "
+"Inga personer ännu. Läs igenom biblioteket igen: antal och månadskurvor läses för varje "
 "namngiven person, utan bildanalys."
 
 #: pages/runs.py:105
@@ -1066,7 +1062,7 @@ msgstr "Personfilter"
 msgid "Person Spotlight"
 msgstr "En person i fokus"
 
-#: pages/clip_grid.py:193
+#: pages/clip_grid.py:200
 msgid "Photo"
 msgstr "Foto"
 
@@ -1078,7 +1074,7 @@ msgstr "Tillgängliga foton"
 msgid "Photo duration (seconds)"
 msgstr "Fotolängd (sekunder)"
 
-#: pages/step2_loading.py:461
+#: pages/step2_loading.py:449
 #, python-brace-format
 msgid "Photo thumbnails: {value}/{count}"
 msgstr "Fotominiatyrer: {value}/{count}"
@@ -1257,6 +1253,10 @@ msgstr "Körs på servern: {phase}. Fortsätter om du lämnar sidan."
 #: app.py:73 app.py:219
 msgid "Runs"
 msgstr "Körningar"
+
+#: pages/clip_grid.py:108 pages/clip_grid.py:320 pages/clip_grid.py:356
+msgid "Same episode"
+msgstr "Samma episod"
 
 #: pages/step1_config.py:140
 msgid "Save Config"
@@ -1510,7 +1510,7 @@ msgstr "Klippningen blev klar medan sidan var stängd. Läs in medierna igen fö
 msgid "Thumbnail cache"
 msgstr "Miniatyrcache"
 
-#: pages/step2_loading.py:415
+#: pages/step2_loading.py:403
 #, python-brace-format
 msgid "Thumbnails: {value}/{count}"
 msgstr "Miniatyrer: {value}/{count}"
@@ -1533,11 +1533,11 @@ msgstr "Tillsammans"
 
 #: pages/step1_people.py:181
 msgid ""
-"Together keeps only the moments holding everyone named. Any of these people keeps a moment "
-"holding any one of them."
+"Together keeps the times everyone named was there, even if never in the same photo. Any of "
+"these people keeps the times any one of them was there."
 msgstr ""
-"Tillsammans behåller bara ögonblick med alla namngivna personer. Någon av dessa personer "
-"behåller ögonblick med minst en av dem."
+"Tillsammans behåller stunderna då alla du nämnt var där, även om de aldrig är på samma foto. "
+"Någon av dessa personer behåller stunderna då någon av dem var där."
 
 #: pages/login.py:64
 msgid "Too many failed attempts. Try again later."
@@ -1824,3 +1824,46 @@ msgstr "{title} ({n_keys} nycklar)"
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}: {duration_seconds:.1f}s"
 
+
+msgid "Default"
+msgstr "Standard"
+
+msgid "Nothing to save"
+msgstr "Inget att spara"
+
+msgid "Save"
+msgstr "Spara"
+
+msgid "Saved here"
+msgstr "Sparad här"
+
+msgid "Saved to the database"
+msgstr "Sparad i databasen"
+
+msgid "Set by {name} (environment)"
+msgstr "Satt av {name} (miljö)"
+
+msgid "Set in config.yaml as {key}"
+msgstr "Satt i config.yaml som {key}"
+
+msgid "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
+msgstr "Inställningar kommer från fyra ställen, starkast först: miljövariabler, config.yaml, det du sparar här (i databasen), sedan standardvärdena. En gråtonad inställning sätts av miljön eller config.yaml; ändra den där."
+
+msgid "{count} set outside this page"
+msgstr "{count} satta utanför den här sidan"
+
+msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
+msgstr "{name} är inte satt, så API-nycklar och lösenord kan inte sparas här. Sätt den, eller lägg hemligheterna i miljön eller config.yaml."
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  ({n} nyckel)"
+msgstr[1] "{title}  ({n} nycklar)"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} satt utanför den här sidan"
+msgstr[1] "{n} satta utanför den här sidan"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Sparad här, men {name} kan inte dekryptera den: standardvärdet används"

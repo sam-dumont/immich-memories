@@ -4,9 +4,14 @@ title: Editorial annotation setup
 unlisted: true
 ---
 
-:::note[Being rewritten]
+:::caution[Historical preparation contract]
 
 This page is being split into the new docs. Its text moves to [Requirements and tiers](../run/requirements.md), [Caption server](../better/captions.md), [Picking each shot](../how-it-chooses/picking-shots.md), [Family, audience and duplicates](../how-it-chooses/family-audience-duplicates.md).
+
+The preparation-tier switches and whole-period captioning flow below predate automatic product
+tiers. Use the linked pages for current installation and sharing behavior. Film generation now
+acquires missing captions and clip evidence for selected shots and actual candidates; a wider
+scope is an explicit `prepare` job.
 
 :::
 

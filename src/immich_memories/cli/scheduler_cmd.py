@@ -120,12 +120,13 @@ def register_scheduler_commands(main: click.Group) -> None:
         print_info(f"Timezone: {config.scheduler.timezone}")
         print_info(f"Schedules: {len(config.scheduler.schedules)}")
 
+        from immich_memories.db import open_store
         from immich_memories.scheduling.daemon import run_daemon_loop
 
         if foreground:
             run_daemon_loop(
                 config.scheduler,
-                db_path=config.cache.database_path,
+                store=open_store(config),
                 config_path=ctx.obj["config_path"],
             )
         else:

@@ -54,6 +54,11 @@ dependencies = [
     "quadrants>=1.3.0; python_version < '3.14' and (sys_platform != 'darwin' or platform_machine != 'x86_64')",
     "freetype-py>=2.4",  # SDF font rendering
     "babel>=2.18.0",
+    # The store (#871): one Alembic history on SQLite (default) or PostgreSQL.
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "psycopg[binary]>=3.2",  # PostgreSQL driver, loaded by SQLAlchemy's postgresql+psycopg dialect
+    "cryptography>=50.0.0",  # Fernet for secrets the settings layer keeps in the store
 ]
 
 [project.optional-dependencies]
@@ -545,6 +550,7 @@ DEP002 = [
     "authlib",                                          # auth: used in upcoming OIDC client task
     "oidc-provider-mock",                               # auth: used in upcoming OIDC tests task
     "demucs",                                           # optional: local stem separation
+    "psycopg",                                          # loaded by SQLAlchemy's postgresql+psycopg dialect
     "onnxruntime-gpu",                                  # editorial-cuda: the CUDA variant of the ONNX seats
 ]
 DEP001 = [
@@ -637,13 +643,14 @@ markers = [
     "perf: performance benchmarks (run with: make benchmark-perf)",
     "demo: renders a docs demo asset (run with: make demo-output)",
     "install_checks: meets the real pre-run install checks instead of an install that ran models fetch",
+    "container: runs the built image through docker compose (run with: make test-container)",
 ]
 # `-p no:quadrants`: the quadrants distribution registers a pytest11 plugin, so
 # merely having it installed pulls its C++ runtime into every pytest session,
 # including the thousands of tests that never touch a kernel. The app imports it
 # in exactly one place and nowhere near collection time; blocking the plugin
 # keeps it that way, and is a no-op where the wheel does not exist.
-addopts = "-p no:quadrants -m 'not integration and not e2e'"
+addopts = "-p no:quadrants -m 'not integration and not e2e and not container'"
 
 [tool.coverage.run]
 source = ["src/immich_memories", "services/inference/immich_memories_inference"]
