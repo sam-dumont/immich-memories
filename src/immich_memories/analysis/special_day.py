@@ -563,6 +563,13 @@ class SpecialDay:
     what: str = ""
     window: tuple[datetime, datetime] | None = None
     judged: bool = True
+    # Why nobody could say, when `judged` is false: the scan prints it instead of a guess.
+    unjudged_because: str = ""
+
+
+def _unjudged(because: str) -> SpecialDay:
+    logger.warning("Special day left unjudged: %s", because)
+    return SpecialDay(special=False, judged=False, unjudged_because=because)
 
 
 def ask_if_special(
@@ -597,8 +604,7 @@ def ask_if_special(
         )
     sampled = sample_across_day(assets)
     if not _has_text_to_read(sampled, captions):
-        logger.info("Not enough written about this day to judge it; leaving it unjudged")
-        return SpecialDay(special=False, judged=False)
+        return _unjudged("nothing written about its pictures")
     return _ask_from_facts(assets, sampled, captions, llm_config, timeout_seconds)
 
 
@@ -617,24 +623,30 @@ def _ask_from_facts(
     route leaves it.
     """
     lines = _describe(sampled, captions)
-    try:
-        raw = _ask(_PROMPT.format(lines=lines), llm_config, timeout_seconds)
-    except Exception as exc:  # noqa: BLE001 - an unreachable model is not a verdict
-        stop_if_this_is_our_bug(exc, "special-day question")
-        logger.debug("Special-day question failed: %s", type(exc).__name__)
-        return SpecialDay(special=False, judged=False)
-
-    # A null content is documented mlx-vlm behaviour, which is why llm_query
-    # retries. Silence is not a verdict either, and reading it as one ended a
-    # multi-hour scan on a TypeError.
-    if not raw:
-        logger.debug("Special-day question came back empty")
-        return SpecialDay(special=False, judged=False)
-
-    try:
-        answer = _day_answer(raw)
-    except ValueError:
-        return SpecialDay(special=False, judged=False)
+    prompt = _PROMPT.format(lines=lines)
+    answer: dict | None = None
+    because = ""
+    # A small model sometimes answers in prose, or not at all. Neither is a verdict on the
+    # day, so the question is asked once more before the day is left unjudged.
+    for _attempt in range(2):
+        try:
+            raw = _ask(prompt, llm_config, timeout_seconds)
+        except Exception as exc:  # noqa: BLE001 - an unreachable model is not a verdict
+            stop_if_this_is_our_bug(exc, "special-day question")
+            return _unjudged(f"the reader failed ({type(exc).__name__})")
+        # A null content is documented mlx-vlm behaviour, which is why llm_query
+        # retries. Silence is not a verdict either, and reading it as one ended a
+        # multi-hour scan on a TypeError.
+        if not raw:
+            because = "the reader answered nothing"
+            continue
+        try:
+            answer = _day_answer(raw)
+            break
+        except ValueError:
+            because = "the reader's answer could not be read"
+    if answer is None:
+        return _unjudged(because)
     special = answer["special"]
     if not special:
         return SpecialDay(special=False)
@@ -760,8 +772,7 @@ def _ask_from_captions(assets, described, captions, llm_config, timeout_seconds,
         answer = _day_answer(raw)
     except Exception as exc:  # WHY: an unavailable text model must not trigger an image send.
         stop_if_this_is_our_bug(exc, "special-day caption question")
-        logger.warning("Special-day caption question failed (%s)", type(exc).__name__)
-        return SpecialDay(special=False, judged=False)
+        return _unjudged(f"the caption question failed ({type(exc).__name__})")
     what = answer["what"].strip()
     return SpecialDay(
         special=answer["special"],

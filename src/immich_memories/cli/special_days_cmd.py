@@ -234,7 +234,8 @@ def _scan_one_year(
         if day.judged:
             console.print(f"  [green]{day.day}[/green]  {day.title or day.what}")
         else:
-            console.print(f"  [dim]{day.day}  nothing written about it; left unjudged[/dim]")
+            because = day.unjudged_because or "nobody could say"
+            console.print(f"  [dim]{day.day}  left unjudged: {because}[/dim]")
         # Written as we go: a scan this long is worth keeping in pieces, and
         # `found` already carries the earlier catalogue.
         out.write_text(json.dumps(found, indent=1))
