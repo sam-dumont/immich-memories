@@ -123,3 +123,26 @@ def test_a_picture_every_pass_kept_but_the_plan_did_not_use_names_the_final_cut(
     assert fates.describe("survivor") == (
         "Left out at the final cut: kept by every pass, not used in the plan"
     )
+
+
+def test_a_picture_the_editor_never_received_is_outside_this_memory(tmp_path):
+    # A spotlight's editor only receives the pictures with its person in them: the rest pass the
+    # cull and stop there, with no stage to name. The pool must say so, not "not recorded".
+    (tmp_path / "selection-trace.private.json").write_text(
+        json.dumps(
+            {
+                "clips": {"with-kim": "still"},
+                "editorial_passes": [
+                    {"name": "pass-1-cull", "input_ids": ["with-kim", "without-kim"]},
+                ],
+            }
+        )
+    )
+
+    fates = CandidateFates.read(tmp_path)
+
+    assert fates.describe("without-kim") == (
+        "Outside this memory: kept by the first cull, never offered to the editor"
+    )
+    assert fates.reachable("with-kim") is True
+    assert fates.reachable("without-kim") is False

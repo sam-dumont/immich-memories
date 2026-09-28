@@ -678,6 +678,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
     from immich_memories.preflight_render import check_render_worker
     from immich_memories.preflight_run import (
         check_detector_export,
+        check_detector_interpreter,
         check_encoder,
         check_output_directory,
     )
@@ -689,6 +690,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
         check_title_rendering(config),
         check_encoder(config),
         check_detector_export(config),
+        check_detector_interpreter(config),
         check_caption_endpoint(config),
         check_host_paths(config),
         check_output_directory(config.output.output_path),

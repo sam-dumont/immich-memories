@@ -15,15 +15,15 @@ from starlette.testclient import TestClient
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from immich_memories.config_loader import Config
-from immich_memories.ui.auth import record_failed_login, reset_rate_limiter
-from immich_memories.ui.reverse_proxy import reverse_proxy_run_kwargs
+from immich_memories.web.auth import record_failed_login, reset_rate_limiter
+from immich_memories.web.reverse_proxy import reverse_proxy_run_kwargs
 
 _BASIC_AUTH = {"enabled": True, "provider": "basic", "username": "op", "password": "pw"}
 _PROXY, _VISITOR, _STRANGER = "10.0.0.2", "203.0.113.5", "192.0.2.9"
 
 
 def _session_cookie(run_kwargs: dict) -> str:
-    """Set-Cookie header Starlette emits with the SessionMiddleware kwargs we hand NiceGUI."""
+    """Set-Cookie header Starlette emits with the SessionMiddleware kwargs the server uses."""
 
     async def touch_session(request: Request) -> PlainTextResponse:
         request.session["seen"] = True
@@ -64,23 +64,27 @@ def _request_after_proxy(run_kwargs: dict, peer: str, headers: dict[str, str]) -
     return seen[0]
 
 
+async def _login_status(request: Request, config: Config) -> int:
+    from immich_memories.web.server import Credentials, login
+
+    request.scope.setdefault("session", {})
+    # WHY: the server reads its config from disk; the test decides who the proxy is.
+    with patch("immich_memories.web.server.get_config", return_value=config):
+        response = await login(Credentials(username="op", password="pw"), request)  # noqa: S106
+    return response.status_code
+
+
 @pytest.fixture
-def _login_storage():
-    # WHY: the login helpers read/write NiceGUI's app.storage.user, which only
-    # exists inside a running NiceGUI request.
+def _fresh_limiter():
     reset_rate_limiter()
-    with patch("immich_memories.ui.app.app") as mock_app:
-        mock_app.storage.user = {}
-        yield mock_app.storage.user
+    yield
     reset_rate_limiter()
 
 
+@pytest.mark.usefixtures("_fresh_limiter")
 class TestForwardedClientIp:
-    def test_rate_limiter_keys_on_the_forwarded_visitor_behind_a_trusted_proxy(
-        self, _login_storage
-    ):
-        from immich_memories.ui.app import _check_login_rate_limit
-
+    @pytest.mark.asyncio
+    async def test_rate_limiter_keys_on_the_forwarded_visitor_behind_a_trusted_proxy(self):
         config = Config(auth={**_BASIC_AUTH, "trusted_proxies": [_PROXY]})
         run_kwargs = reverse_proxy_run_kwargs(config, environ={})
         for _ in range(5):
@@ -89,12 +93,11 @@ class TestForwardedClientIp:
         visitor = _request_after_proxy(run_kwargs, _PROXY, {"X-Forwarded-For": _VISITOR})
         neighbour = _request_after_proxy(run_kwargs, _PROXY, {"X-Forwarded-For": "203.0.113.6"})
 
-        assert _check_login_rate_limit(visitor) is not None
-        assert _check_login_rate_limit(neighbour) is None
+        assert await _login_status(visitor, config) == 429
+        assert await _login_status(neighbour, config) != 429
 
-    def test_forwarded_header_from_an_untrusted_peer_is_ignored(self, _login_storage):
-        from immich_memories.ui.app import _check_login_rate_limit
-
+    @pytest.mark.asyncio
+    async def test_forwarded_header_from_an_untrusted_peer_is_ignored(self):
         config = Config(auth={**_BASIC_AUTH, "trusted_proxies": [_PROXY]})
         run_kwargs = reverse_proxy_run_kwargs(config, environ={})
         for _ in range(5):
@@ -102,7 +105,7 @@ class TestForwardedClientIp:
 
         spoofed = _request_after_proxy(run_kwargs, _STRANGER, {"X-Forwarded-For": _VISITOR})
 
-        assert _check_login_rate_limit(spoofed) is not None
+        assert await _login_status(spoofed, config) == 429
 
 
 class TestForwardedAllowIpsPrecedence:
@@ -116,8 +119,8 @@ class TestForwardedAllowIpsPrecedence:
 
 
 class TestHeaderProvider:
-    def test_header_auth_still_sees_the_proxy_when_it_forwards_the_visitor_ip(self, _login_storage):
-        from immich_memories.ui.app import _try_header_auth
+    def test_header_auth_still_sees_the_proxy_when_it_forwards_the_visitor_ip(self):
+        from immich_memories.web.server import _try_header_auth
 
         config = Config(auth={"enabled": True, "provider": "header", "trusted_proxies": [_PROXY]})
         run_kwargs = reverse_proxy_run_kwargs(config, environ={})
@@ -125,9 +128,10 @@ class TestHeaderProvider:
         request = _request_after_proxy(
             run_kwargs, _PROXY, {"X-Forwarded-For": _VISITOR, "Remote-User": "alice"}
         )
+        request.scope["session"] = {}
         _try_header_auth(request, config.auth)
 
-        assert _login_storage.get("authenticated") is True
+        assert request.session.get("authenticated") is True
 
 
 class _FakeOAuth:
@@ -144,7 +148,7 @@ class _FakeOAuth:
 
 class TestOidcRedirectUri:
     def _redirect_uri_for(self, peer: str) -> str:
-        from immich_memories.ui.app import app
+        from immich_memories.web.server import create_app
 
         config = Config(
             auth={
@@ -156,14 +160,17 @@ class TestOidcRedirectUri:
             }
         )
         run_kwargs = reverse_proxy_run_kwargs(config, environ={})
-        served = ProxyHeadersMiddleware(app, trusted_hosts=run_kwargs["forwarded_allow_ips"])
         oauth = _FakeOAuth()
         with (
             # WHY: the app reads its config from disk; the test decides who the proxy is.
-            patch("immich_memories.ui.app.get_config", return_value=config),
+            patch("immich_memories.web.server.get_config", return_value=config),
             # WHY: authlib would fetch the IdP's discovery document over the network.
-            patch("immich_memories.ui.auth_oidc.create_oidc_client", return_value=oauth),
+            patch("immich_memories.web.auth_oidc.create_oidc_client", return_value=oauth),
+            patch.dict("os.environ", {"IMMICH_MEMORIES_STORAGE_SECRET": "test-secret"}),
         ):
+            served = ProxyHeadersMiddleware(
+                create_app(), trusted_hosts=run_kwargs["forwarded_allow_ips"]
+            )
             TestClient(served, client=(peer, 40000), follow_redirects=False).get(
                 "/auth/authorize",
                 headers={"Host": "memories.example.com", "X-Forwarded-Proto": "https"},

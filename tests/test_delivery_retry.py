@@ -204,7 +204,6 @@ def test_duplicate_tracker_cannot_claim_or_mutate_existing_run(
     with pytest.raises(DuplicateRunError, match="already exists"):
         duplicate.start_run(source="manual", automation_attempt_id="replacement-attempt")
 
-    assert duplicate.current_run is None
     with pytest.raises(RuntimeError, match="not started"):
         if operation == "start_phase":
             duplicate.start_phase("intruder")
@@ -812,7 +811,6 @@ def test_tracker_marks_delivery_pending_and_refreshes_sidecar(tmp_path: Path) ->
     assert pending.automation_attempt_id == "attempt-pending"
     sidecar = RunMetadata.from_dict(json.loads((tmp_path / "run_metadata.json").read_text()))
     assert sidecar.to_dict() == pending.to_dict()
-    assert tracker.current_run == pending
 
 
 def test_tracker_marks_delivery_success_and_refreshes_sidecar(tmp_path: Path) -> None:
@@ -839,7 +837,6 @@ def test_tracker_marks_delivery_success_and_refreshes_sidecar(tmp_path: Path) ->
     assert delivered.delivery_album == "Original Album"
     sidecar = RunMetadata.from_dict(json.loads((tmp_path / "run_metadata.json").read_text()))
     assert sidecar.to_dict() == delivered.to_dict()
-    assert tracker.current_run == delivered
 
 
 def test_tracker_marks_pending_configuration_error_without_counting_api_call(
@@ -1050,8 +1047,7 @@ def test_deferred_generation_returns_exact_context_on_the_caller_owned_tracker(
     assert not prepared.path.exists()
     assert prepared.current_path.read_bytes() == b"validated-artifact"
     assert events == []
-    assert tracker.current_run is not None
-    assert tracker.current_run.run_id == "ui-owned-run"
+    assert tracker.run_id == "ui-owned-run"
     assert saved is not None
     assert saved.status == "running"
     assert [phase.phase_name for phase in saved.phases] == ["clip_extraction", "assembly"]

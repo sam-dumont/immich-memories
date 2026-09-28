@@ -1,4 +1,4 @@
-"""Tests for _get_storage_secret — env var > file > auto-generate."""
+"""Tests for storage_secret — env var > file > auto-generate."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from immich_memories.ui.app import _get_storage_secret
+from immich_memories.web.server import storage_secret as _get_storage_secret
 
 
 @pytest.fixture()
@@ -30,7 +30,7 @@ def test_reads_from_file_when_exists(tmp_path: Path):
     secret_file = tmp_path / ".storage_secret"
     secret_file.write_text("file-secret-abc\n")
 
-    with patch("immich_memories.ui.app.Path.home", return_value=tmp_path / "fake-home"):
+    with patch("immich_memories.web.server.Path.home", return_value=tmp_path / "fake-home"):
         # WHY: patching Path.home so it uses tmp_path, avoiding real filesystem
         (tmp_path / "fake-home" / ".immich-memories").mkdir(parents=True)
         (tmp_path / "fake-home" / ".immich-memories" / ".storage_secret").write_text(
@@ -46,7 +46,7 @@ def test_generates_and_persists_when_no_file(tmp_path: Path):
     fake_home = tmp_path / "fresh-home"
     fake_home.mkdir()
 
-    with patch("immich_memories.ui.app.Path.home", return_value=fake_home):
+    with patch("immich_memories.web.server.Path.home", return_value=fake_home):
         secret = _get_storage_secret()
 
     assert len(secret) == 64  # token_hex(32) = 64 chars
@@ -63,6 +63,6 @@ def test_env_var_takes_priority_over_file(tmp_path: Path):
 
     with (
         patch.dict(os.environ, {"IMMICH_MEMORIES_STORAGE_SECRET": "from-env"}),
-        patch("immich_memories.ui.app.Path.home", return_value=fake_home),
+        patch("immich_memories.web.server.Path.home", return_value=fake_home),
     ):
         assert _get_storage_secret() == "from-env"

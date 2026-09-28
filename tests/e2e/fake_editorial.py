@@ -1,14 +1,14 @@
 """A hermetic stand-in for the story-first editorial route.
 
-The launch smoke runs the real NiceGUI app against the fake Immich service in
+The launch smoke runs the real web server against the fake Immich service in
 ``fake_immich.py``. The sole production selector needs two things a hermetic
 launch cannot have: a text model to read the period with, and an annotation
 store already prepared for this library. This module supplies exactly what
 those two boundaries produce -- a durable attempt tree on disk, written through
 the real ``EditorialAttempt`` so its lease and status file behave as they do in
 production, and one ``(candidates, PipelineResult)`` pair -- so everything
-downstream of selection (the Memory page's polling, the story view, the pool
-page, Step 4 and the real FFmpeg render) runs against unmodified production code.
+downstream of selection (the cut job's progress, the review page, the pool
+page, and the real FFmpeg render) runs against unmodified production code.
 
 The one editorial decision is scripted in ``fake_library``: a picture ships when
 the library hangs it on a story, every other picture is left out with the reason
@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any
 
 from immich_memories.security import write_secret_file
-from tests.e2e.fake_library import BY_ID, CARRIERS, DROPPED, STORIES, STORY_OF, THESIS
+from tests.e2e.fake_library import BY_ID, CARRIERS, DROPPED, LIBRARY, STORIES, STORY_OF, THESIS
 
 # The per-asset pass the real route runs before its named stages, and the one a
 # first cut over a big library sits inside for a long time. It is scripted here
@@ -109,9 +109,22 @@ def _carrier_rows(candidates: Sequence[Any]) -> list[dict[str, Any]]:
                 "standing": "remarkable" if picture.is_favorite else "maybe",
                 "start_time": row.start_time,
                 "end_time": row.end_time,
+                "moment_alternatives": _siblings(picture),
             }
         )
     return rows
+
+
+def _siblings(picture: Any) -> list[str]:
+    """The other stills of the same scene the cut left out: the moment's recorded alternatives."""
+    return [
+        other.asset_id
+        for other in LIBRARY
+        if other.scene == picture.scene
+        and other.asset_id != picture.asset_id
+        and not other.shipped
+        and not other.is_video
+    ][:3]
 
 
 def _story_for(asset_id: str) -> Any:
@@ -381,6 +394,24 @@ class _FakeEditorialPipeline:
                 EditorialAttempt(self._context.artifact_dir, request=request) as attempt,
                 cancellation_scope(report_stage.repeat),
             ):
+                from immich_memories.analysis.editorial_source_snapshot import (
+                    SNAPSHOT_NAME,
+                    source_payload,
+                )
+                from immich_memories.security import write_secret_file
+
+                # The production route records the pool it read, and who the memory is about;
+                # the pool page reads both back (`AttemptSourceSnapshots.capture`).
+                context = self._context
+                payload = source_payload(
+                    list(sources), person_expression=getattr(context, "person_expression", None)
+                ) | {
+                    "people": list(getattr(context, "people", ())),
+                    "person_match": getattr(context, "person_match", "and"),
+                }
+                write_secret_file(
+                    attempt.directory / SNAPSHOT_NAME, json.dumps(payload, default=str)
+                )
                 self._prepare_previews(sources, attempt, report_stage, check_cancelled)
                 for label in STAGES:
                     update = StageUpdate(
@@ -403,6 +434,17 @@ class _FakeEditorialPipeline:
                     dropped,
                     result.stats.get("editorial_render_timing"),
                 )
+                if binding := result.stats.get("editorial_render_timing"):
+                    from immich_memories.processing.render_inputs import write_render_inputs
+
+                    # The production route keeps these beside the plan; so does the fixture.
+                    write_render_inputs(
+                        attempt.directory,
+                        result.selected_clips,
+                        result.editorial_selections,
+                        result.clip_segments,
+                        binding,
+                    )
                 attempt.complete(
                     selected=len(result.editorial_selections),
                     outcome="selected",

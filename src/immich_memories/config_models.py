@@ -185,12 +185,6 @@ class CacheConfig(BaseModel):
     thumbnail_cache_max_size_mb: float = Field(
         default=10_000.0, ge=50, le=100_000, description="Maximum thumbnail cache size in MB"
     )
-    # Not library-sized: preview-cache/ holds the video renditions the wizard's
-    # player streams, so its working set is the clips of one cut -- tens of files,
-    # not one per candidate -- and 2 GB stays a plain cap.
-    preview_cache_max_size_mb: float = Field(
-        default=2000.0, ge=100, le=100_000, description="Maximum clip preview cache size in MB"
-    )
 
     @property
     def cache_path(self) -> Path:

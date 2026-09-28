@@ -302,15 +302,29 @@ def test_first_month_is_not_counted_as_a_divider() -> None:
     assert plan.title_budget == pytest.approx(5.5)
 
 
-def test_short_memory_shortens_opening_instead_of_stealing_content() -> None:
+def test_a_short_memory_still_ends_on_its_ending_card() -> None:
     from immich_memories.processing.timeline_budget import plan_timeline
 
     plan = plan_timeline([_clip("one", "2026-01-05")], _titles(), 15.0, "custom")
 
+    # The opening shortens to the titles' share; the ending keeps its two seconds from the
+    # pictures (owner, 28 Sep: a film always ends on its fade to white).
     assert plan.title_duration == 3.0
-    assert plan.ending_duration == 0.0
-    assert plan.content_budget == 12.0
+    assert plan.ending_duration == 2.0
+    assert plan.content_budget == 10.0
     assert plan.soft_max_duration == 18.0
+
+
+def test_a_twenty_second_special_day_fades_out_too() -> None:
+    from immich_memories.processing.timeline_budget import plan_timeline
+
+    plan = plan_timeline(
+        [_clip("one", "2016-01-01")], _titles(ending_duration=4.0), 20.0, "special_day"
+    )
+
+    assert (plan.title_duration, plan.ending_duration) == (3.5, 2.0)
+    assert plan.content_budget == 14.5
+    assert plan.max_dividers >= 0
 
 
 def test_disabled_titles_leave_the_full_budget_for_content() -> None:
@@ -405,53 +419,3 @@ def test_a_continuous_multi_year_memory_still_skips_its_opening_year() -> None:
     plan = plan_timeline(clips, titles, 120.0, "year_in_review")
 
     assert plan.eligible_dividers == 2
-
-
-def test_estimated_film_length_removes_the_overlap_the_assembler_will_take() -> None:
-    """The demo cut: 3.5s title, 7s ending, 49.5s of content over 18 pictures, smart at 0.5s."""
-    from immich_memories.processing.timeline_budget import TimelinePlan, estimate_film_duration
-
-    plan = TimelinePlan(
-        target_duration=60.0,
-        content_budget=49.5,
-        title_budget=10.5,
-        title_duration=3.5,
-        ending_duration=7.0,
-        divider_duration=2.0,
-        max_dividers=0,
-    )
-
-    estimate = estimate_film_duration(
-        plan,
-        content_seconds=79.0,
-        content_clips=18,
-        transition_mode="smart",
-        transition_duration=0.5,
-    )
-
-    assert estimate == pytest.approx(53.35)
-
-
-def test_estimated_film_length_does_not_stretch_a_short_selection() -> None:
-    """Under budget the content plays at its own length; nothing pads it to the target."""
-    from immich_memories.processing.timeline_budget import TimelinePlan, estimate_film_duration
-
-    plan = TimelinePlan(
-        target_duration=60.0,
-        content_budget=49.5,
-        title_budget=10.5,
-        title_duration=3.5,
-        ending_duration=7.0,
-        divider_duration=2.0,
-        max_dividers=0,
-    )
-
-    estimate = estimate_film_duration(
-        plan,
-        content_seconds=20.0,
-        content_clips=5,
-        transition_mode="cut",
-        transition_duration=0.5,
-    )
-
-    assert estimate == pytest.approx(30.5)

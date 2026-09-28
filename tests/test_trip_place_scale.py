@@ -182,3 +182,15 @@ def test_a_geocoder_is_not_asked_to_name_an_island():
 
     assert trip.location_name == "Crete, Greece"
     assert asked == []
+
+
+def test_a_weekend_mostly_in_one_seaside_town_is_named_after_the_town():
+    # A walk to the next town along the dyke is still a weekend in Wenduine, not "Flanders".
+    name = _trip_name(
+        [
+            (14, 51.30, 3.08, "Wenduine", "Flanders", "Belgium"),
+            (6, 51.31, 3.13, "Blankenberge", "Flanders", "Belgium"),
+        ]
+    )
+
+    assert name == "Wenduine, Belgium"

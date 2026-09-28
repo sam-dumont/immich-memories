@@ -114,3 +114,13 @@ def test_without_a_home_base_the_country_is_the_one_it_always_was():
     from immich_memories.home_country import home_country
 
     assert home_country(Config()) == "US"
+
+
+def test_every_public_holiday_the_calendar_names_resolves_by_that_name():
+    """A picker offers the calendar's own names; "All Saints' Day" and "Martin Luther King Jr.
+    Day" carry punctuation, and each has to come back to its date (#1492)."""
+    from immich_memories.memory_types.date_builders import holidays_of, resolve_holiday
+
+    for country in ("BE", "US", "FR"):
+        for day, name in holidays_of(2026, country).items():
+            assert resolve_holiday(name, 2026, country=country) == day, (country, name)

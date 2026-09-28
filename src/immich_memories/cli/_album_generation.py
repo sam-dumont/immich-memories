@@ -16,8 +16,12 @@ if TYPE_CHECKING:
     from immich_memories.config_loader import Config
 
 
-def album_output_path(default_path: Path, album_name: str, container: str) -> Path:
-    """Name the output file after the album, alongside the default output."""
+def album_output_path(
+    default_path: Path, album_name: str, container: str, *, explicit: bool = False
+) -> Path:
+    """Where the album's film goes: an `--output` the user typed, else a file named after it."""
+    if explicit:
+        return default_path
     slug = safe_slug(album_name)
     stem = f"album_{slug}" if slug else "album"
     return default_path.parent / f"{stem}.{container}"
@@ -61,6 +65,7 @@ def handle_album_generation(
     accept_any_provenance: bool = False,
     owner_required_asset_ids: tuple[str, ...] = (),
     owner_excluded_asset_ids: tuple[str, ...] = (),
+    explicit_output: bool = False,
 ) -> None:
     """Generate one memory from the assets of a single Immich album."""
     import click
@@ -105,7 +110,9 @@ def handle_album_generation(
         config_container=config.output.format,
         format_override=output_format,
     )
-    album_output = album_output_path(output_path, resolved.name, output_selection.container)
+    album_output = album_output_path(
+        output_path, resolved.name, output_selection.container, explicit=explicit_output
+    )
 
     result_path, should_upload, album_name = run_pipeline_and_generate(
         assets=media.videos,

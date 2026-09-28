@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
-from immich_memories.ui.auth import (
+from immich_memories.web.auth import (
     _WINDOW_SECONDS,
     is_rate_limited,
     record_failed_login,
@@ -43,7 +43,7 @@ class TestRateLimiter:
     def test_old_attempts_expire(self):
         """Attempts outside the window are not counted."""
         old_time = datetime.now(UTC) - timedelta(seconds=_WINDOW_SECONDS + 1)
-        with patch("immich_memories.ui.auth.datetime") as mock_dt:
+        with patch("immich_memories.web.auth.datetime") as mock_dt:
             mock_dt.now.return_value = old_time
             mock_dt.side_effect = lambda *args, **kw: datetime(*args, **kw)
             for _ in range(5):
@@ -61,7 +61,7 @@ class TestRateLimiter:
     def test_cleanup_removes_stale_entries(self):
         """Stale entries are cleaned during record_failed_login."""
         old_time = datetime.now(UTC) - timedelta(seconds=_WINDOW_SECONDS + 60)
-        with patch("immich_memories.ui.auth.datetime") as mock_dt:
+        with patch("immich_memories.web.auth.datetime") as mock_dt:
             mock_dt.now.return_value = old_time
             mock_dt.side_effect = lambda *args, **kw: datetime(*args, **kw)
             record_failed_login("10.0.0.99")

@@ -23,6 +23,7 @@ from immich_memories.analysis.editorial_projection import (
 )
 from immich_memories.analysis.progress import ProgressTracker
 from immich_memories.operations.storyboard import TRACE_FILE
+from immich_memories.processing.render_inputs import write_render_inputs
 
 if TYPE_CHECKING:
     from immich_memories.analysis.editorial_planner import (
@@ -171,6 +172,16 @@ class SmartPipeline:
             _write_selection_trace(Path(attempt_dir), active_trace)
         if planned.render_timing is not None:
             result.stats["editorial_render_timing"] = planned.render_timing
+            if attempt_dir is not None:
+                # A revision of this cut renders from these very objects, Live
+                # certificates included, instead of re-deriving them.
+                write_render_inputs(
+                    Path(attempt_dir),
+                    result.selected_clips,
+                    result.editorial_selections,
+                    result.clip_segments,
+                    planned.render_timing,
+                )
         trace.record_favourite_law(candidates, result.selected_clips)
         result.stats["elapsed_seconds"] = self.tracker.progress.elapsed_seconds
         return candidates, result

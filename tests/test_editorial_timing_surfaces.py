@@ -1,4 +1,4 @@
-"""Real CLI/UI parameter builders conserve the frozen editorial title policy."""
+"""The real CLI parameter builder conserves the frozen editorial title policy."""
 
 from unittest.mock import MagicMock, patch
 
@@ -9,7 +9,6 @@ from immich_memories.processing.editorial_timing import (
     prepare_certified_timeline,
     timing_policy_for_params,
 )
-from immich_memories.ui.state import AppState
 from tests.test_editorial_source_route_surfaces import (
     _WINDOW,
     _config,
@@ -83,42 +82,3 @@ def test_cli_actual_context_and_generation_reuse_exact_timing(tmp_path):
             album=None,
         )
     generated.assert_called_once()
-
-
-def test_ui_actual_context_generation_and_later_setting_change(tmp_path):
-    from immich_memories.ui.pages._step4_generate import _build_generation_params
-    from immich_memories.ui.pages.clip_pipeline import _build_ui_editorial_context
-
-    result = _finished_selection()
-    config = _config(tmp_path)
-    config.defaults.transition_duration = 0.8
-    state = AppState(
-        config=config,
-        memory_type="monthly_highlights",
-        date_ranges=[_WINDOW],
-        target_duration=1.0,
-        clips=result.selected_clips,
-        pipeline_selected_clips=result.selected_clips,
-        editorial_selections=result.editorial_selections,
-        generation_options={"transition": "Cut"},
-        clip_segments=result.clip_segments,
-    )
-    context = _build_ui_editorial_context(state, config, state.clips, [])
-    state.editorial_render_timing = _binding(context.render_timing, result)
-    # WHY: avoids opening a real Immich connection; the test only checks the handed-off params.
-    with patch("immich_memories.api.immich.SyncImmichClient"):
-        params = _build_generation_params(state, result.selected_clips, tmp_path / "memory.mp4")
-        assert params.transition_duration == 0.8
-        assert context.render_timing == timing_policy_for_params(params)
-        prepare_certified_timeline(params)
-        state.generation_options["transition"] = "Crossfade"
-        changed = _build_generation_params(state, result.selected_clips, tmp_path / "other.mp4")
-        assert changed.editorial_owner_edits["timing_policy_changed"] is True
-        assert changed.editorial_render_timing is not state.editorial_render_timing
-        prepare_certified_timeline(changed)
-        changed.transition = "cut"
-        with pytest.raises(ValueError, match="timing settings changed"):
-            prepare_certified_timeline(changed)  # Unrecorded mutation still fails.
-        state.editorial_render_timing = None
-        legacy = _build_generation_params(state, result.selected_clips, tmp_path / "legacy.mp4")
-        assert legacy.transition_duration == 0.5  # Existing uncertified UI behavior.

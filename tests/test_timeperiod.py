@@ -10,7 +10,6 @@ from immich_memories.timeperiod import (
     DateRange,
     Period,
     PeriodUnit,
-    available_years,
     birthday_year,
     calendar_year,
     custom_range,
@@ -311,30 +310,6 @@ class TestParseDate:
         """Test invalid date raises error."""
         with pytest.raises(ValueError, match="Cannot parse date"):
             parse_date("not-a-date")
-
-
-class TestAvailableYears:
-    """Tests for available_years function."""
-
-    def test_available_years_default(self):
-        """Test default years list."""
-        years = available_years(current_year=2024, years_back=5)
-        assert years == [2024, 2023, 2022, 2021, 2020]
-
-    def test_available_years_descending(self):
-        """Test years are in descending order."""
-        years = available_years(current_year=2024, years_back=3)
-        assert years[0] > years[-1]
-
-    def test_available_years_count(self):
-        """Test correct number of years."""
-        years = available_years(current_year=2024, years_back=20)
-        assert len(years) == 20
-
-    def test_available_years_single(self):
-        """Single year back returns just that year."""
-        years = available_years(current_year=2024, years_back=1)
-        assert years == [2024]
 
 
 class TestDateRangeEdgeCases:

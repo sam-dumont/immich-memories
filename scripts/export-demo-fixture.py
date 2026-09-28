@@ -26,6 +26,7 @@ from tests.e2e.fake_immich import TIMELINE_ASSETS  # noqa: E402
 from tests.e2e.fake_library import (  # noqa: E402
     CARRIERS,
     LIBRARY,
+    STORIES,
     STORY_OF,
     THESIS,
     pool_line,
@@ -191,7 +192,6 @@ def _shots(pictures, board) -> list[dict]:
 
 def main() -> None:
     board = _board(CARRIERS)
-    recut = _board(CARRIERS[1:])
     shots = _shots(CARRIERS, board)
     timecodes = {shot.asset_id: shot.timecode for shot in board.shots}
     pool = [
@@ -208,6 +208,10 @@ def main() -> None:
         for picture in LIBRARY[:POOL_PAGE]
     ]
     videos = sum(1 for picture in LIBRARY if picture.is_video)
+    stories = [
+        {"title": story.title, "weight": story.weight, "purpose": story.purpose}
+        for story in STORIES
+    ]
     film = _film_facts()
     body = "\n".join(
         [
@@ -225,6 +229,13 @@ def main() -> None:
             "  reason: string;",
             "  /** Set on the first picture of a month: the real page prints a chapter label. */",
             "  chapter?: string;",
+            "};",
+            "",
+            "/** A weighed story, heaviest first, as the Stories view lists them. */",
+            "export type Story = {",
+            "  title: string;",
+            "  weight: string;",
+            "  purpose: string;",
             "};",
             "",
             "export type PoolCard = {",
@@ -248,7 +259,9 @@ def main() -> None:
             f"export const CUT_COUNT = {len(CARRIERS)};",
             f"export const CUT_SECONDS = {int(sum(picture.seconds for picture in CARRIERS))};",
             f"export const CUT_FILM_SECONDS = {board.film_seconds};",
-            f"export const RECUT_FILM_SECONDS = {recut.film_seconds};",
+            "/** The pictures' own seconds, and what the titles leave them: the edit bar's two numbers. */",
+            f"export const CUT_CONTENT_SECONDS = {round(board.total_seconds, 2)};",
+            f"export const CUT_CONTENT_BUDGET = {json.dumps(board.content_budget_seconds)};",
             "",
             "/** How long output-preview.mp4 runs, measured. */",
             f"export const FILM_SECONDS = {film['seconds']};",
@@ -258,7 +271,7 @@ def main() -> None:
             f"export const FILM_SIZE = {json.dumps(film['size'])};",
             "",
             f"export const SHOTS: Shot[] = {json.dumps(shots, indent=2, ensure_ascii=False)};",
-            f"export const RECUT_SHOTS: Shot[] = {json.dumps(_shots(CARRIERS[1:], recut), indent=2, ensure_ascii=False)};",
+            f"export const STORIES: Story[] = {json.dumps(stories, indent=2, ensure_ascii=False)};",
             f"export const POOL: PoolCard[] = {json.dumps(pool, indent=2, ensure_ascii=False)};",
             "",
         ]

@@ -1,301 +1,112 @@
 import React from "react";
-import {
-  AbsoluteFill,
-  Img,
-  interpolate,
-  spring,
-  staticFile,
-  useCurrentFrame,
-  useVideoConfig,
-} from "remotion";
-import { COLORS } from "../theme";
-import { fontFamily } from "../fonts";
+import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
+import { COLORS, UI } from "../theme";
 import { WindowFrame } from "../components/WindowFrame";
-import { Sidebar } from "../components/Sidebar";
-import { PageHeader } from "../components/PageHeader";
-import { ImButton } from "../components/ImButton";
-import { MaterialIcon } from "../components/MaterialIcon";
-import { POOL_TOTAL, SHOTS } from "../fixture";
+import { AppShell } from "../components/AppShell";
+import { JobPanel } from "../components/JobPanel";
+import { Heading } from "../components/ui";
+import { POOL, POOL_TOTAL, SHOTS } from "../fixture";
 
-const PHASE_TITLES = [
-  "Finding media",
-  "Loading thumbnails",
-  "Reading the pictures",
-  "Editing",
-  "Done",
+/**
+ * The same page once Cut is pressed: the form gives way to the job panel
+ * (web/src/lib/JobPanel.svelte), which follows the cut stage by stage. The
+ * counted stage carries the bar, "N of M · ~Ns left in this stage" and the
+ * pictures just read; the stages after it only name themselves.
+ */
+
+export const CUT_COMMAND =
+  "immich-memories generate --memory-type=monthly_highlights --year=2024 --month=6 --include-photos --include-live-photos --no-render";
+
+// The pictures the reading pass goes through, in the order the pool lists them.
+const READ_ORDER = [
+  ...new Set([
+    ...POOL.map((card) => card.picture),
+    ...SHOTS.map((shot) => shot.picture),
+  ]),
 ];
 
-const DONE = PHASE_TITLES.length - 1;
-
-// The strip of pictures the per-picture pass is working on, from the fixture's
-// cut; the bar counts the whole pool the way the real page does.
-const PREVIEWS = SHOTS.slice(0, 8).map((shot) => shot.picture);
-const TOTAL = POOL_TOTAL;
-const PREVIEW_START = 46;
-const PREVIEW_END = 126;
-
-// Where the cut is, frame by frame. The stage strings are the exact labels the
-// editorial planner reports through on_stage, in the order it reaches them on
-// the default no-model route (tests/e2e/fake_editorial.py STAGES).
+// Stage labels: the server's own before the attempt exists (job_routes.py), the
+// attempt's first stage (editorial_attempt.py), then the editorial stages in
+// the order tests/e2e/fake_editorial.py STAGES reports them.
 const TIMELINE = [
-  { at: 0, phase: 0, detail: "" },
-  { at: 28, phase: 1, detail: "" },
-  { at: 52, phase: 2, detail: "Preparing previews: 2/6" },
-  { at: 80, phase: 2, detail: "Reading dates, places and people" },
-  { at: 100, phase: 3, detail: "Reading event evidence" },
-  { at: 128, phase: 3, detail: "Building editorial cards" },
-  { at: 150, phase: 3, detail: "Editing the memory" },
-  { at: 162, phase: 3, detail: "Validating selected source timing" },
-  { at: 172, phase: DONE, detail: "" },
+  { at: 0, label: "Preparing the pool" },
+  { at: 10, label: "Preparing editorial evidence" },
+  { at: 92, label: "Reading dates, places and people" },
+  { at: 104, label: "Reading event evidence" },
+  { at: 114, label: "Editing the memory" },
+  { at: 126, label: "Validating selected source timing" },
 ];
-
-// The strip of pictures belongs to the per-picture passes; once the edit starts it fades.
-const STRIP_FADE_AT = 100;
-
-// The page prints the stage's own estimate beside the count. The strip spans
-// PREVIEW_START..PREVIEW_END at 30fps, so what is left follows from the count.
-const STAGE_SECONDS = (PREVIEW_END - PREVIEW_START) / 30;
-const remainingSeconds = (prepared: number) =>
-  Math.max(1, Math.ceil(STAGE_SECONDS * (1 - prepared / TOTAL)));
+const COUNT_FROM = 12;
+const COUNT_TO = 90;
 
 type Props = { bassIntensity?: number };
 
-const PhaseRow: React.FC<{
-  title: string;
-  state: "done" | "active" | "upcoming";
-  detail: string;
-  detailOpacity: number;
-  reveal: number;
-}> = ({ title, state, detail, detailOpacity, reveal }) => {
-  const icon =
-    state === "done"
-      ? "check_circle"
-      : state === "active"
-        ? "pending"
-        : "radio_button_unchecked";
-  const color =
-    state === "done"
-      ? COLORS.success
-      : state === "active"
-        ? COLORS.primary
-        : COLORS.textMuted;
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        height: 28,
-        opacity: reveal,
-        transform: `translateX(${(1 - reveal) * -10}px)`,
-      }}
-    >
-      <MaterialIcon name={icon} size={18} color={color} />
-      <span style={{ fontSize: 14, color: COLORS.text, width: 170 }}>
-        {title}
-      </span>
-      <span
-        style={{
-          fontSize: 14,
-          color: COLORS.textSecondary,
-          opacity: detailOpacity,
-        }}
-      >
-        {detail}
-      </span>
-    </div>
-  );
-};
-
-/** The strip of pictures the cut has just finished, then the stage's own bar. */
-const PreviewStrip: React.FC<{ prepared: number; fps: number; frame: number }> = ({
-  prepared,
-  fps,
-  frame,
-}) => (
-  <div style={{ marginTop: 18 }}>
-    <div style={{ display: "flex", gap: 6 }}>
-      {PREVIEWS.map((picture, i) => {
-        const at = PREVIEW_START + ((PREVIEW_END - PREVIEW_START) / PREVIEWS.length) * i;
-        const entry = spring({
-          frame: frame - at,
-          fps,
-          config: { damping: 22, stiffness: 190 },
-        });
-        return (
-          <div
-            key={picture}
-            style={{
-              width: 78,
-              height: 78,
-              borderRadius: 6,
-              overflow: "hidden",
-              opacity: i < prepared ? entry : 0,
-              transform: `scale(${0.9 + entry * 0.1})`,
-              backgroundColor: COLORS.border,
-            }}
-          >
-            <Img
-              src={staticFile(picture)}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          </div>
-        );
-      })}
-    </div>
-    <div
-      style={{
-        width: "100%",
-        height: 4,
-        borderRadius: 2,
-        marginTop: 16,
-        backgroundColor: COLORS.border,
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          width: `${(prepared / TOTAL) * 100}%`,
-          height: "100%",
-          backgroundColor: COLORS.primary,
-        }}
-      />
-    </div>
-    <div style={{ fontSize: 13, color: COLORS.textSecondary, marginTop: 8 }}>
-      previews {prepared} of {TOTAL} &middot; ~{remainingSeconds(prepared)}s left in this stage
-    </div>
-  </div>
-);
-
 export const CuttingScene: React.FC<Props> = ({ bassIntensity }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const stage =
+    [...TIMELINE].reverse().find((step) => frame >= step.at) ?? TIMELINE[0];
+  const counting = stage.label === "Preparing editorial evidence";
 
-  const prepared = Math.min(
-    TOTAL,
-    Math.max(
-      0,
-      Math.floor(
-        interpolate(frame, [PREVIEW_START, PREVIEW_END], [0, TOTAL + 0.999], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        }),
-      ),
-    ),
-  );
-
-  const step =
-    [...TIMELINE].reverse().find((s) => frame >= s.at) ?? TIMELINE[0];
-  // While the previews are being prepared, the row detail carries the live count.
-  const liveDetail =
-    step.detail.startsWith("Preparing previews")
-      ? `Preparing previews: ${prepared}/${TOTAL}`
-      : step.detail;
-  const finished = step.phase === DONE;
-
-  // The stage string swaps in rather than jumping.
-  const detailOpacity = interpolate(frame, [step.at, step.at + 5], [0.2, 1], {
+  const exact = interpolate(frame, [COUNT_FROM, COUNT_TO], [0, POOL_TOTAL], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  const done = Math.floor(exact);
+  // The stage's estimate, rounded the way the panel rounds it: seconds under a minute.
+  const stageSeconds = ((COUNT_TO - COUNT_FROM) / 30) * 6;
+  const remaining = Math.max(
+    1,
+    Math.ceil(stageSeconds * (1 - done / POOL_TOTAL)),
+  );
 
-  const elapsed = Math.floor(frame / 6);
+  // One picture joins the strip for every four read; the strip keeps the last eight.
+  const read = Math.floor(exact / 4);
+  const pictures = READ_ORDER.slice(0, Math.min(read, READ_ORDER.length));
+  const arriving = exact / 4 - read;
 
-  const rowReveal = (i: number) =>
-    spring({ frame, fps, config: { damping: 20, stiffness: 180 }, delay: 6 + i * 4 });
+  // The cut runs faster than life: six seconds of it to every second shown.
+  const elapsed = Math.floor((frame / 30) * 6);
 
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
-      <WindowFrame bassIntensity={bassIntensity}>
-        <Sidebar active="Memory" />
-        <div
-          style={{
-            flex: 1,
-            padding: "20px 32px",
-            overflow: "hidden",
-            fontFamily,
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <PageHeader title="Memory" />
-
+      <WindowFrame
+        path="/app/create"
+        bassIntensity={bassIntensity}
+        enter={false}
+      >
+        <AppShell active="Memory">
           <div
             style={{
-              fontSize: 24,
-              fontWeight: 700,
-              color: COLORS.text,
-              marginBottom: 18,
-            }}
-          >
-            Cutting the memory...
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {PHASE_TITLES.map((title, i) => (
-              <PhaseRow
-                key={title}
-                title={title}
-                state={
-                  i < step.phase || (finished && i === DONE)
-                    ? "done"
-                    : i === step.phase
-                      ? "active"
-                      : "upcoming"
-                }
-                detail={i === step.phase ? liveDetail : ""}
-                detailOpacity={detailOpacity}
-                reveal={rowReveal(i)}
-              />
-            ))}
-          </div>
-
-          <div
-            style={{
-              opacity: interpolate(frame, [STRIP_FADE_AT, STRIP_FADE_AT + 10], [1, 0], {
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              }),
-            }}
-          >
-            <PreviewStrip prepared={prepared} fps={fps} frame={frame} />
-          </div>
-
-          <div
-            style={{
-              fontSize: 14,
-              color: COLORS.textSecondary,
-              marginTop: 18,
-            }}
-          >
-            Elapsed: {elapsed}s
-          </div>
-
-          {/* The engine's own stage lines, folded away as the page folds them */}
-          <div
-            style={{
+              width: 768,
               display: "flex",
-              alignItems: "center",
-              gap: 14,
-              marginTop: 14,
-              marginBottom: 18,
-              padding: "10px 0",
+              flexDirection: "column",
+              gap: 24,
             }}
           >
-            <MaterialIcon name="list" size={20} color={COLORS.textSecondary} />
-            <span style={{ fontSize: 14, color: COLORS.text, flex: 1 }}>Details</span>
-            <MaterialIcon
-              name="keyboard_arrow_down"
-              size={22}
-              color={COLORS.textSecondary}
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <Heading size="large">New memory</Heading>
+              <div
+                style={{ fontSize: 16, lineHeight: "24px", color: UI.gray600 }}
+              >
+                Choose what the film covers. The cut is made the way the command
+                below makes it; you review it before anything renders.
+              </div>
+            </div>
+            <JobPanel
+              label={stage.label}
+              elapsed={`${elapsed}s`}
+              command={CUT_COMMAND}
+              fraction={counting ? exact / POOL_TOTAL : 0}
+              done={counting ? done : undefined}
+              total={counting ? POOL_TOTAL : undefined}
+              remaining={
+                counting ? `~${remaining}s left in this stage` : undefined
+              }
+              pictures={pictures}
+              arriving={frame < COUNT_TO ? Math.min(1, arriving * 2) : 1}
             />
           </div>
-
-          <div>
-            <ImButton text="Cancel" variant="secondary" icon="stop" />
-          </div>
-        </div>
+        </AppShell>
       </WindowFrame>
     </AbsoluteFill>
   );

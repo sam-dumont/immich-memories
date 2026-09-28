@@ -112,7 +112,7 @@ src/immich_memories/
 ├── processing/   # Video assembly (VideoAssembler + 5 composed services)
 ├── titles/       # Title screens, map fly-overs (TitleScreenGenerator + services)
 ├── audio/        # Music generation, audio ducking, mood analysis
-├── ui/           # NiceGUI pages: Memory, Media pool, Options, Export
+├── web/          # The web server: /api/v1, sign-in, health (client: web/ at the repo root)
 ├── cli/          # Click commands
 ├── cache/        # Preview, video and run-history caching (SQLite)
 ├── tracking/     # Run history and job management

@@ -55,28 +55,6 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * r * math.asin(math.sqrt(a))
 
 
-def filter_near_home(
-    assets: list[Asset],
-    home_lat: float,
-    home_lon: float,
-    min_distance_km: float = 50,
-) -> list[Asset]:
-    """Remove assets within min_distance_km of home. Assets without GPS are kept."""
-    result: list[Asset] = []
-    for asset in assets:
-        if (
-            not asset.exif_info
-            or asset.exif_info.latitude is None
-            or asset.exif_info.longitude is None
-        ):
-            result.append(asset)  # Keep assets without GPS
-            continue
-        dist = haversine_km(home_lat, home_lon, asset.exif_info.latitude, asset.exif_info.longitude)
-        if dist >= min_distance_km:
-            result.append(asset)
-    return result
-
-
 def _filter_away_assets(
     assets: list[Asset], home_lat: float, home_lon: float, min_km: float
 ) -> list[Asset]:

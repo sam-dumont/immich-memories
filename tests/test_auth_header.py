@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from immich_memories.ui.auth import is_trusted_proxy
+from immich_memories.web.auth import is_trusted_proxy
 
 
 class TestIsTrustedProxy:

@@ -74,7 +74,7 @@ def test_cli_passes_exact_selected_carriers_and_editorial_decisions_to_generatio
 
 
 def test_cli_recipe_identity_includes_ordered_render_mode_and_frame() -> None:
-    from immich_memories.cli._pipeline_runner import _name_after_recipe
+    from immich_memories.filename_builder import name_after_recipe
 
     first = make_clip("recipe-first", duration=5.0)
     second = make_clip("recipe-second", duration=5.0)
@@ -99,17 +99,17 @@ def test_cli_recipe_identity_includes_ordered_render_mode_and_frame() -> None:
         "target_duration": 60.0,
     }
 
-    original = _name_after_recipe(
+    original = name_after_recipe(
         output_path=Path("memory.mp4"),
         editorial_selections=base,
         **common,
     )
-    changed_mode = _name_after_recipe(
+    changed_mode = name_after_recipe(
         output_path=Path("memory.mp4"),
         editorial_selections=(base[0], EditorialSelection(asset_id=second.asset.id)),
         **common,
     )
-    changed_frame = _name_after_recipe(
+    changed_frame = name_after_recipe(
         output_path=Path("memory.mp4"),
         editorial_selections=(
             EditorialSelection(
@@ -121,7 +121,7 @@ def test_cli_recipe_identity_includes_ordered_render_mode_and_frame() -> None:
         ),
         **common,
     )
-    changed_order = _name_after_recipe(
+    changed_order = name_after_recipe(
         output_path=Path("memory.mp4"),
         editorial_selections=tuple(reversed(base)),
         **common,

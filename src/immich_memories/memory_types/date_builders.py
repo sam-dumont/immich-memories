@@ -492,6 +492,8 @@ def resolve_holiday(holiday: str, year: int, *, country: str = "US") -> date:
     Father's Day move by country; a holiday the country does not keep raises ``ValueError``.
     """
     key = holiday.strip().lower().replace("-", "_").replace(" ", "_")
+    # A known holiday named the way `holidays_of` writes it ("Valentine's Day") is that holiday.
+    key = next((known for known, name in _NAMES.items() if _key(name) == _key(holiday)), key)
     if key in _FIXED_HOLIDAYS:
         month, day = _FIXED_HOLIDAYS[key]
         return date(year, month, day)
@@ -499,7 +501,9 @@ def resolve_holiday(holiday: str, year: int, *, country: str = "US") -> date:
         return _easter(year)
     if key in _BY_COUNTRY:
         return _kept_in(key, year, country.strip().upper())
-    if (public := _public_named(key, year, country)) is not None:
+    # The calendar's own names carry punctuation ("All Saints' Day"): compare them the way
+    # `_public_named` writes them.
+    if (public := _public_named(_key(holiday), year, country)) is not None:
         return public
 
     try:

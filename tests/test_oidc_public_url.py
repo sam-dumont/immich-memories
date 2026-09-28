@@ -14,7 +14,7 @@ from __future__ import annotations
 import pytest
 from starlette.requests import Request
 
-from immich_memories.ui.auth_oidc import oidc_redirect_uri, validate_callback_origin
+from immich_memories.web.auth_oidc import oidc_redirect_uri, validate_callback_origin
 
 _PUBLIC = "https://memories.example.com"
 

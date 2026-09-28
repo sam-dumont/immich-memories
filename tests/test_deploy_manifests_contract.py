@@ -324,8 +324,8 @@ def test_trigger_pods_read_the_token_from_a_secret() -> None:
 
 
 def test_trigger_pods_call_the_in_cluster_trigger_route() -> None:
-    """The URL, and the path it hits, are the real contract `ui/trigger_api.py` serves."""
-    from immich_memories.ui.trigger_api import TRIGGER_PATH
+    """The URL, and the path it hits, are the real contract `web/trigger.py` serves."""
+    from immich_memories.web.trigger import TRIGGER_PATH
 
     for label, pod in _trigger_pod_specs():
         command = " ".join(pod["containers"][0]["command"])

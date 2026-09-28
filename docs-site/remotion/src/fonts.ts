@@ -1,17 +1,9 @@
 import { loadFont } from "@remotion/google-fonts/Inter";
-import { loadFont as loadLocalFont } from "@remotion/fonts";
-import { staticFile } from "remotion";
 
-// Inter for body text
-const { fontFamily, waitUntilDone } = loadFont("normal", {
+// Inter, the web client's type (web/src/app.css). Icons are @mdi/js paths, not a font.
+const { fontFamily } = loadFont("normal", {
   weights: ["400", "500", "600", "700"],
   subsets: ["latin"],
 });
 
-// Material Icons for sidebar/section icons (matches NiceGUI/Quasar)
-const materialIconsLoaded = loadLocalFont({
-  family: "Material Icons",
-  url: staticFile("MaterialIcons-Regular.woff2"),
-});
-
-export { fontFamily, waitUntilDone, materialIconsLoaded };
+export { fontFamily };

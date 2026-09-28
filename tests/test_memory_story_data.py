@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from immich_memories.ui.pages.memory_story_data import read_story_view, story_view_from_plan
+from immich_memories.operations.story_view import read_story_view, story_view_from_plan
 
 
 def _plan() -> dict:
@@ -98,9 +98,9 @@ def test_render_mode_from_the_selection_wins_over_the_planner_kind() -> None:
     view = story_view_from_plan(_plan(), render_modes={"photo-first": "motion"})
 
     by_id = {carrier.asset_id: carrier for story in view.stories for carrier in story.carriers}
-    assert by_id["photo-first"].render_label == "Motion"
-    assert by_id["video-second"].render_label == "Motion"
-    assert by_id["photo-late"].render_label == "Still"
+    assert by_id["photo-first"].motion is True
+    assert by_id["video-second"].motion is True
+    assert by_id["photo-late"].motion is False
 
 
 def test_the_duration_line_reads_the_realization() -> None:
@@ -131,33 +131,9 @@ def test_an_attempt_directory_is_read_only_when_it_holds_a_plan(tmp_path: Path) 
     assert len(view.stories) == 2
 
 
-def test_the_weight_badge_reads_in_reader_words_not_the_answer_schema() -> None:
-    view = story_view_from_plan(_plan())
-
-    opening, closing = view.stories
-    assert (opening.weight, opening.weight_label) == ("dominant", "Main story")
-    assert (closing.weight, closing.weight_label) == ("glimpse", "Small moment")
-
-
-def test_the_picture_count_counts_pictures_not_grants() -> None:
-    view = story_view_from_plan(_plan())
-
-    opening, closing = view.stories
-    assert opening.granted_label == "2 pictures"
-    assert closing.granted_label == "1 picture"
-
-
-def test_a_weight_with_no_reader_word_shows_no_badge_at_all() -> None:
-    plan = _plan()
-    plan["story"]["episodes"][0]["weight"] = "none"
-
-    unbadged = next(story for story in story_view_from_plan(plan).stories if story.key == "S0002")
-    assert (unbadged.weight, unbadged.weight_label) == ("none", "")
-
-
 def test_a_reduced_preparation_tier_says_so_under_the_thesis(tmp_path: Path) -> None:
     """The owner's ruling: named tiers, stated on the Memory page, never inferred."""
-    from immich_memories.ui.pages.memory_story_data import preparation_note
+    from immich_memories.operations.story_view import preparation_note
 
     (tmp_path / "plan.private.json").write_text(json.dumps(_plan()))
     assert read_story_view(tmp_path).preparation == ""
