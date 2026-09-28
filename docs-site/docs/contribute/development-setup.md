@@ -26,6 +26,13 @@ it before any other make target.
 | `make dev-mac` | dev + `all-mac` (Apple Vision, Metal, the editorial stack) | Apple Silicon, full feature set |
 | `make dev` | every declared extra (torch, demucs, editorial), slow | Only if you work across all optional backends |
 
+**Rendering with generated music on a Mac? Also run `make install-acestep`.** None of the targets
+above install ACE-Step: it lives in a sibling `.venv-acestep` next to the checkout, so **every new
+clone and every git worktree needs its own `make install-acestep`**. Without it, a config with
+`ace_step.mode: lib` renders every film with a bundled track and one warning in the log.
+`immich-memories preflight` shows a **Music (ACE-Step)** warning when it is missing, and
+`make check-local-audio` proves the install end to end. Details: [Generated music](../better/music.md#install-locally-on-a-mac).
+
 ## Check the install
 
 `make check` runs lint, format check, type check, the file length and complexity gates, and the
