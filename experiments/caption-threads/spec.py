@@ -135,8 +135,12 @@ def at_home_rows(library, assets, lived, which=None, radius=AT_HOME_KM):
     for i, r in enumerate(library.rows):
         a = assets.get(r["asset_id"])
         if not a:
-            # No GPS is no evidence of elsewhere: the photo stays, later checks decide (09-28).
-            out.add(i)
+            # No GPS is no evidence of elsewhere when the place only frames the subject (a pet at
+            # home): the photo stays. When the place IS the subject (one particular home), a photo
+            # must show it was there: a house film admitted a Thai house and a stranger's pool
+            # house without GPS (09-28).
+            if which is None:
+                out.add(i)
             continue
         day = r["taken_at"][:10]
         if which:
