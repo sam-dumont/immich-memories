@@ -102,6 +102,12 @@ def _render_clip_badges(badges: list[str]) -> None:
                     im_badge(badge, variant="info")
 
 
+def _render_episode_marker(state, asset: Asset) -> None:
+    # The owner can untick it; the marker says the face was found elsewhere in its episode.
+    if state.found_by_episode(asset):
+        im_badge(tr("Same episode"), variant="info")
+
+
 def _render_clip_thumbnail(asset_id: str) -> None:
     """Render the thumbnail image or placeholder for a clip card."""
     render_thumbnail(
@@ -147,6 +153,7 @@ def _render_clip_card(
     ):
         _render_clip_thumbnail(clip.asset.id)
         _render_clip_badges(_get_clip_badges(clip))
+        _render_episode_marker(state, clip.asset)
         _render_audio_categories(clip)
         _render_clip_metadata(clip)
         _render_outcome(fates.describe(clip.asset.id))
@@ -193,6 +200,7 @@ def _render_photo_card(
             im_badge(tr("Photo"), variant="analysis")
             if photo.is_favorite:
                 ui.icon("star").classes("text-xs").style("color: var(--im-warning)")
+            _render_episode_marker(state, photo)
 
         date_str = photo.file_created_at.strftime("%b %d %H:%M")
         ui.label(date_str).classes("font-semibold text-sm").style("color: var(--im-text)")
@@ -308,6 +316,8 @@ def _render_compact_photo_thumbnail(
 ) -> None:
     """Render a single compact photo thumbnail cell with selection overlay."""
     tooltip = f"Photo | {photo.file_created_at.strftime('%b %d, %Y %H:%M')}"
+    if state.found_by_episode(photo):
+        tooltip += f" | {tr('Same episode')}"
     _render_compact_cell(
         photo.id,
         state.selected_photo_ids,
@@ -341,10 +351,13 @@ def _render_compact_thumbnail(
     holds: dict[str, PictureHold],
 ) -> None:
     """Render a single compact thumbnail cell with selection overlay."""
+    tooltip = _build_clip_tooltip(clip)
+    if state.found_by_episode(clip.asset):
+        tooltip += f" | {tr('Same episode')}"
     _render_compact_cell(
         clip.asset.id,
         state.selected_clip_ids,
-        _build_clip_tooltip(clip),
+        tooltip,
         all_clips,
         summary_container,
         is_photo=False,

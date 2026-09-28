@@ -1,14 +1,16 @@
 """A multi-person memory is about the people who were there together.
 
-Naming two people asks for the moments that hold both of them, not the union of
-two solo reels. These tests pin that rule at the fetch seam the CLI uses.
+Naming two people asks for the episodes that hold both of them, not the union of two
+solo reels, and not only the frames that happen to hold both faces. These tests pin
+that rule at the fetch seam the CLI uses.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 
+from immich_memories.api.models import Person
 from immich_memories.cli._asset_fetch import fetch_photos, fetch_videos
 from immich_memories.timeperiod import DateRange
 
@@ -16,21 +18,28 @@ PERSON_A = "person-a"
 PERSON_B = "person-b"
 
 WINDOW = DateRange(start=datetime(2025, 1, 1), end=datetime(2025, 12, 31, 23, 59, 59))
+MORNING = datetime(2025, 6, 1, 9, 0, 0)
+EVENING = datetime(2025, 6, 1, 20, 0, 0)
 
 
 @dataclass
 class _Asset:
     id: str
-    people: set[str] = field(default_factory=set)
-    file_created_at: datetime = datetime(2025, 6, 1, 12, 0, 0)
+    faces: set[str] = field(default_factory=set)
+    file_created_at: datetime = MORNING
     duration_seconds: float = 8.0
+    exif_info: None = None
+
+    @property
+    def people(self) -> list[Person]:
+        return [Person(id=face) for face in sorted(self.faces)]
 
 
 class _LibraryClient:
-    """A library that answers person queries the way the Immich client does.
+    """The two unfiltered window reads the Immich client makes for a people fetch.
 
-    Every answer is derived from the same per-person lookup, so a test cannot
-    accidentally describe a union as an intersection.
+    WHY: Immich is the read boundary; per-person endpoints are left undefined, so a
+    fetch that still asks Immich per frame fails here.
     """
 
     def __init__(self, videos: list[_Asset], photos: list[_Asset] | None = None) -> None:
@@ -38,33 +47,13 @@ class _LibraryClient:
         self._photos = photos or []
 
     def get_photos_for_date_range(
-        self,
-        date_range: DateRange,  # noqa: ARG002
-        person_id: str | None = None,
-        person_ids: list[str] | None = None,
-    ) -> list[_Asset]:
-        wanted = set(person_ids or []) | ({person_id} if person_id else set())
-        return [p for p in self._photos if wanted <= p.people]
+        self, date_range: DateRange, progress_callback=None, **people
+    ) -> list[_Asset]:  # noqa: ARG002
+        assert not any(people.values()), "a per-person photo read"
+        return list(self._photos)
 
     def get_videos_for_date_range(self, date_range: DateRange) -> list[_Asset]:  # noqa: ARG002
         return list(self._videos)
-
-    def get_videos_for_person_and_date_range(
-        self,
-        person_id: str,
-        date_range: DateRange,  # noqa: ARG002
-    ) -> list[_Asset]:
-        return [a for a in self._videos if person_id in a.people]
-
-    def get_videos_for_all_persons(
-        self, person_ids: list[str], date_range: DateRange
-    ) -> list[_Asset]:
-        per_person = [
-            {a.id for a in self.get_videos_for_person_and_date_range(p, date_range)}
-            for p in person_ids
-        ]
-        common = set.intersection(*per_person) if per_person else set()
-        return [a for a in self._videos if a.id in common]
 
 
 class _SilentProgress:
@@ -81,104 +70,80 @@ def _fetch(
     *,
     person_match: str = "and",
 ) -> list[_Asset]:
-    assets = fetch_videos(
+    return fetch_videos(
         client=client,
         progress=_SilentProgress(),
         date_ranges=[WINDOW],
         person_ids=person_ids,
         person_match=person_match,
     )
-    return assets
 
 
-def test_two_people_selects_only_the_moments_that_hold_both():
+def test_two_people_select_the_episodes_that_hold_both_even_in_separate_frames():
     client = _LibraryClient(
         [
             _Asset("a-alone", {PERSON_A}),
-            _Asset("b-alone", {PERSON_B}),
-            _Asset("a-and-b", {PERSON_A, PERSON_B}),
+            _Asset("b-alone", {PERSON_B}, file_created_at=MORNING + timedelta(minutes=20)),
+            _Asset("nobody", file_created_at=MORNING + timedelta(minutes=40)),
+            _Asset("a-evening", {PERSON_A}, file_created_at=EVENING),
         ]
     )
 
     assets = _fetch(client, [PERSON_A, PERSON_B])
 
-    assert [a.id for a in assets] == ["a-and-b"]
+    assert [a.id for a in assets] == ["a-alone", "b-alone", "nobody"]
 
 
-def test_no_shared_moment_yields_nothing_rather_than_two_solo_reels():
-    client = _LibraryClient([_Asset("a-alone", {PERSON_A}), _Asset("b-alone", {PERSON_B})])
-
-    assets = _fetch(client, [PERSON_A, PERSON_B])
-
-    assert assets == []
-
-
-def test_or_selects_each_persons_assets_and_deduplicates_shared_ones():
+def test_people_never_in_one_episode_yield_nothing_rather_than_two_solo_reels():
     client = _LibraryClient(
         [
             _Asset("a-alone", {PERSON_A}),
-            _Asset("b-alone", {PERSON_B}),
-            _Asset("a-and-b", {PERSON_A, PERSON_B}),
-            _Asset("neither"),
+            _Asset("b-alone", {PERSON_B}, file_created_at=EVENING),
+        ]
+    )
+
+    assert _fetch(client, [PERSON_A, PERSON_B]) == []
+
+
+def test_or_selects_each_persons_episodes_once():
+    client = _LibraryClient(
+        [
+            _Asset("a-alone", {PERSON_A}),
+            _Asset("a-and-b", {PERSON_A, PERSON_B}, file_created_at=MORNING + timedelta(minutes=5)),
+            _Asset("b-evening", {PERSON_B}, file_created_at=EVENING),
+            _Asset("nobody-next-day", file_created_at=EVENING + timedelta(days=1)),
         ]
     )
 
     assets = _fetch(client, [PERSON_A, PERSON_B], person_match="or")
 
-    assert {asset.id for asset in assets} == {"a-alone", "b-alone", "a-and-b"}
-    assert len(assets) == 3
+    assert [asset.id for asset in assets] == ["a-alone", "a-and-b", "b-evening"]
 
 
-def test_photos_follow_the_same_rule_as_videos():
+def test_photos_follow_the_same_rule_as_videos_and_share_their_episodes():
     client = _LibraryClient(
-        [],
+        [_Asset("video-b", {PERSON_B}, file_created_at=MORNING + timedelta(minutes=10))],
         photos=[
             _Asset("photo-a-alone", {PERSON_A}),
-            _Asset("photo-nobody-named"),
-            _Asset("photo-a-and-b", {PERSON_A, PERSON_B}),
+            _Asset("photo-nobody-named", file_created_at=MORNING + timedelta(minutes=30)),
+            _Asset("photo-a-evening", {PERSON_A}, file_created_at=EVENING),
         ],
     )
 
     photos = fetch_photos(client=client, date_ranges=[WINDOW], person_ids=[PERSON_A, PERSON_B])
 
-    assert [p.id for p in photos] == ["photo-a-and-b"]
+    assert [p.id for p in photos] == ["photo-a-alone", "photo-nobody-named"]
 
 
-def test_photos_can_union_any_named_person_without_duplicates():
-    client = _LibraryClient(
-        [],
-        photos=[
-            _Asset("photo-a-alone", {PERSON_A}),
-            _Asset("photo-b-alone", {PERSON_B}),
-            _Asset("photo-a-and-b", {PERSON_A, PERSON_B}),
-            _Asset("photo-nobody-named"),
-        ],
-    )
-
-    photos = fetch_photos(
-        client=client,
-        date_ranges=[WINDOW],
-        person_ids=[PERSON_A, PERSON_B],
-        person_match="or",
-    )
-
-    assert {photo.id for photo in photos} == {
-        "photo-a-alone",
-        "photo-b-alone",
-        "photo-a-and-b",
-    }
-    assert len(photos) == 3
-
-
-def test_one_person_still_selects_every_moment_they_appear_in():
+def test_one_person_selects_every_picture_of_the_episodes_they_appear_in():
     client = _LibraryClient(
         [
             _Asset("a-alone", {PERSON_A}),
-            _Asset("b-alone", {PERSON_B}),
-            _Asset("a-and-b", {PERSON_A, PERSON_B}),
+            _Asset("unrecognised", file_created_at=MORNING + timedelta(minutes=15)),
+            _Asset("b-evening", {PERSON_B}, file_created_at=EVENING),
         ]
     )
 
     assets = _fetch(client, [PERSON_A])
 
-    assert {a.id for a in assets} == {"a-alone", "a-and-b"}
+    assert {a.id for a in assets} == {"a-alone", "unrecognised"}

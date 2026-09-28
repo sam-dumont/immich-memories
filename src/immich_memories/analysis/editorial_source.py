@@ -119,17 +119,3 @@ def resolve_named_expression(expression: PersonExpression, people) -> PersonExpr
         return leaves[0] if len(leaves) == 1 else PersonExpression("any", children=leaves)
 
     return expression.map_leaves(resolve)
-
-
-def filter_named_expression(sources, expression: PersonExpression | None):
-    """Apply same-asset co-occurrence; surrounding context remains separate."""
-    sources = tuple(sources)
-    if expression is None:
-        return sources
-    by_name: dict[str, set[str]] = {}
-    for source in sources:
-        asset = _asset(source)
-        for person in asset.people:
-            by_name.setdefault(person.name, set()).add(asset.id)
-    selected = expression.evaluate(lambda name: by_name.get(name, ()))
-    return tuple(source for source in sources if _asset(source).id in selected)

@@ -178,7 +178,7 @@ def render_person_picker(state: AppState, memory_type: MemoryType, apply: ApplyP
             .classes("mt-2")
             .tooltip(
                 tr(
-                    "Together keeps only the moments holding everyone named. Any of these people keeps a moment holding any one of them."
+                    "Together keeps the times everyone named was there, even if never in the same photo. Any of these people keeps the times any one of them was there."
                 )
             )
         )

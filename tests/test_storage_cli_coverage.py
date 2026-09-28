@@ -117,10 +117,10 @@ def _invoke_planned_generation(args: list[str], config: Config) -> object:
     with (
         # WHY: SyncImmichClient is the Immich HTTP client; replaced so no server connection is made
         patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
-        # WHY: fetch_videos would call Immich for real assets; stubbed to return the test asset
+        # WHY: fetch_media would call Immich for real assets; stubbed to return the test asset
         patch(
-            "immich_memories.cli.generate.fetch_videos",
-            return_value=[asset],
+            "immich_memories.cli.generate.fetch_media",
+            return_value=([asset], []),
         ),
         patch(
             "immich_memories.cli.generate.run_pipeline_and_generate",
