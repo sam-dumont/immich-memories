@@ -4,10 +4,10 @@ title: What a model adds
 
 # What a model adds
 
-NAS makes the whole film from metadata, pixels and inexpensive CPU classifiers. It is a good
-default. GPU adds captions and Laya for selected shots and candidates. Full adds a
-text model that reads the draft's annotation lines and proposes small refinements. It may replace
-a few pictures or keep the same cut. Compare the result before paying for more hardware or calls.
+The NAS tier makes the whole film from metadata, pixels and small CPU classifiers. The `gpu` tier
+adds captions and Laya for the pictures in the cut and their candidates. The `full` tier adds a text
+model that reads the draft, as annotation lines, and polishes it: this page is how. What each tier
+adds, feature by feature: [What a GPU or a model adds](../get-started/what-a-gpu-or-a-model-adds.md).
 
 The prose model gets text only and never decides sharing. Rules, picture classifiers and Laya
 own that check. A configured LLM can also write titles and music mood on NAS or GPU without
@@ -26,9 +26,11 @@ flowchart TD
   C["C: model plans<br/>the whole film"] --> sel
 ```
 
-- `tier: auto` is the default. Without usable GPU inference it selects NAS, even with an LLM
-  configured. GPU inference selects GPU; adding a configured LLM selects Full. Preparation,
-  selection and Laya follow that one tier. Conflicting legacy switches are reported and ignored.
+- `tier: auto` picks the tier: [The three tiers](../run/requirements.md#the-preparation-tier).
+  Conflicting legacy switches are reported and ignored.
+- The first draft uses metadata and CPU facts on every tier, even when captions are already banked,
+  so it never depends on an earlier caption job. Captions arrive during the polish, for the
+  selected shots and their candidates.
 - **Route B** covers months, years, seasons, trips, special days and person films. It also covers
   separate date windows, such as the same day across years or a birthday with flashbacks.
 - **Route C** is selected with `advanced.editorial.thin_model_layer: false`.

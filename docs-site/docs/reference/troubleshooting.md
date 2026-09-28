@@ -88,8 +88,8 @@ cut again. Every lever is on [Overrule it](../how-it-chooses/overrule-it.md).
 
 ## The first cut is slow
 
-A cut prepares the pictures it can reach once (previews, pixel facts, heads, detectors, and on the `full` tier a
-caption each) and banks them. The second cut over the same period is mostly the render. The levers, in order:
+A cut prepares the pictures it can reach once (previews, pixel facts, heads, detectors, and on the `gpu` and
+`full` tiers a caption for the pictures it selects and their candidates) and banks them. The second cut over the same period is mostly the render. The levers, in order:
 keep the cache volume, prepare ahead with [`prepare`](../make/cli/prepare.md) overnight, and move the heads to a
 faster box with [the inference service](../better/inference.md). Numbers per host are on
 [Measured](../better/measured.md).

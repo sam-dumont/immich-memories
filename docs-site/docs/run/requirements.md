@@ -4,9 +4,10 @@ title: Requirements and tiers
 
 # Requirements and tiers
 
-The default install is one container on the box that already runs Immich. It works on a plain
-NAS and makes the whole film there. That is a good default. GPU models and an LLM can add
-some refinement; compare the result and decide whether it is worth the extra work.
+The default install is one container on the box that already runs Immich, and it makes the whole
+film there. A GPU or a text model makes it better:
+[what each one adds](../get-started/what-a-gpu-or-a-model-adds.md), feature by feature. This page
+is what each setup needs, and how the app picks between them.
 
 ## Hardware
 
@@ -37,52 +38,31 @@ up is the store, `store.db`, where every fact the editor read is banked:
 Tested on a Synology DS423+ (Celeron J4125, four cores), on an Apple Silicon Mac and on a
 Kubernetes cluster. Timings per host are on [Measured](../better/measured.md).
 
-## The three setups
+## The three tiers {#the-preparation-tier}
 
-| Setup | What you run | What it adds |
-|---|---|---|
-| **A plain NAS** (the default) | This container and one `models fetch` | The film: the rules editor, eight context heads and two detectors on every picture the film can reach, the family-viewing gate, titles, maps, music |
-| **+ GPU inference** (optional) | The [inference service](../better/inference.md) reporting CUDA, or a local CUDA runtime, or a Mac's Metal GPU; the caption service and Laya must also be ready | The GPU tier adds captions and Laya for selected shots and replacement candidates. Existing captions stay banked |
-| **+ an LLM** (optional) | A text model with a 32k context, such as local Gemma 4 E4B | Titles and other text features on every tier. With GPU inference too, Full adds prose and refinement of the NAS draft. [What a model adds](../better/overview.md) |
+`tier: auto`, the default, picks one tier for preparation and selection alike:
 
-On Full, the rules editor still makes the draft. A preference vote keeps the original shot until
-a replacement passes the checks. Sharing decisions stay with rules, classifiers and Laya.
+| Tier | Picked when | What runs | Family-viewing check |
+|---|---|---|---|
+| **`nas`** | No GPU inference is found (the default) | Immich metadata, and the DINOv2 encoder with eight heads and two detectors on the CPU. Needs `models fetch` | Rules and the detectors |
+| **`gpu`** | A GPU inference runtime (the [inference service](../better/inference.md) reporting CUDA, a local CUDA runtime, or a Mac's Metal GPU), plus a [caption server](../better/captions.md) and the Laya checkpoint | NAS, plus captions and Laya for the pictures in the cut and the candidates to replace them | Laya can add holds; it never lifts one |
+| **`full`** | GPU, plus a configured [text model](../better/reader.md) with a 32k context | GPU, plus the text model's account of the period, its polish of the draft, the title and the music mood | Same as GPU. The text model never decides what is shareable |
 
-The initial draft uses metadata and CPU facts on every tier, even if captions are already in the
-bank. Captions and their setting descriptions become available during refinement of selected shots
-and candidates. Full can also read banked captions from a selected shot's whole episode for context.
-This keeps the starting draft independent of prior caption jobs without deleting or regenerating
-their work.
+A [render worker](../better/gpu-render.md) or [hardware encoding](./hardware.md) moves or speeds up
+the encode. Neither changes the tier: a GPU that encodes video is not a GPU that runs the models.
 
-A [render worker](../better/gpu-render.md) moves the encode to another machine. It does not change
-the selection tier: a GPU that can encode video is not proof of inference capability.
+### Which tier you get {#which-tier-you-get}
 
-## The preparation tier
-
-Preparation and selection use the same product tier. Leave `tier` unset or use `tier: auto`.
-
-| Tier | What runs | What the family-viewing gate can do |
-|---|---|---|
-| **`nas`** | Immich metadata, pixels, the DINOv2 encoder with eight heads and two detectors. Needs `models fetch` | Rules and classifiers check the pictures without a caption or prose LLM |
-| `gpu` | NAS plus captions and Laya for selected shots and candidates. Needs a [caption server](../better/captions.md) and Laya | Laya may add holds; it cannot lift detector or rule holds |
-| `full` | GPU plus the configured prose LLM | The same sharing checks as GPU; the prose LLM never decides sharing |
-
-A cut acquires cheap facts for the pictures it can select and their capture context. Captions
-and Live Photo checks wait for selected shots and actual candidates. `immich-memories prepare`
-reads a whole scope ahead of time when explicitly requested.
-
-Everything is banked per picture and per producer, so changing the tier erases nothing, and a
-NAS library can add captions later.
-
-### Which tier you get
-
-Without a supported local GPU runtime or a healthy GPU inference service, automatic selection
-stays on NAS. GPU capability selects GPU; a configured LLM alongside it selects Full. On a Mac the `mac` extra's
-Metal bindings find the GPU, so an `all-mac` install gets the whole tier without MLX in the app's
-own environment: the caption server and the reader run as their own processes.
-An LLM alone still supplies titles and other text features, and the app explains the missing GPU
-capability. It does not start captioning through that LLM.
-
-`immich-memories preflight` checks the producers the resolved tier needs. Legacy preparation-tier
-overrides no longer choose a different set. Explicit product tiers remain available for controlled
-comparisons; they do not install missing models or start services.
+- A text model without the GPU tier still writes titles and picks the music mood. Selection stays on
+  `nas`, and the log says which service is missing.
+- On a Mac the `mac` extra's Metal bindings find the GPU, so an `all-mac` install reaches `gpu` and
+  `full`; the caption server and the reader run as their own processes.
+- `IMMICH_MEMORIES_TIER` beats `tier:` in `config.yaml`. The compose file and the Kubernetes
+  manifests set it to `auto`: remove it if you want the file to decide.
+- `nas`, `gpu` and `full` can be set explicitly, for side-by-side comparisons. They don't install a
+  model or start a service. `immich-memories preflight` checks what the resolved tier needs.
+- A cut reads the cheap facts for every picture it can reach. Captions and Live Photo checks wait for
+  the pictures it selects and their replacement candidates. `immich-memories prepare` reads a whole
+  period ahead of time when you ask for it.
+- Everything is banked per picture and per producer, so changing the tier erases nothing, and a NAS
+  library can add captions later.
