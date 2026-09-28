@@ -400,10 +400,17 @@ class _FakeEditorialPipeline:
                 )
                 from immich_memories.security import write_secret_file
 
-                # The production route records the pool it read; the pool page reads it back.
+                # The production route records the pool it read, and who the memory is about;
+                # the pool page reads both back (`AttemptSourceSnapshots.capture`).
+                context = self._context
+                payload = source_payload(
+                    list(sources), person_expression=getattr(context, "person_expression", None)
+                ) | {
+                    "people": list(getattr(context, "people", ())),
+                    "person_match": getattr(context, "person_match", "and"),
+                }
                 write_secret_file(
-                    attempt.directory / SNAPSHOT_NAME,
-                    json.dumps(source_payload(list(sources)), default=str),
+                    attempt.directory / SNAPSHOT_NAME, json.dumps(payload, default=str)
                 )
                 self._prepare_previews(sources, attempt, report_stage, check_cancelled)
                 for label in STAGES:

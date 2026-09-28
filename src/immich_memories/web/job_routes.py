@@ -18,6 +18,7 @@ from pydantic import BaseModel
 
 from immich_memories.config import get_config_path
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.operations.cut_progress import (
     live_progress_of,
     read_latest_attempt,
@@ -226,7 +227,7 @@ def start_render(
     executable: Annotated[str, Depends(cli_executable)],
 ) -> JobView | JSONResponse:
     """Render this run's cut, or one revision of it, with `runs render`."""
-    attempt = attempt_dir_for_run(config.cache.cache_path, run_id)
+    attempt = attempt_dir_for_run(run_id, store=open_store(config))
     if attempt is None:
         raise HTTPException(404, "This run left no saved cut.")
     from uuid import uuid4
@@ -353,7 +354,7 @@ def job_output(job_id: str, runner: Annotated[JobRunner, Depends(job_runner)]) -
 @router.get("/runs/{run_id}/film", response_class=FileResponse)
 def film(run_id: str, config: Annotated[Config, Depends(current_config)]) -> FileResponse:
     """The rendered film, by byte range so the player can seek."""
-    record = RunDatabase(config.cache.database_path).get_run(run_id)
+    record = RunDatabase(open_store(config)).get_run(run_id)
     if record is None or not record.output_path or not Path(record.output_path).is_file():
         raise HTTPException(404, "This run has no film on disk.")
     return FileResponse(record.output_path, media_type="video/mp4")

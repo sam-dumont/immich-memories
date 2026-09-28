@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import sqlite3
 import subprocess
@@ -13,11 +14,13 @@ from unittest.mock import MagicMock
 import pytest
 
 from immich_memories import generate_render as generate_render_module
-from immich_memories.cache import database as cache_database
-from immich_memories.cache.database import VideoAnalysisCache
+from immich_memories.config_loader import Config, set_config
+from immich_memories.db import open_store
+from immich_memories.operations.store_import import import_legacy
 from immich_memories.processing.output_contract import OutputProbe
 from immich_memories.tracking import DeliveryStatus, RunDatabase, RunMetadata, RunTracker
 from tests.conftest import make_clip
+from tests.legacy_cache_db import write_legacy_cache_db
 from tests.output_tools_fake import is_decode_check, output_tools
 
 
@@ -35,7 +38,7 @@ def test_run_metadata_delivery_state_round_trips_through_json() -> None:
         warnings=["Optional music failed: backend unavailable"],
     )
 
-    loaded = RunMetadata.from_json(run.to_json())
+    loaded = RunMetadata.from_dict(json.loads(run.to_json()))
 
     assert loaded.delivery_status is DeliveryStatus.PENDING
     assert loaded.delivery_attempts == 2
@@ -65,36 +68,9 @@ def test_legacy_run_metadata_treats_null_delivery_fields_as_defaults() -> None:
     assert loaded.warnings == []
 
 
-def test_fresh_database_has_delivery_state_defaults(tmp_path: Path) -> None:
-    """Fresh runs begin not requested and retain empty delivery diagnostics."""
-    db_path = tmp_path / "fresh-v13.db"
-    VideoAnalysisCache(db_path)
-
-    with sqlite3.connect(db_path) as conn:
-        conn.execute(
-            """
-            INSERT INTO pipeline_runs (run_id, created_at, status)
-            VALUES ('fresh-run', '2026-08-11T10:00:00+00:00', 'running')
-            """
-        )
-        row = conn.execute(
-            """
-            SELECT delivery_status, delivery_attempts, delivery_error,
-                   immich_asset_id, delivery_album, warnings_json
-            FROM pipeline_runs WHERE run_id = 'fresh-run'
-            """
-        ).fetchone()
-        schema_version = conn.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
-
-    assert row == ("not_requested", 0, None, None, None, "[]")
-    # The subject here is the delivery defaults, not the version number. Assert
-    # against the constant so a schema bump does not break an unrelated test.
-    assert schema_version == cache_database.SCHEMA_VERSION
-
-
 def test_database_round_trip_preserves_delivery_and_automation_identity(tmp_path: Path) -> None:
     """Saving delivery fields never erases the exact v12 automation attempt identity."""
-    database = RunDatabase(tmp_path / "round-trip.db")
+    database = RunDatabase()
     run = RunMetadata(
         run_id="saved-delivery",
         created_at=datetime(2026, 8, 11, 10, 0, tzinfo=UTC),
@@ -130,7 +106,7 @@ def test_resaving_stale_run_cannot_replace_authoritative_state_or_delete_phases(
     """A duplicate save cannot cascade-delete children or erase completed delivery facts."""
     from immich_memories.tracking import DuplicateRunError, PhaseStats
 
-    database = RunDatabase(tmp_path / "non-destructive-save.db")
+    database = RunDatabase()
     created_at = datetime(2026, 8, 11, 10, 0, tzinfo=UTC)
     database.save_run(
         RunMetadata(
@@ -207,10 +183,9 @@ def test_duplicate_tracker_cannot_claim_or_mutate_existing_run(
     """A rejected tracker never owns enough state to overwrite the original run."""
     from immich_memories.tracking import DuplicateRunError
 
-    db_path = tmp_path / "duplicate-tracker.db"
     original_output = tmp_path / "original.mp4"
     original_output.write_bytes(b"original")
-    original = RunTracker("shared-run-id", db_path=db_path, capture_system=False)
+    original = RunTracker("shared-run-id", capture_system=False)
     original.start_run(source="auto", automation_attempt_id="original-attempt")
     original.start_phase("assembly", total_items=1)
     original.complete_phase(items_processed=1)
@@ -225,7 +200,7 @@ def test_duplicate_tracker_cannot_claim_or_mutate_existing_run(
 
     duplicate_output = tmp_path / "duplicate.mp4"
     duplicate_output.write_bytes(b"duplicate")
-    duplicate = RunTracker("shared-run-id", db_path=db_path, capture_system=False)
+    duplicate = RunTracker("shared-run-id", capture_system=False)
     with pytest.raises(DuplicateRunError, match="already exists"):
         duplicate.start_run(source="manual", automation_attempt_id="replacement-attempt")
 
@@ -253,22 +228,15 @@ def test_duplicate_tracker_cannot_claim_or_mutate_existing_run(
         else:
             duplicate.cancel_run()
 
-    after = RunDatabase(db_path).get_run("shared-run-id")
+    after = RunDatabase().get_run("shared-run-id")
     assert after is not None
     assert after.to_dict() == before.to_dict()
     assert [phase.phase_name for phase in after.phases] == ["assembly"]
 
 
-def test_populated_v12_migrates_additively_without_changing_attempt_identity(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The v13 migration preserves populated v12 rows and their parent attempt IDs."""
-    from immich_memories.cache import database as cache_database
-
-    db_path = tmp_path / "populated-v12.db"
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 12)
-    VideoAnalysisCache(db_path)
+def test_populated_v12_imports_without_changing_attempt_identity(tmp_path: Path) -> None:
+    """A populated v12 cache.db imports with its parent attempt IDs and delivery defaults."""
+    db_path = write_legacy_cache_db(tmp_path / "populated-v12.db", version=12)
     with sqlite3.connect(db_path) as conn:
         conn.execute(
             """
@@ -289,8 +257,9 @@ def test_populated_v12_migrates_additively_without_changing_attempt_identity(
         )
         conn.commit()
 
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 13)
-    migrated = RunDatabase(db_path).get_run("existing-v12")
+    set_config(Config(cache={"database": str(db_path), "directory": str(tmp_path / "cache")}))
+    import_legacy(open_store(), tmp_path)
+    migrated = RunDatabase().get_run("existing-v12")
 
     assert migrated is not None
     assert migrated.status == "completed"
@@ -307,7 +276,7 @@ def test_database_marks_delivery_pending_atomically_without_changing_artifact(
     tmp_path: Path,
 ) -> None:
     """One failed API call increments once and leaves the completed artifact intact."""
-    database = RunDatabase(tmp_path / "pending.db")
+    database = RunDatabase()
     output_path = tmp_path / "memory.mp4"
     output_path.write_bytes(b"validated-memory")
     completed_at = datetime(2026, 8, 11, 10, 5, tzinfo=UTC)
@@ -344,7 +313,7 @@ def test_database_marks_delivery_pending_atomically_without_changing_artifact(
 
 def test_database_marks_delivery_success_and_clears_previous_error(tmp_path: Path) -> None:
     """One successful API call increments once, stores its asset ID, and clears failure text."""
-    database = RunDatabase(tmp_path / "delivered.db")
+    database = RunDatabase()
     database.save_run(
         RunMetadata(
             run_id="delivered-run",
@@ -374,7 +343,7 @@ def test_database_rejects_delivery_for_completed_run_without_requested_delivery(
     """A completed no-upload artifact cannot be retroactively marked delivered."""
     from immich_memories.tracking import InvalidRunLifecycleError
 
-    database = RunDatabase(tmp_path / "not-requested.db")
+    database = RunDatabase()
     database.save_run(
         RunMetadata(
             run_id="not-requested-run",
@@ -399,7 +368,7 @@ def test_database_rejects_repeated_artifact_completion_after_delivery(tmp_path: 
     """Artifact facts become immutable once the delivery transition is committed."""
     from immich_memories.tracking import InvalidRunLifecycleError
 
-    database = RunDatabase(tmp_path / "completed-twice.db")
+    database = RunDatabase()
     output_path = tmp_path / "memory.mp4"
     output_path.write_bytes(b"validated")
     created_at = datetime(2026, 8, 11, 10, 0, tzinfo=UTC)
@@ -445,7 +414,7 @@ def test_database_rejects_empty_delivered_asset_identity(
     asset_id: str,
 ) -> None:
     """A response without a usable Immich asset ID is not a successful delivery call."""
-    database = RunDatabase(tmp_path / "invalid-asset.db")
+    database = RunDatabase()
     database.save_run(
         RunMetadata(
             run_id="invalid-asset-run",
@@ -475,7 +444,7 @@ def test_delivery_transitions_reject_noncompleted_runs_without_mutation(
     """Only a completed artifact may enter either delivery transition."""
     from immich_memories.tracking import InvalidRunLifecycleError
 
-    database = RunDatabase(tmp_path / f"{status}-{transition}.db")
+    database = RunDatabase()
     database.save_run(
         RunMetadata(
             run_id="noncompleted-run",
@@ -510,7 +479,7 @@ def test_delivery_transitions_distinguish_missing_runs(
     transition: str,
 ) -> None:
     """A missing identity remains distinct from an invalid lifecycle state."""
-    database = RunDatabase(tmp_path / f"missing-{transition}.db")
+    database = RunDatabase()
 
     with pytest.raises(KeyError, match="Unknown pipeline run"):
         if transition == "pending":
@@ -549,7 +518,7 @@ def _save_delivery_candidate(
 
 def test_oldest_pending_delivery_excludes_ineligible_runs(tmp_path: Path) -> None:
     """Retry selection requires completed, pending, source-matched runs with output paths."""
-    database = RunDatabase(tmp_path / "oldest.db")
+    database = RunDatabase()
     base = datetime(2026, 8, 11, 10, 0, tzinfo=UTC)
     _save_delivery_candidate(
         database,
@@ -609,7 +578,7 @@ def test_oldest_pending_delivery_warns_and_continues_past_missing_files(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """A missing oldest artifact is actionable but cannot hide the next retryable run."""
-    database = RunDatabase(tmp_path / "missing.db")
+    database = RunDatabase()
     base = datetime(2026, 8, 11, 10, 0, tzinfo=UTC)
     database.save_run(
         RunMetadata(
@@ -643,7 +612,7 @@ def test_oldest_pending_delivery_breaks_timestamp_ties_deterministically(
     tmp_path: Path,
 ) -> None:
     """Equal completion and creation timestamps use run ID as the final stable key."""
-    database = RunDatabase(tmp_path / "ties.db")
+    database = RunDatabase()
     created = datetime(2026, 8, 11, 10, 0, tzinfo=UTC)
     completed = created + timedelta(minutes=5)
     _save_delivery_candidate(
@@ -698,7 +667,6 @@ def test_tracker_completes_artifact_from_authoritative_probe_without_reprobing(
     output_path.write_bytes(b"small-test-file")
     tracker = RunTracker(
         "artifact-run",
-        db_path=tmp_path / "tracker.db",
         capture_system=False,
     )
     tracker.start_run(
@@ -733,7 +701,7 @@ def test_tracker_completes_artifact_from_authoritative_probe_without_reprobing(
     assert completed.clips_selected == 7
     assert completed.errors_count == 1
     assert completed.automation_attempt_id == "attempt-artifact"
-    sidecar = RunMetadata.from_json((tmp_path / "run_metadata.json").read_text())
+    sidecar = RunMetadata.from_dict(json.loads((tmp_path / "run_metadata.json").read_text()))
     assert sidecar.to_dict() == completed.to_dict()
 
 
@@ -743,9 +711,7 @@ def test_tracker_completes_requested_artifact_as_retryable_before_upload(
     """Requested delivery is pending with zero attempts in the artifact commit itself."""
     output_path = tmp_path / "memory.mp4"
     output_path.write_bytes(b"validated")
-    tracker = RunTracker(
-        "requested-artifact", db_path=tmp_path / "requested.db", capture_system=False
-    )
+    tracker = RunTracker("requested-artifact", capture_system=False)
     tracker.start_run(automation_attempt_id="attempt-requested")
 
     completed = tracker.complete_artifact(
@@ -774,7 +740,7 @@ def test_legacy_completion_keeps_database_authoritative_when_sidecar_fails(
     configured_literal = "legacy-sidecar-detail-must-not-be-logged"
     output_path = tmp_path / "legacy.mp4"
     output_path.write_bytes(b"legacy-output")
-    tracker = RunTracker("legacy-completion", db_path=tmp_path / "legacy.db", capture_system=False)
+    tracker = RunTracker("legacy-completion", capture_system=False)
     tracker.start_run(automation_attempt_id="attempt-legacy")
     monkeypatch.setattr(tracker, "_get_video_duration", lambda _path: 3.5)
     monkeypatch.setattr(
@@ -785,7 +751,7 @@ def test_legacy_completion_keeps_database_authoritative_when_sidecar_fails(
     caplog.set_level(logging.WARNING)
 
     completed = tracker.complete_run(output_path)
-    saved = RunDatabase(tmp_path / "legacy.db").get_run("legacy-completion")
+    saved = RunDatabase().get_run("legacy-completion")
 
     assert completed.status == "completed"
     assert saved is not None
@@ -805,9 +771,7 @@ def test_sidecar_file_write_failure_logs_only_controlled_text(
     configured_literal = "filesystem-detail-must-not-be-logged"
     output_path = tmp_path / "write-failure.mp4"
     output_path.write_bytes(b"validated")
-    tracker = RunTracker(
-        "write-failure", db_path=tmp_path / "write-failure.db", capture_system=False
-    )
+    tracker = RunTracker("write-failure", capture_system=False)
     tracker.start_run()
     monkeypatch.setattr(
         Path,
@@ -827,7 +791,7 @@ def test_tracker_marks_delivery_pending_and_refreshes_sidecar(tmp_path: Path) ->
     """A failed API call stays completed and persists its retry state to the sidecar."""
     output_path = tmp_path / "memory.mp4"
     output_path.write_bytes(b"validated")
-    tracker = RunTracker("tracker-pending", db_path=tmp_path / "pending.db", capture_system=False)
+    tracker = RunTracker("tracker-pending", capture_system=False)
     tracker.start_run(automation_attempt_id="attempt-pending")
     tracker.complete_artifact(
         output_path,
@@ -845,7 +809,7 @@ def test_tracker_marks_delivery_pending_and_refreshes_sidecar(tmp_path: Path) ->
     assert pending.immich_asset_id is None
     assert pending.delivery_album == "Original Album"
     assert pending.automation_attempt_id == "attempt-pending"
-    sidecar = RunMetadata.from_json((tmp_path / "run_metadata.json").read_text())
+    sidecar = RunMetadata.from_dict(json.loads((tmp_path / "run_metadata.json").read_text()))
     assert sidecar.to_dict() == pending.to_dict()
 
 
@@ -853,9 +817,7 @@ def test_tracker_marks_delivery_success_and_refreshes_sidecar(tmp_path: Path) ->
     """A successful retry records its asset and keeps the original album for provenance."""
     output_path = tmp_path / "memory.mp4"
     output_path.write_bytes(b"validated")
-    tracker = RunTracker(
-        "tracker-delivered", db_path=tmp_path / "delivered.db", capture_system=False
-    )
+    tracker = RunTracker("tracker-delivered", capture_system=False)
     tracker.start_run()
     tracker.complete_artifact(
         output_path,
@@ -873,7 +835,7 @@ def test_tracker_marks_delivery_success_and_refreshes_sidecar(tmp_path: Path) ->
     assert delivered.delivery_error is None
     assert delivered.immich_asset_id == "asset-retry"
     assert delivered.delivery_album == "Original Album"
-    sidecar = RunMetadata.from_json((tmp_path / "run_metadata.json").read_text())
+    sidecar = RunMetadata.from_dict(json.loads((tmp_path / "run_metadata.json").read_text()))
     assert sidecar.to_dict() == delivered.to_dict()
 
 
@@ -883,7 +845,7 @@ def test_tracker_marks_pending_configuration_error_without_counting_api_call(
     """Requested delivery without a client is pending, but no API attempt occurred."""
     output_path = tmp_path / "memory.mp4"
     output_path.write_bytes(b"validated")
-    tracker = RunTracker("tracker-config", db_path=tmp_path / "config.db", capture_system=False)
+    tracker = RunTracker("tracker-config", capture_system=False)
     tracker.start_run()
     tracker.complete_artifact(output_path, _authoritative_probe(), warnings=[])
 
@@ -1010,7 +972,7 @@ def _prepare_generation(
         return _authoritative_probe()
 
     def upload(*_args: object, **_kwargs: object) -> dict[str, str]:
-        artifact = RunDatabase(tmp_path / "runs.db").get_run("delivery-run")
+        artifact = RunDatabase().get_run("delivery-run")
         assert artifact is not None
         assert artifact.status == "completed"
         assert artifact.delivery_status is DeliveryStatus.PENDING
@@ -1068,14 +1030,14 @@ def test_deferred_generation_returns_exact_context_on_the_caller_owned_tracker(
         "build_assembly_settings",
         lambda *_args: AssemblySettings(encoding_plan=exact_plan),
     )
-    tracker = RunTracker("ui-owned-run", db_path=tmp_path / "runs.db", capture_system=False)
+    tracker = RunTracker("ui-owned-run", capture_system=False)
 
     prepared = generate_memory(
         params,  # type: ignore[arg-type]
         run_tracker=tracker,
         defer_finalization=True,
     )
-    saved = RunDatabase(tmp_path / "runs.db").get_run("ui-owned-run")
+    saved = RunDatabase().get_run("ui-owned-run")
 
     assert isinstance(prepared, PreparedGeneration)
     assert prepared.encoding_plan is exact_plan
@@ -1106,7 +1068,7 @@ def test_generation_without_upload_completes_artifact_as_not_requested(
     )
 
     result = generate_memory(params)  # type: ignore[arg-type]
-    saved = RunDatabase(tmp_path / "runs.db").get_run("delivery-run")
+    saved = RunDatabase().get_run("delivery-run")
 
     assert result.read_bytes() == b"validated-artifact"
     assert events == ["final-probe"]
@@ -1145,7 +1107,7 @@ def test_final_progress_callback_failure_preserves_authoritative_artifact_state(
     with pytest.raises(GenerationError, match="observer failed after durable completion"):
         generate_memory(params)  # type: ignore[arg-type]
 
-    saved = RunDatabase(tmp_path / "runs.db").get_run("delivery-run")
+    saved = RunDatabase().get_run("delivery-run")
     assert saved is not None
     assert saved.status == "completed"
     assert saved.output_path is not None
@@ -1177,7 +1139,7 @@ def test_successful_generation_delivery_records_asset_and_original_album(
     )
 
     generate_memory(params)  # type: ignore[arg-type]
-    saved = RunDatabase(tmp_path / "runs.db").get_run("delivery-run")
+    saved = RunDatabase().get_run("delivery-run")
 
     assert events == ["music", "final-probe", "upload"]
     assert saved is not None
@@ -1220,7 +1182,7 @@ def test_final_progress_callback_cannot_downgrade_or_leak_delivered_artifact(
 
     with pytest.raises(GenerationError) as caught:
         generate_memory(params)  # type: ignore[arg-type]
-    saved = RunDatabase(tmp_path / "runs.db").get_run("delivery-run")
+    saved = RunDatabase().get_run("delivery-run")
 
     assert events == ["music", "final-probe", "upload"]
     assert saved is not None
@@ -1263,7 +1225,7 @@ def test_post_completion_exception_guard_preserves_delivered_database_truth(
 
     with pytest.raises(GenerationError) as caught:
         generate_memory(params)  # type: ignore[arg-type]
-    saved = RunDatabase(tmp_path / "runs.db").get_run("delivery-run")
+    saved = RunDatabase().get_run("delivery-run")
 
     assert events == ["music", "final-probe", "upload"]
     assert saved is not None
@@ -1298,7 +1260,7 @@ def test_failed_generation_delivery_is_pending_and_does_not_fail_artifact(
 
     with pytest.raises(DeliveryError, match="Immich delivery failed") as caught:
         generate_memory(params)  # type: ignore[arg-type]
-    saved = RunDatabase(tmp_path / "runs.db").get_run("delivery-run")
+    saved = RunDatabase().get_run("delivery-run")
 
     assert events == ["final-probe", "upload"]
     assert saved is not None
@@ -1332,7 +1294,7 @@ def test_requested_generation_delivery_without_client_is_pending_without_attempt
 
     with pytest.raises(DeliveryError, match="no Immich client"):
         generate_memory(params)  # type: ignore[arg-type]
-    saved = RunDatabase(tmp_path / "runs.db").get_run("delivery-run")
+    saved = RunDatabase().get_run("delivery-run")
 
     assert events == ["final-probe"]
     assert saved is not None
@@ -1440,7 +1402,7 @@ def test_generation_delivers_from_completed_database_state_when_sidecar_mirrorin
     caplog.set_level(logging.WARNING)
 
     result = generate_memory(params)  # type: ignore[arg-type]
-    saved = RunDatabase(tmp_path / "runs.db").get_run("delivery-run")
+    saved = RunDatabase().get_run("delivery-run")
 
     assert result.read_bytes() == b"validated-artifact"
     assert events == ["final-probe", "upload"]
@@ -1479,7 +1441,7 @@ def test_generation_queues_failed_delivery_when_sidecar_mirroring_also_fails(
 
     with pytest.raises(DeliveryError, match="Immich unavailable"):
         generate_memory(params)  # type: ignore[arg-type]
-    saved = RunDatabase(tmp_path / "runs.db").get_run("delivery-run")
+    saved = RunDatabase().get_run("delivery-run")
 
     assert events == ["final-probe", "upload"]
     assert saved is not None
@@ -1516,7 +1478,7 @@ def test_hard_stop_after_artifact_commit_leaves_requested_delivery_pending(
 
     with pytest.raises(KeyboardInterrupt):
         generate_memory(params)  # type: ignore[arg-type]
-    saved = RunDatabase(tmp_path / "runs.db").get_run("delivery-run")
+    saved = RunDatabase().get_run("delivery-run")
 
     assert events == ["final-probe"]
     assert saved is not None
@@ -1551,7 +1513,7 @@ def test_hard_stop_during_upload_leaves_requested_delivery_pending(
 
     with pytest.raises(KeyboardInterrupt):
         generate_memory(params)  # type: ignore[arg-type]
-    saved = RunDatabase(tmp_path / "runs.db").get_run("delivery-run")
+    saved = RunDatabase().get_run("delivery-run")
 
     assert events == ["final-probe", "upload-started"]
     assert saved is not None

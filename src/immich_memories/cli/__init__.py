@@ -97,6 +97,7 @@ def main(
     from pydantic import ValidationError
 
     from immich_memories.cli._config_errors import format_validation_error, format_yaml_error
+    from immich_memories.settings_store import SettingsUnavailable
 
     try:
         if config:
@@ -117,6 +118,16 @@ def main(
     except yaml.YAMLError as e:
         print_error(format_yaml_error(e))
         sys.exit(1)
+    except SettingsUnavailable as e:
+        print_error(str(e))
+        sys.exit(1)
+
+    # Registered after the config has loaded, so the import never runs inside a config load.
+    # The `store` commands manage imports, backups and restores by hand.
+    if ctx.invoked_subcommand != "store":
+        from immich_memories.store.legacy_imports import enable_first_open_import
+
+        enable_first_open_import()
 
 
 @main.command()
@@ -158,6 +169,7 @@ from immich_memories.cli.prepare_cmd import register_prepare_commands  # noqa: E
 from immich_memories.cli.runs import register_runs_commands  # noqa: E402
 from immich_memories.cli.scheduler_cmd import register_scheduler_commands  # noqa: E402
 from immich_memories.cli.special_days_cmd import register_special_day_commands  # noqa: E402
+from immich_memories.cli.store_cmd import register_store_commands  # noqa: E402
 from immich_memories.cli.titles import register_titles_commands  # noqa: E402
 
 register_generate_commands(main)
@@ -174,6 +186,7 @@ register_prepare_commands(main)
 register_cache_commands(main)
 register_models_commands(main)
 register_auto_commands(main)
+register_store_commands(main)
 
 
 if __name__ == "__main__":

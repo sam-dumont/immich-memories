@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sqlite3
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -47,7 +46,7 @@ def _invoke(config: Config, args: list[str]):
 def test_history_filters_auto_runs_before_applying_limit(tmp_path: Path) -> None:
     """A newer manual completion cannot hide an older automation completion."""
     config = _config(tmp_path)
-    db = RunDatabase(config.cache.database_path)
+    db = RunDatabase()
     started = datetime(2026, 8, 10, 9, 0)
     db.save_run(
         RunMetadata(
@@ -80,7 +79,7 @@ def test_history_filters_auto_runs_before_applying_limit(tmp_path: Path) -> None
 def test_status_json_reports_durable_attempt_rotation_and_scheduler(tmp_path: Path) -> None:
     """Status combines durable state without running detection or changing the scheduler."""
     config = _config(tmp_path)
-    state = AutomationStateStore(config.cache.database_path)
+    state = AutomationStateStore()
     attempt = state.start_attempt("daily wake")
     state.update_phase(
         attempt.id,
@@ -92,7 +91,7 @@ def test_status_json_reports_durable_attempt_rotation_and_scheduler(tmp_path: Pa
         "Immich preflight failed",
         error="connection refused",
     )
-    db = RunDatabase(config.cache.database_path)
+    db = RunDatabase()
     now = datetime.now()
     for run_id, started, completed, category in (
         ("birthday-run", now - timedelta(hours=4), now - timedelta(hours=3), "birthday"),
@@ -176,8 +175,8 @@ def test_status_json_reports_durable_attempt_rotation_and_scheduler(tmp_path: Pa
 def test_status_reports_pending_queue_when_all_artifacts_are_missing(tmp_path: Path) -> None:
     """A missing file makes a retry unavailable, not the durable queue empty."""
     config = _config(tmp_path)
-    db = RunDatabase(config.cache.database_path)
-    completed = datetime(2026, 8, 12, 8, 30)
+    db = RunDatabase()
+    completed = datetime(2026, 8, 12, 8, 30, tzinfo=UTC)
     db.save_run(
         RunMetadata(
             run_id="missing-pending",
@@ -215,10 +214,10 @@ def test_status_reports_pending_queue_when_all_artifacts_are_missing(tmp_path: P
 def test_status_exposes_typed_oldest_retryable_delivery_details(tmp_path: Path) -> None:
     """Operators can identify the oldest actionable item without querying SQLite."""
     config = _config(tmp_path)
-    db = RunDatabase(config.cache.database_path)
+    db = RunDatabase()
     output = tmp_path / "retry-me.mp4"
     output.write_bytes(b"video")
-    completed = datetime(2026, 8, 12, 8, 30)
+    completed = datetime(2026, 8, 12, 8, 30, tzinfo=UTC)
     db.save_run(
         RunMetadata(
             run_id="retry-me",
@@ -250,7 +249,7 @@ def test_status_exposes_typed_oldest_retryable_delivery_details(tmp_path: Path) 
 def test_status_refreshes_and_reports_current_rejection_reasons(tmp_path: Path) -> None:
     """A fresh status process computes one read-only candidate snapshot for explainability."""
     config = _config(tmp_path)
-    RunDatabase(config.cache.database_path)
+    RunDatabase()
     rejected = MemoryCandidate(
         memory_type="monthly_highlights",
         category=CandidateCategory.MONTHLY_REVIEW,
@@ -354,7 +353,7 @@ def test_status_json_is_one_document_on_a_fresh_database(tmp_path: Path) -> None
 def test_status_keeps_durable_state_when_suggestion_preflight_fails(tmp_path: Path) -> None:
     """Offline Immich makes suggestions unavailable, not operational status unavailable."""
     config = _config(tmp_path)
-    db = RunDatabase(config.cache.database_path)
+    db = RunDatabase()
     completed = datetime.now() - timedelta(hours=3)
     db.save_run(
         RunMetadata(
@@ -407,14 +406,14 @@ def test_status_keeps_durable_state_when_live_discovery_fails(tmp_path: Path) ->
             "directory": str(tmp_path / "cache"),
         },
     )
-    state = AutomationStateStore(config.cache.database_path)
+    state = AutomationStateStore()
     prior_attempt = state.start_attempt("previous daily wake")
     state.finish_attempt(
         prior_attempt.id,
         AutoOutcome.SKIPPED,
         "cooldown active",
     )
-    db = RunDatabase(config.cache.database_path)
+    db = RunDatabase()
     completed = datetime.now() - timedelta(hours=3)
     db.save_run(
         RunMetadata(
@@ -456,11 +455,9 @@ def test_status_keeps_durable_state_when_live_discovery_fails(tmp_path: Path) ->
         ("x" * 3000) + f": metadata request rejected key={secret}"
     )
 
-    def row_counts() -> tuple[int, int]:
-        with sqlite3.connect(config.cache.database_path) as conn:
-            attempts = conn.execute("SELECT COUNT(*) FROM automation_attempts").fetchone()[0]
-            runs = conn.execute("SELECT COUNT(*) FROM pipeline_runs").fetchone()[0]
-        return attempts, runs
+    def row_counts() -> tuple[object, int]:
+        last_attempt = AutomationStateStore().get_last_attempt()
+        return last_attempt, RunDatabase().get_aggregate_stats()["total_runs"]
 
     before = row_counts()
     with (
@@ -611,9 +608,7 @@ def test_status_exposes_notification_cooldown_without_changing_readiness(tmp_pat
     config = _config(tmp_path)
     config.notifications.enabled = True
     config.notifications.urls = ["ntfy://topic"]
-    NotificationStateStore(config.cache.database_path).record_failure(
-        NotificationFailureCategory.QUOTA
-    )
+    NotificationStateStore().record_failure(NotificationFailureCategory.QUOTA)
 
     payload = AutoRunner(config).status().to_dict()
 
@@ -625,7 +620,7 @@ def test_status_exposes_notification_cooldown_without_changing_readiness(tmp_pat
 def test_status_human_output_distinguishes_installed_from_unknown_active(tmp_path: Path) -> None:
     """Human status does not describe a mere scheduler file as active."""
     config = _config(tmp_path)
-    RunDatabase(config.cache.database_path)
+    RunDatabase()
     with (
         patch.object(AutoRunner, "suggest", return_value=[]),
         patch(
@@ -653,11 +648,9 @@ def test_status_real_suggest_flow_is_read_only(tmp_path: Path) -> None:
     client.get_time_buckets.return_value = []
     client.get_all_people.return_value = []
 
-    def row_counts() -> tuple[int, int]:
-        with sqlite3.connect(config.cache.database_path) as conn:
-            attempts = conn.execute("SELECT COUNT(*) FROM automation_attempts").fetchone()[0]
-            runs = conn.execute("SELECT COUNT(*) FROM pipeline_runs").fetchone()[0]
-        return attempts, runs
+    def row_counts() -> tuple[object, int]:
+        last_attempt = AutomationStateStore().get_last_attempt()
+        return last_attempt, RunDatabase().get_aggregate_stats()["total_runs"]
 
     before = row_counts()
     scheduler = SchedulerStatus("launchd", True, False)
@@ -676,7 +669,7 @@ def test_status_real_suggest_flow_is_read_only(tmp_path: Path) -> None:
         result = _invoke(config, ["auto", "status", "--json"])
 
     assert result.exit_code == 0
-    assert row_counts() == before == (0, 0)
+    assert row_counts() == before == (None, 0)
     assert json.loads(result.stdout)["suggestion"]["outcome"] == "ready"
     preflight.assert_called_once_with(config)
     client.get_time_buckets.assert_called_once_with()

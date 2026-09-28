@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from immich_memories.analysis.editorial_cut_invariants import (
     FinishedCut,
     broken_promises,
@@ -94,6 +96,26 @@ def test_a_favourite_collapsed_into_its_starred_twin_is_shown_by_the_twin():
     )
 
     assert cut_violations(cut) == []
+
+
+@pytest.mark.parametrize("end", ["shown", "missing", "cycle"])
+def test_a_collapsed_favourite_chain_must_end_in_a_shown_keeper(end):
+    cut = FinishedCut(
+        carriers=[_shot("plain", moment="M1", favourite=False)]
+        + ([_shot("keeper", moment="M2", favourite=True)] if end == "shown" else []),
+        units={
+            "star": _shot("star", moment="M1", favourite=True),
+            "plain": _shot("plain", moment="M1", favourite=False),
+        },
+        removed_by={"star": "final-duplicates"},
+        verdict_of=_shared,
+        collapsed_into={"star": "twin", "twin": "star" if end == "cycle" else "keeper"},
+    )
+
+    expected = (
+        [] if end == "shown" else [("favourite_wins_its_moment", "plain", "final-duplicates")]
+    )
+    assert _broken(cut) == expected
 
 
 def test_a_favourite_the_film_refuses_leaves_its_moment_to_another_picture():
@@ -219,6 +241,7 @@ def test_a_run_records_what_it_broke_and_runs_show_counts_it(tmp_path, caplog):
 def test_runs_show_says_how_many_promises_the_cut_broke(tmp_path):
     from immich_memories.cli._helpers import console
     from immich_memories.cli.runs import _print_cut_checks
+    from immich_memories.db import open_store
     from immich_memories.operations.run_index import record_run_attempt
 
     attempt = tmp_path / "editorial-runs" / "film" / "attempts" / "one"
@@ -229,9 +252,9 @@ def test_runs_show_says_how_many_promises_the_cut_broke(tmp_path):
             json.dumps(payload)
         ),
     )
-    record_run_attempt(tmp_path, "20260924_100000_abcd", attempt, tmp_path / "film.mp4")
+    record_run_attempt("20260924_100000_abcd", attempt, tmp_path / "film.mp4")
 
     with console.capture() as captured:
-        _print_cut_checks(tmp_path, "20260924_100000_abcd")
+        _print_cut_checks(open_store(), "20260924_100000_abcd")
 
     assert "Cut checks: 1 broken promise(s)" in captured.get()

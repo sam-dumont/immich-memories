@@ -14,6 +14,7 @@ from immich_memories.automation.models import AutoOutcome
 from immich_memories.automation.runner import AutomationAlreadyRunningError, AutoRunner
 from immich_memories.automation.state_store import AutomationStateStore
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.tracking import RunDatabase
 from immich_memories.web.answer_cache import AnswerCache, Cached
 from immich_memories.web.dependencies import answers, current_config
@@ -150,12 +151,12 @@ def read_attempt(
     attempt_id: str, config: Annotated[Config, Depends(current_config)]
 ) -> AttemptView:
     """Where an automation attempt stands, and the run it opened, even a failed one."""
-    attempt = AutomationStateStore(config.cache.database_path).get_attempt(attempt_id)
+    attempt = AutomationStateStore(open_store(config)).get_attempt(attempt_id)
     if attempt is None:
         raise HTTPException(404, "No such attempt.")
     run_id = attempt.run_id
     if run_id is None:
-        record = RunDatabase(config.cache.database_path).get_run_by_automation_attempt(attempt.id)
+        record = RunDatabase(open_store(config)).get_run_by_automation_attempt(attempt.id)
         run_id = record.run_id if record else None
     return AttemptView(
         id=attempt.id,

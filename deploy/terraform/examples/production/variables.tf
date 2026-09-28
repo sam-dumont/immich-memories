@@ -78,6 +78,20 @@ variable "llm_api_key" {
   sensitive   = true
 }
 
+# The store (optional; empty keeps the default SQLite file on the cache PVC)
+variable "database_url" {
+  description = "PostgreSQL URL for the store. Empty keeps SQLite"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "database_schema" {
+  description = "Schema name for the store, PostgreSQL only"
+  type        = string
+  default     = "immich_memories"
+}
+
 # MusicGen Configuration
 variable "musicgen_enabled" {
   description = "Enable AI music generation using MusicGen API"

@@ -1,0 +1,21 @@
+# Optional: point the store at PostgreSQL instead of the default SQLite file
+# on the `data` PVC. Not referenced by base/kustomization.yaml — the base
+# keeps working unchanged with SQLite unless you apply this overlay yourself:
+#
+#   kubectl apply -k overlays/postgres
+#
+# This does not run a PostgreSQL server for you. database-secret.yaml points
+# at whichever of the four modes you picked: a separate PostgreSQL service, a
+# separate database on your existing Immich PostgreSQL instance, or a
+# dedicated immich_memories schema and role inside Immich's own database. See
+# docs-site/docs/run/database.md for the SQL and the tradeoffs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  # cp database-secret.yaml.example database-secret.yaml and fill in the URL.
+  - database-secret.yaml
+
+patches:
+  - path: deployment-database-env.yaml

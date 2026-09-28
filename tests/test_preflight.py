@@ -231,9 +231,7 @@ def test_notification_preflight_warns_on_sanitized_failure_cooldown(tmp_path) ->
         cache={"database": str(tmp_path / "preflight.db")},
         notifications={"enabled": True, "urls": [credential_url], "cooldown_hours": 24},
     )
-    NotificationStateStore(config.cache.database_path).record_failure(
-        NotificationFailureCategory.QUOTA
-    )
+    NotificationStateStore().record_failure(NotificationFailureCategory.QUOTA)
 
     result = check_notifications(config)
 

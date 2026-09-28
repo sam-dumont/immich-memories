@@ -84,6 +84,9 @@ of them** (`--person-match or`).
 `("Robin" OR "Kit") AND "Charlie"`. It replaces the names above rather than adding to them, and the
 command line shows which one the cut will use.
 
+With two names or more, a person recognised once in an episode counts in all of its pictures, so the
+pool shows those pictures too, marked **Same episode**: untick any that are not really about them.
+
 ### Trips and special days
 
 <ThemedScreenshot name="memory-trip-brief" alt="The trip picker: the trips found in 2024, one chosen" />
@@ -258,12 +261,31 @@ shows at once with when it was worked out, and **Refresh suggestions** reads the
 **Immich Connection** is the server and API key this install reads. The key field always loads empty:
 the saved key stays on the server, and an empty field keeps it. Change the URL and you type the key
 again, because a saved key only ever goes to the server it was saved for. **Test Connection** asks
-the server who the key belongs to without saving; **Save Config** writes both to `config.yaml`.
+the server who the key belongs to without saving. **Save Config** saves what you changed, and only
+that, to the database. A URL or key the environment or `config.yaml` sets is refused with the name of
+what sets it, and the key is a secret, so saving it needs `IMMICH_MEMORIES_SECRET_KEY`.
 
-**Configuration** is the live configuration, read-only: `config.yaml` after environment overrides and
-after any preset filled the keys you did not set. **Reload from Disk** re-reads it after a hand edit.
+**Configuration** lists every setting, grouped by section, with its live value and where it comes from:
+
+| Label | Source |
+|---|---|
+| Set by `IMMICH_MEMORIES_LLM__MODEL` (environment) | an environment variable, named exactly |
+| Set in config.yaml as `advanced.llm.model` | `config.yaml`, named the way the file writes it |
+| Saved here | the database, saved from this page or the CLI |
+| Default | nothing set it |
+
+The strongest source wins: environment, then `config.yaml`, then the database, then the default
+([precedence](../run/config-file.md#where-a-setting-comes-from)). A setting the environment or
+`config.yaml` sets is greyed out: saving under it would change nothing, so change it where the label
+says, or move it out of the file with `immich-memories config move-to-db KEY`. Everything else is
+editable, and each section's **Save** writes only the keys you changed, to the database. The page never
+writes `config.yaml` or the environment. Lists and mappings are edited as JSON. **Reload from Disk**
+re-reads the file after a hand edit.
+
 Any key named `api_key`, `api_keys`, `caption_api_key`, `client_secret`, `password`, `secret`, `token`,
-`trigger_token` or `urls` shows as `***`, masked on the server. Every key:
+`trigger_token` or `urls` is a secret: it shows as `***`, masked on the server, and an empty field
+keeps the stored value. Secrets are encrypted in the database with `IMMICH_MEMORIES_SECRET_KEY`;
+without it the page greys them out and says so. Every key:
 [configuration reference](../reference/config-reference.md).
 
 **Caches** lists four caches with their size and a **Clear** button each.
@@ -275,16 +297,16 @@ Any key named `api_key`, `api_keys`, `caption_api_key`, `client_secret`, `passwo
 | **Thumbnail** | Immich previews, read back for pixel facts, heads, contact sheets and the grid | re-fetched on demand |
 | **Preview** | clip previews the old web pages played; nothing writes it now | nothing |
 
-The expensive thing on disk is not behind those buttons. The editor's bank, `annotations.sqlite` under
-the cache directory, holds every fact it read about your pictures. Delete it and the next cut reads your
-library from scratch. More on [Health, logs and caches](../run/maintenance/health-logs-cache.md).
+The expensive thing on disk is not behind those buttons. The editor's bank lives in the store
+(`store.db`), not under the cache directory, and holds every fact it read about your pictures.
+Delete it and the next cut reads your library from scratch. More on [Health, logs and caches](../run/maintenance/health-logs-cache.md).
 
 ### People: who is who
 
 <ThemedScreenshot name="settings-people" alt="The people file: each person with their picture count, role and relationships" />
 
-**People** edits `~/.immich-memories/people.yaml`, the file [`immich-memories people`](./cli/prepare.md)
-writes. It is what turns "people in the picture" into "your family" for the editor: the family seat
+**People** edits the people registry in the store, the one [`immich-memories people`](./cli/prepare.md)
+writes and `people export` writes out as YAML. It is what turns "people in the picture" into "your family" for the editor: the family seat
 and big stories read it ([Teach it your family](../get-started/who-is-who.md)).
 
 **Rescan the library** runs `people scan`, which reads each named person's picture count and month

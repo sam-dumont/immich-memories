@@ -38,6 +38,7 @@ from immich_memories.store.episode_readings import (
     EpisodeReadingProducer,
     EpisodeReadingStore,
 )
+from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset, make_clip
 
 
@@ -163,7 +164,7 @@ def test_text_editorial_planner_runs_the_real_banked_lane_with_full_context(
             ),
         }
     )
-    episode_store = EpisodeReadingStore(tmp_path / "annotations.sqlite")
+    episode_store = EpisodeReadingStore(annotation_store())
     episode_producer = EpisodeReadingProducer(
         model_id="text-judge-test",
         prompt_version="episode-prompt-v1",

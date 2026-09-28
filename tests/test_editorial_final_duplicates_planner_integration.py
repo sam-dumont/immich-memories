@@ -6,15 +6,113 @@ capable the configured reader is.
 """
 
 import hashlib
+import json
 from dataclasses import replace
 
 import numpy as np
+import pytest
 
+from immich_memories.analysis.annotation_lines import AssetAnnotationLine
 from immich_memories.analysis.editorial_structure_contract import StructurePlannerPorts
 from immich_memories.analysis.editorial_structure_planner import plan_structure
 from immich_memories.operations.cut_progress import announcing_stages
 from tests.editorial_story_fixtures import ControlledStoryJudge
 from tests.test_editorial_duration_planner_integration import source
+
+
+@pytest.mark.parametrize("reason", ["duplicates", "audience"])
+def test_a_late_refill_uses_fresh_standing_and_tries_the_next_picture(tmp_path, reason):
+    captured = source(tmp_path, seconds=60, pictures=20)
+    inspected = set()
+
+    # WHY: preparation supplies newly acquired image facts. All selection and
+    # admission decisions, including standing, use the production implementations.
+    def prepare(rows):
+        fresh = {row["asset_id"] for row in rows} - inspected
+        inspected.update(fresh)
+        if reason == "audience" and "picture-001" in fresh:
+            captured.annotations["picture-001"] += " | screen=yes"
+        if "picture-015" in fresh:
+            description = "An empty room with a bare floor and wall."
+            line = "2020-05-02T09:00 | " + description + " | frame_kind=empty_room_ceiling_or_floor"
+            captured.annotations["picture-015"] = line
+            captured.audience_annotations["picture-015"] = AssetAnnotationLine(
+                "picture-015",
+                line,
+                description=description,
+                heads=(("frame_kind", "empty_room_ceiling_or_floor"), ("nsfw_marqo", "no")),
+            )
+        return bool(fresh)
+
+    prints = {f"picture-{n:03}": np.eye(20)[0 if n == 1 else n] for n in range(20)}
+    plan = plan_structure(
+        captured,
+        StructurePlannerPorts(
+            judge=ControlledStoryJudge(),
+            thumbnail_hash=lambda a: hashlib.sha256(a.encode()).hexdigest()[:16],
+            scene_print=prints.get if reason == "duplicates" else None,
+            prepare_candidates=prepare,
+        ),
+    ).plan
+
+    if reason == "duplicates":
+        removal = next(
+            r for r in plan["final_duplicate_review"]["removals"] if r["asset_id"] == "picture-001"
+        )
+        assert removal["replacement"] == "picture-016"
+    else:
+        assert [(r["from"], r["to"]) for r in plan["shareability"]["substituted"]] == [
+            ("picture-001", "picture-016")
+        ]
+    assert "picture-015" not in {c["asset_id"] for c in plan["carriers"]}
+    assert len(plan["carriers"]) == 15
+    assert not inspected & {"picture-017", "picture-018", "picture-019"}
+    audit = json.loads(
+        (captured.artifact_dir / "derived-decisions/picture-admission.private.json").read_text()
+    )
+    assert {"asset_id": "picture-015", "rule": "standing"}.items() <= next(
+        row for row in audit["checks"] if row["asset_id"] == "picture-015"
+    ).items()
+
+
+def test_a_family_seat_checks_new_facts_before_replacing_a_shot(tmp_path):
+    captured = source(tmp_path, seconds=60, pictures=20)
+    for asset in ("picture-015", "picture-016"):
+        captured.annotations[asset] += " | with Person A (partner; inner circle)"
+
+    inspected = set()
+
+    # WHY: new caption/head facts arrive through the preparation boundary;
+    # family representation and candidate admission run without mocked decisions.
+    def prepare(rows):
+        fresh = {row["asset_id"] for row in rows} - inspected
+        inspected.update(fresh)
+        if "picture-015" in fresh:
+            description = "An empty room with a bare floor and wall."
+            line = "2020-05-02T10:30 | " + description + " | frame_kind=empty_room_ceiling_or_floor"
+            captured.annotations["picture-015"] = line
+            captured.audience_annotations["picture-015"] = AssetAnnotationLine(
+                "picture-015",
+                line,
+                description=description,
+                heads=(("frame_kind", "empty_room_ceiling_or_floor"),),
+            )
+        return bool(fresh)
+
+    plan = plan_structure(
+        captured,
+        StructurePlannerPorts(
+            judge=ControlledStoryJudge(),
+            thumbnail_hash=lambda _asset: None,
+            prepare_candidates=prepare,
+        ),
+    ).plan
+
+    kept = {c["asset_id"] for c in plan["carriers"]}
+    assert "picture-016" in kept
+    assert "picture-015" not in kept
+    assert len(kept) == 15
+
 
 # Cached previews no two of which are within the review's 6 bits.
 DISTINCT_PREVIEWS = (
@@ -107,7 +205,7 @@ def test_the_finished_film_drops_a_scene_it_already_shows_when_it_has_room(tmp_p
     assert "picture-001" not in [c["asset_id"] for c in plan["carriers"]]
 
 
-def _six_days_away(tmp_path, *, starred_days: int, seconds: float = 60):
+def _six_days_away(tmp_path, *, starred_days: int, seconds: float = 60, refine: bool = False):
     """Six days by the sea, one picture each; the first `starred_days` are starred and show one
     scene, every other day its own."""
     from datetime import date
@@ -125,16 +223,21 @@ def _six_days_away(tmp_path, *, starred_days: int, seconds: float = 60):
     prints = {a: np.eye(8)[0 if n < starred_days else n] for n, a in enumerate(ids)}
     # The last starred frame is the sharpest: it is the one the film keeps.
     captured = replace(captured, pixel_facts={a: (100.0 + n, 120.0) for n, a in enumerate(ids)})
-    plan = plan_structure(
-        captured,
-        StructurePlannerPorts(
-            judge=NoModelJudge(),
-            # Far apart on the hash: only the scene print can call two of these one picture.
-            thumbnail_hash=lambda a: hashlib.sha256(a.encode()).hexdigest()[:16],
-            scene_print=prints.get,
-            rules=RuleStructureReader(captured),
-        ),
-    ).plan
+    ports = StructurePlannerPorts(
+        judge=NoModelJudge(),
+        # Far apart on the hash: only the scene print can call two of these one picture.
+        thumbnail_hash=lambda a: hashlib.sha256(a.encode()).hexdigest()[:16],
+        scene_print=prints.get,
+        rules=RuleStructureReader(captured),
+    )
+    if refine:
+        # WHY: evidence acquisition changes nothing in this synthetic library;
+        # both planning passes and their duplicate reviews remain real.
+        ports = replace(
+            ports,
+            refine=lambda current, draft: (current, replace(ports, refine=None, draft=draft)),
+        )
+    plan = plan_structure(captured, ports).plan
     return ids, plan
 
 
@@ -145,6 +248,15 @@ def test_two_starred_frames_of_one_scene_leave_one_and_the_cut_record_names_the_
     collapsed = plan["final_duplicate_review"]["collapsed_favourites"]
     assert [(row["asset_id"], row["keeper"]) for row in collapsed] == [(ids[0], ids[1])]
     assert ids[1] in [c["asset_id"] for c in plan["carriers"]]
+
+
+def test_refinement_preserves_the_drafts_starred_duplicate_history(tmp_path):
+    ids, plan = _six_days_away(tmp_path, starred_days=2, refine=True)
+
+    collapsed = plan["final_duplicate_review"]["collapsed_favourites"]
+    assert [(row["asset_id"], row["keeper"]) for row in collapsed] == [(ids[0], ids[1])]
+    selected = {c["asset_id"] for c in plan["carriers"]}
+    assert ids[0] not in selected and ids[1] in selected
 
 
 def test_folding_starred_twins_never_leaves_a_film_with_nothing(tmp_path):

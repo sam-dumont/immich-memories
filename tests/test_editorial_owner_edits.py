@@ -9,6 +9,7 @@ import pytest
 from immich_memories.analysis.editorial_planner import EditorialSelection
 from immich_memories.api.models import AssetType
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_clips import _validated_render_directives
 from immich_memories.processing.editorial_live_render import validate_editorial_live_clip
@@ -24,6 +25,10 @@ from tests.conftest import make_clip
 
 @pytest.fixture(autouse=True)
 def no_external_work(monkeypatch):
+    # The store the review edits are banked in is opened first: opening it checks, once, that
+    # its file is not on a network mount, which is local bookkeeping and not a service.
+    open_store()
+
     def forbidden(*_args, **_kwargs):
         pytest.fail("owner review projection must not call models, media tools or services")
 

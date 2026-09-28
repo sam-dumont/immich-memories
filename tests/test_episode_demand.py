@@ -14,7 +14,9 @@ from immich_memories.analysis.selection_source import (
 )
 from immich_memories.analysis.selection_source_groups import project_episode_groups
 from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+from immich_memories.db import open_store
 from immich_memories.store.episode_readings import EpisodeReadingProducer, EpisodeReadingStore
+from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 from tests.test_text_episode_reader import _AnnotationLines
 
@@ -66,9 +68,9 @@ def answer(prompt: str) -> str:
     )
 
 
-def demand_for(tmp_path, asked):
-    prepared = prepared_month()
-    lines = Lines({asset: f"{asset} | one complete line" for asset in ASSETS})
+def demand_for(tmp_path, asked, *, respond=answer, prepared=None):
+    prepared = prepared or prepared_month()
+    lines = Lines({asset: f"{asset} | one complete line" for asset in prepared.candidate_ids})
     producer = EpisodeReadingProducer(
         model_id="a-model",
         prompt_version="episode-prompt-v3",
@@ -76,14 +78,14 @@ def demand_for(tmp_path, asked):
         annotation_renderer_version="annotation-line-v1",
         annotation_versions=("description:student-v1",),
     )
-    store = EpisodeReadingStore(tmp_path / "annotations.sqlite")
+    store = EpisodeReadingStore(annotation_store())
 
     def text(_prepared):
         return CachedTextEpisodeReader(
             store=store,
             producer=producer,
             annotations=lines,
-            requester=lambda prompt: (asked.append(prompt), answer(prompt))[1],
+            requester=lambda prompt: (asked.append(prompt), respond(prompt))[1],
         )
 
     demand = DemandEpisodeReadings(
@@ -131,6 +133,57 @@ def test_a_second_demand_for_the_same_story_is_free(tmp_path):
     assert list(again)
 
 
+def test_a_failed_demand_preserves_its_fallback_and_identity(tmp_path):
+    from immich_memories.analysis.llm_wire import LLMIncompleteResponse
+
+    # WHY: replace the model HTTP boundary with a provider-confirmed truncated reply.
+    def incomplete(_prompt):
+        raise LLMIncompleteResponse('{"episodes":[')
+
+    asked = []
+    demand, prepared = demand_for(tmp_path, asked, respond=incomplete)
+    chosen = project_episode_groups(prepared, ("day-two",))[0].group.group_id
+
+    readings = demand.readings_for(["day-two"])
+
+    assert readings == {}
+    health = demand.reading_health()
+    assert health["status"] == "degraded"
+    assert health["unavailable_episodes"] == 1
+    assert len(health["episodes"]) == 1
+    episode = health["episodes"][0]
+    assert episode["group_id"] == chosen
+    assert episode["status"] == "unavailable"
+    assert episode["producer_key"] and episode["evidence_key"]
+    assert "LLMIncompleteResponse" in episode["reason"]
+    assert len(asked) == 1
+
+
+def test_a_recovered_demand_keeps_its_history_without_remaining_degraded(tmp_path):
+    from immich_memories.analysis.llm_wire import LLMIncompleteResponse
+
+    asked = []
+
+    # WHY: the provider fails once, then answers; the real store owns subsequent reuse.
+    def transient(prompt):
+        if len(asked) == 1:
+            raise LLMIncompleteResponse('{"episodes":[')
+        return answer(prompt)
+
+    demand, _prepared = demand_for(tmp_path, asked, respond=transient)
+    assert demand.readings_for(["day-two"]) == {}
+    assert demand.readings_for(["day-two"])
+    assert demand.readings_for(["day-two"])
+
+    health = demand.reading_health()
+    assert health["status"] == "complete"
+    assert health["unavailable_episodes"] == 0
+    assert health["episodes"][0]["status"] == "recovered"
+    assert health["episodes"][0]["reason"] is None
+    assert health["episodes"][0]["cache_hit"]
+    assert len(asked) == 2
+
+
 def test_the_unread_episodes_are_the_ones_no_demand_has_read_and_asking_is_free(tmp_path):
     asked: list[str] = []
     demand, prepared = demand_for(tmp_path, asked)
@@ -174,7 +227,7 @@ def polish_reading_through(demand, tmp_path):
         demand.readings_for([asset for assets in chosen.values() for asset in assets])
         return "the month", {}
 
-    return ThinPolish(bank_dir=tmp_path, read_period=read_period)
+    return ThinPolish(store=open_store(), bank_scope="case", read_period=read_period)
 
 
 def test_a_cold_cut_reads_only_the_episodes_its_draft_put_a_shot_in(tmp_path):

@@ -88,14 +88,14 @@ def _invoke_planned_generation(args: list[str], config: Config) -> Result:
         birth_date=None,
     )
     asset = MagicMock(duration_seconds=10.0)
-    # WHY: SyncImmichClient and fetch_videos would call the real Immich server.
+    # WHY: SyncImmichClient and fetch_media would call the real Immich server.
     with (
         # WHY: SyncImmichClient is the Immich HTTP client this CLI path would otherwise call.
         patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
-        # WHY: fetch_videos wraps the Immich video-listing call this test must not make.
+        # WHY: fetch_media wraps the Immich video-listing call this test must not make.
         patch(
-            "immich_memories.cli.generate.fetch_videos",
-            return_value=[asset],
+            "immich_memories.cli.generate.fetch_media",
+            return_value=([asset], []),
         ),
         patch(
             "immich_memories.cli.generate.run_pipeline_and_generate",
@@ -408,10 +408,10 @@ class TestAutoRunOutput:
         """The root option remains provenance after Click loads the config object."""
         config_path = tmp_path / "Config dir" / "family & photos.yaml"
         config_path.parent.mkdir()
-        Config(
-            immich={"url": "http://immich.test", "api_key": "test-key"},
-            cache={"database": str(tmp_path / "cache.db")},
-        ).save_yaml(config_path)
+        config_path.write_text(
+            "immich:\n  url: http://immich.test\n  api_key: test-key\n"
+            f"cache:\n  database: {tmp_path / 'cache.db'}\n"
+        )
         auto_runner = MagicMock()
         auto_runner.run_one.return_value = AutoRunResult(
             outcome=AutoOutcome.SKIPPED,
@@ -433,7 +433,7 @@ class TestAutoRunOutput:
         """Installed daily jobs must retain the config selected during installation."""
         config_path = tmp_path / "Config dir" / "family & photos.yaml"
         config_path.parent.mkdir()
-        Config().save_yaml(config_path)
+        config_path.write_text("")
 
         # WHY: show_scheduler_config renders the real launchd/systemd/crontab definition text.
         with patch(
@@ -785,7 +785,7 @@ class TestAutoRunOutput:
             immich={"url": "http://immich.test:2283", "api_key": "test-key"},
             cache={"database": str(tmp_path / "runs.db")},
         )
-        store = AutomationStateStore(tmp_path / "runs.db")
+        store = AutomationStateStore()
         for _ in range(2):
             attempt = store.start_attempt(reason="daily wake")
             store.finish_attempt(

@@ -26,9 +26,8 @@ import collections
 import logging
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import date, timedelta
-from pathlib import Path
-from typing import Any
+from datetime import date, datetime, timedelta
+from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.llm_failures import stop_if_this_is_our_bug
 from immich_memories.analysis.moment_grouping import (
@@ -41,9 +40,11 @@ from immich_memories.analysis.special_day import (
     _json_in,
     active_hours,
     run_extent,
-    sample_across_day,
 )
 from immich_memories.people.relationships import is_close_family
+
+if TYPE_CHECKING:
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +97,7 @@ class SequenceReading:
 
 
 def close_family_roles(people: Mapping[str, Any]) -> dict[str, str]:
-    """Each close family member's role by Immich person id, from the people file's context.
+    """Each close family member's role by Immich person id, from the people registry's context.
 
     The owner, and the partner, child and parent roles the owner confirmed (#1180's set,
     `is_close_family`); a relationship only derived by closure is not a confirmation.
@@ -170,12 +171,31 @@ def _close_family_part(items: list, family: Mapping[str, str]) -> list[str]:
 
 
 def _written_about(items: list, captions: Mapping[str, str] | None) -> list[str]:
-    """A few distinct things written about the run's pictures, spread across its hours."""
-    described = [a for a in items if _described_by(a, captions)]
-    texts = [
-        str(_described_by(a, captions))[:_CAPTION_CHARACTERS] for a in sample_across_day(described)
-    ]
-    return list(dict.fromkeys(texts))[:_CAPTIONS_PER_RUN]
+    """A few distinct things written about the run's pictures, from the hours most were taken in.
+
+    One per hour, so a burst cannot fill the line. Taken by the hours' picture counts rather
+    than in clock order: a race day that began with the cat at home was quoted as the cat
+    twice and never the circuit, and read as an ordinary day.
+    """
+    pictures_in = collections.Counter(_hour_of(a) for a in items)
+    written: dict[datetime, list[tuple[datetime, str]]] = collections.defaultdict(list)
+    for asset in items:
+        if text := _described_by(asset, captions):
+            written[_hour_of(asset)].append(
+                (asset.file_created_at, str(text)[:_CAPTION_CHARACTERS])
+            )
+    picked: dict[str, datetime] = {}
+    for hour in sorted(written, key=lambda h: (-pictures_in[h], h)):
+        texts = written[hour]
+        when, text = texts[len(texts) // 2]
+        picked.setdefault(text, when)
+        if len(picked) == _CAPTIONS_PER_RUN:
+            break
+    return sorted(picked, key=picked.__getitem__)
+
+
+def _hour_of(asset: Any) -> datetime:
+    return asset.file_created_at.replace(minute=0, second=0, microsecond=0)
 
 
 def _recognised(people: collections.Counter) -> list[str]:
@@ -231,7 +251,7 @@ def read_in_sequence(
     *,
     captions: Mapping[str, str] | None,
     llm_config: Any,
-    cache_path: Path | None = None,
+    judgments: Store | None = None,
     family: Mapping[str, str] | None = None,
 ) -> SequenceReading:
     """The occasions among these runs, each with what it was, one text call per month."""
@@ -245,7 +265,7 @@ def read_in_sequence(
             continue
         reading.offered += len(lines)
         logger.debug("%s, as read:\n%s", month, "\n".join(lines))
-        answer = _month_answer(_PROMPT.format(lines="\n".join(lines)), llm_config, cache_path)
+        answer = _month_answer(_PROMPT.format(lines="\n".join(lines)), llm_config, judgments)
         if answer is None:
             reading.unread_months.append(month)
             continue
@@ -273,9 +293,9 @@ def _month_lines(
     return keyed, lines
 
 
-def _month_answer(prompt: str, llm_config: Any, cache_path: Path | None) -> dict[str, str] | None:
+def _month_answer(prompt: str, llm_config: Any, judgments: Store | None) -> dict[str, str] | None:
     try:
-        raw = _read(prompt, llm_config, cache_path)
+        raw = _read(prompt, llm_config, judgments)
     except Exception as exc:  # noqa: BLE001 - an unreachable model reads nothing, it decides nothing
         stop_if_this_is_our_bug(exc, "special-day sequence reading")
         logger.warning("A month of days could not be read (%s)", type(exc).__name__)
@@ -291,9 +311,9 @@ def _month_answer(prompt: str, llm_config: Any, cache_path: Path | None) -> dict
     }
 
 
-def _read(prompt: str, llm_config: Any, cache_path: Path | None) -> str:
+def _read(prompt: str, llm_config: Any, judgments: Store | None) -> str:
     """One month's reading, banked when a cache is given so a resumed scan pays for it once."""
-    if cache_path is None:
+    if judgments is None:
         from immich_memories.analysis.llm_query import query_llm
 
         return asyncio.run(
@@ -305,7 +325,7 @@ def _read(prompt: str, llm_config: Any, cache_path: Path | None) -> str:
     request = TextRequest(
         prompt=prompt,
         llm_config=llm_config,
-        cache_path=cache_path,
+        judgments=judgments,
         max_tokens=_ANSWER_TOKENS,
         timeout_seconds=_TIMEOUT_SECONDS,
         json_object=True,

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 11:05+0200\n"
+"POT-Creation-Date: 2026-09-28 12:51+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -19,7 +19,7 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "En månadsgenomgång har redan slutförts den här månaden."
 
-#: web/routes/settings/+page.svelte:95
+#: web/routes/settings/+page.svelte:91
 msgid "API Key"
 msgstr "API-nyckel"
 
@@ -43,7 +43,7 @@ msgstr "Visa datum"
 msgid "Add someone not in Immich"
 msgstr "Lägg till någon som inte finns i Immich"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:147
+#: web/routes/runs/[run_id]/pool/+page.svelte:152
 #, python-brace-format
 msgid "Add: {include} · Take out: {exclude}"
 msgstr "Lägg till: {include} · Ta bort: {exclude}"
@@ -78,7 +78,7 @@ msgstr "Visa även de {count} bilderna utanför det här minnet"
 msgid "Alternatives considered"
 msgstr "Övervägda alternativ"
 
-#: web/routes/settings/+page.svelte:25
+#: web/routes/settings/+page.svelte:26
 msgid "Analysis cache"
 msgstr "Analyscache"
 
@@ -94,7 +94,7 @@ msgstr ""
 msgid "Another day (MM-DD)"
 msgstr "Annan dag (MM-DD)"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:163
+#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Anyone"
 msgstr "Alla"
 
@@ -160,11 +160,11 @@ msgstr "Suddig bakgrund"
 msgid "Browse the whole pool"
 msgstr "Bläddra i hela poolen"
 
-#: web/routes/settings/+page.svelte:142 web/routes/settings/+page.svelte:143
+#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
 msgid "Caches"
 msgstr "Cachar"
 
-#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:169
+#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:174
 msgid "Cancel"
 msgstr "Avbryt"
 
@@ -205,19 +205,19 @@ msgstr ""
 "Välj vad filmen ska täcka. Klippningen görs precis som kommandot nedan gör den; du granskar "
 "den innan något renderas."
 
-#: web/routes/settings/+page.svelte:148
+#: web/routes/settings/+page.svelte:117
 msgid "Clear"
 msgstr "Rensa"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:137 web/routes/runs/[run_id]/pool/+page.svelte:170
+#: web/routes/runs/[run_id]/pool/+page.svelte:142 web/routes/runs/[run_id]/pool/+page.svelte:175
 msgid "Clear hold"
 msgstr "Ta bort spärr"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:156
+#: web/routes/runs/[run_id]/pool/+page.svelte:161
 msgid "Clear this hold?"
 msgstr "Ta bort den här spärren?"
 
-#: web/routes/settings/+page.svelte:71
+#: web/routes/settings/+page.svelte:69
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{count} poster rensades från {cache}."
@@ -226,20 +226,16 @@ msgstr "{count} poster rensades från {cache}."
 msgid "Command"
 msgstr "Kommando"
 
-#: web/routes/settings/+page.svelte:122
+#: web/lib/SettingsEditor.svelte:72
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "Konfigurationsfil: {config_path}"
 
-#: web/routes/settings/+page.svelte:113 web/routes/settings/+page.svelte:115
+#: web/lib/SettingsEditor.svelte:63 web/lib/SettingsEditor.svelte:65
 msgid "Configuration"
 msgstr "Konfiguration"
 
-#: web/routes/settings/+page.svelte:65
-msgid "Configuration saved!"
-msgstr "Konfigurationen sparades!"
-
-#: web/routes/settings/+page.svelte:60
+#: web/routes/settings/+page.svelte:58
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "Ansluten som: {name}"
@@ -283,6 +279,10 @@ msgstr "Dag"
 #: web/routes/create/+page.svelte:314
 msgid "Day (MM-DD)"
 msgstr "Dag (MM-DD)"
+
+#: web/lib/SettingsEditor.svelte:41
+msgid "Default"
+msgstr "Standard"
 
 #: web/routes/+layout.svelte:46 web/routes/+layout.svelte:47
 msgid "Demo mode"
@@ -341,7 +341,7 @@ msgstr "Sluta här"
 msgid "Ends"
 msgstr "Slutar"
 
-#: web/routes/settings/+page.svelte:147
+#: web/routes/settings/+page.svelte:116
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "Poster: {count}"
@@ -356,12 +356,18 @@ msgstr ""
 "förhandsgranska sedan: dina kryss går in i filmen som de är, utan att något väljs om. Använd "
 "aldrig och Ta bort spärr gäller vid varje körning."
 
+#: web/routes/settings/+page.svelte:82
+msgid ""
+"Every setting and where its value comes from. What you save here goes to the database; "
+"config.yaml and the environment are never written, and they win over it."
+msgstr "Varje inställning och varifrån dess värde kommer. Det du sparar här går till databasen; config.yaml och miljön skrivs aldrig, och de har företräde framför detta."
+
 #: web/routes/create/+page.svelte:377
 msgid "Every trip of the year"
 msgstr "Varje resa under året"
 
 #: web/routes/create/+page.svelte:425 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:163
+#: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Family"
 msgstr "Familj"
 
@@ -369,7 +375,7 @@ msgstr "Familj"
 msgid "Fetching picture previews"
 msgstr "Hämtar bildförhandsvisningar"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:161
+#: web/routes/runs/[run_id]/pool/+page.svelte:166
 msgid "Films that may use it"
 msgstr "Filmer som får använda den"
 
@@ -426,11 +432,11 @@ msgstr "Högtid"
 msgid "How the rules got here"
 msgstr "Hur reglerna kom hit"
 
-#: web/routes/settings/+page.svelte:89 web/routes/settings/+page.svelte:90
+#: web/routes/settings/+page.svelte:85 web/routes/settings/+page.svelte:86
 msgid "Immich Connection"
 msgstr "Immich-anslutning"
 
-#: web/routes/settings/+page.svelte:92
+#: web/routes/settings/+page.svelte:88
 msgid "Immich Server URL"
 msgstr "Immich-serverns URL"
 
@@ -468,7 +474,7 @@ msgid "It did not finish."
 msgstr "Blev inte klar."
 
 #: web/routes/create/+page.svelte:424 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:163
+#: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Just us"
 msgstr "Bara vi"
 
@@ -579,7 +585,7 @@ msgstr "Musik"
 msgid "Music volume:"
 msgstr "Musikvolym:"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:136
+#: web/routes/runs/[run_id]/pool/+page.svelte:141
 msgid "Never use"
 msgstr "Använd aldrig"
 
@@ -646,6 +652,10 @@ msgstr "Inga resor hittades för det här året."
 #: web/routes/settings/people/+page.svelte:141
 msgid "No, they are not"
 msgstr "Nej, det stämmer inte"
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
+msgid "Nobody this memory is about was recognised here; they were, elsewhere in the same episode."
+msgstr "Ingen som detta minne handlar om kändes igen här; de kändes igen någon annanstans i samma episod."
 
 #: web/routes/settings/people/+page.svelte:107
 msgid "Nobody yet. Rescan the library to read who is in it."
@@ -716,7 +726,7 @@ msgstr "Klarade {stages}"
 msgid "Password"
 msgstr "Lösenord"
 
-#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:110
+#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:106
 #: web/routes/settings/people/+page.svelte:74 web/routes/settings/people/+page.svelte:80
 msgid "People"
 msgstr "Personer"
@@ -768,20 +778,15 @@ msgstr "Tillgängliga medier"
 msgid "Portrait"
 msgstr "Stående"
 
-#: web/routes/settings/+page.svelte:122
-#, python-brace-format
-msgid "Preset: {preset}"
-msgstr "Förinställning: {preset}"
-
 #: web/lib/RenderPanel.svelte:205
 msgid "Preview a track"
 msgstr "Förhandslyssna på ett spår"
 
-#: web/routes/settings/+page.svelte:28
+#: web/routes/settings/+page.svelte:29
 msgid "Preview cache"
 msgstr "Förhandsgranskningscache"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:148
+#: web/routes/runs/[run_id]/pool/+page.svelte:153
 msgid "Preview with these choices"
 msgstr "Förhandsgranskning med dessa val"
 
@@ -833,7 +838,7 @@ msgstr "Relation"
 msgid "Relationships"
 msgstr "Relationer"
 
-#: web/routes/settings/+page.svelte:116
+#: web/lib/SettingsEditor.svelte:66
 msgid "Reload from Disk"
 msgstr "Läs om från disk"
 
@@ -896,7 +901,15 @@ msgstr "Körs på servern: {phase}. Fortsätter om du lämnar sidan."
 msgid "Runs"
 msgstr "Körningar"
 
-#: web/routes/settings/+page.svelte:101
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
+msgid "Same episode"
+msgstr "Samma episod"
+
+#: web/lib/SettingsEditor.svelte:104
+msgid "Save"
+msgstr "Spara"
+
+#: web/routes/settings/+page.svelte:97
 msgid "Save Config"
 msgstr "Spara konfiguration"
 
@@ -904,7 +917,7 @@ msgstr "Spara konfiguration"
 msgid "Save revision"
 msgstr "Spara revision"
 
-#: web/routes/settings/+page.svelte:97
+#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:93
 msgid "Saved - type a new key to replace it"
 msgstr "Sparad. Skriv en ny nyckel för att ersätta den"
 
@@ -912,6 +925,19 @@ msgstr "Sparad. Skriv en ny nyckel för att ersätta den"
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "Sparad som revision {number}."
+
+#: web/lib/SettingsEditor.svelte:40
+msgid "Saved here"
+msgstr "Sparad här"
+
+#: web/lib/SettingsEditor.svelte:39
+#, python-brace-format
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Sparad här, men {name} kan inte dekryptera den: standardvärdet används"
+
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:63
+msgid "Saved to the database"
+msgstr "Sparad i databasen"
 
 #: web/routes/runs/[run_id]/+page.svelte:313
 #, python-brace-format
@@ -934,8 +960,25 @@ msgstr "Tid i bild (sekunder)"
 msgid "Season"
 msgstr "Årstid"
 
-#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:81
-#: web/routes/settings/+page.svelte:85 web/routes/settings/people/+page.svelte:79
+#: web/lib/SettingsEditor.svelte:76
+#, python-brace-format
+msgid ""
+"Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
+"config.yaml."
+msgstr "Hemligheter kan inte sparas här förrän {name} är satt. Sätt den, eller behåll dem i miljön eller config.yaml."
+
+#: web/lib/SettingsEditor.svelte:37
+#, python-brace-format
+msgid "Set by {name} (environment)"
+msgstr "Satt av {name} (miljö)"
+
+#: web/lib/SettingsEditor.svelte:38
+#, python-brace-format
+msgid "Set in config.yaml as {key}"
+msgstr "Satt i config.yaml som {key}"
+
+#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:77
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:79
 msgid "Settings"
 msgstr "Inställningar"
 
@@ -1041,7 +1084,7 @@ msgstr "Utbytt"
 msgid "Take out"
 msgstr "Ta bort"
 
-#: web/routes/settings/+page.svelte:100
+#: web/routes/settings/+page.svelte:96
 msgid "Test Connection"
 msgstr "Testa anslutning"
 
@@ -1053,7 +1096,7 @@ msgstr "Filen är inte MP3, M4A eller WAV"
 msgid "That file is too large for a soundtrack"
 msgstr "Den filen är för stor för ett ljudspår"
 
-#: web/routes/settings/+page.svelte:56
+#: web/routes/settings/+page.svelte:54
 msgid "The connection could not be checked."
 msgstr "Anslutningen kunde inte kontrolleras."
 
@@ -1072,6 +1115,12 @@ msgstr "Klippningen är klar."
 #: web/lib/RenderPanel.svelte:155
 msgid "The dates and places, never a model"
 msgstr "Datum och platser, aldrig en modell"
+
+#: web/lib/SettingsEditor.svelte:73
+msgid ""
+"The environment wins, then config.yaml, then what is saved here, then the default. A setting "
+"either of the first two sets is greyed out: change it where its label says."
+msgstr "Miljön har företräde, sedan config.yaml, sedan det som sparas här, sedan standardvärdet. En inställning som satts av någon av de två första visas gråtonad: ändra den där etiketten anger."
 
 #: web/routes/runs/[run_id]/+page.svelte:142
 msgid "The film"
@@ -1097,11 +1146,9 @@ msgstr "Modellen, när en är konfigurerad"
 
 #: web/routes/settings/people/+page.svelte:81
 msgid ""
-"The people file (`people.yaml`): who is close, their roles, and how they relate. `people "
-"scan` writes the guesses; your answers stay across scans."
-msgstr ""
-"Personfilen (`people.yaml`): vem som står nära, deras roller och hur de är släkt eller "
-"bekanta. `people scan` skriver gissningarna; dina svar sparas mellan skanningar."
+"The people registry: who is close, their roles, and how they relate. `people scan` writes the"
+" guesses; your answers stay across scans. `people export` writes it out as YAML."
+msgstr "Personregistret: vem som står nära, deras roller och hur de är släkt. `people scan` skriver gissningarna; dina svar finns kvar mellan skanningar. `people export` skriver ut det som YAML."
 
 #: web/lib/ShotInspector.svelte:141
 msgid "The picture it replaced"
@@ -1131,6 +1178,10 @@ msgstr "Körningarna kunde inte läsas in."
 msgid "The server URL changed: enter the API key for the new server."
 msgstr "Server-URL:en ändrades: ange API-nyckeln för den nya servern."
 
+#: web/lib/SettingsEditor.svelte:52
+msgid "The settings could not be saved."
+msgstr "Inställningarna kunde inte sparas."
+
 #: web/lib/labels.ts:48
 msgid "These people appear in the last two people memories."
 msgstr "De här personerna förekommer i de två senaste personminnena."
@@ -1147,7 +1198,7 @@ msgstr "Den här kategorin förekommer redan två gånger i de senaste sex minne
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "Den här körningen sparade ingen uppteckning av sina medier. Klipp igen för att se en."
 
-#: web/routes/settings/+page.svelte:27
+#: web/routes/settings/+page.svelte:28
 msgid "Thumbnail cache"
 msgstr "Miniatyrbildscache"
 
@@ -1191,7 +1242,7 @@ msgstr "Försök igen"
 msgid "Turn your photo library into video memories"
 msgstr "Gör ditt fotobibliotek till videominnen"
 
-#: web/routes/runs/[run_id]/+page.svelte:280 web/routes/runs/[run_id]/pool/+page.svelte:134
+#: web/routes/runs/[run_id]/+page.svelte:280 web/routes/runs/[run_id]/pool/+page.svelte:139
 msgid "Undo"
 msgstr "Ångra"
 
@@ -1225,7 +1276,7 @@ msgstr "Användarnamn"
 msgid "Video"
 msgstr "Video"
 
-#: web/routes/settings/+page.svelte:26
+#: web/routes/settings/+page.svelte:27
 msgid "Video cache"
 msgstr "Videocache"
 
@@ -1246,19 +1297,11 @@ msgstr ""
 "Vad automatiseringen skulle skapa härnäst, samma lista som `auto suggest` visar. Kör en som "
 "`auto run` skulle göra, eller kontrollera den först utan att rendera."
 
-#: web/routes/settings/+page.svelte:86
-msgid ""
-"What this server runs with. The file is the source; environment overrides apply; secrets are "
-"masked."
-msgstr ""
-"Vad den här servern körs med. Filen är källan; miljövariabler har företräde; hemligheter är "
-"dolda."
-
 #: web/lib/RenderPanel.svelte:136
 msgid "What to render"
 msgstr "Vad som ska renderas"
 
-#: web/routes/settings/+page.svelte:110
+#: web/routes/settings/+page.svelte:106
 msgid "Who is who, their roles and relationships."
 msgstr "Vem som är vem, deras roller och relationer."
 

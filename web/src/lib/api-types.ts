@@ -124,26 +124,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Active Config
-         * @description The configuration this server runs with, env overrides applied, secrets masked.
-         */
-        get: operations["active_config_api_v1_config_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/connection": {
         parameters: {
             query?: never;
@@ -158,7 +138,10 @@ export interface paths {
         get: operations["read_connection_api_v1_connection_get"];
         /**
          * Save Connection
-         * @description Keep the server and key in the config file the process reads.
+         * @description Save the server and key to the database, only the ones that changed.
+         *
+         *     config.yaml and the environment are never written: a value either of them sets is refused
+         *     with the name of what sets it, and a key needs IMMICH_MEMORIES_SECRET_KEY to be stored.
          */
         put: operations["save_connection_api_v1_connection_put"];
         post?: never;
@@ -479,7 +462,7 @@ export interface paths {
         };
         /**
          * Roster
-         * @description Everyone in the people file, inner circle first, with what needs curating.
+         * @description Everyone in the people registry, inner circle first, with what needs curating.
          */
         get: operations["roster_api_v1_roster_get"];
         put?: never;
@@ -545,7 +528,7 @@ export interface paths {
         put?: never;
         /**
          * Relate
-         * @description Record one relationship; the file keeps its reciprocal.
+         * @description Record one relationship; the registry keeps its reciprocal.
          */
         post: operations["relate_api_v1_roster__person_id__relationships_post"];
         /**
@@ -782,6 +765,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Settings
+         * @description Every setting with its live value and its source, re-read from disk; secrets masked.
+         */
+        get: operations["read_settings_api_v1_settings_get"];
+        put?: never;
+        /**
+         * Save Settings Form
+         * @description Save the changed values to the database; config.yaml and the environment are never written.
+         *
+         *     422 names the setting refused and why; nothing is saved then.
+         */
+        post: operations["save_settings_form_api_v1_settings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/special-days": {
         parameters: {
             query?: never;
@@ -876,17 +885,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** ActiveConfig */
-        ActiveConfig: {
-            /** Path */
-            path: string;
-            /** Preset */
-            preset: string | null;
-            /** Sections */
-            sections: {
-                [key: string]: unknown;
-            };
-        };
         /** AlbumChoice */
         AlbumChoice: {
             /** Asset Count */
@@ -1342,6 +1340,11 @@ export interface components {
             kind: "photo" | "video" | "live";
             /** Reachable */
             reachable: boolean;
+            /**
+             * Same Episode
+             * @default false
+             */
+            same_episode: boolean;
             /** Taken */
             taken: string;
         };
@@ -1655,6 +1658,56 @@ export interface components {
             signed_in: boolean;
             /** Username */
             username: string | null;
+        };
+        /**
+         * SettingRow
+         * @description One setting as the page shows it: its value, where that value comes from, and whether
+         *     this page may change it. A secret's value is masked (`***`, or empty when none is stored).
+         */
+        SettingRow: {
+            /** Editable */
+            editable: boolean;
+            /** Key */
+            key: string;
+            /** Override */
+            override: string | null;
+            /** Secret */
+            secret: boolean;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "env" | "file" | "database" | "default";
+            /** Unreadable */
+            unreadable: boolean;
+            /** Value */
+            value: unknown;
+        };
+        /**
+         * SettingsForm
+         * @description The edited values, keyed by runtime path (`llm.model`); lists and mappings as JSON text.
+         */
+        SettingsForm: {
+            /** Values */
+            values: {
+                [key: string]: unknown;
+            };
+        };
+        /** SettingsSection */
+        SettingsSection: {
+            /** Name */
+            name: string;
+            /** Settings */
+            settings: components["schemas"]["SettingRow"][];
+        };
+        /** SettingsView */
+        SettingsView: {
+            /** Can Store Secrets */
+            can_store_secrets: boolean;
+            /** Config Path */
+            config_path: string;
+            /** Sections */
+            sections: components["schemas"]["SettingsSection"][];
         };
         /** ShownCommand */
         ShownCommand: {
@@ -1982,26 +2035,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    active_config_api_v1_config_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ActiveConfig"];
                 };
             };
         };
@@ -3086,6 +3119,57 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SessionView"];
                 };
+            };
+        };
+    };
+    read_settings_api_v1_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsView"];
+                };
+            };
+        };
+    };
+    save_settings_form_api_v1_settings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsForm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsView"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

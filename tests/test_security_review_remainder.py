@@ -10,32 +10,35 @@ from __future__ import annotations
 from immich_memories.config_models_auth import AuthConfig
 
 
+def _described(config, tmp_path) -> dict:
+    from immich_memories.config_sources import describe_settings
+
+    entries = describe_settings(config, path=tmp_path / "absent.yaml", stored_keys=set())
+    return {entry.key: entry.value for entry in entries}
+
+
 class TestS16SecretsAreFullyMasked:
     """abc***yz leaks five characters of every secret, auth.password included."""
 
-    def test_no_characters_of_the_secret_survive(self):
-        from immich_memories.security import redact_config
-
-        redacted = redact_config({"immich": {"api_key": "abcdefghijklmnop"}})
-
-        assert redacted["immich"]["api_key"] == "***"
-        assert "abc" not in redacted["immich"]["api_key"]
-
-    def test_an_empty_secret_stays_empty(self):
-        from immich_memories.security import redact_config
-
-        assert redact_config({"immich": {"api_key": ""}})["immich"]["api_key"] == ""
-
-    def test_no_configured_secret_reaches_the_settings_page(self):
-        """The viewer renders the whole model, so a new secret field is masked by name."""
+    def test_no_characters_of_the_secret_survive(self, tmp_path):
         from immich_memories.config_loader import Config
-        from immich_memories.security import redact_config
+
+        values = _described(Config(immich={"api_key": "abcdefghijklmnop"}), tmp_path)
+
+        assert values["immich.api_key"] == "***"
+
+    def test_an_empty_secret_stays_empty(self, tmp_path):
+        from immich_memories.config_loader import Config
+
+        assert _described(Config(immich={"api_key": ""}), tmp_path)["immich.api_key"] == ""
+
+    def test_no_configured_secret_reaches_the_settings_page(self, tmp_path):
+        """The page describes the whole model, so a new secret field is masked by name."""
+        from immich_memories.config_loader import Config
 
         config = Config(editorial={"preparation": {"caption_api_key": "caption-credential"}})
 
-        redacted = redact_config(config.model_dump())
-
-        assert "caption-credential" not in repr(redacted)
+        assert "caption-credential" not in repr(_described(config, tmp_path))
 
 
 class TestS3RateLimiterSeesTheRealClient:

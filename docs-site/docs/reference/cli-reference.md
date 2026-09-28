@@ -130,7 +130,7 @@ immich-memories cache backup [OPTIONS]
 
 ### `cache export`
 
-Export asset scores to JSON (safe, lock-aware).
+Export the banked asset scores to JSON.
 
 ```bash
 immich-memories cache export [OPTIONS]
@@ -160,7 +160,12 @@ immich-memories cache stats [OPTIONS]
 
 ## `config`
 
-Configure Immich connection settings.
+Configure the Immich connection, or inspect where each setting comes from.
+
+Without a subcommand this sets the Immich URL and API key, prompting for
+them when no option is given. Settings saved here go to the database, below
+environment variables and config.yaml, which this never writes. The API key
+is a secret: saving it needs IMMICH_MEMORIES_SECRET_KEY.
 
 ```bash
 immich-memories config [OPTIONS]
@@ -170,10 +175,47 @@ immich-memories config [OPTIONS]
 | --- | --- | --- | --- |
 | `--url`, `-u` | text | - | Immich server URL |
 | `--api-key`, `-k` | text | - | Immich API key |
-| `--show`, `-s` | boolean | false | Show current configuration |
+| `--show`, `-s` | boolean | false | Same as `config show` |
+
+### `config move-to-db`
+
+Move settings out of config.yaml into the database.
+
+KEYS are runtime paths such as `llm.model` (no `advanced.` prefix). Each
+value is saved to the database, then its line is removed from config.yaml,
+so the UI can edit it. The rest of the file keeps its values and `${VAR}`
+references but loses its comments; the old file is kept as config.yaml.bak.
+Nothing moves without this command.
+
+```bash
+immich-memories config move-to-db [OPTIONS]
+```
 
 **Arguments:**
-- `action` (choice)
+- `keys` (text)
+
+### `config show`
+
+Every setting with its value and source: env, file, database or default.
+
+Secrets are masked. An env or file source names the variable or the
+config.yaml key that sets it. Give key prefixes (`llm`, `immich.url`) to
+show only those.
+
+```bash
+immich-memories config show [OPTIONS]
+```
+
+**Arguments:**
+- `prefixes` (text)
+
+### `config test`
+
+Check the Immich connection and the API version it resolves (read-only).
+
+```bash
+immich-memories config test [OPTIONS]
+```
 
 ## `days-due`
 
@@ -186,7 +228,33 @@ immich-memories days-due [OPTIONS]
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
 | `--on` | datetime | - | The date to look around (default today) |
-| `--catalogue` | file | ~/.immich-memories/special-days.json |  |
+
+## `days-export`
+
+Write the special-days catalogue as JSON, for a backup or a hand edit.
+
+```bash
+immich-memories days-export [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--to` | file | - | Write to this file instead of standard output |
+
+## `days-import`
+
+Replace the special-days catalogue with a JSON file's.
+
+Every record is kept as written, so an edited export comes back exactly. A file
+whose records do not read as a catalogue changes nothing.
+
+```bash
+immich-memories days-import [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--from` | file | - | A JSON catalogue, as days-export writes it |
 
 ## `discover-days`
 
@@ -214,6 +282,8 @@ can be cleaned without editing JSON by hand. It says how many rows it
 will replace before it starts, and it never touches a year outside the
 period.
 
+The catalogue lives in the store; `days-export` writes it to a file.
+
 ```bash
 immich-memories discover-days [OPTIONS]
 ```
@@ -223,7 +293,6 @@ immich-memories discover-days [OPTIONS]
 | `--since` | integer | 2007 | First year to scan |
 | `--until` | integer | 2026 | Last year to scan |
 | `--also-skip` | text | - | A holiday name or MM-DD this library keeps that the defaults miss |
-| `--out` | file | ~/.immich-memories/special-days.json | Where to write the catalogue |
 | `--rescan` | boolean | false | Start over, ignoring and replacing the existing catalogue |
 | `--replace` | boolean | false | Re-scan --since..--until and replace every row those years already hold, dropping days that no longer qualify. Rows outside the period are kept. |
 
@@ -277,8 +346,8 @@ immich-memories generate [OPTIONS]
 | `--birthday`, `-b` | text | - | Run the year up to a birthday, plus earlier birthdays (reads Immich's birth date, or override with MM-DD, e.g. 03-15) |
 | `--from-album` | text | - | Generate from an Immich album (name or ID) instead of a date range |
 | `--person`, `-p` | text | - | Person name (repeatable) |
-| `--people-expression` | text | - | Grouped people condition, e.g. ("Person A" OR "Person B") AND "Person C". Use exact library names; each asset must match. |
-| `--person-match` | choice: `and` \| `or` | and | With several --person values, require everyone in each asset (and) or accept any named person (or) |
+| `--people-expression` | text | - | Grouped people condition, e.g. ("Person A" OR "Person B") AND "Person C". Use exact library names; read per episode: a person recognised once in an episode counts in all of its pictures. |
+| `--person-match` | choice: `and` \| `or` | and | With several --person values, require everyone recognised somewhere in the same episode (and) or accept any named person (or) |
 | `--memory-type` | choice: `year_in_review` \| `season` \| `person_spotlight` \| `multi_person` \| `monthly_highlights` \| `on_this_day` \| `album` \| `trip` \| `holiday` \| `special_day` | - | Memory type preset (album takes its pool from --from-album) |
 | `--holiday` | text | - | Holiday name or MM-DD (use with --memory-type holiday) |
 | `--season` | choice: `spring` \| `summer` \| `fall` \| `autumn` \| `winter` | - | Season (use with --memory-type season) |
@@ -431,17 +500,49 @@ what `immich-memories people` has always done.
 immich-memories people [OPTIONS]
 ```
 
+### `people export`
+
+Write the people registry out as YAML, in the shape people.yaml had.
+
+The file holds names and birth dates, so it is created readable by you
+alone. Edit it and bring it back with `people import`.
+
+```bash
+immich-memories people export [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--to` | file | - | Write the YAML here instead of to standard output |
+
+### `people import`
+
+Replace the people registry with a YAML file, keeping every id as written.
+
+The whole file is checked first; if any person in it is malformed,
+nothing is written and every problem is listed. A registry that already
+holds people is only overwritten with --replace.
+
+```bash
+immich-memories people import [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--from` | file | - | A YAML file written by `people export` (or an old people.yaml) |
+| `--replace` | boolean | false | Overwrite a registry that already holds people |
+
 ### `people scan`
 
-Build or refresh the people file from Immich.
+Build or refresh the people registry from Immich.
 
 Reads every named person's count and month curve, then asks about each
 remaining pair to find who appears with whom. Nothing here looks at a
 pixel and nothing here asks you a question: the library's own
 distribution is the whole input.
 
-Safe to re-run: everything under `confirmed:` in the file is copied
-through untouched, and preferred to this pass's reading forever after.
+Safe to re-run: everything you confirmed is copied through untouched,
+and preferred to this pass's reading forever after.
 
 ```bash
 immich-memories people scan [OPTIONS]
@@ -451,11 +552,10 @@ immich-memories people scan [OPTIONS]
 | --- | --- | --- | --- |
 | `--min-assets` | integer | 25 | Pictures a named person needs before the graph has an opinion |
 | `--owner` | text | - | The name of the person whose library this is, if the account does not say |
-| `--out` | file | - | Where to write the people file |
 
 ### `people show`
 
-Print what the last scan wrote down.
+Print the people registry: what the last scan read and what you confirmed.
 
 ```bash
 immich-memories people show [OPTIONS]
@@ -463,7 +563,6 @@ immich-memories people show [OPTIONS]
 
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--file` | file | - | The people file to read |
 | `--tier` | choice: `inner` \| `recurring` \| `episodic` \| `event` | - | Show only one tier |
 
 ## `pictures`
@@ -785,6 +884,89 @@ Show scheduler status.
 
 ```bash
 immich-memories scheduler status [OPTIONS]
+```
+
+## `store`
+
+The database that holds your decisions, model answers, run history and settings.
+
+SQLite at ~/.immich-memories/store.db unless IMMICH_MEMORIES_DATABASE_URL (or
+`database.url`) names another one. Stop the app before `restore`.
+
+```bash
+immich-memories store [OPTIONS]
+```
+
+### `store backup`
+
+Write a consistent backup while the app runs, with a manifest beside it.
+
+SQLite: VACUUM INTO. PostgreSQL: pg_dump of the schema in custom format, which needs
+the PostgreSQL client tools on PATH.
+
+```bash
+immich-memories store backup [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--to` | file | - | The backup file (default: ~/.immich-memories/backups/store-UTCTIME.db, .dump on PostgreSQL) |
+
+### `store copy`
+
+Copy every table into another store: SQLite to PostgreSQL, or back.
+
+The target is migrated first, and every table's row count and content digest are
+compared afterwards. Point IMMICH_MEMORIES_DATABASE_URL at the target to switch.
+
+```bash
+immich-memories store copy [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--to` | text | - | The database URL to copy into |
+| `--schema` | text | - | The PostgreSQL schema to copy into (default: the configured one) |
+| `--force` | boolean | false | Empty a target that already holds rows |
+
+### `store import`
+
+Bring the files the app used before the store into it.
+
+Safe to run again: a record the store holds is never replaced, and an importer
+whose files have not changed since it last completed is skipped. An interrupted
+import finishes where it stopped.
+
+```bash
+immich-memories store import [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--from` | directory | - | The directory holding the legacy files (default: IMMICH_MEMORIES_IMPORT_FROM, then database.import_from, then ~/.immich-memories). They are only read, never changed |
+| `--verify` | boolean | false | Afterwards, check that every legacy record is in the store with equal values; exit 1 on any difference |
+
+### `store restore`
+
+Replace the store with a backup, migrate it to head and check its row counts.
+
+Stop the app first: a restore cannot reach another process's connections.
+
+```bash
+immich-memories store restore [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--from` | file | - | A file `store backup` wrote; its manifest must sit beside it |
+| `--force` | boolean | false | Replace a store that already holds rows |
+
+### `store status`
+
+Backend, URL, schema, revision, import record, row counts and size.
+
+```bash
+immich-memories store status [OPTIONS]
 ```
 
 ## `titles`

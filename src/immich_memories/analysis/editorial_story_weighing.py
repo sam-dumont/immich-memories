@@ -482,7 +482,7 @@ def _apply_joins(by_key, joins, day_of) -> list[list[str]]:
 
 def _present_in_this_memory(story, favourites: int) -> bool:
     """Memory-worthy first, and the favourite wins its moment. Close family present (the kinship
-    words the people file produces) makes a visit an occasion: mom over grandparents over
+    words the people registry produces) makes a visit an occasion: mom over grandparents over
     acquaintance over stranger is what the words themselves say once they are on the row."""
     if story.get("gate") == "remarkable" or favourites > 0:
         return True

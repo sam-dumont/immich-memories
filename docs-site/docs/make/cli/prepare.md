@@ -75,12 +75,14 @@ months overnight. With `advanced.editorial.reader: rules` the command refuses it
 
 ## `people`
 
-Works out who is in your library from the numbers Immich already holds, writes it to a file you can edit, and
-never overwrites an answer you gave it. It reads counts and dates only, and asks you nothing.
+Works out who is in your library from the numbers Immich already holds, keeps it in the store as the people
+registry, and never overwrites an answer you gave it. It reads counts and dates only, and asks you nothing.
 
 ```bash
-immich-memories people scan     # build or refresh the file
-immich-memories people show     # read it back, --tier narrows it
+immich-memories people scan                    # build or refresh the registry
+immich-memories people show                    # read it back, --tier narrows it
+immich-memories people export --to people.yaml # write it out as YAML to edit or keep
+immich-memories people import --from people.yaml --replace
 ```
 
 The one rule doing most of the work: volume is a burst, continuity is a relationship. 160 pictures over four
@@ -99,8 +101,10 @@ name on two person records. You are behind the camera, so pairs with you are rea
 frames. The owner comes from `--owner` or `IMMICH_MEMORIES_OWNER` (`identified: told`), else your Immich account
 name (`account`), else the longest-running person (`inferred`: check it).
 
-The file is `~/.immich-memories/people.yaml`, readable only by you. Everything under `inferred:` is recomputed on
-each scan; everything under `confirmed:` is yours and never overwritten, and wins where the two disagree:
+The registry lives in the [store](../../run/database.md), next to every other decision you made. Everything under
+`inferred:` is recomputed on each scan; everything under `confirmed:` is yours and never overwritten, and wins
+where the two disagree. `people export` writes it out in the shape below (to standard output, or to `--to FILE`
+readable only by you):
 
 ```yaml
 people:
@@ -115,15 +119,29 @@ people:
       links: []
 ```
 
-It is the same file as the **People** page in the web UI. The roles you confirm there decide who counts as close
+`people import --from FILE` replaces the registry with an edited export. It checks the whole file first: a
+person without a list of `ids`, or an id listed twice, is refused with its position, and nothing changes. Ids
+come back exactly as written, `manual:` ids included. A registry that already holds people is only overwritten
+with `--replace`, so an old export can't silently undo newer answers. A scan never reads the file; only an
+import does.
+
+The scan also writes its measurements (every person's counts and the pairs seen together) to
+`~/.immich-memories/people-graph.json`. That one stays a file: each scan recomputes all of it from Immich and
+nothing reads it back.
+
+Upgrading from a version that kept `~/.immich-memories/people.yaml`: the store imports that file once, never
+changes or deletes it, and skips anyone it already holds. An answer in the old file fills a person the store
+knows but nobody answered for; it never replaces one you gave since.
+
+It is the same registry as the **People** page in the web UI. The roles you confirm there decide who counts as close
 family, and selection reads that on every tier: the family seat, the big-story rule, and the relations a model
 sees. Setting it up is on [Teach it your family](../../get-started/who-is-who.md); how selection uses it is on
 [Family, audience and duplicates](../../how-it-chooses/family-audience-duplicates.md).
 
 ## `discover-days`
 
-Finds the days something happened on and writes them to `~/.immich-memories/special-days.json`, so a film can
-arrive years later without you asking ("five years ago today"). Run it once, then now and then. Films from it
+Finds the days something happened on and keeps them in the special-days catalogue in the
+[store](../../run/database.md), so a film can arrive years later without you asking ("five years ago today"). Run it once, then now and then. Films from it
 are the **Surprise me** type on [Memory types](../memory-types.mdx#special-day-surprise-me).
 
 ```bash
@@ -137,14 +155,37 @@ tells that story), and so are holidays spent at home, which have their own type.
 located pictures away from home, at least three favourites, at least three videos making half the day, or a
 long day (20 pictures over six active hours) with your close family on it. Each year keeps its strongest
 `advanced.automation.special_days_per_year` (6): days away first, the furthest first, then favourites, then
-video share, then family presence. The title is "A day in" the place. Without a `people.yaml`, a long day at
-home is not found.
+video share, then family presence. The title is "A day in" the place. Without roles in the people registry, a long
+day at home is not found.
 
 **With a reader** (optional), every run of activity is read a month at a time as one line of recorded facts
 (time, place, counts, who Immich recognised, close family by role, up to three captions), and the model names
 the occasions: the kind of day people tell others about afterwards. A good afternoon at home is not one. No
 yearly cap. Titles are checked against what the day recorded: a place it never went or a claim nothing supports
 gets the title asked for once more, then the day is dropped.
+
+Each proposed occasion is checked against that day's own evidence. An ordinary-day verdict drops it. An
+empty or unreadable answer is asked once more; a day still without a verdict stays unjudged, and the scan
+prints why (nothing written about its pictures, the reader failed, or its answer could not be read). A missing subtitle does not discard an otherwise valid confirmation, and
+existing valid cached answers are reused.
+The month reading compares a month's days and can miss one. So the scan also proposes, with no
+model, the days whose own captions keep using words the rest of the year barely does: "race
+track" and "Ferrari" on one day, where a cat or a baby written about every week cancels out. There
+is no list of occasions or of words to skip. A word counts when it is written about ten or more of
+the day's pictures and on at most 3% of the year's described days, and a day needs two such
+words. A year with fewer than 34 described days proposes nothing this way. Every proposed day
+still goes through the same day check.
+
+Pictures forwarded to the library (sent by someone else or saved: stills with no camera in their
+EXIF) are evidence, not material. They never make a day of their own and never count toward its
+pictures, hours or film. On a day your camera already made, their words count for half toward
+what stands out, and on a day that stands out a few of their captions reach the day check, marked
+as forwarded. A day the month reading proposed is judged on its own pictures. Files saved in one
+batch (three or more stamped with one exact second) count only inside the hours your own camera
+was out that day, since their time is when they were saved.
+A day that contains its occasion (most of its pictures at one place, a stretch the rest of the day
+only frames) is asked once more about that stretch before an ordinary verdict drops it, and a
+description longer than asked for is cut at a word rather than voiding the answer.
 
 Either way a day is kept only if a film of it can run 30 seconds, and a day can carry a window (the stretch at
 the circuit inside a long day) when that window holds at least half its pictures.
@@ -158,6 +199,18 @@ ever adds to the catalogue.
 immich-memories days-due              # anniversaries within three days, roundest first
 immich-memories days-due --on 2026-12-24
 ```
+
+The catalogue is yours to edit: a day the scan missed, a title it got wrong, two occasions to merge.
+`days-export` writes it as JSON, `days-import` puts an edited file back whole. Every record keeps
+exactly what you wrote; a file that is not a list of records changes nothing.
+
+```bash
+immich-memories days-export --to days.json
+immich-memories days-import --from days.json
+```
+
+An install upgraded from before the store keeps its `~/.immich-memories/special-days.json`: the
+upgrade copies it into the store once and never touches the file again.
 
 ## Small questions
 

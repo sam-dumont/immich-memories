@@ -127,7 +127,7 @@ def cut(tmp_path: Path) -> tuple[Config, Path]:
     config = Config()
     config.cache.directory = str(cache)
     config.cache.database = str(cache / "runs.db")
-    db = RunDatabase(db_path=config.cache.database_path)
+    db = RunDatabase()
     db.save_run(
         RunMetadata(
             run_id=RUN_ID,
@@ -137,7 +137,7 @@ def cut(tmp_path: Path) -> tuple[Config, Path]:
             output_path=str(tmp_path / "june.mp4"),
         )
     )
-    record_run_attempt(config.cache.cache_path, RUN_ID, attempt, tmp_path / "june.mp4")
+    record_run_attempt(RUN_ID, attempt, tmp_path / "june.mp4")
     return config, attempt
 
 
@@ -154,14 +154,14 @@ def _invoke(config: Config, args: list[str]):
 class TestRunIndex:
     def test_a_finished_run_is_found_from_its_id_and_the_attempt_knows_its_run(self, cut):
         config, attempt = cut
-        assert attempt_dir_for_run(config.cache.cache_path, RUN_ID) == attempt
+        assert attempt_dir_for_run(RUN_ID) == attempt
         assert run_id_for_attempt(attempt) == RUN_ID
 
     def test_an_unknown_run_or_a_run_without_an_attempt_resolves_to_nothing(self, cut, tmp_path):
         config, _ = cut
-        assert attempt_dir_for_run(config.cache.cache_path, "nope") is None
-        record_run_attempt(config.cache.cache_path, "gone", None, tmp_path / "x.mp4")
-        assert attempt_dir_for_run(config.cache.cache_path, "gone") is None
+        assert attempt_dir_for_run("nope") is None
+        record_run_attempt("gone", None, tmp_path / "x.mp4")
+        assert attempt_dir_for_run("gone") is None
 
 
 class TestRunsStory:
@@ -296,6 +296,28 @@ class TestRunsWhy:
 
         assert result.exit_code == 0, result.output
         assert "Your word on it now: You'll never use this picture." in result.output
+
+    def test_what_the_owner_s_review_did_before_rendering_is_said(self, cut, tmp_path):
+        from immich_memories.db import open_store
+        from immich_memories.store.owner_edits import keep_owner_edits
+
+        config, attempt = cut
+        keep_owner_edits(
+            open_store(config),
+            {
+                "edit_id": "e1",
+                "removed_asset_ids": ["garden-1"],
+                "interval_edits": [{"asset_id": "garden-2", "selected_interval": [1, 3.5]}],
+            },
+            film=tmp_path / "june.mp4",
+            attempt=attempt,
+        )
+
+        trimmed = _invoke(config, ["runs", "why", "garden-2"])
+        removed = _invoke(config, ["runs", "why", "garden-1"])
+
+        assert "Your review: you trimmed it to 1-3.5 s." in trimmed.output
+        assert "Your review: you removed it before rendering." in removed.output
 
 
 class TestRunsShow:

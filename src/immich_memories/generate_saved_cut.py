@@ -8,7 +8,6 @@ projection, and the film is recorded as a new run on the same attempt.
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from datetime import datetime, time
 from pathlib import Path
@@ -24,7 +23,6 @@ from immich_memories.processing.editorial_timing import timing_policy_for_params
 from immich_memories.processing.encoding_plan import resolve_output_selection
 from immich_memories.processing.output_canvas import resolve_output_canvas
 from immich_memories.processing.render_inputs import CutTitles, read_cut_titles, read_render_inputs
-from immich_memories.security import write_secret_file
 from immich_memories.timeperiod import DateRange
 from immich_memories.titles.film_title import resolve_film_title
 
@@ -240,10 +238,15 @@ def render_saved_cut(
         target_duration=projection.timeline.target_duration,
     )
     if projection.record is not None:
-        audit = params.output_path.with_name(
-            f"{params.output_path.stem}.owner-edits-{uuid4().hex}.private.json"
+        from immich_memories.db import open_store
+        from immich_memories.store.owner_edits import keep_owner_edits
+
+        # `runs why` finds a revision's edits by the attempt they were made to (#871).
+        params.editorial_owner_edits = {**projection.record, "edit_id": uuid4().hex}
+        keep_owner_edits(
+            open_store(config),
+            params.editorial_owner_edits,
+            film=params.output_path,
+            attempt=attempt_dir,
         )
-        params.editorial_owner_edits = {**projection.record, "artifact_name": audit.name}
-        audit.parent.mkdir(parents=True, exist_ok=True)
-        write_secret_file(audit, json.dumps(params.editorial_owner_edits, indent=2))
     return generate_memory(params)

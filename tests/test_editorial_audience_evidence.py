@@ -8,6 +8,7 @@ import pytest
 
 from immich_memories.analysis import editorial_shareability as share
 from immich_memories.analysis.editorial_text_failures import TextCompletionFailure
+from tests.annotation_rows import annotation_store
 
 
 def annotation(caption, **heads):
@@ -503,11 +504,11 @@ def test_real_gateway_cold_and_cached_failure_have_identical_audience_semantics(
             provider="openai-compatible", base_url="http://editor.test/v1", model="editor-model"
         )
     )
-    cache = tmp_path / "judgments.sqlite"
+    judgments = annotation_store()
     (tmp_path / "cold").mkdir()
     (tmp_path / "warm").mkdir()
-    cold = StructureTextJudge(config, tmp_path / "cold", cache_path=cache)
-    warm = StructureTextJudge(config, tmp_path / "warm", cache_path=cache)
+    cold = StructureTextJudge(config, tmp_path / "cold", judgments=judgments)
+    warm = StructureTextJudge(config, tmp_path / "warm", judgments=judgments)
     cold_result = share.check_audience(cold, item, "test")
     assert transport_budgets == ([120, 120, 240] if failed_step == "exposure" else [120, 240])
     count_after_cold = len(transport_budgets)

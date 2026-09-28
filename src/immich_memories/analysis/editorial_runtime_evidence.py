@@ -8,9 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
-import sqlite3
 from collections.abc import Callable, Mapping
-from contextlib import closing
 from dataclasses import asdict, dataclass
 from functools import partial
 from pathlib import Path
@@ -27,6 +25,7 @@ from immich_memories.security import write_secret_file
 if TYPE_CHECKING:
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
     from immich_memories.config_loader import Config
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -34,40 +33,31 @@ logger = logging.getLogger(__name__)
 class EditorialInputsRequired(RuntimeError):
     """Selection needs prepared annotation evidence before it can run."""
 
-    def __init__(self, store_path: Path, *, detail: str = "") -> None:
-        self.store_path = store_path
+    def __init__(self, store: Store, *, detail: str = "") -> None:
+        self.store = store
         super().__init__(
-            f"Story-first selection needs prepared annotations at {store_path}. "
-            "Prepare this library's annotations or set advanced.editorial.annotation_database "
-            "to its existing annotation store."
+            f"Story-first selection needs prepared annotations in the store at {store.location}. "
+            "Prepare this library's annotations first."
             + (f" Missing or unavailable: {detail}" if detail else "")
         )
-
-
-def ensure_annotation_store(store_path: Path) -> None:
-    if store_path.is_file():
-        return
-    from immich_memories.store.editorial_preparation import initialize, private_database_path
-
-    with closing(sqlite3.connect(private_database_path(store_path))) as connection:
-        initialize(connection)
 
 
 @dataclass(frozen=True, slots=True)
 class AnnotationReadings:
     """One annotation-line contract shared by episode reading and the source gate."""
 
-    store_path: Path
+    store: Store
     config: Config
     people: Mapping[str, PersonPromptContext]
     subjects: tuple[str, ...] = ()
+    include_captions: bool = True
 
     def reader(self, prepared: Any) -> StoredAnnotationLineReader:
         editorial = self.config.editorial
         return StoredAnnotationLineReader(
-            store_path=self.store_path,
+            store=self.store,
             candidates=prepared.candidates,
-            description_model=editorial.description_model,
+            description_model=editorial.description_model if self.include_captions else None,
             head_versions=editorial.head_versions,
             pixel_producer_key=editorial.pixel_producer_key,
             people_context=self.people,
@@ -145,7 +135,7 @@ class EvidencePreparation:
             # no model, no endpoint -- its own sentence says why, so it goes in
             # the message rather than only into preparation.private.json.
             raise EditorialInputsRequired(
-                self.readings.store_path,
+                self.readings.store,
                 detail="; ".join(filter(None, (missing, *result.producer_failures))),
             )
         readable = tuple(a for a in prepared.candidate_ids if a in reach and a not in unservable)
@@ -164,22 +154,35 @@ class EvidencePreparation:
         # The sentence and the numbers are published together, on one throttle,
         # so a watcher never sees a bar disagreeing with the row above it.
         live = StageProgressWriter(self.artifact_dir)
+        last_published: tuple[str, int, int] | None = None
+        last_seen = 0
 
         def progress(stage: str, done: int, total: int) -> None:
-            if done not in {0, total} and done % batch_size:
+            nonlocal last_published, last_seen
+            reset = done < last_seen
+            last_seen = done
+            if (
+                last_published is not None
+                and (stage, total) == (last_published[0], last_published[2])
+                and done not in {0, total}
+                and not reset
+                and 0 <= done - last_published[1] < batch_size
+            ):
                 return
+            last_published = (stage, done, total)
             if on_stage is not None:
                 on_stage(live.publish(stage, done, total))
 
         prepare = self.ports.prepare_annotations or prepare_editorial_annotations
         return prepare(
             assets=tuple(c.source for c in prepared.candidates if c.asset_id in reach),
-            store_path=self.readings.store_path,
+            store=self.readings.store,
             thumbnail_cache=self.thumbnail_cache,
             preparation_config=config.editorial.preparation,
             triage_config=config.triage,
             head_versions=config.editorial.head_versions,
             inference_config=config.inference,
+            llm_config=config.llm,
             description_model=config.editorial.description_model,
             pixel_producer_key=config.editorial.pixel_producer_key,
             fetch_preview=lambda asset_id: self.ports.fetch_preview(self.client, asset_id),
@@ -199,7 +202,7 @@ class EvidencePreparation:
         batch = self.readings.reader(prepared).lines_for(readable)
         if batch.missing_asset_ids:
             raise EditorialInputsRequired(
-                self.readings.store_path,
+                self.readings.store,
                 detail=f"{len(batch.missing_asset_ids)} unreadable annotation lines; "
                 + "; ".join(batch.warnings),
             )

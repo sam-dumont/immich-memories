@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 11:05+0200\n"
+"POT-Creation-Date: 2026-09-28 12:51+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -19,7 +19,7 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "Ya se ha completado una revisión mensual este mes."
 
-#: web/routes/settings/+page.svelte:95
+#: web/routes/settings/+page.svelte:91
 msgid "API Key"
 msgstr "Clave de API"
 
@@ -43,7 +43,7 @@ msgstr "Mostrar la fecha"
 msgid "Add someone not in Immich"
 msgstr "Añadir a alguien que no está en Immich"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:147
+#: web/routes/runs/[run_id]/pool/+page.svelte:152
 #, python-brace-format
 msgid "Add: {include} · Take out: {exclude}"
 msgstr "Añadir: {include} · Quitar: {exclude}"
@@ -78,7 +78,7 @@ msgstr "Mostrar también las {count} fotos fuera de este recuerdo"
 msgid "Alternatives considered"
 msgstr "Alternativas consideradas"
 
-#: web/routes/settings/+page.svelte:25
+#: web/routes/settings/+page.svelte:26
 msgid "Analysis cache"
 msgstr "Caché de análisis"
 
@@ -94,7 +94,7 @@ msgstr ""
 msgid "Another day (MM-DD)"
 msgstr "Otro día (MM-DD)"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:163
+#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Anyone"
 msgstr "Todo el mundo"
 
@@ -162,11 +162,11 @@ msgstr "Fondo difuminado"
 msgid "Browse the whole pool"
 msgstr "Explorar todo el conjunto"
 
-#: web/routes/settings/+page.svelte:142 web/routes/settings/+page.svelte:143
+#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
 msgid "Caches"
 msgstr "Cachés"
 
-#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:169
+#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:174
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -207,19 +207,19 @@ msgstr ""
 "Elige lo que cubre el vídeo. El montaje se hace tal como lo hace el comando de abajo; lo "
 "revisas antes de que se renderice nada."
 
-#: web/routes/settings/+page.svelte:148
+#: web/routes/settings/+page.svelte:117
 msgid "Clear"
 msgstr "Borrar"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:137 web/routes/runs/[run_id]/pool/+page.svelte:170
+#: web/routes/runs/[run_id]/pool/+page.svelte:142 web/routes/runs/[run_id]/pool/+page.svelte:175
 msgid "Clear hold"
 msgstr "Quitar restricción"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:156
+#: web/routes/runs/[run_id]/pool/+page.svelte:161
 msgid "Clear this hold?"
 msgstr "¿Quitar esta restricción?"
 
-#: web/routes/settings/+page.svelte:71
+#: web/routes/settings/+page.svelte:69
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "Se eliminaron {count} entradas de {cache}."
@@ -228,20 +228,16 @@ msgstr "Se eliminaron {count} entradas de {cache}."
 msgid "Command"
 msgstr "Comando"
 
-#: web/routes/settings/+page.svelte:122
+#: web/lib/SettingsEditor.svelte:72
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "Archivo de configuración: {config_path}"
 
-#: web/routes/settings/+page.svelte:113 web/routes/settings/+page.svelte:115
+#: web/lib/SettingsEditor.svelte:63 web/lib/SettingsEditor.svelte:65
 msgid "Configuration"
 msgstr "Configuración"
 
-#: web/routes/settings/+page.svelte:65
-msgid "Configuration saved!"
-msgstr "¡Configuración guardada!"
-
-#: web/routes/settings/+page.svelte:60
+#: web/routes/settings/+page.svelte:58
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "Conectado como: {name}"
@@ -285,6 +281,10 @@ msgstr "Día"
 #: web/routes/create/+page.svelte:314
 msgid "Day (MM-DD)"
 msgstr "Día (MM-DD)"
+
+#: web/lib/SettingsEditor.svelte:41
+msgid "Default"
+msgstr "Predeterminado"
 
 #: web/routes/+layout.svelte:46 web/routes/+layout.svelte:47
 msgid "Demo mode"
@@ -343,7 +343,7 @@ msgstr "Terminar aquí"
 msgid "Ends"
 msgstr "Termina"
 
-#: web/routes/settings/+page.svelte:147
+#: web/routes/settings/+page.svelte:116
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "Entradas: {count}"
@@ -358,12 +358,18 @@ msgstr ""
 " previsualiza: tus marcas pasan al vídeo tal cual, sin volver a elegir nada. No usar nunca y "
 "Quitar restricción se mantienen en cada ejecución."
 
+#: web/routes/settings/+page.svelte:82
+msgid ""
+"Every setting and where its value comes from. What you save here goes to the database; "
+"config.yaml and the environment are never written, and they win over it."
+msgstr "Cada ajuste y de dónde viene su valor. Lo que guardas aquí va a la base de datos; config.yaml y el entorno nunca se escriben, y tienen prioridad sobre esto."
+
 #: web/routes/create/+page.svelte:377
 msgid "Every trip of the year"
 msgstr "Todos los viajes del año"
 
 #: web/routes/create/+page.svelte:425 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:163
+#: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Family"
 msgstr "Familia"
 
@@ -371,7 +377,7 @@ msgstr "Familia"
 msgid "Fetching picture previews"
 msgstr "Obteniendo las vistas previas de las fotos"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:161
+#: web/routes/runs/[run_id]/pool/+page.svelte:166
 msgid "Films that may use it"
 msgstr "Vídeos que pueden usarla"
 
@@ -428,11 +434,11 @@ msgstr "Festividad"
 msgid "How the rules got here"
 msgstr "Cómo llegaron aquí las reglas"
 
-#: web/routes/settings/+page.svelte:89 web/routes/settings/+page.svelte:90
+#: web/routes/settings/+page.svelte:85 web/routes/settings/+page.svelte:86
 msgid "Immich Connection"
 msgstr "Conexión con Immich"
 
-#: web/routes/settings/+page.svelte:92
+#: web/routes/settings/+page.svelte:88
 msgid "Immich Server URL"
 msgstr "URL del servidor Immich"
 
@@ -470,7 +476,7 @@ msgid "It did not finish."
 msgstr "No terminó."
 
 #: web/routes/create/+page.svelte:424 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:163
+#: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Just us"
 msgstr "Solo nosotros"
 
@@ -581,7 +587,7 @@ msgstr "Música"
 msgid "Music volume:"
 msgstr "Volumen de la música:"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:136
+#: web/routes/runs/[run_id]/pool/+page.svelte:141
 msgid "Never use"
 msgstr "No usar nunca"
 
@@ -648,6 +654,10 @@ msgstr "No se detectaron viajes este año."
 #: web/routes/settings/people/+page.svelte:141
 msgid "No, they are not"
 msgstr "No, no lo son"
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
+msgid "Nobody this memory is about was recognised here; they were, elsewhere in the same episode."
+msgstr "Nadie de quien trata este recuerdo fue reconocido aquí; lo fueron en otro momento del mismo episodio."
 
 #: web/routes/settings/people/+page.svelte:107
 msgid "Nobody yet. Rescan the library to read who is in it."
@@ -718,7 +728,7 @@ msgstr "Superó {stages}"
 msgid "Password"
 msgstr "Contraseña"
 
-#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:110
+#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:106
 #: web/routes/settings/people/+page.svelte:74 web/routes/settings/people/+page.svelte:80
 msgid "People"
 msgstr "Personas"
@@ -770,20 +780,15 @@ msgstr "Medios disponibles"
 msgid "Portrait"
 msgstr "Vertical"
 
-#: web/routes/settings/+page.svelte:122
-#, python-brace-format
-msgid "Preset: {preset}"
-msgstr "Preajuste: {preset}"
-
 #: web/lib/RenderPanel.svelte:205
 msgid "Preview a track"
 msgstr "Escuchar una pista"
 
-#: web/routes/settings/+page.svelte:28
+#: web/routes/settings/+page.svelte:29
 msgid "Preview cache"
 msgstr "Caché de vista previa"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:148
+#: web/routes/runs/[run_id]/pool/+page.svelte:153
 msgid "Preview with these choices"
 msgstr "Vista previa con esta selección"
 
@@ -835,7 +840,7 @@ msgstr "Relación"
 msgid "Relationships"
 msgstr "Relaciones"
 
-#: web/routes/settings/+page.svelte:116
+#: web/lib/SettingsEditor.svelte:66
 msgid "Reload from Disk"
 msgstr "Recargar desde el disco"
 
@@ -898,7 +903,15 @@ msgstr "En curso en el servidor: {phase}. Continuará si sales de esta página."
 msgid "Runs"
 msgstr "Ejecuciones"
 
-#: web/routes/settings/+page.svelte:101
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
+msgid "Same episode"
+msgstr "Mismo episodio"
+
+#: web/lib/SettingsEditor.svelte:104
+msgid "Save"
+msgstr "Guardar"
+
+#: web/routes/settings/+page.svelte:97
 msgid "Save Config"
 msgstr "Guardar configuración"
 
@@ -906,7 +919,7 @@ msgstr "Guardar configuración"
 msgid "Save revision"
 msgstr "Guardar revisión"
 
-#: web/routes/settings/+page.svelte:97
+#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:93
 msgid "Saved - type a new key to replace it"
 msgstr "Guardada: escribe una nueva clave para reemplazarla"
 
@@ -914,6 +927,19 @@ msgstr "Guardada: escribe una nueva clave para reemplazarla"
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "Guardada como revisión {number}."
+
+#: web/lib/SettingsEditor.svelte:40
+msgid "Saved here"
+msgstr "Guardado aquí"
+
+#: web/lib/SettingsEditor.svelte:39
+#, python-brace-format
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Guardado aquí, pero {name} no puede descifrarlo: se usa el valor predeterminado"
+
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:63
+msgid "Saved to the database"
+msgstr "Guardado en la base de datos"
 
 #: web/routes/runs/[run_id]/+page.svelte:313
 #, python-brace-format
@@ -936,8 +962,25 @@ msgstr "Tiempo en pantalla (segundos)"
 msgid "Season"
 msgstr "Estación"
 
-#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:81
-#: web/routes/settings/+page.svelte:85 web/routes/settings/people/+page.svelte:79
+#: web/lib/SettingsEditor.svelte:76
+#, python-brace-format
+msgid ""
+"Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
+"config.yaml."
+msgstr "Los secretos no se pueden guardar aquí hasta que {name} esté definido. Defínelo, o mantenlos en el entorno o en config.yaml."
+
+#: web/lib/SettingsEditor.svelte:37
+#, python-brace-format
+msgid "Set by {name} (environment)"
+msgstr "Definido por {name} (entorno)"
+
+#: web/lib/SettingsEditor.svelte:38
+#, python-brace-format
+msgid "Set in config.yaml as {key}"
+msgstr "Definido en config.yaml como {key}"
+
+#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:77
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:79
 msgid "Settings"
 msgstr "Ajustes"
 
@@ -1043,7 +1086,7 @@ msgstr "Cambiada"
 msgid "Take out"
 msgstr "Quitar"
 
-#: web/routes/settings/+page.svelte:100
+#: web/routes/settings/+page.svelte:96
 msgid "Test Connection"
 msgstr "Probar conexión"
 
@@ -1055,7 +1098,7 @@ msgstr "Ese archivo no es MP3, M4A ni WAV"
 msgid "That file is too large for a soundtrack"
 msgstr "Ese archivo es demasiado grande para una banda sonora"
 
-#: web/routes/settings/+page.svelte:56
+#: web/routes/settings/+page.svelte:54
 msgid "The connection could not be checked."
 msgstr "No se pudo comprobar la conexión."
 
@@ -1074,6 +1117,12 @@ msgstr "El montaje está listo."
 #: web/lib/RenderPanel.svelte:155
 msgid "The dates and places, never a model"
 msgstr "Las fechas y los lugares, nunca un modelo"
+
+#: web/lib/SettingsEditor.svelte:73
+msgid ""
+"The environment wins, then config.yaml, then what is saved here, then the default. A setting "
+"either of the first two sets is greyed out: change it where its label says."
+msgstr "El entorno tiene prioridad, luego config.yaml, luego lo guardado aquí, luego el valor predeterminado. Un ajuste definido por cualquiera de los dos primeros aparece atenuado: cámbialo donde indica su etiqueta."
 
 #: web/routes/runs/[run_id]/+page.svelte:142
 msgid "The film"
@@ -1099,11 +1148,9 @@ msgstr "El modelo, cuando hay uno configurado"
 
 #: web/routes/settings/people/+page.svelte:81
 msgid ""
-"The people file (`people.yaml`): who is close, their roles, and how they relate. `people "
-"scan` writes the guesses; your answers stay across scans."
-msgstr ""
-"El archivo de personas (`people.yaml`): quién es cercano, su papel y cómo se relacionan. "
-"`people scan` escribe las suposiciones; tus respuestas se mantienen entre análisis."
+"The people registry: who is close, their roles, and how they relate. `people scan` writes the"
+" guesses; your answers stay across scans. `people export` writes it out as YAML."
+msgstr "El registro de personas: quién es cercano, sus roles y cómo se relacionan. `people scan` escribe las conjeturas; tus respuestas se mantienen entre escaneos. `people export` las exporta como YAML."
 
 #: web/lib/ShotInspector.svelte:141
 msgid "The picture it replaced"
@@ -1133,6 +1180,10 @@ msgstr "No se pudieron cargar las ejecuciones."
 msgid "The server URL changed: enter the API key for the new server."
 msgstr "La URL del servidor cambió: introduce la clave de API del nuevo servidor."
 
+#: web/lib/SettingsEditor.svelte:52
+msgid "The settings could not be saved."
+msgstr "No se pudieron guardar los ajustes."
+
 #: web/lib/labels.ts:48
 msgid "These people appear in the last two people memories."
 msgstr "Estas personas aparecen en los dos últimos recuerdos de personas."
@@ -1149,7 +1200,7 @@ msgstr "Esta categoría ya aparece dos veces en los últimos seis recuerdos."
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "Esta ejecución no guardó ningún registro de sus medios. Vuelve a montar para ver uno."
 
-#: web/routes/settings/+page.svelte:27
+#: web/routes/settings/+page.svelte:28
 msgid "Thumbnail cache"
 msgstr "Caché de miniaturas"
 
@@ -1193,7 +1244,7 @@ msgstr "Reintentar"
 msgid "Turn your photo library into video memories"
 msgstr "Convierte tu biblioteca de fotos en recuerdos en vídeo"
 
-#: web/routes/runs/[run_id]/+page.svelte:280 web/routes/runs/[run_id]/pool/+page.svelte:134
+#: web/routes/runs/[run_id]/+page.svelte:280 web/routes/runs/[run_id]/pool/+page.svelte:139
 msgid "Undo"
 msgstr "Deshacer"
 
@@ -1229,7 +1280,7 @@ msgstr "Usuario"
 msgid "Video"
 msgstr "Vídeo"
 
-#: web/routes/settings/+page.svelte:26
+#: web/routes/settings/+page.svelte:27
 msgid "Video cache"
 msgstr "Caché de vídeo"
 
@@ -1250,19 +1301,11 @@ msgstr ""
 "Lo que la automatización crearía a continuación, la misma lista que imprime `auto suggest`. "
 "Ejecuta uno como lo haría `auto run`, o compruébalo primero sin renderizar."
 
-#: web/routes/settings/+page.svelte:86
-msgid ""
-"What this server runs with. The file is the source; environment overrides apply; secrets are "
-"masked."
-msgstr ""
-"Con qué se ejecuta este servidor. El archivo es la fuente; las variables de entorno tienen "
-"prioridad; los secretos están ocultos."
-
 #: web/lib/RenderPanel.svelte:136
 msgid "What to render"
 msgstr "Qué renderizar"
 
-#: web/routes/settings/+page.svelte:110
+#: web/routes/settings/+page.svelte:106
 msgid "Who is who, their roles and relationships."
 msgstr "Quién es quién, sus papeles y relaciones."
 

@@ -21,9 +21,21 @@ from immich_memories.analysis.selection_source_groups import project_episode_gro
 from immich_memories.analysis.text_episode_paging import TextEpisodeRequestLimits
 from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
 from immich_memories.config_models_llm import LLMConfig
+from immich_memories.db import open_store
+from immich_memories.db.bootstrap import StoreLocation
 from immich_memories.store.episode_readings import EpisodeReadingProducer, EpisodeReadingStore
 from tests.conftest import make_asset
 from tests.test_text_episode_reader import _AnnotationLines
+
+
+def _store_at(tmp_path):
+    """A store of its own, independent of this test's default one.
+
+    Some tests here compare a run over one bank against a separate run over another
+    (parallel vs. serial, or two directories standing for two library scopes), so
+    each needs a store the other never touches.
+    """
+    return open_store(location=StoreLocation(url=f"sqlite:///{tmp_path / 'store.db'}"))
 
 
 def _reader(tmp_path, config):
@@ -46,7 +58,7 @@ def _reader(tmp_path, config):
         annotation_versions=("description:student-v1",),
     )
     reader = CachedTextEpisodeReader(
-        store=EpisodeReadingStore(tmp_path / "annotations.sqlite"),
+        store=EpisodeReadingStore(_store_at(tmp_path)),
         producer=producer,
         annotations=_AnnotationLines(
             {

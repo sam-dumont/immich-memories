@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 11:05+0200\n"
+"POT-Creation-Date: 2026-09-28 12:51+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -19,7 +19,7 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "今月はすでに月次レビューが完了しています。"
 
-#: web/routes/settings/+page.svelte:95
+#: web/routes/settings/+page.svelte:91
 msgid "API Key"
 msgstr "APIキー"
 
@@ -43,7 +43,7 @@ msgstr "日付を表示"
 msgid "Add someone not in Immich"
 msgstr "Immich にいない人物を追加"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:147
+#: web/routes/runs/[run_id]/pool/+page.svelte:152
 #, python-brace-format
 msgid "Add: {include} · Take out: {exclude}"
 msgstr "追加：{include}・除外：{exclude}"
@@ -78,7 +78,7 @@ msgstr "この思い出の対象外の写真 {count} 枚も表示"
 msgid "Alternatives considered"
 msgstr "検討された代替候補"
 
-#: web/routes/settings/+page.svelte:25
+#: web/routes/settings/+page.svelte:26
 msgid "Analysis cache"
 msgstr "解析キャッシュ"
 
@@ -92,7 +92,7 @@ msgstr "まず記念日、それ以外はその後に表示します。スケジ
 msgid "Another day (MM-DD)"
 msgstr "別の日 (MM-DD)"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:163
+#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Anyone"
 msgstr "誰でも"
 
@@ -158,11 +158,11 @@ msgstr "ぼかした背景"
 msgid "Browse the whole pool"
 msgstr "候補全体を見る"
 
-#: web/routes/settings/+page.svelte:142 web/routes/settings/+page.svelte:143
+#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
 msgid "Caches"
 msgstr "キャッシュ"
 
-#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:169
+#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:174
 msgid "Cancel"
 msgstr "キャンセル"
 
@@ -201,19 +201,19 @@ msgid ""
 "it before anything renders."
 msgstr "動画に収める範囲を選びます。編集は下のコマンドが実行するとおりに行われ、レンダリングする前に内容を確認できます。"
 
-#: web/routes/settings/+page.svelte:148
+#: web/routes/settings/+page.svelte:117
 msgid "Clear"
 msgstr "消去"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:137 web/routes/runs/[run_id]/pool/+page.svelte:170
+#: web/routes/runs/[run_id]/pool/+page.svelte:142 web/routes/runs/[run_id]/pool/+page.svelte:175
 msgid "Clear hold"
 msgstr "制限を解除"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:156
+#: web/routes/runs/[run_id]/pool/+page.svelte:161
 msgid "Clear this hold?"
 msgstr "この制限を解除しますか？"
 
-#: web/routes/settings/+page.svelte:71
+#: web/routes/settings/+page.svelte:69
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{cache} から {count} 件のエントリを消去しました。"
@@ -222,20 +222,16 @@ msgstr "{cache} から {count} 件のエントリを消去しました。"
 msgid "Command"
 msgstr "コマンド"
 
-#: web/routes/settings/+page.svelte:122
+#: web/lib/SettingsEditor.svelte:72
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "設定ファイル：{config_path}"
 
-#: web/routes/settings/+page.svelte:113 web/routes/settings/+page.svelte:115
+#: web/lib/SettingsEditor.svelte:63 web/lib/SettingsEditor.svelte:65
 msgid "Configuration"
 msgstr "設定"
 
-#: web/routes/settings/+page.svelte:65
-msgid "Configuration saved!"
-msgstr "設定を保存しました！"
-
-#: web/routes/settings/+page.svelte:60
+#: web/routes/settings/+page.svelte:58
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "{name} として接続中"
@@ -279,6 +275,10 @@ msgstr "日"
 #: web/routes/create/+page.svelte:314
 msgid "Day (MM-DD)"
 msgstr "日 (MM-DD)"
+
+#: web/lib/SettingsEditor.svelte:41
+msgid "Default"
+msgstr "既定値"
 
 #: web/routes/+layout.svelte:46 web/routes/+layout.svelte:47
 msgid "Demo mode"
@@ -335,7 +335,7 @@ msgstr "ここで終了"
 msgid "Ends"
 msgstr "終了"
 
-#: web/routes/settings/+page.svelte:147
+#: web/routes/settings/+page.svelte:116
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "件数：{count}"
@@ -347,12 +347,18 @@ msgid ""
 "across every run."
 msgstr "この編集が見たすべての画像を、撮影順に表示します。チェックを入れたり外したりしてからプレビュー：チェックはそのまま動画に反映され、再選択はされません。「今後使わない」と「制限を解除」はすべての実行で保持されます。"
 
+#: web/routes/settings/+page.svelte:82
+msgid ""
+"Every setting and where its value comes from. What you save here goes to the database; "
+"config.yaml and the environment are never written, and they win over it."
+msgstr "各設定とその値の出所。ここで保存した内容はデータベースに書き込まれます。config.yaml と環境変数は書き換えられることはなく、常にこちらより優先されます。"
+
 #: web/routes/create/+page.svelte:377
 msgid "Every trip of the year"
 msgstr "その年のすべての旅行"
 
 #: web/routes/create/+page.svelte:425 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:163
+#: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Family"
 msgstr "家族"
 
@@ -360,7 +366,7 @@ msgstr "家族"
 msgid "Fetching picture previews"
 msgstr "画像のプレビューを取得しています"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:161
+#: web/routes/runs/[run_id]/pool/+page.svelte:166
 msgid "Films that may use it"
 msgstr "これを使用できる動画"
 
@@ -417,11 +423,11 @@ msgstr "祝日・行事"
 msgid "How the rules got here"
 msgstr "ルールがここに至った経緯"
 
-#: web/routes/settings/+page.svelte:89 web/routes/settings/+page.svelte:90
+#: web/routes/settings/+page.svelte:85 web/routes/settings/+page.svelte:86
 msgid "Immich Connection"
 msgstr "Immich接続"
 
-#: web/routes/settings/+page.svelte:92
+#: web/routes/settings/+page.svelte:88
 msgid "Immich Server URL"
 msgstr "Immichサーバーの URL"
 
@@ -459,7 +465,7 @@ msgid "It did not finish."
 msgstr "完了しませんでした。"
 
 #: web/routes/create/+page.svelte:424 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:163
+#: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Just us"
 msgstr "私たちだけ"
 
@@ -568,7 +574,7 @@ msgstr "音楽"
 msgid "Music volume:"
 msgstr "音楽の音量："
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:136
+#: web/routes/runs/[run_id]/pool/+page.svelte:141
 msgid "Never use"
 msgstr "今後使わない"
 
@@ -633,6 +639,10 @@ msgstr "この年に検出された旅行はありません。"
 #: web/routes/settings/people/+page.svelte:141
 msgid "No, they are not"
 msgstr "いいえ、違います"
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
+msgid "Nobody this memory is about was recognised here; they were, elsewhere in the same episode."
+msgstr "この思い出に写っている人はここでは認識されませんでしたが、同じエピソードの別の場面で認識されています。"
 
 #: web/routes/settings/people/+page.svelte:107
 msgid "Nobody yet. Rescan the library to read who is in it."
@@ -703,7 +713,7 @@ msgstr "{stages}を通過"
 msgid "Password"
 msgstr "パスワード"
 
-#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:110
+#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:106
 #: web/routes/settings/people/+page.svelte:74 web/routes/settings/people/+page.svelte:80
 msgid "People"
 msgstr "人物"
@@ -755,20 +765,15 @@ msgstr "候補メディア"
 msgid "Portrait"
 msgstr "縦向き"
 
-#: web/routes/settings/+page.svelte:122
-#, python-brace-format
-msgid "Preset: {preset}"
-msgstr "プリセット：{preset}"
-
 #: web/lib/RenderPanel.svelte:205
 msgid "Preview a track"
 msgstr "曲を試聴"
 
-#: web/routes/settings/+page.svelte:28
+#: web/routes/settings/+page.svelte:29
 msgid "Preview cache"
 msgstr "プレビューキャッシュ"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:148
+#: web/routes/runs/[run_id]/pool/+page.svelte:153
 msgid "Preview with these choices"
 msgstr "この選択でプレビュー"
 
@@ -820,7 +825,7 @@ msgstr "関係"
 msgid "Relationships"
 msgstr "関係"
 
-#: web/routes/settings/+page.svelte:116
+#: web/lib/SettingsEditor.svelte:66
 msgid "Reload from Disk"
 msgstr "ディスクから再読み込み"
 
@@ -883,7 +888,15 @@ msgstr "サーバーで実行中：{phase}。このページを離れても続�
 msgid "Runs"
 msgstr "実行履歴"
 
-#: web/routes/settings/+page.svelte:101
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
+msgid "Same episode"
+msgstr "同じエピソード"
+
+#: web/lib/SettingsEditor.svelte:104
+msgid "Save"
+msgstr "保存"
+
+#: web/routes/settings/+page.svelte:97
 msgid "Save Config"
 msgstr "設定を保存"
 
@@ -891,7 +904,7 @@ msgstr "設定を保存"
 msgid "Save revision"
 msgstr "リビジョンを保存"
 
-#: web/routes/settings/+page.svelte:97
+#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:93
 msgid "Saved - type a new key to replace it"
 msgstr "保存済み。置き換えるには新しいキーを入力してください"
 
@@ -899,6 +912,19 @@ msgstr "保存済み。置き換えるには新しいキーを入力してくだ
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "リビジョン {number} として保存しました。"
+
+#: web/lib/SettingsEditor.svelte:40
+msgid "Saved here"
+msgstr "ここで保存"
+
+#: web/lib/SettingsEditor.svelte:39
+#, python-brace-format
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "ここに保存されていますが、{name} で復号できません。既定値を使用中です"
+
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:63
+msgid "Saved to the database"
+msgstr "データベースに保存しました"
 
 #: web/routes/runs/[run_id]/+page.svelte:313
 #, python-brace-format
@@ -921,8 +947,25 @@ msgstr "表示時間（秒）"
 msgid "Season"
 msgstr "季節"
 
-#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:81
-#: web/routes/settings/+page.svelte:85 web/routes/settings/people/+page.svelte:79
+#: web/lib/SettingsEditor.svelte:76
+#, python-brace-format
+msgid ""
+"Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
+"config.yaml."
+msgstr "{name} が設定されるまで、ここに秘密情報を保存できません。設定するか、環境変数か config.yaml に保存してください。"
+
+#: web/lib/SettingsEditor.svelte:37
+#, python-brace-format
+msgid "Set by {name} (environment)"
+msgstr "{name} で設定（環境変数）"
+
+#: web/lib/SettingsEditor.svelte:38
+#, python-brace-format
+msgid "Set in config.yaml as {key}"
+msgstr "config.yaml の {key} で設定"
+
+#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:77
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:79
 msgid "Settings"
 msgstr "設定"
 
@@ -1028,7 +1071,7 @@ msgstr "差し替え"
 msgid "Take out"
 msgstr "外す"
 
-#: web/routes/settings/+page.svelte:100
+#: web/routes/settings/+page.svelte:96
 msgid "Test Connection"
 msgstr "接続をテスト"
 
@@ -1040,7 +1083,7 @@ msgstr "このファイルは MP3、M4A、WAV ではありません"
 msgid "That file is too large for a soundtrack"
 msgstr "そのファイルはサウンドトラックには大きすぎます"
 
-#: web/routes/settings/+page.svelte:56
+#: web/routes/settings/+page.svelte:54
 msgid "The connection could not be checked."
 msgstr "接続を確認できませんでした。"
 
@@ -1059,6 +1102,12 @@ msgstr "編集結果の準備ができました。"
 #: web/lib/RenderPanel.svelte:155
 msgid "The dates and places, never a model"
 msgstr "日付と場所のみ、モデルは使いません"
+
+#: web/lib/SettingsEditor.svelte:73
+msgid ""
+"The environment wins, then config.yaml, then what is saved here, then the default. A setting "
+"either of the first two sets is greyed out: change it where its label says."
+msgstr "環境変数が最優先され、次に config.yaml、次にここでの保存内容、最後に既定値が使われます。先の2つのいずれかで設定されている項目はグレー表示になります。ラベルに示された場所で変更してください。"
 
 #: web/routes/runs/[run_id]/+page.svelte:142
 msgid "The film"
@@ -1082,9 +1131,9 @@ msgstr "設定されている場合はモデル"
 
 #: web/routes/settings/people/+page.svelte:81
 msgid ""
-"The people file (`people.yaml`): who is close, their roles, and how they relate. `people "
-"scan` writes the guesses; your answers stay across scans."
-msgstr "人物ファイル（`people.yaml`）：誰が身近か、その役割、そして関係を記録します。`people scan` が推測を書き込み、あなたの回答はスキャンをまたいで保持されます。"
+"The people registry: who is close, their roles, and how they relate. `people scan` writes the"
+" guesses; your answers stay across scans. `people export` writes it out as YAML."
+msgstr "人物台帳: 誰が近しいか、その役割、そして互いの関係。`people scan` が推測を書き込み、あなたの回答はスキャンをまたいで保持されます。`people export` はそれを YAML として書き出します。"
 
 #: web/lib/ShotInspector.svelte:141
 msgid "The picture it replaced"
@@ -1114,6 +1163,10 @@ msgstr "実行履歴を読み込めませんでした。"
 msgid "The server URL changed: enter the API key for the new server."
 msgstr "サーバーのURLが変更されました。新しいサーバーのAPIキーを入力してください。"
 
+#: web/lib/SettingsEditor.svelte:52
+msgid "The settings could not be saved."
+msgstr "設定を保存できませんでした。"
+
 #: web/lib/labels.ts:48
 msgid "These people appear in the last two people memories."
 msgstr "これらの人物は直近2件の人物思い出に登場しています。"
@@ -1130,7 +1183,7 @@ msgstr "このカテゴリーは直近6件の思い出にすでに2回登場し�
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "この実行には候補の記録が保存されていません。再編集すると確認できます。"
 
-#: web/routes/settings/+page.svelte:27
+#: web/routes/settings/+page.svelte:28
 msgid "Thumbnail cache"
 msgstr "サムネイルキャッシュ"
 
@@ -1174,7 +1227,7 @@ msgstr "再試行"
 msgid "Turn your photo library into video memories"
 msgstr "写真ライブラリを思い出動画に変えましょう"
 
-#: web/routes/runs/[run_id]/+page.svelte:280 web/routes/runs/[run_id]/pool/+page.svelte:134
+#: web/routes/runs/[run_id]/+page.svelte:280 web/routes/runs/[run_id]/pool/+page.svelte:139
 msgid "Undo"
 msgstr "元に戻す"
 
@@ -1208,7 +1261,7 @@ msgstr "ユーザー名"
 msgid "Video"
 msgstr "動画"
 
-#: web/routes/settings/+page.svelte:26
+#: web/routes/settings/+page.svelte:27
 msgid "Video cache"
 msgstr "動画キャッシュ"
 
@@ -1227,17 +1280,11 @@ msgid ""
 "would, or check it first without rendering."
 msgstr "自動化が次に作成する内容で、`auto suggest` が表示するのと同じリストです。`auto run` と同じように実行するか、レンダリングせずに先に確認できます。"
 
-#: web/routes/settings/+page.svelte:86
-msgid ""
-"What this server runs with. The file is the source; environment overrides apply; secrets are "
-"masked."
-msgstr "このサーバーが実行時に使用している設定です。ファイルが元情報で、環境変数が優先され、シークレットは非表示になります。"
-
 #: web/lib/RenderPanel.svelte:136
 msgid "What to render"
 msgstr "レンダリングする対象"
 
-#: web/routes/settings/+page.svelte:110
+#: web/routes/settings/+page.svelte:106
 msgid "Who is who, their roles and relationships."
 msgstr "誰が誰か、その役割と関係です。"
 

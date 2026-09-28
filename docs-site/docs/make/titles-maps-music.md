@@ -203,7 +203,7 @@ occasion films ("Ada and her grandparents" instead of three stacked full names).
 `--no-llm-title` pins the template everywhere, and `--title` always wins.
 
 The title reader gets facts, never pictures and never coordinates: first names, birth dates and ages, the
-relations your [people file](../get-started/who-is-who.md) confirms, the special-day catalogue's words, the
+relations your [people registry](../get-started/who-is-who.md) confirms, the special-day catalogue's words, the
 album that holds most of the cut, and the place names by day. A capitalised word found in none of those facts
 gets the title refused in favour of the template, and so does a country, island or region the facts do not
 name, even as the title's first word. A trip title has to name the trip's place. Refusing

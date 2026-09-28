@@ -143,10 +143,10 @@ class _EmptyLibrary:
     makes every history window report zero — which is the case under test.
     """
 
-    def get_videos_for_person_and_date_range(self, _person_id, _date_range) -> list:
+    def get_videos_for_date_range(self, _date_range) -> list:
         return []
 
-    def get_videos_for_date_range(self, _date_range) -> list:
+    def get_photos_for_date_range(self, _date_range) -> list:
         return []
 
 

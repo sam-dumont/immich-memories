@@ -10,7 +10,6 @@ import re
 import stat
 import tempfile
 from pathlib import Path
-from typing import Any
 
 from pydantic import BaseModel
 
@@ -244,29 +243,3 @@ def sanitize_error_message(msg: str) -> str:
     msg = re.sub(r"Bearer\s+\S+", "Bearer ***", msg, flags=re.IGNORECASE)
     msg = re.sub(r"api[_-]?key['\"]?\s*[:=]\s*['\"]?\S+", "api_key=***", msg, flags=re.IGNORECASE)
     return msg
-
-
-_SENSITIVE_KEYS = {
-    "api_key",
-    "api_keys",
-    "caption_api_key",
-    "client_secret",
-    "password",
-    "secret",
-    "token",
-    "trigger_token",
-    "urls",
-}
-
-
-def redact_config(data: Any, _key: str = "") -> Any:
-    """Recursively redact sensitive values in a config dict."""
-    if isinstance(data, dict):
-        return {k: redact_config(v, k) for k, v in data.items()}
-    if isinstance(data, list):
-        return [redact_config(v, _key) for v in data]
-    if _key in _SENSITIVE_KEYS and isinstance(data, str) and data:
-        # WHY a full mask (S16): the old abc***yz showed five characters of
-        # every secret, auth.password included.
-        return "***"
-    return data

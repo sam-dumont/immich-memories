@@ -45,7 +45,7 @@ def test_runs_page_reads_the_existing_database(page, launch_app_url, launch_work
     from immich_memories.tracking import RunDatabase
     from immich_memories.tracking.models import RunMetadata
 
-    db = RunDatabase(launch_workspace.database_path)
+    db = RunDatabase(launch_workspace.store())
     db.save_run(
         RunMetadata(
             run_id="fixture-history",
@@ -105,7 +105,7 @@ def test_choose_generate_and_read_the_same_automatic_run(
     expect(page.get_by_text("Running on the server", exact=False)).to_be_visible(timeout=60_000)
     # A run somebody clicked for is not a nightly wake, and only the live attempt
     # carries that: finishing overwrites the reason with the outcome.
-    live = AutomationStateStore(automation_workspace.database_path).get_last_attempt()
+    live = AutomationStateStore(automation_workspace.store()).get_last_attempt()
     assert live.reason == SUGGESTION_REASON
     expect(page.get_by_role("link", name="Open run", exact=True)).to_be_visible(timeout=660_000)
     page.get_by_role("link", name="Open run", exact=True).click()
@@ -118,9 +118,7 @@ def test_choose_generate_and_read_the_same_automatic_run(
         page.get_by_role("link", name="Download child output").click()
     transcript = Path(download.value.path()).read_text()
     assert f"Selected {len(CARRIERS)} clips" in transcript
-    rows = RunDatabase(automation_workspace.database_path).list_runs(
-        status="completed", source="auto"
-    )
+    rows = RunDatabase(automation_workspace.store()).list_runs(status="completed", source="auto")
     assert len(rows) == 1 and rows[0].output_path
     assert Path(rows[0].output_path).is_file()
     assert rows[0].run_id in page.url
@@ -143,7 +141,7 @@ def test_variety_rejections_and_all_sidebar_destinations(page, launch_app_url, l
     from immich_memories.tracking import RunDatabase
     from immich_memories.tracking.models import RunMetadata
 
-    db = RunDatabase(launch_workspace.database_path)
+    db = RunDatabase(launch_workspace.store())
     stamp = datetime.now() + timedelta(seconds=1)
     db.save_run(
         RunMetadata(
@@ -183,7 +181,7 @@ def test_run_history_filters_and_loads_every_page(page, launch_app_url, launch_w
     from immich_memories.tracking import RunDatabase
     from immich_memories.tracking.models import RunMetadata
 
-    db = RunDatabase(launch_workspace.database_path)
+    db = RunDatabase(launch_workspace.store())
     for index in range(25):
         db.save_run(
             RunMetadata(

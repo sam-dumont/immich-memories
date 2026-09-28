@@ -130,12 +130,9 @@ def test_the_brief_picks_from_the_library_s_named_people_and_albums(tmp_path):
                 SimpleNamespace(id="b", name="Trip", asset_count=300),
             ]
 
-    from immich_memories.web.roster import people_path
-
     client = api_client(config_in(tmp_path))
     # WHY: Immich is the external boundary; the unit tier has no library to read.
     client.app.dependency_overrides[immich_client] = lambda: Library()
-    client.app.dependency_overrides[people_path] = lambda: tmp_path / "no-people.yaml"
 
     # Before a people scan there is no count to go by: alphabetical.
     assert [p["name"] for p in client.get("/api/v1/people").json()] == ["Ana", "zoé"]
@@ -222,10 +219,9 @@ def test_a_stage_that_counts_nothing_offers_no_time_left(client, tmp_path):
 def test_the_brief_offers_the_people_with_the_most_pictures_first(tmp_path):
     from types import SimpleNamespace
 
-    import yaml
-
+    from immich_memories.db import open_store
+    from immich_memories.people.transfer import import_document
     from immich_memories.web.library import immich_client
-    from immich_memories.web.roster import people_path
 
     class Library:
         def get_all_people(self):
@@ -233,22 +229,21 @@ def test_the_brief_offers_the_people_with_the_most_pictures_first(tmp_path):
                 SimpleNamespace(id=i, name=n) for i, n in (("1", "Ana"), ("2", "Zoé"), ("3", "Bo"))
             ]
 
-    people = tmp_path / "people.yaml"
-    people.write_text(
-        yaml.safe_dump(
-            {
-                "version": 1,
-                "people": [
-                    {"ids": ["2"], "name": "Zoé", "inferred": {"evidence": {"count": 900}}},
-                    {"ids": ["3"], "name": "Bo", "inferred": {"evidence": {"count": 40}}},
-                ],
-            }
-        )
+    config = config_in(tmp_path)
+    import_document(
+        open_store(config),
+        {
+            "version": 1,
+            "people": [
+                {"ids": ["2"], "name": "Zoé", "inferred": {"evidence": {"count": 900}}},
+                {"ids": ["3"], "name": "Bo", "inferred": {"evidence": {"count": 40}}},
+            ],
+        },
+        replace=True,
     )
-    client = api_client(config_in(tmp_path))
-    # WHY: Immich is the external boundary; the people file is the scan's count of each face.
+    client = api_client(config)
+    # WHY: Immich is the external boundary; the registry holds the scan's count of each face.
     client.app.dependency_overrides[immich_client] = lambda: Library()
-    client.app.dependency_overrides[people_path] = lambda: people
 
     found = client.get("/api/v1/people").json()
 

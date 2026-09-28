@@ -82,24 +82,35 @@ def test_provider_hosts_come_from_every_configured_model_endpoint(harness, tmp_p
     assert harness.provider_hosts(bare) == {"model.local:9999", "localhost:8092"}
 
 
-def test_bank_rows_counts_only_judgment_tables(harness, tmp_path):
-    import sqlite3
+def _judge(store, *keys: str) -> None:
+    import sqlalchemy as sa
 
-    with sqlite3.connect(tmp_path / "judgments.db") as connection:
-        connection.execute("create table judgments (k text)")
-        connection.execute("create table visual_judgments (k text)")
-        connection.execute("create table other (k text)")
-        connection.executemany("insert into judgments values (?)", [("a",), ("b",)])
-        connection.execute("insert into other values ('x')")
-    assert harness.bank_rows(tmp_path) == 2
-    assert harness.bank_rows(tmp_path / "missing") == 0
-    store = tmp_path / "annotations.sqlite"
-    with sqlite3.connect(store) as connection:
-        connection.execute("create table editorial_period_insights (k text)")
-        connection.execute("insert into editorial_period_insights values ('p')")
-    config = tmp_path / "config.yaml"
-    config.write_text(f"advanced:\n  editorial:\n    annotation_database: {store}\n")
-    assert harness.bank_rows(tmp_path, config) == 3
+    from immich_memories.db import now_db
+    from immich_memories.db.tables import judgments
+
+    with store.begin() as connection:
+        connection.execute(
+            sa.insert(judgments),
+            [{"key": k, "answer": "{}", "answered_at": now_db()} for k in keys],
+        )
+
+
+def test_bank_rows_counts_only_the_stores_bank_tables(harness):
+    from immich_memories.db import open_store
+    from immich_memories.people.transfer import import_document
+
+    store = open_store()
+    _judge(store, "a", "b")
+    import_document(store, {"people": [{"ids": ["id-1"], "name": "Not A Bank"}]})
+
+    assert harness.bank_rows() == 2
+
+
+def test_a_store_that_does_not_exist_yet_has_no_fingerprint(harness, tmp_path, monkeypatch):
+    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", f"sqlite:///{tmp_path / 'none.db'}")
+
+    assert harness.store_fingerprint() == {}
+    assert not (tmp_path / "none.db").exists()
 
 
 def test_route_argv_strips_the_command_word_output_and_harness_owned_flags(harness):
@@ -216,23 +227,22 @@ def test_the_baseline_attempt_directory_comes_from_the_reference_when_it_names_o
     )
 
 
-def test_the_store_fingerprint_survives_an_insert_that_a_delete_paid_for(harness, tmp_path):
-    import sqlite3
+def test_the_store_fingerprint_survives_an_insert_that_a_delete_paid_for(harness):
+    import sqlalchemy as sa
 
-    with sqlite3.connect(tmp_path / "judgments.db") as connection:
-        connection.execute("create table judgments (k text)")
-        connection.execute("create table other (k text)")
-        connection.executemany("insert into judgments values (?)", [("a",), ("b",)])
-        connection.execute("insert into other values ('x')")
-    banked = harness.store_fingerprint(tmp_path)
-    assert set(banked) == {"judgments"}
+    from immich_memories.db import open_store
+    from immich_memories.db.tables import judgments
+
+    store = open_store()
+    _judge(store, "a", "b")
+    banked = harness.store_fingerprint()
     assert banked["judgments"][0] == 2
 
-    with sqlite3.connect(tmp_path / "judgments.db") as connection:
-        connection.execute("delete from judgments where k = 'a'")
-        connection.execute("insert into judgments values ('c')")
+    with store.begin() as connection:
+        connection.execute(sa.delete(judgments).where(judgments.c.key == "a"))
+    _judge(store, "c")
 
-    current = harness.store_fingerprint(tmp_path)
+    current = harness.store_fingerprint()
     assert current["judgments"][0] == banked["judgments"][0]
     assert current != banked
     assert "judgments" in harness.store_drift(banked, current)

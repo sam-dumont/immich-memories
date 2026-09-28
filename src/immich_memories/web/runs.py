@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.operations.auto_output import output_log_path
 from immich_memories.operations.run_index import attempt_dir_for_run
 from immich_memories.operations.storyboard import read_storyboard
@@ -24,7 +25,7 @@ _PREVIEW_SHOTS = 8
 
 
 def _preview(config: Config, run_id: str) -> list[str]:
-    attempt = attempt_dir_for_run(config.cache.cache_path, run_id)
+    attempt = attempt_dir_for_run(run_id, store=open_store(config))
     board = read_storyboard(attempt) if attempt else None
     return [shot.asset_id for shot in board.shots[:_PREVIEW_SHOTS]] if board else []
 
@@ -51,7 +52,7 @@ def list_runs(
     status: Literal["completed", "failed", "running", "cancelled", "interrupted"] | None = None,
 ) -> RunPage:
     """Runs newest first, each with the first pictures its saved cut plays."""
-    records = RunDatabase(config.cache.database_path).list_runs(
+    records = RunDatabase(open_store(config)).list_runs(
         limit=limit + 1, offset=offset, status=status
     )
     return RunPage(
@@ -73,7 +74,7 @@ def _child_output(config: Config, record: RunMetadata) -> Path | None:
 
 
 def _record(config: Config, run_id: str) -> RunMetadata:
-    record = RunDatabase(config.cache.database_path).get_run(run_id)
+    record = RunDatabase(open_store(config)).get_run(run_id)
     if record is None:
         raise HTTPException(404, "Run not found. It may have been removed.")
     return record

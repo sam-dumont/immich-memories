@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import sqlite3
-from contextlib import closing
 from datetime import UTC, datetime
 
 from immich_memories.analysis.catalogue_runtime import catalogue_banked_episodes
@@ -11,6 +9,7 @@ from immich_memories.analysis.library_catalogue import LibraryEpisode
 from immich_memories.store.episode_readings import EpisodeReadingStore
 from immich_memories.store.library_catalogue import CatalogueStore, LibraryAccount
 from immich_memories.store.library_overviews import library_period_account
+from tests.annotation_rows import annotation_store, read_rows
 from tests.test_library_catalogue import Reader, config_for, reading
 
 # Born late in 2005, filmed until a day in 2026: the edge years are only partly in the window.
@@ -33,24 +32,22 @@ def two_episodes_a_year() -> tuple[list[LibraryEpisode], dict[str, datetime]]:
 
 
 def banked(bank, episodes) -> list:
-    with closing(EpisodeReadingStore(bank)) as store:
-        store.remember([episode.reading for episode in episodes])
+    EpisodeReadingStore(bank).remember([episode.reading for episode in episodes])
     return [episode.reading.identity for episode in episodes]
 
 
 def kinds(bank) -> set[str]:
-    with closing(sqlite3.connect(bank)) as connection:
-        return {kind for (kind,) in connection.execute("SELECT kind FROM library_overviews")}
+    return {row["kind"] for row in read_rows(bank, "library_overviews")}
 
 
 def test_twenty_years_are_told_in_one_account_a_year_and_one_for_the_window(tmp_path) -> None:
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     episodes, dates = two_episodes_a_year()
     asked = Reader()
 
     catalogue_banked_episodes(
         banked(bank, episodes),
-        store_path=bank,
+        store=bank,
         capture_dates=dates,
         config=config_for(tmp_path),
         requester=asked,
@@ -65,7 +62,7 @@ def test_twenty_years_are_told_in_one_account_a_year_and_one_for_the_window(tmp_
 
 
 def test_a_second_film_over_the_same_readings_asks_nothing(tmp_path) -> None:
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     episodes, dates = two_episodes_a_year()
     identities = banked(bank, episodes)
     again = Reader()
@@ -73,7 +70,7 @@ def test_a_second_film_over_the_same_readings_asks_nothing(tmp_path) -> None:
     for asked in (Reader(), again):
         catalogue_banked_episodes(
             identities,
-            store_path=bank,
+            store=bank,
             capture_dates=dates,
             config=config_for(tmp_path),
             requester=asked,
@@ -85,7 +82,7 @@ def test_a_second_film_over_the_same_readings_asks_nothing(tmp_path) -> None:
 
 def test_a_year_the_window_only_touches_is_not_banked_as_that_year(tmp_path) -> None:
     """A later film of that whole year must not read an account of two weeks of it."""
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     episodes = [
         LibraryEpisode(reading=reading(f"e{day}", (f"p{day}",)), taken_at=taken)
         for day, taken in (
@@ -99,7 +96,7 @@ def test_a_year_the_window_only_touches_is_not_banked_as_that_year(tmp_path) -> 
 
     catalogue_banked_episodes(
         banked(bank, episodes),
-        store_path=bank,
+        store=bank,
         capture_dates={e.reading.full_asset_ids[0]: e.taken_at for e in episodes},
         config=config_for(tmp_path),
         requester=Reader(),
@@ -112,22 +109,21 @@ def test_a_year_the_window_only_touches_is_not_banked_as_that_year(tmp_path) -> 
 
 
 def test_a_month_the_library_already_accounted_for_is_read_not_retold(tmp_path) -> None:
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     episodes, dates = two_episodes_a_year()
     march_2010 = [e for e in episodes if e.taken_at.strftime("%Y-%m") == "2010-03"]
-    with closing(CatalogueStore(bank)) as store:
-        store.remember(
-            [
-                LibraryAccount(
-                    "banked-march", "month", "2010-03", "a banked account of March", ("x", "y")
-                )
-            ]
-        )
+    CatalogueStore(bank).remember(
+        [
+            LibraryAccount(
+                "banked-march", "month", "2010-03", "a banked account of March", ("x", "y")
+            )
+        ]
+    )
     asked = Reader()
 
     catalogue_banked_episodes(
         banked(bank, episodes),
-        store_path=bank,
+        store=bank,
         capture_dates=dates,
         config=config_for(tmp_path),
         requester=asked,
@@ -140,14 +136,14 @@ def test_a_month_the_library_already_accounted_for_is_read_not_retold(tmp_path) 
 
 
 def test_the_facts_of_unread_episodes_reach_their_year_not_a_month(tmp_path) -> None:
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     episodes, dates = two_episodes_a_year()
     facts = LibraryAccount("facts-2012", "episode-facts", "2012-06", "a quiet day at the lake", ())
     asked = Reader()
 
     catalogue_banked_episodes(
         banked(bank, episodes),
-        store_path=bank,
+        store=bank,
         capture_dates=dates,
         config=config_for(tmp_path),
         requester=asked,
@@ -160,13 +156,13 @@ def test_the_facts_of_unread_episodes_reach_their_year_not_a_month(tmp_path) -> 
 
 
 def test_a_month_film_still_banks_its_month_and_no_year(tmp_path) -> None:
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     episodes, dates = two_episodes_a_year()
     march = [e for e in episodes if e.taken_at.strftime("%Y-%m") == "2010-03"]
 
     catalogue_banked_episodes(
         banked(bank, march),
-        store_path=bank,
+        store=bank,
         capture_dates=dates,
         config=config_for(tmp_path),
         requester=Reader(),
@@ -177,13 +173,13 @@ def test_a_month_film_still_banks_its_month_and_no_year(tmp_path) -> None:
 
 
 def test_a_year_film_still_banks_its_months_and_its_year(tmp_path) -> None:
-    bank = tmp_path / "annotations.sqlite"
+    bank = annotation_store()
     episodes, dates = two_episodes_a_year()
     year = [e for e in episodes if e.taken_at.year == 2010]
 
     catalogue_banked_episodes(
         banked(bank, year),
-        store_path=bank,
+        store=bank,
         capture_dates=dates,
         config=config_for(tmp_path),
         requester=Reader(),

@@ -30,8 +30,6 @@ def test_saved_ui_preference_overrides_browser_and_auto_restores_it():
 
 
 def test_every_offered_language_has_complete_ui_templates_with_matching_placeholders():
-    from string import Formatter
-
     from babel.messages.pofile import read_po
 
     from immich_memories.i18n import LOCALES_DIR, SUPPORTED_LOCALES
@@ -45,14 +43,23 @@ def test_every_offered_language_has_complete_ui_templates_with_matching_placehol
         if locale != "en":
             assert catalogue["Memory"].string != "Memory", locale
         for message in messages:
-            entry = catalogue.get(message)
-            assert entry and entry.string and "fuzzy" not in entry.flags, (locale, message)
-            assert {
-                (field, spec, conversion)
-                for _, field, spec, conversion in Formatter().parse(message)
-                if field is not None
-            } == {
-                (field, spec, conversion)
-                for _, field, spec, conversion in Formatter().parse(entry.string)
-                if field is not None
-            }, (locale, message)
+            entry = catalogue.get(message[0] if isinstance(message, tuple) else message)
+            forms = (
+                entry.string if entry and isinstance(message, tuple) else (entry and entry.string,)
+            )
+            assert entry and all(forms) and "fuzzy" not in entry.flags, (locale, message)
+            if isinstance(message, tuple):
+                assert len(forms) == catalogue.num_plurals, (locale, message)
+            source = message[-1] if isinstance(message, tuple) else message
+            for form in forms:
+                assert _fields(source) == _fields(form), (locale, message)
+
+
+def _fields(template: str) -> set[tuple]:
+    from string import Formatter
+
+    return {
+        (field, spec, conversion)
+        for _, field, spec, conversion in Formatter().parse(template)
+        if field is not None
+    }

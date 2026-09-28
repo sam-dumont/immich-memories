@@ -34,7 +34,7 @@ from datetime import date, datetime
 import pytest
 
 from immich_memories.api.models import Person
-from immich_memories.cli._asset_fetch import fetch_photos, fetch_videos
+from immich_memories.cli._asset_fetch import fetch_media
 from immich_memories.cli._date_resolution import (
     BIRTHDAY_FLAG_FORMAT,
     default_duration_for_type,
@@ -460,15 +460,13 @@ def cli_fetch_calls(
     """What ``cli/_asset_fetch`` asks Immich for, given windows and people."""
     client = RecordingClient()
     person_ids = [person.id for person in people]
-    fetch_videos(
+    fetch_media(
         client=client,
-        # Read only on the live-photo branch, which use_live_photos closes.
         progress=SilentProgress(),
         date_ranges=windows,
         person_ids=person_ids,
+        include_photos=include_photos,
     )
-    if include_photos:
-        fetch_photos(client=client, date_ranges=windows, person_ids=person_ids)
     return client.calls
 
 
@@ -509,7 +507,7 @@ def _fetch_params():
 
 
 class TestFetchParity:
-    """Same windows and same people, same queries against Immich."""
+    """Every window of the memory, read once per kind, whoever the memory is about."""
 
     @pytest.mark.parametrize("scenario", _fetch_params())
     @pytest.mark.parametrize("include_photos", [False, True], ids=["videos", "videos+photos"])
@@ -521,10 +519,13 @@ class TestFetchParity:
         cli = cli_fetch_calls(windows, scenario.people, include_photos=include_photos)
 
         assert cli, "the CLI asked Immich for nothing"
-        assert {people for _, people, _ in cli} == {tuple(p.id for p in scenario.people)}
+        # The reads name nobody: the people rule is applied to what a window returns, across
+        # each episode, so a picture where a face went unrecognised still counts (#1438).
+        assert {people for _, people, _ in cli} == {()}
         assert {window for _, _, window in cli} == set(_windows(windows))
+        # A memory about people reads both kinds: an episode mixes them, and the rule needs both.
         assert {kind for kind, _, _ in cli} == (
-            {"videos", "photos"} if include_photos else {"videos"}
+            {"videos", "photos"} if include_photos or scenario.people else {"videos"}
         )
 
 

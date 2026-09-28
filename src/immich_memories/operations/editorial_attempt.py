@@ -2,24 +2,26 @@
 
 from __future__ import annotations
 
-import fcntl
 import json
-import os
 from collections.abc import Mapping
 from contextlib import ExitStack
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from immich_memories.analysis.llm_metrics import LLMCounters, collecting
 from immich_memories.analysis.llm_usage_record import write_llm_usage
+from immich_memories.db.leases import Lease
 from immich_memories.operations.cancellation import PipelineCancelled
 from immich_memories.operations.cut_progress import ANALYSIS_PHASE, StageClock, StageUpdate
 from immich_memories.security import write_secret_file
 
 # Beside a cut key's attempts: which attempt is the newest, for a reader in another process.
 LATEST_ATTEMPT = "latest-attempt.private.json"
+
+if TYPE_CHECKING:
+    from immich_memories.db import Store
 
 _FIRST_STAGE = StageUpdate("Preparing editorial evidence", ANALYSIS_PHASE)
 
@@ -31,11 +33,12 @@ def _now() -> str:
 class EditorialAttempt:
     """Keep each run's artifacts separate while semantic caches remain reusable.
 
-    The lease is released by the OS even after a crash. A reader can distinguish
-    an interrupted run from a slow live run without guessing from its age or PID.
+    The lease is released by the OS (or, on a PostgreSQL store, by the server when the
+    holder's connection drops) even after a crash. A reader can distinguish an interrupted
+    run from a slow live run without guessing from its age or PID.
     """
 
-    def __init__(self, root: Path, *, request: dict[str, Any]) -> None:
+    def __init__(self, root: Path, *, request: dict[str, Any], store: Store | None = None) -> None:
         self.root = Path(root)
         self.attempt_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ-") + uuid4().hex[:12]
         self.directory = self.root / "attempts" / self.attempt_id
@@ -49,16 +52,15 @@ class EditorialAttempt:
             "request": request,
             "restart": "Run the same request; completed exact judgments remain reusable.",
         }
-        self._lease: int | None = None
+        self._lease = _attempt_lease(self.directory, self.attempt_id, store)
         self._stage_clock = StageClock()
         self._usage_scope = ExitStack()
         self._usage: LLMCounters | None = None
 
     def __enter__(self) -> EditorialAttempt:
         self.directory.mkdir(parents=True, mode=0o700)
-        self._lease = os.open(self.directory / ".lease", os.O_CREAT | os.O_RDWR, 0o600)
+        self._lease.acquire(wait=True)
         try:
-            fcntl.flock(self._lease, fcntl.LOCK_EX)
             self._usage = self._usage_scope.enter_context(collecting())
             self._save()
             write_secret_file(
@@ -67,8 +69,7 @@ class EditorialAttempt:
             )
         except BaseException:
             self._usage_scope.close()
-            os.close(self._lease)
-            self._lease = None
+            self._lease.release()
             raise
         return self
 
@@ -122,29 +123,24 @@ class EditorialAttempt:
             self._save()
         finally:
             self._usage_scope.close()
-            if self._lease is not None:
-                os.close(self._lease)
-                self._lease = None
+            self._lease.release()
 
 
-def read_editorial_attempt(directory: Path) -> dict[str, Any]:
+def _attempt_lease(directory: Path, attempt_id: str, store: Store | None) -> Lease:
+    return Lease(f"editorial-attempt:{attempt_id}", directory / ".lease", store)
+
+
+def read_editorial_attempt(directory: Path, store: Store | None = None) -> dict[str, Any]:
     """Read truthful liveness without changing an attempt's historical record."""
     record = json.loads((directory / "status.private.json").read_text())
     if record.get("status") != "running":
         return record
-    lease = os.open(directory / ".lease", os.O_RDONLY)
-    try:
-        try:
-            fcntl.flock(lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            return record
-        return {
-            **record,
-            "status": "interrupted",
-            "reason": "Planning process no longer owns its lease",
-        }
-    finally:
-        os.close(lease)
+    if _attempt_lease(directory, record["attempt_id"], store).held_elsewhere():
+        return record
+    return record | {
+        "status": "interrupted",
+        "reason": "Planning process no longer owns its lease",
+    }
 
 
 def window_origin_note(directory: Path) -> str:

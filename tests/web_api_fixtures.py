@@ -17,6 +17,7 @@ from immich_memories.analysis.editorial_contracts import (
 )
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.operations.run_index import record_run_attempt
 from immich_memories.operations.storyboard import PLAN_FILE, PROJECTION_FILE, TRACE_FILE
 from immich_memories.tracking import RunDatabase
@@ -109,7 +110,7 @@ def save_run(
     **fields: Any,
 ) -> Path | None:
     """A run in the database and, with `cut`, the attempt directory its storyboard reads."""
-    RunDatabase(config.cache.database_path).save_run(
+    RunDatabase(open_store(config)).save_run(
         RunMetadata(
             run_id=run_id,
             created_at=when,
@@ -129,5 +130,5 @@ def save_run(
     if polish is not None:
         (attempt / "derived-decisions").mkdir()
         (attempt / "derived-decisions" / "thin-polish.private.json").write_text(json.dumps(polish))
-    record_run_attempt(config.cache.cache_path, run_id, attempt, attempt / "film.mp4")
+    record_run_attempt(run_id, attempt, attempt / "film.mp4", store=open_store(config))
     return attempt

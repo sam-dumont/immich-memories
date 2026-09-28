@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, field_serializer
 
@@ -173,6 +173,8 @@ class PoolItem(BaseModel):
     taken: str
     kind: Literal["photo", "video", "live"]
     favourite: bool
+    # In the pool through its episode, not its own faces: the owner may want to untick it.
+    same_episode: bool = False
     in_cut: bool
     # False when the editor never received it (outside this memory's material): a tick can't reach it.
     reachable: bool
@@ -262,3 +264,36 @@ class JobProgress(BaseModel):
     # The stage's own estimate, measured on this stage's work only (StageClock).
     remaining_seconds: float | None = None
     recent_asset_ids: list[str] = []
+
+
+class SettingRow(BaseModel):
+    """One setting as the page shows it: its value, where that value comes from, and whether
+    this page may change it. A secret's value is masked (`***`, or empty when none is stored)."""
+
+    key: str
+    value: Any
+    source: Literal["env", "file", "database", "default"]
+    # The environment variable or config.yaml key that sets it, when one does.
+    override: str | None
+    secret: bool
+    # Saved in the database, but the secret key cannot decrypt it: the default is in use.
+    unreadable: bool
+    editable: bool
+
+
+class SettingsSection(BaseModel):
+    name: str
+    settings: list[SettingRow]
+
+
+class SettingsView(BaseModel):
+    config_path: str
+    # Whether IMMICH_MEMORIES_SECRET_KEY is set, so a secret can be stored in the database.
+    can_store_secrets: bool
+    sections: list[SettingsSection]
+
+
+class SettingsForm(BaseModel):
+    """The edited values, keyed by runtime path (`llm.model`); lists and mappings as JSON text."""
+
+    values: dict[str, Any]

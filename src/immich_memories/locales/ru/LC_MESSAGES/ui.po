@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 11:05+0200\n"
+"POT-Creation-Date: 2026-09-28 12:51+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -20,7 +20,7 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "Ежемесячная проверка в этом месяце уже завершена."
 
-#: web/routes/settings/+page.svelte:95
+#: web/routes/settings/+page.svelte:91
 msgid "API Key"
 msgstr "Ключ API"
 
@@ -44,7 +44,7 @@ msgstr "Показывать дату"
 msgid "Add someone not in Immich"
 msgstr "Добавить человека, которого нет в Immich"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:147
+#: web/routes/runs/[run_id]/pool/+page.svelte:152
 #, python-brace-format
 msgid "Add: {include} · Take out: {exclude}"
 msgstr "Добавить: {include} · Убрать: {exclude}"
@@ -79,7 +79,7 @@ msgstr "Показать также {count} фото вне этого восп�
 msgid "Alternatives considered"
 msgstr "Рассмотренные варианты"
 
-#: web/routes/settings/+page.svelte:25
+#: web/routes/settings/+page.svelte:26
 msgid "Analysis cache"
 msgstr "Кэш анализа"
 
@@ -95,7 +95,7 @@ msgstr ""
 msgid "Another day (MM-DD)"
 msgstr "Другой день (MM-DD)"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:163
+#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Anyone"
 msgstr "Все"
 
@@ -161,11 +161,11 @@ msgstr "Размытый фон"
 msgid "Browse the whole pool"
 msgstr "Смотреть весь набор"
 
-#: web/routes/settings/+page.svelte:142 web/routes/settings/+page.svelte:143
+#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
 msgid "Caches"
 msgstr "Кэши"
 
-#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:169
+#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:174
 msgid "Cancel"
 msgstr "Отмена"
 
@@ -206,19 +206,19 @@ msgstr ""
 "Выберите, что охватывает фильм. Монтаж выполняется так же, как показывает команда ниже; вы "
 "проверяете его, прежде чем что-либо рендерится."
 
-#: web/routes/settings/+page.svelte:148
+#: web/routes/settings/+page.svelte:117
 msgid "Clear"
 msgstr "Очистить"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:137 web/routes/runs/[run_id]/pool/+page.svelte:170
+#: web/routes/runs/[run_id]/pool/+page.svelte:142 web/routes/runs/[run_id]/pool/+page.svelte:175
 msgid "Clear hold"
 msgstr "Снять ограничение"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:156
+#: web/routes/runs/[run_id]/pool/+page.svelte:161
 msgid "Clear this hold?"
 msgstr "Снять это ограничение?"
 
-#: web/routes/settings/+page.svelte:71
+#: web/routes/settings/+page.svelte:69
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "Удалено {count} записей из {cache}."
@@ -227,20 +227,16 @@ msgstr "Удалено {count} записей из {cache}."
 msgid "Command"
 msgstr "Команда"
 
-#: web/routes/settings/+page.svelte:122
+#: web/lib/SettingsEditor.svelte:72
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "Файл конфигурации: {config_path}"
 
-#: web/routes/settings/+page.svelte:113 web/routes/settings/+page.svelte:115
+#: web/lib/SettingsEditor.svelte:63 web/lib/SettingsEditor.svelte:65
 msgid "Configuration"
 msgstr "Конфигурация"
 
-#: web/routes/settings/+page.svelte:65
-msgid "Configuration saved!"
-msgstr "Конфигурация сохранена!"
-
-#: web/routes/settings/+page.svelte:60
+#: web/routes/settings/+page.svelte:58
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "Подключено как: {name}"
@@ -284,6 +280,10 @@ msgstr "День"
 #: web/routes/create/+page.svelte:314
 msgid "Day (MM-DD)"
 msgstr "День (MM-DD)"
+
+#: web/lib/SettingsEditor.svelte:41
+msgid "Default"
+msgstr "По умолчанию"
 
 #: web/routes/+layout.svelte:46 web/routes/+layout.svelte:47
 msgid "Demo mode"
@@ -342,7 +342,7 @@ msgstr "Закончить здесь"
 msgid "Ends"
 msgstr "Заканчивается"
 
-#: web/routes/settings/+page.svelte:147
+#: web/routes/settings/+page.svelte:116
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "Записи: {count}"
@@ -357,12 +357,18 @@ msgstr ""
 "затем откройте превью: ваши отметки попадают в фильм как есть, без повторного выбора. "
 "«Никогда не использовать» и «Снять ограничение» действуют при каждом запуске."
 
+#: web/routes/settings/+page.svelte:82
+msgid ""
+"Every setting and where its value comes from. What you save here goes to the database; "
+"config.yaml and the environment are never written, and they win over it."
+msgstr "Каждая настройка и откуда берётся её значение. То, что вы сохраняете здесь, попадает в базу данных; config.yaml и окружение никогда не записываются и имеют приоритет над этим."
+
 #: web/routes/create/+page.svelte:377
 msgid "Every trip of the year"
 msgstr "Все поездки за год"
 
 #: web/routes/create/+page.svelte:425 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:163
+#: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Family"
 msgstr "Семья"
 
@@ -370,7 +376,7 @@ msgstr "Семья"
 msgid "Fetching picture previews"
 msgstr "Загрузка превью изображений"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:161
+#: web/routes/runs/[run_id]/pool/+page.svelte:166
 msgid "Films that may use it"
 msgstr "Фильмы, которые могут его использовать"
 
@@ -427,11 +433,11 @@ msgstr "Праздник"
 msgid "How the rules got here"
 msgstr "Как правила пришли к этому"
 
-#: web/routes/settings/+page.svelte:89 web/routes/settings/+page.svelte:90
+#: web/routes/settings/+page.svelte:85 web/routes/settings/+page.svelte:86
 msgid "Immich Connection"
 msgstr "Подключение к Immich"
 
-#: web/routes/settings/+page.svelte:92
+#: web/routes/settings/+page.svelte:88
 msgid "Immich Server URL"
 msgstr "URL сервера Immich"
 
@@ -469,7 +475,7 @@ msgid "It did not finish."
 msgstr "Не завершилось."
 
 #: web/routes/create/+page.svelte:424 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:163
+#: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Just us"
 msgstr "Только мы"
 
@@ -580,7 +586,7 @@ msgstr "Музыка"
 msgid "Music volume:"
 msgstr "Громкость музыки:"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:136
+#: web/routes/runs/[run_id]/pool/+page.svelte:141
 msgid "Never use"
 msgstr "Никогда не использовать"
 
@@ -649,6 +655,10 @@ msgstr "За этот год поездок не обнаружено."
 #: web/routes/settings/people/+page.svelte:141
 msgid "No, they are not"
 msgstr "Нет, это не так"
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
+msgid "Nobody this memory is about was recognised here; they were, elsewhere in the same episode."
+msgstr "Никто из тех, о ком этот эпизод памяти, не был распознан здесь; их узнали в другом месте того же эпизода."
 
 #: web/routes/settings/people/+page.svelte:107
 msgid "Nobody yet. Rescan the library to read who is in it."
@@ -719,7 +729,7 @@ msgstr "Прошло {stages}"
 msgid "Password"
 msgstr "Пароль"
 
-#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:110
+#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:106
 #: web/routes/settings/people/+page.svelte:74 web/routes/settings/people/+page.svelte:80
 msgid "People"
 msgstr "Люди"
@@ -771,20 +781,15 @@ msgstr "Доступные медиа"
 msgid "Portrait"
 msgstr "Вертикально"
 
-#: web/routes/settings/+page.svelte:122
-#, python-brace-format
-msgid "Preset: {preset}"
-msgstr "Пресет: {preset}"
-
 #: web/lib/RenderPanel.svelte:205
 msgid "Preview a track"
 msgstr "Прослушать трек"
 
-#: web/routes/settings/+page.svelte:28
+#: web/routes/settings/+page.svelte:29
 msgid "Preview cache"
 msgstr "Кэш превью"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:148
+#: web/routes/runs/[run_id]/pool/+page.svelte:153
 msgid "Preview with these choices"
 msgstr "Превью с этим выбором"
 
@@ -836,7 +841,7 @@ msgstr "Связь"
 msgid "Relationships"
 msgstr "Связи"
 
-#: web/routes/settings/+page.svelte:116
+#: web/lib/SettingsEditor.svelte:66
 msgid "Reload from Disk"
 msgstr "Перечитать с диска"
 
@@ -899,7 +904,15 @@ msgstr "Выполняется на сервере: {phase}. Продолжит�
 msgid "Runs"
 msgstr "Запуски"
 
-#: web/routes/settings/+page.svelte:101
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
+msgid "Same episode"
+msgstr "Тот же эпизод"
+
+#: web/lib/SettingsEditor.svelte:104
+msgid "Save"
+msgstr "Сохранить"
+
+#: web/routes/settings/+page.svelte:97
 msgid "Save Config"
 msgstr "Сохранить конфигурацию"
 
@@ -907,7 +920,7 @@ msgstr "Сохранить конфигурацию"
 msgid "Save revision"
 msgstr "Сохранить редакцию"
 
-#: web/routes/settings/+page.svelte:97
+#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:93
 msgid "Saved - type a new key to replace it"
 msgstr "Сохранено. Введите новый ключ, чтобы заменить его"
 
@@ -915,6 +928,19 @@ msgstr "Сохранено. Введите новый ключ, чтобы за�
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "Сохранено как редакция {number}."
+
+#: web/lib/SettingsEditor.svelte:40
+msgid "Saved here"
+msgstr "Сохранено здесь"
+
+#: web/lib/SettingsEditor.svelte:39
+#, python-brace-format
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Сохранено здесь, но {name} не может это расшифровать: используется значение по умолчанию"
+
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:63
+msgid "Saved to the database"
+msgstr "Сохранено в базе данных"
 
 #: web/routes/runs/[run_id]/+page.svelte:313
 #, python-brace-format
@@ -937,8 +963,25 @@ msgstr "Время на экране (секунды)"
 msgid "Season"
 msgstr "Время года"
 
-#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:81
-#: web/routes/settings/+page.svelte:85 web/routes/settings/people/+page.svelte:79
+#: web/lib/SettingsEditor.svelte:76
+#, python-brace-format
+msgid ""
+"Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
+"config.yaml."
+msgstr "Секреты нельзя сохранить здесь, пока не задано {name}. Задайте его или храните их в окружении либо в config.yaml."
+
+#: web/lib/SettingsEditor.svelte:37
+#, python-brace-format
+msgid "Set by {name} (environment)"
+msgstr "Задано через {name} (окружение)"
+
+#: web/lib/SettingsEditor.svelte:38
+#, python-brace-format
+msgid "Set in config.yaml as {key}"
+msgstr "Задано в config.yaml как {key}"
+
+#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:77
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:79
 msgid "Settings"
 msgstr "Настройки"
 
@@ -1044,7 +1087,7 @@ msgstr "Заменено"
 msgid "Take out"
 msgstr "Убрать"
 
-#: web/routes/settings/+page.svelte:100
+#: web/routes/settings/+page.svelte:96
 msgid "Test Connection"
 msgstr "Проверить подключение"
 
@@ -1056,7 +1099,7 @@ msgstr "Этот файл не в формате MP3, M4A или WAV"
 msgid "That file is too large for a soundtrack"
 msgstr "Этот файл слишком велик для саундтрека"
 
-#: web/routes/settings/+page.svelte:56
+#: web/routes/settings/+page.svelte:54
 msgid "The connection could not be checked."
 msgstr "Не удалось проверить подключение."
 
@@ -1075,6 +1118,12 @@ msgstr "Монтаж готов."
 #: web/lib/RenderPanel.svelte:155
 msgid "The dates and places, never a model"
 msgstr "Даты и места, никогда модель"
+
+#: web/lib/SettingsEditor.svelte:73
+msgid ""
+"The environment wins, then config.yaml, then what is saved here, then the default. A setting "
+"either of the first two sets is greyed out: change it where its label says."
+msgstr "Окружение имеет приоритет, затем config.yaml, затем сохранённое здесь, затем значение по умолчанию. Настройка, заданная любым из первых двух, показана серым: измените её там, где указано в подписи."
 
 #: web/routes/runs/[run_id]/+page.svelte:142
 msgid "The film"
@@ -1098,11 +1147,9 @@ msgstr "Модель, если она настроена"
 
 #: web/routes/settings/people/+page.svelte:81
 msgid ""
-"The people file (`people.yaml`): who is close, their roles, and how they relate. `people "
-"scan` writes the guesses; your answers stay across scans."
-msgstr ""
-"Файл людей (`people.yaml`): кто близок, их роли и связи между ними. `people scan` записывает "
-"догадки; ваши ответы сохраняются между сканированиями."
+"The people registry: who is close, their roles, and how they relate. `people scan` writes the"
+" guesses; your answers stay across scans. `people export` writes it out as YAML."
+msgstr "Реестр людей: кто близок, их роли и как они связаны. `people scan` записывает предположения; ваши ответы сохраняются между сканированиями. `people export` экспортирует их в YAML."
 
 #: web/lib/ShotInspector.svelte:141
 msgid "The picture it replaced"
@@ -1132,6 +1179,10 @@ msgstr "Не удалось загрузить запуски."
 msgid "The server URL changed: enter the API key for the new server."
 msgstr "URL сервера изменился: введите ключ API для нового сервера."
 
+#: web/lib/SettingsEditor.svelte:52
+msgid "The settings could not be saved."
+msgstr "Не удалось сохранить настройки."
+
 #: web/lib/labels.ts:48
 msgid "These people appear in the last two people memories."
 msgstr "Эти люди встречаются в последних двух воспоминаниях о людях."
@@ -1150,7 +1201,7 @@ msgstr "Эта категория уже дважды встречается в 
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "Для этого запуска не сохранилось записи о его медиа. Смонтируйте заново, чтобы увидеть её."
 
-#: web/routes/settings/+page.svelte:27
+#: web/routes/settings/+page.svelte:28
 msgid "Thumbnail cache"
 msgstr "Кэш миниатюр"
 
@@ -1194,7 +1245,7 @@ msgstr "Повторить"
 msgid "Turn your photo library into video memories"
 msgstr "Превратите вашу фототеку в видеовоспоминания"
 
-#: web/routes/runs/[run_id]/+page.svelte:280 web/routes/runs/[run_id]/pool/+page.svelte:134
+#: web/routes/runs/[run_id]/+page.svelte:280 web/routes/runs/[run_id]/pool/+page.svelte:139
 msgid "Undo"
 msgstr "Отменить решение"
 
@@ -1230,7 +1281,7 @@ msgstr "Имя пользователя"
 msgid "Video"
 msgstr "Видео"
 
-#: web/routes/settings/+page.svelte:26
+#: web/routes/settings/+page.svelte:27
 msgid "Video cache"
 msgstr "Кэш видео"
 
@@ -1251,19 +1302,11 @@ msgstr ""
 "Что автоматизация создала бы следующим — тот же список, что выводит `auto suggest`. Запустите"
 " так, как это сделал бы `auto run`, или сначала проверьте без рендеринга."
 
-#: web/routes/settings/+page.svelte:86
-msgid ""
-"What this server runs with. The file is the source; environment overrides apply; secrets are "
-"masked."
-msgstr ""
-"С чем работает этот сервер. Файл — источник; переменные окружения имеют приоритет; секреты "
-"скрыты."
-
 #: web/lib/RenderPanel.svelte:136
 msgid "What to render"
 msgstr "Что рендерить"
 
-#: web/routes/settings/+page.svelte:110
+#: web/routes/settings/+page.svelte:106
 msgid "Who is who, their roles and relationships."
 msgstr "Кто есть кто, их роли и связи."
 

@@ -5,12 +5,15 @@ sidebar_label: Config Reference
 
 # Config Reference
 
-Every key with its built-in default. Add the ones you want to `~/.immich-memories/config.yaml`.
+Every key with its built-in default. Set one in `~/.immich-memories/config.yaml`, as an environment
+variable, or from the web UI's settings page (saved to the database). Environment beats the file,
+the file beats the database, the database beats these defaults; `immich-memories config show` says
+which one set each key ([where a setting comes from](../run/config-file.md#where-a-setting-comes-from)).
 
 :::tip Config tiers
 Tier 2 sections (`analysis`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`,
-`automation`, `notifications`, `triage`, `editorial`, `inference`) go under an `advanced:` key when
-the app saves the file:
+`automation`, `notifications`, `triage`, `editorial`, `inference`) go under an `advanced:` key in
+the file:
 
 ```yaml
 advanced:
@@ -503,7 +506,7 @@ editorial:
   reader: rules                 # derived from the product tier; not an independent choice
   thin_model_layer: true         # the model polishes a rules draft; false makes it plan the film
   strict_sharing: true           # anything a head or exposure flag marked stays out of shared films
-  annotation_database: ""        # defaults to annotations.sqlite inside the configured cache directory
+  annotation_database: ""        # deprecated: a legacy annotations.sqlite imported into the store once; blank = the cache directory
   laya_audience: false           # derived: off for NAS, on for GPU and Full
   # Apple silicon defaults below; elsewhere the ONNX archive and threshold 0.185 are used.
   laya_checkpoint: "~/.immich-memories/models/laya/laya-audience-a79ad9fa.tar"
@@ -524,6 +527,7 @@ editorial:
     venue: oi-v3
   preparation:
     tier: no_captions            # internal producer mode, derived from the product tier
+    caption_provider: smolvlm    # llm explicitly opts into images sent to advanced.llm; higher cost
     caption_base_url: http://localhost:8092/v1
     caption_artifact_id: ""   # optional artifact/revision label; existing captions stay banked
     caption_api_key: ""          # bearer token for a caption server that requires one
@@ -545,7 +549,7 @@ editorial:
 
 Tier 2: lives under `advanced:` when the app writes the file.
 
-`people` is how the people file's close family (partner, child, parent) reach the selection. A close
+`people` is how the people registry's close family (partner, child, parent) reach the selection. A close
 family member on at least `seat_min_pictures` of the period's pictures, or `seat_min_share` of them,
 who is in none of the film's shots gets one seat: see
 [the family seat](../how-it-chooses/family-audience-duplicates.md#the-family-seat). A story without three favourites is floored
@@ -761,6 +765,27 @@ A scope of ten thousand candidates wants about 3.4 GB; the `0.35` leaves a littl
 If the run's working set does not fit, nothing is lost mid-run: previews still in use are never deleted and the cache overflows the limit instead. The *next* run reclaims them, so the next overlapping memory re-downloads every preview. You get one `WARNING` per run saying how far over you are. Raise it rather than ignoring it.
 
 The video cache is not library-sized: it holds the originals being assembled, tens of files per run however big your library is. `preview_cache_max_size_mb` is gone: it capped the clip previews the old web pages played, and the web client streams Immich's own renditions. An old config that still sets it loads with a warning.
+
+## Store database
+
+Where the store lives: owner decisions, the people registry, model answers, run history, automation
+state, the special-days catalogue and the settings you edit in the UI, as they move out of loose files ([#871](https://github.com/sam-dumont/immich-video-memory-generator/issues/871)).
+The cache stays in `cache.database`.
+
+```yaml
+database:
+  url: "sqlite:///~/.immich-memories/store.db"  # or postgresql://user:${PGPASSWORD}@host/db
+  schema: "immich_memories"                     # PostgreSQL only: the schema holding every table
+  import_from: ""                               # where the one-time import of pre-store files looks;
+                                                # blank = ~/.immich-memories
+```
+
+`IMMICH_MEMORIES_DATABASE_URL`, `IMMICH_MEMORIES_DATABASE_SCHEMA` and `IMMICH_MEMORIES_IMPORT_FROM`
+beat the file. Both are read
+before the store opens, so the UI can never change them. SQLite on local disk is the default and
+fits a single-host install; point `url` at PostgreSQL 14+ (no extensions) to share a server,
+including Immich's own, in a schema of its own. A SQLite file on NFS, SMB or CIFS is refused:
+see [Environment variables](../run/environment-variables.md#not-config-keys).
 
 ## Server (UI)
 

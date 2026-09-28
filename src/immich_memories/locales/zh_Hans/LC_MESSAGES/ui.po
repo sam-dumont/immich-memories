@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 11:05+0200\n"
+"POT-Creation-Date: 2026-09-28 12:51+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans\n"
@@ -19,7 +19,7 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "本月的月度回顾已经完成。"
 
-#: web/routes/settings/+page.svelte:95
+#: web/routes/settings/+page.svelte:91
 msgid "API Key"
 msgstr "API 密钥"
 
@@ -43,7 +43,7 @@ msgstr "显示日期"
 msgid "Add someone not in Immich"
 msgstr "添加 Immich 中没有的人物"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:147
+#: web/routes/runs/[run_id]/pool/+page.svelte:152
 #, python-brace-format
 msgid "Add: {include} · Take out: {exclude}"
 msgstr "添加：{include}·排除：{exclude}"
@@ -78,7 +78,7 @@ msgstr "同时显示此回忆之外的 {count} 张照片"
 msgid "Alternatives considered"
 msgstr "已考虑的备选项"
 
-#: web/routes/settings/+page.svelte:25
+#: web/routes/settings/+page.svelte:26
 msgid "Analysis cache"
 msgstr "分析缓存"
 
@@ -92,7 +92,7 @@ msgstr "先显示纪念日，其余随后。定时任务只会在纪念日当天
 msgid "Another day (MM-DD)"
 msgstr "其他日期 (MM-DD)"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:163
+#: web/routes/runs/[run_id]/pool/+page.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Anyone"
 msgstr "任何人"
 
@@ -158,11 +158,11 @@ msgstr "模糊背景"
 msgid "Browse the whole pool"
 msgstr "浏览全部素材"
 
-#: web/routes/settings/+page.svelte:142 web/routes/settings/+page.svelte:143
+#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
 msgid "Caches"
 msgstr "缓存"
 
-#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:169
+#: web/lib/JobPanel.svelte:87 web/routes/runs/[run_id]/pool/+page.svelte:174
 msgid "Cancel"
 msgstr "取消"
 
@@ -201,19 +201,19 @@ msgid ""
 "it before anything renders."
 msgstr "选择这部影片要涵盖的内容。剪辑会按照下方命令的方式生成；在渲染之前，你可以先查看审阅。"
 
-#: web/routes/settings/+page.svelte:148
+#: web/routes/settings/+page.svelte:117
 msgid "Clear"
 msgstr "清除"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:137 web/routes/runs/[run_id]/pool/+page.svelte:170
+#: web/routes/runs/[run_id]/pool/+page.svelte:142 web/routes/runs/[run_id]/pool/+page.svelte:175
 msgid "Clear hold"
 msgstr "解除限制"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:156
+#: web/routes/runs/[run_id]/pool/+page.svelte:161
 msgid "Clear this hold?"
 msgstr "解除此限制？"
 
-#: web/routes/settings/+page.svelte:71
+#: web/routes/settings/+page.svelte:69
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "已从 {cache} 中清除 {count} 条记录。"
@@ -222,20 +222,16 @@ msgstr "已从 {cache} 中清除 {count} 条记录。"
 msgid "Command"
 msgstr "命令"
 
-#: web/routes/settings/+page.svelte:122
+#: web/lib/SettingsEditor.svelte:72
 #, python-brace-format
 msgid "Config file: {config_path}"
 msgstr "配置文件：{config_path}"
 
-#: web/routes/settings/+page.svelte:113 web/routes/settings/+page.svelte:115
+#: web/lib/SettingsEditor.svelte:63 web/lib/SettingsEditor.svelte:65
 msgid "Configuration"
 msgstr "配置"
 
-#: web/routes/settings/+page.svelte:65
-msgid "Configuration saved!"
-msgstr "配置已保存！"
-
-#: web/routes/settings/+page.svelte:60
+#: web/routes/settings/+page.svelte:58
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "已以 {name} 身份连接"
@@ -279,6 +275,10 @@ msgstr "日期"
 #: web/routes/create/+page.svelte:314
 msgid "Day (MM-DD)"
 msgstr "日期 (MM-DD)"
+
+#: web/lib/SettingsEditor.svelte:41
+msgid "Default"
+msgstr "默认"
 
 #: web/routes/+layout.svelte:46 web/routes/+layout.svelte:47
 msgid "Demo mode"
@@ -335,7 +335,7 @@ msgstr "在此结束"
 msgid "Ends"
 msgstr "结束方式"
 
-#: web/routes/settings/+page.svelte:147
+#: web/routes/settings/+page.svelte:116
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "记录：{count}"
@@ -347,12 +347,18 @@ msgid ""
 "across every run."
 msgstr "这次剪辑看过的每张照片，按拍摄顺序排列。勾选或取消勾选，然后预览：你的勾选会原样进入影片，不会重新挑选任何内容。“永不使用”和“解除限制”在每次运行中都会保留。"
 
+#: web/routes/settings/+page.svelte:82
+msgid ""
+"Every setting and where its value comes from. What you save here goes to the database; "
+"config.yaml and the environment are never written, and they win over it."
+msgstr "每个设置及其取值来源。你在此保存的内容会写入数据库；config.yaml 和环境变量永远不会被写入，并且优先于此处保存的值。"
+
 #: web/routes/create/+page.svelte:377
 msgid "Every trip of the year"
 msgstr "这一年的所有旅行"
 
 #: web/routes/create/+page.svelte:425 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:163
+#: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Family"
 msgstr "家人"
 
@@ -360,7 +366,7 @@ msgstr "家人"
 msgid "Fetching picture previews"
 msgstr "正在获取图片预览"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:161
+#: web/routes/runs/[run_id]/pool/+page.svelte:166
 msgid "Films that may use it"
 msgstr "可以使用它的影片"
 
@@ -417,11 +423,11 @@ msgstr "节日"
 msgid "How the rules got here"
 msgstr "规则如何得出这一结果"
 
-#: web/routes/settings/+page.svelte:89 web/routes/settings/+page.svelte:90
+#: web/routes/settings/+page.svelte:85 web/routes/settings/+page.svelte:86
 msgid "Immich Connection"
 msgstr "Immich 连接"
 
-#: web/routes/settings/+page.svelte:92
+#: web/routes/settings/+page.svelte:88
 msgid "Immich Server URL"
 msgstr "Immich 服务器地址"
 
@@ -459,7 +465,7 @@ msgid "It did not finish."
 msgstr "未能完成。"
 
 #: web/routes/create/+page.svelte:424 web/routes/runs/[run_id]/pool/+page.svelte:87
-#: web/routes/runs/[run_id]/pool/+page.svelte:163
+#: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Just us"
 msgstr "仅自己家"
 
@@ -568,7 +574,7 @@ msgstr "音乐"
 msgid "Music volume:"
 msgstr "音乐音量："
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:136
+#: web/routes/runs/[run_id]/pool/+page.svelte:141
 msgid "Never use"
 msgstr "永不使用"
 
@@ -633,6 +639,10 @@ msgstr "这一年没有检测到旅行。"
 #: web/routes/settings/people/+page.svelte:141
 msgid "No, they are not"
 msgstr "不，不是"
+
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
+msgid "Nobody this memory is about was recognised here; they were, elsewhere in the same episode."
+msgstr "此回忆所关联的人未在此处被识别；他们是在同一片段中的其他地方被识别的。"
 
 #: web/routes/settings/people/+page.svelte:107
 msgid "Nobody yet. Rescan the library to read who is in it."
@@ -703,7 +713,7 @@ msgstr "通过了{stages}"
 msgid "Password"
 msgstr "密码"
 
-#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:110
+#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:106
 #: web/routes/settings/people/+page.svelte:74 web/routes/settings/people/+page.svelte:80
 msgid "People"
 msgstr "人物"
@@ -755,20 +765,15 @@ msgstr "候选媒体"
 msgid "Portrait"
 msgstr "竖屏"
 
-#: web/routes/settings/+page.svelte:122
-#, python-brace-format
-msgid "Preset: {preset}"
-msgstr "预设：{preset}"
-
 #: web/lib/RenderPanel.svelte:205
 msgid "Preview a track"
 msgstr "试听曲目"
 
-#: web/routes/settings/+page.svelte:28
+#: web/routes/settings/+page.svelte:29
 msgid "Preview cache"
 msgstr "预览缓存"
 
-#: web/routes/runs/[run_id]/pool/+page.svelte:148
+#: web/routes/runs/[run_id]/pool/+page.svelte:153
 msgid "Preview with these choices"
 msgstr "按此选择预览"
 
@@ -820,7 +825,7 @@ msgstr "关系"
 msgid "Relationships"
 msgstr "关系"
 
-#: web/routes/settings/+page.svelte:116
+#: web/lib/SettingsEditor.svelte:66
 msgid "Reload from Disk"
 msgstr "从磁盘重新加载"
 
@@ -883,7 +888,15 @@ msgstr "正在服务器上运行：{phase}。离开此页面后仍会继续。"
 msgid "Runs"
 msgstr "任务"
 
-#: web/routes/settings/+page.svelte:101
+#: web/routes/runs/[run_id]/pool/+page.svelte:132
+msgid "Same episode"
+msgstr "同一片段"
+
+#: web/lib/SettingsEditor.svelte:104
+msgid "Save"
+msgstr "保存"
+
+#: web/routes/settings/+page.svelte:97
 msgid "Save Config"
 msgstr "保存配置"
 
@@ -891,7 +904,7 @@ msgstr "保存配置"
 msgid "Save revision"
 msgstr "保存修订"
 
-#: web/routes/settings/+page.svelte:97
+#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:93
 msgid "Saved - type a new key to replace it"
 msgstr "已保存，输入新密钥可替换它"
 
@@ -899,6 +912,19 @@ msgstr "已保存，输入新密钥可替换它"
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "已保存为修订 {number}。"
+
+#: web/lib/SettingsEditor.svelte:40
+msgid "Saved here"
+msgstr "在此保存"
+
+#: web/lib/SettingsEditor.svelte:39
+#, python-brace-format
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "已在此保存，但 {name} 无法解密：正在使用默认值"
+
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:63
+msgid "Saved to the database"
+msgstr "已保存到数据库"
 
 #: web/routes/runs/[run_id]/+page.svelte:313
 #, python-brace-format
@@ -921,8 +947,25 @@ msgstr "屏幕时长（秒）"
 msgid "Season"
 msgstr "季节"
 
-#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:81
-#: web/routes/settings/+page.svelte:85 web/routes/settings/people/+page.svelte:79
+#: web/lib/SettingsEditor.svelte:76
+#, python-brace-format
+msgid ""
+"Secrets cannot be saved here until {name} is set. Set it, or keep them in the environment or "
+"config.yaml."
+msgstr "在设置 {name} 之前，无法在此保存密钥。请设置它，或将其保留在环境变量或 config.yaml 中。"
+
+#: web/lib/SettingsEditor.svelte:37
+#, python-brace-format
+msgid "Set by {name} (environment)"
+msgstr "由 {name} 设置（环境变量）"
+
+#: web/lib/SettingsEditor.svelte:38
+#, python-brace-format
+msgid "Set in config.yaml as {key}"
+msgstr "在 config.yaml 中设为 {key}"
+
+#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:77
+#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:79
 msgid "Settings"
 msgstr "设置"
 
@@ -1028,7 +1071,7 @@ msgstr "已替换"
 msgid "Take out"
 msgstr "移除"
 
-#: web/routes/settings/+page.svelte:100
+#: web/routes/settings/+page.svelte:96
 msgid "Test Connection"
 msgstr "测试连接"
 
@@ -1040,7 +1083,7 @@ msgstr "此文件不是 MP3、M4A 或 WAV"
 msgid "That file is too large for a soundtrack"
 msgstr "该文件太大，无法用作配乐"
 
-#: web/routes/settings/+page.svelte:56
+#: web/routes/settings/+page.svelte:54
 msgid "The connection could not be checked."
 msgstr "无法检查连接。"
 
@@ -1059,6 +1102,12 @@ msgstr "剪辑已准备好。"
 #: web/lib/RenderPanel.svelte:155
 msgid "The dates and places, never a model"
 msgstr "只用日期和地点，绝不使用模型"
+
+#: web/lib/SettingsEditor.svelte:73
+msgid ""
+"The environment wins, then config.yaml, then what is saved here, then the default. A setting "
+"either of the first two sets is greyed out: change it where its label says."
+msgstr "环境变量优先，其次是 config.yaml，然后是此处保存的值，最后是默认值。由前两者之一设定的选项会显示为灰色：请在其标签所指示的位置修改。"
 
 #: web/routes/runs/[run_id]/+page.svelte:142
 msgid "The film"
@@ -1082,9 +1131,9 @@ msgstr "已配置模型时使用模型"
 
 #: web/routes/settings/people/+page.svelte:81
 msgid ""
-"The people file (`people.yaml`): who is close, their roles, and how they relate. `people "
-"scan` writes the guesses; your answers stay across scans."
-msgstr "人物文件（`people.yaml`）：谁是亲近的人、他们的角色，以及彼此的关系。`people scan` 会写入推测结果；你的回答会在多次扫描之间保留。"
+"The people registry: who is close, their roles, and how they relate. `people scan` writes the"
+" guesses; your answers stay across scans. `people export` writes it out as YAML."
+msgstr "人物档案：谁是亲近的人、他们的角色，以及彼此的关系。`people scan` 会写入推测结果；你的回答会在多次扫描间保留。`people export` 会将其导出为 YAML。"
 
 #: web/lib/ShotInspector.svelte:141
 msgid "The picture it replaced"
@@ -1114,6 +1163,10 @@ msgstr "无法加载运行记录。"
 msgid "The server URL changed: enter the API key for the new server."
 msgstr "服务器地址已更改：请输入新服务器的 API 密钥。"
 
+#: web/lib/SettingsEditor.svelte:52
+msgid "The settings could not be saved."
+msgstr "无法保存设置。"
+
 #: web/lib/labels.ts:48
 msgid "These people appear in the last two people memories."
 msgstr "这些人物出现在最近两次人物回忆中。"
@@ -1130,7 +1183,7 @@ msgstr "这个分类已在最近六次回忆中出现两次。"
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "此任务没有保留其媒体的记录。重新剪辑即可查看。"
 
-#: web/routes/settings/+page.svelte:27
+#: web/routes/settings/+page.svelte:28
 msgid "Thumbnail cache"
 msgstr "缩略图缓存"
 
@@ -1174,7 +1227,7 @@ msgstr "重试"
 msgid "Turn your photo library into video memories"
 msgstr "把你的照片库变成回忆视频"
 
-#: web/routes/runs/[run_id]/+page.svelte:280 web/routes/runs/[run_id]/pool/+page.svelte:134
+#: web/routes/runs/[run_id]/+page.svelte:280 web/routes/runs/[run_id]/pool/+page.svelte:139
 msgid "Undo"
 msgstr "撤销"
 
@@ -1208,7 +1261,7 @@ msgstr "用户名"
 msgid "Video"
 msgstr "视频"
 
-#: web/routes/settings/+page.svelte:26
+#: web/routes/settings/+page.svelte:27
 msgid "Video cache"
 msgstr "视频缓存"
 
@@ -1227,17 +1280,11 @@ msgid ""
 "would, or check it first without rendering."
 msgstr "自动化接下来会创建的内容，与 `auto suggest` 打印的列表相同。可以像 `auto run` 那样运行，也可以先不渲染检查一遍。"
 
-#: web/routes/settings/+page.svelte:86
-msgid ""
-"What this server runs with. The file is the source; environment overrides apply; secrets are "
-"masked."
-msgstr "此服务器运行时使用的配置。文件是来源；环境变量优先；密钥会被隐藏。"
-
 #: web/lib/RenderPanel.svelte:136
 msgid "What to render"
 msgstr "渲染内容"
 
-#: web/routes/settings/+page.svelte:110
+#: web/routes/settings/+page.svelte:106
 msgid "Who is who, their roles and relationships."
 msgstr "谁是谁，以及他们的角色和关系。"
 

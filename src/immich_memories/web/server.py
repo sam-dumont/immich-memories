@@ -323,6 +323,19 @@ def main(
     from immich_memories.logging_config import configure_logging
 
     configure_logging(level=log_level)
+    from immich_memories.settings_store import SettingsUnavailable
+
+    try:
+        config = get_config()
+    except SettingsUnavailable as unavailable:
+        logger.error("Not starting the UI: %s", unavailable)
+        sys.exit(1)
+    from immich_memories.db import open_store
+    from immich_memories.store.legacy_imports import enable_first_open_import
+
+    enable_first_open_import()
+    # Open the store now, so a first-open import runs at startup and not inside a request.
+    open_store(config)
     if not _is_port_free(host, port):
         logger.error(
             "Port %s is already in use. Stop the existing process: lsof -ti :%s | xargs kill",
@@ -330,7 +343,7 @@ def main(
             port,
         )
         sys.exit(1)
-    proxy = reverse_proxy_run_kwargs(get_config(), os.environ)
+    proxy = reverse_proxy_run_kwargs(config, os.environ)
     uvicorn.run(
         "immich_memories.web.server:create_app",
         factory=True,

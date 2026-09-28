@@ -13,6 +13,7 @@ from immich_memories.analysis import editorial_text_gateway as gateway
 from immich_memories.analysis.editorial_case import TextRequest
 from immich_memories.cache.judgment_cache import JudgmentCache
 from immich_memories.config_models_llm import LLMConfig
+from tests.annotation_rows import annotation_store
 
 
 class _Clock:
@@ -33,7 +34,7 @@ def _request(tmp_path: Path, *, thinking: bool = False) -> TextRequest:
             api_key="not-a-real-key",
             thinking=True,
         ),
-        cache_path=tmp_path / "judgments.sqlite",
+        judgments=annotation_store(),
         max_tokens=1200,
         timeout_seconds=45,
         thinking=thinking,
@@ -71,7 +72,7 @@ def test_query_text_requester_preserves_the_exact_request_contract(
                 "max_tokens": 1200,
                 "timeout_seconds": 45,
                 "thinking": True,
-                "cache_path": None,  # The gateway owns the bounded request cache.
+                "judgments": None,  # The gateway owns the bounded request cache.
                 "require_complete": True,
             },
         )
@@ -83,9 +84,8 @@ def test_query_text_requester_reports_an_exact_warm_answer(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     request = _request(tmp_path)
-    cache = JudgmentCache(request.cache_path)
+    cache = JudgmentCache(request.judgments)
     cache.remember(request.judgment_key, "already banked")
-    cache.close()
 
     async def fake_query(*_args: Any, **_kwargs: Any) -> str:
         raise AssertionError("an exact gateway hit must not reach transport")
@@ -96,6 +96,26 @@ def test_query_text_requester_reports_an_exact_warm_answer(
 
     assert result.raw == "already banked"
     assert result.cache_hit is True
+
+
+def test_optional_fields_reuse_a_valid_answer_from_the_stricter_contract(tmp_path, monkeypatch):
+    request = replace(_request(tmp_path), json_object=True, json_fields=("special", "subtitle"))
+    raw = '{"special":true,"subtitle":""}'
+    cache = JudgmentCache(request.judgments)
+    cache.remember(request.judgment_key, raw)
+    optional = replace(request, json_optional_fields=("subtitle",))
+
+    # WHY: an existing valid answer must avoid the external model transport.
+    async def forbid(*_args, **_kwargs):
+        raise AssertionError("a stricter cached answer must remain reusable")
+
+    monkeypatch.setattr("httpx.AsyncClient.post", forbid)
+
+    result = asyncio.run(gateway.QueryTextRequester().request(optional))
+
+    assert optional.judgment_key != request.judgment_key
+    assert result.cache_hit and result.raw == raw
+    assert cache.answer_for(request.judgment_key) == raw
 
 
 def test_query_text_requester_retries_one_incomplete_answer_with_double_budget(
@@ -168,11 +188,11 @@ def test_sync_prompt_requester_never_banks_unvalidated_raw_answers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     budgets: list[int] = []
-    cache_paths: list[object] = []
+    judgments_seen: list[object] = []
 
     async def fake_query(*_args: Any, **kwargs: Any) -> str:
         budgets.append(kwargs["max_tokens"])
-        cache_paths.append(kwargs["cache_path"])
+        judgments_seen.append(kwargs["judgments"])
         if len(budgets) == 1:
             raise KeyError("missing content")
         return '{"schema_version":"validated-by-caller"}'
@@ -188,7 +208,7 @@ def test_sync_prompt_requester_never_banks_unvalidated_raw_answers(
 
     assert answer == '{"schema_version":"validated-by-caller"}'
     assert budgets == [900, 1800]
-    assert cache_paths == [None, None]
+    assert judgments_seen == [None, None]
 
 
 def test_sync_prompt_requester_is_safe_when_called_inside_an_event_loop(
@@ -293,9 +313,8 @@ def test_a_poisoned_bank_from_an_earlier_run_is_forgotten_and_asked_again(
 
     monkeypatch.setattr(gateway, "query_llm", fake_query)
     request = _request(tmp_path)
-    cache = JudgmentCache(request.cache_path)
+    cache = JudgmentCache(request.judgments)
     cache.remember(request.judgment_key, "not a pick this contract can read")
-    cache.close()
 
     call = asyncio.run(
         gateway.QueryTextRequester().request(request, accepts=lambda raw: raw.startswith("{"))
@@ -338,9 +357,8 @@ def test_a_bounded_failure_row_names_the_reasoning_that_took_the_budget(
 
 def test_refresh_replaces_the_answer_without_changing_its_identity(tmp_path, monkeypatch):
     request = _request(tmp_path)
-    cache = JudgmentCache(request.cache_path)
+    cache = JudgmentCache(request.judgments)
     cache.remember(request.judgment_key, "old answer")
-    cache.close()
     calls = []
 
     # WHY: Only the external model call is replaced; the SQLite bank remains real.
@@ -368,9 +386,8 @@ def test_refresh_retries_a_banked_completion_failure(tmp_path, monkeypatch):
             for budget in (1200, 2400)
         ]
     )
-    cache = JudgmentCache(request.cache_path)
+    cache = JudgmentCache(request.judgments)
     cache.remember_completion_failure(request.judgment_key, failure.as_record())
-    cache.close()
     with pytest.raises(TextCompletionFailure):
         asyncio.run(gateway.QueryTextRequester().request(request))
 

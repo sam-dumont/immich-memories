@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -24,13 +25,44 @@ _BY_WEIGHT = [
     if any(picture.story_key == story.key for picture in CARRIERS)
 ]
 
-# The Boolean override, and the fixture pictures holding both named faces.
+
+def _episodes_of_the_fixture() -> list[list]:
+    """The fixture's episodes, cut by hand at every gap over 90 minutes.
+
+    Written out here rather than borrowed from `person_presence`, so the cut's pool is
+    checked against the rule and not against the code it tests. The fixture has no two
+    places inside one 90-minute run, so time alone cuts the same episodes.
+    """
+    episodes: list[list] = []
+    last = None
+    for picture in sorted(LIBRARY, key=lambda item: (item.taken_at, item.asset_id)):
+        when = datetime.fromisoformat(picture.taken_at.replace("Z", "+00:00"))
+        if last is None or when - last > timedelta(minutes=90):
+            episodes.append([])
+        episodes[-1].append(picture)
+        last = when
+    return episodes
+
+
+def _present(holds) -> set[str]:
+    """Every picture of an episode whose recognised names satisfy ``holds``."""
+    return {
+        picture.asset_id
+        for episode in _episodes_of_the_fixture()
+        if holds({name for picture in episode for name in picture.people})
+        for picture in episode
+    }
+
+
+# The Boolean override: both named people recognised somewhere in the same episode.
 _CONDITION = '"Robin" AND "Kit"'
-_CONDITION_ASSETS = {
+_CONDITION_ASSETS = _present(lambda names: {"Robin", "Kit"} <= names)
+# The same two names read the plain way: any one of them is enough.
+_EITHER_ASSETS = _present(lambda names: bool({"Robin", "Kit"} & names))
+# The frames holding both faces themselves: the old, narrower rule.
+_SAME_FRAME_ASSETS = {
     picture.asset_id for picture in LIBRARY if {"Robin", "Kit"} <= set(picture.people)
 }
-# The same two names read the plain way: any one of them is enough.
-_EITHER_ASSETS = {picture.asset_id for picture in LIBRARY if {"Robin", "Kit"} & set(picture.people)}
 
 
 @pytest.fixture(autouse=True)
@@ -404,6 +436,8 @@ def test_the_people_condition_reaches_the_cut(
 
     request = _request_of_the_cut_after(launch_workspace, before)
     assert set(request["requested_assets"]) == _CONDITION_ASSETS
+    # The unrecognised views of those afternoons come with them (#1437).
+    assert _CONDITION_ASSETS > _SAME_FRAME_ASSETS
 
 
 def test_two_names_ask_together_or_any_of_them(

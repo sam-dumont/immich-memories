@@ -234,6 +234,27 @@ _UNCOVERED_TEXT = re.compile(
     r"expos(?:ed|ing)(?:\s+\w+){0,2}\s+(?:chest|breasts?|torso|genitals?|bottom|buttocks|body|skin))\b",
     re.IGNORECASE,
 )
+_UNDERWEAR_ONLY = re.compile(
+    r"\b(?:wearing (?:only|just)|(?:only|just) wearing|in (?:only|just)|"
+    r"(?:wearing|in) nothing but)\s+(?:(?:a|an|his|her|their|black|white|blue|red)\s+){0,2}"
+    r"(?:underwear|boxer shorts|boxers|briefs|panties|lingerie|bra)\b",
+    re.IGNORECASE,
+)
+
+
+def underwear_only(evidence: Mapping[str, Any]) -> bool:
+    """Explicitly described underwear on a person; swimwear and nappies are separate.
+
+    The uncovered detector also flags shirtless people and cannot establish this category.
+    Inspect each caption separately so an unrelated person's portrait cannot turn clothing
+    laid out on a bed into an underwear portrait.
+    """
+    return any(
+        _states(_PERSON_TEXT, member) and _states(_UNDERWEAR_ONLY, member)
+        for member in evidence.get("members", ())
+    )
+
+
 # "Feeding a child" at a table is a spoon or a hand (09-24): only a breast, nursing, latching or
 # pumping word describes breastfeeding.
 _BREAST_TEXT = re.compile(

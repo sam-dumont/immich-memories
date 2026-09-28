@@ -248,9 +248,7 @@ class TestHealthEndpoint:
             cache={"database": str(tmp_path / "health.db"), "directory": str(tmp_path / "cache")},
             notifications={"enabled": True, "urls": ["ntfy://topic"]},
         )
-        NotificationStateStore(config.cache.database_path).record_failure(
-            NotificationFailureCategory.QUOTA
-        )
+        NotificationStateStore().record_failure(NotificationFailureCategory.QUOTA)
         with (
             patch("immich_memories.web.health.get_config", return_value=config),
             patch(

@@ -5,7 +5,6 @@ from __future__ import annotations
 import io
 import logging
 import os
-import sqlite3
 import stat
 import time
 from dataclasses import replace
@@ -13,6 +12,7 @@ from datetime import UTC, datetime
 
 import numpy as np
 import pytest
+import sqlalchemy as sa
 from PIL import Image
 
 from immich_memories.analysis.editorial_description_contract import (
@@ -24,7 +24,7 @@ from immich_memories.analysis.editorial_preparation import (
     PreparationPorts,
     prepare_editorial_annotations,
 )
-from immich_memories.analysis.editorial_preparation_captions import _remember_caption
+from immich_memories.analysis.editorial_preparation_captions import _remember_captions
 from immich_memories.analysis.editorial_preparation_detectors import (
     DETECTOR_VERSIONS,
     decide,
@@ -37,8 +37,10 @@ from immich_memories.cache.thumbnail_cache import ThumbnailCache
 from immich_memories.config_models_editorial import EditorialConfig
 from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
 from immich_memories.config_models_triage import TriageConfig
+from immich_memories.db.tables import face_boxes, head_facts
 from immich_memories.operations.cancellation import PipelineCancelled, cancellation_scope
-from immich_memories.store.editorial_preparation import initialize, remember_assets
+from immich_memories.store.editorial_preparation import remember_assets, remember_head_rows
+from tests.annotation_rows import add_rows, annotation_store, count_rows, read_rows
 
 
 def asset(asset_id):
@@ -65,32 +67,51 @@ def preview():
 def successful_ports(calls):
     def heads(**kwargs):
         calls.append(("heads", tuple(kwargs["asset_ids"])))
-        with sqlite3.connect(kwargs["store_path"]) as connection:
-            for asset_id in kwargs["asset_ids"]:
-                for head, version in kwargs["head_versions"].items():
-                    connection.execute(
-                        "INSERT OR REPLACE INTO head_facts VALUES (?,?,?,?,?,?,?)",
-                        (asset_id, head, version, "other", 0.9, "test", "now"),
-                    )
+        remember_head_rows(
+            kwargs["store"],
+            [
+                {
+                    "asset_id": asset_id,
+                    "head": head,
+                    "version": version,
+                    "label": "other",
+                    "confidence": 0.9,
+                    "encoder_key": "test",
+                }
+                for asset_id in kwargs["asset_ids"]
+                for head, version in kwargs["head_versions"].items()
+            ],
+        )
 
     def detectors(**kwargs):
         calls.append(("detectors", tuple(kwargs["pending"])))
-        with sqlite3.connect(kwargs["store_path"]) as connection:
-            for head, ids in kwargs["pending"].items():
-                for asset_id in ids:
-                    connection.execute(
-                        "INSERT OR REPLACE INTO head_facts VALUES (?,?,?,?,?,?,?)",
-                        (asset_id, head, DETECTOR_VERSIONS[head], "no", 0.1, "test", "now"),
-                    )
+        remember_head_rows(
+            kwargs["store"],
+            [
+                {
+                    "asset_id": asset_id,
+                    "head": head,
+                    "version": DETECTOR_VERSIONS[head],
+                    "label": "no",
+                    "confidence": 0.1,
+                    "encoder_key": "test",
+                }
+                for head, ids in kwargs["pending"].items()
+                for asset_id in ids
+            ],
+        )
         return {}
 
     def captions(**kwargs):
         calls.append(("captions", tuple(kwargs["asset_ids"])))
         for asset_id in kwargs["asset_ids"]:
-            _remember_caption(
-                kwargs["connection"],
-                asset_id,
-                validate_envelope({"description": "People sit together.", "setting": "a room"}),
+            _remember_captions(
+                kwargs["store"],
+                {
+                    asset_id: validate_envelope(
+                        {"description": "People sit together.", "setting": "a room"}
+                    )
+                },
             )
         return {}
 
@@ -100,7 +121,7 @@ def successful_ports(calls):
 def run(tmp_path, **kwargs):
     return prepare_editorial_annotations(
         assets=kwargs.pop("assets", [asset("aa1"), asset("bb2")]),
-        store_path=tmp_path / "annotations.sqlite",
+        store=annotation_store(),
         thumbnail_cache=kwargs.pop("thumbnail_cache", tmp_path / "previews"),
         preparation_config=kwargs.pop("preparation_config", EditorialPreparationConfig()),
         triage_config=TriageConfig(),
@@ -136,7 +157,9 @@ def test_cold_full_source_then_warm_has_zero_provider_calls(tmp_path):
     second = run(tmp_path, ports=successful_ports(calls))
     assert second.complete
     assert calls == []
-    assert stat.S_IMODE((tmp_path / "annotations.sqlite").stat().st_mode) == 0o600
+    db_path = annotation_store().location.sqlite_path
+    assert db_path is not None
+    assert stat.S_IMODE(db_path.stat().st_mode) == 0o600
 
 
 def test_changing_caption_server_preserves_rows_and_marks_legacy_origins_unknown(tmp_path):
@@ -200,10 +223,12 @@ def test_warm_preparation_keeps_the_original_server_and_build(tmp_path):
 def test_old_docling_facts_are_replaced_without_repeating_other_producers(tmp_path):
     calls = []
     assert run(tmp_path, ports=successful_ports(calls), fetch_preview=lambda _: preview()).complete
-    with sqlite3.connect(tmp_path / "annotations.sqlite") as connection:
+    store = annotation_store()
+    with store.begin() as connection:
         connection.execute(
-            "UPDATE head_facts SET version='det-v1', label='table', confidence=0.05295 "
-            "WHERE head='doc_docling'"
+            sa.update(head_facts)
+            .where(head_facts.c.head == "doc_docling")
+            .values(version="det-v1", label="table", confidence=0.05295)
         )
     calls.clear()
 
@@ -240,22 +265,12 @@ def test_a_picture_whose_preview_never_arrives_is_not_offered_to_the_watcher(tmp
     assert seen == []
 
 
-def test_cancellation_closes_database_and_retains_committed_pixel_facts(monkeypatch, tmp_path):
-    from immich_memories.analysis import editorial_preparation as preparation
+def test_cancellation_retains_committed_pixel_facts(tmp_path):
+    """A cancellation raised mid-run must not undo facts an earlier stage already committed.
 
-    original_connect = sqlite3.connect
-    closed = []
-
-    class Connection(sqlite3.Connection):
-        def close(self):
-            closed.append(True)
-            super().close()
-
-    monkeypatch.setattr(
-        preparation.sqlite3,
-        "connect",
-        lambda *args, **kwargs: original_connect(*args, **kwargs, factory=Connection),
-    )
+    The store commits pixel facts in their own transaction before heads ever run, so a
+    cancellation raised from the heads port must leave those two pixel rows in place.
+    """
 
     def cancel(**_):
         raise PipelineCancelled()
@@ -267,13 +282,11 @@ def test_cancellation_closes_database_and_retains_committed_pixel_facts(monkeypa
     )
     with pytest.raises(PipelineCancelled):
         run(tmp_path, ports=ports, fetch_preview=lambda _: preview())
-    assert closed == [True]
-    with original_connect(tmp_path / "annotations.sqlite") as connection:
-        assert connection.execute("SELECT COUNT(*) FROM pixel_facts").fetchone() == (2,)
+    assert count_rows(annotation_store(), "pixel_facts") == 2
 
 
 def test_database_and_existing_sidecars_are_private(tmp_path):
-    from immich_memories.store.editorial_preparation import private_database_path
+    from immich_memories.db.sqlite_files import private_database_path
 
     path = tmp_path / "store.sqlite"
     paths = [path, *(tmp_path / f"store.sqlite{suffix}" for suffix in ("-wal", "-shm", "-journal"))]
@@ -296,8 +309,9 @@ def test_fresh_prepared_store_is_readable_by_the_real_annotation_reader(tmp_path
         tmp_path, assets=source, ports=successful_ports(calls), fetch_preview=lambda _: preview()
     ).complete
     versions = EditorialConfig().head_versions
+    store = annotation_store()
     repository = AssetAnnotationFactRepository(
-        tmp_path / "annotations.sqlite",
+        store,
         description_model=DESCRIPTION_MODEL,
         head_versions=versions,
         pixel_producer_key="pixel-facts-v1",  # gitleaks:allow
@@ -320,7 +334,7 @@ def test_fresh_prepared_store_is_readable_by_the_real_annotation_reader(tmp_path
         for a in source
     )
     result = StoredAnnotationLineReader(
-        store_path=tmp_path / "annotations.sqlite",
+        store=store,
         candidates=candidates,
         description_model=DESCRIPTION_MODEL,
         head_versions=versions,
@@ -345,18 +359,6 @@ def test_corrupt_preview_is_refetched_once_with_atomic_private_write(tmp_path):
     assert path.read_bytes() == preview()
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
     assert list(path.parent.glob("*.tmp")) == []
-
-
-def test_public_metadata_writes_use_columns_not_legacy_physical_order(tmp_path):
-    with sqlite3.connect(tmp_path / "store") as connection:
-        connection.execute(
-            "CREATE TABLE asset_people (written_at TEXT,person_id TEXT,person_name TEXT,asset_id TEXT,birth_date TEXT,extra TEXT)"
-        )
-        initialize(connection)
-        remember_assets(connection, [asset("aa1")])
-        assert connection.execute(
-            "SELECT asset_id,person_id,person_name FROM asset_people"
-        ).fetchone() == ("aa1", "person", "A Person")
 
 
 def test_missing_previews_report_every_producer_and_do_not_call_providers(tmp_path):
@@ -396,13 +398,17 @@ def test_wrong_head_version_is_explicit_and_never_written_as_requested_version(t
 
 
 def test_partial_description_rows_do_not_trigger_paid_retries(tmp_path):
-    path = tmp_path / "annotations.sqlite"
-    with sqlite3.connect(path) as connection:
-        initialize(connection)
-        connection.execute(
-            "INSERT INTO descriptions VALUES (?,?,?,?,?)",
-            ("aa1", DESCRIPTION_MODEL, "People sit together.", DESCRIPTION_SOURCE, "now"),
-        )
+    store = annotation_store()
+    add_rows(
+        store,
+        "descriptions",
+        {
+            "asset_id": "aa1",
+            "model": DESCRIPTION_MODEL,
+            "text": "People sit together.",
+            "source": DESCRIPTION_SOURCE,
+        },
+    )
     calls = []
     result = run(tmp_path, ports=successful_ports(calls), fetch_preview=lambda _: preview())
     assert ("captions", ("bb2",)) in calls
@@ -411,25 +417,19 @@ def test_partial_description_rows_do_not_trigger_paid_retries(tmp_path):
 
 
 def test_metadata_migration_uses_live_source_and_preserves_owner_flags(tmp_path):
-    with sqlite3.connect(tmp_path / "store") as connection:
-        connection.execute(
-            "CREATE TABLE assets (asset_id TEXT PRIMARY KEY,taken_at TEXT,media_kind TEXT)"
-        )
-        initialize(connection)
-        connection.execute(
-            "INSERT INTO flags VALUES ('aa1','owner_keep','reason','owner','before')"
-        )
-        remember_assets(connection, [asset("aa1")])
-        assert connection.execute("SELECT width,height,original_file FROM assets").fetchone() == (
-            640,
-            480,
-            "photo.jpg",
-        )
-        assert connection.execute("SELECT person_id,person_name FROM asset_people").fetchone() == (
-            "person",
-            "A Person",
-        )
-        assert connection.execute("SELECT flag FROM flags").fetchone() == ("owner_keep",)
+    store = annotation_store()
+    add_rows(
+        store,
+        "asset_flags",
+        {"asset_id": "aa1", "flag": "owner_keep", "source": "owner", "evidence": "reason"},
+    )
+    remember_assets(store, [asset("aa1")])
+    (row,) = read_rows(store, "annotation_assets")
+    assert (row["width"], row["height"], row["original_file"]) == (640, 480, "photo.jpg")
+    (person,) = read_rows(store, "asset_people")
+    assert (person["person_id"], person["person_name"]) == ("person", "A Person")
+    (flag,) = read_rows(store, "asset_flags")
+    assert flag["flag"] == "owner_keep"
 
 
 def test_default_cancellation_scope_stops_before_any_acquisition(tmp_path):
@@ -438,7 +438,7 @@ def test_default_cancellation_scope_stops_before_any_acquisition(tmp_path):
 
     with pytest.raises(PipelineCancelled), cancellation_scope(cancel):
         run(tmp_path, fetch_preview=lambda _: pytest.fail("must not fetch"))
-    assert not (tmp_path / "annotations.sqlite").exists()
+    assert count_rows(annotation_store(), "annotation_assets") == 0
 
 
 def test_pixel_recipe_retains_accepted_q85_golden():
@@ -566,6 +566,7 @@ def test_an_undemanded_producer_is_never_reported_missing(tmp_path):
     """A tier that does not ask for captions cannot be blocked by their absence."""
     full = run(
         tmp_path / "full",
+        assets=[asset("full1"), asset("full2")],
         ports=PreparationPorts(
             captions=lambda **_: {},
             heads=lambda **_: None,
@@ -575,6 +576,7 @@ def test_an_undemanded_producer_is_never_reported_missing(tmp_path):
     )
     reduced = run(
         tmp_path / "reduced",
+        assets=[asset("reduced1"), asset("reduced2")],
         ports=PreparationPorts(
             captions=lambda **_: {}, heads=lambda **_: None, detectors=lambda **_: {}
         ),
@@ -666,20 +668,30 @@ def test_the_faces_of_a_picture_that_names_somebody_are_banked_once(tmp_path):
     run(tmp_path, assets=assets, ports=successful_ports([]), fetch_faces=_face(calls))
 
     assert calls == ["aa1"]  # never the picture naming nobody, never twice
-    with sqlite3.connect(tmp_path / "annotations.sqlite") as connection:
-        assert connection.execute("SELECT count(*) FROM face_boxes").fetchone()[0] == 2
+    assert count_rows(annotation_store(), "face_boxes") == 2
 
 
 def test_a_picture_whose_faces_were_banked_without_identities_is_read_again(tmp_path):
     """Old boxes say a name was matched, not whose: they are re-read, never guessed."""
-    with sqlite3.connect(tmp_path / "annotations.sqlite") as connection:
-        connection.executescript(
-            "CREATE TABLE face_boxes (asset_id TEXT, named INTEGER, x1 REAL, y1 REAL, x2 REAL, y2 REAL);"
-            "CREATE TABLE face_reads (asset_id TEXT, producer TEXT, read_at TEXT,"
-            " PRIMARY KEY(asset_id,producer));"
-            "INSERT INTO face_boxes VALUES ('aa1', 1, 0.1, 0.1, 0.2, 0.2);"
-            "INSERT INTO face_reads VALUES ('aa1', 'immich-faces-v1', '2030-01-01T00:00:00+00:00');"
-        )
+    store = annotation_store()
+    add_rows(
+        store,
+        "face_boxes",
+        {
+            "asset_id": "aa1",
+            "ordinal": 0,
+            "named": True,
+            "x1": 0.1,
+            "y1": 0.1,
+            "x2": 0.2,
+            "y2": 0.2,
+        },
+    )
+    add_rows(
+        store,
+        "face_reads",
+        {"asset_id": "aa1", "producer": "immich-faces-v1", "read_at": "2030-01-01T00:00:00+00:00"},
+    )
     calls = []
 
     run(
@@ -687,17 +699,19 @@ def test_a_picture_whose_faces_were_banked_without_identities_is_read_again(tmp_
     )
 
     assert calls == ["aa1"]
-    with sqlite3.connect(tmp_path / "annotations.sqlite") as connection:
-        rows = connection.execute("SELECT named, person_id FROM face_boxes ORDER BY x1").fetchall()
-    assert rows == [(0, None), (1, "person-banked")]
+    with store.connect() as connection:
+        rows = connection.execute(
+            sa.select(face_boxes.c.named, face_boxes.c.person_id).order_by(face_boxes.c.x1)
+        ).all()
+    assert [tuple(row) for row in rows] == [(False, None), (True, "person-banked")]
 
 
 def test_a_run_without_a_face_reader_banks_nothing_and_leaves_the_rest_alone(tmp_path):
     run(tmp_path, assets=[_named_asset("aa1")], ports=successful_ports([]))
 
-    with sqlite3.connect(tmp_path / "annotations.sqlite") as connection:
-        assert connection.execute("SELECT count(*) FROM face_boxes").fetchone()[0] == 0
-        assert connection.execute("SELECT count(*) FROM face_reads").fetchone()[0] == 0
+    store = annotation_store()
+    assert count_rows(store, "face_boxes") == 0
+    assert count_rows(store, "face_reads") == 0
 
 
 def test_a_prepared_scope_with_nothing_left_to_do_is_complete_with_no_failures(tmp_path):

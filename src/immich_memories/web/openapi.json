@@ -1,37 +1,6 @@
 {
   "components": {
     "schemas": {
-      "ActiveConfig": {
-        "properties": {
-          "path": {
-            "title": "Path",
-            "type": "string"
-          },
-          "preset": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Preset"
-          },
-          "sections": {
-            "additionalProperties": true,
-            "title": "Sections",
-            "type": "object"
-          }
-        },
-        "required": [
-          "path",
-          "preset",
-          "sections"
-        ],
-        "title": "ActiveConfig",
-        "type": "object"
-      },
       "AlbumChoice": {
         "properties": {
           "asset_count": {
@@ -1366,6 +1335,11 @@
             "title": "Reachable",
             "type": "boolean"
           },
+          "same_episode": {
+            "default": false,
+            "title": "Same Episode",
+            "type": "boolean"
+          },
           "taken": {
             "title": "Taken",
             "type": "string"
@@ -2286,6 +2260,124 @@
         "title": "SessionView",
         "type": "object"
       },
+      "SettingRow": {
+        "description": "One setting as the page shows it: its value, where that value comes from, and whether\nthis page may change it. A secret's value is masked (`***`, or empty when none is stored).",
+        "properties": {
+          "editable": {
+            "title": "Editable",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "override": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override"
+          },
+          "secret": {
+            "title": "Secret",
+            "type": "boolean"
+          },
+          "source": {
+            "enum": [
+              "env",
+              "file",
+              "database",
+              "default"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "unreadable": {
+            "title": "Unreadable",
+            "type": "boolean"
+          },
+          "value": {
+            "title": "Value"
+          }
+        },
+        "required": [
+          "key",
+          "value",
+          "source",
+          "override",
+          "secret",
+          "unreadable",
+          "editable"
+        ],
+        "title": "SettingRow",
+        "type": "object"
+      },
+      "SettingsForm": {
+        "description": "The edited values, keyed by runtime path (`llm.model`); lists and mappings as JSON text.",
+        "properties": {
+          "values": {
+            "additionalProperties": true,
+            "title": "Values",
+            "type": "object"
+          }
+        },
+        "required": [
+          "values"
+        ],
+        "title": "SettingsForm",
+        "type": "object"
+      },
+      "SettingsSection": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "settings": {
+            "items": {
+              "$ref": "#/components/schemas/SettingRow"
+            },
+            "title": "Settings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "settings"
+        ],
+        "title": "SettingsSection",
+        "type": "object"
+      },
+      "SettingsView": {
+        "properties": {
+          "can_store_secrets": {
+            "title": "Can Store Secrets",
+            "type": "boolean"
+          },
+          "config_path": {
+            "title": "Config Path",
+            "type": "string"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/SettingsSection"
+            },
+            "title": "Sections",
+            "type": "array"
+          }
+        },
+        "required": [
+          "config_path",
+          "can_store_secrets",
+          "sections"
+        ],
+        "title": "SettingsView",
+        "type": "object"
+      },
       "ShownCommand": {
         "properties": {
           "command": {
@@ -2995,28 +3087,6 @@
         ]
       }
     },
-    "/api/v1/config": {
-      "get": {
-        "description": "The configuration this server runs with, env overrides applied, secrets masked.",
-        "operationId": "active_config_api_v1_config_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ActiveConfig"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Active Config",
-        "tags": [
-          "settings"
-        ]
-      }
-    },
     "/api/v1/connection": {
       "get": {
         "description": "The server this install reads, and whether a key is stored for it.",
@@ -3039,7 +3109,7 @@
         ]
       },
       "put": {
-        "description": "Keep the server and key in the config file the process reads.",
+        "description": "Save the server and key to the database, only the ones that changed.\n\nconfig.yaml and the environment are never written: a value either of them sets is refused\nwith the name of what sets it, and a key needs IMMICH_MEMORIES_SECRET_KEY to be stored.",
         "operationId": "save_connection_api_v1_connection_put",
         "requestBody": {
           "content": {
@@ -3703,7 +3773,7 @@
     },
     "/api/v1/roster": {
       "get": {
-        "description": "Everyone in the people file, inner circle first, with what needs curating.",
+        "description": "Everyone in the people registry, inner circle first, with what needs curating.",
         "operationId": "roster_api_v1_roster_get",
         "responses": {
           "200": {
@@ -3894,7 +3964,7 @@
         ]
       },
       "post": {
-        "description": "Record one relationship; the file keeps its reciprocal.",
+        "description": "Record one relationship; the registry keeps its reciprocal.",
         "operationId": "relate_api_v1_roster__person_id__relationships_post",
         "parameters": [
           {
@@ -4521,6 +4591,61 @@
         "summary": "Session View",
         "tags": [
           "session"
+        ]
+      }
+    },
+    "/api/v1/settings": {
+      "get": {
+        "description": "Every setting with its live value and its source, re-read from disk; secrets masked.",
+        "operationId": "read_settings_api_v1_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Settings",
+        "tags": [
+          "settings"
+        ]
+      },
+      "post": {
+        "description": "Save the changed values to the database; config.yaml and the environment are never written.\n\n422 names the setting refused and why; nothing is saved then.",
+        "operationId": "save_settings_form_api_v1_settings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "summary": "Save Settings Form",
+        "tags": [
+          "settings"
         ]
       }
     },

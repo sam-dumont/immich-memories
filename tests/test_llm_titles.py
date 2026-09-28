@@ -87,10 +87,10 @@ class TestBuildTitlePrompt:
         assert "hiking along cliffs" in prompt
 
     def test_person_prompt_includes_names(self, tmp_path):
+        from immich_memories.db import open_store
         from immich_memories.titles.llm_titles import MemoryTitleFacts, build_title_prompt
 
-        empty_record = tmp_path / "people.yaml"
-        empty_record.write_text("people: []\n", encoding="utf-8")
+        empty_record = open_store()
 
         prompt = build_title_prompt(
             memory_type="multi_person",
@@ -100,7 +100,7 @@ class TestBuildTitlePrompt:
             duration_days=2556,
             person_names=["Ada Example", "Noah Example"],
             clip_descriptions=["playing in park", "birthday party"],
-            facts=MemoryTitleFacts(people_path=empty_record),
+            facts=MemoryTitleFacts(people_store=empty_record),
         ).text
         assert "Ada Example" in prompt
         assert "Noah Example" in prompt
@@ -122,10 +122,10 @@ class TestBuildTitlePrompt:
     @pytest.mark.parametrize("memory_type", ["special_day", "trip", "multi_person"])
     def test_the_album_the_pictures_sit_in_reaches_every_prompt(self, memory_type, tmp_path):
         """What somebody filed the day under is a fact, whatever kind of film it is."""
+        from immich_memories.db import open_store
         from immich_memories.titles.llm_titles import MemoryTitleFacts, build_title_prompt
 
-        empty_record = tmp_path / "people.yaml"
-        empty_record.write_text("people: []\n", encoding="utf-8")
+        empty_record = open_store()
 
         prompt = build_title_prompt(
             memory_type=memory_type,
@@ -134,7 +134,7 @@ class TestBuildTitlePrompt:
             end_date="2022-03-27",
             duration_days=0,
             person_names=["Ada Example"],
-            facts=MemoryTitleFacts(album_name="Lakeside Half 2022", people_path=empty_record),
+            facts=MemoryTitleFacts(album_name="Lakeside Half 2022", people_store=empty_record),
         ).text
 
         assert "Lakeside Half 2022" in prompt

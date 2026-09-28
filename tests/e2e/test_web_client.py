@@ -21,7 +21,7 @@ pytestmark = pytest.mark.e2e
 
 
 def _seed(workspace) -> None:
-    db = RunDatabase(workspace.database_path)
+    db = RunDatabase(workspace.store())
     if db.get_run("20240630_web_cut"):
         return  # the launch workspace lives for the whole session
     now = datetime.now(UTC)
@@ -66,7 +66,7 @@ def _seed(workspace) -> None:
     (attempt / PROJECTION_FILE).write_text(
         json.dumps({"intervals": {shots[-1].asset_id: [1.0, 2.5]}})
     )
-    record_run_attempt(workspace.cache_dir, "20240630_web_cut", attempt, attempt / "film.mp4")
+    record_run_attempt("20240630_web_cut", attempt, attempt / "film.mp4", store=workspace.store())
 
 
 @pytest.fixture(autouse=True)

@@ -69,10 +69,21 @@ no people at all (a view, a place) is not demoted, and a library that names nobo
 
 ## What a frame must pass
 
+Draft picks and replacements use the same admission rules. A replacement gets its own story
+weight and purpose, then passes standing, audience, spacing and repetition checks against the
+shots it would join. Newly acquired caption or motion facts are read before that decision.
+This also applies when replacing a duplicate or giving a missing family member a seat.
+The existing depth pass can add a distinct view inside an already shown moment; that exception
+does not transfer to a replacement. Candidate decisions are recorded in the run's private
+`derived-decisions/picture-admission.private.json` file.
+
 **Free.** Not already a shot, and not a picture the carrier rules keep as evidence only
 (`excluded_carrier_sources`): a document the detector names, a screen the `screen` head flags, a
 still at an exact phone-screen size, and, where there is a caption, a caption about a screen, a face
 close-up, medical care or a grid of identical items.
+The check covers every burst member and motion clip, before standing is scored. New evidence
+from preparing a replacement runs through the same check; a refusal leaves its slot open for
+another eligible candidate. A refused companion does not mark its clean lead as permanently bad.
 
 **Spaced.** Two shots of the same moment must be at least five minutes apart in capture time.
 
@@ -97,7 +108,7 @@ at all (face recognition off, or only pets and places). Weights were fitted on a
 against a hosted reader's answers and rounded to half points; nothing in it came from anyone's
 library.
 
-| | Heads only (`no_captions`) | Heads and caption, faces read | Heads and caption, no faces |
+| | Heads only (NAS default) | Heads and caption, faces read | Heads and caption, no faces |
 |---|---|---|---|
 | Refuses at | 3.0 points | 4.5 points | 4.5 points |
 | `frame_kind` | empty room 4, accidental frame 4, lone object 3.5, body part 2.5, record 2.5, screen or document 2 | the four "nothing" kinds 2, record or screen 1, scenery -1 | the four "nothing" kinds 2.5, record or screen 1.5, scenery -0.5 |

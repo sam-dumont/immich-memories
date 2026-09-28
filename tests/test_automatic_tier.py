@@ -6,7 +6,6 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
-import yaml
 
 from immich_memories.config_compute import local_inference_acceleration
 from immich_memories.config_loader import Config
@@ -134,7 +133,7 @@ def test_an_unreachable_optional_service_can_use_a_local_gpu(monkeypatch, local_
     assert config.editorial.preparation.demands_captions
 
 
-def test_saving_does_not_pin_the_machine_observed_when_auto_was_loaded(monkeypatch, tmp_path):
+def test_reloading_does_not_pin_the_machine_observed_when_auto_was_loaded(monkeypatch, tmp_path):
     provider = "CUDAExecutionProvider"
     # WHY: the service can change between saving and reloading the same config.
     monkeypatch.setattr(
@@ -146,12 +145,10 @@ def test_saving_does_not_pin_the_machine_observed_when_auto_was_loaded(monkeypat
             json={"status": "ok", "provider": provider},
         ),
     )
-    config = Config(inference={"facts_base_url": "http://gpu.test:8092"})
-    assert config.tier == "gpu"
-    path = tmp_path / "saved.yaml"
-    config.save_yaml(path)
+    path = tmp_path / "config.yaml"
+    path.write_text("advanced:\n  inference:\n    facts_base_url: http://gpu.test:8092\n")
+    assert Config.from_yaml(path).tier == "gpu"
 
-    assert "tier" not in yaml.safe_load(path.read_text())
     provider = "CPUExecutionProvider"
     reloaded = Config.from_yaml(path)
 
@@ -186,6 +183,7 @@ def test_a_cuda_wheel_without_a_usable_device_does_not_enable_gpu(monkeypatch, l
     monkeypatch.setitem(
         sys.modules, "mlx.core", SimpleNamespace(metal=SimpleNamespace(is_available=lambda: False))
     )
+    monkeypatch.setitem(sys.modules, "Metal", None)
 
     config = Config(llm={"model": "local-reader", "base_url": "http://localhost:9999/v1"})
 
@@ -206,3 +204,33 @@ def test_explicit_nas_config_does_not_import_inference_runtimes():
         check=False,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_a_mac_installed_with_its_extra_is_a_gpu_machine(monkeypatch, local_runtime_probe):
+    """The `mac` extra ships the Metal bindings, not MLX: MLX is installed out of band, so
+    probing MLX alone left every Mac installed as documented on NAS. The whole tier turns on
+    together; a part that turns out missing degrades on its own."""
+    monkeypatch.setitem(sys.modules, "onnxruntime", SimpleNamespace(get_available_providers=list))
+    monkeypatch.setitem(sys.modules, "mlx", None)
+    # WHY: the Metal framework stands in for the Mac's GPU boundary.
+    monkeypatch.setitem(
+        sys.modules, "Metal", SimpleNamespace(MTLCreateSystemDefaultDevice=lambda: object())
+    )
+
+    config = Config(llm={"model": "local-reader", "base_url": "http://localhost:9999/v1"})
+
+    assert config.tier == "full"
+    assert config.editorial.reader == "model"
+    assert config.editorial.preparation.demands_captions
+    assert config.editorial.laya_audience
+
+
+def test_metal_bindings_without_a_device_leave_the_machine_on_nas(monkeypatch, local_runtime_probe):
+    monkeypatch.setitem(sys.modules, "onnxruntime", SimpleNamespace(get_available_providers=list))
+    monkeypatch.setitem(sys.modules, "mlx", None)
+    # WHY: an Intel Mac or a VM has the bindings but no Metal device to offer.
+    monkeypatch.setitem(
+        sys.modules, "Metal", SimpleNamespace(MTLCreateSystemDefaultDevice=lambda: None)
+    )
+
+    assert Config().tier == "nas"

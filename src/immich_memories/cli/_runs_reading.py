@@ -17,6 +17,7 @@ import click
 from immich_memories.analysis.editorial_review_list import review_note
 from immich_memories.analysis.selection_trace import ClipStory
 from immich_memories.cli._helpers import console, print_error
+from immich_memories.db import open_store
 from immich_memories.operations.candidate_fates import read_trace
 from immich_memories.operations.caption_origins import caption_origin_note
 from immich_memories.operations.editorial_attempt import window_origin_note
@@ -33,7 +34,7 @@ class RunNotFound(LookupError):
     """The run id names nothing this cache can read."""
 
 
-def resolve_attempt(cache_dir: Path, db, run_id: str | None) -> tuple[str, Path]:
+def resolve_attempt(db, run_id: str | None) -> tuple[str, Path]:
     """The run id and attempt directory to read, from an id, a prefix, a path, or the latest run.
 
     `db` is the run database (`RunDatabase`); it is only asked when the argument
@@ -42,7 +43,7 @@ def resolve_attempt(cache_dir: Path, db, run_id: str | None) -> tuple[str, Path]
     if run_id and Path(run_id).is_dir():
         return Path(run_id).name, Path(run_id)
     resolved = _resolve_run_id(db, run_id)
-    attempt = attempt_dir_for_run(cache_dir, resolved)
+    attempt = attempt_dir_for_run(resolved, store=db.store)
     if attempt is None:
         raise RunNotFound(
             f"Run {resolved} left no cut to read: it was made before this version, "
@@ -126,6 +127,22 @@ def _owner_note(config, asset_id: str) -> str:
     return ""
 
 
+def _review_edit_note(config, attempt: Path, asset_id: str) -> str:
+    """What the owner's review of this run's cut did to the picture before it was rendered."""
+    from immich_memories.db import open_store
+    from immich_memories.store.owner_edits import owner_edits_of_attempt
+
+    notes = []
+    for record in owner_edits_of_attempt(open_store(config), attempt.name):
+        if asset_id in (record.get("removed_asset_ids") or ()):
+            notes.append("you removed it before rendering")
+        for edit in record.get("interval_edits") or ():
+            if edit.get("asset_id") == asset_id:
+                start, end = edit["selected_interval"]
+                notes.append(f"you trimmed it to {start:g}-{end:g} s")
+    return f"Your review: {'; '.join(notes)}." if notes else ""
+
+
 def _wrapped(text: str, columns: int) -> str:
     return textwrap.fill(
         text, width=max(columns, 20), initial_indent="  ", subsequent_indent="    "
@@ -147,9 +164,9 @@ def register_reading_commands(runs: click.Group) -> None:
         from immich_memories.tracking import RunDatabase
 
         config = get_config()
-        db = RunDatabase(db_path=config.cache.database_path)
+        db = RunDatabase(open_store(config))
         try:
-            resolved, attempt = resolve_attempt(config.cache.cache_path, db, run_id)
+            resolved, attempt = resolve_attempt(db, run_id)
         except RunNotFound as exc:
             print_error(str(exc))
             sys.exit(1)
@@ -165,9 +182,9 @@ def register_reading_commands(runs: click.Group) -> None:
         from immich_memories.tracking import RunDatabase
 
         config = get_config()
-        db = RunDatabase(db_path=config.cache.database_path)
+        db = RunDatabase(open_store(config))
         try:
-            resolved, attempt = resolve_attempt(config.cache.cache_path, db, run_id)
+            resolved, attempt = resolve_attempt(db, run_id)
         except RunNotFound as exc:
             print_error(str(exc))
             sys.exit(1)
@@ -180,18 +197,13 @@ def register_reading_commands(runs: click.Group) -> None:
         )
         from immich_memories.audio.text_mood import music_mood_note
 
-        window = window_origin_note(attempt)
-        if window:
-            console.print(window, highlight=False, markup=False)
-        origin = caption_origin_note(attempt, asset_id)
-        if origin:
-            console.print(origin, highlight=False, markup=False)
-        check = review_note(attempt, asset_id)
-        if check:
-            console.print(check, highlight=False, markup=False)
-        note = music_mood_note(attempt)
-        if note:
-            console.print(note, highlight=False)
-        owner = _owner_note(config, asset_id)
-        if owner:
-            console.print(owner, highlight=False, markup=False)
+        notes = (
+            window_origin_note(attempt),
+            caption_origin_note(attempt, asset_id),
+            review_note(attempt, asset_id),
+            music_mood_note(attempt),
+            _review_edit_note(config, attempt, asset_id),
+            _owner_note(config, asset_id),
+        )
+        for note in filter(None, notes):
+            console.print(note, highlight=False, markup=False)

@@ -1,39 +1,29 @@
-"""Cache for asset-level scores (videos and photos).
+"""Asset-level scores (videos and photos): model answers someone paid for, kept in the store.
 
-Operates on the `asset_scores` table in the shared analysis database.
-Separated from VideoAnalysisCache for cohesion — this handles pre-filtering
-scores while VideoAnalysisCache handles per-segment analysis results.
+Separated from VideoAnalysisCache for cohesion: this handles pre-filtering scores while
+VideoAnalysisCache handles per-segment analysis results, which stay derived cache.
 """
 
 from __future__ import annotations
 
 import logging
-import sqlite3
-from collections.abc import Iterator
-from contextlib import contextmanager
-from pathlib import Path
+from typing import Any
+
+import sqlalchemy as sa
+
+from immich_memories.db import Store, iso_from_db, now_db, open_store, upsert
+from immich_memories.db.tables import asset_scores
 
 logger = logging.getLogger(__name__)
 
+_SCORES = asset_scores.c
+
 
 class AssetScoreCache:
-    """Cache for asset-level scores used in cache-first LLM scoring."""
+    """Banked asset scores, one per asset per prompt version."""
 
-    def __init__(self, db_path: Path):
-        self.db_path = Path(db_path)
-
-    @contextmanager
-    def _get_connection(self) -> Iterator[sqlite3.Connection]:
-        conn = sqlite3.connect(
-            self.db_path,
-            timeout=5.0,  # busy_timeout=5000ms — retry on concurrent access
-            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
-        )
-        conn.row_factory = sqlite3.Row
-        try:
-            yield conn
-        finally:
-            conn.close()
+    def __init__(self, store: Store | None = None):
+        self.store = store or open_store()
 
     def save_asset_score(
         self,
@@ -55,29 +45,31 @@ class AssetScoreCache:
         Rows saved without a version share the one empty-string version, which
         is what the pre-versioning rows migrate onto.
         """
-        with self._get_connection() as conn:
-            conn.execute(
-                """
-                INSERT OR REPLACE INTO asset_scores (
-                    asset_id, asset_type, metadata_score, combined_score,
-                    llm_interest, llm_quality, llm_emotion, llm_description,
-                    llm_category, analyzed_at, model_version
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)
-                """,
-                (
-                    asset_id,
-                    asset_type,
-                    metadata_score,
-                    combined_score,
-                    llm_interest,
-                    llm_quality,
-                    llm_emotion,
-                    llm_description,
-                    llm_category,
-                    model_version or "",
-                ),
-            )
-            conn.commit()
+        row = {
+            "asset_id": asset_id,
+            "model_version": model_version or "",
+            "asset_type": asset_type,
+            "metadata_score": metadata_score,
+            "combined_score": combined_score,
+            "llm_interest": llm_interest,
+            "llm_quality": llm_quality,
+            "llm_emotion": llm_emotion,
+            "llm_description": llm_description,
+            "llm_category": llm_category,
+            "analyzed_at": now_db(),
+        }
+        with self.store.begin() as conn:
+            upsert(conn, asset_scores, [row], ["asset_id", "model_version"])
+
+    def all_scores(self) -> list[dict[str, Any]]:
+        """Every banked look, oldest first, as plain rows (`analyzed_at` as ISO text)."""
+        with self.store.connect() as conn:
+            rows = conn.execute(
+                sa.select(asset_scores).order_by(
+                    _SCORES.analyzed_at, _SCORES.asset_id, _SCORES.model_version
+                )
+            ).mappings()
+            return [dict(row) | {"analyzed_at": iso_from_db(row["analyzed_at"])} for row in rows]
 
     def get_cache_stats(self) -> dict:
         """Statistics for the `cache stats` CLI command.
@@ -86,22 +78,26 @@ class AssetScoreCache:
         about — the two differ once a prompt version bump leaves an asset
         holding an answer from each version, which is the point of doing so.
         """
-        with self._get_connection() as conn:
-            total = conn.execute("SELECT COUNT(*) FROM asset_scores").fetchone()[0]
-            assets = conn.execute("SELECT COUNT(DISTINCT asset_id) FROM asset_scores").fetchone()[0]
+        with self.store.connect() as conn:
+            totals = conn.execute(
+                sa.select(
+                    sa.func.count().label("total"),
+                    sa.func.count(sa.distinct(_SCORES.asset_id)).label("assets"),
+                    sa.func.min(_SCORES.analyzed_at).label("oldest"),
+                    sa.func.max(_SCORES.analyzed_at).label("newest"),
+                    sa.func.count().filter(_SCORES.llm_interest.is_not(None)).label("with_llm"),
+                )
+            ).one()
             by_type = conn.execute(
-                "SELECT asset_type, COUNT(*) as cnt FROM asset_scores GROUP BY asset_type"
-            ).fetchall()
-            oldest = conn.execute("SELECT MIN(analyzed_at) FROM asset_scores").fetchone()[0]
-            newest = conn.execute("SELECT MAX(analyzed_at) FROM asset_scores").fetchone()[0]
-            with_llm = conn.execute(
-                "SELECT COUNT(*) FROM asset_scores WHERE llm_interest IS NOT NULL"
-            ).fetchone()[0]
+                sa.select(_SCORES.asset_type, sa.func.count().label("looks")).group_by(
+                    _SCORES.asset_type
+                )
+            ).all()
         return {
-            "total": total,
-            "assets": assets,
-            "by_type": {row["asset_type"]: row["cnt"] for row in by_type},
-            "with_llm": with_llm,
-            "oldest": oldest,
-            "newest": newest,
+            "total": totals.total,
+            "assets": totals.assets,
+            "by_type": {row.asset_type: row.looks for row in by_type},
+            "with_llm": totals.with_llm,
+            "oldest": iso_from_db(totals.oldest),
+            "newest": iso_from_db(totals.newest),
         }

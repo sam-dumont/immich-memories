@@ -9,7 +9,7 @@ Kustomize manifests live in `deploy/kubernetes/`. The base boots on any cluster,
 scheduling is an overlay. Docker Compose is the primary path, and CI renders these manifests
 without applying them to a live cluster, so read the rendered output before you apply it.
 
-The base starts at `no_captions`, which needs no caption server. Releases attach an
+The base uses `tier: auto`; without GPU inference it selects NAS and needs no caption server. Releases attach an
 `immich-memories-deploy-X.Y.Z.tar.gz` bundle after the app and inference images finish
 publishing. Its three image pins match that release. Download it from the release page,
 extract it, then use the `deploy/kubernetes/` directory inside it.
@@ -21,7 +21,7 @@ deploy/kubernetes/
 │   └── ingress.yaml.example optional Ingress, only after enabling authentication
 ├── overlays/gpu/            the app on an NVIDIA node
 ├── overlays/inference/      the inference service alone (+ -cuda, + -lan for outside callers)
-└── overlays/captioner/      llama.cpp under the alias `tier: full` wants (+ -cuda)
+└── overlays/captioner/      the SmolVLM caption service (+ -cuda)
 ```
 
 ## Prerequisites
@@ -101,7 +101,7 @@ read-only. Four writable paths:
 
 | Mount | Backed by | Holds |
 |---|---|---|
-| `/home/immich/.immich-memories` | PVC `immich-memories-cache` | `config.yaml`, `cache/annotations.sqlite` (banked facts and readings), `cache.db` (run history, automation state), video cache |
+| `/home/immich/.immich-memories` | PVC `immich-memories-cache` | `config.yaml`, `store.db` (the store when it is SQLite: banked facts, readings, your picture decisions, people, run history, automation state, special days), `cache.db` (derived analysis), video cache |
 | `/app/output` | PVC `immich-memories-output` | generated videos |
 | `/models` | PVC `immich-memories-models` | the three artifacts `immich-memories models fetch` writes, at `IMMICH_MEMORIES_TRIAGE__ENCODER`, `..._MARQO_ONNX` and `..._DETECTOR_CACHE_DIR` |
 | `/tmp` | emptyDir 4Gi | FFmpeg intermediates; 8Gi for 4K |
@@ -124,26 +124,31 @@ onto the `/models` claim, so there is nothing to run by hand. It exits without a
 three are there, so a restart costs nothing and a nightly CronJob never goes back to the network.
 `kubectl logs -n immich-memories deploy/immich-memories -c fetch-models` shows what it did.
 
-## Set the preparation tier
+## Automatic product tiers {#set-the-preparation-tier}
 
-:::caution The manifests pin `no_captions`
-The Deployment, the Job and both CronJobs set `IMMICH_MEMORIES_EDITORIAL__PREPARATION__TIER` to
-`no_captions`, so a first cut needs no caption server. An env var beats `config.yaml`, so a tier
-saved from the UI or written in the file changes nothing on these pods. For `full`, apply
-`overlays/captioner` and change the env on every pod you run:
+The Deployment, Job and CronJobs set `IMMICH_MEMORIES_TIER` to `auto`. Preparation follows the
+resolved product tier. A CPU-only base stays on NAS. For GPU selection, configure a GPU inference
+service and caption service on every pod you run, and install the Laya checkpoint:
 
 ```yaml
-            - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__TIER
-              value: "full"               # full | no_captions | metadata_only
+            - name: IMMICH_MEMORIES_TIER
+              value: "auto"
+            - name: IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL
+              value: "http://inference:8092"
             - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL
               value: "http://captioner:8092/v1"
 ```
 
-On a running Deployment, `kubectl -n immich-memories set env deployment/immich-memories` with the
-same two pairs does it.
+The inference service must report CUDA; a CPU inference service or caption URL alone does not
+select GPU. A usable local CUDA runtime also qualifies. Adding a configured LLM selects Full.
+Without GPU inference, an LLM still supplies text features such as titles.
+
+Use `kubectl -n immich-memories set env deployment/immich-memories` with these pairs for a running
+Deployment. Environment variables override config files, so remove the tier env var if you want
+`config.yaml` to select an explicit product tier. Check the services with
+`immich-memories preflight`; see [Laya setup](../better/reader.md#the-laya-audience-pre-screen).
 
 What each tier runs and gives up is on [Requirements and tiers](./requirements.md#the-preparation-tier).
-:::
 
 ## Check it from outside the pod
 
@@ -182,15 +187,31 @@ allows egress on 8092. What each overlay patches, and what a card is worth per p
 ## Batch jobs
 
 `base/job.yaml` holds a one-off `generate` Job and two CronJobs (monthly highlights on the 1st,
-`auto run` daily). Uncomment `- job.yaml` in the kustomization. The jobs mount the same PVCs, so on
-`ReadWriteOnce` storage the job pod has to land on the node holding them: use `ReadWriteMany` or
-scale the Deployment to 0 first. For scheduled memories alone,
-`IMMICH_MEMORIES_AUTOMATION__ENABLED=true` on the Deployment does it in-process.
+`auto run` daily). Uncomment `- job.yaml` in the kustomization.
+
+The store defaults to a SQLite file on the `data` PVC, one writer at a time; a second pod on
+another node writing that file over `ReadWriteMany` corrupts it (WAL mode needs shared memory a
+network filesystem does not give two hosts). So the two CronJobs never mount the PVCs: they `curl`
+the Deployment's `POST /api/trigger` route instead, running whatever decision `auto run` would have
+made. Set `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in `base/secret.yaml` first, or use the in-process
+daily timer (`IMMICH_MEMORIES_AUTOMATION__ENABLED=true` on the Deployment) and skip the CronJob
+entirely. The one-off `generate` Job still mounts the PVCs directly, since the trigger route takes
+no `--year`/`--person` parameters: prefer
+`kubectl exec deploy/immich-memories -- immich-memories generate ...` against the running
+Deployment, and keep the Job for a batch cluster where the Deployment stays scaled to 0 between
+runs.
+
+## Database
+
+The store defaults to a SQLite file on the cache PVC. `overlays/postgres` is not referenced by
+`base/kustomization.yaml`, so applying `base` alone keeps that default; apply the overlay yourself
+to point the store at PostgreSQL instead. The four modes, and the SQL for a dedicated schema in
+Immich's own database, are on [Database and the store](./database.md).
 
 ## Backups
 
-Back up the cache PVC: `cache/annotations.sqlite` on it is the expensive part, and losing it means
-re-reading the library. `immich-memories cache backup|export` move the retired scorer's table, not
+Back up the cache PVC: `store.db` on it is the expensive part (unless the store is PostgreSQL), and
+losing it means re-reading the library. `immich-memories cache backup|export` move the retired scorer's table, not
 the banks. For secrets in git, use
 [sealed-secrets](https://github.com/bitnami-labs/sealed-secrets):
 `kubeseal --format=yaml < base/secret.yaml > base/sealed-secret.yaml`.

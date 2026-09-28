@@ -311,3 +311,156 @@ def test_the_model_tier_is_not_capped_by_the_shortlist(reader):
     )
 
     assert len(found) == 30
+
+
+def test_a_run_is_described_by_where_its_pictures_are_not_by_its_first_hour():
+    """A race day (09-28): three cat pictures at home before leaving, a hundred at the circuit,
+    two more at home at night. The line quoted the cat twice and never the circuit, so the
+    reader called it an ordinary day."""
+    from immich_memories.analysis.special_day_sequence import run_line
+
+    start = datetime(2030, 4, 7, 7, tzinfo=UTC)
+    home = [_picture(start + timedelta(minutes=n), n, city="Home") for n in range(3)]
+    circuit = _day(start + timedelta(hours=2), pictures=100, hours=2, city="Circuit")
+    night = [
+        _picture(start + timedelta(hours=10, minutes=n), 200 + n, city="Home") for n in range(2)
+    ]
+    captions = {a.id: f"A tabby cat on the stairs, number {i}" for i, a in enumerate(home + night)}
+    captions |= {a.id: f"A race car on the track, lap {i}" for i, a in enumerate(circuit)}
+
+    line = run_line("R1", [*home, *circuit, *night], captions)
+
+    written = line.split("written: ", 1)[1]
+    assert written.count("race car") >= 2
+
+
+def test_a_day_that_contains_an_occasion_is_judged_on_the_occasion(monkeypatch):
+    """A race day (09-28): the cat at home before leaving, two hours at a circuit 67 km away
+    holding most of the day's pictures, home again at night. The small reader, shown the whole
+    day, named it after the cat and called it ordinary. The place alone says where the day was
+    spent, so an ordinary verdict is asked once more about that stretch."""
+    start = datetime(2021, 4, 4, 7, tzinfo=UTC)
+    morning = _day(start, pictures=6, hours=1, city="Someplace", at=HOME_AT)
+    circuit = _day(start + timedelta(hours=2), pictures=60, hours=2, city="Hastière", at=CAMP_AT)
+    evening = _day(start + timedelta(hours=10), pictures=5, hours=1, city="Someplace", at=HOME_AT)
+    captions = {p.id: "a tabby cat on the stairs" for p in morning + evening}
+    captions |= {p.id: "a race car on the track" for p in circuit}
+    monkeypatch.setattr(
+        "immich_memories.analysis.special_day_sequence._read",
+        lambda *_a, **_k: json.dumps({"occasions": [{"run": "R1", "what": "race track"}]}),
+    )
+    asked = []
+
+    # WHY: the day-level model is the text boundary. Like the small reader, it calls a day
+    # ordinary whenever the cat at home is in front of it.
+    def day_reader(items, *_a, **_k):
+        asked.append(len(items))
+        if any(item in morning + evening for item in items):
+            return SpecialDay(special=False, title="Cat on Staircase", what="a cat")
+        return SpecialDay(special=True, title="Track Day", what="a race track")
+
+    monkeypatch.setattr("immich_memories.automation.special_day_scan.ask_if_special", day_reader)
+
+    found = scan_year(morning + circuit + evening, llm_config=None, home=HOME_AT, captions=captions)
+
+    assert [(d.day, d.title) for d in found] == [(date(2021, 4, 4), "Track Day")]
+    assert asked == [71, 60]
+
+
+def _forwarded(start: datetime, *, pictures: int, hours: int) -> list:
+    sent = _day(start + timedelta(minutes=1), pictures=pictures, hours=hours, city=None)
+    for picture in sent:
+        picture.id = f"sent-{picture.id}"
+    return sent
+
+
+def _from_the_camera(pictures: list) -> list:
+    from immich_memories.api.models import AssetType
+
+    for picture in pictures:
+        picture.exif_info.make = "Apple"
+        picture.type = AssetType.IMAGE
+        picture.live_photo_video_id = None
+        picture.original_file_name = f"IMG_{picture.id}.HEIC"
+    return pictures
+
+
+def _sent(pictures: list) -> list:
+    from immich_memories.api.models import AssetType
+
+    for picture in pictures:
+        picture.exif_info.make = None
+        picture.type = AssetType.IMAGE
+        picture.live_photo_video_id = None
+        picture.original_file_name = f"received_{picture.id}.jpeg"
+    return pictures
+
+
+def test_a_day_whose_words_stand_out_reaches_the_day_check_the_month_reading_missed(monkeypatch):
+    """An obstacle race (09-28): the owner's camera wrote "a runner on a path", as on every other
+    run of the year, and the 123 pictures saved from the race's photographers wrote "obstacle
+    race". The month reading proposed nothing; the words the year never uses propose the day."""
+    from immich_memories.config_models_analysis import AnalysisConfig
+
+    race = datetime(2021, 10, 17, 9, tzinfo=UTC)
+    own = _from_the_camera(_day(race, pictures=25, hours=5, city="Somewhere"))
+    sent = _sent(_forwarded(race, pictures=40, hours=5))
+    only_sent = _sent(_forwarded(datetime(2021, 10, 3, 9, tzinfo=UTC), pictures=40, hours=5))
+    # Saved together, stamped with one second: inside the camera's own run that day, and after it.
+    batch = _sent(_forwarded(race, pictures=3, hours=1))
+    for picture in batch:
+        picture.id = f"batch-{picture.id}"
+        picture.file_created_at = datetime(2021, 10, 17, 12, 0, 7, tzinfo=UTC)
+    late = _sent(_forwarded(race.replace(hour=20), pictures=3, hours=1))
+    for picture in late:
+        picture.id = f"late-{picture.id}"
+        picture.file_created_at = datetime(2021, 10, 17, 20, 0, 7, tzinfo=UTC)
+    runs = [
+        _from_the_camera(
+            _day(datetime(2021, 9, day, 9, tzinfo=UTC), pictures=25, hours=5, city="Somewhere")
+        )
+        for day in (5, 12, 19, 26)
+    ]
+    # A year to stand out from: a run most weeks, written about the same way.
+    runs += [
+        _from_the_camera(
+            [
+                _picture(
+                    datetime(2021, 1, 1, 9, tzinfo=UTC) + timedelta(weeks=w), w, city="Somewhere"
+                )
+            ]
+        )
+        for w in range(36)
+    ]
+    captions = {p.id: "a runner on a cobblestone path" for p in own + [p for r in runs for p in r]}
+    captions |= {
+        p.id: "runners in an obstacle race under the sponsor arch" for p in sent + only_sent
+    }
+    # The race's own photographs say the most; the batch saved after the run says the same.
+    captions |= {
+        p.id: "a finisher with a medal under the sponsor arch at the obstacle race finish"
+        for p in batch + late
+    }
+    monkeypatch.setattr(
+        "immich_memories.analysis.special_day_sequence._read",
+        lambda *_a, **_k: json.dumps({"occasions": []}),
+    )
+    asked = {}
+
+    # WHY: the day-level model is the text boundary; what reaches it is the subject.
+    def day_reader(items, *_a, forwarded=(), **_k):
+        asked[items[0].file_created_at.date()] = {p.id for p in forwarded}
+        return SpecialDay(special=True, title="Obstacle race", what="a race")
+
+    monkeypatch.setattr("immich_memories.automation.special_day_scan.ask_if_special", day_reader)
+
+    found = scan_year(
+        own + sent + only_sent + batch + late + [p for r in runs for p in r],
+        llm_config=None,
+        home=None,
+        captions=captions,
+        analysis_config=AnalysisConfig(),
+    )
+
+    assert [(d.day, d.photos) for d in found] == [(date(2021, 10, 17), 25)]
+    assert asked == {date(2021, 10, 17): {p.id for p in batch}}

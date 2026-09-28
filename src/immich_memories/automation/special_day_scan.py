@@ -12,10 +12,10 @@ being remarkable on its own.
 
 from __future__ import annotations
 
+import collections
 import logging
 from dataclasses import dataclass
 from datetime import date, datetime
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 from immich_memories.analysis.special_day import (
@@ -35,6 +35,7 @@ from immich_memories.analysis.special_day_sequence import (
     read_in_sequence,
 )
 from immich_memories.analysis.special_day_title import honest_title
+from immich_memories.analysis.special_day_vocabulary import distinctive_days, telling
 from immich_memories.analysis.special_event_scope import SpecialEventAdmission
 from immich_memories.analysis.trip_detection import detect_trips, haversine_km
 from immich_memories.automation.special_day_facts import ranked_occasions
@@ -45,6 +46,8 @@ from immich_memories.memory_types.date_builders import KNOWN_HOLIDAYS, resolve_h
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
+
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +77,7 @@ class DiscoveredDay:
     asset_ids: tuple[str, ...] = ()
     event_admission: SpecialEventAdmission | None = None
     judged: bool = True
+    unjudged_because: str = ""
     # How many of the day's pictures the recorded window holds, against `photos`.
     # Zero means a scan from before #1067 that never counted, so its window is
     # taken as written; every other row can be checked without re-fetching the
@@ -101,26 +105,42 @@ def holidays_in(year: int, extra: Iterable[str] = ()) -> set[date]:
     return covered
 
 
-def _shot_here(assets: list, analysis_config: Any) -> list:
-    """Whatever of this year the library's own camera actually made."""
-    from immich_memories.analysis.source_filter import not_shot_here
+def _shot_here(assets: list, analysis_config: Any) -> tuple[list, list]:
+    """Whatever of this year the library's own camera made, and the pictures forwarded to it.
+
+    Forwarded pictures (sent by someone else, or saved) are what a messaging app or a race's
+    photographers left behind. They are evidence of a day the camera already made, never a day
+    of their own: their time is when they were saved, and a film cannot use them. Screen
+    recordings and the other excluded sources are neither.
+    """
+    from immich_memories.analysis.source_filter import from_an_excluded_source, not_shot_here
 
     if analysis_config is None:
-        return assets
+        return assets, []
     patterns = getattr(analysis_config, "exclude_filename_patterns", ())
     stills_need_a_camera = getattr(analysis_config, "exclude_stills_without_camera_exif", False)
-    kept = [
-        asset
-        for asset in assets
-        if not not_shot_here(asset, patterns=patterns, stills_need_a_camera=stills_need_a_camera)
-    ]
+    kept: list = []
+    forwarded: list = []
+    for asset in assets:
+        if not not_shot_here(asset, patterns=patterns, stills_need_a_camera=stills_need_a_camera):
+            kept.append(asset)
+        elif not from_an_excluded_source(getattr(asset, "original_file_name", None), patterns):
+            forwarded.append(asset)
     if len(kept) < len(assets):
         logger.info(
-            "Source filter: %d of %d assets were not shot here",
+            "Source filter: %d of %d assets were not shot here; %d forwarded kept as evidence",
             len(assets) - len(kept),
             len(assets),
+            len(forwarded),
         )
-    return kept
+    return kept, forwarded
+
+
+# Three or more files stamped with one exact second were saved together: the stamp is when they
+# were saved, not when anything happened (measured: 0.9% of camera photos, 26% of stripped ones).
+_ONE_SAVE = 3
+# How many sent pictures a day that stands out is judged with.
+_TOLD = 3
 
 
 def _kept_away_from_home(items: list, home: tuple[float, float], min_km: float) -> bool:
@@ -176,7 +196,7 @@ def scan_year(
     analysis_config: Any = None,
     trips_config: TripsConfig | None = None,
     captions: dict[str, str] | None = None,
-    judgment_cache_path: Path | None = None,
+    judgments: Store | None = None,
     still_seconds: float | None = None,
     reader: Literal["model", "rules"] = "model",
     close_family: Mapping[str, str] | None = None,
@@ -203,12 +223,15 @@ def scan_year(
     day the scan called special: 37 of its 223 assets were received or
     downloaded rather than shot, and they counted toward the day's volume and
     its active hours and could be sampled into the prompt — so the model
-    narrated pictures nobody in the library had taken.
+    narrated pictures nobody in the library had taken. Forwarded pictures come
+    back only as marked evidence of a day the camera made: an obstacle race
+    whose 123 pictures were saved from its photographers read, on the owner's
+    25 alone, as a jog on a path.
     """
     if not assets:
         return []
 
-    assets = _shot_here(assets, analysis_config)
+    assets, forwarded = _shot_here(assets, analysis_config)
     if not assets:
         return []
 
@@ -234,6 +257,8 @@ def scan_year(
 
     off_trip = candidate_days(assets, away_days=away)
     candidates = _drop_the_holidays_it_actually_was(off_trip, holidays, home, trips.min_distance_km)
+    forwarded_on = _by_day(forwarded, candidates)
+    standing_out, sent_to_judge = _standing_out(assets, captions, candidates, forwarded_on, reader)
     occasions = _occasions(
         candidates,
         year=year,
@@ -242,8 +267,9 @@ def scan_year(
         away_km=trips.min_distance_km,
         captions=captions,
         llm_config=llm_config,
-        cache_path=judgment_cache_path,
+        judgments=judgments,
         family=close_family or {},
+        standing_out=standing_out,
     )
     logger.info(
         "%d: %d occasions, %d dates covered by trips, %d dropped as the holiday they fell on",
@@ -271,12 +297,7 @@ def scan_year(
         verdict = (
             SpecialDay(special=True, title=honest_title(items, what=what, evidence=""), what=what)
             if reader == "rules"
-            else ask_if_special(
-                items,
-                llm_config,
-                captions={a.id: captions[a.id] for a in items if captions and captions.get(a.id)},
-                judgment_cache_path=judgment_cache_path,
-            )
+            else _read_the_day(items, llm_config, captions, judgments, sent_to_judge.get(day, []))
         )
         outcome = _day_from(day, items, verdict, what)
         if outcome is not None:
@@ -293,14 +314,15 @@ def _occasions(
     away_km: float,
     captions: dict[str, str] | None,
     llm_config: Any,
-    cache_path: Path | None,
+    judgments: Store | None,
     family: Mapping[str, str],
+    standing_out: Mapping[date, str],
 ) -> dict[date, str]:
     """The occasions among these runs and what each was: read by the model, or by the facts."""
     if reader == "rules":
         return ranked_occasions(candidates, home=home, away_km=away_km, family=family)
     reading = read_in_sequence(
-        candidates, captions=captions, llm_config=llm_config, cache_path=cache_path, family=family
+        candidates, captions=captions, llm_config=llm_config, judgments=judgments, family=family
     )
     logger.info(
         "%d: %d runs read, %d with nothing recorded beyond the clock",
@@ -310,7 +332,74 @@ def _occasions(
     )
     if reading.unread_months:
         raise YearNotRead(year, reading.unread_months)
-    return dict(sorted(reading.found.items()))
+    # The month reading compares a month's days and misses some; what a day's own words make
+    # stand out from its year goes to the same day check.
+    added = {day: f"a day of {words}" for day, words in standing_out.items()}
+    added = {day: what for day, what in added.items() if day not in reading.found}
+    logger.info("%d: %d more days stand out by their words", year, len(added))
+    return dict(sorted((reading.found | added).items()))
+
+
+def _standing_out(
+    assets: list,
+    captions: Mapping[str, str] | None,
+    candidates: Mapping[date, list],
+    forwarded_on: Mapping[date, list],
+    reader: str,
+) -> tuple[dict[date, str], dict[date, list]]:
+    """The candidate days whose own words, and half of what was sent from them, stand out, and
+    what of the sent pictures each will be judged with.
+
+    Only a day that stands out hears what was sent from it, and only the pictures that say
+    most of what the year does not: a day the month reading proposed is judged on its own.
+    """
+    if reader == "rules" or not captions:
+        return {}, {}
+    said = _said_by_day(assets, captions)
+    standing = distinctive_days(
+        said,
+        candidates,
+        forwarded={day: _said(sent, captions) for day, sent in forwarded_on.items()},
+    )
+    told = {day: telling(forwarded_on.get(day, []), captions, said, keep=_TOLD) for day in standing}
+    return standing, told
+
+
+def _said(pictures: list, captions: Mapping[str, str]) -> list[str]:
+    return [captions[a.id] for a in pictures if captions.get(a.id)]
+
+
+def _said_by_day(assets: list, captions: Mapping[str, str]) -> dict[date, list[str]]:
+    """What was written about each day's own pictures, for the year they stand out from."""
+    said: dict[date, list[str]] = collections.defaultdict(list)
+    for asset in assets:
+        if text := captions.get(asset.id):
+            said[asset.file_created_at.date()].append(text)
+    return said.copy()
+
+
+def _by_day(forwarded: list, candidates: Mapping[date, list]) -> dict[date, list]:
+    """The forwarded pictures each candidate day can be said to hold.
+
+    A day of forwards alone is not a candidate. A batch saved in one second is dated by the save,
+    so it counts only inside the day's own run, while the camera was out too: on a race day 47
+    of 58 such pictures were the race's own photographs; over its year, 118 of 243 counted.
+    """
+    second = collections.Counter(a.file_created_at.replace(microsecond=0) for a in forwarded)
+    runs = {day: run_extent(items) for day, items in candidates.items()}
+    on: dict[date, list] = collections.defaultdict(list)
+    for asset in forwarded:
+        day = asset.file_created_at.date()
+        if day in runs and (
+            second[asset.file_created_at.replace(microsecond=0)] < _ONE_SAVE
+            or _during(asset, runs[day])
+        ):
+            on[day].append(asset)
+    return on.copy()
+
+
+def _during(asset: Any, run: tuple[datetime, datetime] | None) -> bool:
+    return run is not None and run[0] <= asset.file_created_at <= run[1]
 
 
 class YearNotRead(RuntimeError):
@@ -318,6 +407,52 @@ class YearNotRead(RuntimeError):
 
     def __init__(self, year: int, months: list[str]) -> None:
         super().__init__(f"{year}: {len(months)} month(s) could not be read ({', '.join(months)})")
+
+
+def _read_the_day(
+    items: list,
+    llm_config: Any,
+    captions: Mapping[str, str] | None,
+    judgments: Store | None,
+    forwarded: list,
+) -> SpecialDay:
+    """The day-level verdict, asked once more about the day's event when the day read ordinary.
+
+    Some days contain an occasion rather than being one: a race day began with the cat at
+    home and ended there, and the small reader, shown the whole day, named it after the cat.
+    Where the pictures were taken already says which stretch the day was spent on
+    (`event_window`), so an ordinary verdict is asked again about that stretch alone. A day
+    with no such stretch, or one the reader already called an occasion, is asked once.
+    """
+
+    def ask(pictures: list) -> SpecialDay:
+        return ask_if_special(
+            pictures,
+            llm_config,
+            captions={
+                a.id: captions[a.id]
+                for a in [*pictures, *forwarded]
+                if captions and captions.get(a.id)
+            },
+            judgments=judgments,
+            forwarded=forwarded,
+        )
+
+    verdict = ask(items)
+    if verdict.special or not verdict.judged:
+        return verdict
+    window = window_that_holds_the_day(event_window(items), items)
+    if window is None:
+        return verdict
+    start, end = window
+    logger.info(
+        "%s read as ordinary; asking about its %s-%s stretch at one place",
+        items[0].file_created_at.date(),
+        f"{start:%H:%M}",
+        f"{end:%H:%M}",
+    )
+    inside = ask([a for a in items if start <= a.file_created_at <= end])
+    return inside if inside.special else verdict
 
 
 def _day_from(day: date, items: list, verdict: Any, what: str = "") -> DiscoveredDay | None:
@@ -343,6 +478,7 @@ def _day_from(day: date, items: list, verdict: Any, what: str = "") -> Discovere
             photos=len(items),
             window=None,
             judged=False,
+            unjudged_because=verdict.unjudged_because,
             prompt_version=SCAN_VERSION,
             app_version=__version__,
         )

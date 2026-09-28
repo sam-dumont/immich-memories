@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator
 from datetime import date, datetime
-from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
 from immich_memories.config_loader import Config
+from immich_memories.db import Store
 from immich_memories.web.answer_cache import AnswerCache, Cached
 from immich_memories.web.dependencies import answers, current_config
-from immich_memories.web.roster import people_path
+from immich_memories.web.roster import people_store
 
 router = APIRouter(prefix="/api/v1", tags=["library"])
 
@@ -53,12 +53,12 @@ def immich_client(config: Annotated[Config, Depends(current_config)]) -> Iterato
         yield client
 
 
-def _picture_counts(path: Path) -> dict[str, int]:
-    """Each Immich person id's picture count, from the people file `people scan` writes."""
+def _picture_counts(store: Store) -> dict[str, int]:
+    """Each Immich person id's picture count, from the people registry `people scan` writes."""
     from immich_memories.people.companion import load_document, people_entries
 
     counts: dict[str, int] = {}
-    for entry in people_entries(load_document(path)):
+    for entry in people_entries(load_document(store)):
         evidence = (entry.get("inferred") or {}).get("evidence") or {}
         if isinstance(evidence.get("count"), int):
             counts.update(dict.fromkeys(entry["ids"], evidence["count"]))
@@ -68,13 +68,13 @@ def _picture_counts(path: Path) -> dict[str, int]:
 @router.get("/people", response_model=list[NamedPerson])
 def people(
     client: Annotated[Any, Depends(immich_client)],
-    people_file: Annotated[Path, Depends(people_path)],
+    registry: Annotated[Store, Depends(people_store)],
 ) -> list[NamedPerson]:
     """Everyone Immich has a name for, the names `--person` takes: most pictured first.
 
     The counts are the last people scan's; anyone it has not counted follows alphabetically.
     """
-    counts = _picture_counts(people_file)
+    counts = _picture_counts(registry)
     named = [
         NamedPerson(id=p.id, name=p.name, pictures=counts.get(p.id))
         for p in client.get_all_people()
@@ -190,10 +190,12 @@ class SpecialDay(BaseModel):
     years_ago: int | None
 
 
-def special_days_catalogue() -> Path:
-    from immich_memories.automation.catalogue import default_catalogue_path
+def special_days_catalogue(config: Annotated[Config, Depends(current_config)]) -> list[dict]:
+    """The records `discover-days` keeps in the store."""
+    from immich_memories.automation.catalogue import load_catalogue
+    from immich_memories.db import open_store
 
-    return default_catalogue_path()
+    return load_catalogue(open_store(config))
 
 
 def today() -> date:
@@ -209,7 +211,7 @@ def _anniversary_rank(years: int) -> int:
 
 @router.get("/special-days", response_model=list[SpecialDay])
 def special_days(
-    catalogue: Annotated[Path, Depends(special_days_catalogue)],
+    catalogue: Annotated[list[dict], Depends(special_days_catalogue)],
     on: Annotated[date, Depends(today)],
 ) -> list[SpecialDay]:
     """The days `discover-days` catalogued, anniversaries due first, then the rest.

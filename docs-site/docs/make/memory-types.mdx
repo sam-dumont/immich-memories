@@ -62,8 +62,11 @@ immich-memories generate --memory-type multi_person --year 2025 \
   --people-expression '"Riley" AND ("Casey" OR "Bob")'
 ```
 
-`AND` binds tighter than `OR`, and `AND` means the same picture, not the same afternoon. The
-expression replaces `--person` and `--person-match`. The web UI has it under **Advanced people
+`AND` binds tighter than `OR`. A person counts as in every picture of an episode (a block of
+pictures with no 90-minute gap) where Immich recognised their face at least once, so the back of a
+head or a baby asleep on a chest still belongs to a person film. `AND` means everybody recognised
+somewhere in the same episode, not in one frame. The expression replaces `--person` and
+`--person-match`. The web UI has it under **Advanced people
 condition**. Trips, albums and a single-person birthday refuse it.
 
 ## Year in review
@@ -101,9 +104,11 @@ card asks for 2 min 15 s, the CLI fits a curve through the date range (about 3 m
 months). Both are editable defaults. `--hemisphere south` maps summer onto December to February.
 
 Person spotlight needs the person named in Immich's face recognition. What makes it a spotlight is
-the filter: the editor is the same one. Multi-person defaults to AND, so two people never in the
-same frame give an empty memory rather than two solo reels. Titles and default filenames say AND or
-OR, so two runs never overwrite each other.
+the filter: the editor is the same one. Multi-person defaults to AND: an afternoon counts when
+both were recognised somewhere in it, even if never in one frame. Two people who never share an
+episode give an empty memory rather than two solo reels. Each window is read once for videos and
+once for photos, however many people are named. Titles and default filenames say AND or OR, so two
+runs never overwrite each other.
 
 ### A people memory with no dates
 
@@ -115,7 +120,7 @@ immich-memories generate --memory-type multi_person \
   --people-expression '("Riley" OR "Bob") AND "Sam"'
 ```
 
-The start comes from the birth dates Immich holds, and from `birth_date` in `people.yaml` where
+The start comes from the birth dates Immich holds, and from `birth_date` in the people registry where
 Immich has none. An AND waits for the youngest person it needs; an OR opens with the oldest it
 accepts, and bounds nothing when one of them has no birth date. Two grandparents AND a child born
 in 2024 covers 2024 onward, because no older picture can hold the child. `runs why` on an earlier
@@ -295,7 +300,8 @@ favourites, it is mostly video, or it ran long (20 pictures over 6 hours or more
 in it. Each year keeps its strongest `automation.special_days_per_year` (6), away days first. The
 title comes from the day's own place.
 
-The catalogue is `~/.immich-memories/special-days.json`. A film covers the day's **run**, the stretch
+The catalogue lives in the [store](../run/database.md); `days-export` writes it to a JSON file you can
+edit and `days-import` reads it back. A film covers the day's **run**, the stretch
 of pictures the occasion left, split at five hours of silence rather than at midnight, so a long
 night out is not cut at 00:00. It never reaches past its own first and last picture, and a run longer
 than 48 hours is not one occasion. `window_origin` in the run record says what bounded the film.

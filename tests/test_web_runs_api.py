@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.tracking import RunDatabase
 from immich_memories.tracking.models import RunMetadata
 from immich_memories.web import mount_web
@@ -108,7 +109,7 @@ def test_the_client_api_answers_401_while_the_client_page_goes_to_login():
 def test_runs_filter_by_status_and_page_forward(client, config):
     for day in range(1, 4):
         _run(config, f"2026090{day}_080000_aaaa", datetime(2026, 9, day, tzinfo=UTC), cut=False)
-    RunDatabase(config.cache.database_path).save_run(
+    RunDatabase(open_store(config)).save_run(
         RunMetadata(
             run_id="20260904_080000_ffff",
             created_at=datetime(2026, 9, 4, tzinfo=UTC),

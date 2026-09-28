@@ -232,7 +232,7 @@ def test_launch_flow_renders_real_video(
     assert probe.duration_seconds > 0
     assert probe.size_bytes > 0
 
-    database = RunDatabase(launch_workspace.database_path)
+    database = RunDatabase(launch_workspace.store())
     rendered = films(database)[0]
     assert Path(rendered.output_path or "") == output_path
     assert rendered.source == "manual"
@@ -301,7 +301,7 @@ def test_reload_during_a_render_rejoins_it_and_plays_the_film(
 
     outputs = set(launch_workspace.output_dir.rglob("*.mp4")) - before
     assert len(outputs) == 1
-    database = RunDatabase(launch_workspace.database_path)
+    database = RunDatabase(launch_workspace.store())
     assert Path(films(database)[0].output_path or "") == outputs.pop()
 
 

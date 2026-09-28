@@ -90,3 +90,37 @@ def test_the_pool_s_ticks_are_the_owner_s_last_pass_saved_as_a_revision_without_
     assert (saved.json()["added"], saved.json()["removed"]) == (["woods-9"], ["lake-1"])
     assert refused.status_code == 422 and "not in this cut's pool" in refused.json()["detail"]
     assert client.post(f"/api/v1/runs/{RUN}/recut", json={}).status_code in {404, 405}
+
+
+def _spotlight_pool(tmp_path, *, people: list[str]):
+    from immich_memories.api.models import Person
+
+    config = config_in(tmp_path)
+    attempt = save_run(config, RUN, trace=selection_trace())
+    ada = Person(id="face-ada", name="Ada")
+    face = make_asset("garden-1", file_created_at=datetime(2024, 6, 8, 9, tzinfo=UTC))
+    face.people = [ada]
+    feeding = make_asset("woods-9", file_created_at=datetime(2024, 6, 8, 9, 30, tzinfo=UTC))
+    payload = source_payload([face, feeding]) | {"people": people, "person_match": "and"}
+    (attempt / SNAPSHOT_NAME).write_text(json.dumps(payload, default=str))
+    return api_client(config)
+
+
+def test_a_picture_the_person_s_episode_brought_is_marked_so_the_owner_can_untick_it(tmp_path):
+    """The face was found elsewhere in the episode, not on this picture (#1438)."""
+    client = _spotlight_pool(tmp_path, people=["Ada"])
+
+    items = client.get(f"/api/v1/runs/{RUN}/pool").json()["items"]
+
+    assert {item["asset_id"]: item["same_episode"] for item in items} == {
+        "garden-1": False,
+        "woods-9": True,
+    }
+
+
+def test_a_memory_about_nobody_marks_nothing(tmp_path):
+    client = _spotlight_pool(tmp_path, people=[])
+
+    items = client.get(f"/api/v1/runs/{RUN}/pool").json()["items"]
+
+    assert not any(item["same_episode"] for item in items)

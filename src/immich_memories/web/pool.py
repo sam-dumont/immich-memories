@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from immich_memories.analysis.editorial_source_snapshot import SNAPSHOT_NAME, load_sources
+from immich_memories.analysis.editorial_source_snapshot import SNAPSHOT_NAME, sources_from_payload
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.operations import picture_holds
 from immich_memories.operations.candidate_fates import CandidateFates
 from immich_memories.operations.run_index import attempt_dir_for_run
@@ -38,6 +40,21 @@ def _asset(source: Asset | VideoClipInfo) -> Asset:
     return source.asset if isinstance(source, VideoClipInfo) else source
 
 
+def _memory_people(payload: dict) -> set[str]:
+    """The names or face ids the run was cut for: its people, or its grouped condition's leaves."""
+    from immich_memories.api.person_expression import PersonExpression
+
+    named = {str(value) for value in payload.get("people") or ()}
+    if expression := payload.get("person_expression"):
+        named |= set(PersonExpression.from_dict(expression).leaf_values)
+    return named
+
+
+def _same_episode(asset: Asset, people: set[str]) -> bool:
+    """In the pool through its episode: none of the memory's people is recognised on it (#1438)."""
+    return bool(people) and not any({face.id, face.name} & people for face in asset.people)
+
+
 def _kind(asset: Asset) -> Literal["photo", "video", "live"]:
     if asset.type == AssetType.VIDEO:
         return "video"
@@ -53,12 +70,14 @@ def read_pool(
     reachable_only: bool = False,
 ) -> Pool:
     """Every picture the cut saw, in capture order, with its fate and whatever holds it."""
-    attempt = attempt_dir_for_run(config.cache.cache_path, run_id)
+    attempt = attempt_dir_for_run(run_id, store=open_store(config))
     snapshot = Path(attempt) / SNAPSHOT_NAME if attempt else None
     if snapshot is None or not snapshot.is_file():
         raise HTTPException(404, "This run kept no record of its pool.")
+    payload = json.loads(snapshot.read_text())
+    people = _memory_people(payload)
     assets = sorted(
-        (_asset(source) for source in load_sources(snapshot)),
+        (_asset(source) for source in sources_from_payload(payload)),
         key=lambda asset: (asset.file_created_at, asset.id),
     )
     fates = CandidateFates.read(attempt)
@@ -77,6 +96,7 @@ def read_pool(
                 taken=asset.file_created_at.isoformat(),
                 kind=_kind(asset),
                 favourite=asset.is_favorite,
+                same_episode=_same_episode(asset, people),
                 in_cut=asset.id in in_cut,
                 reachable=fates.reachable(asset.id),
                 fate=fates.describe(asset.id),

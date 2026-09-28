@@ -126,7 +126,12 @@
               aria-label={t('In the film')} onchange={(event) => (ticks = { ...ticks, [item.asset_id]: event.currentTarget.checked })} />
             {#if item.kind !== 'photo'}<span class="absolute right-1 bottom-1 rounded bg-black/60 px-1.5 text-[11px] text-white">{item.kind === 'video' ? t('Video') : t('Live')}</span>{/if}
           </label>
-          <p class="text-[11px] text-gray-600 tabular-nums dark:text-gray-400">{item.taken.slice(0, 10)}{item.favourite ? ' ★' : ''}</p>
+          <p class="flex flex-wrap items-center gap-1.5 text-[11px] text-gray-600 tabular-nums dark:text-gray-400">
+            {item.taken.slice(0, 10)}{item.favourite ? ' ★' : ''}
+            {#if item.same_episode}
+              <span class="rounded bg-primary/10 px-1.5 text-primary" title={t('Nobody this memory is about was recognised here; they were, elsewhere in the same episode.')}>{t('Same episode')}</span>
+            {/if}
+          </p>
           <p class="line-clamp-3 text-xs">{item.fate}</p>
           {#if holdLine(item.hold)}<p class="text-xs text-warning">{holdLine(item.hold)}</p>{/if}
           <div class="flex flex-wrap gap-1">

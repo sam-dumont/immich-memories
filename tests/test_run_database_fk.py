@@ -2,30 +2,32 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import multiprocessing
 import sqlite3
-import threading
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
 import pytest
 
-from immich_memories.cache import database as cache_database
 from immich_memories.cache.database import VideoAnalysisCache
-from immich_memories.cache.schema_migrator import SchemaMigrator
+from immich_memories.config_loader import Config, set_config
+from immich_memories.db import open_store
+from immich_memories.operations.store_import import import_legacy
 from immich_memories.tracking.models import PhaseStats, RunMetadata
 from immich_memories.tracking.run_database import RunDatabase
 from immich_memories.tracking.run_tracker import RunTracker
+from tests.legacy_cache_db import write_legacy_cache_db
 
 
 def _initialize_database_process(db_path: str, start_event: Any, result_queue: Any) -> None:
     """Initialize one real child-process database client after a shared start signal."""
     start_event.wait()
     try:
-        RunDatabase(Path(db_path))
+        VideoAnalysisCache(Path(db_path))
     except Exception as exc:
         result_queue.put(f"{type(exc).__name__}: {exc}")
     else:
@@ -34,14 +36,20 @@ def _initialize_database_process(db_path: str, start_event: Any, result_queue: A
 
 @pytest.fixture
 def db(tmp_path):
-    return RunDatabase(db_path=tmp_path / "test.db")
+    return RunDatabase()
+
+
+def _import_into_the_store(db_path: Path, home: Path) -> None:
+    """The one-time upgrade: a legacy cache.db's history moves into this test's store."""
+    set_config(Config(cache={"database": str(db_path), "directory": str(home / "cache")}))
+    import_legacy(open_store(), home)
 
 
 def _make_phase_stats() -> PhaseStats:
     return PhaseStats(
         phase_name="analysis",
-        started_at=datetime(2026, 3, 27, 10, 0),
-        completed_at=datetime(2026, 3, 27, 10, 5),
+        started_at=datetime(2026, 3, 27, 10, 0, tzinfo=UTC),
+        completed_at=datetime(2026, 3, 27, 10, 5, tzinfo=UTC),
         duration_seconds=300.0,
         items_processed=42,
         items_total=42,
@@ -57,7 +65,7 @@ class TestCompletePhaseDBResilience:
     @patch("immich_memories.tracking.run_tracker.RunDatabase")
     def test_complete_phase_survives_db_exception(self, mock_db_cls, caplog):
         """complete_phase logs a warning and continues if DB raises any exception."""
-        tracker = RunTracker(db_path=Path("/tmp/test.db"))
+        tracker = RunTracker()
         tracker.start_run()
         tracker.start_phase("analysis", total_items=10)
 
@@ -90,13 +98,9 @@ class TestSavePhaseStatsFKConstraint:
 
     def test_valid_run_id_saves_normally(self, db):
         """Phase stats with a valid run_id are saved successfully."""
-        from datetime import datetime
-
-        from immich_memories.tracking.models import RunMetadata
-
         run = RunMetadata(
             run_id="valid_run_001",
-            created_at=datetime(2026, 3, 27, 10, 0),
+            created_at=datetime(2026, 3, 27, 10, 0, tzinfo=UTC),
             status="running",
         )
         db.save_run(run)
@@ -105,7 +109,7 @@ class TestSavePhaseStatsFKConstraint:
         db.save_phase_stats("valid_run_001", stats)
 
         # Verify the stats were actually persisted
-        retrieved = db.get_phase_stats("valid_run_001")
+        retrieved = db.get_run("valid_run_001").phases
         assert len(retrieved) == 1
         assert retrieved[0].phase_name == "analysis"
 
@@ -128,13 +132,9 @@ def _make_completed_run(
     )
 
 
-def test_v10_migrates_populated_v9_database_without_losing_rows(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The additive v10 migration keeps production-era v9 run records intact."""
-    db_path = tmp_path / "v9.db"
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 9)
-    RunDatabase(db_path)
+def test_a_populated_v9_database_imports_without_losing_rows(tmp_path: Path) -> None:
+    """Production-era v9 run records reach the store intact."""
+    db_path = write_legacy_cache_db(tmp_path / "v9.db", version=9)
     with sqlite3.connect(db_path) as conn:
         conn.execute(
             """
@@ -154,91 +154,19 @@ def test_v10_migrates_populated_v9_database_without_losing_rows(
             ),
         )
 
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 10)
-    migrated = RunDatabase(db_path)
-    loaded = migrated.get_run("existing-v9")
+    _import_into_the_store(db_path, tmp_path)
+    loaded = RunDatabase().get_run("existing-v9")
 
     assert loaded is not None
-    assert loaded.memory_category is None
+    assert loaded.memory_key == "trip:key"
+    # What v11 back-fills on a completed auto run reaches the store the same way.
+    assert loaded.memory_category == "trip"
     assert loaded.memory_people == ()
 
 
-def test_concurrent_connections_upgrade_v9_database_once(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """A second initializer cannot pass version discovery during a v10 migration."""
-    db_path = tmp_path / "concurrent-v9.db"
-    current_version = cache_database.SCHEMA_VERSION
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 9)
-    RunDatabase(db_path)
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", current_version)
-
-    original = SchemaMigrator._migration_v10_automation_state
-    first_entered = threading.Event()
-    second_entered = threading.Event()
-    release_first = threading.Event()
-    call_lock = threading.Lock()
-    errors: list[BaseException] = []
-    calls = 0
-
-    def controlled_migration(self: SchemaMigrator, conn: sqlite3.Connection) -> None:
-        nonlocal calls
-        with call_lock:
-            calls += 1
-            call_number = calls
-        if call_number == 1:
-            first_entered.set()
-            if not release_first.wait(timeout=5):
-                raise TimeoutError("migration test did not release first initializer")
-        else:
-            second_entered.set()
-        original(self, conn)
-
-    monkeypatch.setattr(
-        SchemaMigrator,
-        "_migration_v10_automation_state",
-        controlled_migration,
-    )
-
-    def initialize() -> None:
-        try:
-            RunDatabase(db_path)
-        except BaseException as exc:  # pragma: no cover - asserted below
-            errors.append(exc)
-
-    first = threading.Thread(target=initialize)
-    second = threading.Thread(target=initialize)
-    try:
-        first.start()
-        assert first_entered.wait(timeout=5)
-        second.start()
-        assert not second_entered.wait(timeout=0.25)
-    finally:
-        release_first.set()
-        first.join(timeout=5)
-        second.join(timeout=5)
-
-    assert not first.is_alive()
-    assert not second.is_alive()
-    assert errors == []
-    assert calls == 1
-    with sqlite3.connect(db_path) as conn:
-        version = conn.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
-        columns = [row[1] for row in conn.execute("PRAGMA table_info(pipeline_runs)")]
-    assert version == current_version
-    assert columns.count("memory_category") == 1
-
-
-def test_concurrent_processes_upgrade_v9_database_once(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Four real initializers must re-read the version after acquiring the write guard."""
-    db_path = tmp_path / "multiprocess-v9.db"
-    current_version = cache_database.SCHEMA_VERSION
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 9)
-    RunDatabase(db_path)
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", current_version)
-
+def test_concurrent_processes_build_a_fresh_cache_once(tmp_path: Path) -> None:
+    """Four real initializers race on an empty file and all find one finished cache."""
+    db_path = tmp_path / "multiprocess.db"
     context = multiprocessing.get_context("spawn")
     start_event = context.Event()
     result_queue = context.Queue()
@@ -265,56 +193,13 @@ def test_concurrent_processes_upgrade_v9_database_once(
     assert [process.exitcode for process in processes] == [0, 0, 0, 0]
     assert messages == [None, None, None, None]
     with sqlite3.connect(db_path) as conn:
-        version = conn.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
-        columns = [row[1] for row in conn.execute("PRAGMA table_info(pipeline_runs)")]
-    assert version == current_version
-    assert columns.count("memory_category") == 1
+        columns = [row[1] for row in conn.execute("PRAGMA table_info(video_segments)")]
+    assert columns.count("safe_cut_gaps") == 1
 
 
-def test_fresh_database_has_exact_automation_run_identity_and_phase(tmp_path: Path) -> None:
-    """A fresh database correlates one run/attempt and persists their outer phase."""
-    db_path = tmp_path / "fresh.db"
-    VideoAnalysisCache(db_path)
-
-    with sqlite3.connect(db_path) as conn:
-        version = conn.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
-        attempt_columns = {
-            row[1] for row in conn.execute("PRAGMA table_info(automation_attempts)").fetchall()
-        }
-        run_columns = {row[1] for row in conn.execute("PRAGMA table_info(pipeline_runs)")}
-        run_indexes = {row[1] for row in conn.execute("PRAGMA index_list(pipeline_runs)")}
-
-    # The subject here is the columns and indexes, not the version number. Assert
-    # against the constant so a schema bump does not break an unrelated test.
-    assert version == cache_database.SCHEMA_VERSION
-    assert attempt_columns == {
-        "id",
-        "started_at",
-        "finished_at",
-        "outcome",
-        "reason",
-        "candidate_category",
-        "memory_type",
-        "memory_key",
-        "run_id",
-        "error",
-        "last_phase",
-        "phase_events",
-    }
-    assert "automation_attempt_id" in run_columns
-    assert "last_phase" in run_columns
-    assert "phase_events" in run_columns
-    assert "last_phase" in attempt_columns
-    assert "idx_runs_automation_attempt" in run_indexes
-
-
-def test_v12_migrates_populated_v11_database_without_losing_runs(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The additive v12 column leaves existing manual and automation rows intact."""
-    db_path = tmp_path / "v11.db"
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 11)
-    VideoAnalysisCache(db_path)
+def test_a_populated_v11_database_imports_without_losing_runs(tmp_path: Path) -> None:
+    """Rows written before automation attempts had ids keep their identity in the store."""
+    db_path = write_legacy_cache_db(tmp_path / "v11.db", version=11)
     with sqlite3.connect(db_path) as conn:
         conn.execute(
             """
@@ -337,9 +222,8 @@ def test_v12_migrates_populated_v11_database_without_losing_runs(
         )
         conn.commit()
 
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 12)
-    migrated = RunDatabase(db_path)
-    loaded = migrated.get_run("existing-v11")
+    _import_into_the_store(db_path, tmp_path)
+    loaded = RunDatabase().get_run("existing-v11")
 
     assert loaded is not None
     assert loaded.run_id == "existing-v11"
@@ -348,7 +232,7 @@ def test_v12_migrates_populated_v11_database_without_losing_runs(
 
 def test_run_identity_fields_round_trip_with_normalized_people(db: RunDatabase) -> None:
     """Run identity persists category and canonical Unicode person names."""
-    run = _make_completed_run("normalized", datetime(2026, 7, 2, 9, 0))
+    run = _make_completed_run("normalized", datetime(2026, 7, 2, 9, 0, tzinfo=UTC))
     run.memory_category = "person_spotlight"
     run.memory_people = ("  ALICE\tSmith ", "Straße   Example")
     run.automation_attempt_id = "attempt-round-trip"
@@ -360,7 +244,7 @@ def test_run_identity_fields_round_trip_with_normalized_people(db: RunDatabase) 
     assert loaded.memory_people == ("alice smith", "strasse example")
     assert loaded.automation_attempt_id == "attempt-round-trip"
     assert loaded.to_dict()["memory_people"] == ["alice smith", "strasse example"]
-    assert RunMetadata.from_json(loaded.to_json()).memory_people == (
+    assert RunMetadata.from_dict(json.loads(loaded.to_json())).memory_people == (
         "alice smith",
         "strasse example",
     )
@@ -368,8 +252,10 @@ def test_run_identity_fields_round_trip_with_normalized_people(db: RunDatabase) 
 
 def test_list_runs_filters_source_before_limit(db: RunDatabase) -> None:
     """A newer manual run cannot hide an older automation run behind LIMIT."""
-    db.save_run(_make_completed_run("auto", datetime(2026, 7, 2, 9, 0), source="auto"))
-    db.save_run(_make_completed_run("manual", datetime(2026, 7, 3, 9, 0), source="manual"))
+    db.save_run(_make_completed_run("auto", datetime(2026, 7, 2, 9, 0, tzinfo=UTC), source="auto"))
+    db.save_run(
+        _make_completed_run("manual", datetime(2026, 7, 3, 9, 0, tzinfo=UTC), source="manual")
+    )
 
     runs = db.list_runs(limit=1, status="completed", source="auto")
 
@@ -378,8 +264,10 @@ def test_list_runs_filters_source_before_limit(db: RunDatabase) -> None:
 
 def test_list_runs_treats_empty_source_as_a_concrete_filter(db: RunDatabase) -> None:
     """Only None disables source filtering; an empty string remains queryable."""
-    db.save_run(_make_completed_run("empty", datetime(2026, 7, 2, 9, 0), source=""))
-    db.save_run(_make_completed_run("manual", datetime(2026, 7, 3, 9, 0), source="manual"))
+    db.save_run(_make_completed_run("empty", datetime(2026, 7, 2, 9, 0, tzinfo=UTC), source=""))
+    db.save_run(
+        _make_completed_run("manual", datetime(2026, 7, 3, 9, 0, tzinfo=UTC), source="manual")
+    )
 
     runs = db.list_runs(status="completed", source="")
 
@@ -390,16 +278,18 @@ def test_list_runs_can_order_completed_rows_by_completion_time(db: RunDatabase) 
     """Automation recency follows completion, with legacy rows falling back to creation."""
     completed_first = _make_completed_run(
         "created-last-completed-first",
-        datetime(2026, 8, 10, 10, 0),
+        datetime(2026, 8, 10, 10, 0, tzinfo=UTC),
     )
-    completed_first.completed_at = datetime(2026, 8, 10, 10, 30)
-    legacy = _make_completed_run("legacy-null-completion", datetime(2026, 8, 10, 11, 30))
+    completed_first.completed_at = datetime(2026, 8, 10, 10, 30, tzinfo=UTC)
+    legacy = _make_completed_run(
+        "legacy-null-completion", datetime(2026, 8, 10, 11, 30, tzinfo=UTC)
+    )
     legacy.completed_at = None
     completed_last = _make_completed_run(
         "created-first-completed-last",
-        datetime(2026, 8, 10, 9, 0),
+        datetime(2026, 8, 10, 9, 0, tzinfo=UTC),
     )
-    completed_last.completed_at = datetime(2026, 8, 10, 12, 0)
+    completed_last.completed_at = datetime(2026, 8, 10, 12, 0, tzinfo=UTC)
     for run in (completed_first, legacy, completed_last):
         db.save_run(run)
 
@@ -418,7 +308,7 @@ def test_list_runs_can_order_completed_rows_by_completion_time(db: RunDatabase) 
 
 def test_completion_order_has_deterministic_tie_breakers(db: RunDatabase) -> None:
     """Equal completion and creation timestamps fall back to descending run ID."""
-    created_at = datetime(2026, 8, 10, 9, 0)
+    created_at = datetime(2026, 8, 10, 9, 0, tzinfo=UTC)
     for run_id in ("tie-a", "tie-z"):
         run = _make_completed_run(run_id, created_at)
         db.save_run(run)
@@ -436,16 +326,18 @@ def test_last_run_of_type_filters_source_before_order_and_limit(db: RunDatabase)
     """A newer manual run cannot hide the last auto run of the same memory type."""
     completed_last = _make_completed_run(
         "created-first-completed-last",
-        datetime(2026, 8, 8, 9, 0),
+        datetime(2026, 8, 8, 9, 0, tzinfo=UTC),
         source="auto",
     )
-    completed_last.completed_at = datetime(2026, 8, 11, 12, 0)
+    completed_last.completed_at = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
     db.save_run(completed_last)
-    db.save_run(_make_completed_run("created-last", datetime(2026, 8, 9, 9, 0), source="auto"))
+    db.save_run(
+        _make_completed_run("created-last", datetime(2026, 8, 9, 9, 0, tzinfo=UTC), source="auto")
+    )
     db.save_run(
         _make_completed_run(
             "newer-manual-trip",
-            datetime(2026, 8, 10, 9, 0),
+            datetime(2026, 8, 10, 9, 0, tzinfo=UTC),
             source="manual",
         )
     )
@@ -458,9 +350,9 @@ def test_last_run_of_type_filters_source_before_order_and_limit(db: RunDatabase)
 
 def test_completed_automation_attempt_identity_is_exact(db: RunDatabase) -> None:
     """A same-key completion from another wake cannot satisfy this parent attempt."""
-    wrong = _make_completed_run("wrong-attempt", datetime(2026, 7, 2, 9, 0))
+    wrong = _make_completed_run("wrong-attempt", datetime(2026, 7, 2, 9, 0, tzinfo=UTC))
     wrong.automation_attempt_id = "attempt-other"
-    expected = _make_completed_run("exact-attempt", datetime(2026, 7, 2, 9, 1))
+    expected = _make_completed_run("exact-attempt", datetime(2026, 7, 2, 9, 1, tzinfo=UTC))
     expected.automation_attempt_id = "attempt-exact"
     db.save_run(wrong)
     db.save_run(expected)
@@ -484,7 +376,7 @@ def test_a_failed_automation_attempt_still_finds_the_run_it_started(db: RunDatab
     """A failed generation is exactly when its run record is worth reaching."""
     failed = RunMetadata(
         run_id="failed-child",
-        created_at=datetime(2026, 7, 2, 9, 0),
+        created_at=datetime(2026, 7, 2, 9, 0, tzinfo=UTC),
         status="failed",
         memory_type="trip",
         memory_key="trip:key",
@@ -503,9 +395,9 @@ def test_a_failed_automation_attempt_still_finds_the_run_it_started(db: RunDatab
 
 def test_completed_automation_attempt_identity_rejects_ambiguity(db: RunDatabase) -> None:
     """Two matching child rows are corruption, not a license to pick one."""
-    first = _make_completed_run("duplicate-first", datetime(2026, 7, 2, 9, 0))
+    first = _make_completed_run("duplicate-first", datetime(2026, 7, 2, 9, 0, tzinfo=UTC))
     first.automation_attempt_id = "attempt-duplicate"
-    second = _make_completed_run("duplicate-second", datetime(2026, 7, 2, 9, 1))
+    second = _make_completed_run("duplicate-second", datetime(2026, 7, 2, 9, 1, tzinfo=UTC))
     second.automation_attempt_id = "attempt-duplicate"
     db.save_run(first)
     db.save_run(second)
@@ -523,11 +415,7 @@ class TestTargetDurationSurvivesTheRoundTrip:
     sub-minute or non-round-minute run."""
 
     def test_a_sub_minute_target_is_preserved(self, tmp_path: Path) -> None:
-        from datetime import UTC, datetime
-
-        from immich_memories.tracking.models import RunMetadata
-
-        db = RunDatabase(db_path=tmp_path / "t.db")
+        db = RunDatabase()
         run = RunMetadata(
             run_id="r-25s",
             created_at=datetime(2026, 8, 21, tzinfo=UTC),
@@ -541,42 +429,15 @@ class TestTargetDurationSurvivesTheRoundTrip:
         assert loaded.target_duration_seconds == 25
 
     def test_a_pre_migration_row_backfills_from_minutes(self, tmp_path: Path) -> None:
-        import sqlite3
+        db_path = write_legacy_cache_db(tmp_path / "old.db", version=18)
+        with sqlite3.connect(db_path) as conn:
+            conn.execute(
+                "INSERT INTO pipeline_runs (run_id, created_at, status, target_duration_minutes)"
+                " VALUES ('r-old', '2026-08-01', 'completed', 10)"
+            )
 
-        from immich_memories.cache import database as cache_database
-
-        db_path = tmp_path / "old.db"
-        current = cache_database.SCHEMA_VERSION
-        try:
-            cache_database.SCHEMA_VERSION = 18
-            RunDatabase(db_path)
-            with sqlite3.connect(db_path) as conn:
-                conn.execute(
-                    "INSERT INTO pipeline_runs (run_id, created_at, status, target_duration_minutes)"
-                    " VALUES ('r-old', '2026-08-01', 'completed', 10)"
-                )
-        finally:
-            cache_database.SCHEMA_VERSION = current
-
-        db = RunDatabase(db_path)  # migrates
-        loaded = db.get_run("r-old")
+        _import_into_the_store(db_path, tmp_path)
+        loaded = RunDatabase().get_run("r-old")
 
         assert loaded is not None
         assert loaded.target_duration_seconds == 600
-
-    def test_v19_tolerates_a_missing_table_and_reruns(self, tmp_path: Path) -> None:
-        """A migration must be a no-op on a db without the table, and re-entrant
-        when the column already exists (interrupted upgrade, restarted)."""
-        import sqlite3
-
-        from immich_memories.cache.migration_v19 import migrate_target_duration_seconds
-
-        with sqlite3.connect(tmp_path / "no-table.db") as conn:
-            migrate_target_duration_seconds(conn)  # no pipeline_runs — no-op
-
-        RunDatabase(db_path=tmp_path / "t.db")  # fully migrated
-        with sqlite3.connect(tmp_path / "t.db") as conn:
-            migrate_target_duration_seconds(conn)  # column exists — no-op
-            cols = [r[1] for r in conn.execute("PRAGMA table_info(pipeline_runs)")]
-
-        assert cols.count("target_duration_seconds") == 1

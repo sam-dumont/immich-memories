@@ -18,13 +18,14 @@ from datetime import datetime
 from operator import itemgetter
 from typing import Any
 
+from immich_memories.analysis.editorial_carrier import carrier_row
+from immich_memories.analysis.editorial_picture_admission import PictureAdmission
 from immich_memories.analysis.editorial_story_depth import depth_ladder, neighbours
 from immich_memories.analysis.editorial_story_lookalike import LookAlikeCheck
 from immich_memories.analysis.editorial_story_pick_contract import (
     carries_motion,
 )
 from immich_memories.analysis.editorial_story_places import PlaceShares
-from immich_memories.analysis.editorial_story_replies import WEIGHT_ROLE
 from immich_memories.analysis.editorial_story_shortlist import (
     DepictedChoice,
     _spaced,
@@ -140,6 +141,7 @@ class CarrierAdmission:
         self._anchor_label = anchor_label
         self.parts = parts
         self.gate = gate
+        self.pictures = PictureAdmission(gate, None, None, excluded=excluded)
         self._line_of = line_of
         self._life = life
         self._excluded = excluded
@@ -207,27 +209,14 @@ class CarrierAdmission:
         ]
         return _spaced(open_, self._unit_by_asset, already=self.carriers, among_choices=False)
 
-    def carrier_for(self, choice, s, index, candidates):
+    def carrier_for(self, choice, s, index, candidates, *, recovering=False):
         for asset in candidates:
-            # Recovery may keep a weak still, not override rejected motion or source context.
-            if self.gate.rejected_motion(asset) or not self.gate.has_required_context(
-                asset, s["weight"], s["key"]
-            ):
-                continue
-            # Other stories may have committed carriers since picks were compared.
-            # Recovery and an alternate source must obey the actual capture clock too.
-            actual = DepictedChoice(
-                choice.key,
-                choice.episode,
-                self._unit_by_asset[asset][1]["taken"],
-                choice.content,
-                asset,
-            )
-            if not _spaced([actual], self._unit_by_asset, already=self.carriers):
-                continue
             if not self.free(asset):
                 continue
             family, unit = self._unit_by_asset[asset]
+            row = self._carrier_row(unit, family, s, choice, index, asset)
+            if self.pictures.admits(row, cut=self.carriers, tier_of={}, recovering=recovering):
+                continue
             rest = [
                 a
                 for a in choice.members
@@ -237,20 +226,19 @@ class CarrierAdmission:
                     self.parts.limit is None or self.parts.of_asset(a) == self.parts.of_asset(asset)
                 )
             ]
-            return asset, self._carrier_row(unit, family, s, choice, index, asset), rest
+            return asset, row, rest
         return None, None, []
 
     def _carrier_row(self, unit, family, s, choice, index, asset) -> dict:
-        return unit | {
-            "event": family,
-            "anchor": self._anchor_label.get(family, family),
-            "chapter": index,
+        return carrier_row(
+            unit,
+            family=family,
+            anchor=self._anchor_label.get(family, family),
+            story=s,
+            chapter=index,
+            line=self._line_of(asset),
+        ) | {
             "why": f"{s['title']}: {choice.content[:80]}",
-            "event_intention": s.get("purpose") or "",
-            "line": self._line_of(asset),
-            "story_episode": s["key"],
-            "story_role": WEIGHT_ROLE[s["weight"]],
-            "story_weight": s["weight"],
             "depicted_moment": choice.key,
             # The rest of this moment, so a later stage can swap the frame without
             # losing it. Written by the reader that keeps a moment's siblings.
@@ -700,8 +688,11 @@ class CarrierAdmission:
             row = self._carrier_row(unit, family, s, choice, index, asset)
             kept = [c for c in self.carriers if c["story_episode"] == s["key"]]
             if self.lookalike.shows_something_new(s["key"], row, neighbours(row, kept)):
+                row = row | {"depth": True}
+                if self.pictures.admits(row, cut=self.carriers, tier_of={}):
+                    continue
                 self._used_choice_keys.add(choice.key)
-                self._admit(s, choice, row | {"depth": True}, [])
+                self._admit(s, choice, row, [])
                 added = True
         return added
 
@@ -752,7 +743,7 @@ class CarrierAdmission:
                         not self._unit_by_asset[a][1].get("favourite"),
                     ),
                 )
-                asset, carrier, rest = self.carrier_for(c, s, index, members)
+                asset, carrier, rest = self.carrier_for(c, s, index, members, recovering=True)
                 if carrier is None:
                     continue
                 self._taken.add(asset)
