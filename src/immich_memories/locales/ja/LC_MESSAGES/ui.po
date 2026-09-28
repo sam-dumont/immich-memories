@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 18:13+0200\n"
+"POT-Creation-Date: 2026-09-28 19:18+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -19,7 +19,7 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "今月はすでに月次レビューが完了しています。"
 
-#: web/routes/settings/+page.svelte:91
+#: web/routes/settings/+page.svelte:89
 msgid "API Key"
 msgstr "APIキー"
 
@@ -82,10 +82,6 @@ msgstr "この思い出の対象外の写真 {count} 枚も表示"
 #: web/lib/ShotInspector.svelte:156
 msgid "Alternatives considered"
 msgstr "検討された代替候補"
-
-#: web/routes/settings/+page.svelte:26
-msgid "Analysis cache"
-msgstr "解析キャッシュ"
 
 #: web/routes/create/+page.svelte:332
 msgid ""
@@ -163,7 +159,7 @@ msgstr "ぼかした背景"
 msgid "Browse the whole pool"
 msgstr "候補全体を見る"
 
-#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
+#: web/routes/settings/+page.svelte:109 web/routes/settings/+page.svelte:110
 msgid "Caches"
 msgstr "キャッシュ"
 
@@ -206,7 +202,7 @@ msgid ""
 "it before anything renders."
 msgstr "動画に収める範囲を選びます。編集は下のコマンドが実行するとおりに行われ、レンダリングする前に内容を確認できます。"
 
-#: web/routes/settings/+page.svelte:117
+#: web/routes/settings/+page.svelte:115
 msgid "Clear"
 msgstr "消去"
 
@@ -218,7 +214,7 @@ msgstr "制限を解除"
 msgid "Clear this hold?"
 msgstr "この制限を解除しますか？"
 
-#: web/routes/settings/+page.svelte:69
+#: web/routes/settings/+page.svelte:67
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{cache} から {count} 件のエントリを消去しました。"
@@ -240,7 +236,7 @@ msgstr "設定ファイル：{config_path}"
 msgid "Configuration"
 msgstr "設定"
 
-#: web/routes/settings/+page.svelte:58
+#: web/routes/settings/+page.svelte:56
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "{name} として接続中"
@@ -348,7 +344,7 @@ msgstr "ここで終了"
 msgid "Ends"
 msgstr "終了"
 
-#: web/routes/settings/+page.svelte:116
+#: web/routes/settings/+page.svelte:114
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "件数：{count}"
@@ -360,7 +356,7 @@ msgid ""
 "across every run."
 msgstr "この編集が見たすべての画像を、撮影順に表示します。チェックを入れたり外したりしてからプレビュー：チェックはそのまま動画に反映され、再選択はされません。「今後使わない」と「制限を解除」はすべての実行で保持されます。"
 
-#: web/routes/settings/+page.svelte:82
+#: web/routes/settings/+page.svelte:80
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
@@ -436,11 +432,11 @@ msgstr "祝日・行事"
 msgid "How the rules got here"
 msgstr "ルールがここに至った経緯"
 
-#: web/routes/settings/+page.svelte:85 web/routes/settings/+page.svelte:86
+#: web/routes/settings/+page.svelte:83 web/routes/settings/+page.svelte:84
 msgid "Immich Connection"
 msgstr "Immich接続"
 
-#: web/routes/settings/+page.svelte:88
+#: web/routes/settings/+page.svelte:86
 msgid "Immich Server URL"
 msgstr "Immichサーバーの URL"
 
@@ -730,7 +726,7 @@ msgstr "{stages}を通過"
 msgid "Password"
 msgstr "パスワード"
 
-#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:106
+#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:104
 #: web/routes/settings/people/+page.svelte:74 web/routes/settings/people/+page.svelte:80
 msgid "People"
 msgstr "人物"
@@ -785,10 +781,6 @@ msgstr "縦向き"
 #: web/lib/RenderPanel.svelte:210
 msgid "Preview a track"
 msgstr "曲を試聴"
-
-#: web/routes/settings/+page.svelte:29
-msgid "Preview cache"
-msgstr "プレビューキャッシュ"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:153
 msgid "Preview with these choices"
@@ -921,7 +913,7 @@ msgstr "同じエピソード"
 msgid "Save"
 msgstr "保存"
 
-#: web/routes/settings/+page.svelte:97
+#: web/routes/settings/+page.svelte:95
 msgid "Save Config"
 msgstr "設定を保存"
 
@@ -929,7 +921,7 @@ msgstr "設定を保存"
 msgid "Save revision"
 msgstr "リビジョンを保存"
 
-#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:93
+#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:91
 msgid "Saved - type a new key to replace it"
 msgstr "保存済み。置き換えるには新しいキーを入力してください"
 
@@ -947,7 +939,7 @@ msgstr "ここで保存"
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "ここに保存されていますが、{name} で復号できません。既定値を使用中です"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:63
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:61
 msgid "Saved to the database"
 msgstr "データベースに保存しました"
 
@@ -989,8 +981,8 @@ msgstr "{name} で設定（環境変数）"
 msgid "Set in config.yaml as {key}"
 msgstr "config.yaml の {key} で設定"
 
-#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:77
-#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:79
+#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:75
+#: web/routes/settings/+page.svelte:79 web/routes/settings/people/+page.svelte:79
 msgid "Settings"
 msgstr "設定"
 
@@ -1096,7 +1088,7 @@ msgstr "差し替え"
 msgid "Take out"
 msgstr "外す"
 
-#: web/routes/settings/+page.svelte:96
+#: web/routes/settings/+page.svelte:94
 msgid "Test Connection"
 msgstr "接続をテスト"
 
@@ -1108,7 +1100,7 @@ msgstr "このファイルは MP3、M4A、WAV ではありません"
 msgid "That file is too large for a soundtrack"
 msgstr "そのファイルはサウンドトラックには大きすぎます"
 
-#: web/routes/settings/+page.svelte:54
+#: web/routes/settings/+page.svelte:52
 msgid "The connection could not be checked."
 msgstr "接続を確認できませんでした。"
 
@@ -1224,7 +1216,7 @@ msgstr "このカテゴリーは直近6件の思い出にすでに2回登場し�
 msgid "This run kept no record of its pool. Cut again to see one."
 msgstr "この実行には候補の記録が保存されていません。再編集すると確認できます。"
 
-#: web/routes/settings/+page.svelte:28
+#: web/routes/settings/+page.svelte:27
 msgid "Thumbnail cache"
 msgstr "サムネイルキャッシュ"
 
@@ -1302,7 +1294,7 @@ msgstr "ユーザー名"
 msgid "Video"
 msgstr "動画"
 
-#: web/routes/settings/+page.svelte:27
+#: web/routes/settings/+page.svelte:26
 msgid "Video cache"
 msgstr "動画キャッシュ"
 
@@ -1325,7 +1317,7 @@ msgstr "自動化が次に作成する内容で、`auto suggest` が表示する
 msgid "What to render"
 msgstr "レンダリングする対象"
 
-#: web/routes/settings/+page.svelte:106
+#: web/routes/settings/+page.svelte:104
 msgid "Who is who, their roles and relationships."
 msgstr "誰が誰か、その役割と関係です。"
 

@@ -1,9 +1,8 @@
-"""Settings: every setting with its source, edited into the database, and the caches on disk."""
+"""Settings: every setting with its source, edited into the database, and the caches a run fills."""
 
 from __future__ import annotations
 
 import json
-import shutil
 from itertools import groupby
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -21,7 +20,9 @@ from immich_memories.web.schemas import SettingRow, SettingsForm, SettingsSectio
 
 router = APIRouter(prefix="/api/v1", tags=["settings"])
 
-CacheName = Literal["analysis", "video", "thumbnail", "preview"]
+# The caches a run still fills. The Analysis table and the old players' preview folder are
+# written by nothing now (#1508).
+CacheName = Literal["video", "thumbnail"]
 
 
 class CacheStats(BaseModel):
@@ -124,24 +125,15 @@ def save_settings_form(
     return _settings_view(path)
 
 
-def _preview_dir(config: Config):
-    return config.cache.cache_path / "preview-cache"
-
-
 def _stats(config: Config) -> list[CacheStats]:
-    from immich_memories.cache import ThumbnailCache, VideoAnalysisCache, VideoDownloadCache
+    from immich_memories.cache import ThumbnailCache, VideoDownloadCache
 
-    analysis = VideoAnalysisCache(db_path=config.cache.database_path).get_stats()
     video = VideoDownloadCache(cache_dir=config.cache.video_cache_path).get_stats()
     thumbnail = ThumbnailCache(
         cache_dir=config.cache.cache_path / "thumbnails",
         max_size_mb=config.cache.thumbnail_cache_max_size_mb,
     ).get_stats()
-    previews = list(_preview_dir(config).glob("*.mp4")) if _preview_dir(config).is_dir() else []
     return [
-        CacheStats(
-            name="analysis", items=analysis["total_videos"], bytes=analysis["database_size_bytes"]
-        ),
         CacheStats(
             name="video", items=video.get("file_count", 0), bytes=video.get("total_size_bytes", 0)
         ),
@@ -149,9 +141,6 @@ def _stats(config: Config) -> list[CacheStats]:
             name="thumbnail",
             items=thumbnail.get("file_count", 0),
             bytes=thumbnail.get("total_size_bytes", 0),
-        ),
-        CacheStats(
-            name="preview", items=len(previews), bytes=sum(p.stat().st_size for p in previews)
         ),
     ]
 
@@ -165,20 +154,13 @@ def caches(config: Annotated[Config, Depends(current_config)]) -> list[CacheStat
 @router.post("/caches/{name}/clear", response_model=Cleared)
 def clear_cache(name: CacheName, config: Annotated[Config, Depends(current_config)]) -> Cleared:
     """Empty one cache; the next run fills it again as it needs."""
-    from immich_memories.cache import ThumbnailCache, VideoAnalysisCache, VideoDownloadCache
+    from immich_memories.cache import ThumbnailCache, VideoDownloadCache
 
-    if name == "analysis":
-        removed = VideoAnalysisCache(db_path=config.cache.database_path).clear_all()
-    elif name == "video":
+    if name == "video":
         removed = VideoDownloadCache(cache_dir=config.cache.video_cache_path).clear()
-    elif name == "thumbnail":
+    else:
         removed = ThumbnailCache(
             cache_dir=config.cache.cache_path / "thumbnails",
             max_size_mb=config.cache.thumbnail_cache_max_size_mb,
         ).clear()
-    else:
-        previews = list(_preview_dir(config).glob("*.mp4")) if _preview_dir(config).is_dir() else []
-        removed = len(previews)
-        if _preview_dir(config).is_dir():
-            shutil.rmtree(_preview_dir(config))
     return Cleared(name=name, removed=removed)

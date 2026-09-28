@@ -40,13 +40,6 @@ class VideoAnalysisCache:
     # Core CRUD Methods
     # =========================================================================
 
-    def clear_all(self) -> int:
-        with self._get_connection() as conn:
-            cursor = conn.execute("DELETE FROM video_analysis")
-            count = cursor.rowcount
-            conn.commit()
-            return count
-
     # =========================================================================
     # Query Methods (from DatabaseQueryMixin)
     # =========================================================================

@@ -25,7 +25,7 @@ def _left_open(path: Path) -> bool:
 
 def test_the_analysis_cache_opens_in_wal_and_closes(tmp_path):
     path = tmp_path / "cache.db"
-    VideoAnalysisCache(path).clear_all()
+    VideoAnalysisCache(path).get_stats()
 
     assert _journal_mode(path) == "wal"
     assert not _left_open(path)

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-28 18:13+0200\n"
+"POT-Creation-Date: 2026-09-28 19:18+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -19,7 +19,7 @@ msgstr ""
 msgid "A monthly review already finished this month."
 msgstr "Er is deze maand al een maandelijkse controle voltooid."
 
-#: web/routes/settings/+page.svelte:91
+#: web/routes/settings/+page.svelte:89
 msgid "API Key"
 msgstr "API-sleutel"
 
@@ -82,10 +82,6 @@ msgstr "Ook de {count} foto’s buiten deze herinnering tonen"
 #: web/lib/ShotInspector.svelte:156
 msgid "Alternatives considered"
 msgstr "Overwogen alternatieven"
-
-#: web/routes/settings/+page.svelte:26
-msgid "Analysis cache"
-msgstr "Analysecache"
 
 #: web/routes/create/+page.svelte:332
 msgid ""
@@ -165,7 +161,7 @@ msgstr "Wazige achtergrond"
 msgid "Browse the whole pool"
 msgstr "De hele pool bekijken"
 
-#: web/routes/settings/+page.svelte:111 web/routes/settings/+page.svelte:112
+#: web/routes/settings/+page.svelte:109 web/routes/settings/+page.svelte:110
 msgid "Caches"
 msgstr "Caches"
 
@@ -210,7 +206,7 @@ msgstr ""
 "Kies wat de film omvat. De montage wordt gemaakt zoals de opdracht hieronder die uitvoert; je"
 " bekijkt ze voordat er iets wordt gerenderd."
 
-#: web/routes/settings/+page.svelte:117
+#: web/routes/settings/+page.svelte:115
 msgid "Clear"
 msgstr "Wissen"
 
@@ -222,7 +218,7 @@ msgstr "Beperking opheffen"
 msgid "Clear this hold?"
 msgstr "Deze beperking opheffen?"
 
-#: web/routes/settings/+page.svelte:69
+#: web/routes/settings/+page.svelte:67
 #, python-brace-format
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{count} items verwijderd uit {cache}."
@@ -244,7 +240,7 @@ msgstr "Configuratiebestand: {config_path}"
 msgid "Configuration"
 msgstr "Configuratie"
 
-#: web/routes/settings/+page.svelte:58
+#: web/routes/settings/+page.svelte:56
 #, python-brace-format
 msgid "Connected as: {name}"
 msgstr "Verbonden als: {name}"
@@ -354,7 +350,7 @@ msgstr "Hier eindigen"
 msgid "Ends"
 msgstr "Eindigt"
 
-#: web/routes/settings/+page.svelte:116
+#: web/routes/settings/+page.svelte:114
 #, python-brace-format
 msgid "Entries: {count}"
 msgstr "Items: {count}"
@@ -369,7 +365,7 @@ msgstr ""
 "uit en bekijk dan het voorbeeld: je vinkjes gaan ongewijzigd in de film, zonder dat er iets "
 "opnieuw wordt gekozen. Nooit gebruiken en Beperking opheffen blijven gelden bij elke run."
 
-#: web/routes/settings/+page.svelte:82
+#: web/routes/settings/+page.svelte:80
 msgid ""
 "Every setting and where its value comes from. What you save here goes to the database; "
 "config.yaml and the environment are never written, and they win over it."
@@ -447,11 +443,11 @@ msgstr "Feestdag"
 msgid "How the rules got here"
 msgstr "Hoe de regels hier kwamen"
 
-#: web/routes/settings/+page.svelte:85 web/routes/settings/+page.svelte:86
+#: web/routes/settings/+page.svelte:83 web/routes/settings/+page.svelte:84
 msgid "Immich Connection"
 msgstr "Immich-verbinding"
 
-#: web/routes/settings/+page.svelte:88
+#: web/routes/settings/+page.svelte:86
 msgid "Immich Server URL"
 msgstr "Immich-server-URL"
 
@@ -745,7 +741,7 @@ msgstr "Geslaagd voor {stages}"
 msgid "Password"
 msgstr "Wachtwoord"
 
-#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:106
+#: web/routes/create/+page.svelte:386 web/routes/settings/+page.svelte:104
 #: web/routes/settings/people/+page.svelte:74 web/routes/settings/people/+page.svelte:80
 msgid "People"
 msgstr "Personen"
@@ -800,10 +796,6 @@ msgstr "Staand"
 #: web/lib/RenderPanel.svelte:210
 msgid "Preview a track"
 msgstr "Een nummer beluisteren"
-
-#: web/routes/settings/+page.svelte:29
-msgid "Preview cache"
-msgstr "Voorbeeldcache"
 
 #: web/routes/runs/[run_id]/pool/+page.svelte:153
 msgid "Preview with these choices"
@@ -936,7 +928,7 @@ msgstr "Zelfde episode"
 msgid "Save"
 msgstr "Opslaan"
 
-#: web/routes/settings/+page.svelte:97
+#: web/routes/settings/+page.svelte:95
 msgid "Save Config"
 msgstr "Configuratie opslaan"
 
@@ -944,7 +936,7 @@ msgstr "Configuratie opslaan"
 msgid "Save revision"
 msgstr "Revisie opslaan"
 
-#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:93
+#: web/lib/SettingsEditor.svelte:94 web/routes/settings/+page.svelte:91
 msgid "Saved - type a new key to replace it"
 msgstr "Opgeslagen. Typ een nieuwe sleutel om deze te vervangen"
 
@@ -962,7 +954,7 @@ msgstr "Hier opgeslagen"
 msgid "Saved here, but {name} cannot decrypt it: the default is in use"
 msgstr "Hier opgeslagen, maar {name} kan het niet ontsleutelen: de standaardwaarde geldt"
 
-#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:63
+#: web/lib/SettingsEditor.svelte:57 web/routes/settings/+page.svelte:61
 msgid "Saved to the database"
 msgstr "Opgeslagen in de database"
 
@@ -1006,8 +998,8 @@ msgstr "Ingesteld door {name} (omgeving)"
 msgid "Set in config.yaml as {key}"
 msgstr "Ingesteld in config.yaml als {key}"
 
-#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:77
-#: web/routes/settings/+page.svelte:81 web/routes/settings/people/+page.svelte:79
+#: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:75
+#: web/routes/settings/+page.svelte:79 web/routes/settings/people/+page.svelte:79
 msgid "Settings"
 msgstr "Instellingen"
 
@@ -1113,7 +1105,7 @@ msgstr "Gewisseld"
 msgid "Take out"
 msgstr "Verwijderen"
 
-#: web/routes/settings/+page.svelte:96
+#: web/routes/settings/+page.svelte:94
 msgid "Test Connection"
 msgstr "Verbinding testen"
 
@@ -1125,7 +1117,7 @@ msgstr "Dat bestand is geen MP3, M4A of WAV"
 msgid "That file is too large for a soundtrack"
 msgstr "Dat bestand is te groot voor een soundtrack"
 
-#: web/routes/settings/+page.svelte:54
+#: web/routes/settings/+page.svelte:52
 msgid "The connection could not be checked."
 msgstr "De verbinding kon niet worden gecontroleerd."
 
@@ -1245,7 +1237,7 @@ msgstr ""
 "Voor deze uitvoering is geen overzicht van de media bewaard. Monteer opnieuw om er een te "
 "zien."
 
-#: web/routes/settings/+page.svelte:28
+#: web/routes/settings/+page.svelte:27
 msgid "Thumbnail cache"
 msgstr "Miniaturencache"
 
@@ -1325,7 +1317,7 @@ msgstr "Gebruikersnaam"
 msgid "Video"
 msgstr "Video"
 
-#: web/routes/settings/+page.svelte:27
+#: web/routes/settings/+page.svelte:26
 msgid "Video cache"
 msgstr "Videocache"
 
@@ -1350,7 +1342,7 @@ msgstr ""
 msgid "What to render"
 msgstr "Wat er gerenderd wordt"
 
-#: web/routes/settings/+page.svelte:106
+#: web/routes/settings/+page.svelte:104
 msgid "Who is who, their roles and relationships."
 msgstr "Wie wie is, hun rollen en relaties."
 

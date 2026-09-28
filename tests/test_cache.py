@@ -40,10 +40,6 @@ class TestVideoAnalysisCache:
 class TestVideoAnalysisCacheEdgeCases:
     """Edge cases for cache operations."""
 
-    def test_clear_empty_cache_returns_zero(self, cache):
-        """Clearing an empty cache returns 0."""
-        assert cache.clear_all() == 0
-
     def test_stats_empty_cache(self, cache):
         """Stats on empty cache return zeros."""
         stats = cache.get_stats()
