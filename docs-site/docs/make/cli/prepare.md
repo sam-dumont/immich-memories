@@ -150,6 +150,21 @@ Each proposed occasion is checked against that day's own evidence. An ordinary-d
 empty or unreadable answer is asked once more; a day still without a verdict stays unjudged, and the scan
 prints why (nothing written about its pictures, the reader failed, or its answer could not be read). A missing subtitle does not discard an otherwise valid confirmation, and
 existing valid cached answers are reused.
+The month reading compares a month's days and can miss one. So the scan also proposes, with no
+model, the days whose own captions keep using words the rest of the year barely does: "race
+track" and "Ferrari" on one day, where a cat or a baby written about every week cancels out. There
+is no list of occasions or of words to skip. A word counts when it is written about ten or more of
+the day's pictures and on at most 3% of the year's described days, and a day needs two such
+words. A year with fewer than 34 described days proposes nothing this way. Every proposed day
+still goes through the same day check.
+
+Pictures forwarded to the library (sent by someone else or saved: stills with no camera in their
+EXIF) are evidence, not material. They never make a day of their own and never count toward its
+pictures, hours or film. On a day your camera already made, their words count for half toward
+what stands out, and on a day that stands out a few of their captions reach the day check, marked
+as forwarded. A day the month reading proposed is judged on its own pictures. Files saved in one
+batch (three or more stamped with one exact second) count only inside the hours your own camera
+was out that day, since their time is when they were saved.
 A day that contains its occasion (most of its pictures at one place, a stretch the rest of the day
 only frames) is asked once more about that stretch before an ordinary verdict drops it, and a
 description longer than asked for is cut at a word rather than voiding the answer.

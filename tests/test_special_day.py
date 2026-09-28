@@ -594,3 +594,29 @@ def test_a_day_left_unjudged_says_why(monkeypatch) -> None:
 
     assert not verdict.judged
     assert "could not be read" in verdict.unjudged_because
+
+
+def test_the_day_question_hears_what_was_sent_from_the_day_marked_as_sent(monkeypatch) -> None:
+    from immich_memories.analysis import special_day
+
+    seen = {}
+
+    # WHY: the model call is the network boundary; the prompt it is handed is under test.
+    def _capture(prompt, _llm_config, _timeout, thinking=False):
+        seen["prompt"] = prompt
+        return '{"special": false, "title": "", "subtitle": null, "what": "", "window": null}'
+
+    monkeypatch.setattr(special_day, "_ask", _capture)
+    own = [_asset(h, m) for h in range(9, 15) for m in (0, 30)]
+    sent = [_asset(h, 5) for h in range(9, 14)]
+    for n, asset in enumerate(own + sent):
+        asset.id = f"p{n}"
+    captions = {a.id: "a runner on a path" for a in own} | {
+        a.id: "runners in an obstacle race" for a in sent
+    }
+
+    ask_if_special(own, llm_config=SimpleNamespace(), captions=captions, forwarded=sent)
+
+    forwarded = seen["prompt"].split("forwarded", 1)[1]
+    assert "obstacle race" in forwarded
+    assert "obstacle race" not in seen["prompt"].split("forwarded", 1)[0]
