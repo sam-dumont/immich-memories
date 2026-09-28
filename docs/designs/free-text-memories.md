@@ -36,6 +36,20 @@ Two things, full model tier only:
   cheating. Owner facts are scoring checks, never prompt input.
 - English first; other languages are translated to English by the model and may degrade.
 
+### Rulings (owner, 2026-09-28)
+
+- **One small model for every step.** Gemma 4 E4B translates, checks captions, asks the photo
+  questions and writes the thesis. A step that struggles gets a different task shape (options,
+  lists, one question per call), never a bigger model.
+- **Gemma pilots it in production.** It receives the prompt as typed and nobody reviews the
+  translation, so every semantic decision is Gemma's; code only builds the options from the
+  library and applies the answers. The owner's prompts test the mechanism, never tune it.
+- **The flow is short:** prompt → filters → pool → thesis → the regular engine. No second
+  selector in front of the engine; the per-caption check is the filter that says "shows what was
+  asked", not a ranking.
+- **Bad results must be easy to report** with the same builder and privacy rules as #1428
+  (see *Reports for bad results*).
+
 ## What the research says
 
 - [Snowflake semantic views](https://docs.snowflake.com/en/user-guide/views-semantic/overview) /
@@ -75,47 +89,61 @@ Two things, full model tier only:
 
 ```mermaid
 flowchart LR
-  S[Sentence] --> P[Patterns: dates, people, letters, scope, firsts, thing, exclusions]
-  S --> M[E4B, one enforced field: what must be visible]
-  P --> C[Compile onto existing code]
-  M --> C
-  C --> R[Reach: captions, OCR anchors + episodes, faces, trips, familiar places]
-  R --> J[E4B caption check]
-  J --> V[Visual questions and references: this feature only]
-  V --> B[Rule report: what ordinary rules would drop, and why]
-  B --> T[Thesis]
-  T --> G[Regular generate: window, narrowed pool, thesis as written subject]
+  S[Prompt as typed] --> F[Filters: people, when, where, text in photo, shape]
+  F --> C[Candidates from the lexicon and the filtered photos' captions]
+  C --> W[What the photos show: Gemma picks words, then the main subject]
+  W --> K[Printed spec]
+  K --> P[Pool: filters, caption words, OCR events]
+  P --> J[Gemma caption check against the spec]
+  J --> V[Photo question on unsure and caption-less pictures, sampled yeses]
+  V --> T[Thesis]
+  T --> G[Engine: the pool as an album, the thesis as the written subject]
 ```
 
-### The plan: patterns for structure, the model for the fuzzy part
+### The spec: code builds the options, Gemma picks
 
-A 4B model filling a 12-field plan dropped stated words ("black"), skipped or invented fields and
-stalled. The plan is now mostly deterministic:
+A 4B model writes open text badly (hollow sentences, one-word lists, invented dates, prompt
+examples copied back) and picks well among options. Every field is therefore one small enforced
+question over choices the code builds from the owner's library, and the spec is printed before
+anything runs on it.
 
-| field | from | compiled onto |
+| field | options built by code | Gemma decides |
 |---|---|---|
-| window (since/until) | regex; a year named as an event is not an end date | `generate --start/--end` |
-| people | value-linked: people-file names matched in the sentence | Immich faces via `people.yaml` ids |
-| read_text | words in no dictionary, not a place ("in X") or an exclusion; OCR then decides | Immich OCR search; each hit's 90-minute episode fetched from Immich (forwarded batches included) |
-| scope | only when stated (holiday/trip, home/house) | `detect_trips`, `home_of`/`near_home_of`, `PlaceHistory.is_familiar` |
-| firsts | the word "first(s)" | first appearance of recurring nouns/verbs in a person's pictures |
-| same_thing | "our/my + noun" | reference picture for the visual check |
-| exclusions | "not / no / without / except ..." | judge prompt |
-| **subject** | **E4B, one enforced field**, qualifiers inline ("black cat") | caption bank + companion words by lift over the request's rarest words |
-| qualifiers | extracted by code from the subject, kept only if stated and used in captions | joined to the subject |
-| visual questions | built from the subject ("Does the photo show a black cat?") | visual check |
+| people | people file, with roles relative to the owner ("the owner themself") | who the request is about |
+| when | birth dates, move-in dates, years in the request; for one moment, spans (a day, a week, a month, three months) | the range; a moment's span is a choice, never a written date |
+| where | anywhere / at home at the time / near home / one particular home (homes list, or inferred per year from photo days; Immich's area name shown) / away on trips | asked three times in three option orders, majority wins, widest place on a split |
+| text in photo | the request's own words | which would be printed on things (read by Immich OCR) |
+| shape | one moment / along the years / how it changed / first times / a collection | one |
+| what the photos show | seeds from the request; the lexicon (main sense, kinds and parts, parts inherited from what a thing is, everyday sense only); grounded proposals; words over-represented in the filtered photos | the words that belong, then the main subject; parts and kinds of the main subject follow by logic |
+| alongside | words the owner's captions use next to the main subject | which belong, given the shape (how a house changing shows up: tiles, flooring, exposed) |
+| not this | phrases around the subject in captions; what follows a negation in the request | what does not belong |
+
+Measured limits that shaped it: no example words in any prompt (Gemma quotes them back as the
+answer); names are never subject words (faces own identity); the house is a 150 m radius (the
+owner's library: 19.3k photos within 50 m, then the street), not the 10 km trip radius.
 
 ### Judging
 
-- Caption check: E4B membership against the full sentence, budget spread per year, strongest
-  matches first. Captions cannot show names, breeds or ownership; the judge does not withhold for
-  those (the visual check handles what captions cannot).
-- Visual check: questions about a real photograph (not a painting, poster or screen); letters are
-  OCR's job, never a visual question. A reference picture is an OCR anchor that visibly shows the
-  subject, or for one thing followed over time the earliest picture that passes. Only an explicit
-  "different" drops a picture. Budget spread across years; answers cached.
-- Choosing among candidates (firsts, discovery threads) is **comparative**: a 4B model says yes to
-  almost everything it sees alone; asked to pick at most N of a batch, it discriminates.
+- Caption check: E4B yes / no / unsure per caption against the spec (main subject, what else it
+  may show, what does not belong), twenty-four captions per call, budget spread over the pool's
+  time scale.
+- Photo question: built by code from the main subject; asked of unsure and caption-less pictures
+  and of a random sample of caption yeses. The sample's agreement decides whether the remaining
+  yeses are trusted or looked at too.
+- No "same one as the reference" check: it dropped good pictures and never helped.
+- Firsts: the first occurrence of every noun in the person's own face-tagged photos, compared ten
+  at a time (at most three kept per ten) until about sixty remain. Asked to keep every meaningful
+  one, E4B kept 774 of 1,835.
+
+### What the engine does with a pool (why the pool must already mean the ask)
+
+- The draft is the rules reader's: dates, favourites, people, spread; no captions, no thesis.
+- The model pass reads only the episodes the draft chose.
+- The thesis replaces the base brief in the model's prompts and feeds the thesis-fit vote, which
+  is reject-only over shots already in the film; nothing refills what it removes.
+- Handoff is therefore a precise pool as an **album** (`--from-album`): the pool is the whole
+  material, the album length curve applies. A custom date range clamps to 30 s past about 40
+  months (`duration_from_date_range`), so a multi-year request must not go through it.
 
 ### Rule report and bypass
 
@@ -133,6 +161,26 @@ gate ("the birth of my son", "breastfeeding <child> across the years").
    per picture, as today.
 5. For a subject film, a picture whose caption matches the requested subject stands (as a caption
    naming an animal already does).
+
+### Reports for bad results
+
+Built on #1428 (`immich-memories report`, the web UI's Copy report): same allowlist-then-redact
+builder, same hashed IDs, same issue templates. A free-text run adds one section, because it fails
+in its own places (the translation, the pool, or the engine's picks from a good pool):
+
+- The request as typed, redacted: people-file names become roles ("the owner's son"), home and
+  area names become "home 1" / "area A", printed words read by OCR become "text-1".
+- The spec field by field, with the votes (where) and which source offered each word.
+- The funnel: in scope → pool → captions read → yes / unsure / no → photos looked at → kept →
+  engine picks and film length; the sample agreement; Gemma calls, failures and seconds per stage.
+- The user's verdict, which is what makes it a report of a bad result: photos marked wrong in the
+  result view travel as hashed IDs with the stage that admitted each one and the answer that kept
+  it (caption verdict or photo answer, with Gemma's one-line reason); a "what is missing" line is
+  checked against the spec and the funnel (was the word offered, picked, in the pool, read?).
+- Captions are off by default (they describe private scenes); an opt-in adds the captions of the
+  flagged photos only, shown before copying. Pictures never.
+- Acceptance: a fixture free-text run whose prompt, people, homes and places carry known names
+  produces a report with none of them, the typed request included.
 
 ### Reuse map
 
@@ -173,34 +221,38 @@ gate ("the birth of my son", "breastfeeding <child> across the years").
   house **fails** (searches "house"; the same-house reference drops interiors and works); the cars
   **fail** (any car; nothing tests driving).
 - The local E4B answers image questions at ~5.6 s and ~320 tokens per picture.
+- 2026-09-28, the spec translation on 18 sentences (8 owner, 10 from test households): places,
+  people, dates and text in photo right on all but a few; firsts compared down to 45 meaningful
+  first words; exclusions only from what follows a negation. End to end, the pet request: 14,031
+  photos in scope (home at the time), 2,168 captions read, 171 photos looked at, sample agreement
+  0.96, 785 in the pool, the engine's 300 s film picks 45.
 
 ## Open designs
 
-- **The house (backward thesis):** start from pictures at home since the date, find what changes
-  there (renovation bursts, a facade under scaffolding), make those the subject; the same-house
-  reference applies to exteriors only.
-- **The cars (chapters):** one chapter per car (recurring described car, or an episode: a track
-  day, a rental on a trip), each with its own reference; evidence of driving (driver's seat, at
-  the wheel, a circuit), not ownership; home per period from familiar places.
-- **Curated-pool handoff:** a thread pool handed to the regular editor must not be re-judged as a
-  period (9 pictures cut to 1), and must not use `--include` (which bypasses sharing checks).
+- **The house:** now the address (150 m) since the move-in, the house and its parts as the main
+  subject, and the words the owner's captions use around it; whether works and renovation reach
+  the film is being measured.
+- **The cars:** cars as the main subject (owner ruling: "cars is fine"); no photo shows whose car.
+- **Curated-pool handoff:** the album route (`--from-album`), never `--include` (which bypasses
+  sharing checks).
 - **#1404** resolves an Apple Silicon install whose models run in separate servers (oMLX, mlxcel)
   to the NAS tier: it only checks for `mlx` inside the app's own environment.
 
 ## Build plan (proper, from main)
 
-1. Semantic model object: the library's real values (years, places, familiar places per period,
-   people and roles, caption vocabulary, OCR availability), built without an LLM.
-2. Translator: patterns for structure, one enforced E4B field for the subject; the plan shown to
-   the user.
-3. Compiler: plan -> existing functions -> reach; OCR anchor episodes (forwarded included); firsts;
-   chapters; backward thesis for scopes like a home.
-4. Judge cascade: caption check, visual questions with references, comparative picking, budgets
-   spread by year.
+1. Semantic model object: the library's real values (years, homes per period, people and roles,
+   caption vocabulary, OCR availability), built without an LLM.
+2. Translator: the spec, every field one enforced E4B choice over code-built options; printed to
+   the user before anything runs.
+3. Compiler: spec -> existing functions -> pool; OCR anchor episodes (forwarded included); firsts.
+4. Judge: caption check against the spec, photo question with a sampled agreement check,
+   comparative picking for firsts; budgets spread over the pool's time scale.
 5. Rule report and bypass (audience first, named bypasses, `rule_bypass` config, holds never
    automatic).
-6. Handoff: `generate` with a curated pool, `--accept-any-provenance`, the thesis as the written
-   subject.
-7. Evaluation: the private owner set with its two controls plus the household sentences; every
+6. Handoff: the pool as an album with the thesis as the written subject,
+   `--accept-any-provenance`.
+7. Reports for bad results: the free-text section of #1428's report.
+8. Evaluation: the private owner set with its two controls plus the household sentences; every
    change on the whole set.
-8. UI: sentence box, the plan and its interpretation, the rule report, the pool, then the film.
+9. UI: sentence box, the printed spec, the rule report, the pool, then the film; mark wrong photos
+   and say what is missing, then Copy report.
