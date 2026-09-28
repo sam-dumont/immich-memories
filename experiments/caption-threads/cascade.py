@@ -253,7 +253,7 @@ def same_individual(library, kept, at_home, subject, ask, preview, config, key, 
     away = [i for i in kept if i not in at_home]
     by_moment = {}
     for i in sorted(away, key=lambda i: library.rows[i]["taken_at"]):
-        t = library.rows[i]["taken_at"][:13]  # one moment per hour-ish block; episodes are 90 min
+        t = library.rows[i]["taken_at"][:10]  # one check per day away: per hour cost 9 min for 128 checks (09-28)
         by_moment.setdefault(t, []).append(i)
     images = [preview(config, library.rows[i]["asset_id"]) for i in refs]
     schema = {"type": "object", "additionalProperties": False, "required": ["reason", "same"],
