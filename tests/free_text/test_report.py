@@ -10,12 +10,14 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from immich_memories.config_loader import Config
 from immich_memories.db import open_store
 from immich_memories.free_text.handoff import film_for
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryPerson, LibraryPicture, LibraryView
-from immich_memories.free_text.trace import explain, save_with_run
+from immich_memories.free_text.trace import explain, save_picks, save_with_run
 from immich_memories.free_text.translate import Ask, household_of, translate
 from immich_memories.operations.run_index import record_run_attempt
 from immich_memories.tracking.report_service import report_for_run
@@ -116,3 +118,44 @@ def test_a_free_text_report_carries_the_trace_and_no_name_place_printed_word_or_
     assert "the owner's son" in rendered
     assert "area A" in rendered
     assert "text-1" in rendered
+
+
+def _reported_run(lexicon: Lexicon, tmp_path: Path, *, picks: tuple[str, ...] = ()) -> str:
+    store = open_store()
+    asked = _asked(lexicon)
+    with observe_run(store, source="manual", capture_system=False) as tracker:
+        record_run_attempt(tracker.run_id, tmp_path, "", store=store)
+        save_with_run(asked, None, explain(asked), people=_library().people)
+        save_picks(picks)
+    return tracker.run_id
+
+
+def test_the_engines_picks_travel_as_hashed_ids_with_their_count(
+    lexicon: Lexicon, tmp_path: Path
+) -> None:
+    run_id = _reported_run(lexicon, tmp_path, picks=("ride-0", "ride-3"))
+
+    report = report_for_run(open_store(), Config(), run_id)
+
+    section = report.data["free_text"]
+    assert section["funnel"]["engine_picks"] == 2
+    assert [pick[:3] for pick in section["picks"]] == ["id-", "id-"]
+    assert "ride-3" not in report.json()
+
+
+def test_the_clips_handed_to_generation_are_the_picks_the_run_keeps(
+    lexicon: Lexicon, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from immich_memories.generate import GenerationParams, generate_memory
+    from immich_memories.tracking import timing
+    from tests.conftest import make_clip
+
+    # WHY: the render itself (FFmpeg, Immich downloads) is not what this test is about.
+    monkeypatch.setattr("immich_memories.generate._generate_memory_inner", lambda _p: tmp_path)
+    asked = _asked(lexicon)
+    clips = [make_clip("ride-0"), make_clip("ride-3")]
+    with timing.collecting() as collected:
+        save_with_run(asked, None, explain(asked))
+        generate_memory(GenerationParams(clips=clips, output_path=tmp_path, config=Config()))
+
+    assert collected.diagnostics["free_text"]["picks"] == ["ride-0", "ride-3"]

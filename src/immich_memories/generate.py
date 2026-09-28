@@ -266,6 +266,7 @@ def generate_memory(
     if defer_finalization and run_tracker is None:
         raise ValueError("Deferred finalization requires a caller-owned RunTracker")
 
+    from immich_memories.free_text.trace import save_picks
     from immich_memories.tracking.report_context import record_assets
     from immich_memories.tracking.run_observations import observe_render
 
@@ -273,6 +274,7 @@ def generate_memory(
     lock_path = params.config.cache.database_path.parent / ".lock"
     with PipelineLock(lock_path, open_store(params.config)), observe_render(params.config):
         record_assets(params.clips)
+        save_picks(clip.asset.id for clip in params.clips)
         if run_tracker is None and not defer_finalization:
             return _generate_memory_inner(params)
         return _generate_memory_inner(

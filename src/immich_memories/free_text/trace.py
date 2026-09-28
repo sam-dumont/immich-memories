@@ -128,3 +128,18 @@ def _roles_by_name(people: Sequence[LibraryPerson]) -> dict[str, str]:
         for part in person.name.split():
             roles.setdefault(part, person.role or "")
     return roles
+
+
+def save_picks(asset_ids: Iterable[str]) -> None:
+    """Keep the engine's picks from the pool with the free-text run they were filmed for.
+
+    A report of a bad result shows which pictures the engine chose; a run without a
+    translated request keeps nothing.
+    """
+    collected = timing.active()
+    record = collected.diagnostics.get("free_text") if collected else None
+    if record is None:
+        return
+    picks = list(dict.fromkeys(asset_ids))
+    record["picks"] = picks
+    record["funnel"]["engine_picks"] = len(picks)
