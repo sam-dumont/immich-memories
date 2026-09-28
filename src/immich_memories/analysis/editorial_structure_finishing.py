@@ -17,6 +17,7 @@ from typing import Any
 from immich_memories.analysis import editorial_shareability as _share
 from immich_memories.analysis.editorial_completion import RetainedMotion
 from immich_memories.analysis.editorial_final_hash_review import Admits, review_cut_by_cached_hashes
+from immich_memories.analysis.editorial_intent import voiced_era_of
 from immich_memories.analysis.editorial_intent_validation import MIN_CARRIERS, MIN_CONTENT_SHARE
 from immich_memories.analysis.editorial_source_route import retire_unprojectable
 from immich_memories.analysis.editorial_story_planner import alternatives_pool
@@ -97,6 +98,7 @@ def resolve_motion_and_timing(
         MIN_CARRIER_SECONDS,
         protected=frozenset(source.owner_required_asset_ids),
         vouched=partial(owner_vouches_for, evidence=filler_evidence(source)),
+        era_of=voiced_era_of(source.intent),
     )
     run.cut_carriers.extend(dropped)
     run.render_timeline = timing.resolve(run.carriers, source.assets)
@@ -286,7 +288,9 @@ def trim_to_timing(
         MIN_CARRIER_SECONDS,
         protected=protected,
         vouched=partial(owner_vouches_for, evidence=filler_evidence(source)),
+        era_of=voiced_era_of(source.intent),
     )
+    run.cut_carriers.extend(dropped)
     record("timing-trim", {"dropped": [c["asset_id"] for c in dropped], "kept": len(run.carriers)})
 
 
