@@ -652,6 +652,13 @@ def _gemma_compact_all(reader, library, key, brief, refs, meaning):
     return decisions
 
 
+def save_stages(key, original, spec, library, stages, note=None):
+    """What each stage holds, by asset id, for measuring stage by stage (stages_report.py)."""
+    save(ROOT / "translations" / f"{key[10:]}.stages.json",
+         {"brief": original, "spec": spec, "note": note,
+          "stages": {name: sorted(library.rows[i]["asset_id"] for i in refs) for name, refs in stages.items()}})
+
+
 def main():
     original = sys.argv[1]
     key = "translate:" + hashlib.sha256(original.encode()).hexdigest()[:16]
@@ -767,6 +774,12 @@ def main():
     # cannot decide. Text "yes" is provisional: the regular flow's thesis-fit vote judges again.
     # The owner's flow (09-27): prompt -> filters -> pool -> thesis -> the regular engine. The
     # engine's thesis-fit vote and story selection do the choosing; no second selector here.
+    stages = {"scope": pool_scope, "pool": pool}
+    # Run control for prototyping stage by stage (like FILM_DRY): stop after a stage and measure it.
+    if os.environ.get("STOP_AFTER") == "pool":
+        save_stages(key, original, spec, library, stages)
+        print(json.dumps({"brief": original, "stages": {k: len(v) for k, v in stages.items()}}))
+        return
     decisions, unsure, looked, kept = [], [], [], sorted(pool, key=lambda i: library.rows[i]["taken_at"])
     if not os.environ.get("SIMPLE"):
         text_budget = int(os.environ.get("TEXT_BUDGET", 3000))
@@ -789,6 +802,13 @@ def main():
         kept = sorted((d["ref"] for d in decisions if d["decision"] == "match"),
                       key=lambda i: library.rows[i]["taken_at"])
         unsure = [d["ref"] for d in decisions if d["decision"] == "unknown"]
+        stages |= {"caption_yes": set(kept), "caption_unsure": set(unsure),
+                   "caption_read": {d["ref"] for d in decisions}}
+        if os.environ.get("STOP_AFTER") == "captions":
+            save_stages(key, original, spec, library, stages, plan.get("cascade_captions"))
+            print(json.dumps({"brief": original, "stages": {k: len(v) for k, v in stages.items()},
+                              "grammar": plan.get("cascade_captions")}))
+            return
         looked = []
         if not os.environ.get("NO_LOOK") and not plan.get("firsts"):
             # The ladder (cascade.py): free checks first, pictures last and per open moment.
@@ -824,6 +844,8 @@ def main():
                 looked += more_log
                 kept = set(confirmed) | set(more)
             kept = sorted(set(kept) | set(seen), key=lambda i: library.rows[i]["taken_at"])
+    stages["kept"] = set(kept)
+    save_stages(key, original, spec, library, stages, plan.get("ladder"))
     timeline = [f'{library.rows[i]["taken_at"][:10]}: {library.rows[i]["caption"][:110]}'
                 for i in kept[:: max(1, len(kept) // 24)]]
     thesis = reader.ask("translate_thesis", key, THESIS, {"owner_request": brief, "timeline": timeline},

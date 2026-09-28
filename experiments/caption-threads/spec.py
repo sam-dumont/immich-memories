@@ -29,6 +29,7 @@ from experiment_data import ROOT
 # The owner's house, measured: 19,298 pictures since 2016 lie within 50 m of it, 19,491 within
 # 200 m, then the street starts (20,848 at 1 km, 29,450 at the trip detector's 10 km).
 AT_HOME_KM = 0.15
+INFERRED_HOME_KM = 0.3
 ARTICLES = {"a", "an", "the", "some", "two", "three", "several", "his", "her", "their", "its"}
 SHAPES = ["one moment or event", "along the years", "how something changed over time",
           "first times", "a collection of one kind of thing"]
@@ -83,8 +84,10 @@ def homes(library, assets):
         where = (h["lat"], h["lon"])
         areas = Counter(r.get("city") for r in library.rows
                         if (a := assets.get(r["asset_id"])) and km(where, (a.exif_info.latitude, a.exif_info.longitude)) <= AT_HOME_KM)
+        # An inferred home is a ~200 m grid cell's estimate: 150 m missed photos 260 m from it (09-28).
+        radius = AT_HOME_KM if h.get("source") == "confirmed" else INFERRED_HOME_KM
         out.append({"name": h.get("name") or f"home {n + 1}", "lat": h["lat"], "lon": h["lon"],
-                    "since": str(h["since"]), "until": until,
+                    "since": str(h["since"]), "until": until, "radius": radius,
                     "area": [c for c, _ in areas.most_common(2) if c]})
     return out
 
@@ -111,13 +114,16 @@ def at_home_rows(library, assets, lived, which=None, radius=AT_HOME_KM):
     for i, r in enumerate(library.rows):
         a = assets.get(r["asset_id"])
         if not a:
+            # No GPS is no evidence of elsewhere: the photo stays, later checks decide (09-28).
+            out.add(i)
             continue
         day = r["taken_at"][:10]
         if which:
             candidates = [h for h in lived if h["name"] == which]
         else:
             candidates = [h for h in lived if h["since"] <= day and (h["until"] is None or day < h["until"])][-1:]
-        if any(km((h["lat"], h["lon"]), (a.exif_info.latitude, a.exif_info.longitude)) <= radius for h in candidates):
+        if any(km((h["lat"], h["lon"]), (a.exif_info.latitude, a.exif_info.longitude)) <= max(radius, h.get("radius", 0))
+               for h in candidates):
             out.add(i)
     return out
 
