@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 from typing import TYPE_CHECKING
 
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
 from immich_memories.filename_builder import safe_slug
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -89,8 +92,20 @@ def handle_album_generation(
         digest = hashlib.sha256("\n".join(sorted(ids)).encode()).hexdigest()[:16]
         resolved = AlbumRef(id=f"assets-{digest}", name=spec["name"], asset_count=len(ids))
         progress.update(task, completed=True)
+        from immich_memories.api.immich import ImmichAPIError, ImmichAuthError
+
+        # An album skips what Immich no longer serves (deleted, or shared without read access):
+        # one such id aborted the whole pool (09-28).
+        fetched = []
+        for asset_id in ids:
+            try:
+                fetched.append(client.get_asset(asset_id))
+            except ImmichAuthError:
+                raise
+            except ImmichAPIError:
+                logger.info("file album: skipped an asset Immich no longer serves")
         media = split_album_assets(
-            [client.get_asset(i) for i in ids],
+            fetched,
             config=config,
             use_live_photos=use_live_photos,
             use_photos=use_photos,

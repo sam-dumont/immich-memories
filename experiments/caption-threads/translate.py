@@ -31,7 +31,7 @@ from immich_memories.analysis.llm_wire import openai_headers
 from immich_memories.api.models import Asset, ExifInfo
 from immich_memories.config import Config
 from model_reader import Reader
-from cascade import AGREE, SMOL_SAMPLE, banked_heads, fill_pool, smol_yes
+from cascade import AGREE, MIN_PER_PERIOD, SMOL_SAMPLE, banked_heads, fill_pool, smol_yes
 from spec import AT_HOME_KM, at_home_rows, build_spec, build_subject, homes, show
 from query import companion_terms, retrieve_plan, vocabulary
 from workflow import choose_sources
@@ -800,7 +800,21 @@ def main():
                         lambda a: isinstance(a["thesis"], str), 400) if kept else None
     for k in ("_per_item_questions", "_own", "_companions"):
         plan.pop(k, None)
-    record = {"brief": original, "english": brief, "spec": spec, "plan": plan, "scope": scope_note,
+    # Owner ruling 09-28: what the library cannot show is said, not forced. A bounded light attempt,
+    # then a verdict: possible (film), thin (short film, with why), not possible (no film, with why).
+    fill = plan.get("fill") or {}
+    why = (f'main subject ({", ".join(spec.get("core") or []) or "none"}) named in {fill.get("free", 0)} captions; '
+           f'{fill.get("captions_read", 0)} other captions read ({fill.get("caption_yes", 0)} yes); '
+           f'{fill.get("looked", 0)} photos looked at ({fill.get("photo_yes", 0)} yes); {len(kept)} kept'
+           + (f' over {fill.get("periods")} periods, {fill.get("thin_periods")} thin' if fill.get("periods") else ""))
+    if len(kept) < MIN_PER_PERIOD:
+        verdict = "not possible"
+    elif fill and (fill.get("free", 0) < MIN_PER_PERIOD or fill.get("thin_periods", 0) * 2 > fill.get("periods", 1)):
+        verdict = "thin"
+    else:
+        verdict = "possible"
+    record = {"brief": original, "english": brief, "verdict": {"verdict": verdict, "why": why},
+              "spec": spec, "plan": plan, "scope": scope_note,
               "counts": {"window": len(in_window), "scope": len(pool_scope), "subject_matches": len(subject),
                          "ocr_anchors": len(anchors), "uncaptioned": len(uncaptioned & pool), "pool": len(pool),
                          "text_yes": sum(1 for d in decisions if d["decision"] == "match"),
@@ -813,7 +827,8 @@ def main():
     save(ROOT / "translations" / f"{key[10:]}.json", record | {"looked": looked,
          "asset_ids": [library.rows[i]["asset_id"] for i in kept]})
     print(json.dumps(record, ensure_ascii=False, indent=1))
-    if os.environ.get("FILM_DRY") or len(kept) < 5:
+    print(f"verdict: {verdict} ({why})", file=sys.stderr)
+    if os.environ.get("FILM_DRY") or verdict == "not possible":
         return
     intent = ROOT / "translations" / f"{key[10:]}.intent.json"
     intent.write_text(json.dumps({"name": plan.get("title") or brief[:60], "thesis": record["thesis"] or brief,
