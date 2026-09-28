@@ -125,14 +125,3 @@ def _require_llm_endpoint(config: Config) -> None:
             "to the server that answers it, or choose tier: gpu for every light model "
             "and no LLM"
         )
-
-
-def forget_applied(data: dict[str, Any], applied: dict[str, Any]) -> None:
-    """Persist the chosen product tier without a second set of preparation switches."""
-    for key, value in applied.items():
-        *path, field = key.split(".")
-        section = data
-        for name in path:
-            section = section.get(name, {})
-        if key != "tier" or section.get(field) == value:
-            section.pop(field, None)

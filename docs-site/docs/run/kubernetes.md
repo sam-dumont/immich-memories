@@ -101,7 +101,7 @@ read-only. Four writable paths:
 
 | Mount | Backed by | Holds |
 |---|---|---|
-| `/home/immich/.immich-memories` | PVC `immich-memories-cache` | `config.yaml`, `cache/annotations.sqlite` (banked facts and readings), `cache.db` (run history, automation state), video cache |
+| `/home/immich/.immich-memories` | PVC `immich-memories-cache` | `config.yaml`, `store.db` (the store when it is SQLite: banked facts, readings, your picture decisions, people, run history, automation state, special days), `cache.db` (derived analysis), video cache |
 | `/app/output` | PVC `immich-memories-output` | generated videos |
 | `/models` | PVC `immich-memories-models` | the three artifacts `immich-memories models fetch` writes, at `IMMICH_MEMORIES_TRIAGE__ENCODER`, `..._MARQO_ONNX` and `..._DETECTOR_CACHE_DIR` |
 | `/tmp` | emptyDir 4Gi | FFmpeg intermediates; 8Gi for 4K |
@@ -187,15 +187,31 @@ allows egress on 8092. What each overlay patches, and what a card is worth per p
 ## Batch jobs
 
 `base/job.yaml` holds a one-off `generate` Job and two CronJobs (monthly highlights on the 1st,
-`auto run` daily). Uncomment `- job.yaml` in the kustomization. The jobs mount the same PVCs, so on
-`ReadWriteOnce` storage the job pod has to land on the node holding them: use `ReadWriteMany` or
-scale the Deployment to 0 first. For scheduled memories alone,
-`IMMICH_MEMORIES_AUTOMATION__ENABLED=true` on the Deployment does it in-process.
+`auto run` daily). Uncomment `- job.yaml` in the kustomization.
+
+The store defaults to a SQLite file on the `data` PVC, one writer at a time; a second pod on
+another node writing that file over `ReadWriteMany` corrupts it (WAL mode needs shared memory a
+network filesystem does not give two hosts). So the two CronJobs never mount the PVCs: they `curl`
+the Deployment's `POST /api/trigger` route instead, running whatever decision `auto run` would have
+made. Set `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in `base/secret.yaml` first, or use the in-process
+daily timer (`IMMICH_MEMORIES_AUTOMATION__ENABLED=true` on the Deployment) and skip the CronJob
+entirely. The one-off `generate` Job still mounts the PVCs directly, since the trigger route takes
+no `--year`/`--person` parameters: prefer
+`kubectl exec deploy/immich-memories -- immich-memories generate ...` against the running
+Deployment, and keep the Job for a batch cluster where the Deployment stays scaled to 0 between
+runs.
+
+## Database
+
+The store defaults to a SQLite file on the cache PVC. `overlays/postgres` is not referenced by
+`base/kustomization.yaml`, so applying `base` alone keeps that default; apply the overlay yourself
+to point the store at PostgreSQL instead. The four modes, and the SQL for a dedicated schema in
+Immich's own database, are on [Database and the store](./database.md).
 
 ## Backups
 
-Back up the cache PVC: `cache/annotations.sqlite` on it is the expensive part, and losing it means
-re-reading the library. `immich-memories cache backup|export` move the retired scorer's table, not
+Back up the cache PVC: `store.db` on it is the expensive part (unless the store is PostgreSQL), and
+losing it means re-reading the library. `immich-memories cache backup|export` move the retired scorer's table, not
 the banks. For secrets in git, use
 [sealed-secrets](https://github.com/bitnami-labs/sealed-secrets):
 `kubeseal --format=yaml < base/secret.yaml > base/sealed-secret.yaml`.

@@ -7,6 +7,7 @@ from contextlib import contextmanager
 import pytest
 
 from immich_memories.analysis.editorial_structure_record import shave_content_duration
+from tests.annotation_rows import annotation_store
 
 
 @contextmanager
@@ -190,14 +191,13 @@ def test_speech_facts_transport_and_decode_failures_are_unavailable(tmp_path):
     def failing_fetch(asset_id, path):
         raise httpx.ConnectError("server down")
 
-    store = tmp_path / "annotations.sqlite"
-    facts = SpeechFacts(assets=assets, store_path=store, fetch=failing_fetch, config=config)
+    facts = SpeechFacts(assets=assets, store=annotation_store(), fetch=failing_fetch, config=config)
     facts.detector = stub_detector()
     with pytest.raises(SpeechMeasurementUnavailable):
         facts("v")
 
     facts = SpeechFacts(
-        assets=assets, store_path=store, fetch=lambda _id, _path: None, config=config
+        assets=assets, store=annotation_store(), fetch=lambda _id, _path: None, config=config
     )
     facts.detector = stub_detector()
     with pytest.raises(SpeechMeasurementUnavailable):
@@ -240,13 +240,12 @@ def test_a_changed_source_retires_its_banked_speech_and_is_measured_again(tmp_pa
         check=True,
         capture_output=True,
     )
-    store = tmp_path / "annotations.sqlite"
     fetched = []
 
     def speech_facts():
         return SpeechFacts(
             assets=assets,
-            store_path=store,
+            store=annotation_store(),
             # WHY: Immich playback is the one boundary replaced; the probe, the audio
             # extraction and the detector all run for real on the file below.
             fetch=lambda asset_id, path: (
@@ -255,8 +254,11 @@ def test_a_changed_source_retires_its_banked_speech_and_is_measured_again(tmp_pa
             config=config,
         )
 
-    assert speech_facts()("v") == [], "the silent source measures no speech regions"
+    first_cut = speech_facts()
+    assert first_cut("v") == [], "the silent source measures no speech regions"
     assert fetched == ["v"]
+    # The cut's speech pass banks what it measured as it ends.
+    first_cut.flush()
 
     # A second run reads the measured answer instead of measuring it again...
     assert speech_facts()("v") == []

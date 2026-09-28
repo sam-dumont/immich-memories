@@ -69,6 +69,7 @@ const sidebars: SidebarsConfig = {
         {type: 'doc', id: 'run/uv-pip', label: 'pip / uv [Advanced]'},
         {type: 'doc', id: 'run/kubernetes', label: 'Kubernetes [Advanced]'},
         {type: 'doc', id: 'run/terraform', label: 'Terraform [Advanced]'},
+        {type: 'doc', id: 'run/database', label: 'Database and the store'},
         {type: 'doc', id: 'run/config-file', label: 'Configuration file'},
         {type: 'doc', id: 'run/environment-variables', label: 'Environment variables'},
         {type: 'doc', id: 'run/authentication', label: 'Authentication'},

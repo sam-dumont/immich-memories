@@ -27,8 +27,7 @@ import logging
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.llm_failures import stop_if_this_is_our_bug
 from immich_memories.analysis.moment_grouping import (
@@ -43,6 +42,9 @@ from immich_memories.analysis.special_day import (
     run_extent,
 )
 from immich_memories.people.relationships import is_close_family
+
+if TYPE_CHECKING:
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +97,7 @@ class SequenceReading:
 
 
 def close_family_roles(people: Mapping[str, Any]) -> dict[str, str]:
-    """Each close family member's role by Immich person id, from the people file's context.
+    """Each close family member's role by Immich person id, from the people registry's context.
 
     The owner, and the partner, child and parent roles the owner confirmed (#1180's set,
     `is_close_family`); a relationship only derived by closure is not a confirmation.
@@ -249,7 +251,7 @@ def read_in_sequence(
     *,
     captions: Mapping[str, str] | None,
     llm_config: Any,
-    cache_path: Path | None = None,
+    judgments: Store | None = None,
     family: Mapping[str, str] | None = None,
 ) -> SequenceReading:
     """The occasions among these runs, each with what it was, one text call per month."""
@@ -263,7 +265,7 @@ def read_in_sequence(
             continue
         reading.offered += len(lines)
         logger.debug("%s, as read:\n%s", month, "\n".join(lines))
-        answer = _month_answer(_PROMPT.format(lines="\n".join(lines)), llm_config, cache_path)
+        answer = _month_answer(_PROMPT.format(lines="\n".join(lines)), llm_config, judgments)
         if answer is None:
             reading.unread_months.append(month)
             continue
@@ -291,9 +293,9 @@ def _month_lines(
     return keyed, lines
 
 
-def _month_answer(prompt: str, llm_config: Any, cache_path: Path | None) -> dict[str, str] | None:
+def _month_answer(prompt: str, llm_config: Any, judgments: Store | None) -> dict[str, str] | None:
     try:
-        raw = _read(prompt, llm_config, cache_path)
+        raw = _read(prompt, llm_config, judgments)
     except Exception as exc:  # noqa: BLE001 - an unreachable model reads nothing, it decides nothing
         stop_if_this_is_our_bug(exc, "special-day sequence reading")
         logger.warning("A month of days could not be read (%s)", type(exc).__name__)
@@ -309,9 +311,9 @@ def _month_answer(prompt: str, llm_config: Any, cache_path: Path | None) -> dict
     }
 
 
-def _read(prompt: str, llm_config: Any, cache_path: Path | None) -> str:
+def _read(prompt: str, llm_config: Any, judgments: Store | None) -> str:
     """One month's reading, banked when a cache is given so a resumed scan pays for it once."""
-    if cache_path is None:
+    if judgments is None:
         from immich_memories.analysis.llm_query import query_llm
 
         return asyncio.run(
@@ -323,7 +325,7 @@ def _read(prompt: str, llm_config: Any, cache_path: Path | None) -> str:
     request = TextRequest(
         prompt=prompt,
         llm_config=llm_config,
-        cache_path=cache_path,
+        judgments=judgments,
         max_tokens=_ANSWER_TOKENS,
         timeout_seconds=_TIMEOUT_SECONDS,
         json_object=True,

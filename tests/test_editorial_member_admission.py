@@ -90,10 +90,11 @@ def test_audience_refuses_a_member_without_holding_the_unexcluded_lead(tmp_path,
     from immich_memories.analysis.editorial_rule_reader import NoModelJudge
     from immich_memories.analysis.editorial_shareability_tiers import audience_check_for
     from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
+    from immich_memories.db import open_store
     from tests.test_editorial_shareability_tiers import Annotation
 
     lines = {"burst": "People at a gathering.", member: "A screenshot of a dashboard."}
-    library = AudienceBank(tmp_path / "audience.json", answerer="rules")
+    library = AudienceBank(open_store(), answerer="rules")
     gate = AudienceGate(
         NoModelJudge(),
         audience="family",

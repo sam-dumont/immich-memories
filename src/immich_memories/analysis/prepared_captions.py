@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.store.asset_annotations import AssetAnnotationFactRepository
 
 
@@ -12,7 +13,7 @@ def prepared_captions(config: Config, asset_ids: tuple[str, ...]) -> dict[str, s
         return {}
     editorial = config.editorial
     batch = AssetAnnotationFactRepository(
-        editorial.resolve_annotation_database(config.cache.cache_path),
+        open_store(config),
         description_model=editorial.description_model,
         head_versions=editorial.head_versions,
         pixel_producer_key=editorial.pixel_producer_key,

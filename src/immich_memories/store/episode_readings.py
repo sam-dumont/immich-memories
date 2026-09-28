@@ -5,40 +5,18 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import sqlite3
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from pathlib import Path
 
-from immich_memories.cache.sqlite_conn import ThreadOwnedConnections
+import sqlalchemy as sa
+from sqlalchemy.exc import SQLAlchemyError
+
+from immich_memories.db import Store, now_db
+from immich_memories.db.tables import editorial_episode_readings, editorial_episode_refusals
+from immich_memories.store.batches import bank_rows, in_chunks
 
 logger = logging.getLogger(__name__)
-
-_SCHEMA = """
-CREATE TABLE IF NOT EXISTS editorial_episode_readings (
-    group_id TEXT NOT NULL,
-    producer_key TEXT NOT NULL,
-    evidence_key TEXT NOT NULL,
-    full_asset_ids TEXT NOT NULL,
-    what_happened TEXT NOT NULL,
-    representatives TEXT NOT NULL,
-    cull_decisions TEXT NOT NULL,
-    notable_moments TEXT NOT NULL DEFAULT '[]',
-    answered_at TEXT NOT NULL DEFAULT (datetime('now')),
-    PRIMARY KEY (group_id, producer_key, evidence_key)
-)
-"""
-# Its own pool: one connection runs one CREATE, which is the contract upstream offers.
-_REFUSAL_SCHEMA = """
-CREATE TABLE IF NOT EXISTS editorial_episode_refusals (
-    group_id TEXT NOT NULL,
-    producer_key TEXT NOT NULL,
-    evidence_key TEXT NOT NULL,
-    reason TEXT NOT NULL,
-    answered_at TEXT NOT NULL DEFAULT (datetime('now')),
-    PRIMARY KEY (group_id, producer_key, evidence_key)
-)
-"""
+_KEY = ("group_id", "producer_key", "evidence_key")
 
 
 @dataclass(frozen=True)
@@ -176,31 +154,20 @@ class BankedEpisodeReading:
 
 
 class EpisodeReadingStore:
-    """Persist immutable episode readings in the configured library database."""
+    """Persist immutable episode readings in the store."""
 
-    def __init__(self, db_path: Path) -> None:
-        self.db_path = Path(db_path)
-        self._connections = ThreadOwnedConnections(self.db_path, _SCHEMA)
-        self._refusals = ThreadOwnedConnections(self.db_path, _REFUSAL_SCHEMA)
+    def __init__(self, store: Store) -> None:
+        self._store = store
 
     def remember(self, readings: Iterable[BankedEpisodeReading]) -> None:
         """Keep complete readings; an existing identity is never rerolled."""
-        rows = tuple(_row_for(reading) for reading in readings)
+        answered_at = now_db()
+        rows = [_row_for(reading) | {"answered_at": answered_at} for reading in readings]
         if not rows:
             return
         try:
-            with self._connections.connection() as connection:
-                _migrate_notable_moments(connection)
-                connection.executemany(
-                    "INSERT INTO editorial_episode_readings ("
-                    "group_id, producer_key, evidence_key, full_asset_ids, what_happened, "
-                    "representatives, cull_decisions, notable_moments"
-                    ") VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
-                    "ON CONFLICT(group_id, producer_key, evidence_key) DO NOTHING",
-                    rows,
-                )
-                connection.commit()
-        except (OSError, sqlite3.Error) as exc:
+            bank_rows(self._store, editorial_episode_readings, rows, keys=_KEY, update=())
+        except (OSError, SQLAlchemyError) as exc:
             logger.debug("Episode reading store unwritable (%s): reading not kept", exc)
 
     def readings_for(
@@ -208,26 +175,23 @@ class EpisodeReadingStore:
         identities: Sequence[EpisodeReadingIdentity],
     ) -> dict[str, BankedEpisodeReading]:
         """Return readings matching current membership, producer, and evidence."""
-        ordered = tuple(dict.fromkeys(identities))
-        if not ordered:
-            return {}
-        placeholders = ",".join("(?, ?, ?)" for _ in ordered)
-        parameters = tuple(
-            part
-            for identity in ordered
-            for part in (identity.group_id, identity.producer_key, identity.evidence_key)
-        )
+        t = editorial_episode_readings
         try:
-            with self._connections.connection() as connection:
-                _migrate_notable_moments(connection)
-                query = (
-                    "SELECT group_id, producer_key, evidence_key, full_asset_ids, what_happened, "  # noqa: S608 -- generated placeholders; bound values.
-                    "representatives, cull_decisions, notable_moments "
-                    "FROM editorial_episode_readings "
-                    f"WHERE (group_id, producer_key, evidence_key) IN ({placeholders})"
-                )
-                rows = connection.execute(query, parameters).fetchall()
-        except (OSError, sqlite3.Error) as exc:
+            rows = self._matching(
+                sa.select(
+                    t.c.group_id,
+                    t.c.producer_key,
+                    t.c.evidence_key,
+                    t.c.full_asset_ids,
+                    t.c.what_happened,
+                    t.c.representatives,
+                    t.c.cull_decisions,
+                    t.c.notable_moments,
+                ),
+                t,
+                identities,
+            )
+        except (OSError, SQLAlchemyError) as exc:
             logger.debug("Episode reading store unreadable (%s): treating as cold", exc)
             return {}
         recalled: dict[str, BankedEpisodeReading] = {}
@@ -247,84 +211,71 @@ class EpisodeReadingStore:
         and whose answer could not be used, or evidence too large to ask about. A provider that
         was unreachable has refused nothing, and the caller keeps those out.
         """
+        answered_at = now_db()
         rows = [
-            (identity.group_id, identity.producer_key, identity.evidence_key, reason)
+            {
+                "group_id": identity.group_id,
+                "producer_key": identity.producer_key,
+                "evidence_key": identity.evidence_key,
+                "reason": reason,
+                "answered_at": answered_at,
+            }
             for identity, reason in refusals
             if reason.strip()
         ]
         if not rows:
             return
         try:
-            with self._refusals.connection() as connection:
-                connection.executemany(
-                    "INSERT INTO editorial_episode_refusals ("
-                    "group_id, producer_key, evidence_key, reason"
-                    ") VALUES (?, ?, ?, ?) "
-                    "ON CONFLICT(group_id, producer_key, evidence_key) DO NOTHING",
-                    rows,
-                )
-                connection.commit()
-        except (OSError, sqlite3.Error) as exc:
+            bank_rows(self._store, editorial_episode_refusals, rows, keys=_KEY, update=())
+        except (OSError, SQLAlchemyError) as exc:
             logger.debug("Episode refusal store unwritable (%s): refusal not kept", exc)
 
     def refusals_for(self, identities: Sequence[EpisodeReadingIdentity]) -> dict[str, str]:
         """The episodes this exact contract already failed to read, and why."""
-        ordered = tuple(dict.fromkeys(identities))
-        if not ordered:
-            return {}
-        placeholders = ",".join("(?, ?, ?)" for _ in ordered)
-        parameters = tuple(
-            part
-            for identity in ordered
-            for part in (identity.group_id, identity.producer_key, identity.evidence_key)
-        )
+        t = editorial_episode_refusals
         try:
-            with self._refusals.connection() as connection:
-                rows = connection.execute(
-                    "SELECT group_id, reason FROM editorial_episode_refusals "  # noqa: S608 -- generated placeholders; bound values.
-                    f"WHERE (group_id, producer_key, evidence_key) IN ({placeholders})",
-                    parameters,
-                ).fetchall()
-        except (OSError, sqlite3.Error) as exc:
+            rows = self._matching(sa.select(t.c.group_id, t.c.reason), t, identities)
+        except (OSError, SQLAlchemyError) as exc:
             logger.debug("Episode refusal store unreadable (%s): treating as cold", exc)
             return {}
         return {str(group_id): str(reason) for group_id, reason in rows}
 
-    def close(self) -> None:
-        """Release every thread-owned connection."""
-        self._connections.close()
-        self._refusals.close()
+    def _matching(
+        self, query: sa.Select, table: sa.Table, identities: Sequence[EpisodeReadingIdentity]
+    ) -> list[sa.Row]:
+        ordered = list(dict.fromkeys(identities))
+        key = sa.tuple_(*(table.c[name] for name in _KEY))
+        rows: list[sa.Row] = []
+        with self._store.connect() as connection:
+            for chunk in in_chunks(connection, ordered, per_row=3):
+                wanted = [(i.group_id, i.producer_key, i.evidence_key) for i in chunk]
+                rows.extend(connection.execute(query.where(key.in_(wanted))))
+        return rows
 
 
-def _row_for(reading: BankedEpisodeReading) -> tuple[str, ...]:
-    return (
-        reading.identity.group_id,
-        reading.identity.producer_key,
-        reading.identity.evidence_key,
-        json.dumps(reading.full_asset_ids, separators=(",", ":")),
-        reading.what_happened,
-        json.dumps(
-            [
-                {"asset_id": representative.asset_id, "reason": representative.reason}
-                for representative in reading.representatives
-            ],
+def _row_for(reading: BankedEpisodeReading) -> dict[str, str]:
+    def pairs(items: Iterable[EpisodeRepresentative]) -> str:
+        return json.dumps(
+            [{"asset_id": item.asset_id, "reason": item.reason} for item in items],
             separators=(",", ":"),
-        ),
-        json.dumps(
+        )
+
+    return {
+        "group_id": reading.identity.group_id,
+        "producer_key": reading.identity.producer_key,
+        "evidence_key": reading.identity.evidence_key,
+        "full_asset_ids": json.dumps(reading.full_asset_ids, separators=(",", ":")),
+        "what_happened": reading.what_happened,
+        "representatives": pairs(reading.representatives),
+        "cull_decisions": json.dumps(
             [
                 {"asset_id": decision.asset_id, "bucket": decision.bucket}
                 for decision in reading.cull_decisions
             ],
             separators=(",", ":"),
         ),
-        json.dumps(
-            [
-                {"asset_id": moment.asset_id, "reason": moment.reason}
-                for moment in reading.notable_moments
-            ],
-            separators=(",", ":"),
-        ),
-    )
+        "notable_moments": pairs(reading.notable_moments),
+    }
 
 
 def _reading_from(row: Sequence[object]) -> BankedEpisodeReading:
@@ -351,23 +302,3 @@ def _reading_from(row: Sequence[object]) -> BankedEpisodeReading:
             for item in json.loads(str(row[7]))
         ),
     )
-
-
-def _columns(connection: sqlite3.Connection) -> set[str]:
-    return {row[1] for row in connection.execute("PRAGMA table_info(editorial_episode_readings)")}
-
-
-def _migrate_notable_moments(connection: sqlite3.Connection) -> None:
-    """A bank written before notable moments existed reads back with an explicitly empty lane."""
-    if "notable_moments" in _columns(connection):
-        return
-    try:
-        connection.execute(
-            "ALTER TABLE editorial_episode_readings "
-            "ADD COLUMN notable_moments TEXT NOT NULL DEFAULT '[]'"
-        )
-        connection.commit()
-    except sqlite3.OperationalError:
-        # Another thread's connection may have added it between the check and here.
-        if "notable_moments" not in _columns(connection):
-            raise

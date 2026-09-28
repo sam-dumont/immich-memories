@@ -272,7 +272,7 @@ def test_launch_flow_renders_real_video(
     assert probe.duration_seconds > 0
     assert probe.size_bytes > 0
 
-    database = RunDatabase(launch_workspace.database_path)
+    database = RunDatabase(launch_workspace.store())
     completed = database.list_runs(status="completed", source="manual")
     assert len(completed) == 1
     assert Path(completed[0].output_path or "") == output_path
@@ -345,7 +345,7 @@ def test_reload_during_generation_recovers_the_finished_video(
 
     outputs = set(launch_workspace.output_dir.rglob("*.mp4")) - before
     assert len(outputs) == 1
-    completed = RunDatabase(launch_workspace.database_path).list_runs(
+    completed = RunDatabase(launch_workspace.store()).list_runs(
         status="completed", source="manual", order_by_completion=True
     )
     assert completed and Path(completed[0].output_path or "") == outputs.pop()

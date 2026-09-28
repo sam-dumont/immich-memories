@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Protocol
 
 import numpy as np
@@ -22,7 +22,7 @@ class PackEncoder(Protocol):
 
 class FactStore(Protocol):
     def remember_facts(
-        self, asset_id: str, facts: Sequence[HeadFact], *, encoder_key: str
+        self, facts: Mapping[str, Sequence[HeadFact]], *, encoder_key: str
     ) -> None: ...
 
     def facts_for(

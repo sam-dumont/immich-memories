@@ -1,4 +1,4 @@
-"""Human relationship vocabulary shared by the people file and its editor.
+"""Human relationship vocabulary shared by the people registry and its editor.
 
 The graph stores directed facts so prompts can read them without guessing which
 side of "parent" they are looking at. The UI writes both directions from one

@@ -6,13 +6,9 @@ import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-from immich_memories.cache.schema_migrator import SchemaMigrator
-from immich_memories.cache.versions import SCHEMA_VERSION
-
-if TYPE_CHECKING:
-    pass
+from immich_memories.cache.analysis_schema import ensure_cache_schema
+from immich_memories.db.sqlite_files import connect_sqlite
 
 
 class VideoAnalysisCache:
@@ -21,21 +17,20 @@ class VideoAnalysisCache:
     def __init__(self, db_path: Path):
         self.db_path = Path(db_path)
         self._ensure_db_exists()
-        SchemaMigrator(self._get_connection).migrate_to(SCHEMA_VERSION)
+        with self._get_connection() as conn:
+            ensure_cache_schema(conn)
 
     def _ensure_db_exists(self) -> None:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
     @contextmanager
     def _get_connection(self) -> Iterator[sqlite3.Connection]:
-        conn = sqlite3.connect(
+        conn = connect_sqlite(
             self.db_path,
-            timeout=5.0,  # busy_timeout=5000ms — retry on concurrent access
+            private=False,
             detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
         )
         conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON")
-        conn.execute("PRAGMA journal_mode = WAL")  # Better concurrent access
         try:
             yield conn
         finally:

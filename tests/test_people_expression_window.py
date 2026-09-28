@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from datetime import date
 
-import yaml
-
 from immich_memories.api.models import Person
 from immich_memories.api.person_expression import PersonExpression
+from immich_memories.db import open_store
 from immich_memories.people.expression_window import (
     derive_people_window,
     earliest_possible_day,
     library_people_window,
 )
+from tests.people_registry_seed import seed_people
 
 ELDER = date(1960, 5, 4)
 CHILD = date(2024, 3, 11)
@@ -116,7 +116,7 @@ def test_nothing_known_derives_no_window():
     assert derive_people_window(expression, {}, today=date(2026, 9, 18)) is None
 
 
-def test_the_library_answers_the_window_from_its_own_birth_dates(tmp_path):
+def test_the_library_answers_the_window_from_its_own_birth_dates():
     """Immich holds the birth dates, so the ask needs no invented start."""
     expression = PersonExpression.parse('("Adult A" OR "Adult B") AND "Child"')
     people = [
@@ -129,7 +129,7 @@ def test_the_library_answers_the_window_from_its_own_birth_dates(tmp_path):
         expression,
         # WHY: the Immich people listing is the only network read this needs.
         read_people=lambda: people,
-        people_path=tmp_path / "absent.yaml",
+        people_store=open_store(),
         today=date(2026, 9, 18),
     )
 
@@ -137,19 +137,16 @@ def test_the_library_answers_the_window_from_its_own_birth_dates(tmp_path):
     assert window.range.start.date() == CHILD
 
 
-def test_the_people_file_answers_for_a_name_immich_has_no_birth_date_for(tmp_path):
+def test_the_people_registry_answers_for_a_name_immich_has_no_birth_date_for():
     """The curated roster carries the same fact, so a gap in Immich is not a dead end."""
-    path = tmp_path / "people.yaml"
-    path.write_text(
-        yaml.safe_dump({"people": [{"ids": ["c"], "name": "Child", "birth_date": "2024-03-11"}]})
-    )
+    store = seed_people({"people": [{"ids": ["c"], "name": "Child", "birth_date": "2024-03-11"}]})
     expression = PersonExpression.parse('"Adult A" AND "Child"')
 
     window = library_people_window(
         expression,
         # WHY: the Immich people listing is the only network read this needs.
         read_people=lambda: [Person(id="a", name="Adult A", birthDate="1960-05-04")],
-        people_path=path,
+        people_store=store,
         today=date(2026, 9, 18),
     )
 
@@ -157,7 +154,7 @@ def test_the_people_file_answers_for_a_name_immich_has_no_birth_date_for(tmp_pat
     assert window.range.start.date() == CHILD
 
 
-def test_a_library_that_knows_no_birth_date_derives_nothing(tmp_path):
+def test_a_library_that_knows_no_birth_date_derives_nothing():
     """Nothing known means the caller still has to be told to name its dates."""
     expression = PersonExpression.parse('"Adult A" AND "Child"')
 
@@ -165,7 +162,7 @@ def test_a_library_that_knows_no_birth_date_derives_nothing(tmp_path):
         expression,
         # WHY: the Immich people listing is the only network read this needs.
         read_people=lambda: [Person(id="a", name="Adult A"), Person(id="c", name="Child")],
-        people_path=tmp_path / "absent.yaml",
+        people_store=open_store(),
         today=date(2026, 9, 18),
     )
 

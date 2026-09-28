@@ -922,10 +922,10 @@ msgstr "Inga lämpliga förslag just nu."
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
 msgstr ""
-"Ingen personfil ännu. Läs igenom biblioteket igen: antal och månadskurvor läses för varje "
+"Inga personer ännu. Läs igenom biblioteket igen: antal och månadskurvor läses för varje "
 "namngiven person, utan bildanalys."
 
 #: pages/runs.py:105
@@ -1824,3 +1824,46 @@ msgstr "{title} ({n_keys} nycklar)"
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}: {duration_seconds:.1f}s"
 
+
+msgid "Default"
+msgstr "Standard"
+
+msgid "Nothing to save"
+msgstr "Inget att spara"
+
+msgid "Save"
+msgstr "Spara"
+
+msgid "Saved here"
+msgstr "Sparad här"
+
+msgid "Saved to the database"
+msgstr "Sparad i databasen"
+
+msgid "Set by {name} (environment)"
+msgstr "Satt av {name} (miljö)"
+
+msgid "Set in config.yaml as {key}"
+msgstr "Satt i config.yaml som {key}"
+
+msgid "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
+msgstr "Inställningar kommer från fyra ställen, starkast först: miljövariabler, config.yaml, det du sparar här (i databasen), sedan standardvärdena. En gråtonad inställning sätts av miljön eller config.yaml; ändra den där."
+
+msgid "{count} set outside this page"
+msgstr "{count} satta utanför den här sidan"
+
+msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
+msgstr "{name} är inte satt, så API-nycklar och lösenord kan inte sparas här. Sätt den, eller lägg hemligheterna i miljön eller config.yaml."
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  ({n} nyckel)"
+msgstr[1] "{title}  ({n} nycklar)"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} satt utanför den här sidan"
+msgstr[1] "{n} satta utanför den här sidan"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Sparad här, men {name} kan inte dekryptera den: standardvärdet används"

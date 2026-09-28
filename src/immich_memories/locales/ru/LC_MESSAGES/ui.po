@@ -926,10 +926,10 @@ msgstr "Сейчас нет подходящих предложений."
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
 msgstr ""
-"Файла людей пока нет. Просканируйте библиотеку снова: будут прочитаны количества и месячные "
+"Людей пока нет. Просканируйте библиотеку снова: будут прочитаны количества и месячные "
 "кривые каждого человека с именем, без анализа изображений."
 
 #: pages/runs.py:105
@@ -1829,3 +1829,48 @@ msgstr "{title} (ключей: {n_keys})"
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}: {duration_seconds:.1f} с"
 
+
+msgid "Default"
+msgstr "По умолчанию"
+
+msgid "Nothing to save"
+msgstr "Нечего сохранять"
+
+msgid "Save"
+msgstr "Сохранить"
+
+msgid "Saved here"
+msgstr "Сохранено здесь"
+
+msgid "Saved to the database"
+msgstr "Сохранено в базе данных"
+
+msgid "Set by {name} (environment)"
+msgstr "Задано через {name} (окружение)"
+
+msgid "Set in config.yaml as {key}"
+msgstr "Задано в config.yaml как {key}"
+
+msgid "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
+msgstr "Настройки берутся из четырёх мест, от сильнейшего: переменные окружения, config.yaml, то, что вы сохраняете здесь (в базе данных), затем значения по умолчанию. Серая настройка задана окружением или config.yaml; меняйте её там."
+
+msgid "{count} set outside this page"
+msgstr "{count} задано вне этой страницы"
+
+msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
+msgstr "{name} не задан, поэтому API-ключи и пароли нельзя сохранить здесь. Задайте его или укажите эти секреты в окружении или config.yaml."
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  ({n} ключ)"
+msgstr[1] "{title}  ({n} ключа)"
+msgstr[2] "{title}  ({n} ключей)"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} задан вне этой страницы"
+msgstr[1] "{n} задано вне этой страницы"
+msgstr[2] "{n} задано вне этой страницы"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Сохранено здесь, но {name} не может это расшифровать: используется значение по умолчанию"

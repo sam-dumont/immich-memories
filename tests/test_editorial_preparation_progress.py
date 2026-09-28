@@ -7,7 +7,6 @@ from immich_memories.analysis.editorial_preparation import prepare_editorial_ann
 from immich_memories.analysis.editorial_runtime_evidence import (
     AnnotationReadings,
     EvidencePreparation,
-    ensure_annotation_store,
 )
 from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
 from immich_memories.analysis.selection_source import (
@@ -17,6 +16,7 @@ from immich_memories.analysis.selection_source import (
     prepare_editorial_source,
 )
 from immich_memories.config_loader import Config
+from immich_memories.db import open_store
 from immich_memories.operations.cut_progress import read_stage_progress
 from tests.test_editorial_preparation import asset, preview, successful_ports
 
@@ -29,8 +29,7 @@ def _prepare_with_progress(tmp_path, updates):
         EditorialDependencies(source_fetcher=lambda _scope: sources),
     )
     config = Config(editorial={"preparation": {"tier": "no_captions", "batch_size": 32}})
-    store = tmp_path / "annotations.sqlite"
-    ensure_annotation_store(store)
+    store = open_store()
     providers = successful_ports([])
 
     def detectors(**kwargs):

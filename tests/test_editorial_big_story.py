@@ -113,11 +113,11 @@ def test_a_quiet_week_with_the_family_is_not_promoted():
 def test_a_person_films_big_story_counts_the_subjects_own_parents(tmp_path):
     """In a film of the owner's partner, a dense run with her parents is her family's big day;
     to the owner they are in-laws, so a month film still reads the same run as minor."""
-    _people, relation = subject_people(tmp_path)
+    _people, relation = subject_people()
     parents = her_parents(relation)
 
-    person = _read_month(family_line=parents, film=film_of(tmp_path / "p", "person_spotlight"))
-    month = _read_month(family_line=parents, film=film_of(tmp_path / "m", "monthly_highlights"))
+    person = _read_month(family_line=parents, film=film_of("person_spotlight"))
+    month = _read_month(family_line=parents, film=film_of("monthly_highlights"))
 
     assert person[6] == "major"
     assert month[6] == "minor"

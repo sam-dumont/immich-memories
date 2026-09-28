@@ -37,8 +37,6 @@ def test_translated_choices_keep_the_values_the_pipeline_expects():
 
 
 def test_every_offered_language_has_complete_ui_templates_with_matching_placeholders():
-    from string import Formatter
-
     from babel.messages.extract import extract_from_dir
     from babel.messages.pofile import read_po
 
@@ -47,7 +45,7 @@ def test_every_offered_language_has_complete_ui_templates_with_matching_placehol
     messages = {
         message
         for _, _, message, _, _ in extract_from_dir(
-            str(LOCALES_DIR.parent / "ui"), keywords={"tr": (1,), "N_": (1,)}
+            str(LOCALES_DIR.parent / "ui"), keywords={"tr": (1,), "N_": (1,), "tr_plural": (1, 2)}
         )
     }
     for locale in SUPPORTED_LOCALES:
@@ -58,14 +56,39 @@ def test_every_offered_language_has_complete_ui_templates_with_matching_placehol
         if locale != "en":
             assert catalogue["Memory"].string != "Memory", locale
         for message in messages:
-            entry = catalogue.get(message)
-            assert entry and entry.string and "fuzzy" not in entry.flags, (locale, message)
-            assert {
-                (field, spec, conversion)
-                for _, field, spec, conversion in Formatter().parse(message)
-                if field is not None
-            } == {
-                (field, spec, conversion)
-                for _, field, spec, conversion in Formatter().parse(entry.string)
-                if field is not None
-            }, (locale, message)
+            entry = catalogue.get(message[0] if isinstance(message, tuple) else message)
+            forms = (
+                entry.string if entry and isinstance(message, tuple) else (entry and entry.string,)
+            )
+            assert entry and all(forms) and "fuzzy" not in entry.flags, (locale, message)
+            if isinstance(message, tuple):
+                assert len(forms) == catalogue.num_plurals, (locale, message)
+            source = message[-1] if isinstance(message, tuple) else message
+            for form in forms:
+                assert _fields(source) == _fields(form), (locale, message)
+
+
+def _fields(template: str) -> set[tuple]:
+    from string import Formatter
+
+    return {
+        (field, spec, conversion)
+        for _, field, spec, conversion in Formatter().parse(template)
+        if field is not None
+    }
+
+
+def test_counts_follow_each_locales_plural_rule():
+    from immich_memories.ui.i18n import tr_plural
+
+    def keys(n: int, locale: str) -> str:
+        return tr_plural(
+            "{title}  ({n} key)", "{title}  ({n} keys)", n, title="Preset", locale_code=locale
+        )
+
+    assert [keys(n, "en") for n in (1, 2)] == ["Preset  (1 key)", "Preset  (2 keys)"]
+    assert [keys(n, "ru") for n in (1, 3, 5)] == [
+        "Preset  (1 ключ)",
+        "Preset  (3 ключа)",
+        "Preset  (5 ключей)",
+    ]

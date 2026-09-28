@@ -33,7 +33,7 @@ What the minimum costs you:
 
 The 25 GB is the caches at their default budgets: 10 GB of Immich previews, 10 GB of downloaded
 video kept 7 days, 2 GB of clip previews. The models are about 130 MB. The one file worth backing
-up is `annotations.sqlite`, where every fact the editor read is banked:
+up is the store, `store.db`, where every fact the editor read is banked:
 [What to keep](./docker.md#what-to-keep).
 
 Tested on a Synology DS423+ (Celeron J4125, four cores), on an Apple Silicon Mac and on a

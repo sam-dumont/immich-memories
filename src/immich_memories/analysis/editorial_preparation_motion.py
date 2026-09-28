@@ -12,7 +12,6 @@ import base64
 import hashlib
 import io
 import json
-import sqlite3
 import subprocess
 import tempfile
 import threading
@@ -21,7 +20,6 @@ import urllib.error
 import urllib.request
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import closing
 from contextvars import copy_context
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -29,6 +27,7 @@ from typing import Any
 
 import httpx
 from PIL import Image
+from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
 from immich_memories.analysis.editorial_description_contract import API_MODEL, REPETITION_PENALTY
@@ -48,17 +47,15 @@ from immich_memories.analysis.llm_caption_identity import LLM_CAPTION_PREFIX
 from immich_memories.analysis.llm_preparation_usage import record_preparation_attempt
 from immich_memories.api.models import Asset
 from immich_memories.config_models_llm import LLMConfig
+from immich_memories.db import Store
 from immich_memories.processing.playback_keyframes import SampledKeyframes, sample_keyframes
-from immich_memories.store.cut_measurements import (
-    banked_motion_residuals,
-    reading_cut_measurements,
-)
+from immich_memories.store.cut_measurements import banked_motion_residuals
 from immich_memories.store.motion_lines import (
     DESCRIBED,
     UNAVAILABLE,
     MotionLine,
-    initialize_motion_lines,
-    remember_motion_line,
+    motion_line_row,
+    remember_motion_lines,
     settled_motion_lines,
 )
 
@@ -117,17 +114,18 @@ def motion_sources(
     return tuple(sources)
 
 
-def banked_residuals(store_path: Path) -> Callable[[Asset], float | None]:
-    """A Live still's residual as a cut measured it, read only; None when nobody measured it."""
+def banked_residuals(store: Store, assets: Iterable[Asset]) -> Callable[[Asset], float | None]:
+    """A Live still's residual as a cut measured it, read once for these pictures; None when
+    nobody measured it."""
+    measured = read_motion_residuals(store, assets)
 
     def residual_of(asset: Asset) -> float | None:
-        measured = read_motion_residuals(store_path, (asset,))
         return exact_number(measured[asset.id].get("residual")) if asset.id in measured else None
 
     return residual_of
 
 
-def read_motion_residuals(store_path: Path, assets: Iterable[Asset]) -> dict[str, dict[str, Any]]:
+def read_motion_residuals(store: Store, assets: Iterable[Asset]) -> dict[str, dict[str, Any]]:
     """What a cut already measured about these pictures' motion, keyed by picture.
 
     A real video answers with the residual over its sampled frames, a Live still with its
@@ -139,12 +137,8 @@ def read_motion_residuals(store_path: Path, assets: Iterable[Asset]) -> dict[str
         return {}
     videos = {asset.id: digests[asset.id] for asset in pictures if asset.is_video}
     stills = {key: digest for key, digest in digests.items() if key not in videos}
-    return reading_cut_measurements(
-        store_path,
-        lambda c: (
-            banked_motion_residuals(c, stills, RESIDUAL_PRODUCER)
-            | banked_motion_residuals(c, videos, VIDEO_RESIDUAL_PRODUCER)
-        ),
+    return banked_motion_residuals(store, stills, RESIDUAL_PRODUCER) | banked_motion_residuals(
+        store, videos, VIDEO_RESIDUAL_PRODUCER
     )
 
 
@@ -155,10 +149,12 @@ def motion_producer(description_model: str) -> str:
     return MOTION_PRODUCER
 
 
-def _settled_motion(connection, digests, producer):
-    settled = settled_motion_lines(connection, digests, producer)
+def _settled_motion(
+    store: Store, digests: Mapping[str, str], producer: str
+) -> dict[str, MotionLine]:
+    settled = settled_motion_lines(store, digests, producer)
     if LLM_CAPTION_PREFIX in producer:
-        existing = settled_motion_lines(connection, digests, MOTION_PRODUCER)
+        existing = settled_motion_lines(store, digests, MOTION_PRODUCER)
         settled.update(
             {asset: line for asset, line in existing.items() if line.status == DESCRIBED}
         )
@@ -166,13 +162,12 @@ def _settled_motion(connection, digests, producer):
 
 
 def missing_motion(
-    connection: sqlite3.Connection,
+    store: Store,
     sources: Sequence[MotionSource],
     *,
     producer: str = MOTION_PRODUCER,
 ) -> tuple[MotionSource, ...]:
-    initialize_motion_lines(connection)
-    settled = _settled_motion(connection, {s.asset_id: s.digest for s in sources}, producer)
+    settled = _settled_motion(store, {s.asset_id: s.digest for s in sources}, producer)
     return tuple(s for s in sources if s.asset_id not in settled)
 
 
@@ -198,7 +193,7 @@ class MotionScope:
     def __init__(
         self,
         assets: Sequence[Asset],
-        store_path: Path,
+        store: Store,
         read_playback: Callable[[str, int, int], tuple[bytes, int]] | None,
         *,
         demanded: bool,
@@ -208,7 +203,7 @@ class MotionScope:
         self.key = f"motion:{producer}"
         self._read_playback = read_playback
         self._sources = (
-            motion_sources(assets, residual_of=banked_residuals(store_path))
+            motion_sources(assets, residual_of=banked_residuals(store, assets))
             if read_playback and demanded
             else ()
         )
@@ -217,30 +212,24 @@ class MotionScope:
         self,
         prepare: Callable[
             [
-                sqlite3.Connection,
+                Store,
                 Sequence[MotionSource],
                 Callable[[str, int, int], tuple[bytes, int]],
             ],
             None,
         ],
-        connection: sqlite3.Connection,
+        store: Store,
         before: dict,
     ) -> None:
         """Acquire only missing lines and record their exact requested producer."""
-        owed = (
-            missing_motion(connection, self._sources, producer=self.producer)
-            if self._sources
-            else ()
-        )
+        owed = missing_motion(store, self._sources, producer=self.producer) if self._sources else ()
         if owed and self._read_playback is not None:
             before[self.key] = tuple(source.asset_id for source in owed)
-            prepare(connection, owed, self._read_playback)
+            prepare(store, owed, self._read_playback)
 
-    def report(self, connection: sqlite3.Connection, after: dict) -> None:
+    def report(self, store: Store, after: dict) -> None:
         """Keep unfinished motion lines visible in the preparation completeness report."""
-        if self._sources and (
-            owed := missing_motion(connection, self._sources, producer=self.producer)
-        ):
+        if self._sources and (owed := missing_motion(store, self._sources, producer=self.producer)):
             after[self.key] = tuple(source.asset_id for source in owed)
 
 
@@ -419,7 +408,7 @@ def _describe(source: MotionSource, sample, ask, seat: threading.Semaphore) -> _
 
 def prepare_motion_lines(
     *,
-    connection: sqlite3.Connection,
+    store: Store,
     sources: Sequence[MotionSource],
     sample: Callable[[str], SampledKeyframes],
     ask: Callable[[bytes], str],
@@ -433,7 +422,6 @@ def prepare_motion_lines(
 
     A refused credential at the seat is not one video's problem, so PermissionError leaves.
     """
-    initialize_motion_lines(connection)
     outcome = MotionPreparation()
     seat = threading.Semaphore(concurrency)
     step = max(SAMPLE_WORKERS, concurrency)
@@ -445,28 +433,32 @@ def prepare_motion_lines(
                 pool.submit(copy_context().run, _describe, source, sample, ask, seat)
                 for source in batch
             ]
-            for source, future in zip(batch, futures, strict=True):
-                _settle(connection, source, future.result(), outcome, producer, caption_origin)
+            settled: list[dict[str, Any]] = []
+            try:
+                for source, future in zip(batch, futures, strict=True):
+                    if row := _settle(source, future.result(), outcome, producer, caption_origin):
+                        settled.append(row)
+            finally:
+                # One write per batch; a refused credential still keeps what was answered.
+                remember_motion_lines(store, settled)
             progress("motion", start + len(batch), len(sources))
     return outcome
 
 
 def _settle(
-    connection: sqlite3.Connection,
     source: MotionSource,
     result: _Outcome,
     outcome: MotionPreparation,
     producer: str,
     caption_origin: Mapping[str, Any] | None,
-) -> None:
+) -> dict[str, Any] | None:
     outcome.bytes_read += result.bytes_read
     outcome.requests += result.requests
     outcome.seat_calls += result.seat_calls
     if result.line is None:
         outcome.failures[source.asset_id] = result.failure
-        return
-    remember_motion_line(
-        connection,
+        return None
+    row = motion_line_row(
         asset_id=source.asset_id,
         producer=producer,
         source_digest=source.digest,
@@ -479,6 +471,7 @@ def _settle(
         outcome.described += 1
     else:
         outcome.unavailable += 1
+    return row
 
 
 def _provenance(source: MotionSource, result: _Outcome) -> dict[str, Any]:
@@ -521,15 +514,16 @@ class BankedMotionLines:
     def __init__(
         self,
         *,
-        store_path: Path,
+        store: Store,
         assets: Mapping[str, Asset],
         described: bool,
         producer: str = MOTION_PRODUCER,
     ) -> None:
         self.producer = producer
-        self._store_path = store_path
+        self._store = store
         self._assets = assets
         self._described = described
+        self._settled: dict[str, MotionLine] | None = None
         self._counts = {
             "requested": 0,
             "banked": 0,
@@ -559,19 +553,23 @@ class BankedMotionLines:
         return f"{line.text} ({line.frames} frames across the clip)"
 
     def _banked(self, asset_ids: list[str]) -> MotionLine | None:
-        if not self._described or not asset_ids or not self._store_path.exists():
+        if not self._described or not asset_ids:
             return None
-        digests = {a: source_metadata_digest(self._assets[a]) for a in asset_ids}
-        uri = f"file:{self._store_path}?mode=ro"
-        try:
-            with closing(sqlite3.connect(uri, uri=True)) as connection:
-                settled = _settled_motion(connection, digests, self.producer)
-        except sqlite3.Error:
-            return None
+        settled = self._settled_lines()
         return next(
             (settled[a] for a in asset_ids if a in settled and settled[a].status == DESCRIBED),
             None,
         )
+
+    def _settled_lines(self) -> dict[str, MotionLine]:
+        # Every picture the pick can reach, read once rather than once per unit.
+        if self._settled is None:
+            digests = {a: source_metadata_digest(asset) for a, asset in self._assets.items()}
+            try:
+                self._settled = _settled_motion(self._store, digests, self.producer)
+            except SQLAlchemyError:
+                self._settled = {}
+        return self._settled
 
     def metrics(self) -> dict[str, Any]:
         return {"producer": self.producer} | self._counts

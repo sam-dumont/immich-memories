@@ -35,19 +35,25 @@ from __future__ import annotations
 
 import json
 import logging
-import sqlite3
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
+
+import sqlalchemy as sa
+from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.analysis.editorial_shareability import OWNER_CLEARANCES, allowed
 from immich_memories.analysis.editorial_structure_audience import (
-    AUDIENCE_BANK_NAME,
     library_refusals,
 )
+from immich_memories.db.tables import editorial_episode_readings
+from immich_memories.store.batches import in_chunks
 from immich_memories.store.owner_decisions import decisions
+
+if TYPE_CHECKING:
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -114,9 +120,8 @@ NO_BANKED_FACTS = BankedAnswers(frozenset(), {}, frozenset())
 
 def open_banked_facts(
     *,
-    bank_dir: Path,
     attempts_dir: Path | None,
-    store_path: Path | None,
+    store: Store | None,
     audience: str,
     episode_cards: Mapping[str, Any],
     own_producers: frozenset[str] = frozenset(),
@@ -129,12 +134,12 @@ def open_banked_facts(
     unreadable is treated as unanswered rather than raised: a draft that cannot open a bank is
     the cold draft, which is always a valid film.
     """
-    representatives, culls = _banked_readings(store_path, episode_cards, own_producers)
-    refused = _refused_before(attempts_dir, audience=audience) | library_refusals(
-        bank_dir.parent / AUDIENCE_BANK_NAME, audience
+    representatives, culls = _banked_readings(store, episode_cards, own_producers)
+    refused = _refused_before(attempts_dir, audience=audience) | (
+        library_refusals(store, audience) if store is not None else frozenset()
     )
     answers = BankedAnswers(
-        refused=refused - _owner_cleared(store_path, audience),
+        refused=refused - _owner_cleared(store, audience),
         representatives=representatives,
         culls=culls,
     )
@@ -147,13 +152,13 @@ def open_banked_facts(
     return answers
 
 
-def _owner_cleared(store_path: Path | None, audience: str) -> frozenset[str]:
+def _owner_cleared(store: Store | None, audience: str) -> frozenset[str]:
     """What the owner cleared by hand for this level: a refusal banked before no longer holds."""
-    if store_path is None:
+    if store is None:
         return frozenset()
     return frozenset(
         asset_id
-        for asset_id, decision in decisions(store_path).items()
+        for asset_id, decision in decisions(store).items()
         if decision in OWNER_CLEARANCES and allowed(OWNER_CLEARANCES[decision], audience)
     )
 
@@ -193,7 +198,7 @@ def _cut_shareability(record: Path) -> Mapping[str, Any]:
 
 
 def _banked_readings(
-    store_path: Path | None, episode_cards: Mapping[str, Any], own_producers: frozenset[str]
+    store: Store | None, episode_cards: Mapping[str, Any], own_producers: frozenset[str]
 ) -> tuple[dict[str, tuple[str, ...]], frozenset[str]]:
     """The representatives and culls of every episode ANOTHER reader has already read.
 
@@ -206,9 +211,9 @@ def _banked_readings(
         for card in episode_cards.values()
         if getattr(card, "evidence_key", "")
     }
-    if store_path is None or not wanted:
+    if store is None or not wanted:
         return {}, frozenset()
-    read = _read_episode_rows(store_path, sorted(wanted), own_producers)
+    read = _read_episode_rows(store, sorted(wanted), own_producers)
     representatives = {
         alias: read[(card.episode_id, card.evidence_key)][0]
         for alias, card in episode_cards.items()
@@ -220,33 +225,33 @@ def _banked_readings(
 
 
 def _read_episode_rows(
-    store_path: Path, wanted: list[tuple[str, str]], own_producers: frozenset[str]
+    store: Store, wanted: list[tuple[str, str]], own_producers: frozenset[str]
 ) -> dict[tuple[str, str], tuple[tuple[str, ...], tuple[str, ...]]]:
     """(representatives, culled) per (group, evidence), newest reading of each pair winning."""
+    t = editorial_episode_readings
+    key = sa.tuple_(t.c.group_id, t.c.evidence_key)
     out: dict[tuple[str, str], tuple[tuple[str, ...], tuple[str, ...]]] = {}
     try:
-        connection = sqlite3.connect(f"file:{store_path}?mode=ro", uri=True)
-    except sqlite3.Error:
+        with store.connect() as connection:
+            for chunk in in_chunks(connection, wanted, per_row=2):
+                rows = connection.execute(
+                    sa.select(
+                        t.c.group_id,
+                        t.c.evidence_key,
+                        t.c.producer_key,
+                        t.c.representatives,
+                        t.c.cull_decisions,
+                    )
+                    .where(key.in_(list(chunk)))
+                    .order_by(t.c.answered_at)
+                )
+                out.update(
+                    ((str(group), str(evidence)), _reading_lists(reps, culls))
+                    for group, evidence, producer, reps, culls in rows
+                    if str(producer) not in own_producers
+                )
+    except SQLAlchemyError:
         return out
-    try:
-        for start in range(0, len(wanted), 250):
-            chunk = wanted[start : start + 250]
-            marks = ",".join("(?, ?)" for _ in chunk)
-            rows = connection.execute(
-                "SELECT group_id, evidence_key, producer_key, representatives, cull_decisions "  # noqa: S608 -- generated placeholders; every value is bound
-                "FROM editorial_episode_readings "
-                f"WHERE (group_id, evidence_key) IN ({marks}) ORDER BY answered_at",
-                tuple(chain.from_iterable(chunk)),
-            )
-            out.update(
-                ((str(group), str(evidence)), _reading_lists(reps, culls))
-                for group, evidence, producer, reps, culls in rows
-                if str(producer) not in own_producers
-            )
-    except sqlite3.Error:
-        return out
-    finally:
-        connection.close()
     return out
 
 

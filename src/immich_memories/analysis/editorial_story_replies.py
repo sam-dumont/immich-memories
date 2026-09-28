@@ -40,7 +40,7 @@ _RELATION = re.compile(r"\(([^;()]+(?:\([^()]*\))?)")
 
 
 def relations_on(line: str) -> list[str]:
-    """The relation of each known person on an annotation line, as the people file states it
+    """The relation of each known person on an annotation line, as the people registry states it
     ("partner", "son", "grandmother", "friend"), in order, without names."""
     if not line:
         return []
@@ -89,7 +89,7 @@ def film_close_family(source: StructurePlanningInput) -> Callable[[str], Mapping
     """Who on a line counts as close family in this film.
 
     The owner's partner, children and parents always do. A film about people adds each
-    subject's own partner, children and parents, as the people file links them: in a film of
+    subject's own partner, children and parents, as the people registry links them: in a film of
     the owner's partner, their parents are close family though the owner calls them in-laws.
     Their relation reads "father of the film's subject", so no reader mistakes it for the owner's.
     """

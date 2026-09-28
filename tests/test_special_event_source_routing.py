@@ -42,7 +42,7 @@ from immich_memories.automation.catalogue import entries_from
 from immich_memories.config_loader import Config
 from immich_memories.timeperiod import DateRange
 from tests.conftest import make_asset, make_clip
-from tests.test_editorial_runtime import _create_annotation_store
+from tests.test_editorial_runtime import _seed_descriptions
 
 WINDOW = DateRange(datetime(2020, 6, 14, tzinfo=UTC), datetime(2020, 6, 14, 23, 59, tzinfo=UTC))
 
@@ -95,13 +95,9 @@ def test_incomplete_or_changed_membership_cannot_become_a_day(identity, members)
         validate_special_event_scope(identity, members)
 
 
-def test_catalogue_rejects_missing_exact_window_instead_of_using_day(tmp_path):
-    path = tmp_path / "catalogue.json"
-    path.write_text(
-        json.dumps([{"day": "2020-06-14", "event_id": event_id(("a",)), "asset_ids": ["a"]}])
-    )
+def test_catalogue_rejects_missing_exact_window_instead_of_using_day():
     with pytest.raises(ValueError, match="exact start and end"):
-        entries_from(path)
+        entries_from([{"day": "2020-06-14", "event_id": event_id(("a",)), "asset_ids": ["a"]}])
 
 
 def test_exact_source_filters_overreturn_before_annotation_and_keeps_live_link():
@@ -153,13 +149,11 @@ def test_production_wall_receives_only_selected_event_even_if_port_returns_whole
         name: make_clip(name, file_created_at=WINDOW.start.replace(hour=10))
         for name in ("race", "festival")
     }
-    store = tmp_path / "annotations.sqlite"
-    _create_annotation_store(store, {member: "People share an occasion."})
+    _seed_descriptions({member: "People share an occasion."})
     config = Config(
         llm={"model": "fake-model"},
         editorial={
             "enabled": True,
-            "annotation_database": str(store),
             "description_model": "student-v1",
         },
     )

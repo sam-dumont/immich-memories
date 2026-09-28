@@ -1,6 +1,6 @@
 """What a NAS install can refuse on its own: its own films, stub clips, runaway clips, screens."""
 
-import sqlite3
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
@@ -11,10 +11,9 @@ from immich_memories.analysis.editorial_structure_budget import (
     MIN_MOTION_SECONDS,
     MOTION_CAP_SECONDS,
 )
-from immich_memories.analysis.generated_source_provenance import (
-    generated_source_ids,
-    recorded_generated_ids,
-)
+from immich_memories.analysis.generated_source_provenance import generated_source_ids
+from immich_memories.tracking.models import RunMetadata
+from immich_memories.tracking.run_database import RunDatabase
 
 
 def _line(asset_id, *, heads=(), description="", text=""):
@@ -54,34 +53,30 @@ def test_the_document_head_still_answers_first():
     assert screen_document_rejections(batch) == {"scan": "screen-docling:table"}
 
 
-def test_our_own_uploaded_films_are_named_by_the_tag_and_by_the_receipts(tmp_path):
-    database = tmp_path / "cache.db"
-    with sqlite3.connect(database) as db:
-        db.execute("CREATE TABLE pipeline_runs (run_id TEXT, immich_asset_id TEXT)")
-        db.executemany(
-            "INSERT INTO pipeline_runs VALUES (?, ?)",
-            [("r1", "uploaded"), ("r2", None), ("r3", "  "), ("r4", "uploaded")],
+def test_our_own_uploaded_films_are_named_by_the_tag_and_by_the_receipts():
+    runs = RunDatabase()
+    for run_id, asset_id in [("r1", "uploaded"), ("r2", None), ("r3", "  "), ("r4", "uploaded")]:
+        runs.save_run(
+            RunMetadata(
+                run_id=run_id,
+                created_at=datetime(2026, 1, 1, tzinfo=UTC),
+                status="completed",
+                immich_asset_id=asset_id,
+            )
         )
-    assert recorded_generated_ids(database) == frozenset({"uploaded"})
-    assert generated_source_ids(tagged=lambda: ["tagged"], cache_database=database) == frozenset(
-        {"tagged", "uploaded"}
-    )
+    assert runs.delivered_asset_ids() == frozenset({"uploaded"})
+    assert generated_source_ids(tagged=lambda: ["tagged"]) == frozenset({"tagged", "uploaded"})
 
 
-def test_a_library_with_no_receipts_file_still_reads_the_tag(tmp_path):
-    assert recorded_generated_ids(tmp_path / "absent.db") == frozenset()
-    assert generated_source_ids(
-        tagged=lambda: ["tagged"], cache_database=tmp_path / "absent.db"
-    ) == frozenset({"tagged"})
+def test_a_library_with_no_receipts_still_reads_the_tag():
+    assert generated_source_ids(tagged=lambda: ["tagged"]) == frozenset({"tagged"})
 
 
-def test_a_server_that_refuses_the_tag_query_leaves_the_receipts_answering(tmp_path):
+def test_a_server_that_refuses_the_tag_query_leaves_the_receipts_answering():
     def refused():
         raise OSError("no tag scope on this key")
 
-    assert (
-        generated_source_ids(tagged=refused, cache_database=tmp_path / "absent.db") == frozenset()
-    )
+    assert generated_source_ids(tagged=refused) == frozenset()
 
 
 def _video(asset_id, seconds, regions=()):

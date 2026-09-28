@@ -49,8 +49,8 @@ class FilmPreparation:
         readings = evidence.readings
         batch = readings.reader(self._prepared).lines_for(tuple(sorted(ids)))
         if batch.missing_asset_ids:
-            raise EditorialInputsRequired(readings.store_path, detail="unreadable refinement facts")
-        store = readings.store_path
+            raise EditorialInputsRequired(readings.store, detail="unreadable refinement facts")
+        store = readings.store
         assets = [source.assets[asset_id] for asset_id in ids]
         companions = {
             str(asset.live_photo_video_id) for asset in assets if asset.live_photo_video_id

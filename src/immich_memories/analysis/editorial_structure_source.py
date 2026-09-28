@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
-import sqlite3
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+import sqlalchemy as sa
 
 from immich_memories.analysis.editorial_case import Case, _adapt_production_cards
 from immich_memories.analysis.editorial_clip_frames import load_clip_frames
@@ -21,6 +22,7 @@ from immich_memories.analysis.editorial_structure_contract import (
     StructurePlanningInput,
 )
 from immich_memories.api.models import Asset, VideoClipInfo
+from immich_memories.db.tables import pixel_facts
 from immich_memories.speech.facts import read_speech_regions, speech_producer
 
 if TYPE_CHECKING:
@@ -29,15 +31,18 @@ if TYPE_CHECKING:
     from immich_memories.analysis.moment_cards import MomentCard
     from immich_memories.analysis.text_episode_reader import TextEpisodeReadResult
     from immich_memories.config_loader import Config
+    from immich_memories.db import Store
 
 
-def read_pixel_facts(store_path: Path, producer: str) -> dict[str, tuple[float, float]]:
-    with sqlite3.connect(f"file:{store_path}?mode=ro", uri=True) as connection:
+def read_pixel_facts(store: Store, producer: str) -> dict[str, tuple[float, float]]:
+    p = pixel_facts
+    with store.connect() as connection:
         return {
             row[0]: (float(row[1] or 0.0), float(row[2] or 0.0))
             for row in connection.execute(
-                "select asset_id, sharpness, brightness from pixel_facts where producer_key=?",
-                (producer,),
+                sa.select(p.c.asset_id, p.c.sharpness, p.c.brightness).where(
+                    p.c.producer_key == producer
+                )
             )
         }
 
@@ -95,7 +100,8 @@ def capture_structure_input(
     case: Case,
     config: Config,
     people: EditorialPeople,
-    store_path: Path,
+    store: Store,
+    bank_root: Path,
     artifact_dir: Path,
     motion_outcome_replay: MotionOutcomeReplay | None = None,
     attached_sources: Sequence[Asset | VideoClipInfo] = (),
@@ -146,22 +152,20 @@ def capture_structure_input(
             line.asset_id: line for line in workprint.episodes.annotation_batch.lines
         },
         gps=gps,
-        pixel_facts=read_pixel_facts(store_path, config.editorial.pixel_producer_key),
-        shareability_flags=load_flags(store_path, {*assets, *companions}),
-        companion_detectors=load_detector_heads(
-            store_path, companions, config.editorial.head_versions
-        ),
+        pixel_facts=read_pixel_facts(store, config.editorial.pixel_producer_key),
+        shareability_flags=load_flags(store, {*assets, *companions}),
+        companion_detectors=load_detector_heads(store, companions, config.editorial.head_versions),
         clip_frames=load_clip_frames(
-            store_path,
+            store,
             [str(a.live_photo_video_id) for a in assets.values() if a.live_photo_video_id],
         ),
-        motion_residuals=read_motion_residuals(store_path, assets.values()),
+        motion_residuals=read_motion_residuals(store, assets.values()),
         speech_regions=read_speech_regions(
-            store_path,
+            store,
             [*assets.values(), *companions.values()],
             speech_producer(config.speech),
         ),
-        store_path=store_path,
+        store=store,
         episode_readings=episode_reading_cards(workprint.episodes, workprint.cards, wall.aliases),
         lineage={
             "episode_readings": [
@@ -176,7 +180,7 @@ def capture_structure_input(
             "eligible_ids_sha256": eligible_hash,
             "sources": "conserved production workprint, no refetch",
         },
-        bank_dir=store_path.parent / "structure-banks" / case.key,
+        bank_dir=bank_root / "structure-banks" / case.key,
         artifact_dir=artifact_dir,
         motion_outcome_replay=motion_outcome_replay,
         owner_required_asset_ids=tuple(

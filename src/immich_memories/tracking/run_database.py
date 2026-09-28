@@ -1,27 +1,33 @@
-"""Database operations for run history.
+"""Pipeline run history, kept in the store.
 
-Row-to-model conversion lives in run_database_rows.py; the lifecycle
-transition errors in run_lifecycle_errors.py.
+Row conversion lives in run_database_rows.py; the lifecycle transition errors in
+run_lifecycle_errors.py. Every lifecycle transition is one conditional UPDATE, so two
+processes racing on the same run cannot both win it.
 """
 
 from __future__ import annotations
 
-import json
 import logging
-import sqlite3
-from collections.abc import Iterator
-from contextlib import contextmanager
+from collections.abc import Callable, Iterable, Sequence
 from datetime import datetime
 from pathlib import Path
+from typing import Any, NoReturn
 
-from immich_memories.operations.phases import OperationalPhase, PhaseEvent
-from immich_memories.tracking.models import (
-    DeliveryStatus,
-    PhaseStats,
-    RunMetadata,
-    normalize_memory_people,
+import sqlalchemy as sa
+from sqlalchemy.engine import Connection
+from sqlalchemy.exc import IntegrityError
+
+from immich_memories.db import Store, open_store, to_db
+from immich_memories.db.tables import automation_attempts, phase_stats, pipeline_runs
+from immich_memories.operations.phases import PhaseEvent
+from immich_memories.tracking.models import DeliveryStatus, PhaseStats, RunMetadata
+from immich_memories.tracking.phase_rows import advance_phase
+from immich_memories.tracking.run_database_rows import (
+    phase_stats_to_row,
+    row_to_phase_stats,
+    row_to_run,
+    run_to_row,
 )
-from immich_memories.tracking.run_database_rows import row_to_phase_stats, row_to_run
 from immich_memories.tracking.run_lifecycle_errors import (
     DuplicateRunError,
     raise_invalid_artifact_transition,
@@ -30,175 +36,63 @@ from immich_memories.tracking.run_lifecycle_errors import (
 
 logger = logging.getLogger(__name__)
 
+# SQLite's default limit on bound variables is 999; stay under it for `IN (...)`.
+_CHUNK = 900
 
-def _compute_avg_run_seconds(conn: sqlite3.Connection, completed_runs: int) -> float:
-    """Compute average processing time per completed run."""
-    if completed_runs <= 0:
-        return 0.0
+_RUNS = pipeline_runs.c
+_COMPLETION_ORDER = (
+    sa.func.coalesce(_RUNS.completed_at, _RUNS.created_at).desc(),
+    _RUNS.created_at.desc(),
+    _RUNS.run_id.desc(),
+)
 
-    avg_result = conn.execute(
-        """
-        SELECT AVG(total_duration) FROM (
-            SELECT SUM(duration_seconds) as total_duration
-            FROM phase_stats ps
-            JOIN pipeline_runs pr ON ps.run_id = pr.run_id
-            WHERE pr.status = 'completed'
-            GROUP BY ps.run_id
-        )
-        """
-    ).fetchone()
-    return avg_result[0] or 0.0
+
+def _chunks(values: Sequence[str]) -> Iterable[Sequence[str]]:
+    for start in range(0, len(values), _CHUNK):
+        yield values[start : start + _CHUNK]
 
 
 class RunDatabase:
-    """Database operations for pipeline run history."""
+    """Pipeline run history: every run, its phase timings, and its delivery lifecycle."""
 
-    def __init__(self, db_path: Path):
-        self.db_path = Path(db_path)
-
-        # Ensure migrations are run (this will create the tables if needed)
-        from immich_memories.cache.database import VideoAnalysisCache
-
-        VideoAnalysisCache(db_path)  # This triggers migrations
-
-    @contextmanager
-    def _get_connection(self) -> Iterator[sqlite3.Connection]:
-        """Get a database connection with proper settings."""
-        conn = sqlite3.connect(
-            self.db_path,
-            timeout=5.0,  # busy_timeout=5000ms — retry on concurrent access
-            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
-        )
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON")
-        try:
-            yield conn
-        finally:
-            conn.close()
+    def __init__(self, store: Store | None = None):
+        self.store = store or open_store()
 
     def save_run(self, run: RunMetadata) -> None:
         """Insert a new run without replacing an existing authoritative identity."""
-        with self._get_connection() as conn:
-            cursor = conn.execute(
-                """
-                INSERT INTO pipeline_runs (
-                    run_id, created_at, completed_at, status,
-                    memory_type, memory_key, memory_category, memory_people_json, source,
-                    automation_attempt_id,
-                    last_phase, phase_events,
-                    person_name, person_id, date_range_start, date_range_end,
-                    target_duration_seconds, output_path, output_size_bytes,
-                    output_duration_seconds, clips_analyzed, clips_selected,
-                    errors_count, system_info, delivery_status, delivery_attempts,
-                    delivery_error, immich_asset_id, delivery_album, warnings_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(run_id) DO NOTHING
-                """,
-                (
-                    run.run_id,
-                    run.created_at.isoformat(),
-                    run.completed_at.isoformat() if run.completed_at else None,
-                    run.status,
-                    run.memory_type,
-                    run.memory_key,
-                    run.memory_category,
-                    json.dumps(normalize_memory_people(run.memory_people)),
-                    run.source,
-                    run.automation_attempt_id,
-                    run.last_phase.value if run.last_phase else None,
-                    json.dumps(run.phase_events),
-                    run.person_name,
-                    run.person_id,
-                    run.date_range_start.isoformat() if run.date_range_start else None,
-                    run.date_range_end.isoformat() if run.date_range_end else None,
-                    run.target_duration_seconds,
-                    run.output_path,
-                    run.output_size_bytes,
-                    run.output_duration_seconds,
-                    run.clips_analyzed,
-                    run.clips_selected,
-                    run.errors_count,
-                    run.system_info.to_json() if run.system_info else None,
-                    run.delivery_status.value,
-                    run.delivery_attempts,
-                    run.delivery_error,
-                    run.immich_asset_id,
-                    run.delivery_album,
-                    json.dumps(run.warnings),
-                ),
-            )
-            if cursor.rowcount != 1:
-                raise DuplicateRunError(f"Pipeline run already exists: {run.run_id}")
-            conn.commit()
+        try:
+            with self.store.begin() as conn:
+                conn.execute(sa.insert(pipeline_runs), [run_to_row(run)])
+        except IntegrityError as error:
+            raise DuplicateRunError(f"Pipeline run already exists: {run.run_id}") from error
 
     def update_operational_phase(self, run_id: str, event: PhaseEvent) -> bool:
         """Persist a monotonic run phase and mirror its exact automation attempt."""
-        with self._get_connection() as conn:
-            row = conn.execute(
-                "SELECT last_phase, automation_attempt_id FROM pipeline_runs WHERE run_id = ?",
-                (run_id,),
-            ).fetchone()
-            if row is None:
+        with self.store.begin() as conn:
+            advanced = advance_phase(conn, pipeline_runs, _RUNS.run_id, run_id, event)
+            if advanced is None:
                 raise KeyError(f"Unknown pipeline run: {run_id}")
-            previous = OperationalPhase(row["last_phase"]) if row["last_phase"] else None
-            if previous is not None and event.phase.order < previous.order:
+            if not advanced:
                 return False
-            conn.execute(
-                """UPDATE pipeline_runs SET last_phase = ?,
-                   phase_events = json_insert(phase_events, '$[#]', json(?)) WHERE run_id = ?""",
-                (event.phase.value, json.dumps(event.to_dict()), run_id),
-            )
-            attempt_id = row["automation_attempt_id"]
+            attempt_id = conn.execute(
+                sa.select(_RUNS.automation_attempt_id).where(_RUNS.run_id == run_id)
+            ).scalar()
             if attempt_id:
-                attempt_row = conn.execute(
-                    "SELECT last_phase FROM automation_attempts WHERE id = ?", (attempt_id,)
-                ).fetchone()
-                if attempt_row is not None:
-                    attempt_phase = (
-                        OperationalPhase(attempt_row["last_phase"])
-                        if attempt_row["last_phase"]
-                        else None
-                    )
-                    if attempt_phase is None or event.phase.order >= attempt_phase.order:
-                        conn.execute(
-                            """UPDATE automation_attempts SET last_phase = ?,
-                               phase_events = json_insert(phase_events, '$[#]', json(?))
-                               WHERE id = ?""",
-                            (event.phase.value, json.dumps(event.to_dict()), attempt_id),
-                        )
-            conn.commit()
+                advance_phase(
+                    conn, automation_attempts, automation_attempts.c.id, attempt_id, event
+                )
         return True
 
     def save_phase_stats(self, run_id: str, stats: PhaseStats) -> None:
         """Save phase timing statistics.
 
-        Gracefully handles missing run_id (e.g. DB was deleted mid-run).
-        Phase stats are observability data — losing them is acceptable.
+        A run that no longer exists (deleted mid-run) loses its phase stats with a
+        warning: they are observability data, and losing them is acceptable.
         """
         try:
-            with self._get_connection() as conn:
-                conn.execute(
-                    """
-                    INSERT INTO phase_stats (
-                        run_id, phase_name, started_at, completed_at,
-                        duration_seconds, items_processed, items_total,
-                        errors, extra_metrics
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        run_id,
-                        stats.phase_name,
-                        stats.started_at.isoformat(),
-                        stats.completed_at.isoformat() if stats.completed_at else None,
-                        stats.duration_seconds,
-                        stats.items_processed,
-                        stats.items_total,
-                        json.dumps(stats.errors) if stats.errors else None,
-                        json.dumps(stats.extra_metrics) if stats.extra_metrics else None,
-                    ),
-                )
-                conn.commit()
-        except sqlite3.IntegrityError:
+            with self.store.begin() as conn:
+                conn.execute(sa.insert(phase_stats), [phase_stats_to_row(run_id, stats)])
+        except IntegrityError:
             logger.warning(
                 "Phase stats lost for '%s' — run_id '%s' may no longer exist in database",
                 stats.phase_name,
@@ -206,23 +100,15 @@ class RunDatabase:
             )
 
     def get_run(self, run_id: str) -> RunMetadata | None:
-        """Get a single run by ID."""
-        with self._get_connection() as conn:
-            row = conn.execute("SELECT * FROM pipeline_runs WHERE run_id = ?", (run_id,)).fetchone()
-
-            if not row:
-                return None
-
-            run = row_to_run(row)
-            run.phases = self.get_phase_stats(run_id)
-            return run
+        """Get a single run by ID, with its phase timings."""
+        runs = self._select_runs(sa.select(pipeline_runs).where(_RUNS.run_id == run_id))
+        return runs[0] if runs else None
 
     def delete_run(self, run_id: str) -> bool:
         """Delete a run and its stats."""
-        with self._get_connection() as conn:
-            cursor = conn.execute("DELETE FROM pipeline_runs WHERE run_id = ?", (run_id,))
-            conn.commit()
-            return cursor.rowcount > 0
+        with self.store.begin() as conn:
+            result = conn.execute(sa.delete(pipeline_runs).where(_RUNS.run_id == run_id))
+        return result.rowcount > 0
 
     def update_run_status(
         self,
@@ -238,54 +124,40 @@ class RunDatabase:
         delivery_album: str | None = None,
         warnings: list[str] | None = None,
     ) -> None:
-        """Update run status and optionally other fields."""
-        with self._get_connection() as conn:
-            updates = ["status = ?"]
-            params: list = [status]
+        """Update run status and whichever other fields were given."""
+        given = {
+            "completed_at": to_db(completed_at),
+            "output_path": output_path,
+            "output_size_bytes": output_size_bytes,
+            "output_duration_seconds": output_duration_seconds,
+            "clips_analyzed": clips_analyzed,
+            "clips_selected": clips_selected,
+            "errors_count": errors_count,
+            "delivery_album": delivery_album,
+            "warnings": warnings,
+        }
+        values = {"status": status} | {k: v for k, v in given.items() if v is not None}
+        with self.store.begin() as conn:
+            conn.execute(sa.update(pipeline_runs).where(_RUNS.run_id == run_id).values(values))
 
-            if completed_at is not None:
-                updates.append("completed_at = ?")
-                params.append(completed_at.isoformat())
-
-            if output_path is not None:
-                updates.append("output_path = ?")
-                params.append(output_path)
-
-            if output_size_bytes is not None:
-                updates.append("output_size_bytes = ?")
-                params.append(output_size_bytes)
-
-            if output_duration_seconds is not None:
-                updates.append("output_duration_seconds = ?")
-                params.append(output_duration_seconds)
-
-            if clips_analyzed is not None:
-                updates.append("clips_analyzed = ?")
-                params.append(clips_analyzed)
-
-            if clips_selected is not None:
-                updates.append("clips_selected = ?")
-                params.append(clips_selected)
-
-            if errors_count is not None:
-                updates.append("errors_count = ?")
-                params.append(errors_count)
-
-            if delivery_album is not None:
-                updates.append("delivery_album = ?")
-                params.append(delivery_album)
-
-            if warnings is not None:
-                updates.append("warnings_json = ?")
-                params.append(json.dumps(warnings))
-
-            params.append(run_id)
-
-            conn.execute(
-                f"UPDATE pipeline_runs SET {', '.join(updates)} WHERE run_id = ?",  # noqa: S608  # nosemgrep: sqlalchemy-execute-raw-query — column names hardcoded, values parameterized
-                params,
+    def _transition(
+        self,
+        run_id: str,
+        where: Sequence[sa.ColumnElement[bool]],
+        values: dict[str, Any],
+        refuse: Callable[[Connection, str], NoReturn],
+    ) -> RunMetadata:
+        """Apply one guarded lifecycle UPDATE, or name the precondition it missed."""
+        with self.store.begin() as conn:
+            result = conn.execute(
+                sa.update(pipeline_runs).where(_RUNS.run_id == run_id, *where).values(values)
             )
-            conn.commit()
+            if result.rowcount != 1:
+                refuse(conn, run_id)
+        saved = self.get_run(run_id)
+        if saved is None:  # pragma: no cover - the UPDATE just matched this row
+            raise KeyError(f"Unknown pipeline run: {run_id}")
+        return saved
 
     def mark_delivery_abandoned(self, run_id: str, error: str) -> RunMetadata:
         """Stop retrying a delivery that has used up its attempts.
@@ -294,23 +166,12 @@ class RunDatabase:
         Leaving it pending would consume every nightly wake forever, because the
         runner retries a pending delivery before it considers generating.
         """
-        with self._get_connection() as conn:
-            cursor = conn.execute(
-                """
-                UPDATE pipeline_runs
-                SET delivery_status = ?,
-                    delivery_error = ?
-                WHERE run_id = ? AND status = 'completed'
-                """,
-                (DeliveryStatus.ABANDONED.value, error, run_id),
-            )
-            if cursor.rowcount != 1:
-                raise_invalid_delivery_transition(conn, run_id)
-            conn.commit()
-        saved = self.get_run(run_id)
-        if saved is None:  # pragma: no cover - the UPDATE just matched this row
-            raise KeyError(f"Unknown pipeline run: {run_id}")
-        return saved
+        return self._transition(
+            run_id,
+            [_RUNS.status == "completed"],
+            {"delivery_status": DeliveryStatus.ABANDONED.value, "delivery_error": error},
+            raise_invalid_delivery_transition,
+        )
 
     def mark_delivery_pending(
         self,
@@ -320,26 +181,17 @@ class RunDatabase:
         attempted: bool = True,
     ) -> RunMetadata:
         """Record one failed delivery call without changing artifact completion."""
-        with self._get_connection() as conn:
-            cursor = conn.execute(
-                """
-                UPDATE pipeline_runs
-                SET delivery_status = ?,
-                    delivery_attempts = delivery_attempts + ?,
-                    delivery_error = ?,
-                    immich_asset_id = NULL
-                WHERE run_id = ? AND status = 'completed'
-                """,
-                (DeliveryStatus.PENDING.value, int(attempted), error, run_id),
-            )
-            if cursor.rowcount != 1:
-                raise_invalid_delivery_transition(conn, run_id)
-            conn.commit()
-
-        updated = self.get_run(run_id)
-        if updated is None:  # pragma: no cover - row was updated in the transaction above
-            raise KeyError(f"Unknown pipeline run: {run_id}")
-        return updated
+        return self._transition(
+            run_id,
+            [_RUNS.status == "completed"],
+            {
+                "delivery_status": DeliveryStatus.PENDING.value,
+                "delivery_attempts": _RUNS.delivery_attempts + int(attempted),
+                "delivery_error": error,
+                "immich_asset_id": None,
+            },
+            raise_invalid_delivery_transition,
+        )
 
     def complete_artifact(
         self,
@@ -361,187 +213,127 @@ class RunDatabase:
         delivery_status = (
             DeliveryStatus.PENDING if delivery_requested else DeliveryStatus.NOT_REQUESTED
         )
-        with self._get_connection() as conn:
-            cursor = conn.execute(
-                """
-                UPDATE pipeline_runs
-                SET status = 'completed',
-                    completed_at = ?,
-                    output_path = ?,
-                    output_size_bytes = ?,
-                    output_duration_seconds = ?,
-                    clips_analyzed = ?,
-                    clips_selected = ?,
-                    errors_count = ?,
-                    delivery_status = ?,
-                    delivery_attempts = 0,
-                    delivery_error = NULL,
-                    immich_asset_id = NULL,
-                    delivery_album = ?,
-                    warnings_json = ?,
-                    llm_metrics = ?
-                WHERE run_id = ? AND status = 'running'
-                """,
-                (
-                    completed_at.isoformat(),
-                    output_path,
-                    output_size_bytes,
-                    output_duration_seconds,
-                    clips_analyzed,
-                    clips_selected,
-                    errors_count,
-                    delivery_status.value,
-                    delivery_album,
-                    json.dumps(warnings),
-                    json.dumps(llm_metrics) if llm_metrics else None,
-                    run_id,
-                ),
-            )
-            if cursor.rowcount != 1:
-                raise_invalid_artifact_transition(conn, run_id)
-            conn.commit()
-
-        completed = self.get_run(run_id)
-        if completed is None:  # pragma: no cover - row updated in the transaction above
-            raise KeyError(f"Unknown pipeline run: {run_id}")
-        return completed
+        return self._transition(
+            run_id,
+            [_RUNS.status == "running"],
+            {
+                "status": "completed",
+                "completed_at": to_db(completed_at),
+                "output_path": output_path,
+                "output_size_bytes": output_size_bytes,
+                "output_duration_seconds": output_duration_seconds,
+                "clips_analyzed": clips_analyzed,
+                "clips_selected": clips_selected,
+                "errors_count": errors_count,
+                "delivery_status": delivery_status.value,
+                "delivery_attempts": 0,
+                "delivery_error": None,
+                "immich_asset_id": None,
+                "delivery_album": delivery_album,
+                "warnings": warnings.copy(),
+                "llm_metrics": llm_metrics or None,
+            },
+            raise_invalid_artifact_transition,
+        )
 
     def mark_delivered(self, run_id: str, asset_id: str) -> RunMetadata:
         """Record one successful delivery call without changing artifact completion."""
         normalized_asset_id = asset_id.strip()
         if not normalized_asset_id:
             raise ValueError("Immich delivery requires a nonempty asset ID")
-        with self._get_connection() as conn:
-            cursor = conn.execute(
-                """
-                UPDATE pipeline_runs
-                SET delivery_status = ?,
-                    delivery_attempts = delivery_attempts + 1,
-                    delivery_error = NULL,
-                    immich_asset_id = ?
-                WHERE run_id = ?
-                  AND status = 'completed'
-                  AND delivery_status = ?
-                """,
-                (
-                    DeliveryStatus.DELIVERED.value,
-                    normalized_asset_id,
-                    run_id,
-                    DeliveryStatus.PENDING.value,
-                ),
-            )
-            if cursor.rowcount != 1:
-                raise_invalid_delivery_transition(conn, run_id)
-            conn.commit()
-
-        updated = self.get_run(run_id)
-        if updated is None:  # pragma: no cover - row was updated in the transaction above
-            raise KeyError(f"Unknown pipeline run: {run_id}")
-        return updated
+        return self._transition(
+            run_id,
+            [_RUNS.status == "completed", _RUNS.delivery_status == DeliveryStatus.PENDING.value],
+            {
+                "delivery_status": DeliveryStatus.DELIVERED.value,
+                "delivery_attempts": _RUNS.delivery_attempts + 1,
+                "delivery_error": None,
+                "immich_asset_id": normalized_asset_id,
+            },
+            raise_invalid_delivery_transition,
+        )
 
     def mark_stale_runs_as_interrupted(self) -> int:
         """Mark any 'running' runs as 'interrupted' (startup cleanup)."""
-        with self._get_connection() as conn:
-            cursor = conn.execute(
-                """
-                UPDATE pipeline_runs
-                SET status = 'interrupted'
-                WHERE status = 'running'
-                """
-            )
-            conn.commit()
-            count = cursor.rowcount
-            if count > 0:
-                logger.info(f"Marked {count} stale run(s) as interrupted")
-            return count
+        with self.store.begin() as conn:
+            count = conn.execute(
+                sa.update(pipeline_runs)
+                .where(_RUNS.status == "running")
+                .values(status="interrupted")
+            ).rowcount
+        if count > 0:
+            logger.info(f"Marked {count} stale run(s) as interrupted")
+        return count
+
+    def _pending_deliveries(self, source: str) -> sa.Select:
+        return sa.select(_RUNS.run_id, _RUNS.output_path).where(
+            _RUNS.status == "completed",
+            _RUNS.delivery_status == DeliveryStatus.PENDING.value,
+            _RUNS.output_path.is_not(None),
+            _RUNS.source == source,
+        )
 
     def get_oldest_pending_delivery(self, source: str) -> RunMetadata | None:
         """Return the oldest completed pending delivery for one source."""
-        with self._get_connection() as conn:
-            rows = conn.execute(
-                """
-                SELECT run_id, output_path
-                FROM pipeline_runs
-                WHERE status = 'completed'
-                  AND delivery_status = ?
-                  AND output_path IS NOT NULL
-                  AND source = ?
-                ORDER BY COALESCE(completed_at, created_at), created_at, run_id
-                """,
-                (DeliveryStatus.PENDING.value, source),
-            ).fetchall()
-
+        query = self._pending_deliveries(source).order_by(
+            sa.func.coalesce(_RUNS.completed_at, _RUNS.created_at),
+            _RUNS.created_at,
+            _RUNS.run_id,
+        )
+        with self.store.connect() as conn:
+            rows = conn.execute(query).all()
         for row in rows:
-            output_path = Path(row["output_path"])
-            if output_path.is_file():
-                return self.get_run(row["run_id"])
+            if Path(row.output_path).is_file():
+                return self.get_run(row.run_id)
             logger.warning(
                 "Pending delivery run '%s' cannot be retried because its output file "
                 "is missing or not a regular file: %s",
-                row["run_id"],
-                output_path,
+                row.run_id,
+                row.output_path,
             )
         return None
 
     def count_pending_deliveries(self, source: str = "auto") -> int:
         """Count durable pending deliveries without hiding missing artifacts."""
-        with self._get_connection() as conn:
-            row = conn.execute(
-                """
-                SELECT COUNT(*) AS pending_count
-                FROM pipeline_runs
-                WHERE status = 'completed'
-                  AND delivery_status = ?
-                  AND output_path IS NOT NULL
-                  AND source = ?
-                """,
-                (DeliveryStatus.PENDING.value, source),
-            ).fetchone()
-        return int(row["pending_count"])
-
-    # =========================================================================
-    # Query Methods (from RunQueriesMixin)
-    # =========================================================================
+        query = sa.select(sa.func.count()).select_from(self._pending_deliveries(source).subquery())
+        with self.store.connect() as conn:
+            return int(conn.execute(query).scalar_one())
 
     def record_llm_metrics(self, run_id: str, metrics: dict) -> None:
-        """Store what the run spent on the model.
-
-        Its own method rather than another optional field on
-        `update_run_status`: that function is a chain of "if this was passed,
-        update it" branches sitting at the cognitive-complexity ceiling, and
-        this is one unconditional write.
-        """
+        """Store what the run spent on the model."""
         if not metrics:
             return
-        with self._get_connection() as conn:
-            conn.execute(
-                "UPDATE pipeline_runs SET llm_metrics = ? WHERE run_id = ?",
-                (json.dumps(metrics), run_id),
-            )
-            conn.commit()
+        self._set(run_id, llm_metrics=metrics.copy())
 
     def record_title_source(self, run_id: str, source: str) -> None:
         """Store which source produced the run's opening title."""
-        with self._get_connection() as conn:
-            conn.execute(
-                "UPDATE pipeline_runs SET title_source = ? WHERE run_id = ?",
-                (source, run_id),
-            )
-            conn.commit()
+        self._set(run_id, title_source=source)
 
-    def get_phase_stats(self, run_id: str) -> list[PhaseStats]:
-        """Get all phase stats for a run."""
-        with self._get_connection() as conn:
-            rows = conn.execute(
-                """
-                SELECT * FROM phase_stats
-                WHERE run_id = ?
-                ORDER BY started_at
-                """,
-                (run_id,),
-            ).fetchall()
+    def _set(self, run_id: str, **values: Any) -> None:
+        with self.store.begin() as conn:
+            conn.execute(sa.update(pipeline_runs).where(_RUNS.run_id == run_id).values(values))
 
-            return [row_to_phase_stats(row) for row in rows]
+    def _phases_of(self, run_ids: Sequence[str]) -> dict[str, list[PhaseStats]]:
+        found: dict[str, list[PhaseStats]] = {}
+        with self.store.connect() as conn:
+            for chunk in _chunks(run_ids):
+                rows = conn.execute(
+                    sa.select(phase_stats)
+                    .where(phase_stats.c.run_id.in_(chunk))
+                    .order_by(phase_stats.c.started_at, phase_stats.c.id)
+                ).mappings()
+                for row in rows:
+                    found.setdefault(row["run_id"], []).append(row_to_phase_stats(row))
+        return found
+
+    def _select_runs(self, query: sa.Select, *, with_phases: bool = True) -> list[RunMetadata]:
+        with self.store.connect() as conn:
+            runs = [row_to_run(row) for row in conn.execute(query).mappings()]
+        if with_phases and runs:
+            phases = self._phases_of([run.run_id for run in runs])
+            for run in runs:
+                run.phases = phases.get(run.run_id, [])
+        return runs
 
     def list_runs(
         self,
@@ -556,88 +348,49 @@ class RunDatabase:
         if order_by_completion and status != "completed":
             msg = "order_by_completion requires status='completed'"
             raise ValueError(msg)
-
-        with self._get_connection() as conn:
-            query = "SELECT * FROM pipeline_runs WHERE 1=1"
-            params: list = []
-
-            if person_name:
-                query += " AND person_name = ?"
-                params.append(person_name)
-
-            if status:
-                query += " AND status = ?"
-                params.append(status)
-
-            if source is not None:
-                query += " AND source = ?"
-                params.append(source)
-
-            if order_by_completion:
-                query += (
-                    " ORDER BY COALESCE(completed_at, created_at) DESC,"
-                    " created_at DESC, run_id DESC"
-                )
-            else:
-                query += " ORDER BY created_at DESC"
-            query += " LIMIT ? OFFSET ?"
-            params.extend([limit, offset])
-
-            rows = conn.execute(query, params).fetchall()
-            runs = []
-
-            for row in rows:
-                run = row_to_run(row)
-                run.phases = self.get_phase_stats(run.run_id)
-                runs.append(run)
-
-            return runs
+        query = sa.select(pipeline_runs)
+        if person_name:
+            query = query.where(_RUNS.person_name == person_name)
+        if status:
+            query = query.where(_RUNS.status == status)
+        if source is not None:
+            query = query.where(_RUNS.source == source)
+        order = _COMPLETION_ORDER if order_by_completion else (_RUNS.created_at.desc(),)
+        return self._select_runs(query.order_by(*order).limit(limit).offset(offset))
 
     def get_aggregate_stats(self) -> dict:
         """Get aggregate statistics across all runs."""
-        with self._get_connection() as conn:
-            total_runs = conn.execute("SELECT COUNT(*) FROM pipeline_runs").fetchone()[0]
-
-            completed_runs = conn.execute(
-                "SELECT COUNT(*) FROM pipeline_runs WHERE status = 'completed'"
-            ).fetchone()[0]
-
-            failed_runs = conn.execute(
-                "SELECT COUNT(*) FROM pipeline_runs WHERE status = 'failed'"
-            ).fetchone()[0]
-
-            total_output_seconds = conn.execute(
-                "SELECT COALESCE(SUM(output_duration_seconds), 0) FROM pipeline_runs"
-            ).fetchone()[0]
-
-            total_clips = conn.execute(
-                "SELECT COALESCE(SUM(clips_selected), 0) FROM pipeline_runs"
-            ).fetchone()[0]
-
-            total_processing_seconds = conn.execute(
-                "SELECT COALESCE(SUM(duration_seconds), 0) FROM phase_stats"
-            ).fetchone()[0]
-
-            avg_run_seconds = _compute_avg_run_seconds(conn, completed_runs)
-
-            avg_clips = 0.0
-            if total_runs > 0:
-                avg_clips = total_clips / total_runs
-
-            return {
-                "total_runs": total_runs,
-                "completed_runs": completed_runs,
-                "failed_runs": failed_runs,
-                "total_output_seconds": total_output_seconds,
-                "total_processing_seconds": total_processing_seconds,
-                "avg_run_seconds": avg_run_seconds,
-                "avg_clips": avg_clips,
-                "total_clips": total_clips,
-            }
-
-    # =========================================================================
-    # Deduplication Queries (for automation)
-    # =========================================================================
+        per_run = (
+            sa.select(sa.func.sum(phase_stats.c.duration_seconds).label("total"))
+            .join(pipeline_runs, phase_stats.c.run_id == _RUNS.run_id)
+            .where(_RUNS.status == "completed")
+            .group_by(phase_stats.c.run_id)
+            .subquery()
+        )
+        with self.store.connect() as conn:
+            totals = conn.execute(
+                sa.select(
+                    sa.func.count().label("runs"),
+                    sa.func.count().filter(_RUNS.status == "completed").label("completed"),
+                    sa.func.count().filter(_RUNS.status == "failed").label("failed"),
+                    sa.func.coalesce(sa.func.sum(_RUNS.output_duration_seconds), 0).label("out"),
+                    sa.func.coalesce(sa.func.sum(_RUNS.clips_selected), 0).label("clips"),
+                )
+            ).one()
+            processing: float = conn.execute(
+                sa.select(sa.func.coalesce(sa.func.sum(phase_stats.c.duration_seconds), 0))
+            ).scalar_one()
+            average = conn.execute(sa.select(sa.func.avg(per_run.c.total))).scalar()
+        return {
+            "total_runs": totals.runs,
+            "completed_runs": totals.completed,
+            "failed_runs": totals.failed,
+            "total_output_seconds": totals.out,
+            "total_processing_seconds": processing,
+            "avg_run_seconds": float(average or 0.0) if totals.completed > 0 else 0.0,
+            "avg_clips": totals.clips / totals.runs if totals.runs > 0 else 0.0,
+            "total_clips": totals.clips,
+        }
 
     def get_last_run_of_type(
         self,
@@ -645,32 +398,31 @@ class RunDatabase:
         source: str | None = None,
     ) -> RunMetadata | None:
         """Get the most recent completed run of a type, optionally scoped by source."""
-        with self._get_connection() as conn:
-            query = """
-                SELECT * FROM pipeline_runs
-                WHERE memory_type = ? AND status = 'completed'
-            """
-            params = [memory_type]
-            if source is not None:
-                query += " AND source = ?"
-                params.append(source)
-            query += (
-                " ORDER BY COALESCE(completed_at, created_at) DESC,"
-                " created_at DESC, run_id DESC LIMIT 1"
-            )
-            row = conn.execute(query, params).fetchone()
-            return row_to_run(row) if row else None
+        query = sa.select(pipeline_runs).where(
+            _RUNS.memory_type == memory_type, _RUNS.status == "completed"
+        )
+        if source is not None:
+            query = query.where(_RUNS.source == source)
+        runs = self._select_runs(query.order_by(*_COMPLETION_ORDER).limit(1), with_phases=False)
+        return runs[0] if runs else None
 
     def get_generated_memory_keys(self) -> set[str]:
         """Get all memory_keys that have been successfully generated."""
-        with self._get_connection() as conn:
-            rows = conn.execute(
-                """
-                SELECT DISTINCT memory_key FROM pipeline_runs
-                WHERE status = 'completed' AND memory_key IS NOT NULL
-                """
-            ).fetchall()
-            return {row["memory_key"] for row in rows}
+        query = (
+            sa.select(_RUNS.memory_key)
+            .where(_RUNS.status == "completed", _RUNS.memory_key.is_not(None))
+            .distinct()
+        )
+        with self.store.connect() as conn:
+            return set(conn.execute(query).scalars())
+
+    def delivered_asset_ids(self) -> frozenset[str]:
+        """Every Immich asset id this install recorded when it uploaded a finished film."""
+        query = sa.select(_RUNS.immich_asset_id).where(
+            _RUNS.immich_asset_id.is_not(None), sa.func.trim(_RUNS.immich_asset_id) != ""
+        )
+        with self.store.connect() as conn:
+            return frozenset(conn.execute(query).scalars())
 
     def get_run_by_automation_attempt(self, automation_attempt_id: str) -> RunMetadata | None:
         """Find the newest run of any status that one automation attempt started.
@@ -678,17 +430,14 @@ class RunDatabase:
         The completed-only lookup answers delivery; this one answers "where did
         that attempt end up", which is the question a failed attempt raises.
         """
-        with self._get_connection() as conn:
-            row = conn.execute(
-                """
-                SELECT * FROM pipeline_runs
-                WHERE automation_attempt_id = ?
-                ORDER BY created_at DESC, run_id DESC
-                LIMIT 1
-                """,
-                (automation_attempt_id,),
-            ).fetchone()
-        return row_to_run(row) if row else None
+        query = (
+            sa.select(pipeline_runs)
+            .where(_RUNS.automation_attempt_id == automation_attempt_id)
+            .order_by(_RUNS.created_at.desc(), _RUNS.run_id.desc())
+            .limit(1)
+        )
+        runs = self._select_runs(query, with_phases=False)
+        return runs[0] if runs else None
 
     def get_completed_run_by_automation_attempt(
         self,
@@ -697,21 +446,20 @@ class RunDatabase:
         memory_key: str,
     ) -> RunMetadata | None:
         """Find the completed auto run created by one exact automation attempt."""
-        with self._get_connection() as conn:
-            rows = conn.execute(
-                """
-                SELECT * FROM pipeline_runs
-                WHERE automation_attempt_id = ?
-                  AND memory_key = ?
-                  AND source = 'auto'
-                  AND status = 'completed'
-                ORDER BY created_at DESC
-                LIMIT 2
-                """,
-                (automation_attempt_id, memory_key),
-            ).fetchall()
-        if len(rows) > 1:
+        query = (
+            sa.select(pipeline_runs)
+            .where(
+                _RUNS.automation_attempt_id == automation_attempt_id,
+                _RUNS.memory_key == memory_key,
+                _RUNS.source == "auto",
+                _RUNS.status == "completed",
+            )
+            .order_by(_RUNS.created_at.desc())
+            .limit(2)
+        )
+        runs = self._select_runs(query, with_phases=False)
+        if len(runs) > 1:
             raise RuntimeError(
                 f"Multiple completed auto runs matched automation attempt {automation_attempt_id}"
             )
-        return row_to_run(rows[0]) if rows else None
+        return runs[0] if runs else None

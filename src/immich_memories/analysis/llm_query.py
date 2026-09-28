@@ -67,7 +67,8 @@ from immich_memories.operations.cancellation import check_cancelled
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
-    from pathlib import Path
+
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -181,14 +182,14 @@ async def query_llm(
     thinking: bool = False,
     images: Sequence[bytes] = (),
     image_detail: str = "low",
-    cache_path: Path | None = None,
+    judgments: Store | None = None,
     transport_observer: Callable[[LLMTransportAttempt], None] | None = None,
     require_complete: bool = False,
     response_format: Mapping[str, Any] | None = None,
 ) -> str:
     """Send a prompt, optionally with JPEG images, and return the response.
 
-    cache_path opts this call into reuse: an identical question to an identical
+    judgments opts this call into reuse: an identical question to an identical
     model gets the answer it got before, rather than being paid for again.
     Deliberately opt-in — a health probe must reach the server every time — and
     deliberately refused for image-bearing calls, whose pictures a prompt hash
@@ -221,7 +222,7 @@ async def query_llm(
         if not images
         else None
     )
-    remembered = _remembered(cache_path, key) if key is not None else None
+    remembered = _remembered(judgments, key) if key is not None else None
     if remembered is not None:
         logger.debug("Reusing the answer to an identical question")
         llm_metrics.record_cache_hit()
@@ -259,34 +260,25 @@ async def query_llm(
         # that spent four minutes on a dead server should not read as free.
         llm_metrics.record_wall(time.monotonic() - started)
     if key is not None:
-        _remember(cache_path, key, answer)
+        _remember(judgments, key, answer)
     return answer
 
 
-def _remembered(cache_path: Path | None, key: str) -> str | None:
-    """Read the exact transport request, closing the connection on every path."""
-    if cache_path is None:
+def _remembered(judgments: Store | None, key: str) -> str | None:
+    if judgments is None:
         return None
     from immich_memories.cache.judgment_cache import JudgmentCache
 
-    cache = JudgmentCache(cache_path)
-    try:
-        return cache.answer_for(key)
-    finally:
-        cache.close()
+    return JudgmentCache(judgments).answer_for(key)
 
 
-def _remember(cache_path: Path | None, key: str, answer: str) -> None:
+def _remember(judgments: Store | None, key: str, answer: str) -> None:
     """Keep an answer. Silence is never kept — a failed call must not stick."""
-    if cache_path is None or not answer:
+    if judgments is None or not answer:
         return
     from immich_memories.cache.judgment_cache import JudgmentCache
 
-    cache = JudgmentCache(cache_path)
-    try:
-        cache.remember(key, answer)
-    finally:
-        cache.close()
+    JudgmentCache(judgments).remember(key, answer)
 
 
 async def _dispatch(

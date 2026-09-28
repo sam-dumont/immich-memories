@@ -210,7 +210,7 @@ class TestDaemonLoop:
             patch("immich_memories.tracking.run_database.RunDatabase", return_value=mock_db),
         ):
             # Should not raise — graceful shutdown
-            run_daemon_loop(config, db_path=Path("/tmp/test_daemon.db"))
+            run_daemon_loop(config)
 
     def test_daemon_loop_forwards_custom_config_to_each_job(self):
         """The daemon handoff cannot discard provenance after CLI startup."""
@@ -253,11 +253,7 @@ class TestDaemonLoop:
                 side_effect=stop_after_job,
             ) as execute,
         ):
-            run_daemon_loop(
-                config,
-                db_path=Path("/tmp/test_daemon.db"),
-                config_path=config_path,
-            )
+            run_daemon_loop(config, config_path=config_path)
 
         execute.assert_called_once_with(
             job,

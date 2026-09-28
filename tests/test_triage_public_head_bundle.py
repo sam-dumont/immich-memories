@@ -69,8 +69,8 @@ class _Store:
             if asset_id in rows
         }
 
-    def remember_facts(self, asset_id, facts, *, encoder_key):
-        self.written[asset_id] = list(facts)
+    def remember_facts(self, facts, *, encoder_key):
+        self.written |= {asset_id: list(decided) for asset_id, decided in facts.items()}
 
 
 class _Encoder:

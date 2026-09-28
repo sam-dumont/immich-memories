@@ -74,6 +74,7 @@ def _ci_success_result(
         command = command.replace(token, result)
     for job in workflow["jobs"]:
         command = command.replace(f"${{{{ needs.{job}.result }}}}", "success")
+        command = command.replace(f"${{{{ needs['{job}'].result }}}}", "success")
     assert "${{" not in command
     return subprocess.run(
         ["bash", "-o", "pipefail", "-c", command],
@@ -141,12 +142,15 @@ def test_ci_runs_the_hermetic_launch_check_with_runtime_dependencies() -> None:
     steps = launch_job["steps"]
     commands = "\n".join(str(step.get("run", "")) for step in steps)
 
-    assert launch_job["timeout-minutes"] == 30
+    # 40, not 30: the PostgreSQL leg runs the same suite against a real server.
+    assert launch_job["timeout-minutes"] == 40
+    assert launch_job["strategy"]["matrix"]["database"] == ["sqlite", "postgresql"]
     assert "ffmpeg" in commands
     assert "playwright install --with-deps chromium" in commands
     # Exact target: "make launch-check" is a substring of "make launch-check-ci",
     # so a loose check would pass whichever one CI pointed at.
     assert re.search(r"^\s*make launch-check-ci\s*$", commands, re.M)
+    assert re.search(r"^\s*make launch-check-ci-postgres\s*$", commands, re.M)
     assert all("IMMICH_API_KEY" not in str(step) for step in steps)
 
     lfs_pull_index = next(

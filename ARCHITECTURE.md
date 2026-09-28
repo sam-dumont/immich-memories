@@ -15,7 +15,7 @@ five stages: **Reading dates, places and people -> Reading event evidence
 -> Building editorial cards -> Editing the memory -> Validating selected source timing**. Every
 attempt is durable under `<cache>/editorial-runs/<key>/attempts/<id>/`
 (`operations/editorial_attempt.py`, an OS lease tells interrupted from slow); the facts and banks
-it reads live in `<cache>/annotations.sqlite` (`store/`). The design is summarised in
+it reads live in the store (`db/`, repositories in `store/`). The design is summarised in
 `docs/designs/2026-09-10-story-first-selection.md`.
 
 Selection carries the exact episode reading identities into its audit lineage. The former
@@ -189,11 +189,13 @@ unchanged sources retain their existing bank entries.
   `editorial_thin_short.py`).
 - **Bank / banked**: an answer stored under its exact inputs and producer identity, so the next
   run asks nothing and a changed asset invalidates only its own rows. The main ones:
-  `annotations.sqlite` (`store/`), episode readings, accounts, cut measurements
-  (`store/cut_measurements.py`) and the `structure-banks/*.private.json` files (thesis-fit
-  votes, audience verdicts). No row means nobody asked, never "measured nothing". Two runs write them at
-  once (the pipeline lock covers assembly only): SQLite banks write row by row, and every JSON
-  bank merges what is on disk under `locked_file.file_lock` before its atomic replace.
+  the store's annotation tables (`store/`), episode readings, accounts, cut measurements
+  (`store/cut_measurements.py`), judgments (`cache/judgment_cache.py`), the thesis-fit and
+  memory-worthy vote banks (`store/vote_banks.py`) and the audience bank (`store/audience_bank.py`).
+  No row means nobody asked, never "measured nothing". Two runs write them at once (the pipeline
+  lock covers assembly only): every bank writes in short store transactions, and audience holds
+  reach the store in batches of up to 500 pictures, each merged with the store's copy in one
+  transaction under locks taken in sorted order, so the stricter hold always stands.
   Private database creation is exclusive. Existing files are chmodded without opening and
   closing an extra descriptor, which would release live SQLite connections' POSIX locks.
 
@@ -655,8 +657,9 @@ src/immich_memories/
 │   ├── prepare_cmd.py          # `prepare`
 │   ├── scheduler_cmd.py        # `scheduler list/status/start`
 │   ├── auto_cmd.py             # `auto suggest/run/history/status/install/test-notification`
-│   ├── special_days_cmd.py     # `discover-days` and `days-due`: the days worth a memory of their own
+│   ├── special_days_cmd.py     # `discover-days`, `days-due`, `days-export`/`days-import`: the days worth a memory
 │   ├── cache_cmd.py            # `cache stats/export/import/backup`
+│   ├── store_cmd.py            # `store status/import/copy/backup/restore`
 │   ├── titles.py               # `titles test`, `titles fonts`
 │   ├── runs.py                 # `runs list/show/story/why/stats/storage/delete`
 │   ├── pictures_cmd.py         # `pictures show/clear-hold/never-use/undo/list`: the owner's word on one picture
@@ -725,23 +728,64 @@ src/immich_memories/
 │       └── settings_people.py      # The companion editor: confirm who's who, flag twins
 │
 ├── tracking/                   # Run history & telemetry
-│   ├── run_database.py         # SQLite run storage
-│   ├── run_database_rows.py    # SQLite row <-> model conversion
+│   ├── run_database.py         # RunDatabase: run history in the store (pipeline_runs, phase_stats)
+│   ├── run_database_rows.py    # Store row <-> RunMetadata/PhaseStats conversion
+│   ├── phase_rows.py           # advance_phase(): forward-only phase log on a run or attempt row
 │   ├── run_lifecycle_errors.py # Refused lifecycle transitions and their diagnosis
 │   ├── run_tracker.py          # Pipeline run tracking
 │   ├── run_id.py               # Run ID generation
 │   ├── models.py               # Run/phase data models
 │   └── system_info.py          # System info collection
 │
+├── db/                         # The store (#871): one versioned database on SQLite or PostgreSQL
+│   ├── __init__.py             # Public API: open_store, Store, upsert, to_db/from_db, migrations
+│   ├── bootstrap.py            # StoreLocation: env > config.yaml `database:` > sqlite:///~/.immich-memories/store.db;
+│   │                           # redact_url (a URL is never logged with its password)
+│   ├── engine.py               # create_store_engine: SQLite pragmas + explicit BEGIN, psycopg 3 pool,
+│   │                           # schema_translate_map (symbolic `immich_memories` -> None / the PG schema)
+│   ├── store.py                # Store (.begin/.connect/.schema), open_store: one engine per location, upgraded on open;
+│   │                           # on_first_open hooks (run once per store per process, outside every lock);
+│   │                           # unmigrated_store for status/backup
+│   ├── migrate.py              # Alembic driven in code: upgrade/downgrade under pg_advisory_lock or
+│   │                           # fcntl + BEGIN IMMEDIATE; pending_changes, migration_schema
+│   ├── migrations/             # env.py, script.py.mako, versions/ (shipped in the wheel; alembic.ini is dev only)
+│   ├── metadata.py             # The shared MetaData(schema="immich_memories") and naming convention
+│   ├── tables/                 # One module per domain's Table objects: store_meta; people (people_registry,
+│   │                           # people, people_aliases, people_relationships; 0002_people); settings
+│   │                           # (0003_settings); annotations.py (asset facts, captions, heads, pixels, faces,
+│   │                           # cut measurements, motion lines, owner decisions in asset_flags) and
+│   │                           # model_answers.py (judgments, Cull verdicts, episode readings/refusals,
+│   │                           # library overviews; 0004_annotations); operations.py (pipeline_runs,
+│   │                           # phase_stats, automation_attempts, notification_health, asset_scores,
+│   │                           # run_attempts, special_days; 0005_operations); banks.py (audience answers
+│   │                           # and holds, block vote entries, owner review edits; 0006_banks)
+│   ├── legacy_import.py        # ImportOutcome: what one domain's import_legacy(store, home) did; the
+│   │                           # `legacy_import` records in store_meta (read_/write_import_record)
+│   ├── inventory.py            # row_counts, present_counts, recorded_revisions, digests: order-free,
+│   │                           # backend-neutral per-table content digests (copy checks, restore drill)
+│   ├── copy.py                 # copy_store: every table into another store (SQLite <-> PostgreSQL),
+│   │                           # batched, one target transaction, serial sequences advanced, digests compared
+│   ├── backup.py               # backup_store / restore_store + Manifest: VACUUM INTO / pg_dump -Fc -n on one
+│   │                           # snapshot; restore swaps the file or pg_restores the schema, migrates, checks counts
+│   ├── status.py               # store_status: revision, head, import record, counts, size; never migrates
+│   ├── sqlite_files.py         # connect_sqlite: the one raw sqlite3 factory (WAL, busy_timeout 30 s,
+│   │                           # synchronous NORMAL, foreign keys), private_database_path (0600)
+│   ├── network_guard.py        # Refuses a SQLite file on NFS/SMB/CIFS unless IMMICH_MEMORIES_ALLOW_NETWORK_SQLITE=1
+│   ├── leases.py               # Lease: fcntl lock file on SQLite, pg_try_advisory_lock on PostgreSQL
+│   │                           # (automation, PipelineLock, editorial attempt; works across hosts)
+│   ├── upsert.py               # upsert(): dialect insert().on_conflict_do_update / do_nothing
+│   └── time.py                 # to_db / from_db: naive UTC in the store, aware UTC at the edge
+│
 ├── cache/                      # Analysis caching system
 │   ├── __init__.py             # Re-exports public API
-│   ├── database.py             # VideoAnalysisCache: owns cache.db's schema; the legacy segment tables it still reads
-│   ├── schema_migrator.py      # SchemaMigrator: schema ladder v1..vN, DDL
-│   ├── versions.py             # SCHEMA_VERSION / ANALYSIS_VERSION (independent)
-│   ├── migration_sql.py        # Transactional migration helpers
-│   ├── migration_v11.py … v23.py # One module per schema migration (no v18, no v20)
-│   ├── asset_score_cache.py    # The legacy photo scorer's table, still read by `cache stats/export/import`
-│   ├── judgment_cache.py       # Reasoning-mode LLM verdicts, keyed by the exact prompt asked
+│   ├── database.py             # VideoAnalysisCache over cache.db (derived analysis only)
+│   ├── analysis_schema.py      # The cache's tables and PRAGMA user_version stamp: never migrated; a finished
+│   │                           # v25 ladder is adopted as is, any other layout rebuilt empty; the store's old
+│   │                           # tables in an old cache.db are left for the legacy import
+│   ├── asset_score_cache.py    # Banked asset scores (store table `asset_scores`), read by `cache stats/export/import`
+│   ├── judgment_cache.py       # Reasoning-mode LLM verdicts, keyed by the exact prompt asked (store table `judgments`)
+│   ├── editorial_verdicts.py   # Cull's standing per-picture verdicts (store table `editorial_verdicts`)
+│   ├── embedding_cache.py      # HeadFactStore: head answers (store table `head_facts`)
 │   ├── thumbnail_cache.py      # File-based thumbnail storage
 │   ├── disk_budget.py          # LRU-by-mtime eviction that holds a cache directory to a size cap
 │   └── video_cache.py          # Downloaded video file cache
@@ -752,28 +796,51 @@ src/immich_memories/
 │   ├── daemon.py               # Daemon loop (foreground, SIGINT/SIGTERM)
 │   └── models.py               # Scheduling data models
 │
-├── store/                      # The annotation store: every banked fact and reading
+├── store/                      # Repositories over the store's annotation tables: every banked fact and reading
 │   ├── caption_provenance.py   # What served each caption (served /models row + control digest), grouped
 │   ├── motion_lines.py         # The motion line per video, keyed by picture, producer and source digest,
 │   │                           # with what produced it (question, keyframes, admitting residual)
 │   ├── library_overviews.py    # Read-only: the library's own account of a period, written by cataloguing
 │   ├── library_catalogue.py    # The only writer of that table: content-addressed period accounts
 │   ├── owner_decisions.py      # The only writer of the owner's per-picture decisions (clear hold,
-│   │                           # never use): `source='owner'` rows in `flags`, one per picture
+│   │                           # never use): `source='owner'` rows in `asset_flags`, one per picture
 │   ├── cut_measurements.py     # What a cut measures and banks: a Live Photo's motion residual, a
 │                               # clip's speech regions and a Live burst's companion clock offsets,
 │                               # keyed the same way (a missing row is "not measured", never
 │                               # "measured as nothing")
-│                               # (annotations.sqlite; see docs/research for the design)
+│   ├── legacy_annotations.py   # import_legacy(store, home): annotations.sqlite + judgments.db, read-only,
+│   │                           # keys kept, idempotent; the only reader of those files; verify_legacy
+│   ├── legacy_imports.py       # The import registry (people -> annotations -> operations -> banks; one per domain):
+│   │                           # run_import (resumable, per-importer fingerprint records), verify_import,
+│   │                           # import_on_first_open (the CLI/UI enable it after the config loads; a lease
+│   │                           # makes concurrent starts import once)
+│   ├── legacy_verify.py        # verify_rows: every legacy key in the store with equal values
+│   ├── audience_bank.py        # The audience bank's rows: answers by answerer + evidence key, hold slots
+│   │                           # (permanent / text) per picture, merged a batch per transaction
+│   ├── vote_banks.py           # VoteBank: a block vote bank (memory-worthy, thesis-fit) per case key;
+│   │                           # save() writes only the entries changed since the last save
+│   ├── owner_edits.py          # The owner's review edits before a render, kept whole per edit id and
+│   │                           # read back by attempt (`runs why`)
+│   ├── legacy_banks.py         # import_legacy(store, home): the structure-banks/ JSON files and
+│   │                           # <film>.owner-edits-<id>.private.json, read-only, idempotent;
+│   │                           # verify_legacy (owner edits exact, holds at least as strict)
+│   └── batches.py              # id_in/in_chunks (one array parameter on PostgreSQL, IN slices under
+│                               # SQLite's bind limit); bank_rows/upsert_rows: one transaction per batch.
+│                               # Producers bank in batches (PendingHeadFacts, PendingMeasurements,
+│                               # judgment_cache's shared bank): a crash costs at most one batch
 │
 ├── triage/                     # The pinned DINOv2 ONNX encoder and its eight context heads
 │
 ├── people/                     # The library's people graph (counts and dates, no pixels)
 │   ├── signatures.py           # Tiers, onset, twins, duplicates, dyads, owner curve pairing
 │   ├── graph.py                # build_graph(): Immich roster + co-occurrence -> PeopleGraph
-│   ├── companion.py            # ~/.immich-memories/people.yaml; confirmed beats inferred
+│   ├── companion.py            # The people registry's writers (scan, confirm, add, relate), each one
+│   │                           # store transaction under the registry row lock; confirmed beats inferred
+│   ├── registry_store.py       # The registry document <-> the people tables (the only code that knows the rows)
+│   ├── transfer.py             # people export/import (validated, ids kept) and import_legacy(people.yaml)
+│   ├── evidence_graph.py       # ~/.immich-memories/people-graph.json: scan measurements, a derived file
 │   ├── expression_window.py    # The earliest day a people condition can hold, from birth dates
-│   └── editor.py               # The companion editor's model: the file as rows, and back
+│   └── editor.py               # The companion editor's model: the registry as rows, and back
 │
 ├── automation/                 # Smart automation (auto suggest/run)
 │   ├── __init__.py             # Public API re-exports
@@ -788,10 +855,11 @@ src/immich_memories/
 │   ├── failure_backoff.py      # Keep a candidate that keeps failing out of the nightly slot
 │   ├── models.py               # Typed values returned/persisted by automation
 │   ├── generation_request.py   # Typed boundary from candidates to the `generate` CLI
-│   ├── state_store.py          # SQLite persistence for automation attempts
+│   ├── state_store.py          # Automation attempts in the store; failure streaks for backoff
 │   ├── status.py               # Cooldown gate + read-only AutomationStatus contract
 │   ├── delivery_retry.py       # Durable state for one pending delivery retry
-│   ├── notification_state.py   # Durable, sanitized notification delivery health
+│   ├── notification_state.py   # Durable, sanitized notification delivery health (store row id 1)
+│   ├── catalogue.py            # The special-days catalogue in the store: load/save, entries, scope
 │   ├── trip_input_cache.py     # Durable, identity-checked inputs for auto trip discovery
 │   ├── notifications.py        # Apprise notification integration
 │   ├── runner.py               # Auto-run orchestrator (lease, subprocess, attempt record)
@@ -803,7 +871,9 @@ src/immich_memories/
 │   ├── auto_output.py           # Private complete child transcripts, addressed by automation attempt
 │   ├── call_families.py        # family_of()/calls_by_family(): model calls grouped by stage family
 │   ├── cut_progress.py         # Where a run is, as one record the page and the terminal both read
-│   ├── run_index.py            # A run id resolved to its attempt directory, for both surfaces
+│   ├── run_index.py            # A run id resolved to its attempt directory (store table run_attempts)
+│   ├── store_import.py         # import_legacy(): cache.db run/automation/score tables, the by-run
+│   │                           # index and special-days.json into the store, read-only, idempotent
 │   ├── candidate_fates.py       # Saved pool outcomes + decision-log reader shared with runs why
 │   ├── picture_holds.py         # What holds a picture + the owner's decision, for the pool, storyboard and CLI
 │   ├── caption_origins.py      # One picture's caption origin, and the run's distinct-origin line
@@ -814,7 +884,11 @@ src/immich_memories/
 │   └── auto_duration.py        # decide_memory_duration(): Auto length fitted to discovered media, CLI and UI
 │
 ├── config.py                   # YAML configuration management (re-exports)
-├── config_loader.py            # Config loading logic
+├── config_loader.py            # Config loading: env > config.yaml > database > default (pydantic-settings sources)
+├── config_sources.py           # describe_settings(): every leaf key's value (secrets masked), source and exact override
+├── settings_store.py           # SettingsStore: the `settings` table, Fernet secrets under IMMICH_MEMORIES_SECRET_KEY;
+│                               # load_stored_settings (bootstrap-safe, never via get_config)
+├── settings_edit.py            # save_settings (the UI/CLI write path, database only), move_to_database (`config move-to-db`)
 ├── config_presets.py           # Named presets (`preset: fast`) that fill several knobs at once
 ├── config_tiers.py             # One resolved product tier: reader, preparation producers, Laya
 ├── config_compute.py           # Inference capability discovery, separate from video encoding
@@ -843,7 +917,8 @@ src/immich_memories/
 ├── filename_builder.py         # Output filename generation
 ├── timeperiod.py               # Date range utilities
 ├── security.py                 # Input sanitization, secret files, credential fingerprints
-├── locked_file.py              # file_lock(): one writer at a time on a bank file several runs rewrite
+├── locked_file.py              # file_lock(): one writer at a time on a file several processes rewrite
+│                               # (the SQLite migration lock, the place-name cache)
 ├── i18n.py                     # Internationalization
 ├── i18n_places.py              # Country names in the film's language (CLDR, offline)
 ├── place_names.py              # Offline island boxes and short island/region names
@@ -917,7 +992,13 @@ VideoAssembler.assemble_with_titles()
 
 ## Configuration
 
-- `Config` (config_loader.py): loaded from `~/.immich-memories/config.yaml`, tiered YAML (see above)
+- `Config` (config_loader.py): env > `~/.immich-memories/config.yaml` (tiered YAML, see above) > the
+  store's `settings` table > defaults. `config.yaml` is operator-owned: the app writes it only for
+  `config move-to-db`. The UI and `immich-memories config` save through `settings_edit.save_settings`,
+  which refuses keys env or the file override and bootstrap keys (`database.*`). The database source
+  is opened from env + the file's `database:` block only, so it never recurses into `get_config()`.
+  `config_sources.describe_settings` is the per-key source report the settings page and
+  `config show` render.
 - `AssemblySettings` (assembly_config.py): video assembly parameters
 - `PipelineConfig` (smart_pipeline.py): the per-run switches the editorial route reads
 
@@ -944,8 +1025,8 @@ These YAML tiers are not the product `tier` (`config_tiers.py`): `nas` (inexpens
 (every light model, no LLM) or `full` (plus an LLM, whose endpoint it requires). The product
 tier owns `editorial.reader`, `editorial.preparation.tier` and `editorial.laya_audience`.
 `auto` resolves from inference capability and the configured LLM; conflicting legacy preparation
-settings are ignored with a notice. `save_yaml` omits derived settings and does not turn an
-automatic config into a machine-specific pin. Internal metadata-only component fixtures remain
+settings are ignored with a notice. A save stores only the keys that changed, so an automatic
+config never becomes a machine-specific pin. Internal metadata-only component fixtures remain
 available without exposing a fourth product tier. The real-Immich gate uses NAS with pinned CPU models.
 
 The tiers are a YAML layout, not a code layout. The section models are grouped by
@@ -984,7 +1065,9 @@ version and capabilities first); deployment files are `services/render-worker/co
 - **Private helpers**: Prefixed with `_`, same package
 - **Tests**: `tests/` directory, run with `make test`
 - **Integration tests**: run manually with `make test-integration*` (per-suite folders under `tests/integration/`, see CLAUDE.md); also run on the self-hosted GPU runner. Not a pre-commit hook.
-- **Real-Immich gate**: `make test-immich-gate` (`tests/integration/immich_gate/`: compose file, `seed.py`, `media.py`) runs on every PR against Immich v2 and v3 in Docker (`.github/workflows/immich-gate.yml`, required check `Immich Gate`); the pinned images ride in the Actions cache per version (`scripts/immich_gate_images.sh`, `make immich-gate-fetch`/`immich-gate-save`).
+- **Real-Immich gate**: `make test-immich-gate` (`tests/integration/immich_gate/`: compose file, `seed.py`, `media.py`) runs on every PR against Immich v2 and v3 in Docker, each with the store on SQLite and on PostgreSQL (`IMMICH_GATE_DATABASE`; `.github/workflows/immich-gate.yml`, required check `Immich Gate`); the pinned images ride in the Actions cache per version (`scripts/immich_gate_images.sh`, `make immich-gate-fetch`/`immich-gate-save`).
+- **Launch check per backend**: `make launch-check-ci` (SQLite) and `make launch-check-ci-postgres` (each launch workspace gets its own schema in `IMMICH_MEMORIES_E2E_DATABASE_URL`); CI job `Hermetic Launch Check (sqlite|postgresql)`. `scripts/with_throwaway_postgres.sh` starts the throwaway `postgres:16` for this, `make test-store` and the gate.
+- **Container e2e**: `make test-container` (`tests/container/`, marker `container`) builds the image and runs it from `docker-compose.yml` on a legacy volume: first-start import and `store import --verify`, `store backup`/`restore` in the image, the trigger API called by the CronJob's curl. `CONTAINER_E2E_DATABASE=postgresql` switches on the compose file's PostgreSQL example; CI job `Container E2E (sqlite|postgresql)`.
 - **Pre-commit**: Run `make ci` before committing
 
 The web sidebar links Memory, Suggestions, Runs, Media pool and Settings.

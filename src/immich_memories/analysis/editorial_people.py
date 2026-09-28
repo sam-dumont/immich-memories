@@ -67,7 +67,7 @@ class EditorialPeople(Mapping[str, EditorialPersonFact]):
     def close_family_of(self, subjects: Sequence[str]) -> dict[str, str]:
         """Each partner, child and parent of the subjects, by name, with their relation to them.
 
-        A subject is named as the people file or Immich names them, or by an Immich ID. The
+        A subject is named as the people registry or Immich names them, or by an Immich ID. The
         confirmed links are read from both sides, so a parent recorded only on the subject's
         entry is found as well as one recorded only on the parent's own.
         """

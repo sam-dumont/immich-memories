@@ -5,20 +5,20 @@ from __future__ import annotations
 import hashlib
 import io
 import json
-import sqlite3
 import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Mapping, Sequence
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from contextvars import copy_context
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, field, replace
 from http.client import HTTPResponse
 from typing import Any
 from urllib.parse import urlsplit
 
 import httpx
 from PIL import Image
+from sqlalchemy.exc import IntegrityError
 
 from immich_memories.analysis import editorial_description_outcomes as caption_outcomes
 from immich_memories.analysis.editorial_async_bridge import _run_sync
@@ -49,9 +49,12 @@ from immich_memories.analysis.llm_preparation_usage import record_preparation_at
 from immich_memories.analysis.llm_providers import resolved_llm_config
 from immich_memories.analysis.llm_query import query_llm
 from immich_memories.config_models_llm import LLMConfig
+from immich_memories.db import Store, now_db
+from immich_memories.db.tables import description_fields, descriptions
+from immich_memories.store.batches import insert_rows
 from immich_memories.store.caption_provenance import (
     CaptionOrigin,
-    remember_origin,
+    remember_origins,
     served_facts,
 )
 from immich_memories.store.editorial_preparation import now
@@ -381,7 +384,7 @@ def _describe(
 
 def prepare_captions(
     *,
-    connection: sqlite3.Connection,
+    store: Store,
     asset_ids: Sequence[str],
     preview_for: Callable[[str], bytes],
     base_url: str,
@@ -422,77 +425,111 @@ def prepare_captions(
                 )
                 for asset_id in asset_ids[start : start + concurrency]
             ]
+            batch = _Settled()
             for asset_id, future in zip(
                 asset_ids[start : start + concurrency], futures, strict=True
             ):
-                try:
-                    _asset_id, preview, outcomes = future.result()
-                    failure = _settle_caption(
-                        connection,
-                        asset_id,
-                        preview,
-                        outcomes,
-                        origin,
-                        model=description_model,
-                        llm=llm_config is not None,
-                    )
-                    if failure:
-                        failures[asset_id] = failure
-                except Exception as exc:
-                    failures[asset_id] = f"{type(exc).__name__}: {exc}"
+                if failure := batch.collect(asset_id, future, llm=llm_config is not None):
+                    failures[asset_id] = failure
+            source = LLM_DESCRIPTION_SOURCE if llm_config is not None else DESCRIPTION_SOURCE
+            failures |= batch.bank(store, origin, model=description_model, source=source)
             progress("captions", min(start + concurrency, len(asset_ids)), len(asset_ids))
     return failures
 
 
-def _settle_caption(
-    connection: sqlite3.Connection,
-    asset_id: str,
-    preview: bytes,
-    outcomes: Sequence[CallOutcome],
-    origin: CaptionOrigin,
-    *,
-    model: str,
-    llm: bool,
-) -> str | None:
-    outcome = outcomes[-1]
-    if outcome.envelope is not None:
-        _remember_caption(
-            connection,
-            asset_id,
-            outcome.envelope,
-            origin,
-            model=model,
-            source=LLM_DESCRIPTION_SOURCE if llm else DESCRIPTION_SOURCE,
-        )
-        return None
-    if not llm and caption_outcomes.bounded_invalid_attempts([asdict(o) for o in outcomes]):
-        row = caption_outcomes.make_unavailable(
-            asset_id, preview, [asdict(o) for o in outcomes], written_at=now()
-        )
-        caption_outcomes.remember_unavailable(connection, row, preview)
-        return None
-    return outcome.error or "caption failed without bounded completion evidence"
+@dataclass
+class _Settled:
+    """One batch's answers, banked together: one write per batch, not per picture."""
+
+    captions: dict[str, DescriptionEnvelope] = field(default_factory=dict)
+    unavailable: list[tuple[dict[str, Any], bytes]] = field(default_factory=list)
+
+    def collect(self, asset_id: str, future: Future, *, llm: bool) -> str | None:
+        """Settle one finished request; its failure, if any, in words."""
+        try:
+            _asset_id, preview, outcomes = future.result()
+            return self.settle(asset_id, preview, outcomes, llm=llm)
+        except Exception as exc:
+            return f"{type(exc).__name__}: {exc}"
+
+    def settle(
+        self, asset_id: str, preview: bytes, outcomes: Sequence[CallOutcome], *, llm: bool
+    ) -> str | None:
+        outcome = outcomes[-1]
+        if outcome.envelope is not None:
+            self.captions[asset_id] = outcome.envelope
+            return None
+        if not llm and caption_outcomes.bounded_invalid_attempts([asdict(o) for o in outcomes]):
+            row = caption_outcomes.make_unavailable(
+                asset_id, preview, [asdict(o) for o in outcomes], written_at=now()
+            )
+            self.unavailable.append((row, preview))
+            return None
+        return outcome.error or "caption failed without bounded completion evidence"
+
+    def bank(
+        self, store: Store, origin: CaptionOrigin, *, model: str, source: str
+    ) -> dict[str, str]:
+        failures: dict[str, str] = {}
+        try:
+            _remember_captions(store, self.captions, origin, model=model, source=source)
+        except IntegrityError:
+            # One picture's conflicting rows must not cost the batch its other captions.
+            for asset_id, envelope in self.captions.items():
+                try:
+                    _remember_captions(
+                        store, {asset_id: envelope}, origin, model=model, source=source
+                    )
+                except IntegrityError as exc:
+                    failures[asset_id] = f"{type(exc).__name__}: {exc}"
+        for row, preview in self.unavailable:
+            try:
+                caption_outcomes.remember_unavailable(store, row, preview)
+            except Exception as exc:
+                failures[str(row["asset_id"])] = f"{type(exc).__name__}: {exc}"
+        return failures
 
 
-def _remember_caption(
-    connection: sqlite3.Connection,
-    asset_id: str,
-    envelope: DescriptionEnvelope,
+def _remember_captions(
+    store: Store,
+    captions: Mapping[str, DescriptionEnvelope],
     origin: CaptionOrigin | None = None,
     *,
     model: str = DESCRIPTION_MODEL,
     source: str = DESCRIPTION_SOURCE,
 ) -> None:
     # Partial/conflicting rows are an integrity failure, never silently overwritten.
-    timestamp = now()
-    with connection:
-        connection.execute(
-            "INSERT INTO descriptions (asset_id,model,text,source,written_at) VALUES (?,?,?,?,?)",
-            (asset_id, model, envelope.description, source, timestamp),
+    if not captions:
+        return
+    timestamp = now_db()
+    with store.begin() as connection:
+        insert_rows(
+            connection,
+            descriptions,
+            [
+                {
+                    "asset_id": asset_id,
+                    "model": model,
+                    "text": envelope.description,
+                    "source": source,
+                    "written_at": timestamp,
+                }
+                for asset_id, envelope in captions.items()
+            ],
         )
-        connection.execute(
-            "INSERT INTO description_fields (asset_id,model,field,value,written_at) VALUES (?,?,?,?,?)",
-            (asset_id, model, "setting", envelope.setting, timestamp),
+        insert_rows(
+            connection,
+            description_fields,
+            [
+                {
+                    "asset_id": asset_id,
+                    "model": model,
+                    "field": "setting",
+                    "value": envelope.setting,
+                    "written_at": timestamp,
+                }
+                for asset_id, envelope in captions.items()
+            ],
         )
         if origin is not None:
-            remember_origin(connection, asset_id, model, origin)
+            remember_origins(connection, list(captions), model, origin)

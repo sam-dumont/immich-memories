@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import logging
-import sqlite3
-from pathlib import Path
 from typing import TYPE_CHECKING
+
+from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.automation.notification_state import (
     NotificationFailureCategory,
@@ -14,6 +14,7 @@ from immich_memories.automation.notification_state import (
 
 if TYPE_CHECKING:
     from immich_memories.config_loader import Config
+    from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ def send_configured_notification(
         output_path=output_path,
         error=error,
         urls=notif.urls,
-        db_path=config.cache.database_path,
+        store=notification_store(config),
         attach_thumbnail=notif.attach_thumbnail,
         cooldown_hours=notif.cooldown_hours,
     )
@@ -53,7 +54,7 @@ def notify_job_complete(
     output_path: str | None = None,
     error: str | None = None,
     urls: list[str] | None = None,
-    db_path: Path | None = None,
+    store: Store | None = None,
     attach_thumbnail: bool = False,
     cooldown_hours: int = 24,
     bypass_cooldown: bool = False,
@@ -61,12 +62,13 @@ def notify_job_complete(
     """Send a notification about job completion via Apprise.
 
     Returns True if at least one notification was delivered, False otherwise.
-    Fails silently (logs warning) if the apprise package is not installed.
+    Fails silently (logs warning) if the apprise package is not installed. With a `store`,
+    delivery health is recorded there and a recent failure suppresses the send.
     """
     if not urls:
         return False
 
-    state = _get_state_store(db_path)
+    state = _health_of(store)
     if state is not None and not bypass_cooldown and state.is_cooling_down(cooldown_hours):
         logger.warning("Notification delivery suppressed during failure cooldown")
         return False
@@ -113,13 +115,17 @@ def notify_job_complete(
     return result
 
 
-def _get_state_store(db_path: Path | None) -> NotificationStateStore | None:
-    """Open optional durable state without making notifications depend on SQLite."""
-    if db_path is None:
-        return None
+def _health_of(store: Store | None) -> NotificationStateStore | None:
+    return NotificationStateStore(store) if store is not None else None
+
+
+def notification_store(config: Config) -> Store | None:
+    """The store for notification health, or None: a notification never depends on it."""
+    from immich_memories.db import open_store
+
     try:
-        return NotificationStateStore(Path(db_path))
-    except (OSError, RuntimeError, sqlite3.Error):
+        return open_store(config)
+    except (OSError, RuntimeError, SQLAlchemyError):
         logger.warning("Notification health state is unavailable")
         return None
 
@@ -129,7 +135,7 @@ def _record_success(state: NotificationStateStore | None) -> None:
         return
     try:
         state.record_success()
-    except (OSError, RuntimeError, sqlite3.Error):
+    except (OSError, RuntimeError, SQLAlchemyError):
         logger.warning("Could not persist notification success state")
 
 
@@ -141,7 +147,7 @@ def _record_failure(
         return
     try:
         state.record_failure(category)
-    except (OSError, RuntimeError, sqlite3.Error):
+    except (OSError, RuntimeError, SQLAlchemyError):
         logger.warning("Could not persist notification failure state")
 
 
@@ -240,7 +246,7 @@ def _build_body(
 def send_test_notification(
     urls: list[str],
     *,
-    db_path: Path | None = None,
+    store: Store | None = None,
     attach_thumbnail: bool = False,
     cooldown_hours: int = 24,
 ) -> bool:
@@ -249,7 +255,7 @@ def send_test_notification(
         memory_type="test",
         status="completed",
         urls=urls,
-        db_path=db_path,
+        store=store,
         attach_thumbnail=attach_thumbnail,
         cooldown_hours=cooldown_hours,
         bypass_cooldown=True,

@@ -92,6 +92,9 @@ WHITELIST = Path(__file__).resolve().parent.parent / "vulture-whitelist.py"
 # 55: NiceGUI's Client.build_response calls LocalizedPage.resolve_language.
 # Vulture scans our source, not NiceGUI's; the browser locale tests exercise
 # that framework callback and its per-browser HTML language.
+# 56: the annotations slice's import_legacy (#871), called by `store import` and the
+# first-open import once the store slices are integrated.
+# 55: they are (the #871 cutover); the importers are reached through the import registry.
 MAX_WHITELISTED_SYMBOLS = 55
 
 

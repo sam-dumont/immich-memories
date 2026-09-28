@@ -18,6 +18,7 @@ from immich_memories.analysis.editorial_laya_reader import (
 )
 from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
 from immich_memories.config_models_editorial import EditorialConfig
+from immich_memories.db import open_store
 from tests.editorial_thin_fixtures import PRIVATE, CountingJudge
 
 FINDINGS = list(AUDIENCE_FINDINGS)
@@ -59,7 +60,7 @@ def gate(tmp_path, annotations, scorer):
         flag_rows={},
         lines=lines,
         bank_path=tmp_path / "shareability.private.json",
-        library=AudienceBank(tmp_path / "audience.private.json", answerer="full|model-a|laya"),
+        library=AudienceBank(open_store(), answerer="full|model-a|laya"),
         activity_reader=LayaReader(
             scorer, threshold=0.186, checkpoint_id="test-checkpoint"
         ).activity_answers,

@@ -1,5 +1,8 @@
 """config.yaml holds the Immich API key, so it must never exist world-readable.
 
+The app writes it only on an explicit `config move-to-db`; that rewrite and its backup
+are held to the same rule.
+
 `open("w")` creates a file with the process umask -- 0644 on a normal system --
 and only a later `chmod` narrows it. Between those two calls the API key is on
 disk readable by every account on the machine. On a NAS or a shared box that is
@@ -11,59 +14,68 @@ from __future__ import annotations
 
 import os
 import stat
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 
-from immich_memories.config_loader import Config
+from immich_memories.config_loader import Config, load_config, set_config
+from immich_memories.db import close_stores
+from immich_memories.settings_edit import move_to_database
 
 
 def _mode(path: Path) -> int:
     return stat.S_IMODE(path.stat().st_mode)
 
 
-def test_saved_config_is_owner_only(tmp_path: Path):
+@pytest.fixture
+def config_path(tmp_path: Path, monkeypatch) -> Iterator[Path]:
+    """A config.yaml the app rewrites through `config move-to-db`, its one write path."""
+    monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_URL", f"sqlite:///{tmp_path / 'store.db'}")
     path = tmp_path / "config.yaml"
+    path.write_text(
+        "immich:\n  url: http://example.invalid:2283\nadvanced:\n  llm:\n    model: moved\n"
+    )
+    load_config(path)
+    yield path
+    set_config(None)
+    close_stores()
 
-    Config().save_yaml(path)
 
-    assert _mode(path) == 0o600
+def test_a_rewritten_config_and_its_backup_are_owner_only(config_path: Path):
+    backup = move_to_database(["llm.model"], path=config_path)
+
+    assert _mode(config_path) == 0o600
+    assert _mode(backup) == 0o600
 
 
-def test_the_file_is_never_created_wider_than_0600(tmp_path: Path, monkeypatch):
+def test_the_file_is_never_created_wider_than_0600(config_path: Path, monkeypatch):
     """Proves the permissions come from creation, not from a later chmod.
 
     With chmod disabled, a file created via `open("w")` keeps the umask bits and
     this fails; a file created at 0600 passes.
     """
-    path = tmp_path / "config.yaml"
     monkeypatch.setattr(Path, "chmod", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(os, "chmod", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(os, "umask", lambda _mask: 0)
 
-    Config().save_yaml(path)
+    move_to_database(["llm.model"], path=config_path)
 
-    assert _mode(path) == 0o600, "config.yaml was created with umask permissions"
-
-
-def test_replacing_an_existing_config_does_not_widen_it(tmp_path: Path):
-    path = tmp_path / "config.yaml"
-    path.write_text("old: value\n")
-    path.chmod(0o644)
-
-    Config().save_yaml(path)
-
-    assert _mode(path) == 0o600
+    assert _mode(config_path) == 0o600, "config.yaml was created with umask permissions"
 
 
-def test_the_saved_file_is_still_readable_config(tmp_path: Path):
-    path = tmp_path / "config.yaml"
-    config = Config()
-    config.immich.url = "http://example.invalid:2283"
+def test_replacing_an_existing_config_does_not_widen_it(config_path: Path):
+    config_path.chmod(0o644)
 
-    config.save_yaml(path)
+    move_to_database(["llm.model"], path=config_path)
 
-    assert Config.from_yaml(path).immich.url == "http://example.invalid:2283"
+    assert _mode(config_path) == 0o600
+
+
+def test_the_rewritten_file_is_still_readable_config(config_path: Path):
+    move_to_database(["llm.model"], path=config_path)
+
+    assert Config.from_yaml(config_path).immich.url == "http://example.invalid:2283"
 
 
 class TestStorageSecretFile:

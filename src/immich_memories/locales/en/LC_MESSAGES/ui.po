@@ -919,11 +919,11 @@ msgstr "No eligible suggestions right now."
 
 #: pages/settings_people.py:251
 msgid ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
 msgstr ""
-"No people file yet. Rescan the library to build one — it reads every named person's count and"
-" month curve, and looks at no pixels."
+"No people yet. Rescan the library to find them — it reads every named person's count and month"
+" curve, and looks at no pixels."
 
 #: pages/runs.py:105
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
@@ -1822,3 +1822,46 @@ msgstr "{title}  ({n_keys} keys)"
 msgid "{value}: {duration_seconds:.1f}s"
 msgstr "{value}: {duration_seconds:.1f}s"
 
+
+msgid "Default"
+msgstr "Default"
+
+msgid "Nothing to save"
+msgstr "Nothing to save"
+
+msgid "Save"
+msgstr "Save"
+
+msgid "Saved here"
+msgstr "Saved here"
+
+msgid "Saved to the database"
+msgstr "Saved to the database"
+
+msgid "Set by {name} (environment)"
+msgstr "Set by {name} (environment)"
+
+msgid "Set in config.yaml as {key}"
+msgstr "Set in config.yaml as {key}"
+
+msgid "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
+msgstr "Settings come from four places, strongest first: environment variables, config.yaml, what you save here (kept in the database), then the defaults. A greyed-out setting is set by the environment or config.yaml; change it there."
+
+msgid "{count} set outside this page"
+msgstr "{count} set outside this page"
+
+msgid "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
+msgstr "{name} is not set, so API keys and passwords cannot be saved here. Set it, or put those secrets in the environment or config.yaml."
+
+msgid "{title}  ({n} key)"
+msgid_plural "{title}  ({n} keys)"
+msgstr[0] "{title}  ({n} key)"
+msgstr[1] "{title}  ({n} keys)"
+
+msgid "{n} set outside this page"
+msgid_plural "{n} set outside this page"
+msgstr[0] "{n} set outside this page"
+msgstr[1] "{n} set outside this page"
+
+msgid "Saved here, but {name} cannot decrypt it: the default is in use"
+msgstr "Saved here, but {name} cannot decrypt it: the default is in use"

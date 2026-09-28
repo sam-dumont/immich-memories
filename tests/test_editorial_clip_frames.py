@@ -9,6 +9,7 @@ from immich_memories.analysis.editorial_clip_frames import (
     SUBJECT_OFTEN_MISSING,
     clip_frames_fact,
 )
+from tests.annotation_rows import annotation_store, read_rows
 
 MOMENT = "people_moment"
 NOTHING = "lone_everyday_object"
@@ -128,8 +129,6 @@ def test_the_rules_reader_does_not_stand_a_clip_whose_frames_often_miss_its_subj
 
 
 def test_the_producer_banks_each_clips_reading_of_its_own_frames(tmp_path):
-    import sqlite3
-
     import numpy as np
     from PIL import Image
 
@@ -171,17 +170,17 @@ def test_the_producer_banks_each_clips_reading_of_its_own_frames(tmp_path):
 
     failures = prepare_clip_frames(
         frame_paths={"clip": frames, "unreadable": [tmp_path / "absent.jpg"]},
-        store_path=tmp_path / "facts.sqlite",
+        store=annotation_store(),
         bundle_path=tmp_path / "heads.npz",
         encoder_path=tmp_path / "encoder.onnx",
         check_cancelled=lambda: None,
         open_encoder=lambda _path, **_kwargs: Encoder(),
     )
 
-    with sqlite3.connect(tmp_path / "facts.sqlite") as connection:
-        rows = connection.execute(
-            "SELECT asset_id, head, version, label, confidence FROM head_facts"
-        ).fetchall()
+    rows = [
+        (row["asset_id"], row["head"], row["version"], row["label"], row["confidence"])
+        for row in read_rows(annotation_store(), "head_facts")
+    ]
     assert rows == [
         ("clip", CLIP_FRAMES_HEAD, "frame_kind-public-v1/8-frames", SUBJECT_OFTEN_MISSING, 0.0)
     ]
@@ -272,12 +271,16 @@ def test_a_film_reads_each_live_clips_banked_frames(tmp_path):
     from immich_memories.analysis.editorial_clip_frames import load_clip_frames
     from immich_memories.cache.embedding_cache import HeadFactStore
 
-    store = HeadFactStore(tmp_path / "bank.sqlite")
-    store.remember_facts("walled", [clip_frames_fact([MOMENT, NOTHING])], encoder_key="k")
-    store.remember_facts("held", [clip_frames_fact([MOMENT] * 4)], encoder_key="k")
-    store.close()
+    store = HeadFactStore(annotation_store())
+    store.remember_facts(
+        {
+            "walled": [clip_frames_fact([MOMENT, NOTHING])],
+            "held": [clip_frames_fact([MOMENT] * 4)],
+        },
+        encoder_key="k",
+    )
 
-    frames = load_clip_frames(tmp_path / "bank.sqlite", ["walled", "held", "unread"])
+    frames = load_clip_frames(annotation_store(), ["walled", "held", "unread"])
 
     assert frames == {"walled": SUBJECT_OFTEN_MISSING, "held": "shows_its_moment"}
-    assert load_clip_frames(tmp_path / "absent.sqlite", ["walled"]) == {}
+    assert load_clip_frames(None, ["walled"]) == {}

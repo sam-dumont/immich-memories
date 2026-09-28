@@ -17,6 +17,7 @@ from immich_memories.analysis.selection_source import (
     prepare_editorial_source,
 )
 from immich_memories.analysis.selection_trace import Trace
+from tests.annotation_rows import annotation_store
 from tests.test_editorial_story_first_planner import StoryJudge, make_source
 from tests.test_episode_demand import answer, demand_for
 
@@ -55,7 +56,8 @@ def test_final_plan_and_trace_report_the_latest_demand_health(tmp_path, recover)
         ),
         people=adapt_editorial_people({}),
         thumbnail_cache=object(),
-        store_path=tmp_path / "annotations.sqlite",
+        store=annotation_store(),
+        bank_root=tmp_path,
         # WHY: fixed model judgments and absent fixture thumbnails isolate run persistence.
         ports=EditorialRuntimePorts(
             structure_ports_factory=lambda _source: StructurePlannerPorts(

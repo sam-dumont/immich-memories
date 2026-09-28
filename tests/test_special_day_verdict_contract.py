@@ -8,6 +8,7 @@ import pytest
 from immich_memories.analysis.special_day import ask_if_special
 from immich_memories.automation.special_day_scan import scan_year
 from immich_memories.config_models_llm import LLMConfig
+from tests.annotation_rows import annotation_store
 from tests.test_special_day_captions import _a_real_day, _verdict_response
 
 
@@ -30,12 +31,8 @@ def test_an_explicit_negative_is_banked_without_validating_unused_display_copy(t
     config = LLMConfig(model="day-reader", provider="ollama")
     # WHY: the provider is external; the public reader and its bank stay real.
     with patch("httpx.AsyncClient.post", return_value=reply) as post:
-        first = ask_if_special(
-            assets, config, captions=captions, judgment_cache_path=tmp_path / "judgments.db"
-        )
-        repeated = ask_if_special(
-            assets, config, captions=captions, judgment_cache_path=tmp_path / "judgments.db"
-        )
+        first = ask_if_special(assets, config, captions=captions, judgments=annotation_store())
+        repeated = ask_if_special(assets, config, captions=captions, judgments=annotation_store())
 
     assert first.judged and not first.special
     assert first.title == first.subtitle == first.what == ""
@@ -59,7 +56,7 @@ def test_a_positive_day_can_have_an_optional_subtitle(tmp_path, banked, subtitle
             assets,
             LLMConfig(model="day-reader", provider="ollama"),
             captions=captions,
-            judgment_cache_path=tmp_path / "judgments.db" if banked else None,
+            judgments=annotation_store() if banked else None,
         )
 
     assert verdict.judged and verdict.special
@@ -96,7 +93,7 @@ def test_an_invalid_day_answer_stays_unjudged_on_every_route(tmp_path, route, ra
             assets,
             LLMConfig(model="day-reader", provider="ollama"),
             captions=captions,
-            judgment_cache_path=tmp_path / "judgments.db" if route == "banked" else None,
+            judgments=annotation_store() if route == "banked" else None,
         )
 
     assert not verdict.judged and not verdict.special
@@ -120,7 +117,7 @@ def test_a_description_longer_than_asked_is_cut_not_a_reason_to_drop_the_day(tmp
             assets,
             LLMConfig(model="day-reader", provider="ollama"),
             captions=captions,
-            judgment_cache_path=tmp_path / "judgments.db" if route == "banked" else None,
+            judgments=annotation_store() if route == "banked" else None,
         )
 
     assert verdict.judged and verdict.special and verdict.title == "A race"
@@ -142,7 +139,7 @@ def test_a_valid_negative_day_verdict_vetoes_the_months_proposed_occasion(tmp_pa
             llm_config=config,
             home=None,
             captions=captions,
-            judgment_cache_path=tmp_path / "judgments.db",
+            judgments=annotation_store(),
         )
 
     assert found == []

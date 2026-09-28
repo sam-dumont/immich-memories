@@ -1,8 +1,6 @@
 """Music reads the finished cut, without reopening any pictures."""
 
 import json
-import sqlite3
-from contextlib import closing
 from unittest.mock import patch
 
 import httpx
@@ -10,6 +8,7 @@ import pytest
 
 from immich_memories.config_loader import Config
 from immich_memories.config_models_llm import LLMConfig
+from tests.annotation_rows import add_rows, annotation_store
 
 
 @pytest.mark.asyncio
@@ -39,33 +38,24 @@ async def test_cut_text_answers_once_and_is_reused_without_images(tmp_path, tier
     )
     config.cache.directory = str(tmp_path / "cache")
     config.cache.cache_path.mkdir()
-    from immich_memories.store.editorial_preparation import initialize
 
-    with closing(
-        sqlite3.connect(config.editorial.resolve_annotation_database(config.cache.cache_path))
-    ) as db:
-        initialize(db)
-        db.executemany(
-            "INSERT INTO descriptions VALUES (?,?,?,?,?)",
-            [
-                (
-                    "kept",
-                    config.editorial.description_model,
-                    "Laughing on a carousel",
-                    "model",
-                    "now",
-                ),
-                ("kept", "old-producer", "Old description", "model", "now"),
-                (
-                    "dropped",
-                    config.editorial.description_model,
-                    "A dropped picture",
-                    "model",
-                    "now",
-                ),
-            ],
-        )
-        db.commit()
+    add_rows(
+        annotation_store(),
+        "descriptions",
+        {
+            "asset_id": "kept",
+            "model": config.editorial.description_model,
+            "text": "Laughing on a carousel",
+            "source": "model",
+        },
+        {"asset_id": "kept", "model": "old-producer", "text": "Old description", "source": "model"},
+        {
+            "asset_id": "dropped",
+            "model": config.editorial.description_model,
+            "text": "A dropped picture",
+            "source": "model",
+        },
+    )
     attempt = tmp_path / "attempt"
     attempt.mkdir()
     (attempt / "plan.private.json").write_text(

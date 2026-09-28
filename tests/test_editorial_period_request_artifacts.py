@@ -70,7 +70,7 @@ def test_exact_complete_reply_is_retained_before_episode_parser_rejects_it(tmp_p
                 "max_tokens": 3000,
                 "timeout_seconds": 45,
                 "thinking": False,
-                "cache_path": None,
+                "judgments": None,
                 "require_complete": True,
                 "response_format": None,
             },
@@ -257,7 +257,6 @@ def test_production_episode_recording_follows_each_active_attempt_even_on_failur
         ] == ["exact invalid episode reply"]
         assert json.loads((attempt / "status.private.json").read_text())["status"] == "failed"
     assert not (context.artifact_dir / "pre-planner-calls").exists()
-    planner.close()
 
 
 def test_the_episode_stage_keeps_its_own_prompt_transcript(tmp_path, monkeypatch):
@@ -290,10 +289,7 @@ def test_the_episode_stage_keeps_its_own_prompt_transcript(tmp_path, monkeypatch
     monkeypatch.setattr(gateway, "query_llm", query)
     demand = planner._planner._episode_reader_factory(SimpleNamespace(candidates=()))
     reader = demand._reader(demand._on_demand)
-    try:
-        assert reader._requester("Read these episodes.") == "exact invalid episode reply"
-    finally:
-        planner.close()
+    assert reader._requester("Read these episodes.") == "exact invalid episode reply"
     [record] = records(context.artifact_dir)
     assert record["stage"] == "episodes"
     assert [

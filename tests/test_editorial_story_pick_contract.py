@@ -10,6 +10,7 @@ from immich_memories.analysis.editorial_story_pick_contract import (
     source_kind_marker,
 )
 from immich_memories.analysis.editorial_story_shortlist import DepictedChoice, pick_story_moments
+from tests.annotation_rows import annotation_store
 
 
 class Answers:
@@ -237,7 +238,7 @@ def test_a_refused_pick_is_asked_again_on_the_next_run_instead_of_replayed(tmp_p
     out.mkdir()
 
     def run() -> list[str]:
-        judge = StructureTextJudge(config, out, cache_path=tmp_path / "judgments.sqlite")
+        judge = StructureTextJudge(config, out, judgments=annotation_store())
         return ask_moment_pick(
             judge, "story-pick-K01", "Choose one row.", labels={"M01", "M02"}, count=1
         )

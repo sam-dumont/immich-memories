@@ -72,7 +72,7 @@ def test_a_run_row_with_a_hand_typed_attempt_id_still_opens(monkeypatch, tmp_pat
         source="auto",
     )
     record.automation_attempt_id = "last-nights-run"
-    RunDatabase(config.cache.database_path).save_run(record)
+    RunDatabase().save_run(record)
     previous = get_config()
     set_config(config)
     # WHY: the HTTP session is the external boundary; the database and page are real.

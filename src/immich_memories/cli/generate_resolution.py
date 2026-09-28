@@ -50,8 +50,8 @@ def resolve_special_day(
     """
     from immich_memories.automation.catalogue import (
         SCOPE_UNCATALOGUED,
-        default_catalogue_path,
         entries_from,
+        load_catalogue,
     )
 
     if event_id is not None and (day is None or memory_type != "special_day"):
@@ -67,7 +67,7 @@ def resolve_special_day(
     if memory_type != "special_day":
         raise click.UsageError("--day requires --memory-type special_day or on_this_day")
 
-    catalogue = entries_from(default_catalogue_path())
+    catalogue = entries_from(load_catalogue())
     entry = _catalogued_event(catalogue, day, event_id)
     if entry is None:
         return {
@@ -428,7 +428,7 @@ def resolve_people_memory_window(
     if window is None:
         raise click.UsageError(
             f"--year is required with --memory-type {memory_type}: none of the named people "
-            "has a birth date in Immich or people.yaml, so no window can be derived from them"
+            "has a birth date in Immich or the people registry, so no window can be derived from them"
         )
     return window
 
@@ -437,7 +437,7 @@ def _library_people(config: Config) -> list[Person]:
     """The roster, or nothing when Immich cannot be reached.
 
     The run connects again moments later and reports a real outage in its own
-    words; here an unreachable server only means the curated people file is the
+    words; here an unreachable server only means the curated people registry is the
     one source left to answer from.
     """
     from immich_memories.api.immich import ImmichAPIError, SyncImmichClient

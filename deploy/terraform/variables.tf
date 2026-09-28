@@ -80,6 +80,20 @@ variable "musicgen_api_key" {
   sensitive   = true
 }
 
+# The store (optional; empty means the default SQLite file on the cache PVC)
+variable "database_url" {
+  description = "PostgreSQL URL for the store (postgresql+psycopg://user:pass@host:5432/db). Empty keeps the default SQLite file on the cache PVC"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "database_schema" {
+  description = "Schema name for the store, PostgreSQL only. Only matters when database_url points at a database shared with something else, e.g. Immich's own"
+  type        = string
+  default     = "immich_memories"
+}
+
 # Any other setting: IMMICH_MEMORIES_<SECTION>__<KEY>
 variable "env" {
   description = "Extra environment variables, e.g. { IMMICH_MEMORIES_AUTOMATION__ENABLED = \"true\" }"

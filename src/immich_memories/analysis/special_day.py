@@ -39,7 +39,6 @@ import operator
 import re
 from dataclasses import dataclass
 from datetime import timedelta
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.trip_detection import haversine_km
@@ -49,6 +48,7 @@ if TYPE_CHECKING:
     from datetime import date, datetime
 
     from immich_memories.config_models_llm import LLMConfig
+    from immich_memories.db import Store
 
 from immich_memories.analysis.editorial_json_completion import complete_final_json
 from immich_memories.analysis.llm_failures import stop_if_this_is_our_bug
@@ -596,7 +596,7 @@ def ask_if_special(
     *,
     timeout_seconds: int = 30,
     captions: Mapping[str, str] | None = None,
-    judgment_cache_path: Path | None = None,
+    judgments: Store | None = None,
     forwarded: list | None = None,
 ) -> SpecialDay:
     """Ask the model whether a day was an occasion, and name it.
@@ -623,7 +623,7 @@ def ask_if_special(
     described = _captioned_assets(assets, captions)
     if described:
         return _ask_from_captions(
-            assets, described, captions, llm_config, timeout_seconds, judgment_cache_path, sent
+            assets, described, captions, llm_config, timeout_seconds, judgments, sent
         )
     sampled = sample_across_day(assets)
     if not _has_text_to_read(sampled, captions):
@@ -752,7 +752,7 @@ def _accepts_day_answer(raw: str) -> bool:
 
 
 def _ask_from_captions(  # noqa: PLR0913 - the day, its text, and where the answer is kept
-    assets, described, captions, llm_config, timeout_seconds, cache_path, sent=""
+    assets, described, captions, llm_config, timeout_seconds, judgments, sent=""
 ):
     """A prepared day, judged against the text bank's own contract."""
     from immich_memories.analysis.editorial_case import TextRequest
@@ -794,13 +794,13 @@ def _ask_from_captions(  # noqa: PLR0913 - the day, its text, and where the answ
     # (deepseek-v4.1-flash 6,256, muse-glimmer 13,469), so asking to think is
     # what starves this answer rather than what pays for it.
     try:
-        if cache_path is None:
+        if judgments is None:
             raw = _ask(prompt, llm_config, timeout_seconds, thinking=False)
         else:
             request = TextRequest(
                 prompt=prompt,
                 llm_config=llm_config,
-                cache_path=cache_path,
+                judgments=judgments,
                 max_tokens=_CAPTION_ANSWER_TOKENS,
                 timeout_seconds=timeout_seconds,
                 thinking=False,

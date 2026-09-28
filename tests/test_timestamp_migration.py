@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import sqlite3
 import time
@@ -17,10 +16,11 @@ from immich_memories.automation.models import AutoOutcome
 from immich_memories.automation.runner import AutoRunner
 from immich_memories.automation.state_store import AutomationStateStore
 from immich_memories.automation.status import cooldown_status
-from immich_memories.cache import database as cache_database
-from immich_memories.cache.database import VideoAnalysisCache
-from immich_memories.config_loader import Config
+from immich_memories.config_loader import Config, set_config
+from immich_memories.db import open_store
+from immich_memories.operations.store_import import import_legacy
 from immich_memories.tracking.run_database import RunDatabase
+from tests.legacy_cache_db import write_legacy_cache_db
 
 
 @pytest.fixture
@@ -84,8 +84,14 @@ def _create_minimal_v10_database(db_path: Path) -> None:
         )
 
 
-def test_future_automation_attempt_timestamps_are_aware_utc(tmp_path: Path) -> None:
-    store = AutomationStateStore(tmp_path / "attempts.db")
+def _import_into_the_store(db_path: Path, home: Path) -> None:
+    """The one-time upgrade: a legacy cache.db's history moves into this test's store."""
+    set_config(Config(cache={"database": str(db_path), "directory": str(home / "cache")}))
+    import_legacy(open_store(), home)
+
+
+def test_future_automation_attempt_timestamps_are_aware_utc() -> None:
+    store = AutomationStateStore()
     attempt = store.start_attempt(reason="daily wake")
 
     finished = store.finish_attempt(attempt.id, AutoOutcome.SKIPPED, reason="no candidates")
@@ -95,7 +101,7 @@ def test_future_automation_attempt_timestamps_are_aware_utc(tmp_path: Path) -> N
     assert finished.finished_at.tzinfo is UTC
 
 
-def test_v11_normalizes_all_timestamps_to_canonical_utc(
+def test_the_import_reads_pre_v11_wall_times_as_canonical_utc(
     tmp_path: Path,
     brussels_machine_timezone: None,
 ) -> None:
@@ -155,27 +161,23 @@ def test_v11_normalizes_all_timestamps_to_canonical_utc(
             ],
         )
 
-    VideoAnalysisCache(db_path)
+    _import_into_the_store(db_path, tmp_path)
 
-    with sqlite3.connect(db_path) as conn:
-        runs = {
-            row[0]: row[1:]
-            for row in conn.execute("SELECT run_id, created_at, completed_at FROM pipeline_runs")
-        }
-        phases = conn.execute(
-            "SELECT started_at, completed_at FROM phase_stats ORDER BY id"
-        ).fetchall()
-        attempts = conn.execute(
-            "SELECT started_at, finished_at FROM automation_attempts ORDER BY id"
-        ).fetchall()
+    history = RunDatabase()
+    runs = {
+        run_id: (run.created_at.isoformat(), run.completed_at.isoformat())
+        for run_id in ("winter", "summer", "aware")
+        if (run := history.get_run(run_id)) is not None
+    }
+    state = AutomationStateStore()
+    attempts = [
+        (attempt.started_at.isoformat(), attempt.finished_at.isoformat())
+        for attempt in (state.get_attempt("aware"), state.get_attempt("legacy"))
+    ]
 
     assert runs["winter"] == ("2026-01-10T08:00:00+00:00", "2026-01-10T09:00:00+00:00")
     assert runs["summer"] == ("2026-08-10T07:00:00+00:00", "2026-08-10T08:00:00+00:00")
     assert runs["aware"] == ("2026-08-10T07:00:00+00:00", "2026-08-10T08:00:00+00:00")
-    assert phases == [
-        ("2026-08-10T07:00:00+00:00", "2026-08-10T08:00:00+00:00"),
-        ("2026-08-10T07:00:00+00:00", "2026-08-10T08:00:00+00:00"),
-    ]
     assert attempts == [
         ("2026-01-10T08:00:00+00:00", "2026-01-10T09:00:00+00:00"),
         ("2026-01-10T08:00:00+00:00", "2026-01-10T09:00:00+00:00"),
@@ -184,12 +186,9 @@ def test_v11_normalizes_all_timestamps_to_canonical_utc(
 
 def test_v11_canonical_utc_keeps_completion_order_and_cooldown_chronological(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Different explicit offsets cannot invert completion history after migration."""
-    db_path = tmp_path / "offset-order-v10.db"
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 10)
-    RunDatabase(db_path)
+    """Different explicit offsets cannot invert completion history after the import."""
+    db_path = write_legacy_cache_db(tmp_path / "offset-order-v10.db", version=10)
     with sqlite3.connect(db_path) as conn:
         conn.executemany(
             """
@@ -235,9 +234,8 @@ def test_v11_canonical_utc_keeps_completion_order_and_cooldown_chronological(
             ],
         )
 
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 11)
-    migrated = RunDatabase(db_path)
-    runs = migrated.list_runs(
+    _import_into_the_store(db_path, tmp_path)
+    runs = RunDatabase().list_runs(
         status="completed",
         source="auto",
         order_by_completion=True,
@@ -252,13 +250,13 @@ def test_v11_canonical_utc_keeps_completion_order_and_cooldown_chronological(
         24,
         now=datetime(2026, 8, 11, 7, 0, tzinfo=UTC),
     ).active
-    last_attempt = AutomationStateStore(db_path).get_last_attempt()
+    last_attempt = AutomationStateStore().get_last_attempt()
     assert last_attempt is not None
     assert last_attempt.id == "newer-utc"
     assert last_attempt.started_at == datetime(2026, 8, 10, 8, 5, tzinfo=UTC)
 
 
-def test_v11_conservatively_backfills_legacy_auto_identity(tmp_path: Path) -> None:
+def test_the_import_conservatively_backfills_legacy_auto_identity(tmp_path: Path) -> None:
     """Only unambiguous completed-auto category and empty people fields are filled."""
     db_path = tmp_path / "identity-v10.db"
     _create_minimal_v10_database(db_path)
@@ -299,34 +297,32 @@ def test_v11_conservatively_backfills_legacy_auto_identity(tmp_path: Path) -> No
             ],
         )
 
-    VideoAnalysisCache(db_path)
+    _import_into_the_store(db_path, tmp_path)
 
-    with sqlite3.connect(db_path) as conn:
-        rows = {
-            row[0]: (row[1], row[2])
-            for row in conn.execute(
-                "SELECT run_id, memory_category, memory_people_json FROM pipeline_runs"
-            )
-        }
+    history = RunDatabase()
+    rows = {
+        run_id: (run.memory_category, list(run.memory_people))
+        for run_id in [*mappings, "explicit", "manual", "failed", "unknown"]
+        if (run := history.get_run(run_id)) is not None
+    }
 
     for memory_type, category in mappings.items():
-        assert rows[memory_type] == (category, json.dumps(["strasse example"]))
-    assert rows["explicit"] == ("birthday", '["Keep Me"]')
-    assert rows["manual"] == (None, "[]")
-    assert rows["failed"] == (None, "[]")
-    assert rows["unknown"] == (None, json.dumps(["unknown person"]))
+        assert rows[memory_type] == (category, ["strasse example"])
+    assert rows["explicit"] == ("birthday", ["keep me"])
+    assert rows["manual"] == (None, [])
+    assert rows["failed"] == (None, [])
+    assert rows["unknown"] == (None, ["unknown person"])
 
 
 def test_brussels_daily_auto_run_is_not_inside_24_hour_cooldown(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
     brussels_machine_timezone: None,
 ) -> None:
-    """Local 09:00 on consecutive summer days is exactly 24 hours apart."""
-    db_path = tmp_path / "cooldown-v10.db"
-    current_schema_version = cache_database.SCHEMA_VERSION
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", 10)
-    RunDatabase(db_path)
+    """Local 09:00 on consecutive summer days is exactly 24 hours apart.
+
+    A pre-v11 row holds local wall time; the import reads it the way v11 would have.
+    """
+    db_path = write_legacy_cache_db(tmp_path / "cooldown-v10.db", version=10)
     with sqlite3.connect(db_path) as conn:
         conn.execute(
             """
@@ -336,7 +332,7 @@ def test_brussels_daily_auto_run_is_not_inside_24_hour_cooldown(
                       'completed', 'auto', '[]')
             """
         )
-    monkeypatch.setattr(cache_database, "SCHEMA_VERSION", current_schema_version)
+    _import_into_the_store(db_path, tmp_path)
     config = Config(
         immich={"url": "http://immich.test:2283", "api_key": "test-key"},
         cache={"database": str(db_path), "directory": str(tmp_path / "cache")},

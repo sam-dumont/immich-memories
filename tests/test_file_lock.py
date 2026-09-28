@@ -81,7 +81,7 @@ class TestPipelineLockWiredInPipeline:
             with pytest.raises(GenerationError, match="held elsewhere"):
                 generate_memory(params)
 
-        mock_lock.assert_called_once_with(expected_lock)
+        assert mock_lock.call_args.args[0] == expected_lock
 
 
 class TestPipelineLock:

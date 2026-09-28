@@ -1,67 +1,109 @@
-"""Head facts per asset, in their own SQLite file beside the analysis cache.
-
-Kept out of the migration chain on purpose: a fact is (asset, head, version) →
-label, cheap to recompute, and the store is the seam the knowledge-store move
-to Postgres replaces wholesale.
-"""
+"""Head facts per asset: (asset, head, version) -> label, banked in the store's `head_facts`."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from datetime import UTC, datetime
-from pathlib import Path
+from collections.abc import Mapping, Sequence
+from types import TracebackType
+from typing import Any
 
-from immich_memories.cache.sqlite_conn import ThreadOwnedConnections
+import sqlalchemy as sa
+
+from immich_memories.db import Store, now_db
+from immich_memories.db.tables import head_facts
+from immich_memories.store.batches import bank_rows, id_in, in_chunks
 from immich_memories.triage.heads import HeadFact
 
-_SCHEMA = """
-CREATE TABLE IF NOT EXISTS head_facts (
-    asset_id TEXT NOT NULL,
-    head TEXT NOT NULL,
-    version TEXT NOT NULL,
-    label TEXT NOT NULL,
-    confidence REAL NOT NULL,
-    encoder_key TEXT NOT NULL,
-    decided_at TEXT NOT NULL,
-    PRIMARY KEY (asset_id, head, version)
-)
-"""
+# Pictures per write when a producer banks as it goes: a crash costs at most this many.
+BATCH_PICTURES = 32
 
 
 class HeadFactStore:
-    def __init__(self, db_path: Path) -> None:
-        self._connections = ThreadOwnedConnections(Path(db_path), _SCHEMA)
+    def __init__(self, store: Store) -> None:
+        self._store = store
 
-    def remember_facts(self, asset_id: str, facts: Sequence[HeadFact], *, encoder_key: str) -> None:
-        decided_at = datetime.now(UTC).isoformat(timespec="seconds")
-        with self._connections.connection() as conn:
-            conn.executemany(
-                "INSERT OR REPLACE INTO head_facts"
-                " (asset_id, head, version, label, confidence, encoder_key, decided_at)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [
-                    (asset_id, f.head, f.version, f.label, f.confidence, encoder_key, decided_at)
-                    for f in facts
-                ],
-            )
-            conn.commit()
+    def remember_facts(self, facts: Mapping[str, Sequence[HeadFact]], *, encoder_key: str) -> None:
+        """Bank a batch of pictures' head answers in one transaction."""
+        self.remember_rows(_rows(facts, encoder_key))
+
+    def remember_rows(self, rows: Sequence[Mapping[str, Any]]) -> None:
+        # A key twice in one statement is refused by PostgreSQL; the later answer wins.
+        latest = {(r["asset_id"], r["head"], r["version"]): r for r in rows}
+        if not latest:
+            return
+        bank_rows(
+            self._store, head_facts, list(latest.values()), keys=("asset_id", "head", "version")
+        )
 
     def facts_for(
         self, asset_ids: Sequence[str], *, head: str, version: str
     ) -> dict[str, HeadFact]:
-        if not asset_ids:
-            return {}
-        placeholders = ",".join("?" * len(asset_ids))
-        with self._connections.connection() as conn:
-            rows = conn.execute(
-                "SELECT asset_id, label, confidence FROM head_facts"  # noqa: S608
-                f" WHERE head = ? AND version = ? AND asset_id IN ({placeholders})",
-                [head, version, *asset_ids],
-            ).fetchall()
-        return {
-            row[0]: HeadFact(head=head, label=row[1], confidence=float(row[2]), version=version)
-            for row in rows
-        }
+        t = head_facts
+        found: dict[str, HeadFact] = {}
+        with self._store.connect() as connection:
+            for chunk in in_chunks(connection, list(asset_ids)):
+                rows = connection.execute(
+                    sa.select(t.c.asset_id, t.c.label, t.c.confidence).where(
+                        t.c.head == head,
+                        t.c.version == version,
+                        id_in(connection, t.c.asset_id, chunk),
+                    )
+                )
+                found.update(
+                    (
+                        row[0],
+                        HeadFact(
+                            head=head, label=row[1], confidence=float(row[2]), version=version
+                        ),
+                    )
+                    for row in rows
+                )
+        return found
 
-    def close(self) -> None:
-        self._connections.close()
+
+class PendingHeadFacts:
+    """Head answers a producer banks as it goes, written every `size` pictures and on exit."""
+
+    def __init__(self, bank: HeadFactStore, size: int = BATCH_PICTURES) -> None:
+        self._bank = bank
+        self._size = size
+        self._rows: list[dict[str, Any]] = []
+        self._pictures: set[str] = set()
+
+    def add(self, asset_id: str, facts: Sequence[HeadFact], *, encoder_key: str) -> None:
+        self._rows.extend(_rows({asset_id: facts}, encoder_key))
+        self._pictures.add(asset_id)
+        if len(self._pictures) >= self._size:
+            self.flush()
+
+    def flush(self) -> None:
+        rows, self._rows, self._pictures = self._rows, [], set()
+        self._bank.remember_rows(rows)
+
+    def __enter__(self) -> PendingHeadFacts:
+        return self
+
+    def __exit__(
+        self,
+        _type: type[BaseException] | None,
+        _error: BaseException | None,
+        _traceback: TracebackType | None,
+    ) -> None:
+        # Whatever was decided before a stop is kept, as a per-picture commit kept it.
+        self.flush()
+
+
+def _rows(facts: Mapping[str, Sequence[HeadFact]], encoder_key: str) -> list[dict[str, Any]]:
+    decided_at = now_db()
+    return [
+        {
+            "asset_id": asset_id,
+            "head": f.head,
+            "version": f.version,
+            "label": f.label,
+            "confidence": f.confidence,
+            "encoder_key": encoder_key,
+            "decided_at": decided_at,
+        }
+        for asset_id, decided in facts.items()
+        for f in decided
+    ]

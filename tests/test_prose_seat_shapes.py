@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import json
-from contextlib import closing
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from immich_memories.analysis.library_catalogue import bank_month_accounts
 from immich_memories.store.library_catalogue import CatalogueStore
+from tests.annotation_rows import annotation_store
 from tests.test_library_catalogue import FEBRUARY, Reader
 
 
@@ -25,11 +25,11 @@ class ShapedReader(Reader):
         return self(prompt)
 
 
-def test_an_account_request_asks_for_an_account_under_every_offered_key(tmp_path):
+def test_an_account_request_asks_for_an_account_under_every_offered_key():
     asked = ShapedReader()
 
-    with closing(CatalogueStore(tmp_path / "annotations.sqlite")) as store:
-        bank_month_accounts(FEBRUARY, store=store, requester=asked, producer="model-a")
+    store = CatalogueStore(annotation_store())
+    bank_month_accounts(FEBRUARY, store=store, requester=asked, producer="model-a")
 
     schema = asked.shapes[0]["json_schema"]["schema"]
     offered = asked.prompts[0].split("exact keys: ")[1].split(".\n")[0].split(", ")
