@@ -11,7 +11,12 @@ from nicegui import run, ui
 from immich_memories.analysis.editorial_source import resolve_named_expression
 from immich_memories.api.immich import SyncImmichClient
 from immich_memories.api.models import VideoClipInfo
-from immich_memories.api.person_scope import photos_in_window, videos_in_window
+from immich_memories.api.person_scope import (
+    people_in_window,
+    photos_in_window,
+    videos_in_window,
+    window_condition,
+)
 from immich_memories.operations.phases import OperationalPhase, PhaseEvent
 from immich_memories.security import sanitize_error_message
 from immich_memories.ui.i18n import tr
@@ -119,8 +124,13 @@ def _scope_event_media(assets: list, state) -> list:
     return list(select_source_members(assets, members if members else None))
 
 
-def _fetch_assets(state) -> list:
-    """Blocking: fetch video assets from Immich API, one query per window."""
+def _fetch_media(state) -> tuple[list, list]:
+    """Blocking: the videos and photos of every window, in one pass per window.
+
+    A memory about people reads each window once per kind and keeps the episodes
+    those people are in; an episode mixes videos and photos, so both kinds are read
+    even when photos are left out.
+    """
     person_ids, expression_args = _person_fetch_args(state)
     with SyncImmichClient(
         base_url=state.immich_url,
@@ -131,18 +141,24 @@ def _fetch_assets(state) -> list:
             expression_args["person_expression"] = resolve_named_expression(
                 state.person_expression, client.get_all_people(with_hidden=True)
             )
-        assets: list = []
+        condition = window_condition(person_ids, person_match=state.person_match, **expression_args)
+        videos: list = []
+        photos: list = []
         for date_range in state.date_ranges:
-            assets.extend(
-                videos_in_window(
-                    client,
-                    person_ids,
-                    date_range,
-                    person_match=state.person_match,
-                    **expression_args,
+            if condition is not None:
+                window_videos, window_photos = people_in_window(client, date_range, condition)
+            else:
+                window_videos = videos_in_window(client, [], date_range)
+                window_photos = (
+                    photos_in_window(client, [], date_range) if state.include_photos else []
                 )
-            )
-        return _scope_event_media(_dedup_by_id(assets), state)
+            videos.extend(window_videos)
+            photos.extend(window_photos)
+    photos = photos if state.include_photos else []
+    return (
+        _scope_event_media(_dedup_by_id(videos), state),
+        _scope_event_media(_dedup_by_id(photos), state),
+    )
 
 
 def _filter_near_home(assets: list, state) -> list:
@@ -167,32 +183,6 @@ def _build_clips(assets: list) -> tuple[list[VideoClipInfo], int]:
     from immich_memories.generate_clips import assets_to_clips
 
     return assets_to_clips(assets, min_duration=0.0), 0
-
-
-def _fetch_photos(state) -> list:
-    """Fetch photo assets (blocking), one query per window."""
-    person_ids, expression_args = _person_fetch_args(state)
-    with SyncImmichClient(
-        base_url=state.immich_url,
-        api_key=state.immich_api_key,
-        api_version=state.immich_api_version,
-    ) as client:
-        if expression_args:
-            expression_args["person_expression"] = resolve_named_expression(
-                state.person_expression, client.get_all_people(with_hidden=True)
-            )
-        photos: list = []
-        for date_range in state.date_ranges:
-            photos.extend(
-                photos_in_window(
-                    client,
-                    person_ids,
-                    date_range,
-                    person_match=state.person_match,
-                    **expression_args,
-                )
-            )
-        return _scope_event_media(_dedup_by_id(photos), state)
 
 
 def _set_initial_selection(clips: list[VideoClipInfo], state) -> None:
@@ -231,7 +221,8 @@ async def _collect_date_range_media(state, status_label, progress_bar, on_phase:
     if not state.date_ranges:
         raise ValueError("No date range configured")
 
-    assets = _filter_near_home(await io_bound_result(_fetch_assets, state), state)
+    assets, photo_assets = await io_bound_result(_fetch_media, state)
+    assets = _filter_near_home(assets, state)
     _set_phase_status(
         status_label,
         _ui_phase(
@@ -247,10 +238,7 @@ async def _collect_date_range_media(state, status_label, progress_bar, on_phase:
 
     clips, _ = _build_clips(assets)
 
-    photo_assets = []
-    if state.include_photos:
-        status_label.set_text(tr("Fetching photos..."))
-        photo_assets = await io_bound_result(_fetch_photos, state)
+    if photo_assets:
         logger.info(f"Found {len(photo_assets)} photos")
 
     # A Live Photo's video half is part of a photograph. It is dropped from the

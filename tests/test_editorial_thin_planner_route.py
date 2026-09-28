@@ -225,3 +225,28 @@ def test_a_shot_the_vote_removes_is_refilled_inside_the_films_real_length(tmp_pa
     assert len(plan["carriers"]) == audit["draft_shots"]
     # the polish measured the film against the length finishing holds it to
     assert audit["content_cap"] == plan["content_cap_seconds"]
+
+
+def test_the_polish_keeps_no_screen_the_no_model_film_would_drop(tmp_path):
+    """A season (09-27): a polished film kept a printed recipe and a vehicle form that no star,
+    video or known face vouched for. The no-model film drops such filler as its last pass, and
+    the polish refines that film, so it cannot keep what the film without it would drop."""
+    from dataclasses import replace
+
+    plain = run(film(tmp_path / "plain"), PolishJudge(), account=ACCOUNT)
+    source = film(tmp_path)
+    screen = next(
+        c["asset_id"]
+        for c in plain["carriers"]
+        if not source.assets[c["asset_id"]].is_favorite and not source.assets[c["asset_id"]].people
+    )
+    row = source.audience_annotations[screen]
+    source.audience_annotations[screen] = replace(
+        row, heads=(*row.heads, ("frame_kind", "screen_or_document"))
+    )
+
+    plan = run(source, PolishJudge(), account=ACCOUNT)
+
+    assert audit_of(source)["ran"] is True
+    assert screen not in {c["asset_id"] for c in plan["carriers"]}
+    assert (source.artifact_dir / "derived-decisions/unvouched-filler.private.json").is_file()

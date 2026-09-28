@@ -116,7 +116,7 @@ records what it asked against that budget, and the run logs a warning when it go
 
 **When the account can't be read**, it is asked once more. A second failure ships the no-model film
 exactly: the run logs *The model polish did not run (...); the film is the rules draft*, the record
-says `ran: false` with the reason, and the filler pass of the no-model film runs.
+says `ran: false` with the reason. The filler pass runs either way.
 
 **When an episode can't be read**, the account can still use its factual card. The private
 `plan.private.json` records each demanded episode's availability and exact evidence identity under

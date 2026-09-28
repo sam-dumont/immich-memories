@@ -1,7 +1,7 @@
 """The pictures a film can reach, which are the only ones it prepares (#1181).
 
-A film selects from the pictures it was asked about: a person film from the pictures where
-the person is recognised. The window around them is still read, as Immich metadata, because
+A film selects from the pictures it was asked about: a person film from every picture of an
+episode where the person is recognised (`person_presence.py`). The window around them is still read, as Immich metadata, because
 episodes and moments are cut from the whole library; but preparing it (previews, heads, the
 exposure detector over video frames and Live Photo clips, face boxes) bought the film
 nothing. Over a lifetime window it was 90k pictures for a 7.5k-picture pool.

@@ -93,14 +93,14 @@ def _invoke_planned_generation(args: list[str], config: Config) -> Result:
         birth_date=None,
     )
     asset = MagicMock(duration_seconds=10.0)
-    # WHY: SyncImmichClient and fetch_videos would call the real Immich server.
+    # WHY: SyncImmichClient and fetch_media would call the real Immich server.
     with (
         # WHY: SyncImmichClient is the Immich HTTP client this CLI path would otherwise call.
         patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
-        # WHY: fetch_videos wraps the Immich video-listing call this test must not make.
+        # WHY: fetch_media wraps the Immich video-listing call this test must not make.
         patch(
-            "immich_memories.cli.generate.fetch_videos",
-            return_value=[asset],
+            "immich_memories.cli.generate.fetch_media",
+            return_value=([asset], []),
         ),
         patch(
             "immich_memories.cli.generate.run_pipeline_and_generate",

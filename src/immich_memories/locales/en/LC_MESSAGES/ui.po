@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 19:10+0200\n"
+"POT-Creation-Date: 2026-09-27 22:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -200,7 +200,7 @@ msgstr "Auto (match clips)"
 msgid "Auto duration"
 msgstr "Auto duration"
 
-#: i18n.py:101
+#: i18n.py:102
 msgid "Automatic (browser)"
 msgstr "Automatic (browser)"
 
@@ -413,7 +413,7 @@ msgstr ""
 msgid "Connected as: {name}"
 msgstr "Connected as: {name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:454 pages/step2_loading.py:307
 msgid "Connecting to Immich..."
 msgstr "Connecting to Immich..."
 
@@ -502,7 +502,7 @@ msgstr "Difference"
 msgid "Discovery failed: {error}"
 msgstr "Discovery failed: {error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:66 pages/step2_loading.py:366
 msgid "Done"
 msgstr "Done"
 
@@ -545,7 +545,7 @@ msgstr "Errors ({error_count})"
 msgid "Export"
 msgstr "Export"
 
-#: pages/step2_loading.py:336
+#: pages/step2_loading.py:324
 #, python-brace-format
 msgid "Failed to load videos: {value}"
 msgstr "Failed to load videos: {value}"
@@ -574,10 +574,6 @@ msgstr ""
 "backgrounds, no speech analysis, fewer photos, favorites-first analysis. Set with `preset: "
 "fast` in config.yaml or IMMICH_MEMORIES_PRESET=fast; the choices below still win for this "
 "run."
-
-#: pages/step2_loading.py:252
-msgid "Fetching photos..."
-msgstr "Fetching photos..."
 
 #: pages/_step3_music_preview.py:232
 msgid "Film language"
@@ -708,7 +704,7 @@ msgstr "Immich delivery: {delivery_label}"
 msgid "Immich delivery: {value}"
 msgstr "Immich delivery: {value}"
 
-#: pages/clip_grid.py:170 pages/clip_grid.py:224
+#: pages/clip_grid.py:177 pages/clip_grid.py:232
 msgid "Include"
 msgstr "Include"
 
@@ -724,7 +720,7 @@ msgstr "Include Photos"
 msgid "Include in compilation"
 msgstr "Include in compilation"
 
-#: i18n.py:109
+#: i18n.py:110
 msgid "Interface language"
 msgstr "Interface language"
 
@@ -786,7 +782,7 @@ msgstr "Loading albums..."
 msgid "Loading thumbnails"
 msgstr "Loading thumbnails"
 
-#: pages/step2_loading.py:313
+#: pages/step2_loading.py:301
 msgid "Loading videos..."
 msgstr "Loading videos..."
 
@@ -1063,7 +1059,7 @@ msgstr "Person Filter"
 msgid "Person Spotlight"
 msgstr "Person Spotlight"
 
-#: pages/clip_grid.py:193
+#: pages/clip_grid.py:200
 msgid "Photo"
 msgstr "Photo"
 
@@ -1075,7 +1071,7 @@ msgstr "Photo Pool"
 msgid "Photo duration (seconds)"
 msgstr "Photo duration (seconds)"
 
-#: pages/step2_loading.py:461
+#: pages/step2_loading.py:449
 #, python-brace-format
 msgid "Photo thumbnails: {value}/{count}"
 msgstr "Photo thumbnails: {value}/{count}"
@@ -1254,6 +1250,10 @@ msgstr "Running on the server: {phase}. It continues if you leave this page."
 #: app.py:73 app.py:219
 msgid "Runs"
 msgstr "Runs"
+
+#: pages/clip_grid.py:108 pages/clip_grid.py:320 pages/clip_grid.py:356
+msgid "Same episode"
+msgstr "Same episode"
 
 #: pages/step1_config.py:140
 msgid "Save Config"
@@ -1505,7 +1505,7 @@ msgstr "This cut finished while the page was away. Re-load its media to export i
 msgid "Thumbnail cache"
 msgstr "Thumbnail cache"
 
-#: pages/step2_loading.py:415
+#: pages/step2_loading.py:403
 #, python-brace-format
 msgid "Thumbnails: {value}/{count}"
 msgstr "Thumbnails: {value}/{count}"
@@ -1528,11 +1528,11 @@ msgstr "Together"
 
 #: pages/step1_people.py:181
 msgid ""
-"Together keeps only the moments holding everyone named. Any of these people keeps a moment "
-"holding any one of them."
+"Together keeps the times everyone named was there, even if never in the same photo. Any of "
+"these people keeps the times any one of them was there."
 msgstr ""
-"Together keeps only the moments holding everyone named. Any of these people keeps a moment "
-"holding any one of them."
+"Together keeps the times everyone named was there, even if never in the same photo. Any of "
+"these people keeps the times any one of them was there."
 
 #: pages/login.py:64
 msgid "Too many failed attempts. Try again later."

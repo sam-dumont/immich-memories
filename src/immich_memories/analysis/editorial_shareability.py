@@ -40,6 +40,7 @@ from immich_memories.analysis.editorial_shareability_audience import (
     exposure_flagged,
     exposure_members,
     parse_audience_verdict,
+    underwear_only,
 )
 from immich_memories.analysis.editorial_story_shortlist import capture_space_available
 from immich_memories.analysis.editorial_text_failures import TextCompletionFailure
@@ -407,6 +408,12 @@ def floors_under(evidence: Mapping[str, Any], result: dict[str, Any]) -> dict[st
     prefers a false positive to a miss. Nor can the reader see the three minutes around a
     capture. All of these only ever take a unit further from `share`.
     """
+    if allowed(result["verdict"], FAMILY) and underwear_only(evidence):
+        return result | {
+            "verdict": "just_us",
+            "finding": "underwear_only",
+            "why": "the caption explicitly describes a person wearing only underwear",
+        }
     if result["verdict"] != "share":
         return result
     if finding := _head_hold(evidence):

@@ -70,8 +70,8 @@ other pages of this section describe happens inside it.
 
 ## Preparation: what gets read, and when
 
-A film acquires cheap facts for its **reach**: the pictures it could select (for a person film, the ones that
-person is in), the other stills of their Live Photo bursts, and every picture of the same
+A film acquires cheap facts for its **reach**: the pictures it could select (for a person film, every
+picture of an episode where Immich recognised that person at least once), the other stills of their Live Photo bursts, and every picture of the same
 five-minute capture run, because the exposure rule reads the whole run. The rest of the window is
 read as Immich metadata only, since moments and episodes are cut from all of it. A cut that selects
 a picture it never prepared stops rather than ship it. Captions and clip checks wait until after

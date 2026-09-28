@@ -153,6 +153,20 @@ class QueryTextRequester:
         if request.refresh:
             return None
         raw = cache.answer_for(request.judgment_key)
+        if raw is None and request.json_optional_fields:
+            # An older complete answer still answers this exact question. New optional
+            # answers have their own identity and cannot satisfy the stricter contract.
+            strict = replace(request, json_optional_fields=())
+            raw = cache.answer_for(strict.judgment_key)
+            if raw is not None:
+                try:
+                    raw = complete_final_json(
+                        raw,
+                        fields=strict.json_fields,
+                        empty_array_pairs=strict.json_empty_array_pairs,
+                    )
+                except ValueError:
+                    raw = None
         if raw is None:
             return None
         if accepts is not None and not accepts(raw):
@@ -244,6 +258,7 @@ class QueryTextRequester:
                     raw,
                     fields=request.json_fields,
                     empty_array_pairs=request.json_empty_array_pairs,
+                    optional_fields=request.json_optional_fields,
                 )
                 if request.json_fields and decoded != raw and self._json_decoding_observer:
                     self._json_decoding_observer(

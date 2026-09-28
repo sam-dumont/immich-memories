@@ -50,6 +50,7 @@ if TYPE_CHECKING:
     from immich_memories.config_models_llm import LLMConfig
     from immich_memories.db import Store
 
+from immich_memories.analysis.editorial_json_completion import complete_final_json
 from immich_memories.analysis.llm_failures import stop_if_this_is_our_bug
 from immich_memories.analysis.special_day_title import (
     honest_title,
@@ -493,6 +494,8 @@ _THINKING_TIMEOUT_SECONDS = 300
 # over. Whatever the host spends thinking is budgeted beside this, per endpoint,
 # by the transport; the answer is all the call site sizes.
 _CAPTION_ANSWER_TOKENS = 500
+_DAY_FIELDS = ("special", "title", "subtitle", "what", "window")
+_DAY_OPTIONAL_FIELDS = ("title", "subtitle", "what", "window")
 
 
 def _asked_again(
@@ -626,12 +629,15 @@ def _ask_from_facts(
         logger.debug("Special-day question came back empty")
         return SpecialDay(special=False, judged=False)
 
-    answer = _json_in(raw)
-    if answer is None:
+    try:
+        answer = _day_answer(raw)
+    except ValueError:
         return SpecialDay(special=False, judged=False)
-    special = bool(answer.get("special"))
-    written = str(answer.get("title", "")).strip()
-    what = str(answer.get("what", ""))[:80].strip()
+    special = answer["special"]
+    if not special:
+        return SpecialDay(special=False)
+    written = answer["title"].strip()
+    what = answer["what"].strip()
     title = title_the_day_can_keep(written, assets, evidence=lines)
     # Only for a day that is going to be kept. An ordinary day is discarded
     # whatever it is called, and a second live call to name it better is spent
@@ -641,9 +647,7 @@ def _ask_from_facts(
     return SpecialDay(
         special=special,
         title=title or honest_title(assets, what=what, evidence=lines),
-        subtitle=line_the_day_can_keep(
-            str(answer.get("subtitle", ""))[:90].strip(), assets, evidence=lines
-        ),
+        subtitle=line_the_day_can_keep(answer["subtitle"].strip(), assets, evidence=lines),
         what=what,
         window=_window_the_model_gave(answer, assets),
     )
@@ -670,22 +674,27 @@ def _captioned_assets(assets: list, captions: Mapping[str, str] | None) -> list:
     return described
 
 
-def _caption_answer(raw: str) -> dict:
-    # Read leniently, exactly as the image branch does: the banked route arrives
-    # pre-decoded through the JSON contract, but the uncached route gets the
-    # model's raw text, and a fenced or prefaced object is still an answer.
-    answer = _json_in(raw)
-    if answer is None or not isinstance(answer.get("special"), bool):
+def _day_answer(raw: str) -> dict:
+    answer = json.loads(
+        complete_final_json(raw, fields=_DAY_FIELDS, optional_fields=_DAY_OPTIONAL_FIELDS)
+    )
+    if not isinstance(answer.get("special"), bool):
         raise ValueError("special-day verdict needs a Boolean")
+    if not answer["special"]:
+        return {"special": False, "title": "", "subtitle": "", "what": "", "window": None}
+    if answer.get("subtitle") is None:
+        answer["subtitle"] = ""
+    # A grounded title can stand alone; facts-only answers already omit the summary.
+    answer.setdefault("what", "")
     for field, limit in (("title", 90), ("subtitle", 90), ("what", 80)):
         if not isinstance(answer.get(field), str) or len(answer[field]) > limit:
             raise ValueError(f"special-day {field} is not bounded text")
     return answer
 
 
-def _accepts_caption_answer(raw: str) -> bool:
+def _accepts_day_answer(raw: str) -> bool:
     try:
-        _caption_answer(raw)
+        _day_answer(raw)
     except (ValueError, TypeError):
         return False
     return True
@@ -740,12 +749,13 @@ def _ask_from_captions(assets, described, captions, llm_config, timeout_seconds,
                 timeout_seconds=timeout_seconds,
                 thinking=False,
                 json_object=True,
-                json_fields=("special", "title", "subtitle", "what", "window"),
+                json_fields=_DAY_FIELDS,
+                json_optional_fields=_DAY_OPTIONAL_FIELDS,
             )
             raw = asyncio.run(
-                QueryTextRequester().request(request, accepts=_accepts_caption_answer)
+                QueryTextRequester().request(request, accepts=_accepts_day_answer)
             ).raw
-        answer = _caption_answer(raw)
+        answer = _day_answer(raw)
     except Exception as exc:  # WHY: an unavailable text model must not trigger an image send.
         stop_if_this_is_our_bug(exc, "special-day caption question")
         logger.warning("Special-day caption question failed (%s)", type(exc).__name__)

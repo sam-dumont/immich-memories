@@ -98,6 +98,26 @@ def test_query_text_requester_reports_an_exact_warm_answer(
     assert result.cache_hit is True
 
 
+def test_optional_fields_reuse_a_valid_answer_from_the_stricter_contract(tmp_path, monkeypatch):
+    request = replace(_request(tmp_path), json_object=True, json_fields=("special", "subtitle"))
+    raw = '{"special":true,"subtitle":""}'
+    cache = JudgmentCache(request.judgments)
+    cache.remember(request.judgment_key, raw)
+    optional = replace(request, json_optional_fields=("subtitle",))
+
+    # WHY: an existing valid answer must avoid the external model transport.
+    async def forbid(*_args, **_kwargs):
+        raise AssertionError("a stricter cached answer must remain reusable")
+
+    monkeypatch.setattr("httpx.AsyncClient.post", forbid)
+
+    result = asyncio.run(gateway.QueryTextRequester().request(optional))
+
+    assert optional.judgment_key != request.judgment_key
+    assert result.cache_hit and result.raw == raw
+    assert cache.answer_for(request.judgment_key) == raw
+
+
 def test_query_text_requester_retries_one_incomplete_answer_with_double_budget(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

@@ -84,16 +84,10 @@ def _check_companions(companion_assets: Mapping[str, Asset], assets: Mapping[str
         raise ValueError("captured companion metadata must describe a declared attached video")
 
 
-def _check_case_scope(case: Case, assets: Mapping[str, Asset], members: list[str]) -> None:
-    if case.person_expression is not None:
-        from immich_memories.analysis.editorial_source import filter_named_expression
-
-        matching = {
-            asset.id
-            for asset in filter_named_expression(tuple(assets.values()), case.person_expression)
-        }
-        if not set(members).issubset(matching):
-            raise ValueError("captured wall selects outside the grouped people condition")
+def _check_case_scope(case: Case, assets: Mapping[str, Asset]) -> None:
+    # Who is in a picture was settled by the fetch, over the episodes the owner reviewed
+    # (`person_presence.py`); regrouping the admitted source here could refuse a pool
+    # picture whose episode an exclusion split.
     if case.special_event_id is not None and not set(assets).issubset(case.event_asset_ids):
         raise ValueError("captured source exceeds exact special event membership")
 
@@ -190,9 +184,9 @@ class StructurePlanningInput:
 
     def __post_init__(self) -> None:
         _check_render_timing(self.render_timing, self.case)
-        members = _check_wall_membership(self.wall_bytes, self.moment_asset_ids, self.assets)
+        _check_wall_membership(self.wall_bytes, self.moment_asset_ids, self.assets)
         _check_companions(self.companion_assets, self.assets)
-        _check_case_scope(self.case, self.assets, members)
+        _check_case_scope(self.case, self.assets)
         _check_contract(self.case, self.intent)
         if not isinstance(self.allow_live_motion, bool):
             raise ValueError("Live motion request must be boolean")

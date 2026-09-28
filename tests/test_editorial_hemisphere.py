@@ -128,8 +128,8 @@ def test_actual_cli_hemisphere_flag_survives_the_generation_handoff(tmp_path):
         patch("immich_memories.cli.get_config", return_value=config),
         # WHY: SyncImmichClient is the Immich HTTP client; replaced so no server connection is made
         patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
-        # WHY: fetch_videos would call Immich for real assets; stubbed to return the test clip
-        patch("immich_memories.cli.generate.fetch_videos", return_value=[clip.asset]),
+        # WHY: fetch_media would call Immich for real assets; stubbed to return the test clip
+        patch("immich_memories.cli.generate.fetch_media", return_value=([clip.asset], [])),
         # WHY: run_pipeline_and_generate is the FFmpeg render entrypoint; captured, not executed
         patch(
             "immich_memories.cli.generate.run_pipeline_and_generate",

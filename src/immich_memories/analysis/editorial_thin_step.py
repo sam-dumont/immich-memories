@@ -1,9 +1,7 @@
 """The planner's thin step: the model's one read of the rules draft, or the reason it did not run.
 
-A draft the polish did not touch is the no-model film, so the step tells the run whether it
-polished: the passes only a no-model film takes (the unvouched-filler drop) run on that draft
-exactly as they would with no model configured, instead of being skipped for a polish that
-never happened.
+A draft the polish did not touch is the no-model film. Polished or not, the film then takes
+the no-model film's last passes (the unvouched-filler drop), so the polish only refines it.
 """
 
 from __future__ import annotations
@@ -35,7 +33,7 @@ def polish_the_draft(
     record,
     gates,
 ):
-    """The model's one read of the rules cut this run built; sets `run.polished`.
+    """The model's one read of the rules cut this run built.
 
     The draft was built blind, from rules. Standing here is the same answer from the heads the
     draft used; the model is asked only what the heads cannot answer.
@@ -47,7 +45,6 @@ def polish_the_draft(
         unread = ""
     except PeriodUnread as exc:
         catalogue, unread = None, str(exc)
-    run.polished = catalogue is not None and bool(carriers)
     if catalogue is not None and not selection.story.thesis:
         # The polish judges every shot against the period's account, so that account is what
         # this film is about: the film page and `runs story` read it from the plan's story.

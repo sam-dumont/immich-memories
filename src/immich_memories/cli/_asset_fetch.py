@@ -13,7 +13,12 @@ import logging
 from typing import TYPE_CHECKING
 
 from immich_memories.api.person_expression import PersonExpression
-from immich_memories.api.person_scope import photos_in_window, videos_in_window
+from immich_memories.api.person_scope import (
+    people_in_window,
+    photos_in_window,
+    videos_in_window,
+    window_condition,
+)
 from immich_memories.cli._helpers import print_info, print_success, print_warning
 from immich_memories.timeperiod import DateRange
 
@@ -129,8 +134,8 @@ def fetch_photos(
     """Fetch every photograph in the memory's windows, honouring the person filter.
 
     Several people use the explicit AND/OR rule videos follow. Person-scoped
-    discovery returns only assets Immich tagged with a requested person; it
-    does not pull untagged temporal neighbours into the pool.
+    discovery keeps every picture of the episodes the people are in
+    (`api/person_scope.py`), not only the frames their faces were found in.
 
     A window that cannot be read costs that window, not the run. Live Photos
     used to be fetched through a wrapper that said so out loud; their stills
@@ -218,3 +223,60 @@ def fetch_videos(
     _report_per_window(assets, date_ranges, person_ids, history_from)
 
     return assets
+
+
+def fetch_media(
+    *,
+    client: SyncImmichClient,
+    progress: ProgressDisplay,
+    date_ranges: list[DateRange],
+    person_ids: list[str],
+    person_match: str = "and",
+    person_expression: PersonExpression | None = None,
+    include_photos: bool = True,
+    history_from: int | None = None,
+) -> tuple[list, list]:
+    """The videos and photos a memory's windows hold, as one fetch.
+
+    A memory about nobody reads videos and photos the way `fetch_videos` and
+    `fetch_photos` do. A memory about people reads each window once per kind and
+    keeps the episodes those people are in (`people_in_window`): an episode mixes
+    videos and photos, so both reads are needed even when photos are left out.
+    """
+    condition = window_condition(
+        person_ids, person_match=person_match, person_expression=person_expression
+    )
+    if condition is None:
+        everything = fetch_videos(
+            client=client,
+            progress=progress,
+            date_ranges=date_ranges,
+            person_ids=[],
+            history_from=history_from,
+        )
+        if not include_photos:
+            return everything, []
+        return everything, fetch_photos(client=client, date_ranges=date_ranges, person_ids=[])
+    task = progress.add_task("Fetching the episodes these people are in...", total=None)
+    videos: list = []
+    photos: list = []
+    for date_range in date_ranges:
+        window_videos, window_photos = people_in_window(client, date_range, condition)
+        videos.extend(window_videos)
+        photos.extend(window_photos)
+    progress.update(task, completed=True)
+    videos = _first_of_each(videos)
+    print_success(f"Found {len(videos)} videos")
+    _report_per_window(videos, date_ranges, person_ids, history_from)
+    return videos, _first_of_each(photos) if include_photos else []
+
+
+def _first_of_each(assets: list) -> list:
+    """Windows that touch hand the same asset over twice; keep its first arrival."""
+    seen: set[str] = set()
+    unique = []
+    for asset in assets:
+        if asset.id not in seen:
+            seen.add(asset.id)
+            unique.append(asset)
+    return unique

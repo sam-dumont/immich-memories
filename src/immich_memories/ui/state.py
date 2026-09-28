@@ -16,7 +16,7 @@ from immich_memories.tracking.models import DeliveryStatus
 
 if TYPE_CHECKING:
     from immich_memories.analysis.editorial_planner import EditorialSelection
-    from immich_memories.api.models import Person, VideoClipInfo
+    from immich_memories.api.models import Asset, Person, VideoClipInfo
     from immich_memories.api.person_expression import PersonExpression
     from immich_memories.cache.thumbnail_cache import ThumbnailCache
     from immich_memories.config_loader import Config
@@ -252,6 +252,16 @@ class AppState:
         from immich_memories.analysis.editorial_source import resolve_named_expression
 
         return resolve_named_expression(expression, self.people)
+
+    def found_by_episode(self, asset: Asset) -> bool:
+        """Whether this picture is in the pool through its episode, not its own faces.
+
+        None of the memory's people was recognised on it; one was elsewhere in the same
+        episode, which is what put it in the pool (`analysis/person_presence.py`).
+        """
+        expression = self.resolved_person_expression()
+        faces = set(expression.leaf_values) if expression is not None else set(self.person_ids)
+        return bool(faces) and not any(person.id in faces for person in asset.people)
 
     def clear_person_expression(self) -> None:
         """An explicit flat-picker choice replaces the previous grouped condition."""

@@ -21,6 +21,7 @@ from immich_memories.analysis.editorial_block_votes import (
     judge_worthiness,
     worth_criterion_v44,
 )
+from immich_memories.analysis.editorial_carrier_eligibility import excluded_carrier_sources
 from immich_memories.analysis.editorial_cut_invariants import check_finished_cut
 from immich_memories.analysis.editorial_episode_documents import factual_moment_rows
 from immich_memories.analysis.editorial_exposure_chains import chain_holds_for
@@ -38,7 +39,7 @@ from immich_memories.analysis.editorial_rule_banked_facts import (
 )
 from immich_memories.analysis.editorial_rule_quality import rule_representative_rank
 from immich_memories.analysis.editorial_rule_reader import NoModelJudge, RuleStructureReader
-from immich_memories.analysis.editorial_shareability import SHAREABLE
+from immich_memories.analysis.editorial_shareability import SHAREABLE, unit_members
 from immich_memories.analysis.editorial_shareability_tiers import audience_check_for
 from immich_memories.analysis.editorial_story_candidates import story_candidates
 from immich_memories.analysis.editorial_story_lookalike import hash_pair_relation
@@ -544,8 +545,10 @@ def _select(
     )
     run.selection_stages["after_final_duplicate_review"] = len(run.carriers)
     announce_count(len(run.carriers), "after the duplicate review")
-    if ports.rules is not None and not run.polished:
+    if ports.rules is not None:
         # The last removal pass, so no replacement pass can bring a removed filler's like back in.
+        # A polished film runs it too: the polish refines the no-model film, and must not keep
+        # a screen or an empty frame that film would have dropped.
         drop_filler_nothing_vouches_for(run, filler_evidence(source), record_story)
     # After every pass that removes a shot, so none of them can undo a family seat. It seats a
     # close family member's frame, never filler the pass above removed.
@@ -587,6 +590,12 @@ def _refresh_candidates(source, ports, material, chains, carriers):
     # must follow them before any candidate is judged.
     chains.update(
         chain_holds_for(source.assets, source.audience_annotations, source.companion_detectors)
+    )
+    members = {member for carrier in carriers for member in unit_members(carrier)}
+    for member in members:
+        material.document_sources.pop(member, None)
+    material.document_sources.update(
+        excluded_carrier_sources({member: source.annotations.get(member, "") for member in members})
     )
     for carrier in carriers:
         carrier.update(material.builder.refresh_clip_facts(carrier))

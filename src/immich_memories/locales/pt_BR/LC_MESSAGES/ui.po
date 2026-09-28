@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-25 19:10+0200\n"
+"POT-Creation-Date: 2026-09-27 22:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pt_BR\n"
@@ -202,7 +202,7 @@ msgstr "Automático (igual aos clipes)"
 msgid "Auto duration"
 msgstr "Duração automática"
 
-#: i18n.py:101
+#: i18n.py:102
 msgid "Automatic (browser)"
 msgstr "Automático (navegador)"
 
@@ -415,7 +415,7 @@ msgstr ""
 msgid "Connected as: {name}"
 msgstr "Conectado como: {name}"
 
-#: pages/memory_run.py:454 pages/step2_loading.py:319
+#: pages/memory_run.py:454 pages/step2_loading.py:307
 msgid "Connecting to Immich..."
 msgstr "Conectando ao Immich..."
 
@@ -506,7 +506,7 @@ msgstr "Diferença"
 msgid "Discovery failed: {error}"
 msgstr "Falha na pesquisa: {error}"
 
-#: pages/memory_run.py:66 pages/step2_loading.py:378
+#: pages/memory_run.py:66 pages/step2_loading.py:366
 msgid "Done"
 msgstr "Concluído"
 
@@ -549,7 +549,7 @@ msgstr "Erros ({error_count})"
 msgid "Export"
 msgstr "Exportar"
 
-#: pages/step2_loading.py:336
+#: pages/step2_loading.py:324
 #, python-brace-format
 msgid "Failed to load videos: {value}"
 msgstr "Falha ao carregar vídeos: {value}"
@@ -578,10 +578,6 @@ msgstr ""
 "estáticos, sem análise de voz, menos fotos e favoritos primeiro. Definido por `preset: fast` "
 "em config.yaml ou IMMICH_MEMORIES_PRESET=fast; as opções abaixo têm prioridade nesta "
 "execução."
-
-#: pages/step2_loading.py:252
-msgid "Fetching photos..."
-msgstr "Obtendo fotos..."
 
 #: pages/_step3_music_preview.py:232
 msgid "Film language"
@@ -712,7 +708,7 @@ msgstr "Envio para o Immich: {delivery_label}"
 msgid "Immich delivery: {value}"
 msgstr "Envio para o Immich: {value}"
 
-#: pages/clip_grid.py:170 pages/clip_grid.py:224
+#: pages/clip_grid.py:177 pages/clip_grid.py:232
 msgid "Include"
 msgstr "Incluir"
 
@@ -728,7 +724,7 @@ msgstr "Incluir fotos"
 msgid "Include in compilation"
 msgstr "Incluir na compilação"
 
-#: i18n.py:109
+#: i18n.py:110
 msgid "Interface language"
 msgstr "Idioma da interface"
 
@@ -790,7 +786,7 @@ msgstr "Carregando álbuns..."
 msgid "Loading thumbnails"
 msgstr "Carregando miniaturas"
 
-#: pages/step2_loading.py:313
+#: pages/step2_loading.py:301
 msgid "Loading videos..."
 msgstr "Carregando vídeos..."
 
@@ -1069,7 +1065,7 @@ msgstr "Filtro de pessoas"
 msgid "Person Spotlight"
 msgstr "Uma pessoa em destaque"
 
-#: pages/clip_grid.py:193
+#: pages/clip_grid.py:200
 msgid "Photo"
 msgstr "Foto"
 
@@ -1081,7 +1077,7 @@ msgstr "Fotos disponíveis"
 msgid "Photo duration (seconds)"
 msgstr "Duração das fotos (segundos)"
 
-#: pages/step2_loading.py:461
+#: pages/step2_loading.py:449
 #, python-brace-format
 msgid "Photo thumbnails: {value}/{count}"
 msgstr "Miniaturas das fotos: {value}/{count}"
@@ -1262,6 +1258,10 @@ msgstr "Em andamento no servidor: {phase}. Continua mesmo se você sair desta p�
 #: app.py:73 app.py:219
 msgid "Runs"
 msgstr "Execuções"
+
+#: pages/clip_grid.py:108 pages/clip_grid.py:320 pages/clip_grid.py:356
+msgid "Same episode"
+msgstr "Mesmo episódio"
 
 #: pages/step1_config.py:140
 msgid "Save Config"
@@ -1513,7 +1513,7 @@ msgstr "Esta montagem terminou enquanto você estava ausente. Recarregue os cont
 msgid "Thumbnail cache"
 msgstr "Cache de miniaturas"
 
-#: pages/step2_loading.py:415
+#: pages/step2_loading.py:403
 #, python-brace-format
 msgid "Thumbnails: {value}/{count}"
 msgstr "Miniaturas: {value}/{count}"
@@ -1536,11 +1536,11 @@ msgstr "Juntas"
 
 #: pages/step1_people.py:181
 msgid ""
-"Together keeps only the moments holding everyone named. Any of these people keeps a moment "
-"holding any one of them."
+"Together keeps the times everyone named was there, even if never in the same photo. Any of "
+"these people keeps the times any one of them was there."
 msgstr ""
-"Juntas mantém apenas momentos com todas as pessoas indicadas. Qualquer uma destas pessoas "
-"mantém momentos com pelo menos uma delas."
+"Juntos mantém os momentos em que todas as pessoas citadas estavam lá, mesmo que nunca na "
+"mesma foto. Qualquer uma destas pessoas mantém os momentos em que alguma delas estava lá."
 
 #: pages/login.py:64
 msgid "Too many failed attempts. Try again later."

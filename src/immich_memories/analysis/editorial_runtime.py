@@ -247,13 +247,11 @@ class RuntimeEditorialPlanner:
         asset_ids: tuple[str, ...] | None = None,
         config: Config | None = None,
         backend: ProductionPostCardBackend | None = None,
-        person_expression: PersonExpression | None = None,
     ) -> None:
         self._planner = planner
         self._config = config
         self._backend = backend
         self._asset_ids = frozenset(asset_ids) if asset_ids is not None else None
-        self._person_expression = person_expression
         self.last_attempt_directory: Path | None = None
         self._prepare_annotations: Callable[..., Any] | None = None
 
@@ -270,20 +268,10 @@ class RuntimeEditorialPlanner:
     def _narrowed(
         self, rows: Sequence[_Row], asset_of: Callable[[_Row], Asset]
     ) -> tuple[_Row, ...]:
-        """Apply the run's people condition and explicit membership to any source shape."""
-        if self._person_expression is not None:
-            from immich_memories.analysis.editorial_source import filter_named_expression
-
-            allowed = {
-                asset.id
-                for asset in filter_named_expression(
-                    [asset_of(row) for row in rows], self._person_expression
-                )
-            }
-            rows = [row for row in rows if asset_of(row).id in allowed]
-        if self._asset_ids is not None:
-            rows = [row for row in rows if asset_of(row).id in self._asset_ids]
-        return tuple(rows)
+        """Apply the run's explicit membership to any source shape."""
+        if self._asset_ids is None:
+            return tuple(rows)
+        return tuple(row for row in rows if asset_of(row).id in self._asset_ids)
 
     def plan_source(
         self,
@@ -605,7 +593,6 @@ def build_editorial_planner(
         asset_ids=scope.asset_ids,
         config=config,
         backend=backend,
-        person_expression=context.person_expression,
     )
 
     runtime._prepare_annotations = refinement or evidence

@@ -30,7 +30,7 @@ flowchart TD
   sort --> gate["family-viewing gate<br/>apply_audience_gate"]
   gate --> motion["Live motion, speech, second trim<br/>resolve_motion_and_timing"]
   motion --> dup["duplicate review<br/>final_duplicate_review"]
-  dup --> filler["filler nothing vouches for, no-model film only<br/>drop_filler_nothing_vouches_for"]
+  dup --> filler["filler nothing vouches for, every tier<br/>drop_filler_nothing_vouches_for"]
   filler --> again["family seat again<br/>seat_again_after_review"]
   again --> check["finished-cut check<br/>check_finished_cut"]
   check --> review["review list, 0.2 to 0.5<br/>editorial_review_list.write_for_cut"]
@@ -89,6 +89,12 @@ brief, `generate --sharing`), and `defaults.sharing` is the default, `family` un
 | **Just us** (`just-us`) | the household | `share`, `family_only`, `just_us` |
 | **Family** (`family`, the default) | grandparents, siblings, the group chat | `share`, `family_only` |
 | **Shareable** (`shareable`) | anyone | `share` only, with `strict_sharing` |
+
+A caption that explicitly describes a person wearing only underwear holds the picture to
+**Just us**, including when an older cached verdict allowed Family viewing. Swimwear and babies
+in nappies are separate; an uncovered-person flag alone does not identify underwear. A NAS run
+without that caption cannot make this distinction. Use **Never use** for a picture you want out
+of every future film, or clear its hold yourself after reviewing it.
 
 The attempt's `request` records the level, `runs show` and `runs story` print it (`Sharing: family`),
 and `runs why` reads the gate's verdicts against it.
@@ -216,10 +222,9 @@ No tier asks a model to compare two pictures.
 Which frame stays: one you ticked, then the favourite, then the one that moves (a video before a Live
 Photo), then a close family member's only shot, then (between two favourites) the one with more
 faces Immich found and then the sharper, then the earlier one. A moving frame is never a
-repeat of a still. A scene repeat is less certain than a hash repeat, so it leaves only when a
-replacement takes its slot or the film still reaches 85 % of its length without it. Two starred
-twins are the exception: the second leaves either way, and its slot goes to a refill when there is
-one. The one limit: a twin never leaves unreplaced when the film would then hold fewer than 3 shots
+repeat of a still. A scene repeat leaves even when no distinct replacement remains and the film
+is short of its requested duration. Its slot goes to an eligible refill when there is one.
+The one limit for two starred twins: a twin never leaves unreplaced when the film would then hold fewer than 3 shots
 or under 20 % of its length, the point where it gives up and makes no film. The record names each such pair under `collapsed_favourites`. Every
 replacement passes the family-viewing gate first. The `final_duplicate_review` record lists each
 removal, the distance or cosine behind it, and who kept the slot.

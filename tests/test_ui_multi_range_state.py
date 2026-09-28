@@ -52,7 +52,7 @@ def test_the_wizard_fetches_each_window_not_the_span_between_them() -> None:
     newest window — years of library it has no interest in, at Immich's expense
     and then the editor's.
     """
-    from immich_memories.ui.pages.step2_loading import _fetch_assets
+    from immich_memories.ui.pages.step2_loading import _fetch_media
 
     state = _state_with_ranges(2020, 2023, 2026)
     client = MagicMock()
@@ -61,7 +61,7 @@ def test_the_wizard_fetches_each_window_not_the_span_between_them() -> None:
     # WHY: Immich is the external boundary — this stands in for the library read.
     with patch("immich_memories.ui.pages.step2_loading.SyncImmichClient") as client_cls:
         client_cls.return_value.__enter__.return_value = client
-        _fetch_assets(state)
+        _fetch_media(state)
 
     queried = [c.args[0] for c in client.get_videos_for_date_range.call_args_list]
     assert queried == [_year(2020), _year(2023), _year(2026)]
@@ -69,7 +69,7 @@ def test_the_wizard_fetches_each_window_not_the_span_between_them() -> None:
 
 def test_an_asset_in_two_overlapping_windows_is_fetched_once() -> None:
     """Holiday windows two days either side can collide on consecutive years."""
-    from immich_memories.ui.pages.step2_loading import _fetch_assets
+    from immich_memories.ui.pages.step2_loading import _fetch_media
 
     state = _state_with_ranges(2025, 2026)
     shared = MagicMock()
@@ -80,7 +80,7 @@ def test_an_asset_in_two_overlapping_windows_is_fetched_once() -> None:
     # WHY: Immich is the external boundary — this stands in for the library read.
     with patch("immich_memories.ui.pages.step2_loading.SyncImmichClient") as client_cls:
         client_cls.return_value.__enter__.return_value = client
-        assets = _fetch_assets(state)
+        assets, _ = _fetch_media(state)
 
     assert client.get_videos_for_date_range.call_count == 2
     assert [a.id for a in assets] == ["in-both-windows"]

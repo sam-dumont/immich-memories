@@ -81,6 +81,9 @@ does not transfer to a replacement. Candidate decisions are recorded in the run'
 (`excluded_carrier_sources`): a document the detector names, a screen the `screen` head flags, a
 still at an exact phone-screen size, and, where there is a caption, a caption about a screen, a face
 close-up, medical care or a grid of identical items.
+The check covers every burst member and motion clip, before standing is scored. New evidence
+from preparing a replacement runs through the same check; a refusal leaves its slot open for
+another eligible candidate. A refused companion does not mark its clean lead as permanently bad.
 
 **Spaced.** Two shots of the same moment must be at least five minutes apart in capture time.
 
