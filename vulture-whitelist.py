@@ -123,3 +123,8 @@ reset_oidc_client  # unused function (src/immich_memories/ui/auth_oidc.py:144)
 
 # Serialized by FastAPI; the Svelte report preview uses this to offer caption opt-in.
 has_flagged_photos
+
+# PEP 562: Python calls a module-level __getattr__ for names the module lacks.
+# tracking/__init__.py uses it to re-export lazily, so timing spans never load the
+# run database (and SQLAlchemy) into the API client and the renderer.
+__getattr__  # unused function (src/immich_memories/tracking/__init__.py:43)
