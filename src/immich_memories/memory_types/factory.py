@@ -322,7 +322,7 @@ def _trip(
     )
 
 
-def holiday_label(holiday: str, year: int, locale: str = "en") -> str:
+def holiday_label(holiday: str, year: int, locale: str = "en", *, country: str = "US") -> str:
     """A printable name, falling back to the date for a household's own occasion."""
     from immich_memories.i18n import film_text
 
@@ -330,7 +330,7 @@ def holiday_label(holiday: str, year: int, locale: str = "en") -> str:
     label = film_text(f"holiday.{key}", locale)
     if label != f"holiday.{key}":
         return label
-    resolved = resolve_holiday(holiday, year)
+    resolved = resolve_holiday(holiday, year, country=country)
     return resolved.strftime("%-d %B")
 
 
@@ -355,22 +355,26 @@ def _holiday(
     window_days: int = 2,
     person_names: list[str] | None = None,
     person_match: str = "and",
+    country: str = "US",
     **kwargs,  # noqa: ARG001
 ) -> MemoryPreset:
-    """A holiday is the date a library reliably has every year, so it spans them."""
+    """A holiday is the date a library reliably has every year, so it spans them, on the
+    date ``country`` keeps it."""
     # WHY today= only when the year was defaulted: asking for Christmas in
     # August would otherwise spend one of the requested years on a window that
     # has not happened. A year the caller named is a choice and is left alone.
     # Both surfaces default the year here, so both get the guard from here.
     today = None if year else date.today()
     year = year or date.today().year
-    label = holiday_label(holiday, year)
+    label = holiday_label(holiday, year, country=country)
 
     return MemoryPreset(
         memory_type=MemoryType.HOLIDAY,
         name=f"{label} Through the Years",
         description=f"{label} across {years_back} years",
-        date_ranges=build_holiday(holiday, year, years_back, window_days, today=today),
+        date_ranges=build_holiday(
+            holiday, year, years_back, window_days, today=today, country=country
+        ),
         person_filter=person_filter_for(person_names, person_match=person_match),
         default_duration_seconds=60,
     )

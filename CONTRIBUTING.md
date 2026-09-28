@@ -195,6 +195,14 @@ with it.
 Do not try to commit coverage XMLs. They are gitignored deliberately, and
 `git add -f` is not acceptable in this repo.
 
+## Missing a holiday or a country?
+
+The holidays that move by country (Mother's Day, Father's Day, Thanksgiving) are one rule per line
+in `src/immich_memories/memory_types/date_builders.py`. If your country keeps one on another date,
+or your family keeps a holiday the list lacks, open a PR with the rule and a line in
+`tests/test_holiday_countries.py`. A date needs no design discussion first. Lunar-calendar holidays
+(Eid, Lunar New Year) are welcome too; they need a computed date rather than a fixed one.
+
 ## Getting Help
 
 - **Questions**: [GitHub Discussions](https://github.com/sam-dumont/immich-video-memory-generator/discussions)

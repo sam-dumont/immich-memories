@@ -254,6 +254,7 @@ def _scan_one_year(
         llm_config=config.llm,
         home=home,
         extra_holidays=also_skip,
+        country=config.defaults.country,
         analysis_config=config.analysis,
         trips_config=config.trips,
         captions=prepared_captions(config, tuple(asset.id for asset in assets)),
