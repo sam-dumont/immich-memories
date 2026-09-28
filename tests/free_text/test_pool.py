@@ -314,3 +314,39 @@ def test_other_names_for_the_subject_carry_its_stated_quality(lexicon: Lexicon) 
     }
     offered = asker.questions[0][1]["properties"]["choices"]["items"]["enum"]
     assert sorted(offered) == ["dog", "kitten"]
+
+
+def _choice(option: str) -> dict[str, str]:
+    return {"reason": "banked", "choice": option}
+
+
+def test_one_particular_place_at_home_needs_gps_and_any_of_a_kind_does_not(
+    lexicon: Lexicon,
+) -> None:
+    house = "A house with a red door and a garden"
+    view = _view(
+        _picture("ours", "2021-05-01", latitude=51.0005, longitude=5.0, caption=house),
+        _picture("no-gps", "2021-05-02", caption=house),
+        _picture("elsewhere", "2021-05-03", latitude=45.0, longitude=5.0, caption=house),
+    )
+    request = "the evolution of our house"
+    ours = _asked(
+        request,
+        reading=Reading(request=request, what=("the evolution of our house",)),
+        subject=Subject(heads=("house",), words=("house",), main=("house",)),
+        where=WhereLink(scope="home_at_time"),
+    )
+    houses = _asked(
+        "houses at home",
+        reading=Reading(request="houses at home", what=("houses",)),
+        subject=Subject(heads=("houses",), words=("houses",), main=("houses",), kind="a place"),
+        where=WhereLink(scope="home_at_time"),
+    )
+    # WHY: stands in for the model server; every answer says the house is a place.
+    asker = BankedAsker(*[_choice("a place")] * 3)
+
+    one = build_pool(ours, view, MOVED, lexicon, asker)
+    any_kind = build_pool(houses, view, MOVED, lexicon, BankedAsker())
+
+    assert _ids(one) == {"ours"}
+    assert _ids(any_kind) == {"ours", "no-gps"}

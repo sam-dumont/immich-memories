@@ -28,8 +28,8 @@ _MOST_MAIN = 4
 _KIND = (
     """What is the owner's photos' main subject (subject)? Pick one. Reason first. Return JSON."""
 )
-_PLACE = "a place"
-_KINDS = (_PLACE, "an animal", "a thing", "an activity or event")
+PLACE = "a place"
+_KINDS = (PLACE, "an animal", "a thing", "an activity or event")
 _PEOPLE_RULE = (
     "a word for people: faces prove people; only a word you wrote or the doer of an activity "
     "you asked for counts"
@@ -358,9 +358,7 @@ def _extent(
     ]
     kind = None
     if any(relative.shared_with for relative in own):
-        kind, votes = choose(
-            asker, _KIND, {"owner_request": request, "subject": list(main)}, list(_KINDS)
-        )
+        kind, votes = subject_kind(request, main, asker)
         reasons.append(
             Reason(
                 ", ".join(main),
@@ -369,7 +367,7 @@ def _extent(
                 kind,
             )
         )
-    extent = [relative.word for relative in own if not relative.shared_with or kind == _PLACE]
+    extent = [relative.word for relative in own if not relative.shared_with or kind == PLACE]
     if extent:
         reasons.append(
             Reason(
@@ -377,6 +375,12 @@ def _extent(
             )
         )
     return extent, kind
+
+
+def subject_kind(request: str, main: Sequence[str], asker: Asker) -> tuple[str, Counter[str]]:
+    """What kind of subject it is ("a place", "an animal", "a thing", "an activity or event"),
+    by the model's vote over the main subject's words; how its identity is proven depends on it."""
+    return choose(asker, _KIND, {"owner_request": request, "subject": list(main)}, list(_KINDS))
 
 
 def _tally(votes: Counter[str]) -> str:

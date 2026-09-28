@@ -14,8 +14,8 @@ from immich_memories.free_text.facts import PICTURE_WORDS
 from immich_memories.free_text.grammar import Captioned, subject_head
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.linking import GLUE, Reason
-from immich_memories.free_text.reading import Asker, choose_several, words_of
-from immich_memories.free_text.subject import Subject
+from immich_memories.free_text.reading import Asker, Reading, choose, choose_several, words_of
+from immich_memories.free_text.subject import PLACE, Subject, subject_kind
 
 _LEAVE_OUT = """Which of these phrases from the request name what the owner asks to leave out of the
 film? None when the request excludes nothing. Reason first. Return JSON."""
@@ -120,6 +120,58 @@ def _qualities(main: Iterable[str], lexicon: Lexicon) -> list[str]:
     # part would make a bare kitten.
     phrase = next((words_of(p) for p in main if len(words_of(p)) > 1), [])
     return [word for word in phrase[:-1] if lexicon.is_adjective(word)]
+
+
+_ONE = """Does the request follow one particular individual of its main subject (the owner's own,
+the same one across the photos) or any of that kind? Pick one. Reason first. Return JSON."""
+_ONE_OF_IT, _ANY_OF_IT = "one particular individual", "any of that kind"
+_POSSESSIVES = frozenset({"my", "our", "his", "her", "their", "your"})
+
+
+def one_particular_place(
+    reading: Reading, subject: Subject, lexicon: Lexicon, asker: Asker
+) -> tuple[bool, Reason]:
+    """Whether the subject is one particular place ("our house"), which only GPS can prove.
+
+    The model says what kind of subject it is when the subject did not already ask. For a
+    place, grammar decides first: a plural head is any of the kind ("beaches"), a possessive
+    before a singular head is one ("our house"); otherwise the model is asked.
+    """
+    said = ", ".join(subject.main)
+    kind, votes = (
+        (subject.kind, Counter())
+        if subject.kind
+        else subject_kind(reading.request, subject.main, asker)
+    )
+    how = f"the model says it is {kind} ({tally(votes)})" if votes else f"it is {kind}"
+    if kind != PLACE:
+        return False, Reason(said, how, "a picture without GPS stays")
+    one = _one_by_grammar(reading, subject, lexicon)
+    if one is None:
+        answer, votes = choose(
+            asker,
+            _ONE,
+            {"owner_request": reading.request, "subject": list(subject.main)},
+            [_ONE_OF_IT, _ANY_OF_IT],
+        )
+        one, how = answer == _ONE_OF_IT, f"{how}; the model says {answer} ({tally(votes)})"
+    else:
+        how += "; grammar: " + ("a possessive before it" if one else "a plural")
+    outcome = "one particular place: a picture must carry GPS" if one else "any of that kind"
+    return one, Reason(said, how, outcome)
+
+
+def _one_by_grammar(reading: Reading, subject: Subject, lexicon: Lexicon) -> bool | None:
+    if any((lexicon.noun_base(head) or head) != head for head in subject.heads):
+        return False
+    for span in reading.what or (reading.request,):
+        words = [word.removesuffix("'s").removesuffix("’s") for word in words_of(span)]
+        for head in subject.heads:
+            if head in words:
+                before = words_of(span)[: words.index(head)]
+                if any(w in _POSSESSIVES or w.endswith(("'s", "’s")) for w in before):
+                    return True
+    return None
 
 
 def tally(votes: Counter[str]) -> str:

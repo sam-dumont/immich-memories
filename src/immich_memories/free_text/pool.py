@@ -26,7 +26,7 @@ from immich_memories.free_text.grammar import free_tier
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryPicture, LibraryView
 from immich_memories.free_text.linking import Household, Reason, WhenLink, WhereLink, WhoLink
-from immich_memories.free_text.pool_questions import left_out, other_names
+from immich_memories.free_text.pool_questions import left_out, one_particular_place, other_names
 from immich_memories.free_text.reading import Asker, Reading, words_of
 from immich_memories.free_text.scopes import in_place
 from immich_memories.free_text.subject import Subject
@@ -36,6 +36,9 @@ THIN_BELOW = 12
 
 # The document head's label for an ordinary photograph; None is a picture nothing labelled.
 _PHOTOGRAPH = frozenset({None, "photograph"})
+
+# The scopes around a home, where one particular place must prove it was there by GPS.
+_AT_HOMES = frozenset({"home", "home_at_time", "near_home"})
 
 POSSIBLE, THIN, NOT_POSSIBLE = "possible", "thin", "not possible"
 
@@ -106,7 +109,7 @@ def build_pool(
     _when(funnel, translation.when)
     _present(funnel, translation.who)
     rules = trips or TripsConfig()
-    _where(funnel, translation, household, rules)
+    _where(funnel, translation, household, rules, lexicon, asker)
     _measured(funnel, translation.facts)
     if not _computed(funnel, translation.facts, view, household, rules):
         names, names_reason = other_names(
@@ -132,7 +135,12 @@ def _when(funnel: _Funnel, when: WhenLink) -> None:
 
 
 def _where(
-    funnel: _Funnel, translation: Translation, household: Household, trips: TripRules
+    funnel: _Funnel,
+    translation: Translation,
+    household: Household,
+    trips: TripRules,
+    lexicon: Lexicon,
+    asker: Asker,
 ) -> None:
     facts = translation.facts
     if facts.places:
@@ -141,8 +149,19 @@ def _where(
         named = ", ".join(value for _, value in facts.places)
         funnel.keep("place names", kept, Reason(named, "Immich's place names", named))
         return
-    if placed := in_place(translation.where, funnel.pictures, household.homes, trips):
-        funnel.keep("where", *placed)
+    require_gps, why = False, None
+    if translation.where.scope in _AT_HOMES and translation.subject.main:
+        require_gps, why = one_particular_place(
+            translation.reading, translation.subject, lexicon, asker
+        )
+    placed = in_place(
+        translation.where, funnel.pictures, household.homes, trips, require_gps=require_gps
+    )
+    if placed:
+        kept, reason = placed
+        if why:
+            reason = Reason(reason.said, f"{reason.rule}; {why.rule}", reason.outcome)
+        funnel.keep("where", kept, reason)
 
 
 def _measured(funnel: _Funnel, facts: LibraryFacts) -> None:
