@@ -1,5 +1,4 @@
 ---
-sidebar_position: 4
 title: Terraform
 ---
 
@@ -26,7 +25,7 @@ dropped, `RuntimeDefault` seccomp, `read_only_root_filesystem = true`). Four wri
 
 | Mount | Backed by | Holds |
 |-------|-----------|-------|
-| `/home/immich/.immich-memories` | cache PVC | `config.yaml`, `store.db` (the store when it is SQLite: the editor's banks, your decisions, people, run history, automation state, special days), `cache.db` (derived analysis), video cache, projects |
+| `/home/immich/.immich-memories` | cache PVC | `config.yaml`, `store.db` (the store when it is SQLite: the editor's banks, your decisions, people, run history, automation state, special days), `cache.db` (derived analysis), video cache |
 | `/app/output` | output PVC | generated videos (`IMMICH_MEMORIES_OUTPUT__DIRECTORY=/app/output`) |
 | `/models` | models PVC | pinned encoder and detector artifacts; `models_storage_size` defaults to `10Gi` |
 | `/tmp` | emptyDir (`tmp_size`, 4Gi) | FFmpeg intermediates: 8Gi for 4K |
@@ -46,9 +45,8 @@ artifacts already present. Inspect it with:
 kubectl logs -n immich-memories deploy/immich-memories -c fetch-models
 ```
 
-The module defaults to `IMMICH_MEMORIES_TIER=auto`. Without GPU inference, selection stays on
-NAS. GPU or Full also need a caption provider and Laya ready; preparation follows the resolved
-product tier. See [Requirements and tiers](./requirements.md#which-tier-you-get).
+The module sets `IMMICH_MEMORIES_TIER=auto`, so the app picks its tier from what it finds:
+[The three tiers](./requirements.md#the-preparation-tier).
 
 ## Prerequisites
 
@@ -99,7 +97,7 @@ module "immich_memories" {
 ```
 
 Which model to serve at `llm_base_url` is on [Readers](../better/reader.md). Preparation goes through the
-same `env` map: [editorial annotation setup](../being-rewritten/editorial-preparation.md).
+same `env` map: [Inference on a GPU box](../better/inference.md) and [Add captions](../better/captions.md).
 
 Setting `database_url` moves the store off the default SQLite file onto PostgreSQL. The four
 modes, and the SQL for a dedicated schema in Immich's own database, are on
@@ -121,7 +119,8 @@ modes, and the SQL for a dedicated schema in Immich's own database, are on
 | `gpu_enabled`, `gpu_count` | Schedule on NVIDIA GPU nodes: RuntimeClass, `nvidia.com/gpu`, node selector, toleration, `NVIDIA_*` env | `false`, `1` |
 | `gpu_node_selector`, `runtime_class_name` | how GPU nodes are found | `{"nvidia.com/gpu.present": "true"}`, `"nvidia"` |
 | `output_storage_size`, `cache_storage_size` | PVC sizes | `"50Gi"`, `"20Gi"` |
-| `storage_class_name` | Storage class for both PVCs | `null` (cluster default) |
+| `models_storage_size` | Models PVC size (the Kubernetes manifests ship `5Gi`) | `"10Gi"` |
+| `storage_class_name` | Storage class for all three PVCs | `null` (cluster default) |
 | `ingress_enabled`, `ingress_class_name`, `ingress_host` | Ingress, off by default | `false`, `"nginx"`, `"memories.example.com"` |
 | `ingress_tls_enabled`, `ingress_tls_secret_name`, `ingress_annotations` | TLS and extras for it | `false`, `"immich-memories-tls"`, `{}` |
 | `llm_base_url`, `llm_model`, `llm_api_key` | The reader (Ollama: append `/v1`). Empty leaves the editor without a model | `""` |

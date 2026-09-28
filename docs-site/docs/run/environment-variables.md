@@ -1,5 +1,4 @@
 ---
-sidebar_position: 2
 title: Environment variables
 ---
 
@@ -37,12 +36,12 @@ environment. Add the line to `environment:` as well, like the commented ones alr
 
 ## The variables you are most likely to set
 
-"Tier" is where the key lives in `config.yaml`: top level (1) or under `advanced:`. "Compose" says
+"Placement" is where the key lives in `config.yaml`: top level (1) or under `advanced:`. "Compose" says
 whether the shipped compose file already passes it.
 
 ### Immich and home
 
-| Variable | Config key | Default | Tier | Compose | What it does |
+| Variable | Config key | Default | Placement | Compose | What it does |
 |---|---|---|---|---|---|
 | `IMMICH_URL` | `immich.url` | none | 1 | yes, `.env` | Immich, as the app reaches it. Required |
 | `IMMICH_API_KEY` | `immich.api_key` | none | 1 | yes, `.env` | Required. Permissions: [The API key](./docker.md#the-api-key) |
@@ -53,20 +52,25 @@ whether the shipped compose file already passes it.
 
 ### The web UI
 
-| Variable | Config key | Default | Tier | Compose | What it does |
+| Variable | Config key | Default | Placement | Compose | What it does |
 |---|---|---|---|---|---|
 | `IMMICH_MEMORIES_AUTH_USERNAME`, `IMMICH_MEMORIES_AUTH_PASSWORD` | `auth.username`, `auth.password` | empty | advanced | yes, `.env` | Set both to turn on basic auth. Either alone is ignored |
-| `IMMICH_MEMORIES_DATABASE_URL` | The store's database, beating `database.url`: `sqlite:////data/store.db` or `postgresql://user:pass@host/db`. Read before the store opens, so never from the store |
-| `IMMICH_MEMORIES_DATABASE_SCHEMA` | The PostgreSQL schema for the store, beating `database.schema` (default `immich_memories`) |
-| `IMMICH_MEMORIES_IMPORT_FROM` | Where the one-time import of pre-store files (`people.yaml`, `cache.db` history, `annotations.sqlite`, ...) looks, and the default of `store import --from`, beating `database.import_from`. Default `~/.immich-memories` ([upgrading](./maintenance/upgrading.md#data-compatibility)) |
-| `IMMICH_MEMORIES_ALLOW_NETWORK_SQLITE` | `1` opens a SQLite file on NFS, SMB or CIFS with a warning instead of refusing. WAL needs shared memory those filesystems cannot give two hosts, so set it only when one host ever opens the file |
 | `IMMICH_MEMORIES_STORAGE_SECRET` | none | generated | none | commented | Session secret. Generated once onto the config volume, so sessions survive a recreate without it |
 | `IMMICH_MEMORIES_AUTOMATION__ENABLED` | `automation.enabled` | `false` | advanced | commented | The daily memory, inside the UI process |
 | `IMMICH_MEMORIES_AUTOMATION__DAILY_AT` | `automation.daily_at` | `09:00` | advanced | commented | When, in the `TZ` zone |
 
+### The store
+
+| Variable | Config key | Default | Placement | Compose | What it does |
+|---|---|---|---|---|---|
+| `IMMICH_MEMORIES_DATABASE_URL` | `database.url` | `sqlite:///~/.immich-memories/store.db` | 1 | commented | The store's database: `sqlite:////data/store.db` or `postgresql://user:pass@host/db`. Read before the store opens, so never from the store |
+| `IMMICH_MEMORIES_DATABASE_SCHEMA` | `database.schema` | `immich_memories` | 1 | no | The PostgreSQL schema for the store |
+| `IMMICH_MEMORIES_IMPORT_FROM` | `database.import_from` | `~/.immich-memories` | 1 | no | Where the one-time import of pre-store files (`people.yaml`, `cache.db` history, `annotations.sqlite`, ...) looks, and the default of `store import --from` ([upgrading](./maintenance/upgrading.md#data-compatibility)) |
+| `IMMICH_MEMORIES_ALLOW_NETWORK_SQLITE` | none | unset | none | no | `1` opens a SQLite file on NFS, SMB or CIFS with a warning instead of refusing. WAL needs shared memory those filesystems cannot give two hosts, so set it only when one host ever opens the file |
+
 ### Preparation and output
 
-| Variable | Config key | Default | Tier | Compose | What it does |
+| Variable | Config key | Default | Placement | Compose | What it does |
 |---|---|---|---|---|---|
 | `IMMICH_MEMORIES_TIER` | `tier` | `auto` | 1 | `auto` | Resolves NAS, GPU or Full from inference capability and the configured LLM; preparation follows it |
 | `IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` | `editorial.preparation.detector_cache_dir` | the Hugging Face cache | advanced | the config volume | Where the document classifier lives. Keep it on a volume |
@@ -78,7 +82,7 @@ whether the shipped compose file already passes it.
 
 ### Optional add-ons
 
-| Variable | Config key | Default | Tier | Compose | What it does |
+| Variable | Config key | Default | Placement | Compose | What it does |
 |---|---|---|---|---|---|
 | `IMMICH_MEMORIES_LLM__BASE_URL` | `llm.base_url` | `http://localhost:8080/v1` | advanced | commented | The reader's endpoint. The default is the app's own port: set it |
 | `IMMICH_MEMORIES_LLM__MODEL` | `llm.model` | empty | advanced | commented | The reader. Empty means the rules editor works alone. Must match `GET /v1/models`; a text model is enough |
@@ -179,21 +183,12 @@ run [`auto install`](../make/automate.md) again.
 
 ## Precedence
 
-Highest wins:
-
-1. CLI flags (`--duration`, `--output`, ...) for the options they cover
-2. Shorthand variables (the table above)
-3. `IMMICH_MEMORIES_<SECTION>__<FIELD>` variables
-4. The config file (`~/.immich-memories/config.yaml`)
-5. Built-in defaults
-
-So `IMMICH_URL=http://a` beats `IMMICH_MEMORIES_IMMICH__URL=http://b`, which beats `immich.url` in
-the file. `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` are the exception above: they sit below the
-config file.
+CLI flags beat the shorthand variables, which beat the `IMMICH_MEMORIES_<SECTION>__<FIELD>` form,
+then the config file and the database: the full order, with a diagram, is on
+[Where a setting comes from](./config-file.md#where-a-setting-comes-from). `OPENAI_API_KEY` and
+`ANTHROPIC_API_KEY` are the exception: they sit below the config file.
 
 ## Compute tier
 
-`IMMICH_MEMORIES_TIER=auto|nas|gpu|full` selects the same tier as `tier:` in the config file.
-The default is `auto`: no GPU inference capability means NAS; GPU capability means GPU;
-GPU capability plus a configured LLM means Full. An LLM alone remains available for text features.
-See the [tier reference](../reference/config-reference.md#tier).
+`IMMICH_MEMORIES_TIER=auto|nas|gpu|full` sets the same tier as `tier:` in the config file, and
+beats it. The default is `auto`: [The three tiers](./requirements.md#the-preparation-tier).

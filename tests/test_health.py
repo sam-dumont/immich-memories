@@ -657,10 +657,10 @@ class TestHealthDisclosure:
             auth={"enabled": True, "provider": "basic", "username": "u", "password": "p"},
         )
         automation = {
-            "last_attempt": {"memory_key": "person_spotlight:2024:Alice", "outcome": "completed"},
+            "last_attempt": {"memory_key": "person_spotlight:2024:Ada", "outcome": "completed"},
             "last_completed_auto_run": {
-                "memory_key": "person_spotlight:2024:Alice",
-                "output_path": "/data/output/alice_2024_memories.mp4",
+                "memory_key": "person_spotlight:2024:Ada",
+                "output_path": "/data/output/ada_2024_memories.mp4",
             },
             "pending_delivery_count": 0,
             "oldest_pending_delivery": None,
@@ -684,8 +684,8 @@ class TestHealthDisclosure:
         body = response.json()
         assert body["status"] in {"ok", "ready"}
         assert body["version"] == immich_memories.__version__
-        assert "Alice" not in response.text
-        assert "alice_2024_memories" not in response.text
+        assert "Ada" not in response.text
+        assert "ada_2024_memories" not in response.text
         assert body["automation"] is None
         assert body["last_successful_run"] is None
 

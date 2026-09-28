@@ -35,7 +35,7 @@ from pathlib import Path
 from research_data_schema import valid_research_data
 
 DEFAULT_TERMS_ENV_VAR = "IMMICH_MEMORIES_PRIVATE_TERMS"
-DEFAULT_TERMS_PATH = Path("~/.config/immich-memories/private-terms.txt")
+DEFAULT_TERMS_RELATIVE = Path(".config/immich-memories/private-terms.txt")
 
 EXIT_OK = 0
 EXIT_HITS_FOUND = 1
@@ -91,6 +91,20 @@ def _parse_terms(content: str) -> list[Term]:
     return terms
 
 
+def _account_home() -> Path:
+    """The account's own home, whatever $HOME says.
+
+    Agents and CI legs run with HOME pointed at a disposable directory; resolving the
+    default denylist from there silently turned the gate into a skip.
+    """
+    try:
+        import pwd
+
+        return Path(pwd.getpwuid(os.getuid()).pw_dir)
+    except (ImportError, KeyError):  # WHY: no passwd database on Windows
+        return Path.home()
+
+
 def load_terms(terms_file: str | None = None, terms_env: str | None = None) -> list[Term]:
     """Resolve the denylist through the priority chain and parse it.
 
@@ -105,7 +119,7 @@ def load_terms(terms_file: str | None = None, terms_env: str | None = None) -> l
         value = os.environ.get(terms_env, "")
         return _parse_terms(value) if value.strip() else []
     configured_path = os.environ.get(DEFAULT_TERMS_ENV_VAR, "")
-    path = Path(configured_path) if configured_path else DEFAULT_TERMS_PATH.expanduser()
+    path = Path(configured_path) if configured_path else _account_home() / DEFAULT_TERMS_RELATIVE
     return _parse_terms(path.read_text(encoding="utf-8")) if path.is_file() else []
 
 

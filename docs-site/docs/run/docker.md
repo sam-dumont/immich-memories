@@ -1,5 +1,4 @@
 ---
-sidebar_position: 1
 title: Docker Compose
 ---
 
@@ -12,7 +11,8 @@ on a plain NAS; a GPU or a model makes it better. The shortest path through it i
 ## Install
 
 You need Docker Engine with Compose v2 (`docker compose version` answers), Immich v2 or v3, and
-the hardware on [Requirements](./requirements.md).
+the hardware on [Requirements](./requirements.md). What the image has been checked on, and when:
+[Supported and tested](./requirements.md#supported-and-tested).
 
 **1. Download the compose file and `example.env`** into an empty directory:
 
@@ -23,7 +23,7 @@ curl -O https://raw.githubusercontent.com/sam-dumont/immich-video-memory-generat
 cp example.env .env
 ```
 
-**2. Fill in `.env`.** Two values are required, and the home base makes trips work:
+**2. Fill in `.env`.** Two values are required, and the home base makes trips and your country's public holidays work:
 
 ```bash
 IMMICH_URL=http://192.168.1.10:2283       # your Immich, as the container reaches it
@@ -128,13 +128,9 @@ release. An unknown major version stops the run:
 
 ## The product tier in compose {#the-preparation-tier-in-compose}
 
-The compose file sets `IMMICH_MEMORIES_TIER: "auto"`. Without GPU inference, that resolves to
-NAS. A usable GPU inference service selects GPU; adding a configured LLM selects Full.
-Caption and Laya services must also be ready. Preparation follows the same product tier.
-
-An environment variable beats `config.yaml`: remove the Compose tier variable if you want the
-file to control an explicit tier. Do not set a separate preparation tier. What each tier runs is on
-[Requirements and tiers](./requirements.md#the-preparation-tier).
+The compose file sets `IMMICH_MEMORIES_TIER: "auto"`, so the app picks its tier from what it
+finds: a plain NAS until a GPU and a caption server are there. How it decides:
+[The three tiers](./requirements.md#the-preparation-tier).
 
 `IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` puts the document classifier on the
 config volume. Keep that line if you write your own service block: without it the classifier lands

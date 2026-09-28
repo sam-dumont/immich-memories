@@ -4,10 +4,12 @@ title: On a NAS
 
 # On a NAS
 
-The NAS that runs Immich runs this too, on its own. NAS is a good default; optional GPU and model
-layers can add small refinements. Compare the pictures before upgrading. The install is the
+The NAS that runs Immich runs this too, on its own, and makes the whole film there. A GPU or a
+model makes it better later ([what each one adds](../get-started/what-a-gpu-or-a-model-adds.md)).
+The install is the
 [Docker Compose](./docker.md) one; this page is what is different on a Synology, QNAP, TrueNAS or
-Unraid box. Tested on a Synology DS423+ (Celeron J4125, four cores).
+Unraid box. It has run on a Synology DS423+ (Celeron J4125, four cores); when, and on which release:
+[Supported and tested](./requirements.md#supported-and-tested).
 
 ## Install
 
@@ -21,11 +23,12 @@ sudo docker compose exec immich-memories immich-memories models fetch
 sudo docker compose exec immich-memories immich-memories preflight
 ```
 
-The compose file uses `tier: auto`, which selects `nas` without GPU inference. The eight context
-heads and two detectors run on the NAS CPU; no caption or LLM service is required.
+The compose file uses `tier: auto`, which picks the `nas` tier here: the eight context heads and
+two detectors run on the NAS CPU, and no caption or model service is needed.
 
 Set the home base in `.env` before the first cut
-(`IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE` and `..._LONGITUDE`). Without it no day counts as
+(`IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE` and `..._LONGITUDE`). It also picks your country's public
+holidays. Without it no day counts as
 away from home, so a three-week holiday arrives as three weekly stories instead of one trip. Then
 confirm who's who once: [Teach it your family](../get-started/who-is-who.md).
 
@@ -67,8 +70,8 @@ to that port.
 
 The first cut of a month reads every picture it can reach once, on the NAS CPU, and banks the
 answers. Run it in the evening. Later cuts reuse matching facts; new pictures and changed producers
-can require more work. `docker compose logs immich-memories | grep "preparation tier"` shows
-what each producer cost this box. Numbers per host are on [Measured](../better/measured.md).
+can require more work. `immich-memories runs show` prints where the time went, phase by phase and
+per picture. NAS timings are being re-measured; [Measured](../better/measured.md) has the rest.
 
 Start with one month, not a year: preparation grows with the pictures in the window, not with the
 length of the film. To read a bigger window ahead of time, run

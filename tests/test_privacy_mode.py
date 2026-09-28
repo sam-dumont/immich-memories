@@ -186,7 +186,7 @@ class TestPrivacyNameAnonymization:
         assert anonymize_name("PersonB") == anonymize_name("PersonB")
         # Known SHA256-based values (won't change across processes)
         assert anonymize_name("PersonA") in [
-            "Alice",
+            "Ada",
             "Bob",
             "Charlie",
             "Diana",

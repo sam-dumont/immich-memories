@@ -4,10 +4,13 @@ title: What a model adds, what it costs
 
 # What a model adds, what it costs
 
-Immich Memories works on a plain NAS: one container, one `models fetch`, and the whole film gets
-made there. That is a good default. Optional models can add small refinements; compare the
-pictures and decide whether the extra time, memory or API cost is worth it. They can also leave
-the cut unchanged. Existing captions and other facts stay banked when you change the setup.
+Immich Memories makes the whole film on a plain NAS. The add-ons below make it better or faster,
+and each one plugs into the same install. Everything they work out is banked next to what the NAS
+already knows, so switching one off later loses nothing.
+
+What each one adds, feature by feature, is on
+[What a GPU or a model adds](../get-started/what-a-gpu-or-a-model-adds.md). This page is the
+practical side: what each add-on needs, and what it sends where.
 
 ```mermaid
 flowchart LR
@@ -32,43 +35,14 @@ flowchart LR
 Every destination defaults to `localhost` or off. Pointing one at another host is the consent step,
 and [Privacy](../run/privacy.md) lists every switch.
 
-## What the model does, and what it doesn't
+## How the model changes the cut
 
-The rules editor builds the draft from dates, places, favourites, known people and inexpensive
-CPU classifier results. `tier: auto` selects NAS without GPU inference, GPU with it, and Full
-with GPU inference plus a configured LLM. Preparation follows the same tier. An LLM alone can
-still write titles and music mood; it does not enable selection refinement.
-
-On Full, the model does two things with the draft:
-
-- **It writes the prose.** It reads the episodes the draft's shots sit in (only those, not the
-  whole period), says what happened in each, then writes an account of the period, a title and a
-  mood for the music. Banked readings are reused when their inputs and producer still match.
-- **It polishes.** It reads the finished draft in blocks of 12 shots and names the ones that add
-  nothing. A named shot stays until a replacement passes the shared checks and its final fit
-  vote. An ordinary replacement still marked weak leaves the original in place. Favourites,
-  a close relative's only shot and a record the catalogue holds
-  stay put. So does a year's only shot in a film that gives every year a voice, and a year whose
-  every shot is named keeps one. A refill that picks a picture takes its moment's favourite instead
-  when the page has one. Sharing and unusable-picture checks can still remove a shot outright.
-  Final duplicate review can also leave a shorter cut when no suitable replacement exists.
-
-The prose reader gets text only and never decides sharing. Rules and picture classifiers make
-those decisions on NAS; GPU and Full add Laya over the captions. Laya cannot lift a detector hold.
-GPU and Full acquire missing captions and clip evidence for selected shots and actual replacement
-candidates. Captioning the whole library is a separate, explicit `prepare` job.
-
-The [LLM caption option](./captions.md#explicit-llm-captions) is separate from the prose reader.
-It sends image inputs only with explicit config approval, is less efficient than SmolVLM, and
-can cost much more on hosted infrastructure. It can supply captions on NAS without enabling
-Full selection.
-
-Separate date windows also use the NAS draft and bounded refinement. If the model cannot read
-the period account after two attempts, the rules draft ships with the passes a no-model film gets,
-and the log says: `The model polish did not run (<reason>); the film is the rules draft`.
-
-`advanced.editorial.thin_model_layer: false` makes the model plan every film whole instead. How the
-polish decides, with diagrams: [What a model adds](../how-it-chooses/what-a-model-adds.md).
+On the `full` tier the rules editor still builds the draft. The model reads it, writes an account
+of the period, and polishes it: it names the shots that add nothing and swaps in better pictures of
+the same moments, while favourites, close family and the family-viewing holds stay put. If the model
+can't answer, the rules draft ships and the log says why. How the polish decides, with diagrams:
+[What a model adds](../how-it-chooses/what-a-model-adds.md). Which setup reaches `full`:
+[The three tiers](../run/requirements.md#the-preparation-tier).
 
 ## What it costs
 

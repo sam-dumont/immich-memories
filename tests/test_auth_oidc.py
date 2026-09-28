@@ -60,15 +60,15 @@ class TestExtractUserFromToken:
     def test_preferred_username_present(self):
         token = {
             "userinfo": {
-                "preferred_username": "alice",
-                "name": "Alice Smith",
+                "preferred_username": "ada",
+                "name": "Ada Smith",
                 "sub": "abc123",
-                "email": "alice@example.com",
+                "email": "ada@example.com",
             }
         }
         username, email = extract_user_from_token(token)
-        assert username == "alice"
-        assert email == "alice@example.com"
+        assert username == "ada"
+        assert email == "ada@example.com"
 
     def test_only_name_present(self):
         token = {

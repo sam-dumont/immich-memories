@@ -19,9 +19,9 @@ class TestMakeMemoryKey:
             memory_type="person_spotlight",
             date_range_start=date(2025, 1, 1),
             date_range_end=date(2025, 12, 31),
-            person_names=["Alice"],
+            person_names=["Ada"],
         )
-        assert key == "person_spotlight:2025-01-01:2025-12-31:alice"
+        assert key == "person_spotlight:2025-01-01:2025-12-31:ada"
 
     def test_key_with_multiple_persons_sorted(self):
         """Person names are sorted and lowered for deterministic keys."""
@@ -29,16 +29,16 @@ class TestMakeMemoryKey:
             memory_type="multi_person",
             date_range_start=date(2025, 6, 1),
             date_range_end=date(2025, 6, 30),
-            person_names=["Bob", "Alice"],
+            person_names=["Bob", "Ada"],
         )
         key2 = make_memory_key(
             memory_type="multi_person",
             date_range_start=date(2025, 6, 1),
             date_range_end=date(2025, 6, 30),
-            person_names=["alice", "bob"],
+            person_names=["ada", "bob"],
         )
         assert key1 == key2
-        assert key1 == "multi_person:2025-06-01:2025-06-30:alice,bob"
+        assert key1 == "multi_person:2025-06-01:2025-06-30:ada,bob"
 
     def test_key_deterministic(self):
         """Same inputs always produce the same key."""

@@ -1,5 +1,4 @@
 ---
-sidebar_position: 2
 title: uv / pip
 ---
 
@@ -30,13 +29,14 @@ immich-memories ui                           # http://localhost:8080
 Or with pip, in a virtual environment (not your system Python):
 
 ```bash
-pip install "immich-memories[editorial]"     # or [all-mac] on Apple Silicon
+pip install "immich-memories[all]"          # or [all-mac] on Apple Silicon
 ```
 
 Quote the spec: zsh reads `[...]` as a glob and fails with `no matches found` otherwise.
 
 To try it without installing anything:
-`uvx --from "immich-memories[editorial]" immich-memories ui`. To get uv itself: `brew install uv`,
+`uvx --from "immich-memories[editorial]" immich-memories ui` (the classifiers only: `[all]` adds
+authentication, generated music and the audio extras). To get uv itself: `brew install uv`,
 or `curl -LsSf https://astral.sh/uv/install.sh | sh`.
 
 `models fetch` writes the encoder to `~/.immich-memories/models/triage/`, the sensitive-content

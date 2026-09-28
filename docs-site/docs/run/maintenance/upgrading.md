@@ -28,7 +28,7 @@ Keep your extras, or the upgrade comes back without the ONNX runtime:
 ```bash
 uv tool upgrade immich-memories
 # or
-pip install --upgrade "immich-memories[editorial]"
+pip install --upgrade "immich-memories[all]"
 immich-memories models fetch
 ```
 
@@ -150,9 +150,9 @@ docker compose up -d
 **uv / pip:**
 
 ```bash
-uv tool install --force "immich-memories[editorial]==X.Y.Z"
+uv tool install --force "immich-memories[all]==X.Y.Z"
 # or
-pip install "immich-memories[editorial]==X.Y.Z"
+pip install "immich-memories[all]==X.Y.Z"
 ```
 
 Take a backup before an upgrade you might undo:

@@ -116,24 +116,24 @@ class TestWhereTheBirthdayComesFrom:
     """Immich is the source of truth; a typed date is an override for one run."""
 
     def test_the_immich_birth_date_anchors_the_memory(self):
-        assert birthday_anchor(datetime(2018, 2, 7, 0, 0), None, person_name="Alice") == date(
+        assert birthday_anchor(datetime(2018, 2, 7, 0, 0), None, person_name="Ada") == date(
             2018, 2, 7
         )
 
     def test_a_typed_date_overrides_what_immich_holds(self):
-        anchor = birthday_anchor(datetime(2018, 2, 7), date(2000, 11, 20), person_name="Alice")
+        anchor = birthday_anchor(datetime(2018, 2, 7), date(2000, 11, 20), person_name="Ada")
 
         assert anchor == date(2000, 11, 20)
 
     def test_a_typed_date_still_answers_when_immich_holds_nothing(self):
-        assert birthday_anchor(None, date(2000, 11, 20), person_name="Alice") == date(2000, 11, 20)
+        assert birthday_anchor(None, date(2000, 11, 20), person_name="Ada") == date(2000, 11, 20)
 
     def test_neither_is_an_error_that_says_where_to_set_it(self):
         """Refuse over fake: the error is how the user learns Immich drives this."""
         with pytest.raises(ValueError, match="People") as caught:
-            birthday_anchor(None, None, person_name="Alice")
+            birthday_anchor(None, None, person_name="Ada")
 
-        assert "Alice" in str(caught.value)
+        assert "Ada" in str(caught.value)
         assert "birth date" in str(caught.value)
 
 
@@ -184,7 +184,7 @@ class TestSparseHistoryReporting:
                 client=_EmptyLibrary(),
                 progress=display,
                 date_ranges=build_birthday_windows(date(2018, 2, 7), year=2026),
-                person_ids=["person-alice"],
+                person_ids=["person-ada"],
                 history_from=history_from,
             )
         finally:
@@ -218,7 +218,7 @@ class TestAutomationRoundTrip:
         process a year number; taking that from the start of the window would
         render the year before the one the runner proposed, silently.
         """
-        person = SimpleNamespace(id="p1", name="Alice", birth_date=date(2000, 2, 7))
+        person = SimpleNamespace(id="p1", name="Ada", birth_date=date(2000, 2, 7))
 
         # WHY: BirthdayDetector reads no config field on this path; the object
         # is only there to satisfy the signature.
