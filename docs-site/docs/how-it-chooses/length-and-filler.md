@@ -84,6 +84,10 @@ knows, still stays. So does one shot of a year this pass would leave empty, in a
 every year a shot: the one that stands best. What left is listed by id and head label
 in `derived-decisions/unvouched-filler.private.json`.
 
+An album handed over with a written subject (`--from-album ... --subject ...`) skips this pass. Every
+picture in it was picked for that subject, so a loaf in a bread film is the film, not filler
+([Picking each shot](./picking-shots.md#what-a-frame-must-pass)).
+
 ## Going short, on purpose
 
 The draft tries to reach its length before it gives up the seconds:

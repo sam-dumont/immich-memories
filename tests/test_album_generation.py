@@ -157,3 +157,11 @@ def test_an_album_with_no_usable_media_stops_the_run(monkeypatch):
         _run_album(monkeypatch, [], [])
 
     assert exc.value.code == 1
+
+
+def test_a_written_subject_hands_the_album_over_as_a_subject_pool(monkeypatch):
+    videos = [_asset("v1", AssetType.VIDEO, datetime(2025, 7, 1, tzinfo=UTC))]
+
+    captured = _run_album(monkeypatch, videos, [], subject="Bread making along the years")
+
+    assert captured["memory_preset_params"]["subject"] == "Bread making along the years"

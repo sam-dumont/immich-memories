@@ -210,6 +210,7 @@ class ProductionPostCardBackend:
             special_event_id=context.special_event_id,
             event_asset_ids=context.event_asset_ids,
             event_admission=context.event_admission,
+            pool_subject=context.pool_subject,
         )
         source = capture_structure_input(
             workprint,

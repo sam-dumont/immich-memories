@@ -29,7 +29,7 @@ def _polish(story, catalogue):
         config=SimpleNamespace(editorial=SimpleNamespace()),
         audience="family",
         owner_required_asset_ids=(),
-        intent=SimpleNamespace(subject="", voice_per_partition=False),
+        intent=SimpleNamespace(subject="", voice_per_partition=False, pool_is_subject=False),
         case=SimpleNamespace(product="monthly_highlights", people=()),
         people=None,
         render_timing=None,

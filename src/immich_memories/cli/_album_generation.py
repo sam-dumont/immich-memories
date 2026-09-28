@@ -61,8 +61,13 @@ def handle_album_generation(
     accept_any_provenance: bool = False,
     owner_required_asset_ids: tuple[str, ...] = (),
     owner_excluded_asset_ids: tuple[str, ...] = (),
+    subject: str | None = None,
 ) -> None:
-    """Generate one memory from the assets of a single Immich album."""
+    """Generate one memory from the assets of a single Immich album.
+
+    With a written `subject`, the album is a pool curated for it: its pictures stand on that
+    subject (owner ruling 2026-09-28).
+    """
     import click
 
     from immich_memories.analysis.album_source import fetch_album_media
@@ -140,7 +145,8 @@ def handle_album_generation(
         date_ranges=(),
         upload_to_immich=upload_to_immich,
         album=album,
-        memory_preset_params={"album_name": resolved.name, "album_id": resolved.id},
+        memory_preset_params={"album_name": resolved.name, "album_id": resolved.id}
+        | ({"subject": subject} if subject else {}),
         source=source,
         memory_key=memory_key,
         memory_category=memory_category,

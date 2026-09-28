@@ -222,7 +222,10 @@ unchanged sources retain their existing bank entries.
   Answered on every tier from the facts, never asked of a model (`editorial_standing_facts.py`: two
   points tables, heads alone or heads plus the ingest caption; a caption naming an animal, or a
   person Immich found a face for, is never refused; `face_evidence` reads the faces), and applied
-  by `StandingGate` (`editorial_story_standing.py`).
+  by `StandingGate` (`editorial_story_standing.py`). An album handed over with a written subject
+  (`generate --from-album --subject`, `EditorialIntent.pool_is_subject`) is a curated pool: its
+  pictures stand on the subject whatever their score, every year it holds gets a shot, the filler
+  pass skips it, and `stood_on_subject` in the story-selection record lists what got in that way.
 - **Look-alike / scene print**: a story's next picture is kept only if it adds to the ones already
   kept (`editorial_story_lookalike.py`). The final review drops repeats by perceptual hash and by
   scene print, the pooled DINOv2 vector of a preview, which catches the same scene in another

@@ -270,6 +270,7 @@ def picture_admission(source, ports, material, selection, gate) -> PictureAdmiss
         unit_by_asset=unit_by_asset,
         pictures_of={s["key"]: s["seen"]["pictures"] for s in selection.story.stories},
         context_without_life=source.intent.context_without_life,
+        pool_is_subject=source.intent.pool_is_subject,
     )
 
     def prepare_candidates(rows):

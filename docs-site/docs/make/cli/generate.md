@@ -106,6 +106,10 @@ Four things the examples hide:
   or by the model from the day's own facts, and never written back to the catalogue.
   `immich-memories days-due` lists what the catalogue holds.
 
+`--subject` only works with `--from-album`, and needs a model reader. It tells the editor the album
+is a pool you picked for that subject, so a lone loaf or a parked car is not refused for having
+nobody in it. See [an album made for one subject](../memory-types.mdx#an-album-made-for-one-subject).
+
 ## Trips
 
 With `trips.homebase_latitude` and `trips.homebase_longitude` set, the tool finds clusters of

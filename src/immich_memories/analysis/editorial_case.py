@@ -39,6 +39,8 @@ class Case:
     event_asset_ids: tuple[str, ...] = ()
     event_admission: SpecialEventAdmission | None = None
     person_expression: PersonExpression | None = None
+    # The written subject an album was curated for; None unless the album is a subject pool.
+    pool_subject: str | None = None
 
     def __post_init__(self) -> None:
         from immich_memories.analysis.special_event_scope import validate_special_event_scope

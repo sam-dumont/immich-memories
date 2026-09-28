@@ -82,6 +82,8 @@ def build_editorial_context(
     )
     special_event = product == "special_day"
     key = _context_key(memory_key or output_stem, person_expression)
+    # `generate --from-album --subject`: the album is a pool curated for that written subject.
+    pool_subject = resolved.preset_params.get("subject") if product == "album" else None
     return EditorialRunContext(
         key=key,
         label=label,
@@ -110,6 +112,8 @@ def build_editorial_context(
         accept_any_provenance=accept_any_provenance,
         owner_required_asset_ids=owner_required_asset_ids,
         owner_excluded_asset_ids=owner_excluded_asset_ids,
+        base_brief=pool_subject,
+        pool_is_subject=pool_subject is not None,
         trip=product == "trip",
         album_ref=album_ref,
         album_sources=album_sources,

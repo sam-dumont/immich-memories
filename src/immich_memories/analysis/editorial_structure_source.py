@@ -131,6 +131,7 @@ def capture_structure_input(
             brief=case.brief,
             people=case.people,
             event_admission=case.event_admission,
+            pool_subject=case.pool_subject,
             material={
                 assets[asset_id].file_created_at.date()
                 for card in workprint.cards
