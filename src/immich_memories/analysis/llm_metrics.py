@@ -34,6 +34,7 @@ _T = TypeVar("_T")
 
 _active: ContextVar[tuple[LLMCounters, ...]] = ContextVar("llm_counters", default=())
 _stage: ContextVar[str] = ContextVar("llm_stage", default="reader")
+_model: ContextVar[str | None] = ContextVar("llm_model", default=None)
 
 __all__ = [
     "LLMCounters",
@@ -58,6 +59,9 @@ class ModelSpend:
     cached_prompt_tokens: int = 0
     completion_tokens: int = 0
     reasoning_tokens: int = 0
+    wall_seconds: float = 0.0
+    cache_hits: int = 0
+    truncated: int = 0
 
 
 @dataclass
@@ -191,6 +195,8 @@ def record_reply(
     served.
     """
     stage = stage or _stage.get()
+    if model:
+        _model.set(model)
     for counters in _active.get():
         with counters._lock:
             counters.calls += 1
@@ -241,24 +247,44 @@ def record_batch_reply(
             counters.batch_reasoning_tokens += reasoning_tokens
 
 
+def begin_request(model: str | None) -> None:
+    """A failed request is charged to its requested model until a reply names the served one."""
+    _model.set(model)
+
+
+def _group_event(
+    counters: LLMCounters, field: str, value: float, model: str | None, stage: str | None
+) -> None:
+    for groups, key in (
+        (counters.by_model, model or _model.get()),
+        (counters.by_stage, stage or _stage.get()),
+    ):
+        if key:
+            spend = groups.setdefault(key, ModelSpend())
+            setattr(spend, field, getattr(spend, field) + value)
+
+
 def record_truncation() -> None:
     """A thinking call hit the token budget and its reasoning was discarded."""
     for counters in _active.get():
         with counters._lock:
             counters.truncated += 1
+            _group_event(counters, "truncated", 1, None, None)
 
 
-def record_cache_hit() -> None:
+def record_cache_hit(*, model: str | None = None) -> None:
     """An identical question was answered from the judgment cache, unpaid for."""
     for counters in _active.get():
         with counters._lock:
             counters.cache_hits += 1
+            _group_event(counters, "cache_hits", 1, model, None)
 
 
-def record_wall(seconds: float) -> None:
+def record_wall(seconds: float, *, model: str | None = None, stage: str | None = None) -> None:
     for counters in _active.get():
         with counters._lock:
             counters.wall_seconds += seconds
+            _group_event(counters, "wall_seconds", seconds, model, stage)
 
 
 def active() -> LLMCounters | None:

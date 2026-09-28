@@ -51,6 +51,22 @@ class EditorialAttempt:
         }
         self._lease = _attempt_lease(self.directory, self.attempt_id, store)
         self._stage_clock = StageClock()
+        from immich_memories.tracking.run_observations import current_tracker
+        from immich_memories.tracking.span_progress import SpanPlan
+        from immich_memories.tracking.span_store import SpanStore
+
+        tracker = current_tracker()
+        if tracker is not None and tracker.current_run is not None:
+            history = SpanStore(tracker.db.store).latest(
+                tracker.current_run.source, prefix="stage."
+            )
+            if history:
+                self._stage_clock = StageClock(
+                    plan=SpanPlan(
+                        [span for span in history.spans if span.name.startswith("stage.")],
+                        items=len(request.get("requested_assets", [])),
+                    )
+                )
         self._usage_scope = ExitStack()
         self._usage: LLMCounters | None = None
 
@@ -60,6 +76,11 @@ class EditorialAttempt:
         try:
             self._usage = self._usage_scope.enter_context(collecting())
             self._save()
+            from immich_memories.operations.run_index import record_run_attempt
+            from immich_memories.tracking.run_observations import current_tracker
+
+            if tracker := current_tracker():
+                record_run_attempt(tracker.run_id, self.directory, "", store=tracker.db.store)
             write_secret_file(
                 self.root / "latest-attempt.private.json",
                 json.dumps({"attempt_id": self.attempt_id, "directory": str(self.directory)}),
@@ -106,6 +127,7 @@ class EditorialAttempt:
         )
 
     def __exit__(self, _exc_type, exc, traceback) -> None:
+        self._stage_clock.finish()
         try:
             if exc is not None:
                 self.record["status"] = (

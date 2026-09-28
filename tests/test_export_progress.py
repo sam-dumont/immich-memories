@@ -33,3 +33,17 @@ def test_extraction_and_upload_cannot_finish_or_rewind_the_export_bar(tmp_path):
     assert all(value < 1 for value in seen)
     progress.report("done", 1, "Complete")
     assert seen[-1] == 1
+
+
+def test_first_render_does_not_invent_a_total(tmp_path):
+    seen = []
+    params = GenerationParams(
+        clips=[],
+        output_path=tmp_path / "memory.mp4",
+        config=Config(),
+        progress_callback=lambda _phase, pct, _msg: seen.append(pct),
+    )
+    progress = _PipelineProgress(params, clip_count=10)
+    progress.report("assembly", 0.5, "Encoding")
+    assert seen == [0.0]
+    assert progress.remaining_seconds is None

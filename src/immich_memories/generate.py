@@ -269,9 +269,13 @@ def generate_memory(
     if defer_finalization and run_tracker is None:
         raise ValueError("Deferred finalization requires a caller-owned RunTracker")
 
+    from immich_memories.tracking.report_context import record_assets
+    from immich_memories.tracking.run_observations import observe_render
+
     # Single-instance lock: prevent concurrent pipeline runs from corrupting state
     lock_path = params.config.cache.database_path.parent / ".lock"
-    with PipelineLock(lock_path, open_store(params.config)):
+    with PipelineLock(lock_path, open_store(params.config)), observe_render(params.config):
+        record_assets(params.clips)
         if run_tracker is None and not defer_finalization:
             return _generate_memory_inner(params)
         return _generate_memory_inner(
@@ -385,7 +389,13 @@ def _generate_memory_inner(
     prepare_certified_timeline(params)
     from immich_memories.security import sanitize_filename
     from immich_memories.tracking import RunTracker, generate_run_id
+    from immich_memories.tracking.run_observations import current_tracker
 
+    observed = current_tracker()
+    run_tracker = run_tracker or observed
+    observed_run = (
+        observed.current_run if observed is not None and run_tracker is observed else None
+    )
     run_id = run_tracker.run_id if run_tracker is not None else generate_run_id()
 
     # Tag all log lines with run_id for correlation
@@ -405,19 +415,36 @@ def _generate_memory_inner(
     check_disk_space(run_output_dir)
     requested_output_path = run_output_dir / sanitize_filename(params.output_path.name)
 
-    run_tracker.start_run(
-        person_name=params.person_name,
-        date_range=None,
-        target_duration_seconds=round(
-            params.target_duration_seconds or _total_clip_duration(params)
-        ),
-        memory_type=params.memory_type,
-        memory_key=build_memory_key(params),
-        memory_category=params.memory_category,
-        memory_people=params.memory_people,
-        source=params.source,
-        automation_attempt_id=params.automation_attempt_id,
-    )
+    if observed_run is None:
+        run_tracker.start_run(
+            person_name=params.person_name,
+            date_range=None,
+            target_duration_seconds=round(
+                params.target_duration_seconds or _total_clip_duration(params)
+            ),
+            memory_type=params.memory_type,
+            memory_key=build_memory_key(params),
+            memory_category=params.memory_category,
+            memory_people=params.memory_people,
+            source=params.source,
+            automation_attempt_id=params.automation_attempt_id,
+        )
+    else:
+        run_tracker.db.describe_run(
+            replace(
+                observed_run,
+                person_name=params.person_name,
+                target_duration_seconds=round(
+                    params.target_duration_seconds or _total_clip_duration(params)
+                ),
+                memory_type=params.memory_type,
+                memory_key=build_memory_key(params),
+                memory_category=params.memory_category,
+                memory_people=params.memory_people,
+                source=params.source,
+                automation_attempt_id=params.automation_attempt_id,
+            )
+        )
     operational = _OperationalProgress(params, run_tracker)
     operational.emit_unperformed_prerequisites(OperationalPhase.DISCOVERY)
 
@@ -456,19 +483,21 @@ def _generate_memory_inner(
         )
 
         # Phase 3: Music, mixed into the film before it is published
-        _t = _time.monotonic()
-        music_result = _complete_music_phase(
-            params,
-            assembly_clips,
-            prepared.current_path,
-            run_output_dir,
-            run_tracker,
-            plan,
-            operational,
-            pp,
-            mute_windows=prepared.music_mute_windows,
-        )
-        _phase_times["music"] = _time.monotonic() - _t
+        from immich_memories.tracking import timing
+
+        with timing.span("render.music") as music_span:
+            music_result = _complete_music_phase(
+                params,
+                assembly_clips,
+                prepared.current_path,
+                run_output_dir,
+                run_tracker,
+                plan,
+                operational,
+                pp,
+                mute_windows=prepared.music_mute_windows,
+            )
+        _phase_times["music"] = music_span.duration
 
         final_probe = prepared.publish(decode_check)
         artifact_warnings = _artifact_warnings(params, duration_warning, music_result.warning)
@@ -495,6 +524,8 @@ def _generate_memory_inner(
         )
 
         _phase_times["total"] = _time.monotonic() - _phase_start
+        if collected := timing.active():
+            collected.interval("generation", _phase_start, _phase_times["total"], len(params.clips))
         _log_phase_timing(_phase_times, len(assembly_clips))
 
         _report(params, "done", 1.0, "Complete!")

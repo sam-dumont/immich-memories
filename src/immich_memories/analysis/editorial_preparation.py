@@ -5,7 +5,6 @@ from __future__ import annotations
 import io
 import os
 import tempfile
-import time
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager, suppress
 from dataclasses import asdict, dataclass, field
@@ -74,6 +73,7 @@ from immich_memories.store.editorial_preparation import (
     remember_assets,
     remember_faces,
 )
+from immich_memories.tracking import timing
 
 
 @dataclass(frozen=True)
@@ -284,6 +284,9 @@ class _Acquisition:
         if still_missing := [a for a in preview_missing if a not in self.unservable]:
             after["preview"] = tuple(still_missing)
         demanded = _demanded_producers(self.preparation_config)
+        if collected := timing.active():
+            collected.diagnostics["cache"] = "cold" if any(produced.values()) else "warm"
+            collected.diagnostics["missing_capabilities"] = list(self.failures)
         return PreparationResult(
             requested,
             {key: value for key, value in after.items() if demanded(key)},
@@ -300,12 +303,12 @@ class _Acquisition:
 
     @contextmanager
     def timed(self, stage: str, pictures: int) -> Iterator[None]:
-        started = time.perf_counter()
-        try:
-            yield
-        finally:
-            self.seconds[stage] = self.seconds.get(stage, 0.0) + time.perf_counter() - started
-            self.pictures[stage] = self.pictures.get(stage, 0) + pictures
+        with timing.span(f"preparation.{stage}", items=pictures) as measured:
+            try:
+                yield
+            finally:
+                self.pictures[stage] = self.pictures.get(stage, 0) + pictures
+        self.seconds[stage] = self.seconds.get(stage, 0.0) + measured.duration
 
     def previews(
         self, ids: Sequence[str], cache_path: Path, fetch_preview

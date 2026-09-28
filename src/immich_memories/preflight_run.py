@@ -145,4 +145,11 @@ def run_blockers(config: Config, *, output_directory: Path | None) -> list[Check
         checks.append(check_detector_export(config))
     if output_directory is not None:
         checks.append(check_output_directory(output_directory))
+    from immich_memories.tracking.timing import active
+
+    if collected := active():
+        collected.diagnostics["preflight"] = [
+            {"name": check.name, "status": check.status.value, "message": check.message}
+            for check in checks
+        ]
     return [check for check in checks if check.status is CheckStatus.ERROR]

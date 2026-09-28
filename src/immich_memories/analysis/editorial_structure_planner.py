@@ -101,6 +101,7 @@ from immich_memories.config_tiers import nas_draft_config
 from immich_memories.processing.editorial_timing import bind_editorial_timeline
 from immich_memories.security import write_secret_file
 from immich_memories.store.vote_banks import VoteBank
+from immich_memories.tracking.timed import timed
 
 SECONDS_PER_SLOT = NOMINAL_STILL_SECONDS
 STORY_RANK = {"central": 0, "supporting": 1}
@@ -240,6 +241,7 @@ def _partition_cap(
     return slots_total, cap, limit
 
 
+@timed("selection.structure")
 def plan_structure(
     source: StructurePlanningInput, ports: StructurePlannerPorts
 ) -> StructurePlanningResult:

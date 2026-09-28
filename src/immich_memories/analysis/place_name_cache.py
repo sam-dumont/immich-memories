@@ -25,6 +25,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from immich_memories.locked_file import file_lock
+from immich_memories.tracking.report_context import private_place_name
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +121,7 @@ class PlaceNameCache:
         except OSError as error:
             logger.debug("Could not write the place-name cache: %s", error)
 
+    @private_place_name
     def name_for(self, latitude: float, longitude: float, fallback: str | None) -> str | None:
         """The place's name in the film's language, or `fallback` when nobody knows."""
         latitude, longitude = _rounded(latitude, longitude)

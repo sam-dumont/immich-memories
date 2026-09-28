@@ -317,3 +317,15 @@ async def test_two_models_in_one_run_are_billed_apart() -> None:
     assert set(counters.by_model) == {"glm-5.3-flash", "qwen3-vl-8b"}
     assert counters.by_model["glm-5.3-flash"].prompt_tokens == 900
     assert counters.by_model["qwen3-vl-8b"].prompt_tokens == 120
+
+
+def test_model_and_stage_keep_rates_and_cache_hits():
+    from immich_memories.analysis import llm_metrics
+
+    with llm_metrics.collecting() as counters, llm_metrics.recording_stage("episode"):
+        llm_metrics.record_reply(model="fixture-model", completion_tokens=20)
+        llm_metrics.record_wall(2, model="fixture-model")
+        llm_metrics.record_cache_hit(model="fixture-model")
+    assert counters.by_model["fixture-model"].wall_seconds == 2
+    assert counters.by_model["fixture-model"].cache_hits == 1
+    assert counters.by_stage["episode"].wall_seconds == 2

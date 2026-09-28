@@ -25,6 +25,8 @@ from pathlib import Path
 from typing import Any
 
 from immich_memories.security import write_secret_file
+from immich_memories.tracking import timing
+from immich_memories.tracking.span_progress import SpanPlan
 
 PROGRESS_FILE = "stage-progress.private.json"
 
@@ -51,6 +53,8 @@ class StageUpdate:
     # the editorial reads read.
     verb: str = "Preparing"
     remaining_seconds: float | None = None
+    total_fraction: float | None = None
+    total_remaining_seconds: float | None = None
 
     @property
     def identity(self) -> tuple[str, str, str, int | None]:
@@ -91,6 +95,8 @@ class StageUpdate:
             "total": self.total,
             "verb": self.verb,
             "remaining_seconds": self.remaining_seconds,
+            "total_fraction": self.total_fraction,
+            "total_remaining_seconds": self.total_remaining_seconds,
         }
 
     @classmethod
@@ -108,6 +114,8 @@ class StageUpdate:
                 recent_asset_ids=tuple(str(v) for v in record.get("recent_asset_ids") or ()),
                 verb=str(record.get("verb") or "Preparing"),
                 remaining_seconds=record.get("remaining_seconds"),
+                total_fraction=record.get("total_fraction"),
+                total_remaining_seconds=record.get("total_remaining_seconds"),
             )
         except (ValueError, TypeError):
             return None
@@ -116,10 +124,24 @@ class StageUpdate:
 class StageClock:
     """Measure only work observed in this stage; never borrow another pass's rate."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, plan: SpanPlan | None = None) -> None:
         self._previous: StageUpdate | None = None
         self._started = 0.0
         self._baseline = 0
+        self._plan = plan
+        self._total_fraction = 0.0
+
+    def finish(self, now: float | None = None) -> None:
+        """Keep the last stage too, including when its enclosing attempt failed."""
+        if self._previous is not None and (collected := timing.active()) is not None:
+            update = self._previous
+            collected.interval(
+                f"stage.{update.phase}.{update.label}",
+                self._started,
+                (time.monotonic() if now is None else now) - self._started,
+                update.total,
+            )
+        self._previous = None
 
     def measure(self, update: StageUpdate) -> StageUpdate:
         now = time.monotonic()
@@ -129,6 +151,7 @@ class StageClock:
             or previous.identity != update.identity
             or (update.done or 0) < (previous.done or 0)
         ):
+            self.finish(now)
             self._started = now
             self._baseline = update.done or 0
         self._previous = update
@@ -136,7 +159,23 @@ class StageClock:
         remaining = None
         if completed > 0 and update.total and update.done is not None:
             remaining = (now - self._started) * max(0, update.total - update.done) / completed
-        return replace(update, remaining_seconds=remaining)
+        estimate = (
+            self._plan.estimate(
+                f"stage.{update.phase}.{update.label}",
+                fraction=update.fraction if update.fraction is not None else 0.0,
+                remaining=remaining,
+            )
+            if self._plan
+            else None
+        )
+        if estimate is not None:
+            self._total_fraction = max(self._total_fraction, estimate.fraction)
+        return replace(
+            update,
+            remaining_seconds=remaining,
+            total_fraction=self._total_fraction if self._plan and self._plan.weights else None,
+            total_remaining_seconds=estimate.remaining_seconds if estimate else None,
+        )
 
 
 # The run's stage sink, reachable from layers that never see the `on_stage`

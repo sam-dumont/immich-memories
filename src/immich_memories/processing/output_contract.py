@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
+from immich_memories.tracking.timed import timed
 
 logger = logging.getLogger(__name__)
 
@@ -475,6 +476,7 @@ def _naming_the_file(path: Path, check: Callable[[], OutputProbe]) -> OutputProb
         raise InvalidOutputArtifact(f"{path}: {exc}") from exc
 
 
+@timed("render.final_check")
 def check_output(path: Path, plan: EncodingPlan) -> OutputProbe:
     """Read the film's container, without decoding, and check it against its plan.
 

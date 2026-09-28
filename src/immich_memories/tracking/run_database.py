@@ -104,6 +104,29 @@ class RunDatabase:
         runs = self._select_runs(sa.select(pipeline_runs).where(_RUNS.run_id == run_id))
         return runs[0] if runs else None
 
+    def describe_run(self, run: RunMetadata) -> None:
+        """Fill resolved inputs on the run opened before discovery, preserving its lifecycle."""
+        row = run_to_row(run)
+        names = (
+            "person_name",
+            "person_id",
+            "date_range_start",
+            "date_range_end",
+            "target_duration_seconds",
+            "memory_type",
+            "memory_key",
+            "memory_category",
+            "memory_people",
+            "source",
+            "automation_attempt_id",
+        )
+        with self.store.begin() as conn:
+            conn.execute(
+                sa.update(pipeline_runs)
+                .where(_RUNS.run_id == run.run_id)
+                .values({name: row[name] for name in names})
+            )
+
     def delete_run(self, run_id: str) -> bool:
         """Delete a run and its stats."""
         with self.store.begin() as conn:

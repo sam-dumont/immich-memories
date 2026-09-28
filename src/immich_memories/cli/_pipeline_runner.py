@@ -38,6 +38,7 @@ from immich_memories.operations.auto_output import NOTHING_WORTH_A_FILM
 from immich_memories.operations.run_index import run_id_for_attempt
 from immich_memories.operations.storyboard import read_storyboard
 from immich_memories.timeperiod import DateRange
+from immich_memories.tracking.timed import timed
 
 logger = logging.getLogger(__name__)
 
@@ -181,6 +182,15 @@ def _finish_without_rendering(
     )
     print_generation_preview(preview)
     progress.update(task, completed=100)
+    from immich_memories.operations.run_index import record_run_attempt
+    from immich_memories.tracking.run_observations import current_tracker
+
+    if tracker := current_tracker():
+        tracker.complete_run(
+            clips_analyzed=len(assets) + len(photo_assets or []), clips_selected=len(selected_clips)
+        )
+        if attempt := _attempt_dir_of(pipeline_result):
+            record_run_attempt(tracker.run_id, attempt, output_path, store=tracker.db.store)
     return output_path, should_upload, album_name
 
 
@@ -298,6 +308,7 @@ class _SourceProgressReporter:
 
 
 @llm_metrics.counted
+@timed("pipeline")
 def run_pipeline_and_generate(
     *,
     assets: list,
@@ -347,6 +358,9 @@ def run_pipeline_and_generate(
 
     Returns (result_path, should_upload, album_name).
     """
+    from immich_memories.tracking.report_context import record_assets
+
+    record_assets([*assets, *(photo_assets or [])])
     from immich_memories.analysis.editorial_runtime import build_smart_pipeline
     from immich_memories.analysis.smart_pipeline import PipelineConfig
     from immich_memories.cache.thumbnail_cache import ThumbnailCache

@@ -113,38 +113,52 @@ class _PipelineProgress:
 
     def __init__(self, params: GenerationParams, clip_count: int) -> None:
         self._params = params
-        has_music = not params.no_music
-        self._last = 0.0
+        from immich_memories.db import open_store
+        from immich_memories.tracking.span_progress import SpanPlan
+        from immich_memories.tracking.span_store import SpanStore
 
-        # WHY: Estimated relative durations for each phase.
-        # These determine how much of the progress bar each phase occupies.
-        # Tune based on _log_phase_timing output from real runs.
-        # Photographs are rendered inside the download phase, by extract_clips,
-        # so the estimate that used to sit on its own "photos" phase belongs here.
-        weights = {
-            "download": clip_count * 3.0 + 20.0,
-            "assembly": 180.0 + clip_count * 8.0,  # titles + encoding
-            "music": 120.0 if has_music else 0.0,
-            "upload": 30.0 if params.upload_enabled else 0.0,
+        history = SpanStore(open_store(params.config)).latest(params.source, prefix="render.")
+        names = {
+            "render.clip_extraction": "download",
+            "render.assembly": "assembly",
+            "render.music": "music",
+            "delivery": "upload",
         }
-        total = sum(weights.values())
+        from dataclasses import replace
 
-        # Build [start, end) ranges for each phase
-        self._ranges: dict[str, tuple[float, float]] = {}
-        cursor = 0.0
-        for phase, w in weights.items():
-            span = w / total if total > 0 else 0
-            self._ranges[phase] = (cursor, cursor + span)
-            cursor += span
-        self._ranges["extract"] = self._ranges["download"]
+        spans = (
+            [replace(span, name=names[span.name]) for span in history.spans if span.name in names]
+            if history
+            else []
+        )
+        self._plan = SpanPlan(spans, items=clip_count)
+        self._last = 0.0
+        self.remaining_seconds: float | None = None
+        self._phase = ""
+        self._phase_started = 0.0
 
     def report(self, phase: str, pct: float, msg: str) -> None:
-        """Report progress within a phase. pct is 0.0-1.0 within that phase."""
+        """Report one total from history; the first run promises no percentage or ETA."""
+        from immich_memories.tracking.timing import active
+
         if not self._params.progress_callback:
             return
-        start, end = self._ranges.get(phase, (self._last, self._last))
-        scaled = start + min(1.0, max(0.0, pct)) * (end - start)
-        self._last = 1.0 if phase == "done" else max(self._last, min(0.99, scaled))
+        name = "download" if phase == "extract" else phase
+        now = time.monotonic()
+        if name != self._phase:
+            self._phase, self._phase_started = name, now
+        remaining = (now - self._phase_started) * (1 - pct) / pct if 0 < pct < 1 else None
+        estimate = self._plan.estimate(name, fraction=pct, remaining=remaining)
+        if estimate:
+            self._last = max(self._last, min(0.99, estimate.fraction))
+        if phase == "done":
+            self._last = 1.0
+        self.remaining_seconds = estimate.remaining_seconds if estimate else None
+        if collected := active():
+            collected.diagnostics["progress"] = {
+                "fraction": self._last if self._plan.weights or phase == "done" else None,
+                "remaining_seconds": self.remaining_seconds,
+            }
         self._params.progress_callback(phase, self._last, msg)
 
     def assembly_callback(self) -> Callable[[float, str], None] | None:

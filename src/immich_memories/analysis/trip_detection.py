@@ -17,6 +17,7 @@ from geopy.geocoders import Nominatim
 from immich_memories.analysis.trip_place import TripPlace, trip_place
 from immich_memories.api.models import Asset
 from immich_memories.place_names import short_place_name
+from immich_memories.tracking.report_context import private_place_name
 
 logger = logging.getLogger(__name__)
 
@@ -187,6 +188,7 @@ def _place_at_scale(address: dict, spread_km: float | None) -> str | None:
     return next((name for key in keys if (name := short_place_name(address.get(key)))), None)
 
 
+@private_place_name
 def reverse_geocode(
     lat: float, lon: float, spread_km: float | None = None, *, language: str = "en"
 ) -> str | None:

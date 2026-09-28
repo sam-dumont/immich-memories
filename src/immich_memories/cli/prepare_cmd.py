@@ -26,6 +26,8 @@ from immich_memories.cli._helpers import (
 )
 from immich_memories.config_loader import Config
 from immich_memories.timeperiod import DateRange
+from immich_memories.tracking.run_observations import observed_command
+from immich_memories.tracking.timed import timed
 
 if TYPE_CHECKING:
     from immich_memories.analysis.editorial_preparation import PreparationResult
@@ -40,6 +42,7 @@ def _windows(
     return list(resolved) if isinstance(resolved, list) else [resolved]
 
 
+@timed("discovery")
 def _eligible_source(client, config: Config, windows: list[DateRange]):
     """The corpus a cut over these windows would prepare, decided by the source pass itself."""
     from immich_memories.analysis.editorial_source import (
@@ -54,6 +57,9 @@ def _eligible_source(client, config: Config, windows: list[DateRange]):
 
     scope = library_source_scope(client, config, windows)
     sources = fetch_full_window_source(client, scope)
+    from immich_memories.tracking.report_context import record_assets
+
+    record_assets(sources)
     prepared = prepare_editorial_source(
         EditorialSelectionRequest(scope=scope),
         EditorialDependencies(source_fetcher=lambda _scope: sources),
@@ -72,7 +78,10 @@ def _run_preparation(client, config: Config, assets) -> tuple[ProducerClock, Pre
         max_size_mb=config.cache.thumbnail_cache_max_size_mb,
     )
     thumbnail_cache.begin_run()
-    clock = ProducerClock()
+    from immich_memories.tracking.timing import active
+
+    collected = active()
+    clock = ProducerClock(spans=collected.spans if collected else None)
     result = prepare_editorial_annotations(
         assets=assets,
         store=open_store(config),
@@ -170,6 +179,7 @@ def register_prepare_commands(cli_group: click.Group) -> None:
         help="Project the measured rate onto a library of this many pictures",
     )
     @click.pass_context
+    @observed_command("prepare")
     def prepare(
         ctx: click.Context,
         year: int | None,

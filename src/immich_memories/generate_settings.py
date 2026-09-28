@@ -35,6 +35,7 @@ from immich_memories.processing.hdr_utilities import (
     quality_encoder_preset,
 )
 from immich_memories.titles.title_source import TitleSource
+from immich_memories.tracking.timed import timed
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -321,6 +322,7 @@ def _complete_music_failure(
     return MusicPhaseResult(applied=False, warning=warning)
 
 
+@timed("render.music.generate")
 def run_music_phase(
     params: GenerationParams,
     assembly_clips: list[AssemblyClip],
@@ -395,6 +397,7 @@ def run_music_phase(
     return MusicPhaseResult(applied=True, warning=selection.warning)
 
 
+@timed("delivery")
 def upload_to_immich(
     client: SyncImmichClient,
     video_path: Path,
