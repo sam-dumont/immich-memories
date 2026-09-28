@@ -114,11 +114,14 @@ def migration_schema() -> str | None:
     """The schema a running revision creates and alters tables in; None on SQLite.
 
     Revisions pass this, never the symbolic `SCHEMA`: Alembic renders ALTER and a batch
-    table's rename with the name it is given, past `schema_translate_map`.
+    table's rename with the name it is given, past `schema_translate_map`. The name comes
+    back as one quoted identifier: Alembic splits a plain schema name on its dots when it
+    renders an ALTER, so a schema like `a.b` would name a database.
     """
     from alembic import op
 
-    return op.get_context().version_table_schema
+    schema = op.get_context().version_table_schema
+    return sa.sql.quoted_name(schema, quote=True) if schema else None
 
 
 def _current(connection: Connection, schema: str | None) -> tuple[str, ...]:
