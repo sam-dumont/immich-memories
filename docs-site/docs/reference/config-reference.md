@@ -732,12 +732,14 @@ wrote down yourself, and nothing else.
 ```yaml
 network:
   geocoding: false        # nominatim.openstreetmap.org
+  geocoding_url: ""       # a self-hosted Nominatim instead of the public one
   map_tiles: false        # server.arcgisonline.com (World Imagery)
 ```
 
 | Key | What it sends | What you get |
 |---|---|---|
-| `geocoding` | each trip cluster's centroid, and the rounded coordinates of the places on the cut | trip names from the map instead of from EXIF, and place names in the film's language |
+| `geocoding` | each trip cluster's centroid, and the coordinates of every clip on the cut, rounded to about a kilometre, once per place (answers are kept in the store) | the district's name where Immich names a neighbouring town, trip names from the map instead of from EXIF, and place names in the film's language |
+| `geocoding_url` | the same requests, to this host instead (`http://nominatim.lan:8080`); empty means `nominatim.openstreetmap.org`. Only read with `geocoding: true` | your own Nominatim, nothing sent outside |
 | `map_tiles` | tile coordinates covering the trip area and your home base | the trip fly-over, the static trip map, and a satellite background behind location cards |
 
 Fonts are not a switch: a render never downloads one, and `titles fonts --install` is the one

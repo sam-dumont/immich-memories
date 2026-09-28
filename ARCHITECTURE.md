@@ -510,7 +510,7 @@ src/immich_memories/
 │   ├── progress.py             # ProgressTracker: the run clock the stage reporter reads
 │   ├── trip_detection.py       # GPS-based trip detection (clustering, injected geocoder)
 │   ├── trip_place.py           # Names a trip at the scale its pictures cover (city → country)
-│   ├── place_name_cache.py     # Localised names for the places one cut shows, one ask each
+│   ├── place_geocoder.py       # Opt-in Nominatim: district names per ~1 km cell, cached in the store
 │   ├── trip_discovery.py       # Shared UI/CLI all-asset discovery, including year-boundary trips
 │   ├── special_day.py          # Every run of activity, and a found day named from its own lines
 │   ├── special_day_sequence.py # Days read a month at a time in order (close family by role on each line); 30 s film floor
@@ -761,7 +761,8 @@ src/immich_memories/
 │   │                           # library overviews; 0004_annotations); operations.py (pipeline_runs,
 │   │                           # phase_stats, automation_attempts, notification_health, asset_scores,
 │   │                           # run_attempts, special_days; 0005_operations); banks.py (audience answers
-│   │                           # and holds, block vote entries, owner review edits; 0006_banks)
+│   │                           # and holds, block vote entries, owner review edits; 0006_banks); places.py
+│   │                           # (geocoded_places: opt-in reverse-geocode answers per cell; 0007)
 │   ├── legacy_import.py        # ImportOutcome: what one domain's import_legacy(store, home) did; the
 │   │                           # `legacy_import` records in store_meta (read_/write_import_record)
 │   ├── inventory.py            # row_counts, present_counts, recorded_revisions, digests: order-free,

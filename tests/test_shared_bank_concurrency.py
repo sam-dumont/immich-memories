@@ -8,24 +8,23 @@ banks' cases run on every store backend in `tests/store/test_banks.py`.
 
 from concurrent.futures import ThreadPoolExecutor
 
-from immich_memories.analysis.place_name_cache import PlaceNameCache
+from immich_memories.analysis.place_geocoder import PlaceGeocoder
 from immich_memories.db import open_store
 from immich_memories.people.companion import add_confirmed_person, load_document, people_entries
 
 
-def test_two_runs_naming_different_places_keep_both_names(tmp_path):
-    # WHY: the reader stands in for the geocoder, the only outside call the cache makes.
-    first = PlaceNameCache(tmp_path, "fr", lambda *_: "Lyon, France")
-    second = PlaceNameCache(tmp_path, "fr", lambda *_: "Gand, Belgique")
+def test_two_runs_naming_different_places_keep_both_names():
+    store = open_store()
+    # WHY: each fetch stands in for Nominatim, the only outside call the geocoder makes.
+    first = PlaceGeocoder(store, "fr", lambda *_: {"city": "Lyon"})
+    second = PlaceGeocoder(store, "fr", lambda *_: {"city": "Gand"})
 
-    first.name_for(45.76, 4.84, None)
-    second.name_for(51.05, 3.72, None)
-    first.flush()
-    second.flush()
+    first.address(45.76, 4.84)
+    second.address(51.05, 3.72)
 
-    offline = PlaceNameCache(tmp_path, "fr", None)
-    assert offline.name_for(45.76, 4.84, None) == "Lyon, France"
-    assert offline.name_for(51.05, 3.72, None) == "Gand, Belgique"
+    offline = PlaceGeocoder(store, "fr", lambda *_: None)
+    assert offline.address(45.76, 4.84) == {"city": "Lyon"}
+    assert offline.address(51.05, 3.72) == {"city": "Gand"}
 
 
 def test_people_added_from_the_web_ui_and_the_cli_at_once_are_all_kept():
