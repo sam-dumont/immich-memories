@@ -14,11 +14,22 @@ pictures into moments and the moments into stories, decides which stories earn a
 of that length, picks the best frame of each moment it funds, and checks the finished cut against
 a list of promises before anything renders.
 
-On a plain NAS that is the whole editor: metadata, pixels and inexpensive CPU classifiers make
-the film. GPU adds captions and Laya for selected shots and candidates. Full also lets a text
-model propose refinements to the draft. It may replace a few pictures or keep the same cut
-([What a model adds](./what-a-model-adds.md)). Existing facts and captions are reused; missing
-ones are acquired when needed. The prose model only reads text and never decides sharing.
+On a plain NAS that is the whole editor: metadata, pixels and small CPU classifiers make the film.
+A GPU adds a one-line description of every picture in the cut and a second family-viewing check. A
+text model on top of that polishes the draft, swapping out the shots that add nothing
+([What a model adds](./what-a-model-adds.md)). Facts already banked are reused, and the text model
+only ever reads text and never decides what is shareable.
+
+```mermaid
+flowchart LR
+  period["A period you pick"] --> moments["Pictures grouped<br/>into moments"]
+  moments --> stories["Moments grouped<br/>into stories"]
+  stories --> weigh["Stories weighed<br/>against the length"]
+  weigh --> pick["The best frame<br/>of each funded moment"]
+  pick --> checks["Family, family-viewing<br/>and duplicate checks"]
+  checks --> promises["The finished cut<br/>checked against the rules"]
+  promises --> film["Render"]
+```
 
 ## The house rules
 
@@ -38,19 +49,20 @@ These hold on every tier.
 - **Short beats a guess.** When the material runs out, the film runs shorter than its target rather
   than pad with a frame nothing vouches for. See [Length, quiet weeks and filler](./length-and-filler.md).
 - **Your tick outranks the editor.** A picture you tick in the pool goes in, one you untick never
-  does. Only the family-viewing gate outranks a tick. See [Overrule it](./overrule-it.md).
+  does, even over a family-viewing hold: you looked at it. On a new cut, a picture you pass with
+  `--include` still goes through the gate. See [Overrule it](./overrule-it.md).
 - **The finished cut is checked.** Once every pass has run, the cut is read against these promises.
   A broken one is a warning in the log and a row in the run's records.
 
 ## The route through the code
 
-A **Cut** on the Memory page and `immich-memories generate` take the same route. The quoted stage
-names are what the Memory page and the terminal print.
+The web UI's **Cut** runs `immich-memories generate --no-render` on the server, so both take the same
+route. The quoted stage names are what the web UI and the terminal print.
 
 ```mermaid
 flowchart TD
+  ui["Cut in the web UI<br/>web/job_routes: generate --no-render"] --> cli
   cli["generate<br/>cli/_pipeline_runner.run_pipeline_and_generate"] --> build
-  ui["Cut button<br/>ui/pages/clip_pipeline._run_pipeline_blocking"] --> build
   build["build_smart_pipeline<br/>analysis/editorial_runtime"] --> run["SmartPipeline.run_editorial_source"]
   run --> plan["RuntimeEditorialPlanner.plan_source<br/>opens EditorialAttempt"]
   plan --> prep["'Reading dates, places and people'<br/>_prepared_source"]

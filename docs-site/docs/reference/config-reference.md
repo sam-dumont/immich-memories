@@ -641,8 +641,8 @@ procedures, sexual content, exposed adult changing and identifying records never
 Preparation fills missing descriptions, public heads, detectors and pixel measurements in the
 annotation database, and skips provider calls where the facts are complete. Missing previews or
 providers stop selection with an explicit incomplete result. See
-[Editorial annotation setup](../being-rewritten/editorial-preparation.md) for the runtime
-extra, the exact model artifacts and the caption endpoint requirements.
+[Add captions](../better/captions.md) for the caption endpoint requirements and
+[Inference on a GPU box](../better/inference.md) for the model artifacts.
 
 ## Inference service
 

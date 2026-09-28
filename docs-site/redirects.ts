@@ -40,5 +40,6 @@ export const redirects: {from: string; to: string}[] = [
   {from: '/docs/deploy/common-setups/mac-local-llm', to: '/docs/better/reader'},
   {from: '/docs/deploy/common-setups/linux-nvidia', to: '/docs/better/inference'},
   {from: '/docs/deploy/common-setups/kubernetes-gpu', to: '/docs/run/kubernetes'},
-  {from: '/docs/deploy/configuration/editorial-preparation', to: '/docs/being-rewritten/editorial-preparation'},
+  {from: '/docs/deploy/configuration/editorial-preparation', to: '/docs/better/captions'},
+  {from: '/docs/being-rewritten/editorial-preparation', to: '/docs/better/captions'},
 ];

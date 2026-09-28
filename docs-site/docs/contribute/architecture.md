@@ -12,7 +12,7 @@ How the code is organized and where to make changes.
 The four main orchestrators compose smaller service objects through constructor injection. The
 lifecycle a run reports is the `OperationalPhase` enum in `operations/phases.py` (discovery →
 download → analysis → selection → render → music → delivery → complete), and it spans two entry
-points. Selection runs first: `generate` (or the Memory page's Cut) →
+points. Selection runs first: `generate` (the web UI's Cut runs the same command) →
 `build_smart_pipeline(editorial_context)` in `analysis/editorial_runtime.py` →
 `SmartPipeline.run_editorial_source()` → `RuntimeEditorialPlanner.plan_source()`, which runs
 preparation, the two readings, the structure and story planners, and certifies the timing.

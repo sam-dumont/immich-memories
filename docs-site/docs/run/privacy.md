@@ -201,3 +201,10 @@ too) and absolute paths, in field names as well as values. Names match as whole 
 but "Alarm" stays; only single letters are left alone. IDs become hashes that match within that report and
 change in the next one. Config appears as shape, without hostnames or values. Pictures are never
 included. Read the report before sharing it. Nothing is sent automatically.
+
+## Files on disk, and cancellation
+
+The annotation database and its SQLite sidecars are restricted to the current user. Previews are
+replaced atomically at mode `0600`; a corrupt preview gets one fresh fetch. Cancellation stops
+before the next caption request and terminates the detector worker's process group; committed
+facts stay for the next run.
