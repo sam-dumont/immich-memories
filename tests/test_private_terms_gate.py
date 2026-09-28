@@ -20,6 +20,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
+import private_terms_gate  # noqa: E402
 from private_terms_gate import (  # noqa: E402
     DEFAULT_TERMS_ENV_VAR,
     EXIT_HITS_FOUND,
@@ -344,13 +345,30 @@ def test_load_terms_reads_newline_separated_content_from_a_named_env_var(monkeyp
     assert len(terms) == 2
 
 
-def test_load_terms_returns_empty_when_nothing_is_configured(tmp_path: Path, monkeypatch) -> None:
-    # No file, no env var, no default path -- HOME is redirected so a real
-    # denylist that happens to exist on the machine running this test can't leak in.
-    monkeypatch.setenv("HOME", str(tmp_path))
+def _no_account_denylist(tmp_path: Path, monkeypatch) -> None:
+    # WHY: the default path is the account's real home; point it at an empty dir so a real
+    # denylist on the machine running this test can't leak in.
+    monkeypatch.setattr(private_terms_gate, "_account_home", lambda: tmp_path)
     monkeypatch.delenv(DEFAULT_TERMS_ENV_VAR, raising=False)
 
+
+def test_load_terms_returns_empty_when_nothing_is_configured(tmp_path: Path, monkeypatch) -> None:
+    _no_account_denylist(tmp_path, monkeypatch)
+
     assert load_terms() == []
+
+
+def test_a_disposable_home_does_not_hide_the_accounts_denylist(tmp_path: Path, monkeypatch) -> None:
+    account = tmp_path / "account"
+    denylist = account / ".config" / "immich-memories" / "private-terms.txt"
+    denylist.parent.mkdir(parents=True)
+    denylist.write_text("zorblax\n", encoding="utf-8")
+    # WHY: stands in for the passwd home, which a test cannot write to.
+    monkeypatch.setattr(private_terms_gate, "_account_home", lambda: account)
+    monkeypatch.setenv("HOME", str(tmp_path / "disposable"))
+    monkeypatch.delenv(DEFAULT_TERMS_ENV_VAR, raising=False)
+
+    assert len(load_terms()) == 1
 
 
 # --- main() ------------------------------------------------------------------------
@@ -359,8 +377,7 @@ def test_load_terms_returns_empty_when_nothing_is_configured(tmp_path: Path, mon
 def test_main_reports_a_skip_notice_and_exits_clean_with_no_denylist(
     tmp_path: Path, monkeypatch, capsys
 ) -> None:
-    monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.delenv(DEFAULT_TERMS_ENV_VAR, raising=False)
+    _no_account_denylist(tmp_path, monkeypatch)
 
     exit_code = main([])
 
@@ -371,8 +388,7 @@ def test_main_reports_a_skip_notice_and_exits_clean_with_no_denylist(
 def test_main_require_terms_without_a_denylist_exits_with_configuration_error(
     tmp_path: Path, monkeypatch
 ) -> None:
-    monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.delenv(DEFAULT_TERMS_ENV_VAR, raising=False)
+    _no_account_denylist(tmp_path, monkeypatch)
 
     assert main(["--require-terms"]) == EXIT_MISCONFIGURED
 
