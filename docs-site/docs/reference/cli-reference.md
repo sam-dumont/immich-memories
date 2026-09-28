@@ -625,6 +625,8 @@ immich-memories report [OPTIONS]
 | `--json` | boolean | false | Print the redacted report as JSON |
 | `--bundle` | file | - | Write the full redacted report to a ZIP file |
 | `--include-flagged-captions` | boolean | false | Include captions and reasons of flagged free-text photos; review before sharing |
+| `--wrong` | text | - | Mark a photo of a free-text film as wrong (repeatable); kept on the run |
+| `--missing` | text | - | Say what a free-text film is missing; kept on the run and checked against it |
 
 **Arguments:**
 - `run_id` (text)

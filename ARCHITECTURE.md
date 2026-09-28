@@ -858,7 +858,12 @@ src/immich_memories/
 │   │                           # "not possible" -> no film
 │   ├── trace.py                # explain(): READING/WHO/WHEN/WHERE/WHAT/FACTS/POOL/VERDICT/FILM lines;
 │   │                           # save_with_run(): the run's diagnostics["free_text"] (report builder)
-│   │                           # and free-text-trace.private.txt in the attempt directory
+│   │                           # and free-text-trace.private.txt in the attempt directory; the report's
+│   │                           # vocabulary (name parts -> role, places, OCR words) and the marks basis
+│   │                           # (pool, OCR anchors, admitting step, words read). save_picks(): the
+│   │                           # clips generate_memory() was handed
+│   ├── marks.py                # marked(): `report --wrong/--missing` on a free-text run: each photo's
+│   │                           # admitting stage and pick; missing words read/offered/picked/in the pool
 │   ├── printed.py              # ImmichPrintedText: the PrintedText port on Immich's /search/metadata
 │   │                           # `ocr` filter (the store banks no OCR text)
 │   ├── subject.py              # subject_words(): the head noun per coordinated part of the what-spans

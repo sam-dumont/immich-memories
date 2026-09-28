@@ -13,7 +13,7 @@ from immich_memories.free_text.handoff import Film
 from immich_memories.free_text.library import LibraryPerson
 from immich_memories.free_text.linking import Reason
 from immich_memories.free_text.pool import Translation
-from immich_memories.free_text.reading import PARTS, Reading
+from immich_memories.free_text.reading import PARTS, Reading, words_of
 from immich_memories.free_text.translate import Ask
 from immich_memories.tracking import timing
 
@@ -92,6 +92,8 @@ def save_with_run(
         "film": film.route if film else None,
         "spec": _spec(translation, [name for name, _ in people_roles]),
         "funnel": {"in_scope": scoped[-1] if scoped else 0, "pool": len(pool.pictures)},
+        # What a picture marked wrong or a missing word is checked against; never reported.
+        "marks_basis": _marks_basis(ask),
         "privacy": {
             "people": _roles_by_name(linked),
             "areas": places,
@@ -104,6 +106,23 @@ def save_with_run(
     collected.private_terms.update(pool.printed)
     # An age or "since he was born" is dated from the birth date, which the trace then prints.
     collected.private_terms.update(str(person.birth_date) for person in linked if person.birth_date)
+
+
+def _marks_basis(ask: Ask) -> dict[str, object]:
+    reading, last = ask.translation.reading, ask.pool.funnel[-1]
+    return {
+        "pool": [picture.asset_id for picture in ask.pool.pictures],
+        "anchors": sorted(ask.pool.anchors),
+        "admitted": {"stage": last.name, "reason": last.reason.line()},
+        "read": sorted(
+            {
+                word
+                for part in PARTS
+                for phrase in getattr(reading, part)
+                for word in words_of(phrase)
+            }
+        ),
+    }
 
 
 def _spec(translation: Translation, names: Sequence[str]) -> dict[str, object]:

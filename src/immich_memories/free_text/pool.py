@@ -89,6 +89,8 @@ class Pool:
     occasion: Reason | None = None
     # The words searched for as printed in the photos (OCR): private, like a place name.
     printed: tuple[str, ...] = ()
+    # The pictures whose printed text reads those words: in the pool on that evidence alone.
+    anchors: frozenset[str] = frozenset()
 
 
 class _Funnel:
@@ -409,4 +411,5 @@ def _verdict(funnel: _Funnel) -> Pool:
         day=funnel.day,
         occasion=funnel.occasion,
         printed=funnel.printed,
+        anchors=frozenset(funnel.anchors),
     )

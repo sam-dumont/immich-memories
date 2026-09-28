@@ -6,13 +6,16 @@ must not carry.
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 import pytest
+from click.testing import CliRunner
 
 from immich_memories.config_loader import Config
+from immich_memories.config_models_editorial import EditorialConfig
 from immich_memories.db import open_store
 from immich_memories.free_text.handoff import film_for
 from immich_memories.free_text.lexicon import Lexicon
@@ -22,6 +25,7 @@ from immich_memories.free_text.translate import Ask, household_of, translate
 from immich_memories.operations.run_index import record_run_attempt
 from immich_memories.tracking.report_service import report_for_run
 from immich_memories.tracking.run_observations import observe_run
+from tests.annotation_rows import add_rows
 from tests.free_text.banked import QuestionAsker
 
 NAME, PLACE, PRINTED = "Quillamar", "Brackwater", "Thornfield"
@@ -159,3 +163,58 @@ def test_the_clips_handed_to_generation_are_the_picks_the_run_keeps(
         generate_memory(GenerationParams(clips=clips, output_path=tmp_path, config=Config()))
 
     assert collected.diagnostics["free_text"]["picks"] == ["ride-0", "ride-3"]
+
+
+def _stored_captions() -> None:
+    editorial = EditorialConfig()
+    rides = _library().pictures
+    add_rows(
+        open_store(),
+        "annotation_assets",
+        *(
+            {"asset_id": p.asset_id, "taken_at": p.taken_at.isoformat(), "media_kind": "photo"}
+            for p in rides
+        ),
+    )
+    add_rows(
+        open_store(),
+        "descriptions",
+        *(
+            {"asset_id": p.asset_id, "model": editorial.description_model, "text": p.caption}
+            for p in rides
+        ),
+    )
+
+
+def test_a_picture_marked_wrong_and_what_is_missing_are_kept_on_the_run_and_checked(
+    lexicon: Lexicon, tmp_path: Path
+) -> None:
+    from immich_memories.cli import main
+
+    _stored_captions()
+    run_id = _reported_run(lexicon, tmp_path, picks=("ride-0", "ride-3"))
+
+    marked = CliRunner().invoke(
+        main, ["report", run_id, "--wrong", "ride-3", "--missing", "the farm gate", "--json"]
+    )
+    again = CliRunner().invoke(main, ["report", run_id, "--json"])
+
+    assert marked.exit_code == 0, marked.output
+    section = json.loads(marked.stdout)["free_text"]
+    assert [(row["stage"], row["verdict"]) for row in section["flagged"]] == [
+        ("printed text", "picked by the engine")
+    ]
+    assert section["missing"] == "the farm gate"
+    assert section["missing_check"] == {
+        "offered": [],
+        "picked": [],
+        "in_pool": ["farm", "gate"],
+        "read": [],
+    }
+    assert "ride-3" not in marked.stdout
+    kept = json.loads(again.stdout)["free_text"]
+    assert (kept["missing"], kept["missing_check"]) == (
+        section["missing"],
+        section["missing_check"],
+    )
+    assert [row["stage"] for row in kept["flagged"]] == ["printed text"]
