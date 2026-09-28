@@ -89,7 +89,7 @@ def smol_yes(config, question, asset_id, preview):
 # caption can speak (owner 09-28: the free tier alone was 92-100% precise on the pet, the
 # landscapes and the birth, against the owner's labels).
 
-HEADS = ("doc_docling",)
+HEADS = ("doc_docling", "activity")
 MIN_PER_PERIOD = 12   # enough for the engine to choose from in a period; the pet's 300 s film used ~4 a year
 READ_PER_PERIOD = 96  # captions Gemma reads at most in one thin period (four calls)
 LOOK_PER_PERIOD = 24  # photos looked at at most in one thin period
@@ -164,3 +164,31 @@ def fill_pool(library, pool, core, not_this, shape, anchors, captionless, read, 
     stages = {"free": free, "caption_read": read_refs, "caption_yes": said_yes, "caption_unsure": unsure,
               "to_look": to_look}
     return sorted(kept, key=lambda i: library.rows[i]["taken_at"]), log, stats, stages
+
+
+def fewer_poses(library, kept, heads, shape, per=4):
+    """At most one posed photo per `per` others in each period, for a subject that is not a person:
+    the engine favours people and picked twice the pool's share of poses (41% of 21%, 09-28)."""
+    from collections import defaultdict
+
+    posing = lambda i: heads.get(library.rows[i]["asset_id"], {}).get("activity") == "posing"  # noqa: E731
+    periods = defaultdict(list)
+    for i in kept:
+        periods[period_of(library.rows[i], shape)].append(i)
+    out = []
+    for refs in periods.values():
+        posed = sorted((i for i in refs if posing(i)), key=lambda i: library.rows[i]["taken_at"])
+        others = [i for i in refs if not posing(i)]
+        room = max(1, len(others) // per)
+        out += others + posed[:: max(1, len(posed) // room)][:room]
+    return sorted(out, key=lambda i: library.rows[i]["taken_at"])
+
+
+def subject_head(caption):
+    """The last word of a caption's subject ("A small black kitten is..." -> "kitten")."""
+    text = (caption or "").lower()
+    end = SUBJECT_ENDS.search(text)
+    head = text[:end.start()] if end else text
+    verb = re.search(r"\b[a-z]+ing\b", head)
+    words = re.findall(r"[a-z]+", head[:verb.start()] if verb else head)
+    return words[-1] if words else None

@@ -153,6 +153,9 @@ them describe photos that belong in this film, given the film's shape? For a fil
 something changed over time, that includes the subject being worked on or changed, and its state
 before and after. Return JSON.'''
 
+SAME_AS = '''Which of these words name the main subject itself too: a young one of it, another name for
+it, or a kind of it? Only words that do; none when none does. Return JSON.'''
+
 LEAVE_OUT = '''Which of these phrases from the request name what the owner asks to leave out of the film?
 None when the request excludes nothing. Return JSON.'''
 
@@ -370,6 +373,22 @@ def build_subject(reader, key, brief, library, spec, rows):
         _schema(words={"type": "array", "items": {"type": "string", "enum": near_core or [""]}, "maxItems": 15}),
         300).get("words") or [] if w] if near_core else []
     shows = list(dict.fromkeys(shows + alongside))
+    # Other names for the subject itself (a kitten is the cat, 09-28): Gemma picks them; the core's
+    # stated qualities carry over ("black cat" + "kitten" -> "black kitten").
+    # Candidates: the other words, and what the filtered photos' captions put in the subject slot
+    # ("A black kitten is..."): a subject's other names sit where the subject sits.
+    from cascade import subject_head
+
+    slot = Counter(h for i in rows if (h := subject_head(library.rows[i].get("caption"))))
+    slot_words = [w for w, n in slot.most_common(40) if n >= 3 and w not in names]
+    others = list(dict.fromkeys(w for w in shows + slot_words if w not in core and w not in extent))[:50]
+    same = [w for w in _ask(reader, "spec_same_as", key, SAME_AS, {
+        "owner_request": brief, "main_subject": core, "words": others},
+        _schema(same={"type": "array", "items": {"type": "string", "enum": others or [""]}, "maxItems": 6})
+        ).get("same") or [] if w] if others else []
+    for c in list(core):
+        qualities = re.findall(r"[a-z]+", c.lower())[:-1]
+        extent += [p for w in same if (p := " ".join(qualities + [w])) not in core + extent]
     question = "Is the main subject of this photo " + " or ".join(core) + (
         " (or one of its parts or kinds: " + ", ".join(extent[:10]) + ")" if extent else "") + "?"
     core = core + extent

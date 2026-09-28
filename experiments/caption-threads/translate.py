@@ -31,7 +31,7 @@ from immich_memories.analysis.llm_wire import openai_headers
 from immich_memories.api.models import Asset, ExifInfo
 from immich_memories.config import Config
 from model_reader import Reader
-from cascade import AGREE, MIN_PER_PERIOD, SMOL_SAMPLE, banked_heads, fill_pool, smol_yes
+from cascade import AGREE, MIN_PER_PERIOD, SMOL_SAMPLE, banked_heads, fewer_poses, fill_pool, smol_yes
 from spec import AT_HOME_KM, at_home_rows, build_spec, build_subject, homes, show
 from query import companion_terms, retrieve_plan, vocabulary
 from workflow import choose_sources
@@ -784,6 +784,10 @@ def main():
             kept, looked, plan["fill"], filled = fill_pool(
                 library, pool, spec.get("core") or [], spec.get("not_this") or (), spec["shape"],
                 anchors & pool, uncaptioned & pool, read, None if stop else looker)
+            if not named:
+                before = len(kept)
+                kept = fewer_poses(library, kept, heads, spec["shape"])
+                plan["fill"]["poses_held_back"] = before - len(kept)
             stages |= filled
             decisions = [{"ref": i, "decision": "match"} for i in filled["caption_yes"]]
             unsure = sorted(filled["caption_unsure"])
