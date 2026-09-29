@@ -17,7 +17,14 @@ import subprocess
 import sys
 from dataclasses import dataclass
 
-_VERSION_TAG = re.compile(r"^v\d+\.\d+\.\d+$")
+_VERSION_TAG = re.compile(r"^v(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+))?$")
+
+# Anything that changes what ships. A final must not carry one of these unless a
+# candidate did; docs, tests, ci, chore and style do not reach the artifacts.
+_UNTESTED_CHANGE = re.compile(
+    r"^((feat|fix|perf|refactor|build|revert)(\(.+\))?!?:|[a-z]+(\(.+\))?!:|BREAKING[ -]CHANGE:)",
+    re.MULTILINE,
+)
 
 
 @dataclass(frozen=True)
@@ -29,6 +36,34 @@ class Decision:
     release_type: str = "none"
     resumed: bool = False
     previous_tag: str = ""
+    prerelease: bool = False
+    note: str = ""
+
+
+def _version_key(tag: str) -> tuple[int, int, int, int, int]:
+    match = _VERSION_TAG.match(tag)
+    if match is None:
+        raise ValueError(f"not a version tag: {tag}")
+    major, minor, patch, candidate = match.groups()
+    # A final sorts above every candidate of its version: (…, 1, 0) > (…, 0, n).
+    return (int(major), int(minor), int(patch), 0 if candidate else 1, int(candidate or 0))
+
+
+def sort_version_tags(tags: list[str]) -> list[str]:
+    """Version tags newest first, release candidates below their final.
+
+    Git's own version sort ranks v1.0.0-rc.1 above v1.0.0, which would make a
+    candidate look newer than the release it led to.
+    """
+    return sorted((tag for tag in tags if _VERSION_TAG.match(tag)), key=_version_key, reverse=True)
+
+
+def _is_candidate(tag: str) -> bool:
+    return "-rc." in tag
+
+
+def _core(tag: str) -> str:
+    return tag.removeprefix("v").split("-", 1)[0]
 
 
 def _bump(previous: str, release_type: str) -> str:
@@ -38,6 +73,15 @@ def _bump(previous: str, release_type: str) -> str:
     if release_type == "minor":
         return f"{major}.{minor + 1}.0"
     return f"{major}.{minor}.{patch + 1}"
+
+
+def _series_type(stable: str | None, core: str) -> str:
+    """The bump a candidate series makes over the last final, for approval gating."""
+    old = [int(part) for part in (_core(stable) if stable else "0.0.0").split(".")]
+    new = [int(part) for part in core.split(".")]
+    if new[0] != old[0]:
+        return "major"
+    return "minor" if new[1] != old[1] else "patch"
 
 
 def _type_from_branches(merged_branches: str) -> str:
@@ -72,19 +116,25 @@ def decide(
     merged_branches: str,
     commit_bodies: str,
     force_version: str | None = None,
+    channel: str = "stable",
+    commits_since_latest: str | None = None,
 ) -> Decision:
-    """Choose between a new version and resuming an interrupted one.
+    """Choose between a new version, a release candidate, and resuming one.
 
     Args:
-        tags: every version tag, newest first.
+        tags: every version tag, in any order.
         release_exists: callable answering whether a GitHub Release was created
             for a tag; the difference between a published version and a
             stranded one.
-        merged_branches: merge-commit subjects since the published baseline.
-        commit_bodies: full commit messages since the published baseline.
-        force_version: manual bump override for a fresh release.
+        merged_branches: merge-commit subjects since the last published final.
+        commit_bodies: full commit messages since the last published final.
+        force_version: manual bump override for a fresh release or a new series.
+        channel: "stable" for a final, "rc" for a release candidate. While a
+            candidate series is open, "stable" promotes it and "rc" continues it.
+        commits_since_latest: commit messages since the newest published tag,
+            candidate or final; defaults to commit_bodies.
     """
-    version_tags = [tag for tag in tags if _VERSION_TAG.match(tag)]
+    version_tags = sort_version_tags(tags)
     baseline = published_baseline(version_tags, release_exists)
 
     # An interrupted publication left a tag with no release behind it. Publish
@@ -99,19 +149,57 @@ def decide(
             release_type=release_type,
             resumed=True,
             previous_tag=baseline or "",
+            prerelease=_is_candidate(version_tags[0]),
         )
+
+    stable = published_baseline(
+        [tag for tag in version_tags if not _is_candidate(tag)], release_exists
+    )
+    since_latest = commit_bodies if commits_since_latest is None else commits_since_latest
+    if baseline and _is_candidate(baseline):
+        return _continue_series(baseline, stable, channel, since_latest)
 
     release_type = _release_type(baseline, merged_branches, commit_bodies)
     if force_version and force_version != "auto":
         release_type = force_version
     if release_type == "none":
         return Decision(should_release=False)
-    previous = baseline.removeprefix("v") if baseline else "0.0.0"
+    core = _bump(_core(stable) if stable else "0.0.0", release_type)
+    candidate = channel == "rc"
     return Decision(
         should_release=True,
-        next_version=_bump(previous, release_type),
+        next_version=f"{core}-rc.1" if candidate else core,
         release_type=release_type,
-        previous_tag=baseline or "",
+        previous_tag=stable or "",
+        prerelease=candidate,
+    )
+
+
+def _continue_series(open_candidate: str, stable: str | None, channel: str, since: str) -> Decision:
+    """Cut the next candidate of an open series, or promote the last one to final."""
+    core = _core(open_candidate)
+    release_type = _series_type(stable, core)
+    following = f"{core}-rc.{_version_key(open_candidate)[4] + 1}"
+    if channel == "rc":
+        if not since.strip():
+            return Decision(should_release=False, note=f"nothing new since {open_candidate}")
+        return Decision(
+            should_release=True,
+            next_version=following,
+            release_type=release_type,
+            previous_tag=open_candidate,
+            prerelease=True,
+        )
+    if _UNTESTED_CHANGE.search(since):
+        return Decision(
+            should_release=False,
+            note=f"changes since {open_candidate} were in no candidate; cut {following} first",
+        )
+    return Decision(
+        should_release=True,
+        next_version=core,
+        release_type=release_type,
+        previous_tag=stable or "",
     )
 
 
@@ -139,18 +227,25 @@ def _release_exists(tag: str, repo: str) -> bool:
     return result.returncode == 0
 
 
+def _since(tag: str | None) -> list[str]:
+    return [f"{tag}..HEAD"] if tag else []
+
+
 def format_outputs(decision: Decision) -> dict[str, str]:
     """The GITHUB_OUTPUT lines the workflow's steps read."""
     outputs = {"should_release": str(decision.should_release).lower()}
     if decision.should_release:
         outputs["next_version"] = decision.next_version
         outputs["release_type"] = decision.release_type
+        outputs["prerelease"] = str(decision.prerelease).lower()
+        outputs["previous_tag"] = decision.previous_tag
     return outputs
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--force-version", default=None)
+    parser.add_argument("--channel", choices=("stable", "rc"), default="stable")
     parser.add_argument("--inference-only", action="store_true")
     args = parser.parse_args()
 
@@ -169,30 +264,40 @@ def main() -> int:
     except (subprocess.CalledProcessError, OSError):
         # A fresh or remote-less checkout still has its local tags to reason about.
         pass
-    tags = [
-        tag for tag in _git("tag", "--list", "v*", "--sort=-version:refname").splitlines() if tag
-    ]
-    baseline = published_baseline(tags, lambda tag: _release_exists(tag, repo))
+    tags = sort_version_tags(_git("tag", "--list", "v*").splitlines())
 
-    # Type and evidence come from the commits since the published baseline; a
-    # stranded tag on HEAD must not shrink that range to nothing.
-    if baseline:
-        merged_branches = _git("log", f"{baseline}..HEAD", "--merges", "--pretty=format:%s")
-        commit_bodies = _git("log", f"{baseline}..HEAD", "--pretty=format:%B")
-    else:
-        merged_branches = _git("log", "--merges", "--pretty=format:%s")
-        commit_bodies = _git("log", "--pretty=format:%B")
+    def released(tag: str) -> bool:
+        return _release_exists(tag, repo)
+
+    # Type and evidence come from the commits since the published final; a
+    # stranded tag on HEAD must not shrink that range to nothing, and neither
+    # may a candidate, which has not shipped as a final yet.
+    stable = published_baseline([tag for tag in tags if not _is_candidate(tag)], released)
+    latest = published_baseline(tags, released)
+    merged_branches = _git("log", *_since(stable), "--merges", "--pretty=format:%s")
+    commit_bodies = _git("log", *_since(stable), "--pretty=format:%B")
+    commits_since_latest = _git("log", *_since(latest), "--pretty=format:%B")
 
     decision = decide(
         tags=tags,
-        release_exists=lambda tag: _release_exists(tag, repo),
+        release_exists=released,
         merged_branches=merged_branches,
         commit_bodies=commit_bodies,
         force_version=args.force_version,
+        channel=args.channel,
+        commits_since_latest=commits_since_latest,
     )
 
     if decision.resumed:
-        print(f"Resuming interrupted release: tag v{decision.next_version} has no GitHub Release")
+        # stderr: the workflow appends stdout to GITHUB_OUTPUT, which takes key=value lines only.
+        print(
+            f"Resuming interrupted release: tag v{decision.next_version} has no GitHub Release",
+            file=sys.stderr,
+        )
+    if decision.note:
+        # A deliberate dispatch that cannot do what it was asked should fail visibly.
+        print(f"::error::No release: {decision.note}", file=sys.stderr)
+        return 1
     outputs = format_outputs(decision)
     destination = os.environ.get("GITHUB_OUTPUT")
     if destination:
