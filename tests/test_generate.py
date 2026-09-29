@@ -853,15 +853,15 @@ class TestAutoMusicGeneration:
 
 class TestClipLocationName:
     def test_returns_city_and_country(self):
-        exif = type("Exif", (), {"city": "Paris", "country": "France"})()
+        exif = type("Exif", (), {"city": "Paris", "country": "France", "place_name": None})()
         assert clip_location_name(exif) == "Paris, France"
 
     def test_returns_country_if_no_city(self):
-        exif = type("Exif", (), {"city": None, "country": "US"})()
+        exif = type("Exif", (), {"city": None, "country": "US", "place_name": None})()
         assert clip_location_name(exif) == "US"
 
     def test_returns_none_if_no_location(self):
-        exif = type("Exif", (), {"city": None, "country": None})()
+        exif = type("Exif", (), {"city": None, "country": None, "place_name": None})()
         assert clip_location_name(exif) is None
 
     def test_returns_none_for_none_exif(self):

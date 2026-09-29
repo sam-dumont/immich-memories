@@ -66,6 +66,10 @@ class ExifInfo(BaseModel):
     city: str | None = None
     state: str | None = None
     country: str | None = None
+    # The place a viewer is shown, resolved once where a film's pictures arrive (#1591): the
+    # district OpenStreetMap names when geocoding is on and answered. `city` stays Immich's own,
+    # which is what Immich's search and the place rules match on. Read it through `shown_city`.
+    place_name: str | None = None
     date_time_original: datetime | None = Field(default=None, alias="dateTimeOriginal")
     lens_model: str | None = Field(default=None, alias="lensModel")
     file_size_in_byte: int | None = Field(default=None, alias="fileSizeInByte")

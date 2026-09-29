@@ -89,4 +89,5 @@ def _asset_labels(asset):
     yield asset.original_file_name
     yield from (person.name for person in asset.people)
     if asset.exif_info:
-        yield from (asset.exif_info.city, asset.exif_info.state, asset.exif_info.country)
+        exif = asset.exif_info
+        yield from (exif.city, exif.place_name, exif.state, exif.country)

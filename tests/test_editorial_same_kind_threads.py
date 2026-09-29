@@ -105,7 +105,7 @@ def _read(month, *, gps=True, family_days=()):
                     file_created_at=taken,
                     is_favorite=group == 0 and n < favourites,
                     is_video=False,
-                    exif_info=SimpleNamespace(city=f"town-{where[0]}"),
+                    exif_info=SimpleNamespace(city=f"town-{where[0]}", place_name=None),
                     people=[],
                 )
                 audience[asset_id] = SimpleNamespace(heads=[("activity", activity)])
@@ -234,7 +234,7 @@ def test_the_public_fixture_month_folds_nothing():
             file_created_at=taken,
             is_favorite=picture.is_favorite,
             is_video=picture.is_video,
-            exif_info=SimpleNamespace(city=picture.place.city),
+            exif_info=SimpleNamespace(city=picture.place.city, place_name=None),
             people=[],
         )
         audience[picture.asset_id] = SimpleNamespace(

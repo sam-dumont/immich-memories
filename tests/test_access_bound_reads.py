@@ -329,3 +329,41 @@ def test_an_owner_s_read_that_fails_mid_run_fails_the_attempt_naming_the_account
 
     # The primary, which holds it through partner sharing, is never asked instead.
     assert immich.reads_of("shared-video") == [("user-partner", False)]
+
+
+def test_the_attempt_names_its_pictures_once_and_the_snapshot_keeps_the_name(
+    tmp_path, immich, run, monkeypatch
+):
+    """A replay reads the district from the snapshot, not from a second question (#1591)."""
+    import tests.test_access_bound_reads as this
+
+    held = _asset("own-video", "user-primary")
+    held["exifInfo"] = {"latitude": 51.1682, "longitude": 4.3931, "city": "Hoboken"}
+    immich.hold(PRIMARY_KEY, held)
+    asked: list[tuple[float, float]] = []
+
+    def nominatim(_language, _url=""):
+        return lambda latitude, longitude: (
+            asked.append((latitude, longitude)) or {"suburb": "Wilrijk"}
+        )
+
+    # WHY: Nominatim is the outside host the run would ask.
+    monkeypatch.setattr("immich_memories.analysis.place_geocoder.nominatim_fetch", nominatim)
+    plain = this._config
+
+    def geocoding(path):
+        config = plain(path)
+        return config.model_copy(
+            update={"network": config.network.model_copy(update={"geocoding": True})}
+        )
+
+    monkeypatch.setattr(this, "_config", geocoding)
+    _client, source = run
+
+    pool = source(accounts=())
+
+    assert pool["own-video"].exif_info.place_name == "Wilrijk"
+    snapshot = json.loads((tmp_path / "attempt" / SNAPSHOT_NAME).read_text())
+    [kept] = [row["value"] for row in snapshot["sources"] if row["value"]["id"] == "own-video"]
+    assert kept["exif_info"]["place_name"] == "Wilrijk"
+    assert len(asked) == 1

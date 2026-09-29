@@ -8,6 +8,7 @@ from typing import Protocol
 
 from immich_memories.analysis.annotation_lines import StoredAnnotationLineReader
 from immich_memories.analysis.editorial_rule_quality import picture_facts, representative_key
+from immich_memories.analysis.place_names import shown_city
 from immich_memories.analysis.selection_source_groups import EditorialGroupProjection
 from immich_memories.analysis.text_episode_reader import (
     EpisodeEditorialEvidence,
@@ -88,9 +89,7 @@ class RuleEpisodeReader:
             representative = self._representative(group, lines)
             cities = tuple(
                 dict.fromkeys(
-                    c.source.exif_info.city
-                    for c in group.candidates
-                    if c.source.exif_info and c.source.exif_info.city
+                    city for c in group.candidates if (city := shown_city(c.source.exif_info))
                 )
             )
             account = f"{len(group.candidates)} captures on {group.candidates[0].taken_at:%Y-%m-%d}"
