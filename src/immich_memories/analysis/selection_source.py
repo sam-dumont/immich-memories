@@ -27,7 +27,7 @@ from immich_memories.analysis.editorial_contracts import (
     SourceEvidence,
     TraceDecision,
 )
-from immich_memories.analysis.exact_copies import FoldedPool, fold_exact_copies
+from immich_memories.analysis.exact_copies import CopyGroup, FoldedPool, fold_exact_copies
 from immich_memories.analysis.picture_copies import picture_copies, starred_keepers
 from immich_memories.analysis.selection_source_groups import (
     EditorialGroup,
@@ -165,6 +165,12 @@ class PreparedEditorialSource:
     episode_groups: tuple[EditorialGroup, ...]
     moment_groups: tuple[EditorialGroup, ...]
     owner_required_asset_ids: tuple[str, ...] = ()
+    # The exact copies folded into one kept picture (`exact_copies.py`).
+    copy_groups: tuple[CopyGroup, ...] = ()
+
+    def kept_ids(self, asset_ids: Sequence[str]) -> tuple[str, ...]:
+        """Each id as the copy kept for its picture: a household run asks for every copy."""
+        return FoldedPool((), self.copy_groups).kept_ids(asset_ids)
 
     @property
     def candidate_ids(self) -> tuple[str, ...]:
@@ -304,6 +310,7 @@ def prepare_editorial_source(
         episode_groups=grouped.episode_groups,
         moment_groups=grouped.moment_groups,
         owner_required_asset_ids=_required_in_pool(request, grouped.candidates, trace),
+        copy_groups=folded.groups,
     )
     _validate_prepared_source(prepared)
     return prepared

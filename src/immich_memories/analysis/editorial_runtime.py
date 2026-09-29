@@ -431,7 +431,7 @@ class RuntimeEditorialPlanner:
         preliminary = self._planner.prepare_source(
             trace=Trace(), include_previews=False, group=False
         )
-        reach = film_reach(preliminary.candidates, demanded)
+        reach = film_reach(preliminary.candidates, preliminary.kept_ids(demanded))
         logger.info(
             "preparing %d of %d pictures in the window", len(reach), len(preliminary.candidates)
         )

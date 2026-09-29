@@ -688,7 +688,7 @@ src/immich_memories/
 │   ├── generate.py             # `generate`
 │   ├── generate_options.py     # `generate`'s flags, grouped; group order is the --help order
 │   ├── generate_resolution.py  # What those flags mean against the config, presets and conflicts
-│   ├── run_people.py           # `--person`/`--people-expression` through the people store, then the roster
+│   ├── run_people.py           # `--accounts` and `--person`/`--people-expression` through the people store
 │   ├── config_cmd.py           # `config`, `years`, `preflight`
 │   ├── people_cmd.py           # `people` scan/show
 │   ├── models_cmd.py           # `models fetch`

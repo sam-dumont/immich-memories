@@ -1,6 +1,7 @@
-"""Which faces a `generate` run's people are (#1500).
+"""Whose libraries a `generate` run reads, and which faces its people are (#1500).
 
-`--person` and `--people-expression` resolve through the people store
+`--accounts` names the Immich accounts a film reads; without it the primary reads alone,
+as it always has. `--person` and `--people-expression` resolve through the people store
 first (`analysis/person_resolution.py`) and fall back to the Immich roster for anybody
 the store does not hold, so a run without a people store matches exactly as before.
 """
@@ -9,7 +10,8 @@ from __future__ import annotations
 
 import functools
 import sys
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Literal
@@ -25,14 +27,57 @@ from immich_memories.analysis.person_resolution import (
     resolve_people,
     store_people,
 )
+from immich_memories.api.accounts import AccountUnavailable, check_account_names
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.cli._helpers import print_error, print_success, print_warning
+from immich_memories.config_models import PRIMARY_ACCOUNT, ImmichConfig
 from immich_memories.people.companion import load_document
 
 if TYPE_CHECKING:
     from immich_memories.api.models import Person
+    from immich_memories.api.person_scope import WindowSource
     from immich_memories.api.sync_client import SyncImmichClient
     from immich_memories.db import Store
+
+
+def run_accounts(immich: ImmichConfig, names: Sequence[str]) -> tuple[str, ...]:
+    """The accounts `--accounts` chose, checked against the config before any request.
+
+    Empty, or the primary alone, is the one-account run every film has been: it reads
+    through the primary client and its snapshots carry no account tags.
+    """
+    try:
+        chosen = check_account_names(immich, names)
+    except AccountUnavailable as error:
+        raise click.BadParameter(str(error), param_hint="'--accounts'") from None
+    return () if chosen in ((), (PRIMARY_ACCOUNT,)) else chosen
+
+
+def refuse_household_scope(
+    accounts: Sequence[str], *, from_album: str | None, memory_type: str | None
+) -> None:
+    """Albums and trips read the primary account; naming more accounts there is an error."""
+    if accounts and (from_album or memory_type == "trip"):
+        raise click.UsageError("--accounts reads date-range memories, not albums or trips")
+
+
+def accounts_record(accounts: Sequence[str]) -> dict[str, list[str]]:
+    """The run's accounts for its preset parameters; a one-account run records none."""
+    return {"accounts": list(accounts)} if accounts else {}
+
+
+@contextmanager
+def run_windows(
+    immich: ImmichConfig, accounts: Sequence[str], primary: SyncImmichClient
+) -> Iterator[WindowSource]:
+    """The window reads discovery uses: the primary client, or every chosen account."""
+    if not accounts:
+        yield primary
+        return
+    from immich_memories.analysis.household_source import household_windows
+
+    with household_windows(immich, accounts) as household:
+        yield household
 
 
 @dataclass(frozen=True)

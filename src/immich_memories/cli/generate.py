@@ -52,7 +52,13 @@ from immich_memories.cli.generate_resolution import (
     resolve_short_form,
     resolve_special_day,
 )
-from immich_memories.cli.run_people import resolve_run_people
+from immich_memories.cli.run_people import (
+    accounts_record,
+    refuse_household_scope,
+    resolve_run_people,
+    run_accounts,
+    run_windows,
+)
 from immich_memories.filename_builder import build_memory_output_path, normalize_output_path
 from immich_memories.memory_types.date_builders import BIRTHDAY_HISTORY_FROM, birthday_anchor
 from immich_memories.planning.auto_duration import (
@@ -107,6 +113,7 @@ def register_generate_commands(main: click.Group) -> None:
         person: tuple[str, ...],
         person_match: str,
         person_expression: str | None,
+        accounts: tuple[str, ...],
         memory_type: str | None,
         holiday: str | None,
         season: str | None,
@@ -216,6 +223,8 @@ def register_generate_commands(main: click.Group) -> None:
             print_error("Immich not configured. Run 'immich-memories config' first.")
             sys.exit(1)
 
+        household = run_accounts(config.immich, accounts)
+
         if automation_attempt_id is not None and source != "auto":
             raise click.UsageError("--automation-attempt-id requires --source=auto")
 
@@ -254,6 +263,8 @@ def register_generate_commands(main: click.Group) -> None:
             birthday=birthday,
             from_album=from_album,
         )
+
+        refuse_household_scope(household, from_album=from_album, memory_type=memory_type)
 
         # Validate memory type constraints
         if memory_type in ("person_spotlight", "multi_person") and not person_names:
@@ -560,7 +571,7 @@ def register_generate_commands(main: click.Group) -> None:
                         expression=people_condition,
                         person_names=person_names,
                         person_match=person_match,
-                        accounts=(),
+                        accounts=household,
                     )
 
                     # Immich holds the birth date; the bare --birthday flag is
@@ -618,17 +629,18 @@ def register_generate_commands(main: click.Group) -> None:
                     # A birthday memory's flashback windows are single days years
                     # apart, so most of them are empty and #661's per-window
                     # warning would bury the one that matters — the rolling year.
-                    assets, fetched_photos = fetch_media(
-                        history_from=BIRTHDAY_HISTORY_FROM if birthday else None,
-                        client=client,
-                        progress=progress,
-                        date_ranges=date_ranges,
-                        person_ids=run_people.person_ids,
-                        person_match=person_match,
-                        person_expression=run_people.condition,
-                        include_photos=use_photos,
-                        face_accounts=run_people.face_accounts,
-                    )
+                    with run_windows(config.immich, household, client) as windows:
+                        assets, fetched_photos = fetch_media(
+                            history_from=BIRTHDAY_HISTORY_FROM if birthday else None,
+                            client=windows,
+                            progress=progress,
+                            date_ranges=date_ranges,
+                            person_ids=run_people.person_ids,
+                            person_match=person_match,
+                            person_expression=run_people.condition,
+                            include_photos=use_photos,
+                            face_accounts=run_people.face_accounts,
+                        )
                     if fetched_photos:
                         print_info(f"Found {len(fetched_photos)} photos")
 
@@ -689,6 +701,7 @@ def register_generate_commands(main: click.Group) -> None:
                             "person_names": person_names,
                             "person_match": person_match,
                             **window_record,
+                            **accounts_record(household),
                             **(
                                 {"person_expression": people_condition.to_dict()}
                                 if people_condition is not None
