@@ -645,7 +645,7 @@ nvidia-nvtx 13.0.85
   License: NVIDIA proprietary (CUDA Toolkit EULA); pulled only by torch on Linux through the demucs extra
   URL: https://docs.nvidia.com/cuda/eula/
 
-oauthlib 3.3.1
+oauthlib 4.0.0
   License: BSD-3-Clause
   URL: https://github.com/oauthlib/oauthlib
 
