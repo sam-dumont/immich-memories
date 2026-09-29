@@ -801,7 +801,7 @@ class TestAutoRunOutput:
         # WHY: external Immich server and its preflight check
         with (
             # WHY: external Immich server
-            patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
+            patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
             # WHY: external Immich server (preflight check)
             patch(
                 "immich_memories.preflight.check_immich",

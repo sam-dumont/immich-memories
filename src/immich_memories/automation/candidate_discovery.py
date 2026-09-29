@@ -6,16 +6,30 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from typing import Any, Protocol
 
+from immich_memories.analysis.person_resolution import store_people
+from immich_memories.api.accounts import AccountUnavailable, OpenAccount, open_accounts
 from immich_memories.automation.candidate_scorer import score_and_rank
-from immich_memories.automation.candidates import MemoryCandidate
+from immich_memories.automation.candidates import CandidateCategory, MemoryCandidate
 from immich_memories.automation.catalogue import entries_from, load_catalogue
 from immich_memories.automation.failure_backoff import drop_backed_off
+from immich_memories.automation.group_candidates import GroupCandidateDetector
+from immich_memories.automation.people_merge import (
+    canonical_person_map,
+    merge_counts,
+    merge_people,
+    overlay_birth_dates,
+    store_birth_dates,
+    sum_month_counts,
+)
 from immich_memories.automation.state_store import FailureStreak
 from immich_memories.automation.trip_input_cache import load_or_fetch_trip_assets
 from immich_memories.automation.variety import VarietyDecision, apply_variety_rules
 from immich_memories.config_loader import Config
+from immich_memories.config_models import PRIMARY_ACCOUNT
 from immich_memories.config_models_automation import AutomationConfig
 from immich_memories.db import open_store
+from immich_memories.people.companion import load_document
+from immich_memories.people.groups import SavedGroup, list_groups
 from immich_memories.timeperiod import DateRange, same_day_in_year
 from immich_memories.tracking.models import RunMetadata
 
@@ -53,9 +67,13 @@ class DiscoveryResult:
 
 @dataclass(frozen=True)
 class _LibrarySnapshot:
-    """One live Immich read shared by every detector in a discovery pass."""
+    """One live Immich read shared by every detector in a discovery pass.
 
-    buckets: list
+    Merged across every account discovery read (`automation.accounts`): the store's aliases
+    fold two accounts' rosters and counts into one person, the way a household run does.
+    """
+
+    assets_by_month: dict[str, int]
     people: list
     person_asset_counts: dict[str, int]
     gps_assets: list | None
@@ -133,6 +151,7 @@ def _run_all_detectors(
     person_asset_counts: dict[str, int],
     gps_assets: list | None,
     catalogue: list | None,
+    groups: list[SavedGroup],
 ) -> list[MemoryCandidate]:
     """Run all enabled detectors and collect candidates."""
     from immich_memories.automation.calendar_detectors import (
@@ -236,6 +255,19 @@ def _run_all_detectors(
         )
     )
 
+    if auto_cfg.detect_groups and groups:
+        all_candidates.extend(
+            GroupCandidateDetector().detect(
+                assets_by_month,
+                people,
+                generated_keys,
+                config,
+                today,
+                groups=groups,
+                person_asset_counts=person_asset_counts,
+            )
+        )
+
     return all_candidates
 
 
@@ -264,11 +296,13 @@ class CandidateDiscovery:
         last_runs = _build_last_runs_by_type(self._runs)
         today = date.today()
 
-        snapshot = self._library_snapshot(auto_cfg, today)
+        store = open_store(self._config)
+        snapshot = self._library_snapshot(auto_cfg, today, store)
+        groups = list_groups(store) if auto_cfg.detect_groups else []
 
         all_candidates = _run_all_detectors(
             auto_cfg,
-            _time_buckets_to_month_counts(snapshot.buckets),
+            snapshot.assets_by_month,
             snapshot.people,
             generated_keys,
             self._config,
@@ -277,7 +311,8 @@ class CandidateDiscovery:
             snapshot.gps_assets,
             # Read here rather than in _LibrarySnapshot: that exists to bundle
             # the live Immich reads into one session, and this is the store.
-            entries_from(load_catalogue(open_store(self._config))),
+            entries_from(load_catalogue(store)),
+            groups,
         )
 
         all_candidates, backoff_skips = drop_backed_off(
@@ -297,34 +332,75 @@ class CandidateDiscovery:
             today,
             last_runs,
         )
+        _attach_accounts(ranked, tuple(auto_cfg.accounts))
         return DiscoveryResult(
             candidates=ranked[:limit],
             variety_decision=variety_decision,
             backoff_skips=backoff_skips,
         )
 
-    def _library_snapshot(self, auto_cfg: AutomationConfig, today: date) -> _LibrarySnapshot:
-        """Collect every live read in one session; any transport fault ends discovery."""
-        from immich_memories.api.immich import SyncImmichClient
+    def _library_snapshot(
+        self, auto_cfg: AutomationConfig, today: date, store: Any
+    ) -> _LibrarySnapshot:
+        """Collect every selected account's read in one session (#1500 slice 10).
+
+        `automation.accounts` reads those accounts the way a household run does
+        (`analysis/household_source.py`): each is proven with `/users/me` first, and a
+        read that fails on any of them fails discovery, naming the account. Empty reads
+        the primary account alone, exactly as before this setting existed.
+        """
+        document = load_document(store)
+        canon = canonical_person_map(store_people(document))
+        accounts = tuple(auto_cfg.accounts) or (PRIMARY_ACCOUNT,)
 
         try:
-            with SyncImmichClient(
-                base_url=self._config.immich.url,
-                api_key=self._config.immich.api_key,
-                api_version=self._config.immich.api_version,
-            ) as client:
-                buckets = client.get_time_buckets()
-                people = client.get_all_people() if auto_cfg.detect_person_spotlight else []
-                person_asset_counts = (
-                    _person_asset_counts(client, people) if auto_cfg.detect_person_spotlight else {}
-                )
-                gps_assets = (
-                    self._trip_assets(client, buckets, today) if auto_cfg.detect_trips else None
-                )
-        except Exception as exc:
+            opened = open_accounts(self._config.immich, accounts)
+        except AccountUnavailable as exc:
             raise ImmichDiscoveryError(str(exc)) from exc
 
-        return _LibrarySnapshot(buckets, people, person_asset_counts, gps_assets)
+        try:
+            per_account_months, per_account_people, per_account_counts, gps_assets = (
+                self._read_every_account(opened, auto_cfg, today)
+            )
+        except Exception as exc:
+            # Broad on purpose, as this replaces: any transport fault ends discovery,
+            # whichever account it came from.
+            raise ImmichDiscoveryError(str(exc)) from exc
+        finally:
+            for account in opened.values():
+                account.client.close()
+
+        people = overlay_birth_dates(
+            merge_people(per_account_people, canon), store_birth_dates(document)
+        )
+        return _LibrarySnapshot(
+            sum_month_counts(per_account_months),
+            people,
+            merge_counts(per_account_counts, canon),
+            gps_assets,
+        )
+
+    def _read_every_account(
+        self, opened: dict[str, OpenAccount], auto_cfg: AutomationConfig, today: date
+    ) -> tuple[dict[str, dict[str, int]], dict[str, list], dict[str, dict[str, int]], list | None]:
+        """Every opened account's raw reads, kept separate so the caller can merge them."""
+        per_account_months: dict[str, dict[str, int]] = {}
+        per_account_people: dict[str, list] = {}
+        per_account_counts: dict[str, dict[str, int]] = {}
+        gps_assets: list | None = None
+        for name, account in opened.items():
+            client = account.client
+            buckets = client.get_time_buckets()
+            per_account_months[name] = _time_buckets_to_month_counts(buckets)
+            if auto_cfg.detect_person_spotlight:
+                account_people = client.get_all_people()
+                per_account_people[name] = account_people
+                per_account_counts[name] = _person_asset_counts(client, account_people)
+            # Trips stay primary-account only: --accounts refuses trip memories
+            # (cli/run_people.py::refuse_household_scope), so discovery never scopes one.
+            if auto_cfg.detect_trips and name == PRIMARY_ACCOUNT and gps_assets is None:
+                gps_assets = self._trip_assets(client, buckets, today)
+        return per_account_months, per_account_people, per_account_counts, gps_assets
 
     def _trip_assets(self, client: Any, buckets: list, today: date) -> list | None:
         """Trips are measured against a homebase; without one there is nothing to measure."""
@@ -345,3 +421,13 @@ def _person_asset_counts(client: Any, people: list) -> dict[str, int]:
     """Count assets for the top named people only — a spotlight cannot use the rest."""
     named = [p for p in people if p.name and p.thumbnail_path][:10]
     return {p.id: client.get_person_asset_count(p.id) for p in named}
+
+
+def _attach_accounts(candidates: list[MemoryCandidate], accounts: tuple[str, ...]) -> None:
+    """Every ranked candidate carries the run's account scope, so its generate call reads
+    the same accounts discovery did — except a trip, which reads the primary alone."""
+    if not accounts:
+        return
+    for candidate in candidates:
+        if candidate.category is not CandidateCategory.TRIP:
+            candidate.extra_params["accounts"] = list(accounts)
