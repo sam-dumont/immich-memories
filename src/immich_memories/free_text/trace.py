@@ -134,6 +134,8 @@ def save_with_run(
     collected.private_terms.update(name for name, _ in people_roles)
     collected.private_terms.update(places)
     collected.private_terms.update(pool.printed)
+    # Immich ids of everyone the request linked: a report hashes them wherever they appear.
+    collected.private_ids.update({*translation.who.anchors, *translation.who.present})
     # An age or "since he was born" is dated from the birth date, which the trace then prints.
     collected.private_terms.update(str(person.birth_date) for person in linked if person.birth_date)
 

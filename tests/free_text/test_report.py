@@ -168,6 +168,35 @@ def test_a_long_trace_is_pasted_whole_in_the_markdown(lexicon: Lexicon, tmp_path
     assert NAME.lower() not in markdown.lower()
 
 
+def test_no_person_or_asset_id_reaches_the_report_or_its_bundle(
+    lexicon: Lexicon, tmp_path: Path
+) -> None:
+    import io
+    import zipfile
+
+    asset_id = "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+    store = open_store()
+    asked = _asked(lexicon)
+    with observe_run(store, source="manual", capture_system=False) as tracker:
+        record_run_attempt(tracker.run_id, tmp_path, "", store=store)
+        # A line a later change might write with raw ids: the report still must not carry them.
+        trace = f"{explain(asked)}\nWHO      {RIDER.person_id}\nPOOL     picked {asset_id}"
+        save_with_run(asked, None, trace, people=_library().people)
+
+    report = report_for_run(store, Config(), tracker.run_id)
+
+    archive = zipfile.ZipFile(io.BytesIO(report.bundle()))
+    shipped = [
+        report.markdown(),
+        report.json(),
+        *map(bytes.decode, map(archive.read, archive.namelist())),
+    ]
+    assert "who:" in report.data["free_text"]["trace"]
+    for text in shipped:
+        assert RIDER.person_id not in text
+        assert asset_id not in text
+
+
 def test_a_block_the_translation_gains_later_is_redacted_like_the_rest(
     lexicon: Lexicon, tmp_path: Path
 ) -> None:
