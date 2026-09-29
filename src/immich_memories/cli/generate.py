@@ -132,6 +132,8 @@ def register_generate_commands(main: click.Group) -> None:
         album: str | None,
         from_album: str | None,
         subject: str | None,
+        ask: str | None,
+        ask_trace: Path | None,
         add_date: bool,
         add_place: bool,
         keep_intermediates: bool,
@@ -221,6 +223,15 @@ def register_generate_commands(main: click.Group) -> None:
             month=month,
             memory_type=memory_type,
             person_names=person_names,
+        )
+
+        from immich_memories.cli._ask_generation import RunScope, scope_of_ask
+
+        typed = RunScope(memory_type, day, event_id, from_album, subject, accept_any_provenance)
+        memory_type, day, event_id, from_album, subject, accept_any_provenance, curated = (
+            scope_of_ask(
+                ctx, config, ask, dry_run=dry_run, typed=typed, trace_file=ask_trace
+            ).fields()
         )
 
         # Read the memory from the date flags when it was not named. Without
@@ -483,6 +494,7 @@ def register_generate_commands(main: click.Group) -> None:
                             owner_excluded_asset_ids=exclude_asset,
                             no_render=no_render,
                             subject=subject,
+                            curated=curated,
                         )
                         return
 

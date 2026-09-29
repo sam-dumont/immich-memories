@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
@@ -19,6 +20,16 @@ if TYPE_CHECKING:
     from immich_memories.config_loader import Config
 
 
+@dataclass(frozen=True)
+class CuratedPool:
+    """Pictures chosen for a written subject (`generate --ask`), filmed like an album of them."""
+
+    name: str
+    # The film's identity where an album would put its Immich id.
+    ref: str
+    asset_ids: tuple[str, ...]
+
+
 def album_output_path(
     default_path: Path, album_name: str, container: str, *, explicit: bool = False
 ) -> Path:
@@ -28,40 +39,6 @@ def album_output_path(
     slug = safe_slug(album_name)
     stem = f"album_{slug}" if slug else "album"
     return default_path.parent / f"{stem}.{container}"
-
-
-@timed("discovery")
-def _discover_album(
-    client: SyncImmichClient,
-    progress: ProgressDisplay,
-    album_ref: str,
-    config: Config,
-    *,
-    use_live_photos: bool,
-    use_photos: bool,
-) -> tuple[AlbumRef, AlbumMedia]:
-    import click
-
-    from immich_memories.analysis.album_source import fetch_album_media
-    from immich_memories.api.album_service import AlbumNotFoundError, AmbiguousAlbumError
-
-    task = progress.add_task(f"Resolving album: {album_ref}...", total=None)
-    try:
-        resolved = client.resolve_album(album_ref)
-    except (AlbumNotFoundError, AmbiguousAlbumError) as exc:
-        progress.update(task, completed=True)
-        progress.stop()
-        raise click.ClickException(str(exc)) from exc
-    progress.update(task, completed=True)
-    print_success(f"Album: {resolved.name} ({resolved.asset_count} assets)")
-    media = fetch_album_media(
-        client,
-        resolved,
-        config=config,
-        use_live_photos=use_live_photos,
-        use_photos=use_photos,
-    )
-    return resolved, media
 
 
 def handle_album_generation(
@@ -104,25 +81,32 @@ def handle_album_generation(
     owner_excluded_asset_ids: tuple[str, ...] = (),
     subject: str | None = None,
     explicit_output: bool = False,
+    curated: CuratedPool | None = None,
 ) -> None:
     """Generate one memory from the assets of a single Immich album.
 
     With a written `subject`, the album is a pool curated for it: its pictures stand on that
-    subject (owner ruling 2026-09-28).
+    subject (owner ruling 2026-09-28). A `curated` pool is read by asset id in place of an
+    Immich album.
     """
     from immich_memories.cli._pipeline_runner import run_pipeline_and_generate
     from immich_memories.cli._trip_generation import resolve_music_arg
     from immich_memories.memory_types.registry import MemoryType
     from immich_memories.processing.encoding_plan import resolve_output_selection
 
-    resolved, media = _discover_album(
-        client,
-        progress,
-        album_ref,
-        config,
-        use_live_photos=use_live_photos,
-        use_photos=use_photos,
-    )
+    if curated is None:
+        resolved, media = _read_album(
+            client,
+            album_ref,
+            progress,
+            config,
+            use_live_photos=use_live_photos,
+            use_photos=use_photos,
+        )
+    else:
+        resolved, media = _read_pool(
+            client, curated, config, use_live_photos=use_live_photos, use_photos=use_photos
+        )
     if media.truncated:
         print_info(
             f"Album exceeds {config.analysis.max_album_assets} assets per type, "
@@ -199,3 +183,53 @@ def handle_album_generation(
     print_success(f"Album video: {result_path}")
     if should_upload:
         print_success(f"Uploaded to Immich (album: {album_name or 'none'})")
+
+
+@timed("discovery")
+def _read_album(
+    client: SyncImmichClient,
+    album_ref: str,
+    progress: ProgressDisplay,
+    config: Config,
+    *,
+    use_live_photos: bool,
+    use_photos: bool,
+) -> tuple[AlbumRef, AlbumMedia]:
+    import click
+
+    from immich_memories.analysis.album_source import fetch_album_media
+    from immich_memories.api.album_service import AlbumNotFoundError, AmbiguousAlbumError
+
+    task = progress.add_task(f"Resolving album: {album_ref}...", total=None)
+    try:
+        resolved = client.resolve_album(album_ref)
+    except (AlbumNotFoundError, AmbiguousAlbumError) as exc:
+        progress.update(task, completed=True)
+        progress.stop()
+        raise click.ClickException(str(exc)) from exc
+    progress.update(task, completed=True)
+    print_success(f"Album: {resolved.name} ({resolved.asset_count} assets)")
+    media = fetch_album_media(
+        client, resolved, config=config, use_live_photos=use_live_photos, use_photos=use_photos
+    )
+    return resolved, media
+
+
+@timed("discovery")
+def _read_pool(
+    client: SyncImmichClient,
+    pool: CuratedPool,
+    config: Config,
+    *,
+    use_live_photos: bool,
+    use_photos: bool,
+) -> tuple[AlbumRef, AlbumMedia]:
+    from immich_memories.analysis.album_source import split_album_assets
+    from immich_memories.api.album_service import AlbumRef
+
+    assets = [client.get_asset(asset_id) for asset_id in pool.asset_ids]
+    print_success(f"Pool: {len(assets)} pictures")
+    media = split_album_assets(
+        assets, config=config, use_live_photos=use_live_photos, use_photos=use_photos
+    )
+    return AlbumRef(id=pool.ref, name=pool.name, asset_count=len(assets)), media

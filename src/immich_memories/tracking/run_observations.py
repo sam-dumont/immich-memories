@@ -154,6 +154,9 @@ def _export_timings(store: Store, run_id: str, collected: timing.Collector) -> N
                 [span.to_dict() for span in sorted(collected.spans, key=lambda item: item.span_id)]
             ),
         )
+        # Files a stage asked to keep beside the run's outputs (the free-text trace).
+        for name, text in collected.diagnostics.get("attempt_files", {}).items():
+            write_secret_file(attempt / name, text)
     except OSError:
         logging.getLogger(__name__).warning("Could not mirror timings into the attempt directory")
 

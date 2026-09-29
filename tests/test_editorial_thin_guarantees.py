@@ -274,7 +274,8 @@ def test_a_shot_the_vote_removed_is_not_refilled_from_its_own_moment(tmp_path):
 
 def test_a_refill_that_repeats_a_scene_the_cut_holds_is_refused_and_chosen_again(tmp_path):
     """April 2021 (09-25): two refills repeated a scene the cut already held, and the final
-    duplicate review took them out later with nothing in their place."""
+    duplicate review took them out later with nothing in their place. On one day, a repeat is
+    the same moment (owner, 09-29): the refill here is the beach again minutes later."""
     from datetime import timedelta
 
     import numpy as np
@@ -285,7 +286,7 @@ def test_a_refill_that_repeats_a_scene_the_cut_holds_is_refused_and_chosen_again
     film.tiers["S001"] = "maybe"
     film.draft.append(film.shot("d1", "S001", START, "a beach at noon"))
     film.draft.append(film.shot("d2", "S001", START + timedelta(days=1), JUNK))
-    film.shot("again", "S001", START + timedelta(hours=5), "the same beach")
+    film.shot("again", "S001", START + timedelta(minutes=4), "the same beach")
     film.shot("fresh", "S001", START + timedelta(hours=9), "people in the garden")
     beach, garden = np.array([1.0, 0.0]), np.array([0.0, 1.0])
     prints = {"d1": beach, "again": beach, "fresh": garden, "d2": garden}

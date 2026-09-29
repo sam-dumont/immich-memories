@@ -7,6 +7,7 @@
   import { locale, N_, t } from '$lib/i18n.svelte';
   import { followJob } from '$lib/job.svelte';
   import JobPanel from '$lib/JobPanel.svelte';
+  import AskPanel from '$lib/AskPanel.svelte';
   import { updatedAgo } from '$lib/ago';
   import { memoryTypeLabel } from '$lib/labels';
 
@@ -236,13 +237,22 @@
     return () => stop?.();
   });
 
+  // Starts the cut and follows it; what went wrong otherwise, for the form that asked.
+  async function startCut(body: CutBrief): Promise<string> {
+    const { status, body: answer } = await post<JobView>('/cuts', body);
+    if (status === 202) follow(answer);
+    else if (status === 409 && answer.job) follow(answer.job);
+    else return answer.detail ?? t('The cut could not start.');
+    return '';
+  }
+
   async function cut() {
     problem = '';
-    const { status, body } = await post<JobView>('/cuts', brief);
-    if (status === 202) follow(body);
-    else if (status === 409 && body.job) follow(body.job);
-    else problem = body.detail ?? t('The cut could not start.');
+    problem = await startCut(brief);
   }
+
+  // A sentence is a brief of its own: `generate --ask` is the whole scope.
+  const cutSentence = (sentence: string) => startCut({ ask: sentence } as CutBrief);
 
   async function cancel() {
     if (job) job = (await post<JobView>(`/jobs/${encodeURIComponent(job.id)}/cancel`, {})).body;
@@ -263,6 +273,7 @@
   {#if job && job.status === 'running'}
     <JobPanel {job} onCancel={cancel} />
   {:else}
+    <AskPanel onFilm={cutSentence} />
     <form class="flex flex-col gap-6" onsubmit={(event) => { event.preventDefault(); void cut(); }}>
       <fieldset class="flex flex-col gap-3">
         <legend class="mb-2 text-sm font-semibold">{t('Memory type')}</legend>

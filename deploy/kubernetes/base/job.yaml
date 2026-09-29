@@ -74,6 +74,7 @@ spec:
               test -s /models/triage/dinov2-small.onnx
               && test -s /models/detectors/nsfw-marqo-384.onnx
               && test -d /models/huggingface
+              && test -s /models/wordnet/wordnet.zip
               || immich-memories models fetch
           env:
             - name: IMMICH_MEMORIES_TRIAGE__ENCODER
@@ -82,6 +83,8 @@ spec:
               value: /models/detectors/nsfw-marqo-384.onnx
             - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR
               value: /models/huggingface
+            - name: IMMICH_MEMORIES_FREE_TEXT__WORDNET
+              value: /models/wordnet/wordnet.zip
           resources:
             requests:
               memory: "512Mi"
@@ -137,6 +140,8 @@ spec:
               value: /models/detectors/nsfw-marqo-384.onnx
             - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR
               value: /models/huggingface
+            - name: IMMICH_MEMORIES_FREE_TEXT__WORDNET
+              value: /models/wordnet/wordnet.zip
 
           resources:
             requests:

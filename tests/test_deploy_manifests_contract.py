@@ -36,11 +36,13 @@ CAPTION_GGUF_SHA256 = (
     "921dc7e259f308e5b027111fa185efcbf33db13f6e35749ddf7f5cdb60ef520b",
 )
 # Every path-valued setting a pinned artifact lands on: the encoder, the
-# sensitive-content export and the Hugging Face cache the detectors read.
+# sensitive-content export, the Hugging Face cache the detectors read and the
+# WordNet corpus free-text requests are read with.
 MODEL_PATH_ENV = (
     "IMMICH_MEMORIES_TRIAGE__ENCODER",
     "IMMICH_MEMORIES_EDITORIAL__PREPARATION__MARQO_ONNX",
     "IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR",
+    "IMMICH_MEMORIES_FREE_TEXT__WORDNET",
 )
 
 
