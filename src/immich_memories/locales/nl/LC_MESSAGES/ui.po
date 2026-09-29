@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-29 07:25+0200\n"
+"POT-Creation-Date: 2026-09-29 10:32+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -48,7 +48,7 @@ msgstr "Toevoegen"
 msgid "Add a relationship"
 msgstr "Een relatie toevoegen"
 
-#: web/lib/RenderPanel.svelte:189
+#: web/lib/RenderPanel.svelte:191
 msgid "Add date overlay"
 msgstr "Datum in beeld"
 
@@ -78,7 +78,7 @@ msgstr "Na een periode"
 msgid "Album"
 msgstr "Album"
 
-#: web/lib/RenderPanel.svelte:231
+#: web/lib/RenderPanel.svelte:233
 msgid "Album name"
 msgstr "Albumnaam"
 
@@ -111,21 +111,21 @@ msgstr "Iedereen"
 msgid "Anyone. Only pictures nothing held back: no detector flag, no private moment."
 msgstr "Iedereen. Alleen beelden zonder beperkingen: geen detectiemelding, geen privémoment."
 
-#: web/lib/RenderPanel.svelte:144 web/lib/RenderPanel.svelte:167 web/lib/RenderPanel.svelte:173
-#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:231
+#: web/lib/RenderPanel.svelte:146 web/lib/RenderPanel.svelte:169 web/lib/RenderPanel.svelte:175
+#: web/lib/RenderPanel.svelte:181 web/lib/RenderPanel.svelte:187 web/lib/RenderPanel.svelte:233
 #: web/routes/create/+page.svelte:435
 msgid "As configured"
 msgstr "Zoals geconfigureerd"
 
-#: web/lib/RenderPanel.svelte:153
+#: web/lib/RenderPanel.svelte:155
 msgid "As generate decides"
 msgstr "Zoals het genereren bepaalt"
 
-#: web/lib/RenderPanel.svelte:161 web/lib/labels.ts:23
+#: web/lib/RenderPanel.svelte:163 web/lib/labels.ts:23
 msgid "Automatic"
 msgstr "Automatisch"
 
-#: web/lib/RenderPanel.svelte:202
+#: web/lib/RenderPanel.svelte:204
 msgid "Automatic (as configured)"
 msgstr "Automatisch (zoals geconfigureerd)"
 
@@ -161,7 +161,7 @@ msgstr "Verjaardag (MM-DD; geboortedatum van Immich als dit leeg is)"
 msgid "Birthday to birthday, with earlier birthdays"
 msgstr "Van verjaardag tot verjaardag, met eerdere verjaardagen"
 
-#: web/lib/RenderPanel.svelte:185
+#: web/lib/RenderPanel.svelte:187
 msgid "Blurred background"
 msgstr "Wazige achtergrond"
 
@@ -181,7 +181,7 @@ msgstr "Annuleren"
 msgid "Candidate key"
 msgstr "Kandidaatsleutel"
 
-#: web/lib/RenderPanel.svelte:190
+#: web/lib/RenderPanel.svelte:192
 msgid "Caption clips with their place"
 msgstr "Plaatsnaam bij clips tonen"
 
@@ -269,7 +269,7 @@ msgstr "Als CLI-opdracht kopiëren"
 msgid "Copy report"
 msgstr "Rapport kopiëren"
 
-#: web/lib/RenderPanel.svelte:145
+#: web/lib/RenderPanel.svelte:147
 msgid "Crossfade"
 msgstr "Overvloeien"
 
@@ -281,7 +281,7 @@ msgstr "Ordenen"
 msgid "Custom date range"
 msgstr "Aangepaste periode"
 
-#: web/lib/RenderPanel.svelte:145 web/routes/create/+page.svelte:451
+#: web/lib/RenderPanel.svelte:147 web/routes/create/+page.svelte:451
 msgid "Cut"
 msgstr "Monteren"
 
@@ -296,6 +296,10 @@ msgstr "Dag"
 #: web/routes/create/+page.svelte:325
 msgid "Day (MM-DD)"
 msgstr "Dag (MM-DD)"
+
+#: web/lib/AskPanel.svelte:177
+msgid "Decided while cutting"
+msgstr "Beslist tijdens het monteren"
 
 #: web/lib/SettingsEditor.svelte:41
 msgid "Default"
@@ -422,11 +426,11 @@ msgstr "Een naam zoeken"
 msgid "Finding faces"
 msgstr "Gezichten worden gezocht"
 
-#: web/lib/RenderPanel.svelte:185
+#: web/lib/RenderPanel.svelte:187
 msgid "Fit with bars"
 msgstr "Passend met balken"
 
-#: web/lib/RenderPanel.svelte:171
+#: web/lib/RenderPanel.svelte:173
 msgid "Format"
 msgstr "Formaat"
 
@@ -455,7 +459,7 @@ msgstr "Beperkt: {reasons}."
 msgid "Hemisphere"
 msgstr "Halfrond"
 
-#: web/lib/RenderPanel.svelte:179
+#: web/lib/RenderPanel.svelte:181
 msgid "High"
 msgstr "Hoog"
 
@@ -471,7 +475,7 @@ msgstr "Hoe je woorden gelezen zijn"
 msgid "How the rules got here"
 msgstr "Hoe de regels hier kwamen"
 
-#: web/lib/AskPanel.svelte:146
+#: web/lib/AskPanel.svelte:193
 msgid "How the sentence was read"
 msgstr "Hoe de zin gelezen is"
 
@@ -538,7 +542,7 @@ msgstr "Behouden bij {stage}"
 msgid "Kept because"
 msgstr "Behouden omdat"
 
-#: web/lib/RenderPanel.svelte:161
+#: web/lib/RenderPanel.svelte:163
 msgid "Landscape"
 msgstr "Liggend"
 
@@ -558,7 +562,7 @@ msgstr "Live"
 msgid "Looking through your library for memories to suggest..."
 msgstr "Bibliotheek wordt doorzocht naar herinneringen om voor te stellen..."
 
-#: web/lib/RenderPanel.svelte:180
+#: web/lib/RenderPanel.svelte:182
 msgid "Low"
 msgstr "Laag"
 
@@ -584,7 +588,7 @@ msgstr ""
 "Handmatige en automatische uitvoeringen, inclusief fouten. Open een uitvoering voor de "
 "montage en doorlooptijden."
 
-#: web/lib/RenderPanel.svelte:167
+#: web/lib/RenderPanel.svelte:169
 msgid "Match the sources"
 msgstr "Zoals de bronnen"
 
@@ -596,7 +600,7 @@ msgstr "Beweging in de video's wordt gemeten"
 msgid "Measuring the pictures"
 msgstr "Beelden worden gemeten"
 
-#: web/lib/RenderPanel.svelte:180
+#: web/lib/RenderPanel.svelte:182
 msgid "Medium"
 msgstr "Gemiddeld"
 
@@ -628,11 +632,11 @@ msgstr "Hoogtepunten van de maand"
 msgid "Multi-Person"
 msgstr "Meerdere personen"
 
-#: web/lib/RenderPanel.svelte:200
+#: web/lib/RenderPanel.svelte:202
 msgid "Music"
 msgstr "Muziek"
 
-#: web/lib/RenderPanel.svelte:223
+#: web/lib/RenderPanel.svelte:225
 msgid "Music volume:"
 msgstr "Muziekvolume:"
 
@@ -668,7 +672,7 @@ msgstr ""
 msgid "No model read this cut: the rules chose every picture."
 msgstr "Geen model heeft deze montage gelezen: de regels kozen elk beeld."
 
-#: web/lib/RenderPanel.svelte:203
+#: web/lib/RenderPanel.svelte:205
 msgid "No music"
 msgstr "Geen muziek"
 
@@ -691,6 +695,10 @@ msgstr "Geen beelden komen overeen met dit filter."
 #: web/lib/ShotInspector.svelte:84
 msgid "No reason recorded for this picture."
 msgstr "Geen reden vastgelegd voor dit beeld."
+
+#: web/lib/AskPanel.svelte:174
+msgid "No rule the preview can check would drop a picture."
+msgstr "Geen regel die de preview kan controleren zou een foto weglaten."
 
 #: web/routes/runs/+page.svelte:121
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
@@ -720,13 +728,17 @@ msgstr "Niemand over wie deze herinnering gaat, is hier herkend; wel elders, in 
 msgid "Nobody yet. Rescan the library to read who is in it."
 msgstr "Nog niemand. Scan de bibliotheek opnieuw om te zien wie erin voorkomt."
 
-#: web/lib/RenderPanel.svelte:145
+#: web/lib/RenderPanel.svelte:147
 msgid "None"
 msgstr "Geen"
 
 #: web/routes/create/+page.svelte:300
 msgid "North"
 msgstr "Noord"
+
+#: web/lib/AskPanel.svelte:177
+msgid "Not applied to a film you asked for"
+msgstr "Niet toegepast op een film die je zelf vroeg"
 
 #: web/lib/AskPanel.svelte:29
 msgid "Not possible"
@@ -760,7 +772,7 @@ msgstr "Openen"
 msgid "Open run"
 msgstr "Uitvoering openen"
 
-#: web/lib/RenderPanel.svelte:131
+#: web/lib/RenderPanel.svelte:133
 msgid "Open the film run"
 msgstr "Filmuitvoering openen"
 
@@ -768,7 +780,7 @@ msgstr "Filmuitvoering openen"
 msgid "Order and timecodes from the saved cut."
 msgstr "Volgorde en tijdcodes van de opgeslagen montage."
 
-#: web/lib/RenderPanel.svelte:159
+#: web/lib/RenderPanel.svelte:161
 msgid "Orientation"
 msgstr "Oriëntatie"
 
@@ -818,7 +830,7 @@ msgstr "Beeld beoordelen"
 msgid "Pictures just read"
 msgstr "Net gelezen beelden"
 
-#: web/lib/AskPanel.svelte:153
+#: web/lib/AskPanel.svelte:201
 msgid "Pictures left after each step"
 msgstr "Beelden over na elke stap"
 
@@ -841,7 +853,7 @@ msgstr "Vul zowel de URL als de API-sleutel in"
 msgid "Pool"
 msgstr "Beschikbare media"
 
-#: web/lib/RenderPanel.svelte:162
+#: web/lib/RenderPanel.svelte:164
 msgid "Portrait"
 msgstr "Staand"
 
@@ -853,7 +865,7 @@ msgstr "Mogelijk"
 msgid "Preview"
 msgstr "Voorbeeld"
 
-#: web/lib/RenderPanel.svelte:210
+#: web/lib/RenderPanel.svelte:212
 msgid "Preview a track"
 msgstr "Een nummer beluisteren"
 
@@ -861,7 +873,7 @@ msgstr "Een nummer beluisteren"
 msgid "Preview with these choices"
 msgstr "Voorbeeld met deze selectie"
 
-#: web/lib/RenderPanel.svelte:196
+#: web/lib/RenderPanel.svelte:198
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Privémodus: alle beelden vervagen en namen verhullen"
 
@@ -873,7 +885,7 @@ msgstr "Voortgang"
 msgid "Put it back"
 msgstr "Terugzetten"
 
-#: web/lib/RenderPanel.svelte:177
+#: web/lib/RenderPanel.svelte:179
 msgid "Quality"
 msgstr "Kwaliteit"
 
@@ -925,7 +937,7 @@ msgstr "Deze relatie verwijderen"
 msgid "Removed"
 msgstr "Verwijderd"
 
-#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:234
+#: web/lib/RenderPanel.svelte:126 web/lib/RenderPanel.svelte:127 web/lib/RenderPanel.svelte:236
 msgid "Render"
 msgstr "Renderen"
 
@@ -941,7 +953,7 @@ msgstr "Voorbeeld van het rapport"
 msgid "Rescan the library"
 msgstr "Bibliotheek opnieuw scannen"
 
-#: web/lib/RenderPanel.svelte:165
+#: web/lib/RenderPanel.svelte:167
 msgid "Resolution"
 msgstr "Resolutie"
 
@@ -949,7 +961,7 @@ msgstr "Resolutie"
 msgid "Review the report, then copy it. Nothing is sent automatically."
 msgstr "Bekijk het rapport en kopieer het daarna. Er wordt niets automatisch verstuurd."
 
-#: web/lib/RenderPanel.svelte:139 web/routes/runs/[run_id]/+page.svelte:298
+#: web/lib/RenderPanel.svelte:141 web/routes/runs/[run_id]/+page.svelte:298
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "Revisie {number}"
@@ -1023,7 +1035,7 @@ msgstr "Opgeslagen in de database"
 msgid "Saved to: {output_path}"
 msgstr "Opgeslagen in: {output_path}"
 
-#: web/lib/RenderPanel.svelte:183
+#: web/lib/RenderPanel.svelte:185
 msgid "Scaling Mode"
 msgstr "Schaalmodus"
 
@@ -1092,9 +1104,13 @@ msgstr "Afmelden"
 msgid "Small moment"
 msgstr "Klein moment"
 
-#: web/lib/RenderPanel.svelte:144
+#: web/lib/RenderPanel.svelte:146
 msgid "Smart (fades and cuts)"
 msgstr "Slim (overvloeiingen en sneden)"
+
+#: web/lib/AskPanel.svelte:165
+msgid "Some of its pictures"
+msgstr "Enkele van de foto's"
 
 #: web/routes/create/+page.svelte:300
 msgid "South"
@@ -1108,7 +1124,7 @@ msgstr "Bijzondere dag"
 msgid "Spring"
 msgstr "Lente"
 
-#: web/lib/RenderPanel.svelte:162
+#: web/lib/RenderPanel.svelte:164
 msgid "Square"
 msgstr "Vierkant"
 
@@ -1136,7 +1152,7 @@ msgstr "Gestopt."
 msgid "Stories"
 msgstr "Verhalen"
 
-#: web/lib/RenderPanel.svelte:149
+#: web/lib/RenderPanel.svelte:151
 msgid "Subtitle"
 msgstr "Ondertitel"
 
@@ -1169,7 +1185,7 @@ msgstr "Verwijderen"
 msgid "Test Connection"
 msgstr "Verbinding testen"
 
-#: web/lib/RenderPanel.svelte:110
+#: web/lib/RenderPanel.svelte:112
 msgid "That file is not an MP3, M4A or WAV"
 msgstr "Dat bestand is geen MP3, M4A of WAV"
 
@@ -1181,7 +1197,7 @@ msgstr "Dat bestand is te groot voor een soundtrack"
 msgid "The connection could not be checked."
 msgstr "De verbinding kon niet worden gecontroleerd."
 
-#: web/lib/RenderPanel.svelte:138
+#: web/lib/RenderPanel.svelte:140
 msgid "The cut as chosen"
 msgstr "De gekozen montage"
 
@@ -1193,7 +1209,7 @@ msgstr "De montage kon niet worden gestart."
 msgid "The cut is ready."
 msgstr "De montage is klaar."
 
-#: web/lib/RenderPanel.svelte:155
+#: web/lib/RenderPanel.svelte:157
 msgid "The dates and places, never a model"
 msgstr "De data en plaatsen, nooit een model"
 
@@ -1230,7 +1246,7 @@ msgstr ""
 "Het model leest je woorden tegen je voorbereide bibliotheek. Eerst het voorbeeld: dat toont "
 "wat elk deel van de zin werd en hoeveel beelden passen, en filmt niets."
 
-#: web/lib/RenderPanel.svelte:154
+#: web/lib/RenderPanel.svelte:156
 msgid "The model, when one is configured"
 msgstr "Het model, als er een is ingesteld"
 
@@ -1247,7 +1263,7 @@ msgstr ""
 msgid "The picture it replaced"
 msgstr "Het beeld dat het verving"
 
-#: web/lib/RenderPanel.svelte:193
+#: web/lib/RenderPanel.svelte:195
 msgid ""
 "The place is Immich's. With geocoding on (Settings, network), it names the district in the "
 "film's language, through the public Nominatim or network.geocoding_url."
@@ -1263,7 +1279,7 @@ msgstr "De selectie"
 msgid "The preview could not start."
 msgstr "Het voorbeeld kon niet starten."
 
-#: web/lib/RenderPanel.svelte:204
+#: web/lib/RenderPanel.svelte:206
 msgid "The previewed track"
 msgstr "Het beluisterde nummer"
 
@@ -1271,7 +1287,7 @@ msgstr "Het beluisterde nummer"
 msgid "The previous automatic memory used this category."
 msgstr "De vorige automatische herinnering gebruikte deze categorie."
 
-#: web/lib/RenderPanel.svelte:89
+#: web/lib/RenderPanel.svelte:91
 msgid "The render could not start."
 msgstr "Het renderen kon niet worden gestart."
 
@@ -1327,7 +1343,7 @@ msgstr ""
 msgid "Thumbnail cache"
 msgstr "Miniaturencache"
 
-#: web/lib/RenderPanel.svelte:148
+#: web/lib/RenderPanel.svelte:150
 msgid "Title (decided as generate decides when empty)"
 msgstr "Titel (bepaald zoals `generate` dat doet als dit leeg is)"
 
@@ -1343,7 +1359,7 @@ msgstr "Nam de plaats in van een beeld dat een controle weigerde."
 msgid "Took the seat of a picture the model removed from this story."
 msgstr "Nam de plaats in van een beeld dat het model uit dit verhaal haalde."
 
-#: web/lib/RenderPanel.svelte:142
+#: web/lib/RenderPanel.svelte:144
 msgid "Transition Style"
 msgstr "Overgangsstijl"
 
@@ -1376,11 +1392,11 @@ msgstr "Ongedaan maken"
 msgid "Updated {when}"
 msgstr "Bijgewerkt {when}"
 
-#: web/lib/RenderPanel.svelte:213
+#: web/lib/RenderPanel.svelte:215
 msgid "Upload a track"
 msgstr "Een nummer uploaden"
 
-#: web/lib/RenderPanel.svelte:230
+#: web/lib/RenderPanel.svelte:232
 msgid "Upload the film to Immich"
 msgstr "De film naar Immich uploaden"
 
@@ -1432,11 +1448,15 @@ msgstr ""
 "Wat de automatisering hierna zou maken, dezelfde lijst die `auto suggest` toont. Voer er een "
 "uit zoals `auto run` zou doen, of controleer het eerst zonder te renderen."
 
+#: web/lib/AskPanel.svelte:149
+msgid "What the editor's rules would drop"
+msgstr "Wat de regels van de montage zouden weglaten"
+
 #: web/lib/AskPanel.svelte:21
 msgid "What the library measures"
 msgstr "Wat de bibliotheek meet"
 
-#: web/lib/RenderPanel.svelte:136
+#: web/lib/RenderPanel.svelte:138
 msgid "What to render"
 msgstr "Wat er gerenderd wordt"
 
@@ -1460,7 +1480,7 @@ msgstr "Wie wie is, hun rollen en relaties."
 msgid "Who may see it"
 msgstr "Wie het mag zien"
 
-#: web/lib/RenderPanel.svelte:151
+#: web/lib/RenderPanel.svelte:153
 msgid "Who names the film"
 msgstr "Wie de film een naam geeft"
 
@@ -1562,6 +1582,20 @@ msgstr "{days} dagen · {count} beelden"
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done} van {total}"
+
+#: web/lib/AskPanel.svelte:154
+#, python-brace-format
+msgid "{passed} of {checked} pictures pass the rules checked before cutting."
+msgstr "{passed} van {checked} foto's komen door de regels die vóór de montage worden gecontroleerd."
+
+#: web/lib/AskPanel.svelte:152
+#, python-brace-format
+msgid ""
+"{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are "
+"not prepared yet."
+msgstr ""
+"{passed} van {checked} voorbereide foto's komen door de regels die vóór de montage worden "
+"gecontroleerd; {unread} zijn nog niet voorbereid."
 
 #: web/lib/AskPanel.svelte:134
 #, python-brace-format

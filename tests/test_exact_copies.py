@@ -291,3 +291,18 @@ def test_an_owner_choice_on_either_copy_holds_for_the_picture() -> None:
     assert prepared.candidate_ids == ("b-copy",)
     assert prepared.owner_required_asset_ids == ("b-copy",)
     assert prepared.excluded_ids == ("b-gone",)
+
+
+def test_the_kept_copy_is_opened_through_the_account_that_holds_it() -> None:
+    bytes_ = _sha1("garden.jpg")
+    primary_copy = _photo("p-copy", owner="owner-p", checksum=bytes_).model_copy(
+        update={"access_accounts": ("primary",)}
+    )
+    partner_copy = _photo("w-copy", owner="owner-w", checksum=bytes_, favourite=True).model_copy(
+        update={"access_accounts": ("partner",)}
+    )
+
+    folded = fold_exact_copies((primary_copy, partner_copy), primary_owner_id="owner-p")
+
+    assert _ids(folded.pool) == ["w-copy"]
+    assert folded.pool[0].access_accounts == ("partner",)

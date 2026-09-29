@@ -136,7 +136,7 @@ def test_status_json_reports_durable_attempt_rotation_and_scheduler(tmp_path: Pa
         result = _invoke(config, ["auto", "status", "--json"])
 
     assert result.exit_code == 0
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     assert set(payload) == {
         "last_attempt",
         "last_completed_auto_run",
@@ -204,7 +204,7 @@ def test_status_reports_pending_queue_when_all_artifacts_are_missing(tmp_path: P
         human_result = _invoke(config, ["auto", "status"])
 
     assert json_result.exit_code == 0
-    payload = json.loads(json_result.output)
+    payload = json.loads(json_result.stdout)
     assert payload["pending_delivery_count"] == 1
     assert payload["oldest_pending_delivery"] is None
     assert human_result.exit_code == 0
@@ -286,7 +286,7 @@ def test_status_refreshes_and_reports_current_rejection_reasons(tmp_path: Path) 
         result = _invoke(config, ["auto", "status", "--json"])
 
     assert result.exit_code == 0
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     assert payload["suggestion"] == {"outcome": "ready", "error": None}
     assert payload["rejection_reasons"] == ["same_category_as_previous"]
     suggest.assert_called_once()
@@ -319,7 +319,7 @@ def test_status_names_the_code_that_would_run_and_flags_it_when_stale(tmp_path: 
         human_result = _invoke(config, ["auto", "status"])
 
     assert json_result.exit_code == 0
-    assert json.loads(json_result.output)["runtime"] == {
+    assert json.loads(json_result.stdout)["runtime"] == {
         "version": "1.2.3",
         "checkout": "/home/me/.immich-memories/runtime",
         "commit": "ea892ad",

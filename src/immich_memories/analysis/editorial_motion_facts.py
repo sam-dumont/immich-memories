@@ -330,17 +330,14 @@ def production_motion_resolver(source, *, on_playback=None):
     )
 
     def resolve(carriers):
-        from immich_memories.api.sync_client import SyncImmichClient
+        from immich_memories.api.access_clients import reads_for
 
         client = None
 
         def fetch(video_id):
             nonlocal client
             if client is None:
-                config = source.config.immich
-                client = SyncImmichClient(
-                    base_url=config.url, api_key=config.api_key, api_version=config.api_version
-                )
+                client = reads_for(source.config.immich, source.assets.values())
             return client.get_video_playback(video_id)
 
         try:

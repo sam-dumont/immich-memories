@@ -67,7 +67,7 @@
         "type": "object"
       },
       "AskPreview": {
-        "description": "`generate --ask --dry-run`'s translation: the trace by part, the pool and the verdict.",
+        "description": "`generate --ask --dry-run`'s translation: the trace by part, the pool, the rule preview\nand the verdict.",
         "properties": {
           "blocks": {
             "items": {
@@ -85,6 +85,16 @@
           "request": {
             "title": "Request",
             "type": "string"
+          },
+          "rules": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AskRules"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "verdict": {
             "title": "Verdict",
@@ -119,6 +129,54 @@
           "sentence"
         ],
         "title": "AskRequest",
+        "type": "object"
+      },
+      "AskRules": {
+        "description": "What the editor's rules would drop from the pool, asked before render.",
+        "properties": {
+          "at_cut": {
+            "items": {
+              "$ref": "#/components/schemas/RuleNoteView"
+            },
+            "title": "At Cut",
+            "type": "array"
+          },
+          "checked": {
+            "title": "Checked",
+            "type": "integer"
+          },
+          "drops": {
+            "items": {
+              "$ref": "#/components/schemas/RuleDropView"
+            },
+            "title": "Drops",
+            "type": "array"
+          },
+          "lifted": {
+            "items": {
+              "$ref": "#/components/schemas/RuleNoteView"
+            },
+            "title": "Lifted",
+            "type": "array"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "unread": {
+            "title": "Unread",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "checked",
+          "passed",
+          "unread",
+          "drops",
+          "at_cut",
+          "lifted"
+        ],
+        "title": "AskRules",
         "type": "object"
       },
       "AskedFilm": {
@@ -230,6 +288,23 @@
           "bytes"
         ],
         "title": "CacheStats",
+        "type": "object"
+      },
+      "CaptionDefaults": {
+        "description": "`defaults.add_date` and `defaults.add_place`: what the render panel starts ticked.",
+        "properties": {
+          "add_date": {
+            "default": true,
+            "title": "Add Date",
+            "type": "boolean"
+          },
+          "add_place": {
+            "default": true,
+            "title": "Add Place",
+            "type": "boolean"
+          }
+        },
+        "title": "CaptionDefaults",
         "type": "object"
       },
       "Choice": {
@@ -1518,14 +1593,26 @@
         "description": "`runs render`'s flags; None keeps the CLI's own default.",
         "properties": {
           "add_date": {
-            "default": false,
-            "title": "Add Date",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add Date"
           },
           "add_place": {
-            "default": false,
-            "title": "Add Place",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add Place"
           },
           "album": {
             "anyOf": [
@@ -2024,6 +2111,55 @@
         "title": "RosterPerson",
         "type": "object"
       },
+      "RuleDropView": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "examples": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Examples",
+            "type": "array"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule",
+          "why",
+          "count",
+          "examples"
+        ],
+        "title": "RuleDropView",
+        "type": "object"
+      },
+      "RuleNoteView": {
+        "properties": {
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule",
+          "why"
+        ],
+        "title": "RuleNoteView",
+        "type": "object"
+      },
       "RunDetail": {
         "properties": {
           "child_output": {
@@ -2367,6 +2503,13 @@
               }
             ],
             "title": "Button Text"
+          },
+          "captions": {
+            "$ref": "#/components/schemas/CaptionDefaults",
+            "default": {
+              "add_date": true,
+              "add_place": true
+            }
           },
           "demo_mode_offered": {
             "default": false,

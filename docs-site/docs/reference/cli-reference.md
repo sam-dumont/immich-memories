@@ -273,7 +273,7 @@ immich-memories generate [OPTIONS]
 | `--from-album` | text | - | Generate from an Immich album (name or ID) instead of a date range |
 | `--subject` | text | - | With --from-album: what the album was curated for, in your words. Every picture then stands on that subject, a loaf in a bread album included, and every year the album holds gets a shot. Needs a model reader |
 | `--ask` | text | - | Highly experimental: the film in a sentence, e.g. "our cat along the years". Read by the configured model reader against your prepared library; the translation is printed first. Needs tier: full |
-| `--ask-trace` | file | - | With --ask: keep the translation (the trace, the pool counts, the verdict) in this JSON file, for a watcher such as the web client |
+| `--ask-trace` | file | - | With --ask: keep the translation (the trace, the pool counts, the rule preview, the verdict) in this JSON file, for a watcher such as the web client |
 | `--person`, `-p` | text | - | Person name (repeatable) |
 | `--people-expression` | text | - | Grouped people condition, e.g. ("Person A" OR "Person B") AND "Person C". Use exact library names; read per episode: a person recognised once in an episode counts in all of its pictures. |
 | `--person-match` | choice: `and` \| `or` | and | With several --person values, require everyone recognised somewhere in the same episode (and) or accept any named person (or) |
@@ -302,8 +302,8 @@ immich-memories generate [OPTIONS]
 | `--sharing` | choice: `just-us` \| `family` \| `shareable` | - | Who the film is for: just-us (the household), family (default: defaults.sharing) or shareable (anyone) |
 | `--upload-to-immich` | boolean | false | Upload generated video back to Immich |
 | `--album` | text | - | Immich album name for uploaded video |
-| `--add-date` | boolean | false | Caption each clip with its date |
-| `--add-place` | boolean | false | Caption each clip with its place |
+| `--add-date` | boolean | - | Caption each clip with its date (default: defaults.add_date, on) |
+| `--add-place` | boolean | - | Caption each clip with its place (default: defaults.add_place, on) |
 | `--keep-intermediates` | boolean | false | Keep intermediate files for debugging |
 | `--privacy-mode` | boolean | false | Demo mode: blur every clip frame, scramble the audio, fake the person names |
 | `--title` | text | - | Override video title text |
@@ -727,8 +727,8 @@ immich-memories runs render [OPTIONS]
 | `--music` | text | - | A track to use, or 'auto' to choose as configured |
 | `--no-music` | boolean | false |  |
 | `--music-volume` | float | 0.5 |  |
-| `--add-date` | boolean | false | Date overlay on each clip |
-| `--add-place` | boolean | false | Place overlay on each clip |
+| `--add-date` | boolean | - | Caption each clip with its date (default: defaults.add_date, on) |
+| `--add-place` | boolean | - | Caption each clip with its place (default: defaults.add_place, on) |
 | `--privacy-mode` | boolean | false |  |
 | `--upload-to-immich` | boolean | false |  |
 | `--album` | text | - | Immich album for the upload |

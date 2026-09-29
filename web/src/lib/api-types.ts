@@ -1018,7 +1018,8 @@ export interface components {
         };
         /**
          * AskPreview
-         * @description `generate --ask --dry-run`'s translation: the trace by part, the pool and the verdict.
+         * @description `generate --ask --dry-run`'s translation: the trace by part, the pool, the rule preview
+         *     and the verdict.
          */
         AskPreview: {
             /** Blocks */
@@ -1027,6 +1028,7 @@ export interface components {
             pool: components["schemas"]["PoolCounts"];
             /** Request */
             request: string;
+            rules?: components["schemas"]["AskRules"] | null;
             /** Verdict */
             verdict: string;
             /** Why */
@@ -1036,6 +1038,24 @@ export interface components {
         AskRequest: {
             /** Sentence */
             sentence: string;
+        };
+        /**
+         * AskRules
+         * @description What the editor's rules would drop from the pool, asked before render.
+         */
+        AskRules: {
+            /** At Cut */
+            at_cut: components["schemas"]["RuleNoteView"][];
+            /** Checked */
+            checked: number;
+            /** Drops */
+            drops: components["schemas"]["RuleDropView"][];
+            /** Lifted */
+            lifted: components["schemas"]["RuleNoteView"][];
+            /** Passed */
+            passed: number;
+            /** Unread */
+            unread: number;
         };
         /** AskedFilm */
         AskedFilm: {
@@ -1075,6 +1095,22 @@ export interface components {
              * @enum {string}
              */
             name: "video" | "thumbnail";
+        };
+        /**
+         * CaptionDefaults
+         * @description `defaults.add_date` and `defaults.add_place`: what the render panel starts ticked.
+         */
+        CaptionDefaults: {
+            /**
+             * Add Date
+             * @default true
+             */
+            add_date: boolean;
+            /**
+             * Add Place
+             * @default true
+             */
+            add_place: boolean;
         };
         /** Choice */
         Choice: {
@@ -1513,16 +1549,10 @@ export interface components {
          * @description `runs render`'s flags; None keeps the CLI's own default.
          */
         RenderOptions: {
-            /**
-             * Add Date
-             * @default false
-             */
-            add_date: boolean;
-            /**
-             * Add Place
-             * @default false
-             */
-            add_place: boolean;
+            /** Add Date */
+            add_date?: boolean | null;
+            /** Add Place */
+            add_place?: boolean | null;
             /** Album */
             album?: string | null;
             /** Format */
@@ -1706,6 +1736,24 @@ export interface components {
             /** Tier */
             tier: string;
         };
+        /** RuleDropView */
+        RuleDropView: {
+            /** Count */
+            count: number;
+            /** Examples */
+            examples: string[];
+            /** Rule */
+            rule: string;
+            /** Why */
+            why: string;
+        };
+        /** RuleNoteView */
+        RuleNoteView: {
+            /** Rule */
+            rule: string;
+            /** Why */
+            why: string;
+        };
         /** RunDetail */
         RunDetail: {
             /** Child Output */
@@ -1805,6 +1853,13 @@ export interface components {
             auto_launch: boolean;
             /** Button Text */
             button_text: string | null;
+            /**
+             * @default {
+             *       "add_date": true,
+             *       "add_place": true
+             *     }
+             */
+            captions: components["schemas"]["CaptionDefaults"];
             /**
              * Demo Mode Offered
              * @default false

@@ -17,7 +17,7 @@ makes the film is the same editor as every other memory
 ([From library to film](../how-it-chooses/overview.md)).
 
 ```bash
-immich-memories generate --ask "at the park with kids" --dry-run   # the translation and the pool counts
+immich-memories generate --ask "at the park with kids" --dry-run   # the translation, the pool and its rules
 immich-memories generate --ask "at the park with kids"             # then the film
 ```
 
@@ -126,7 +126,53 @@ that barely moves means the filter did nothing.
 A computed selection ("the first picture of each person") is never called thin, however short.
 The run does not pad a request it cannot show with something else.
 
-With `--dry-run` the command stops after the trace and the pool counts. Translating one sentence
+## Which rules would drop pictures
+
+The pool is what your words mean. The editor then refuses some pool pictures on rules that protect
+every film: a screenshot, a second file of a picture it already has, a picture held for review. A
+dry run asks those rules about the pool before anything renders, and prints them as `RULES` right
+after `POOL`:
+
+```
+RULES    451 of 457 pictures pass the rules checked before cutting
+         another file of the same picture: 3 (the full-size file of the same picture plays instead) id-6c1f0e2a9b4d7e31, id-...
+         screens and documents: 1 (a screenshot, a screen or a document is never a source) id-...
+         held for review: 2 (a detector or you marked it never_auto; only your clearance lifts it) id-...
+         decided while cutting: who sees it (...); look-alikes (...); capture spacing (...)
+         not applied to a film you asked for: provenance (...); standing (...)
+```
+
+These are the run's own checks, called on the same banked facts, so the preview and the film
+agree. It reads the pool's pictures from Immich first, like the film run does: one search call
+per 1,000 pictures between the pool's first and last date, never one call per picture. Each picture
+counts once, under the first rule that drops it. The ids are hashed the way
+[`report`](./cli/report.md) hashes them: the terminal never prints a real one.
+
+What it checks, in the run's order:
+
+| Rule | Drops |
+|---|---|
+| hidden in Immich, a film this app made, long video | archived, locked or deleted pictures, uploaded memories, recordings over the source cap |
+| another file of the same picture | the smaller copy (a shared album's downscale, a chat's re-send) |
+| screens and documents | screenshots, screens, documents, by the document head, the screen head, the caption or a phone's screen size |
+| held for review | a `never_auto` flag on the picture or its Live Photo clip, until you clear it |
+| close-up of a face part, medical care, sheet of identical portraits | pictures that need an explanation |
+| video frames miss the subject | a video whose sampled frames mostly miss the subject, unless starred |
+
+Three rules depend on the shots around a picture or on a model reading, so they are only known
+while cutting and are named without a count: **who sees it** (the reader checks each chosen shot's
+caption for your sharing level; a detector hold keeps a picture out of shareable films),
+**look-alikes** (a shot repeating one already in the cut) and **capture spacing** (two shots of
+one moment within five minutes). Two rules do not apply to a film you asked for, and the block
+says so: **provenance** (forwarded and saved pictures stay) and **standing** (a pool picture stands
+on your subject whatever its score).
+
+A picture `prepare` has not read yet has nothing for the rules to read, so it is not counted as
+passing: the first line then reads "17 of 18 prepared pictures pass ...; 12 not prepared yet". The
+run reads those pictures before applying the rules. There is no switch to turn a rule
+off. Held pictures come back one at a time, when you clear them on the pool page.
+
+With `--dry-run` the command stops after the trace and the rule preview. Translating one sentence
 took 7 to 46 seconds on a Mac with a local Gemma E4B; the model's answers are banked in the store,
 so asking the same question twice does not ask the model twice.
 
@@ -186,7 +232,7 @@ with the whole log. Same report, same redaction. A film made from the web UI is 
 rendered as a run of its own: the report of either run carries your sentence.
 
 The report carries the sentence, the trace, the translation as data (the same JSON `--ask-trace`
-writes), the funnel, the editor's picks and the run's logs. Before anything is copied:
+writes), the funnel, the rule preview, the editor's picks and the run's logs. Before anything is copied:
 
 - IDs become hashes that only match inside that one report;
 - the names of people the sentence linked become their roles ("the owner's son"), and a birth

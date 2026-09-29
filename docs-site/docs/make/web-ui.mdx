@@ -112,6 +112,9 @@ Type what you want to see ("our cat along the years"), then press **Preview**. T
 - the verdict: **Possible**, **Thin** (fewer than 12 pictures fit, so a short film) or **Not
   possible** (no film, and the line under it says which filter emptied the pool)
 - the pool: how many pictures, photos and videos fit
+- what the editor's rules would drop: each rule with its count and up to 3 thumbnails, then the
+  rules only decided while cutting and the ones a film you asked for does not apply
+  ([Which rules would drop pictures](./free-text.md#which-rules-would-drop-pictures))
 - the trace, one part at a time: how it read your words, who, when, where, what, what the library
   measures, the pool step by step, and the verdict
 
@@ -237,8 +240,9 @@ selected again: the film plays exactly the reviewed cut. Every option defaults t
 - **Resolution**, **Format** (H.264 or H.265 MP4, ProRes MOV), **Quality**, **Orientation** (Automatic
   follows most of the kept clips; Portrait with a short length is a vertical short) and **Scaling
   Mode** (a blurred backdrop or bars; clips are never cropped).
-- **Transition Style**, **Add date overlay** and **Caption clips with their place** (both on; untick
-  to leave them out), and **Privacy mode**, which blurs every picture and scrambles names for a public
+- **Transition Style**, **Add date overlay** and **Caption clips with their place** (ticked as
+  `defaults.add_date` and `defaults.add_place` say, both on out of the box, the same rule `generate`
+  and automation follow; untick to leave one out of this film), and **Privacy mode**, which blurs every picture and scrambles names for a public
   demo. A place caption is Immich's place name. With `network.geocoding` on (Settings, **Network**),
   it names the district rather than a neighbouring town, in the film's language, through the public
   Nominatim or your own (`network.geocoding_url`). See [Titles, maps and music](./titles-maps-music.md).

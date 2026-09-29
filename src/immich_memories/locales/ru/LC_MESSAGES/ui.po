@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-29 07:25+0200\n"
+"POT-Creation-Date: 2026-09-29 10:32+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -49,7 +49,7 @@ msgstr "Добавить"
 msgid "Add a relationship"
 msgstr "Добавить связь"
 
-#: web/lib/RenderPanel.svelte:189
+#: web/lib/RenderPanel.svelte:191
 msgid "Add date overlay"
 msgstr "Показывать дату"
 
@@ -79,7 +79,7 @@ msgstr "После периода"
 msgid "Album"
 msgstr "Альбом"
 
-#: web/lib/RenderPanel.svelte:231
+#: web/lib/RenderPanel.svelte:233
 msgid "Album name"
 msgstr "Название альбома"
 
@@ -112,21 +112,21 @@ msgstr "Все"
 msgid "Anyone. Only pictures nothing held back: no detector flag, no private moment."
 msgstr "Все. Только изображения без ограничений: без сигнала детектора и без личных моментов."
 
-#: web/lib/RenderPanel.svelte:144 web/lib/RenderPanel.svelte:167 web/lib/RenderPanel.svelte:173
-#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:231
+#: web/lib/RenderPanel.svelte:146 web/lib/RenderPanel.svelte:169 web/lib/RenderPanel.svelte:175
+#: web/lib/RenderPanel.svelte:181 web/lib/RenderPanel.svelte:187 web/lib/RenderPanel.svelte:233
 #: web/routes/create/+page.svelte:435
 msgid "As configured"
 msgstr "Как настроено"
 
-#: web/lib/RenderPanel.svelte:153
+#: web/lib/RenderPanel.svelte:155
 msgid "As generate decides"
 msgstr "Как решит генерация"
 
-#: web/lib/RenderPanel.svelte:161 web/lib/labels.ts:23
+#: web/lib/RenderPanel.svelte:163 web/lib/labels.ts:23
 msgid "Automatic"
 msgstr "Автоматический"
 
-#: web/lib/RenderPanel.svelte:202
+#: web/lib/RenderPanel.svelte:204
 msgid "Automatic (as configured)"
 msgstr "Автоматически (как настроено)"
 
@@ -162,7 +162,7 @@ msgstr "День рождения (MM-DD; дата рождения из Immich,
 msgid "Birthday to birthday, with earlier birthdays"
 msgstr "От дня рождения к дню рождения, включая прошлые"
 
-#: web/lib/RenderPanel.svelte:185
+#: web/lib/RenderPanel.svelte:187
 msgid "Blurred background"
 msgstr "Размытый фон"
 
@@ -182,7 +182,7 @@ msgstr "Отмена"
 msgid "Candidate key"
 msgstr "Ключ кандидата"
 
-#: web/lib/RenderPanel.svelte:190
+#: web/lib/RenderPanel.svelte:192
 msgid "Caption clips with their place"
 msgstr "Показывать место на клипах"
 
@@ -270,7 +270,7 @@ msgstr "Копировать как команду CLI"
 msgid "Copy report"
 msgstr "Скопировать отчёт"
 
-#: web/lib/RenderPanel.svelte:145
+#: web/lib/RenderPanel.svelte:147
 msgid "Crossfade"
 msgstr "Наплыв"
 
@@ -282,7 +282,7 @@ msgstr "Упорядочивание"
 msgid "Custom date range"
 msgstr "Свой период"
 
-#: web/lib/RenderPanel.svelte:145 web/routes/create/+page.svelte:451
+#: web/lib/RenderPanel.svelte:147 web/routes/create/+page.svelte:451
 msgid "Cut"
 msgstr "Смонтировать"
 
@@ -297,6 +297,10 @@ msgstr "День"
 #: web/routes/create/+page.svelte:325
 msgid "Day (MM-DD)"
 msgstr "День (MM-DD)"
+
+#: web/lib/AskPanel.svelte:177
+msgid "Decided while cutting"
+msgstr "Решается во время монтажа"
 
 #: web/lib/SettingsEditor.svelte:41
 msgid "Default"
@@ -423,11 +427,11 @@ msgstr "Найти имя"
 msgid "Finding faces"
 msgstr "Поиск лиц"
 
-#: web/lib/RenderPanel.svelte:185
+#: web/lib/RenderPanel.svelte:187
 msgid "Fit with bars"
 msgstr "Вписать с полосами"
 
-#: web/lib/RenderPanel.svelte:171
+#: web/lib/RenderPanel.svelte:173
 msgid "Format"
 msgstr "Формат"
 
@@ -456,7 +460,7 @@ msgstr "Ограничено: {reasons}."
 msgid "Hemisphere"
 msgstr "Полушарие"
 
-#: web/lib/RenderPanel.svelte:179
+#: web/lib/RenderPanel.svelte:181
 msgid "High"
 msgstr "Высокое"
 
@@ -472,7 +476,7 @@ msgstr "Как прочитаны ваши слова"
 msgid "How the rules got here"
 msgstr "Как правила пришли к этому"
 
-#: web/lib/AskPanel.svelte:146
+#: web/lib/AskPanel.svelte:193
 msgid "How the sentence was read"
 msgstr "Как прочитана фраза"
 
@@ -539,7 +543,7 @@ msgstr "Оставлено на этапе {stage}"
 msgid "Kept because"
 msgstr "Оставлено, потому что"
 
-#: web/lib/RenderPanel.svelte:161
+#: web/lib/RenderPanel.svelte:163
 msgid "Landscape"
 msgstr "Горизонтально"
 
@@ -559,7 +563,7 @@ msgstr "Live"
 msgid "Looking through your library for memories to suggest..."
 msgstr "Поиск воспоминаний для предложения в вашей библиотеке..."
 
-#: web/lib/RenderPanel.svelte:180
+#: web/lib/RenderPanel.svelte:182
 msgid "Low"
 msgstr "Низкое"
 
@@ -585,7 +589,7 @@ msgstr ""
 "Ручные и автоматические запуски, включая неудачные. Откройте запуск, чтобы увидеть монтаж и "
 "время этапов."
 
-#: web/lib/RenderPanel.svelte:167
+#: web/lib/RenderPanel.svelte:169
 msgid "Match the sources"
 msgstr "Как у источников"
 
@@ -597,7 +601,7 @@ msgstr "Измерение движения в видео"
 msgid "Measuring the pictures"
 msgstr "Измерение изображений"
 
-#: web/lib/RenderPanel.svelte:180
+#: web/lib/RenderPanel.svelte:182
 msgid "Medium"
 msgstr "Среднее"
 
@@ -629,11 +633,11 @@ msgstr "Главное за месяц"
 msgid "Multi-Person"
 msgstr "Несколько людей"
 
-#: web/lib/RenderPanel.svelte:200
+#: web/lib/RenderPanel.svelte:202
 msgid "Music"
 msgstr "Музыка"
 
-#: web/lib/RenderPanel.svelte:223
+#: web/lib/RenderPanel.svelte:225
 msgid "Music volume:"
 msgstr "Громкость музыки:"
 
@@ -669,7 +673,7 @@ msgstr ""
 msgid "No model read this cut: the rules chose every picture."
 msgstr "Ни одна модель не читала этот монтаж: каждое изображение выбрали правила."
 
-#: web/lib/RenderPanel.svelte:203
+#: web/lib/RenderPanel.svelte:205
 msgid "No music"
 msgstr "Без музыки"
 
@@ -692,6 +696,10 @@ msgstr "Нет изображений, соответствующих этому
 #: web/lib/ShotInspector.svelte:84
 msgid "No reason recorded for this picture."
 msgstr "Причина выбора этого изображения не записана."
+
+#: web/lib/AskPanel.svelte:174
+msgid "No rule the preview can check would drop a picture."
+msgstr "Ни одно правило, которое может проверить предпросмотр, не отбросило бы снимок."
 
 #: web/routes/runs/+page.svelte:121
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
@@ -725,13 +733,17 @@ msgstr ""
 msgid "Nobody yet. Rescan the library to read who is in it."
 msgstr "Пока никого. Просканируйте библиотеку заново, чтобы увидеть, кто в ней есть."
 
-#: web/lib/RenderPanel.svelte:145
+#: web/lib/RenderPanel.svelte:147
 msgid "None"
 msgstr "Нет"
 
 #: web/routes/create/+page.svelte:300
 msgid "North"
 msgstr "Север"
+
+#: web/lib/AskPanel.svelte:177
+msgid "Not applied to a film you asked for"
+msgstr "Не применяется к фильму, который вы попросили"
 
 #: web/lib/AskPanel.svelte:29
 msgid "Not possible"
@@ -765,7 +777,7 @@ msgstr "Открыть"
 msgid "Open run"
 msgstr "Открыть запуск"
 
-#: web/lib/RenderPanel.svelte:131
+#: web/lib/RenderPanel.svelte:133
 msgid "Open the film run"
 msgstr "Открыть запуск фильма"
 
@@ -773,7 +785,7 @@ msgstr "Открыть запуск фильма"
 msgid "Order and timecodes from the saved cut."
 msgstr "Порядок и таймкоды сохранённого монтажа."
 
-#: web/lib/RenderPanel.svelte:159
+#: web/lib/RenderPanel.svelte:161
 msgid "Orientation"
 msgstr "Ориентация"
 
@@ -823,7 +835,7 @@ msgstr "Просмотр изображения"
 msgid "Pictures just read"
 msgstr "Только что прочитанные изображения"
 
-#: web/lib/AskPanel.svelte:153
+#: web/lib/AskPanel.svelte:201
 msgid "Pictures left after each step"
 msgstr "Сколько снимков осталось после каждого шага"
 
@@ -846,7 +858,7 @@ msgstr "Введите URL и ключ API"
 msgid "Pool"
 msgstr "Доступные медиа"
 
-#: web/lib/RenderPanel.svelte:162
+#: web/lib/RenderPanel.svelte:164
 msgid "Portrait"
 msgstr "Вертикально"
 
@@ -858,7 +870,7 @@ msgstr "Возможно"
 msgid "Preview"
 msgstr "Предпросмотр"
 
-#: web/lib/RenderPanel.svelte:210
+#: web/lib/RenderPanel.svelte:212
 msgid "Preview a track"
 msgstr "Прослушать трек"
 
@@ -866,7 +878,7 @@ msgstr "Прослушать трек"
 msgid "Preview with these choices"
 msgstr "Превью с этим выбором"
 
-#: web/lib/RenderPanel.svelte:196
+#: web/lib/RenderPanel.svelte:198
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "Режим приватности: размывает каждое изображение и скрывает имена"
 
@@ -878,7 +890,7 @@ msgstr "Прогресс"
 msgid "Put it back"
 msgstr "Вернуть"
 
-#: web/lib/RenderPanel.svelte:177
+#: web/lib/RenderPanel.svelte:179
 msgid "Quality"
 msgstr "Качество"
 
@@ -930,7 +942,7 @@ msgstr "Удалить эту связь"
 msgid "Removed"
 msgstr "Убрано"
 
-#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:234
+#: web/lib/RenderPanel.svelte:126 web/lib/RenderPanel.svelte:127 web/lib/RenderPanel.svelte:236
 msgid "Render"
 msgstr "Рендер"
 
@@ -946,7 +958,7 @@ msgstr "Предпросмотр отчёта"
 msgid "Rescan the library"
 msgstr "Просканировать библиотеку снова"
 
-#: web/lib/RenderPanel.svelte:165
+#: web/lib/RenderPanel.svelte:167
 msgid "Resolution"
 msgstr "Разрешение"
 
@@ -954,7 +966,7 @@ msgstr "Разрешение"
 msgid "Review the report, then copy it. Nothing is sent automatically."
 msgstr "Проверьте отчёт, затем скопируйте его. Ничего не отправляется автоматически."
 
-#: web/lib/RenderPanel.svelte:139 web/routes/runs/[run_id]/+page.svelte:298
+#: web/lib/RenderPanel.svelte:141 web/routes/runs/[run_id]/+page.svelte:298
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "Редакция {number}"
@@ -1028,7 +1040,7 @@ msgstr "Сохранено в базе данных"
 msgid "Saved to: {output_path}"
 msgstr "Сохранено в: {output_path}"
 
-#: web/lib/RenderPanel.svelte:183
+#: web/lib/RenderPanel.svelte:185
 msgid "Scaling Mode"
 msgstr "Режим масштабирования"
 
@@ -1097,9 +1109,13 @@ msgstr "Выйти"
 msgid "Small moment"
 msgstr "Небольшой момент"
 
-#: web/lib/RenderPanel.svelte:144
+#: web/lib/RenderPanel.svelte:146
 msgid "Smart (fades and cuts)"
 msgstr "Умный (затухания и склейки)"
+
+#: web/lib/AskPanel.svelte:165
+msgid "Some of its pictures"
+msgstr "Некоторые из его снимков"
 
 #: web/routes/create/+page.svelte:300
 msgid "South"
@@ -1113,7 +1129,7 @@ msgstr "Особый день"
 msgid "Spring"
 msgstr "Весна"
 
-#: web/lib/RenderPanel.svelte:162
+#: web/lib/RenderPanel.svelte:164
 msgid "Square"
 msgstr "Квадрат"
 
@@ -1141,7 +1157,7 @@ msgstr "Остановлено."
 msgid "Stories"
 msgstr "Истории"
 
-#: web/lib/RenderPanel.svelte:149
+#: web/lib/RenderPanel.svelte:151
 msgid "Subtitle"
 msgstr "Подзаголовок"
 
@@ -1174,7 +1190,7 @@ msgstr "Убрать"
 msgid "Test Connection"
 msgstr "Проверить подключение"
 
-#: web/lib/RenderPanel.svelte:110
+#: web/lib/RenderPanel.svelte:112
 msgid "That file is not an MP3, M4A or WAV"
 msgstr "Этот файл не в формате MP3, M4A или WAV"
 
@@ -1186,7 +1202,7 @@ msgstr "Этот файл слишком велик для саундтрека"
 msgid "The connection could not be checked."
 msgstr "Не удалось проверить подключение."
 
-#: web/lib/RenderPanel.svelte:138
+#: web/lib/RenderPanel.svelte:140
 msgid "The cut as chosen"
 msgstr "Монтаж в выбранном виде"
 
@@ -1198,7 +1214,7 @@ msgstr "Не удалось запустить монтаж."
 msgid "The cut is ready."
 msgstr "Монтаж готов."
 
-#: web/lib/RenderPanel.svelte:155
+#: web/lib/RenderPanel.svelte:157
 msgid "The dates and places, never a model"
 msgstr "Даты и места, никогда модель"
 
@@ -1235,7 +1251,7 @@ msgstr ""
 "Модель читает ваши слова по подготовленной библиотеке. Сначала предпросмотр: он показывает, "
 "во что превратилась каждая часть фразы и сколько снимков подходит, и ничего не снимает."
 
-#: web/lib/RenderPanel.svelte:154
+#: web/lib/RenderPanel.svelte:156
 msgid "The model, when one is configured"
 msgstr "Модель, если она настроена"
 
@@ -1251,7 +1267,7 @@ msgstr ""
 msgid "The picture it replaced"
 msgstr "Изображение, которое оно заменило"
 
-#: web/lib/RenderPanel.svelte:193
+#: web/lib/RenderPanel.svelte:195
 msgid ""
 "The place is Immich's. With geocoding on (Settings, network), it names the district in the "
 "film's language, through the public Nominatim or network.geocoding_url."
@@ -1267,7 +1283,7 @@ msgstr "Набор"
 msgid "The preview could not start."
 msgstr "Не удалось запустить предпросмотр."
 
-#: web/lib/RenderPanel.svelte:204
+#: web/lib/RenderPanel.svelte:206
 msgid "The previewed track"
 msgstr "Прослушанный трек"
 
@@ -1275,7 +1291,7 @@ msgstr "Прослушанный трек"
 msgid "The previous automatic memory used this category."
 msgstr "Предыдущее автоматическое воспоминание использовало эту категорию."
 
-#: web/lib/RenderPanel.svelte:89
+#: web/lib/RenderPanel.svelte:91
 msgid "The render could not start."
 msgstr "Не удалось запустить рендер."
 
@@ -1329,7 +1345,7 @@ msgstr "Для этого запуска не сохранилось запис�
 msgid "Thumbnail cache"
 msgstr "Кэш миниатюр"
 
-#: web/lib/RenderPanel.svelte:148
+#: web/lib/RenderPanel.svelte:150
 msgid "Title (decided as generate decides when empty)"
 msgstr "Название (определяется как решает generate, если не указано)"
 
@@ -1345,7 +1361,7 @@ msgstr "Заняло место изображения, отклонённого
 msgid "Took the seat of a picture the model removed from this story."
 msgstr "Заняло место изображения, которое модель убрала из этой истории."
 
-#: web/lib/RenderPanel.svelte:142
+#: web/lib/RenderPanel.svelte:144
 msgid "Transition Style"
 msgstr "Стиль переходов"
 
@@ -1378,11 +1394,11 @@ msgstr "Отменить решение"
 msgid "Updated {when}"
 msgstr "Обновлено {when}"
 
-#: web/lib/RenderPanel.svelte:213
+#: web/lib/RenderPanel.svelte:215
 msgid "Upload a track"
 msgstr "Загрузить трек"
 
-#: web/lib/RenderPanel.svelte:230
+#: web/lib/RenderPanel.svelte:232
 msgid "Upload the film to Immich"
 msgstr "Загрузить фильм в Immich"
 
@@ -1434,11 +1450,15 @@ msgstr ""
 "Что автоматизация создала бы следующим — тот же список, что выводит `auto suggest`. Запустите"
 " так, как это сделал бы `auto run`, или сначала проверьте без рендеринга."
 
+#: web/lib/AskPanel.svelte:149
+msgid "What the editor's rules would drop"
+msgstr "Что отбросили бы правила монтажа"
+
 #: web/lib/AskPanel.svelte:21
 msgid "What the library measures"
 msgstr "Что измеряет библиотека"
 
-#: web/lib/RenderPanel.svelte:136
+#: web/lib/RenderPanel.svelte:138
 msgid "What to render"
 msgstr "Что рендерить"
 
@@ -1462,7 +1482,7 @@ msgstr "Кто есть кто, их роли и связи."
 msgid "Who may see it"
 msgstr "Кто может это увидеть"
 
-#: web/lib/RenderPanel.svelte:151
+#: web/lib/RenderPanel.svelte:153
 msgid "Who names the film"
 msgstr "Кто называет фильм"
 
@@ -1564,6 +1584,20 @@ msgstr "{days} дней · {count} изображений"
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done} из {total}"
+
+#: web/lib/AskPanel.svelte:154
+#, python-brace-format
+msgid "{passed} of {checked} pictures pass the rules checked before cutting."
+msgstr "{passed} из {checked} снимков проходят правила, проверяемые до монтажа."
+
+#: web/lib/AskPanel.svelte:152
+#, python-brace-format
+msgid ""
+"{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are "
+"not prepared yet."
+msgstr ""
+"{passed} из {checked} подготовленных снимков проходят правила, проверяемые до монтажа; "
+"{unread} ещё не подготовлены."
 
 #: web/lib/AskPanel.svelte:134
 #, python-brace-format

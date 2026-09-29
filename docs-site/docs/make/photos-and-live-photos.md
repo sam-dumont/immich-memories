@@ -59,7 +59,7 @@ flowchart TD
   L[Live Photo kept in the cut] --> B{Other Live Photos<br/>within 10 s?}
   B -- no, lone --> R
   B -- yes, a burst --> J{Stitched burst at least 3.5 s?<br/>live_photo_min_clip_seconds}
-  J -- no --> S[Plays as its still]
+  J -- no --> O[The kept picture's own clip, alone] --> R
   J -- yes --> R{Motion residual at least 1.5?<br/>RESIDUAL_MIN}
   R -- no --> S
   R -- yes --> F{Clip shows the subject?<br/>clip_frames}
@@ -73,7 +73,10 @@ flowchart TD
    sharpest, best-exposed frame, and the siblings are not separately selectable.
 3. **Length.** A lone Live Photo is a motion candidate. A join of two or more must stitch to at
    least `live_photo_min_clip_seconds` (3.5 s), because a stitch shorter than that is more cut than
-   footage. A lone clip runs 1.7 to 3.3 s, so the rule only applies to joins.
+   footage. A lone clip runs 1.7 to 3.3 s, so the rule only applies to joins. Shots a fraction of a
+   second apart overlap so much that their stitch can come out shorter than one of their clips (three
+   shots in 1.4 s can stitch to 2.4 s). A join like that drops back to the kept picture's own
+   clip, which then goes through the motion check like any lone Live Photo.
 4. **Motion.** The residual is the optical flow left once the camera's own movement is removed,
    over 12 frames. At 1.5 or above something happened in every burst we measured; below it the
    answer is a coin flip, and a still always works where a dead clip does not.

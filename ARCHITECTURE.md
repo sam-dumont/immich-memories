@@ -407,6 +407,9 @@ src/immich_memories/
 │   ├── album_service.py        # AlbumService: album operations
 │   ├── sync_client.py          # Sync wrapper for async client
 │   ├── accounts.py             # open_accounts: one /users/me-verified client per selected account (#1500)
+│   ├── access_clients.py       # AccessBoundClient: the run's client; reads each routed picture (details,
+│   │                           # preview, original, motion, playback) through its owner's account, kept
+│   │                           # open until the run ends; uploads stay primary. AccountReadFailed names it
 │   ├── compatibility.py        # Immich API-version compatibility policy (v2/v3 resolution)
 │   └── models.py               # API data models (Asset, Person, etc.)
 │
@@ -494,6 +497,7 @@ src/immich_memories/
 │   ├── selection_source*.py    # The canonical source model: admission, provenance, groups, invariants
 │   ├── household_source.py     # A run naming its accounts (`EditorialRunContext.accounts`) reads the
 │   │                           # window per account, keeps chosen owners only, tags `Asset.access_accounts`
+│   │                           # and routes the run's AccessBoundClient
 │   ├── text_episode_reader.py  # Reading event evidence (paged, banked); the same reading names
 │   │                           # each episode's notable moments, which the polish layer seats and protects
 │   ├── text_episode_prompt.py  # What that reading is asked, and what it may take a name from
@@ -862,7 +866,11 @@ src/immich_memories/
 │   │                           # the model picking between the catalogue's occasions that day; else the
 │   │                           # pool as the film's whole reach with the request as written subject;
 │   │                           # "not possible" -> no film
-│   ├── trace.py                # explain(): READING/WHO/WHEN/WHERE/WHAT/FACTS/POOL/VERDICT/FILM lines;
+│   ├── rule_preview.py         # preview_rules(): a dry run asks the editor's rules about the pool
+│   │                           # before render, through the run's own functions (source pass, screen
+│   │                           # gate, never_auto, carrier sources, video frames); count + hashed ids
+│   │                           # per rule; at-cut rules (audience, look-alikes, spacing) named only
+│   ├── trace.py                # explain(): READING/WHO/WHEN/WHERE/WHAT/FACTS/POOL/RULES/VERDICT/FILM;
 │   │                           # save_with_run(): the run's diagnostics["free_text"] (report builder)
 │   │                           # and free-text-trace.private.txt in the attempt directory; the report's
 │   │                           # vocabulary (name parts -> role, places, OCR words) and the marks basis
