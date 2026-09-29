@@ -10,6 +10,7 @@ from immich_memories.cli._helpers import console, print_error, print_info, print
 from immich_memories.filename_builder import safe_slug
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
     from immich_memories.analysis.album_source import AlbumMedia
@@ -221,12 +222,31 @@ def _read_pool(
     use_live_photos: bool,
     use_photos: bool,
 ) -> tuple[AlbumRef, AlbumMedia]:
-    from immich_memories.analysis.album_source import split_album_assets
     from immich_memories.api.album_service import AlbumRef
 
-    assets = [client.get_asset(asset_id) for asset_id in pool.asset_ids]
-    print_success(f"Pool: {len(assets)} pictures")
-    media = split_album_assets(
+    media = pool_media(
+        client, pool.asset_ids, config, use_live_photos=use_live_photos, use_photos=use_photos
+    )
+    count = len(pool.asset_ids)
+    print_success(f"Pool: {count} pictures")
+    return AlbumRef(id=pool.ref, name=pool.name, asset_count=count), media
+
+
+def pool_media(
+    client: SyncImmichClient,
+    asset_ids: Sequence[str],
+    config: Config,
+    *,
+    use_live_photos: bool,
+    use_photos: bool,
+) -> AlbumMedia:
+    """A curated pool's pictures read from Immich by id, split as an album's are.
+
+    The one read of a pool: the film run and the rule preview before it see the same media.
+    """
+    from immich_memories.analysis.album_source import split_album_assets
+
+    assets = [client.get_asset(asset_id) for asset_id in asset_ids]
+    return split_album_assets(
         assets, config=config, use_live_photos=use_live_photos, use_photos=use_photos
     )
-    return AlbumRef(id=pool.ref, name=pool.name, asset_count=len(assets)), media

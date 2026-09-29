@@ -67,7 +67,7 @@
         "type": "object"
       },
       "AskPreview": {
-        "description": "`generate --ask --dry-run`'s translation: the trace by part, the pool and the verdict.",
+        "description": "`generate --ask --dry-run`'s translation: the trace by part, the pool, the rule preview\nand the verdict.",
         "properties": {
           "blocks": {
             "items": {
@@ -85,6 +85,16 @@
           "request": {
             "title": "Request",
             "type": "string"
+          },
+          "rules": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AskRules"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "verdict": {
             "title": "Verdict",
@@ -119,6 +129,54 @@
           "sentence"
         ],
         "title": "AskRequest",
+        "type": "object"
+      },
+      "AskRules": {
+        "description": "What the editor's rules would drop from the pool, asked before render.",
+        "properties": {
+          "at_cut": {
+            "items": {
+              "$ref": "#/components/schemas/RuleNoteView"
+            },
+            "title": "At Cut",
+            "type": "array"
+          },
+          "checked": {
+            "title": "Checked",
+            "type": "integer"
+          },
+          "drops": {
+            "items": {
+              "$ref": "#/components/schemas/RuleDropView"
+            },
+            "title": "Drops",
+            "type": "array"
+          },
+          "lifted": {
+            "items": {
+              "$ref": "#/components/schemas/RuleNoteView"
+            },
+            "title": "Lifted",
+            "type": "array"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "unread": {
+            "title": "Unread",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "checked",
+          "passed",
+          "unread",
+          "drops",
+          "at_cut",
+          "lifted"
+        ],
+        "title": "AskRules",
         "type": "object"
       },
       "AskedFilm": {
@@ -2022,6 +2080,55 @@
           "links"
         ],
         "title": "RosterPerson",
+        "type": "object"
+      },
+      "RuleDropView": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "examples": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Examples",
+            "type": "array"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule",
+          "why",
+          "count",
+          "examples"
+        ],
+        "title": "RuleDropView",
+        "type": "object"
+      },
+      "RuleNoteView": {
+        "properties": {
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule",
+          "why"
+        ],
+        "title": "RuleNoteView",
         "type": "object"
       },
       "RunDetail": {

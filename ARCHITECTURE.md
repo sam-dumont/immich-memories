@@ -859,7 +859,11 @@ src/immich_memories/
 │   │                           # the model picking between the catalogue's occasions that day; else the
 │   │                           # pool as the film's whole reach with the request as written subject;
 │   │                           # "not possible" -> no film
-│   ├── trace.py                # explain(): READING/WHO/WHEN/WHERE/WHAT/FACTS/POOL/VERDICT/FILM lines;
+│   ├── rule_preview.py         # preview_rules(): a dry run asks the editor's rules about the pool
+│   │                           # before render, through the run's own functions (source pass, screen
+│   │                           # gate, never_auto, carrier sources, video frames); count + hashed ids
+│   │                           # per rule; at-cut rules (audience, look-alikes, spacing) named only
+│   ├── trace.py                # explain(): READING/WHO/WHEN/WHERE/WHAT/FACTS/POOL/RULES/VERDICT/FILM;
 │   │                           # save_with_run(): the run's diagnostics["free_text"] (report builder)
 │   │                           # and free-text-trace.private.txt in the attempt directory; the report's
 │   │                           # vocabulary (name parts -> role, places, OCR words) and the marks basis

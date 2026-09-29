@@ -8,11 +8,11 @@ from __future__ import annotations
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
 
 import pytest
 from click.testing import CliRunner, Result
 
+from immich_memories.api.models import Asset
 from immich_memories.cli._helpers import set_quiet_mode
 from immich_memories.config_models_editorial import EditorialConfig
 from immich_memories.db import open_store
@@ -37,23 +37,46 @@ ANSWERS: dict[str, Any] = {
 }
 
 
+FIRST = datetime(2019, 1, 1, 12, tzinfo=UTC)
+SHOTS = [(f"cat-{n}", FIRST + timedelta(days=40 * n), "A black cat is sleeping") for n in range(14)]
+SHOTS += [(f"dog-{n}", FIRST + timedelta(days=n), "A dog on a beach") for n in range(5)]
+
+
 def _library() -> None:
-    first = datetime(2019, 1, 1, 12, tzinfo=UTC)
-    shots = [
-        (f"cat-{n}", first + timedelta(days=40 * n), "A black cat is sleeping") for n in range(14)
-    ]
-    shots += [(f"dog-{n}", first + timedelta(days=n), "A dog on a beach") for n in range(5)]
     store = open_store()
     add_rows(
         store,
         "annotation_assets",
-        *({"asset_id": i, "taken_at": at.isoformat(), "media_kind": "photo"} for i, at, _ in shots),
+        *({"asset_id": i, "taken_at": at.isoformat(), "media_kind": "photo"} for i, at, _ in SHOTS),
     )
     add_rows(
         store,
         "descriptions",
-        *({"asset_id": i, "model": EDITORIAL.description_model, "text": c} for i, _, c in shots),
+        *({"asset_id": i, "model": EDITORIAL.description_model, "text": c} for i, _, c in SHOTS),
     )
+
+
+class _InventedImmich:
+    """WHY: replaces the Immich HTTP API; it answers for the invented library's pictures."""
+
+    def get_asset(self, asset_id: str) -> Asset:
+        at = next(taken for shot, taken, _ in SHOTS if shot == asset_id)
+        return Asset(
+            id=asset_id,
+            type="IMAGE",
+            file_created_at=at,
+            file_modified_at=at,
+            updated_at=at,
+            original_file_name=f"IMG_{asset_id}.JPG",
+            width=4032,
+            height=3024,
+        )
+
+    def __enter__(self) -> _InventedImmich:
+        return self
+
+    def __exit__(self, *_exc) -> bool:
+        return False
 
 
 @pytest.fixture
@@ -62,8 +85,13 @@ def ask(tmp_path: Path, lexicon: WordNetLexicon, monkeypatch: pytest.MonkeyPatch
     from immich_memories.cli import main
 
     _library()
+    # The config directory is made under the home directory: a throwaway one here.
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
     # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
     monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
+    monkeypatch.setattr(
+        "immich_memories.api.immich.SyncImmichClient", lambda **_k: _InventedImmich()
+    )
 
     def _invoke(
         *args: str, config: str = IMMICH + MODEL_TIER, answers: dict[str, Any] = ANSWERS
@@ -75,9 +103,7 @@ def ask(tmp_path: Path, lexicon: WordNetLexicon, monkeypatch: pytest.MonkeyPatch
         )
         path = tmp_path / "config.yaml"
         path.write_text(config)
-        # WHY: init_config_dir writes to the real home directory.
-        with patch("immich_memories.cli.init_config_dir"):
-            return CliRunner().invoke(main, ["-c", str(path), "generate", *args])
+        return CliRunner().invoke(main, ["-c", str(path), "generate", *args])
 
     yield _invoke
     # A run without a terminal switches the print helpers to log lines for the whole process.
@@ -107,6 +133,30 @@ def test_a_dry_run_keeps_its_translation_for_a_watcher(ask, tmp_path: Path) -> N
     assert record["pool"] == {"pictures": 14, "photos": 14, "videos": 0}
     assert record["verdict"] == "possible"
     assert record["film"]["route"] == "pool"
+
+
+def test_a_dry_run_shows_which_rules_would_drop_pool_pictures(ask, tmp_path: Path) -> None:
+    import json
+
+    add_rows(
+        open_store(),
+        "asset_flags",
+        {"asset_id": "cat-3", "flag": "never_auto", "source": "nsfw_marqo"},
+    )
+    kept = tmp_path / "ask.json"
+
+    result = ask("--ask", "our cat along the years", "--dry-run", "--ask-trace", str(kept))
+
+    assert result.exit_code == 0, result.output
+    assert "RULES    13 of 14 pictures pass the rules checked before cutting" in result.output
+    held = next(line for line in result.output.splitlines() if "held for review: 1" in line)
+    assert " id-" in held and "cat-3" not in result.output.split("RULES", 1)[1]
+    assert "decided while cutting: who sees it" in result.output
+    rules = json.loads(kept.read_text())["rules"]
+    assert (rules["checked"], rules["passed"]) == (14, 13)
+    assert [(d["rule"], d["count"], d["examples"]) for d in rules["drops"]] == [
+        ("held for review", 1, ["cat-3"])
+    ]
 
 
 def test_without_the_model_tier_the_ask_says_what_it_needs(ask) -> None:

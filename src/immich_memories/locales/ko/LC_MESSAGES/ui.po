@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-29 01:32+0200\n"
+"POT-Creation-Date: 2026-09-29 07:09+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: web/lib/AskPanel.svelte:106
+#: web/lib/AskPanel.svelte:107
 msgid ""
 "A film from a sentence needs the model tier: set advanced.llm.base_url and advanced.llm.model"
 " to the reader that answers it (tier: full)."
@@ -293,6 +293,10 @@ msgstr "날짜"
 msgid "Day (MM-DD)"
 msgstr "날짜 (MM-DD)"
 
+#: web/lib/AskPanel.svelte:175
+msgid "Decided while cutting"
+msgstr "편집 중에 결정"
+
 #: web/lib/SettingsEditor.svelte:41
 msgid "Default"
 msgstr "기본값"
@@ -301,7 +305,7 @@ msgstr "기본값"
 msgid "Demo mode"
 msgstr "데모 모드"
 
-#: web/lib/AskPanel.svelte:98 web/lib/AskPanel.svelte:115
+#: web/lib/AskPanel.svelte:98 web/lib/AskPanel.svelte:116
 msgid "Describe the film you want"
 msgstr "원하는 영화를 설명하세요"
 
@@ -380,7 +384,7 @@ msgstr "각 설정과 값이 어디서 오는지. 여기서 저장한 내용은 
 msgid "Every trip of the year"
 msgstr "그 해의 모든 여행"
 
-#: web/lib/AskPanel.svelte:100
+#: web/lib/AskPanel.svelte:101
 msgid "Experimental"
 msgstr "실험적"
 
@@ -393,7 +397,7 @@ msgstr "가족"
 msgid "Fetching picture previews"
 msgstr "이미지 미리보기를 가져오는 중"
 
-#: web/lib/AskPanel.svelte:139
+#: web/lib/AskPanel.svelte:140
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "맞는 사진이 12장 미만입니다: 영화가 짧아집니다."
 
@@ -458,7 +462,7 @@ msgstr "단어를 읽은 방식"
 msgid "How the rules got here"
 msgstr "규칙이 여기까지 온 과정"
 
-#: web/lib/AskPanel.svelte:145
+#: web/lib/AskPanel.svelte:191
 msgid "How the sentence was read"
 msgstr "문장을 읽은 방식"
 
@@ -557,7 +561,7 @@ msgstr "주 메뉴"
 msgid "Main story"
 msgstr "주요 이야기"
 
-#: web/lib/AskPanel.svelte:121
+#: web/lib/AskPanel.svelte:122
 msgid "Make the film"
 msgstr "영화 만들기"
 
@@ -639,7 +643,7 @@ msgstr "아직 기록된 날이 없습니다. `immich-memories discover-days`를
 msgid "No child output was retained for this run."
 msgstr "이 작업에 연결된 결과가 저장되지 않았습니다."
 
-#: web/lib/AskPanel.svelte:137
+#: web/lib/AskPanel.svelte:138
 msgid ""
 "No film: the library cannot show this. Try other words, or read below what each part of the "
 "sentence found."
@@ -672,6 +676,10 @@ msgstr "이 필터에 맞는 이미지가 없습니다."
 #: web/lib/ShotInspector.svelte:84
 msgid "No reason recorded for this picture."
 msgstr "이 이미지를 선택한 이유가 기록되지 않았습니다."
+
+#: web/lib/AskPanel.svelte:172
+msgid "No rule the preview can check would drop a picture."
+msgstr "미리보기에서 확인할 수 있는 규칙으로 제외되는 사진은 없습니다."
 
 #: web/routes/runs/+page.svelte:121
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
@@ -708,6 +716,10 @@ msgstr "없음"
 #: web/routes/create/+page.svelte:300
 msgid "North"
 msgstr "북반구"
+
+#: web/lib/AskPanel.svelte:175
+msgid "Not applied to a film you asked for"
+msgstr "요청한 영화에는 적용되지 않음"
 
 #: web/lib/AskPanel.svelte:29
 msgid "Not possible"
@@ -799,7 +811,7 @@ msgstr "이미지 검토"
 msgid "Pictures just read"
 msgstr "방금 읽은 이미지"
 
-#: web/lib/AskPanel.svelte:152
+#: web/lib/AskPanel.svelte:199
 msgid "Pictures left after each step"
 msgstr "단계별로 남은 사진"
 
@@ -830,7 +842,7 @@ msgstr "세로"
 msgid "Possible"
 msgstr "가능"
 
-#: web/lib/AskPanel.svelte:119 web/lib/AskPanel.svelte:129
+#: web/lib/AskPanel.svelte:120 web/lib/AskPanel.svelte:130
 msgid "Preview"
 msgstr "미리보기"
 
@@ -1075,6 +1087,10 @@ msgstr "작은 순간"
 msgid "Smart (fades and cuts)"
 msgstr "스마트(페이드와 컷)"
 
+#: web/lib/AskPanel.svelte:163
+msgid "Some of its pictures"
+msgstr "해당 사진 일부"
+
 #: web/routes/create/+page.svelte:300
 msgid "South"
 msgstr "남반구"
@@ -1200,7 +1216,7 @@ msgstr "집안 식구. 설명에 언급된 목욕 같은 사적인 순간도 포
 msgid "The model had nothing to say about this picture."
 msgstr "모델이 이 이미지에 대해 남긴 말이 없습니다."
 
-#: web/lib/AskPanel.svelte:109
+#: web/lib/AskPanel.svelte:110
 msgid ""
 "The model reads your words against your prepared library. Preview first: it shows what each "
 "part of the sentence became and how many pictures fit, and films nothing."
@@ -1270,7 +1286,7 @@ msgstr "서버 URL이 변경되었습니다. 새 서버의 API 키를 입력하�
 msgid "The settings could not be saved."
 msgstr "설정을 저장하지 못했습니다."
 
-#: web/lib/AskPanel.svelte:142
+#: web/lib/AskPanel.svelte:143
 msgid "The words changed since this preview: preview again before making the film."
 msgstr "이 미리보기 이후 단어가 바뀌었습니다: 영화를 만들기 전에 다시 미리보기 하세요."
 
@@ -1399,6 +1415,10 @@ msgid ""
 "would, or check it first without rendering."
 msgstr "자동화가 다음에 만들 내용으로, `auto suggest`가 출력하는 목록과 같습니다. `auto run`처럼 실행하거나, 렌더링 없이 먼저 확인할 수 있습니다."
 
+#: web/lib/AskPanel.svelte:149
+msgid "What the editor's rules would drop"
+msgstr "편집 규칙이 제외할 사진"
+
 #: web/lib/AskPanel.svelte:21
 msgid "What the library measures"
 msgstr "라이브러리가 측정하는 것"
@@ -1497,7 +1517,7 @@ msgstr "모두 함께"
 msgid "any of them"
 msgstr "그중 한 명이라도"
 
-#: web/lib/AskPanel.svelte:115
+#: web/lib/AskPanel.svelte:116
 msgid "our cat along the years"
 msgstr "우리 고양이의 세월"
 
@@ -1530,7 +1550,12 @@ msgstr "{days}일 · 이미지 {count}장"
 msgid "{done} of {total}"
 msgstr "{done} / {total}"
 
-#: web/lib/AskPanel.svelte:133
+#: web/lib/AskPanel.svelte:150
+#, python-brace-format
+msgid "{passed} of {checked} pictures pass the rules checked before cutting."
+msgstr "{checked}장 중 {passed}장이 편집 전에 확인하는 규칙을 통과합니다."
+
+#: web/lib/AskPanel.svelte:134
 #, python-brace-format
 msgid "{pictures} pictures: {photos} photos, {videos} videos"
 msgstr "사진 {pictures}장: 사진 {photos}, 동영상 {videos}"
@@ -1539,6 +1564,11 @@ msgstr "사진 {pictures}장: 사진 {photos}, 동영상 {videos}"
 #, python-brace-format
 msgid "{seconds} s on screen"
 msgstr "화면에 {seconds}초"
+
+#: web/lib/AskPanel.svelte:152
+#, python-brace-format
+msgid "{unread} pictures are not prepared yet: the run reads them first, then these rules apply."
+msgstr "{unread}장은 아직 준비되지 않았습니다. 실행할 때 먼저 읽은 뒤 이 규칙을 적용합니다."
 
 #: web/routes/create/+page.svelte:351
 #, python-brace-format

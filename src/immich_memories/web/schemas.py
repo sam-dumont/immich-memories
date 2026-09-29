@@ -319,12 +319,41 @@ class AskedFilm(BaseModel):
     outcome: str
 
 
+class RuleDropView(BaseModel):
+    rule: str
+    why: str
+    count: int
+    # A few of its pictures, by Immich id, for their thumbnails.
+    examples: list[str]
+
+
+class RuleNoteView(BaseModel):
+    rule: str
+    why: str
+
+
+class AskRules(BaseModel):
+    """What the editor's rules would drop from the pool, asked before render."""
+
+    checked: int
+    passed: int
+    # Pool pictures preparation has not read yet: the run reads them first.
+    unread: int
+    drops: list[RuleDropView]
+    # Rules known only while cutting, and rules a film you asked for does not apply.
+    at_cut: list[RuleNoteView]
+    lifted: list[RuleNoteView]
+
+
 class AskPreview(BaseModel):
-    """`generate --ask --dry-run`'s translation: the trace by part, the pool and the verdict."""
+    """`generate --ask --dry-run`'s translation: the trace by part, the pool, the rule preview
+    and the verdict."""
 
     request: str
     blocks: list[TraceBlock]
     pool: PoolCounts
+    # None when there is no pool to preview: a special day, or no film.
+    rules: AskRules | None = None
     # "possible", "thin" or "not possible".
     verdict: str
     why: str

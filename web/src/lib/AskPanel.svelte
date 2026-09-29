@@ -2,7 +2,7 @@
   import { Badge, Button, Text, type Color } from '@immich/ui';
   import { mdiMovieOpenPlayOutline, mdiTextSearch } from '@mdi/js';
   import { onMount } from 'svelte';
-  import { api, post, type AskAvailability, type AskPreview, type JobView } from './api';
+  import { api, post, thumbnail, type AskAvailability, type AskPreview, type JobView } from './api';
   import { docsPage } from './docs';
   import { N_, t } from './i18n.svelte';
   import { followJob } from './job.svelte';
@@ -143,8 +143,54 @@
           {#if !current}<p class="text-sm text-gray-600 dark:text-gray-400">{t('The words changed since this preview: preview again before making the film.')}</p>{/if}
         </div>
 
+        {#if preview.rules}
+          {@const rules = preview.rules}
+          <section class="flex flex-col gap-3 text-sm" aria-labelledby="ask-rules-heading">
+            <h3 id="ask-rules-heading" class="font-semibold">{t("What the editor's rules would drop")}</h3>
+            <p class="tabular-nums">{t('{passed} of {checked} pictures pass the rules checked before cutting.', { passed: rules.passed, checked: rules.checked })}</p>
+            {#if rules.unread}
+              <p class="text-gray-600 dark:text-gray-400">{t('{unread} pictures are not prepared yet: the run reads them first, then these rules apply.', { unread: rules.unread })}</p>
+            {/if}
+            {#if rules.drops.length}
+              <ul class="flex flex-col gap-3">
+                {#each rules.drops as drop (drop.rule)}
+                  <li class="flex flex-col gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="font-medium">{drop.rule}</span>
+                      <Badge size="small" color="secondary">{drop.count}</Badge>
+                    </div>
+                    <p class="break-words text-gray-700 dark:text-gray-300">{drop.why}</p>
+                    <ul class="flex flex-wrap gap-2" aria-label={t('Some of its pictures')}>
+                      {#each drop.examples as asset (asset)}
+                        <li class="shrink-0"><img src={thumbnail(asset)} alt="" loading="lazy" class="h-16 w-16 rounded-lg object-cover" /></li>
+                      {/each}
+                    </ul>
+                  </li>
+                {/each}
+              </ul>
+            {:else}
+              <p>{t('No rule the preview can check would drop a picture.')}</p>
+            {/if}
+            <dl class="flex flex-col gap-2">
+              {#each [{ head: t('Decided while cutting'), notes: rules.at_cut }, { head: t('Not applied to a film you asked for'), notes: rules.lifted }] as group (group.head)}
+                {#if group.notes.length}
+                  <div class="grid gap-1 sm:grid-cols-[10rem_1fr] sm:gap-4">
+                    <dt class="font-semibold">{group.head}</dt>
+                    <dd class="flex min-w-0 flex-col gap-1">
+                      {#each group.notes as note (note.rule)}
+                        <p class="break-words text-gray-700 dark:text-gray-300"><span class="font-medium">{note.rule}</span>: {note.why}</p>
+                      {/each}
+                    </dd>
+                  </div>
+                {/if}
+              {/each}
+            </dl>
+          </section>
+        {/if}
+
         <dl class="flex flex-col gap-3 text-sm" aria-label={t('How the sentence was read')}>
-          {#each preview.blocks as block (block.head)}
+          <!-- The rules have their own section above, with thumbnails in place of hashed ids. -->
+          {#each preview.blocks.filter((block) => block.head !== 'RULES') as block (block.head)}
             <div class="grid gap-1 sm:grid-cols-[10rem_1fr] sm:gap-4">
               <dt class="font-semibold">{HEADS[block.head] ? t(HEADS[block.head]) : block.head}</dt>
               <dd class="flex min-w-0 flex-col gap-1">
