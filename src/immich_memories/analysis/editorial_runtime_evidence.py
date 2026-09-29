@@ -71,6 +71,11 @@ def _log_preparation(result: Any) -> None:
     A wall-clock total cannot tell a self-hoster which producer their box cannot
     afford, and the artifact holding the same numbers is inside the attempt tree.
     """
+    motion_missing = sum(
+        len(ids) for key, ids in result.missing_by_producer.items() if key.startswith("motion:")
+    )
+    if motion_missing:
+        logger.warning("Motion unavailable for %d clips; using plain clip facts", motion_missing)
     service = result.service_rates()
     rates = " ".join(
         f"{stage} {seconds:.3f}s/pic"
@@ -191,6 +196,7 @@ class EvidencePreparation:
             progress=progress,
             on_asset=live.note_asset,
             inspect_clips=self.inspect_clips,
+            acquire_motion=False,
         )
 
     def _screen_documents(self, prepared: Any, readable: tuple[str, ...]) -> dict[str, Any]:

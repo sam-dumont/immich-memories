@@ -234,6 +234,18 @@ and skips the reasoning in front of it, asks for 1,024 tokens on top of the call
 a reply with no `text` block into an error naming the `stop_reason`. A provider's own error `code`
 and `message` go into the log line, cut at 300 characters.
 
+## Structured replies
+
+Hosted readers request a JSON schema by default. Local endpoints default to prompt-only JSON
+because some local grammar decoders stall on these schemas. `advanced.llm.structured_output`
+can explicitly enable or disable that request shape.
+
+If a provider refuses schema mode and asks for `json_object`, the app retries once in object
+mode and carries the schema in the prompt. It remembers that choice for the endpoint and model
+for the rest of the process and logs the adaptation once. A refusal of the whole response-format
+parameter removes that parameter. An invalid schema or another ordinary HTTP 400 still fails.
+For a provider already known to lack schema support, `structured_output: false` skips negotiation.
+
 ## Batch mode
 
 The episode readings are one prompt per episode, and those prompts don't read each other. Every

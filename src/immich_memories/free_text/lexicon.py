@@ -108,7 +108,7 @@ class Lexicon(Protocol):
         ...
 
     def derived_nouns(self, word: str) -> frozenset[str]:
-        """The nouns WordNet forms from the word as a noun or a verb, its own noun included.
+        """The nouns WordNet forms from the word as a noun, verb or adjective, its own noun included.
 
         "hiking" gives hiking, hike and hiker; "partying" (no noun) gives party and partier.
         """
@@ -229,7 +229,7 @@ class WordNetLexicon:
         noun = self.noun_base(word)
         if noun:
             found.add(noun)
-        for base, pos in ((noun, NOUN), (self.verb_base(word), VERB)):
+        for base, pos in ((noun, NOUN), (self.verb_base(word), VERB), (word.lower(), ADJ)):
             if not base:
                 continue
             found |= {

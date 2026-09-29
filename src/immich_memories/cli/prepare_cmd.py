@@ -125,10 +125,16 @@ def _print_outcome(
     if excluded := result.unservable_sources:
         reasons = ", ".join(sorted(set(excluded.values())))
         print_info(f"{len(excluded):,} sources will leave any cut — {reasons}")
-    if result.missing_by_producer:
-        missing = ", ".join(
-            f"{producer}: {len(ids)}" for producer, ids in result.missing_by_producer.items()
-        )
+    optional = sum(
+        len(ids) for key, ids in result.missing_by_producer.items() if key.startswith("motion:")
+    )
+    if optional:
+        print_info(f"Motion unavailable for {optional} clips; cuts will use plain clip facts")
+    required = {
+        key: ids for key, ids in result.missing_by_producer.items() if not key.startswith("motion:")
+    }
+    if required:
+        missing = ", ".join(f"{producer}: {len(ids)}" for producer, ids in required.items())
         print_error(f"Still missing after this pass — {missing}")
         return
     print_success(
