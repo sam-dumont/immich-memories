@@ -1616,3 +1616,7 @@ msgstr "Delivered to Immich. The local file was removed to save disk space."
 
 msgid "View in Immich"
 msgstr "View in Immich"
+
+#: web/routes/login/+page.svelte
+msgid "Sign-in expired. Try again."
+msgstr "Sign-in expired. Try again."

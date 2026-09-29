@@ -1595,3 +1595,7 @@ msgstr "Immich에 전달했습니다. 디스크 공간을 아끼기 위해 로�
 
 msgid "View in Immich"
 msgstr "Immich에서 보기"
+
+#: web/routes/login/+page.svelte
+msgid "Sign-in expired. Try again."
+msgstr "로그인 시간이 만료되었습니다. 다시 시도해 주세요."

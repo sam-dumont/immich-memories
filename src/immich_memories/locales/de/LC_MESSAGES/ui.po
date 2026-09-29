@@ -1630,3 +1630,7 @@ msgstr "An Immich übergeben. Die lokale Datei wurde entfernt, um Speicherplatz 
 
 msgid "View in Immich"
 msgstr "In Immich ansehen"
+
+#: web/routes/login/+page.svelte
+msgid "Sign-in expired. Try again."
+msgstr "Die Anmeldung ist abgelaufen. Versuche es erneut."

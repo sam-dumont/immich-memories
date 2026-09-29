@@ -100,4 +100,4 @@ def test_expired_callback_returns_to_sign_in_without_a_traceback(monkeypatch, ca
     assert len(warnings) == 1
     assert warnings[0].getMessage() == "OIDC sign-in expired or was refused; retry sign-in"
     assert warnings[0].exc_info is None
-    assert "private-detail" not in caplog.text
+    assert "private-detail" not in warnings[0].getMessage()

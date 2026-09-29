@@ -1628,3 +1628,7 @@ msgstr "Передано в Immich. Локальный файл удалён, ч
 
 msgid "View in Immich"
 msgstr "Открыть в Immich"
+
+#: web/routes/login/+page.svelte
+msgid "Sign-in expired. Try again."
+msgstr "Время входа истекло. Попробуйте ещё раз."
