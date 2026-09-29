@@ -1,9 +1,11 @@
-# Strategic-merge patch: a third init container that installs config.yaml
-# at 0600, and the Secret that file's ${VAR} placeholders expand against.
+# Strategic-merge patch: a second init container that installs config.yaml
+# at 0600, the Secret that file's ${VAR} placeholders expand against, and the
+# tier the file names.
 #
-# A ConfigMap volume mounts every key world-readable (0444) with no way to
-# chmod it; config_loader.py checks the file's own mode after mount and warns
-# ("Config file ... is readable by other users") on exactly that. The fix
+# A ConfigMap volume's files belong to root, so the app's uid can read one
+# only through its group or world bits (the default mode is 0644), and
+# config_loader.py warns ("Config file ... is readable by other users") on
+# either. The fix
 # copies the file, as the app's own uid, onto the writable cache PVC and
 # chmods it there, rather than mounting the ConfigMap at
 # ~/.immich-memories/config.yaml directly. Both this container and the app
@@ -61,6 +63,13 @@ spec:
                 name: immich-memories-secrets
             - secretRef:
                 name: immich-memories-maximalist
+          # base/deployment.yaml sets IMMICH_MEMORIES_TIER=auto, and an env var
+          # beats config.yaml: without this the pod runs `auto`, which lands on
+          # nas here (no inference service) and never asks the caption server.
+          # env merges by name, so this replaces only that one entry.
+          env:
+            - name: IMMICH_MEMORIES_TIER
+              value: full
       volumes:
         - name: config-src
           configMap:

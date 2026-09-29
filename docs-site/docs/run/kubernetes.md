@@ -118,7 +118,8 @@ in the namespace by default (`<NAME>_SERVICE_HOST`, `<NAME>_PORT`, ...), and thi
 which the worker's settings then read as its own `port` field and crash on:
 
 ```
-port: Input should be a valid integer, unable to parse string as an integer [input_value='tcp://…:8093']
+port
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='tcp://…:8093', input_type=str]
 ```
 
 The main app carries the same risk from a Service named `immich-memories` (`IMMICH_MEMORIES_PORT`,
@@ -291,8 +292,8 @@ uploads the daily runs only. The trigger route itself: [Trigger it over HTTP](..
 ## Everything at once
 
 `overlays/maximalist` composes `overlays/render-sidecar` and `overlays/captioner-cuda` with OIDC
-behind a reverse proxy, a declarative `config.yaml`, an LLM and ACE-Step on a LAN machine,
-geocoding, map tiles and cache caps sized to the PVC that holds them: the [reference
+behind a reverse proxy, a declarative `config.yaml`, an LLM on a LAN machine, an ACE-Step API
+server, geocoding, map tiles and cache caps sized to the PVC that holds them: the [reference
 setup](./reference-setup.md), written up from a real two-GPU-node cluster.
 
 ## Database

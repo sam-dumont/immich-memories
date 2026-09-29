@@ -1,7 +1,8 @@
 # A declarative config.yaml, mounted read-only via the ConfigMap and copied
 # onto the writable cache PVC by deployment-maximalist.yaml's install-config
-# init container (a ConfigMap volume is always world-readable, and the app
-# warns on that: see docs-site/docs/run/reference-setup.md#the-always-on-server-kubernetes).
+# init container (a ConfigMap volume's files belong to root, readable by the app
+# only through group or world bits, and the app warns on either).
+# docs-site/docs/run/reference-setup.md#the-always-on-server-kubernetes walks through it.
 # Everything that is a credential stays out of this file and comes from
 # maximalist-secret.yaml instead: ${VAR} below expands against the pod's
 # environment (config_models_auth.py, config_models_llm.py and
@@ -11,7 +12,8 @@
 #   - advanced.auth.public_url: the hostname your reverse proxy terminates TLS for
 #   - advanced.auth.trusted_proxies: your cluster's pod CIDR, IPv4 and IPv6
 #   - advanced.auth.allowed_emails: who may sign in
-#   - advanced.llm.base_url / advanced.ace_step.api_url: your LAN machine's address
+#   - advanced.llm.base_url: your LAN machine's address
+#   - advanced.ace_step.api_url: your ACE-Step API server (not part of this overlay)
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -47,7 +49,7 @@ data:
         provider: oidc
         public_url: "https://memories.example.com"
         trusted_proxies:
-          - "10.42.0.0/16"   # replace with: kubectl get nodes -o wide (pod CIDR)
+          - "10.42.0.0/16"   # replace with your cluster's pod CIDR (the CNI's or k3s's cluster-cidr)
           - "fd42::/48"      # and its IPv6 equivalent, if the cluster has one
         issuer_url: "${OIDC_ISSUER_URL}"
         client_id: "${OIDC_CLIENT_ID}"
@@ -71,8 +73,9 @@ data:
         api_key: "${LLM_API_KEY}"
 
       # An ACE-Step 1.5 API server (acestep-api: /release_task, /query_result),
-      # in-cluster. The XL variant wants >=12 GB VRAM upstream; the default
-      # 1.7B turbo/base family fits smaller cards.
+      # in-cluster or on the LAN; this overlay does not deploy one. The XL
+      # variant wants >=12 GB VRAM upstream; the default 2B turbo/base family
+      # fits smaller cards.
       ace_step:
         enabled: true
         mode: api

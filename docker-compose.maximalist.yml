@@ -9,7 +9,7 @@
 #     --profile captioner --profile inference --profile postgres up -d
 #
 # Walkthrough, hardware needed per piece, and the config keys:
-# docs-site/docs/run/maximalist.md. The Kubernetes equivalent is
+# docs-site/docs/run/reference-setup.md. The Kubernetes equivalent is
 # deploy/kubernetes/overlays/maximalist.
 #
 # What this file does NOT need to reinvent: the CUDA captioner and CUDA
@@ -23,6 +23,10 @@ services:
   immich-memories:
     environment:
       IMMICH_MEMORIES_TIER: "full"
+      # The two profiles below are only started by --profile; docker-compose.yml
+      # ships the app's pointers to them commented out, so name them here.
+      IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL: "http://immich-memories-captioner:8092/v1"
+      IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL: "http://immich-memories-inference:8092"
 
       # ── OIDC behind a TLS-terminating reverse proxy ─────────────────────
       # Without public_url the redirect_uri handed to the IdP is built from

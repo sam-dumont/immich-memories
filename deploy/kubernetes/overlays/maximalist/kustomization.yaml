@@ -1,8 +1,9 @@
 # The maximalist reference: every optional piece this project ships, composed
 # on one cluster. Written up from a real deployment: OIDC behind a
 # TLS-terminating proxy, a CUDA caption server, the render worker as a
-# sidecar, a declarative config.yaml, an LLM and ACE-Step on a LAN machine,
-# geocoding and map tiles on, and cache caps sized to the PVC that holds them.
+# sidecar, a declarative config.yaml, an LLM on a LAN machine, an ACE-Step API
+# server, geocoding and map tiles on, and cache caps sized to the PVC that
+# holds them.
 #
 #   cd deploy/kubernetes
 #   cp base/secret.yaml.example base/secret.yaml
@@ -28,6 +29,7 @@ resources:
   - ../render-sidecar   # base + render worker sidecar, on the GPU node
   - ../captioner-cuda    # the caption server the full tier needs, on a card
   - config-map.yaml
+  - networkpolicy-maximalist.yaml
   # cp maximalist-secret.yaml.example maximalist-secret.yaml and fill in.
   # kustomize refuses to build until the file exists.
   - maximalist-secret.yaml

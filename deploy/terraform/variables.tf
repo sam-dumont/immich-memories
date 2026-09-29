@@ -349,7 +349,7 @@ variable "secure_cookies" {
 }
 
 # The render worker as a sidecar in this Deployment's own pod, rather than a
-# separate Deployment (see docs-site/docs/better/gpu-render.md#run-it-as-a-sidecar).
+# separate Deployment (see docs-site/docs/run/kubernetes.md#render-worker-as-a-sidecar).
 # The app refuses a cleartext-HTTP render.worker_base_url to any host but
 # loopback, since the request carries the Immich API key; sharing a pod
 # reaches the worker at 127.0.0.1 with neither TLS nor
@@ -370,8 +370,8 @@ variable "render_worker_token" {
 }
 
 # A declarative config.yaml (config_loader.py). A ConfigMap volume mounts
-# every key world-readable with no way to chmod it, which is exactly what the
-# app warns on ("Config file ... is readable by other users"); when this is
+# files owned by root, readable by the app's uid only through group or world
+# bits, which is exactly what the app warns on ("Config file ... is readable by other users"); when this is
 # set, an init container copies it onto the writable cache PVC as the app's
 # own uid and chmods it 600 there, instead of mounting the ConfigMap directly
 # at ~/.immich-memories/config.yaml.

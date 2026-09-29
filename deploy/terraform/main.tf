@@ -295,9 +295,10 @@ resource "kubernetes_deployment_v1" "this" {
           }
         }
 
-        # A ConfigMap volume mounts every key world-readable with no way to
-        # chmod it, which is exactly what config_loader.py warns on ("Config
-        # file ... is readable by other users"). This copies it onto the
+        # A ConfigMap volume's files belong to root, readable by the app's uid
+        # only through group or world bits, which is exactly what
+        # config_loader.py warns on ("Config file ... is readable by other
+        # users"). This copies it onto the
         # writable cache PVC as the app's own uid instead, and chmods it
         # there. Only present when var.config_yaml is set: the default path
         # stays env-var only, like the rest of this module.

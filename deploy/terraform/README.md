@@ -17,14 +17,16 @@ The image runs as user `immich`, UID/GID 1000, `HOME=/home/immich`:
 
 | Mount | Backed by | Holds |
 |-------|-----------|-------|
-| `/home/immich/.immich-memories` | cache PVC (writable) | `config.yaml`, `cache.db`, video cache, projects, automation history |
+| `/home/immich/.immich-memories` | cache PVC (writable) | `config.yaml`, `store.db`, video cache, projects, automation history |
 | `/app/output` | output PVC | generated videos (`IMMICH_MEMORIES_OUTPUT__DIRECTORY=/app/output`) |
 | `/models` | models PVC (`models_storage_size`, 10Gi) | pinned encoder, sensitive-content model and detector snapshot |
 | `/tmp` | emptyDir (`tmp_size`, 4Gi) | FFmpeg intermediates |
 
-The init container runs `models fetch` on an empty models claim. The default tier is
-`no_captions`; to use a caption server, set both `IMMICH_MEMORIES_EDITORIAL__PREPARATION__TIER`
-to `full` and `IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL` in `env`.
+The init container runs `models fetch` on an empty models claim. The module runs `tier: auto`
+(`IMMICH_MEMORIES_TIER`), which selects the plain NAS tier until it finds GPU inference; to use a
+caption server, set `IMMICH_MEMORIES_TIER` to `gpu` or `full` and
+`IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL` in `env`. The preparation tier follows
+the product tier; setting `EDITORIAL__PREPARATION__TIER` by hand is overridden with a warning.
 
 No ConfigMap by default. `immich_url` / `immich_api_key` (and `llm_api_key`, `musicgen_api_key`,
 `secret_env`) land in the Secret and reach the pod through `envFrom`; every other setting is an
@@ -59,8 +61,8 @@ $(terraform output -raw port_forward_command)   # http://localhost:8080
 ## The maximalist example
 
 `examples/maximalist` wires every optional variable in the table below at once, the Terraform side
-of the reference setup: what runs where, and the two error strings OIDC fails with when a step is
-skipped, are on [docs-site/docs/run/reference-setup.md](../../docs-site/docs/run/reference-setup.md).
+of the reference setup: what runs where, and how OIDC fails when a step is skipped, are on
+[docs-site/docs/run/reference-setup.md](../../docs-site/docs/run/reference-setup.md).
 The Kubernetes-manifests equivalent is `deploy/kubernetes/overlays/maximalist`; both express the
 same features, so pick whichever tool manages the rest of your cluster.
 
@@ -197,7 +199,7 @@ module "immich_memories" {
 Both `oidc_public_url` and `oidc_trusted_proxies` are needed once `oidc_enabled` is true. Without
 `oidc_public_url` the `redirect_uri` sent to the IdP is built from the in-cluster request and comes
 out `http://`, which every IdP refuses. Without `oidc_trusted_proxies` naming the proxy,
-`X-Forwarded-Proto` is not trusted and the callback fails with `400 {"detail": "Invalid callback
+`X-Forwarded-Proto` is not trusted and the callback fails with `400 {"detail":"Invalid callback
 origin"}`.
 
 ### Render worker sidecar
@@ -227,8 +229,8 @@ dropped that architecture.
 |------|-------------|------|---------|
 | `config_yaml` | Literal `config.yaml` content | `string` | `""` |
 
-A ConfigMap volume mounts every key world-readable with no way to `chmod` it, which is exactly what
-the app warns on at startup ("Config file ... is readable by other users"). Setting `config_yaml`
+A ConfigMap volume's files belong to root, so the app's uid reads one only through its group or
+world bits, which is exactly what the app warns on at startup ("Config file ... is readable by other users"). Setting `config_yaml`
 adds an `install-config` init container that copies it onto the writable cache PVC as the app's own
 uid and `chmod 600`s it there, instead of mounting the ConfigMap directly at
 `~/.immich-memories/config.yaml`.

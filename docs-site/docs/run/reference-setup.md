@@ -33,8 +33,9 @@ Traefik (TLS) ── OIDC (Auth0) ── the app                 (XL turbo, bf16
 The server profile is a Deployment plus two single-purpose GPU workloads, reached through
 [`deploy/kubernetes/overlays/maximalist`](https://github.com/sam-dumont/immich-video-memory-generator/tree/main/deploy/kubernetes/overlays/maximalist)
 or [`deploy/terraform/examples/maximalist`](https://github.com/sam-dumont/immich-video-memory-generator/tree/main/deploy/terraform/examples/maximalist).
-The Mac profile is a single `uv tool install`, with three local servers instead of Python
-dependencies: see [pip / uv](./uv-pip.md) and [Add a reader](../better/reader.md).
+The Mac profile is a source checkout with ACE-Step installed beside it, plus two local servers
+(the reader and the caption server): see [Generated music](../better/music.md#install-locally-on-a-mac)
+and [Add a reader](../better/reader.md).
 
 ## Feature → where it runs → config keys → hardware
 
@@ -51,8 +52,10 @@ dependencies: see [pip / uv](./uv-pip.md) and [Add a reader](../better/reader.md
 | Cache caps | the cache PVC / local disk | `cache.video_cache_max_size_gb`, `cache.thumbnail_cache_max_size_mb` | sized storage |
 | Automation | in-process timer, or a CronJob to `/api/trigger` | `advanced.automation.enabled`, `advanced.automation.daily_at` | none |
 
-Missing a piece from this table: drop just that row and the app still runs. No caption server
-falls back a tier; no reader keeps the rules-based editor; no ACE-Step turns music off.
+Missing a piece from this table: drop the row and set `tier` to match, because a named tier never
+steps down on its own. `tier: full` refuses to load without `advanced.llm.base_url` and
+`advanced.llm.model`, and still asks for captions when no caption server answers; `tier: auto` picks
+what the install can do. No ACE-Step means a bundled track.
 
 ## The always-on server (Kubernetes)
 
@@ -67,9 +70,11 @@ kubectl apply -k overlays/maximalist
 ```
 
 `overlays/maximalist/kustomization.yaml` composes `overlays/render-sidecar` (which itself pulls in
-`base`) and `overlays/captioner-cuda`, rather than duplicating either. Two patches on top: a bigger
-cache PVC, and a third init container that installs `config.yaml`. Read [Kubernetes](./kubernetes.md)
-first for the base layout this builds on.
+`base`) and `overlays/captioner-cuda`, rather than duplicating either. On top: a smaller cache PVC
+(10Gi, down from the base's 20Gi), a second init container that installs `config.yaml`,
+`IMMICH_MEMORIES_TIER=full` on the app container (the base sets `auto`, and an env var beats
+`config.yaml`), and a NetworkPolicy that lets the app reach the LLM and ACE-Step ports. Read
+[Kubernetes](./kubernetes.md) first for the base layout this builds on.
 
 ### The cluster's config.yaml, annotated
 
@@ -117,7 +122,7 @@ advanced:
   ace_step:
     enabled: true
     mode: api
-    api_url: "http://acestep-api:8001"   # in-cluster: ACE-Step 1.5, 1.7B turbo
+    api_url: "http://acestep-api:8001"   # an ACE-Step 1.5 API server, not in the overlay
     api_key: "${ACE_STEP_API_KEY}"
 
   automation:
@@ -132,8 +137,8 @@ advanced:
 NVENC h264/hevc for the render, exec probes for the worker (below). `gpu-node-b` carries only the
 caption server: an older GTX 1070 (Pascal, 8 GB) that PyTorch's cu128 wheels have already dropped
 support for, but llama.cpp's CUDA build still runs on. Splitting them this way means the caption
-server never competes with the app for the busier card, and a card too old for the CUDA inference
-service still earns its keep.
+server never competes with the app for the busier card, and a card too old for anything built on
+PyTorch's cu128 wheels still earns its keep.
 
 ### Gotchas, with the exact strings to search for
 
@@ -146,19 +151,20 @@ ever sees the callback.
 comes back:
 
 ```
-400 {"detail": "Invalid callback origin"}
+400 {"detail":"Invalid callback origin"}
 ```
 
 `trusted_proxies` is the pod CIDR your CNI hands out, IPv4 and IPv6.
 
-**`enableServiceLinks` left on.** Kubernetes injects one env var per Service in the namespace by
-default, and this app's own `IMMICH_MEMORIES_*` prefix collides with its own Service names. A
-Service named `immich-memories-render-worker` injects
+**`enableServiceLinks` left on.** Kubernetes injects a set of env vars for every Service in the
+namespace by default, and this app's own `IMMICH_MEMORIES_*` prefix collides with its own Service
+names. A Service named `immich-memories-render-worker` injects
 `IMMICH_MEMORIES_RENDER_WORKER_PORT=tcp://10.x.x.x:8093`, which the worker's settings then read as
-its own `port` field and crash on:
+its own `port` field and crash on (pydantic's validation error):
 
 ```
-port: Input should be a valid integer, unable to parse string as an integer [input_value='tcp://…:8093']
+port
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='tcp://…:8093', input_type=str]
 ```
 
 Every manifest here sets `enableServiceLinks: false` for exactly this reason (#1608); copy it onto
@@ -173,12 +179,12 @@ namespace, where loopback is reachable.
 **A PVC that never binds.** A storage class provisioning only static, pre-created PVs (no dynamic
 provisioner, `volumeBindingMode: Immediate`) leaves a fresh PVC `Pending` forever if no PV happens
 to match it. The caption weights are the case that bites here: they are pinned artifacts, cheap to
-refetch, so `overlays/captioner-cuda` gets away with an `emptyDir` model cache instead of a claim
-when the cluster's storage class works this way. The cache, output and models PVCs the app itself
-needs still want real storage.
+refetch, so on a storage class that works this way, patch the caption server's `models` volume to
+an `emptyDir` in place of the `immich-memories-caption-models` claim `overlays/captioner` ships.
+The cache, output and models PVCs the app itself needs still want real storage.
 
 **`sm_61` vs PyTorch cu128.** Covered above: llama.cpp's CUDA build runs on Pascal, PyTorch's
-cu128 wheels do not. Put the caption server, not the inference service, on the older card.
+cu128 wheels do not. Put the caption server, not a PyTorch workload, on the older card.
 
 **MTU on a multi-site cluster.** A cluster spanning two sites over VXLAN loses bytes to the tunnel
 header; Cilium's default MTU assumes a 1500-byte path that isn't there. Symptoms are intermittent:
@@ -189,11 +195,18 @@ rather than discovering it one timeout at a time.
 ## The laptop / workstation (the Mac)
 
 Nothing above needs a second machine or a cluster; this profile runs the same app, the same
-config keys, entirely on one Mac. Install with the `all-mac` extra
-([Hardware](./hardware.md#apple-silicon)), then three local servers instead of a cluster:
+config keys, entirely on one Mac, with two local servers instead of a cluster. `lib` mode is not in
+`uv tool install` or the `all-mac` extra: ACE-Step runs from a `.venv-acestep` beside a checkout
+([Install locally on a Mac](../better/music.md#install-locally-on-a-mac)). OIDC needs `authlib`,
+which `all-mac` and `make dev-mac` leave out; `make dev` installs every extra and builds the web
+client (it needs Node 22):
 
 ```bash
-uv tool install "immich-memories[all-mac]"
+git clone https://github.com/sam-dumont/immich-video-memory-generator.git
+cd immich-video-memory-generator
+make dev
+make install-acestep
+uv run immich-memories ui
 ```
 
 ### The Mac's config.yaml, annotated
@@ -221,17 +234,17 @@ advanced:
 
   editorial:
     preparation:
-      # mlxcel: llama.cpp's SmolVLM2 alias, served locally
+      # mlxcel, serving the same SmolVLM2 alias as the llama.cpp recipe
       caption_base_url: "http://localhost:8092/v1"
 
   llm:
     provider: "openai-compatible"
-    base_url: "http://localhost:9999/v1"   # oMLX, bound to this machine only
+    base_url: "http://localhost:9999/v1"   # oMLX, also the cluster's reader over the LAN
     model: "gemma-4-e4b-it-6bit"
 
   ace_step:
     enabled: true
-    mode: lib                        # in-process, not an API server
+    mode: lib                        # a local library, not an API server
     model_variant: "acestep-v15-xl-turbo"   # the XL variant
     lm_model_size: "4B"
     use_lm: true
@@ -247,5 +260,6 @@ single-user machine reached only at `localhost`: nothing forwards a proxied `Hos
 ## Terraform
 
 `deploy/terraform/examples/maximalist` is the Terraform form of the server profile: every feature
-above as a module variable, defaulting to the minimal path (off) until set. See
+above as a module variable, defaulting to the minimal path (off) until set, except the tier and
+automation, which go through `env`. See
 [`deploy/terraform/README.md`](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/deploy/terraform/README.md#the-maximalist-example).

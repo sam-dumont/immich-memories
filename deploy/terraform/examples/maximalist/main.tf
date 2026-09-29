@@ -79,8 +79,12 @@ module "immich_memories" {
   captioner_enabled = true
   captioner_cuda    = true
 
-  # Daily automation inside the pod.
+  # The module sets IMMICH_MEMORIES_TIER=auto, which lands on nas here (no
+  # inference service) and never asks the caption server; `env` is merged
+  # last, so this pins the tier the captioner and the LLM are for. Daily
+  # automation inside the pod.
   env = {
+    IMMICH_MEMORIES_TIER                 = "full"
     IMMICH_MEMORIES_AUTOMATION__ENABLED  = "true"
     IMMICH_MEMORIES_AUTOMATION__DAILY_AT = "09:00"
   }

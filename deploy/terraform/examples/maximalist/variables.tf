@@ -58,7 +58,7 @@ variable "oidc_public_url" {
 }
 
 variable "oidc_trusted_proxies" {
-  description = "The cluster's pod CIDR, IPv4 and IPv6 (kubectl get nodes -o wide, or your CNI's docs)"
+  description = "The cluster's pod CIDR, IPv4 and IPv6 (your CNI's or k3s's cluster-cidr)"
   type        = list(string)
 }
 
