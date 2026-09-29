@@ -10,7 +10,9 @@ transport in `llm_query` only has to speak the two dialects.
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from ipaddress import ip_address
+from typing import Any
 from urllib.parse import urlsplit
 
 from immich_memories.config_models_llm import LLMConfig
@@ -242,20 +244,18 @@ def is_local_endpoint(config: LLMConfig) -> bool:
     return _reachable_only_from_here(urlsplit(config.base_url).hostname or "")
 
 
-def structured_output_enabled(config: LLMConfig) -> bool:
-    """Whether this call may ask the server for a strict response_format json_schema.
+def structured_output_enabled(
+    config: LLMConfig, response_format: Mapping[str, Any] | None = None
+) -> bool:
+    """Choose schema enforcement for this request, retaining explicit endpoint overrides.
 
-    An explicit `llm.structured_output` always wins. Left unset, a hosted endpoint gets
-    it (the earlier behaviour) and a local one does not: measured 2026-09-29, oMLX's
-    grammar-constrained decoder for gemma-4-e4b-it-6bit stalled at the completion ceiling
-    on the episode-reading schema, always right after an empty array closed and before the
-    next required key, spending the whole budget on 360 characters. The identical prompt
-    with no response_format completed in under half the tokens with valid JSON. Only the
-    local shape was measured broken, so a hosted endpoint's default is untouched.
+    Local episode-reading schemas can stall oMLX after an empty array. Other request
+    types, including free-text answers, retain the schema their parser requires.
     """
     if config.structured_output is not None:
         return config.structured_output
-    return not is_local_endpoint(config)
+    name = (response_format or {}).get("json_schema", {}).get("name")
+    return not (is_local_endpoint(config) and name == "episode_reading")
 
 
 def reader_concurrency(config: LLMConfig) -> int:

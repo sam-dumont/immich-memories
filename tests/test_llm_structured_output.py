@@ -1,9 +1,7 @@
 """A prose seat asks for its JSON shape and states its own sampling; a server that refuses either is still answered.
 
-Whether the shape is asked for at all now depends on where the server lives: measured
-2026-09-29, oMLX's grammar-constrained decoder stalled forever on the episode-reading
-schema, so a server on this machine or this private network defaults to no shape and a
-hosted one keeps asking for it. An explicit `structured_output` always wins either way.
+The local episode reader keeps its measured unconstrained mode. Other named requests retain
+schema enforcement, and an explicit endpoint override still wins.
 """
 
 from __future__ import annotations
@@ -13,6 +11,7 @@ from unittest.mock import patch
 import pytest
 
 from immich_memories.analysis.llm_text_identity import text_model_identity
+from immich_memories.analysis.prose_shapes import episode_reading_shape
 from immich_memories.config_models_llm import LLMConfig
 from tests.test_llm_query import _openai_400, _openai_response
 
@@ -60,8 +59,8 @@ async def test_a_hosted_seat_s_json_shape_reaches_the_server():
 
 
 @pytest.mark.asyncio
-async def test_a_local_server_gets_no_shape_left_at_its_default():
-    body = await _sent(_local(), response_format=SHAPE)
+async def test_a_local_episode_gets_no_shape_left_at_its_default():
+    body = await _sent(_local(), response_format=episode_reading_shape(1, lean=False))
 
     assert "response_format" not in body
 
@@ -167,7 +166,7 @@ async def test_ollama_gets_the_shape_as_its_format_and_the_penalty_as_an_option(
 
 
 @pytest.mark.asyncio
-async def test_ollama_on_a_local_server_defaults_to_no_shape():
+async def test_ollama_local_episode_defaults_to_no_shape():
     from unittest.mock import AsyncMock, MagicMock
 
     from immich_memories.analysis.llm_query import query_llm
@@ -177,7 +176,9 @@ async def test_ollama_on_a_local_server_defaults_to_no_shape():
     answer.raise_for_status = lambda: None
     # WHY: the LLM server is the external boundary this request reaches.
     with patch("httpx.AsyncClient.post", return_value=answer) as post:
-        await query_llm("Name this film", config, response_format=SHAPE)
+        await query_llm(
+            "Name this film", config, response_format=episode_reading_shape(1, lean=False)
+        )
     body = post.call_args[1]["json"]
 
     assert "format" not in body
@@ -194,7 +195,7 @@ def test_changing_either_setting_is_another_model_identity():
 
 
 def test_left_at_its_default_a_local_and_a_hosted_endpoint_carry_different_identities():
-    """Same unset setting, different resolved behaviour: the identity must tell them apart."""
+    """A provider bank remains specific to its endpoint."""
     local = text_model_identity(_local(), thinking=False)
     hosted = text_model_identity(_hosted(), thinking=False)
 
@@ -284,3 +285,11 @@ async def test_concurrent_schema_refusals_announce_the_learned_capability_once(c
         )
     assert initial == 2
     assert caplog.text.count("adapting request (json_object)") == 1
+
+
+@pytest.mark.asyncio
+async def test_a_hosted_episode_retains_its_schema_at_the_default():
+    shape = episode_reading_shape(1, lean=False)
+    body = await _sent(_hosted(), response_format=shape)
+
+    assert body["response_format"] == shape

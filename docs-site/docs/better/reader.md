@@ -236,9 +236,11 @@ and `message` go into the log line, cut at 300 characters.
 
 ## Structured replies
 
-Hosted readers request a JSON schema by default. Local endpoints default to prompt-only JSON
-because some local grammar decoders stall on these schemas. `advanced.llm.structured_output`
-can explicitly enable or disable that request shape.
+The default selects the mode by request type. Free-text questions, titles and period accounts
+request their JSON schemas on local and hosted endpoints. Local episode readings use prompt-only
+JSON because oMLX can stall on their nested schema; hosted episode readings retain the schema.
+Both modes work against the same endpoint in one process. `advanced.llm.structured_output` can
+explicitly enable or disable schemas for that endpoint.
 
 If a provider refuses schema mode and asks for `json_object`, the app retries once in object
 mode and carries the schema in the prompt. It remembers that choice for the endpoint and model
