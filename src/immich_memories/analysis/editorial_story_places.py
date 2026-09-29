@@ -35,10 +35,13 @@ class PlaceShares:
         scope_of: Mapping[str, str],
         bounds: Mapping[tuple[str, str], int],
         scopes: Sequence[Mapping[str, Any]] = (),
+        shares: Mapping[str, Mapping[str, tuple[int, int]]] | None = None,
     ) -> None:
         self._scope_of = scope_of
-        self._bounds = bounds
+        self._bounds = dict(bounds)
         self._scopes = list(scopes)
+        # Per scope, each place's (days or moments it holds, of the scope's whole), to size again.
+        self._shares = dict(shares or {})
         self._held: Counter[tuple[str, str]] = Counter()
         self.crowded: list[dict[str, Any]] = []
 
@@ -50,6 +53,19 @@ class PlaceShares:
         key = self._key(story_key, place)
         bound = self._bounds.get(key)
         return bound is not None and self._held[key] >= bound
+
+    def widen(self, story_key: str, allowance: int) -> None:
+        """Size this story's places for an allowance it now spends: a film still short hands its
+        free slots to the moments a story already shows, and a bound sized from the story's
+        weight alone (one shot for a minor story) refused every one of them (#1601). Same curve,
+        larger allowance; a bound never shrinks."""
+        scope = self._scope_of.get(story_key, story_key)
+        for place, (at, whole) in self._shares.get(scope, {}).items():
+            key = (scope, place)
+            wider = trip_allowance(at, whole, allowance)
+            if wider > self._bounds.get(key, 0):
+                self._bounds[key] = wider
+                self._scopes.append({"scope": scope, "widened_to": allowance, "place": place})
 
     def took(self, story_key: str, place: str) -> None:
         self._held[self._key(story_key, place)] += 1
@@ -92,21 +108,19 @@ def _spread(units: Sequence[Mapping[str, Any]], place_of: Callable[[str], str]):
     return days, moments
 
 
-def _scope_bounds(units, *, allowance: int, place_of) -> dict[str, int]:
-    """One place of this scope may hold what a trip of the same share of it may hold.
+def _scope_shares(units, *, place_of) -> dict[str, tuple[int, int]]:
+    """Per place, the days (or, on a one-day scope, the moments) it holds of the scope's whole.
 
-    A scope of one place, or one the film funds with nothing, is left alone: there is nothing
-    for its pictures to compete with.
+    One place of a scope may hold what a trip of the same share of it may hold. A scope of one
+    place is left alone: there is nothing for its pictures to compete with.
     """
     days, moments = _spread(units, place_of)
-    if allowance <= 0 or len(days) < 2:
+    if len(days) < 2:
         return {}
     spans_days = len(set(chain.from_iterable(days.values()))) > 1
     counted = days if spans_days else moments
     whole = len(set(chain.from_iterable(counted.values())))
-    return {
-        place: trip_allowance(len(at), whole, allowance) for place, at in sorted(counted.items())
-    }
+    return {place: (len(at), whole) for place, at in sorted(counted.items())}
 
 
 def place_shares(
@@ -129,15 +143,20 @@ def place_shares(
     )
     scope_of: dict[str, str] = {}
     bounds: dict[tuple[str, str], int] = {}
+    shares: dict[str, dict[str, tuple[int, int]]] = {}
     audit: list[dict[str, Any]] = []
     for scope, keys, allowance in scopes:
         for key in keys:
             scope_of[key] = scope
         units = [unit for key in keys for unit in story_units.get(key, ())]
-        found = _scope_bounds(units, allowance=allowance, place_of=place_of)
-        if not found:
+        shares[scope] = _scope_shares(units, place_of=place_of)
+        if allowance <= 0 or not shares[scope]:
             continue
+        found = {
+            place: trip_allowance(at, whole, allowance)
+            for place, (at, whole) in shares[scope].items()
+        }
         for place, bound in found.items():
             bounds[(scope, place)] = bound
         audit.append({"scope": scope, "allowance": allowance, "places": found})
-    return PlaceShares(scope_of, bounds, audit)
+    return PlaceShares(scope_of, bounds, audit, shares)

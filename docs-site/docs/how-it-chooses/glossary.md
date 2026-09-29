@@ -49,7 +49,7 @@ flowchart LR
 | **Carrier rule** | a picture kept as evidence and never a shot: a document, a screen, a screenshot, a face close-up | `excluded_carrier_sources` |
 | **Standing** | whether a picture stands on its own, scored 0 to 2 from its facts, never asked of a model | `editorial_standing_facts.py`, `StandingGate` |
 | **Look-alike** | a story's next shot must not repeat one it holds (hash within 10 bits) | `editorial_story_lookalike.py` |
-| **Depth** | a story with slots left spends them inside moments it already shows, up to 3 frames each | `editorial_story_depth.py` |
+| **Depth** | a story with slots left spends them inside moments it already shows, videos first, spread in time, until the slots run out | `editorial_story_depth.py` |
 | **Family seat** | one shot for a close family member the cut left out | `editorial_family_seat.py` |
 | **Close family** | partner or spouse, child, parent, as confirmed in the people registry; in a person film, that person's too | `people/relationships.py` |
 | **Owner-required** | a picture you ticked; added after the draft, kept through the trim and the duplicate review | `editorial_owner_required.py` |
