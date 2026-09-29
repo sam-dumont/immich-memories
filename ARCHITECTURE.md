@@ -390,6 +390,10 @@ these helper modules:
   `DownloadCoordinator.sources_for` shares downloaded components across workers by source ID.
   `processing/memory_budget.py` sizes the pool when `source_prepare_workers` is `auto`: one worker
   per 2 GB of the cgroup memory limit (else physical RAM), at most 2 and never more than the CPUs.
+  The same budget caps each assembly decode's FFmpeg `-threads` (one per 2 GB, 1 to 4).
+  It also sets libx265's `rc-lookahead` above 1080p (5 up to 3 GB, 10 at 4-5 GB, default from 6 GB)
+  through `clip_encoder.encoder_args_for_plan` and the photo clip encoder.
+  Below 3 GB with no hardware HEVC encoder, `output_canvas` renders an `auto` 4K film at 1080p.
 - `processing/remote_render.py`: authenticated jobs, bounded polling, a SHA-256-checked download,
   and a staged film that reuses the worker's decode when the bytes match
 - `processing/remote_render_plan.py`: frozen cut serialization, including certified Live material
@@ -439,6 +443,7 @@ src/immich_memories/
 │   ├── annotation_line_fields.py # Which parts of a picture's line are its content and which we wrote; content rules read only the first
 │   ├── editorial_film_reach.py # What a film prepares: its demanded pictures, their Live families and capture runs
 │   ├── person_presence.py      # Who a person film may select: every picture of an episode its people are recognised in
+│   ├── person_resolution.py    # A name or UUID -> faces: the store's aliases per read account, else the roster
 │   ├── editorial_orchestration.py  # TextEditorialPlanner: episodes -> cards -> edit
 │   ├── editorial_rule_episodes.py  # Factual episode cards / omitted thesis; no semantic-bank writes
 │   ├── editorial_rule_reader.py    # Rules for worthiness, grouping and standing; shared allocation
@@ -503,7 +508,8 @@ src/immich_memories/
 │   ├── selection_source*.py    # The canonical source model: admission, provenance, groups, invariants
 │   ├── household_source.py     # A run naming its accounts (`EditorialRunContext.accounts`) reads the
 │   │                           # window per account, keeps chosen owners only, tags `Asset.access_accounts`
-│   │                           # and routes the run's AccessBoundClient; the kept copy of each exact-copy
+│   │                           # and routes the run's AccessBoundClient; `HouseholdWindows` is the same
+│   │                           # read for person presence in discovery; the kept copy of each exact-copy
 │   │                           # group and its account are frozen in the attempt's source snapshot, and
 │   │                           # `runs render` reads that copy through that account
 │   ├── text_episode_reader.py  # Reading event evidence (paged, banked); the same reading names
@@ -682,6 +688,7 @@ src/immich_memories/
 │   ├── generate.py             # `generate`
 │   ├── generate_options.py     # `generate`'s flags, grouped; group order is the --help order
 │   ├── generate_resolution.py  # What those flags mean against the config, presets and conflicts
+│   ├── run_people.py           # `--person`/`--people-expression` through the people store, then the roster
 │   ├── config_cmd.py           # `config`, `years`, `preflight`
 │   ├── people_cmd.py           # `people` scan/show
 │   ├── models_cmd.py           # `models fetch`
@@ -743,7 +750,7 @@ src/immich_memories/
 │   ├── dependencies.py         # Config, thumbnail cache, Immich fetches; overridable in tests
 │   ├── openapi.json            # Generated (make web-api); web/src/lib/api-types.ts comes from it
 │   ├── static/fonts/           # The title fonts the client previews with
-│   └── client/                 # Generated SvelteKit build (make web-build), committed: no Node at runtime
+│   └── client/                 # Generated SvelteKit build (make web-build), gitignored: the wheel and image build it
 │
 ├── tracking/                   # Run history & telemetry
 │   ├── run_database.py         # RunDatabase: run history in the store (pipeline_runs, phase_stats)
@@ -850,6 +857,7 @@ src/immich_memories/
 │   ├── companion.py            # The people registry's writers (scan, confirm, add, relate), each one
 │   │                           # store transaction under the registry row lock; confirmed beats inferred
 │   ├── registry_store.py       # The registry document <-> the people tables (the only code that knows the rows)
+│   ├── account_ids.py          # A person's ids: one flat list (primary account) or one list per account
 │   ├── transfer.py             # people export/import (validated, ids kept) and import_legacy(people.yaml)
 │   ├── evidence_graph.py       # ~/.immich-memories/people-graph.json: scan measurements, a derived file
 │   ├── expression_window.py    # The earliest day a people condition can hold, from birth dates
@@ -1193,8 +1201,11 @@ Suggestions use `AutoRunner`; nothing owns a separate job store.
 **Web client (`web/` at the repo root, served from `src/immich_memories/web/client`).** SvelteKit
 static SPA with `@immich/ui` (MIT; its logos and store badges are Immich trademarks, stripped at
 build time and gated by `scripts/check_web_brand.py`). It talks only to `/api/v1`; the server
-pages it replaced redirect to `/app/...`. `make web-check` fails on a stale bundle, a stale
-OpenAPI contract or TS types, or a shipped Immich brand asset. Import-linter keeps
+pages it replaced redirect to `/app/...`. The build is not committed (#1580): the release job
+and both Docker images build it, `hatch_build.py` refuses a wheel without it, `make dev` builds it
+for a checkout, and until then `/app` answers 503 naming `make web-build`. `make web-check` fails
+on a stale OpenAPI contract or TS types, a client that no longer builds, or a shipped Immich brand
+asset. Import-linter keeps
 `immich_memories.web` from importing the CLI, and the core packages from importing the web
 server. Labels are `t('...')`/`N_('...')` in Svelte and land in the `ui.po` catalogues
 (`make ui-catalogues`).
@@ -1205,6 +1216,8 @@ server. Labels are `t('...')`/`N_('...')` in Svelte and land in the `ui.po` cata
 boundaries share it; worker pools propagate context. `run_observations.py` owns the CLI lifecycle from
 before discovery through failure or completion. `span_store.py` persists spans and diagnostic context
 through Alembic revision `0007_timing`, on SQLite or PostgreSQL. No span writes to the database.
+`peak_memory.py` gives each span of a measured run its peak RSS, own and with child processes: the
+`ru_maxrss` lifetime high at both ends, plus one sampler thread (libproc on macOS, /proc on Linux).
 
 `tracking/report.py` allowlists diagnostic fields. `report_privacy.py` redacts the chosen strings and
 assigns per-report salted IDs. `report_service.py` assembles the same report for `report` and the HTTP

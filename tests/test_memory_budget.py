@@ -87,6 +87,8 @@ def test_preflight_says_how_many_sources_a_render_prepares():
 
     config = Config()
     config.analysis.source_prepare_workers = 1
-    assert check_memory(config).message == "Photo preparation: 1 at a time (set in the config)"
+    assert check_memory(config).message.startswith(
+        "Photo preparation: 1 at a time (set in the config); libx265 lookahead at 4K: "
+    )
     config.analysis.source_prepare_workers = "auto"
     assert check_memory(config).message.startswith("Photo preparation: ")

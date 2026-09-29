@@ -260,9 +260,9 @@ def test_refinement_preserves_the_drafts_starred_duplicate_history(tmp_path):
 
 
 def test_folding_starred_twins_never_leaves_a_film_with_nothing(tmp_path):
-    """Six starred days that all read as one scene: folding them would leave two shots, under
-    the floor where the film abstains. It folds down to the floor and the film is made."""
+    """Six starred days that all read as one scene fold as repeats, but never below one shot:
+    the floor where a film would have nothing (#1595). The film is made."""
     _ids, plan = _six_days_away(tmp_path, starred_days=6)
 
     assert plan["status"] != "insufficient_material"
-    assert len(plan["carriers"]) == 3
+    assert len(plan["carriers"]) >= 1

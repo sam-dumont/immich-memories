@@ -10,7 +10,7 @@ Cull, and the pool the owner reviews already holds those pictures.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Literal, Protocol
 
 from immich_memories.analysis.person_presence import (
@@ -71,16 +71,23 @@ def window_condition(
 
 
 def people_in_window(
-    client: WindowSource, date_range: DateRange, condition: PersonExpression
+    client: WindowSource,
+    date_range: DateRange,
+    condition: PersonExpression,
+    *,
+    face_accounts: Mapping[str, str] | None = None,
 ) -> tuple[list, list]:
     """The videos and photos of one window whose episode holds ``condition`` (face IDs).
 
     Two reads per window whatever the number of people: per-person queries answer per
-    frame, which is the question this replaces.
+    frame, which is the question this replaces. ``face_accounts`` holds each face to its
+    own account's pictures, in a household run (`present_in_episodes`).
     """
     videos = client.get_videos_for_date_range(date_range)
     photos = list(client.get_photos_for_date_range(date_range))
-    present = present_in_episodes(episodes_of([*videos, *photos]), condition)
+    present = present_in_episodes(
+        episodes_of([*videos, *photos]), condition, face_accounts=face_accounts
+    )
     return _in_order(videos, present), _in_order(photos, present)
 
 

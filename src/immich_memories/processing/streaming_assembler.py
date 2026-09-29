@@ -89,7 +89,7 @@ class StreamingEncoder:
         self._height = height
         self._fps = fps
         self._encoding_plan = encoding_plan or _default_streaming_plan()
-        self._encoder_args = encoder_args_for_plan(self._encoding_plan)
+        self._encoder_args = encoder_args_for_plan(self._encoding_plan, frame_size=(width, height))
         # WHY: Frames arrive as rgb24 (sRGB). For HDR output, zscale converts
         # sRGB → HLG/PQ on the encoder side. Same pattern as photo pipeline.
         self._target_transfer = self._encoding_plan.target_transfer

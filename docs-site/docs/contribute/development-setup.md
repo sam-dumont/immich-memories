@@ -6,7 +6,8 @@ sidebar_label: "Development Setup"
 
 The full contribution guidelines are in [CONTRIBUTING.md](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/CONTRIBUTING.md).
 
-You need Python 3.11+, FFmpeg, [uv](https://docs.astral.sh/uv/) and GNU Make.
+You need Python 3.11+, FFmpeg, [uv](https://docs.astral.sh/uv/) and GNU Make. The web UI also
+needs Node 22: a checkout builds its own client (see [The web client](#the-web-client)).
 
 ```bash
 git clone https://github.com/sam-dumont/immich-video-memory-generator.git
@@ -24,7 +25,7 @@ it before any other make target.
 | `make dev-test` | dev tools only | Default for contributors (what CI tests with) |
 | `make dev-ci` | dev tools only | Identical to `dev-test` today |
 | `make dev-mac` | dev + `all-mac` (Apple Vision, Metal, the editorial stack) | Apple Silicon, full feature set |
-| `make dev` | every declared extra (torch, demucs, editorial), slow | Only if you work across all optional backends |
+| `make dev` | every declared extra (torch, demucs, editorial) and the built web client, slow | Only if you work across all optional backends |
 
 **Rendering with generated music on a Mac? Also run `make install-acestep`.** None of the targets
 above install ACE-Step: it lives in a sibling `.venv-acestep` next to the checkout, so **every new
@@ -50,15 +51,21 @@ The test tiers, what each needs, and what to do when diff-cover fails on your PR
 ## The web client
 
 The web UI is a SvelteKit client in `web/` at the repository root, built into the Python package
-and served by the app at `/app`. Working on it needs Node 22 (what CI uses) on top of the Python
-setup above.
+and served by the app at `/app`. The built client is not committed: the release wheel and the
+Docker image build it, and a checkout builds its own. `make dev` does it for you. After
+`make dev-test`, run `make web-client` once (Node 22, what CI uses). Until then `/app` says the
+client is not built and names the command.
 
 ```bash
-make web-install        # the client's pinned dependencies (npm ci)
+make web-client         # npm ci, then build the client into the package
 cd web && npm run dev   # the Vite dev server, with hot reload
-make web-build          # build the client into the package, as the app serves it
-make web-check          # type-check, and fail on a stale bundle or API contract
+make web-build          # rebuild the client after a change, as the app serves it
+make web-check          # type-check, check the API contract and types, build, refuse Immich logos
 ```
+
+The build lands in `src/immich_memories/web/client/`, which git ignores, so two web PRs never
+conflict on hashed file names again. A wheel can't be built without it: `hatch_build.py` refuses
+one and names `make web-build`. `make build` builds the client first.
 
 The client talks to the app through `/api/v1`. After changing an endpoint, run `make web-api`: it
 regenerates the OpenAPI document and the client's TypeScript types from it, and `make web-check`

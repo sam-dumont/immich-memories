@@ -35,9 +35,10 @@ def test_available_story_material_and_shorter_selection_are_not_discarded(tmp_pa
     assert plan["intent_report"]["status"] == "ok"
 
 
-def test_unlimited_small_result_keeps_existing_refusal(tmp_path):
+def test_a_single_real_picture_makes_a_short_film_not_a_refusal(tmp_path):
+    """Small beats nothing (#1595): one real shot is a film, however short of the target."""
     plan = run(source(tmp_path, seconds=60, pictures=1), ControlledStoryJudge())
-    assert plan["status"] == plan["intent_report"]["status"] == "insufficient_material"
+    assert plan["intent_report"]["status"] != "insufficient_material"
     assert len(plan["carriers"]) == 1
     assert plan["intent_report"]["coverage"] == {"scope": 1}
 
