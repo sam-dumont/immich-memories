@@ -314,3 +314,55 @@ def test_a_starred_twin_stays_when_leaving_would_leave_no_film():
 
     assert len(survivors) == 3
     assert record["collapsed_favourites"] == []
+
+
+def _at(asset_id, *, hour, minute=0, kind="still", day=13):
+    return {
+        "asset_id": asset_id,
+        "taken": f"2024-06-{day:02}T{hour:02}:{minute:02}:00",
+        "favourite": False,
+        "kind": kind,
+        "story_episode": "the-event",
+        "seconds": 4.0,
+    }
+
+
+def test_scenes_of_one_kind_hours_apart_on_one_event_day_are_moments_not_repeats():
+    """A single-event day is one kind of scene all day: stage after stage, set after set.
+
+    A scene print says what kind of scene a frame shows, not which moment. On one day, the same
+    kind hours apart is the event going on; only frames of one moment repeat each other.
+    """
+    cut = [
+        _at("path", hour=14, kind="video"),
+        _at("path-again", hour=18, kind="video"),  # cosine 0.95 with the path
+        _at("path-third", hour=20, minute=40, kind="video"),  # cosine 0.80
+    ]
+
+    survivors, record = _review(cut)
+
+    assert _ids(survivors) == ["path", "path-again", "path-third"]
+    assert record["removals"] == []
+
+
+def test_the_same_scene_twice_within_one_moment_still_collapses():
+    cut = [_at("path", hour=18), _at("path-again", hour=18, minute=4), _at("beach", hour=21)]
+
+    survivors, record = _review(cut)
+
+    assert _ids(survivors) == ["path", "beach"]
+    assert [(r["asset_id"], r["keeper"]) for r in record["removals"]] == [("path-again", "path")]
+
+
+def test_a_near_identical_frame_hours_apart_on_one_day_still_collapses_by_its_hash():
+    near = {**HASHES, "path-again": "fffffffffffffffe"}  # one bit from the path
+
+    survivors, record = review_cut_by_cached_hashes(
+        [_at("path", hour=14), _at("path-again", hour=19), _at("beach", hour=21)],
+        thumbnail_hash=near.get,
+        scene_print=PRINTS.get,
+        content_floor=0.0,
+    )
+
+    assert _ids(survivors) == ["path", "beach"]
+    assert record["removals"][0]["asset_id"] == "path-again"

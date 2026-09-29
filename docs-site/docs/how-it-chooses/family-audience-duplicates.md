@@ -221,9 +221,12 @@ No tier asks a model to compare two pictures.
    - a preview hash within 6 bits, inside the same story or the same day;
    - a scene print (the pooled DINOv2 vector of the preview, banked in `scene-prints.sqlite`) at a
      cosine of 0.65 or more, within 14 days, across stories. That catches the same trail at dusk
-     shot twice from different spots, which hashes as strangers. Two favourites are the same scene
-     only within 2 days of each other: the same pose in the same place on consecutive days is one
-     moment you starred twice, and further apart it is two moments.
+     shot twice from different spots, which hashes as strangers. On one day it only counts inside
+     one moment (10 minutes): a scene print says what kind of scene a picture is, and a concert or
+     a wedding is one kind all day, so two sets hours apart are two moments of the event, not a
+     repeat. Two favourites are the same scene only within 2 days of each other: the same pose in
+     the same place on consecutive days is one moment you starred twice, and further apart it is
+     two moments.
 
 Which frame stays: one you ticked, then the favourite, then the one that moves (a video before a Live
 Photo), then a close family member's only shot, then (between two favourites) the one with more
