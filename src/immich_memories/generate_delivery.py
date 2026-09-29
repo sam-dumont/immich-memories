@@ -26,8 +26,26 @@ if TYPE_CHECKING:
     from immich_memories.generate import DeliveryError, GenerationParams
     from immich_memories.generate_progress import _OperationalProgress
     from immich_memories.tracking import RunTracker
+    from immich_memories.tracking.models import RunMetadata
 
 logger = logging.getLogger(__name__)
+
+
+def _cleanup_local_output(run: RunMetadata) -> None:
+    """Reclaim the local film once Immich confirms it; a failure here stays local.
+
+    The durable copy this run answers for is already in Immich, so this is
+    strictly best-effort: any failure leaves the file on disk for the next
+    `runs delete` or a size/age cap to clear, rather than turning a
+    successful delivery into a reported failure.
+    """
+    from immich_memories.operations.local_output_cleanup import delete_local_output
+
+    try:
+        if delete_local_output(run):
+            logger.info("Removed local output for delivered run %s", run.run_id)
+    except Exception:  # WHY: cleanup must never downgrade a confirmed delivery
+        logger.warning("Could not remove local output after delivery", exc_info=True)
 
 
 def _delivery_error(message: str) -> DeliveryError:
@@ -125,7 +143,7 @@ def deliver_completed_artifact(
     assert asset_id is not None  # validated in the API-call boundary above
     normalized_asset_id = asset_id.strip()
     try:
-        run_tracker.mark_delivered(asset_id)
+        delivered_run = run_tracker.mark_delivered(asset_id)
     except Exception as exc:
         persisted = None
         try:
@@ -137,10 +155,13 @@ def deliver_completed_artifact(
             and persisted.delivery_status.value == "delivered"
             and persisted.immich_asset_id == normalized_asset_id
         ):
+            _cleanup_local_output(persisted)
             return result
         safe_message = _safe_delivery_message(exc, params.config)
         logger.error("Could not persist successful Immich delivery: %s", safe_message)
         delivery_error = _delivery_error(f"Immich delivery state update failed: {safe_message}")
+    else:
+        _cleanup_local_output(delivered_run)
     if delivery_error is not None:
         raise delivery_error from None
     return result

@@ -1619,3 +1619,8 @@ msgstr "för {years} år sedan"
 msgid "~{amount} left in this stage"
 msgstr "~{amount} kvar i detta steg"
 
+msgid "Delivered to Immich. The local file was removed to save disk space."
+msgstr "Levererad till Immich. Den lokala filen togs bort för att spara diskutrymme."
+
+msgid "View in Immich"
+msgstr "Visa i Immich"

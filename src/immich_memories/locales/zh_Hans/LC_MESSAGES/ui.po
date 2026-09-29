@@ -1580,3 +1580,8 @@ msgstr "{years} 年前"
 msgid "~{amount} left in this stage"
 msgstr "此阶段约剩 {amount}"
 
+msgid "Delivered to Immich. The local file was removed to save disk space."
+msgstr "已交付到 Immich。为节省磁盘空间，本地文件已删除。"
+
+msgid "View in Immich"
+msgstr "在 Immich 中查看"

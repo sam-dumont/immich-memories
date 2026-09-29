@@ -426,11 +426,11 @@ def register_runs_commands(main: click.Group) -> None:
 
         # Delete output directory if requested
         if not keep_output and run.output_path:
+            from immich_memories.operations.local_output_cleanup import local_output_directory
+
             output_path = Path(run.output_path)
-            # Check if output is in a run-specific directory (contains run_id)
-            if run.run_id in str(output_path.parent):
-                # Delete the entire run directory
-                output_dir = output_path.parent
+            output_dir = local_output_directory(run)
+            if output_dir is not None:
                 if output_dir.exists():
                     shutil.rmtree(output_dir)
                     print_info(f"Deleted output directory: {output_dir}")

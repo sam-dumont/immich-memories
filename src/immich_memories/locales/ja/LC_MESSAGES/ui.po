@@ -1588,3 +1588,8 @@ msgstr "{years} 年前"
 msgid "~{amount} left in this stage"
 msgstr "この段階、残り約 {amount}"
 
+msgid "Delivered to Immich. The local file was removed to save disk space."
+msgstr "Immich に送信しました。ディスク容量を節約するため、ローカルファイルを削除しました。"
+
+msgid "View in Immich"
+msgstr "Immich で見る"

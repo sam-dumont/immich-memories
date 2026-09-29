@@ -1114,13 +1114,15 @@ def test_final_progress_callback_failure_preserves_authoritative_artifact_state(
     assert saved is not None
     assert saved.status == "completed"
     assert saved.output_path is not None
-    assert Path(saved.output_path).read_bytes() == b"validated-artifact"
     if upload_enabled:
         assert saved.delivery_status is DeliveryStatus.DELIVERED
         assert saved.immich_asset_id == "asset-final-callback"
+        # Immich confirmed the upload, so the local film is reclaimed.
+        assert not Path(saved.output_path).exists()
     else:
         assert saved.delivery_status is DeliveryStatus.NOT_REQUESTED
         assert saved.immich_asset_id is None
+        assert Path(saved.output_path).read_bytes() == b"validated-artifact"
 
 
 def test_successful_generation_delivery_records_asset_and_original_album(
@@ -1154,6 +1156,30 @@ def test_successful_generation_delivery_records_asset_and_original_album(
     assert saved.delivery_album == "Original Family Album"
     assert saved.warnings == ["Optional music failed: backend unavailable"]
     assert saved.automation_attempt_id == "attempt-generation"
+    # The run row keeps a durable path, but the local film and its run
+    # directory are gone -- Immich now holds the only copy.
+    output_path = Path(saved.output_path or "/nonexistent")
+    assert not output_path.exists()
+    assert not output_path.parent.exists()
+
+
+def test_generation_without_upload_keeps_the_local_film(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A run that never asks for delivery keeps its film on disk."""
+    from immich_memories.generate import generate_memory
+
+    params, _events = _prepare_generation(
+        tmp_path,
+        monkeypatch,
+        upload_enabled=False,
+        client=None,
+    )
+
+    result = generate_memory(params)  # type: ignore[arg-type]
+
+    assert result.read_bytes() == b"validated-artifact"
 
 
 def test_final_progress_callback_cannot_downgrade_or_leak_delivered_artifact(
@@ -1193,7 +1219,9 @@ def test_final_progress_callback_cannot_downgrade_or_leak_delivered_artifact(
     assert saved.delivery_status is DeliveryStatus.DELIVERED
     assert saved.delivery_attempts == 1
     assert saved.immich_asset_id == "asset-finished"
-    assert Path(saved.output_path or "").read_bytes() == b"validated-artifact"
+    # Immich confirmed the upload before the presentation callback ran, so the
+    # local film was already reclaimed by the time it failed.
+    assert not Path(saved.output_path or "/nonexistent").exists()
     assert configured_literal not in str(caught.value)
     assert caught.value.__cause__ is None
     assert caught.value.__context__ is None
@@ -1407,7 +1435,8 @@ def test_generation_delivers_from_completed_database_state_when_sidecar_mirrorin
     result = generate_memory(params)  # type: ignore[arg-type]
     saved = RunDatabase().get_run("delivery-run")
 
-    assert result.read_bytes() == b"validated-artifact"
+    # Delivery confirmed and reclaimed the local film; the record still names it.
+    assert not result.exists()
     assert events == ["final-probe", "upload"]
     assert saved is not None
     assert saved.status == "completed"

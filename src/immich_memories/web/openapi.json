@@ -2218,9 +2218,35 @@
             "title": "Film",
             "type": "boolean"
           },
+          "film_available": {
+            "title": "Film Available",
+            "type": "boolean"
+          },
           "has_cut": {
             "title": "Has Cut",
             "type": "boolean"
+          },
+          "immich_asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Immich Asset Id"
+          },
+          "immich_asset_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Immich Asset Url"
           },
           "memory_type": {
             "anyOf": [
@@ -2288,9 +2314,12 @@
           "date_range_end",
           "preview_asset_ids",
           "film",
+          "film_available",
           "completed_at",
           "output_path",
           "delivery_status",
+          "immich_asset_id",
+          "immich_asset_url",
           "warnings",
           "phases",
           "clips_selected",
@@ -2380,6 +2409,10 @@
             "title": "Film",
             "type": "boolean"
           },
+          "film_available": {
+            "title": "Film Available",
+            "type": "boolean"
+          },
           "memory_type": {
             "anyOf": [
               {
@@ -2420,7 +2453,8 @@
           "date_range_start",
           "date_range_end",
           "preview_asset_ids",
-          "film"
+          "film",
+          "film_available"
         ],
         "title": "RunSummary",
         "type": "object"
@@ -4647,7 +4681,7 @@
     },
     "/api/v1/runs/{run_id}/film": {
       "get": {
-        "description": "The rendered film, by byte range so the player can seek.",
+        "description": "The rendered film, by byte range so the player can seek.\n\nA run's page checks `film_available` before ever requesting this, so\nreaching here for a delivered run means a stale link, not a broken\nplayer: the local copy was reclaimed once Immich confirmed the upload.",
         "operationId": "film_api_v1_runs__run_id__film_get",
         "parameters": [
           {
