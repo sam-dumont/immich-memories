@@ -358,7 +358,66 @@ class _AccountBuilder:
             else self.requester(prompt)
         )
         # A reader may fence its JSON or trail a word after it; take the object it answered with.
-        return final_json_object(raw)
+        payload = final_json_object(raw)
+        return payload if payload is not None else _salvage_truncated_accounts(raw)
+
+
+def _salvage_truncated_accounts(raw: str) -> dict[str, object] | None:
+    """Recover whatever complete `"key": "account"` pairs a cut-off reply finished writing.
+
+    Measured on the episode reader (#1609): a reply cut off mid-transport was discarded
+    whole even when it had already finished writing one or more complete answers, so the
+    call was wasted and the same accounts got asked for again. `_valid_accounts` still
+    validates and drops anything malformed or unoffered; this only stops throwing away
+    complete pairs the strict decoder above cannot see past an object that never closed.
+    """
+    marker = raw.find('"accounts"')
+    if marker == -1:
+        return None
+    object_start = raw.find("{", marker)
+    if object_start == -1:
+        return None
+    decoder = json.JSONDecoder()
+    index = object_start + 1
+    length = len(raw)
+    accounts: dict[str, object] = {}
+    while index < length:
+        index = _skip_chars(raw, index, " \t\r\n,")
+        if index >= length or raw[index] != '"':
+            break
+        pair = _next_account_pair(raw, index, decoder)
+        if pair is None:
+            break
+        key, value, index = pair
+        accounts[key] = value
+    return {"accounts": accounts} if accounts else None
+
+
+def _skip_chars(raw: str, index: int, chars: str) -> int:
+    length = len(raw)
+    while index < length and raw[index] in chars:
+        index += 1
+    return index
+
+
+def _next_account_pair(
+    raw: str, index: int, decoder: json.JSONDecoder
+) -> tuple[str, object, int] | None:
+    """Decode one `"key": value` pair starting at `index`, or None if it doesn't fully parse."""
+    length = len(raw)
+    try:
+        key, index = decoder.raw_decode(raw, index)
+    except json.JSONDecodeError:
+        return None
+    index = _skip_chars(raw, index, " \t\r\n")
+    if index >= length or raw[index] != ":":
+        return None
+    index = _skip_chars(raw, index + 1, " \t\r\n")
+    try:
+        value, index = decoder.raw_decode(raw, index)
+    except json.JSONDecodeError:
+        return None
+    return key, value, index
 
 
 def _valid_accounts(raw, pending) -> dict[str, str]:

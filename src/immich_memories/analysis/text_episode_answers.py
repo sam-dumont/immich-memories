@@ -167,7 +167,47 @@ def _episode_payload(raw: str) -> tuple[dict[str, object] | None, bool]:
             continue
         if isinstance(value, dict) and value.get("schema_version") == TEXT_EPISODE_SCHEMA_VERSION:
             candidates.append(value)
-    return (candidates[0], True) if len(candidates) == 1 else (None, False)
+    if len(candidates) == 1:
+        return candidates[0], True
+    salvaged = _salvage_truncated_episodes(raw)
+    return (salvaged, True) if salvaged is not None else (None, False)
+
+
+def _salvage_truncated_episodes(raw: str) -> dict[str, object] | None:
+    """Recover whatever complete episode rows a cut-off transport finished writing.
+
+    A reply truncated mid-array has already written zero or more whole `{...}` episode
+    objects before the cut -- the outer envelope never closes, so the strict decoder
+    above sees the whole thing as unparseable and every episode it read gets discarded
+    with it. Measured 2026-09-29: 34 of 54 replies from a local gemma were truncated,
+    and every one was thrown away whole. What is returned here becomes a page-scoped
+    `episodes` payload carrying only the rows that finished; the alias loop in
+    `_read_response_result` leaves any episode this omits unread, so it still gets a
+    retry -- this never invents or completes a row, it only stops discarding good ones.
+    """
+    marker = raw.find('"episodes"')
+    if marker == -1:
+        return None
+    array_start = raw.find("[", marker)
+    if array_start == -1:
+        return None
+    decoder = json.JSONDecoder()
+    index = array_start + 1
+    rows: list[object] = []
+    length = len(raw)
+    while index < length:
+        while index < length and raw[index] in " \t\r\n,":
+            index += 1
+        if index >= length or raw[index] != "{":
+            break
+        try:
+            value, index = decoder.raw_decode(raw, index)
+        except json.JSONDecodeError:
+            break
+        rows.append(value)
+    if not rows:
+        return None
+    return {"schema_version": TEXT_EPISODE_SCHEMA_VERSION, "episodes": rows}
 
 
 def _one_reading(
