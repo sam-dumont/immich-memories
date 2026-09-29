@@ -2,6 +2,8 @@
 title: A second Immich account
 ---
 
+import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
+
 # A second Immich account
 
 The classic couple: two phones, two Immich accounts, one server. Without any of this, a
@@ -14,10 +16,31 @@ Nothing here writes to Immich beyond the film upload you may already have on: no
 no re-tagging, no upgrade to Immich 3.2. Two separate, already-tagged accounts on the current
 server are all this needs.
 
+## What you need
+
+- **The partner's own Immich login**, to create an API key as them and to look up their person
+  IDs. The key only reads; you never need their password in this app.
+- **Faces named in both libraries.** Each account keeps its own people: a face named in yours is
+  unnamed in theirs until they name it too.
+- **The primary account set up already**, with `immich-memories people scan` run once
+  ([Teach it your family](../get-started/who-is-who.md)).
+- **The config file or the environment.** The Settings page shows the primary account only;
+  a second one is added in `config.yaml` or as environment variables, below.
+
+## The steps
+
+1. [Connect the account](#connect-the-account) and prove its key with `config test`.
+2. [Bind](#bind-the-same-person-across-accounts) each person the two libraries share: their ID in
+   the partner's library, once.
+3. [Read both accounts](#read-both-accounts-into-one-film) into a film, on the CLI or on the New
+   memory page.
+4. Optional: [save a group](#saved-groups) you'll reuse, and let
+   [automation](#what-automation-does-across-accounts) read both accounts.
+
 ## Connect the account
 
 Add it under `immich.accounts`, by name, next to the primary account, which stays the only
-upload target:
+upload target. In `~/.immich-memories/config.yaml` (pip, or a file mounted into the container):
 
 ```yaml
 immich:
@@ -36,6 +59,17 @@ saved to the database, and settable from the environment as
 `IMMICH_MEMORIES_IMMICH__ACCOUNTS__PARTNER__API_KEY`. Full field reference:
 [extra accounts](../reference/config-reference.md#extra-accounts).
 
+On Docker Compose, add the two lines to the `environment:` block of `docker-compose.yml`, with the
+key itself in `.env` (a line in `.env` alone does not reach the container), then
+`docker compose up -d`:
+
+```yaml
+      IMMICH_MEMORIES_IMMICH__ACCOUNTS__PARTNER__URL: "${IMMICH_URL:-http://immich-server:2283}"
+      IMMICH_MEMORIES_IMMICH__ACCOUNTS__PARTNER__API_KEY: "${PARTNER_IMMICH_API_KEY}"
+```
+
+The account can sit on another Immich server: give it that server's `url`.
+
 Create the key while signed in to Immich as the partner. It only ever reads: the read
 permissions in [the API key table](docker.md#the-api-key) are enough, since nothing is uploaded,
 tagged or deleted through it.
@@ -46,8 +80,14 @@ Configuring it changes no film by itself. Prove the key first:
 immich-memories config test
 ```
 
-This checks every account, one line per account, each proving who its key belongs to
-against `/users/me`. Nothing else is read until a run explicitly asks for the account.
+```text
+✓ Connected as Alex: Server: https://photos.example.com; API: v3
+✓ Immich account partner: Connected as Sam: API: v3
+```
+
+One line per account, each proving who its key belongs to against `/users/me`. The second line
+must name the partner: if it names you, the key was created in your account. Nothing else is read
+until a run explicitly asks for the account.
 
 ## Bind the same person across accounts
 
@@ -64,8 +104,18 @@ and copy the ID from the address bar (`/people/<id>`). Then:
 immich-memories people bind "Alex" --account partner --id <person-id-in-partner-account>
 ```
 
+```text
+✓ Bound 5b1f0c2e-… (partner account) to Alex (a93d7e41-…)
+```
+
+The ID in brackets is Alex's store ID, the one a [saved group](#saved-groups) names them by.
+
 Or in the web UI: **Settings > People**, the person's **Accounts** section, pick the account, paste
-the ID and **Bind** ([The web UI](../make/web-ui.mdx)). It makes the same declaration.
+the ID and **Bind** ([The web UI](../make/web-ui.mdx)). It makes the same declaration, and the
+card then lists the person's ID in each account. The section only shows once a second account is
+configured.
+
+<ThemedScreenshot name="people-accounts-bind" alt="A person's card on the People page: their ID in the primary and the partner account, and the form that binds another" />
 
 `PERSON` is a store person ID or a name exactly one person carries. Binding only adds the
 ID: the person's name, birth date and everything already confirmed about them stay exactly
@@ -116,8 +166,11 @@ Leaving `--accounts` off reads the primary account alone, exactly as before this
 `--accounts` reads exactly the accounts it names, so keep `primary` in the list: `--accounts partner`
 reads the partner alone. Albums and trips still read the primary account only: `--accounts` is
 refused there. In the web UI, **Immich accounts to read** on the New memory page is the same
-choice, shown once a second account is configured: pick both accounts; none picked reads the
-primary alone.
+choice, shown under **People** once a second account is configured: pick both accounts; none
+picked reads the primary alone. The command at the bottom of the brief is the `generate` it runs,
+`--accounts` included.
+
+<ThemedScreenshot name="memory-brief-accounts" alt="The New memory page for a Multi-Person film: the Kids group and both accounts picked, and the command they make" />
 
 ## Saved groups
 
@@ -129,8 +182,19 @@ immich-memories people group list
 immich-memories generate --group "Kids" --accounts primary,partner --memory-type multi_person --year 2026
 ```
 
-The web UI has the same thing under **Saved groups** on the People settings page, and each saved
-group shows up as a card on the New memory page.
+```text
+✓ Saved group 'Kids': ("<alex-id>" OR "<sam-jr-id>")
+```
+
+The expression takes `OR`, `AND` and brackets, like `--people-expression`: `OR` keeps a moment with
+either child in it, `AND` one with both, even when each is only on one partner's copy of that
+afternoon ([generate](../make/cli/generate.md)). The web UI has the same thing under **Saved groups** on the
+People settings page:
+
+<ThemedScreenshot name="people-saved-groups" alt="The Saved groups section of the People page, with one group and the form that adds another" />
+
+On the New memory page, a saved group is a chip under **People** for a **Multi-Person** film
+(pictured above, with both accounts picked); picking it replaces the names.
 
 Write the people as store person IDs, not names: `people show` lists each person's ID next
 to their name, `people bind` prints it too (`Alex (<id>)`), and `people export` lists every
@@ -155,6 +219,15 @@ advanced:
     accounts: ["primary", "partner"]  # list primary too; empty reads the primary alone
     detect_groups: true               # propose last year's film for each saved group
 ```
+
+On Docker Compose, the same in the `environment:` block (`detect_groups` is on by default):
+
+```yaml
+      IMMICH_MEMORIES_AUTOMATION__ACCOUNTS: '["primary", "partner"]'
+```
+
+`immich-memories auto suggest` shows what the next run would pick, saved groups included, without
+making anything ([Automate it](../make/automate.md)).
 
 As with `--accounts`, the list is exactly what is read: `["partner"]` alone leaves the primary
 library out, and with it trips. A saved group's film is a `multi_person` film of the year

@@ -285,7 +285,7 @@ Configuring it changes no film on its own. To make one film from both libraries:
 
 `generate --accounts` on the CLI, **Immich accounts to read** in the web UI and
 `automation.accounts` in config all read the household through; albums and trips still read the
-primary account only, and every film is uploaded to the primary only. [A second account, start to finish](multi-account.md) walks the whole setup,
+primary account only, and every film is uploaded to the primary only. [A second account, start to finish](multi-account.mdx) walks the whole setup,
 including binding a person and saving a group.
 Name rules, secrets and env variables: [extra accounts](../reference/config-reference.md#extra-accounts).
 
