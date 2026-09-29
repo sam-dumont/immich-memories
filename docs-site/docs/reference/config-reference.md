@@ -732,6 +732,8 @@ title_screens:
   title_duration: 3.5            # seconds (1-10)
   month_divider_duration: 2.0    # seconds (1-5)
   ending_duration: 7.0           # seconds (2-15)
+  map_move_min_seconds: 6.0      # trip map to a nearby place, 2 s still hold included (3-15)
+  map_move_max_seconds: 8.0      # trip map to a far place, 2 s still hold included (3-15)
   locale: "auto"                 # en fr nl de es it pt-BR pt-PT pl sv ru ja zh-Hans ko, or auto
   style_mode: "auto"             # auto (mood-based) or random
   animated_background: true      # Gradient shift and colour pulse behind the text

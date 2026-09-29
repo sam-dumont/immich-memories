@@ -39,13 +39,16 @@ def _duration_limits(target: float) -> tuple[float, float]:
     return tolerated, target + max(_DURATION_HARD_FLOOR, target * _DURATION_HARD_RATIO)
 
 
-def validate_final_duration(params: GenerationParams, actual_duration: float) -> str | None:
+def validate_final_duration(
+    params: GenerationParams, actual_duration: float, map_extra_seconds: float = 0.0
+) -> str | None:
     """Check a render against its runtime budget.
 
     Returns a warning for an overshoot worth reporting, or None. Raises only
     when the artifact is far enough over that it indicates a planning fault --
     a finished render is expensive, and throwing one away for jitter costs the
-    whole run.
+    whole run. `map_extra_seconds` is the map time past the regular cards and title
+    (see processing/film_timeline): it goes on top of the requested length.
     """
     target = params.target_duration_seconds
     if target is None:
@@ -61,6 +64,7 @@ def validate_final_duration(params: GenerationParams, actual_duration: float) ->
     ):
         budget = plan.soft_max_duration
 
+    budget += max(0.0, map_extra_seconds)
     tolerated, hard_limit = _duration_limits(budget)
     if actual_duration > hard_limit:
         from immich_memories.generate import GenerationError
@@ -197,6 +201,7 @@ def check_rendered_film(
     params: GenerationParams,
     staged_path: Path,
     plan: EncodingPlan,
+    map_extra_seconds: float = 0.0,
 ) -> tuple[dict[str, object], str | None]:
     """Check the rendered film's container against its plan and its runtime against the budget.
 
@@ -207,4 +212,6 @@ def check_rendered_film(
     and the mix.
     """
     probe = check_output(staged_path, plan)
-    return probe.render_metrics(plan), validate_final_duration(params, probe.duration_seconds)
+    return probe.render_metrics(plan), validate_final_duration(
+        params, probe.duration_seconds, map_extra_seconds
+    )

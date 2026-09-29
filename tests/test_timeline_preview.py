@@ -37,3 +37,35 @@ def test_trip_map_and_location_card_use_real_source_places():
     # A map intro shows no clip, so only the ending borrows.
     assert starts == {"a": (2.5, 4), "b": (7.5, 3.5)}
     assert seconds == 16
+
+
+def test_a_map_trip_previews_its_flights_at_their_own_length():
+    """The intro flies from home and each card from the last place: both run 6 to 8 s."""
+    from immich_memories.processing.map_move_timing import MapMoveTiming
+
+    north, south = (48.86, 2.35), (45.76, 4.84)
+    clips = [
+        AssemblyClip(
+            Path(), 4, asset_id="a", latitude=north[0], longitude=north[1], location_name="A"
+        ),
+        AssemblyClip(
+            Path(), 4, asset_id="b", latitude=south[0], longitude=south[1], location_name="B"
+        ),
+    ]
+    titles = TitleScreenSettings(
+        memory_type="trip",
+        map_tiles=True,
+        trip_locations=[north, south],
+        trip_title_text="A WEEK SOUTH",
+        home_lat=50.85,
+        home_lon=4.35,
+    )
+    plan = TimelinePlan(30, 20, 10, 3, 5, 2, 1)
+    timing = MapMoveTiming()
+    intro = timing.intro_seconds((50.85, 4.35), [north, south])
+    card = timing.seconds_between(north, south)
+
+    starts, seconds = preview_timeline(clips, plan, titles, "cut", 0.5)
+
+    assert starts["a"][0] == intro
+    assert seconds == intro + 4 + card + 3.5 + 5

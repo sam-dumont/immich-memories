@@ -56,6 +56,7 @@ def run_to_row(run: RunMetadata) -> dict[str, Any]:
         "warnings": run.warnings.copy(),
         "llm_metrics": run.llm_metrics or None,
         "title_source": run.title_source,
+        "film_timeline": run.film_timeline,
     }
 
 
@@ -98,6 +99,7 @@ def row_to_run(row: Mapping[Any, Any]) -> RunMetadata:
         warnings=list(row["warnings"] or []),
         llm_metrics=dict(row["llm_metrics"] or {}),
         title_source=row["title_source"],
+        film_timeline=row["film_timeline"],
         clips_analyzed=row["clips_analyzed"] or 0,
         clips_selected=row["clips_selected"] or 0,
         errors_count=row["errors_count"] or 0,
