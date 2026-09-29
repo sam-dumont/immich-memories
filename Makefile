@@ -2,7 +2,7 @@
 # Uses uv for fast Python package management
 export PYTHONUNBUFFERED=1
 
-.PHONY: workflow-guard docs-voice notices notices-check help install dev dev-ci dev-test run preflight parity docs-cli-check docs-config-check test test-extras test-cov test-cov-xml test-integration test-integration-auth test-integration-photos test-integration-audio test-integration-audio-mixing test-integration-titles test-fast benchmark benchmark-perf benchmark-steps benchmark-assembly benchmark-titles benchmark-titles-json benchmark-pipeline benchmark-json benchmark-submit lint format typecheck check launch-check launch-check-ci launch-check-ci-postgres clean clean-all build build-check docker docker-run docker-shell compose-check file-length complexity cognitive-complexity security-lint bandit-ci semgrep dead-code duplication refurb dep-check arch-check diff-cover diff-cover-ci integration-coverage-for-diff ci-scope ci critique ensure-dev commitlint privacy-gate pip-audit docs-install docs-dev docs-build docs-check docs-cli demo-video playwright-install e2e e2e-full screenshots demo-output demo-output-trip diagrams capability-matrix
+.PHONY: workflow-guard docs-voice notices notices-check help install dev dev-ci dev-test run preflight parity docs-cli-check docs-config-check test test-extras test-cov test-cov-xml test-integration test-integration-auth test-integration-photos test-integration-audio test-integration-audio-mixing test-integration-titles test-fast benchmark benchmark-perf benchmark-steps benchmark-assembly benchmark-titles benchmark-titles-json benchmark-pipeline benchmark-json benchmark-submit lint format typecheck check launch-check launch-check-ci launch-check-ci-postgres clean clean-all build build-check docker docker-run docker-shell compose-check file-length complexity cognitive-complexity security-lint bandit-ci semgrep dead-code duplication refurb dep-check arch-check diff-cover diff-cover-ci integration-coverage-for-diff ci-scope ci critique ensure-dev commitlint privacy-gate pip-audit docs-install docs-dev docs-build docs-check docs-cli demo-video playwright-install e2e e2e-full screenshots demo-output demo-output-trip capability-matrix
 
 # Default target
 help:
@@ -66,7 +66,6 @@ help:
 	@echo "  e2e                 Run the required hermetic launch smoke"
 	@echo "  e2e-full            Run ALL E2E and optional visual flows (~10min)"
 	@echo "  screenshots         Capture optional UI screenshots (light + dark)"
-	@echo "  diagrams            Render architecture diagrams (Mermaid)"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  clean        Remove build artifacts"
@@ -464,15 +463,6 @@ contact-sheets:  ## Render contact sheets for a sweep of memories (SPEC=path OUT
 screenshots: web-client-present  ## Capture UI screenshots in light + dark mode (coverage from server subprocess)
 	uv run pytest tests/e2e/test_screenshots.py -v -m visual --log-cli-level=INFO --tb=short \
 		--junitxml=tests/e2e-junit.xml
-
-diagrams:  ## Render architecture diagrams from Mermaid source files
-	@for f in docs-site/diagrams/setup-*.mmd; do \
-		name=$$(basename "$$f" .mmd); \
-		echo "Rendering $$name (dark + light)..."; \
-		npx --yes @mermaid-js/mermaid-cli -i "$$f" -o "docs-site/static/img/diagrams/$${name}.png" -w 800 -H 400 -b transparent -c docs-site/diagrams/mermaid-config.json 2>/dev/null; \
-		npx --yes @mermaid-js/mermaid-cli -i "$$f" -o "docs-site/static/img/diagrams/$${name}-light.png" -w 800 -H 400 -b transparent -c docs-site/diagrams/mermaid-config-light.json 2>/dev/null; \
-	done
-	@echo "Diagrams saved to docs-site/static/img/diagrams/"
 
 test-cov:
 	uv run pytest $(COVERAGE_FLAGS) --cov-report=html --cov-report=term-missing
