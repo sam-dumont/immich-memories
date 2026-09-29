@@ -290,6 +290,23 @@
         "title": "CacheStats",
         "type": "object"
       },
+      "CaptionDefaults": {
+        "description": "`defaults.add_date` and `defaults.add_place`: what the render panel starts ticked.",
+        "properties": {
+          "add_date": {
+            "default": true,
+            "title": "Add Date",
+            "type": "boolean"
+          },
+          "add_place": {
+            "default": true,
+            "title": "Add Place",
+            "type": "boolean"
+          }
+        },
+        "title": "CaptionDefaults",
+        "type": "object"
+      },
       "Choice": {
         "properties": {
           "kind": {
@@ -1576,14 +1593,26 @@
         "description": "`runs render`'s flags; None keeps the CLI's own default.",
         "properties": {
           "add_date": {
-            "default": false,
-            "title": "Add Date",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add Date"
           },
           "add_place": {
-            "default": false,
-            "title": "Add Place",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add Place"
           },
           "album": {
             "anyOf": [
@@ -2474,6 +2503,13 @@
               }
             ],
             "title": "Button Text"
+          },
+          "captions": {
+            "$ref": "#/components/schemas/CaptionDefaults",
+            "default": {
+              "add_date": true,
+              "add_place": true
+            }
           },
           "demo_mode_offered": {
             "default": false,
