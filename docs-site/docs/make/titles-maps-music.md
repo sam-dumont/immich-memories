@@ -165,7 +165,9 @@ location cards and map pins. What that sends is on [Privacy](../run/privacy.md).
 
 ## Date and place captions
 
-`generate --add-date --add-place` burns small translucent captions on the clips: 48 px on a 1080p frame at
+Every film gets small translucent date and place captions unless you turn them off: `defaults.add_date`
+and `defaults.add_place` are on, and `--no-add-date` or `--no-add-place` drops one for a single film (the
+web render panel has the same two boxes). They are 48 px on a 1080p frame at
 85 % opacity, each one appearing when it changes. Captions stay clear of dissolves so two never overlap, and a
 caption in any alphabet draws with the title fonts above, HDR included.
 
