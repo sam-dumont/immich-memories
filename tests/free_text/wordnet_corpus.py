@@ -16,6 +16,8 @@ from pathlib import Path
 LEXNAMES = (
     "adj.all",
     "noun.act",
+    "noun.phenomenon",
+    "noun.attribute",
     "noun.animal",
     "noun.artifact",
     "noun.cognition",

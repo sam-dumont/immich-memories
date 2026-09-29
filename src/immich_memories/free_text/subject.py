@@ -20,6 +20,8 @@ from immich_memories.free_text.linking import FIRST_PERSON, GLUE, Household, Rea
 from immich_memories.free_text.reading import Asker, Reading, choose, choose_several, words_of
 
 _COORDINATORS = frozenset({"and", "or"})
+# WordNet handles time periods; its first sense of day is a time unit, not a period.
+_CONTAINER_HEADS = frozenset({"day", "walk", "trip", "moment", "time"})
 
 _MAIN = """Which of these words name what the owner's photos must mainly show, for this request?
 A photo that shows only the other words does not belong. Pick one to four. Reason first. Return
@@ -61,23 +63,50 @@ def subject_words(reading: Reading, household: Household, lexicon: Lexicon) -> S
     skipped = GLUE | PICTURE_WORDS | people_words(reading, household, lexicon)
     heads: list[str] = []
     found: list[str] = []
+    reasons: list[Reason] = []
     for span in reading.what:
         for part in _parts(time_cut(span, lexicon)):
             head, activity = _head_of([word for word in part if word not in skipped], lexicon)
+            if modifier := _container_modifier(part, head, lexicon):
+                container = head[0] if head else "picture words"
+                head, activity = [modifier], sorted(lexicon.derived_nouns(modifier))
+                reasons.append(
+                    Reason(
+                        " ".join(part),
+                        f"modifier {modifier} carries the subject of generic {container}; "
+                        "its noun forms come from WordNet",
+                        f"subject words {', '.join(dict.fromkeys(head + activity))}",
+                    )
+                )
             heads += head
             found += head + activity
     found = list(dict.fromkeys(found))
     said = " | ".join(reading.what)
     outcome = f"subject words {', '.join(found)}" if found else "no subject"
     rule = (
-        "the head noun of each part, and the nouns an activity forms (WordNet); words for "
+        "the head noun or a generic container's modifier, plus WordNet noun forms; words for "
         "people or the picture itself are skipped"
     )
     return SubjectWords(
         heads=tuple(dict.fromkeys(heads)),
         words=tuple(found),
-        reasons=(Reason(said, rule, outcome),),
+        reasons=(Reason(said, rule, outcome), *reasons),
     )
+
+
+def _container_modifier(words: Sequence[str], head: list[str], lexicon: Lexicon) -> str | None:
+    if head:
+        if not (lexicon.is_time_period(head[0]) or lexicon.noun_base(head[0]) in _CONTAINER_HEADS):
+            return None
+        words = words[: words.index(head[0])]
+    elif len(words) > 1 and words[-1] in PICTURE_WORDS:
+        # A measured quality ("blurry pictures") already belongs to the facts filter.
+        words = words[-2:-1]
+        if words[0] in PICTURE_WORDS:
+            return None
+    else:
+        return None
+    return next((word for word in reversed(words) if lexicon.is_adjective(word)), None)
 
 
 def _head_of(words: Sequence[str], lexicon: Lexicon) -> tuple[list[str], list[str]]:

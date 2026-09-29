@@ -11,6 +11,18 @@ from tests.free_text.wordnet_corpus import Sense, write_corpus
 
 # Each word's senses as WordNet 3.0 orders them, first sense first.
 VOCABULARY: dict[str, tuple[str | Sense, ...]] = {
+    "snowy": (Sense("adj.all", formed=("snow.n.01",)),),
+    "snow": ("noun.phenomenon",),
+    "day": ("noun.time",),
+    "rainy": (Sense("adj.all", formed=("rain.n.01",)),),
+    "rain": ("noun.phenomenon",),
+    "sunny": (Sense("adj.all", formed=("sunniness.n.01",)),),
+    "sunniness": ("noun.attribute",),
+    "foggy": (Sense("adj.all", formed=("fog.n.01",)),),
+    "fog": ("noun.phenomenon",),
+    "weekend": (Sense("noun.time", kind_of="time_period.n.01"),),
+    "morning": (Sense("noun.time", kind_of="time_period.n.01"),),
+    "walk": ("noun.act",),
     "cat": (Sense("noun.animal", also=("puss",)), "noun.person"),
     "kitten": ("noun.animal",),
     "ride": ("noun.act",),
