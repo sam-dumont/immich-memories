@@ -8,6 +8,7 @@ import platform
 import subprocess
 from typing import TYPE_CHECKING
 
+from immich_memories import process_start
 from immich_memories.tracking.models import SystemInfo
 
 if TYPE_CHECKING:
@@ -22,7 +23,7 @@ def capture_system_info() -> SystemInfo:
     Returns:
         SystemInfo with current hardware and software details.
     """
-    return SystemInfo(
+    info = SystemInfo(
         platform=platform.system().lower(),
         platform_version=platform.platform(),
         python_version=platform.python_version(),
@@ -35,8 +36,13 @@ def capture_system_info() -> SystemInfo:
         vram_mb=_get_vram_mb(),
         ffmpeg_version=_get_ffmpeg_version(),
         opencv_version=_get_opencv_version(),
-        gpu_kernels_available=_check_kernel_library(),
+        gpu_kernels_available=False,
     )
+    process_start.mark("system")
+    # WHY last and marked apart: the check compiles the title kernels, the slowest probe.
+    info.gpu_kernels_available = _check_kernel_library()
+    process_start.mark("title_kernels")
+    return info
 
 
 def _get_cpu_brand_macos() -> str | None:

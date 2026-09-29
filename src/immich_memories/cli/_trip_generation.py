@@ -21,12 +21,14 @@ from immich_memories.cli._pipeline_runner import run_pipeline_and_generate
 from immich_memories.filename_builder import safe_slug
 from immich_memories.memory_types.date_builders import build_trip
 from immich_memories.processing.encoding_plan import resolve_output_selection
+from immich_memories.tracking.timed import timed
 
 if TYPE_CHECKING:
     from immich_memories.api.immich import SyncImmichClient
     from immich_memories.api.models import Asset
     from immich_memories.cli._live_display import ProgressDisplay
     from immich_memories.config_loader import Config
+    from immich_memories.timeperiod import DateRange
 
 logger = logging.getLogger(__name__)
 
@@ -164,6 +166,32 @@ def _select_requested_trips(
         sys.exit(1)
 
 
+@timed("discovery")
+def _fetch_trip_media(
+    client: SyncImmichClient,
+    progress: ProgressDisplay,
+    trip: DetectedTrip,
+    trip_date_range: DateRange,
+    config: Config,
+    *,
+    use_photos: bool,
+) -> tuple[list, list]:
+    trip_assets = fetch_videos(
+        client=client,
+        progress=progress,
+        date_ranges=[trip_date_range],
+        person_ids=[],
+    )
+    trip_photos: list = []
+    if use_photos:
+        all_photos = client.get_photos_for_date_range(trip_date_range)
+        # WHY: photos are fetched by date only — filter to geotagged ones
+        # near the trip centroid so home photos don't leak into trip memories
+        trip_photos = _filter_photos_near_trip(all_photos, trip, config)
+    # A Live Photo's video half belongs to its still, not to the video pool.
+    return drop_live_photo_components(trip_assets, trip_photos), trip_photos
+
+
 def handle_trip_generation(
     *,
     client: SyncImmichClient,
@@ -271,22 +299,9 @@ def handle_trip_generation(
             f"({trip.start_date} to {trip.end_date}, {trip_days} days, {trip.asset_count} assets)"
         )
 
-        trip_assets = fetch_videos(
-            client=client,
-            progress=progress,
-            date_ranges=[trip_date_range],
-            person_ids=[],
+        trip_assets, trip_photos = _fetch_trip_media(
+            client, progress, trip, trip_date_range, config, use_photos=use_photos
         )
-
-        trip_photos: list = []
-        if use_photos:
-            all_photos = client.get_photos_for_date_range(trip_date_range)
-            # WHY: photos are fetched by date only — filter to geotagged ones
-            # near the trip centroid so home photos don't leak into trip memories
-            trip_photos = _filter_photos_near_trip(all_photos, trip, config)
-
-        # A Live Photo's video half belongs to its still, not to the video pool.
-        trip_assets = drop_live_photo_components(trip_assets, trip_photos)
 
         if not trip_assets and not trip_photos:
             print_error(f"No content found for trip: {trip.location_name}")
