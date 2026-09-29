@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
 import contextvars
 import logging
 import sys
+from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 from rich.console import Console
@@ -34,9 +36,18 @@ def set_active_display(display: LiveDisplay | None) -> None:
     _active_display.set(display)
 
 
-def set_quiet_mode(quiet: bool) -> None:
-    """Enable quiet mode — print helpers emit log lines instead of Rich output."""
-    _quiet_mode.set(quiet)
+@contextlib.contextmanager
+def quiet_output(quiet: bool) -> Iterator[None]:
+    """Print helpers emit log lines instead of Rich output, for this block only.
+
+    A run without a terminal prints this way; the next command in the same process, or the
+    next test, gets its console back when the block ends.
+    """
+    token = _quiet_mode.set(quiet)
+    try:
+        yield
+    finally:
+        _quiet_mode.reset(token)
 
 
 def get_active_display() -> LiveDisplay | None:

@@ -9,7 +9,12 @@ from immich_memories.tracking.timing import Span
 
 
 def uncovered_seconds(spans: Sequence[Span], wall_seconds: float) -> float:
-    """Union measured operations; overlap and the run's enclosing span earn no extra credit."""
+    """Union measured operations; overlap and the run's enclosing span earn no extra credit.
+
+    The root span opens at process start while the saved run starts after imports, so the
+    wall is whichever of the two is longer: the time before the run record is not hidden.
+    """
+    wall_seconds = _process_wall(spans, wall_seconds)
     intervals = sorted(
         (span.start, span.start + span.duration) for span in spans if span.name != "run"
     )
@@ -19,6 +24,11 @@ def uncovered_seconds(spans: Sequence[Span], wall_seconds: float) -> float:
         covered += max(0.0, stop - max(start, end))
         end = max(end, stop)
     return max(0.0, wall_seconds - covered)
+
+
+def _process_wall(spans: Sequence[Span], wall_seconds: float) -> float:
+    roots = [span.duration for span in spans if span.name == "run" and span.parent_id is None]
+    return max([wall_seconds, *roots])
 
 
 @dataclass(frozen=True)
@@ -89,6 +99,7 @@ def span_tree(spans: Sequence[Span], wall_seconds: float) -> list[str]:
         error = f" [{span.error['type']}]" if span.error else ""
         rows.append(f"{'  ' * len(ancestors)}{span.name}: {span.duration:.3f} s{rate}{error}")
     uncovered = uncovered_seconds(spans, wall_seconds)
+    wall_seconds = _process_wall(spans, wall_seconds)
     fraction = uncovered / wall_seconds if wall_seconds else 0
     rows.append(f"Uncovered: {uncovered:.3f} s ({fraction:.1%} of wall time)")
     return rows
