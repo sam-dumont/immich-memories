@@ -181,6 +181,7 @@ class UnitBuilder:
         never_auto,
         document_sources,
         measure: Callable[[list[str]], Mapping[str, MotionRendering]] | None = None,
+        plan: Callable[[list[str]], Mapping[str, MotionRendering]] | None = None,
     ) -> None:
         self._assets = source.assets
         self._residuals = source.motion_residuals
@@ -192,6 +193,7 @@ class UnitBuilder:
         self._moment_of_asset = wall.moment_of_asset
         self._renderings = renderings
         self._measure = measure
+        self._plan = plan
         self._bound: dict[tuple, dict] = {}
         self._resolve_motion = ports.resolve_motion
         self._thumbnail_hash = ports.thumbnail_hash
@@ -239,6 +241,8 @@ class UnitBuilder:
         if r.material is None:
             raise ValueError("Live rendering lacks canonical source material")
         members = [s for s in r.still_ids if s in ids] or [asset_id]
+        if not r.may_play and (own := self._keepers_own_clip(members)) is not None:
+            return self._live_unit(own, own.still_ids[0], base, list(own.still_ids))
         residual = self._family_residual(members)
         # Motion is used only when the clip is interesting: measured motion with the subject
         # in frame. A clip of wall keeps the picture, as its still.
@@ -381,6 +385,26 @@ class UnitBuilder:
             unit = self._still_unit(asset_id, {})
         return {k: v for k, v in self._with_banked_speech(unit).items() if k in _RENDERED_FIELDS}
 
+    def _keepers_own_clip(self, members: list[str]) -> MotionRendering | None:
+        """The kept picture's own clip, for a burst whose stitch is too short to be worth its cuts.
+
+        Shutters a fraction of a second apart overlap so much that their join can come out
+        shorter than one of their clips, and a join under the minimum may not play. The kept
+        picture's own recording is not a join: it plays or not on its residual, like any lone
+        Live Photo, rather than the whole burst shipping as a photograph unmeasured (#1547).
+        """
+        if len(members) < 2:
+            return None
+        stars = [s for s in members if self._assets[s].is_favorite]
+        return self._lone_clip(max(stars or members, key=self.quality))
+
+    def _lone_clip(self, asset_id: str) -> MotionRendering | None:
+        rendering_of = self._measure or self._plan
+        if rendering_of is None:
+            return None
+        own = rendering_of([asset_id]).get(asset_id)
+        return own if own is not None and set(own.still_ids) == {asset_id} else None
+
     def _own_clip(self, asset_id: str, members: list[str]) -> MotionRendering | None:
         """The kept picture's own clip, when the burst it belongs to cannot be stitched.
 
@@ -390,8 +414,7 @@ class UnitBuilder:
         """
         if len(members) < 2 or self._measure is None:
             return None
-        own = self._measure([asset_id]).get(asset_id)
-        return own if own is not None and set(own.still_ids) == {asset_id} else None
+        return self._lone_clip(asset_id)
 
     def _with_banked_speech(self, unit: dict) -> dict:
         """A unit whose speech a cut has already measured knows where its sentences end."""
@@ -498,8 +521,18 @@ def _live_renderings(
 
 def _stitch_measurer(source: StructurePlanningInput, ports: StructurePlannerPorts):
     """Re-derive one kept burst with the measuring probe, as the render projection will."""
-    probe = ports.clock_offsets
-    if probe is None or not source.allow_live_motion:
+    if ports.clock_offsets is None:
+        return None
+    return _renderer(source, ports.clock_offsets)
+
+
+def _draft_renderer(source: StructurePlanningInput, ports: StructurePlannerPorts):
+    """Derive a burst the way the draft plans every burst: on metadata, measuring nothing."""
+    return _renderer(source, None if ports.clock_offsets is None else plan_before_measuring)
+
+
+def _renderer(source: StructurePlanningInput, probe):
+    if not source.allow_live_motion:
         return None
 
     def measure(members: list[str]) -> Mapping[str, MotionRendering]:
@@ -526,6 +559,7 @@ def build_material(
         never_auto=_share.never_auto_ids(source.shareability_flags),
         document_sources=document_sources,
         measure=_stitch_measurer(source, ports),
+        plan=_draft_renderer(source, ports),
     )
     units = {f: builder.units_of(f) for f in wall.fam_ids}
     text = UnitLines(
