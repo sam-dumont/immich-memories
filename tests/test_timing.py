@@ -181,3 +181,36 @@ def test_a_cold_start_is_split_into_named_phases_that_sum_to_it():
         ("startup.run_record", 9.0, 21.0),
     ]
     assert startup.duration == 30.0
+
+
+def test_a_span_records_a_peak_at_least_what_it_allocated():
+    import subprocess
+    import sys
+    import time
+
+    size = 64 * 1024 * 1024
+    child = (
+        f"x = bytearray({size}); x[::4096] = b'y' * len(x[::4096]); import sys; sys.stdin.read()"
+    )
+    with timing.collecting() as collected, timing.span("run"):
+        with timing.span("download"):
+            held = bytearray(size)
+            held[::4096] = b"x" * len(held[::4096])
+        del held
+        with timing.span("assembly"):
+            # A child standing in for ffmpeg: it holds its buffer until told to exit.
+            ffmpeg = subprocess.Popen([sys.executable, "-c", child], stdin=subprocess.PIPE)
+            time.sleep(0.6)
+            ffmpeg.communicate(b"")
+
+    download, assembly, run = collected.spans
+    assert download.peak_rss >= size
+    assert download.peak_tree_rss >= download.peak_rss
+    assert assembly.peak_tree_rss >= assembly.peak_rss + size
+    assert run.peak_rss >= download.peak_rss
+
+
+def test_spans_outside_a_run_measure_no_memory():
+    with timing.span("loose") as measured:
+        pass
+    assert measured.peak_rss is None

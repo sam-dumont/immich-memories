@@ -85,6 +85,13 @@ class SpanPlan:
         return Estimate(done / (done + left) if done + left else 1.0, left if known else None)
 
 
+def _peaks(span: Span) -> str:
+    if span.peak_rss is None:
+        return ""
+    tree = span.peak_tree_rss or span.peak_rss
+    return f", peak {span.peak_rss / 2**20:.0f} MB (with children {tree / 2**20:.0f} MB)"
+
+
 def span_tree(spans: Sequence[Span], wall_seconds: float) -> list[str]:
     """A stable, plain-text tree, with normalized rates and the unmeasured remainder."""
     by_id = {span.span_id: span for span in spans}
@@ -97,7 +104,9 @@ def span_tree(spans: Sequence[Span], wall_seconds: float) -> list[str]:
             parent = by_id[parent].parent_id
         rate = f", {span.duration / span.items:.4f} s/item ({span.items})" if span.items else ""
         error = f" [{span.error['type']}]" if span.error else ""
-        rows.append(f"{'  ' * len(ancestors)}{span.name}: {span.duration:.3f} s{rate}{error}")
+        rows.append(
+            f"{'  ' * len(ancestors)}{span.name}: {span.duration:.3f} s{rate}{_peaks(span)}{error}"
+        )
     uncovered = uncovered_seconds(spans, wall_seconds)
     wall_seconds = _process_wall(spans, wall_seconds)
     fraction = uncovered / wall_seconds if wall_seconds else 0

@@ -1184,6 +1184,8 @@ server. Labels are `t('...')`/`N_('...')` in Svelte and land in the `ui.po` cata
 boundaries share it; worker pools propagate context. `run_observations.py` owns the CLI lifecycle from
 before discovery through failure or completion. `span_store.py` persists spans and diagnostic context
 through Alembic revision `0007_timing`, on SQLite or PostgreSQL. No span writes to the database.
+`peak_memory.py` gives each span of a measured run its peak RSS, own and with child processes: the
+`ru_maxrss` lifetime high at both ends, plus one sampler thread (libproc on macOS, /proc on Linux).
 
 `tracking/report.py` allowlists diagnostic fields. `report_privacy.py` redacts the chosen strings and
 assigns per-report salted IDs. `report_service.py` assembles the same report for `report` and the HTTP
