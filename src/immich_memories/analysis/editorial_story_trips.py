@@ -17,6 +17,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from operator import itemgetter
 from typing import Any
 
 from immich_memories.analysis.trip_detection import detect_trips
@@ -252,7 +253,7 @@ class LegStories:
                 out.append(story)
                 continue
             out.extend(
-                {**story, "key": f"{story['key']}-leg{leg + 1}", "episodes": keys}
+                story | {"key": f"{story['key']}-leg{leg + 1}", "episodes": keys}
                 for leg, keys in sorted(parts.items())
             )
         return out
@@ -302,7 +303,7 @@ def _describe_trip(story: dict[str, Any], hints) -> None:
             stops.append([place, 1])
     if "leg" in story["trip"] and stops:
         # A leg is named by where it stayed longest, not by the whole trip's name.
-        place = max(stops, key=lambda stop: stop[1])[0]
+        place = max(stops, key=itemgetter(1))[0]
         story["title"] = f"Trip to {place}"
         story["trip"]["place"] = place
     span = f"{days[0]} to {days[-1]}" if days else "undated"
