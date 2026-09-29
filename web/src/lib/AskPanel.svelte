@@ -147,9 +147,11 @@
           {@const rules = preview.rules}
           <section class="flex flex-col gap-3 text-sm" aria-labelledby="ask-rules-heading">
             <h3 id="ask-rules-heading" class="font-semibold">{t("What the editor's rules would drop")}</h3>
-            <p class="tabular-nums">{t('{passed} of {checked} pictures pass the rules checked before cutting.', { passed: rules.passed, checked: rules.checked })}</p>
+            <!-- An unprepared picture has nothing for the rules to read: it is not counted as passing. -->
             {#if rules.unread}
-              <p class="text-gray-600 dark:text-gray-400">{t('{unread} pictures are not prepared yet: the run reads them first, then these rules apply.', { unread: rules.unread })}</p>
+              <p class="tabular-nums">{t('{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are not prepared yet.', { passed: rules.passed, checked: rules.checked, unread: rules.unread })}</p>
+            {:else}
+              <p class="tabular-nums">{t('{passed} of {checked} pictures pass the rules checked before cutting.', { passed: rules.passed, checked: rules.checked })}</p>
             {/if}
             {#if rules.drops.length}
               <ul class="flex flex-col gap-3">

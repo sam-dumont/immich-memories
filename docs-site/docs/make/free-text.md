@@ -167,8 +167,9 @@ one moment within five minutes). Two rules do not apply to a film you asked for,
 says so: **provenance** (forwarded and saved pictures stay) and **standing** (a pool picture stands
 on your subject whatever its score).
 
-A picture `prepare` has not read yet has nothing for the rules to read: the block counts those
-separately, and the run reads them before applying the rules. There is no switch to turn a rule
+A picture `prepare` has not read yet has nothing for the rules to read, so it is not counted as
+passing: the first line then reads "17 of 18 prepared pictures pass ...; 12 not prepared yet". The
+run reads those pictures before applying the rules. There is no switch to turn a rule
 off. Held pictures come back one at a time, when you clear them on the pool page.
 
 With `--dry-run` the command stops after the trace and the rule preview. Translating one sentence

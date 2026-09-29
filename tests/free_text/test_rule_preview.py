@@ -159,4 +159,17 @@ def test_a_pool_picture_immich_no_longer_lists_counts_as_hidden() -> None:
     assert [(drop.rule, drop.asset_ids) for drop in preview.drops] == [
         ("hidden in Immich", ("gone-1",))
     ]
-    assert (preview.checked, preview.passed) == (2, 1)
+    # cat-1 has nothing banked yet: no rule has checked it.
+    assert (preview.checked, preview.passed, preview.unread) == (1, 0, 1)
+
+
+def test_pictures_not_prepared_yet_are_not_counted_as_passing() -> None:
+    pool = _pool()
+    raw = [_photo(f"raw-{n}", 200 + n) for n in range(3)]
+
+    preview = _preview([*pool, *raw])
+
+    assert (preview.checked, preview.passed, preview.unread) == (6, 2, 3)
+    assert preview.lines()[0] == (
+        "2 of 6 prepared pictures pass the rules checked before cutting; 3 not prepared yet"
+    )

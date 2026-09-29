@@ -335,9 +335,10 @@ class RuleNoteView(BaseModel):
 class AskRules(BaseModel):
     """What the editor's rules would drop from the pool, asked before render."""
 
+    # The prepared pool pictures the rules read; `passed` of them pass.
     checked: int
     passed: int
-    # Pool pictures preparation has not read yet: the run reads them first.
+    # Pool pictures preparation has not read yet: no rule has checked them, the run reads them first.
     unread: int
     drops: list[RuleDropView]
     # Rules known only while cutting, and rules a film you asked for does not apply.

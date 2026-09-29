@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-29 07:09+0200\n"
+"POT-Creation-Date: 2026-09-29 07:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -293,7 +293,7 @@ msgstr "날짜"
 msgid "Day (MM-DD)"
 msgstr "날짜 (MM-DD)"
 
-#: web/lib/AskPanel.svelte:175
+#: web/lib/AskPanel.svelte:177
 msgid "Decided while cutting"
 msgstr "편집 중에 결정"
 
@@ -462,7 +462,7 @@ msgstr "단어를 읽은 방식"
 msgid "How the rules got here"
 msgstr "규칙이 여기까지 온 과정"
 
-#: web/lib/AskPanel.svelte:191
+#: web/lib/AskPanel.svelte:193
 msgid "How the sentence was read"
 msgstr "문장을 읽은 방식"
 
@@ -677,7 +677,7 @@ msgstr "이 필터에 맞는 이미지가 없습니다."
 msgid "No reason recorded for this picture."
 msgstr "이 이미지를 선택한 이유가 기록되지 않았습니다."
 
-#: web/lib/AskPanel.svelte:172
+#: web/lib/AskPanel.svelte:174
 msgid "No rule the preview can check would drop a picture."
 msgstr "미리보기에서 확인할 수 있는 규칙으로 제외되는 사진은 없습니다."
 
@@ -717,7 +717,7 @@ msgstr "없음"
 msgid "North"
 msgstr "북반구"
 
-#: web/lib/AskPanel.svelte:175
+#: web/lib/AskPanel.svelte:177
 msgid "Not applied to a film you asked for"
 msgstr "요청한 영화에는 적용되지 않음"
 
@@ -811,7 +811,7 @@ msgstr "이미지 검토"
 msgid "Pictures just read"
 msgstr "방금 읽은 이미지"
 
-#: web/lib/AskPanel.svelte:199
+#: web/lib/AskPanel.svelte:201
 msgid "Pictures left after each step"
 msgstr "단계별로 남은 사진"
 
@@ -1087,7 +1087,7 @@ msgstr "작은 순간"
 msgid "Smart (fades and cuts)"
 msgstr "스마트(페이드와 컷)"
 
-#: web/lib/AskPanel.svelte:163
+#: web/lib/AskPanel.svelte:165
 msgid "Some of its pictures"
 msgstr "해당 사진 일부"
 
@@ -1550,10 +1550,17 @@ msgstr "{days}일 · 이미지 {count}장"
 msgid "{done} of {total}"
 msgstr "{done} / {total}"
 
-#: web/lib/AskPanel.svelte:150
+#: web/lib/AskPanel.svelte:154
 #, python-brace-format
 msgid "{passed} of {checked} pictures pass the rules checked before cutting."
 msgstr "{checked}장 중 {passed}장이 편집 전에 확인하는 규칙을 통과합니다."
+
+#: web/lib/AskPanel.svelte:152
+#, python-brace-format
+msgid ""
+"{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are "
+"not prepared yet."
+msgstr "준비된 {checked}장 중 {passed}장이 편집 전에 확인하는 규칙을 통과합니다. {unread}장은 아직 준비되지 않았습니다."
 
 #: web/lib/AskPanel.svelte:134
 #, python-brace-format
@@ -1564,11 +1571,6 @@ msgstr "사진 {pictures}장: 사진 {photos}, 동영상 {videos}"
 #, python-brace-format
 msgid "{seconds} s on screen"
 msgstr "화면에 {seconds}초"
-
-#: web/lib/AskPanel.svelte:152
-#, python-brace-format
-msgid "{unread} pictures are not prepared yet: the run reads them first, then these rules apply."
-msgstr "{unread}장은 아직 준비되지 않았습니다. 실행할 때 먼저 읽은 뒤 이 규칙을 적용합니다."
 
 #: web/routes/create/+page.svelte:351
 #, python-brace-format

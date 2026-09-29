@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-29 07:09+0200\n"
+"POT-Creation-Date: 2026-09-29 07:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -297,7 +297,7 @@ msgstr "Dag"
 msgid "Day (MM-DD)"
 msgstr "Dag (MM-DD)"
 
-#: web/lib/AskPanel.svelte:175
+#: web/lib/AskPanel.svelte:177
 msgid "Decided while cutting"
 msgstr "Beslist tijdens het monteren"
 
@@ -471,7 +471,7 @@ msgstr "Hoe je woorden gelezen zijn"
 msgid "How the rules got here"
 msgstr "Hoe de regels hier kwamen"
 
-#: web/lib/AskPanel.svelte:191
+#: web/lib/AskPanel.svelte:193
 msgid "How the sentence was read"
 msgstr "Hoe de zin gelezen is"
 
@@ -692,7 +692,7 @@ msgstr "Geen beelden komen overeen met dit filter."
 msgid "No reason recorded for this picture."
 msgstr "Geen reden vastgelegd voor dit beeld."
 
-#: web/lib/AskPanel.svelte:172
+#: web/lib/AskPanel.svelte:174
 msgid "No rule the preview can check would drop a picture."
 msgstr "Geen regel die de preview kan controleren zou een foto weglaten."
 
@@ -732,7 +732,7 @@ msgstr "Geen"
 msgid "North"
 msgstr "Noord"
 
-#: web/lib/AskPanel.svelte:175
+#: web/lib/AskPanel.svelte:177
 msgid "Not applied to a film you asked for"
 msgstr "Niet toegepast op een film die je zelf vroeg"
 
@@ -826,7 +826,7 @@ msgstr "Beeld beoordelen"
 msgid "Pictures just read"
 msgstr "Net gelezen beelden"
 
-#: web/lib/AskPanel.svelte:199
+#: web/lib/AskPanel.svelte:201
 msgid "Pictures left after each step"
 msgstr "Beelden over na elke stap"
 
@@ -1104,7 +1104,7 @@ msgstr "Klein moment"
 msgid "Smart (fades and cuts)"
 msgstr "Slim (overvloeiingen en sneden)"
 
-#: web/lib/AskPanel.svelte:163
+#: web/lib/AskPanel.svelte:165
 msgid "Some of its pictures"
 msgstr "Enkele van de foto's"
 
@@ -1579,10 +1579,19 @@ msgstr "{days} dagen · {count} beelden"
 msgid "{done} of {total}"
 msgstr "{done} van {total}"
 
-#: web/lib/AskPanel.svelte:150
+#: web/lib/AskPanel.svelte:154
 #, python-brace-format
 msgid "{passed} of {checked} pictures pass the rules checked before cutting."
 msgstr "{passed} van {checked} foto's komen door de regels die vóór de montage worden gecontroleerd."
+
+#: web/lib/AskPanel.svelte:152
+#, python-brace-format
+msgid ""
+"{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are "
+"not prepared yet."
+msgstr ""
+"{passed} van {checked} voorbereide foto's komen door de regels die vóór de montage worden "
+"gecontroleerd; {unread} zijn nog niet voorbereid."
 
 #: web/lib/AskPanel.svelte:134
 #, python-brace-format
@@ -1593,11 +1602,6 @@ msgstr "{pictures} beelden: {photos} foto’s, {videos} video’s"
 #, python-brace-format
 msgid "{seconds} s on screen"
 msgstr "{seconds} s in beeld"
-
-#: web/lib/AskPanel.svelte:152
-#, python-brace-format
-msgid "{unread} pictures are not prepared yet: the run reads them first, then these rules apply."
-msgstr "{unread} foto's zijn nog niet voorbereid: de run leest ze eerst, daarna gelden deze regels."
 
 #: web/routes/create/+page.svelte:351
 #, python-brace-format

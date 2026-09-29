@@ -97,6 +97,7 @@ class RuleNote:
 class RulePreview:
     """What the editor's rules would do to the pool, before render."""
 
+    # The pool pictures the rules could read: every one but those not prepared yet.
     checked: int
     drops: tuple[RuleDrop, ...]
     # Pictures preparation has not read yet: the run reads them first, then these rules apply.
@@ -108,22 +109,22 @@ class RulePreview:
 
     @property
     def passed(self) -> int:
-        """The pool pictures no rule the preview can check would drop."""
+        """The checked pictures no rule the preview can check would drop."""
         return self.checked - sum(len(drop.asset_ids) for drop in self.drops)
 
     def lines(self) -> list[str]:
         """The RULES block of the trace: a count per rule, a few hashed ids, then the notes."""
-        said = [f"{self.passed} of {self.checked} pictures pass the rules checked before cutting"]
+        said = [
+            f"{self.passed} of {self.checked} prepared pictures pass the rules checked before "
+            f"cutting; {self.unread} not prepared yet"
+            if self.unread
+            else f"{self.passed} of {self.checked} pictures pass the rules checked before cutting"
+        ]
         said += [
             f"{drop.rule}: {len(drop.asset_ids)} ({drop.why}) "
             + ", ".join(self.hashed[asset_id] for asset_id in drop.examples)
             for drop in self.drops
         ]
-        if self.unread:
-            said.append(
-                f"not prepared yet: {self.unread} pictures; the run reads them first, "
-                "then these rules apply"
-            )
         return [
             *said,
             "decided while cutting: " + _notes(self.at_cut),
@@ -174,11 +175,13 @@ def preview_rules(
     order = tuple(dict.fromkeys([*missing, *(asset_of(source).id for source in sources)]))
     fates = dict.fromkeys(missing, HIDDEN) | _source_fates(prepared)
     readable = tuple(prepared.candidate_ids)
-    unread = 0
+    unread: set[str] = set()
     if readable:
         batch = readings.reader(prepared).lines_for(readable)
         lines = batch.as_mapping()
-        unread = sum(not line.description and not line.heads for line in batch.lines)
+        # Nothing banked to read: the run prepares these first, so no rule has checked them.
+        unread = {line.asset_id for line in batch.lines if not line.description and not line.heads}
+        unread.update(batch.missing_asset_ids)
         _first(fates, dict.fromkeys(screen_document_rejections(batch), SCREENS))
         _first(fates, dict.fromkeys(_held(prepared, readings), HELD))
         _first(fates, _carrier_fates(lines))
@@ -190,9 +193,9 @@ def preview_rules(
     ]
     privacy = ReportPrivacy()
     return RulePreview(
-        checked=len(order),
+        checked=len(order) - len(unread - fates.keys()),
         drops=tuple(drops),
-        unread=unread,
+        unread=len(unread - fates.keys()),
         at_cut=_at_cut(audience),
         lifted=_lifted(scope),
         hashed={a: privacy.hash_id(a) for drop in drops for a in drop.examples},
