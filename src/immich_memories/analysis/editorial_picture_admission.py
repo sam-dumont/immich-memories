@@ -17,6 +17,7 @@ from immich_memories.analysis.editorial_story_replies import film_close_family
 from immich_memories.analysis.editorial_story_shortlist import capture_space_available
 from immich_memories.analysis.editorial_story_standing import StandingGate
 from immich_memories.analysis.editorial_structure_material import Material
+from immich_memories.analysis.favourite_law import favourites_by_moment, stands_for_its_moment
 
 # What a worthiness tier means to the standing gate, which asks in weight words.
 WEIGHT_OF_TIER = {"remarkable": "major", "maybe": "minor", "background": "glimpse"}
@@ -71,6 +72,8 @@ class PictureAdmission:
     prepare_candidates: Callable[[Sequence[Mapping[str, Any]]], None] | None = None
     excluded: Mapping[str, str] = field(default_factory=dict)
     close_family_of: Callable[[str], Collection[str]] = lambda _asset: ()
+    # Each moment's starred pictures: the one rule every pass that proposes a picture obeys.
+    moment_favourites: Mapping[str, frozenset[str]] = field(default_factory=dict)
     decisions: list[dict[str, str]] = field(default_factory=list)
 
     def admit(
@@ -88,7 +91,10 @@ class PictureAdmission:
         refused: list[GateRefusal] = []
         # Accepted depth supplements a representative, even when captured earlier.
         # Seat representatives first so depth cannot consume their spacing slot.
-        for shot in sorted(shots, key=lambda row: bool(row.get("depth"))):
+        # A moment's favourite is seated before its neighbours, which may only join it.
+        for shot in sorted(
+            shots, key=lambda row: (bool(row.get("depth")), not row.get("favourite"))
+        ):
             refusal = self._refusal(shot, kept, tier_of)
             if refusal is None:
                 kept.append(shot)
@@ -193,6 +199,8 @@ class PictureAdmission:
         source_refusal = self._source_refusal(shot)
         if source_refusal is not None:
             return source_refusal
+        if not stands_for_its_moment(shot, kept, self.moment_favourites):
+            return GateRefusal(asset, story, "favourite", "its moment's favourite is out", moment)
         stands = (
             (
                 not self.standing.rejected_motion(asset)
@@ -289,4 +297,5 @@ def picture_admission(source, ports, material, selection, gate) -> PictureAdmiss
         prepare_candidates=prepare_candidates,
         excluded=material.document_sources,
         close_family_of=lambda asset: close_of(selection.lines.get(asset, "")),
+        moment_favourites=favourites_by_moment(unit_of.values()),
     )

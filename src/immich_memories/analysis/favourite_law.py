@@ -12,6 +12,7 @@ something standing beside it — same time, same place, same moment.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -67,6 +68,36 @@ def moments_that_lost_their_favourite(
             )
         )
     return lost
+
+
+def favourites_by_moment(units: Iterable[Mapping[str, Any]]) -> dict[str, frozenset[str]]:
+    """Each moment's starred pictures, keyed by the moment a unit belongs to."""
+    starred: dict[str, set[str]] = {}
+    for unit in units:
+        if unit.get("favourite") and unit.get("moment"):
+            starred.setdefault(str(unit["moment"]), set()).add(str(unit["asset_id"]))
+    return {moment: frozenset(assets) for moment, assets in starred.items()}
+
+
+def stands_for_its_moment(
+    candidate: Mapping[str, Any],
+    cut: Sequence[Mapping[str, Any]],
+    moment_favourites: Mapping[str, frozenset[str]],
+) -> bool:
+    """Whether a picture may join this cut without passing over its moment's favourite.
+
+    A favourite always may; the favourites of one moment settle it among themselves. A
+    non-favourite may only when every favourite of its moment is already in the cut. A favourite
+    the audience holds never gets there, so its moment has nobody left to stand for it and is
+    dropped whole: the slot goes to another moment, never to the favourite's neighbour.
+    """
+    if candidate.get("favourite"):
+        return True
+    starred = moment_favourites.get(str(candidate.get("moment") or ""), frozenset())
+    if not starred:
+        return True
+    shown = {a for row in cut for a in (row["asset_id"], *(row.get("members") or ()))}
+    return starred <= shown
 
 
 def _asset_of(item: Any) -> Any:
