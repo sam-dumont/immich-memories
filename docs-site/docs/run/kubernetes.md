@@ -21,7 +21,8 @@ deploy/kubernetes/
 ├── overlays/gpu/            the app on an NVIDIA node
 ├── overlays/inference/      the inference service alone (+ -cuda, + -lan for outside callers)
 ├── overlays/captioner/      the SmolVLM caption service (+ -cuda)
-└── overlays/render-sidecar/ the render worker in the app's own pod, on a GPU node
+├── overlays/render-sidecar/ the render worker in the app's own pod, on a GPU node
+└── overlays/maximalist/     every optional piece composed together
 ```
 
 ## Prerequisites
@@ -251,6 +252,13 @@ no `--year`/`--person` parameters: prefer
 `kubectl exec deploy/immich-memories -- immich-memories generate ...` against the running
 Deployment, and keep the Job for a batch cluster where the Deployment stays scaled to 0 between
 runs.
+
+## Everything at once
+
+`overlays/maximalist` composes `overlays/render-sidecar` and `overlays/captioner-cuda` with OIDC
+behind a reverse proxy, a declarative `config.yaml`, an LLM and ACE-Step on a LAN machine,
+geocoding, map tiles, and cache caps sized to the PVC that holds them: [A maximalist
+setup](./maximalist.md).
 
 ## Database
 

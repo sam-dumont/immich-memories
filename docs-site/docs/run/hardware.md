@@ -87,6 +87,11 @@ The image ships the CPU build of PyTorch on purpose: the detectors are ONNX grap
 torch. To run the ONNX seats on CUDA, use the `-cuda` [inference service](../better/inference.md),
 or install `immich-memories[editorial-cuda]` on the host in place of `editorial`.
 
+Old card, still worth a caption server: llama.cpp's CUDA build still runs on Pascal (a GTX 1070,
+`sm_61`), where PyTorch's cu128 wheels have already dropped that architecture. The
+[`-cuda` captioner overlay](./maximalist.md#the-cuda-captioner) is worth applying on a card
+too old for the CUDA inference service.
+
 ### Apple Silicon
 
 Nothing to set up. VideoToolbox takes the encode, the title kernels run on Metal, and face

@@ -76,6 +76,7 @@ const sidebars: SidebarsConfig = {
             {type: 'doc', id: 'run/uv-pip', label: 'pip / uv [Advanced]'},
             {type: 'doc', id: 'run/kubernetes', label: 'Kubernetes [Advanced]'},
             {type: 'doc', id: 'run/terraform', label: 'Terraform [Advanced]'},
+            {type: 'doc', id: 'run/maximalist', label: 'A maximalist setup [Advanced]'},
           ],
         },
         {

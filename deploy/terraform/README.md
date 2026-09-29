@@ -26,10 +26,11 @@ The init container runs `models fetch` on an empty models claim. The default tie
 `no_captions`; to use a caption server, set both `IMMICH_MEMORIES_EDITORIAL__PREPARATION__TIER`
 to `full` and `IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL` in `env`.
 
-There is no ConfigMap. `immich_url` / `immich_api_key` (and `llm_api_key`, `musicgen_api_key`,
+No ConfigMap by default. `immich_url` / `immich_api_key` (and `llm_api_key`, `musicgen_api_key`,
 `secret_env`) land in the Secret and reach the pod through `envFrom`; every other setting is an
 `IMMICH_MEMORIES_<SECTION>__<KEY>` env var (`env`). Probes: `/health/live` (liveness) and
-`/health/ready` (readiness, `503` until config is present and Immich answers).
+`/health/ready` (readiness, `503` until config is present and Immich answers). Setting
+`config_yaml` is the one exception: see [A maximalist setup](#a-maximalist-setup) below.
 
 ## Prerequisites
 
@@ -43,6 +44,8 @@ There is no ConfigMap. `immich_url` / `immich_api_key` (and `llm_api_key`, `musi
 ```bash
 cd examples/basic            # CPU, no ingress, port-forward
 # or: cd examples/production # pinned tag, basic auth, ingress + TLS, GPU optional
+# or: cd examples/maximalist # every optional piece: render sidecar, CUDA captioner,
+#                             OIDC, LAN LLM/ACE-Step, geocoding, cache caps
 
 cp terraform.tfvars.example terraform.tfvars
 vim terraform.tfvars
@@ -52,6 +55,18 @@ terraform plan
 terraform apply
 $(terraform output -raw port_forward_command)   # http://localhost:8080
 ```
+
+## A maximalist setup
+
+`examples/maximalist` wires every optional variable in the table below at once. Walkthrough,
+what runs where, and the two error strings OIDC fails with when a step is skipped:
+[docs-site/docs/run/maximalist.md](../../docs-site/docs/run/maximalist.md). The
+Kubernetes-manifests equivalent is `deploy/kubernetes/overlays/maximalist`; both express the same
+features, so pick whichever tool manages the rest of your cluster.
+
+Every variable behind this defaults to the minimal path: `render_worker_sidecar_enabled`,
+`captioner_enabled`, `oidc_enabled`, `ace_step_enabled`, `network_geocoding`, `network_map_tiles`
+and `secure_cookies` are all `false`, and `config_yaml` is `""`, until you set them.
 
 ## Module Usage
 
@@ -148,6 +163,75 @@ module "immich_memories" {
 | `ingress_tls_enabled` | TLS | `bool` | `false` |
 | `ingress_tls_secret_name` | TLS secret | `string` | `"immich-memories-tls"` |
 | `ingress_annotations` | Annotations | `map(string)` | `{}` |
+
+### Network and cache
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `network_geocoding` | Reverse geocode through nominatim.openstreetmap.org | `bool` | `false` |
+| `network_map_tiles` | Fetch satellite tiles from server.arcgisonline.com | `bool` | `false` |
+| `cache_video_max_size_gb` | `video_cache_max_size_gb` override; `null` keeps the app's 10 GB default | `number` | `null` |
+| `cache_thumbnail_max_size_mb` | `thumbnail_cache_max_size_mb` override; `null` keeps the app's 10 GB default | `number` | `null` |
+
+### ACE-Step music (API mode)
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `ace_step_enabled` | Enable ACE-Step music generation | `bool` | `false` |
+| `ace_step_api_url` | ACE-Step API server URL (in-cluster or a LAN machine) | `string` | `"http://localhost:8000"` |
+| `ace_step_api_key` | API key (Secret), if the server requires one | `string` | `""` |
+
+### OIDC behind a reverse proxy
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `oidc_enabled` | Turn on OIDC/SSO instead of basic auth | `bool` | `false` |
+| `oidc_issuer_url` | Issuer URL | `string` | `""` |
+| `oidc_client_id` | Client ID | `string` | `""` |
+| `oidc_client_secret` | Client secret (Secret); empty for a public client | `string` | `""` |
+| `oidc_public_url` | The externally reachable URL users type | `string` | `""` |
+| `oidc_trusted_proxies` | Addresses `X-Forwarded-*` is trusted from | `list(string)` | `[]` |
+| `oidc_allowed_emails` | Email allow-list; empty admits anyone the IdP authenticates | `list(string)` | `[]` |
+| `secure_cookies` | Mark the session cookie `Secure`; only once every visitor arrives over HTTPS | `bool` | `false` |
+
+Both `oidc_public_url` and `oidc_trusted_proxies` are needed once `oidc_enabled` is true. Without
+`oidc_public_url` the `redirect_uri` sent to the IdP is built from the in-cluster request and comes
+out `http://`, which every IdP refuses. Without `oidc_trusted_proxies` naming the proxy,
+`X-Forwarded-Proto` is not trusted and the callback fails with `400 {"detail": "Invalid callback
+origin"}`.
+
+### Render worker sidecar
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `render_worker_sidecar_enabled` | Run the render worker as a second container in this Deployment's own pod, on a GPU node | `bool` | `false` |
+| `render_worker_token` | Bearer token both containers share (Secret) | `string` | `""` |
+
+Implies GPU scheduling for the whole pod even when `gpu_enabled` is left `false`: the app container
+itself needs no card, but the worker does.
+
+### Caption server
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `captioner_enabled` | Deploy the SmolVLM2 caption server (a separate Deployment/Service/PVC) | `bool` | `false` |
+| `captioner_cuda` | Run it on an NVIDIA card (`--n-gpu-layers 99`) | `bool` | `false` |
+| `captioner_storage_size` | Size of the caption weights PVC | `string` | `"2Gi"` |
+
+llama.cpp's CUDA build still runs on Pascal (`sm_61`), where PyTorch cu128 wheels have already
+dropped that architecture.
+
+### A declarative config.yaml
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `config_yaml` | Literal `config.yaml` content | `string` | `""` |
+
+A ConfigMap volume mounts every key world-readable with no way to `chmod` it, which is exactly what
+the app warns on at startup ("Config file ... is readable by other users"). Setting `config_yaml`
+adds an `install-config` init container that copies it onto the writable cache PVC as the app's own
+uid and `chmod 600`s it there, instead of mounting the ConfigMap directly at
+`~/.immich-memories/config.yaml`.
 
 ## Outputs
 

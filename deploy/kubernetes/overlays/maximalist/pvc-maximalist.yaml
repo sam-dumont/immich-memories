@@ -1,0 +1,14 @@
+# Strategic-merge patch: the cache PVC sized for config-map.yaml's cache caps
+# (30 GB video + 30 GB thumbnails), on top of config.yaml, store.db and
+# automation history. The base's 20Gi is not enough once those two caps are
+# raised; lower them in config-map.yaml instead if the PVC has to stay
+# smaller. See docs-site/docs/run/maximalist.md.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-memories-cache
+  namespace: immich-memories
+spec:
+  resources:
+    requests:
+      storage: 80Gi
