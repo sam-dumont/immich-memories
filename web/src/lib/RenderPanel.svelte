@@ -26,9 +26,11 @@
   let format = $state('');
   let quality = $state('');
   let scaleMode = $state('');
-  // On unless the owner unticks them: a film reads better with its dates and places (owner, 28 Sep).
-  let addDate = $state(true);
-  let addPlace = $state(true);
+  // defaults.add_date / add_place, the rule `generate` and automation read too: on unless the
+  // config turns them off, and the owner can untick either for this film.
+  const captions = page.data.session?.captions ?? { add_date: true, add_place: true };
+  let addDate = $state(captions.add_date);
+  let addPlace = $state(captions.add_place);
   let privacy = $state(false);
   let naming = $state<'' | 'model' | 'rules'>('');
   let music = $state<string>('auto');

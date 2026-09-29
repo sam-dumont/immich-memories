@@ -228,6 +228,13 @@ class JobProgress(BaseModel):
     recent_asset_ids: list[str] = []
 
 
+class CaptionDefaults(BaseModel):
+    """`defaults.add_date` and `defaults.add_place`: what the render panel starts ticked."""
+
+    add_date: bool = True
+    add_place: bool = True
+
+
 class SessionView(BaseModel):
     auth_enabled: bool
     provider: str | None
@@ -239,6 +246,7 @@ class SessionView(BaseModel):
     demo_mode_offered: bool = False
     # A music generator (MusicGen or ACE-Step) is configured, so a track can be previewed.
     music_preview_offered: bool = False
+    captions: CaptionDefaults = CaptionDefaults()
 
 
 class Language(BaseModel):
