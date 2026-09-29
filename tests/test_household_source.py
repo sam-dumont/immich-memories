@@ -7,6 +7,8 @@ names its accounts reads more than the primary, and only pictures its chosen own
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -22,8 +24,11 @@ from immich_memories.analysis.selection_source import (
     prepare_editorial_source,
 )
 from immich_memories.api.accounts import AccountUnavailable
+from immich_memories.api.models import Asset
 from immich_memories.api.sync_client import SyncImmichClient
 from immich_memories.config import Config
+from immich_memories.db import open_store
+from immich_memories.store.editorial_preparation import remember_assets
 from immich_memories.timeperiod import DateRange
 
 URL = "https://immich.example.test"
@@ -221,3 +226,58 @@ def test_an_account_that_cannot_prove_who_it_is_fails_the_run_before_any_read(
         _source(tmp_path, ("primary", "uncle"))
 
     assert immich_server.searched_by == []
+
+
+def _byte_copy(asset_id: str, owner: str, *, favourite: bool) -> dict:
+    """One account's upload of the same file: its own ID and star, the file's real SHA-1."""
+    digest = hashlib.sha1(b"beach.heic").digest()  # noqa: S324 - Immich's checksum, not security
+    return {
+        **_asset(asset_id, owner, 7, favourite=favourite),
+        "checksum": base64.b64encode(digest).decode(),
+    }
+
+
+@pytest.mark.parametrize("accounts", [("primary", "partner"), ("partner", "primary")])
+@pytest.mark.parametrize(
+    ("starred_by", "kept"), [("user-primary", "own-beach"), ("user-partner", "copy-beach")]
+)
+def test_a_star_on_either_owners_copy_is_the_copy_the_film_keeps(
+    tmp_path, immich_server, monkeypatch, accounts, starred_by, kept
+):
+    """Both accounts uploaded the file and one owner starred theirs: that copy stands for it."""
+    # WHY: each fake account's library answers with one byte copy of the same file.
+    monkeypatch.setitem(
+        LIBRARY,
+        PRIMARY_KEY,
+        [_byte_copy("own-beach", "user-primary", favourite=starred_by == "user-primary")],
+    )
+    monkeypatch.setitem(
+        LIBRARY,
+        PARTNER_KEY,
+        [_byte_copy("copy-beach", "user-partner", favourite=starred_by == "user-partner")],
+    )
+
+    [picture] = _source(tmp_path, accounts)
+
+    assert picture.asset_id == kept
+    assert picture.favourite is True
+
+
+def test_what_the_store_banked_never_unstars_a_later_run(tmp_path, immich_server):
+    """The store's favourite column is not evidence: every run reads the owners' stars live.
+
+    A one-account `prepare` banks the partner's picture as the primary's search showed it,
+    unstarred, around the pictures a household run kept. The next run keeps the owner's star.
+    """
+    first = _source(tmp_path, ("primary", "partner"))
+    shared_as_the_primary_saw_it = Asset.model_validate(LIBRARY[PRIMARY_KEY][2])
+    assert shared_as_the_primary_saw_it.is_favorite is False
+    store = open_store()
+    remember_assets(store, [shared_as_the_primary_saw_it])
+    remember_assets(store, [candidate.source for candidate in first])
+    remember_assets(store, [shared_as_the_primary_saw_it])
+
+    later = _by_id(_source(tmp_path, ("primary", "partner")))
+
+    assert later["shared"].favourite is True
+    assert {c.asset_id: c.favourite for c in first} == {a: c.favourite for a, c in later.items()}
