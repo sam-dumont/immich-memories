@@ -27,6 +27,7 @@ def _entry(
     confirmed: str = "{role: null, links: [], notes: null}",
     birth_date: str = "null",
     counts_reliable: str = "true",
+    active_months: int = 12,
 ) -> str:
     return (
         f"  - ids: [{person_id}]\n"
@@ -35,7 +36,7 @@ def _entry(
         f"    inferred:\n"
         f"      tier: {tier}\n"
         f"      counts_reliable: {counts_reliable}\n"
-        f"      evidence: {{count: {count}, active_months: 12, first_month: '2019-01',"
+        f"      evidence: {{count: {count}, active_months: {active_months}, first_month: '2019-01',"
         f" last_month: '2021-06', span_years: 2.4, onset: '2019-03',"
         f" concentration: 8.3, continuity: 0.4}}\n"
         f"      links: {links}\n"
@@ -68,6 +69,11 @@ class TestTheRoster:
         assert "412 pictures" in person.evidence
         assert "12 months" in person.evidence
         assert "2019-03" in person.evidence
+
+    def test_one_active_month_reads_as_one_month(self):
+        store = _registry(_entry("Alex Example", "id-alex", count=40, active_months=1))
+
+        assert "40 pictures across 1 month," in load_people(store)[0].evidence
 
     def test_an_empty_registry_is_an_empty_roster_rather_than_a_crash(self):
         assert load_people(open_store()) == []

@@ -1227,6 +1227,10 @@ msgid "The film"
 msgstr "De film"
 
 #: web/lib/JobPanel.svelte:61
+msgid "Done."
+msgstr "Klaar."
+
+#: web/lib/JobPanel.svelte:61
 msgid "The film is ready."
 msgstr "De film is klaar."
 
