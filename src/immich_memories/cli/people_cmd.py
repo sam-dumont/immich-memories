@@ -400,8 +400,10 @@ def _person_line(entry: dict[str, Any]) -> str:
     evidence = _evidence_of(entry)
     confirmed = entry.get("confirmed") or {}
     role = confirmed.get("role")
+    # The store id is what a saved group's expression and `people bind` name a person by.
     line = (
-        f"  [bold]{entry.get('name', '?'):<24}[/bold] {_tier_of(entry):<10}"
+        f"  [bold]{entry.get('name', '?'):<24}[/bold] [dim]{entry_ids(entry)[0]}[/dim]"
+        f"  {_tier_of(entry):<10}"
         f" {evidence.get('count', 0):>6} pics"
         f"  {evidence.get('active_months', 0):>4} months"
         f"  [dim]since {evidence.get('onset') or evidence.get('first_month') or '?'}[/dim]"

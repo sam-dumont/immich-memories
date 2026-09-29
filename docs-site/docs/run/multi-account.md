@@ -73,6 +73,32 @@ as they were, whatever the partner account calls them. An ID already bound to so
 is refused, never merged; binding the same ID again changes nothing. A missing binding is
 unresolved evidence, not permission to match the two accounts by name.
 
+### Someone only the partner account knows
+
+The scan reads the primary account only, and `bind` adds to somebody the store already holds, so
+a person tagged only in the partner's library (their side of the family, say) comes in by hand.
+Export the store, add them with the partner's ID, and import it back:
+
+```bash
+immich-memories people export --to people.yaml
+```
+
+```yaml
+people:
+  # ...everyone already there, left as it is...
+  - name: Jo
+    ids:
+      partner: [<person-id-in-partner-account>]
+```
+
+```bash
+immich-memories people import --from people.yaml --replace
+```
+
+`--replace` is needed because the store already holds people; the import checks every entry
+before it writes anything. A later `people scan` keeps the entry, since its ID belongs to
+another account, and `people show` lists it with that ID for a group to name.
+
 ## Read both accounts into one film
 
 ```bash
@@ -106,8 +132,9 @@ immich-memories generate --group "Kids" --accounts primary,partner --memory-type
 The web UI has the same thing under **Saved groups** on the People settings page, and each saved
 group shows up as a card on the New memory page.
 
-Write the people as store person IDs, not names: `people bind` prints the ID next to the name
-(`Alex (<id>)`), and `people export` lists every person's `ids`. A name is accepted but kept as
+Write the people as store person IDs, not names: `people show` lists each person's ID next
+to their name, `people bind` prints it too (`Alex (<id>)`), and `people export` lists every
+person's `ids`. A name is accepted but kept as
 typed: a rename breaks it, and automation, which counts a group's pictures by ID, skips a named
 group under its default settings.
 
