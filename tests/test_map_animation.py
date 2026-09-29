@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import pytest
-
 from immich_memories.titles.map_animation import (
     _destination_overview,
     _geo_to_screen,
     _linear_pan,
     _pick_interpolator,
-    _title_alpha,
     _to_latlon,
     _to_world,
     _van_wijk,
@@ -125,21 +122,3 @@ class TestDestinationOverview:
             wx, wy = _to_world(lat, lon)
             assert abs(wx - cx) < w, f"Destination ({lat},{lon}) outside overview x"
             assert abs(wy - cy) < w, f"Destination ({lat},{lon}) outside overview y"
-
-
-class TestTitleAlpha:
-    @pytest.mark.parametrize(
-        "progress,expected_range",
-        [
-            (0.0, (0.0, 0.01)),  # Start: invisible
-            (0.075, (0.4, 0.6)),  # Mid fade-in: partial
-            (0.15, (0.99, 1.01)),  # End of fade-in: fully visible
-            (0.5, (0.99, 1.01)),  # Middle: fully visible
-            (0.85, (0.99, 1.01)),  # Start of fade-out: still visible
-            (1.0, (0.0, 0.01)),  # End: invisible
-        ],
-    )
-    def test_fade_curve(self, progress: float, expected_range: tuple[float, float]):
-        alpha = _title_alpha(progress)
-        lo, hi = expected_range
-        assert lo <= alpha <= hi, f"alpha={alpha} at progress={progress}"

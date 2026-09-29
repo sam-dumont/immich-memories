@@ -93,7 +93,7 @@ def final_timeline(
         )
     if plan.divider_policy in {"all", "none"}:
         logger.info(
-            "Final timeline: month dividers=%s (%d/%d), %.1fs estimated, %.1fs soft maximum",
+            "Planned timeline: month dividers=%s (%d/%d), %.1fs estimated, %.1fs soft maximum",
             plan.divider_policy,
             plan.max_dividers,
             plan.eligible_dividers,
@@ -104,7 +104,7 @@ def final_timeline(
         )
     else:
         logger.info(
-            "Final timeline: %.1fs content + %.1fs titles (%d dividers capped)",
+            "Planned timeline: %.1fs content + %.1fs titles (%d dividers capped)",
             selected_duration,
             plan.title_budget,
             plan.max_dividers,

@@ -121,7 +121,9 @@ class RemoteRenderClient:
                 keep_staged = True
                 raise
             _validate_result(params, request, status, clips, probe, plan)
-            warning = validate_final_duration(params, probe.duration_seconds)
+            warning = validate_final_duration(
+                params, probe.duration_seconds, _map_extra(params, request, clips)
+            )
             logger.info("Render worker completed: %s, %.2fs", plan.encoder, probe.duration_seconds)
             for message in status.get("degradations", ()):
                 logger.warning("Render worker: %s", self._safe_message(str(message), params))
@@ -266,11 +268,10 @@ def _validate_result(params, request, status, clips, probe, plan) -> None:
             raise GenerationError("Render worker returned an invalid audio window")
 
 
-def _expected_duration(params, request, clips) -> float:
+def _preview_inputs(params, request, clips):
     from immich_memories.generate_settings import build_title_settings
     from immich_memories.processing.assembly_config import TitleScreenSettings
     from immich_memories.processing.editorial_timing import read_editorial_timeline
-    from immich_memories.processing.timeline_preview import preview_timeline
 
     timeline = read_editorial_timeline(request["timing"])
     frozen = replace(params, timeline_plan=timeline)
@@ -280,6 +281,20 @@ def _expected_duration(params, request, clips) -> float:
         show_month_dividers=False,
         show_location_cards=False,
     )
+    return timeline, titles
+
+
+def _map_extra(params, request, clips) -> float:
+    from immich_memories.processing.timeline_preview import preview_map_extra
+
+    timeline, titles = _preview_inputs(params, request, clips)
+    return preview_map_extra(list(clips), timeline, titles)
+
+
+def _expected_duration(params, request, clips) -> float:
+    from immich_memories.processing.timeline_preview import preview_timeline
+
+    timeline, titles = _preview_inputs(params, request, clips)
     _, duration = preview_timeline(
         list(clips),
         timeline,

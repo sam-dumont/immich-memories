@@ -8,6 +8,7 @@ Provides methods for generating trip-specific title screens:
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -63,7 +64,10 @@ class TripService:
         from .map_animation import create_map_fly_video
 
         width, height = self.config.output_resolution
-        duration = self.config.title_duration
+        timing = self.config.map_move
+        # A map move's own length, not the title's: the seconds past the title's are
+        # added on top of the film's requested length (see processing/map_time_budget).
+        duration = timing.intro_seconds((home_lat, home_lon), destinations)
 
         output_path = self.output_dir / f"trip_map_fly_intro{self.config.output_suffix}"
         create_map_fly_video(
@@ -75,8 +79,7 @@ class TripService:
             height=height,
             duration=duration,
             fps=self.config.fps,
-            hold_start=0.5,
-            hold_end=1.0,
+            timing=timing,
             encoding_plan=self.config.encoding_plan,
             destination_names=location_names,
         )
@@ -122,3 +125,33 @@ class TripService:
             duration=self.config.title_duration,
             screen_type="trip_map",
         )
+
+    def generate_location_move(
+        self,
+        location_name: str,
+        came_from: tuple[float, float],
+        destination: tuple[float, float],
+        seconds: float,
+    ) -> GeneratedScreen:
+        """A location card that flies from the last place to this one and holds on its name."""
+        from .generator import GeneratedScreen
+        from .map_animation import create_map_move_video
+
+        width, height = self.config.output_resolution
+        safe_name = location_name.replace(" ", "_").replace(",", "")[:30]
+        # The same place reached from elsewhere is another flight; no coordinate in a file name.
+        origin = hashlib.sha256(f"{came_from[0]:.3f},{came_from[1]:.3f}".encode()).hexdigest()[:8]
+        output_path = self.output_dir / f"location_{safe_name}_{origin}{self.config.output_suffix}"
+        create_map_move_video(
+            came_from,
+            destination,
+            location_name,
+            output_path,
+            seconds,
+            width=width,
+            height=height,
+            fps=self.config.fps,
+            timing=self.config.map_move,
+            encoding_plan=self.config.encoding_plan,
+        )
+        return GeneratedScreen(path=output_path, duration=seconds, screen_type="location_card")

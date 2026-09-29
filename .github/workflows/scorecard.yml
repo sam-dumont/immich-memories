@@ -2,10 +2,11 @@ name: OpenSSF Scorecard
 
 on:
   branch_protection_rule:
+  # Nightly, not on every push to main: during a merge wave each push queued a
+  # run that competed with pull requests for the same runner slots.
   schedule:
-    - cron: '25 7 * * 1'  # Weekly Monday
-  push:
-    branches: [main]
+    - cron: '25 3 * * *'
+  workflow_dispatch:
 
 permissions: read-all
 

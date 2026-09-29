@@ -15,6 +15,7 @@ from immich_memories.cli._album_generation import (
     handle_album_generation,
 )
 from immich_memories.config_loader import Config
+from immich_memories.timeperiod import DateRange
 
 
 def test_output_filename_is_built_from_the_album_name():
@@ -178,7 +179,7 @@ def test_an_explicit_output_is_where_the_album_film_goes():
 
 
 class _AssetsById(_Client):
-    """WHY: replaces the Immich API; a curated pool is read by asset id, never as an album."""
+    """WHY: replaces the Immich API; a curated pool is read from its window, never as an album."""
 
     def __init__(self, assets):
         super().__init__(AlbumRef(id="unused", name="unused", asset_count=0), [], [])
@@ -187,14 +188,19 @@ class _AssetsById(_Client):
     def resolve_album(self, _name_or_id):
         raise AssertionError("a curated pool is no Immich album")
 
-    def get_asset(self, asset_id):
-        return self._by_id[asset_id]
+    def search_metadata(self, **query):
+        return _PagedImmich(list(self._by_id.values())).search_metadata(**query)
 
 
-def test_a_curated_pool_is_read_by_id_and_filmed_as_an_album_of_its_subject(monkeypatch):
+def test_a_curated_pool_is_read_from_immich_and_filmed_as_an_album_of_its_subject(monkeypatch):
     video = _asset("v1", AssetType.VIDEO, datetime(2024, 3, 1, tzinfo=UTC))
     photo = _asset("p1", AssetType.IMAGE, datetime(2025, 7, 9, tzinfo=UTC))
-    pool = CuratedPool(name="our cat along the years", ref="ask-1234", asset_ids=("v1", "p1"))
+    pool = CuratedPool(
+        name="our cat along the years",
+        ref="ask-1234",
+        asset_ids=("v1", "p1"),
+        window=DateRange(start=video.file_created_at, end=photo.file_created_at),
+    )
 
     captured = _run_album(
         monkeypatch,
@@ -213,3 +219,52 @@ def test_a_curated_pool_is_read_by_id_and_filmed_as_an_album_of_its_subject(monk
         "album_id": "ask-1234",
         "subject": "our cat along the years",
     }
+
+
+class _PagedImmich:
+    """WHY: replaces the Immich API; it pages a date range's assets and counts every call."""
+
+    def __init__(self, assets):
+        self.assets = sorted(assets, key=lambda a: a.file_created_at)
+        self.calls = 0
+
+    def get_asset(self, asset_id):
+        self.calls += 1
+        return next(asset for asset in self.assets if asset.id == asset_id)
+
+    def search_metadata(self, *, page, size, taken_after, taken_before, **_filters):
+        from immich_memories.api.models import MetadataSearchResult
+
+        self.calls += 1
+        inside = [a for a in self.assets if taken_after <= a.file_created_at <= taken_before]
+        items = inside[(page - 1) * size : page * size]
+        more = page * size < len(inside)
+        return MetadataSearchResult.model_validate(
+            {
+                "assets": {
+                    "items": items,
+                    "total": len(items),
+                    "nextPage": str(page + 1) if more else None,
+                }
+            }
+        )
+
+
+def test_a_large_pool_is_read_in_pages_not_one_call_per_picture():
+    from datetime import timedelta
+
+    from immich_memories.cli._album_generation import pool_media
+
+    first = datetime(2020, 1, 1, tzinfo=UTC)
+    library = [_asset(f"p{n}", AssetType.IMAGE, first + timedelta(hours=n)) for n in range(3000)]
+    pool = [asset.id for asset in library[:2500]]
+    immich = _PagedImmich(library)
+    window = DateRange(start=first, end=first + timedelta(hours=2499))
+
+    media = pool_media(
+        immich, pool, Config(), window=window, use_live_photos=False, use_photos=True
+    )
+
+    assert sorted(a.id for a in media.photos) == sorted(pool)
+    # 2,500 pictures (and the 500 around them) in pages of 1,000, not 2,500 single reads.
+    assert immich.calls <= 4

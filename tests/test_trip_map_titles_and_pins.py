@@ -99,8 +99,8 @@ def test_pin_names_line_up_with_the_pins_they_label() -> None:
     assert settings.trip_location_names == ["Paris", "London"]
 
 
-def test_a_pin_with_no_known_place_still_holds_its_slot() -> None:
-    """A missing name must not shorten the list and shift every later label."""
+def test_a_pin_with_no_known_place_is_left_off_without_shifting_the_labels() -> None:
+    """An unnamed dot tells the viewer nothing; dropping it must keep names on their pins."""
     settings = build_title_settings(
         _trip_params(),
         Config(),
@@ -108,7 +108,7 @@ def test_a_pin_with_no_known_place_still_holds_its_slot() -> None:
     )
 
     assert settings is not None
-    assert settings.trip_location_names == ["", "London"]
+    assert settings.trip_location_names == ["London"]
 
 
 def test_a_location_card_is_given_the_coordinates_it_is_standing_on() -> None:
