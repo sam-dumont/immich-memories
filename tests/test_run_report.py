@@ -246,3 +246,37 @@ def test_report_carries_how_many_lines_each_level_logged():
         diagnostics=diagnostics,
     )
     assert report.data["log_counts"] == {"WARNING": 7000, "ERROR": 2}
+
+
+def test_every_immich_id_in_the_export_is_hashed_the_same_everywhere():
+    asset = "0d3c2b1a-9f8e-4d7c-b6a5-443322110000"
+    person = "7e6d5c4b-3a29-4180-9f7e-6d5c4b3a2918"
+    album = "c0ffee00-1234-4abc-8def-0123456789ab"
+    run = RunMetadata(
+        "fixture-run-id",
+        datetime.now(UTC),
+        status="failed",
+        memory_type="trip",
+        warnings=[f"album {album} held {asset}"],
+    )
+    logs = [
+        f"reading asset {asset} for person {person}",
+        f"uploaded to album {album.upper()}",
+        f"asset={asset};person={person}",
+    ]
+    error = {"type": "KeyError", "message": f"no face {person} on {asset}", "frames": []}
+    collected = Collector(logs=logs, spans=[Span(1, "render.clips", None, 0, 1, error=error)])
+    # The asset is one the report shows on purpose: the leftover pass must hash it the same way.
+    privacy = ReportPrivacy(ids=[asset])
+    report = build_report(run, collected, privacy=privacy)
+
+    with ZipFile(BytesIO(report.bundle())) as archive:
+        bundled = [archive.read(name).decode() for name in archive.namelist()]
+    for rendered in (report.markdown(), report.json(), *bundled):
+        for raw in (asset, person, album):
+            assert raw not in rendered.lower()
+    run_log = "\n".join(report.data["logs"])
+    assert run_log.count(privacy.hash_id(asset)) == 2
+    assert run_log.count(privacy.hash_id(person)) == 2
+    assert run_log.count(privacy.hash_id(album)) == 1
+    assert privacy.hash_id(album) in report.data["warnings"][0]
