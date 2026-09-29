@@ -7,8 +7,10 @@ arrives in the group chat's photos as often as in the owner's own.
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Protocol
 
+from immich_memories.analysis.source_filter import not_shot_here
 from immich_memories.api.models import MetadataSearchResult
 
 _PAGE = 1000
@@ -35,3 +37,21 @@ class ImmichPrintedText:
             found.update(asset.id for asset in result.all_assets)
             page = int(result.next_page) if result.next_page else None
         return frozenset(found)
+
+    def screen_reads(self, text: str, taken_after: datetime, taken_before: datetime) -> bool:
+        """Whether a screen or document (a still no camera made) taken in the window reads `text`.
+
+        A camera photo of a sign reads words too; only what a phone shows or a scan holds counts.
+        """
+        page: int | None = 1
+        while page is not None and page <= _MOST_PAGES:
+            result = self._immich.search_metadata(
+                ocr=text, taken_after=taken_after, taken_before=taken_before, page=page, size=_PAGE
+            )
+            if any(
+                not_shot_here(asset, patterns=(), stills_need_a_camera=True)
+                for asset in result.all_assets
+            ):
+                return True
+            page = int(result.next_page) if result.next_page else None
+        return False

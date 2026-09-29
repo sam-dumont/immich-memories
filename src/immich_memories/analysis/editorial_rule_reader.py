@@ -12,6 +12,12 @@ from typing import Any
 import numpy as np
 
 from immich_memories.analysis.editorial_clip_frames import CLIP_FRAMES_HEAD, SUBJECT_OFTEN_MISSING
+from immich_memories.analysis.editorial_event_story import (
+    EpisodeShape,
+    PrintedNear,
+    episode_shapes,
+    split_events,
+)
 from immich_memories.analysis.editorial_home_radius import home_of, near_home_of
 from immich_memories.analysis.editorial_rule_episodes import RULES_VERSION
 from immich_memories.analysis.editorial_same_kind import EpisodeKind, same_kind_threads
@@ -69,9 +75,17 @@ class NoModelJudge:
 
 
 class RuleStructureReader:
-    def __init__(self, source) -> None:
+    def __init__(self, source, *, printed: PrintedNear | None = None) -> None:
         self.source = source
         self._face: Callable[[str], bool | None] | None = None
+        # Immich's OCR over the screens and documents near a moment, when the run can reach it.
+        self._printed = printed
+
+    def _day_threshold(self) -> float:
+        """A day at least this dense is an occasion by its capture count alone."""
+        days = Counter(a.file_created_at.date() for a in self.source.assets.values())
+        masses = list(days.values())
+        return max(4 * median(masses), float(np.percentile(masses, 75)))
 
     def _day_threshold(self) -> float:
         """A day at least this dense is an occasion by its capture count alone."""
@@ -352,6 +366,16 @@ class RuleStructureReader:
         hints = enrich(episodes)
         stories = self._stories(episodes, hints)
         by_key = {e.key: e for e in episodes}
+        self._big_stories(stories, episodes)
+        events = split_events(
+            stories,
+            shape_of=self._episode_shapes(episodes),
+            hints=hints,
+            title_of={e.key: e.title for e in episodes},
+            threshold=self._day_threshold(),
+            away=lambda story: any(self._away_from_home(by_key[k]) for k in story["episodes"]),
+            printed_near=self._printed,
+        )
         big = self._big_stories(stories, episodes)
         floors = _floor_weights(stories, journey=False)
         kinds = same_kind_threads(
@@ -375,6 +399,7 @@ class RuleStructureReader:
                 "floors": floors,
                 "big_stories": big,
                 "same_kind": kinds,
+                "events": events,
             },
             stories,
         )
@@ -399,6 +424,15 @@ class RuleStructureReader:
                 partition=part.key if part is not None else None,
             )
         return kinds
+
+    def _episode_shapes(self, episodes) -> dict[str, EpisodeShape]:
+        assets, moments = self.source.assets, self.source.moment_asset_ids
+        return episode_shapes(
+            episodes,
+            members_of=lambda e: [assets[a] for m in e.moments for a in moments.get(m, ())],
+            activity_of=self._activity,
+            gps_of=lambda asset: self.source.gps.get(asset.id),
+        )
 
     def _face_on(self, asset_id: str) -> bool | None:
         if self._face is None:

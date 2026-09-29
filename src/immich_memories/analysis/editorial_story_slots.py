@@ -124,6 +124,9 @@ class _Grants:
         for s in self.stories:
             if s["weight"] == weight and s.get("first_day", "") not in days and self.take(s, cap):
                 days.add(s.get("first_day", ""))
+                # an event takes the depth it reserved at its own turn, as a trip does
+                while s.get("reserve") and self.take(s, s["reserve"]):
+                    pass
 
     def fill(self, weight: str, cap: int) -> None:
         group = self.of_weight(weight)

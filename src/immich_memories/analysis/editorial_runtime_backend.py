@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.editorial_case import Case
 from immich_memories.analysis.editorial_demanded_previews import DemandedPreviewReader
+from immich_memories.analysis.editorial_event_story import PrintedNear
 from immich_memories.analysis.editorial_film_preparation import CandidateEvidence
 from immich_memories.analysis.editorial_motion_facts import production_motion_resolver
 from immich_memories.analysis.editorial_orchestration import TextEditorialWorkprint
@@ -80,8 +81,10 @@ class ProductionPostCardBackend:
             [StructurePlanningInput, Sequence[Mapping[str, Any]]], StructurePlanningInput
         ]
         | None = None,
+        printed_near: PrintedNear | None = None,
     ) -> None:
         self._prepare_refinement = prepare_refinement
+        self._printed_near = printed_near
         self._episode_demand = episode_demand
         self._fetch_preview = fetch_preview
         self._attached_sources = attached_sources
@@ -293,7 +296,8 @@ class ProductionPostCardBackend:
                 thumbnail_hash=thumbnail_hasher,
                 scene_print=scene_prints,
                 thumbnail_metrics=thumbnail_metrics,
-                rules=RuleStructureReader(source),
+                rules=RuleStructureReader(source, printed=self._printed_near),
+                printed_near=self._printed_near,
                 resolve_speech=production_speech_resolver(source, resources=resources),
                 resolve_motion=production_motion_resolver(source),
                 clock_offsets=self.clock_offsets(source, resources),
@@ -311,6 +315,7 @@ class ProductionPostCardBackend:
             observe_story_motion=story_motion.observe,
             story_motion_metrics=story_motion.metrics,
             clock_offsets=self.clock_offsets(source, resources),
+            printed_near=self._printed_near,
             **self._thin_polish(source),
         )
 
@@ -336,7 +341,7 @@ class ProductionPostCardBackend:
         from immich_memories.analysis.editorial_laya_reader import laya_reader_for
         from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
 
-        rules = RuleStructureReader(source)
+        rules = RuleStructureReader(source, printed=self._printed_near)
         return {
             "rules": rules,
             "laya": laya_reader_for(config.editorial),
