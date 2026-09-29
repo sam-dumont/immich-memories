@@ -1,0 +1,86 @@
+# The maximalist reference for Docker Compose: every optional piece this
+# project ships, together on one GPU box. An override, not a replacement.
+# The store on PostgreSQL needs one more step: uncomment the `postgres`
+# service in docker-compose.yml first (it ships commented out, same as the
+# reservations.devices GPU blocks), then:
+#
+#   CAPTIONER_TAG=server-cuda INFERENCE_TAG=latest-cuda \
+#     docker compose -f docker-compose.yml -f docker-compose.maximalist.yml \
+#     --profile captioner --profile inference --profile postgres up -d
+#
+# Walkthrough, hardware needed per piece, and the config keys:
+# docs-site/docs/run/maximalist.md. The Kubernetes equivalent is
+# deploy/kubernetes/overlays/maximalist.
+#
+# What this file does NOT need to reinvent: the CUDA captioner and CUDA
+# inference service are already the `captioner`/`inference` profiles in
+# docker-compose.yml with CAPTIONER_TAG/INFERENCE_TAG set and the commented
+# `reservations.devices` block uncommented there (see that file). This
+# override only adds what nothing in docker-compose.yml demonstrates yet:
+# OIDC behind a reverse proxy, an LLM and ACE-Step on a LAN machine,
+# geocoding/map tiles, and cache caps sized for a bigger library.
+services:
+  immich-memories:
+    environment:
+      IMMICH_MEMORIES_TIER: "full"
+
+      # ── OIDC behind a TLS-terminating reverse proxy ─────────────────────
+      # Without public_url the redirect_uri handed to the IdP is built from
+      # the request's Host header and comes out http://, which every IdP
+      # refuses. Without trusted_proxies naming the proxy, the callback comes
+      # back 400 "Invalid callback origin" (X-Forwarded-Proto is only
+      # trusted from these addresses). Full walkthrough:
+      # docs-site/docs/run/authentication.mdx#oidc--sso
+      IMMICH_MEMORIES_AUTH__ENABLED: "true"
+      IMMICH_MEMORIES_AUTH__PROVIDER: "oidc"
+      IMMICH_MEMORIES_AUTH__PUBLIC_URL: "${AUTH_PUBLIC_URL:-https://memories.example.com}"
+      IMMICH_MEMORIES_AUTH__ISSUER_URL: "${OIDC_ISSUER_URL:-https://idp.example.com}"
+      IMMICH_MEMORIES_AUTH__CLIENT_ID: "${OIDC_CLIENT_ID:-immich-memories}"
+      IMMICH_MEMORIES_AUTH__CLIENT_SECRET: "${OIDC_CLIENT_SECRET:-}"
+      # List-valued fields take JSON. This is the reverse proxy container's
+      # address on the compose network, not a whole subnet: `docker network
+      # inspect` names it, or give the proxy a static IP and use that.
+      IMMICH_MEMORIES_AUTH__TRUSTED_PROXIES: '["172.20.0.2"]'
+      IMMICH_MEMORIES_SERVER__SECURE_COOKIES: "true"
+
+      # ── An LLM on another LAN machine, e.g. an Apple Silicon Mac running
+      # an OpenAI-compatible server bound to 0.0.0.0 ─────────────────────
+      IMMICH_MEMORIES_LLM__PROVIDER: "openai-compatible"
+      IMMICH_MEMORIES_LLM__BASE_URL: "${LAN_LLM_BASE_URL:-http://192.168.1.50:8000/v1}"
+      IMMICH_MEMORIES_LLM__MODEL: "${LAN_LLM_MODEL:-qwen3-vl-30b-a3b-instruct}"
+      IMMICH_MEMORIES_LLM__API_KEY: "${LAN_LLM_API_KEY:-}"
+
+      # ── ACE-Step 1.5 API server (acestep-api: /release_task,
+      # /query_result), in-cluster or on the same LAN Mac (MLX/MPS). The XL
+      # variant wants >=12 GB VRAM upstream; the default 2B turbo/base
+      # family fits smaller cards. ────────────────────────────────────────
+      IMMICH_MEMORIES_ACE_STEP__ENABLED: "true"
+      IMMICH_MEMORIES_ACE_STEP__MODE: "api"
+      IMMICH_MEMORIES_ACE_STEP__API_URL: "${ACE_STEP_API_URL:-http://192.168.1.50:8001}"
+      IMMICH_MEMORIES_ACE_STEP__API_KEY: "${ACE_STEP_API_KEY:-}"
+
+      # ── Geocoding and map tiles: place names, the trip fly-over, location
+      # cards. Off by default; each one buys back one third-party host. ───
+      IMMICH_MEMORIES_NETWORK__GEOCODING: "true"
+      IMMICH_MEMORIES_NETWORK__MAP_TILES: "true"
+
+      # ── Cache caps: 10 GB each by default. Raised for a bigger library;
+      # size the Docker volume backing immich-memories-config accordingly,
+      # or leave the caps at their default instead. ───────────────────────
+      IMMICH_MEMORIES_CACHE__VIDEO_CACHE_MAX_SIZE_GB: "30"
+      IMMICH_MEMORIES_CACHE__THUMBNAIL_CACHE_MAX_SIZE_MB: "30000"
+
+      # ── The store on PostgreSQL instead of the cache volume's SQLite
+      # file (the postgres profile in docker-compose.yml). ────────────────
+      IMMICH_MEMORIES_DATABASE_URL: "postgresql+psycopg://immich_memories:${POSTGRES_PASSWORD:-change-me}@postgres:5432/immich_memories"
+
+      # ── Daily automation inside the container ───────────────────────────
+      IMMICH_MEMORIES_AUTOMATION__ENABLED: "true"
+      IMMICH_MEMORIES_AUTOMATION__DAILY_AT: "09:00"
+    deploy:
+      resources:
+        limits:
+          # More headroom than the base file's 4G: the full tier keeps a
+          # caption client, an LLM client and ACE-Step polling open alongside
+          # the same FFmpeg assembly.
+          memory: 8G
