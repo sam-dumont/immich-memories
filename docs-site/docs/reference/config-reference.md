@@ -125,8 +125,9 @@ A name is lowercase letters and digits joined by single underscores (`partner`, 
 `primary` is taken: it means the top-level account. The name is what a person alias bound to that
 account records. Configuring an account adds nothing to your films: a run reads only the accounts it
 selects, and every selected account has to answer `/users/me` with its key before anything is read.
-`generate --accounts primary,partner` reads the named accounts into one film (the CLI only, for
-now), and `config test` and `preflight` check each one, one line per account, with no key printed:
+`generate --accounts primary,partner` reads the named accounts into one film on the CLI, and
+[`automation.accounts`](#automation) does the same for the daily scan. `config test` and
+`preflight` check each one, one line per account, with no key printed:
 [A second Immich account](../run/config-file.md#a-second-immich-account).
 
 The key is a secret like the primary one: redacted from logs and issue reports, and sealed with
@@ -915,7 +916,17 @@ automation:
   detect_activity_burst: true     # unusually active months
   burst_threshold: 2.0            # multiplier above rolling average to trigger burst
   special_days_per_year: 6        # days a year discover-days keeps without a model, strongest first
+  accounts: []                    # extra immich.accounts names automation reads alongside the
+                                   # primary, exactly as generate --accounts does (default: primary alone)
+  detect_groups: true             # propose a film for each saved people group (people group add)
+                                   # that has content
 ```
+
+`accounts` and saved groups are the automation side of
+[a second Immich account](../run/config-file.md#a-second-immich-account): naming an extra account
+here makes the daily scan read it the same way a manual `--accounts` run does, one `/users/me`
+check per account, and a read that fails on any of them fails that day's discovery instead of
+proposing a film from half a household.
 
 ## Authentication
 
