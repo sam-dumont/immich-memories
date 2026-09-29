@@ -13,6 +13,7 @@ whole period ahead of time, use [`prepare`](./prepare.md).
 Without `--duration` the length comes from the material the period holds, and the run prints what decided it:
 see [how long a film runs](../memory-types.mdx#how-long-a-film-runs). With `--duration`, selection budgets the
 finished film: it reserves the opening, the ending and the dividers, and credits the crossfade overlap. A
+trip's map moves run on top of it ([Maps and film length](../titles-maps-music.md#maps-and-film-length)). A
 period with too little material finishes shorter rather than padding.
 
 ```bash
