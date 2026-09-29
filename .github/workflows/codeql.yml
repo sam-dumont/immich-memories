@@ -12,12 +12,11 @@
 name: CodeQL
 
 on:
-  push:
-    branches: [main]
+  # Nightly, not on every push to main: during a merge wave each push queued a
+  # run that competed with pull requests for runner slots. Offset from the
+  # Scorecard run at 03:25 so the two security workflows do not contend.
   schedule:
-    # Weekly Monday, offset from the Scorecard run at 07:25 so the two security
-    # workflows do not contend for the same runner slots.
-    - cron: '18 5 * * 1'
+    - cron: '18 2 * * *'
   workflow_dispatch:
 
 permissions:
