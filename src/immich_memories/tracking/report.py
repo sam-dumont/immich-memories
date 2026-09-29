@@ -206,6 +206,7 @@ def build_report(
             "wall_seconds": run.total_duration_seconds,
             "output_seconds": run.output_duration_seconds,
             "selected": run.clips_selected,
+            "timeline": run.film_timeline,
             "cache": diagnostics.get("cache", "unknown"),
         },
         "preflight": [

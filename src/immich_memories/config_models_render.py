@@ -239,6 +239,20 @@ class TitleScreenConfig(BaseModel):
         le=15.0,
         description="Duration of ending screen in seconds",
     )
+    # A trip's maps (the intro and each location card) fly to the place, then hold
+    # still on it for two seconds with its name up; the flight scales with distance.
+    map_move_min_seconds: float = Field(
+        default=6.0,
+        ge=3.0,
+        le=15.0,
+        description="Seconds a map move to a nearby place lasts, the 2 s still hold included",
+    )
+    map_move_max_seconds: float = Field(
+        default=8.0,
+        ge=3.0,
+        le=15.0,
+        description="Seconds a map move to a far place lasts, the 2 s still hold included",
+    )
 
     # Localization
     locale: Literal[
@@ -291,6 +305,15 @@ class TitleScreenConfig(BaseModel):
         default=True,
         description="Use only the first name for titles (e.g., 'John' instead of 'John Smith')",
     )
+
+    @model_validator(mode="after")
+    def order_map_move_seconds(self) -> TitleScreenConfig:
+        """A far flight never runs shorter than a near one."""
+        if self.map_move_max_seconds < self.map_move_min_seconds:
+            raise ValueError(
+                "title_screens.map_move_max_seconds must be at least map_move_min_seconds"
+            )
+        return self
 
 
 class PhotoConfig(BaseModel):
