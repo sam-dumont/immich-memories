@@ -16,8 +16,14 @@ TEXT_EPISODE_MAX_OUTPUT_TOKENS = 4_000
 _DEFAULT_MAX_PROMPT_CHARS = 24_000
 _DEFAULT_MIN_OUTPUT_TOKENS = 512
 _DEFAULT_OUTPUT_BASE_TOKENS = 200
-_DEFAULT_OUTPUT_TOKENS_PER_ROW = 128
-_DEFAULT_OUTPUT_TOKENS_PER_ASSET = 12
+_DEFAULT_OUTPUT_TOKENS_PER_ROW = 160
+# Measured 2026-09-29 on a local gemma reading an unfiltered month (prepare --overviews):
+# 63% of replies were truncated, most well under the 4,000-token ceiling -- the old
+# estimate (12) only covers a bare cull row and starves the per-asset cost a model
+# actually pays once it writes a representative or notable-moment reason (up to 120
+# chars) for some fraction of a page's pictures. This still assumes most assets get the
+# cheap row, not the expensive one; it is a safety margin, not a worst case.
+_DEFAULT_OUTPUT_TOKENS_PER_ASSET = 28
 
 
 @dataclass(frozen=True)
