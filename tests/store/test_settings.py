@@ -334,3 +334,15 @@ def test_an_unreadable_secret_is_flagged_in_the_report(config_path, monkeypatch)
 
     assert (entry.source, entry.unreadable) == ("database", True)
     assert not _source("llm.model").unreadable
+
+
+def test_an_extra_immich_account_is_sealed_as_one_secret(config_path, location):
+    """The whole map is one row: an account's url and key are access details, never plain text."""
+    account = {"url": "https://partner.example.test", "api_key": API_KEY}
+    save_settings({"immich.accounts": {"partner": account}})
+
+    row = _raw_row(location, "immich.accounts")
+    assert (row["secret"], row["value"]) == (True, None)
+    assert API_KEY.encode() not in bytes(row["ciphertext"])
+    assert load_config(config_path).immich.accounts["partner"].api_key == API_KEY
+    assert _source("immich.accounts").value == "***"

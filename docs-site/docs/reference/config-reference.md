@@ -103,6 +103,37 @@ An override forces that API contract.
 Run the read-only `immich-memories config test` to check credentials and see the resolved API
 contract without generating or uploading a memory.
 
+### Extra accounts
+
+A second person on the same Immich server (the classic couple where each phone uploads to its own
+account) goes under `accounts`, by name. The top-level `url` and `api_key` stay the primary account,
+and the primary is the only account a film is ever uploaded to.
+
+```yaml
+immich:
+  url: "https://photos.example.com"
+  api_key: "${IMMICH_API_KEY}"
+  accounts: {}  # name -> url, api_key, api_version (default: none)
+  # accounts:
+  #   partner:
+  #     url: "https://photos.example.com"
+  #     api_key: "${PARTNER_IMMICH_API_KEY}"
+  #     api_version: auto
+```
+
+A name is lowercase letters and digits joined by single underscores (`partner`, `grandma_2`), and
+`primary` is taken: it means the top-level account. The name is what a person alias bound to that
+account records. Configuring an account adds nothing to your films: a run reads only the accounts it
+selects, and every selected account has to answer `/users/me` with its key before anything is read.
+Films don't read extra accounts yet; `config test` and `preflight` already check each one, one line
+per account, with no key printed. Multi-account films are tracked in
+[#1500](https://github.com/sam-dumont/immich-video-memory-generator/issues/1500).
+
+The key is a secret like the primary one: redacted from logs and issue reports, and sealed with
+`IMMICH_MEMORIES_SECRET_KEY` when saved to the database (the whole `immich.accounts` map is one
+encrypted row). From the environment, name the account in the variable:
+`IMMICH_MEMORIES_IMMICH__ACCOUNTS__PARTNER__API_KEY`.
+
 ## Render worker
 
 The CLI and web UI can send an already selected film to a trusted render worker.

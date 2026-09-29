@@ -151,6 +151,8 @@ immich-memories config show [OPTIONS]
 
 Check the Immich connection and the API version it resolves (read-only).
 
+Every extra account under immich.accounts is checked too, one line each.
+
 ```bash
 immich-memories config test [OPTIONS]
 ```
@@ -563,7 +565,7 @@ immich-memories pictures undo [OPTIONS]
 Run preflight checks to validate all provider connections.
 
 Checks:
-- Immich server connection and API key
+- Immich server connection and API key, and each extra account
 - LLM availability (Ollama or OpenAI-compatible)
 - Title rendering (GPU or PIL fallback)
 - Pinned DINOv2 encoder export (presence and digest)

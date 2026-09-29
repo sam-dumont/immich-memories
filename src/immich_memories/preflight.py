@@ -672,6 +672,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
     Returns:
         List of check results.
     """
+    from immich_memories.preflight_accounts import check_extra_accounts
     from immich_memories.preflight_homebase import check_homebase
     from immich_memories.preflight_music import check_music
     from immich_memories.preflight_network import outside_call_checks
@@ -685,6 +686,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
 
     return [
         check_immich(config),
+        *check_extra_accounts(config),
         check_homebase(config),
         check_llm(config),
         check_title_rendering(config),
