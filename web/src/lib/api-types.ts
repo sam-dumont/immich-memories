@@ -24,6 +24,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ask Availability
+         * @description Whether a film can be asked for in a sentence: the model tier reads it (`generate --ask`).
+         */
+        get: operations["ask_availability_api_v1_ask_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ask/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Ask Preview
+         * @description Translate a sentence with `generate --ask --dry-run`; nothing is filmed.
+         *
+         *     The CLI keeps the translation in a JSON file beside the job, which the preview reads.
+         */
+        post: operations["start_ask_preview_api_v1_ask_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ask/preview/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ask Preview
+         * @description The translation a finished preview kept; 404 until it has one.
+         */
+        get: operations["ask_preview_api_v1_ask_preview__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/assets/{asset_id}/thumbnail": {
         parameters: {
             query?: never;
@@ -927,6 +989,43 @@ export interface components {
             /** Fate */
             fate: string;
         };
+        /** AskAvailability */
+        AskAvailability: {
+            /** Available */
+            available: boolean;
+            /** Tier */
+            tier: string;
+        };
+        /**
+         * AskPreview
+         * @description `generate --ask --dry-run`'s translation: the trace by part, the pool and the verdict.
+         */
+        AskPreview: {
+            /** Blocks */
+            blocks: components["schemas"]["TraceBlock"][];
+            film: components["schemas"]["AskedFilm"];
+            pool: components["schemas"]["PoolCounts"];
+            /** Request */
+            request: string;
+            /** Verdict */
+            verdict: string;
+            /** Why */
+            why: string;
+        };
+        /** AskRequest */
+        AskRequest: {
+            /** Sentence */
+            sentence: string;
+        };
+        /** AskedFilm */
+        AskedFilm: {
+            /** Line */
+            line: string;
+            /** Outcome */
+            outcome: string;
+            /** Route */
+            route: string;
+        };
         /** AttemptView */
         AttemptView: {
             /** Id */
@@ -1023,6 +1122,8 @@ export interface components {
              * @default false
              */
             all_trips: boolean;
+            /** Ask */
+            ask?: string | null;
             /** Birthday */
             birthday?: string | null;
             /** Day */
@@ -1222,7 +1323,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cut" | "render" | "scan" | "music";
+            kind: "cut" | "render" | "scan" | "music" | "ask";
             /**
              * Meta
              * @default {}
@@ -1344,6 +1445,15 @@ export interface components {
             outside: number;
             /** Total */
             total: number;
+        };
+        /** PoolCounts */
+        PoolCounts: {
+            /** Photos */
+            photos: number;
+            /** Pictures */
+            pictures: number;
+            /** Videos */
+            videos: number;
         };
         /** PoolItem */
         PoolItem: {
@@ -1854,6 +1964,13 @@ export interface components {
             /** Skipped */
             skipped: components["schemas"]["Skipped"][];
         };
+        /** TraceBlock */
+        TraceBlock: {
+            /** Head */
+            head: string;
+            /** Lines */
+            lines: string[];
+        };
         /** TripChoice */
         TripChoice: {
             /** Days */
@@ -1924,6 +2041,97 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AlbumChoice"][];
+                };
+            };
+        };
+    };
+    ask_availability_api_v1_ask_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskAvailability"];
+                };
+            };
+        };
+    };
+    start_ask_preview_api_v1_ask_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobView"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ask_preview_api_v1_ask_preview__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

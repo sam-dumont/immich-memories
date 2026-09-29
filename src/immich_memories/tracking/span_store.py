@@ -38,6 +38,16 @@ class SpanStore:
                 ],
             )
 
+    def amend(self, run_id: str, **fields: Any) -> None:
+        """Replace top-level fields of a saved run's diagnostics, keeping everything else."""
+        record = self.diagnostics(run_id) | fields
+        with self.store.begin() as conn:
+            conn.execute(
+                sa.update(run_diagnostics)
+                .where(run_diagnostics.c.run_id == run_id)
+                .values(record=record)
+            )
+
     def load(self, run_id: str) -> Collector:
         """Reconstruct the exportable buffer without starting a timing context."""
         with self.store.connect() as conn:

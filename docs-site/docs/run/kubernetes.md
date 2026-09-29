@@ -102,7 +102,7 @@ read-only. Four writable paths:
 |---|---|---|
 | `/home/immich/.immich-memories` | PVC `immich-memories-cache` | `config.yaml`, `store.db` (the store when it is SQLite: banked facts, readings, your picture decisions, people, run history, automation state, special days), video cache (a `cache.db` there is a pre-store leftover, imported once) |
 | `/app/output` | PVC `immich-memories-output` | generated videos |
-| `/models` | PVC `immich-memories-models` | the three artifacts `immich-memories models fetch` writes, at `IMMICH_MEMORIES_TRIAGE__ENCODER`, `..._MARQO_ONNX` and `..._DETECTOR_CACHE_DIR` |
+| `/models` | PVC `immich-memories-models` | the four artifacts `immich-memories models fetch` writes, at `IMMICH_MEMORIES_TRIAGE__ENCODER`, `..._MARQO_ONNX`, `..._DETECTOR_CACHE_DIR` and `IMMICH_MEMORIES_FREE_TEXT__WORDNET` |
 | `/tmp` | emptyDir 4Gi | FFmpeg intermediates; 8Gi for 4K |
 
 A deployment that predates the models claim has to add it before the next apply, or the pod stays
@@ -118,9 +118,9 @@ port; oMLX serves on 8000) and the caption server on 8092. Edit the ports if you
 
 ## The models the first cut needs
 
-Every pod in `base/` runs a `fetch-models` init container first, writing the three pinned artifacts
+Every pod in `base/` runs a `fetch-models` init container first, writing the four pinned artifacts
 onto the `/models` claim, so there is nothing to run by hand. It exits without a download when all
-three are there, so a restart costs nothing and a nightly CronJob never goes back to the network.
+four are there, so a restart costs nothing and a nightly CronJob never goes back to the network.
 `kubectl logs -n immich-memories deploy/immich-memories -c fetch-models` shows what it did.
 
 ## Automatic product tiers {#set-the-preparation-tier}

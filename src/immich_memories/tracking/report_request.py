@@ -57,14 +57,17 @@ def _aliases(vocabulary: dict) -> dict[str, str]:
 def request_section(record: dict, privacy: ReportPrivacy, *, include_captions: bool) -> dict:
     """Preserve the request's structure and verdicts, with captions an explicit opt-in."""
     flagged = record.get("flagged", [])
+    picks = [pick for pick in record.get("picks", []) if isinstance(pick, str)]
     privacy.include(
-        ids=[row["asset_id"] for row in flagged if row.get("asset_id")],
+        ids=[*(row["asset_id"] for row in flagged if row.get("asset_id")), *picks],
         aliases=_aliases(record.get("privacy", {})),
     )
     # A reason quotes what the picture shows, so it is caption text and shares the opt-in.
     keys = ("asset_id", "stage", "verdict") + (("reason", "caption") if include_captions else ())
     return {
         "request": record.get("request", ""),
+        # The translation as the owner read it: free text, so the aliases above redact it.
+        "trace": record.get("trace", ""),
         "spec": {
             field: _value(record["spec"][field])
             for field in _FIELDS
@@ -75,6 +78,8 @@ def request_section(record: dict, privacy: ReportPrivacy, *, include_captions: b
             for key, value in record.get("funnel", {}).items()
             if key in _COUNTS and isinstance(value, (int, float))
         },
+        # Joinable with the flagged rows inside this report only: each is hashed.
+        "picks": picks,
         "flagged": [{key: row[key] for key in keys if key in row} for row in flagged],
         "missing": record.get("missing", ""),
         "missing_check": {

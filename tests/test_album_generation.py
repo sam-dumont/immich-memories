@@ -9,7 +9,11 @@ import pytest
 
 from immich_memories.api.album_service import AlbumRef
 from immich_memories.api.models import Asset, AssetType
-from immich_memories.cli._album_generation import album_output_path, handle_album_generation
+from immich_memories.cli._album_generation import (
+    CuratedPool,
+    album_output_path,
+    handle_album_generation,
+)
 from immich_memories.config_loader import Config
 
 
@@ -171,3 +175,41 @@ def test_an_explicit_output_is_where_the_album_film_goes():
     asked = Path("/films/holiday.mp4")
 
     assert album_output_path(asked, "Trip 2025", "mp4", explicit=True) == asked
+
+
+class _AssetsById(_Client):
+    """WHY: replaces the Immich API; a curated pool is read by asset id, never as an album."""
+
+    def __init__(self, assets):
+        super().__init__(AlbumRef(id="unused", name="unused", asset_count=0), [], [])
+        self._by_id = {asset.id: asset for asset in assets}
+
+    def resolve_album(self, _name_or_id):
+        raise AssertionError("a curated pool is no Immich album")
+
+    def get_asset(self, asset_id):
+        return self._by_id[asset_id]
+
+
+def test_a_curated_pool_is_read_by_id_and_filmed_as_an_album_of_its_subject(monkeypatch):
+    video = _asset("v1", AssetType.VIDEO, datetime(2024, 3, 1, tzinfo=UTC))
+    photo = _asset("p1", AssetType.IMAGE, datetime(2025, 7, 9, tzinfo=UTC))
+    pool = CuratedPool(name="our cat along the years", ref="ask-1234", asset_ids=("v1", "p1"))
+
+    captured = _run_album(
+        monkeypatch,
+        [],
+        [],
+        client=_AssetsById([video, photo]),
+        album_ref=pool.ref,
+        curated=pool,
+        subject=pool.name,
+    )
+
+    assert [a.id for a in captured["assets"]] == ["v1"]
+    assert [a.id for a in captured["photo_assets"]] == ["p1"]
+    assert captured["memory_preset_params"] == {
+        "album_name": "our cat along the years",
+        "album_id": "ask-1234",
+        "subject": "our cat along the years",
+    }

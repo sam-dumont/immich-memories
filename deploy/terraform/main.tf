@@ -26,6 +26,7 @@ locals {
     IMMICH_MEMORIES_TRIAGE__ENCODER                            = "/models/triage/dinov2-small.onnx"
     IMMICH_MEMORIES_EDITORIAL__PREPARATION__MARQO_ONNX         = "/models/detectors/nsfw-marqo-384.onnx"
     IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR = "/models/huggingface"
+    IMMICH_MEMORIES_FREE_TEXT__WORDNET                         = "/models/wordnet/wordnet.zip"
   }
 
   # Everything is configured through IMMICH_MEMORIES_<SECTION>__<KEY> env vars,
@@ -203,7 +204,7 @@ resource "kubernetes_deployment_v1" "this" {
         init_container {
           name    = "fetch-models"
           image   = "${var.image_repository}:${var.image_tag}"
-          command = ["/bin/sh", "-c", "test -s /models/triage/dinov2-small.onnx && test -s /models/detectors/nsfw-marqo-384.onnx && test -d /models/huggingface || immich-memories models fetch"]
+          command = ["/bin/sh", "-c", "test -s /models/triage/dinov2-small.onnx && test -s /models/detectors/nsfw-marqo-384.onnx && test -d /models/huggingface && test -s /models/wordnet/wordnet.zip || immich-memories models fetch"]
           security_context {
             allow_privilege_escalation = false
             read_only_root_filesystem  = true

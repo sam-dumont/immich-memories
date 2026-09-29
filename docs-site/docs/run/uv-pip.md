@@ -21,7 +21,7 @@ picture classifiers.
 
 ```bash
 uv tool install "immich-memories[all]"       # or [all-mac] on Apple Silicon
-immich-memories models fetch                 # about 130 MB, once
+immich-memories models fetch                 # about 140 MB, once
 immich-memories preflight
 immich-memories ui                           # http://localhost:8080
 ```
@@ -40,9 +40,10 @@ authentication, generated music and the audio extras). To get uv itself: `brew i
 or `curl -LsSf https://astral.sh/uv/install.sh | sh`.
 
 `models fetch` writes the encoder to `~/.immich-memories/models/triage/`, the sensitive-content
-detector to `~/.immich-memories/models/detectors/`, and the document classifier into the Hugging
-Face cache (`~/.cache/huggingface`, or `advanced.editorial.preparation.detector_cache_dir`). Each is
-checked against a SHA-256. It needs the `editorial` extra (every `all*` extra has it).
+detector to `~/.immich-memories/models/detectors/`, the WordNet dictionary to
+`~/.immich-memories/models/wordnet/`, and the document classifier into the Hugging Face cache
+(`~/.cache/huggingface`, or `advanced.editorial.preparation.detector_cache_dir`). Each is checked
+against a SHA-256. It needs the `editorial` extra (every `all*` extra has it).
 
 A cut checks the two ONNX files and the output folder (`~/Videos/Memories` by default) before it
 asks Immich for anything, and stops with `Run immich-memories models fetch` if a model is missing.

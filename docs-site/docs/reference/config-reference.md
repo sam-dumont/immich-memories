@@ -12,8 +12,8 @@ which one set each key ([where a setting comes from](../run/config-file.md#where
 
 :::tip Config tiers
 Tier 2 sections (`analysis`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`,
-`automation`, `notifications`, `triage`, `editorial`, `inference`) go under an `advanced:` key in
-the file:
+`automation`, `notifications`, `triage`, `editorial`, `inference`, `free_text`) go under an
+`advanced:` key in the file:
 
 ```yaml
 advanced:
@@ -708,6 +708,21 @@ When the service does not answer, the failure is recorded against the endpoint i
 report, and with `fallback_to_local: true` the in-process producers take over for the pictures
 still missing facts (which needs the model files from `models fetch` on the app box). With it off,
 the cut refuses until the service is back.
+
+## Free-text requests
+
+```yaml
+advanced:
+  free_text:
+    wordnet: ~/.immich-memories/models/wordnet/wordnet.zip   # WordNet 3.0 (11 MB)
+    wordnet_url: https://raw.githubusercontent.com/...       # where `models fetch` gets it
+```
+
+A film asked for in a sentence (experimental, being built) looks the request's words up in
+WordNet: is "cat" a thing, is "park" a place, is a town's name also an ordinary word. The corpus is
+a model file like the others: `models fetch` downloads it from a fixed commit of `nltk_data` and
+checks its SHA-256, and a run that finds it missing stops and says to run `models fetch`. Nothing
+fetches it while a film is being made.
 
 ## Title screens
 
