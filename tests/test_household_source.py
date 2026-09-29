@@ -34,7 +34,9 @@ USERS = {PRIMARY_KEY: "user-primary", PARTNER_KEY: "user-partner", GRANDMA_KEY: 
 WINDOW = DateRange(datetime(2025, 6, 1, tzinfo=UTC), datetime(2025, 6, 30, 23, 59, tzinfo=UTC))
 
 
-def _asset(asset_id: str, owner: str, day: int, *, kind: str = "IMAGE", favourite=False):
+def _asset(
+    asset_id: str, owner: str, day: int, *, kind="IMAGE", favourite=False, copy_of: str = ""
+):
     taken = datetime(2025, 6, day, 12, tzinfo=UTC).isoformat()
     return {
         "id": asset_id,
@@ -48,13 +50,16 @@ def _asset(asset_id: str, owner: str, day: int, *, kind: str = "IMAGE", favourit
         "width": 4032,
         "height": 3024,
         "duration": "0:00:05.000" if kind == "VIDEO" else None,
-        "checksum": f"sum-{asset_id}",
+        "checksum": f"sum-{copy_of or asset_id}",
         "exifInfo": {"make": "Apple", "model": "iPhone"},
     }
 
 
-# What each key's metadata search answers. The partner's picture "shared" shows up in the
-# primary's timeline through partner sharing, unstarred there; its owner starred it.
+# What each key's metadata search answers. Like a real household, the partner's library is
+# mostly byte copies of the primary's, under its own IDs (collapsing those is slice 4's
+# job), with a few pictures of its own. Some installs also share partner timelines: the
+# partner's "shared" shows up in the primary's search, unstarred there though its owner
+# starred it, and so does a picture from grandma, whom this film did not choose.
 LIBRARY = {
     PRIMARY_KEY: [
         _asset("own-photo", "user-primary", 2),
@@ -63,6 +68,8 @@ LIBRARY = {
         _asset("grandma-photo", "user-grandma", 5),
     ],
     PARTNER_KEY: [
+        _asset("copy-photo", "user-partner", 2, copy_of="own-photo"),
+        _asset("copy-video", "user-partner", 3, kind="VIDEO", copy_of="own-video"),
         _asset("shared", "user-partner", 4, favourite=True),
         _asset("partner-photo", "user-partner", 6),
     ],
@@ -193,7 +200,8 @@ def test_a_picture_shared_between_partners_is_one_picture_both_can_open(
 def test_a_picture_shared_by_an_account_the_run_did_not_choose_stays_out(tmp_path, immich_server):
     source = _by_id(_source(tmp_path, ("primary", "partner")))
 
-    assert set(source) == {"own-photo", "own-video", "shared", "partner-photo"}
+    assert "grandma-photo" not in source
+    assert {"own-photo", "shared", "partner-photo"} <= set(source)
     assert "user-grandma" not in immich_server.searched_by
 
 
