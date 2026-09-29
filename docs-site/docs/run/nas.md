@@ -132,4 +132,13 @@ the [config reference](../reference/config-reference.md#size-the-thumbnail-cache
 
 Uncomment `IMMICH_MEMORIES_AUTOMATION__ENABLED` and `IMMICH_MEMORIES_AUTOMATION__DAILY_AT` in the
 compose file and set `TZ` in `.env`. The UI process makes one memory a day by itself; there is no
-cron to install. [Daily automation](./docker.md#daily-automation).
+cron to install. [Daily automation](./docker.md#daily-automation), which also says how the daily
+film reaches Immich.
+
+## Everything else
+
+Same container, same commands, prefixed with `sudo` over SSH on most NAS systems. On the Docker page:
+[the API key](./docker.md#the-api-key), [films into Immich](./docker.md#films-into-immich),
+[logs and health](./docker.md#health-check-and-logs), [backups and the store](./docker.md#what-to-keep),
+[updating](./docker.md#updating), [hardening](./docker.md#hardening) and the
+[add-ons](./docker.md#add-ons-as-profiles).

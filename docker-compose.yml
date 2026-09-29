@@ -55,10 +55,14 @@ services:
       IMMICH_MEMORIES_AUTH_PASSWORD: "${IMMICH_MEMORIES_AUTH_PASSWORD:-}"
       # Optional: session secret (auto-generated if not set; set to preserve sessions on restart)
       # IMMICH_MEMORIES_STORAGE_SECRET: "${IMMICH_MEMORIES_STORAGE_SECRET}"
+      # Encrypts the secrets the Settings page saves (API keys, passwords).
+      # Empty, Settings keeps them read-only; set it in .env to save them there.
+      IMMICH_MEMORIES_SECRET_KEY: "${IMMICH_MEMORIES_SECRET_KEY:-}"
       # Optional: the store (human decisions, model answers, run history, UI
       # settings) on PostgreSQL instead of the default SQLite file on the
-      # config volume. Uncomment this and the postgres service below, or point
-      # it at a separate database on your own PostgreSQL instance. A schema
+      # config volume. Uncomment this, the postgres service and its volume
+      # below, or point it at a separate database on your own PostgreSQL
+      # instance. A schema
       # name only matters if that instance is shared; default: immich_memories.
       # IMMICH_MEMORIES_DATABASE_URL: "postgresql+psycopg://immich_memories:${POSTGRES_PASSWORD:-change-me}@postgres:5432/immich_memories"
       # The model editor's text reader. Left unset, as it ships, the rules
@@ -319,14 +323,14 @@ services:
 
   # ── Optional: PostgreSQL for the store ──────────────────────────────────
   # The store defaults to a SQLite file on the config volume, which is the
-  # right choice for one host with one writer. Uncomment this service and the
-  # commented IMMICH_MEMORIES_DATABASE_URL line on the app service above to
-  # put the store on PostgreSQL instead — the owner's preferred deployment,
-  # and useful once you also run `psql` for other things. Set POSTGRES_PASSWORD
+  # right choice for one host with one writer. To put the store on PostgreSQL
+  # instead, uncomment three things: this service, the
+  # IMMICH_MEMORIES_DATABASE_URL line on the app service above, and the
+  # immich-memories-postgres-data volume at the bottom. Set POSTGRES_PASSWORD
   # in .env; it has to match the password in IMMICH_MEMORIES_DATABASE_URL.
-  # Plain PostgreSQL 14+, no extensions required.
-  #
-  #   docker compose --profile postgres up -d
+  # The service sits behind the `postgres` profile, so also add
+  # COMPOSE_PROFILES=postgres to .env: without it a plain `docker compose up -d`
+  # (an update, a restart) never starts it. Plain PostgreSQL 14+, no extensions.
   #
   # postgres:
   #   image: postgres:16@sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54

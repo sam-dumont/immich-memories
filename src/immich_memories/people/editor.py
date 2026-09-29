@@ -308,7 +308,7 @@ def _evidence_line(evidence: dict[str, Any]) -> str:
     count = evidence.get("count") or 0
     months = evidence.get("active_months") or 0
     since = evidence.get("onset") or evidence.get("first_month")
-    line = f"{count} pictures across {months} months"
+    line = f"{count} pictures across {months} {'month' if months == 1 else 'months'}"
     return f"{line}, here since {since}" if since else line
 
 

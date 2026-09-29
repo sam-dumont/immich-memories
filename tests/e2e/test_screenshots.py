@@ -12,11 +12,15 @@ Usage:
 
 from __future__ import annotations
 
+import base64
 import re
+import subprocess
 from pathlib import Path
+from urllib.parse import urljoin
 
 import pytest
 from playwright.sync_api import Page, expect
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from tests.e2e.conftest import set_theme
 from tests.e2e.fake_library import CARRIERS, LIBRARY, THESIS
@@ -26,6 +30,18 @@ from tests.e2e.web_flow import contact_sheet, cut_june, render, the_film
 pytestmark = [pytest.mark.e2e, pytest.mark.visual]
 
 _THEMES = ("light", "dark")
+# Tall enough for the whole brief down to Cut, and the render panel down to Render.
+_VIEWPORT = {"width": 1440, "height": 1000}
+
+
+@pytest.fixture(scope="session")
+def browser_type_launch_args(browser_type_launch_args: dict) -> dict:
+    # WHY: Linux Chromium hints glyphs to the pixel grid, which spreads Inter's letters; the docs
+    # show the client the way a desktop browser draws it, whatever machine captured it.
+    args = [*browser_type_launch_args.get("args", []), "--font-render-hinting=none"]
+    return {**browser_type_launch_args, "args": args}
+
+
 # The stock library's swim picture, as a nudity detector that misread it would bank it: the
 # false positive the owner clears by hand. Seeded by the recipe, never placed by hand.
 _HELD = "trip-swim-02"
@@ -45,7 +61,8 @@ def _settle(page: Page) -> None:
     page.wait_for_function(
         # Only what the frame shows: a lazy thumbnail below the fold is never fetched.
         "() => [...document.images].filter(i => { const r = i.getBoundingClientRect();"
-        " return r.height > 0 && r.bottom > 0 && r.top < innerHeight; }).every(i => i.complete)",
+        " return r.height > 0 && r.bottom > 0 && r.top < innerHeight"
+        " && getComputedStyle(i).visibility !== 'hidden'; }).every(i => i.complete)",
         timeout=30_000,
     )
     # WHY: the hermetic launch writes under a pytest temp root that carries the developer's
@@ -65,8 +82,78 @@ def _save_part(page: Page, locator, directory: Path, name: str) -> None:
     locator.screenshot(path=str(directory / f"{name}.png"))
 
 
+def _save_padded(page: Page, locator, directory: Path, name: str, pad: int = 24) -> None:
+    """A part of the page with room around it, so its borders are not cut at the frame's edge."""
+    _to_top(locator, 96)
+    _settle(page)
+    box = locator.bounding_box()
+    assert box is not None
+    page.screenshot(
+        path=str(directory / f"{name}.png"),
+        clip={
+            "x": box["x"] - pad,
+            "y": box["y"] - pad,
+            "width": box["width"] + 2 * pad,
+            "height": box["height"] + 2 * pad,
+        },
+    )
+
+
+def _to_top(locator, margin: int = 24) -> None:
+    """Scroll `locator` to the top of whatever scrolls it: the app scrolls its main column,
+    not the window, so `window.scrollTo` moves nothing."""
+    locator.evaluate(
+        "(el, m) => { el.style.scrollMarginTop = m + 'px'; el.scrollIntoView({block: 'start'}); }",
+        margin,
+    )
+
+
+def _blur(page: Page) -> None:
+    page.evaluate("document.activeElement && document.activeElement.blur()")
+
+
+# The job panel follows the cut through server-sent events, and every event swaps the row of
+# pictures just read, so during a counted stage that row is always half loaded. `__holdJobs`
+# lets the capture hold the panel still for a moment; EventSource reconnects on release and the
+# server sends the job as it is by then, so nothing the page needs is lost.
+_HOLDABLE_JOBS = """
+window.__holdJobs = false;
+const Base = window.EventSource;
+window.EventSource = class extends Base {
+  set onmessage(handler) {
+    super.onmessage = (event) => { if (!window.__holdJobs) handler(event); };
+  }
+  get onmessage() { return super.onmessage; }
+};
+"""
+
+
+def _hold_a_counted_stage(page: Page) -> None:
+    """Hold the job panel on a counted stage whose row of pictures has fully loaded."""
+    counted = (
+        "() => { const panel = document.querySelector('[aria-label=\"Progress\"]');"
+        " const imgs = document.querySelectorAll('[aria-label=\"Pictures just read\"] img');"
+        " return panel && /\\d+ of \\d+/.test(panel.textContent) && imgs.length >= 6; }"
+    )
+    loaded = (
+        "() => [...document.querySelectorAll('[aria-label=\"Pictures just read\"] img')]"
+        ".every(i => i.complete)"
+    )
+    for _ in range(20):
+        page.wait_for_function(counted, polling=50, timeout=120_000)
+        page.evaluate("window.__holdJobs = true")
+        try:
+            page.wait_for_function(loaded, timeout=5_000)
+        except PlaywrightTimeoutError:
+            page.evaluate("window.__holdJobs = false")
+            continue
+        return
+    raise AssertionError("no counted stage held still long enough to load its pictures")
+
+
 def _open(page: Page, url: str, theme: str) -> None:
-    page.set_viewport_size({"width": 1440, "height": 900})
+    page.add_init_script(_HOLDABLE_JOBS)
+    page.set_viewport_size(_VIEWPORT)
     page.goto(url, wait_until="domcontentloaded", timeout=30_000)
     set_theme(page, theme)
 
@@ -75,8 +162,6 @@ def _brief_for_june(page: Page) -> None:
     page.get_by_text("Monthly Highlights", exact=True).click()
     page.get_by_label("Year", exact=True).fill("2024")
     page.get_by_label("Month", exact=True).select_option("6")
-    page.get_by_text("Length and pictures").click()
-    page.get_by_label("Length in minutes", exact=False).fill("2")
 
 
 @pytest.mark.parametrize("theme", _THEMES)
@@ -87,18 +172,24 @@ def test_capture_memory_walkthrough(
     d = screenshot_dir
     _open(page, f"{launch_app_url}/app/create", theme)
     _brief_for_june(page)
+    # The brief as a first visit sees it: the type, the month, the command and Cut, no panel open.
+    _blur(page)
     _save(page, d, _name("memory-brief", theme))
+    page.get_by_text("Length and pictures").click()
+    # The fixture month holds 79 s of pictures and video; 1.5 minutes leaves room for the titles
+    # and stays inside the accepted shortfall, so the review shows no "selected less" notice.
+    page.get_by_label("Length in minutes", exact=False).fill("1.5")
     page.get_by_label("Who may see it").select_option("just-us")
+    _blur(page)
     _save(page, d, _name("memory-brief-sharing", theme))
     page.get_by_label("Who may see it").select_option("")
 
     page.get_by_role("button", name="Cut", exact=True).click()
     progress = page.get_by_role("region", name="Progress")
-    expect(progress.get_by_text(re.compile(r"\d+ of \d+"))).to_be_visible(timeout=60_000)
-    expect(
-        progress.get_by_role("list", name="Pictures just read").locator("img").first
-    ).to_be_visible()
+    expect(progress).to_be_visible(timeout=60_000)
+    _hold_a_counted_stage(page)
     _save(page, d, _name("memory-cutting", theme))
+    page.evaluate("window.__holdJobs = false")
 
     page.wait_for_url("**/app/runs/**", timeout=240_000)
     expect(page.get_by_text(THESIS)).to_be_visible()
@@ -120,28 +211,62 @@ def test_capture_memory_walkthrough(
             "button"
         ).first.click()
         inspector.get_by_role("button", name="Use this picture instead").click()
+    # Both edits sit in the first row: show that row, the inspector beside it and the change bar.
+    _to_top(page.get_by_role("list", name="Cut contact sheet"), 64)
     _save(page, d, _name("memory-review-edit", theme))
     page.get_by_role("button", name="Save revision").click()
     expect(page.get_by_role("status").filter(has_text="Saved as revision")).to_be_visible()
 
     panel = page.get_by_role("region", name="Render")
-    panel.scroll_into_view_if_needed()
     panel.get_by_label("What to render").select_option(label="Revision 1")
-    _save_part(page, panel, d, _name("memory-options", theme))
+    _to_top(panel)
+    _save(page, d, _name("memory-options", theme))
     render(page, resolution="720p")
-    expect(panel.get_by_role("progressbar")).to_be_visible(timeout=30_000)
-    _save_part(page, panel, d, _name("memory-rendering", theme))
     expect(the_film(page)).to_be_visible(timeout=600_000)
-    page.wait_for_function(
-        "video => video.readyState >= 2", arg=the_film(page).element_handle(), timeout=60_000
-    )
-    _save_part(page, panel, d, _name("memory-export", theme))
+    _show_the_film_at(page, 19.5, d)
+    _to_top(panel)
+    _save(page, d, _name("memory-export", theme))
 
-    page.evaluate("window.scrollTo(0, 0)")
-    page.get_by_role("navigation", name="Main navigation").first.evaluate(
-        "nav => nav.style.display = 'none'"
-    )
-    _save(page, d, _name("hero-memory", theme))
+
+def _show_the_film_at(page: Page, seconds: float, scratch: Path) -> None:
+    """Put a frame of the rendered film in the page's player, the birthday candles the demo
+    shows too.
+
+    WHY: Playwright's Chromium ships without an H.264 decoder, so the player reads the film's
+    length and never draws a frame: a blank box, or a spinner. The frame comes from the very file
+    the page is playing, cut out with FFmpeg and set as the player's poster.
+    """
+    film = the_film(page)
+    source = film.evaluate("v => v.currentSrc || v.src")
+    body = page.request.get(urljoin(page.url, source)).body()
+    movie, still = scratch / ".film.mp4", scratch / ".film.jpg"
+    movie.write_bytes(body)
+    try:
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-v",
+                "error",
+                "-y",
+                "-ss",
+                str(seconds),
+                "-i",
+                str(movie),
+                "-frames:v",
+                "1",
+                "-q:v",
+                "2",
+                str(still),
+            ],
+            check=True,
+        )
+        poster = "data:image/jpeg;base64," + base64.b64encode(still.read_bytes()).decode()
+    finally:
+        movie.unlink(missing_ok=True)
+        still.unlink(missing_ok=True)
+    # Without a decoder the controls read 0:00 and greyed out, which looks broken; the frame alone
+    # reads as the film.
+    film.evaluate("(v, url) => { v.pause(); v.poster = url; v.controls = false; }", poster)
 
 
 def _has_alternatives(page: Page, index: int) -> bool:
@@ -181,7 +306,7 @@ def test_capture_the_pool_and_picture_decisions(
     d = screenshot_dir
     try:
         _open(page, f"{launch_app_url}/app/create", theme)
-        cut_june(page, launch_app_url)
+        cut_june(page, launch_app_url, minutes=1.5)
         page.get_by_role("link", name="Pool", exact=True).click()
         tiles = page.get_by_role("list", name="Pool").get_by_role("listitem")
         expect(tiles.first).to_be_visible(timeout=30_000)
@@ -228,11 +353,24 @@ def test_capture_the_pages_around_the_film(
     _open(page, f"{launch_app_url}/app/runs", theme)
     cards = page.get_by_role("list", name="Runs").get_by_role("listitem")
     expect(cards.first).to_be_visible(timeout=30_000)
-    _save(page, d, _name("runs", theme))
-    cards.first.get_by_role("link").first.click()
-    page.wait_for_url("**/app/runs/**")
-    page.get_by_role("heading", name="Run details").scroll_into_view_if_needed()
-    _save(page, d, _name("run-details", theme))
+    # Every pass adds runs, so the light and dark lists would differ; the last pass takes both.
+    if theme == _THEMES[-1]:
+        for shade in _THEMES:
+            set_theme(page, shade)
+            _save(page, d, _name("runs", shade))
+        set_theme(page, theme)
+    # The details worth showing belong to a film: its output path, delivery and phase timings.
+    # The newest card can be a cut or a preview, so open cards until one was rendered.
+    links = [
+        cards.nth(i).get_by_role("link").first.get_attribute("href") for i in range(cards.count())
+    ]
+    details = page.get_by_role("heading", name="Run details")
+    for href in links:
+        page.goto(urljoin(launch_app_url, href or ""))
+        expect(details).to_be_visible(timeout=30_000)
+        if page.get_by_text(re.compile(r"^Saved to: ")).count():
+            break
+    _save_padded(page, details.locator("xpath=.."), d, _name("run-details", theme))
 
     page.goto(f"{launch_app_url}/app/suggestions")
     expect(page.get_by_role("heading", level=1)).to_be_visible()
@@ -244,7 +382,17 @@ def test_capture_the_pages_around_the_film(
     page.wait_for_load_state("networkidle")
     _save(page, d, _name("settings-config", theme))
 
+    # The registry starts empty on a fresh host; the page is only worth a picture once it has
+    # read who is in the library, which is what the first thing anyone does there is.
     page.goto(f"{launch_app_url}/app/settings/people")
+    page.wait_for_load_state("networkidle")
+    if page.get_by_text("Nobody yet.", exact=False).count():
+        page.get_by_role("button", name="Rescan the library").click()
+    roster = page.get_by_role("listitem").filter(has_text=re.compile(r"Pictures: \d+"))
+    expect(roster.first).to_be_visible(timeout=120_000)
+    # Opened again, as someone coming back to the page does: the roster, not the scan's panel.
+    page.reload()
+    expect(roster.first).to_be_visible(timeout=30_000)
     page.wait_for_load_state("networkidle")
     _save(page, d, _name("settings-people", theme))
 
@@ -273,7 +421,7 @@ def test_capture_the_sign_in_page(
         "IMMICH_MEMORIES_AUTH__PASSWORD": "screenshot-only",  # noqa: S105 - a throwaway fixture
     }
     with served_ui(env, unused_tcp_port_factory(), root / "server.log") as url:
-        page.set_viewport_size({"width": 1440, "height": 900})
+        page.set_viewport_size(_VIEWPORT)
         page.goto(f"{url}/app/login")
         set_theme(page, theme)
         expect(page.get_by_role("button", name="Sign in")).to_be_visible()

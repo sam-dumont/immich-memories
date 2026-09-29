@@ -4,7 +4,7 @@
 # carries the Immich API key; a sidecar reaches the worker at
 # http://127.0.0.1:8093 without TLS and without setting
 # render.allow_insecure_http, since the two containers share one network
-# namespace. See docs-site/docs/better/gpu-render.md#run-it-as-a-sidecar.
+# namespace. See docs-site/docs/run/kubernetes.md#render-worker-as-a-sidecar.
 #
 # The whole pod moves to the GPU node this way (the app itself needs no GPU),
 # so replace the node selector below with whatever labels your GPU node

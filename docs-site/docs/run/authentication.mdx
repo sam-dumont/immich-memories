@@ -125,8 +125,10 @@ Four things, whichever provider you use:
 
 ## Sessions
 
-Sessions last `session_ttl_hours` (24 by default) and abandoned session files are swept at startup
-and every 15 minutes. **Sign out** in the top bar, or `/logout`, ends the session; OIDC logout also ends the IdP
+A session is a signed cookie and lasts `session_ttl_hours` (24 by default). The key that signs it
+is `IMMICH_MEMORIES_STORAGE_SECRET`, or else `~/.immich-memories/.storage_secret`, generated on
+first start, so logins survive a restart; change it and every session ends. **Sign out** in the
+top bar, or `/logout`, ends the session; OIDC logout also ends the IdP
 session when the IdP advertises `end_session_endpoint`. Scripts authenticate to
 [the trigger endpoint](../make/automate.md#trigger-it-over-http) with
 `server.trigger_token` instead.

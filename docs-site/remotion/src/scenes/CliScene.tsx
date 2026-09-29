@@ -3,6 +3,7 @@ import {
   AbsoluteFill,
   interpolate,
   OffthreadVideo,
+  Sequence,
   spring,
   staticFile,
   useCurrentFrame,
@@ -10,15 +11,48 @@ import {
 } from "remotion";
 import { COLORS } from "../theme";
 import { fontFamily } from "../fonts";
+import { CLI_TIMING } from "../cli-timing";
 
-// The recording is the real CLI: about a minute from the prompt to `runs why`.
-// The scene shows its last 39 seconds at 10x: the counted stage with its
-// estimate, the render, the end-of-run block, then runs story and runs why.
-// START_FRAME is in the recording's own frames (VHS records at 25 fps).
-const RECORDING_FPS = 25;
-const START_SECONDS = 18.6;
-const START_FRAME = START_SECONDS * RECORDING_FPS;
-const PLAYBACK_RATE = 10;
+// The recording is the real CLI, a couple of minutes from the first prompt to
+// `open`. The command is typed at a readable pace, the generate run is a
+// time-lapse; `runs story` and `runs why` are held
+// long enough to read. The cut points are the seconds the recording script wrote
+// down as it typed each command (cli-timing.ts), so a new recording moves them.
+export const CLI_FRAMES = 165;
+const FPS = 30;
+// The command is typed in about three seconds: shown at 3x so it can be read,
+// then the run itself as a time-lapse.
+const TYPED = CLI_TIMING.generate + 4.5;
+const LEGS: { from: number; to: number; frames: number }[] = [
+  { from: CLI_TIMING.generate, to: TYPED, frames: 45 },
+  { from: TYPED, to: CLI_TIMING.story, frames: 38 },
+  { from: CLI_TIMING.story, to: CLI_TIMING.why, frames: 36 },
+  { from: CLI_TIMING.why, to: CLI_TIMING.open, frames: 34 },
+  { from: CLI_TIMING.open, to: CLI_TIMING.end, frames: CLI_FRAMES - 45 - 38 - 36 - 34 },
+];
+
+const Recording: React.FC = () => {
+  let at = 0;
+  return (
+    <>
+      {LEGS.map((leg) => {
+        const start = at;
+        at += leg.frames;
+        return (
+          <Sequence key={leg.from} from={start} durationInFrames={leg.frames} layout="none">
+            <OffthreadVideo
+              src={staticFile("cli-demo.mp4")}
+              style={{ width: "100%", height: "calc(100% - 36px)", objectFit: "cover" }}
+              muted
+              startFrom={Math.round(leg.from * FPS)}
+              playbackRate={(leg.to - leg.from) * FPS / leg.frames}
+            />
+          </Sequence>
+        );
+      })}
+    </>
+  );
+};
 
 export const CliScene: React.FC = () => {
   const frame = useCurrentFrame();
@@ -72,9 +106,9 @@ export const CliScene: React.FC = () => {
           top: "50%",
           left: "50%",
           width: 1500,
-          height: 850,
+          height: 872,
           marginLeft: -750,
-          marginTop: -425,
+          marginTop: -436,
           borderRadius: 12,
           overflow: "hidden",
           opacity: entryOpacity,
@@ -130,17 +164,7 @@ export const CliScene: React.FC = () => {
           </div>
         </div>
 
-        <OffthreadVideo
-          src={staticFile("cli-demo.mp4")}
-          style={{
-            width: "100%",
-            height: "calc(100% - 36px)",
-            objectFit: "cover",
-          }}
-          muted
-          startFrom={START_FRAME}
-          playbackRate={PLAYBACK_RATE}
-        />
+        <Recording />
       </div>
     </AbsoluteFill>
   );

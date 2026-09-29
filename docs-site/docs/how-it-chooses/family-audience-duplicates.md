@@ -80,7 +80,7 @@ Every shot gets one of four verdicts, and the strictest reading wins:
 
 ### Sharing levels
 
-Each film is cut for one of three levels. You pick it per film (**Who will watch it** in the web
+Each film is cut for one of three levels. You pick it per film (**Who may see it** in the web
 brief, `generate --sharing`), and `defaults.sharing` is the default, `family` unless you change it.
 
 | Level | Who watches | Plays |
@@ -218,7 +218,11 @@ No tier asks a model to compare two pictures.
    received batch shares a second too, so the pixels have to agree; burst frames hash alike, so
    the name has to say it was forwarded). The file with the most pixels plays, a star on any copy
    counts for the picture, and the others are left out as "another file of the same picture". On
-   one real month that was 415 of 2,028 files.
+   one real month that was 415 of 2,028 files. Files with the same bytes (an equal SHA-1) are one
+   picture too: your partner's phone uploaded it as well, or a second account of a
+   `generate --accounts` run holds it. A Live Photo copy stands for it before a plain one, then a
+   starred copy, then the primary account's. A video whose bytes are a Live Photo's own motion
+   folds into that Live Photo (`exact_copies.py`).
 2. **Bursts, before the editor.** Photos within `photos.burst_window_seconds` (300) of each other
    **and** within `photos.burst_hash_threshold` (8) bits on a preview hash are one burst; the
    favourite survives it, else the best frame. A photo with no hash is kept.

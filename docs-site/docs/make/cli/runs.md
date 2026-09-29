@@ -26,7 +26,7 @@ immich-memories runs list --person "Emma" --limit 5
 immich-memories runs show 20260105_1430
 ```
 
-Status, date range, clip counts, **Title From**, output file, duration and size, **Sharing** (who the cut was
+Status, date range, clip counts, **Title From**, **Timeline** (seconds of pictures, titles and map moves), output file, duration and size, **Sharing** (who the cut was
 for: just us, family or shareable; `runs story` prints it too), the phase-by-phase timing,
 and the machine it ran on (CPU, GPU, RAM, FFmpeg version).
 
@@ -40,6 +40,20 @@ the attempt's `derived-decisions/cut-invariants.private.json` (see
 
 A partial run id matches if it is unambiguous among the 100 most recent runs. Older than that, a
 unique prefix still reports "Run not found": use the full id.
+
+### Timings
+
+`runs show` also prints the saved span tree, rates per item, and the uncovered part of the run's wall
+clock. Each span also carries its memory peak: the `immich-memories` process alone, then with its
+children (ffmpeg) added, sampled every 0.25 s. Runs older than this keep no peaks.
+
+The wall clock starts when the command starts: the first span, `startup`, is the time spent
+loading and reading the config before the run opened (usually 4 to 5 seconds). Its children say where
+it went: `startup.imports`, `startup.config`, `startup.store`, `startup.system`, `startup.title_kernels`
+(the title kernels compile here, about 2 to 3 seconds on a Mac) and `startup.run_record`. A first run
+from a fresh checkout is slower: nothing is compiled yet. Finding the pictures is
+`discovery` on every route, trips and albums included. `prepare` records a run too. Older runs keep the timings they originally recorded.
+The same measurements sit in each attempt's `timings.private.json`.
 
 ### Model spend
 
@@ -159,13 +173,3 @@ immich-memories runs storage --json
 
 To file an issue about a run, `immich-memories report` prints a redacted report of it:
 [report](./report.md).
-
-`runs show` also prints the saved span tree, rates per item, and the uncovered part of the run's wall
-clock. Each span also carries its memory peak: the `immich-memories` process alone, then with its
-children (ffmpeg) added, sampled every 0.25 s. Runs older than this keep no peaks. The wall clock starts when the command starts: the first span, `startup`, is the time spent
-loading and reading the config before the run opened (usually 4 to 5 seconds). Its children say where
-it went: `startup.imports`, `startup.config`, `startup.store`, `startup.system`, `startup.title_kernels`
-(the title kernels compile here, about 2 to 3 seconds on a Mac) and `startup.run_record`. A first run
-from a fresh checkout is slower: nothing is compiled yet. Finding the pictures is
-`discovery` on every route, trips and albums included. `prepare` records a run too. Older runs keep the timings they originally recorded.
-The setup matrix copies these same measurements from each attempt's `timings.private.json`.

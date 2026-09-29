@@ -1209,6 +1209,10 @@ msgid "The film"
 msgstr "이 영상"
 
 #: web/lib/JobPanel.svelte:61
+msgid "Done."
+msgstr "완료되었습니다."
+
+#: web/lib/JobPanel.svelte:61
 msgid "The film is ready."
 msgstr "영상이 준비되었습니다."
 

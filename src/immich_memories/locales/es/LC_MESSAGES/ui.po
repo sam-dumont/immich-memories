@@ -1231,6 +1231,10 @@ msgid "The film"
 msgstr "El vídeo"
 
 #: web/lib/JobPanel.svelte:61
+msgid "Done."
+msgstr "Hecho."
+
+#: web/lib/JobPanel.svelte:61
 msgid "The film is ready."
 msgstr "El vídeo está listo."
 

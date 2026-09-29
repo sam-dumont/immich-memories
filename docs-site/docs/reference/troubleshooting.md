@@ -30,10 +30,13 @@ one go. In Docker, prefix both with `docker compose exec immich-memories`.
 | `nsfw_marqo has no model: …` or `doc_docling has no model: …` | Same: `models fetch` |
 | `Output directory is not writable` | In Docker the container runs as uid 1000: `mkdir output` before `up`, or `sudo chown 1000:1000 output` |
 | `Story-first selection needs prepared annotations in the store at …` | The store this run opened has no prepared facts for these pictures: check `IMMICH_MEMORIES_DATABASE_URL` / `database.url` names the store you prepared into, or run `prepare` |
-| `editorial runtime needs a nonblank LLM model` | `reader: model` with an empty `llm.model`. Set the model, or go back to `reader: auto` |
+| `tier: full needs an LLM: set advanced.llm.base_url and advanced.llm.model …` | `tier: full` without a model server. Set both keys, or use `tier: auto` or `tier: gpu` |
 | `Waiting for the reader at host:port` | A configured model server stopped answering. See [below](#waiting-for-a-model-server) |
 | `caption endpoint must advertise smolvlm2-500m-base-public` | Right weights, wrong name: alias it. See [Add captions](../better/captions.md) |
 | `caption endpoint failed the compact-v3 schema control` | The server ignores the JSON schema, or it is the wrong model |
+| Settings: `Secrets cannot be saved here until IMMICH_MEMORIES_SECRET_KEY is set` | Nothing is broken: keys in `.env` or `config.yaml` work without it. To save them from the page, set the key ([The secret key](../run/environment-variables.md#the-secret-key)) |
+| `IMMICH_MEMORIES_SECRET_KEY must be at least 32 characters` | Use `openssl rand -base64 32`, which prints 44 |
+| `Immich account 'partner' could not read asset …` | A `generate --accounts` run stops rather than lose that account's pictures. Run `immich-memories config test`: the account's key is wrong, revoked, or lacks the asset read permissions |
 
 ## Cannot connect to Immich
 
@@ -99,9 +102,10 @@ with a partial batch. Stage changes, counter resets and completion appear immedi
 
 ## Waiting for a model server
 
-Only with a reader or caption server configured. The run names the endpoint and retries three times, two then
-four seconds apart, then fails. Start the server or fix `llm.base_url`, then **Cut again** or rerun: everything
-already read is banked. To cut without it, clear `llm.model` with `reader: auto` (the NAS path).
+Only on the `full` tier, where an LLM reads the film. The run names the endpoint and tries three times, two then
+four seconds apart, then stops with `Gave up on the reader at host:port`. Start the server or fix
+`advanced.llm.base_url`, then **Cut again** or rerun: everything already read is banked. To cut without it, set
+`tier: gpu` (or `nas`): selection then uses the rules reader.
 
 ## A clip fails with "Could not write header (incorrect codec parameters ?)"
 

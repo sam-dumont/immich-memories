@@ -9,7 +9,9 @@ model to host. A GPU and a text model each add features on top of that. Nothing 
 add one later, because everything the app works out about a picture is banked and reused.
 
 The app picks its setup by itself (`tier: auto`): a plain NAS by default, **GPU** once it finds a
-usable GPU and the caption server, **Full** when a text model is configured as well.
+GPU to read pictures on (in this box or through the inference service), **Full** when a text model
+is configured as well. The GPU and Full tiers then expect the caption server, and
+`immich-memories preflight` says when it is missing.
 
 ## Feature by feature
 

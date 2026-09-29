@@ -33,7 +33,7 @@ dropped, `RuntimeDefault` seccomp, `read_only_root_filesystem = true`). Four wri
 There is no ConfigMap. `immich_url` / `immich_api_key` (plus `llm_api_key`, `musicgen_api_key` and
 anything in `secret_env`) land in the Secret and reach the pod through `envFrom`; every other
 setting is an `IMMICH_MEMORIES_<SECTION>__<KEY>` env var (`env`). Settings saved from the UI go to
-`config.yaml` on the PVC; env vars override them. Probes are `/health/live` for liveness and
+the store (`store.db` on the cache PVC by default); env vars override them. Probes are `/health/live` for liveness and
 `/health/ready` for readiness, which stays `503` until config is present and Immich answers.
 
 ## Model preparation and tiers
@@ -70,6 +70,49 @@ terraform apply
 $(terraform output -raw port_forward_command)   # http://localhost:8080
 ```
 
+The production example also serves the UI through its Ingress.
+
+## After the apply
+
+The module makes the same Deployment as the Kustomize base, under the same names
+(`deploy/immich-memories` in the `immich-memories` namespace unless you set `namespace`), so the
+`kubectl` lines on [Kubernetes](./kubernetes.md) work as written:
+[preflight](./kubernetes.md#check-it-from-outside-the-pod),
+[home base and the first cut](./kubernetes.md#home-base-time-zone-and-the-first-cut),
+[getting the films](./kubernetes.md#getting-the-films), [backups](./kubernetes.md#backups),
+[logs](./kubernetes.md#logs). Settings go in `env` rather than `kubectl set env`, which the next
+`terraform apply` reverts:
+
+```hcl
+  env = {
+    IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE  = "50.8503"
+    IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE = "4.3517"
+    TZ                                        = "Europe/Brussels"
+    IMMICH_MEMORIES_UPLOAD__ENABLED           = "true"   # films into Immich too
+  }
+```
+
+## Daily automation
+
+The module has no CronJob: the daily run is the in-pod timer, the two `IMMICH_MEMORIES_AUTOMATION__*`
+keys in the `env` example below, read in the `TZ` zone (the production example sets both, with a
+`timezone` variable). To fire it from outside instead, put `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in
+`secret_env` and call [the trigger route](../make/automate.md#trigger-it-over-http).
+
+## Upgrading
+
+Take a `store backup` first ([Backups](./kubernetes.md#backups)), set `image_tag` to the new
+release, `terraform apply`, then run `models fetch` once:
+
+```bash
+kubectl exec -n immich-memories deploy/immich-memories -- immich-memories models fetch
+```
+
+The `fetch-models` init container only checks that the files exist, so after a release that moves
+a pin it skips the download and the next cut refuses to start. Rollback is the old `image_tag` plus
+[a store restore](./database.md#restore-in-a-container). With the default `image_tag = "latest"`
+every pod restart can move you to a new release; pin a tag.
+
 ## Module usage
 
 ```hcl
@@ -98,6 +141,13 @@ module "immich_memories" {
 
 Which model to serve at `llm_base_url` is on [Readers](../better/reader.md). Preparation goes through the
 same `env` map: [Inference on a GPU box](../better/inference.md) and [Add captions](../better/captions.md).
+So do the [render worker](../better/gpu-render.md) and ACE-Step
+([Generated music](../better/music.md)); MusicGen has its own `musicgen_*` variables. The module
+deploys none of these servers.
+
+`gpu_enabled` schedules on an NVIDIA node for NVENC and the title kernels
+([Hardware encoding](./hardware.md#nvidia)). Intel Quick Sync and AMD VA-API need `/dev/dri` in the
+pod, which the module does not map: those encode on the CPU here.
 
 Setting `database_url` moves the store off the default SQLite file onto PostgreSQL. The four
 modes, and the SQL for a dedicated schema in Immich's own database, are on

@@ -44,7 +44,8 @@ total              1440      0.9480    100%     23 min
 At this rate 10,000 pictures would take 2 h 38 min.
 ```
 
-`--library-size 10000` prints the last line. `s/picture` is the number to compare between machines; `share`
+The last line projects the measured rate onto `--library-size` pictures (1,000 unless you pass one; the
+example used `--library-size 10000`). `s/picture` is the number to compare between machines; `share`
 says which producer to move to a faster box. With [the inference service](../../better/inference.md) the heads
 and detectors run elsewhere, and a `remote_facts` row appears.
 
@@ -153,7 +154,8 @@ immich-memories people bind "Alex Example" --account partner --id a91e…
 The person is a store id or a name exactly one person carries; if two people share the name, the command lists
 their ids and asks for one. `bind` only adds the id: the name, birth date and your answers stay put. An id somebody
 else holds is refused, never merged, and binding the same id twice changes nothing. Ids are never matched by name.
-Reading a second account arrives in a later release.
+A film reads the second account with `generate --accounts primary,partner`
+([generate](./generate.md)), and a bound person counts as one person across both.
 
 The scan also writes its measurements (every person's counts and the pairs seen together) to
 `~/.immich-memories/people-graph.json`. That one stays a file: each scan recomputes all of it from Immich and
@@ -172,7 +174,7 @@ sees. Setting it up is on [Teach it your family](../../get-started/who-is-who.md
 
 Finds the days something happened on and keeps them in the special-days catalogue in the
 [store](../../run/database.md), so a film can arrive years later without you asking ("five years ago today"). Run it once, then now and then. Films from it
-are the **Surprise me** type on [Memory types](../memory-types.mdx#special-day-surprise-me).
+are the **Special day** type on [Memory types](../memory-types.mdx#special-day).
 
 ```bash
 immich-memories discover-days --since 2015
@@ -272,5 +274,7 @@ immich-memories preflight       # can it reach Immich, the models, the renderer
 
 Bare `people` lists names exactly as Immich holds them: "Emma" versus "Emma S." is the difference between a
 film and an empty pool. `years` saves you guessing at `--year` on a library imported from old backups.
+What each `preflight` row checks, and `models fetch` in full, are on
+[Health, logs and caches](../../run/maintenance/health-logs-cache.md#preflight).
 
 To see how a cut was reached, use [`runs why`](./runs.md#runs-why).

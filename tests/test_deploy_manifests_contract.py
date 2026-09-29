@@ -441,17 +441,29 @@ def test_terraform_module_defaults_to_cpu_and_writable_state() -> None:
     assert gpu_default and gpu_default.group(1) == "false"
     assert f'"{CONFIG_DIR}"' in main
     assert f'"{OUTPUT_DIR}"' in main
-    assert not re.search(r"read_only\s*=\s*true", main)
+    # The one legitimate exception: install-config's config-src mount is a
+    # ConfigMap, meant to be read-only. Every `read_only = true` in the file
+    # must be that one mount -- the data/output/models mounts stay writable.
+    for match in re.finditer(r"read_only\s*=\s*true", main):
+        nearby = main[max(0, match.start() - 120) : match.start()]
+        assert "config-src" in nearby, nearby
     assert "IMMICH_MEMORIES_OUTPUT__DIRECTORY" in main
     probe_paths = re.findall(r'http_get \{\s*path\s*=\s*"([^"]+)"', main)
     assert probe_paths == ["/health/live", "/health/ready"]
     assert 'dynamic "node_selector"' not in main
-    assert "kubernetes_config_map" not in main
+    # config_yaml (deploy/terraform/captioner.tf's kubernetes_config_map_v1.config)
+    # is opt-in: the default "" ships no ConfigMap at all, so the base module
+    # stays env-var only unless a caller sets it (test_terraform_config_yaml_
+    # ships_no_configmap_by_default covers the plan-time side of this).
+    config_yaml_default = re.search(
+        r'variable "config_yaml"[^}]*default\s*=\s*(".*?")', variables, re.S
+    )
+    assert config_yaml_default and config_yaml_default.group(1) == '""'
 
 
 def test_terraform_examples_only_set_declared_variables() -> None:
     declared = set(re.findall(r'variable "(\w+)"', (TF_DIR / "variables.tf").read_text()))
-    for example in ("basic", "production"):
+    for example in ("basic", "production", "maximalist"):
         example_dir = TF_DIR / "examples" / example
         example_vars = set(
             re.findall(r'variable "(\w+)"', (example_dir / "variables.tf").read_text())
@@ -810,3 +822,352 @@ def test_the_render_sidecar_worker_probes_run_inside_the_container(tmp_path: Pat
         assert "127.0.0.1:8093/health" in script, probe_name
         assert "IMMICH_MEMORIES_RENDER_WORKER_TOKEN" in script, probe_name
         assert "Bearer" in script, probe_name
+
+
+def _maximalist_rendered(tmp_path: Path) -> list[dict]:
+    """Build overlays/maximalist with all three secret examples copied in.
+
+    The overlay composes overlays/render-sidecar (base + render-worker-secret)
+    and overlays/captioner-cuda, and adds its own maximalist-secret for the
+    OIDC/LLM/ACE-Step values config-map.yaml's config.yaml expands with ${VAR}.
+    """
+    workdir = tmp_path / "kubernetes"
+    shutil.copytree(K8S_ROOT, workdir)
+    shutil.copy(workdir / "base" / "secret.yaml.example", workdir / "base" / "secret.yaml")
+    shutil.copy(
+        workdir / "overlays" / "render-sidecar" / "render-worker-secret.yaml.example",
+        workdir / "overlays" / "render-sidecar" / "render-worker-secret.yaml",
+    )
+    shutil.copy(
+        workdir / "overlays" / "maximalist" / "maximalist-secret.yaml.example",
+        workdir / "overlays" / "maximalist" / "maximalist-secret.yaml",
+    )
+    result = subprocess.run(
+        ["kubectl", "kustomize", str(workdir / "overlays" / "maximalist")],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    return list(yaml.safe_load_all(result.stdout))
+
+
+def _maximalist_pod(tmp_path: Path) -> dict:
+    deployment = next(
+        doc
+        for doc in _maximalist_rendered(tmp_path)
+        if doc["kind"] == "Deployment" and doc["metadata"]["name"] == "immich-memories"
+    )
+    return deployment["spec"]["template"]["spec"]
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_maximalist_overlay_builds(tmp_path: Path) -> None:
+    """The documented quick start: three secret examples copied in, then apply -k."""
+    rendered = _maximalist_rendered(tmp_path)
+    kinds = {doc["kind"] for doc in rendered}
+    assert {"Deployment", "ConfigMap", "Secret", "PersistentVolumeClaim", "Service"} <= kinds
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_maximalist_overlay_disables_service_links_everywhere(tmp_path: Path) -> None:
+    """Every pod the overlay ships, not just the app's own: the captioner too (#1608)."""
+    rendered = _maximalist_rendered(tmp_path)
+    pod_specs = [doc["spec"]["template"]["spec"] for doc in rendered if doc["kind"] == "Deployment"]
+    assert pod_specs, "expected at least one Deployment in the rendered overlay"
+    for spec in pod_specs:
+        assert spec["enableServiceLinks"] is False
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_maximalist_overlay_keeps_the_render_worker_exec_probes(tmp_path: Path) -> None:
+    """Composing render-sidecar must not lose the loopback-only exec probes
+    (tcpSocket/httpGet both dial the pod IP, never 127.0.0.1, so a worker bound
+    to loopback only would never go Ready with either)."""
+    pod = _maximalist_pod(tmp_path)
+    worker = next(c for c in pod["containers"] if c["name"] == "render-worker")
+
+    for probe_name in ("startupProbe", "readinessProbe"):
+        probe = worker[probe_name]
+        assert "tcpSocket" not in probe, probe_name
+        assert "httpGet" not in probe, probe_name
+        assert "127.0.0.1:8093/health" in probe["exec"]["command"][-1], probe_name
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_maximalist_overlay_installs_config_yaml_at_0600(tmp_path: Path) -> None:
+    """A ConfigMap volume mounts every key world-readable with no way to chmod it,
+    which is exactly what config_loader.py warns on. install-config copies the
+    file onto the writable cache PVC, as the app's own uid, and chmods it there."""
+    pod = _maximalist_pod(tmp_path)
+    init = next(c for c in pod["initContainers"] if c["name"] == "install-config")
+
+    assert init["securityContext"]["runAsUser"] == 1000
+    script = init["command"][-1]
+    assert "chmod 600" in script
+    assert "/home/immich/.immich-memories/config.yaml" in script
+    mounts = {m["mountPath"]: m for m in init["volumeMounts"]}
+    assert mounts["/config-src"]["readOnly"] is True
+    assert not mounts["/home/immich/.immich-memories"].get("readOnly")
+
+    volumes = {v["name"]: v for v in pod["volumes"]}
+    config_src = volumes[mounts["/config-src"]["name"]]
+    assert config_src["configMap"]["name"] == "immich-memories-config"
+
+    # The base's own fetch-models init container must still be there: this
+    # overlay appends, it does not replace.
+    assert {c["name"] for c in pod["initContainers"]} >= {"install-config", "fetch-models"}
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_maximalist_overlay_config_yaml_carries_every_advertised_feature(
+    tmp_path: Path,
+) -> None:
+    """The table in docs-site/docs/run/reference-setup.md promises these config keys;
+    pin the ConfigMap content so a rename or a dropped key is caught here first."""
+    rendered = _maximalist_rendered(tmp_path)
+    config_map = next(doc for doc in rendered if doc["kind"] == "ConfigMap")
+    config_yaml = yaml.safe_load(config_map["data"]["config.yaml"])
+
+    assert config_yaml["tier"] == "full"
+    assert config_yaml["network"]["geocoding"] is True
+    assert config_yaml["network"]["map_tiles"] is True
+    # Deliberately below the app's own 10+10 GB defaults, to fit the 10Gi PVC
+    # this reference setup ships (test_..._cache_pvc_fits_its_own_cache_caps
+    # covers the PVC side of this).
+    assert 0 < config_yaml["cache"]["video_cache_max_size_gb"] < 10
+    assert 0 < config_yaml["cache"]["thumbnail_cache_max_size_mb"] < 10_000
+
+    advanced = config_yaml["advanced"]
+    auth = advanced["auth"]
+    assert auth["provider"] == "oidc"
+    assert auth["public_url"].startswith("https://")
+    assert auth["trusted_proxies"]
+    assert advanced["server"]["secure_cookies"] is True
+    assert advanced["editorial"]["preparation"]["caption_base_url"] == "http://captioner:8092/v1"
+    assert advanced["llm"]["provider"] == "openai-compatible"
+    assert advanced["ace_step"]["enabled"] is True
+    assert advanced["ace_step"]["mode"] == "api"
+    assert advanced["automation"]["enabled"] is True
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_maximalist_overlay_cache_pvc_fits_its_own_cache_caps(tmp_path: Path) -> None:
+    """The reference setup's caps (5 GB video + 3 GB thumbnails) sit inside the base's
+    20Gi cache PVC, which the overlay keeps: a bound claim cannot shrink, so an overlay
+    that sized it down would fail over an existing install. Whichever way a reader
+    changes the caps, the PVC must still hold config.yaml/store.db/automation history
+    on top of both of them."""
+    rendered = _maximalist_rendered(tmp_path)
+    config_map = next(doc for doc in rendered if doc["kind"] == "ConfigMap")
+    config_yaml = yaml.safe_load(config_map["data"]["config.yaml"])
+    cache_caps_gb = config_yaml["cache"]["video_cache_max_size_gb"] + (
+        config_yaml["cache"]["thumbnail_cache_max_size_mb"] / 1000
+    )
+
+    pvc = next(
+        doc
+        for doc in rendered
+        if doc["kind"] == "PersistentVolumeClaim"
+        and doc["metadata"]["name"] == "immich-memories-cache"
+    )
+    storage = pvc["spec"]["resources"]["requests"]["storage"]
+    assert storage.endswith("Gi")
+    assert int(storage[:-2]) > cache_caps_gb
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_maximalist_overlay_reuses_the_cuda_captioner_overlay(tmp_path: Path) -> None:
+    """Composed, not duplicated: the same weights, alias and n-gpu-layers patch
+    as overlays/captioner-cuda on its own (test_the_cuda_captioner_is_the_cpu_recipe_
+    with_the_layers_offloaded covers that overlay directly)."""
+    rendered = _maximalist_rendered(tmp_path)
+    captioner = next(
+        doc
+        for doc in rendered
+        if doc["kind"] == "Deployment" and doc["metadata"]["name"] == "immich-memories-captioner"
+    )
+    container = captioner["spec"]["template"]["spec"]["containers"][0]
+    assert container["image"] == "ghcr.io/ggml-org/llama.cpp:server-cuda"
+    assert container["args"][-2:] == ["--n-gpu-layers", "99"]
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_maximalist_overlay_pins_or_digests_every_third_party_image(tmp_path: Path) -> None:
+    """Every image this overlay pulls is either this repo's own release tag
+    (rewritten by the kustomization's images: transformer, checked elsewhere by
+    test_only_the_kustomization_pin_names_a_concrete_version) or a third-party
+    image pinned by digest or a named, documented floating tag -- never `latest`
+    on an image this repo does not publish."""
+    rendered = _maximalist_rendered(tmp_path)
+    own_repo = "ghcr.io/sam-dumont/immich-video-memory-generator"
+    for doc in rendered:
+        spec = doc.get("spec", {}).get("template", {}).get("spec")
+        if not spec:
+            continue
+        for container in spec.get("initContainers", []) + spec.get("containers", []):
+            image = container["image"]
+            if image.startswith(own_repo):
+                # A release tag; the inference service's CUDA build is published as `X.Y.Z-cuda`.
+                assert re.search(r":\d+\.\d+\.\d+(-cuda)?$", image), image
+            else:
+                # Third-party: llama.cpp's documented floating server/server-cuda
+                # tag, or a sha256 digest. Never a bare `latest`.
+                assert image != "latest", image
+                assert "@sha256:" in image or re.search(r":server(-cuda)?$", image), image
+
+
+# ── Terraform mirror of the same maximalist reference ──────────────────────
+#
+# deploy/terraform/{main,variables,captioner}.tf and
+# deploy/terraform/examples/maximalist express the same features as
+# overlays/maximalist: render worker sidecar, CUDA captioner, OIDC behind a
+# proxy, config.yaml a ConfigMap can own, LAN LLM/ACE-Step, network and cache
+# caps. Every new variable defaults to the minimal path (off/empty), checked
+# statically here; test_terraform_module_defaults_to_cpu_and_writable_state
+# covers the pre-existing gpu_enabled/config_yaml defaults.
+
+
+def test_terraform_maximalist_variables_default_to_the_minimal_path() -> None:
+    variables = (TF_DIR / "variables.tf").read_text()
+    off_by_default = (
+        "render_worker_sidecar_enabled",
+        "captioner_enabled",
+        "captioner_cuda",
+        "oidc_enabled",
+        "ace_step_enabled",
+        "network_geocoding",
+        "network_map_tiles",
+        "secure_cookies",
+    )
+    for name in off_by_default:
+        match = re.search(rf'variable "{name}"[^}}]*default\s*=\s*(\w+)', variables, re.S)
+        assert match and match.group(1) == "false", name
+
+    empty_by_default = (
+        "oidc_issuer_url",
+        "oidc_client_id",
+        "oidc_public_url",
+        "render_worker_token",
+    )
+    for name in empty_by_default:
+        match = re.search(rf'variable "{name}"[^}}]*default\s*=\s*(".*?")', variables, re.S)
+        assert match and match.group(1) == '""', name
+
+
+def test_terraform_render_worker_sidecar_mirrors_the_kubernetes_overlay() -> None:
+    """Same contract as overlays/render-sidecar: loopback, no TLS, no
+    render.allow_insecure_http, GPU scheduling implied even without gpu_enabled."""
+    main = (TF_DIR / "main.tf").read_text()
+    assert 'IMMICH_MEMORIES_RENDER__WORKER_BASE_URL = "http://127.0.0.1:8093"' in main
+    assert "IMMICH_MEMORIES_RENDER__WORKER_TOKEN" in main
+    assert "var.gpu_enabled || var.render_worker_sidecar_enabled" in main
+    # The kubelet dials the pod IP for tcpSocket/httpGet, never 127.0.0.1, so a
+    # worker bound to loopback only needs an exec probe, same as the manifest.
+    assert '"tcpSocket"' not in main
+    assert "startup_probe" in main and "exec {" in main
+
+
+def test_terraform_installs_config_yaml_at_0600_when_set() -> None:
+    """Mirrors deploy/kubernetes/overlays/maximalist's install-config init
+    container: a ConfigMap volume mounts every key world-readable with no way
+    to chmod it, so this copies the file onto the writable cache PVC first."""
+    main = (TF_DIR / "main.tf").read_text()
+    assert "install-config" in main
+    assert "chmod 600" in main
+    assert 'for_each = var.config_yaml != "" ? [1] : []' in main
+    captioner = (TF_DIR / "captioner.tf").read_text()
+    assert 'count = var.config_yaml != "" ? 1 : 0' in captioner
+    assert 'resource "kubernetes_config_map_v1" "config"' in captioner
+
+
+def test_terraform_captioner_module_pins_the_same_weights_as_the_kubernetes_overlay() -> None:
+    """One set of digests, not two that can drift apart."""
+    captioner = (TF_DIR / "captioner.tf").read_text()
+    assert CAPTION_GGUF_REVISION in captioner
+    for digest in CAPTION_GGUF_SHA256:
+        assert digest in captioner
+    assert '"smolvlm2-500m-base-public"' in captioner
+    assert 'var.captioner_cuda ? "ghcr.io/ggml-org/llama.cpp:server-cuda"' in captioner
+    assert '"--n-gpu-layers", "99"' in captioner
+
+
+def test_terraform_oidc_error_strings_are_the_ones_the_app_actually_raises() -> None:
+    """The two failure modes docs-site/docs/run/reference-setup.md tells readers to
+    search for; both must still be the literal strings the app produces."""
+    auth_oidc = (REPO_ROOT / "src" / "immich_memories" / "web" / "auth_oidc.py").read_text()
+    server = (REPO_ROOT / "src" / "immich_memories" / "web" / "server.py").read_text()
+    assert "Invalid callback origin" in server
+    # Without public_url, oidc_redirect_uri falls back to the request-derived
+    # URL, and validate_callback_origin has nothing trustworthy to compare
+    # against -- both documented right where the fallback happens.
+    assert "forwarded headers are trusted" in auth_oidc
+    assert "nothing trustworthy to compare against" in auth_oidc
+
+
+def test_terraform_maximalist_example_sets_public_url_and_trusted_proxies() -> None:
+    """oidc_enabled with neither set is exactly the misconfiguration
+    docs-site/docs/run/reference-setup.md warns about."""
+    example_main = (TF_DIR / "examples" / "maximalist" / "main.tf").read_text()
+    assert "oidc_public_url" in example_main
+    assert "oidc_trusted_proxies" in example_main
+    assert "secure_cookies       = true" in example_main
+
+
+@pytest.mark.skipif(shutil.which("terraform") is None, reason="terraform not installed")
+def test_terraform_module_and_maximalist_example_are_valid_hcl(tmp_path: Path) -> None:
+    """terraform validate against the real provider schema, no live cluster
+    needed. Runs in an isolated copy so init's .terraform/ never lands in the
+    repo (a stray lock file has broken a test here before)."""
+    workdir = tmp_path / "terraform"
+    shutil.copytree(TF_DIR, workdir)
+    for target in (workdir, workdir / "examples" / "maximalist"):
+        init = subprocess.run(
+            ["terraform", "init", "-backend=false", "-input=false"],
+            cwd=target,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert init.returncode == 0, init.stdout + init.stderr
+        result = subprocess.run(
+            ["terraform", "validate"],
+            cwd=target,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.skipif(shutil.which("terraform") is None, reason="terraform not installed")
+def test_terraform_deploy_tree_is_formatted() -> None:
+    result = subprocess.run(
+        ["terraform", "fmt", "-check", "-recursive", str(TF_DIR)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, f"needs `terraform fmt -recursive {TF_DIR}`:\n{result.stdout}"
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_maximalist_overlay_reads_pictures_on_a_gpu_and_points_the_app_at_it(
+    tmp_path: Path,
+) -> None:
+    """`tier: full` in a pod that reads pictures on its CPU is the tier the file names, not
+    what the install does: the reference setup ships the CUDA inference service (encoder,
+    context heads, detectors) beside the app, and the app's config names it."""
+    rendered = _maximalist_rendered(tmp_path)
+    inference = next(
+        doc
+        for doc in rendered
+        if doc["kind"] == "Deployment" and doc["metadata"]["name"] == "immich-memories-inference"
+    )
+    pod = inference["spec"]["template"]["spec"]
+    assert pod["runtimeClassName"] == "nvidia"
+    assert pod["containers"][0]["image"].endswith("-cuda")
+
+    config_map = next(doc for doc in rendered if doc["kind"] == "ConfigMap")
+    config_yaml = yaml.safe_load(config_map["data"]["config.yaml"])
+    assert config_yaml["advanced"]["inference"]["facts_base_url"] == "http://inference:8092"

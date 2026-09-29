@@ -30,8 +30,8 @@ about different things, so do not reconcile them by editing one.
 | Command (repo root) | Produces |
 |---|---|
 | `make demo-ui` | `docs-site/static/demo/demo.mp4`, 1,486 video frames at 30 fps (about 50 s), 1920×1080 H.264; it ends on the film the product made |
-| `make demo-hero` | `docs-site/static/img/demo-hero.gif`, the brief, the cut and the review from `demo.mp4` (the Makefile comment has the window) then its last 3 s (the film), 720 px, 10 fps, under 4 MB, the README hero |
-| `make demo-cli` | `docs-site/remotion/public/cli-demo.mp4`, VHS recording the real CLI: `scripts/demo-cli-hermetic.py` runs `generate`, `runs story` and `runs why` against the hermetic fakes from `tests/e2e` (`make demo-cli-run` plays the same session without recording) |
+| `make demo-hero` | `docs-site/static/img/demo-hero.gif`, the README and homepage hero: the brief, the cut and the review, then Render pressed and the film arriving on the page, then that film full bleed from the moment the page's player shows (the Makefile comment has the windows), 720 px, 10 fps, under 4 MB |
+| `make demo-cli` | `docs-site/remotion/public/cli-demo.mp4` and `docs-site/remotion/src/cli-timing.ts`, VHS recording the real CLI: `scripts/demo-cli-hermetic.py` runs `generate`, `runs story` and `runs why` against the hermetic fakes from `tests/e2e`, types each command, and writes the second each one starts at so the scene cuts there (`make demo-cli-run` plays the same session without recording; as root in a container, set `VHS_NO_SANDBOX=true`) |
 | `make demo-output` | `docs-site/remotion/public/output-preview.mp4` and `output-frame.jpg`, cut on the hermetic launch |
 | `make demo-output-trip` | `docs-site/static/demo/trip-preview.mp4` and `docs-site/static/img/trip-map-flyover.jpg`, the fixture's lake week cut as a trip memory and the still of its map fly-over, both played by the trip memory page. Needs the network: the satellite tiles come from ArcGIS World Imagery and the trip's name from Nominatim, and neither has an offline stand-in |
 | `make demo-soundtrack` | `docs-site/remotion/public/demo-music.wav`, crossfaded and normalised from a bundled acoustic track; also runs with `make demo-ui` |
@@ -65,7 +65,11 @@ the scene changes with it.
 
 Keep the UI workflow together: brief, cut in progress, review, the edit saved as a revision,
 render, the film on the page. Runs and Suggestions follow, then the CLI goes straight into the
-rendered film. The review scene shows the contact sheet and the picture inspector. Its pictures,
+rendered film. The CLI scene plays `generate` as a time-lapse and holds `runs story` and
+`runs why` long enough to read; it cuts the recording at the seconds in `cli-timing.ts`, so a new
+recording moves the cuts with it. Every UI frame is set in Inter from the file the web client
+serves (`public/fonts` links to `src/immich_memories/web/static/fonts`), so a render needs no
+network. The review scene shows the contact sheet and the picture inspector. Its pictures,
 reasons and stories come from the same fixture as the browser tests; it must not invent model
 proposals that the fixture did not record. Rebuild the Remotion demo and hero after changing the
 client's layout.
@@ -73,7 +77,7 @@ The demo shows the product working: an error card, even a helpful one, reads as 
 failing, so refusals live in the install docs, not in a scene.
 
 The last scene plays the closing seconds of `output-preview.mp4` and must stop before the film's
-blurred ending card, because the hero GIF's last three seconds are the demo's last three. It does
+blurred ending card: the demo ends on a picture, not on a blur. It does
 not hold that moment in a constant: `make demo-fixture` measures the film with `edgedetect`, which
 reads a flat zero on that card and 8 to 12 on a photograph, and writes `FILM_PICTURES_END` into
 `fixture.ts`. Re-cutting the film moves the window with it.

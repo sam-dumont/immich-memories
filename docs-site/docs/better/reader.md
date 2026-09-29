@@ -273,6 +273,9 @@ logs why, and reads in real time for the rest of the run.
   repair round on that call. A moment pick still refused after its repair doesn't end the film:
   those rows get the moments the no-model film would pick, and the story's pick record says why
   (`pick-rules-fallback`).
+- **A reply cut off at its token cap keeps what it finished.** The episode readings or period
+  accounts it wrote whole are kept, and only the unfinished ones are asked again. An episode asked
+  again gets the full 4,000-token ceiling rather than its own estimate.
 - **Text only.** No request to the reader carries a picture; a test fails the build if one does.
 
 The prompt shapes the setup matrix probes readers with are in `scripts/reader_probe_prompts/`.

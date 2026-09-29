@@ -45,7 +45,7 @@ Claude and Codex write the code; I make the decisions, test the films and debug 
 experiment is how far AI can go on a codebase this size while the code stays clean.
 
 So far, guardrails are what make it work. Every PR goes through the gates in the `Makefile` (lint, types,
-complexity, an 800-line file cap, dead code, duplication, architecture boundaries, security scans,
+complexity, a file length cap (800 lines warns, 1,000 fails), dead code, duplication, architecture boundaries, security scans,
 docs drift) and the build stays red until they pass. They catch real bugs that both models introduce
 with a straight face. The file cap forced a composition-based design with zero mixins, which
 turned out to be the right call anyway.

@@ -30,7 +30,7 @@ The editorial route has Protocol-typed ports rather than services: the providers
 loader, the structure planner, the judges it calls out to, and `EditorialAttempt` in `operations/`
 for the durable attempt tree and its OS lease. On disk each attempt is
 `<cache>/editorial-runs/<key>/attempts/<id>/`, and the banked facts and
-answers live in the store (`immich_memories.db`, tables in `db/tables/annotations.py` and
+answers live in the store (the `db/` package, tables in `db/tables/annotations.py` and
 `db/tables/model_answers.py`).
 [ARCHITECTURE.md](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/ARCHITECTURE.md)
 names every port and the file it lives in, with the full module map.
@@ -87,7 +87,7 @@ needs a remote or a diff: commitlint, pip-audit, gitleaks, hadolint.
 | Security | Bandit + Semgrep | Common vulnerability patterns |
 | Secrets | Gitleaks | Committed API keys |
 | Dependencies | pip-audit + deptry | Known CVEs; unused, missing or transitive imports |
-| Architecture | import-linter | The core packages (`analysis`, `processing`, `titles`, `people`, `store`, `triage`, `operations`) must not import `ui`; they plus `audio` must not import `cli`. UI and CLI import core, never the reverse |
+| Architecture | import-linter | The core packages (`analysis`, `processing`, `titles`, `people`, `store`, `triage`, `operations`, `free_text`) must not import `cli`, and neither may `audio`. They plus `cache` and `tracking` must not import the web server (`web`). `web` runs the CLI as a child process and never imports it. The inference service in `services/inference` imports neither, and the app never imports it |
 | Compose | `make compose-check` | A `docker-compose.yml` that only parses with the repo beside it |
 | Commits | commitizen | Non-conventional commit messages |
 | Docs | docs-voice, docs-cli-check, docs-config-check, notices-check | Chatbot prose and em dashes; drift between the generated references and the code |
@@ -119,9 +119,10 @@ needs a remote or a diff: commitlint, pip-audit, gitleaks, hadolint.
 
 ### A new CLI command
 
-1. Create a new file in `cli/` (for example `cli/my_cmd.py`)
-2. Register the command group in `cli/__init__.py`
-3. Add the docs page under `docs-site/docs/`, add its ID to `docs-site/sidebars.ts`, and run `make docs-build`
+1. Create a new file in `cli/` (for example `cli/my_cmd.py`) with a `register_my_commands(main)` function, like `cli/hardware_cmd.py`
+2. Import it and call it with the others at the bottom of `cli/__init__.py`
+3. Run `make docs-cli` to regenerate the [CLI reference](../reference/cli-reference.md): `make docs-cli-check` fails CI until you do
+4. Add the docs page under `docs-site/docs/make/cli/`, add its ID to `docs-site/sidebars.ts`, and run `make docs-build`
 
 ## File naming conventions
 
