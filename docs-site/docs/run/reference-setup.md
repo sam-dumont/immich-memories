@@ -166,6 +166,10 @@ The inference CUDA image includes the 80 MB `htdemucs` weights under `/opt/immic
 The CPU inference image downloads them on first separation into `/cache/torch`; keep `/cache`
 on the model-cache PVC. Jobs run one at a time and their temporary audio files are removed after
 the response is sent. ACE-Step keeps its own image, models and Terraform deployment.
+On NVIDIA cards without BF16 support, its Oobleck VAE needs FP32 through CPU offload/reload:
+FP16 can produce NaNs and silent tracks. The [ACE-Step image patch](https://github.com/sam-dumont/ace-step-1.5#vae-precision-on-older-nvidia-cards)
+sets that precision in the VAE selector. Deploy the rebuilt image digest; this upstream selector
+does not read `ACESTEP_DTYPE`.
 
 If the service fails, `advanced.inference.fallback_to_local` (default `true`) allows local Demucs.
 The app and render-worker image includes it on CPU; the Mac uses Metal. Local separation caches
