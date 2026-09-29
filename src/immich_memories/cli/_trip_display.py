@@ -9,6 +9,7 @@ from rich.table import Table
 
 from immich_memories.analysis.trip_detection import DetectedTrip
 from immich_memories.analysis.trip_discovery import discover_year_trips
+from immich_memories.tracking.timed import timed
 
 if TYPE_CHECKING:
     from immich_memories.api.immich import SyncImmichClient
@@ -96,6 +97,7 @@ def _closest_trip_to_date(trips: list[DetectedTrip], target: date) -> DetectedTr
     return min(trips, key=distance)
 
 
+@timed("discovery")
 def run_trip_detection(
     client: SyncImmichClient,
     config: Config,
