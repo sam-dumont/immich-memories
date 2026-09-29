@@ -33,6 +33,15 @@ def _apply(command: Any, options: list[Any]) -> Any:
     return command
 
 
+def _account_names(_ctx: click.Context, _param: click.Parameter, value: str | None) -> tuple:
+    if value is None:
+        return ()
+    names = tuple(name.strip() for name in value.split(",") if name.strip())
+    if not names:
+        raise click.BadParameter("name at least one account", param_hint="'--accounts'")
+    return names
+
+
 def scope_options(command: FC) -> FC:
     """What the memory covers: the window to search, and whose memory it is."""
     options = [
@@ -113,6 +122,16 @@ def scope_options(command: FC) -> FC:
             help=(
                 "With several --person values, require everyone recognised somewhere "
                 "in the same episode (and) or accept any named person (or)"
+            ),
+        ),
+        click.option(
+            "--accounts",
+            type=str,
+            default=None,
+            callback=_account_names,
+            help=(
+                "Immich accounts the film reads, comma-separated: primary plus names under "
+                "immich.accounts, e.g. primary,partner. Default: the primary alone"
             ),
         ),
         click.option(

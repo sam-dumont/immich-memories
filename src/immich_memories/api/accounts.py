@@ -60,6 +60,17 @@ def _open(name: str, connection: ImmichConnection) -> OpenAccount:
     return OpenAccount(name=name, client=client, user=user, api_version=version)
 
 
+def check_account_names(immich: ImmichConfig, selected: Iterable[str]) -> tuple[str, ...]:
+    """The selected names, deduplicated in order, once every one is configured.
+
+    Touches no network: raises `AccountUnavailable` naming the first unknown account.
+    """
+    names = tuple(dict.fromkeys(selected))
+    for name in names:
+        _connection(immich, name)
+    return names
+
+
 def open_accounts(immich: ImmichConfig, selected: Iterable[str]) -> dict[str, OpenAccount]:
     """One verified client per selected account name, in selection order.
 

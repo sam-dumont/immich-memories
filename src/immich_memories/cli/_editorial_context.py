@@ -122,6 +122,7 @@ def build_editorial_context(
         event_asset_ids=(
             tuple(resolved.preset_params.get("asset_ids") or ()) if special_event else ()
         ),
+        accounts=tuple(resolved.preset_params.get("accounts") or ()),
     )
 
 

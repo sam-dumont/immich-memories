@@ -46,10 +46,13 @@ class FakeHousehold:
     library: dict[str, list[dict]] = field(default_factory=dict)
     roster: dict[str, list[dict]] = field(default_factory=dict)
     requests: list[str] = field(default_factory=list)
+    # (the user whose key asked, the path): which account read what.
+    reads: list[tuple[str, str]] = field(default_factory=list)
 
     def handler(self, request: httpx.Request) -> httpx.Response:
         key = request.headers["x-api-key"]
         self.requests.append(request.url.path)
+        self.reads.append((USERS[key], request.url.path))
         if request.url.path.endswith("/users/me"):
             return httpx.Response(200, json={"id": USERS[key], "email": f"{USERS[key]}@x.test"})
         if request.url.path.endswith("/people"):

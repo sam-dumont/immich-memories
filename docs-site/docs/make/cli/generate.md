@@ -89,7 +89,7 @@ immich-memories generate --memory-type special_day --day 2021-04-04
 immich-memories generate --year 2025 --month 8 --short-form 30
 ```
 
-Six things the examples hide:
+Seven things the examples hide:
 
 - `--people-expression` takes exact library names, binds `AND` tighter than `OR`, and works on
   date-range memories (months, years, seasons). Trips, albums and single-person presets refuse it.
@@ -101,6 +101,11 @@ Six things the examples hide:
   as an id, never a name: a registry person's id, or an Immich person id from either account,
   which picks the registry person holding it (or just that face if nobody does). An id nothing
   holds stops the run before it reads a picture.
+- `--accounts primary,partner` reads each named account (from `immich.accounts`, plus `primary`)
+  into one film. Without it the primary account reads alone. A face bound to the partner's
+  account only counts on the partner's pictures, and `AND` still holds per episode: one person on
+  your copy of the afternoon and the other on your partner's is enough. An unknown name fails
+  before any request. Albums and trips read the primary only.
 - A person or multi-person memory with no dates at all is not an error. It runs from the first day
   one of its pictures could exist to today, read off the birth dates Immich holds (and the people registry
   where Immich holds none). See [memory types](../memory-types.mdx#a-people-memory-with-no-dates).
