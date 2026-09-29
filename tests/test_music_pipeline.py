@@ -16,6 +16,7 @@ from immich_memories.audio.generators.base import (
 )
 from immich_memories.audio.music_generator_models import MusicStems, VideoTimeline
 from immich_memories.audio.music_pipeline import MusicPipeline
+from tests.generated_audio_fixtures import write_audio
 
 
 class FakeGenerator(MusicGenerator):
@@ -42,10 +43,10 @@ class FakeGenerator(MusicGenerator):
         if self._fail:
             raise RuntimeError(f"{self._name} generation failed")
         self.generate_called = True
-        # Create a fake output file
+        # WHY: replace the external generator with a valid synthetic waveform.
         out = request.output_dir / f"fake_{request.variation_index}.wav"
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_bytes(b"RIFF" + b"\x00" * 40)
+        write_audio(out, 0.2)
         return GenerationResult(
             audio_path=out,
             duration_seconds=float(request.duration_seconds),
@@ -744,7 +745,7 @@ class TestQualityGate:
         assert len(result.versions) == 1
         # The winner is the good take: regeneration replaced the tick instead of
         # silently shipping it.
-        assert result.versions[0].full_mix.name == "fake_1.wav"
+        assert result.versions[0].full_mix.name == "mastered_version_1.wav"
 
     async def test_scoring_nothing_still_returns_a_track(self, tmp_path: Path) -> None:
         """None means 'no verdict', not 'drop the take'."""
@@ -835,7 +836,7 @@ class TestMoodDetailThreadsThrough:
 
 
 def _fake_assemble(_blocks, _target, out, **kwargs):
-    """Stand in for real FFmpeg assembly against the fake generator's junk bytes."""
+    """Keep the block-count test independent of FFmpeg assembly."""
     out.write_bytes(b"RIFF" + b"\x00" * 40)
     return out
 
@@ -854,7 +855,7 @@ class TestLongVideoBlocks:
         timeline = VideoTimeline()
         timeline.clips = [ClipMood(duration=600.0, mood="happy")]
 
-        # WHY: replaces real FFmpeg assembly; the fake generator writes junk bytes.
+        # WHY: isolate generation block counts from FFmpeg crossfade assembly.
         with patch(
             "immich_memories.audio.music_pipeline.assemble_music", side_effect=_fake_assemble
         ) as assemble:

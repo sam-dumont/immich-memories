@@ -31,6 +31,11 @@ class AlbumChoice(BaseModel):
     asset_count: int
 
 
+class AccountChoice(BaseModel):
+    name: str
+    primary: bool
+
+
 class TripChoice(BaseModel):
     # 1-based, in discovery order: the number `generate --trip-index` takes.
     index: int
@@ -94,6 +99,20 @@ def albums(client: Annotated[Any, Depends(immich_client)]) -> list[AlbumChoice]:
         ),
         key=lambda album: (-album.asset_count, album.name.casefold()),
     )
+
+
+@router.get("/accounts", response_model=list[AccountChoice])
+def accounts(config: Annotated[Config, Depends(current_config)]) -> list[AccountChoice]:
+    """The Immich accounts a run may read: primary, plus every name under immich.accounts.
+
+    Configuring an extra account here does not add it to a film — `--accounts` (or this
+    list, for the brief) is what a run selects to read.
+    """
+    from immich_memories.config_models import PRIMARY_ACCOUNT
+
+    return [AccountChoice(name=PRIMARY_ACCOUNT, primary=True)] + [
+        AccountChoice(name=name, primary=False) for name in sorted(config.immich.accounts)
+    ]
 
 
 TripFinder = Callable[[int, list[str]], list[Any]]

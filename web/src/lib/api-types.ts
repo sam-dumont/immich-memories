@@ -4,6 +4,29 @@
  */
 
 export interface paths {
+    "/api/v1/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Accounts
+         * @description The Immich accounts a run may read: primary, plus every name under immich.accounts.
+         *
+         *     Configuring an extra account here does not add it to a film — `--accounts` (or this
+         *     list, for the brief) is what a run selects to read.
+         */
+        get: operations["accounts_api_v1_accounts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/albums": {
         parameters: {
             query?: never;
@@ -540,6 +563,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/roster/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Groups
+         * @description Every saved group, in the order they were added — the labels `--group` takes.
+         */
+        get: operations["groups_api_v1_roster_groups_get"];
+        put?: never;
+        /**
+         * Add Group Route
+         * @description Save a group. EXPRESSION is the --people-expression grammar over canonical person ids.
+         *
+         *     Parsed and size-checked first: a malformed expression saves nothing.
+         */
+        post: operations["add_group_route_api_v1_roster_groups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roster/groups/{label}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Group Route
+         * @description Remove a saved group. Never touches the people it named.
+         */
+        delete: operations["remove_group_route_api_v1_roster_groups__label__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/roster/scan": {
         parameters: {
             query?: never;
@@ -574,6 +643,30 @@ export interface paths {
          */
         put: operations["answer_api_v1_roster__person_id__put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roster/{person_id}/aliases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bind Alias Route
+         * @description Declare that `bind.alias_id`, as `bind.account` reads it, is this person.
+         *
+         *     The account has to be `primary` or a name under `immich.accounts` (`people bind`'s own
+         *     rule); an id already bound to somebody else is refused, an id this person already has
+         *     for this account is a no-op. Name, birth date and confirmations are untouched.
+         */
+        post: operations["bind_alias_route_api_v1_roster__person_id__aliases_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -694,6 +787,10 @@ export interface paths {
         /**
          * Film
          * @description The rendered film, by byte range so the player can seek.
+         *
+         *     A run's page checks `film_available` before ever requesting this, so
+         *     reaching here for a delivered run means a stale link, not a broken
+         *     player: the local copy was reclaimed once Immich confirmed the upload.
          */
         get: operations["film_api_v1_runs__run_id__film_get"];
         put?: never;
@@ -988,6 +1085,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccountChoice */
+        AccountChoice: {
+            /** Name */
+            name: string;
+            /** Primary */
+            primary: boolean;
+        };
         /** AlbumChoice */
         AlbumChoice: {
             /** Asset Count */
@@ -996,6 +1100,13 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+        };
+        /** AliasBind */
+        AliasBind: {
+            /** Account */
+            account: string;
+            /** Alias Id */
+            alias_id: string;
         };
         /**
          * Alternative
@@ -1174,6 +1285,11 @@ export interface components {
              */
             accept_any_provenance: boolean;
             /**
+             * Accounts
+             * @default []
+             */
+            accounts: string[];
+            /**
              * All Trips
              * @default false
              */
@@ -1197,6 +1313,8 @@ export interface components {
             exclude_asset: string[];
             /** From Album */
             from_album?: string | null;
+            /** Group */
+            group?: string | null;
             /** Hemisphere */
             hemisphere?: ("north" | "south") | null;
             /** Holiday */
@@ -1464,6 +1582,13 @@ export interface components {
             /** Pictures */
             pictures?: number | null;
         };
+        /** NewGroup */
+        NewGroup: {
+            /** Expression */
+            expression: string;
+            /** Label */
+            label: string;
+        };
         /** NewPerson */
         NewPerson: {
             /** Name */
@@ -1715,6 +1840,13 @@ export interface components {
         };
         /** RosterPerson */
         RosterPerson: {
+            /**
+             * Aliases
+             * @default {}
+             */
+            aliases: {
+                [key: string]: string[];
+            };
             /** Birth Date */
             birth_date: string | null;
             /** Count */
@@ -1772,8 +1904,14 @@ export interface components {
             delivery_status: string;
             /** Film */
             film: boolean;
+            /** Film Available */
+            film_available: boolean;
             /** Has Cut */
             has_cut: boolean;
+            /** Immich Asset Id */
+            immich_asset_id: string | null;
+            /** Immich Asset Url */
+            immich_asset_url: string | null;
             /** Memory Type */
             memory_type: string | null;
             /** Output Path */
@@ -1818,6 +1956,8 @@ export interface components {
             date_range_start: string | null;
             /** Film */
             film: boolean;
+            /** Film Available */
+            film_available: boolean;
             /** Memory Type */
             memory_type: string | null;
             /** Preview Asset Ids */
@@ -1828,6 +1968,13 @@ export interface components {
             source: string;
             /** Status */
             status: string;
+        };
+        /** SavedGroupView */
+        SavedGroupView: {
+            /** Expression */
+            expression: string;
+            /** Label */
+            label: string;
         };
         /**
          * SelectionPath
@@ -2100,6 +2247,26 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    accounts_api_v1_accounts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountChoice"][];
+                };
+            };
+        };
+    };
     albums_api_v1_albums_get: {
         parameters: {
             query?: never;
@@ -2921,6 +3088,88 @@ export interface operations {
             };
         };
     };
+    groups_api_v1_roster_groups_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedGroupView"][];
+                };
+            };
+        };
+    };
+    add_group_route_api_v1_roster_groups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewGroup"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedGroupView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_group_route_api_v1_roster_groups__label__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                label: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     scan_people_api_v1_roster_scan_post: {
         parameters: {
             query?: never;
@@ -2960,6 +3209,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PersonAnswers"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterPerson"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bind_alias_route_api_v1_roster__person_id__aliases_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                person_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AliasBind"];
             };
         };
         responses: {

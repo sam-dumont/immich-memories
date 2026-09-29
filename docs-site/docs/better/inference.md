@@ -19,7 +19,9 @@ It answers on port `8092`, which is also where `caption_base_url` looks for the
 [caption server](./captions.md). Two services, one default port: on one host, move one (the
 compose file publishes captions on 8094 for that reason).
 
-What leaves the app: one preview of each picture, once, to the URL you set. Nothing behind the port
+The service also runs Demucs for [music stems](./music.md). ACE-Step stays in its own deployment.
+
+What leaves the app: picture previews and generated full music tracks sent for separation. Nothing behind the port
 checks a credential, so keep it on your LAN.
 
 ## The two images
@@ -45,6 +47,18 @@ docker pull ghcr.io/sam-dumont/immich-video-memory-generator/inference:latest-cu
 
 From a checkout, `docker/Dockerfile.inference` builds either one: `--build-arg DEVICE=cpu` or
 `DEVICE=cuda`, with `--build-arg APP_VERSION=0+local`.
+
+## Music stems
+
+With `advanced.inference.facts_base_url` set, the app sends generated music to `POST /audio/stems`
+and receives a ZIP containing `drums.wav`, `bass.wav`, `other.wav` and `vocals.wav`. The endpoint
+accepts one multipart `file`, up to 64 MiB. Jobs run serially off the HTTP event loop; temporary
+audio is deleted after the response. Both inference images include Demucs. The CUDA image bundles
+its weights; the CPU image downloads them on first use into `/cache/torch`.
+
+`advanced.inference.fallback_to_local` also controls recovery from a failed stem request. Its
+default is `true`: the app uses local Demucs if installed. An explicitly enabled MusicGen server
+keeps priority for stems. Neither setting changes the ACE-Step generation endpoint.
 
 ## Running it with compose
 

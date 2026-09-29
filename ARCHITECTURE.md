@@ -152,7 +152,9 @@ selected LLM caption identity, preferring valid banked SmolVLM pairs. Fact reads
 checks and provenance use the same choice. Default SmolVLM reads retain their exact producer.
 `editorial_preparation_motion.py` owns `MotionScope`, motion acquisition and bank reads. Its
 producer-specific reads reuse described SmolVLM motion lines before requesting a new LLM line;
-unchanged sources retain their existing bank entries.
+unchanged sources retain their existing bank entries. `prepare` acquires descriptions; film-time
+evidence preparation reads banked motion or falls back to plain clip facts. Missing motion
+remains in the preparation report but does not block required-fact completeness.
 
 - **Producer**: anything that writes a fact about a picture: the caption server, the heads, the
   detectors, the motion and pixel readers (`editorial_preparation*.py`). Film preparation runs
@@ -301,7 +303,7 @@ unchanged sources retain their existing bank entries.
 
 `src/immich_memories/` is the app. `services/inference/immich_memories_inference/` is a second
 top-level package — the inference service, which serves the encoder, the eight public heads and the
-two detectors over HTTP (`/ping`, `/health`, `/facts`) in its own image with its own device
+two detectors and Demucs over HTTP (`/ping`, `/health`, `/facts`, `/audio/stems`) in its own image with its own device
 variant (`docker/Dockerfile.inference`, `docker/hwaccel.inference.yml`). It imports the app's
 triage engine and detector module rather than reimplementing them, which is what keeps a fact
 computed there identical to one computed in process; two import-linter contracts hold the
@@ -559,6 +561,7 @@ src/immich_memories/
 │   ├── apple_vision.py         # macOS Vision framework face detection (smart crops)
 │   ├── apple_vision_image.py   # Vision image conversion helpers
 │   ├── llm_query.py            # The live transport: one prompt, one connection, one answer
+│   ├── llm_adaptations.py      # Capability refusals: remembered request changes, schema/object fallback
 │   ├── llm_wire.py             # The two request dialects, what a reply says, and the reasoning budget
 │   ├── llm_batch.py            # A stage's independent prompts as one provider batch (half price, async): the two wire dialects and their transports
 │   ├── llm_providers.py        # Named providers: their URL, their adapter, the way they reason
@@ -626,6 +629,7 @@ src/immich_memories/
 │   ├── music_generator_models.py # Music generation data models
 │   ├── music_sources.py        # Music source providers (local library)
 │   ├── text_mood.py            # Banked music judgment from saved cut text; private answering-route record
+│   ├── generated_audio.py      # Decode and reject silent/non-finite generator output before fallback
 │   ├── music_pipeline.py       # Multi-provider pipeline (ACE-Step -> MusicGen fallback)
 │   ├── bundled_music.py        # The 28 bundled royalty-free tracks (`music` extra), used with no backend
 │   ├── track_tempo.py          # Measure a bundled track's tempo (numpy onset autocorrelation, no librosa)
@@ -640,6 +644,7 @@ src/immich_memories/
 │       ├── ace_step_runtime.py # ACE-Step in-process handlers: device, MLX/torch memory, one render
 │       ├── ace_step_isolated.py # Local subprocess using the installer's separate audio environment
 │       ├── ace_step_captions.py # Dense caption templates
+│       ├── inference_demucs.py # Owned inference HTTP stems, optional local fallback
 │       └── demucs_local.py     # Local Demucs stem separation (in-process)
 │
 ├── titles/                     # Title screen generation (film_title.py: explicit, model or template title, any surface)

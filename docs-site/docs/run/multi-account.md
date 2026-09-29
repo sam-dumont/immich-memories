@@ -64,6 +64,9 @@ and copy the ID from the address bar (`/people/<id>`). Then:
 immich-memories people bind "Alex" --account partner --id <person-id-in-partner-account>
 ```
 
+Or in the web UI: **Settings > People**, the person's **Accounts** section, pick the account, paste
+the ID and **Bind** ([The web UI](../make/web-ui.mdx)). It makes the same declaration.
+
 `PERSON` is a store person ID or a name exactly one person carries. Binding only adds the
 ID: the person's name, birth date and everything already confirmed about them stay exactly
 as they were, whatever the partner account calls them. An ID already bound to somebody else
@@ -86,7 +89,9 @@ a film with half a household silently missing.
 Leaving `--accounts` off reads the primary account alone, exactly as before this existed.
 `--accounts` reads exactly the accounts it names, so keep `primary` in the list: `--accounts partner`
 reads the partner alone. Albums and trips still read the primary account only: `--accounts` is
-refused there. The web UI has no account choice yet: a film you make there reads the primary alone.
+refused there. In the web UI, **Immich accounts to read** on the New memory page is the same
+choice, shown once a second account is configured: pick both accounts; none picked reads the
+primary alone.
 
 ## Saved groups
 
@@ -97,6 +102,9 @@ immich-memories people group add "Kids" '"<alex-id>" OR "<sam-jr-id>"'
 immich-memories people group list
 immich-memories generate --group "Kids" --accounts primary,partner --memory-type multi_person --year 2026
 ```
+
+The web UI has the same thing under **Saved groups** on the People settings page, and each saved
+group shows up as a card on the New memory page.
 
 Write the people as store person IDs, not names: `people bind` prints the ID next to the name
 (`Alex (<id>)`), and `people export` lists every person's `ids`. A name is accepted but kept as

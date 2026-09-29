@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-29 10:32+0200\n"
+"POT-Creation-Date: 2026-09-29 18:46+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -23,6 +23,10 @@ msgstr ""
 "En film från en mening kräver modellnivån: ställ in advanced.llm.base_url och "
 "advanced.llm.model på läsaren som svarar (tier: full)."
 
+#: web/routes/settings/people/+page.svelte:153
+msgid "A label for a people condition. Pick it on the New memory page, or with generate --group."
+msgstr "En etikett för ett personvillkor. Välj den på sidan Nytt minne, eller med generate --group."
+
 #: web/lib/labels.ts:47
 msgid "A monthly review already finished this month."
 msgstr "En månadsgenomgång har redan slutförts den här månaden."
@@ -36,15 +40,23 @@ msgstr "API-nyckel"
 msgid "About {amount} left"
 msgstr "Ungefär {amount} kvar"
 
-#: web/routes/create/+page.svelte:443
+#: web/routes/create/+page.svelte:490
 msgid "Accept forwarded and downloaded media"
 msgstr "Acceptera vidarebefordrade och nedladdade medier"
 
-#: web/routes/settings/people/+page.svelte:165
+#: web/routes/settings/people/+page.svelte:252 web/routes/settings/people/+page.svelte:255
+msgid "Account"
+msgstr "Konto"
+
+#: web/routes/settings/people/+page.svelte:247
+msgid "Accounts"
+msgstr "Konton"
+
+#: web/routes/settings/people/+page.svelte:242
 msgid "Add"
 msgstr "Lägg till"
 
-#: web/routes/settings/people/+page.svelte:157
+#: web/routes/settings/people/+page.svelte:234
 msgid "Add a relationship"
 msgstr "Lägg till en relation"
 
@@ -52,7 +64,7 @@ msgstr "Lägg till en relation"
 msgid "Add date overlay"
 msgstr "Visa datum"
 
-#: web/routes/settings/people/+page.svelte:102
+#: web/routes/settings/people/+page.svelte:179
 msgid "Add someone not in Immich"
 msgstr "Lägg till någon som inte finns i Immich"
 
@@ -70,11 +82,11 @@ msgstr "Tillagd för ett ögonblick som katalogen noterar som anmärkningsvärt.
 msgid "Added from the pool"
 msgstr "Tillagd från poolen"
 
-#: web/routes/create/+page.svelte:313
+#: web/routes/create/+page.svelte:335
 msgid "After a period"
 msgstr "Efter en period"
 
-#: web/lib/labels.ts:11 web/routes/create/+page.svelte:328
+#: web/lib/labels.ts:11 web/routes/create/+page.svelte:350
 msgid "Album"
 msgstr "Album"
 
@@ -91,7 +103,7 @@ msgstr "Visa även de {count} bilderna utanför det här minnet"
 msgid "Alternatives considered"
 msgstr "Övervägda alternativ"
 
-#: web/routes/create/+page.svelte:343
+#: web/routes/create/+page.svelte:365
 msgid ""
 "Anniversaries first, then the rest. A scheduled run only proposes a day on its anniversary; "
 "here you can pick any day the catalogue holds."
@@ -99,7 +111,7 @@ msgstr ""
 "Först jubileerna, sedan resten. En schemalagd körning föreslår bara en dag på dess jubileum; "
 "här kan du välja vilken dag som helst som finns i katalogen."
 
-#: web/routes/create/+page.svelte:322
+#: web/routes/create/+page.svelte:344
 msgid "Another day (MM-DD)"
 msgstr "Annan dag (MM-DD)"
 
@@ -113,7 +125,7 @@ msgstr "Alla. Bara bilder utan begränsningar: ingen detektorflagga, inget priva
 
 #: web/lib/RenderPanel.svelte:146 web/lib/RenderPanel.svelte:169 web/lib/RenderPanel.svelte:175
 #: web/lib/RenderPanel.svelte:181 web/lib/RenderPanel.svelte:187 web/lib/RenderPanel.svelte:233
-#: web/routes/create/+page.svelte:435
+#: web/routes/create/+page.svelte:482
 msgid "As configured"
 msgstr "Enligt konfigurationen"
 
@@ -129,7 +141,7 @@ msgstr "Automatisk"
 msgid "Automatic (as configured)"
 msgstr "Automatiskt (enligt konfigurationen)"
 
-#: web/routes/+layout.svelte:42
+#: web/routes/+layout.svelte:43
 msgid "Automatic (browser)"
 msgstr "Automatiskt (webbläsare)"
 
@@ -153,11 +165,15 @@ msgstr "Tillbaka till körningar"
 msgid "Back to the cut"
 msgstr "Tillbaka till klippningen"
 
-#: web/routes/create/+page.svelte:305
+#: web/routes/settings/people/+page.svelte:261
+msgid "Bind"
+msgstr "Koppla"
+
+#: web/routes/create/+page.svelte:327
 msgid "Birthday (MM-DD; Immich’s birth date when empty)"
 msgstr "Födelsedag (MM-DD; Immichs födelsedatum om tomt)"
 
-#: web/routes/create/+page.svelte:304
+#: web/routes/create/+page.svelte:326
 msgid "Birthday to birthday, with earlier birthdays"
 msgstr "Från födelsedag till födelsedag, med tidigare födelsedagar"
 
@@ -173,7 +189,7 @@ msgstr "Bläddra i hela poolen"
 msgid "Caches"
 msgstr "Cachar"
 
-#: web/lib/JobPanel.svelte:90 web/routes/runs/[run_id]/pool/+page.svelte:174
+#: web/lib/JobPanel.svelte:92 web/routes/runs/[run_id]/pool/+page.svelte:174
 msgid "Cancel"
 msgstr "Avbryt"
 
@@ -185,7 +201,7 @@ msgstr "Kandidatnyckel"
 msgid "Caption clips with their place"
 msgstr "Visa plats på klippen"
 
-#: web/routes/create/+page.svelte:339 web/routes/create/+page.svelte:344
+#: web/routes/create/+page.svelte:361 web/routes/create/+page.svelte:366
 msgid "Catalogued days"
 msgstr "Katalogiserade dagar"
 
@@ -202,11 +218,11 @@ msgstr "Kontrollera lämplighet"
 msgid "Checking pictures for the family audience"
 msgstr "Kontrollerar bilderna för familjepublik"
 
-#: web/routes/create/+page.svelte:330
+#: web/routes/create/+page.svelte:352
 msgid "Choose an album"
 msgstr "Välj ett album"
 
-#: web/routes/create/+page.svelte:270
+#: web/routes/create/+page.svelte:292
 msgid ""
 "Choose what the film covers. The cut is made the way the command below makes it; you review "
 "it before anything renders."
@@ -235,7 +251,7 @@ msgstr "{count} poster rensades från {cache}."
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "Urklipp är inte tillgängligt. Markera rapporten nedan och kopiera den."
 
-#: web/routes/create/+page.svelte:448
+#: web/routes/create/+page.svelte:495
 msgid "Command"
 msgstr "Kommando"
 
@@ -257,11 +273,11 @@ msgstr "Ansluten som: {name}"
 msgid "Considered by the model"
 msgstr "Övervägd av modellen"
 
-#: web/lib/JobPanel.svelte:88 web/lib/RunReport.svelte:76
+#: web/lib/JobPanel.svelte:90 web/lib/RunReport.svelte:76
 msgid "Copied"
 msgstr "Kopierad"
 
-#: web/lib/JobPanel.svelte:88
+#: web/lib/JobPanel.svelte:90
 msgid "Copy as CLI command"
 msgstr "Kopiera som CLI-kommando"
 
@@ -273,7 +289,7 @@ msgstr "Kopiera rapport"
 msgid "Crossfade"
 msgstr "Övertoning"
 
-#: web/routes/settings/people/+page.svelte:92 web/routes/settings/people/+page.svelte:93
+#: web/routes/settings/people/+page.svelte:145 web/routes/settings/people/+page.svelte:146
 msgid "Curation"
 msgstr "Ordna"
 
@@ -281,7 +297,7 @@ msgstr "Ordna"
 msgid "Custom date range"
 msgstr "Egen period"
 
-#: web/lib/RenderPanel.svelte:147 web/routes/create/+page.svelte:451
+#: web/lib/RenderPanel.svelte:147 web/routes/create/+page.svelte:498
 msgid "Cut"
 msgstr "Klipp"
 
@@ -289,11 +305,11 @@ msgstr "Klipp"
 msgid "Cut contact sheet"
 msgstr "Kontaktkarta för klippningen"
 
-#: web/routes/create/+page.svelte:302
+#: web/routes/create/+page.svelte:324
 msgid "Day"
 msgstr "Dag"
 
-#: web/routes/create/+page.svelte:325
+#: web/routes/create/+page.svelte:347
 msgid "Day (MM-DD)"
 msgstr "Dag (MM-DD)"
 
@@ -305,7 +321,7 @@ msgstr "Avgörs under klippningen"
 msgid "Default"
 msgstr "Standard"
 
-#: web/routes/+layout.svelte:46 web/routes/+layout.svelte:47
+#: web/routes/+layout.svelte:47 web/routes/+layout.svelte:48
 msgid "Demo mode"
 msgstr "Demoläge"
 
@@ -317,7 +333,7 @@ msgstr "Beskriv filmen du vill ha"
 msgid "Describing the pictures"
 msgstr "Beskriver bilderna"
 
-#: web/routes/create/+page.svelte:372
+#: web/routes/create/+page.svelte:394
 msgid "Detecting trips from GPS data..."
 msgstr "Identifierar resor från GPS-data…"
 
@@ -329,6 +345,10 @@ msgstr "Kasta ändringar"
 #, python-brace-format
 msgid "Discovery failed: {error}"
 msgstr "Sökningen misslyckades: {error}"
+
+#: web/lib/JobPanel.svelte:61
+msgid "Done."
+msgstr "Klart."
 
 #: web/routes/runs/[run_id]/+page.svelte:326
 msgid "Download child output"
@@ -366,7 +386,7 @@ msgstr "Lämplig. Ingen video skapades."
 msgid "End here"
 msgstr "Sluta här"
 
-#: web/routes/create/+page.svelte:312
+#: web/routes/create/+page.svelte:334
 msgid "Ends"
 msgstr "Slutar"
 
@@ -393,7 +413,7 @@ msgstr ""
 "Varje inställning och varifrån dess värde kommer. Det du sparar här går till databasen; "
 "config.yaml och miljön skrivs aldrig, och de har företräde framför detta."
 
-#: web/routes/create/+page.svelte:388
+#: web/routes/create/+page.svelte:410
 msgid "Every trip of the year"
 msgstr "Varje resa under året"
 
@@ -401,7 +421,11 @@ msgstr "Varje resa under året"
 msgid "Experimental"
 msgstr "Experimentell"
 
-#: web/routes/create/+page.svelte:436 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/settings/people/+page.svelte:169
+msgid "Expression"
+msgstr "Uttryck"
+
+#: web/routes/create/+page.svelte:483 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Family"
 msgstr "Familj"
@@ -418,7 +442,7 @@ msgstr "Färre än 12 bilder passar: filmen blir kort."
 msgid "Films that may use it"
 msgstr "Filmer som får använda den"
 
-#: web/routes/create/+page.svelte:399 web/routes/settings/people/+page.svelte:99
+#: web/routes/create/+page.svelte:421 web/routes/settings/people/+page.svelte:176
 msgid "Find a name"
 msgstr "Sök ett namn"
 
@@ -434,11 +458,11 @@ msgstr "Anpassa med kantlister"
 msgid "Format"
 msgstr "Format"
 
-#: web/routes/create/+page.svelte:310
+#: web/routes/create/+page.svelte:332
 msgid "From"
 msgstr "Från"
 
-#: web/routes/settings/people/+page.svelte:101
+#: web/routes/settings/people/+page.svelte:178
 msgid "Full name"
 msgstr "Fullständigt namn"
 
@@ -446,7 +470,7 @@ msgstr "Fullständigt namn"
 msgid "Grandparents, siblings, the group chat. Private moments stay out."
 msgstr "Mor- och farföräldrar, syskon, gruppchatten. Privata ögonblick tas inte med."
 
-#: web/routes/create/+page.svelte:414
+#: web/routes/create/+page.svelte:449
 msgid "Grouped condition"
 msgstr "Grupperat villkor"
 
@@ -455,7 +479,7 @@ msgstr "Grupperat villkor"
 msgid "Held: {reasons}."
 msgstr "Spärrad: {reasons}."
 
-#: web/routes/create/+page.svelte:300
+#: web/routes/create/+page.svelte:322
 msgid "Hemisphere"
 msgstr "Halvklot"
 
@@ -463,7 +487,7 @@ msgstr "Halvklot"
 msgid "High"
 msgstr "Hög"
 
-#: web/lib/labels.ts:13 web/routes/create/+page.svelte:319
+#: web/lib/labels.ts:13 web/routes/create/+page.svelte:341
 msgid "Holiday"
 msgstr "Högtid"
 
@@ -487,6 +511,10 @@ msgstr "Immich-anslutning"
 msgid "Immich Server URL"
 msgstr "Immich-serverns URL"
 
+#: web/routes/create/+page.svelte:463
+msgid "Immich accounts to read (primary alone when none are picked)"
+msgstr "Immich-konton att läsa (endast primärt om inget är valt)"
+
 #: web/routes/runs/[run_id]/+page.svelte:316
 #, python-brace-format
 msgid "Immich delivery: {value}"
@@ -504,7 +532,7 @@ msgstr "I klippet"
 msgid "In the film"
 msgstr "I filmen"
 
-#: web/routes/create/+page.svelte:441
+#: web/routes/create/+page.svelte:488
 msgid "Include Live Photos"
 msgstr "Ta med Live Photos"
 
@@ -512,11 +540,11 @@ msgstr "Ta med Live Photos"
 msgid "Include captions of flagged photos"
 msgstr "Ta med bildtexter för flaggade foton"
 
-#: web/routes/create/+page.svelte:440
+#: web/routes/create/+page.svelte:487
 msgid "Include photos"
 msgstr "Ta med foton"
 
-#: web/routes/+layout.svelte:40
+#: web/routes/+layout.svelte:41
 msgid "Interface language"
 msgstr "Gränssnittets språk"
 
@@ -524,7 +552,7 @@ msgstr "Gränssnittets språk"
 msgid "It did not finish."
 msgstr "Blev inte klar."
 
-#: web/routes/create/+page.svelte:435 web/routes/runs/[run_id]/pool/+page.svelte:87
+#: web/routes/create/+page.svelte:482 web/routes/runs/[run_id]/pool/+page.svelte:87
 #: web/routes/runs/[run_id]/pool/+page.svelte:168
 msgid "Just us"
 msgstr "Bara vi"
@@ -542,15 +570,19 @@ msgstr "Behölls vid {stage}"
 msgid "Kept because"
 msgstr "Behölls eftersom"
 
+#: web/routes/settings/people/+page.svelte:168
+msgid "Label"
+msgstr "Etikett"
+
 #: web/lib/RenderPanel.svelte:163
 msgid "Landscape"
 msgstr "Liggande"
 
-#: web/routes/create/+page.svelte:430
+#: web/routes/create/+page.svelte:477
 msgid "Length and pictures"
 msgstr "Längd och bilder"
 
-#: web/routes/create/+page.svelte:432
+#: web/routes/create/+page.svelte:479
 msgid "Length in minutes (fitted to the pictures when empty)"
 msgstr "Längd i minuter (anpassas till bilderna om tomt)"
 
@@ -566,7 +598,7 @@ msgstr "Söker igenom ditt bibliotek efter minnen att föreslå..."
 msgid "Low"
 msgstr "Låg"
 
-#: web/routes/+layout.svelte:60 web/routes/+layout.svelte:71
+#: web/routes/+layout.svelte:63 web/routes/+layout.svelte:74
 msgid "Main navigation"
 msgstr "Huvudnavigering"
 
@@ -608,7 +640,7 @@ msgstr "Medel"
 msgid "Memory"
 msgstr "Minne"
 
-#: web/routes/create/+page.svelte:279
+#: web/routes/create/+page.svelte:301
 msgid "Memory type"
 msgstr "Typ av minne"
 
@@ -620,7 +652,7 @@ msgstr "Modellens finputsning"
 msgid "Model suggestion"
 msgstr "Modellens förslag"
 
-#: web/routes/create/+page.svelte:292 web/routes/create/+page.svelte:293
+#: web/routes/create/+page.svelte:314 web/routes/create/+page.svelte:315
 msgid "Month"
 msgstr "Månad"
 
@@ -644,11 +676,11 @@ msgstr "Musikvolym:"
 msgid "Never use"
 msgstr "Använd aldrig"
 
-#: web/routes/create/+page.svelte:265 web/routes/create/+page.svelte:269
+#: web/routes/create/+page.svelte:287 web/routes/create/+page.svelte:291
 msgid "New memory"
 msgstr "Nytt minne"
 
-#: web/routes/create/+page.svelte:357
+#: web/routes/create/+page.svelte:379
 msgid ""
 "No catalogued days yet. Run immich-memories discover-days to find them, or film any day by "
 "its date."
@@ -676,11 +708,11 @@ msgstr "Ingen modell läste det här klippet: reglerna valde varje bild."
 msgid "No music"
 msgstr "Ingen musik"
 
-#: web/routes/create/+page.svelte:409
+#: web/routes/create/+page.svelte:431
 msgid "No name matches."
 msgstr "Inget namn matchar."
 
-#: web/routes/create/+page.svelte:409
+#: web/routes/create/+page.svelte:431
 msgid "No named people in Immich yet."
 msgstr "Inga namngivna personer i Immich ännu."
 
@@ -708,15 +740,19 @@ msgstr "Inga körningar matchar den här vyn. Skapa ett minne från Minne eller 
 msgid "No saved cut is available for this run."
 msgstr "Ingen sparad klippning finns för den här körningen."
 
+#: web/routes/settings/people/+page.svelte:165
+msgid "No saved groups yet."
+msgstr "Inga sparade grupper än."
+
 #: web/routes/suggestions/+page.svelte:115
 msgid "No suggestions right now."
 msgstr "Inga förslag just nu."
 
-#: web/routes/create/+page.svelte:390
+#: web/routes/create/+page.svelte:412
 msgid "No trips detected for this year."
 msgstr "Inga resor hittades för det här året."
 
-#: web/routes/settings/people/+page.svelte:141
+#: web/routes/settings/people/+page.svelte:218
 msgid "No, they are not"
 msgstr "Nej, det stämmer inte"
 
@@ -726,7 +762,7 @@ msgstr ""
 "Ingen som detta minne handlar om kändes igen här; de kändes igen någon annanstans i samma "
 "episod."
 
-#: web/routes/settings/people/+page.svelte:107
+#: web/routes/settings/people/+page.svelte:184
 msgid "Nobody yet. Rescan the library to read who is in it."
 msgstr "Ingen ännu. Läs igenom biblioteket igen för att se vem som finns i det."
 
@@ -734,7 +770,7 @@ msgstr "Ingen ännu. Läs igenom biblioteket igen för att se vem som finns i de
 msgid "None"
 msgstr "Ingen"
 
-#: web/routes/create/+page.svelte:300
+#: web/routes/create/+page.svelte:322
 msgid "North"
 msgstr "Norr"
 
@@ -746,11 +782,11 @@ msgstr "Gäller inte en film du bad om"
 msgid "Not possible"
 msgstr "Inte möjligt"
 
-#: web/routes/settings/people/+page.svelte:127
+#: web/routes/settings/people/+page.svelte:204
 msgid "Notes"
 msgstr "Anteckningar"
 
-#: web/routes/settings/people/+page.svelte:148
+#: web/routes/settings/people/+page.svelte:225
 msgid "Nothing recorded yet."
 msgstr "Inget registrerat ännu."
 
@@ -758,11 +794,11 @@ msgstr "Inget registrerat ännu."
 msgid "On This Day"
 msgstr "Den här dagen"
 
-#: web/routes/create/+page.svelte:313
+#: web/routes/create/+page.svelte:335
 msgid "On a date"
 msgstr "Ett visst datum"
 
-#: web/routes/create/+page.svelte:397
+#: web/routes/create/+page.svelte:419
 msgid "Only with (optional)"
 msgstr "Bara med (valfritt)"
 
@@ -803,16 +839,16 @@ msgstr "Klarade {stages}"
 msgid "Password"
 msgstr "Lösenord"
 
-#: web/routes/create/+page.svelte:397 web/routes/settings/+page.svelte:104
-#: web/routes/settings/people/+page.svelte:74 web/routes/settings/people/+page.svelte:80
+#: web/routes/create/+page.svelte:419 web/routes/settings/+page.svelte:104
+#: web/routes/settings/people/+page.svelte:127 web/routes/settings/people/+page.svelte:133
 msgid "People"
 msgstr "Personer"
 
-#: web/routes/create/+page.svelte:415
+#: web/routes/create/+page.svelte:450
 msgid "People condition"
 msgstr "Personvillkor"
 
-#: web/routes/create/+page.svelte:317
+#: web/routes/create/+page.svelte:339
 msgid "Period (6m, 1y, 2w)"
 msgstr "Period (6m, 1y, 2w)"
 
@@ -820,7 +856,7 @@ msgstr "Period (6m, 1y, 2w)"
 msgid "Person Spotlight"
 msgstr "En person i fokus"
 
-#: web/routes/create/+page.svelte:442
+#: web/routes/create/+page.svelte:489
 msgid "Photo duration (seconds)"
 msgstr "Fotolängd (sekunder)"
 
@@ -836,12 +872,12 @@ msgstr "Nyss lästa bilder"
 msgid "Pictures left after each step"
 msgstr "Bilder kvar efter varje steg"
 
-#: web/routes/create/+page.svelte:422
+#: web/routes/create/+page.svelte:457
 msgid "Pictures with"
 msgstr "Bilder med"
 
 #: web/routes/runs/[run_id]/+page.svelte:135 web/routes/runs/[run_id]/+page.svelte:190
-#: web/routes/settings/people/+page.svelte:118 web/routes/suggestions/+page.svelte:106
+#: web/routes/settings/people/+page.svelte:195 web/routes/suggestions/+page.svelte:106
 #, python-brace-format
 msgid "Pictures: {count}"
 msgstr "Bilder: {count}"
@@ -903,7 +939,7 @@ msgstr "Läser vad varje bild visar"
 msgid "Recorded alternative"
 msgstr "Sparat alternativ"
 
-#: web/routes/create/+page.svelte:368
+#: web/routes/create/+page.svelte:390
 msgid "Refresh"
 msgstr "Uppdatera"
 
@@ -911,15 +947,15 @@ msgstr "Uppdatera"
 msgid "Refresh suggestions"
 msgstr "Uppdatera förslag"
 
-#: web/routes/create/+page.svelte:368
+#: web/routes/create/+page.svelte:390
 msgid "Refreshing..."
 msgstr "Uppdaterar..."
 
-#: web/routes/settings/people/+page.svelte:155
+#: web/routes/settings/people/+page.svelte:232
 msgid "Relationship"
 msgstr "Relation"
 
-#: web/routes/settings/people/+page.svelte:133
+#: web/routes/settings/people/+page.svelte:210
 msgid "Relationships"
 msgstr "Relationer"
 
@@ -927,11 +963,15 @@ msgstr "Relationer"
 msgid "Reload from Disk"
 msgstr "Läs om från disk"
 
+#: web/routes/settings/people/+page.svelte:160
+msgid "Remove"
+msgstr "Ta bort"
+
 #: web/lib/ShotInspector.svelte:50
 msgid "Remove from this cut"
 msgstr "Ta bort ur det här klippet"
 
-#: web/routes/settings/people/+page.svelte:144
+#: web/routes/settings/people/+page.svelte:221
 msgid "Remove this relationship"
 msgstr "Ta bort den här relationen"
 
@@ -951,7 +991,7 @@ msgstr "Ersatte en bild som modellen tvivlade på."
 msgid "Report preview"
 msgstr "Förhandsvisning av rapporten"
 
-#: web/routes/settings/people/+page.svelte:83
+#: web/routes/settings/people/+page.svelte:136
 msgid "Rescan the library"
 msgstr "Läs igenom biblioteket igen"
 
@@ -972,7 +1012,7 @@ msgstr "Revision {number}"
 msgid "Revisions"
 msgstr "Revisioner"
 
-#: web/routes/settings/people/+page.svelte:123
+#: web/routes/settings/people/+page.svelte:200
 msgid "Role (suggestions; type your own)"
 msgstr "Roll (förslag eller egen text)"
 
@@ -1006,6 +1046,10 @@ msgstr "Spara"
 msgid "Save Config"
 msgstr "Spara konfiguration"
 
+#: web/routes/settings/people/+page.svelte:170
+msgid "Save group"
+msgstr "Spara grupp"
+
 #: web/routes/runs/[run_id]/+page.svelte:285
 msgid "Save revision"
 msgstr "Spara revision"
@@ -1018,6 +1062,11 @@ msgstr "Sparad. Skriv en ny nyckel för att ersätta den"
 #, python-brace-format
 msgid "Saved as revision {number}."
 msgstr "Sparad som revision {number}."
+
+#: web/routes/create/+page.svelte:436 web/routes/settings/people/+page.svelte:151
+#: web/routes/settings/people/+page.svelte:152
+msgid "Saved groups"
+msgstr "Sparade grupper"
 
 #: web/lib/SettingsEditor.svelte:40
 msgid "Saved here"
@@ -1049,7 +1098,7 @@ msgstr "Schemalagd"
 msgid "Screen time (seconds)"
 msgstr "Tid i bild (sekunder)"
 
-#: web/lib/labels.ts:6 web/routes/create/+page.svelte:297
+#: web/lib/labels.ts:6 web/routes/create/+page.svelte:319
 msgid "Season"
 msgstr "Årstid"
 
@@ -1073,11 +1122,11 @@ msgid "Set in config.yaml as {key}"
 msgstr "Satt i config.yaml som {key}"
 
 #: web/routes/+layout.svelte:24 web/routes/settings/+page.svelte:75
-#: web/routes/settings/+page.svelte:79 web/routes/settings/people/+page.svelte:79
+#: web/routes/settings/+page.svelte:79 web/routes/settings/people/+page.svelte:132
 msgid "Settings"
 msgstr "Inställningar"
 
-#: web/routes/create/+page.svelte:436
+#: web/routes/create/+page.svelte:483
 msgid "Shareable"
 msgstr "Delbar"
 
@@ -1085,7 +1134,7 @@ msgstr "Delbar"
 msgid "Show"
 msgstr "Visa"
 
-#: web/routes/settings/people/+page.svelte:171
+#: web/routes/settings/people/+page.svelte:269
 msgid "Show more"
 msgstr "Visa mer"
 
@@ -1098,7 +1147,7 @@ msgstr "Logga in"
 msgid "Sign in through the proxy in front of this server."
 msgstr "Logga in via proxyn framför den här servern."
 
-#: web/routes/+layout.svelte:54
+#: web/routes/+layout.svelte:55
 msgid "Sign out"
 msgstr "Logga ut"
 
@@ -1114,7 +1163,7 @@ msgstr "Smart (toningar och klipp)"
 msgid "Some of its pictures"
 msgstr "Några av dess bilder"
 
-#: web/routes/create/+page.svelte:300
+#: web/routes/create/+page.svelte:322
 msgid "South"
 msgstr "Söder"
 
@@ -1187,6 +1236,10 @@ msgstr "Ta bort"
 msgid "Test Connection"
 msgstr "Testa anslutning"
 
+#: web/routes/settings/people/+page.svelte:100
+msgid "That expression could not be saved."
+msgstr "Det uttrycket kunde inte sparas."
+
 #: web/lib/RenderPanel.svelte:112
 msgid "That file is not an MP3, M4A or WAV"
 msgstr "Filen är inte MP3, M4A eller WAV"
@@ -1194,6 +1247,10 @@ msgstr "Filen är inte MP3, M4A eller WAV"
 #: web/lib/labels.ts:71
 msgid "That file is too large for a soundtrack"
 msgstr "Den filen är för stor för ett ljudspår"
+
+#: web/routes/settings/people/+page.svelte:85
+msgid "That id could not be bound."
+msgstr "Det id:t kunde inte kopplas."
 
 #: web/routes/settings/+page.svelte:52
 msgid "The connection could not be checked."
@@ -1203,7 +1260,7 @@ msgstr "Anslutningen kunde inte kontrolleras."
 msgid "The cut as chosen"
 msgstr "Den valda klippningen"
 
-#: web/routes/create/+page.svelte:245
+#: web/routes/create/+page.svelte:267
 msgid "The cut could not start."
 msgstr "Klippningen kunde inte startas."
 
@@ -1227,10 +1284,6 @@ msgstr ""
 #: web/lib/AskPanel.svelte:24 web/routes/runs/[run_id]/+page.svelte:143
 msgid "The film"
 msgstr "Filmen"
-
-#: web/lib/JobPanel.svelte:61
-msgid "Done."
-msgstr "Klart."
 
 #: web/lib/JobPanel.svelte:61
 msgid "The film is ready."
@@ -1258,7 +1311,7 @@ msgstr ""
 msgid "The model, when one is configured"
 msgstr "Modellen, när en är konfigurerad"
 
-#: web/routes/settings/people/+page.svelte:81
+#: web/routes/settings/people/+page.svelte:134
 msgid ""
 "The people registry: who is close, their roles, and how they relate. `people scan` writes the"
 " guesses; your answers stay across scans. `people export` writes it out as YAML."
@@ -1323,6 +1376,10 @@ msgstr "Inställningarna kunde inte sparas."
 msgid "The words changed since this preview: preview again before making the film."
 msgstr "Orden har ändrats sedan den här förhandsvisningen: förhandsvisa igen innan du gör filmen."
 
+#: web/routes/settings/people/+page.svelte:258
+msgid "Their id in that account"
+msgstr "Deras id i det kontot"
+
 #: web/lib/labels.ts:48
 msgid "These people appear in the last two people memories."
 msgstr "De här personerna förekommer i de två senaste personminnena."
@@ -1351,7 +1408,7 @@ msgstr "Miniatyrbildscache"
 msgid "Title (decided as generate decides when empty)"
 msgstr "Titel (bestäms som `generate` gör om tomt)"
 
-#: web/routes/create/+page.svelte:316
+#: web/routes/create/+page.svelte:338
 msgid "To"
 msgstr "Till"
 
@@ -1367,15 +1424,15 @@ msgstr "Tog platsen efter en bild som modellen tog bort ur den här berättelsen
 msgid "Transition Style"
 msgstr "Övergångsstil"
 
-#: web/lib/labels.ts:12 web/routes/create/+page.svelte:364
+#: web/lib/labels.ts:12 web/routes/create/+page.svelte:386
 msgid "Trip"
 msgstr "Resa"
 
-#: web/routes/create/+page.svelte:167 web/routes/create/+page.svelte:171
+#: web/routes/create/+page.svelte:187 web/routes/create/+page.svelte:191
 msgid "Trip detection failed."
 msgstr "Resedetekteringen misslyckades."
 
-#: web/routes/create/+page.svelte:376
+#: web/routes/create/+page.svelte:398
 msgid "Trips"
 msgstr "Resor"
 
@@ -1404,7 +1461,7 @@ msgstr "Ladda upp ett spår"
 msgid "Upload the film to Immich"
 msgstr "Ladda upp filmen till Immich"
 
-#: web/routes/create/+page.svelte:418
+#: web/routes/create/+page.svelte:453
 msgid "Use exact library names; each picture must match. It replaces the names above."
 msgstr "Använd exakta namn från biblioteket; varje bild måste matcha. Ersätter namnen ovan."
 
@@ -1478,7 +1535,7 @@ msgstr "Vem"
 msgid "Who is who, their roles and relationships."
 msgstr "Vem som är vem, deras roller och relationer."
 
-#: web/routes/create/+page.svelte:433
+#: web/routes/create/+page.svelte:480
 msgid "Who may see it"
 msgstr "Vem som får se den"
 
@@ -1502,11 +1559,11 @@ msgstr "Varför den här bilden"
 msgid "Winter"
 msgstr "Vinter"
 
-#: web/routes/settings/people/+page.svelte:160 web/routes/settings/people/+page.svelte:162
+#: web/routes/settings/people/+page.svelte:237 web/routes/settings/people/+page.svelte:239
 msgid "With"
 msgstr "Med"
 
-#: web/routes/create/+page.svelte:290
+#: web/routes/create/+page.svelte:312
 msgid "Year"
 msgstr "År"
 
@@ -1514,15 +1571,15 @@ msgstr "År"
 msgid "Year in Review"
 msgstr "Året i backspegeln"
 
-#: web/routes/create/+page.svelte:308
+#: web/routes/create/+page.svelte:330
 msgid "Years back (all when empty)"
 msgstr "År tillbaka (alla om tomt)"
 
-#: web/routes/create/+page.svelte:308
+#: web/routes/create/+page.svelte:330
 msgid "Years to span"
 msgstr "Antal år att spänna över"
 
-#: web/routes/settings/people/+page.svelte:139
+#: web/routes/settings/people/+page.svelte:216
 msgid "Yes, that is right"
 msgstr "Ja, det stämmer"
 
@@ -1544,11 +1601,11 @@ msgstr "Den här bilden kommer aldrig att användas."
 msgid "about {film} of film"
 msgstr "ungefär {film} film"
 
-#: web/routes/create/+page.svelte:423
+#: web/routes/create/+page.svelte:458
 msgid "all of them together"
 msgstr "alla tillsammans"
 
-#: web/routes/create/+page.svelte:423
+#: web/routes/create/+page.svelte:458
 msgid "any of them"
 msgstr "någon av dem"
 
@@ -1575,7 +1632,7 @@ msgstr "{content}: filmen växer förbi sin {budget} för att få plats med dem"
 msgid "{date_range_start} to {date_range_end}"
 msgstr "{date_range_start} till {date_range_end}"
 
-#: web/routes/create/+page.svelte:383
+#: web/routes/create/+page.svelte:405
 #, python-brace-format
 msgid "{days} days · {count} pictures"
 msgstr "{days} dagar · {count} bilder"
@@ -1609,7 +1666,7 @@ msgstr "{pictures} bilder: {photos} foton, {videos} videor"
 msgid "{seconds} s on screen"
 msgstr "{seconds} s i bild"
 
-#: web/routes/create/+page.svelte:351
+#: web/routes/create/+page.svelte:373
 #, python-brace-format
 msgid "{years} years ago"
 msgstr "för {years} år sedan"
@@ -1619,3 +1676,8 @@ msgstr "för {years} år sedan"
 msgid "~{amount} left in this stage"
 msgstr "~{amount} kvar i detta steg"
 
+msgid "Delivered to Immich. The local file was removed to save disk space."
+msgstr "Levererad till Immich. Den lokala filen togs bort för att spara diskutrymme."
+
+msgid "View in Immich"
+msgstr "Visa i Immich"

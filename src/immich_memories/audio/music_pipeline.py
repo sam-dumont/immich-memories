@@ -19,6 +19,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from immich_memories.audio.generated_audio import validate_generated_audio
 from immich_memories.audio.generators.base import (
     GenerationRequest,
     GenerationResult,
@@ -374,7 +375,13 @@ class MusicPipeline:
                     continue
 
                 logger.info(f"Generating with {gen.name}")
-                return await gen.generate(request, _progress)
+                result = await gen.generate(request, _progress)
+                if reason := validate_generated_audio(result.audio_path):
+                    logger.warning(
+                        "Music backend %s rejected: %s; trying next backend", gen.name, reason
+                    )
+                    continue
+                return result
 
             except Exception:
                 # WHY broad: the point of a backend chain is that one backend
@@ -459,7 +466,8 @@ def create_pipeline(app_config, *, separate_stems: bool = True) -> MusicPipeline
 
     Stem separation priority:
     1. MusicGen API (if enabled) — established, supports 2-stem and 4-stem
-    2. Local Demucs (if demucs package installed) — zero-config fallback
+    2. Owned inference service (if configured), with optional local fallback
+    3. Local Demucs (if demucs package installed) — zero-config fallback
 
     ``separate_stems=False`` skips the separator for callers that only need a
     full track. CLI and UI generation retain stems for the final mix.
@@ -492,7 +500,19 @@ def create_pipeline(app_config, *, separate_stems: bool = True) -> MusicPipeline
             " + Demucs stems" if separate_stems else "",
         )
 
-    # Auto-detect local Demucs when no MusicGen configured
+    inference_url = getattr(getattr(app_config, "inference", None), "facts_base_url", "")
+    if (
+        separate_stems
+        and stem_separator is None
+        and isinstance(inference_url, str)
+        and inference_url
+    ):
+        from immich_memories.audio.generators.inference_demucs import InferenceDemucs
+
+        fallback = _try_local_demucs() if app_config.inference.fallback_to_local else None
+        stem_separator = InferenceDemucs(inference_url, fallback=fallback)
+
+    # Auto-detect local Demucs when no remote separator is configured.
     if separate_stems and stem_separator is None:
         stem_separator = _try_local_demucs()
 

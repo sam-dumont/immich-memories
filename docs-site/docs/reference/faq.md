@@ -70,7 +70,7 @@ The web UI is single-user, single-replica: one Immich API key, one library. Run 
 A couple whose phones upload to two accounts can still get one film from both: add the second account under
 `immich.accounts` and run `generate --accounts primary,partner` on the CLI
 ([A second Immich account](../run/multi-account.md)); `automation.accounts` does the same for the daily
-run. Films made in the web UI read the main account only for now.
+run, and **Immich accounts to read** on the web UI's New memory page for a film made there.
 
 **Is it stable?**
 

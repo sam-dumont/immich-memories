@@ -74,7 +74,13 @@ flowchart TD
    home, near home, away on a trip. A phrase that only repeats the subject ("at the park") stays
    the subject, not a place. One particular place at home has to be proven by GPS.
 5. **What.** The head noun of each phrase ("bread" in "bread making", "park" in "at the park with
-   kids"). WordNet adds the other everyday names and the thing's own kinds and parts, and the
+   kids"). When that head only frames an occasion, the modifier carries the subject instead:
+   "rainy weekends" offers "rainy" and WordNet's "rain"; "snowy days" offers "snowy" and "snow".
+   Generic heads are WordNet time periods plus `day`, `walk`, `trip`, `moment` and `time`. Their plural
+   forms follow the same rule. A picture phrase such as "rainy pictures" also keeps its modifier;
+   measured qualities such as "blurry pictures" still use the facts filter. Concrete heads such
+   as "cat" in "black cat" keep their meaning. The trace names the modifier and the head it replaced.
+   WordNet adds the other everyday names and the thing's own kinds and parts, and the
    model votes which one is the main subject. A thing has to be what the caption is about ("a
    loaf of bread on a rack" yes, "a toddler holding toast" no). A place, a scene or something
    people do counts anywhere in the caption, since captions put the people first ("kids playing

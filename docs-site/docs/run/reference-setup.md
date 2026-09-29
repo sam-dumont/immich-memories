@@ -50,6 +50,7 @@ and [Add a reader](../better/reader.md).
 | Caption server (Mac) | mlxcel, localhost | same key, `http://localhost:8092/v1` | Apple Silicon, Metal |
 | Reader (LLM) | the Mac, on the LAN | `advanced.llm.base_url`, `advanced.llm.provider`, `advanced.llm.model` | Apple Silicon running oMLX |
 | Music | ACE-Step 1.5 API (cluster) or lib mode (Mac) | `advanced.ace_step.mode`, `advanced.ace_step.api_url` | cluster: any card; Mac: Apple Silicon, XL wants more RAM |
+| Music stems | Demucs in the inference service | `advanced.inference.facts_base_url` | inference: CUDA or CPU; app/render fallback: CPU; Mac fallback: Metal |
 | OIDC behind a proxy | the reverse proxy + the app | `advanced.auth.public_url`, `advanced.auth.trusted_proxies`, `advanced.server.secure_cookies` | none |
 | Geocoding + map tiles | `nominatim.openstreetmap.org`, `server.arcgisonline.com` | `network.geocoding`, `network.map_tiles` | none |
 | Cache caps | the cache PVC / local disk | `cache.video_cache_max_size_gb`, `cache.thumbnail_cache_max_size_mb` | sized storage |
@@ -153,6 +154,32 @@ advanced:
     enabled: true
     daily_at: "09:00"
 ```
+
+### Music stems
+
+ACE-Step generates the full track in its separate deployment. Demucs in the inference service
+splits it into drums, bass, other and vocals for separate ducking under the clips. The existing
+`advanced.inference.facts_base_url` also selects `/audio/stems`. This setup needs ACE-Step and
+Demucs; a MusicGen server is optional and is not deployed by this repository.
+
+The inference CUDA image includes the 80 MB `htdemucs` weights under `/opt/immich-models/torch`.
+The CPU inference image downloads them on first separation into `/cache/torch`; keep `/cache`
+on the model-cache PVC. Jobs run one at a time and their temporary audio files are removed after
+the response is sent. ACE-Step keeps its own image, models and Terraform deployment.
+On NVIDIA cards without BF16 support, its Oobleck VAE needs FP32 through CPU offload/reload:
+FP16 can produce NaNs and silent tracks. The [ACE-Step image patch](https://github.com/sam-dumont/ace-step-1.5#vae-precision-on-older-nvidia-cards)
+sets that precision in the VAE selector. Deploy the rebuilt image digest; this upstream selector
+does not read `ACESTEP_DTYPE`.
+
+If the service fails, `advanced.inference.fallback_to_local` (default `true`) allows local Demucs.
+The app and render-worker image includes it on CPU; the Mac uses Metal. Local separation caches
+weights under `~/.cache/torch/hub/checkpoints`. Set `TORCH_HOME` to a persistent cache directory
+to reuse them after a container restart. With no inference URL, local separation remains the default.
+An explicitly enabled MusicGen server retains priority for stems for existing installations.
+
+The app image takes both Torch and TorchAudio from the CPU wheel index. The inference images
+pin matching CPU or CUDA 12.8 wheels. Every image checks the real Demucs model-loader import at
+build time, catching missing native libraries before release.
 
 ### The two GPU nodes
 

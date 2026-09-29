@@ -354,8 +354,9 @@ and asks nothing.
 The bank keys on the picture, its complete source metadata and
 `motion-line-v1@smolvlm2-500m-base-public/3-keyframes-320px`, so a changed source is asked again
 and nothing else is. Two invalid answers, a playback Immich answers 404 for, or an index the app
-cannot read are banked as settled; timeouts and transport failures stay missing and stop the run
-like a missing caption. `caption_concurrency` bounds the requests in flight; keyframe reads run
+cannot read are banked as settled. Timeouts and transport failures stay missing, so a later
+`prepare` retries them. They produce a visible "motion unavailable" warning; cuts continue
+with plain clip facts. `caption_concurrency` bounds the requests in flight; keyframe reads run
 four at a time.
 
 Each row also records what produced it: a digest of the question asked, the keyframe times it
@@ -370,6 +371,12 @@ banks it under the picture, its source metadata and
 on. A video that measures under 1.5 has its sentence withheld (a favourite keeps it); see
 [Picking each shot](../how-it-chooses/picking-shots.md). A video already prepared before this is sampled once more
 for the residual alone; a frame read or measurement that fails is named and never blocks the cut.
+
+`prepare` owns motion-description requests. It banks true videos and Live Photo companions whose
+measured residual already qualifies them. A first cut can discover motion in an unmeasured Live
+Photo; it uses plain facts until a later `prepare` banks that companion's sentence. Cuts read
+banked descriptions and never contact the motion-description server. Missing lines remain listed
+in the private preparation record. Required captions and safety facts still gate the cut.
 
 The `nas` tier asks for no motion line. The pick then reads the video's plain
 facts instead: its length, and the measured motion of a Live Photo that has one.
