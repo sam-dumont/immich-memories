@@ -1,0 +1,127 @@
+# Strategic-merge patch: the render worker as a second container in the app
+# pod, not a separate Deployment. The app refuses a cleartext-HTTP
+# render.worker_base_url to any host but loopback, because the request
+# carries the Immich API key; a sidecar reaches the worker at
+# http://127.0.0.1:8093 without TLS and without setting
+# render.allow_insecure_http, since the two containers share one network
+# namespace. See docs-site/docs/better/gpu-render.md#run-it-as-a-sidecar.
+#
+# The whole pod moves to the GPU node this way (the app itself needs no GPU),
+# so replace the node selector below with whatever labels your GPU node
+# carries if it is not `nvidia.com/gpu.present: "true"`.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-memories
+  namespace: immich-memories
+spec:
+  template:
+    spec:
+      runtimeClassName: nvidia
+      nodeSelector:
+        nvidia.com/gpu.present: "true"  # placeholder: match your GPU node's label
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: immich-memories
+          env:
+            - name: IMMICH_MEMORIES_RENDER__WORKER_BASE_URL
+              value: http://127.0.0.1:8093
+            - name: IMMICH_MEMORIES_RENDER__WORKER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: immich-memories-render-worker
+                  key: token
+        - name: render-worker
+          image: ghcr.io/sam-dumont/immich-video-memory-generator:latest
+          command: [python, -m, immich_memories_render_worker]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: worker-http
+              containerPort: 8093
+          env:
+            - name: IMMICH_MEMORIES_RENDER_WORKER_HOST
+              value: 127.0.0.1  # loopback only: the app is the only caller
+            - name: IMMICH_MEMORIES_RENDER_WORKER_DIRECTORY
+              value: /app/render-worker-output
+            - name: IMMICH_MEMORIES_RENDER_WORKER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: immich-memories-render-worker
+                  key: token
+            - name: IMMICH_MEMORIES_RENDER_WORKER_IMMICH_URL
+              valueFrom:
+                secretKeyRef:
+                  name: immich-memories-render-worker
+                  key: immich-url
+            - name: NVIDIA_DRIVER_CAPABILITIES
+              value: compute,video,utility
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+              nvidia.com/gpu: "1"
+          # tcpSocket and httpGet probes both dial the pod IP, not
+          # 127.0.0.1 -- the kubelet, not a process inside the container,
+          # makes the call. This worker binds loopback only (see
+          # IMMICH_MEMORIES_RENDER_WORKER_HOST above), so either kind of
+          # probe fails forever and the pod never goes Ready. exec runs
+          # inside the container's own network namespace instead, where
+          # 127.0.0.1 is reachable, and carries the bearer token /health
+          # sits behind.
+          startupProbe:
+            exec:
+              command: &worker_health_probe
+                - python3
+                - -c
+                - |
+                  import os, sys, urllib.request
+                  req = urllib.request.Request(
+                      "http://127.0.0.1:8093/health",
+                      headers={"Authorization": f"Bearer {os.environ['IMMICH_MEMORIES_RENDER_WORKER_TOKEN']}"},
+                  )
+                  with urllib.request.urlopen(req, timeout=3) as resp:
+                      sys.exit(0 if resp.status == 200 else 1)
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            exec:
+              command: *worker_health_probe
+            periodSeconds: 10
+            timeoutSeconds: 5
+          # Its own scratch, matching services/render-worker/kubernetes.yaml,
+          # distinctly named so they do not collide with the app container's
+          # own volumes of the same purpose.
+          volumeMounts:
+            - name: worker-scratch
+              mountPath: /app/render-worker-output
+            - name: worker-tmp
+              mountPath: /tmp
+            - name: worker-state
+              mountPath: /home/immich/.immich-memories
+            - name: worker-cache
+              mountPath: /home/immich/.cache
+      volumes:
+        - name: worker-scratch
+          emptyDir:
+            sizeLimit: 20Gi
+        - name: worker-tmp
+          emptyDir:
+            sizeLimit: 4Gi
+        - name: worker-state
+          emptyDir:
+            sizeLimit: 256Mi
+        - name: worker-cache
+          emptyDir:
+            sizeLimit: 1Gi

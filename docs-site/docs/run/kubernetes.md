@@ -20,7 +20,8 @@ deploy/kubernetes/
 │   └── ingress.yaml.example optional Ingress, only after enabling authentication
 ├── overlays/gpu/            the app on an NVIDIA node
 ├── overlays/inference/      the inference service alone (+ -cuda, + -lan for outside callers)
-└── overlays/captioner/      the SmolVLM caption service (+ -cuda)
+├── overlays/captioner/      the SmolVLM caption service (+ -cuda)
+└── overlays/render-sidecar/ the render worker in the app's own pod, on a GPU node
 ```
 
 ## Prerequisites
@@ -108,6 +109,20 @@ read-only. Four writable paths:
 A deployment that predates the models claim has to add it before the next apply, or the pod stays
 `Pending` waiting for a volume that does not exist.
 
+Every pod spec here sets `enableServiceLinks: false`. Kubernetes injects one env var per Service
+in the namespace by default (`<NAME>_SERVICE_HOST`, `<NAME>_PORT`, ...), and this app's own
+`IMMICH_MEMORIES_*` prefix collides with its own Service names. A Service named
+`immich-memories-render-worker` injects `IMMICH_MEMORIES_RENDER_WORKER_PORT=tcp://10.x.x.x:8093`,
+which the worker's settings then read as its own `port` field and crash on:
+
+```
+port: Input should be a valid integer, unable to parse string as an integer [input_value='tcp://…:8093']
+```
+
+The main app carries the same risk from a Service named `immich-memories` (`IMMICH_MEMORIES_PORT`,
+`IMMICH_MEMORIES_SERVICE_HOST`, ...). If you write your own manifest instead of using these, copy
+`enableServiceLinks: false` onto every pod spec too.
+
 There is no ConfigMap. `IMMICH_URL`, `IMMICH_API_KEY` and any other secret setting come from the
 Secret (`envFrom`); everything else is an `IMMICH_MEMORIES_<SECTION>__<KEY>` env var on the
 Deployment, which carries commented examples for the reader and the daily automation. Settings
@@ -162,6 +177,49 @@ the matching toleration. The app uses that card for NVENC encoding and the title
 nothing else: the editor's models are separate services, each with its own CUDA image. When the card
 cannot start the title kernels, titles still render, on the CPU, and the log says why in one warning
 line.
+
+## Render worker as a sidecar
+
+The render worker (see [Render on a GPU box](../better/gpu-render.md)) normally runs as its own
+Deployment, reachable over HTTPS, since the render request carries your Immich API key and the app
+refuses to send it over plain HTTP to anything but loopback. `overlays/render-sidecar` puts the
+worker in the app's own pod instead: the two containers share one network namespace, so the app
+reaches it at `http://127.0.0.1:8093`, loopback, no TLS and no
+`render.allow_insecure_http` needed. The whole pod moves to the GPU node this way, even though the
+app container itself needs no GPU.
+
+```bash
+cd deploy/kubernetes
+cp base/secret.yaml.example base/secret.yaml
+cp overlays/render-sidecar/render-worker-secret.yaml.example overlays/render-sidecar/render-worker-secret.yaml
+vim base/secret.yaml overlays/render-sidecar/render-worker-secret.yaml
+kubectl apply -k overlays/render-sidecar
+```
+
+One Secret, `immich-memories-render-worker`, holds the bearer token both sides use: the sidecar
+reads it directly as `IMMICH_MEMORIES_RENDER_WORKER_TOKEN` (its own settings prefix), and the
+patch on the app container maps the same key onto `IMMICH_MEMORIES_RENDER__WORKER_TOKEN` (two
+underscores: `render.worker_token` in the app's own config). `${VAR}`-style placeholders in
+`config.yaml` do expand against the pod's environment for this field
+(`render.worker_token`/`render.worker_base_url` only, via `config_models_render.py`), but setting
+the env var directly is simpler here and skips `config.yaml` entirely.
+
+`deployment-sidecar.yaml` sets `runtimeClassName: nvidia` and a
+`nvidia.com/gpu.present: "true"` node selector as a placeholder: replace it with whatever label
+your GPU node actually carries. The overlay pins the sidecar's image tag itself
+(`overlays/render-sidecar/kustomization.yaml`), since a patch introducing a new container is not
+covered by `base`'s own image pin; keep the two in sync; the app refuses a worker on a different
+version before it sends any footage.
+
+The worker's `startupProbe` and `readinessProbe` run `python3` inside the worker container and
+call `/health` over loopback themselves, rather than `tcpSocket`/`httpGet`: the kubelet dials the
+pod IP for both of those, never `127.0.0.1`, and this worker only binds loopback, so the pod would
+never go Ready. Keep that pairing if you touch either probe: a worker bound wider than loopback, or
+a probe that goes back to `tcpSocket`/`httpGet`, breaks the same way.
+
+Two other ways to reach the same guarantee, each a one-line config change instead of a manifest:
+run the worker as its own Deployment behind HTTPS (the default path above), or set
+`render.allow_insecure_http: true` if the worker sits on a network you already treat as trusted.
 
 ## The two model services
 

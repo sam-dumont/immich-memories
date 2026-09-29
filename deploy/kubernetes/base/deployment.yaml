@@ -19,6 +19,11 @@ spec:
       labels:
         app.kubernetes.io/name: immich-memories
     spec:
+      # Kubernetes injects one env var per Service in the namespace by default
+      # (SERVICE_HOST, SERVICE_PORT...); a Service named `immich-memories`
+      # collides with this app's own IMMICH_MEMORIES_* prefix and the pod
+      # fails to start. Off everywhere for the same reason (#1608).
+      enableServiceLinks: false
       # The image runs as `immich`, UID/GID 1000, HOME=/home/immich.
       securityContext:
         runAsNonRoot: true
