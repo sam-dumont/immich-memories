@@ -280,3 +280,17 @@ logs why, and reads in real time for the rest of the run.
 
 The prompt shapes the setup matrix probes readers with are in `scripts/reader_probe_prompts/`.
 Time, tokens and euros per reader go on [Measured](./measured.md).
+
+## Provider conformance
+
+From a checkout, `make llm-conformance CONFIG=/path/to/provider.yaml` exercises the configured
+`advanced.llm` endpoint with synthetic evidence. It reads only the LLM section of that file;
+no library, captions, people file or live store is opened. The command can incur provider charges.
+
+Each row reports whether the provider was called, HTTP attempts, reported tokens, elapsed seconds,
+validity and a feature-specific quality check. A local fallback fails the check. Unknown token
+usage stays unknown. A failed feature leaves its row and the other checks continue.
+
+The suite is being filled in under [#1513](https://github.com/sam-dumont/immich-video-memory-generator/issues/1513).
+The first probe covers title generation. The command prints every uncovered production call site
+and exits with status 1 while any remain, so an incomplete run cannot count as provider validation.

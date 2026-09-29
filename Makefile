@@ -1145,3 +1145,8 @@ demo-hero:  ## Cut the README hero GIF: brief, cut, review, render, and the film
 	ffmpeg -y -loglevel error -i docs-site/static/demo/demo.mp4 -i docs-site/remotion/public/output-preview.mp4 \
 	  -filter_complex "[0:v]trim=4.0:13.6,setpts=PTS-STARTPTS,$(HERO_FILTER)[a];[0:v]trim=29.0:34.43,setpts=PTS-STARTPTS,$(HERO_FILTER)[b];[1:v]trim=20.63:24.13,setpts=PTS-STARTPTS,$(HERO_FILTER)[c];[a][b]xfade=transition=fade:duration=0.3:offset=9.3[ab];[ab][c]xfade=transition=fade:duration=0.5:offset=14.23,hqdn3d,split[x][y];[y]palettegen=max_colors=255:stats_mode=diff[p];[x][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \
 	  docs-site/static/img/demo-hero.gif
+
+.PHONY: llm-conformance
+llm-conformance:  ## Exercise production LLM features on synthetic evidence: CONFIG=provider.yaml
+	@test -n "$(CONFIG)" || { echo 'Set CONFIG to the provider YAML file'; exit 2; }
+	uv run python -m immich_memories.conformance --config "$(CONFIG)"
