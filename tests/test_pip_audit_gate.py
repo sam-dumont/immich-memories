@@ -80,3 +80,16 @@ def test_a_nonzero_exit_with_only_unfixable_vulns_still_passes() -> None:
 
 def test_a_clean_exit_code_passes() -> None:
     assert run(CLEAN, audit_exit=0) == 0
+
+
+def test_adjacent_unfixable_and_fixable_rows_keep_their_own_advisories() -> None:
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), "--audit-exit", "1"],
+        input=("nltk 3.10.3 PYSEC-2026-3740\noauthlib 3.3.1 CVE-2026-49265 4.0.0\n"),
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 1
+    assert "WARN  nltk 3.10.3 (PYSEC-2026-3740) - no fix available yet" in result.stdout
+    assert "FAIL  oauthlib 3.3.1 (CVE-2026-49265) - fix available: 4.0.0" in result.stdout
+    assert "2 vulnerabilities: 1 fixable, 1 unfixable" in result.stdout

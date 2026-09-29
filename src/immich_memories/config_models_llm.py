@@ -108,12 +108,18 @@ class LLMConfig(BaseModel):
         default_factory=dict,
         description="Request fields merged into every call, for provider-specific requirements.",
     )
-    structured_output: bool = Field(
-        default=True,
+    structured_output: bool | None = Field(
+        default=None,
         description=(
             "Ask the server for each prose answer's exact JSON shape (response_format "
-            "json_schema; Ollama's format). A small local model then never breaks the JSON it "
-            "writes. A server that refuses the field is asked again without it, and remembered."
+            "json_schema; Ollama's format). Left unset, it is on for a hosted endpoint and off "
+            "for a server on this machine or this private network: measured 2026-09-29, oMLX's "
+            "grammar-constrained decoder for gemma-4-e4b-it-6bit stalls forever on some schema "
+            "shapes, spending its whole completion budget short of a required key, where the "
+            "identical prompt with no response_format completes cleanly. Every prompt states the "
+            "shape in words too, for the servers asked without it. A server that refuses the "
+            "field when it is on is asked again without it, and remembered. Set true or false to "
+            "pin the behaviour for any endpoint."
         ),
     )
     repetition_penalty: float | None = Field(

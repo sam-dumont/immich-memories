@@ -40,6 +40,7 @@ import numpy as np
 from immich_memories.analysis.duplicate_hashing import hamming_distance
 from immich_memories.analysis.editorial_shareability import STORY_CONTEXT_KEYS
 from immich_memories.analysis.editorial_story_lookalike import MOTION_KINDS
+from immich_memories.analysis.moment_grouping import MOMENT_WINDOW_MINUTES
 
 POLICY = "final-cached-hash-duplicates-v2"
 
@@ -143,16 +144,23 @@ def _scene_reach(candidate: Mapping[str, Any], keeper: Mapping[str, Any]) -> boo
 
     A star is never refused for a picture the owner did not star, and a frame that plays is
     never refused for a still. Two starred frames are one scene only within
-    `FAVOURITE_TWIN_DAYS`: further apart the owner starred two moments. Any other pair is read
-    within the scene window.
+    `FAVOURITE_TWIN_DAYS`: further apart the owner starred two moments. Any other pair on one
+    day is read only within one moment (`MOMENT_WINDOW_MINUTES`): a scene print says what KIND
+    of scene a frame shows, and a single-event day is one kind all day long, so stage after
+    stage an evening apart scored 0.68 to 0.78 and five sets of one concert left the film as
+    repeats of a sixth. Pairs on different days are read within the scene window, where every
+    repeat the owner named sat.
     """
     if candidate.get("favourite") and not keeper.get("favourite"):
         return False
     if candidate.get("kind") in MOTION_KINDS and keeper.get("kind") not in MOTION_KINDS:
         return False
+    apart = abs(_taken(candidate) - _taken(keeper))
     if candidate.get("favourite") and keeper.get("favourite"):
-        return abs(_taken(candidate) - _taken(keeper)) <= timedelta(days=FAVOURITE_TWIN_DAYS)
-    return abs(_taken(candidate) - _taken(keeper)) <= timedelta(days=SCENE_WINDOW_DAYS)
+        return apart <= timedelta(days=FAVOURITE_TWIN_DAYS)
+    if _taken(candidate).date() == _taken(keeper).date():
+        return apart <= timedelta(minutes=MOMENT_WINDOW_MINUTES)
+    return apart <= timedelta(days=SCENE_WINDOW_DAYS)
 
 
 class _Repeats:

@@ -174,14 +174,20 @@ def test_duplication_gate_pins_a_supported_jscpd_cli() -> None:
     assert "--gitignore" not in commands
 
 
-def test_cognitive_complexity_gate_pins_snapshot_analyzer() -> None:
-    """The snapshot must be evaluated by the analyzer version that created it."""
+def test_cognitive_complexity_gate_pins_its_analyzer_and_judges_by_the_watermark() -> None:
+    """The watermark is read against the analyzer version that measured it (#1550).
+
+    complexipy's own line-numbered snapshot is ignored; its fresh results go to the
+    watermark script, which fails when there are none, so a crashed analyzer is no pass.
+    """
     commands = _make_dry_run("cognitive-complexity")
     pyproject = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text())
 
     assert "complexipy==5.2.0" in commands
-    assert "ANALYZER_STATUS=$?" in commands
-    assert 'if [ "$ANALYZER_STATUS" -ne 0 ]' in commands
+    assert "--snapshot-ignore" in commands
+    assert "--output-json" in commands
+    assert "scripts/complexity_watermark.py complexipy_results_*.json" in commands
+    assert "exit $STATUS" in commands
     assert pyproject["tool"]["complexipy"]["exclude"] == ["_version.py"]
 
 

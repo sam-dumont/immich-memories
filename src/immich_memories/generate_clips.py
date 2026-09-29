@@ -327,11 +327,14 @@ def _rendered_clip(extraction: _Extraction, clip, progress: float, name: str):
 
 
 def _prepare_in_workers(params, video_cache, output_dir, directives, coordinator, report):
+    from immich_memories.processing.memory_budget import source_prepare_workers
     from immich_memories.processing.output_canvas import resolve_generation_canvas
     from immich_memories.processing.probe_cache import ProbeCache
     from immich_memories.processing.source_preparation import prepare_sources
 
     canvas = resolve_generation_canvas(params)
+    workers, why = source_prepare_workers(params.config.analysis.source_prepare_workers)
+    logger.info("Photo preparation: %s", why)
     ordered = {}
     jobs = list(enumerate(params.clips))
 
@@ -363,7 +366,7 @@ def _prepare_in_workers(params, video_cache, output_dir, directives, coordinator
             jobs,
             client=coordinator.worker_client,
             prepare=prepare,
-            workers=params.config.analysis.source_prepare_workers,
+            workers=workers,
         ),
         1,
     ):

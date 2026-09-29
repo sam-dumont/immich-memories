@@ -191,10 +191,10 @@ def _first_day(story_units: Mapping[str, list[dict]], s) -> str:
 def funding_order(
     stories: Sequence[dict[str, Any]], priorities: Sequence[Mapping[str, Any]] = ()
 ) -> list[dict[str, Any]]:
-    """The order a film funds its stories in: the weight word; inside a word, a detected trip
-    first (a trip carries its own weight), then the memory-worthy gate's word and the moments the
-    story holds, then the reader's own order of its stories (`priorities`), then the day it
-    starts on.
+    """The order a film funds its stories in: the weight word; inside a word, a detected trip or
+    an event inside a day first (both carry their own weight), then the memory-worthy gate's
+    word and the moments the story holds, then the reader's own order of its stories
+    (`priorities`), then the day it starts on.
 
     The reader's order breaks ties rather than leading: it is the order the grouping named its
     stories in, and a period the reader filed as one story and the day rule split comes first in
@@ -206,7 +206,7 @@ def funding_order(
         stories,
         key=lambda s: (
             WEIGHTS.index(s["weight"]),
-            not s.get("trip"),
+            not (s.get("trip") or s.get("event")),
             GATE_ORDER.get(s["gate"], 3),
             -s["seen"]["moments"],
             rank.get(tuple(s["episodes"]), len(rank)),

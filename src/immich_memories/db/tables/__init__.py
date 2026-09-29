@@ -50,6 +50,7 @@ from immich_memories.db.tables.operations import (
 from immich_memories.db.tables.people import (
     people,
     people_aliases,
+    people_groups,
     people_registry,
     people_relationships,
 )
@@ -89,6 +90,7 @@ __all__ = [
     "owner_edits",
     "people",
     "people_aliases",
+    "people_groups",
     "people_registry",
     "people_relationships",
     "phase_stats",

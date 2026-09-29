@@ -56,6 +56,12 @@ render:
 The request carries your Immich key, so a non-loopback `http://` worker is refused until you set
 `render.allow_insecure_http: true` to say the network is trusted. HTTPS needs no opt-in.
 
+On Kubernetes, `deploy/kubernetes/overlays/render-sidecar` runs the worker as a second container
+in the app's own pod instead of its own Deployment: the two share a network namespace, so the app
+reaches it at `http://127.0.0.1:8093`, loopback, with neither HTTPS nor
+`render.allow_insecure_http` needed. See
+[the Kubernetes page](../run/kubernetes.md#render-worker-as-a-sidecar).
+
 ## Check it
 
 ```bash

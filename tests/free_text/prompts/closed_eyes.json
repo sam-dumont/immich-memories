@@ -1,0 +1,69 @@
+{
+  "request": "closed eyes along the years",
+  "shape": "a body state, anywhere in the caption",
+  "answers": {
+    "Split the owner's request": {
+      "who": [],
+      "when": [
+        "along the years"
+      ],
+      "where": [],
+      "what": [
+        "closed eyes"
+      ]
+    },
+    "Give the date range": {
+      "date_from": null,
+      "date_to": null
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": []
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "many occasions"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    },
+    "puts a quality word before its subject": {
+      "reason": "banked",
+      "choice": "it narrows"
+    }
+  },
+  "expect": {
+    "reading": {
+      "when": [
+        "along the years"
+      ],
+      "what": [
+        "closed eyes"
+      ]
+    },
+    "who": {
+      "present": [],
+      "anchors": [],
+      "company": null
+    },
+    "when": [
+      null,
+      null
+    ],
+    "where": "anywhere",
+    "subject": [
+      "closed eyes"
+    ],
+    "funnel": [
+      "library",
+      "kind of picture",
+      "subject"
+    ],
+    "pool": [
+      "eyes"
+    ],
+    "verdict": "possible",
+    "film": "pool"
+  }
+}

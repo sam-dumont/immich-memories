@@ -3,7 +3,7 @@
 ## The 60-second version
 
 1. **Open an Issue first.** Let's agree on the approach before you write code.
-2. `make dev` installs everything. `make ci` runs the same gates CI runs.
+2. `make dev` installs everything (it needs Node 22 for the web client). `make ci` runs the same gates CI runs.
 3. Keep the PR to ~300 lines, one concern, a [conventional commit](https://www.conventionalcommits.org/) title.
 4. `make ci` must pass before you request review.
 
@@ -25,12 +25,12 @@ I'm a solo maintainer. Here's what helps me most:
 
 ## Development Setup
 
-Prerequisites: Python 3.11+, FFmpeg, [uv](https://docs.astral.sh/uv/), GNU Make
+Prerequisites: Python 3.11+, FFmpeg, [uv](https://docs.astral.sh/uv/), GNU Make, and Node 22 for the web client
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/immich-video-memory-generator.git
 cd immich-video-memory-generator
-make dev       # Install all dependencies
+make dev       # Install all dependencies and build the web client
 make check     # Verify everything works
 ```
 
@@ -48,12 +48,16 @@ make critique          # AI smell audit
 
 | Tier | Where | Command | What it needs |
 |------|-------|---------|---------------|
-| **Unit tests** | CI + local | `make test` | Nothing external |
+| **Unit tests** | CI + local | `make test` | FFmpeg on the `PATH` |
 | **Integration tests** | Local + CI (FFmpeg-only subset) + GPU runner | `make test-integration` | FFmpeg + Immich server |
 | **Real-Immich gate** | CI on every PR (required) + local | `make test-immich-gate IMMICH_GATE_VERSION=v2\|v3` | Docker + FFmpeg; it starts its own Immich |
 
-**Unit tests** cover pure logic: scoring math, config parsing, data models, helpers.
-They run in CI on every PR. No FFmpeg, no Immich, no network needed.
+**Unit tests** cover pure logic: config parsing, selection rules, data models, helpers.
+They run in CI on every PR. No Immich and no network; a handful encode real media, so FFmpeg
+must be on the `PATH`.
+
+The store suite, the Playwright launch check and the container suite have their own targets:
+the [testing guide](docs-site/docs/contribute/testing.md) lists every tier and what it needs.
 
 **Integration tests** cover the real pipeline: download from Immich, FFmpeg assembly,
 video output validation. Locally they need your Immich server and FFmpeg, and skip
@@ -85,7 +89,7 @@ These are enforced by CI and pre-commit hooks. Not suggestions.
 
 **Tests:**
 - TDD with vertical slices (RED → GREEN → REFACTOR)
-- Test behavior through public APIs, not internal methods
+- Test behaviour through public APIs, not internal methods
 - Every mock gets a `# WHY:` comment explaining what boundary it replaces
 - No testing Python arithmetic, Pydantic defaults, or ABC instantiation
 - Integration tests exist for FFmpeg pipeline changes
@@ -104,9 +108,9 @@ Full rules in [CLAUDE.md](CLAUDE.md) (yes, the AI reads it too).
 src/immich_memories/
 ├── api/          # Immich API client (ImmichClient + 5 composed services)
 ├── analysis/     # Reading the period and choosing what stays (SmartPipeline + services)
-├── editorial/    # The editing passes, inside analysis/
 ├── store/        # The annotation store: every banked fact and reading
-├── triage/       # The pinned ONNX encoder and its six context heads
+├── db/           # The store's engine, tables, migrations, backup and restore
+├── triage/       # The pinned ONNX encoder and its eight context heads
 ├── people/       # The people graph and the companion file
 ├── photos/       # Photo-to-video animation (Ken Burns, face-aware pan, blurred fill)
 ├── processing/   # Video assembly (VideoAssembler + 5 composed services)
@@ -114,8 +118,8 @@ src/immich_memories/
 ├── audio/        # Music generation, audio ducking, mood analysis
 ├── web/          # The web server: /api/v1, sign-in, health (client: web/ at the repo root)
 ├── cli/          # Click commands
-├── cache/        # Preview, video and run-history caching (SQLite)
-├── tracking/     # Run history and job management
+├── cache/        # Preview, video, judgment and embedding caches
+├── tracking/     # Run history, timings and `report`
 ├── operations/   # Lifecycle phases, storage report
 ├── planning/     # Auto-duration planning
 ├── automation/   # auto suggest/run
@@ -127,8 +131,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full module map.
 ## Commit Messages
 
 PRs are squash-merged. Before merging a large integration branch, push its complete history to
-a `history/` branch and link it in the PR. Releases require a manual workflow dispatch after
-the image smoke test passes. See [merging and releasing](docs-site/docs/contribute/development-setup.md#merging-and-releasing).
+a `history/` branch and link it in the PR. Merging does not release: the maintainer dispatches the
+Release workflow, which renders a smoke film in the built image before it publishes anything. See [merging and releasing](docs-site/docs/contribute/development-setup.md#merging-and-releasing).
 
 [Conventional Commits](https://www.conventionalcommits.org/) format, enforced by commitlint:
 
@@ -142,15 +146,15 @@ test: add integration test for HDR passthrough
 
 ## About this project
 
-This codebase is built almost entirely with AI (Claude by Anthropic). That's not a disclaimer: it's a deliberate choice, and the quality gates exist because of it, not in spite of it. 21 CI gates and 80 % diff-coverage on every PR, composition over inheritance, TDD. `uv run pytest tests/ --collect-only -q` says how many tests there are today.
+This codebase is built almost entirely with AI (Claude and Codex), on purpose, and the quality gates exist because of it. Every PR passes the gates in the `Makefile` and 80% diff coverage; the design is composition over inheritance, and new code is written test first. `uv run pytest tests/ --collect-only -q` says how many tests there are today.
 
 If you spot something the AI got wrong, please fix it. That's how this gets better.
 
 ## AI Tools Welcome (With Context)
 
-AI-assisted contributions are absolutely welcome: this is not a project that's going to lecture you about using Copilot.
+AI-assisted contributions are welcome: this is not a project that's going to lecture you about using Copilot.
 
-That said, AI code has specific failure modes: bloat, over-abstraction, tests that test mocks instead of behavior, verbose docstrings that add no value. That's why this project has 20 CI gates, a hermetic browser launch test, and architectural rules like "no mixins": they exist specifically to catch the things AI gets wrong.
+That said, AI code has specific failure modes: bloat, over-abstraction, tests that test mocks instead of behaviour, verbose docstrings that add no value. That's why this project has the gates in the `Makefile`, a hermetic browser launch test, and architectural rules like "no mixins": they exist specifically to catch the things AI gets wrong.
 
 When contributing with AI tools:
 

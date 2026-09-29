@@ -119,7 +119,7 @@ class TestSuggestReturnsCandidates:
                 return_value=MagicMock(status=CheckStatus.OK),
             ),
             patch(
-                "immich_memories.api.immich.SyncImmichClient", return_value=client
+                "immich_memories.api.accounts.SyncImmichClient", return_value=client
             ) as client_factory,
         ):
             AutoRunner(config).suggest(limit=1)
@@ -181,7 +181,7 @@ class TestSuggestReturnsCandidates:
                 "immich_memories.preflight.check_immich",
                 return_value=MagicMock(status=CheckStatus.OK),
             ),
-            patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
+            patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
             patch(
                 "immich_memories.api.all_assets_service.AllAssetsService",
                 return_value=asset_service,
@@ -268,7 +268,7 @@ class TestSuggestReturnsCandidates:
         with (
             # WHY: external Immich server
             patch(
-                "immich_memories.api.immich.SyncImmichClient",
+                "immich_memories.api.accounts.SyncImmichClient",
                 return_value=mock_client,
             ),
             # WHY: external Immich server (preflight check)
@@ -306,7 +306,7 @@ class TestSuggestReturnsCandidates:
         with (
             # WHY: avoids a real HTTP call to fetch people and time buckets from Immich
             patch(
-                "immich_memories.api.immich.SyncImmichClient",
+                "immich_memories.api.accounts.SyncImmichClient",
                 return_value=client,
             ),
             patch(
@@ -345,7 +345,7 @@ class TestSuggestReturnsCandidates:
         with (
             # WHY: keeps this birthday-suppression test off the real Immich HTTP client
             patch(
-                "immich_memories.api.immich.SyncImmichClient",
+                "immich_memories.api.accounts.SyncImmichClient",
                 return_value=client,
             ),
             patch(
@@ -421,7 +421,7 @@ class TestSuggestReturnsCandidates:
         with (
             # WHY: no real Immich HTTP call is made for this variety-history check
             patch(
-                "immich_memories.api.immich.SyncImmichClient",
+                "immich_memories.api.accounts.SyncImmichClient",
                 return_value=mock_client,
             ),
             patch(
@@ -472,7 +472,7 @@ class TestSuggestReturnsCandidates:
         with (
             # WHY: this rejection-path test never touches the real Immich HTTP client
             patch(
-                "immich_memories.api.immich.SyncImmichClient",
+                "immich_memories.api.accounts.SyncImmichClient",
                 return_value=mock_client,
             ),
             patch(
@@ -564,7 +564,7 @@ class TestSuggestReturnsCandidates:
         with (
             # WHY: keeps this completion-order test off the real Immich HTTP client
             patch(
-                "immich_memories.api.immich.SyncImmichClient",
+                "immich_memories.api.accounts.SyncImmichClient",
                 return_value=mock_client,
             ),
             patch(
@@ -601,7 +601,7 @@ class TestSuggestEmptyLibrary:
         with (
             # WHY: fakes an empty-library response instead of a live Immich client
             patch(
-                "immich_memories.api.immich.SyncImmichClient",
+                "immich_memories.api.accounts.SyncImmichClient",
                 return_value=mock_client,
             ),
             patch(
@@ -762,7 +762,7 @@ class TestRunOneNoCandidates:
                 "immich_memories.preflight.check_immich",
                 return_value=MagicMock(status=CheckStatus.OK),
             ),
-            patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
+            patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
             patch(
                 "immich_memories.automation.candidate_discovery._run_all_detectors",
                 return_value=rejected_candidates,
@@ -897,7 +897,7 @@ class TestRunOneNoCandidates:
             # WHY: the real preflight probe is replaced with a healthy canned result
             patch("immich_memories.preflight.check_immich", return_value=healthy),
             # WHY: avoids a real HTTP call to Immich for the recovered suggest() run
-            patch("immich_memories.api.immich.SyncImmichClient", return_value=mock_client),
+            patch("immich_memories.api.accounts.SyncImmichClient", return_value=mock_client),
         ):
             result = runner.run_one(force=True)
 
@@ -1806,7 +1806,7 @@ class TestFailedCandidateBackoff:
         # WHY: Immich server, its preflight check, and the clock
         with (
             # WHY: external Immich server
-            patch("immich_memories.api.immich.SyncImmichClient", return_value=mock_client),
+            patch("immich_memories.api.accounts.SyncImmichClient", return_value=mock_client),
             # WHY: external Immich server (preflight check)
             patch(
                 "immich_memories.preflight.check_immich",

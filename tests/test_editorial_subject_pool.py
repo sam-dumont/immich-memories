@@ -350,16 +350,7 @@ def _configured():
     return config
 
 
-@pytest.fixture
-def cli_output_restored():
-    """A non-terminal run silences the CLI's printing for the rest of the thread."""
-    from immich_memories.cli._helpers import set_quiet_mode
-
-    yield
-    set_quiet_mode(False)
-
-
-def test_generate_hands_the_album_and_its_subject_to_the_album_route(cli_output_restored):
+def test_generate_hands_the_album_and_its_subject_to_the_album_route():
     from unittest.mock import MagicMock, patch
 
     from tests.test_cli_smoke import _invoke

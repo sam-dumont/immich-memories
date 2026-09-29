@@ -1,0 +1,79 @@
+{
+  "request": "our black cat along the years",
+  "shape": "a pet along the years, with its colour",
+  "answers": {
+    "Split the owner's request": {
+      "who": [],
+      "when": [
+        "along the years"
+      ],
+      "where": [],
+      "what": [
+        "our black cat"
+      ]
+    },
+    "Give the date range": {
+      "date_from": null,
+      "date_to": null
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": []
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "many occasions"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    },
+    "puts a quality word before its subject": {
+      "reason": "banked",
+      "choice": "it narrows"
+    },
+    "Does it give that time": {
+      "reason": "banked",
+      "is_age": false,
+      "whose_age": "Ada Placeholder",
+      "age_from": 0,
+      "age_to": 0
+    }
+  },
+  "expect": {
+    "reading": {
+      "when": [
+        "along the years"
+      ],
+      "what": [
+        "our black cat"
+      ]
+    },
+    "who": {
+      "present": [],
+      "anchors": [
+        "p-owner",
+        "p-partner"
+      ],
+      "company": null
+    },
+    "when": [
+      null,
+      null
+    ],
+    "where": "anywhere",
+    "subject": [
+      "black cat"
+    ],
+    "funnel": [
+      "library",
+      "kind of picture",
+      "subject"
+    ],
+    "pool": [
+      "cat"
+    ],
+    "verdict": "possible",
+    "film": "pool"
+  }
+}

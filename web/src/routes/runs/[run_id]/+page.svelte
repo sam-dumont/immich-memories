@@ -138,10 +138,19 @@
         {#if cut.film_seconds}<span>{t('about {film} of film', { film: clock(cut.film_seconds) })}</span>{/if}
       {/if}
     </p>
-    {#if run.film}
+    {#if run.film_available}
       <!-- svelte-ignore a11y_media_has_caption -->
       <video class="w-full max-w-3xl rounded-2xl bg-black" controls preload="metadata" aria-label={t('The film')}
         src={`/api/v1/runs/${encodeURIComponent(run.run_id)}/film`}></video>
+    {:else if run.film && run.delivery_status === 'delivered'}
+      <Alert color="info" size="small">
+        {t('Delivered to Immich. The local file was removed to save disk space.')}
+        {#if run.immich_asset_url}
+          <a href={run.immich_asset_url} target="_blank" rel="noreferrer" class="underline">{t('View in Immich')}</a>
+        {:else if run.immich_asset_id}
+          <span class="tabular-nums">{run.immich_asset_id}</span>
+        {/if}
+      </Alert>
     {/if}
     {#if cut?.thesis}<p class="max-w-4xl text-lg">{cut.thesis}</p>{/if}
     {#if story?.preparation}<Text size="small" color="muted">{t(story.preparation)}</Text>{/if}

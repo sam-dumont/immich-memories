@@ -50,3 +50,27 @@ def test_the_report_is_typed_and_asks_for_a_session(client):
 
     assert response["content"]["application/json"]["schema"]["$ref"].endswith("/ReportResponse")
     assert not is_bypass_path("/api/v1/runs/20000101_000000_none/report")
+
+
+def test_the_page_downloads_the_same_redacted_bundle_the_cli_writes(client):
+    import io
+    import zipfile
+
+    from immich_memories.tracking import RunTracker
+
+    tracker = RunTracker(capture_system=False)
+    tracker.start_run(person_name="Marigold")
+    tracker.fail_run("Marigold is missing")
+
+    response = client.get(f"/api/v1/runs/{tracker.run_id}/report/bundle")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/zip"
+    assert "attachment" in response.headers["content-disposition"]
+    archive = zipfile.ZipFile(io.BytesIO(response.content))
+    assert sorted(archive.namelist()) == ["report.json", "report.md", "run.log"]
+    assert all(b"Marigold" not in archive.read(name) for name in archive.namelist())
+
+
+def test_a_run_that_is_not_there_has_no_bundle(client):
+    assert client.get("/api/v1/runs/20000101_000000_none/report/bundle").status_code == 404

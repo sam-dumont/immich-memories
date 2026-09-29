@@ -6,7 +6,8 @@ title: Family, audience and duplicates
 
 Once the draft is cut, a few passes make sure it is a film you'd show, to the people you cut it for. Your partner, who is on 300
 pictures of the month and starred in none, gets a shot. A picture the family-viewing gate refuses
-leaves and another frame of the same moment takes its place. Two near-identical photos of the same
+leaves and another frame of the same moment takes its place, unless the refused picture was that
+moment's favourite: then the whole moment goes and another moment gets the slot. Two near-identical photos of the same
 sunset, or the same hiking trail filmed twice twenty minutes apart, become one. Then the finished
 cut is checked against everything the passes promised.
 
@@ -79,7 +80,7 @@ Every shot gets one of four verdicts, and the strictest reading wins:
 
 ### Sharing levels
 
-Each film is cut for one of three levels. You pick it per film (**Who will watch it** in the web
+Each film is cut for one of three levels. You pick it per film (**Who may see it** in the web
 brief, `generate --sharing`), and `defaults.sharing` is the default, `family` unless you change it.
 
 | Level | Who watches | Plays |
@@ -101,6 +102,12 @@ A shot that leaves is replaced from its own moment first, then from a moment of 
 film doesn't show yet, never within five minutes of a shot of the same moment, and each replacement
 is judged by the same gate before it takes the slot. When every offer is refused, the slot stays
 empty.
+
+A moment you starred something in is only ever shown by a favourite. If the gate holds that
+favourite (or every favourite of it, when you starred two), no plain frame of the same moment
+stands in: the moment is dropped and the slot goes to a moment the story doesn't show yet. With two
+favourites and one held, the other one plays. The same rule applies to every later refill: the
+duplicate review, the family seat and the polish.
 
 ```mermaid
 flowchart TD
@@ -211,7 +218,11 @@ No tier asks a model to compare two pictures.
    received batch shares a second too, so the pixels have to agree; burst frames hash alike, so
    the name has to say it was forwarded). The file with the most pixels plays, a star on any copy
    counts for the picture, and the others are left out as "another file of the same picture". On
-   one real month that was 415 of 2,028 files.
+   one real month that was 415 of 2,028 files. Files with the same bytes (an equal SHA-1) are one
+   picture too: your partner's phone uploaded it as well, or a second account of a
+   `generate --accounts` run holds it. A Live Photo copy stands for it before a plain one, then a
+   starred copy, then the primary account's. A video whose bytes are a Live Photo's own motion
+   folds into that Live Photo (`exact_copies.py`).
 2. **Bursts, before the editor.** Photos within `photos.burst_window_seconds` (300) of each other
    **and** within `photos.burst_hash_threshold` (8) bits on a preview hash are one burst; the
    favourite survives it, else the best frame. A photo with no hash is kept.
@@ -221,17 +232,20 @@ No tier asks a model to compare two pictures.
    - a preview hash within 6 bits, inside the same story or the same day;
    - a scene print (the pooled DINOv2 vector of the preview, banked in `scene-prints.sqlite`) at a
      cosine of 0.65 or more, within 14 days, across stories. That catches the same trail at dusk
-     shot twice from different spots, which hashes as strangers. Two favourites are the same scene
-     only within 2 days of each other: the same pose in the same place on consecutive days is one
-     moment you starred twice, and further apart it is two moments.
+     shot twice from different spots, which hashes as strangers. On one day it only counts inside
+     one moment (10 minutes): a scene print says what kind of scene a picture is, and a concert or
+     a wedding is one kind all day, so two sets hours apart are two moments of the event, not a
+     repeat. Two favourites are the same scene only within 2 days of each other: the same pose in
+     the same place on consecutive days is one moment you starred twice, and further apart it is
+     two moments.
 
 Which frame stays: one you ticked, then the favourite, then the one that moves (a video before a Live
 Photo), then a close family member's only shot, then (between two favourites) the one with more
 faces Immich found and then the sharper, then the earlier one. A moving frame is never a
 repeat of a still. A scene repeat leaves even when no distinct replacement remains and the film
 is short of its requested duration. Its slot goes to an eligible refill when there is one.
-The one limit for two starred twins: a twin never leaves unreplaced when the film would then hold fewer than 3 shots
-or under 20 % of its length, the point where it gives up and makes no film. The record names each such pair under `collapsed_favourites`. Every
+The one limit for two starred twins: a twin never leaves unreplaced when the film would then hold no shot at all,
+the only point where it makes no film. The record names each such pair under `collapsed_favourites`. Every
 replacement passes the family-viewing gate first. The `final_duplicate_review` record lists each
 removal, the distance or cosine behind it, and who kept the slot.
 

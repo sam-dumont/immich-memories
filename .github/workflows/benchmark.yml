@@ -15,19 +15,11 @@
 name: Benchmarks
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "src/immich_memories/processing/**"
-      - "src/immich_memories/analysis/**"
-      - "src/immich_memories/titles/**"
-      - "tests/integration/assembly/test_perf_*.py"
-      - "tests/integration/titles/test_perf_*.py"
-      - "tests/integration/assembly/perf_utils.py"
-      - ".github/workflows/benchmark.yml"
-      - "scripts/profile_pipeline.py"
-      - "tests/performance/test_benchmark_contract.py"
-      - "Makefile"
+  # Nightly on main, not on every push: a scheduled run's ref is main, so it
+  # still saves the baseline cache that pull requests compare against, without
+  # queueing a benchmark behind every merge.
+  schedule:
+    - cron: '47 1 * * *'
   # Every pull request, not only the ones aimed at main: a stacked PR targets the
   # branch below it, and a main-only filter skipped all of them.
   pull_request:

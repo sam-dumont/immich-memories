@@ -236,6 +236,39 @@ class TestHealthEndpoint:
         assert data["oldest_pending_delivery"] is None
 
     @pytest.mark.asyncio
+    async def test_readiness_names_a_volume_running_low_on_free_space(self, tmp_path: Path):
+        """The Runs/health page surfaces the same free-space warning a run's own preflight logs."""
+        from immich_memories.web.health import _ImmichDependency, _readiness_handler
+
+        config = Config(
+            immich={"url": "http://immich.test", "api_key": "health-secret"},
+            cache={"database": str(tmp_path / "health.db"), "directory": str(tmp_path / "cache")},
+            output={"directory": str(tmp_path / "output"), "min_free_space_gb": 5.0},
+        )
+        with (
+            patch("immich_memories.web.health.get_config", return_value=config),
+            patch(
+                "immich_memories.web.health._check_immich_dependency",
+                new_callable=AsyncMock,
+                return_value=_ImmichDependency(
+                    status="ready", reachable=True, resolved_api_version="v3"
+                ),
+            ),
+            patch("immich_memories.web.health._get_last_successful_run", return_value=None),
+            # WHY: shutil.disk_usage reads the real volume; a boundary this snapshot always crosses.
+            patch(
+                "immich_memories.operations.disk_guard.shutil.disk_usage",
+                return_value=type("Usage", (), {"free": 2 * 1024**3})(),
+            ),
+        ):
+            response = await _readiness_handler(MagicMock())
+
+        data = json.loads(response.body)
+        assert data["disk"]["output"]["free_gb"] == 2.0
+        assert "Low disk space" in data["disk"]["output"]["warning"]
+        assert "Low disk space" in data["disk"]["cache"]["warning"]
+
+    @pytest.mark.asyncio
     async def test_notification_cooldown_warns_without_failing_readiness(self, tmp_path: Path):
         from immich_memories.automation.notification_state import (
             NotificationFailureCategory,
@@ -759,7 +792,9 @@ class TestHealthIsCheapUnderRepeatedProbes:
             # WHY: external Immich server
             patch("immich_memories.web.health._check_immich_dependency", counted_dependency),
             # WHY: reads four SQLite databases
-            patch("immich_memories.web.health._operational_detail", return_value=(None, None)),
+            patch(
+                "immich_memories.web.health._operational_detail", return_value=(None, None, None)
+            ),
         ):
             for _ in range(5):
                 await health_module._health_handler(MagicMock())
@@ -787,7 +822,9 @@ class TestHealthIsCheapUnderRepeatedProbes:
             # WHY: external Immich server
             patch("immich_memories.web.health._check_immich_dependency", counted_dependency),
             # WHY: reads four SQLite databases
-            patch("immich_memories.web.health._operational_detail", return_value=(None, None)),
+            patch(
+                "immich_memories.web.health._operational_detail", return_value=(None, None, None)
+            ),
         ):
             await health_module._health_handler(MagicMock())
             clock["now"] += 60.0
@@ -816,7 +853,7 @@ class TestHealthIsCheapUnderRepeatedProbes:
 
         def slow_blocking_detail(config, secrets):  # noqa: ARG001
             time_module.sleep(0.2)
-            return None, None
+            return None, None, None
 
         async def ready_dependency(config):  # noqa: ARG001
             return health_module._ImmichDependency(status="ready", reachable=True)

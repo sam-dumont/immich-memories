@@ -28,10 +28,11 @@ from immich_memories.tracking.run_database import RunDatabase
 
 def _config(tmp_path: Path) -> Config:
     return Config(
+        immich={"url": "http://immich.test:2283", "api_key": "test-key"},
         cache={
             "database": str(tmp_path / "status.db"),
             "directory": str(tmp_path / "cache"),
-        }
+        },
     )
 
 
@@ -136,7 +137,7 @@ def test_status_json_reports_durable_attempt_rotation_and_scheduler(tmp_path: Pa
         result = _invoke(config, ["auto", "status", "--json"])
 
     assert result.exit_code == 0
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     assert set(payload) == {
         "last_attempt",
         "last_completed_auto_run",
@@ -204,7 +205,7 @@ def test_status_reports_pending_queue_when_all_artifacts_are_missing(tmp_path: P
         human_result = _invoke(config, ["auto", "status"])
 
     assert json_result.exit_code == 0
-    payload = json.loads(json_result.output)
+    payload = json.loads(json_result.stdout)
     assert payload["pending_delivery_count"] == 1
     assert payload["oldest_pending_delivery"] is None
     assert human_result.exit_code == 0
@@ -286,7 +287,7 @@ def test_status_refreshes_and_reports_current_rejection_reasons(tmp_path: Path) 
         result = _invoke(config, ["auto", "status", "--json"])
 
     assert result.exit_code == 0
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     assert payload["suggestion"] == {"outcome": "ready", "error": None}
     assert payload["rejection_reasons"] == ["same_category_as_previous"]
     suggest.assert_called_once()
@@ -319,7 +320,7 @@ def test_status_names_the_code_that_would_run_and_flags_it_when_stale(tmp_path: 
         human_result = _invoke(config, ["auto", "status"])
 
     assert json_result.exit_code == 0
-    assert json.loads(json_result.output)["runtime"] == {
+    assert json.loads(json_result.stdout)["runtime"] == {
         "version": "1.2.3",
         "checkout": "/home/me/.immich-memories/runtime",
         "commit": "ea892ad",
@@ -462,7 +463,7 @@ def test_status_keeps_durable_state_when_live_discovery_fails(tmp_path: Path) ->
     before = row_counts()
     with (
         patch("immich_memories.preflight.check_immich") as preflight,
-        patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
+        patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
         patch("immich_memories.automation.runner.AutoRunner", return_value=runner),
         patch(
             "immich_memories.automation.system_scheduler.get_scheduler_status",
@@ -514,7 +515,7 @@ def test_direct_suggest_still_raises_post_preflight_discovery_errors(tmp_path: P
             "immich_memories.preflight.check_immich",
             return_value=MagicMock(status=CheckStatus.OK),
         ),
-        patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
+        patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
         pytest.raises(ImmichDiscoveryError, match="metadata failed"),
     ):
         AutoRunner(config).suggest(limit=1)
@@ -535,7 +536,7 @@ def test_status_does_not_hide_generated_key_database_failures(tmp_path: Path) ->
             "get_generated_memory_keys",
             side_effect=RuntimeError("generated-key database read failed"),
         ),
-        patch("immich_memories.api.immich.SyncImmichClient") as client,
+        patch("immich_memories.api.accounts.SyncImmichClient") as client,
         pytest.raises(RuntimeError, match="generated-key database read failed"),
     ):
         runner.status(refresh_suggestion=True)
@@ -559,7 +560,7 @@ def test_status_does_not_hide_detector_programming_failures(tmp_path: Path) -> N
             "immich_memories.preflight.check_immich",
             return_value=MagicMock(status=CheckStatus.OK),
         ),
-        patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
+        patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
         patch(
             "immich_memories.automation.candidate_discovery._run_all_detectors",
             side_effect=RuntimeError("detector invariant failed"),
@@ -656,7 +657,7 @@ def test_status_real_suggest_flow_is_read_only(tmp_path: Path) -> None:
     scheduler = SchedulerStatus("launchd", True, False)
     with (
         patch("immich_memories.preflight.check_immich") as preflight,
-        patch("immich_memories.api.immich.SyncImmichClient", return_value=client),
+        patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
         patch("immich_memories.automation.runner.AutoRunner", return_value=runner),
         patch(
             "immich_memories.automation.system_scheduler.get_scheduler_status",

@@ -36,6 +36,10 @@ A pull request runs only the jobs its changes can break: the `changes` job runs 
 
 Run the full CI pipeline locally with `make ci`, and `make ci-scope` to see what your branch would run.
 
+### `main-push.yml` - Main Tripwire
+
+Runs on every push to `main`: the unit suite (`make test`) and `make typecheck`, on Python 3.12 and ubuntu-latest. It exists because `ci.yml` only runs on pull requests, so two PRs that were each green can break `main` together. It is not a required check; a failure shows as a red mark on the commit.
+
 ### `release.yml` - Automatic Release
 
 Runs on every push to `main` and automatically releases if there are releasable commits.

@@ -1,0 +1,94 @@
+# A declarative config.yaml, mounted read-only via the ConfigMap and copied
+# onto the writable cache PVC by deployment-maximalist.yaml's install-config
+# init container (a ConfigMap volume's files belong to root, readable by the app
+# only through group or world bits, and the app warns on either).
+# docs-site/docs/run/reference-setup.md#the-always-on-server-kubernetes walks through it.
+# Everything that is a credential stays out of this file and comes from
+# maximalist-secret.yaml instead: ${VAR} below expands against the pod's
+# environment (config_models_auth.py, config_models_llm.py and
+# config_models_soundtrack.py all call expand_env_vars on these fields).
+#
+# Placeholders to replace before applying:
+#   - advanced.auth.public_url: the hostname your reverse proxy terminates TLS for
+#   - advanced.auth.trusted_proxies: your cluster's pod CIDR, IPv4 and IPv6
+#   - advanced.auth.allowed_emails: who may sign in
+#   - advanced.llm.base_url: your LAN machine's address
+#   - advanced.ace_step.api_url: your ACE-Step API server (not part of this overlay)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: immich-memories-config
+  namespace: immich-memories
+  labels:
+    app.kubernetes.io/name: immich-memories
+data:
+  config.yaml: |
+    tier: full
+
+    # Third-party hosts this install is allowed to reach (config_models_network.py).
+    network:
+      geocoding: true    # nominatim.openstreetmap.org: place names, trip names
+      map_tiles: true    # server.arcgisonline.com: the trip fly-over, location cards
+
+    # 10 GB is the default for each cap; both lowered here so they sit well
+    # inside the base's 20Gi cache PVC alongside config.yaml, store.db and
+    # automation history. Raise them for a bigger library; past about 15 GB
+    # together, grow the PVC first (a bound claim grows, it never shrinks).
+    cache:
+      video_cache_max_size_gb: 5
+      thumbnail_cache_max_size_mb: 3000
+
+    advanced:
+      # A TLS-terminating reverse proxy sits in front of this Service. Without
+      # public_url the redirect_uri handed to the IdP is built from the
+      # in-cluster Host header and comes out http://, which every IdP refuses.
+      # Without trusted_proxies the callback comes back "Invalid callback
+      # origin" (config_models_auth.py, web/auth_oidc.py): X-Forwarded-Proto
+      # is only trusted from these addresses.
+      auth:
+        enabled: true
+        provider: oidc
+        public_url: "https://memories.example.com"
+        trusted_proxies:
+          - "10.42.0.0/16"   # replace with your cluster's pod CIDR (the CNI's or k3s's cluster-cidr)
+          - "fd42::/48"      # and its IPv6 equivalent, if the cluster has one
+        issuer_url: "${OIDC_ISSUER_URL}"
+        client_id: "${OIDC_CLIENT_ID}"
+        client_secret: "${OIDC_CLIENT_SECRET}"
+        allowed_emails:
+          - "you@example.com"
+
+      server:
+        secure_cookies: true   # only correct once every visitor arrives over HTTPS
+
+      editorial:
+        preparation:
+          caption_base_url: "http://captioner:8092/v1"   # ../captioner-cuda's Service
+
+      # The picture encoder, context heads and detectors on a GPU, instead of
+      # this pod's CPU: ../inference-cuda's Service. Put it on the newer card
+      # (see reference-setup.md): the older one stays for the caption server.
+      inference:
+        facts_base_url: "http://inference:8092"
+
+      # An OpenAI-compatible server on another LAN machine: an Apple Silicon
+      # Mac running oMLX, bound to 0.0.0.0 instead of localhost.
+      llm:
+        provider: "openai-compatible"
+        base_url: "http://192.168.1.50:9999/v1"
+        model: "gemma-4-e4b-it-6bit"
+        api_key: "${LLM_API_KEY}"
+
+      # An ACE-Step 1.5 API server (acestep-api: /release_task, /query_result),
+      # in-cluster or on the LAN; this overlay does not deploy one. The XL
+      # variant wants >=12 GB VRAM upstream; the default 2B turbo/base family
+      # fits smaller cards.
+      ace_step:
+        enabled: true
+        mode: api
+        api_url: "http://acestep-api:8001"
+        api_key: "${ACE_STEP_API_KEY}"
+
+      automation:
+        enabled: true
+        daily_at: "09:00"

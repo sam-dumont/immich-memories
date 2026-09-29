@@ -58,7 +58,7 @@
   <div class="flex flex-wrap items-center justify-between gap-3">
     <p class="font-medium">
       {#if job.status === 'running'}{heading || t('Starting')}
-      {:else if job.status === 'succeeded'}{job.kind === 'cut' ? t('The cut is ready.') : t('The film is ready.')}
+      {:else if job.status === 'succeeded'}{job.kind === 'cut' ? t('The cut is ready.') : job.kind === 'render' ? t('The film is ready.') : t('Done.')}
       {:else if job.status === 'cancelled'}{t('Stopped.')}
       {:else}{t('It did not finish.')}{/if}
     </p>
@@ -68,12 +68,14 @@
   {#if job.status === 'running'}
     <ProgressBar value={fraction ?? 0} valueLabel={fraction == null ? heading : `${Math.round(fraction * 100)}%`} aria-label={t('Progress')} />
     <p class="text-sm text-gray-600 tabular-nums dark:text-gray-400">
-      {#if job.progress.total}{t('{done} of {total}', { done: job.progress.done ?? 0, total: job.progress.total })}{#if remaining} · {/if}{/if}{remaining}
+      {#if job.progress.total}{t('{done} of {total}', { done: job.progress.done ?? 0, total: job.progress.total })}{#if remaining}{' · '}{/if}{/if}{remaining}
     </p>
     {#if job.progress.recent_asset_ids.length}
       <ul class="flex gap-2 overflow-hidden" aria-label={t('Pictures just read')}>
         {#each job.progress.recent_asset_ids.slice(-8) as asset (asset)}
-          <li class="shrink-0"><img src={thumbnail(asset)} alt="" class="h-16 w-16 rounded-lg object-cover" /></li>
+          <!-- A preview that fails to load leaves no empty tile in the row. -->
+          <li class="shrink-0"><img src={thumbnail(asset)} alt="" class="h-16 w-16 rounded-lg object-cover"
+            onerror={(event) => ((event.currentTarget as HTMLImageElement).parentElement!.style.display = 'none')} /></li>
         {/each}
       </ul>
     {/if}

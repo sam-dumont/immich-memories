@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 from immich_memories.cli._generate_display import _print_generation_result
-from immich_memories.cli._helpers import set_quiet_mode
+from immich_memories.cli._helpers import quiet_output
 
 
 @pytest.fixture(autouse=True)
@@ -26,9 +26,8 @@ def _quiet():
     or the console — so which stream carries the message depends on state other
     tests may have set. Choosing one makes these tests say what they mean.
     """
-    set_quiet_mode(True)
-    yield
-    set_quiet_mode(False)
+    with quiet_output(True):
+        yield
 
 
 def _messages(caplog) -> str:

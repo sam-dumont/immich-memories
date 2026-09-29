@@ -44,7 +44,10 @@ def test_private_fixture_has_no_names_paths_or_secrets_in_any_format():
         assert not any(value in rendered for value in [*private, asset_id, run.run_id])
         assert privacy.hash_id(asset_id) in rendered
     assert privacy.hash_id(asset_id) != ReportPrivacy(ids=[asset_id]).hash_id(asset_id)
-    assert "| Phase | Seconds | Items | s/item | s/output second |" in report.markdown()
+    assert (
+        "| Phase | Seconds | Items | s/item | s/output second | Peak MB | With children MB |"
+        in report.markdown()
+    )
     assert "| preparation.detectors | 2.000 | 4 | 0.500 |" in report.markdown()
 
 
@@ -68,6 +71,29 @@ def test_many_reader_calls_do_not_push_render_rates_out_of_the_report():
     )
     assert "| reader.call | 500.000 | 500 | 1.000 |" in report.markdown()
     assert "| render.assembly | 10.000 | 5 | 2.000 |" in report.markdown()
+
+
+def test_the_phase_table_keeps_the_highest_peak_of_a_repeated_phase():
+    mebibyte = 2**20
+    spans = [
+        Span(1, "download.original", None, 0, 1.0, items=1, peak_rss=300 * mebibyte),
+        Span(
+            2,
+            "download.original",
+            None,
+            1,
+            1.0,
+            items=1,
+            peak_rss=700 * mebibyte,
+            peak_tree_rss=900 * mebibyte,
+        ),
+        Span(3, "render.assembly", None, 2, 5.0, items=5),
+    ]
+    markdown = build_report(
+        RunMetadata("peaks", datetime.now(UTC)), Collector(spans=spans), privacy=ReportPrivacy()
+    ).markdown()
+    assert "| download.original | 2.000 | 2 | 1.000 | n/a | 700 | 900 |" in markdown
+    assert "| render.assembly | 5.000 | 5 | 1.000 | n/a | n/a | n/a |" in markdown
 
 
 def test_cli_report_defaults_to_latest_failed_run(tmp_path):
@@ -246,3 +272,37 @@ def test_report_carries_how_many_lines_each_level_logged():
         diagnostics=diagnostics,
     )
     assert report.data["log_counts"] == {"WARNING": 7000, "ERROR": 2}
+
+
+def test_every_immich_id_in_the_export_is_hashed_the_same_everywhere():
+    asset = "0d3c2b1a-9f8e-4d7c-b6a5-443322110000"
+    person = "7e6d5c4b-3a29-4180-9f7e-6d5c4b3a2918"
+    album = "c0ffee00-1234-4abc-8def-0123456789ab"
+    run = RunMetadata(
+        "fixture-run-id",
+        datetime.now(UTC),
+        status="failed",
+        memory_type="trip",
+        warnings=[f"album {album} held {asset}"],
+    )
+    logs = [
+        f"reading asset {asset} for person {person}",
+        f"uploaded to album {album.upper()}",
+        f"asset={asset};person={person}",
+    ]
+    error = {"type": "KeyError", "message": f"no face {person} on {asset}", "frames": []}
+    collected = Collector(logs=logs, spans=[Span(1, "render.clips", None, 0, 1, error=error)])
+    # The asset is one the report shows on purpose: the leftover pass must hash it the same way.
+    privacy = ReportPrivacy(ids=[asset])
+    report = build_report(run, collected, privacy=privacy)
+
+    with ZipFile(BytesIO(report.bundle())) as archive:
+        bundled = [archive.read(name).decode() for name in archive.namelist()]
+    for rendered in (report.markdown(), report.json(), *bundled):
+        for raw in (asset, person, album):
+            assert raw not in rendered.lower()
+    run_log = "\n".join(report.data["logs"])
+    assert run_log.count(privacy.hash_id(asset)) == 2
+    assert run_log.count(privacy.hash_id(person)) == 2
+    assert run_log.count(privacy.hash_id(album)) == 1
+    assert privacy.hash_id(album) in report.data["warnings"][0]

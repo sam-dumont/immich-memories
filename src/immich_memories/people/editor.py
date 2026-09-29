@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from immich_memories.db import Store
+from immich_memories.people.account_ids import entry_ids, ids_by_account
 from immich_memories.people.companion import (
     add_confirmed_person,
     load_document,
@@ -21,6 +22,7 @@ from immich_memories.people.companion import (
     save_confirmed,
     save_confirmed_relationship,
 )
+from immich_memories.people.companion import bind_alias as _bind_alias
 from immich_memories.people.relationships import RELATIONSHIP_CHOICES
 from immich_memories.people.signatures import Tier, pair_key
 
@@ -97,6 +99,9 @@ class PersonView:
     links: list[LinkView] = field(default_factory=list)
     role: str | None = None
     notes: str | None = None
+    # Every id this person answers to, by the account that reads it (`people bind`'s doing).
+    # A one-account registry has only `primary`; there is no reader for other accounts' names.
+    aliases: dict[str, list[str]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -170,6 +175,24 @@ def add_relationship(store: Store, source_id: str, kind: str, target_id: str) ->
     save_confirmed_relationship(store, source_id, kind, target_id)
 
 
+def bind_person_alias(store: Store, person_id: str, account: str, alias_id: str) -> None:
+    """Declare that `alias_id`, as `account` reads it, is this person — `people bind`'s API.
+
+    Binding only adds an id; name, birth date and confirmations stay as they are. An id
+    already bound to somebody else is refused. Binding the same id to the same account
+    again is a no-op, same as the CLI command.
+    """
+    cleaned = alias_id.strip()
+    if not cleaned:
+        raise ValueError("An alias id cannot be empty")
+    entry = next(
+        (e for e in people_entries(load_document(store)) if person_id in entry_ids(e)), None
+    )
+    if entry is not None and cleaned in ids_by_account(entry).get(account, []):
+        return
+    _bind_alias(store, person_id, cleaned, account=account)
+
+
 def remove_relationship(store: Store, source_id: str, kind: str, target_id: str) -> None:
     """Remove one relationship created by the user and its reciprocal."""
     remove_confirmed_relationship(store, source_id, kind, target_id)
@@ -221,7 +244,7 @@ def _view(entry: dict[str, Any], names: dict[str, str]) -> PersonView:
     confirmed = _mapping(entry.get(CONFIRMED))
     evidence = _mapping(inferred.get("evidence"))
     return PersonView(
-        person_id=str(entry["ids"][0]),
+        person_id=entry_ids(entry)[0],
         name=str(entry.get("name") or "?"),
         birth_date=_text(entry.get("birth_date")),
         tier=str(inferred.get("tier") or ""),
@@ -231,6 +254,7 @@ def _view(entry: dict[str, Any], names: dict[str, str]) -> PersonView:
         links=_links(inferred, confirmed, names),
         role=_text(confirmed.get("role")),
         notes=_text(confirmed.get("notes")),
+        aliases=ids_by_account(entry),
     )
 
 
@@ -307,15 +331,15 @@ def _evidence_line(evidence: dict[str, Any]) -> str:
     count = evidence.get("count") or 0
     months = evidence.get("active_months") or 0
     since = evidence.get("onset") or evidence.get("first_month")
-    line = f"{count} pictures across {months} months"
+    line = f"{count} pictures across {months} {'month' if months == 1 else 'months'}"
     return f"{line}, here since {since}" if since else line
 
 
 def _names_by_id(entries: list[dict[str, Any]]) -> dict[str, str]:
     return {
-        str(person_id): str(entry.get("name") or "?")
+        person_id: str(entry.get("name") or "?")
         for entry in entries
-        for person_id in entry["ids"]
+        for person_id in entry_ids(entry)
     }
 
 

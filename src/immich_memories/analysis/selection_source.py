@@ -15,7 +15,7 @@ to selection_source_groups.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -27,6 +27,7 @@ from immich_memories.analysis.editorial_contracts import (
     SourceEvidence,
     TraceDecision,
 )
+from immich_memories.analysis.exact_copies import CopyGroup, FoldedPool, fold_exact_copies
 from immich_memories.analysis.picture_copies import picture_copies, starred_keepers
 from immich_memories.analysis.selection_source_groups import (
     EditorialGroup,
@@ -53,6 +54,7 @@ from immich_memories.analysis.source_filter import (
 )
 from immich_memories.analysis.source_quality import grounded_source_annotations
 from immich_memories.analysis.visual_atlas import AtlasSource
+from immich_memories.api.access_clients import AccountReadFailed
 from immich_memories.api.models import AssetType, VideoClipInfo
 from immich_memories.timeperiod import DateRange
 
@@ -134,6 +136,9 @@ class EditorialSelectionRequest:
     # about again. A post-read signal, so it changes no prompt and no digest input.
     owner_required_asset_ids: tuple[str, ...] = ()
     evidence_exclusions: Mapping[str, str] = field(default_factory=dict)
+    # Whose copy stands for a picture two accounts both hold, after any favourite.
+    # None (one account, or the owner not yet known) falls through to stable ids.
+    primary_owner_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -144,6 +149,8 @@ class EditorialDependencies:
     library_membership: Callable[[Asset, tuple[str, ...]], bool] | None = None
     source_evidence: Callable[[Asset | VideoClipInfo], SourceEvidence | None] | None = None
     preview_jpeg: Callable[[Asset], bytes | None] | None = None
+    # Keeps which copy stands for each exact-copy group, so a replay reads that one.
+    record_copies: Callable[[FoldedPool], None] = lambda _folded: None
 
 
 @dataclass(frozen=True)
@@ -158,6 +165,12 @@ class PreparedEditorialSource:
     episode_groups: tuple[EditorialGroup, ...]
     moment_groups: tuple[EditorialGroup, ...]
     owner_required_asset_ids: tuple[str, ...] = ()
+    # The exact copies folded into one kept picture (`exact_copies.py`).
+    copy_groups: tuple[CopyGroup, ...] = ()
+
+    def kept_ids(self, asset_ids: Sequence[str]) -> tuple[str, ...]:
+        """Each id as the copy kept for its picture: a household run asks for every copy."""
+        return FoldedPool((), self.copy_groups).kept_ids(asset_ids)
 
     @property
     def candidate_ids(self) -> tuple[str, ...]:
@@ -198,7 +211,6 @@ def prepare_editorial_source(
     ``group=False`` leaves episodes and moments uncut, for a caller that only needs to
     know what was admitted.
     """
-    excluded = set(request.owner_excluded_asset_ids)
     sources, normalization_warnings = _coalesce_sources(
         tuple(
             sorted(
@@ -207,6 +219,15 @@ def prepare_editorial_source(
             )
         )
     )
+    folded = fold_exact_copies(sources, primary_owner_id=request.primary_owner_id)
+    dependencies.record_copies(folded)
+    sources = folded.pool
+    request = replace(
+        request,
+        owner_excluded_asset_ids=folded.kept_ids(request.owner_excluded_asset_ids),
+        owner_required_asset_ids=folded.kept_ids(request.owner_required_asset_ids),
+    )
+    excluded = set(request.owner_excluded_asset_ids)
     components = live_photo_component_ids(asset_of(source) for source in sources)
     generated = frozenset(request.scope.generated_asset_ids)
     copies = picture_copies(
@@ -289,6 +310,7 @@ def prepare_editorial_source(
         episode_groups=grouped.episode_groups,
         moment_groups=grouped.moment_groups,
         owner_required_asset_ids=_required_in_pool(request, grouped.candidates, trace),
+        copy_groups=folded.groups,
     )
     _validate_prepared_source(prepared)
     return prepared
@@ -388,6 +410,8 @@ def _preview_hash(
         try:
             preview = preview_jpeg(asset)
             return compute_thumbnail_hash(preview) if preview else None
+        except AccountReadFailed:
+            raise
         except Exception:  # WHY: one unreadable preview only means that file is not folded
             return None
 
@@ -404,6 +428,8 @@ def _visual_source_from(
     if preview_jpeg is not None:
         try:
             preview = preview_jpeg(asset)
+        except AccountReadFailed:
+            raise
         except Exception as exc:  # WHY: one failed external preview read cannot abort the corpus
             unavailable_reason = (
                 f"preview provider raised {type(exc).__name__} and no usable motion frames"
@@ -445,13 +471,30 @@ def _coalesce_sources(
             warnings.append(
                 f"!! conflicting Live Photo rendering manifests for duplicate asset {asset_id}"
             )
-        coalesced[asset_id] = _with_favourite(
-            _without_rendering_evidence(preferred)
-            if asset_id in conflicting_render_manifests
-            else preferred,
-            asset_of(existing).is_favorite or asset_of(source).is_favorite,
+        coalesced[asset_id] = _with_access_accounts(
+            _with_favourite(
+                _without_rendering_evidence(preferred)
+                if asset_id in conflicting_render_manifests
+                else preferred,
+                asset_of(existing).is_favorite or asset_of(source).is_favorite,
+            ),
+            (*asset_of(existing).access_accounts, *asset_of(source).access_accounts),
         )
     return tuple(coalesced.values()), tuple(warnings)
+
+
+def _with_access_accounts(
+    source: Asset | VideoClipInfo, accounts: Sequence[str]
+) -> Asset | VideoClipInfo:
+    """Every account any read of the asset came through, in first-seen order."""
+    merged = tuple(dict.fromkeys(accounts))
+    asset = asset_of(source)
+    if asset.access_accounts == merged:
+        return source
+    merged_asset = asset.model_copy(update={"access_accounts": merged})
+    if isinstance(source, VideoClipInfo):
+        return source.model_copy(update={"asset": merged_asset})
+    return merged_asset
 
 
 def _asset_signature(source: Asset | VideoClipInfo) -> tuple[object, ...]:

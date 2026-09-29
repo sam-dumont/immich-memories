@@ -140,6 +140,7 @@ def _special_day_params(entry: DiscoveredDay, other_days: set[date]) -> dict[str
 
 def resolve_people_condition(
     person_expression: str | None,
+    group_label: str | None = None,
     *,
     person_names: list[str],
     person_match_typed: bool,
@@ -147,27 +148,46 @@ def resolve_people_condition(
     memory_type: str | None,
     birthday: str | None,
 ) -> tuple[PersonExpression | None, list[str]]:
-    """Read --people-expression, which replaces --person rather than refining it.
+    """Read --people-expression or --group, which replace --person rather than refining it.
 
-    A grouped condition names its own people, so mixing it with --person or
-    --person-match would leave two disagreeing answers to the same question.
+    A grouped condition names its own people, so mixing either with --person or
+    --person-match would leave two disagreeing answers to the same question, and the
+    two flags naming a condition are mutually exclusive with each other too.
     """
-    if person_expression is None:
+    if person_expression is not None and group_label is not None:
+        raise click.UsageError("Use --people-expression or --group, not both")
+    condition = _named_condition(person_expression, group_label)
+    if condition is None:
         return None, person_names
     if person_names or person_match_typed:
         raise click.UsageError(
-            "Use --people-expression separately from --person and --person-match"
+            "Use --people-expression or --group separately from --person and --person-match"
         )
-    try:
-        condition = PersonExpression.parse(person_expression)
-    except ValueError as exc:
-        raise click.UsageError(str(exc)) from exc
     if from_album or memory_type in {"trip", "album", "person_spotlight"} or birthday:
         raise click.UsageError(
             "Grouped people conditions currently support date-range memories, "
             "not trips, albums or a single-person birthday"
         )
     return condition, list(condition.leaf_values)
+
+
+def _named_condition(
+    person_expression: str | None, group_label: str | None
+) -> PersonExpression | None:
+    if group_label is not None:
+        from immich_memories.db import open_store
+        from immich_memories.people.groups import group_expression
+
+        try:
+            return group_expression(open_store(), group_label)
+        except ValueError as exc:
+            raise click.UsageError(str(exc)) from exc
+    if person_expression is None:
+        return None
+    try:
+        return PersonExpression.parse(person_expression)
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from exc
 
 
 def name_from_catalogue(

@@ -10,7 +10,10 @@ default that changes your output, a new system requirement such as an FFmpeg ver
 
 ## Docker
 
+Take a store backup first if you might roll back ([Rollback](#rollback)):
+
 ```bash
+docker compose exec immich-memories immich-memories store backup
 docker compose pull
 docker compose up -d
 docker compose exec immich-memories immich-memories models fetch
@@ -31,6 +34,11 @@ uv tool upgrade immich-memories
 pip install --upgrade "immich-memories[all]"
 immich-memories models fetch
 ```
+
+## Kubernetes and Terraform
+
+A new image tag, then `models fetch` by hand, because the init container does not re-check the
+pins: [Kubernetes](../kubernetes.md#upgrading-and-rollback), [Terraform](../terraform.md#upgrading).
 
 ## Upgrading Immich from v2 to v3
 
@@ -153,6 +161,11 @@ uv tool install --force "immich-memories[all]==X.Y.Z"
 pip install "immich-memories[all]==X.Y.Z"
 ```
 
+**Kubernetes and Terraform:** set the old image tag and apply.
+
+When the store needs restoring (below), a container install stops the app first and restores from a
+one-off container: [Restore in a container](../database.md#restore-in-a-container).
+
 Take a backup before an upgrade you might undo:
 
 ```bash
@@ -166,8 +179,7 @@ left them untouched, so the old release finds them as they were. Whatever you di
 **Rolling back between two releases with the store** means old code opening a store a newer release
 has migrated, which it refuses (it does not know the newer revision). Restore the backup you took
 with the old release (`store restore --from FILE --force`) after reinstalling it. The store's
-revisions can go down as well as up (`0005_operations` to `0001_foundation`), but each step down
-drops the tables that revision added, rows and all: operations history, then model answers and owner
-decisions, then settings, then people. A backup is the rollback; a downgrade is for development.
+revisions can go down as well as up, as far as `0001_foundation`, but each step down drops the
+tables that revision added, rows and all. A backup is the rollback; a downgrade is for development.
 
 `cache.db` needs nothing: this release never writes it, so an old release finds it as it left it.

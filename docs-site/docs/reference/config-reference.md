@@ -12,8 +12,8 @@ which one set each key ([where a setting comes from](../run/config-file.md#where
 
 :::tip Config tiers
 Tier 2 sections (`analysis`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`,
-`automation`, `notifications`, `triage`, `editorial`, `inference`) go under an `advanced:` key in
-the file:
+`automation`, `notifications`, `triage`, `editorial`, `inference`, `free_text`) go under an
+`advanced:` key in the file:
 
 ```yaml
 advanced:
@@ -125,9 +125,10 @@ A name is lowercase letters and digits joined by single underscores (`partner`, 
 `primary` is taken: it means the top-level account. The name is what a person alias bound to that
 account records. Configuring an account adds nothing to your films: a run reads only the accounts it
 selects, and every selected account has to answer `/users/me` with its key before anything is read.
-Films don't read extra accounts yet; `config test` and `preflight` already check each one, one line
-per account, with no key printed. Multi-account films are tracked in
-[#1500](https://github.com/sam-dumont/immich-video-memory-generator/issues/1500).
+`generate --accounts primary,partner` reads the named accounts into one film on the CLI, and
+[`automation.accounts`](#automation) does the same for the daily scan. `config test` and
+`preflight` check each one, one line per account, with no key printed:
+[A second Immich account](../run/config-file.md#a-second-immich-account).
 
 The key is a secret like the primary one: redacted from logs and issue reports, and sealed with
 `IMMICH_MEMORIES_SECRET_KEY` when saved to the database (the whole `immich.accounts` map is one
@@ -185,7 +186,7 @@ analysis:
 
   # Downloads
   download_workers: 3            # Parallel download clients for video and thumbnail prefetching (1-8)
-  source_prepare_workers: 2      # Selected-source download and preparation workers (1-4)
+  source_prepare_workers: auto   # Sources prepared at once (1-4); auto: 1 per 2 GB of the container's limit or RAM, at most 2
 
   # Duration sizing
   optimal_clip_duration: 5.0     # Expected seconds per clip when a trip or album sizes its own duration (2-15s)
@@ -193,7 +194,7 @@ analysis:
   # Live Photos (iPhone 3s video clips)
   include_live_photos: true      # Include Live Photo clips (ON by default)
   live_photo_merge_window_seconds: 10.0  # Max gap to group as burst (1-60s)
-  live_photo_min_clip_seconds: 3.5       # Below this a burst ships as a photo (0-30s)
+  live_photo_min_clip_seconds: 3.5       # Below this a burst plays its kept picture's own clip (0-30s)
 ```
 
 Any Live Photo cluster of two or more within the merge window is treated as a burst; the count is
@@ -227,7 +228,14 @@ defaults:
   transition: "smart"            # cut, crossfade, smart, none (used when --transition is left on smart)
   transition_duration: 0.5       # 0-2 seconds
   sharing: "family"              # just-us | family | shareable; used when --sharing is not given
+  add_date: true                 # caption each clip with its date; --no-add-date turns it off for one film
+  add_place: true                # caption each clip with its place; --no-add-place turns it off for one film
 ```
+
+`add_date` and `add_place` are the one rule for captions on every surface: the web render panel
+starts from them, `generate` and `runs render` use them when neither `--add-date` nor
+`--no-add-date` is given, and automation follows them. Set one to `false` to turn that caption off
+everywhere, automation included. Privacy mode never shows a place, whatever `add_place` says.
 
 `sharing` is who a film is for when the run doesn't say (`generate --sharing`, or **Who will watch
 it** in the web brief). `just-us` is the household: a private moment a caption names, like a bath,
@@ -252,6 +260,7 @@ output:
   hdr_mode: auto                  # auto, sdr, hdr
   quality: "balanced"            # high, balanced, fast (shorthand for CRF presets)
   crf: null                      # unset = derived from quality; 0-51 overrides (lower = better)
+  min_free_space_gb: 5.0         # warn below this on the output/cache volumes; 0.5-1000
 ```
 
 CRF is the image-quality authority. `quality` is only a shorthand used when `crf` is omitted; an
@@ -291,6 +300,13 @@ SDR clips, photos and title screens into the chosen HDR transfer before blending
 SDR: with `codec: h264`, `auto` tone-maps detected HDR sources and logs the reason. Use
 `hdr_mode: sdr` when SDR is intentional, or `hdr_mode: hdr` with H.265 to force an HDR output from
 SDR sources.
+
+`min_free_space_gb` is a preflight, not a cap: it runs before a film starts rendering, on both
+`output.directory` and `cache.directory`. Below the threshold the run logs a warning naming the
+volume and its free space; below what the film itself needs (estimated from target duration and
+`quality`) it stops before writing anything. A run that uploads to Immich has nothing else to do
+here: its local film is removed once the upload is confirmed. A run that keeps files locally is
+the one this protects. See [health, logs and caches](../run/maintenance/health-logs-cache.md#caches).
 
 ## Photos
 
@@ -474,15 +490,20 @@ Two settings shape what a prose request asks for:
 
 ```yaml
 llm:
-  structured_output: true   # default: ask for each answer's exact JSON shape
+  structured_output: null   # default: on for a hosted endpoint, off for one on your machine or network
   repetition_penalty: 1.0   # default: sent to a server on your own machine or network, and to Ollama
 ```
 
 `structured_output` sends the JSON shape each prose seat's parser reads (episode readings, period
-accounts, the title) as `response_format` `json_schema`, or as Ollama's `format`. A small local
-model then can't break the JSON it writes: measured on 243 public episodes, Gemma 4 E4B read every
-episode on the first try with it and lost a whole request to one broken token about one time in
-five without it. A server that refuses the field is asked again without it, and the run remembers.
+accounts, the title) as `response_format` `json_schema`, or as Ollama's `format`. Left unset, a
+hosted endpoint gets it and a server on your own machine or network doesn't: measured 2026-09-29,
+oMLX's grammar-constrained decoder for gemma-4-e4b-it-6bit stalled at the token ceiling on the
+episode-reading schema every time, always right after closing an empty array and before the next
+required key, burning the whole budget on a few hundred characters. The identical prompt with no
+`response_format` finished in under half the tokens with valid JSON. Every prompt states the exact
+JSON shape in words too, for a server asked without the schema. Set it to `true` or `false` to pin
+the behaviour for a specific endpoint either way; a server that refuses the field when it is on is
+asked again without it, and the run remembers.
 
 `repetition_penalty` is sent because local servers default to 1.1 (oMLX, Ollama), which penalises
 the repeated keys every JSON answer needs. It is never sent to a public host; a server of your own
@@ -709,6 +730,21 @@ report, and with `fallback_to_local: true` the in-process producers take over fo
 still missing facts (which needs the model files from `models fetch` on the app box). With it off,
 the cut refuses until the service is back.
 
+## Free-text requests
+
+```yaml
+advanced:
+  free_text:
+    wordnet: ~/.immich-memories/models/wordnet/wordnet.zip   # WordNet 3.0 (11 MB)
+    wordnet_url: https://raw.githubusercontent.com/...       # where `models fetch` gets it
+```
+
+A film asked for in a sentence (experimental, being built) looks the request's words up in
+WordNet: is "cat" a thing, is "park" a place, is a town's name also an ordinary word. The corpus is
+a model file like the others: `models fetch` downloads it from a fixed commit of `nltk_data` and
+checks its SHA-256, and a run that finds it missing stops and says to run `models fetch`. Nothing
+fetches it while a film is being made.
+
 ## Title screens
 
 ```yaml
@@ -717,6 +753,8 @@ title_screens:
   title_duration: 3.5            # seconds (1-10)
   month_divider_duration: 2.0    # seconds (1-5)
   ending_duration: 7.0           # seconds (2-15)
+  map_move_min_seconds: 6.0      # trip map to a nearby place, 2 s still hold included (3-15)
+  map_move_max_seconds: 8.0      # trip map to a far place, 2 s still hold included (3-15)
   locale: "auto"                 # en fr nl de es it pt-BR pt-PT pl sv ru ja zh-Hans ko, or auto
   style_mode: "auto"             # auto (mood-based) or random
   animated_background: true      # Gradient shift and colour pulse behind the text
@@ -756,7 +794,7 @@ network:
 
 | Key | What it sends | What you get |
 |---|---|---|
-| `geocoding` | each trip cluster's centroid, and the coordinates of every clip on the cut, rounded to about a kilometre, once per place (answers are kept in the store) | the district's name where Immich names a neighbouring town, trip names from the map instead of from EXIF, and place names in the film's language |
+| `geocoding` | each trip cluster's centroid, and the coordinates of the pictures in the film's window, rounded to about a kilometre, once per place (answers are kept in the store) | the district's name where Immich names a neighbouring town, on every name you read (story titles, captions, location cards, map stops, the report), trip names from the map instead of from EXIF, and place names in the film's language |
 | `geocoding_url` | the same requests, to this host instead (`http://nominatim.lan:8080`); empty means `nominatim.openstreetmap.org`. Only read with `geocoding: true` | your own Nominatim, nothing sent outside |
 | `map_tiles` | tile coordinates covering the trip area and your home base | the trip fly-over, the static trip map, and a satellite background behind location cards |
 
@@ -878,7 +916,17 @@ automation:
   detect_activity_burst: true     # unusually active months
   burst_threshold: 2.0            # multiplier above rolling average to trigger burst
   special_days_per_year: 6        # days a year discover-days keeps without a model, strongest first
+  accounts: []                    # extra immich.accounts names automation reads alongside the
+                                   # primary, exactly as generate --accounts does (default: primary alone)
+  detect_groups: true             # propose a film for each saved people group (people group add)
+                                   # that has content
 ```
+
+`accounts` and saved groups are the automation side of
+[a second Immich account](../run/config-file.md#a-second-immich-account): naming an extra account
+here makes the daily scan read it the same way a manual `--accounts` run does, one `/users/me`
+check per account, and a read that fails on any of them fails that day's discovery instead of
+proposing a film from half a household.
 
 ## Authentication
 

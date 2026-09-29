@@ -19,6 +19,10 @@ class RunSummary(BaseModel):
     preview_asset_ids: list[str]
     # False for a cut that stopped before rendering: it can be reviewed and rendered.
     film: bool
+    # False either way `film` is False, or the delivered film's local copy was
+    # already reclaimed after a confirmed Immich upload -- the run page tells
+    # those two apart using `delivery_status`.
+    film_available: bool
 
     @field_serializer("created_at")
     def _rfc3339(self, value: datetime) -> str:
@@ -138,6 +142,8 @@ class RunDetail(RunSummary):
     completed_at: datetime | None
     output_path: str | None
     delivery_status: str
+    immich_asset_id: str | None
+    immich_asset_url: str | None
     warnings: list[str]
     phases: list[PhaseTiming]
     clips_selected: int
@@ -194,7 +200,7 @@ class Decision(BaseModel):
     level: Literal["anyone", "family", "just-us"] = "anyone"
 
 
-JobKind = Literal["cut", "render", "scan", "music"]
+JobKind = Literal["cut", "render", "scan", "music", "ask"]
 JobStatus = Literal["running", "succeeded", "failed", "cancelled", "interrupted"]
 
 
@@ -228,6 +234,13 @@ class JobProgress(BaseModel):
     recent_asset_ids: list[str] = []
 
 
+class CaptionDefaults(BaseModel):
+    """`defaults.add_date` and `defaults.add_place`: what the render panel starts ticked."""
+
+    add_date: bool = True
+    add_place: bool = True
+
+
 class SessionView(BaseModel):
     auth_enabled: bool
     provider: str | None
@@ -239,6 +252,7 @@ class SessionView(BaseModel):
     demo_mode_offered: bool = False
     # A music generator (MusicGen or ACE-Step) is configured, so a track can be previewed.
     music_preview_offered: bool = False
+    captions: CaptionDefaults = CaptionDefaults()
 
 
 class Language(BaseModel):
@@ -299,3 +313,63 @@ class SettingsForm(BaseModel):
     """The edited values, keyed by runtime path (`llm.model`); lists and mappings as JSON text."""
 
     values: dict[str, Any]
+
+
+class TraceBlock(BaseModel):
+    head: str
+    lines: list[str]
+
+
+class PoolCounts(BaseModel):
+    pictures: int
+    photos: int
+    videos: int
+
+
+class AskedFilm(BaseModel):
+    # "pool", "special_day" or "none" (no film).
+    route: str
+    line: str
+    outcome: str
+
+
+class RuleDropView(BaseModel):
+    rule: str
+    why: str
+    count: int
+    # A few of its pictures, by Immich id, for their thumbnails.
+    examples: list[str]
+
+
+class RuleNoteView(BaseModel):
+    rule: str
+    why: str
+
+
+class AskRules(BaseModel):
+    """What the editor's rules would drop from the pool, asked before render."""
+
+    # The prepared pool pictures the rules read; `passed` of them pass.
+    checked: int
+    passed: int
+    # Pool pictures preparation has not read yet: no rule has checked them, the run reads them first.
+    unread: int
+    drops: list[RuleDropView]
+    # Rules known only while cutting, and rules a film you asked for does not apply.
+    at_cut: list[RuleNoteView]
+    lifted: list[RuleNoteView]
+
+
+class AskPreview(BaseModel):
+    """`generate --ask --dry-run`'s translation: the trace by part, the pool, the rule preview
+    and the verdict."""
+
+    request: str
+    blocks: list[TraceBlock]
+    pool: PoolCounts
+    # None when there is no pool to preview: a special day, or no film.
+    rules: AskRules | None = None
+    # "possible", "thin" or "not possible".
+    verdict: str
+    why: str
+    film: AskedFilm

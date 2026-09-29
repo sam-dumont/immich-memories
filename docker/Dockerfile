@@ -1,6 +1,16 @@
 # Immich Memories - Docker Image
 # Multi-stage build for smaller final image
 
+# The web client (#1580): it is not committed, so the image builds it from web/. Every wheel of
+# the app carries it (hatch_build.py refuses one without it).
+# WHY: pinned to digest, like every base image here.
+FROM node:22-slim@sha256:43ac6c60b8f89723f746e8a92ce91abd5017e627ce1ddfe4238355d3a30b772c AS web-client
+WORKDIR /build/web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY web/ ./
+RUN npm run build
+
 # Stage 1: Build dependencies
 # WHY: pinned to digest to prevent supply-chain attacks via tag mutation
 FROM python:3.11-slim@sha256:b1b81d67b8df73bf6067191790c233ef9e598b863fc1ccf447956138ca466d99 AS builder
@@ -53,6 +63,8 @@ RUN grep -E '^[A-Za-z0-9_.[-]+==' /constraints.txt > /constraints.pins && \
 # retires the failure where a CPU-index torch met a PyPI torchvision, the C++
 # operators never registered, and the detector died on import with `operator
 # torchvision::nms does not exist` (#805, #806).
+# TorchAudio comes from that same CPU index: its PyPI wheel requires CUDA
+# shared libraries even when Torch itself is CPU-only (#1627).
 # The wheels are built into their own directory, not /wheels, so a torch-free
 # INSTALL_EXTRAS never installs them, and uv.lock is untouched so Apple
 # development resolves exactly as before. The case list is what release.yml
@@ -63,7 +75,7 @@ RUN mkdir -p /torch-cpu && \
         amd64|arm64) \
             pip wheel --no-cache-dir --no-deps --wheel-dir=/torch-cpu \
                 --index-url https://download.pytorch.org/whl/cpu \
-                --constraint /constraints.txt torch ;; \
+                --constraint /constraints.txt torch torchaudio ;; \
     esac
 
 # The dependency wheels for INSTALL_EXTRAS, fetched from the lock alone so this
@@ -81,6 +93,8 @@ RUN python docker/validate_install_extras.py "${INSTALL_EXTRAS}" >/dev/null && \
     pip wheel --no-cache-dir --no-deps --wheel-dir=/deps -r /deps.pins
 
 COPY src/ ./src/
+COPY hatch_build.py ./
+COPY --from=web-client /build/src/immich_memories/web/client ./src/immich_memories/web/client
 COPY packages/ ./packages/
 COPY services/render-worker/ ./services/render-worker/
 
@@ -146,6 +160,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # arm64 with INSTALL_EXTRAS=all: 10.5 GB -> 7.08 GB, one fewer layer.
 RUN --mount=type=bind,from=builder,source=/wheels,target=/wheels \
     pip install --no-cache-dir /wheels/*.whl
+
+# Import the real model loader: find_spec alone misses broken native libraries.
+RUN python -c "import importlib.util; importlib.util.find_spec('demucs') and __import__('demucs.pretrained')"
 
 # The Noto faces for every script the wheel does not carry (Arabic, Hebrew, the
 # Indic scripts, Thai, CJK and more): 43 MB, 39.5 MB of it the two CJK

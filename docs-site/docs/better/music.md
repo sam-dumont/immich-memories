@@ -41,7 +41,7 @@ advanced:
     use_lm: false
     num_versions: 1
   musicgen:
-    enabled: false                        # local Demucs does the stems
+    enabled: false                        # inference service or local Demucs does the stems
 ```
 
 The variants are `turbo` and `base` (2B, 8 and 50 steps), `acestep-v15-xl-turbo` (4B, 8 steps), and
@@ -118,6 +118,11 @@ advanced:
     num_versions: 3
 ```
 
+Generated audio is decoded before mastering or stem separation. Empty, unreadable, non-finite
+(NaN/Inf), and silent tracks (peak at or below -80 dBFS) count as failed generations. The next
+enabled generator is tried; if all fail, automatic music uses the bundled library and reports
+the substitution.
+
 ## What generation adds to the mix
 
 - **Tempo fits the photos.** In a film with photos, the tempo is nudged so a photo lasts a whole
@@ -131,4 +136,6 @@ advanced:
   generation.
 - **Four stems.** The track is split with Demucs: vocals duck most under the clips' sound, drums
   keep their rhythm. Local Demucs uses Metal on Apple Silicon (`immich-memories[demucs]` alone);
-  a MusicGen server's `/separate` wins when MusicGen is on.
+  the configured [inference service](./inference.md#music-stems) handles separation over HTTP,
+  with local fallback controlled by `advanced.inference.fallback_to_local`. An explicitly enabled
+  MusicGen server's `/separate` keeps priority.

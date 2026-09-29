@@ -1,0 +1,24 @@
+# The base policy lets the app out on 53, 80, 443, 2283, 11434 and 8092 only.
+# config-map.yaml's reader (oMLX, :9999) and ACE-Step API server (:8001) are on
+# neither, and NetworkPolicies add up, so this second policy on the same pods
+# opens exactly those two ports. Change them with the URLs in config-map.yaml.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: immich-memories-maximalist
+  namespace: immich-memories
+  labels:
+    app.kubernetes.io/name: immich-memories
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: immich-memories
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 9999
+          protocol: TCP
+        - port: 8001
+          protocol: TCP

@@ -29,9 +29,28 @@ What the minimum costs you:
 - **No AVX** (Intel Celeron J4125 and friends) means the CPU fallback draws the titles instead
   of the animated title kernels: [CPUs without AVX](./hardware.md#cpus-without-avx).
 - **ARM64** gets no hardware encoder: the VA-API drivers ship in the amd64 image only.
+- **Less memory** means fewer photos rendered at once. The app prepares one source per 2 GB it
+  may use: the container's memory limit when Compose sets one (the shipped file sets 4 GB),
+  otherwise the machine's RAM. 2 or 3 GB renders one photo at a time, 4 GB and up renders two.
+  `immich-memories preflight` prints what it picked, for example
+  `Photo preparation: 1 at a time (2.0 GB available, container limit)`. Setting
+  `advanced.analysis.source_prepare_workers` to a number (1 to 4) overrides it.
+  The same memory figure caps the threads of each clip decode in the render (one per 2 GB, up
+  to 4): FFmpeg's own default of one per core cost 1.2 GB per 4K decode on an 18-core Mac.
+  A box with no hardware HEVC encoder encodes in libx265, which holds about 52 MB per frame it
+  looks ahead at 4K. Above 1080p the app lets it look 5 frames ahead up to 3 GB, 10 at 4 or
+  5 GB, and x265's default (20 at the `medium` preset) from 6 GB. The files come out a few
+  percent smaller at a slightly lower quality: at 1080p with a lookahead of 10, 3% smaller and
+  0.03 dB lower. `preflight` shows the choice on its Memory line. 1080p output keeps the
+  default everywhere.
+  Below 3 GB there is no room for a 4K software HEVC film at all, so when the film's resolution
+  is `auto` and the box has no hardware HEVC encoder, a 4K film renders at 1080p instead, in the
+  same orientation. `preflight` and the run log say so. A resolution you set yourself, in the
+  config or with `--resolution`, is kept: a 4K set that way below 3 GB gets a warning that the
+  render may run out of memory, and the fix is `auto` or `1080p`.
 
 The 25 GB covers the caches at their default budgets (10 GB of Immich previews, 10 GB of downloaded
-video kept 7 days) with room for the store to grow. The models are about 130 MB. The one file worth backing
+video kept 7 days) with room for the store to grow. The models are about 140 MB. The one file worth backing
 up is the store, `store.db`, where every fact the editor read is banked:
 [What to keep](./docker.md#what-to-keep).
 
@@ -72,7 +91,7 @@ and the Docker image built from it, not on a `pip install`.
 | Reader | Local: llama.cpp, Ollama | Supported | Films on earlier releases |
 | Reader | Local: vLLM, mlx-vlm served directly | Untested | |
 | Reader | Hosted: z.ai (glm-5.3-flash) and OpenAI (gpt-5.6-luna) | Supported | Last run 2026-09-17; re-test: [#1513](https://github.com/sam-dumont/immich-video-memory-generator/issues/1513) |
-| Reader | Hosted: Melious (DeepSeek, deepseek-v4.1-flash) | Supported | Last run 2026-09-15; re-test: [#1513](https://github.com/sam-dumont/immich-video-memory-generator/issues/1513) |
+| Reader | Hosted: Melious (DeepSeek, deepseek-v4.1-flash) | Supported; [schema fallback](../better/reader.md#structured-replies), or `advanced.llm.structured_output: false` | Last run 2026-09-15; re-test: [#1513](https://github.com/sam-dumont/immich-video-memory-generator/issues/1513) |
 | Reader | Hosted: Anthropic's own API | Untested | The same code path only ran through z.ai's Anthropic-compatible route |
 | Reader | Hosted: Melious gemma-4-31b | Not supported | Its API refused every image (HTTP 400), 2026-09-15 |
 | Captions | SmolVLM2 500M, on a Mac | Tested | 2026-09-27, commit [`9eb16812`](https://github.com/sam-dumont/immich-video-memory-generator/commit/9eb168126c0f24f6cced39a0316f0045132e56c8), the `gpu` and `full` films above |
@@ -85,11 +104,15 @@ and the Docker image built from it, not on a `pip install`.
 
 `tier: auto`, the default, picks one tier for preparation and selection alike:
 
-| Tier | Picked when | What runs | Family-viewing check |
-|---|---|---|---|
-| **`nas`** | No GPU inference is found (the default) | Immich metadata, and the DINOv2 encoder with eight heads and two detectors on the CPU. Needs `models fetch` | Rules and the detectors |
-| **`gpu`** | A GPU inference runtime (the [inference service](../better/inference.md) reporting CUDA, a local CUDA runtime, or a Mac's Metal GPU), plus a [caption server](../better/captions.md) and the Laya checkpoint | NAS, plus captions and Laya for the pictures in the cut and the candidates to replace them | Laya can add holds; it never lifts one |
-| **`full`** | GPU, plus a configured [text model](../better/reader.md) with a 32k context | GPU, plus the text model's account of the period, its polish of the draft, the title and the music mood | Same as GPU. The text model never decides what is shareable |
+| Tier | Picked when | Also needs | What runs | Family-viewing check |
+|---|---|---|---|---|
+| **`nas`** | No GPU inference is found (the default) | `models fetch` | Immich metadata, and the DINOv2 encoder with eight heads and two detectors on the CPU | Rules and the detectors |
+| **`gpu`** | A GPU inference runtime is found: the [inference service](../better/inference.md) reporting CUDA, a local CUDA runtime, or a Mac's Metal GPU | A [caption server](../better/captions.md) and the Laya checkpoint | NAS, plus captions and Laya for the pictures in the cut and the candidates to replace them | Laya can add holds; it never lifts one |
+| **`full`** | GPU, plus a [text model](../better/reader.md) whose `llm.model` and endpoint (`llm.base_url`, or a hosted `llm.provider`) are both set | A text model with a 32k context | GPU, plus the text model's account of the period, its polish of the draft, the title and the music mood | Same as GPU. The text model never decides what is shareable |
+
+`auto` looks only at the GPU runtime and those `llm` keys, not at the caption server or the
+Laya checkpoint. `immich-memories preflight` checks the caption server, and `models fetch` also
+downloads the Laya checkpoint once the tier is `gpu` or `full`.
 
 A [render worker](../better/gpu-render.md) or [hardware encoding](./hardware.md) moves or speeds up
 the encode. Neither changes the tier: a GPU that encodes video is not a GPU that runs the models.

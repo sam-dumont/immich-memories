@@ -14,7 +14,7 @@ from types import SimpleNamespace
 import pytest
 
 from immich_memories.cli._asset_fetch import fetch_videos
-from immich_memories.cli._helpers import set_quiet_mode
+from immich_memories.cli._helpers import quiet_output
 from immich_memories.timeperiod import DateRange
 
 NOW = DateRange(start=datetime(2026, 1, 1), end=datetime(2026, 12, 31, 23, 59, 59))
@@ -51,9 +51,8 @@ class _Progress:
 @pytest.fixture(autouse=True)
 def _quiet():
     """Route the print helpers through logging so caplog can see them."""
-    set_quiet_mode(True)
-    yield
-    set_quiet_mode(False)
+    with quiet_output(True):
+        yield
 
 
 def _fetch(by_range, caplog):

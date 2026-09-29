@@ -25,10 +25,21 @@ ARG CAPTION_RUNTIME=ghcr.io/ggml-org/llama.cpp:server-cuda-b10920@sha256:6b4e575
 
 FROM ${CAPTION_RUNTIME} AS caption-runtime
 
+# The web client (#1580): not committed, and every wheel of the app carries it
+# (hatch_build.py refuses one without it), so this image builds it from web/ as well.
+# WHY: pinned to digest, like every base image here.
+FROM node:22-slim@sha256:43ac6c60b8f89723f746e8a92ce91abd5017e627ce1ddfe4238355d3a30b772c AS web-client
+WORKDIR /build/web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY web/ ./
+RUN npm run build
+
 # ─── builders ────────────────────────────────────────────────────────────────
 FROM ${PYTHON_BASE} AS builder-cpu
 
 ENV INFERENCE_EXTRA=editorial
+ENV TORCH_INDEX=cpu
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
@@ -45,16 +56,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 # The device extra locks a CUDA 12 / cuDNN 9-compatible runtime.
 ENV INFERENCE_EXTRA=editorial-cuda
+ENV TORCH_INDEX=cu128
 
 
 FROM builder-${DEVICE} AS builder
 
 WORKDIR /app
 
-COPY pyproject.toml README.md uv.lock ./
+COPY pyproject.toml README.md uv.lock hatch_build.py ./
 COPY src/ ./src/
+COPY --from=web-client /build/src/immich_memories/web/client ./src/immich_memories/web/client
 COPY packages/ ./packages/
 COPY docker/uv-requirements.txt ./docker/uv-requirements.txt
+COPY docker/demucs-*-requirements.txt ./docker/
 
 # hatch-vcs reads the version from git history, which a build context has not
 # got. The caller states the release identity instead.
@@ -83,19 +97,26 @@ ENV PATH=/opt/venv/bin:$PATH
 # digest-checked, not just version-pinned. A local source tree has no hash to
 # check, so the project is built to a wheel and that wheel installed with
 # --no-deps: the extra only ever selected dependencies, and those are in already.
-RUN pip install --no-cache-dir --require-hashes -r /deps-hashes.txt && \
+ARG DEVICE
+RUN pip install --no-cache-dir --require-hashes \
+        --extra-index-url "https://download.pytorch.org/whl/${TORCH_INDEX}" \
+        -r "docker/demucs-${DEVICE}-requirements.txt" && \
+    pip install --no-cache-dir --require-hashes -r /deps-hashes.txt && \
     pip wheel --no-cache-dir --no-deps --wheel-dir=/project-wheel . && \
     pip install --no-cache-dir --no-deps /project-wheel/*.whl && \
-    pip check
+    pip check && \
+    python -c "from demucs.pretrained import get_model"
 
 
 FROM builder AS bundled-cuda-models
 RUN python -m immich_memories.model_bundle /opt/immich-models
+RUN TORCH_HOME=/opt/immich-models/torch python -c "from demucs.pretrained import get_model; get_model('htdemucs')"
 
 
 # ─── runtime ─────────────────────────────────────────────────────────────────
 FROM ${PYTHON_BASE} AS prod-cpu
 ENV IMMICH_MEMORIES_INFERENCE_DETECTOR_CACHE_DIR=/cache/huggingface
+ENV TORCH_HOME=/cache/torch
 
 
 FROM ${CUDA_BASE} AS prod-cuda
@@ -121,6 +142,7 @@ ENV IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR=/opt/immich-model
 ENV IMMICH_MEMORIES_EDITORIAL__LAYA_CHECKPOINT=/opt/immich-models/laya
 ENV IMMICH_MEMORIES_EDITORIAL__LAYA_AUDIENCE_THRESHOLD=0.185
 ENV HF_HUB_OFFLINE=1
+ENV TORCH_HOME=/opt/immich-models/torch
 # The pinned caption runtime can JIT for older cards: keep the
 # driver's JIT cache on the model-cache volume so it outlives the container,
 # bounded at 512 MB because an unbounded cache on a NAS or a shared node is how

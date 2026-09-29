@@ -295,30 +295,23 @@ def status(ctx: click.Context, as_json: bool) -> None:
 
     config: Config = ctx.obj["config"]
     provenance = provenance_module.runtime_provenance()
-    previous_logging_disable = logging.root.manager.disable
-    if as_json:
-        logging.disable(logging.CRITICAL)
-    try:
-        payload = (
-            AutoRunner(config, config_path=ctx.obj["config_path"])
-            .status(refresh_suggestion=True)
-            .to_dict()
-        )
-        scheduler = get_scheduler_status()
-        scheduler_state = (
-            "unknown" if scheduler.active is None else "active" if scheduler.active else "inactive"
-        )
-        payload["scheduler"] = {
-            "platform": scheduler.platform,
-            "installed": scheduler.installed,
-            "active": scheduler.active,
-            "state": scheduler_state,
-            "paths": [str(path) for path in scheduler.paths],
-        }
-        payload["runtime"] = provenance.to_dict()
-    finally:
-        if as_json:
-            logging.disable(previous_logging_disable)
+    payload = (
+        AutoRunner(config, config_path=ctx.obj["config_path"])
+        .status(refresh_suggestion=True)
+        .to_dict()
+    )
+    scheduler = get_scheduler_status()
+    scheduler_state = (
+        "unknown" if scheduler.active is None else "active" if scheduler.active else "inactive"
+    )
+    payload["scheduler"] = {
+        "platform": scheduler.platform,
+        "installed": scheduler.installed,
+        "active": scheduler.active,
+        "state": scheduler_state,
+        "paths": [str(path) for path in scheduler.paths],
+    }
+    payload["runtime"] = provenance.to_dict()
 
     if as_json:
         click.echo(json_mod.dumps(payload))

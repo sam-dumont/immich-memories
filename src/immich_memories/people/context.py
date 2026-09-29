@@ -9,6 +9,7 @@ from types import MappingProxyType
 from typing import Any, Literal
 
 from immich_memories.db import Store
+from immich_memories.people.account_ids import entry_ids
 from immich_memories.people.assumptions import family_assumptions
 from immich_memories.people.companion import load_document, people_entries
 from immich_memories.people.relationships import relationship_label
@@ -233,7 +234,7 @@ def _credible_first_month(first_month: str | None, birth_date: str | None) -> st
 
 
 def _person_ids(entry: Mapping[str, Any]) -> tuple[str, ...]:
-    return tuple(dict.fromkeys(value for item in entry["ids"] if (value := _text(item))))
+    return tuple(dict.fromkeys(value for item in entry_ids(entry) if (value := _text(item))))
 
 
 def _mapping(value: object) -> Mapping[str, Any]:

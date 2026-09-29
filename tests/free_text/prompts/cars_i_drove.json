@@ -1,0 +1,63 @@
+{
+  "request": "the cars I drove",
+  "shape": "things the owner used; I is the owner, never a face",
+  "answers": {
+    "Split the owner's request": {
+      "who": [
+        "i"
+      ],
+      "when": [],
+      "where": [],
+      "what": [
+        "the cars"
+      ]
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": []
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "many occasions"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    }
+  },
+  "expect": {
+    "reading": {
+      "who": [
+        "i"
+      ],
+      "what": [
+        "the cars"
+      ]
+    },
+    "who": {
+      "present": [],
+      "anchors": [
+        "p-owner"
+      ],
+      "company": null
+    },
+    "when": [
+      null,
+      null
+    ],
+    "where": "anywhere",
+    "subject": [
+      "cars"
+    ],
+    "funnel": [
+      "library",
+      "kind of picture",
+      "subject"
+    ],
+    "pool": [
+      "car"
+    ],
+    "verdict": "possible",
+    "film": "pool"
+  }
+}

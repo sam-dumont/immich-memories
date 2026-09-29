@@ -234,6 +234,18 @@ and skips the reasoning in front of it, asks for 1,024 tokens on top of the call
 a reply with no `text` block into an error naming the `stop_reason`. A provider's own error `code`
 and `message` go into the log line, cut at 300 characters.
 
+## Structured replies
+
+Hosted readers request a JSON schema by default. Local endpoints default to prompt-only JSON
+because some local grammar decoders stall on these schemas. `advanced.llm.structured_output`
+can explicitly enable or disable that request shape.
+
+If a provider refuses schema mode and asks for `json_object`, the app retries once in object
+mode and carries the schema in the prompt. It remembers that choice for the endpoint and model
+for the rest of the process and logs the adaptation once. A refusal of the whole response-format
+parameter removes that parameter. An invalid schema or another ordinary HTTP 400 still fails.
+For a provider already known to lack schema support, `structured_output: false` skips negotiation.
+
 ## Batch mode
 
 The episode readings are one prompt per episode, and those prompts don't read each other. Every
@@ -273,6 +285,9 @@ logs why, and reads in real time for the rest of the run.
   repair round on that call. A moment pick still refused after its repair doesn't end the film:
   those rows get the moments the no-model film would pick, and the story's pick record says why
   (`pick-rules-fallback`).
+- **A reply cut off at its token cap keeps what it finished.** The episode readings or period
+  accounts it wrote whole are kept, and only the unfinished ones are asked again. An episode asked
+  again gets the full 4,000-token ceiling rather than its own estimate.
 - **Text only.** No request to the reader carries a picture; a test fails the build if one does.
 
 The prompt shapes the setup matrix probes readers with are in `scripts/reader_probe_prompts/`.

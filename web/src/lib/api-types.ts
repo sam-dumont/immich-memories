@@ -4,6 +4,29 @@
  */
 
 export interface paths {
+    "/api/v1/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Accounts
+         * @description The Immich accounts a run may read: primary, plus every name under immich.accounts.
+         *
+         *     Configuring an extra account here does not add it to a film — `--accounts` (or this
+         *     list, for the brief) is what a run selects to read.
+         */
+        get: operations["accounts_api_v1_accounts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/albums": {
         parameters: {
             query?: never;
@@ -16,6 +39,68 @@ export interface paths {
          * @description The albums a film can be made from, largest first; `--from-album` takes the id.
          */
         get: operations["albums_api_v1_albums_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ask Availability
+         * @description Whether a film can be asked for in a sentence: the model tier reads it (`generate --ask`).
+         */
+        get: operations["ask_availability_api_v1_ask_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ask/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Ask Preview
+         * @description Translate a sentence with `generate --ask --dry-run`; nothing is filmed.
+         *
+         *     The CLI keeps the translation in a JSON file beside the job, which the preview reads.
+         */
+        post: operations["start_ask_preview_api_v1_ask_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ask/preview/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ask Preview
+         * @description The translation a finished preview kept; 404 until it has one.
+         */
+        get: operations["ask_preview_api_v1_ask_preview__job_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -478,6 +563,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/roster/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Groups
+         * @description Every saved group, in the order they were added — the labels `--group` takes.
+         */
+        get: operations["groups_api_v1_roster_groups_get"];
+        put?: never;
+        /**
+         * Add Group Route
+         * @description Save a group. EXPRESSION is the --people-expression grammar over canonical person ids.
+         *
+         *     Parsed and size-checked first: a malformed expression saves nothing.
+         */
+        post: operations["add_group_route_api_v1_roster_groups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roster/groups/{label}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Group Route
+         * @description Remove a saved group. Never touches the people it named.
+         */
+        delete: operations["remove_group_route_api_v1_roster_groups__label__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/roster/scan": {
         parameters: {
             query?: never;
@@ -512,6 +643,30 @@ export interface paths {
          */
         put: operations["answer_api_v1_roster__person_id__put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roster/{person_id}/aliases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bind Alias Route
+         * @description Declare that `bind.alias_id`, as `bind.account` reads it, is this person.
+         *
+         *     The account has to be `primary` or a name under `immich.accounts` (`people bind`'s own
+         *     rule); an id already bound to somebody else is refused, an id this person already has
+         *     for this account is a no-op. Name, birth date and confirmations are untouched.
+         */
+        post: operations["bind_alias_route_api_v1_roster__person_id__aliases_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -632,6 +787,10 @@ export interface paths {
         /**
          * Film
          * @description The rendered film, by byte range so the player can seek.
+         *
+         *     A run's page checks `film_available` before ever requesting this, so
+         *     reaching here for a delivered run means a stale link, not a broken
+         *     player: the local copy was reclaimed once Immich confirmed the upload.
          */
         get: operations["film_api_v1_runs__run_id__film_get"];
         put?: never;
@@ -714,6 +873,26 @@ export interface paths {
          * @description Preview exactly what Copy report puts on the clipboard. Nothing is sent.
          */
         get: operations["read_report_api_v1_runs__run_id__report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runs/{run_id}/report/bundle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Report
+         * @description The ZIP `report --bundle` writes: report.md, report.json and run.log, all redacted.
+         */
+        get: operations["download_report_api_v1_runs__run_id__report_bundle_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -906,6 +1085,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccountChoice */
+        AccountChoice: {
+            /** Name */
+            name: string;
+            /** Primary */
+            primary: boolean;
+        };
         /** AlbumChoice */
         AlbumChoice: {
             /** Asset Count */
@@ -914,6 +1100,13 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+        };
+        /** AliasBind */
+        AliasBind: {
+            /** Account */
+            account: string;
+            /** Alias Id */
+            alias_id: string;
         };
         /**
          * Alternative
@@ -926,6 +1119,63 @@ export interface components {
             facts: string;
             /** Fate */
             fate: string;
+        };
+        /** AskAvailability */
+        AskAvailability: {
+            /** Available */
+            available: boolean;
+            /** Tier */
+            tier: string;
+        };
+        /**
+         * AskPreview
+         * @description `generate --ask --dry-run`'s translation: the trace by part, the pool, the rule preview
+         *     and the verdict.
+         */
+        AskPreview: {
+            /** Blocks */
+            blocks: components["schemas"]["TraceBlock"][];
+            film: components["schemas"]["AskedFilm"];
+            pool: components["schemas"]["PoolCounts"];
+            /** Request */
+            request: string;
+            rules?: components["schemas"]["AskRules"] | null;
+            /** Verdict */
+            verdict: string;
+            /** Why */
+            why: string;
+        };
+        /** AskRequest */
+        AskRequest: {
+            /** Sentence */
+            sentence: string;
+        };
+        /**
+         * AskRules
+         * @description What the editor's rules would drop from the pool, asked before render.
+         */
+        AskRules: {
+            /** At Cut */
+            at_cut: components["schemas"]["RuleNoteView"][];
+            /** Checked */
+            checked: number;
+            /** Drops */
+            drops: components["schemas"]["RuleDropView"][];
+            /** Lifted */
+            lifted: components["schemas"]["RuleNoteView"][];
+            /** Passed */
+            passed: number;
+            /** Unread */
+            unread: number;
+        };
+        /** AskedFilm */
+        AskedFilm: {
+            /** Line */
+            line: string;
+            /** Outcome */
+            outcome: string;
+            /** Route */
+            route: string;
         };
         /** AttemptView */
         AttemptView: {
@@ -956,6 +1206,22 @@ export interface components {
              * @enum {string}
              */
             name: "video" | "thumbnail";
+        };
+        /**
+         * CaptionDefaults
+         * @description `defaults.add_date` and `defaults.add_place`: what the render panel starts ticked.
+         */
+        CaptionDefaults: {
+            /**
+             * Add Date
+             * @default true
+             */
+            add_date: boolean;
+            /**
+             * Add Place
+             * @default true
+             */
+            add_place: boolean;
         };
         /** Choice */
         Choice: {
@@ -1019,10 +1285,17 @@ export interface components {
              */
             accept_any_provenance: boolean;
             /**
+             * Accounts
+             * @default []
+             */
+            accounts: string[];
+            /**
              * All Trips
              * @default false
              */
             all_trips: boolean;
+            /** Ask */
+            ask?: string | null;
             /** Birthday */
             birthday?: string | null;
             /** Day */
@@ -1040,6 +1313,8 @@ export interface components {
             exclude_asset: string[];
             /** From Album */
             from_album?: string | null;
+            /** Group */
+            group?: string | null;
             /** Hemisphere */
             hemisphere?: ("north" | "south") | null;
             /** Holiday */
@@ -1222,7 +1497,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cut" | "render" | "scan" | "music";
+            kind: "cut" | "render" | "scan" | "music" | "ask";
             /**
              * Meta
              * @default {}
@@ -1307,6 +1582,13 @@ export interface components {
             /** Pictures */
             pictures?: number | null;
         };
+        /** NewGroup */
+        NewGroup: {
+            /** Expression */
+            expression: string;
+            /** Label */
+            label: string;
+        };
         /** NewPerson */
         NewPerson: {
             /** Name */
@@ -1344,6 +1626,15 @@ export interface components {
             outside: number;
             /** Total */
             total: number;
+        };
+        /** PoolCounts */
+        PoolCounts: {
+            /** Photos */
+            photos: number;
+            /** Pictures */
+            pictures: number;
+            /** Videos */
+            videos: number;
         };
         /** PoolItem */
         PoolItem: {
@@ -1383,16 +1674,10 @@ export interface components {
          * @description `runs render`'s flags; None keeps the CLI's own default.
          */
         RenderOptions: {
-            /**
-             * Add Date
-             * @default false
-             */
-            add_date: boolean;
-            /**
-             * Add Place
-             * @default false
-             */
-            add_place: boolean;
+            /** Add Date */
+            add_date?: boolean | null;
+            /** Add Place */
+            add_place?: boolean | null;
             /** Album */
             album?: string | null;
             /** Format */
@@ -1555,6 +1840,13 @@ export interface components {
         };
         /** RosterPerson */
         RosterPerson: {
+            /**
+             * Aliases
+             * @default {}
+             */
+            aliases: {
+                [key: string]: string[];
+            };
             /** Birth Date */
             birth_date: string | null;
             /** Count */
@@ -1576,6 +1868,24 @@ export interface components {
             /** Tier */
             tier: string;
         };
+        /** RuleDropView */
+        RuleDropView: {
+            /** Count */
+            count: number;
+            /** Examples */
+            examples: string[];
+            /** Rule */
+            rule: string;
+            /** Why */
+            why: string;
+        };
+        /** RuleNoteView */
+        RuleNoteView: {
+            /** Rule */
+            rule: string;
+            /** Why */
+            why: string;
+        };
         /** RunDetail */
         RunDetail: {
             /** Child Output */
@@ -1594,8 +1904,14 @@ export interface components {
             delivery_status: string;
             /** Film */
             film: boolean;
+            /** Film Available */
+            film_available: boolean;
             /** Has Cut */
             has_cut: boolean;
+            /** Immich Asset Id */
+            immich_asset_id: string | null;
+            /** Immich Asset Url */
+            immich_asset_url: string | null;
             /** Memory Type */
             memory_type: string | null;
             /** Output Path */
@@ -1640,6 +1956,8 @@ export interface components {
             date_range_start: string | null;
             /** Film */
             film: boolean;
+            /** Film Available */
+            film_available: boolean;
             /** Memory Type */
             memory_type: string | null;
             /** Preview Asset Ids */
@@ -1650,6 +1968,13 @@ export interface components {
             source: string;
             /** Status */
             status: string;
+        };
+        /** SavedGroupView */
+        SavedGroupView: {
+            /** Expression */
+            expression: string;
+            /** Label */
+            label: string;
         };
         /**
          * SelectionPath
@@ -1675,6 +2000,13 @@ export interface components {
             auto_launch: boolean;
             /** Button Text */
             button_text: string | null;
+            /**
+             * @default {
+             *       "add_date": true,
+             *       "add_place": true
+             *     }
+             */
+            captions: components["schemas"]["CaptionDefaults"];
             /**
              * Demo Mode Offered
              * @default false
@@ -1854,6 +2186,13 @@ export interface components {
             /** Skipped */
             skipped: components["schemas"]["Skipped"][];
         };
+        /** TraceBlock */
+        TraceBlock: {
+            /** Head */
+            head: string;
+            /** Lines */
+            lines: string[];
+        };
         /** TripChoice */
         TripChoice: {
             /** Days */
@@ -1908,6 +2247,26 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    accounts_api_v1_accounts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountChoice"][];
+                };
+            };
+        };
+    };
     albums_api_v1_albums_get: {
         parameters: {
             query?: never;
@@ -1924,6 +2283,97 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AlbumChoice"][];
+                };
+            };
+        };
+    };
+    ask_availability_api_v1_ask_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskAvailability"];
+                };
+            };
+        };
+    };
+    start_ask_preview_api_v1_ask_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobView"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ask_preview_api_v1_ask_preview__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -2638,6 +3088,88 @@ export interface operations {
             };
         };
     };
+    groups_api_v1_roster_groups_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedGroupView"][];
+                };
+            };
+        };
+    };
+    add_group_route_api_v1_roster_groups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewGroup"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedGroupView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_group_route_api_v1_roster_groups__label__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                label: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     scan_people_api_v1_roster_scan_post: {
         parameters: {
             query?: never;
@@ -2677,6 +3209,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PersonAnswers"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterPerson"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bind_alias_route_api_v1_roster__person_id__aliases_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                person_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AliasBind"];
             };
         };
         responses: {
@@ -3059,6 +3626,46 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ReportResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_report_api_v1_runs__run_id__report_bundle_get: {
+        parameters: {
+            query?: {
+                include_flagged_captions?: boolean;
+            };
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": unknown;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

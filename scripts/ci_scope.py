@@ -61,7 +61,7 @@ CODE = (
     "tests/*",
     "scripts/*",
     "examples/*",
-    "complexipy-snapshot.json",
+    "complexity-watermark.json",
     "vulture-whitelist.py",
     "THIRD_PARTY_NOTICES*",
 )

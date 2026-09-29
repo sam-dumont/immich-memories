@@ -1,0 +1,69 @@
+{
+  "request": "the farthest I have been from home",
+  "shape": "computed, the farthest trip from the home of its time",
+  "answers": {
+    "Split the owner's request": {
+      "who": [
+        "i"
+      ],
+      "when": [],
+      "where": [
+        "from home"
+      ],
+      "what": []
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": []
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "many occasions"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    },
+    "Which of these places": {
+      "reason": "banked",
+      "choice": "away from home"
+    }
+  },
+  "expect": {
+    "reading": {
+      "who": [
+        "i"
+      ],
+      "where": [
+        "from home"
+      ]
+    },
+    "who": {
+      "present": [],
+      "anchors": [
+        "p-owner"
+      ],
+      "company": null
+    },
+    "when": [
+      null,
+      null
+    ],
+    "where": "trips",
+    "subject": [],
+    "facts": {
+      "extreme": "farthest"
+    },
+    "funnel": [
+      "library",
+      "where",
+      "kind of picture",
+      "farthest"
+    ],
+    "pool": [
+      "trip"
+    ],
+    "verdict": "possible",
+    "film": "pool"
+  }
+}

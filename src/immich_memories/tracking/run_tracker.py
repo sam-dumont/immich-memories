@@ -20,6 +20,7 @@ from immich_memories.tracking.system_info import capture_system_info
 
 if TYPE_CHECKING:
     from immich_memories.db import Store
+    from immich_memories.processing.film_timeline import FilmTimeline
     from immich_memories.processing.output_contract import OutputProbe
     from immich_memories.timeperiod import DateRange
 
@@ -206,6 +207,12 @@ class RunTracker:
         run = self._require_started()
         run.title_source = source
         self.db.record_title_source(self.run_id, source)
+
+    def record_film_timeline(self, timeline: FilmTimeline) -> None:
+        """Record what the rendered film spent its seconds on, map extra included."""
+        run = self._require_started()
+        run.film_timeline = timeline.as_dict()
+        self.db.record_film_timeline(self.run_id, run.film_timeline)
 
     def record_phase_event(self, event: PhaseEvent) -> bool:
         """Record one public phase without letting stale telemetry move backwards."""

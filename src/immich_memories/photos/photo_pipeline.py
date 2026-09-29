@@ -28,6 +28,7 @@ from immich_memories.photos.renderer import (
     render_ken_burns_streaming,
 )
 from immich_memories.processing.assembly_config import AssemblyClip
+from immich_memories.processing.clip_encoder import with_x265_lookahead
 from immich_memories.processing.ffmpeg_runner import write_frames_to_ffmpeg
 
 logger = logging.getLogger(__name__)
@@ -50,10 +51,10 @@ def _source_photo_path(asset: Asset, work_dir: Path) -> Path:
 
 
 def _prepared_photo_pixels(raw_path: Path, target_w: int, target_h: int, work_dir: Path):
-    """Decode the source into normalized float RGB, or report it unreadable."""
+    """Decode the source into integer RGB (16-bit for gain-mapped HDR), or report it unreadable."""
     # Prepare (HEIC decode, gain map extraction for HDR).
     # WHY 1.5x (#423): the renderer samples at most output x 1.12 max zoom
-    # x 1.26 pan margin = 1.41x, and it holds three float32 copies of
+    # x 1.26 pan margin = 1.41x, and it holds three copies of
     # whatever it is given. Measured on a 24.5 MP HEIC at 4K: 2.0x paid
     # 0.63 s and 0.32 GB per photo for pixels its own resize discarded.
     prepared = prepare_photo_source(
@@ -67,12 +68,7 @@ def _prepared_photo_pixels(raw_path: Path, target_w: int, target_h: int, work_di
     if img is None:
         logger.warning(f"Failed to read {prepared.path}")
         return None
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    if img.dtype == np.uint16:
-        img = img.astype(np.float32) / 65535.0
-    else:
-        img = img.astype(np.float32) / 255.0
-    return prepared, img
+    return prepared, cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 
 def _ken_burns_params(asset: Asset, prepared: Any, fps: int, duration: float) -> KenBurnsParams:
@@ -179,6 +175,22 @@ def photo_filter_chain(
     )
 
 
+def _at_pipe_depth(img: np.ndarray, *, sixteen_bit: bool) -> np.ndarray:
+    """The source at the pipe's integer depth, so the renderer works in it directly.
+
+    WHY (#1527): the renderer used to receive float32, 12 bytes a pixel, and every
+    frame was scaled, clipped and cast back to integers: at 4K that held the source,
+    its resized copy and its blur as floats, plus four frame-sized copies. OpenCV
+    resizes, blurs and warps 8- and 16-bit images natively and rounds as it goes.
+    8 to 16 bits is exact (x257); 16 to 8 bits truncates as the float path did.
+    """
+    if sixteen_bit and img.dtype == np.uint8:
+        return img.astype(np.uint16) * 257
+    if not sixteen_bit and img.dtype == np.uint16:
+        return (img.astype(np.uint32) * 255 // 65535).astype(np.uint8)
+    return img
+
+
 def _stream_render_to_mp4(
     img: np.ndarray,
     params: KenBurnsParams,
@@ -209,18 +221,20 @@ def _stream_render_to_mp4(
     # so nothing downstream can lift the shadows. Video clips stay HLG, which
     # is what iPhone video is, and the assembler converts between the two.
     transfer = "smpte2084"
-    encoder_args = _get_photo_encoder_args(transfer) if has_zscale else _get_sdr_encoder_args()
+    encoder_args = (
+        _get_photo_encoder_args(transfer, (target_w, target_h))
+        if has_zscale
+        else _get_sdr_encoder_args()
+    )
     pix_fmt, vf = photo_filter_chain(
         gain_map_hdr=gain_map_hdr, has_zscale=has_zscale, peak_nits=peak_nits, primaries=primaries
     )
 
+    source = _at_pipe_depth(img, sixteen_bit=pix_fmt == "rgb48le")
+
     def _frames() -> Iterator[bytes]:
-        use_16bit = pix_fmt == "rgb48le"
-        for frame in render_ken_burns_streaming(img, target_w, target_h, params):
-            if use_16bit:
-                yield (np.clip(frame * 65535, 0, 65535).astype(np.uint16)).tobytes()
-            else:
-                yield (np.clip(frame * 255, 0, 255).astype(np.uint8)).tobytes()
+        for frame in render_ken_burns_streaming(source, target_w, target_h, params):
+            yield frame.tobytes()
 
     returncode, stderr_text = write_frames_to_ffmpeg(
         [
@@ -260,7 +274,9 @@ def _stream_render_to_mp4(
         raise RuntimeError(f"Photo FFmpeg encoding failed (exit {returncode}): {stderr_text}")
 
 
-def _get_photo_encoder_args(transfer: str = "arib-std-b67") -> list[str]:
+def _get_photo_encoder_args(
+    transfer: str = "arib-std-b67", frame_size: tuple[int, int] = (3840, 2160)
+) -> list[str]:
     """Encoder args for a 10-bit BT.2020 HEVC photo clip.
 
     WHY: iPhone videos are HEVC HLG 10-bit BT.2020, and a photo clip has to
@@ -297,7 +313,7 @@ def _get_photo_encoder_args(transfer: str = "arib-std-b67") -> list[str]:
             transfer,
         ]
 
-    return [
+    software = [
         "-c:v",
         "libx265",
         "-preset",
@@ -315,6 +331,7 @@ def _get_photo_encoder_args(transfer: str = "arib-std-b67") -> list[str]:
         "-x265-params",
         f"hdr-opt=1:repeat-headers=1:colorprim=bt2020:transfer={transfer}:colormatrix=bt2020nc",
     ]
+    return with_x265_lookahead(software, *frame_size)
 
 
 def _get_sdr_encoder_args() -> list[str]:

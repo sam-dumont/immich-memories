@@ -681,6 +681,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
         check_detector_export,
         check_detector_interpreter,
         check_encoder,
+        check_memory,
         check_output_directory,
     )
 
@@ -700,6 +701,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
         check_render_worker(config),
         check_music(config),
         check_hardware(),
+        check_memory(config),
         *outside_call_checks(config),
     ]
 

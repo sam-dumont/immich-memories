@@ -422,6 +422,38 @@ def _convert_heif(
     return PreparedPhoto(path=out_path, width=w, height=h, has_gain_map=False)
 
 
+# Rows of the gain-map maths per strip. The maths is per pixel, so strips give the
+# same result; a whole 12 MP picture at once held about 0.9 GB of float32 (#1527).
+_GAIN_MAP_STRIP_ROWS = 64
+
+
+def _gain_mapped_bgr16(sdr: np.ndarray, gain: np.ndarray, headroom: float) -> np.ndarray:
+    """The 16-bit BGR HDR picture from an 8-bit SDR base and its 8-bit gain map."""
+    import numpy as np
+
+    bgr16 = np.empty(sdr.shape, dtype=np.uint16)
+    for top in range(0, sdr.shape[0], _GAIN_MAP_STRIP_ROWS):
+        rows = slice(top, top + _GAIN_MAP_STRIP_ROWS)
+        # WHY: BOTH layers are sRGB-encoded and both must be linearised. Skipping it
+        # on the gain map was worth a factor of two on this library -- raw values
+        # average 0.51 where their linear counterparts average 0.23 -- so mid-tones
+        # were lifted about twice as far as Apple lifts them, which reads as a flat,
+        # over-bright picture rather than as a bright highlight.
+        # Display P3 and sRGB share an EOTF, so one function serves both.
+        sdr_linear = _eotf_srgb(sdr[rows].astype(np.float32) / 255.0)
+        gain_linear = _eotf_srgb(gain[rows].astype(np.float32) / 255.0)
+        # WHY: Apple interpolates linearly between 1.0 and the headroom -- it never
+        # darkens. The exponential 2**(gain * headroom) used before is the ISO
+        # 21496-1 / Ultra HDR shape, which belongs to a different file format.
+        # Validated against CoreImage's own kCIImageExpandToHDR output on 11
+        # photographs: median error 1-2% on most, 10% worst of those that converged.
+        scale = 1.0 + (headroom - 1.0) * gain_linear
+        hdr = np.clip(sdr_linear * scale[:, :, np.newaxis] / headroom, 0, 1)
+        # Assigning floats to uint16 truncates, as astype did; reversed channels are BGR.
+        bgr16[rows] = (hdr * 65535)[:, :, ::-1]
+    return bgr16
+
+
 def _apply_hdr_gain_map(
     sdr_img: PILImage.Image,
     heif_file: object,
@@ -443,50 +475,23 @@ def _apply_hdr_gain_map(
     from PIL import Image
 
     gain_pil = heif_file.get_aux_image(gain_map_index).to_pillow()  # type: ignore[attr-defined]
-    gain_resized = gain_pil.resize((w, h), Image.Resampling.LANCZOS)
-
-    sdr_arr = np.array(sdr_img, dtype=np.float32) / 255.0
-    gain_arr = np.array(gain_resized, dtype=np.float32) / 255.0
-    if gain_arr.ndim == 3:
-        gain_arr = gain_arr[:, :, 0]
-
-    # WHY: BOTH layers are sRGB-encoded and both must be linearised. Skipping it
-    # on the gain map was worth a factor of two on this library -- raw values
-    # average 0.51 where their linear counterparts average 0.23 -- so mid-tones
-    # were lifted about twice as far as Apple lifts them, which reads as a flat,
-    # over-bright picture rather than as a bright highlight.
-    # Display P3 and sRGB share an EOTF, so one function serves both.
-    sdr_linear = _eotf_srgb(sdr_arr)
-    gain_linear = _eotf_srgb(gain_arr)
-
-    # WHY: Apple interpolates linearly between 1.0 and the headroom -- it never
-    # darkens. The exponential 2**(gain * headroom) used before is the ISO
-    # 21496-1 / Ultra HDR shape, which belongs to a different file format.
-    # Validated against CoreImage's own kCIImageExpandToHDR output on 11
-    # photographs: median error 1-2% on most, 10% worst of those that converged.
-    scale = 1.0 + (headroom - 1.0) * gain_linear
-    hdr_linear = sdr_linear * scale[:, :, np.newaxis]
-
-    # Normalize for uint16 storage: map HDR range into 0-1
-    # WHY: headroom IS the peak multiple of SDR white; npl = peak * 203 nits
-    peak_linear = headroom
-    hdr_arr = np.clip(hdr_linear / peak_linear, 0, 1)
-
-    # Save as 16-bit PNG (cv2 handles 16-bit natively)
-    hdr_16 = (hdr_arr * 65535).astype(np.uint16)
+    gain = np.asarray(gain_pil.resize((w, h), Image.Resampling.LANCZOS))
+    if gain.ndim == 3:
+        gain = gain[:, :, 0]
 
     try:
         import cv2
-
-        hdr_bgr = cv2.cvtColor(hdr_16, cv2.COLOR_RGB2BGR)
-        out_path = work_dir / f"{source_path.stem}_hdr.png"
-        cv2.imwrite(str(out_path), hdr_bgr)
     except ImportError:
         # Fallback: save SDR JPEG if cv2 not available
         logger.warning("cv2 not available — falling back to SDR JPEG (gain map not applied)")
         out_path = work_dir / f"{source_path.stem}_converted.jpg"
         sdr_img.save(out_path, "JPEG", quality=95)
         return PreparedPhoto(path=out_path, width=w, height=h, has_gain_map=True)
+
+    # WHY: headroom IS the peak multiple of SDR white; npl = peak * 203 nits
+    peak_linear = headroom
+    out_path = work_dir / f"{source_path.stem}_hdr.png"
+    cv2.imwrite(str(out_path), _gain_mapped_bgr16(np.asarray(sdr_img), gain, headroom))
 
     peak_nits = int(peak_linear * 203)
     logger.info(

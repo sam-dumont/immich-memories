@@ -1,6 +1,24 @@
 {
   "components": {
     "schemas": {
+      "AccountChoice": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "primary": {
+            "title": "Primary",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "primary"
+        ],
+        "title": "AccountChoice",
+        "type": "object"
+      },
       "AlbumChoice": {
         "properties": {
           "asset_count": {
@@ -22,6 +40,24 @@
           "asset_count"
         ],
         "title": "AlbumChoice",
+        "type": "object"
+      },
+      "AliasBind": {
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          },
+          "alias_id": {
+            "title": "Alias Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account",
+          "alias_id"
+        ],
+        "title": "AliasBind",
         "type": "object"
       },
       "Alternative": {
@@ -46,6 +82,160 @@
           "fate"
         ],
         "title": "Alternative",
+        "type": "object"
+      },
+      "AskAvailability": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "tier": {
+            "title": "Tier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "available",
+          "tier"
+        ],
+        "title": "AskAvailability",
+        "type": "object"
+      },
+      "AskPreview": {
+        "description": "`generate --ask --dry-run`'s translation: the trace by part, the pool, the rule preview\nand the verdict.",
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/TraceBlock"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "film": {
+            "$ref": "#/components/schemas/AskedFilm"
+          },
+          "pool": {
+            "$ref": "#/components/schemas/PoolCounts"
+          },
+          "request": {
+            "title": "Request",
+            "type": "string"
+          },
+          "rules": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AskRules"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verdict": {
+            "title": "Verdict",
+            "type": "string"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request",
+          "blocks",
+          "pool",
+          "verdict",
+          "why",
+          "film"
+        ],
+        "title": "AskPreview",
+        "type": "object"
+      },
+      "AskRequest": {
+        "properties": {
+          "sentence": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Sentence",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sentence"
+        ],
+        "title": "AskRequest",
+        "type": "object"
+      },
+      "AskRules": {
+        "description": "What the editor's rules would drop from the pool, asked before render.",
+        "properties": {
+          "at_cut": {
+            "items": {
+              "$ref": "#/components/schemas/RuleNoteView"
+            },
+            "title": "At Cut",
+            "type": "array"
+          },
+          "checked": {
+            "title": "Checked",
+            "type": "integer"
+          },
+          "drops": {
+            "items": {
+              "$ref": "#/components/schemas/RuleDropView"
+            },
+            "title": "Drops",
+            "type": "array"
+          },
+          "lifted": {
+            "items": {
+              "$ref": "#/components/schemas/RuleNoteView"
+            },
+            "title": "Lifted",
+            "type": "array"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "unread": {
+            "title": "Unread",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "checked",
+          "passed",
+          "unread",
+          "drops",
+          "at_cut",
+          "lifted"
+        ],
+        "title": "AskRules",
+        "type": "object"
+      },
+      "AskedFilm": {
+        "properties": {
+          "line": {
+            "title": "Line",
+            "type": "string"
+          },
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          },
+          "route": {
+            "title": "Route",
+            "type": "string"
+          }
+        },
+        "required": [
+          "route",
+          "line",
+          "outcome"
+        ],
+        "title": "AskedFilm",
         "type": "object"
       },
       "AttemptView": {
@@ -134,6 +324,23 @@
           "bytes"
         ],
         "title": "CacheStats",
+        "type": "object"
+      },
+      "CaptionDefaults": {
+        "description": "`defaults.add_date` and `defaults.add_place`: what the render panel starts ticked.",
+        "properties": {
+          "add_date": {
+            "default": true,
+            "title": "Add Date",
+            "type": "boolean"
+          },
+          "add_place": {
+            "default": true,
+            "title": "Add Place",
+            "type": "boolean"
+          }
+        },
+        "title": "CaptionDefaults",
         "type": "object"
       },
       "Choice": {
@@ -280,10 +487,29 @@
             "title": "Accept Any Provenance",
             "type": "boolean"
           },
+          "accounts": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Accounts",
+            "type": "array"
+          },
           "all_trips": {
             "default": false,
             "title": "All Trips",
             "type": "boolean"
+          },
+          "ask": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ask"
           },
           "birthday": {
             "anyOf": [
@@ -360,6 +586,17 @@
               }
             ],
             "title": "From Album"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
           },
           "hemisphere": {
             "anyOf": [
@@ -959,7 +1196,8 @@
               "cut",
               "render",
               "scan",
-              "music"
+              "music",
+              "ask"
             ],
             "title": "Kind",
             "type": "string"
@@ -1207,6 +1445,24 @@
         "title": "NamedPerson",
         "type": "object"
       },
+      "NewGroup": {
+        "properties": {
+          "expression": {
+            "title": "Expression",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "expression"
+        ],
+        "title": "NewGroup",
+        "type": "object"
+      },
       "NewPerson": {
         "properties": {
           "name": {
@@ -1308,6 +1564,29 @@
         "title": "Pool",
         "type": "object"
       },
+      "PoolCounts": {
+        "properties": {
+          "photos": {
+            "title": "Photos",
+            "type": "integer"
+          },
+          "pictures": {
+            "title": "Pictures",
+            "type": "integer"
+          },
+          "videos": {
+            "title": "Videos",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pictures",
+          "photos",
+          "videos"
+        ],
+        "title": "PoolCounts",
+        "type": "object"
+      },
       "PoolItem": {
         "properties": {
           "asset_id": {
@@ -1387,14 +1666,26 @@
         "description": "`runs render`'s flags; None keeps the CLI's own default.",
         "properties": {
           "add_date": {
-            "default": false,
-            "title": "Add Date",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add Date"
           },
           "add_place": {
-            "default": false,
-            "title": "Add Place",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add Place"
           },
           "album": {
             "anyOf": [
@@ -1815,6 +2106,17 @@
       },
       "RosterPerson": {
         "properties": {
+          "aliases": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "default": {},
+            "title": "Aliases",
+            "type": "object"
+          },
           "birth_date": {
             "anyOf": [
               {
@@ -1893,6 +2195,55 @@
         "title": "RosterPerson",
         "type": "object"
       },
+      "RuleDropView": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "examples": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Examples",
+            "type": "array"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule",
+          "why",
+          "count",
+          "examples"
+        ],
+        "title": "RuleDropView",
+        "type": "object"
+      },
+      "RuleNoteView": {
+        "properties": {
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule",
+          "why"
+        ],
+        "title": "RuleNoteView",
+        "type": "object"
+      },
       "RunDetail": {
         "properties": {
           "child_output": {
@@ -1951,9 +2302,35 @@
             "title": "Film",
             "type": "boolean"
           },
+          "film_available": {
+            "title": "Film Available",
+            "type": "boolean"
+          },
           "has_cut": {
             "title": "Has Cut",
             "type": "boolean"
+          },
+          "immich_asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Immich Asset Id"
+          },
+          "immich_asset_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Immich Asset Url"
           },
           "memory_type": {
             "anyOf": [
@@ -2021,9 +2398,12 @@
           "date_range_end",
           "preview_asset_ids",
           "film",
+          "film_available",
           "completed_at",
           "output_path",
           "delivery_status",
+          "immich_asset_id",
+          "immich_asset_url",
           "warnings",
           "phases",
           "clips_selected",
@@ -2113,6 +2493,10 @@
             "title": "Film",
             "type": "boolean"
           },
+          "film_available": {
+            "title": "Film Available",
+            "type": "boolean"
+          },
           "memory_type": {
             "anyOf": [
               {
@@ -2153,9 +2537,28 @@
           "date_range_start",
           "date_range_end",
           "preview_asset_ids",
-          "film"
+          "film",
+          "film_available"
         ],
         "title": "RunSummary",
+        "type": "object"
+      },
+      "SavedGroupView": {
+        "properties": {
+          "expression": {
+            "title": "Expression",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "expression"
+        ],
+        "title": "SavedGroupView",
         "type": "object"
       },
       "SelectionPath": {
@@ -2236,6 +2639,13 @@
               }
             ],
             "title": "Button Text"
+          },
+          "captions": {
+            "$ref": "#/components/schemas/CaptionDefaults",
+            "default": {
+              "add_date": true,
+              "add_place": true
+            }
           },
           "demo_mode_offered": {
             "default": false,
@@ -2725,6 +3135,27 @@
         "title": "Suggestions",
         "type": "object"
       },
+      "TraceBlock": {
+        "properties": {
+          "head": {
+            "title": "Head",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Lines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "head",
+          "lines"
+        ],
+        "title": "TraceBlock",
+        "type": "object"
+      },
       "TripChoice": {
         "properties": {
           "days": {
@@ -2866,6 +3297,32 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/accounts": {
+      "get": {
+        "description": "The Immich accounts a run may read: primary, plus every name under immich.accounts.\n\nConfiguring an extra account here does not add it to a film \u2014 `--accounts` (or this\nlist, for the brief) is what a run selects to read.",
+        "operationId": "accounts_api_v1_accounts_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AccountChoice"
+                  },
+                  "title": "Response Accounts Api V1 Accounts Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Accounts",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/api/v1/albums": {
       "get": {
         "description": "The albums a film can be made from, largest first; `--from-album` takes the id.",
@@ -2889,6 +3346,116 @@
         "summary": "Albums",
         "tags": [
           "library"
+        ]
+      }
+    },
+    "/api/v1/ask": {
+      "get": {
+        "description": "Whether a film can be asked for in a sentence: the model tier reads it (`generate --ask`).",
+        "operationId": "ask_availability_api_v1_ask_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskAvailability"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ask Availability",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/ask/preview": {
+      "post": {
+        "description": "Translate a sentence with `generate --ask --dry-run`; nothing is filmed.\n\nThe CLI keeps the translation in a JSON file beside the job, which the preview reads.",
+        "operationId": "start_ask_preview_api_v1_ask_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Ask Preview",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/ask/preview/{job_id}": {
+      "get": {
+        "description": "The translation a finished preview kept; 404 until it has one.",
+        "operationId": "ask_preview_api_v1_ask_preview__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ask Preview",
+        "tags": [
+          "jobs"
         ]
       }
     },
@@ -3856,6 +4423,108 @@
         ]
       }
     },
+    "/api/v1/roster/groups": {
+      "get": {
+        "description": "Every saved group, in the order they were added \u2014 the labels `--group` takes.",
+        "operationId": "groups_api_v1_roster_groups_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SavedGroupView"
+                  },
+                  "title": "Response Groups Api V1 Roster Groups Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Groups",
+        "tags": [
+          "people"
+        ]
+      },
+      "post": {
+        "description": "Save a group. EXPRESSION is the --people-expression grammar over canonical person ids.\n\nParsed and size-checked first: a malformed expression saves nothing.",
+        "operationId": "add_group_route_api_v1_roster_groups_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewGroup"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedGroupView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Group Route",
+        "tags": [
+          "people"
+        ]
+      }
+    },
+    "/api/v1/roster/groups/{label}": {
+      "delete": {
+        "description": "Remove a saved group. Never touches the people it named.",
+        "operationId": "remove_group_route_api_v1_roster_groups__label__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "label",
+            "required": true,
+            "schema": {
+              "title": "Label",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Group Route",
+        "tags": [
+          "people"
+        ]
+      }
+    },
     "/api/v1/roster/scan": {
       "post": {
         "description": "Read the library's people again with `people scan`, keeping every answer given.",
@@ -3929,6 +4598,59 @@
           }
         },
         "summary": "Answer",
+        "tags": [
+          "people"
+        ]
+      }
+    },
+    "/api/v1/roster/{person_id}/aliases": {
+      "post": {
+        "description": "Declare that `bind.alias_id`, as `bind.account` reads it, is this person.\n\nThe account has to be `primary` or a name under `immich.accounts` (`people bind`'s own\nrule); an id already bound to somebody else is refused, an id this person already has\nfor this account is a no-op. Name, birth date and confirmations are untouched.",
+        "operationId": "bind_alias_route_api_v1_roster__person_id__aliases_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AliasBind"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RosterPerson"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Bind Alias Route",
         "tags": [
           "people"
         ]
@@ -4242,7 +4964,7 @@
     },
     "/api/v1/runs/{run_id}/film": {
       "get": {
-        "description": "The rendered film, by byte range so the player can seek.",
+        "description": "The rendered film, by byte range so the player can seek.\n\nA run's page checks `film_available` before ever requesting this, so\nreaching here for a delivered run means a stale link, not a broken\nplayer: the local copy was reclaimed once Immich confirmed the upload.",
         "operationId": "film_api_v1_runs__run_id__film_get",
         "parameters": [
           {
@@ -4502,6 +5224,58 @@
           }
         },
         "summary": "Read Report",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/report/bundle": {
+      "get": {
+        "description": "The ZIP `report --bundle` writes: report.md, report.json and run.log, all redacted.",
+        "operationId": "download_report_api_v1_runs__run_id__report_bundle_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_flagged_captions",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Flagged Captions",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/zip": {}
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Report",
         "tags": [
           "reports"
         ]

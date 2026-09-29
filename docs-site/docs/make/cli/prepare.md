@@ -44,7 +44,8 @@ total              1440      0.9480    100%     23 min
 At this rate 10,000 pictures would take 2 h 38 min.
 ```
 
-`--library-size 10000` prints the last line. `s/picture` is the number to compare between machines; `share`
+The last line projects the measured rate onto `--library-size` pictures (1,000 unless you pass one; the
+example used `--library-size 10000`). `s/picture` is the number to compare between machines; `share`
 says which producer to move to a faster box. With [the inference service](../../better/inference.md) the heads
 and detectors run elsewhere, and a `remote_facts` row appears.
 
@@ -80,6 +81,7 @@ immich-memories people scan                    # build or refresh the registry
 immich-memories people show                    # read it back, --tier narrows it
 immich-memories people export --to people.yaml # write it out as YAML to edit or keep
 immich-memories people import --from people.yaml --replace
+immich-memories people bind "Alex Example" --account partner --id <uuid>
 ```
 
 The one rule doing most of the work: volume is a burst, continuity is a relationship. 160 pictures over four
@@ -122,11 +124,55 @@ come back exactly as written, `manual:` ids included. A registry that already ho
 with `--replace`, so an old export can't silently undo newer answers. A scan never reads the file; only an
 import does.
 
-A person whose ids come from a second Immich account on the same server carries an `accounts:` map, id to
-account name, next to `ids:`. An id it doesn't list belongs to your main account, so a one-account export has
-no `accounts:` at all. An `accounts:` entry naming an id the person doesn't have is refused like any other
-mistake. One id belongs to one person, and ids are never matched by name. Reading a second account arrives in a
-later release.
+A second Immich account on the same server gives the same person a different id. You say which ids are the same
+person (the model @Mike7154 laid out in [#703](https://github.com/sam-dumont/immich-video-memory-generator/issues/703)), and `ids:` becomes one list per account, `primary` first:
+
+```yaml
+people:
+  - ids:
+      primary: [5f2c…]
+      partner: [a91e…, 07bd…]
+    name: Alex Example
+```
+
+A flat `ids: [...]` list still works and means your main account only, so a one-account export looks exactly as
+it always did. Account names follow the rule for `immich.accounts` (lowercase letters and digits joined by single
+underscores), and the account doesn't have to be configured yet. An empty list, a name that breaks the rule, or an
+id listed under two accounts or two people is refused, and nothing changes. The old `accounts:` map is refused
+too, with the new shape in the message.
+
+The first id listed is the person's own id: the one links and saved references point at. Adding ids never
+changes it. When the person's own id isn't first (someone who came in through the partner account and later got
+a `primary` id), the export names it with a `person_id:` line next to `ids:`, and an import keeps it.
+
+To add one id without editing the file:
+
+```bash
+immich-memories people bind "Alex Example" --account partner --id a91e…
+```
+
+The person is a store id or a name exactly one person carries; if two people share the name, the command lists
+their ids and asks for one. `bind` only adds the id: the name, birth date and your answers stay put. An id somebody
+else holds is refused, never merged, and binding the same id twice changes nothing. Ids are never matched by name.
+A film reads the second account with `generate --accounts primary,partner`
+([generate](./generate.md)), and a bound person counts as one person across both.
+
+### Saved groups
+
+A group is a label for a people condition, so `generate --group kids` reads the same as typing the expression
+out. It saves nothing about the people themselves, just the condition:
+
+```bash
+immich-memories people group add kids '"5f2c…" OR "a91e…"'
+immich-memories people group list
+immich-memories people group rm kids
+```
+
+`add` takes the same grammar as `--people-expression`, but the leaves are ids (what `people show` lists), not
+names: `people group list` prints them, `people group add` refuses a label already in use, and `people group rm`
+never touches the people the group named. `generate --group kids` resolves the saved expression through the
+people store exactly as `--people-expression` does, and it combines with `--accounts` the same way. Groups round-trip
+with `people export`/`people import`, next to the people.
 
 The scan also writes its measurements (every person's counts and the pairs seen together) to
 `~/.immich-memories/people-graph.json`. That one stays a file: each scan recomputes all of it from Immich and
@@ -145,7 +191,7 @@ sees. Setting it up is on [Teach it your family](../../get-started/who-is-who.md
 
 Finds the days something happened on and keeps them in the special-days catalogue in the
 [store](../../run/database.md), so a film can arrive years later without you asking ("five years ago today"). Run it once, then now and then. Films from it
-are the **Surprise me** type on [Memory types](../memory-types.mdx#special-day-surprise-me).
+are the **Special day** type on [Memory types](../memory-types.mdx#special-day).
 
 ```bash
 immich-memories discover-days --since 2015
@@ -245,5 +291,7 @@ immich-memories preflight       # can it reach Immich, the models, the renderer
 
 Bare `people` lists names exactly as Immich holds them: "Emma" versus "Emma S." is the difference between a
 film and an empty pool. `years` saves you guessing at `--year` on a library imported from old backups.
+What each `preflight` row checks, and `models fetch` in full, are on
+[Health, logs and caches](../../run/maintenance/health-logs-cache.md#preflight).
 
 To see how a cut was reached, use [`runs why`](./runs.md#runs-why).

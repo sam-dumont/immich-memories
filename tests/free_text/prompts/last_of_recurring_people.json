@@ -1,0 +1,68 @@
+{
+  "request": "last picture of recurring people (over 35 pictures)",
+  "shape": "computed, the latest face of each",
+  "answers": {
+    "Split the owner's request": {
+      "who": [
+        "recurring people"
+      ],
+      "when": [],
+      "where": [],
+      "what": [
+        "last picture"
+      ]
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": []
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "many occasions"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    }
+  },
+  "expect": {
+    "reading": {
+      "who": [
+        "recurring people"
+      ],
+      "what": [
+        "last picture"
+      ]
+    },
+    "who": {
+      "present": [],
+      "anchors": [],
+      "company": null
+    },
+    "when": [
+      null,
+      null
+    ],
+    "where": "anywhere",
+    "subject": [
+      "last"
+    ],
+    "facts": {
+      "people": [
+        "p-child",
+        "p-partner"
+      ],
+      "extreme": "last"
+    },
+    "funnel": [
+      "library",
+      "kind of picture",
+      "last"
+    ],
+    "pool": [
+      "family-39"
+    ],
+    "verdict": "possible",
+    "film": "pool"
+  }
+}

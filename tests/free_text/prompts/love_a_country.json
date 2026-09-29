@@ -1,0 +1,77 @@
+{
+  "request": "I love Examplia, show me the proof",
+  "shape": "a country from Immich's place names",
+  "answers": {
+    "Split the owner's request": {
+      "who": [
+        "i"
+      ],
+      "when": [],
+      "where": [
+        "examplia"
+      ],
+      "what": []
+    },
+    "Give the date range": {
+      "date_from": null,
+      "date_to": null
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": []
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "many occasions"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    },
+    "Which of these places": {
+      "reason": "banked",
+      "choice": "anywhere"
+    }
+  },
+  "expect": {
+    "reading": {
+      "who": [
+        "i"
+      ],
+      "where": [
+        "examplia"
+      ]
+    },
+    "who": {
+      "present": [],
+      "anchors": [
+        "p-owner"
+      ],
+      "company": null
+    },
+    "when": [
+      null,
+      null
+    ],
+    "where": "anywhere",
+    "subject": [],
+    "facts": {
+      "places": [
+        [
+          "country",
+          "Examplia"
+        ]
+      ]
+    },
+    "funnel": [
+      "library",
+      "place names",
+      "kind of picture"
+    ],
+    "pool": [
+      "trip"
+    ],
+    "verdict": "possible",
+    "film": "pool"
+  }
+}

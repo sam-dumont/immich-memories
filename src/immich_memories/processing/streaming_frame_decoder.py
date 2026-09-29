@@ -25,6 +25,7 @@ from immich_memories.processing.hdr_utilities import (
     _resolve_clip_hdr,
     get_colorspace_filter,
 )
+from immich_memories.processing.memory_budget import assembly_decoder_threads
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +52,12 @@ class FrameDecoder:
         caption: ClipCaption | None = None,
         caption_font: str | None = None,
         caption_window: tuple[int, int] | None = None,
+        source_size: tuple[int, int] | None = None,
+        threads: int | None = None,
     ) -> None:
         self._clip_path = clip_path
+        self._source_size = source_size
+        self._threads = threads
         self._input_seek = input_seek
         self._audio_output = audio_output
         self._width = width
@@ -73,6 +78,49 @@ class FrameDecoder:
         self._caption = caption
         self._caption_font = caption_font
         self._caption_window = caption_window
+
+    def _covers_canvas(self) -> bool:
+        if self._source_size is None:
+            return False
+        width, height = self._source_size
+        if self._rotation in (90, 270):
+            width, height = height, width
+        return width * self._height == height * self._width
+
+    def _fill_filters(self) -> list[str]:
+        """Scale to the canvas and fill what the source leaves uncovered."""
+        if self._covers_canvas():
+            # WHY (#1527): a source with the canvas's exact shape scales to fill it,
+            # so a blur fill would sit entirely under it: at 4K that background cost
+            # about 5 s of CPU and 130 MB per clip for pixels nobody sees.
+            self._use_filter_complex = False
+            return [f"scale={self._width}:{self._height}:flags=lanczos"]
+        if self._scale_mode == "blur":
+            # WHY: Blur background fills the entire frame with a blurred, zoomed version
+            # of the source, then overlays the sharp scaled version centered on top.
+            # Uses split to avoid re-reading the source.
+            # When privacy blur is active, skip the extra sigma=30 on the background
+            # because the frame is already blurred — adding more makes it unrecognizable.
+            bg_blur = "" if self._privacy_blur else ",gblur=sigma=30"
+            # WHY (#1527): overlay composites in 8-bit yuv420 unless told otherwise,
+            # which rounded every HDR frame with a blur fill to multiples of 4.
+            overlay_format = ":format=yuv420p10" if self._pix_fmt != "rgb24" else ""
+            self._use_filter_complex = True
+            return [
+                "split[_bg][_fg]",
+                f"[_bg]scale={self._width}:{self._height}:force_original_aspect_ratio=increase:flags=lanczos,"
+                f"crop={self._width}:{self._height}{bg_blur}[_blurred]",
+                f"[_fg]scale={self._width}:{self._height}:force_original_aspect_ratio=decrease:flags=lanczos[_sharp]",
+                f"[_blurred][_sharp]overlay=(W-w)/2:(H-h)/2{overlay_format}",
+            ]
+        # "fit": scale down inside the frame and pad the rest black. There is
+        # no face-aware crop on the video path, so anything that is not
+        # "blur" lands here — which is why no such mode is offered.
+        self._use_filter_complex = False
+        return [
+            f"scale={self._width}:{self._height}:force_original_aspect_ratio=decrease:flags=lanczos",
+            f"pad={self._width}:{self._height}:(ow-iw)/2:(oh-ih)/2:black",
+        ]
 
     def _build_vf(self) -> str:
         """Build the -vf filter chain applied to every decoded clip."""
@@ -98,34 +146,7 @@ class FrameDecoder:
         parts.append("setpts=PTS-STARTPTS")
 
         # Scale + fill to target resolution
-        if self._scale_mode == "blur":
-            # WHY: Blur background fills the entire frame with a blurred, zoomed version
-            # of the source, then overlays the sharp scaled version centered on top.
-            # Uses split to avoid re-reading the source.
-            # When privacy blur is active, skip the extra sigma=30 on the background
-            # because the frame is already blurred — adding more makes it unrecognizable.
-            bg_blur = "" if self._privacy_blur else ",gblur=sigma=30"
-            parts.extend(
-                (
-                    "split[_bg][_fg]",
-                    f"[_bg]scale={self._width}:{self._height}:force_original_aspect_ratio=increase:flags=lanczos,"
-                    f"crop={self._width}:{self._height}{bg_blur}[_blurred]",
-                    f"[_fg]scale={self._width}:{self._height}:force_original_aspect_ratio=decrease:flags=lanczos[_sharp]",
-                    "[_blurred][_sharp]overlay=(W-w)/2:(H-h)/2",
-                )
-            )
-            self._use_filter_complex = True
-        else:
-            # "fit": scale down inside the frame and pad the rest black. There is
-            # no face-aware crop on the video path, so anything that is not
-            # "blur" lands here — which is why no such mode is offered.
-            parts.extend(
-                (
-                    f"scale={self._width}:{self._height}:force_original_aspect_ratio=decrease:flags=lanczos",
-                    f"pad={self._width}:{self._height}:(ow-iw)/2:(oh-ih)/2:black",
-                )
-            )
-            self._use_filter_complex = False
+        parts.extend(self._fill_filters())
 
         # FPS + timebase reset
         parts.append(f"fps={self._fps},settb=1/{self._fps}")
@@ -193,8 +214,11 @@ class FrameDecoder:
                 str(self._audio_output),
             ]
 
+        threads = self._threads if self._threads is not None else assembly_decoder_threads()
         cmd = [
             "ffmpeg",
+            "-threads",
+            str(threads),
             *seek_args,
             "-i",
             str(self._clip_path),
@@ -307,4 +331,15 @@ def make_decoder(
         caption=caption if not is_title else None,
         caption_font=caption_font,
         caption_window=caption_window,
+        source_size=_display_size(clip.path),
     )
+
+
+def _display_size(path: Path) -> tuple[int, int] | None:
+    """The source's width and height as FFmpeg shows it (rotation applied), if it probes."""
+    from immich_memories.processing.probe_cache import ProbeCache, ProbeError
+
+    try:
+        return ProbeCache().get(path).resolution
+    except (ProbeError, OSError, ValueError):
+        return None

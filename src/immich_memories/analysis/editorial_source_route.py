@@ -60,8 +60,11 @@ def metadata_demand(
     photo_seconds: float,
     hdr_only: bool = False,
 ) -> tuple[ClipWithSegment, ...]:
-    """Keep every requested eligible primary, without ranking the captured context."""
-    source_by_id = {_asset(source).id: source for source in sources}
+    """Keep every requested eligible primary, without ranking the captured context.
+
+    A requested copy the source folded into another stands for the kept one.
+    """
+    source_by_id = _by_kept_id(prepared, sources)
     requested = set(source_by_id)
     captured = set(prepared.candidate_ids) | set(prepared.excluded_ids)
     if requested - captured:
@@ -90,6 +93,19 @@ def metadata_demand(
         for row in rows
         if not hdr_only or row.clip.asset.type != AssetType.VIDEO or row.clip.is_hdr
     )
+
+
+def _by_kept_id(
+    prepared: PreparedEditorialSource, sources: Sequence[Asset | VideoClipInfo]
+) -> dict[str, Asset | VideoClipInfo]:
+    by_id: dict[str, Asset | VideoClipInfo] = {}
+    for source in sources:
+        asset_id = _asset(source).id
+        [kept] = prepared.kept_ids((asset_id,))
+        # The kept copy's own request wins over a copy standing in for it.
+        if kept == asset_id or kept not in by_id:
+            by_id[kept] = source
+    return by_id
 
 
 def _seconds(value: object, name: str, *, zero: bool = False) -> float:

@@ -16,7 +16,9 @@ from urllib.parse import urlparse
 
 from immich_memories.analysis.editorial_preparation_detectors import MARQO_ONNX_SHA256
 from immich_memories.config_models_editorial_preparation import MARQO_ONNX_URL
+from immich_memories.config_models_free_text import WORDNET_URL
 from immich_memories.config_models_triage import DINOV2_SMALL_ONNX_URL
+from immich_memories.free_text.lexicon import WORDNET_SHA256
 from immich_memories.laya_checkpoints import LAYA_MLX_URL, LAYA_ONNX_URL
 from immich_memories.triage.encoder import DINOV2_SMALL_ONNX_SHA256
 
@@ -40,6 +42,7 @@ ENCODER = PinnedModel(
     "the pinned DINOv2 ONNX export", DINOV2_SMALL_ONNX_URL, DINOV2_SMALL_ONNX_SHA256
 )
 MARQO_ONNX = PinnedModel("the pinned Marqo ONNX export", MARQO_ONNX_URL, MARQO_ONNX_SHA256)
+WORDNET = PinnedModel("the pinned WordNet 3.0 corpus", WORDNET_URL, WORDNET_SHA256)
 # Two exports of the Apache-2.0 audience checkpoint, fetched by gpu/full or --laya.
 LAYA_AUDIENCE = PinnedModel(
     "the pinned Laya audience checkpoint",

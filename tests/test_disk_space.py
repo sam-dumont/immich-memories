@@ -1,4 +1,4 @@
-"""Tests for disk space preflight check before assembly."""
+"""Disk space preflight: a film that cannot fit stops before it renders."""
 
 from __future__ import annotations
 
@@ -7,52 +7,67 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from immich_memories.generate import GenerationError
+from immich_memories.config_loader import Config
+from immich_memories.generate import GenerationError, check_disk_space
 from tests.conftest import make_clip
 
 
+def _usage(free_bytes: int):
+    return type("Usage", (), {"free": free_bytes})()
+
+
 class TestCheckDiskSpace:
-    """check_disk_space should raise GenerationError when free space < 1GB."""
+    """`check_disk_space` reads the output and cache volumes before a film renders."""
 
-    def test_raises_when_disk_full(self, tmp_path: Path):
-        from immich_memories.generate import check_disk_space
-
-        # Simulate <1GB free (500MB)
-        fake_usage = type("Usage", (), {"free": 500 * 1024 * 1024})()
+    def test_raises_when_the_estimated_film_cannot_fit(self, tmp_path: Path):
+        # WHY: shutil.disk_usage reads the real volume; a boundary this preflight always crosses.
         with (
-            patch("shutil.disk_usage", return_value=fake_usage),
-            pytest.raises(GenerationError, match="Insufficient disk space"),
+            patch(
+                "immich_memories.operations.disk_guard.shutil.disk_usage",
+                return_value=_usage(100_000),
+            ),
+            pytest.raises(GenerationError, match="Not enough free space"),
         ):
-            check_disk_space(tmp_path)
+            check_disk_space(Config(), tmp_path, estimated_duration_seconds=600)
 
-    def test_passes_when_enough_space(self, tmp_path: Path):
-        from immich_memories.generate import check_disk_space
+    def test_passes_with_plenty_of_room(self, tmp_path: Path):
+        with patch(
+            "immich_memories.operations.disk_guard.shutil.disk_usage",
+            return_value=_usage(20 * 1024**3),
+        ):
+            warnings = check_disk_space(Config(), tmp_path, estimated_duration_seconds=60)
 
-        # 5GB free — should not raise
-        fake_usage = type("Usage", (), {"free": 5 * 1024 * 1024 * 1024})()
-        with patch("shutil.disk_usage", return_value=fake_usage):
-            check_disk_space(tmp_path)  # Should not raise
+        assert warnings == []
 
-    def test_passes_at_exactly_1gb(self, tmp_path: Path):
-        from immich_memories.generate import check_disk_space
+    def test_warns_below_the_threshold_even_when_the_film_still_fits(self, tmp_path: Path):
+        config = Config()
+        config.output.min_free_space_gb = 5.0
+        with patch(
+            "immich_memories.operations.disk_guard.shutil.disk_usage",
+            # 2 GB free: below the 5 GB warning line, but far more than a 10s film needs.
+            return_value=_usage(2 * 1024**3),
+        ):
+            warnings = check_disk_space(config, tmp_path, estimated_duration_seconds=10)
 
-        fake_usage = type("Usage", (), {"free": 1024 * 1024 * 1024})()
-        with patch("shutil.disk_usage", return_value=fake_usage):
-            check_disk_space(tmp_path)  # Should not raise (>= threshold)
+        assert any("Low disk space" in warning for warning in warnings)
+        assert any(str(tmp_path) in warning for warning in warnings)
 
-    def test_error_message_includes_free_space(self, tmp_path: Path):
-        from immich_memories.generate import check_disk_space
-
-        fake_usage = type("Usage", (), {"free": 200 * 1024 * 1024})()
+    def test_error_names_the_volume_the_free_space_and_the_estimate(self, tmp_path: Path):
         with (
-            patch("shutil.disk_usage", return_value=fake_usage),
-            pytest.raises(GenerationError, match="0.2 GB free"),
+            patch(
+                "immich_memories.operations.disk_guard.shutil.disk_usage",
+                return_value=_usage(100_000),
+            ),
+            pytest.raises(GenerationError) as caught,
         ):
-            check_disk_space(tmp_path)
+            check_disk_space(Config(), tmp_path, estimated_duration_seconds=600)
+
+        message = str(caught.value)
+        assert str(tmp_path) in message
+        assert "runs delete" in message
 
 
 def test_a_run_on_a_full_disk_stops_before_it_downloads_anything(tmp_path: Path):
-    from immich_memories.config_loader import Config
     from immich_memories.generate import GenerationParams, generate_memory
 
     client = MagicMock()  # WHY: Immich must not be asked for a single clip
@@ -60,11 +75,13 @@ def test_a_run_on_a_full_disk_stops_before_it_downloads_anything(tmp_path: Path)
         clips=[make_clip("c1")], output_path=tmp_path / "out.mp4", config=Config(), client=client
     )
 
-    # WHY: a disk with 500 MB left, below the 1 GB floor
+    # WHY: a disk with next to nothing left, far below what even a 5s clip needs.
     with (
-        # WHY: shutil.disk_usage reads the real volume
-        patch("immich_memories.generate.shutil.disk_usage", return_value=MagicMock(free=500 << 20)),
-        pytest.raises(GenerationError, match="Insufficient disk space"),
+        patch(
+            "immich_memories.operations.disk_guard.shutil.disk_usage",
+            return_value=_usage(100_000),
+        ),
+        pytest.raises(GenerationError, match="Not enough free space"),
     ):
         generate_memory(params)
 

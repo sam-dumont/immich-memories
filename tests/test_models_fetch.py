@@ -146,7 +146,10 @@ def test_models_fetch_lands_the_configured_path_from_the_configured_url(
     # WHY: the pinned 88 MB export cannot live in the repo, so the fixture's own
     # digest stands in for it; everything else is the production command.
     monkeypatch.setattr(models_cmd, "ENCODER", replace(models_cmd.ENCODER, sha256=EXPORT_SHA256))
-    config = Config(triage={"encoder": str(destination), "encoder_url": served.url})
+    config = Config(
+        triage={"encoder": str(destination), "encoder_url": served.url},
+        free_text=_served_wordnet(served, tmp_path, monkeypatch),
+    )
 
     # WHY: --no-detectors keeps this test on the encoder. Warming the detectors
     # needs huggingface-hub, which the editorial extra carries and CI does not
@@ -156,6 +159,18 @@ def test_models_fetch_lands_the_configured_path_from_the_configured_url(
     assert result.exit_code == 0
     assert destination.read_bytes() == EXPORT
     assert str(destination) in result.output
+
+
+def test_models_fetch_lands_the_wordnet_corpus_free_text_reads(
+    served: _Fixture, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _pinned_everywhere(served, tmp_path, monkeypatch)
+
+    result = _invoke(["models", "fetch", "--no-detectors"], config)
+
+    assert result.exit_code == 0
+    assert (tmp_path / "wordnet" / "wordnet.zip").read_bytes() == EXPORT
+    assert "wordnet" in result.output
 
 
 def test_models_fetch_refuses_an_export_that_is_not_the_pinned_one(
@@ -200,7 +215,19 @@ def _pinned_everywhere(served: _Fixture, tmp_path: Path, monkeypatch: pytest.Mon
                 "marqo_onnx_url": served.url,
             }
         },
+        free_text=_served_wordnet(served, tmp_path, monkeypatch),
     )
+
+
+def _served_wordnet(
+    served: _Fixture, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> dict[str, str]:
+    """The WordNet corpus from the local fixture: a fetch never reaches GitHub from a test.
+
+    WHY: the pinned corpus is 11 MB, so the fixture's own digest stands in for it.
+    """
+    monkeypatch.setattr(models_cmd, "WORDNET", replace(models_cmd.WORDNET, sha256=EXPORT_SHA256))
+    return {"wordnet": str(tmp_path / "wordnet" / "wordnet.zip"), "wordnet_url": served.url}
 
 
 def test_models_fetch_lands_every_artifact_a_first_run_needs(
@@ -232,6 +259,7 @@ def test_models_fetch_refuses_a_detector_export_that_is_not_the_pinned_one(
                 "marqo_onnx_url": served.url,
             }
         },
+        free_text=_served_wordnet(served, tmp_path, monkeypatch),
     )
 
     result = _invoke(["models", "fetch"], config)

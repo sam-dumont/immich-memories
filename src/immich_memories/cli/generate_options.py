@@ -33,6 +33,15 @@ def _apply(command: Any, options: list[Any]) -> Any:
     return command
 
 
+def _account_names(_ctx: click.Context, _param: click.Parameter, value: str | None) -> tuple:
+    if value is None:
+        return ()
+    names = tuple(name.strip() for name in value.split(",") if name.strip())
+    if not names:
+        raise click.BadParameter("name at least one account", param_hint="'--accounts'")
+    return names
+
+
 def scope_options(command: FC) -> FC:
     """What the memory covers: the window to search, and whose memory it is."""
     options = [
@@ -70,7 +79,32 @@ def scope_options(command: FC) -> FC:
                 "every year the album holds gets a shot. Needs a model reader"
             ),
         ),
-        click.option("--person", "-p", type=str, multiple=True, help="Person name (repeatable)"),
+        click.option(
+            "--ask",
+            type=str,
+            default=None,
+            help=(
+                'Highly experimental: the film in a sentence, e.g. "our cat along the '
+                'years". Read by the configured model reader against your prepared library; '
+                "the translation is printed first. Needs tier: full"
+            ),
+        ),
+        click.option(
+            "--ask-trace",
+            type=click.Path(dir_okay=False, path_type=Path),
+            default=None,
+            help=(
+                "With --ask: keep the translation (the trace, the pool counts, the rule preview, "
+                "the verdict) in this JSON file, for a watcher such as the web client"
+            ),
+        ),
+        click.option(
+            "--person",
+            "-p",
+            type=str,
+            multiple=True,
+            help="Person name, or a UUID for exactly one person (repeatable)",
+        ),
         click.option(
             "--people-expression",
             "person_expression",
@@ -81,6 +115,14 @@ def scope_options(command: FC) -> FC:
             "in an episode counts in all of its pictures.",
         ),
         click.option(
+            "--group",
+            "group_label",
+            type=str,
+            default=None,
+            help="A label saved with `people group add`, resolved like --people-expression "
+            "(mutually exclusive with it, --person and --person-match)",
+        ),
+        click.option(
             "--person-match",
             type=click.Choice(["and", "or"]),
             default="and",
@@ -88,6 +130,16 @@ def scope_options(command: FC) -> FC:
             help=(
                 "With several --person values, require everyone recognised somewhere "
                 "in the same episode (and) or accept any named person (or)"
+            ),
+        ),
+        click.option(
+            "--accounts",
+            type=str,
+            default=None,
+            callback=_account_names,
+            help=(
+                "Immich accounts the film reads, comma-separated: primary plus names under "
+                "immich.accounts, e.g. primary,partner. Default: the primary alone"
             ),
         ),
         click.option(
@@ -269,10 +321,14 @@ def run_options(command: FC) -> FC:
             "--album", type=str, default=None, help="Immich album name for uploaded video"
         ),
         click.option(
-            "--add-date", is_flag=True, default=False, help="Caption each clip with its date"
+            "--add-date/--no-add-date",
+            default=None,
+            help="Caption each clip with its date (default: defaults.add_date, on)",
         ),
         click.option(
-            "--add-place", is_flag=True, default=False, help="Caption each clip with its place"
+            "--add-place/--no-add-place",
+            default=None,
+            help="Caption each clip with its place (default: defaults.add_place, on)",
         ),
         click.option(
             "--keep-intermediates",

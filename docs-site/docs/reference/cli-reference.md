@@ -272,9 +272,13 @@ immich-memories generate [OPTIONS]
 | `--birthday`, `-b` | text | - | Run the year up to a birthday, plus earlier birthdays (reads Immich's birth date, or override with MM-DD, e.g. 03-15) |
 | `--from-album` | text | - | Generate from an Immich album (name or ID) instead of a date range |
 | `--subject` | text | - | With --from-album: what the album was curated for, in your words. Every picture then stands on that subject, a loaf in a bread album included, and every year the album holds gets a shot. Needs a model reader |
-| `--person`, `-p` | text | - | Person name (repeatable) |
+| `--ask` | text | - | Highly experimental: the film in a sentence, e.g. "our cat along the years". Read by the configured model reader against your prepared library; the translation is printed first. Needs tier: full |
+| `--ask-trace` | file | - | With --ask: keep the translation (the trace, the pool counts, the rule preview, the verdict) in this JSON file, for a watcher such as the web client |
+| `--person`, `-p` | text | - | Person name, or a UUID for exactly one person (repeatable) |
 | `--people-expression` | text | - | Grouped people condition, e.g. ("Person A" OR "Person B") AND "Person C". Use exact library names; read per episode: a person recognised once in an episode counts in all of its pictures. |
+| `--group` | text | - | A label saved with `people group add`, resolved like --people-expression (mutually exclusive with it, --person and --person-match) |
 | `--person-match` | choice: `and` \| `or` | and | With several --person values, require everyone recognised somewhere in the same episode (and) or accept any named person (or) |
+| `--accounts` | text | - | Immich accounts the film reads, comma-separated: primary plus names under immich.accounts, e.g. primary,partner. Default: the primary alone |
 | `--memory-type` | choice: `year_in_review` \| `season` \| `person_spotlight` \| `multi_person` \| `monthly_highlights` \| `on_this_day` \| `album` \| `trip` \| `holiday` \| `special_day` | - | Memory type preset (album takes its pool from --from-album) |
 | `--holiday` | text | - | Holiday name or MM-DD (use with --memory-type holiday) |
 | `--season` | choice: `spring` \| `summer` \| `fall` \| `autumn` \| `winter` | - | Season (use with --memory-type season) |
@@ -300,8 +304,8 @@ immich-memories generate [OPTIONS]
 | `--sharing` | choice: `just-us` \| `family` \| `shareable` | - | Who the film is for: just-us (the household), family (default: defaults.sharing) or shareable (anyone) |
 | `--upload-to-immich` | boolean | false | Upload generated video back to Immich |
 | `--album` | text | - | Immich album name for uploaded video |
-| `--add-date` | boolean | false | Caption each clip with its date |
-| `--add-place` | boolean | false | Caption each clip with its place |
+| `--add-date` | boolean | - | Caption each clip with its date (default: defaults.add_date, on) |
+| `--add-place` | boolean | - | Caption each clip with its place (default: defaults.add_place, on) |
 | `--keep-intermediates` | boolean | false | Keep intermediate files for debugging |
 | `--privacy-mode` | boolean | false | Demo mode: blur every clip frame, scramble the audio, fake the person names |
 | `--title` | text | - | Override video title text |
@@ -427,6 +431,27 @@ what `immich-memories people` has always done.
 immich-memories people [OPTIONS]
 ```
 
+### `people bind`
+
+Say that one person has this id in another Immich account.
+
+PERSON is a store person id or a name exactly one person carries. The
+binding only adds the id: the name, birth date and everything you
+confirmed stay as they are. An id somebody else holds is refused,
+never merged, and binding the same id again changes nothing.
+
+```bash
+immich-memories people bind [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--account` | text | - | The account that reads the id: primary, or an extra account's name |
+| `--id` | text | - | The person's id as that account's Immich knows them |
+
+**Arguments:**
+- `person` (text)
+
 ### `people export`
 
 Write the people registry out as YAML, in the shape people.yaml had.
@@ -441,6 +466,14 @@ immich-memories people export [OPTIONS]
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
 | `--to` | file | - | Write the YAML here instead of to standard output |
+
+### `people group`
+
+Saved people expressions `generate --group` can reuse.
+
+```bash
+immich-memories people group [OPTIONS]
+```
 
 ### `people import`
 
@@ -626,6 +659,8 @@ immich-memories report [OPTIONS]
 | `--json` | boolean | false | Print the redacted report as JSON |
 | `--bundle` | file | - | Write the full redacted report to a ZIP file |
 | `--include-flagged-captions` | boolean | false | Include captions and reasons of flagged free-text photos; review before sharing |
+| `--wrong` | text | - | Mark a photo of a free-text film as wrong (repeatable); kept on the run |
+| `--missing` | text | - | Say what a free-text film is missing; kept on the run and checked against it |
 
 **Arguments:**
 - `run_id` (text)
@@ -723,8 +758,8 @@ immich-memories runs render [OPTIONS]
 | `--music` | text | - | A track to use, or 'auto' to choose as configured |
 | `--no-music` | boolean | false |  |
 | `--music-volume` | float | 0.5 |  |
-| `--add-date` | boolean | false | Date overlay on each clip |
-| `--add-place` | boolean | false | Place overlay on each clip |
+| `--add-date` | boolean | - | Caption each clip with its date (default: defaults.add_date, on) |
+| `--add-place` | boolean | - | Caption each clip with its place (default: defaults.add_place, on) |
 | `--privacy-mode` | boolean | false |  |
 | `--upload-to-immich` | boolean | false |  |
 | `--album` | text | - | Immich album for the upload |

@@ -6,7 +6,8 @@ sidebar_label: "Development Setup"
 
 The full contribution guidelines are in [CONTRIBUTING.md](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/CONTRIBUTING.md).
 
-You need Python 3.11+, FFmpeg, [uv](https://docs.astral.sh/uv/) and GNU Make.
+You need Python 3.11+, FFmpeg, [uv](https://docs.astral.sh/uv/) and GNU Make. The web UI also
+needs Node 22: a checkout builds its own client (see [The web client](#the-web-client)).
 
 ```bash
 git clone https://github.com/sam-dumont/immich-video-memory-generator.git
@@ -24,7 +25,7 @@ it before any other make target.
 | `make dev-test` | dev tools only | Default for contributors (what CI tests with) |
 | `make dev-ci` | dev tools only | Identical to `dev-test` today |
 | `make dev-mac` | dev + `all-mac` (Apple Vision, Metal, the editorial stack) | Apple Silicon, full feature set |
-| `make dev` | every declared extra (torch, demucs, editorial), slow | Only if you work across all optional backends |
+| `make dev` | every declared extra (torch, demucs, editorial) and the built web client, slow | Only if you work across all optional backends |
 
 **Rendering with generated music on a Mac? Also run `make install-acestep`.** None of the targets
 above install ACE-Step: it lives in a sibling `.venv-acestep` next to the checkout, so **every new
@@ -50,15 +51,21 @@ The test tiers, what each needs, and what to do when diff-cover fails on your PR
 ## The web client
 
 The web UI is a SvelteKit client in `web/` at the repository root, built into the Python package
-and served by the app at `/app`. Working on it needs Node 22 (what CI uses) on top of the Python
-setup above.
+and served by the app at `/app`. The built client is not committed: the release wheel and the
+Docker image build it, and a checkout builds its own. `make dev` does it for you. After
+`make dev-test`, run `make web-client` once (Node 22, what CI uses). Until then `/app` says the
+client is not built and names the command.
 
 ```bash
-make web-install        # the client's pinned dependencies (npm ci)
+make web-client         # npm ci, then build the client into the package
 cd web && npm run dev   # the Vite dev server, with hot reload
-make web-build          # build the client into the package, as the app serves it
-make web-check          # type-check, and fail on a stale bundle or API contract
+make web-build          # rebuild the client after a change, as the app serves it
+make web-check          # type-check, check the API contract and types, build, refuse Immich logos
 ```
+
+The build lands in `src/immich_memories/web/client/`, which git ignores, so two web PRs never
+conflict on hashed file names again. A wheel can't be built without it: `hatch_build.py` refuses
+one and names `make web-build`. `make build` builds the client first.
 
 The client talks to the app through `/api/v1`. After changing an endpoint, run `make web-api`: it
 regenerates the OpenAPI document and the client's TypeScript types from it, and `make web-check`
@@ -85,6 +92,34 @@ A real release runs CI, builds the app images, renders a CPU smoke film in the e
 and publishes the tested multi-architecture image before the GitHub release and PyPI packages.
 The package build must also pass before the Git tag is pushed. Release runs execute one at a time.
 
+### Release candidates
+
+The **Channel** input picks what a run publishes. `stable` (the default) is a final release; `rc`
+is a release candidate, tagged `vX.Y.Z-rc.N`.
+
+1. **Open a series.** Run with channel `rc` and the bump for the coming final, for example
+   `major` from `v0.103.0`. That publishes `v1.0.0-rc.1`.
+2. **Fix and repeat.** Merge fixes to `main`, then run with channel `rc` again: `v1.0.0-rc.2`,
+   `rc.3` and so on. The bump input is ignored while a series is open. A run with no commit
+   since the last candidate fails instead of publishing a duplicate.
+3. **Promote.** Run with channel `stable`. It publishes `v1.0.0` from `main`, with notes covering
+   the whole series since the previous final. The run fails if `main` gained a `feat`, `fix`,
+   `perf`, `refactor`, `build`, `revert` or breaking commit since the last candidate: that code was
+   in no candidate, so cut one more first. Docs, tests, CI and chores do not block promotion.
+
+A candidate goes through the same CI, smoke film and approval gates as a final, and differs in
+what it moves:
+
+| | Candidate | Final |
+|---|---|---|
+| GitHub release | marked pre-release, not "Latest" | marked "Latest" |
+| App image | `:1.0.0-rc.1` only | `:1.0.0` and `:latest` |
+| Inference images | `:1.0.0-rc.1`, `:1.0.0-rc.1-cuda` | also `:latest`, `:latest-cuda` |
+| PyPI | `1.0.0rc1`, installed only with `pip install --pre` | default install |
+| Docs site | not deployed | deployed |
+
+Testers pin the exact candidate tag. `latest` users stay on the previous final until promotion.
+
 CI uses `make secret-scan` for both PRs and release runs: all commits since the latest version
 tag, or all history for the first release. It also catches secrets removed by a later commit in
 that range. Install Gitleaks 8.24.3 to run the same scan locally; pre-commit uses that version too.
@@ -108,6 +143,7 @@ src/immich_memories/
   api/          # Immich API client
   analysis/     # Story-first selection (the editorial route)
   store/        # The annotation store: every banked fact and reading
+  db/           # The store's engine, tables, migrations, backup and restore
   triage/       # The pinned ONNX encoder and its eight context heads
   people/       # The people graph and the companion file
   photos/       # Photo-to-video animation

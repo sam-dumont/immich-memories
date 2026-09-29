@@ -13,6 +13,7 @@ whole period ahead of time, use [`prepare`](./prepare.md).
 Without `--duration` the length comes from the material the period holds, and the run prints what decided it:
 see [how long a film runs](../memory-types.mdx#how-long-a-film-runs). With `--duration`, selection budgets the
 finished film: it reserves the opening, the ending and the dividers, and credits the crossfade overlap. A
+trip's map moves run on top of it ([Maps and film length](../titles-maps-music.md#maps-and-film-length)). A
 period with too little material finishes shorter rather than padding.
 
 ```bash
@@ -88,10 +89,23 @@ immich-memories generate --memory-type special_day --day 2021-04-04
 immich-memories generate --year 2025 --month 8 --short-form 30
 ```
 
-Four things the examples hide:
+Seven things the examples hide:
 
 - `--people-expression` takes exact library names, binds `AND` tighter than `OR`, and works on
   date-range memories (months, years, seasons). Trips, albums and single-person presets refuse it.
+- `--person` and `--people-expression` look a name up in the people registry first: a person
+  there is every face cluster bound to them, in every account the run reads. A name the registry
+  doesn't hold matches Immich's own people list, the same as before the registry existed.
+- A name two registry people share picks both, and the run prints a warning listing each one
+  with its id. Pass that id instead (`--person 3f2a9c1e-...`) to pick one. A UUID is always read
+  as an id, never a name: a registry person's id, or an Immich person id from either account,
+  which picks the registry person holding it (or just that face if nobody does). An id nothing
+  holds stops the run before it reads a picture.
+- `--accounts primary,partner` reads each named account (from `immich.accounts`, plus `primary`)
+  into one film. Without it the primary account reads alone. A face bound to the partner's
+  account only counts on the partner's pictures, and `AND` still holds per episode: one person on
+  your copy of the afternoon and the other on your partner's is enough. An unknown name fails
+  before any request. Albums and trips read the primary only.
 - A person or multi-person memory with no dates at all is not an error. It runs from the first day
   one of its pictures could exist to today, read off the birth dates Immich holds (and the people registry
   where Immich holds none). See [memory types](../memory-types.mdx#a-people-memory-with-no-dates).
@@ -107,6 +121,32 @@ Four things the examples hide:
 `--subject` only works with `--from-album`, and needs a model reader. It tells the editor the album
 is a pool you picked for that subject, so a lone loaf or a parked car is not refused for having
 nobody in it. See [an album made for one subject](../memory-types.mdx#an-album-made-for-one-subject).
+
+## A film from a sentence
+
+**Highly experimental.** Tuned on one real library and a few synthetic ones: expect wrong
+translations on yours. How it reads a sentence, what works and how to report a bad result:
+[A film from a sentence](../free-text.md).
+
+```bash
+immich-memories generate --ask "our cat along the years" --dry-run
+immich-memories generate --ask "our cat along the years" --duration 120
+```
+
+`--ask` needs `tier: full` (a configured reader) and a prepared library: it reads the captions,
+faces and place names `prepare` banked, plus the letters Immich's OCR found. It prints the
+translation before anything runs, one line per decision (which words went where, the rule or
+the question behind each, the votes, and how many pictures each filter kept). With `--dry-run`
+it also shows which editor rules would drop pool pictures (a count and a few hashed ids per rule,
+[details](../free-text.md#which-rules-would-drop-pictures)) and stops there. `--ask-trace FILE`
+keeps the same translation and rule preview as JSON, which is where the web UI's preview reads it
+from.
+
+The sentence is the whole scope, so `--year`, `--person`, `--from-album` and the other scope flags
+are refused next to it. The pool it finds is filmed like an album whose subject is your sentence,
+forwarded pictures included. One occasion of one day ("our wedding") goes to the special-day
+product instead. A sentence the library cannot show makes no film and says which filter emptied
+it. The translation is kept with the run, for [`report`](./report.md).
 
 ## Trips
 
@@ -168,16 +208,17 @@ the run attempt directory, and `runs why` names one when you ask about it. A run
 
 ## Output
 
-`--output` names the file you want, not the path you get. Every run writes into its own folder,
-named after the file plus the run id, so a rerun never overwrites an earlier result:
+`--output` names the file you want, not the path you get. The name gains an 8-character recipe hash
+(the same clips in the same order over the same dates hash the same), and every run writes into its own
+folder, named after that file plus the run id, so a rerun never overwrites an earlier result:
 
 ```bash
 immich-memories generate --year 2025 --output ~/Videos/summer.mp4
-# writes ~/Videos/summer_20260105_143052_a7b3/summer.mp4
+# writes ~/Videos/summer_3c9e1f0a_20260105_143052_a7b3/summer_3c9e1f0a.mp4
 ```
 
-Without `--output` the file lands in `output.directory` (`~/Videos/Memories/`) as
-`{person}_{memory-type}_{date}.mp4`. Nothing prunes those folders; `runs delete` removes a run and
+Without `--output` the file lands in the same kind of folder in `output.directory` (`~/Videos/Memories/`),
+named `{people}_{memory-type}_{dates}_{hash}.mp4`, with `all` when no one is named. Nothing prunes those folders; `runs delete` removes a run and
 its output.
 
 `--upload-to-immich --album "2024 Memories"` creates the album if it does not exist; the

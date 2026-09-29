@@ -228,7 +228,7 @@ class TestSecretRedaction:
 
         logging.getLogger("test.redaction").warning("token=trigger-token-from-config")
 
-        printed = capsys.readouterr().out
+        printed = capsys.readouterr().err
         assert "trigger-token-from-config" not in printed
         assert "[redacted]" in printed
 

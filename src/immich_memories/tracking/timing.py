@@ -13,6 +13,8 @@ from itertools import count
 from typing import Any
 
 from immich_memories.logging_config import SecretRedactionFilter, redact_secrets
+from immich_memories.process_start import Startup
+from immich_memories.tracking import peak_memory
 
 # The lines a run keeps for its report; the report shows the tail, the counts cover all.
 LOG_LINES = 5000
@@ -32,6 +34,9 @@ class Span:
     attributes: dict[str, float] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
     error: dict[str, Any] | None = None
+    # Resident bytes at the span's highest point: this process, and it plus its children.
+    peak_rss: int | None = None
+    peak_tree_rss: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Portable representation shared by the store, reports and matrix exports."""
@@ -118,6 +123,34 @@ def collecting(*, now: Callable[[], float] = time.perf_counter) -> Iterator[Coll
         _active.reset(token)
 
 
+def open_at(root: Span, startup: Startup | None) -> None:
+    """Move the root span back to process start and name the time before it `startup`.
+
+    Each phase mark closes one `startup.<phase>` child where the previous one ended, and
+    `startup.run_record` runs from the last mark to the root's old opening, so the children
+    cover the startup span with no gap.
+    """
+    collector = active()
+    if collector is None or startup is None or not startup.started < root.start:
+        return
+    opened = root.start
+    root.start = startup.started
+    whole = Span(
+        next(collector._ids), "startup", root.span_id, startup.started, opened - startup.started
+    )
+    collector.spans.append(whole)
+    token = _parent.set(whole)
+    try:
+        begin = startup.started
+        for phase, ended in startup.marks:
+            if begin <= ended <= opened:
+                collector.interval(f"startup.{phase}", begin, ended - begin, None)
+                begin = ended
+        collector.interval("startup.run_record", begin, opened - begin, None)
+    finally:
+        _parent.reset(token)
+
+
 @contextmanager
 def span(name: str, *, items: int | None = None, **attributes: float) -> Iterator[Span]:
     """Measure one operation, retaining its exception and application frames on failure."""
@@ -133,6 +166,7 @@ def span(name: str, *, items: int | None = None, **attributes: float) -> Iterato
         attributes=attributes,
     )
     token = _parent.set(measured)
+    watch = peak_memory.watch_open() if collector else None
     try:
         yield measured
     except BaseException as error:
@@ -150,6 +184,9 @@ def span(name: str, *, items: int | None = None, **attributes: float) -> Iterato
         raise
     finally:
         measured.duration = max(0.0, now() - measured.start)
+        if watch is not None:
+            peak_memory.watch_close(watch)
+            measured.peak_rss, measured.peak_tree_rss = watch.own, watch.tree
         _parent.reset(token)
         if collector is not None:
             collector.spans.append(measured)

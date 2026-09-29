@@ -99,7 +99,7 @@ repos:
         types: [python]
 
       - id: cognitive-complexity
-        name: Cognitive complexity (complexipy with snapshot)
+        name: Cognitive complexity (complexipy against the watermark)
         entry: make cognitive-complexity
         language: system
         pass_filenames: false

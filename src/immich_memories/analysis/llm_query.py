@@ -23,7 +23,15 @@ from typing import TYPE_CHECKING, Any
 import httpx
 
 from immich_memories.analysis import llm_metrics
-from immich_memories.analysis.llm_providers import resolved_llm_config
+from immich_memories.analysis.llm_adaptations import (
+    adaptation_for,
+    announce_adaptation,
+    apply_adaptations,
+)
+from immich_memories.analysis.llm_providers import (
+    resolved_llm_config,
+    structured_output_enabled,
+)
 from immich_memories.analysis.llm_text_identity import text_judgment_key
 from immich_memories.analysis.llm_wire import (
     ANSWERED_ENDPOINTS,
@@ -34,14 +42,11 @@ from immich_memories.analysis.llm_wire import (
     TRANSPORT_RETRIES,
     LLMIncompleteResponse,
     LLMTransportAttempt,
-    adaptation_for,
-    announce_adaptation,
     anthropic_answer,
     anthropic_headers,
     anthropic_payload,
     anthropic_reasoned,
     anthropic_usage,
-    apply_adaptations,
     apply_anthropic_reasoning,
     apply_reasoning_headroom,
     apply_thinking_budget,
@@ -118,11 +123,13 @@ def _learn_dialect(
     if adaptation is None or adaptation in applied_adaptations:
         return False
     observe(transport_observer, 1, "dialect_adaptation", resp.status_code, adaptation)
+    newly_learned = adaptation not in adaptations
     adaptations.add(adaptation)
     applied_adaptations.add(adaptation)
     before = payload.get("thinking")
     apply_adaptations(payload, adaptations)
-    announce_adaptation(adaptation, before, payload.get("thinking"))
+    if newly_learned:
+        announce_adaptation(adaptation, before, payload.get("thinking"))
     return True
 
 
@@ -219,7 +226,7 @@ async def query_llm(
             max_tokens=max_tokens,
             temperature=temperature,
             require_complete=require_complete,
-            response_format=response_format if llm_config.structured_output else None,
+            response_format=response_format if structured_output_enabled(llm_config) else None,
         )
         if not images
         else None
@@ -386,7 +393,7 @@ def _ollama_shape(
 ) -> None:
     """Ollama takes the JSON shape as `format` and the penalty as `repeat_penalty`."""
     schema = (response_format or {}).get("json_schema", {}).get("schema")
-    if schema and config.structured_output and not images:
+    if schema and structured_output_enabled(config) and not images:
         payload["format"] = schema
     if config.repetition_penalty is not None:
         payload["options"]["repeat_penalty"] = config.repetition_penalty

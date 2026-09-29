@@ -23,8 +23,9 @@ flowchart TD
   day --> home{"within 10 km of home?<br/>editorial_home_radius, trips.homebase_*"}
   home -- "yes, or no home base set" --> week["cut on the ISO week<br/>RuleStructureReader._runs"]
   home -- no --> away["the stretch away stays whole<br/>RuleStructureReader._runs"]
+  away --> legs["cut where it changes where it stays<br/>trip_legs.legs_of_days"]
   week --> story["one story per run<br/>RuleStructureReader._stories"]
-  away --> story
+  legs --> story
   story --> places["one place may not fill a story<br/>editorial_story_places.place_shares"]
 ```
 
@@ -34,17 +35,51 @@ flowchart TD
 | Episode | the same test at 90 minutes and 2 km; every moment sits in exactly one episode | `EPISODE_WINDOW_MINUTES`, `build_episode_groups` |
 | Capture run | captures each within five minutes of the one before; it spaces shots and is the unit of the exposure rule | `MIN_GAP_IN_CAPTURE_GROUP_SECONDS` |
 | Day chunk | same calendar day, or starting within 6 hours of the last picture (a late night stays one night); split only when more than 90 minutes pass **and** the city changes | `RuleStructureReader._day_chunks` |
-| Story | a run of consecutive photographed days: at home, cut on the ISO week; away, kept whole; a day back home ends it | `RuleStructureReader._runs` |
+| Story | a run of consecutive photographed days: at home, cut on the ISO week; away, kept whole unless it changes where it stays (below); a day back home ends it | `RuleStructureReader._runs` |
+| Trip leg | days stay in one area while each day's median position is within 25 km of the area's; an area of 3 days or more is a leg, a shorter one joins a neighbour; a trip splits only when two legs are more than 50 km apart | `trip_legs.legs_of_days` |
 
 "Away" is more than 10 km from `trips.homebase_latitude` / `homebase_longitude`. Without a home base
 nothing is away, so a three-week holiday arrives as three weekly stories. Setting it is step one of
 [Teach it your family](../get-started/who-is-who.md).
+
+**A trip that changes where it stays is two stories.** A week hiking village to village and then four
+days in a city are two chapters. As one story, the hike's favourites took every slot and the city got
+none. A road trip that never stays three days in one place is still one story, and so is a week on an
+island with day trips. Each leg is weighed on its own, with its own name and the same rules for days
+without a favourite. A trip film splits the same way.
 
 **One place does not take a film.** Inside a story, each place may hold only the share of shots its
 days (or its moments, on a one-day story) earn against the rest, on the same square-root curve a trip
 allowance uses. A story that only ever visited one place is never bounded. A picture refused for its
 place comes back when nothing else can fill the slot, and a starred one comes back before a shot
 nothing vouches for keeps its slot.
+
+**A one-off inside an ordinary day is its own story.** A week at home is one story, so an evening
+across town photographed in two dense bursts used to share that week's single shot with the
+morning's errands. An episode of a home story now becomes its own **event** story when all of this
+holds (`editorial_event_story.py`):
+
+- it's dense on its own: its pictures reach the same day threshold the gate uses for a whole day
+  (4x the median photographed day, or the 75th percentile if that's higher),
+- it's at least 2 moments, so one burst of a cake, a pet or a sunset never counts,
+- its activity label differs from every other episode of its day (or, alone on its day, from the
+  episodes either side of it in the story),
+- when both sides have GPS, it's at least 1 km from them.
+
+Nothing here names a kind of event: a race, a concert, a graduation and a prize evening all look
+the same to it. A story with three favourites or a big one already has the depth, so it isn't cut,
+and a trip stays whole. The event is funded first among stories of its weight (like a trip) and
+reserves 2 shots, the most a `minor` story takes.
+
+A screen or document the next day can add a third shot, never make an event. When a picture no
+camera made (a screenshot, a scan), taken within 18 hours after the event, has a result, finish,
+time or rank word on it according to Immich's own OCR, the event reserves 3. The words are
+generic ("result", "time", "rank", "record", "score", "certificate", "prize"...), and the read is
+one Immich search per word, only for the events the draft found. The events and whether a
+screen backed them up are listed under `events` in `derived-decisions/period-story.private.json`.
+
+Known limit: a dinner out photographed like an occasion (40 pictures in 3 bursts across town) is
+an event too. From counts, places and labels alone it looks exactly like one.
 
 ## How much a story weighs
 
@@ -97,6 +132,27 @@ Slots are handed out in order: one for each `major` story, then one `minor` per 
 stories up to their ceiling, the remaining `minor` stories, one `glimpse` per day, and whatever is
 left deepens the heavier stories one moment at a time.
 
+In a long film the `major` ceiling rarely binds. The budget runs out first, so every `major` story
+ends up at the same depth: a two-evening story with a handful of stars gets as many shots as a
+ten-day trip with a hundred.
+
+**A recurring kind is one story's worth.** Three starred evenings of the same thing at the same
+place in one month (three concerts at the same hall, three matches at the same club) used to take
+three full `major` shares. Now they count as one kind when all of this holds:
+
+- the densest episode of each story carries the same activity label,
+- that episode alone reaches the day threshold the gate already uses (4x the median photographed
+  day, or the 75th percentile if that's higher), so a label on a few ordinary pictures links nothing,
+- they happen at the same place: the GPS medians of those episodes are within 10 km, or they have
+  the same place name when one of them has no GPS,
+- they fall in the same part of the film (a month in a year film, the whole film otherwise).
+
+Every story of the kind keeps its own shot. Only the heaviest one (most favourites, then most
+moments) goes deeper, as deep as any other `major` story. A trip and a big family story never fold:
+they carry their own weight, so a birth-sized day next to smaller days of the same label keeps
+everything it had. The kinds found are listed under `same_kind` in
+`derived-decisions/period-story.private.json` (`editorial_same_kind.py`).
+
 **Every year gets a shot.** A person film longer than 18 months (548 days) is split into calendar
 years, a person film over several date ranges into those ranges, and a custom film over several
 ranges likewise. Before any story takes a second shot, each year (or range) that holds a funded
@@ -111,14 +167,15 @@ one. A year-in-review film is one year, so this does not apply to it.
 
 ## When the model plans the whole film
 
-On a model install, a film over several separate windows (on this day across years, a holiday
-across years, a birthday film) has no single period account to polish, so the model plans it whole, and so
-does any film with `advanced.editorial.thin_model_layer: false` (see [What a model adds](./what-a-model-adds.md)). Only that route adds these:
+On a model install, the model plans the whole film only when `advanced.editorial.thin_model_layer`
+is `false` (Route C in [What a model adds](./what-a-model-adds.md)). Every other film, one over
+several separate windows included (on this day across years, a birthday with flashbacks), starts
+from the no-model draft on this page and gets the polish. Only Route C adds these:
 
-- **Trips fold into one story** (`editorial_story_trips`), with a reserve of
-  `round(slots / 2 * sqrt(trip days / film days))` shots, at least one.
+- **Trips fold into one story per leg** (`editorial_story_trips`), each with a reserve of
+  `round(slots / 2 * sqrt(leg days / film days))` shots, at least one.
 - **Recurring activities become one thread** (`editorial_story_threads`): four Saturdays at the same
   climbing gym are one story, one per calendar year in a film longer than 18 months, so a year of
-  progress still shows.
+  progress still shows. The no-model draft has its own, narrower version: the recurring kind above.
 - **`dominant`** is set by the model naming at most two central stories. The no-model draft never
   sets it, so its heaviest weight is `major`.

@@ -1,0 +1,68 @@
+{
+  "request": "sport apps screenshots along the year",
+  "shape": "the kind is found, the captions never say sport",
+  "answers": {
+    "Split the owner's request": {
+      "who": [],
+      "when": [
+        "along the year"
+      ],
+      "where": [],
+      "what": [
+        "sport apps screenshots"
+      ]
+    },
+    "Give the date range": {
+      "date_from": null,
+      "date_to": null
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": []
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "many occasions"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    }
+  },
+  "expect": {
+    "reading": {
+      "when": [
+        "along the year"
+      ],
+      "what": [
+        "sport apps screenshots"
+      ]
+    },
+    "who": {
+      "present": [],
+      "anchors": [],
+      "company": null
+    },
+    "when": [
+      null,
+      null
+    ],
+    "where": "anywhere",
+    "subject": [
+      "apps"
+    ],
+    "facts": {
+      "picture_kinds": [
+        "screenshots"
+      ]
+    },
+    "funnel": [
+      "library",
+      "kind of picture",
+      "subject"
+    ],
+    "pool": [],
+    "verdict": "not possible",
+    "film": "none"
+  }
+}

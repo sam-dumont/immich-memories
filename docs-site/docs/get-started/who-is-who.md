@@ -52,7 +52,7 @@ Immich first. Then, in this app, open **Settings > People**:
    Immich (never a pixel) and keeps the result in the people registry, in the app's store. The
    roster lists the inner circle first.
 2. For your partner, your children and your parents, set **Role** to `partner`, `child` or
-   `parent`. It saves the moment you pick it.
+   `parent` (pick the suggestion or type it). It saves as soon as you set it.
 3. Under **Relationships**, confirm the links the scan proposed (**Yes, that is right**) or reject
    them (**No, they are not**). **Add a relationship** records one it missed.
 

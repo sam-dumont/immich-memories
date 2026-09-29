@@ -53,8 +53,11 @@ class TestPipelineLockWiredInPipeline:
             # WHY: a home the legacy lock location would resolve under
             patch("immich_memories.generate.Path.home", return_value=fake_home),
             # WHY: a full disk ends the run right after the lock is taken
-            patch("immich_memories.generate.shutil.disk_usage", return_value=MagicMock(free=0)),
-            pytest.raises(GenerationError, match="Insufficient disk space"),
+            patch(
+                "immich_memories.operations.disk_guard.shutil.disk_usage",
+                return_value=MagicMock(free=0),
+            ),
+            pytest.raises(GenerationError, match="Not enough free space"),
         ):
             generate_memory(params)
 

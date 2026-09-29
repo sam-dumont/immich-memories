@@ -88,7 +88,10 @@ def test_each_variant_installs_only_its_device_extra() -> None:
     assert "--all-extras" not in build
     assert "--require-hashes -r /deps-hashes.txt" in build
     assert "pip check" in build
-    assert "torch" not in build
+    assert "TORCH_INDEX=cpu" in cpu
+    assert "TORCH_INDEX=cu128" in cuda
+    assert '-r "docker/demucs-${DEVICE}-requirements.txt"' in build
+    assert "from demucs.pretrained import get_model" in build
     assert "pip uninstall" not in build
 
 

@@ -12,6 +12,7 @@ from immich_memories.analysis.editorial_story_shortlist import (
     shortlist_story_moments,
 )
 from immich_memories.analysis.editorial_story_weighing import consecutive_runs
+from immich_memories.api.models import ExifInfo
 
 HOME = (50.8468, 4.3525)
 AWAY = (41.9028, 12.4964)
@@ -27,7 +28,7 @@ def _reader(days, *, place, home=HOME):
             file_created_at=datetime(2024, 6, 3) + timedelta(days=offset, hours=9),
             is_favorite=False,
             is_video=False,
-            exif_info=SimpleNamespace(city="somewhere"),
+            exif_info=ExifInfo(city="somewhere"),
             people=[],
         )
         moments[f"M{offset:03}"] = (asset_id,)

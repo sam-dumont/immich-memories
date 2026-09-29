@@ -1,0 +1,76 @@
+# Strategic-merge patch: a second init container that installs config.yaml
+# at 0600, the Secret that file's ${VAR} placeholders expand against, and the
+# tier the file names.
+#
+# A ConfigMap volume's files belong to root, so the app's uid can read one
+# only through its group or world bits (the default mode is 0644), and
+# config_loader.py warns ("Config file ... is readable by other users") on
+# either. The fix
+# copies the file, as the app's own uid, onto the writable cache PVC and
+# chmods it there, rather than mounting the ConfigMap at
+# ~/.immich-memories/config.yaml directly. Both this container and the app
+# container share fsGroup 1000 from the pod's securityContext (base/deployment.yaml).
+#
+# The base's own fetch-models init container and the render-sidecar's worker
+# container are untouched: initContainers, containers and volumes all merge
+# by name, so this only appends entries.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-memories
+  namespace: immich-memories
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: install-config
+          image: ghcr.io/sam-dumont/immich-video-memory-generator:latest
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -c
+            - |
+              cp /config-src/config.yaml /home/immich/.immich-memories/config.yaml
+              chmod 600 /home/immich/.immich-memories/config.yaml
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+            limits:
+              memory: "64Mi"
+              cpu: "250m"
+          volumeMounts:
+            - name: config-src
+              mountPath: /config-src
+              readOnly: true
+            - name: data
+              mountPath: /home/immich/.immich-memories
+      containers:
+        - name: immich-memories
+          # Listed in full: envFrom has no merge key, so a partial list here
+          # would drop base/secret.yaml's own Immich credentials (the same
+          # trap overlays/postgres documents on its own env patch).
+          envFrom:
+            - secretRef:
+                name: immich-memories-secrets
+            - secretRef:
+                name: immich-memories-maximalist
+          # base/deployment.yaml sets IMMICH_MEMORIES_TIER=auto, and an env var
+          # beats config.yaml: without this the pod runs `auto`, which lands on
+          # nas here (no inference service) and never asks the caption server.
+          # env merges by name, so this replaces only that one entry.
+          env:
+            - name: IMMICH_MEMORIES_TIER
+              value: full
+      volumes:
+        - name: config-src
+          configMap:
+            name: immich-memories-config

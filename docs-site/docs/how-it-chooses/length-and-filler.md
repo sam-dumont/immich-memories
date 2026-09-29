@@ -11,7 +11,9 @@ every shot earned beats a full one padded with the fridge, the ceiling and a scr
 
 Taken to the end, a period can hold nothing worth a film at all: three pictures of a floor
 being laid, say. Then no film is made, the run says `Nothing worth a film in February 2019` and
-exits 0. That is an answer, not a failure. A period with no pictures in it at all (a wrong date
+exits 0. That is an answer, not a failure. But one shot worth showing is a film: a special day
+that keeps two good clips gets a 13-second film, not nothing. The only exception is on this day,
+which is about a day coming back, so it needs two years that hold something. A period with no pictures in it at all (a wrong date
 range, a filter, Immich unreachable) still ends in an error and exit 1.
 
 How the target itself is set (per memory type, per active day, `--duration`) is on
@@ -92,7 +94,10 @@ The draft tries to reach its length before it gives up the seconds:
 
 - **Depth.** When a story has slots left after every pass, it spends them inside the moments it
   already shows (`editorial_story_depth.py`): first moments no pick took, alternating between
-  capture groups, then up to 3 frames of each chosen moment. Eligible favourites come first;
+  capture groups, then further frames of each chosen moment, one round at a time, until the
+  slots run out. A 36-minute moment of laps on a track can fill a short film this way. Videos
+  come before stills, frames are spread across the moment's time, and the story's place bound
+  grows with the slots it now spends. Eligible favourites come first;
   equally preferred frames spread furthest in time from those already in. Every one must stand
   and must not look like its neighbours. A film of one repeated
   scene stays short.

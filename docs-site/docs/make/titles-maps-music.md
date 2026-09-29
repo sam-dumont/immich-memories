@@ -4,8 +4,6 @@ title: Title screens, maps and music
 
 # Title screens, maps and music
 
-down.
-
 The clips are the film, but the cards around them are what make it read as a memory and not an FFmpeg concat
 of your camera roll:
 
@@ -17,7 +15,11 @@ of your camera roll:
   binds the first month changes win, so a thin January can keep its card while a busy November loses one.
 - **Trip map**: a satellite fly-over from home to the destination, in place of the intro. Off by default, see
   [The map fly-over](#the-map-fly-over).
-- **Location cards**: the city name between trip segments.
+- **Location cards**: the place name where a trip moves on. A hop of more than 30 km always gets one. A
+  walking or cycling trip moves village to village well under that, so a change of town gets one too: at
+  most one a day, never the same town twice in a row, never a town within 50 km of home. With map tiles on,
+  each card flies from the town the last card named to the new one, then holds on its name. See
+  [Map moves](#map-moves).
 - **Ending**: a fade to white, no text. Every film keeps it; a short film squeezes it to 2 s rather than dropping it.
 
 All of this works on a plain NAS. Titles come from templates, the special-day catalogue and your album names; a
@@ -102,7 +104,7 @@ the end of February is `Summer 2024–25`. Without a home base, or for any other
 August 2025`).
 
 The web UI's suggested title is the same template in the same language, so with no reader a French trip made
-in the wizard opens on "DEUX SEMAINES EN CRÈTE, GRÈCE, ÉTÉ 2025", exactly as the CLI would.
+in the web UI opens on "DEUX SEMAINES EN CRÈTE, GRÈCE, ÉTÉ 2025", exactly as the CLI would.
 
 | Language | Code | Trip titles |
 |---|---|---|
@@ -159,13 +161,15 @@ The full title adds the length and the season or month: `TWO WEEKS IN CRETE, GRE
 
 Immich stores places in English. Country, island and region names are translated offline (CLDR and the bundled
 tables). City names stay as Immich stored them unless you switch on `network.geocoding`, which asks Nominatim
-for the district each clip is in, in the film's language, one request per distinct place and kept for the
-next film. That also fixes the district Immich names after its neighbour (Wilrijk, not Hoboken) on captions,
-location cards and map pins. What that sends is on [Privacy](../run/privacy.md).
+for the district each picture is in, in the film's language, one request per distinct place and kept for the
+next film. That also fixes the district Immich names after its neighbour (Wilrijk, not Hoboken) everywhere a
+place is named: story titles, captions, location cards, map pins and the report. What that sends is on [Privacy](../run/privacy.md).
 
 ## Date and place captions
 
-`generate --add-date --add-place` burns small translucent captions on the clips: 48 px on a 1080p frame at
+Every film gets small translucent date and place captions unless you turn them off: `defaults.add_date`
+and `defaults.add_place` are on, and `--no-add-date` or `--no-add-place` drops one for a single film (the
+web render panel has the same two boxes). They are 48 px on a 1080p frame at
 85 % opacity, each one appearing when it changes. Captions stay clear of dissolves so two never overlap, and a
 caption in any alphabet draws with the title fonts above, HDR included.
 
@@ -188,12 +192,63 @@ network:
   map_tiles: true
 ```
 
-Off, a trip film opens on the ordinary title card and nothing about where you went leaves the machine. On, the
-camera starts over home at city zoom, flies out to the destinations and settles where every pin shows, in
-`title_duration`. Long distances use a Van Wijk zoom (the d3 `interpolateZoom` path, which pulls out further
-the further apart the points are); short hops pan. Tiles come from ArcGIS World Imagery at
-`server.arcgisonline.com`, no key, a few hundred per fly-over. A box that cannot reach it renders grey frames
-and the run carries on.
+Off, a trip film opens on the ordinary title card, location cards show the town name on the style's own
+background, and nothing about where you went leaves the machine. On, the camera starts over home at city zoom
+and flies out to the trip's stops. Long distances use a Van Wijk zoom (the d3 `interpolateZoom` path, which
+pulls out further the further apart the points are); short hops pan. Tiles come from ArcGIS World Imagery at
+`server.arcgisonline.com`, no key, a few hundred per map. A box that cannot reach it renders grey frames and the
+run carries on.
+
+### Map moves
+
+Every map in a trip film is one move: an eased flight, then at least 2 seconds sitting still on the destination
+with its name up. That goes for the intro and for each location card, the town-change cards of a walk
+included. A card flies from the place the previous card named (the trip's first place for the first card) to
+its own town, so a hike reads as village to village on the map.
+
+A move lasts 6 seconds for a short hop and 8 for a long flight, scaled on the log of the distance: 30 km gets
+6 s, 300 km about 7 s, 3000 km and more 8 s. The 2 s hold always stays; the flight gets the rest.
+
+```yaml
+title_screens:
+  map_move_min_seconds: 6.0   # nearby place, hold included
+  map_move_max_seconds: 8.0   # far place, hold included
+```
+
+A card renders every flight frame once and the hold once, so a 7 s card at 30 fps is about 150 map renders.
+Tiles are cached for the whole card. The log line per card gives frames, renders and tiles.
+
+### Stops on the intro
+
+Every pin on the intro has a name. A point nobody can name gets no pin, since an unlabelled dot tells you
+nothing.
+
+Close stops are grouped with the trip-leg rule: points that stay within 25 km of each other are one area of stay.
+
+- A group of 1 or 2 stops keeps each town's own name.
+- A group of 3 or more is one pin in its middle, named by the place its members share: the municipality,
+  county, district, island, province or region, from the geocoder, in the film's language. With
+  [geocoding](../run/privacy.md) off, or no level in common, it is named "first → last" (`Village A → Village G`).
+
+So a hike through seven villages in one valley is one stop with the valley's county on it, and the intro flies
+there as one hop. The intro never hops stop by stop: each location card already flies that leg at a
+watchable speed, and an 8-stop trip at 2 s a hop would open on 18 s of map before any picture.
+
+### Maps and film length
+
+Maps run on top of the length you asked for. The budget counts each map at the price of what it replaces (a
+location card at `month_divider_duration`, the intro at `title_duration`), so a 3-minute trip keeps its
+3 minutes of pictures and regular cards, and the seconds the maps run past that are added on top. Three
+location cards and an intro add about 20 s.
+
+The render log says it once the film is composed:
+
+```
+Final timeline: 163.5s content + 16.5s titles + 21.0s map extra
+```
+
+`immich-memories runs show <run-id>` prints the same line as **Timeline**, and
+[`immich-memories report`](./cli/report.md) carries it under `run.timeline`.
 
 ## When a model names the film
 
@@ -282,5 +337,6 @@ immich-memories music add compilation.mp4 output.mp4 --mood nostalgic
 `music search` reads `audio.local_music_dir` (`~/Music/Memories`). `music add` mixes a track under a video you
 already have, with the same ducking. Without `--music` it picks a track from that folder by `--mood`, and by
 `calm` when you give none. A standalone video has no cut text to read, and no command here sends a frame to a
-model: pictures are read once, at ingest. Every flag is in the
+model: pictures are read once, at ingest. To hear what a finished cut would get before you render it,
+`music preview RUN` generates its track ([runs render](./cli/runs.md#runs-render)). Every flag is in the
 [CLI reference](../reference/cli-reference.md#music).

@@ -69,13 +69,13 @@ touches nothing.
 | `llm.base_url` (caption provider) | explicit `advanced.editorial.preparation.caption_provider: llm`, on any tier | synthetic schema controls, then missing picture tiles and candidate video frame strips; configured LLM credentials | off; existing valid SmolVLM captions are reused first |
 | `inference.facts_base_url` | preparation, when set | each picture's preview, for the heads and detectors | unset: the app runs them itself |
 | `render.worker_base_url` | rendering on another box | the chosen cut, plus your Immich URL and API key so the worker can fetch the clips | unset: renders here |
-| `nominatim.openstreetmap.org`, or your `network.geocoding_url` | `network.geocoding: true` | each trip's centre, and the coordinates of every clip on the cut, home included, rounded to about a kilometre, once per place | off |
+| `nominatim.openstreetmap.org`, or your `network.geocoding_url` | `network.geocoding: true` | each trip's centre, and the coordinates of the pictures in the film's own window, home included, rounded to about a kilometre, once per place ever | off |
 | `server.arcgisonline.com` | `network.map_tiles: true` | tile requests over the trip area and your home base | off |
 | `ace_step.api_url`, `musicgen.base_url` | AI music through a remote API | mood, tempo and genre text; MusicGen is also sent the generated track, for stem separation | off |
 | Apprise or ntfy targets | `notifications.enabled: true` | memory type, outcome, duration, output path, a redacted error tail; a frame if `attach_thumbnail: true` | off |
 | Your OIDC provider | login with `provider: oidc` | the standard OIDC flow with PKCE | basic auth |
 | Hugging Face, `github.com` | only when you run `models fetch` (and ACE-Step or Demucs on first use) | nothing about your library: pinned weights, checked by SHA-256 | a run never downloads |
-| `raw.githubusercontent.com` | only `titles fonts --install`, or while the Docker image builds | nothing about your library: 42 Noto files, 43 MB | a render never downloads |
+| `raw.githubusercontent.com` | only `titles fonts --install`, `models fetch`, or while the Docker image builds | nothing about your library: 42 Noto files, 43 MB; the WordNet 3.0 corpus, 11 MB, checked by SHA-256 | a render never downloads |
 
 `preflight` prints one row per outside switch you turned on, naming the host. A default install
 prints none.
@@ -135,11 +135,13 @@ network:
   map_tiles: false
 ```
 
-**`geocoding`** asks Nominatim about each trip's centre and about the place of every clip on the
-cut, home included, each rounded to 2 decimals (about a kilometre) before it leaves. Nothing else
-goes with it: no picture, no date, no name. One request per place, at most one a second, with a
-User-Agent naming this app, and every answer is kept in the [store](./database.md), so a place is
-asked about once, not once per render. The library itself is never walked.
+**`geocoding`** asks Nominatim about each trip's centre and about the places of the pictures in
+the film's own window (a month, a year), home included, each rounded to 2 decimals (about a
+kilometre) before it leaves. Nothing else goes with it: no picture, no date, no name. One request
+per place, at most one a second, with a User-Agent naming this app, and every answer is kept in the
+[store](./database.md), "nothing here" included, so a place is asked about once, ever, not once per
+film. A first year at home is a few hundred places; after that almost nothing. The rest of the
+library is never walked.
 
 What it buys:
 
@@ -164,9 +166,10 @@ Privacy mode stops the cut's places from being asked about, but not the trip nam
 
 ## Thumbnails in the web UI
 
-Your browser fetches every thumbnail from the app itself (`/media/thumb/<asset id>`), out of the
-cache preparation filled, behind the same login as every page, and only for assets the current
-session prepared.
+Your browser never talks to Immich. It asks the app (`/api/v1/assets/<asset id>/thumbnail`,
+`.../video`, and `/api/v1/people/<id>/face`), behind the same login as every page. The app serves a
+picture from the preview cache, or fetches it from Immich once and keeps it; a video streams through
+the app by byte range, so the API key stays on the server.
 
 ## Privacy mode
 

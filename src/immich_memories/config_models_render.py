@@ -69,6 +69,20 @@ class DefaultsConfig(BaseModel):
             "'family' (the default) or 'shareable' (anyone: only pictures nothing held)"
         ),
     )
+    add_date: bool = Field(
+        default=True,
+        description=(
+            "Caption each clip with its date, on every surface (web, CLI, automation); "
+            "--no-add-date or the render panel turns it off for one film"
+        ),
+    )
+    add_place: bool = Field(
+        default=True,
+        description=(
+            "Caption each clip with its place, on every surface; --no-add-place or the render "
+            "panel turns it off for one film. Privacy mode never shows a place"
+        ),
+    )
 
     @field_validator("scale_mode", mode="before")
     @classmethod
@@ -87,6 +101,14 @@ class OutputConfig(BaseModel):
     codec_policy: Literal["prefer_hardware", "strict"] = "prefer_hardware"
     hdr_mode: HdrMode = HdrMode.AUTO
     quality: Literal["high", "balanced", "fast"] = "balanced"
+    # Shared threshold for the output and cache volumes: below it, a run warns;
+    # unable to fit the estimated film at all, it stops before rendering.
+    # One number for both because they are usually the same disk, and a
+    # container/NAS deployment is exactly the case a single sane default
+    # should protect without asking for a second setting.
+    min_free_space_gb: float = Field(
+        default=5.0, ge=0.5, le=1000, description="Warn/stop below this much free disk space"
+    )
     crf: int | None = Field(default=None, ge=0, le=51)
 
     @field_serializer("hdr_mode")
@@ -225,6 +247,20 @@ class TitleScreenConfig(BaseModel):
         le=15.0,
         description="Duration of ending screen in seconds",
     )
+    # A trip's maps (the intro and each location card) fly to the place, then hold
+    # still on it for two seconds with its name up; the flight scales with distance.
+    map_move_min_seconds: float = Field(
+        default=6.0,
+        ge=3.0,
+        le=15.0,
+        description="Seconds a map move to a nearby place lasts, the 2 s still hold included",
+    )
+    map_move_max_seconds: float = Field(
+        default=8.0,
+        ge=3.0,
+        le=15.0,
+        description="Seconds a map move to a far place lasts, the 2 s still hold included",
+    )
 
     # Localization
     locale: Literal[
@@ -277,6 +313,15 @@ class TitleScreenConfig(BaseModel):
         default=True,
         description="Use only the first name for titles (e.g., 'John' instead of 'John Smith')",
     )
+
+    @model_validator(mode="after")
+    def order_map_move_seconds(self) -> TitleScreenConfig:
+        """A far flight never runs shorter than a near one."""
+        if self.map_move_max_seconds < self.map_move_min_seconds:
+            raise ValueError(
+                "title_screens.map_move_max_seconds must be at least map_move_min_seconds"
+            )
+        return self
 
 
 class PhotoConfig(BaseModel):

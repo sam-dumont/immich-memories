@@ -320,6 +320,10 @@ class RunDatabase:
         """Store which source produced the run's opening title."""
         self._set(run_id, title_source=source)
 
+    def record_film_timeline(self, run_id: str, timeline: dict[str, float]) -> None:
+        """Store the rendered film's content, title and map-extra seconds."""
+        self._set(run_id, film_timeline=timeline.copy())
+
     def _set(self, run_id: str, **values: Any) -> None:
         with self.store.begin() as conn:
             conn.execute(sa.update(pipeline_runs).where(_RUNS.run_id == run_id).values(values))

@@ -360,6 +360,7 @@ class ImmichClient:
         taken_before: datetime | None = None,
         page: int = 1,
         size: int = 100,
+        ocr: str | None = None,
     ) -> MetadataSearchResult:
         return await self.search.search_metadata(
             person_ids=person_ids,
@@ -368,6 +369,7 @@ class ImmichClient:
             taken_before=taken_before,
             page=page,
             size=size,
+            ocr=ocr,
         )
 
     async def get_videos_for_person_and_year(

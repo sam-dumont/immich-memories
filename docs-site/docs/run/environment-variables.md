@@ -30,9 +30,10 @@ The container reads its environment when it starts. After changing `.env` or the
 run `docker compose up -d`, which recreates it. `docker compose restart` does not.
 :::
 
-A variable that is neither in `example.env` nor in the compose file's `environment:` block does
-not reach the container: compose uses `.env` to fill in the compose file, not as the container's
-environment. Add the line to `environment:` as well, like the commented ones already there.
+A line in `.env` reaches the container only when the compose file's `environment:` block names
+it: compose uses `.env` to fill in the compose file, not as the container's environment. Every
+variable in `example.env` is already there. For any other one, add the line to `environment:` as
+well, like the commented ones already there.
 
 ## The variables you are most likely to set
 
@@ -56,8 +57,43 @@ whether the shipped compose file already passes it.
 |---|---|---|---|---|---|
 | `IMMICH_MEMORIES_AUTH_USERNAME`, `IMMICH_MEMORIES_AUTH_PASSWORD` | `auth.username`, `auth.password` | empty | advanced | yes, `.env` | Set both to turn on basic auth. Either alone is ignored |
 | `IMMICH_MEMORIES_STORAGE_SECRET` | none | generated | none | commented | Session secret. Generated once onto the config volume, so sessions survive a recreate without it |
+| `IMMICH_MEMORIES_SECRET_KEY` | none | unset | none | yes | Encrypts the secrets Settings saves (API keys, passwords). Unset, Settings says "Secrets cannot be saved here until IMMICH_MEMORIES_SECRET_KEY is set". Not the same thing as `STORAGE_SECRET`: [set it up](#the-secret-key) |
 | `IMMICH_MEMORIES_AUTOMATION__ENABLED` | `automation.enabled` | `false` | advanced | commented | The daily memory, inside the UI process |
 | `IMMICH_MEMORIES_AUTOMATION__DAILY_AT` | `automation.daily_at` | `09:00` | advanced | commented | When, in the `TZ` zone |
+| `IMMICH_MEMORIES_AUTOMATION__UPLOAD_TO_IMMICH` | `automation.upload_to_immich` | `false` | advanced | no | The daily film goes back to Immich too (`AUTOMATION__ALBUM_NAME` picks the album) |
+| `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` | `server.trigger_token` | empty | advanced | no | Shared secret for `POST /api/trigger`, for a cron job or a Kubernetes CronJob to start a run ([Automate it](../make/automate.md)) |
+| `IMMICH_MEMORIES_SERVER__ENABLE_DEMO_MODE` | `server.enable_demo_mode` | `false` | advanced | no | Offers the **Demo mode** eye button that blurs every picture, for a screen share |
+
+### Uploads and outside calls
+
+| Variable | Config key | Default | Placement | Compose | What it does |
+|---|---|---|---|---|---|
+| `IMMICH_MEMORIES_UPLOAD__ENABLED` | `upload.enabled` | `false` | 1 | no | Upload every film `generate` makes back to Immich; the web render panel has its own box ([what Immich sees](./privacy.md#what-immich-sees)) |
+| `IMMICH_MEMORIES_UPLOAD__ALBUM_NAME` | `upload.album_name` | none | 1 | no | The album it goes into |
+| `IMMICH_MEMORIES_NETWORK__GEOCODING` | `network.geocoding` | `false` | 1 | no | Place names from Nominatim: the right district, in the film's language ([outside calls](./config-file.md#outside-calls)) |
+| `IMMICH_MEMORIES_NETWORK__GEOCODING_URL` | `network.geocoding_url` | empty | 1 | no | Your own Nominatim instead of the public one |
+| `IMMICH_MEMORIES_NETWORK__MAP_TILES` | `network.map_tiles` | `false` | 1 | no | Satellite tiles for the trip fly-over and the map behind location cards |
+| `IMMICH_MEMORIES_DEFAULTS__SHARING` | `defaults.sharing` | `family` | 1 | no | Who a film is for when you don't say: `just-us`, `family` or `shareable` ([sharing levels](../how-it-chooses/family-audience-duplicates.md#sharing-levels)) |
+
+### The secret key
+
+`IMMICH_MEMORIES_SECRET_KEY` is what lets the web UI and `immich-memories config` save an API key
+or a password to the database, encrypted. Generate one:
+
+```bash
+openssl rand -base64 32
+```
+
+On Docker, put the value in `.env` (the shipped compose file passes it through; `example.env` has
+the commented line):
+
+```bash
+IMMICH_MEMORIES_SECRET_KEY=paste-the-openssl-output-here
+```
+
+then `docker compose up -d`. Keep the value with your other secrets: lose or change it and every
+secret saved from the UI has to be saved again. You don't need it at all if your keys come from
+`.env` or `config.yaml`. The details: [secrets in the database](./config-file.md#secrets-in-the-database).
 
 ### The store
 
@@ -178,6 +214,8 @@ replace a key that is in the file, use `IMMICH_MEMORIES_LLM__API_KEY`.
 | `IMMICH_MEMORIES_LOG_LEVEL` | `INFO` (default), `DEBUG`, `WARNING` or `ERROR`. The CLI's `-v` and `--log-level` win for one run |
 | `IMMICH_MEMORIES_LOG_FILE` | Also write logs to this file |
 | `IMMICH_FORCE_CPU` | `1`, `true` or `yes` puts the title renderer on the CPU even with a GPU |
+| `IMMICH_MEMORIES_FONTS_DIR` | Where `titles fonts --install` puts the Noto fonts for other alphabets and where titles look for them (default `~/.immich-memories/fonts/noto`; the image sets its own) |
+| `IMMICH_MEMORIES_OWNER` | Who "you" is in the people registry, for `people scan` (same as `--owner`) |
 | `ACESTEP_CHECKPOINTS_DIR` | ACE-Step `lib` mode: where checkpoints go (default `~/.cache/ace-step/checkpoints`) |
 | `ACESTEP_MLX_VAE_CHUNK` | ACE-Step `lib` mode on Apple Silicon: VAE decode chunk in latent frames (minimum 192). Lower it if MLX runs out of memory |
 | `IMMICH_MEMORIES_ACESTEP_MLX_DIT_FP32` | ACE-Step `lib` mode on Apple Silicon: `1` keeps the decoder in fp32 (about twice the memory) |

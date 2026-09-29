@@ -2,7 +2,7 @@
 # Uses uv for fast Python package management
 export PYTHONUNBUFFERED=1
 
-.PHONY: workflow-guard docs-voice notices notices-check help install dev dev-ci dev-test run preflight parity docs-cli-check docs-config-check test test-extras test-cov test-cov-xml test-integration test-integration-auth test-integration-photos test-integration-audio test-integration-audio-mixing test-integration-titles test-fast benchmark benchmark-perf benchmark-steps benchmark-assembly benchmark-titles benchmark-titles-json benchmark-pipeline benchmark-json benchmark-submit lint format typecheck check launch-check launch-check-ci launch-check-ci-postgres clean clean-all build build-check docker docker-run docker-shell compose-check file-length complexity cognitive-complexity security-lint bandit-ci semgrep dead-code duplication refurb dep-check arch-check diff-cover diff-cover-ci integration-coverage-for-diff ci-scope ci critique ensure-dev commitlint privacy-gate pip-audit docs-install docs-dev docs-build docs-check docs-cli demo-video playwright-install e2e e2e-full screenshots demo-output demo-output-trip diagrams capability-matrix
+.PHONY: workflow-guard docs-voice notices notices-check help install dev dev-ci dev-test run preflight parity docs-cli-check docs-config-check test test-extras test-cov test-cov-xml test-integration test-integration-auth test-integration-photos test-integration-audio test-integration-audio-mixing test-integration-titles test-fast benchmark benchmark-perf benchmark-steps benchmark-assembly benchmark-titles benchmark-titles-json benchmark-pipeline benchmark-json benchmark-submit lint format typecheck check launch-check launch-check-ci launch-check-ci-postgres clean clean-all build build-check docker docker-run docker-shell compose-check file-length complexity cognitive-complexity security-lint bandit-ci semgrep dead-code duplication refurb dep-check arch-check diff-cover diff-cover-ci integration-coverage-for-diff ci-scope ci critique ensure-dev commitlint privacy-gate pip-audit docs-install docs-dev docs-build docs-check docs-cli demo-video playwright-install e2e e2e-full screenshots demo-output demo-output-trip capability-matrix
 
 # Default target
 help:
@@ -66,7 +66,6 @@ help:
 	@echo "  e2e                 Run the required hermetic launch smoke"
 	@echo "  e2e-full            Run ALL E2E and optional visual flows (~10min)"
 	@echo "  screenshots         Capture optional UI screenshots (light + dark)"
-	@echo "  diagrams            Render architecture diagrams (Mermaid)"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  clean        Remove build artifacts"
@@ -79,8 +78,12 @@ help:
 install:
 	uv sync --no-dev
 
+# A source checkout builds its own web client (#1580): it is not committed.
 dev:
 	uv sync --all-extras
+	@command -v npm >/dev/null || { echo "make dev builds the web client and needs Node 22 (npm)."; \
+		echo "Install Node, or run 'uv sync --all-extras' for the Python side only."; exit 1; }
+	$(MAKE) --no-print-directory web-client
 
 .PHONY: install-acestep check-local-audio
 install-acestep:  ## Install the tested ACE-Step 1.5 inference stack and local Demucs
@@ -439,11 +442,11 @@ test-integration:  ## Run ALL integration tests per-suite (requires FFmpeg/Immic
 playwright-install:  ## Install Playwright browsers for E2E tests
 	uv run playwright install chromium
 
-e2e:  ## Run required fake-service contracts and real hermetic browser render
+e2e: web-client-present  ## Run required fake-service contracts and real hermetic browser render
 	uv run pytest tests/e2e/test_fake_immich.py tests/e2e/test_launch_smoke.py \
 		tests/e2e/test_memory_page.py tests/e2e/test_picture_decisions.py tests/e2e/test_sharing_levels.py \
 		tests/e2e/test_web_client.py \
-		tests/e2e/test_people_page.py tests/e2e/test_person_pool.py tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py -v \
+		tests/e2e/test_people_page.py tests/e2e/test_person_pool.py tests/e2e/test_phone_width.py tests/e2e/test_automation_pages.py tests/e2e/test_ui_languages.py -v \
 		-m "e2e and not visual" --log-cli-level=INFO --tb=short \
 		--junitxml=tests/e2e-junit.xml
 
@@ -457,18 +460,9 @@ contact-sheets:  ## Render contact sheets for a sweep of memories (SPEC=path OUT
 	@test -n "$(SPEC)" || (echo "SPEC=path/to/spec.json required — see examples/sweep-spec.example.json"; exit 1)
 	uv run python scripts/sweep_contact_sheets.py --spec "$(SPEC)" --out "$(or $(OUT),output/contact-sheets)"
 
-screenshots:  ## Capture UI screenshots in light + dark mode (coverage from server subprocess)
+screenshots: web-client-present  ## Capture UI screenshots in light + dark mode (coverage from server subprocess)
 	uv run pytest tests/e2e/test_screenshots.py -v -m visual --log-cli-level=INFO --tb=short \
 		--junitxml=tests/e2e-junit.xml
-
-diagrams:  ## Render architecture diagrams from Mermaid source files
-	@for f in docs-site/diagrams/setup-*.mmd; do \
-		name=$$(basename "$$f" .mmd); \
-		echo "Rendering $$name (dark + light)..."; \
-		npx --yes @mermaid-js/mermaid-cli -i "$$f" -o "docs-site/static/img/diagrams/$${name}.png" -w 800 -H 400 -b transparent -c docs-site/diagrams/mermaid-config.json 2>/dev/null; \
-		npx --yes @mermaid-js/mermaid-cli -i "$$f" -o "docs-site/static/img/diagrams/$${name}-light.png" -w 800 -H 400 -b transparent -c docs-site/diagrams/mermaid-config-light.json 2>/dev/null; \
-	done
-	@echo "Diagrams saved to docs-site/static/img/diagrams/"
 
 test-cov:
 	uv run pytest $(COVERAGE_FLAGS) --cov-report=html --cov-report=term-missing
@@ -618,29 +612,16 @@ commitlint:
 	uvx --from commitizen cz check --rev-range $${COMMIT_RANGE:-HEAD~1..HEAD}
 
 # Cognitive complexity (complements cyclomatic complexity)
-# On failure the FAILED list is only the grandfathered backlog — the actual
-# cause is the "Snapshot watermark:" line, so that is what gets printed (#453).
-# complexipy rewrites the snapshot on every run; a FAILING run restores it so
-# diagnosing by hand cannot absorb the violation into the baseline. A passing
-# run keeps the rewrite — that is the ratchet tightening.
+# complexipy lists every function over 15; scripts/complexity_watermark.py compares that list
+# with complexity-watermark.json, keyed by file and function name with no line numbers, so an
+# edit above a listed function changes nothing (#1550). A new or worse function fails and
+# writes nothing; a passing run that improved one tightens the file.
 cognitive-complexity:
-	@OUTPUT=$$(uvx complexipy==5.2.0 src/ $(SERVICE_TREES) --max-complexity-allowed 15 2>&1); \
-	ANALYZER_STATUS=$$?; \
-	if echo "$$OUTPUT" | grep -q "Snapshot watermark passed"; then \
-		echo "Cognitive complexity: snapshot watermark passed (no new violations)"; \
-	elif echo "$$OUTPUT" | grep -q "Snapshot watermark"; then \
-		git checkout --quiet -- complexipy-snapshot.json 2>/dev/null || true; \
-		echo "$$OUTPUT" | sed -n '/Snapshot watermark/,$$p'; \
-		echo "Cognitive complexity gate FAILED: the watermark lines above name the new violations"; \
-		exit 1; \
-	elif [ "$$ANALYZER_STATUS" -ne 0 ]; then \
-		git checkout --quiet -- complexipy-snapshot.json 2>/dev/null || true; \
-		echo "$$OUTPUT"; \
-		echo "Cognitive complexity gate FAILED: analyzer exited $$ANALYZER_STATUS"; \
-		exit "$$ANALYZER_STATUS"; \
-	else \
-		echo "Cognitive complexity: all functions under threshold"; \
-	fi
+	@rm -f complexipy_results_*.json; \
+	uvx complexipy==5.2.0 src/ $(SERVICE_TREES) --max-complexity-allowed 15 \
+		--snapshot-ignore --failed --output-json --quiet >/dev/null 2>&1; \
+	uv run python scripts/complexity_watermark.py complexipy_results_*.json; \
+	STATUS=$$?; rm -f complexipy_results_*.json; exit $$STATUS
 
 # Code duplication detection
 duplication:
@@ -775,6 +756,10 @@ diff-cover-ci:
 # Build check (twine)
 build-check:
 	uvx twine check dist/*
+	@for wheel in dist/*.whl; do \
+		unzip -l "$$wheel" | grep -q "immich_memories/web/client/index.html" || { \
+			echo "$$wheel has no web client"; exit 1; }; \
+	done
 
 # Ensure dev dependencies are installed
 # --inexact: an exact sync deletes anything this project does not declare, which
@@ -842,10 +827,13 @@ pre-commit:
 # Building
 # =============================================================================
 
-build:
+# A wheel carries the built client (hatch_build.py refuses one without it), so build it first.
+build: web-client
+	uv run python scripts/check_web_brand.py --require-bundle
 	uv build
 
-build-wheel:
+build-wheel: web-client
+	uv run python scripts/check_web_brand.py --require-bundle
 	uv build --wheel
 
 # =============================================================================
@@ -1030,7 +1018,7 @@ docs-install:
 ui-catalogues:  ## Extract UI labels and update the per-language PO files
 	uv run python scripts/update-ui-catalogues.py
 
-.PHONY: web-install web-build web-api web-check
+.PHONY: web-install web-build web-api web-check web-client web-client-present
 web-install:  ## Install the Svelte web client's pinned dependencies
 	cd web && npm ci
 
@@ -1041,10 +1029,16 @@ web-api:  ## Regenerate the /api/v1 OpenAPI document and the client's TypeScript
 web-build:  ## Build the Svelte web client into the Python package (served at /app)
 	cd web && npm run build
 
-# The client is committed so an install needs no Node: a fresh build, the OpenAPI document and
-# the generated types must all match what is committed. The Immich logos in @immich/ui are
-# trademarks, not part of its MIT grant, and must never reach the bundle.
-web-check: web-install  ## Type-check the web client and fail on a stale bundle, contract or Immich logo
+web-client: web-install web-build  ## Install the client's pinned dependencies and build it
+
+# The browser suites serve the client; build it once when a checkout does not have it yet.
+web-client-present:
+	@[ -f src/immich_memories/web/client/index.html ] || $(MAKE) --no-print-directory web-client
+
+# The client is built where it ships (#1580), not committed. The OpenAPI document and the
+# generated types still are, and must match the API. A fresh build proves the client builds, and
+# the Immich logos in @immich/ui (trademarks, not part of its MIT grant) must never reach it.
+web-check: web-install  ## Type-check the web client, check the contract and types, build it, refuse Immich logos
 	cd web && npm run -s check
 	@fresh=$$(mktemp -d); \
 	uv run python scripts/export-web-openapi.py --out "$$fresh/openapi.json" && \
@@ -1054,14 +1048,9 @@ web-check: web-install  ## Type-check the web client and fail on a stale bundle,
 	diff -q "$$fresh/api-types.ts" web/src/lib/api-types.ts >/dev/null || { \
 		rm -rf "$$fresh"; echo "web/src/lib/api-types.ts is stale: run make web-api"; exit 1; }; \
 	rm -rf "$$fresh"
-	@fresh=$$(mktemp -d); cp -R src/immich_memories/web/client "$$fresh/committed"; \
-	(cd web && npm run -s build >/dev/null 2>&1) && \
-	diff -r "$$fresh/committed" src/immich_memories/web/client >/dev/null || { \
-		rm -rf src/immich_memories/web/client; cp -R "$$fresh/committed" src/immich_memories/web/client; \
-		rm -rf "$$fresh"; echo "src/immich_memories/web/client is stale: run make web-build"; exit 1; }; \
-	rm -rf "$$fresh"
-	uv run python scripts/check_web_brand.py
-	@echo "web client matches web/src, the contract and the types; no Immich logo shipped"
+	cd web && npm run -s build >/dev/null
+	uv run python scripts/check_web_brand.py --require-bundle
+	@echo "web client builds from web/src, matches the contract and the types; no Immich logo shipped"
 
 docs-dev:
 	cd docs-site && npm start
@@ -1094,6 +1083,8 @@ demo-cli-run:  ## Run the CLI demo's real hermetic session in this terminal (no 
 
 demo-cli:  ## Record the CLI demo via VHS → docs-site/remotion/public/cli-demo.mp4 (the Remotion CliScene plays it)
 	vhs docs-site/scripts/demo-cli.tape
+	@# The marks are wall-clock seconds; a recording that dropped frames is shorter than them.
+	@python3 -c "import re,subprocess,sys; end=float(re.search(r'end: ([0-9.]+)',open('docs-site/remotion/src/cli-timing.ts').read()).group(1)); got=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','csv=p=0','docs-site/remotion/public/cli-demo.mp4'])); ok=abs(got-end)<=0.03*end+1; print(f'cli-demo.mp4: {got:.1f} s against the last mark {end:.1f} s'); sys.exit(0 if ok else 'the recording dropped frames: run make demo-cli again on an idle machine')"
 
 demo-output:  ## Cut the demo's output clip + poster on the hermetic launch
 	uv run pytest tests/e2e/test_demo_assets.py::test_cut_the_demo_output_clip -v -m demo \
@@ -1126,9 +1117,12 @@ demo-fixture:  ## Export the hermetic fixture library into the Remotion demo (do
 
 .PHONY: demo-soundtrack
 demo-soundtrack:  ## Rebuild the demo's music from a bundled MIT-licensed acoustic track
+	@# The track read twice, not asplit: asplit into acrossfade buffers differently across
+	@# FFmpeg versions, and 6.1 made a 28.7 s track the demo outran.
 	ffmpeg -y -loglevel error \
 	  -i packages/immich-memories-music/immich_memories_music/tracks/happy/happy_acoustic_s411.opus \
-	  -filter_complex "[0:a]asplit[a][b];[a][b]acrossfade=d=3:c1=tri:c2=tri,loudnorm=I=-18:TP=-2:LRA=9[music]" \
+	  -i packages/immich-memories-music/immich_memories_music/tracks/happy/happy_acoustic_s411.opus \
+	  -filter_complex "[0:a][1:a]acrossfade=d=3:c1=tri:c2=tri,loudnorm=I=-18:TP=-2:LRA=9[music]" \
 	  -map "[music]" -t 60 -ar 48000 -ac 2 -c:a pcm_s16le docs-site/remotion/public/demo-music.wav
 
 DEMO_RENDER_ARGS ?=
@@ -1136,18 +1130,30 @@ demo-ui: demo-ui-install demo-fixture demo-soundtrack  ## Render Remotion demo �
 	@mkdir -p docs-site/static/demo
 	cd docs-site/remotion && npx remotion render src/index.ts DemoVideo ../static/demo/demo.mp4 --codec h264 --crf 18 $(DEMO_RENDER_ARGS)
 
-# The homepage and README hero is the brief → cut → review stretch of the Remotion demo
-# (seconds 2.6 to 14.4: the brief, the cut's progress panel, the contact sheet with a
-# video shot opened) and then the last 3 s, the film it made: 720 px, 10 fps, 14.7 s,
-# 3.9 MB. The README loads it from GitHub Pages on every visit, so 4 MB is the ceiling.
-# The film tail is what costs: full-bleed photography runs about 0.6 MB per GIF second
-# against the light UI's 0.2, because LZW gets nothing on moving photographs. Width and
-# the cut window alone cannot pay for it, so the palette is capped at 60 colours and a
-# light hqdn3d takes the grain out before palettegen sees it. sierra2_4a was measured
-# worse than bayer here (+21%). Re-run after `make demo-ui`, and re-check the size: the
-# film's content sets it, not the code.
-demo-hero:  ## Cut the README hero GIF from docs-site/static/demo/demo.mp4: the brief, the cut and the review, then the film it made
-	$(eval DEMO_END := $(shell ffprobe -v error -show_entries format=duration -of csv=p=0 docs-site/static/demo/demo.mp4))
-	ffmpeg -y -loglevel error -i docs-site/static/demo/demo.mp4 \
-	  -filter_complex "[0:v]trim=2.6:14.4,setpts=PTS-STARTPTS[a];[0:v]trim=start=$$(python3 -c 'print($(DEMO_END)-3.0)'),setpts=PTS-STARTPTS[b];[a][b]concat=n=2:v=1:a=0,fps=10,scale=720:-1:flags=lanczos,hqdn3d,split[x][y];[y]palettegen=max_colors=60:stats_mode=diff[p];[x][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \
+# The homepage and README hero tells the product's loop without a jump: the brief, the cut
+# and the review (demo 4.0 to 13.6 s), then Render pressed, the film arriving on the page and
+# the zoom into its player (29.0 s to 34.43 s, demo frame 1033, where the slide to Runs starts),
+# then the same film full bleed from the moment that player shows: FilmScene plays it from
+# FILM_FROM 19.2 s, so frame 1033 is film second 21.13 and the tail starts half a second earlier
+# to cover its crossfade. Moving a scene in Composition.tsx moves these numbers.
+# 720 px, 10 fps, about 17.7 s and 3.6 MB. The README loads it from GitHub Pages on every visit,
+# so 4 MB is the ceiling. The film tail is what costs (LZW gets nothing on moving photographs);
+# a 60-colour palette fit easily but posterised the film, so it takes the full 255 and a light
+# hqdn3d. Re-run after `make demo-ui` and re-check the size.
+HERO_FILTER := fps=10,scale=720:405:flags=lanczos,format=yuv420p
+demo-hero:  ## Cut the README hero GIF: brief, cut, review, render, and the film it made
+	ffmpeg -y -loglevel error -i docs-site/static/demo/demo.mp4 -i docs-site/remotion/public/output-preview.mp4 \
+	  -filter_complex "[0:v]trim=4.0:13.6,setpts=PTS-STARTPTS,$(HERO_FILTER)[a];[0:v]trim=29.0:34.43,setpts=PTS-STARTPTS,$(HERO_FILTER)[b];[1:v]trim=20.63:24.13,setpts=PTS-STARTPTS,$(HERO_FILTER)[c];[a][b]xfade=transition=fade:duration=0.3:offset=9.3[ab];[ab][c]xfade=transition=fade:duration=0.5:offset=14.23,hqdn3d,split[x][y];[y]palettegen=max_colors=255:stats_mode=diff[p];[x][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \
 	  docs-site/static/img/demo-hero.gif
+
+.PHONY: demucs-locks
+demucs-locks:  ## Refresh the Linux inference audio locks without changing Mac dependencies
+	@constraints=$$(mktemp); trap 'rm -f "$$constraints"' EXIT; \
+	uv export --frozen --no-dev --extra demucs --extra editorial --prune torch --prune torchaudio \
+	  --no-emit-project --no-emit-package immich-memories-music --no-hashes -o "$$constraints" >/dev/null && \
+	uv pip compile docker/demucs-requirements.in --constraint "$$constraints" --python-version 3.11 \
+	  --python-platform linux --torch-backend cpu --generate-hashes --no-annotate --no-header \
+	  -o docker/demucs-cpu-requirements.txt && \
+	uv pip compile docker/demucs-requirements.in --constraint "$$constraints" --python-version 3.12 \
+	  --python-platform linux --torch-backend cu128 --generate-hashes --no-annotate --no-header \
+	  -o docker/demucs-cuda-requirements.txt

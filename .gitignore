@@ -74,6 +74,8 @@ complexipy_results_*.json
 /deploy/kubernetes/base/secret.yaml
 /deploy/kubernetes/base/ingress.yaml
 /deploy/kubernetes/overlays/postgres/database-secret.yaml
+/deploy/kubernetes/overlays/render-sidecar/render-worker-secret.yaml
+/deploy/kubernetes/overlays/maximalist/maximalist-secret.yaml
 # Auto-generated version file
 # Byte-compiled / optimized / DLL files
 # C extensions
@@ -167,3 +169,6 @@ people*.yaml
 
 # Real-Immich PR gate: generated media, seeded config, logs (make test-immich-gate)
 .immich-gate/
+
+# The built web client (make web-build). The release wheel and the Docker image build it (#1580).
+src/immich_memories/web/client/

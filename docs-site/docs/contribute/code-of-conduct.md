@@ -8,4 +8,4 @@ This project follows the [Contributor Covenant Code of Conduct v2.1](https://www
 
 The full text is in [CODE_OF_CONDUCT.md](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/CODE_OF_CONDUCT.md) in the repository root.
 
-By participating in this project, you agree to uphold this standard. Report unacceptable behavior via the contact methods listed in the code of conduct.
+By participating in this project, you agree to uphold this standard. Report unacceptable behaviour through GitHub's private reporting form, or the other contact routes the code of conduct lists.

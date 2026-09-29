@@ -25,6 +25,43 @@ the app: the UI still serves.
 {"status": "ready", "immich_reachable": true, "last_successful_run": "2025-12-15T10:30:00", "version": "<the running version>"}
 ```
 
+## Preflight
+
+The endpoints answer "is the web process up". `preflight` answers "will a film work on this box":
+
+```bash
+immich-memories preflight        # one row per check: OK, WARNING, ERROR or SKIPPED
+immich-memories preflight -v     # adds a Details column
+```
+
+In Docker: `docker compose exec immich-memories immich-memories preflight`.
+
+It checks the Immich connection and API key (and each extra account), the model files and their digests,
+the title renderer, hardware encoding, the output folder, the home base, config paths that don't exist on
+this machine, notification delivery, the memory the box has, and every server you configured: caption
+server, text model, render worker, and ACE-Step when it is set to run on this machine. It also prints one row per outside host you switched on
+([Privacy](../privacy.md)). A warning names what is missing and the cut still runs
+without it, for example `Music (ACE-Step)` falling back to a bundled track. Any error exits 1, so a
+script or a setup step can stop on it. Run it after an install, an upgrade or a config change.
+
+## Model files
+
+```bash
+immich-memories models fetch               # once per install, and after an upgrade
+immich-memories models fetch --force       # download again even when the files check out
+immich-memories models fetch --laya        # also the Laya checkpoint on the nas tier
+immich-memories models fetch --no-detectors
+```
+
+About 140 MB of pinned files, each checked against a SHA-256: the DINOv2 encoder (88 MB) behind the eight
+context heads, the sensitive-content detector, the document classifier and the WordNet dictionary. They
+land under `~/.immich-memories/models/`, the document classifier in the Hugging Face cache (in Docker both sit on the config volume, so a `docker compose pull` keeps
+them). A file already there with the right digest is not downloaded again, so running it twice costs
+nothing. On the `gpu` and `full` tiers it fetches the Laya audience checkpoint too
+([tiers](../requirements.md#which-tier-you-get)). `--no-detectors` skips the detector files, for an
+install without the `editorial` extra. A cut that needs a missing file stops with an error naming this
+command; `preflight` flags it first.
+
 ## Logging
 
 `INFO` by default. `immich-memories -v generate …` logs at `DEBUG`; `--log-level WARNING` keeps
@@ -37,6 +74,10 @@ video...`: the bracketed run id ties one run's lines together (`-` outside a run
 `IMMICH_MEMORIES_LOG_FORMAT=json` writes one JSON object per line with the same fields, so
 `jq 'select(.run_id=="abc123")'` works. `IMMICH_MEMORIES_LOG_FILE=/path/to/file.log` writes the
 same lines to a file as well; in Docker, point it at a mounted path.
+
+Log lines go to stderr. Stdout only carries what a command prints, so `runs storage --json`,
+`report --json` and `auto status --json` give you one JSON document you can pipe straight into
+`jq`, whatever the log level. `docker logs` shows both streams.
 
 ## Model usage records
 
@@ -55,8 +96,23 @@ Everything lives under `~/.immich-memories/cache/` (or `cache.directory`):
 |---|---|---|
 | `thumbnails/` | one Immich preview per candidate a film can reach | `thumbnail_cache_max_size_mb`, 10 GB |
 | `video-cache/` | downloaded Immich clips | `video_cache_max_size_gb` 10 GB, `video_cache_max_age_days` 7 |
+| `editorial-runs/` | each cut's attempt directories: the plan, its progress and `llm-usage.json`. The store links each run to one | none |
+| `structure-banks/` | the thumbnail-hash and scene-print caches; rebuilt when missing | none |
 | `preview-cache/` | clip previews the old web pages played; nothing writes it now. Delete a leftover folder by hand | none |
 | `../cache.db` (one level up) | a pre-store file nothing writes; its run history and scores are imported into the [store](../database.md) once, then it can go | none |
+
+`output.directory` (default `~/Videos/Memories`, one level up from `cache/`) is not a cache, but
+it grows the same way: one file per run. A run that delivers to Immich has its local film and run
+directory removed right after the upload is confirmed, so a container with upload on stays
+bounded without any setting. A run that never uploads (`upload_enabled: false`, or a delivery
+that stays pending) keeps its output on disk, same as before: use `immich-memories runs delete`
+or `runs storage` to see and clear it by hand.
+
+Both `output.directory` and `cache.directory` get a free-space preflight before a run starts and
+again right before the film is written. Below `output.min_free_space_gb` (5 GB by default) the
+run logs a warning naming the volume and the free space; if the estimated film would not fit at
+all, the run stops before rendering instead of failing halfway through. The estimate comes from
+the target duration and the configured `output.quality`.
 
 The facts the app banked (head answers, detector verdicts, measurements, and captions and
 readings when a model is used, each keyed by producer and exact input) and your own picture
@@ -125,7 +181,8 @@ rm -rf ~/.immich-memories/cache/video-cache
 rm -rf ~/.immich-memories/cache/thumbnails
 ```
 
-Deleting `~/.immich-memories/cache` costs previews and clips, not facts: those are in the store.
+Deleting `~/.immich-memories/cache` costs previews, clips and the attempt directories under
+`editorial-runs/`, not facts: those are in the store.
 Don't delete `store.db`: without it every fact about your library is prepared again, and every
 picture you cleared or ruled out is held again.
 

@@ -15,6 +15,7 @@ from immich_memories.processing.assembly_config import (
     TransitionType,
 )
 from immich_memories.processing.ffmpeg_prober import FFmpegProber
+from immich_memories.processing.map_move_timing import map_move_timing_of
 from immich_memories.processing.scaling_utilities import aggregate_mood_from_clips
 from immich_memories.processing.title_background_renderer import TitleBackgroundRenderer
 from immich_memories.processing.title_divider_planner import TitleDividerPlanner
@@ -138,6 +139,7 @@ class TitleInserter:
             title_duration=title_settings.title_duration,
             month_divider_duration=title_settings.month_divider_duration,
             ending_duration=title_settings.ending_duration,
+            map_move=map_move_timing_of(title_settings),
             locale=title_settings.locale,
             style_mode=title_settings.style_mode,
             show_month_dividers=title_settings.show_month_dividers,
@@ -438,6 +440,10 @@ class TitleInserter:
             )
 
         _t_ending_done = _time.monotonic()
+        from immich_memories.processing.film_timeline import measure_film_timeline
+
+        self.settings.film_timeline = measure_film_timeline(final_clips, title_settings)
+        logger.info("Final timeline: %s", self.settings.film_timeline.describe())
 
         # 5. Assemble
         if progress_callback:

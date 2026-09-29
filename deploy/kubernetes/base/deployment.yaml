@@ -19,6 +19,11 @@ spec:
       labels:
         app.kubernetes.io/name: immich-memories
     spec:
+      # Kubernetes injects one env var per Service in the namespace by default
+      # (SERVICE_HOST, SERVICE_PORT...); a Service named `immich-memories`
+      # collides with this app's own IMMICH_MEMORIES_* prefix and the pod
+      # fails to start. Off everywhere for the same reason (#1608).
+      enableServiceLinks: false
       # The image runs as `immich`, UID/GID 1000, HOME=/home/immich.
       securityContext:
         runAsNonRoot: true
@@ -51,6 +56,7 @@ spec:
               test -s /models/triage/dinov2-small.onnx
               && test -s /models/detectors/nsfw-marqo-384.onnx
               && test -d /models/huggingface
+              && test -s /models/wordnet/wordnet.zip
               || immich-memories models fetch
           env:
             - name: IMMICH_MEMORIES_TRIAGE__ENCODER
@@ -59,6 +65,8 @@ spec:
               value: /models/detectors/nsfw-marqo-384.onnx
             - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR
               value: /models/huggingface
+            - name: IMMICH_MEMORIES_FREE_TEXT__WORDNET
+              value: /models/wordnet/wordnet.zip
           resources:
             requests:
               memory: "512Mi"
@@ -111,6 +119,8 @@ spec:
               value: /models/detectors/nsfw-marqo-384.onnx
             - name: IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR
               value: /models/huggingface
+            - name: IMMICH_MEMORIES_FREE_TEXT__WORDNET
+              value: /models/wordnet/wordnet.zip
             # Optional: LLM clip content analysis (any OpenAI-compatible API)
             # - name: IMMICH_MEMORIES_LLM__BASE_URL
             #   value: "http://your-llm.llm.svc.cluster.local:8080/v1"

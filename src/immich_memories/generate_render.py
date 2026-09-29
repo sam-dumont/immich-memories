@@ -339,7 +339,15 @@ def render_local(
             # film, and decoding the result can only be faster.
             encode_seconds = encode.duration
             plan = settings.encoding_plan
-            metrics, duration_warning = check_rendered_film(params, staged_result_path, plan)
+            film_timeline = settings.film_timeline
+            if film_timeline is not None:
+                run_tracker.record_film_timeline(film_timeline)
+            metrics, duration_warning = check_rendered_film(
+                params,
+                staged_result_path,
+                plan,
+                film_timeline.map_extra_seconds if film_timeline is not None else 0.0,
+            )
             run_tracker.complete_phase(items_processed=len(assembly_clips), extra_metrics=metrics)
             operational.emit(
                 OperationalPhase.RENDER,

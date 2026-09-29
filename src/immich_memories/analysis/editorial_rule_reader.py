@@ -12,8 +12,15 @@ from typing import Any
 import numpy as np
 
 from immich_memories.analysis.editorial_clip_frames import CLIP_FRAMES_HEAD, SUBJECT_OFTEN_MISSING
+from immich_memories.analysis.editorial_event_story import (
+    EpisodeShape,
+    PrintedNear,
+    episode_shapes,
+    split_events,
+)
 from immich_memories.analysis.editorial_home_radius import home_of, near_home_of
 from immich_memories.analysis.editorial_rule_episodes import RULES_VERSION
+from immich_memories.analysis.editorial_same_kind import EpisodeKind, same_kind_threads
 from immich_memories.analysis.editorial_shareability import SHAREABLE, owner_cleared_ids
 from immich_memories.analysis.editorial_shareability_audience import exposure_flagged
 from immich_memories.analysis.editorial_standing_facts import (
@@ -36,6 +43,8 @@ from immich_memories.analysis.editorial_story_weighing import (
     _floor_weights,
     consecutive_runs,
 )
+from immich_memories.analysis.place_names import shown_city
+from immich_memories.analysis.trip_legs import legs_of_days
 
 # The place labels of the shipped head bundle the standing rule reads. A picture is in a
 # private or utility interior, or in a public place; every other venue label says nothing.
@@ -67,15 +76,22 @@ class NoModelJudge:
 
 
 class RuleStructureReader:
-    def __init__(self, source) -> None:
+    def __init__(self, source, *, printed: PrintedNear | None = None) -> None:
         self.source = source
         self._face: Callable[[str], bool | None] | None = None
+        # Immich's OCR over the screens and documents near a moment, when the run can reach it.
+        self._printed = printed
+
+    def _day_threshold(self) -> float:
+        """A day at least this dense is an occasion by its capture count alone."""
+        days = Counter(a.file_created_at.date() for a in self.source.assets.values())
+        masses = list(days.values())
+        return max(4 * median(masses), float(np.percentile(masses, 75)))
 
     def worthiness(self, wall, near_home):
         assets = self.source.assets
         days = Counter(a.file_created_at.date() for a in assets.values())
-        masses = list(days.values())
-        threshold = max(4 * median(masses), float(np.percentile(masses, 75)))
+        threshold = self._day_threshold()
         cities = Counter(self._city(a) for a in assets.values() if self._city(a))
         usual = {city for city, _ in cities.most_common(12)}
         required = self._required_families(wall)
@@ -134,9 +150,7 @@ class RuleStructureReader:
     def _city(asset) -> str:
         return (asset.exif_info.city or "") if asset.exif_info else ""
 
-    def _title(self, members) -> str:
-        cities = Counter(self._city(a) for a in members if self._city(a))
-        city = cities.most_common(1)[0][0] if cities else ""
+    def _activity(self, members) -> str:
         activities = Counter(
             label
             for a in members
@@ -144,7 +158,13 @@ class RuleStructureReader:
             for head, label in record.heads
             if head == "activity" and label != "other"
         )
-        activity = activities.most_common(1)[0][0] if activities else ""
+        return activities.most_common(1)[0][0] if activities else ""
+
+    def _title(self, members) -> str:
+        # The title is read by a viewer: the shown place, not the city the usual-city vote uses.
+        cities = Counter(shown for a in members if (shown := shown_city(a.exif_info)))
+        city = cities.most_common(1)[0][0] if cities else ""
+        activity = self._activity(members)
         return (
             f"{activity} at {city}"
             if activity and city
@@ -216,7 +236,8 @@ class RuleStructureReader:
 
         A stretch away from home stays whole however long it lasts, because a trip is one
         story, and a day at home ends it: two trips either side of a week at home are two
-        stories, not one. A run at home is cut on the calendar week; without that, a
+        stories, not one. The one cut inside it is a change of where it stays: a hike then a
+        city stay is two legs, each its own story (`trip_legs`, #1563). A run at home is cut on the calendar week; without that, a
         densely photographed year merges into a single 129-day story whose grant is spent
         on its first week and whose remaining months never come into view. A day whose
         pictures say nothing about where they were does not end a trip.
@@ -235,8 +256,26 @@ class RuleStructureReader:
                 was_away = away
                 week = _calendar_week(hints[key]["day"]) or dated
                 chunks.setdefault((True, trips) if away else (False, week), []).append(key)
-            runs.extend(chunks.values())
+            for (away_run, _), chunk in chunks.items():
+                runs.extend(self._legs(chunk, episodes, hints) if away_run else [chunk])
         return runs
+
+    def _legs(self, keys: list[str], episodes, hints) -> list[list[str]]:
+        moments_of = {e.key: e.moments for e in episodes}
+        points: dict[str, list[tuple[float, float]]] = {}
+        for key in keys:
+            day = str(hints[key]["day"])
+            points.setdefault(day, []).extend(
+                point
+                for moment in moments_of[key]
+                for asset_id in self.source.moment_asset_ids.get(moment, ())
+                if (point := self.source.gps.get(asset_id)) is not None
+            )
+        leg_of = legs_of_days(points)
+        legs: dict[int, list[str]] = {}
+        for key in keys:
+            legs.setdefault(leg_of[str(hints[key]["day"])], []).append(key)
+        return list(legs.values())
 
     def _stories(self, episodes, hints):
         by_key = {e.key: e for e in episodes}
@@ -324,8 +363,24 @@ class RuleStructureReader:
         hints = enrich(episodes)
         stories = self._stories(episodes, hints)
         by_key = {e.key: e for e in episodes}
+        self._big_stories(stories, episodes)
+        events = split_events(
+            stories,
+            shape_of=self._episode_shapes(episodes),
+            hints=hints,
+            title_of={e.key: e.title for e in episodes},
+            threshold=self._day_threshold(),
+            away=lambda story: any(self._away_from_home(by_key[k]) for k in story["episodes"]),
+            printed_near=self._printed,
+        )
         big = self._big_stories(stories, episodes)
         floors = _floor_weights(stories, journey=False)
+        kinds = same_kind_threads(
+            stories,
+            kind_of=self._episode_kinds(episodes),
+            threshold=self._day_threshold(),
+            away=lambda story: any(self._away_from_home(by_key[k]) for k in story["episodes"]),
+        )
         for story in stories:
             for key in story["episodes"]:
                 by_key[key].role = WEIGHT_ROLE[story["weight"]]
@@ -335,11 +390,46 @@ class RuleStructureReader:
             [],
             [],
             [],
-            {"producer": RULES_VERSION, "hints": hints, "floors": floors, "big_stories": big},
+            {
+                "producer": RULES_VERSION,
+                "hints": hints,
+                "floors": floors,
+                "big_stories": big,
+                "same_kind": kinds,
+                "events": events,
+            },
             stories,
         )
         record(result.as_record())
         return result
+
+    def _episode_kinds(self, episodes) -> dict[str, EpisodeKind]:
+        partition_for = getattr(self.source.intent, "partition_for", lambda _day: None)
+        kinds = {}
+        for episode in episodes:
+            ids = [a for m in episode.moments for a in self.source.moment_asset_ids.get(m, ())]
+            members = [self.source.assets[a] for a in ids]
+            points = [p for a in ids if (p := self.source.gps.get(a)) is not None]
+            part = partition_for(members[0].file_created_at.date()) if members else None
+            kinds[episode.key] = EpisodeKind(
+                pictures=len(members),
+                activity=self._activity(members),
+                place=self._dominant_city(members),
+                gps=(median(p[0] for p in points), median(p[1] for p in points))
+                if points
+                else None,
+                partition=part.key if part is not None else None,
+            )
+        return kinds
+
+    def _episode_shapes(self, episodes) -> dict[str, EpisodeShape]:
+        assets, moments = self.source.assets, self.source.moment_asset_ids
+        return episode_shapes(
+            episodes,
+            members_of=lambda e: [assets[a] for m in e.moments for a in moments.get(m, ())],
+            activity_of=self._activity,
+            gps_of=lambda asset: self.source.gps.get(asset.id),
+        )
 
     def _face_on(self, asset_id: str) -> bool | None:
         if self._face is None:

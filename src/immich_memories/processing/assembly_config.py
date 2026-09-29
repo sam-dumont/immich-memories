@@ -10,8 +10,13 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import StrEnum
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
+from immich_memories.processing.map_move_timing import MapMoveTiming
+
+if TYPE_CHECKING:
+    from immich_memories.processing.film_timeline import FilmTimeline
 
 __all__ = [
     "AssemblyClip",
@@ -74,6 +79,8 @@ class TitleScreenSettings:
     title_duration: float = 3.5
     month_divider_duration: float = 2.0
     ending_duration: float = 4.0
+    # A trip map's flight and still hold (title_screens.map_move_*_seconds)
+    map_move: MapMoveTiming = field(default_factory=MapMoveTiming)
 
     # Features
     show_month_dividers: bool = True
@@ -135,6 +142,9 @@ class AssemblySettings:
     target_resolution: tuple[int, int] | None = None  # Override resolution (width, height)
     # Title screens
     title_screens: TitleScreenSettings | None = None
+    # Recorded by the title inserter from the composed sequence: content, titles at
+    # their regular cost, and the map time past it that goes on top of the film.
+    film_timeline: FilmTimeline | None = None
     # Recorded by the assembly engine from the FINAL clip sequence (titles
     # included): timeline windows where a clip's own audio is music, so the
     # music phase can step the soundtrack aside (#466).

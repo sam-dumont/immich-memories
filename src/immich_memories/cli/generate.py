@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import sys
 from datetime import date
 from pathlib import Path
@@ -50,6 +51,14 @@ from immich_memories.cli.generate_resolution import (
     resolve_people_memory_window,
     resolve_short_form,
     resolve_special_day,
+)
+from immich_memories.cli.run_people import (
+    accounts_record,
+    refuse_household_scope,
+    resolve_run_people,
+    run_accounts,
+    run_client,
+    run_windows,
 )
 from immich_memories.filename_builder import build_memory_output_path, normalize_output_path
 from immich_memories.memory_types.date_builders import BIRTHDAY_HISTORY_FROM, birthday_anchor
@@ -105,6 +114,8 @@ def register_generate_commands(main: click.Group) -> None:
         person: tuple[str, ...],
         person_match: str,
         person_expression: str | None,
+        group_label: str | None,
+        accounts: tuple[str, ...],
         memory_type: str | None,
         holiday: str | None,
         season: str | None,
@@ -132,8 +143,10 @@ def register_generate_commands(main: click.Group) -> None:
         album: str | None,
         from_album: str | None,
         subject: str | None,
-        add_date: bool,
-        add_place: bool,
+        ask: str | None,
+        ask_trace: Path | None,
+        add_date: bool | None,
+        add_place: bool | None,
         keep_intermediates: bool,
         privacy_mode: bool,
         title_override: str | None,
@@ -179,6 +192,12 @@ def register_generate_commands(main: click.Group) -> None:
         from immich_memories.cli._live_display import LiveDisplay, ProgressDisplay, QuietDisplay
 
         config = ctx.obj["config"]
+        from immich_memories.generate_captions import resolve_caption_overlays
+
+        # One rule for every surface: a flag decides for this film, else defaults.add_*.
+        add_date, add_place = resolve_caption_overlays(
+            config, add_date=add_date, add_place=add_place
+        )
         output_selection = resolve_output_selection(
             config_codec=config.output.codec,
             config_container=config.output.format,
@@ -194,6 +213,7 @@ def register_generate_commands(main: click.Group) -> None:
 
         people_condition, person_names = resolve_people_condition(
             person_expression,
+            group_label,
             person_names=list(person) if person else [],
             person_match_typed=ctx.get_parameter_source("person_match")
             == click.core.ParameterSource.COMMANDLINE,
@@ -205,6 +225,8 @@ def register_generate_commands(main: click.Group) -> None:
         if not config.immich.url or not config.immich.api_key:
             print_error("Immich not configured. Run 'immich-memories config' first.")
             sys.exit(1)
+
+        household = run_accounts(config.immich, accounts)
 
         if automation_attempt_id is not None and source != "auto":
             raise click.UsageError("--automation-attempt-id requires --source=auto")
@@ -223,6 +245,15 @@ def register_generate_commands(main: click.Group) -> None:
             person_names=person_names,
         )
 
+        from immich_memories.cli._ask_generation import RunScope, scope_of_ask
+
+        typed = RunScope(memory_type, day, event_id, from_album, subject, accept_any_provenance)
+        memory_type, day, event_id, from_album, subject, accept_any_provenance, curated = (
+            scope_of_ask(
+                ctx, config, ask, dry_run=dry_run, typed=typed, trace_file=ask_trace
+            ).fields()
+        )
+
         # Read the memory from the date flags when it was not named. Without
         # this --month did nothing unless --memory-type was also given, so
         # `--year 2025 --month 7` rendered the whole year.
@@ -235,6 +266,8 @@ def register_generate_commands(main: click.Group) -> None:
             birthday=birthday,
             from_album=from_album,
         )
+
+        refuse_household_scope(household, from_album=from_album, memory_type=memory_type)
 
         # Validate memory type constraints
         if memory_type in ("person_spotlight", "multi_person") and not person_names:
@@ -409,15 +442,17 @@ def register_generate_commands(main: click.Group) -> None:
             no_music=no_music,
         )
         show_interactive = not quiet and sys.stdout.isatty()
+        quiet_scope = contextlib.ExitStack()
         if not show_interactive:
-            from immich_memories.cli._helpers import set_quiet_mode
+            from immich_memories.cli._helpers import quiet_output
 
-            set_quiet_mode(True)
+            # WHY no plain set: this run prints as log lines, the process after it does not.
+            quiet_scope.enter_context(quiet_output(True))
         else:
             console.print(table)
             console.print()
 
-        from immich_memories.api.immich import ImmichAPIError, SyncImmichClient
+        from immich_memories.api.immich import ImmichAPIError
         from immich_memories.generate import GenerationError
 
         try:
@@ -432,11 +467,7 @@ def register_generate_commands(main: click.Group) -> None:
                 # Connect to Immich
                 task = progress.add_task("Connecting to Immich...", total=None)
 
-                with SyncImmichClient(
-                    base_url=config.immich.url,
-                    api_key=config.immich.api_key,
-                    api_version=config.immich.api_version,
-                ) as client:
+                with run_client(config.immich, household) as client:
                     progress.update(task, completed=True)
                     # Album flow: the album is the pool, so branch before discovery
                     if from_album:
@@ -483,6 +514,7 @@ def register_generate_commands(main: click.Group) -> None:
                             owner_excluded_asset_ids=exclude_asset,
                             no_render=no_render,
                             subject=subject,
+                            curated=curated,
                         )
                         return
 
@@ -533,27 +565,13 @@ def register_generate_commands(main: click.Group) -> None:
                         )
                         return
 
-                    # Find person(s) if specified
-                    person_ids: list[str] = []
-                    id_condition = None
-                    if people_condition is not None:
-                        from immich_memories.analysis.editorial_source import (
-                            resolve_named_expression,
-                        )
-
-                        id_condition = resolve_named_expression(
-                            people_condition, client.get_all_people(with_hidden=True)
-                        )
-                    elif person_names:
-                        for pname in person_names:
-                            task = progress.add_task(f"Finding person: {pname}...", total=None)
-                            found_person = client.get_person_by_name(pname)
-                            if not found_person:
-                                print_error(f"Person not found: {pname}")
-                                sys.exit(1)
-                            person_ids.append(found_person.id)
-                            progress.update(task, completed=True)
-                            print_success(f"Found person: {found_person.name}")
+                    run_people = resolve_run_people(
+                        client,
+                        expression=people_condition,
+                        person_names=person_names,
+                        person_match=person_match,
+                        accounts=household,
+                    )
 
                     # Immich holds the birth date; the bare --birthday flag is
                     # how a run says "use it". Curating one there is what makes
@@ -612,13 +630,14 @@ def register_generate_commands(main: click.Group) -> None:
                     # warning would bury the one that matters — the rolling year.
                     assets, fetched_photos = fetch_media(
                         history_from=BIRTHDAY_HISTORY_FROM if birthday else None,
-                        client=client,
+                        client=run_windows(client, household),
                         progress=progress,
                         date_ranges=date_ranges,
-                        person_ids=person_ids,
+                        person_ids=run_people.person_ids,
                         person_match=person_match,
-                        person_expression=id_condition,
+                        person_expression=run_people.condition,
                         include_photos=use_photos,
+                        face_accounts=run_people.face_accounts,
                     )
                     if fetched_photos:
                         print_info(f"Found {len(fetched_photos)} photos")
@@ -680,6 +699,7 @@ def register_generate_commands(main: click.Group) -> None:
                             "person_names": person_names,
                             "person_match": person_match,
                             **window_record,
+                            **accounts_record(household),
                             **(
                                 {"person_expression": people_condition.to_dict()}
                                 if people_condition is not None
@@ -722,6 +742,8 @@ def register_generate_commands(main: click.Group) -> None:
 
             print_error(f"Error: {sanitize_error_message(described_error(e))}")
             sys.exit(1)
+        finally:
+            quiet_scope.close()
 
 
 def _holiday_country(memory_type: str | None, config) -> dict:

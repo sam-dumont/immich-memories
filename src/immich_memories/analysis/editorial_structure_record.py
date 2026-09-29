@@ -22,6 +22,7 @@ from immich_memories.analysis.editorial_intent_validation import CarrierView, va
 from immich_memories.analysis.editorial_story_planner import story_plan_fields
 from immich_memories.analysis.editorial_structure_budget import MIN_CARRIER_SECONDS
 from immich_memories.analysis.editorial_structure_contract import StructurePlanningResult
+from immich_memories.analysis.place_names import shown_city
 from immich_memories.operations.call_families import calls_by_family
 
 IMPLEMENTATION_VERSION = "structure-plan-v87-bounded-offers-and-reference-fallback"
@@ -251,7 +252,7 @@ def _carrier_locations(carriers, assets) -> dict:
             result[carrier["asset_id"]] = {
                 "latitude": exif.latitude,
                 "longitude": exif.longitude,
-                "location_name": exif.city,
+                "location_name": shown_city(exif),
             }
     return result
 

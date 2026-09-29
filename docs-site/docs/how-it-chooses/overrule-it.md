@@ -168,7 +168,7 @@ away from home.
 | `advanced.editorial.people.big_story_family_share` | 0.3 | the share of close-family pictures a big story needs |
 | `photos.burst_window_seconds` | 300 | bursts should merge over a shorter or longer span; 0 turns it off |
 | `photos.burst_hash_threshold` | 8 | frames of a burst must look closer, or may differ more |
-| `advanced.editorial.reader` | `auto` | you want the no-model film even with a model configured: `rules` |
+| `tier` | `auto` | you want the no-model film even with a model configured: `gpu` (or `nas`). The tier sets the reader, and an explicit `advanced.editorial.reader` is ignored with a warning |
 | `advanced.editorial.thin_model_layer` | `true` | you want the model to plan every film whole: `false` |
 
 Everything else in selection is a measured constant in the code, named on the page that describes

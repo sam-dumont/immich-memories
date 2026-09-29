@@ -89,6 +89,14 @@ def _print_run_details_table(run, format_duration) -> None:
     table.add_row("Clips", f"{run.clips_selected}/{run.clips_analyzed} selected")
     if run.title_source:
         table.add_row("Title From", run.title_source)
+    if run.film_timeline:
+        timeline = run.film_timeline
+        table.add_row(
+            "Timeline",
+            f"{timeline.get('content_seconds', 0.0):.1f}s content + "
+            f"{timeline.get('title_seconds', 0.0):.1f}s titles + "
+            f"{timeline.get('map_extra_seconds', 0.0):.1f}s map extra",
+        )
 
     if run.output_path:
         table.add_row("Output", run.output_path)
@@ -418,11 +426,11 @@ def register_runs_commands(main: click.Group) -> None:
 
         # Delete output directory if requested
         if not keep_output and run.output_path:
+            from immich_memories.operations.local_output_cleanup import local_output_directory
+
             output_path = Path(run.output_path)
-            # Check if output is in a run-specific directory (contains run_id)
-            if run.run_id in str(output_path.parent):
-                # Delete the entire run directory
-                output_dir = output_path.parent
+            output_dir = local_output_directory(run)
+            if output_dir is not None:
                 if output_dir.exists():
                     shutil.rmtree(output_dir)
                     print_info(f"Deleted output directory: {output_dir}")

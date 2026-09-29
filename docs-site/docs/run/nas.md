@@ -117,6 +117,15 @@ Size `cache.thumbnail_cache_max_size_mb` against your library: too small and the
 memory downloads every preview again, which on a NAS is the slow part. The budget per picture is in
 the [config reference](../reference/config-reference.md#size-the-thumbnail-cache-by-your-library).
 
+A NAS volume is usually the smallest disk in the setup, and often shared with everything else on
+the box. A run that uploads to Immich has its local film removed as soon as the upload is
+confirmed, so nightly automation does not grow `output.directory` on its own. A run kept local
+(`upload_enabled: false`, or a delivery that stays pending) does not clean up on its own: watch it
+with `immich-memories runs storage` and clear it with `runs delete`. Below
+`output.min_free_space_gb` (5 GB by default) on the output or cache volume, a run warns; if a film
+would not fit at all, the run stops before rendering rather than filling the volume mid-encode.
+See [health, logs and caches](./maintenance/health-logs-cache.md#caches).
+
 ## What a NAS can't do
 
 - Run GPU selection without GPU inference. A render-only GPU does not count. A configured LLM
@@ -132,4 +141,13 @@ the [config reference](../reference/config-reference.md#size-the-thumbnail-cache
 
 Uncomment `IMMICH_MEMORIES_AUTOMATION__ENABLED` and `IMMICH_MEMORIES_AUTOMATION__DAILY_AT` in the
 compose file and set `TZ` in `.env`. The UI process makes one memory a day by itself; there is no
-cron to install. [Daily automation](./docker.md#daily-automation).
+cron to install. [Daily automation](./docker.md#daily-automation), which also says how the daily
+film reaches Immich.
+
+## Everything else
+
+Same container, same commands, prefixed with `sudo` over SSH on most NAS systems. On the Docker page:
+[the API key](./docker.md#the-api-key), [films into Immich](./docker.md#films-into-immich),
+[logs and health](./docker.md#health-check-and-logs), [backups and the store](./docker.md#what-to-keep),
+[updating](./docker.md#updating), [hardening](./docker.md#hardening) and the
+[add-ons](./docker.md#add-ons-as-profiles).

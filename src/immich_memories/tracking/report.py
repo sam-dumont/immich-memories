@@ -53,10 +53,21 @@ def _details(title: str, content: str) -> str:
     )
 
 
+_PEAKS = ("peak_rss_mb", "peak_tree_rss_mb")
+
+
+def _higher(held: float | None, seen: float | None) -> float | None:
+    return seen if held is None else held if seen is None else max(held, seen)
+
+
+def _megabytes(size: int | None) -> float | None:
+    return None if size is None else size / 2**20
+
+
 def _phase_table(rows: list[dict]) -> str:
     lines = [
-        "| Phase | Seconds | Items | s/item | s/output second |",
-        "| --- | ---: | ---: | ---: | ---: |",
+        "| Phase | Seconds | Items | s/item | s/output second | Peak MB | With children MB |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in rows:
         name = html.escape(row["name"]).replace("|", "&#124;").replace("\n", " ")
@@ -67,7 +78,7 @@ def _phase_table(rows: list[dict]) -> str:
         cells = [
             "n/a" if value is None else str(value) if index == 1 else f"{value:.3f}"
             for index, value in enumerate(numbers)
-        ]
+        ] + ["n/a" if row.get(key) is None else f"{row[key]:.0f}" for key in _PEAKS]
         line = "| " + " | ".join([name, *cells]) + " |"
         if sum(map(len, lines)) + len(line) > 5500:
             lines.append("\nMore phases in report.json in the bundle.")
@@ -82,19 +93,48 @@ def _phase_totals(spans: list[dict], output_seconds: float) -> list[dict]:
         name = span["name"]
         if name == "run" or name.startswith("stage."):
             continue
-        row = totals.setdefault(name, {"name": name, "seconds": 0.0, "items": 0})
+        row = totals.setdefault(
+            name, {"name": name, "seconds": 0.0, "items": 0} | dict.fromkeys(_PEAKS)
+        )
         row["seconds"] += span["seconds"]
         row["items"] = (
             row["items"] + span["items"]
             if row["items"] is not None and span["items"] is not None
             else None
         )
+        # Repeated spans sum their seconds, but memory is a high-water mark: keep the highest.
+        row.update({key: _higher(row[key], span.get(key)) for key in _PEAKS})
     for row in totals.values():
         row["seconds_per_item"] = row["seconds"] / row["items"] if row["items"] else None
         row["seconds_per_output_second"] = (
             row["seconds"] / output_seconds if output_seconds else None
         )
     return list(totals.values())
+
+
+_TRACE_LIMIT = 20_000
+
+
+def _free_text_trace(data: dict[str, Any]) -> str:
+    """The free-text trace as its own folding block, out of the per-section budget.
+
+    The trace is what a bad result is read from, so it is pasted whole up to its own limit.
+    Its data twin (the translation's blocks) stays in report.json only.
+    """
+    section = data.get("free_text")
+    if not isinstance(section, dict):
+        return ""
+    translation = {
+        key: value for key, value in section.get("translation", {}).items() if key != "blocks"
+    }
+    data["free_text"] = {key: value for key, value in section.items() if key != "trace"} | {
+        "translation": translation
+    }
+    trace = section.get("trace", "")
+    if len(trace) > _TRACE_LIMIT:
+        cut = trace.rfind("\n", 0, _TRACE_LIMIT)
+        trace = trace[: cut if cut > 0 else _TRACE_LIMIT] + "\n... more in report.json"
+    return _details("Free-text trace", trace) + "\n" if trace else ""
 
 
 @dataclass(frozen=True)
@@ -108,6 +148,7 @@ class RunReport:
     def markdown(self, *, limit: int = 59_000) -> str:
         """Keep complete folding blocks and whole trailing log lines below the issue limit."""
         data = {key: value for key, value in self.data.items() if key not in {"logs", "phases"}}
+        trace = _free_text_trace(data)
         sections = []
         section_limit = min(3500, max(200, (limit - 7000) // max(1, len(data))))
         for key, value in data.items():
@@ -122,6 +163,7 @@ class RunReport:
             "## Immich Memories run report\n\nRepeated spans are summed; nested phases overlap.\n\n"
             + table
             + "\n"
+            + trace
             + "\n".join(sections)
         )
         lines = self.data["logs"]
@@ -174,6 +216,8 @@ def build_report(
             "seconds_per_output_second": measured.duration / run.output_duration_seconds
             if run.output_duration_seconds
             else None,
+            "peak_rss_mb": _megabytes(measured.peak_rss),
+            "peak_tree_rss_mb": _megabytes(measured.peak_tree_rss),
             "warnings": measured.warnings,
             "error": {key: measured.error.get(key) for key in ("type", "message", "frames")}
             if measured.error
@@ -206,6 +250,7 @@ def build_report(
             "wall_seconds": run.total_duration_seconds,
             "output_seconds": run.output_duration_seconds,
             "selected": run.clips_selected,
+            "timeline": run.film_timeline,
             "cache": diagnostics.get("cache", "unknown"),
         },
         "preflight": [

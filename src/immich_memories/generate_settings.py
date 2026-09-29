@@ -34,6 +34,7 @@ from immich_memories.processing.hdr_utilities import (
     detect_dominant_hdr_transfer,
     quality_encoder_preset,
 )
+from immich_memories.processing.map_move_timing import MapMoveTiming
 from immich_memories.titles.title_source import TitleSource
 from immich_memories.tracking.timed import timed
 
@@ -179,9 +180,7 @@ def build_title_settings(
     trip_location_names: list[str] = []
     trip_title_text = None
     if params.memory_type == "trip":
-        trip_locations, trip_location_names = extract_trip_pins(
-            assembly_clips, resolve_caption_locale(config.title_screens.locale)
-        )
+        trip_locations, trip_location_names = _trip_stops(params, config, assembly_clips)
         trip_title_text = generate_trip_title_text(
             params.memory_preset_params, config.title_screens.locale
         )
@@ -196,6 +195,10 @@ def build_title_settings(
         title_duration=config.title_screens.title_duration,
         month_divider_duration=config.title_screens.month_divider_duration,
         ending_duration=config.title_screens.ending_duration,
+        map_move=MapMoveTiming(
+            min_seconds=config.title_screens.map_move_min_seconds,
+            max_seconds=config.title_screens.map_move_max_seconds,
+        ),
         show_month_dividers=divider_mode == "month",
         divider_mode=divider_mode,
         month_divider_threshold=config.title_screens.month_divider_threshold,
@@ -245,6 +248,32 @@ def build_title_settings(
             settings.trip_title_text = params.title
 
     return apply_map_tile_policy(settings)
+
+
+def _trip_stops(
+    params: GenerationParams, config: Config, assembly_clips: list[AssemblyClip]
+) -> tuple[list[tuple[float, float]], list[str]]:
+    """The intro's pins: close stops grouped under one name, unnamed ones left off.
+
+    Grouping asks the geocoder only when `network.geocoding` allows it and never in
+    privacy mode, whose relocated pins would put a real place's name on a fake trip.
+    """
+    from immich_memories.titles.trip_stops import group_trip_stops
+
+    pins, names = extract_trip_pins(
+        assembly_clips, resolve_caption_locale(config.title_screens.locale)
+    )
+    address_of = None
+    if config.network.geocoding and not params.privacy_mode:
+        from immich_memories.analysis.place_geocoder import place_geocoder_for
+
+        geocoder = place_geocoder_for(config)
+        address_of = geocoder.address if geocoder is not None else None
+    stops = group_trip_stops(pins, names, address_of)
+    if not stops:
+        # Nobody can name any stop: the intro still flies to the trip, just with no pins.
+        return pins, [""] * len(pins)
+    return [(stop.lat, stop.lon) for stop in stops], [stop.name for stop in stops]
 
 
 def announce_title_source(title_screens: TitleScreenSettings, run_tracker: RunTracker) -> None:

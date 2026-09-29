@@ -241,7 +241,9 @@ def configure_logging(
         level: Log level name (DEBUG, INFO, WARNING, ERROR, CRITICAL).
             If None, reads from IMMICH_MEMORIES_LOG_LEVEL env var (default: "INFO").
         log_file: Path to a log file. If None, reads from IMMICH_MEMORIES_LOG_FILE
-            env var. When set, logs go to both stdout and the file.
+            env var. When set, logs go to both stderr and the file.
+        stream: Where log lines go; stderr unless a caller says otherwise. Stdout carries only
+            a command's own output, so `--json` output parses as one document (#1570).
     """
     if fmt is None:
         fmt = os.environ.get("IMMICH_MEMORIES_LOG_FORMAT", "text").lower()
@@ -257,7 +259,7 @@ def configure_logging(
     for handler in root.handlers.copy():
         root.removeHandler(handler)
 
-    stream_handler = logging.StreamHandler(stream if stream is not None else sys.stdout)
+    stream_handler = logging.StreamHandler(stream if stream is not None else sys.stderr)
     stream_handler.addFilter(RunIdFilter())
     stream_handler.addFilter(SecretRedactionFilter())
 

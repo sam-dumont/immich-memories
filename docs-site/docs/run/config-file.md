@@ -54,6 +54,32 @@ llm:
   model: "gemma-4-e4b-it-6bit"
 ```
 
+## What each top-level section is for
+
+Every key and its default is in the [config reference](../reference/config-reference.md). This is
+the map: what a section decides, and where it is explained.
+
+| Section | What it decides | Explained on |
+|---|---|---|
+| `tier` | `auto` (the default), `nas`, `gpu` or `full`: how much preparation runs | [Compute tier](#compute-tier) |
+| `preset` | `fast` fills several output knobs at once (1080p H.264, fast encoder, static titles); your own keys win | [Environment variables](./environment-variables.md#preparation-and-output) |
+| `immich` | the server, the API key, the API version, and extra accounts | [Immich API compatibility](#immich-api-compatibility), [A second Immich account](#a-second-immich-account) |
+| `trips` | where home is (`homebase_latitude`, `homebase_longitude`), and how far (50 km), how long (2 days) and how broken (2-day gap) a trip may be | [Trip](../make/memory-types.mdx#trip) |
+| `defaults` | what every film gets unless you say otherwise: blurred backdrop or bars (`scale_mode`), transitions, the sharing level (`family`), date and place captions (both on) | [Sharing levels](../how-it-chooses/family-audience-duplicates.md#sharing-levels), [Date and place captions](../make/titles-maps-music.md#date-and-place-captions) |
+| `output` | where films land, resolution, container, codec, HDR, quality | [Photos, Live Photos and HDR](../make/photos-and-live-photos.md#hdr-end-to-end) |
+| `photos` | whether photos play (on), for how long (4 s), and when shots are one burst | [Photos, Live Photos and HDR](../make/photos-and-live-photos.md) |
+| `title_screens` | title, month and ending cards, their style, language (`locale`), and map move lengths | [Titles, maps and music](../make/titles-maps-music.md) |
+| `audio` | your own music folder and how generated music is built | [Music](../make/titles-maps-music.md#music) |
+| `upload` | whether a finished film goes back to Immich, into which album | [Upload back to Immich](#upload-back-to-immich) |
+| `network` | the two outside calls, both off: place names from Nominatim and map tiles | [Outside calls](#outside-calls) |
+| `cache` | where previews and downloaded clips live, and how big they may grow | [Caches](./maintenance/health-logs-cache.md#caches) |
+| `database` | the store: a SQLite file (default) or PostgreSQL | [Database and the store](./database.md) |
+| `render` | a GPU box that renders for you | [Render on a GPU box](../better/gpu-render.md) |
+
+Under `advanced:` the ones you are likely to touch are `llm` (the model reader), `auth` (sign-in),
+`automation` (the daily film, [Automate it](../make/automate.md)), `notifications` and `server`
+(port, demo mode, the trigger token).
+
 ## Where a setting comes from
 
 Four sources, strongest first:
@@ -120,7 +146,17 @@ openssl rand -base64 32
 ```
 
 and keep it with your other secrets. Without it the UI and the CLI refuse to store a secret and say
-so; put the secret in the environment or `config.yaml` instead. Change or lose the key and the
+so (Settings: "Secrets cannot be saved here until IMMICH_MEMORIES_SECRET_KEY is set"); put the
+secret in the environment or `config.yaml` instead. It is read from the environment only. On
+Docker the shipped compose file already passes it through, so set it in `.env`:
+
+```bash
+# .env
+IMMICH_MEMORIES_SECRET_KEY=paste-the-openssl-output-here
+```
+
+Then `docker compose up -d` to recreate the container. A key shorter than 32 characters is refused
+when you save. Change or lose the key and the
 stored secrets stop opening: the app logs which ones and falls back to their defaults, `config show`
 and the settings page mark each one, and you save them again. Logs never print a secret, whichever source it came from.
 
@@ -136,7 +172,7 @@ vision-capable LLM instead of the caption server are a separate, explicit switch
 Everyday sections sit at the top level: `immich`, `defaults`, `output`, `audio`, `title_screens`,
 `cache`, `database`, `upload`, `trips`, `network`, `photos`, `render`, `title_llm`. Tuning sections
 go under `advanced:`: `analysis`, `speech`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`, `automation`,
-`notifications`, `triage`, `editorial`, `inference`. Both placements work and merge key by key at
+`notifications`, `triage`, `editorial`, `inference`, `free_text`. Both placements work and merge key by key at
 every depth, and the top-level value wins a tie, so a hand-written
 `editorial: {preparation: {caption_concurrency: 4}}` changes concurrency and keeps the rest of an
 `advanced.editorial` block. The database, `config show` and `config move-to-db` use the runtime
@@ -235,9 +271,20 @@ immich:
       api_key: "${PARTNER_IMMICH_API_KEY}"
 ```
 
-For now this is a connection and nothing more: `config test` and `preflight` check it, one line per
-account, and films still read the primary account only. Reading both libraries into one film lands
-in later releases ([#1500](https://github.com/sam-dumont/immich-video-memory-generator/issues/1500)).
+Configuring it changes no film on its own. To make one film from both libraries:
+
+1. `immich-memories config test` (or `preflight`): one line per account, each proving who its key
+   belongs to.
+2. Tell the people registry which face in the partner's account is which person, so `--person`
+   finds them on both sides: `immich-memories people bind "Alex" --account partner --id <person-id>`
+   ([people](../make/cli/prepare.md)).
+3. `immich-memories generate --accounts primary,partner ...` reads both into one film. A picture
+   both phones uploaded counts once ([Duplicates](../how-it-chooses/family-audience-duplicates.md#duplicates)),
+   and each picture is downloaded through the account that owns it. If that account cannot read
+   it, the run stops and names the account rather than make a film with half a household missing.
+
+Today only `generate` on the CLI takes `--accounts`. The web UI, automation, albums and trips read
+the primary account, and the film is uploaded to the primary only.
 Name rules, secrets and env variables: [extra accounts](../reference/config-reference.md#extra-accounts).
 
 ## Environment variable substitution
@@ -280,8 +327,9 @@ network:
 
 Both off, so a default run reaches your Immich server, the endpoints named elsewhere in this file,
 and nothing else. `geocoding` buys the right district's name where Immich names the neighbouring
-town (Wilrijk, not Hoboken), trip names from the map, and place names in the film's language. It
-sends rounded coordinates, about a kilometre, once per place; answers are kept in the store.
+town (Wilrijk, not Hoboken) on every name you read, trip names from the map, and place names in the
+film's language. It sends rounded coordinates, about a kilometre, once per place; answers are kept
+in the store.
 `geocoding_url` points it at a self-hosted Nominatim. `map_tiles` buys the trip fly-over and the
 map behind location cards. Fonts are never fetched at run time (see
 [fonts](./privacy.md#fonts)). [Privacy](./privacy.md) says exactly what each host receives.

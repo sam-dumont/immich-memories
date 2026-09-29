@@ -16,9 +16,8 @@ import { FILM_PICTURES_END } from "../fixture";
  * tests/e2e/fixtures -- see `make demo-output`. Nothing in it is anyone's library.
  */
 
-// The film ends on a blurred card, and the demo must not: this is the README's
-// first impression, and the hero GIF's last three seconds are this scene's last
-// three. So the window is anchored to the end of the film's pictures, which
+// The film ends on a blurred card, and the demo must not: it closes on a
+// picture. So the window is anchored to the end of the film's pictures, which
 // `make demo-fixture` measures out of the film itself. A re-cut that moves it by
 // a second moves this with it; nothing here is a number anyone typed.
 const FPS = 30;

@@ -16,6 +16,7 @@ from immich_memories.i18n import DEFAULT_LOCALE
 from immich_memories.i18n_places import is_country, localise_place
 
 if TYPE_CHECKING:
+    from immich_memories.config_loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.processing.assembly_config import AssemblyClip
 
@@ -74,6 +75,20 @@ def apply_location_captions(
     ]
 
 
+def resolve_caption_overlays(
+    config: Config, *, add_date: bool | None, add_place: bool | None
+) -> tuple[bool, bool]:
+    """Whether a film is captioned with dates and with places: what the film asked, else the config.
+
+    `defaults.add_date` and `defaults.add_place` are the one rule the web client, the CLI and
+    automation start from, so no surface can quietly render without captions the others show.
+    """
+    return (
+        config.defaults.add_date if add_date is None else add_date,
+        config.defaults.add_place if add_place is None else add_place,
+    )
+
+
 def prepare_location_captions(
     params: GenerationParams, clips: list[AssemblyClip]
 ) -> list[AssemblyClip]:
@@ -112,16 +127,16 @@ def district_place_names(params: GenerationParams, clips: list[AssemblyClip]) ->
     """
     if params.privacy_mode:
         return clips
-    from immich_memories.analysis.place_geocoder import district_of, place_geocoder_for
+    from immich_memories.analysis.place_names import place_names_for
 
-    places = place_geocoder_for(params.config)
-    if places is None:
-        return clips
+    # The same resolver the film's pictures were named with (#1591), asked again here only for
+    # a replay of a snapshot written before names travelled on the pictures; the store answers.
+    places = place_names_for(params.config)
     named = []
     for clip in clips:
         district = None
         if clip.latitude is not None and clip.longitude is not None:
-            district = district_of(places.address(clip.latitude, clip.longitude))
+            district = places.district_at(clip.latitude, clip.longitude)
         named.append(
             replace(clip, location_name=_with_district(district, clip.location_name))
             if district

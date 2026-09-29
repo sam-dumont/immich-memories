@@ -115,3 +115,121 @@ def test_run_logs_keep_the_last_lines_and_count_every_level(monkeypatch):
     assert len(collected.logs) == 10
     assert collected.logs[-1].endswith("last")
     assert collected.diagnostics["log_counts"] == {"WARNING": 25, "ERROR": 1}
+
+
+def test_a_run_opened_after_imports_names_that_time_startup():
+    import time
+
+    from immich_memories.db import open_store
+    from immich_memories.process_start import Startup
+    from immich_memories.tracking.run_observations import observe_run
+    from immich_memories.tracking.span_progress import uncovered_seconds
+
+    startup = Startup(time.perf_counter() - 4.0)
+    with observe_run(open_store(), source="manual", capture_system=False, startup=startup) as run:
+        pass
+    spans = {span.name: span for span in _spans(run)}
+    assert spans["startup"].duration >= 4.0
+    assert spans["startup"].parent_id == spans["run"].span_id
+    assert spans["run"].duration >= spans["startup"].duration
+    assert uncovered_seconds(list(spans.values()), 0.0) < 0.5
+
+
+def test_only_the_first_cli_run_of_a_process_claims_its_startup(monkeypatch):
+    import time
+
+    import click
+    from click.testing import CliRunner
+
+    from immich_memories import process_start
+    from immich_memories.config_loader import Config
+    from immich_memories.tracking.run_observations import current_tracker, observed_command
+
+    # WHY: this test process began long before; a fresh mark stands in for a CLI that just did.
+    fresh = process_start.Startup(time.perf_counter() - 2.0)
+    monkeypatch.setattr(process_start, "_process", fresh)
+    monkeypatch.setattr(process_start, "_unclaimed", [fresh])
+    runs = []
+
+    @click.command()
+    @click.pass_context
+    @observed_command("manual")
+    def command(ctx):
+        runs.append(current_tracker())
+
+    for _ in range(2):
+        result = CliRunner().invoke(command, obj={"config": Config()}, catch_exceptions=False)
+        assert result.exit_code == 0
+    first, second = ({span.name for span in _spans(run)} for run in runs)
+    assert "startup" in first
+    assert "startup" not in second
+
+
+def test_a_cold_start_is_split_into_named_phases_that_sum_to_it():
+    from immich_memories.process_start import Startup
+
+    cold = Startup(started=0.0, marks=[("imports", 2.0), ("config", 3.5), ("system", 9.0)])
+    with timing.collecting(now=lambda: 30.0) as collected, timing.span("run") as root:
+        timing.open_at(root, cold)
+
+    startup = next(span for span in collected.spans if span.name == "startup")
+    children = [span for span in collected.spans if span.parent_id == startup.span_id]
+    assert [(span.name, span.start, span.duration) for span in children] == [
+        ("startup.imports", 0.0, 2.0),
+        ("startup.config", 2.0, 1.5),
+        ("startup.system", 3.5, 5.5),
+        ("startup.run_record", 9.0, 21.0),
+    ]
+    assert startup.duration == 30.0
+
+
+def test_a_span_records_a_peak_at_least_what_it_allocated():
+    import subprocess
+    import sys
+    import time
+
+    size = 64 * 1024 * 1024
+    child = (
+        f"x = bytearray({size}); x[::4096] = b'y' * len(x[::4096]); import sys; sys.stdin.read()"
+    )
+    with timing.collecting() as collected, timing.span("run"):
+        with timing.span("download"):
+            held = bytearray(size)
+            held[::4096] = b"x" * len(held[::4096])
+        del held
+        with timing.span("assembly"):
+            # A child standing in for ffmpeg: it holds its buffer until told to exit.
+            ffmpeg = subprocess.Popen([sys.executable, "-c", child], stdin=subprocess.PIPE)
+            time.sleep(0.6)
+            ffmpeg.communicate(b"")
+
+    download, assembly, run = collected.spans
+    assert download.peak_rss >= size
+    assert download.peak_tree_rss >= download.peak_rss
+    assert assembly.peak_tree_rss >= assembly.peak_rss + size
+    assert run.peak_rss >= download.peak_rss
+
+
+def test_spans_outside_a_run_measure_no_memory():
+    with timing.span("loose") as measured:
+        pass
+    assert measured.peak_rss is None
+
+
+def test_a_parent_span_reports_at_least_its_childs_peak(monkeypatch):
+    from immich_memories.tracking import peak_memory
+
+    resident = {"bytes": 10**14}
+    # WHY: RSS is read from the OS; a scripted reading makes the child's high point
+    # one that only the child's own close sees, which real sampling hits by chance.
+    monkeypatch.setattr(peak_memory, "rss_bytes", lambda _pid: resident["bytes"])
+    monkeypatch.setattr(peak_memory, "SAMPLE_SECONDS", 3600.0)
+    with timing.collecting() as collected, timing.span("run"):
+        with timing.span("download"):
+            resident["bytes"] = 10**15
+        resident["bytes"] = 10**14
+
+    download, run = collected.spans
+    assert download.peak_rss == 10**15
+    assert run.peak_rss >= download.peak_rss
+    assert run.peak_tree_rss >= download.peak_tree_rss

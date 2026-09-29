@@ -56,6 +56,17 @@ people_aliases = Table(
     Column("account", String(), nullable=True),
 )
 
+# A saved people expression `generate --group` resolves like `--people-expression`. The
+# expression is the parsed `PersonExpression` AST, over canonical person ids, so a
+# selection change (a rename, a merge) is seen the next time the group is used.
+people_groups = Table(
+    "people_groups",
+    metadata,
+    Column("label", String(), primary_key=True),
+    Column("position", Integer, nullable=False),
+    Column("expression", JSON, nullable=False),
+)
+
 # The confirmed links, in the order the person's block lists them. `target_id` is not a
 # foreign key: a link to somebody who left the roster is still the owner's answer.
 people_relationships = Table(

@@ -265,23 +265,15 @@ class TestQuietModePrintHelpers:
     """Print helpers route to logging when quiet mode is active."""
 
     def test_error_goes_to_logger(self, caplog):
-        from immich_memories.cli._helpers import print_error, set_quiet_mode
+        from immich_memories.cli._helpers import print_error, quiet_output
 
-        set_quiet_mode(True)
-        try:
-            with caplog.at_level(logging.ERROR):
-                print_error("something broke")
-            assert "something broke" in caplog.text
-        finally:
-            set_quiet_mode(False)
+        with quiet_output(True), caplog.at_level(logging.ERROR):
+            print_error("something broke")
+        assert "something broke" in caplog.text
 
     def test_info_goes_to_logger(self, caplog):
-        from immich_memories.cli._helpers import print_info, set_quiet_mode
+        from immich_memories.cli._helpers import print_info, quiet_output
 
-        set_quiet_mode(True)
-        try:
-            with caplog.at_level(logging.INFO):
-                print_info("status update")
-            assert "status update" in caplog.text
-        finally:
-            set_quiet_mode(False)
+        with quiet_output(True), caplog.at_level(logging.INFO):
+            print_info("status update")
+        assert "status update" in caplog.text

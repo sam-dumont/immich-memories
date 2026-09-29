@@ -61,6 +61,8 @@ pipeline_runs = Table(
     Column("warnings", JSON, nullable=False),
     Column("llm_metrics", JSON, nullable=True),
     Column("title_source", String(), nullable=True),
+    # Seconds of content, of titles at their regular cost, and of map time on top.
+    Column("film_timeline", JSON, nullable=True),
     Index(None, "delivery_status", "source", "status"),
 )
 

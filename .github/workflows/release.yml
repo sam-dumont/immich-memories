@@ -9,8 +9,16 @@ on:
         required: false
         default: false
         type: boolean
+      channel:
+        description: 'stable = a final release (promotes an open candidate series); rc = a release candidate'
+        required: false
+        default: stable
+        type: choice
+        options:
+          - stable
+          - rc
       force_version:
-        description: 'Force version bump type (optional)'
+        description: 'Force version bump type (optional; starts a new series, ignored while one is open)'
         required: false
         type: choice
         options:
@@ -48,6 +56,8 @@ jobs:
       should_release: ${{ steps.analyze.outputs.should_release }}
       next_version: ${{ steps.analyze.outputs.next_version }}
       release_type: ${{ steps.analyze.outputs.release_type }}
+      prerelease: ${{ steps.analyze.outputs.prerelease }}
+      previous_tag: ${{ steps.analyze.outputs.previous_tag }}
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
@@ -60,12 +70,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_VERSION: ${{ inputs.force_version }}
+          CHANNEL: ${{ inputs.channel }}
           INFERENCE_ONLY: ${{ inputs.inference_only }}
         run: |
           if [[ "$INFERENCE_ONLY" == "true" ]]; then
             python3 scripts/release_analyze.py --inference-only >> "$GITHUB_OUTPUT"
           else
-            python3 scripts/release_analyze.py --force-version "${FORCE_VERSION:-auto}" >> "$GITHUB_OUTPUT"
+            python3 scripts/release_analyze.py --force-version "${FORCE_VERSION:-auto}" \
+              --channel "${CHANNEL:-stable}" >> "$GITHUB_OUTPUT"
           fi
 
   # Run CI before release
@@ -116,6 +128,18 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev
 
+      # The wheel carries the built web client, which is not committed (#1580).
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build the web client
+        run: |
+          make web-client
+          uv run python scripts/check_web_brand.py --require-bundle
+
       - name: Build package
         env:
           # The tag is not pushed until this succeeds; pin the candidate version.
@@ -164,8 +188,10 @@ jobs:
         id: changelog
         env:
           NEXT_VERSION: ${{ needs.analyze.outputs.next_version }}
+          # A candidate's notes cover what changed since the previous candidate;
+          # a final's cover the whole series since the previous final.
+          PREV_TAG: ${{ needs.analyze.outputs.previous_tag }}
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
 
           echo "## What's Changed" > release_notes.md
           echo "" >> release_notes.md
@@ -230,7 +256,8 @@ jobs:
             attestations/*.sigstore.json
             attestations/*.intoto.jsonl
           draft: false
-          prerelease: false
+          prerelease: ${{ needs.analyze.outputs.prerelease == 'true' }}
+          make_latest: ${{ needs.analyze.outputs.prerelease == 'true' && 'false' || 'true' }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
@@ -316,7 +343,11 @@ jobs:
   deploy-docs:
     name: Deploy Docs
     needs: [analyze, release]
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && (!inputs.dry_run && needs.analyze.outputs.should_release == 'true')
+    # The site documents the current final; a candidate's changes wait for it.
+    if: >-
+      github.repository == 'sam-dumont/immich-video-memory-generator' &&
+      !inputs.dry_run && needs.analyze.outputs.should_release == 'true' &&
+      needs.analyze.outputs.prerelease != 'true'
     uses: ./.github/workflows/docs.yml
     with:
       version: v${{ needs.analyze.outputs.next_version }}
@@ -518,13 +549,17 @@ jobs:
           IMAGE: ghcr.io/${{ github.repository }}/inference
           VERSION: ${{ needs.analyze.outputs.next_version }}
           INFERENCE_ONLY: ${{ inputs.inference_only }}
+          PRERELEASE: ${{ needs.analyze.outputs.prerelease }}
         run: |
           # A dispatch build has no version to claim, so it is tagged by commit
-          # and never moves `latest`. Only a release does that.
+          # and never moves `latest`. Only a final release does that.
           if [ "$INFERENCE_ONLY" = "true" ]; then
             base="sha-${GITHUB_SHA:0:12}"
             cpu_tags="-t $IMAGE:$base"
             cuda_tags="-t $IMAGE:$base-cuda"
+          elif [ "$PRERELEASE" = "true" ]; then
+            cpu_tags="-t $IMAGE:$VERSION"
+            cuda_tags="-t $IMAGE:$VERSION-cuda"
           else
             cpu_tags="-t $IMAGE:$VERSION -t $IMAGE:latest"
             cuda_tags="-t $IMAGE:$VERSION-cuda -t $IMAGE:latest-cuda"
@@ -612,10 +647,14 @@ jobs:
         env:
           IMAGE: ghcr.io/${{ github.repository }}
           VERSION: ${{ needs.analyze.outputs.next_version }}
+          PRERELEASE: ${{ needs.analyze.outputs.prerelease }}
         run: |
+          # A candidate is pulled by its exact tag; `latest` stays on the last final.
+          latest=(-t "$IMAGE:latest")
+          if [ "$PRERELEASE" = "true" ]; then latest=(); fi
           docker buildx imagetools create \
             -t "$IMAGE:$VERSION" \
-            -t "$IMAGE:latest" \
+            "${latest[@]}" \
             $(printf "$IMAGE@sha256:%s " *)
 
   deployment-bundle:

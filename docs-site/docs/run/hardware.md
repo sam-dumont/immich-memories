@@ -77,7 +77,22 @@ No hardware acceleration detected, using software encoding
 
 Set `NVIDIA_DRIVER_CAPABILITIES=compute,video,utility` on the container, with
 `runtimeClassName: nvidia` in Kubernetes or `capabilities: [gpu, video]` in the compose device
-reservation. `kubectl apply -k overlays/gpu` sets both.
+reservation. `kubectl apply -k overlays/gpu` sets both. The shipped compose file has no GPU block on
+the app service: add the variable to its `environment:` block, and the reservation under the
+`deploy:` it already has:
+
+```yaml
+      NVIDIA_DRIVER_CAPABILITIES: "compute,video,utility"   # in environment:
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, video]
+```
 
 An FFmpeg built against a newer NVENC SDK than your driver refuses to open the encoder at render
 time. This project's image works on the 570 driver; the one-frame probe catches a mismatch and
@@ -86,6 +101,11 @@ falls back to software.
 The image ships the CPU build of PyTorch on purpose: the detectors are ONNX graphs and need no
 torch. To run the ONNX seats on CUDA, use the `-cuda` [inference service](../better/inference.md),
 or install `immich-memories[editorial-cuda]` on the host in place of `editorial`.
+
+Old card, still worth a caption server: llama.cpp's CUDA build still runs on Pascal (a GTX 1070,
+`sm_61`), where PyTorch's cu128 wheels have already dropped that architecture. The [reference
+setup](./reference-setup.md#the-two-gpu-nodes) puts exactly that card on caption duty next to a
+newer one running everything else.
 
 ### Apple Silicon
 

@@ -3,17 +3,18 @@
   import { Button, Heading, LoadingSpinner, Text } from '@immich/ui';
   import { mdiMovieOpenPlayOutline } from '@mdi/js';
   import { onMount } from 'svelte';
-  import { api, post, type AlbumChoice, type CutBrief, type JobView, type NamedPerson, type SpecialDay, type TripChoice, type Trips } from '$lib/api';
+  import { api, post, type AccountChoice, type AlbumChoice, type CutBrief, type JobView, type NamedPerson, type SavedGroup, type SpecialDay, type TripChoice, type Trips } from '$lib/api';
   import { locale, N_, t } from '$lib/i18n.svelte';
   import { followJob } from '$lib/job.svelte';
   import JobPanel from '$lib/JobPanel.svelte';
+  import AskPanel from '$lib/AskPanel.svelte';
   import { updatedAgo } from '$lib/ago';
   import { memoryTypeLabel } from '$lib/labels';
 
   // Which of generate's scope flags each memory type reads, in the order the form asks them.
   // Every date-range memory can be narrowed to people; a trip, an album and a spotlight cannot take a
   // grouped condition (generate refuses it there).
-  const PEOPLE = ['person', 'person_match', 'people_expression'];
+  const PEOPLE = ['person', 'person_match', 'people_expression', 'group'];
   const FIELDS: Record<string, string[]> = {
     monthly_highlights: ['year', 'month', ...PEOPLE],
     year_in_review: ['year', ...PEOPLE],
@@ -103,8 +104,26 @@
   let problem = $state('');
   let stop: (() => void) | null = null;
 
+  let savedGroups = $state<SavedGroup[]>([]);
+  let groupLabel = $state<string | null>(null);
+  let accountChoices = $state<AccountChoice[]>([]);
+  let accountsChosen = $state<string[]>([]);
+
   const shown = $derived(FIELDS[kind]);
-  const grouped = $derived(shown.includes('people_expression') && expression.trim() !== '');
+  // Picking a group replaces the names and the grouped condition, the same way an expression does.
+  const grouped = $derived(
+    (shown.includes('people_expression') && expression.trim() !== '') ||
+      (shown.includes('group') && groupLabel !== null),
+  );
+  const pickGroup = (label: string) => {
+    groupLabel = groupLabel === label ? null : label;
+    if (groupLabel) { chosen = []; expression = ''; }
+  };
+  const toggleAccount = (name: string) => {
+    accountsChosen = accountsChosen.includes(name)
+      ? accountsChosen.filter((choice) => choice !== name)
+      : [...accountsChosen, name];
+  };
 
   const brief = $derived.by((): CutBrief => {
     const has = (name: string) => shown.includes(name);
@@ -121,10 +140,12 @@
       end: has('end') && span === 'until' && end ? end : null,
       period: has('period') && span === 'for' && period ? period : null,
       birthday: has('birthday') && birthdayYear ? birthdayOverride.trim() || 'auto' : null,
-      // A grouped condition names its own people: it replaces --person rather than refining it.
+      // A grouped condition or a saved group names its own people: it replaces --person.
       person: has('person') && !grouped ? chosen : [],
       person_match: has('person_match') && !grouped && chosen.length > 1 ? match : null,
-      people_expression: grouped ? expression.trim() : null,
+      people_expression: has('people_expression') && groupLabel === null && expression.trim() ? expression.trim() : null,
+      group: has('group') && groupLabel ? groupLabel : null,
+      accounts: accountsChosen,
       from_album: has('from_album') && album ? album : null,
       trip_index: has('trip_index') ? tripIndex : null,
       all_trips: has('all_trips') && allTrips,
@@ -233,16 +254,27 @@
       if (earlier && (earlier.status === 'failed' || earlier.status === 'interrupted')) job = earlier;
     });
     void api<NamedPerson[]>('/people').then((found) => (people = found)).catch(() => (people = []));
+    void api<SavedGroup[]>('/roster/groups').then((found) => (savedGroups = found)).catch(() => (savedGroups = []));
+    void api<AccountChoice[]>('/accounts').then((found) => (accountChoices = found)).catch(() => (accountChoices = []));
     return () => stop?.();
   });
 
+  // Starts the cut and follows it; what went wrong otherwise, for the form that asked.
+  async function startCut(body: CutBrief): Promise<string> {
+    const { status, body: answer } = await post<JobView>('/cuts', body);
+    if (status === 202) follow(answer);
+    else if (status === 409 && answer.job) follow(answer.job);
+    else return answer.detail ?? t('The cut could not start.');
+    return '';
+  }
+
   async function cut() {
     problem = '';
-    const { status, body } = await post<JobView>('/cuts', brief);
-    if (status === 202) follow(body);
-    else if (status === 409 && body.job) follow(body.job);
-    else problem = body.detail ?? t('The cut could not start.');
+    problem = await startCut(brief);
   }
+
+  // A sentence is a brief of its own: `generate --ask` is the whole scope.
+  const cutSentence = (sentence: string) => startCut({ ask: sentence } as CutBrief);
 
   async function cancel() {
     if (job) job = (await post<JobView>(`/jobs/${encodeURIComponent(job.id)}/cancel`, {})).body;
@@ -263,6 +295,7 @@
   {#if job && job.status === 'running'}
     <JobPanel {job} onCancel={cancel} />
   {:else}
+    <AskPanel onFilm={cutSentence} />
     <form class="flex flex-col gap-6" onsubmit={(event) => { event.preventDefault(); void cut(); }}>
       <fieldset class="flex flex-col gap-3">
         <legend class="mb-2 text-sm font-semibold">{t('Memory type')}</legend>
@@ -391,18 +424,31 @@
             {#each visiblePeople as person (person.id)}
               <!-- relative: the hidden checkbox stays inside its chip, so focusing it never scrolls the page away. -->
               <label class={['relative cursor-pointer rounded-full border px-3 py-1 text-sm', chosen.includes(person.name) ? 'border-primary bg-primary/10' : 'border-gray-200 dark:border-gray-800']}>
-                <input type="checkbox" class="sr-only" value={person.name} bind:group={chosen} disabled={grouped} />{person.name}
+                <input type="checkbox" class="sr-only" value={person.name} bind:group={chosen} disabled={grouped} onchange={() => (groupLabel = null)} />{person.name}
                 {#if person.pictures}<span class="ml-1 text-xs text-gray-500 tabular-nums">{person.pictures.toLocaleString(locale())}</span>{/if}
               </label>
             {:else}
               <Text size="small" color="muted">{people.length ? t('No name matches.') : t('No named people in Immich yet.')}</Text>
             {/each}
           </div>
+          {#if shown.includes('group') && savedGroups.length}
+            <div class="flex flex-col gap-1">
+              <p class="text-xs font-medium">{t('Saved groups')}</p>
+              <div class="flex flex-wrap gap-2">
+                {#each savedGroups as saved (saved.label)}
+                  <button type="button" onclick={() => pickGroup(saved.label)} aria-pressed={groupLabel === saved.label}
+                    class={['rounded-full border px-3 py-1 text-sm', groupLabel === saved.label ? 'border-primary bg-primary/10 font-medium' : 'border-gray-200 dark:border-gray-800']}>
+                    {saved.label} <span class="text-xs text-gray-500">{saved.expression}</span>
+                  </button>
+                {/each}
+              </div>
+            </div>
+          {/if}
           {#if shown.includes('people_expression')}
-            <details class="text-sm" open={grouped}>
+            <details class="text-sm" open={shown.includes('people_expression') && expression.trim() !== ''}>
               <summary class="cursor-pointer text-gray-600 dark:text-gray-400">{t('Grouped condition')}</summary>
               <label class="mt-2 flex flex-col gap-1 font-medium">{t('People condition')}
-                <input class={field} bind:value={expression} placeholder={'("Person A" OR "Person B") AND "Person C"'} />
+                <input class={field} bind:value={expression} oninput={() => (groupLabel = null)} placeholder={'("Person A" OR "Person B") AND "Person C"'} disabled={groupLabel !== null} />
               </label>
               <Text size="small" color="muted">{t('Use exact library names; each picture must match. It replaces the names above.')}</Text>
             </details>
@@ -411,6 +457,18 @@
             <label class="flex items-center gap-2 text-sm">{t('Pictures with')}
               <select class={field} bind:value={match}><option value="and">{t('all of them together')}</option><option value="or">{t('any of them')}</option></select>
             </label>
+          {/if}
+          {#if accountChoices.length > 1}
+            <div class="flex flex-col gap-1">
+              <p class="text-xs font-medium">{t('Immich accounts to read (primary alone when none are picked)')}</p>
+              <div class="flex flex-wrap gap-2">
+                {#each accountChoices as choice (choice.name)}
+                  <label class={['relative cursor-pointer rounded-full border px-3 py-1 text-sm', accountsChosen.includes(choice.name) ? 'border-primary bg-primary/10' : 'border-gray-200 dark:border-gray-800']}>
+                    <input type="checkbox" class="sr-only" checked={accountsChosen.includes(choice.name)} onchange={() => toggleAccount(choice.name)} />{choice.name}
+                  </label>
+                {/each}
+              </div>
+            </div>
           {/if}
         </fieldset>
       {/if}

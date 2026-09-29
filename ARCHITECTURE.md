@@ -30,8 +30,9 @@ and one changed asset invalidates one month instead of every page after it. The 
 applied to the answer (`_split_by_day`), not asked for in the prompt.
 
 Before the weighing, `editorial_story_trips.py` runs the app's trip detection over the film's pool
-and folds every trip's day episodes into one story; the trip reserves
-`round(slots / 2 * sqrt(trip days / film days))` pictures at its turn in the presence pass. After
+and folds every trip's day episodes into one story per leg (`trip_legs.py`: a trip that changes
+where it stays, such as a hike then a city, is two legs); each leg reserves
+`round(slots / 2 * sqrt(leg days / film days))` pictures at its turn in the presence pass. After
 the weighing, `editorial_story_threads.py` asks the reader whether stories of one place and era
 that its own words link are one recurring activity, and folds each confirmed group. At
 carrier admission, `editorial_story_lookalike.py` answers the repetition question from the cached
@@ -151,7 +152,9 @@ selected LLM caption identity, preferring valid banked SmolVLM pairs. Fact reads
 checks and provenance use the same choice. Default SmolVLM reads retain their exact producer.
 `editorial_preparation_motion.py` owns `MotionScope`, motion acquisition and bank reads. Its
 producer-specific reads reuse described SmolVLM motion lines before requesting a new LLM line;
-unchanged sources retain their existing bank entries.
+unchanged sources retain their existing bank entries. `prepare` acquires descriptions; film-time
+evidence preparation reads banked motion or falls back to plain clip facts. Missing motion
+remains in the preparation report but does not block required-fact completeness.
 
 - **Producer**: anything that writes a fact about a picture: the caption server, the heads, the
   detectors, the motion and pixel readers (`editorial_preparation*.py`). Film preparation runs
@@ -179,7 +182,8 @@ unchanged sources retain their existing bank entries.
   Explicit tiers remain available for comparisons. Sharing never asks the prose
   LLM (`config_tiers.py`, `config_models_editorial*.py`, `editorial_shareability_tiers.py`).
   `laya_checkpoints.py` selects platform-matched archive, path and threshold defaults;
-  `pinned_models.py` owns the SHA-256 pins used by `models fetch`.
+  `pinned_models.py` owns the SHA-256 pins used by `models fetch` (the encoder, the detector
+  exports, Laya, and the WordNet corpus free-text requests are read with).
 - **Reach**: the pictures a film can actually select (for a person film, its person presence),
   plus their Live Photo siblings and capture runs. This bounds cheap preparation; captions
   and playback have the narrower selected/candidate scope. The rest of the window is read as
@@ -303,7 +307,7 @@ unchanged sources retain their existing bank entries.
 
 `src/immich_memories/` is the app. `services/inference/immich_memories_inference/` is a second
 top-level package — the inference service, which serves the encoder, the eight public heads and the
-two detectors over HTTP (`/ping`, `/health`, `/facts`) in its own image with its own device
+two detectors and Demucs over HTTP (`/ping`, `/health`, `/facts`, `/audio/stems`) in its own image with its own device
 variant (`docker/Dockerfile.inference`, `docker/hwaccel.inference.yml`). It imports the app's
 triage engine and detector module rather than reimplementing them, which is what keeps a fact
 computed there identical to one computed in process; two import-linter contracts hold the
@@ -390,6 +394,12 @@ these helper modules:
 - `processing/source_preparation.py`: bounded completion queue with worker-owned clients;
   `generate_clips.py` gives each source its own scratch directory and restores editorial order.
   `DownloadCoordinator.sources_for` shares downloaded components across workers by source ID.
+  `processing/memory_budget.py` sizes the pool when `source_prepare_workers` is `auto`: one worker
+  per 2 GB of the cgroup memory limit (else physical RAM), at most 2 and never more than the CPUs.
+  The same budget caps each assembly decode's FFmpeg `-threads` (one per 2 GB, 1 to 4).
+  It also sets libx265's `rc-lookahead` above 1080p (5 up to 3 GB, 10 at 4-5 GB, default from 6 GB)
+  through `clip_encoder.encoder_args_for_plan` and the photo clip encoder.
+  Below 3 GB with no hardware HEVC encoder, `output_canvas` renders an `auto` 4K film at 1080p.
 - `processing/remote_render.py`: authenticated jobs, bounded polling, a SHA-256-checked download,
   and a staged film that reuses the worker's decode when the bytes match
 - `processing/remote_render_plan.py`: frozen cut serialization, including certified Live material
@@ -410,6 +420,9 @@ src/immich_memories/
 │   ├── album_service.py        # AlbumService: album operations
 │   ├── sync_client.py          # Sync wrapper for async client
 │   ├── accounts.py             # open_accounts: one /users/me-verified client per selected account (#1500)
+│   ├── access_clients.py       # AccessBoundClient: the run's client; reads each routed picture (details,
+│   │                           # preview, original, motion, playback) through its owner's account, kept
+│   │                           # open until the run ends; uploads stay primary. AccountReadFailed names it
 │   ├── compatibility.py        # Immich API-version compatibility policy (v2/v3 resolution)
 │   └── models.py               # API data models (Asset, Person, etc.)
 │
@@ -436,6 +449,7 @@ src/immich_memories/
 │   ├── annotation_line_fields.py # Which parts of a picture's line are its content and which we wrote; content rules read only the first
 │   ├── editorial_film_reach.py # What a film prepares: its demanded pictures, their Live families and capture runs
 │   ├── person_presence.py      # Who a person film may select: every picture of an episode its people are recognised in
+│   ├── person_resolution.py    # A name or UUID -> faces: the store's aliases per read account, else the roster
 │   ├── editorial_orchestration.py  # TextEditorialPlanner: episodes -> cards -> edit
 │   ├── editorial_rule_episodes.py  # Factual episode cards / omitted thesis; no semantic-bank writes
 │   ├── editorial_rule_reader.py    # Rules for worthiness, grouping and standing; shared allocation
@@ -491,10 +505,19 @@ src/immich_memories/
 │   ├── editorial_preparation*.py   # Annotation preparation: captions, public heads, detectors, pixel facts,
 │   │                               # motion lines (one caption-seat sentence per video, read by
 │   │                               # the pick).
+│   │                               # _previews.py fetches, verifies and caches the preview every
+│   │                               # stage reads. Every broad per-picture handler here lets
+│   │                               # AccountReadFailed through (test_account_read_escapes.py).
 │   │                               # _model_facts.py plans who answers each model producer;
 │   │                               # _detector_frames.py samples a video's eight frames for the
 │   │                               # exposure head, through the motion line's keyframe reader
 │   ├── selection_source*.py    # The canonical source model: admission, provenance, groups, invariants
+│   ├── household_source.py     # A run naming its accounts (`EditorialRunContext.accounts`) reads the
+│   │                           # window per account, keeps chosen owners only, tags `Asset.access_accounts`
+│   │                           # and routes the run's AccessBoundClient; `HouseholdWindows` is the same
+│   │                           # read for person presence in discovery; the kept copy of each exact-copy
+│   │                           # group and its account are frozen in the attempt's source snapshot, and
+│   │                           # `runs render` reads that copy through that account
 │   ├── text_episode_reader.py  # Reading event evidence (paged, banked); the same reading names
 │   │                           # each episode's notable moments, which the polish layer seats and protects
 │   ├── text_episode_prompt.py  # What that reading is asked, and what it may take a name from
@@ -503,11 +526,13 @@ src/immich_memories/
 │   ├── text_episode_paging.py  # Its request limits: an episode cut into pages, pages packed into prompts
 │   ├── editorial_album_index.py # Album names by asset, one listing + one read per album, once per run
 │   ├── editorial_story_*.py    # Story reading, weighing, slots, shortlist, carriers: the story planner
-│   ├── editorial_story_trips.py     # Detected trips become one story each, with a reserve for their length
+│   ├── editorial_story_trips.py     # Detected trips become one story per leg, with a reserve for each leg's length
 │   ├── editorial_story_lookalike.py # A story's further picture is refused when it repeats one it holds
 │   ├── editorial_story_depth.py     # A short film's free slots as verified-different frames inside shown moments
 │   ├── editorial_story_trim.py      # The allocation in reverse when the production budget is tighter
 │   ├── editorial_story_threads.py   # A recurring activity at one place is one story per era, if the reader agrees
+│   ├── editorial_same_kind.py       # No-model: dense same-label stories at one place in one partition share one story's depth
+│   ├── editorial_event_story.py     # No-model: a dense, distinct one-off inside a home story is its own event story
 │   ├── editorial_story_places.py    # One place of a scope holds only the share of it a trip of that length would
 │   ├── editorial_page_recovery.py  # Bounded ask/retry/repair for a stage that reads its own JSON envelope
 │   ├── provider_failure.py     # What a 4xx/5xx means: refused, come back later, down, or a bad credential
@@ -520,6 +545,7 @@ src/immich_memories/
 │   ├── selection_trace.py      # Per-stage funnel record: what each filter received and let through
 │   ├── progress.py             # ProgressTracker: the run clock the stage reporter reads
 │   ├── trip_detection.py       # GPS-based trip detection (clustering, injected geocoder)
+│   ├── trip_legs.py            # Where a trip changes where it stays: areas of stay become legs (#1563)
 │   ├── trip_place.py           # Names a trip at the scale its pictures cover (city → country)
 │   ├── place_geocoder.py       # Opt-in Nominatim: district names per ~1 km cell, cached in the store
 │   ├── trip_discovery.py       # Shared UI/CLI all-asset discovery, including year-boundary trips
@@ -530,6 +556,7 @@ src/immich_memories/
 │   ├── album_source.py         # Album mode: the album is the candidate pool, nothing is searched for
 │   ├── source_filter.py        # Drop doorbell / dashcam / screen-recorder uploads by filename
 │   ├── source_quality.py       # Drop messaging re-encodes: sub-1080p with no camera EXIF
+│   ├── exact_copies.py         # Same SHA-1 + kind under distinct UUIDs: one item (a Live copy with its motion, favourite, primary owner, ids); a video equal to a Live Photo's motion folds into the Live Photo; any member's star stars the kept item
 │   ├── picture_copies.py       # One picture stored as several files: fold, keep the most pixels
 │   ├── llm_failures.py         # Separate "the model could not answer" from a bug in the calling code
 │   ├── request_heartbeat.py    # RequestHeartbeat: periodic log line for long-outstanding HTTP calls
@@ -538,6 +565,7 @@ src/immich_memories/
 │   ├── apple_vision.py         # macOS Vision framework face detection (smart crops)
 │   ├── apple_vision_image.py   # Vision image conversion helpers
 │   ├── llm_query.py            # The live transport: one prompt, one connection, one answer
+│   ├── llm_adaptations.py      # Capability refusals: remembered request changes, schema/object fallback
 │   ├── llm_wire.py             # The two request dialects, what a reply says, and the reasoning budget
 │   ├── llm_batch.py            # A stage's independent prompts as one provider batch (half price, async): the two wire dialects and their transports
 │   ├── llm_providers.py        # Named providers: their URL, their adapter, the way they reason
@@ -572,6 +600,9 @@ src/immich_memories/
 │   ├── output_canvas.py        # Resolve the single pixel canvas used by one run
 │   ├── output_contract.py      # metadata probe, render-bounded full decode check, atomic publish
 │   ├── timeline_budget.py      # plan_timeline(): pure planning of content + title-screen timeline
+│   ├── film_timeline.py        # measure_film_timeline(): content + regular title seconds + map extra on top
+│   ├── map_move_timing.py      # MapMoveTiming: 6-8 s map moves by distance, eased flight + 2 s still hold
+│   ├── location_card_route.py  # location_card_moves(): when a trip card appears and where it flies from
 │   ├── title_inserter.py       # TitleInserter: title screen concatenation
 │   ├── title_background_renderer.py # TitleBackgroundRenderer: pre-renders the clip a title reveals into
 │   ├── title_divider_planner.py # TitleDividerPlanner: month/year/location divider cards
@@ -602,6 +633,7 @@ src/immich_memories/
 │   ├── music_generator_models.py # Music generation data models
 │   ├── music_sources.py        # Music source providers (local library)
 │   ├── text_mood.py            # Banked music judgment from saved cut text; private answering-route record
+│   ├── generated_audio.py      # Decode and reject silent/non-finite generator output before fallback
 │   ├── music_pipeline.py       # Multi-provider pipeline (ACE-Step -> MusicGen fallback)
 │   ├── bundled_music.py        # The 28 bundled royalty-free tracks (`music` extra), used with no backend
 │   ├── track_tempo.py          # Measure a bundled track's tempo (numpy onset autocorrelation, no librosa)
@@ -616,6 +648,7 @@ src/immich_memories/
 │       ├── ace_step_runtime.py # ACE-Step in-process handlers: device, MLX/torch memory, one render
 │       ├── ace_step_isolated.py # Local subprocess using the installer's separate audio environment
 │       ├── ace_step_captions.py # Dense caption templates
+│       ├── inference_demucs.py # Owned inference HTTP stems, optional local fallback
 │       └── demucs_local.py     # Local Demucs stem separation (in-process)
 │
 ├── titles/                     # Title screen generation (film_title.py: explicit, model or template title, any surface)
@@ -644,7 +677,8 @@ src/immich_memories/
 │   ├── kernel_video.py         # GPU title video creation
 │   ├── ffmpeg_pipe.py          # Feed raw frames to FFmpeg without deadlocking on an unread stderr
 │   ├── safe_zones.py           # Keep vertical titles clear of the Reels/Shorts/TikTok button rail
-│   ├── map_animation.py        # Satellite map fly-over (van Wijk zoom)
+│   ├── map_animation.py        # Satellite map fly-over and location-card flights (van Wijk zoom)
+│   ├── trip_stops.py           # group_trip_stops(): intro pins grouped within 25 km, every pin named
 │   ├── map_renderer.py         # Map tile rendering (staticmap + PIL overlay)
 │   ├── backgrounds.py          # Background generation
 │   ├── backgrounds_animated.py # Animated gradient backgrounds
@@ -665,6 +699,7 @@ src/immich_memories/
 │   ├── generate.py             # `generate`
 │   ├── generate_options.py     # `generate`'s flags, grouped; group order is the --help order
 │   ├── generate_resolution.py  # What those flags mean against the config, presets and conflicts
+│   ├── run_people.py           # `--accounts` and `--person`/`--people-expression` through the people store
 │   ├── config_cmd.py           # `config`, `years`, `preflight`
 │   ├── people_cmd.py           # `people` scan/show
 │   ├── models_cmd.py           # `models fetch`
@@ -685,7 +720,10 @@ src/immich_memories/
 │   ├── _editorial_context.py   # CLI flags + presets -> one EditorialRunContext
 │   ├── _run_timeline.py        # The run's timeline: selection budget, then the settled plan
 │   ├── _asset_fetch.py         # What a memory asks Immich for: videos, Live Photos, stills
-│   ├── _album_generation.py    # Album mode: an Immich album is the candidate pool
+│   ├── _album_generation.py    # Album mode: an Immich album is the candidate pool; a CuratedPool
+│   │                           # (generate --ask) is read by asset id in its place
+│   ├── _ask_generation.py      # generate --ask: model tier required, translate against the store,
+│   │                           # print + save the trace, then a RunScope (pool as album, or special day)
 │   ├── runs_render.py          # `runs render`: a saved cut or revision → generate_saved_cut
 │   ├── _trip_generation.py     # Trip detection, selection, per-trip generation
 │   ├── _trip_display.py        # Trip table formatting & selection logic
@@ -712,6 +750,8 @@ src/immich_memories/
 │   ├── job_routes.py           # POST /cuts (generate --no-render), /runs/{id}/renders (runs render),
 │   │                           #   /runs/{id}/music-preview, /music uploads, /roster/scan,
 │   │                           #   /jobs/{id}[/events|/cancel|/output] (SSE progress), /runs/{id}/film
+│   │                           #   /ask (tier: full?), /ask/preview[/{id}] (generate --ask --dry-run
+│   │                           #   --ask-trace: the translation as JSON); the film is a /cuts brief with `ask`
 │   ├── library.py              # GET /people, /albums, /trips, /special-days for the brief's pickers
 │   ├── connection.py           # /connection: the Immich URL + key saved to the database; never follows a new URL
 │   ├── suggestions.py          # /suggestions: what `auto suggest` offers, generate one as `auto run` would
@@ -721,7 +761,7 @@ src/immich_memories/
 │   ├── dependencies.py         # Config, thumbnail cache, Immich fetches; overridable in tests
 │   ├── openapi.json            # Generated (make web-api); web/src/lib/api-types.ts comes from it
 │   ├── static/fonts/           # The title fonts the client previews with
-│   └── client/                 # Generated SvelteKit build (make web-build), committed: no Node at runtime
+│   └── client/                 # Generated SvelteKit build (make web-build), gitignored: the wheel and image build it
 │
 ├── tracking/                   # Run history & telemetry
 │   ├── run_database.py         # RunDatabase: run history in the store (pipeline_runs, phase_stats)
@@ -828,10 +868,93 @@ src/immich_memories/
 │   ├── companion.py            # The people registry's writers (scan, confirm, add, relate), each one
 │   │                           # store transaction under the registry row lock; confirmed beats inferred
 │   ├── registry_store.py       # The registry document <-> the people tables (the only code that knows the rows)
+│   ├── account_ids.py          # A person's ids: one flat list (primary account) or one list per account
 │   ├── transfer.py             # people export/import (validated, ids kept) and import_legacy(people.yaml)
 │   ├── evidence_graph.py       # ~/.immich-memories/people-graph.json: scan measurements, a derived file
 │   ├── expression_window.py    # The earliest day a people condition can hold, from birth dates
 │   └── editor.py               # The companion editor's model: the registry as rows, and back
+│
+├── free_text/                  # A film asked for in a sentence (#1436, experimental; design in
+│   │                           # docs/designs/free-text-memories.md, user page docs-site/docs/make/free-text.md). Only reading.py and the
+│   │                           # model's picks in linking.py, subject.py and pool_questions.py reach an LLM
+│   ├── __init__.py             # The package API (the pool, the reading and the CLI build on it)
+│   ├── lexicon.py              # Lexicon Protocol; load_wordnet(): the pinned WordNet 3.0 zip that
+│   │                           # `models fetch` writes (free_text.wordnet), digest-checked, read through
+│   │                           # nltk; never downloaded at run time. Noun files, plurals, people words,
+│   │                           # young people, time periods, roles through their kinds, verb bases,
+│   │                           # adjectives, derived nouns, relatives() (own kinds/parts, inherited parts),
+│   │                           # synonyms() (the first sense's other everyday names)
+│   ├── reading.py              # read_request(): the model picks who/when/where/what from an enum of the
+│   │                           # request's own n-grams, 3 field orders, 2-of-3 token votes, where+what
+│   │                           # voted as content; choose() (one option, 3 orders), choose_several()
+│   │                           # (a list, 2-of-3 per option); Asker Protocol and WireAsker
+│   │                           # (llm_query.query_llm with the answer's json_schema, through the async
+│   │                           # bridge so it also answers under a running loop)
+│   ├── translate.py            # translate(): reading -> link_who -> link_when -> build_subject ->
+│   │                           # link_where (Subject.heads) -> link_facts -> build_pool, as an Ask
+│   │                           # (Translation + Pool); household_of(): people file, owner, homes
+│   ├── handoff.py              # film_for(): one occasion of one day (the pool's found day, a one-day
+│   │                           # date range, or the model's voted "one day or longer") -> special day,
+│   │                           # the model picking between the catalogue's occasions that day; else the
+│   │                           # pool as the film's whole reach with the request as written subject;
+│   │                           # "not possible" -> no film
+│   ├── rule_preview.py         # preview_rules(): a dry run asks the editor's rules about the pool
+│   │                           # before render, through the run's own functions (source pass, screen
+│   │                           # gate, never_auto, carrier sources, video frames); count + hashed ids
+│   │                           # per rule; at-cut rules (audience, look-alikes, spacing) named only
+│   ├── trace.py                # explain(): READING/WHO/WHEN/WHERE/WHAT/FACTS/POOL/RULES/VERDICT/FILM;
+│   │                           # save_with_run(): the run's diagnostics["free_text"] (report builder)
+│   │                           # and free-text-trace.private.txt in the attempt directory; the report's
+│   │                           # vocabulary (name parts -> role, places, OCR words) and the marks basis
+│   │                           # (pool, OCR anchors, admitting step, words read). save_picks(): the
+│   │                           # clips generate_memory() was handed
+│   ├── marks.py                # marked(): `report --wrong/--missing` on a free-text run: each photo's
+│   │                           # admitting stage and pick; missing words read/offered/picked/in the pool
+│   ├── printed.py              # ImmichPrintedText: the PrintedText port on Immich's /search/metadata
+│   │                           # `ocr` filter (the store banks no OCR text)
+│   ├── subject.py              # subject_words(): the head noun per coordinated part of the what-spans
+│   │                           # (time phrase cut; people, picture words never), -ing activities add
+│   │                           # WordNet's derived nouns, "X making" is X. build_subject(): candidates
+│   │                           # = those words + own kinds/parts the captions use; people words only when
+│   │                           # said or formed from the request; the model votes the main subject (2-of-3,
+│   │                           # fallback: the request's words); a quality stays when the model says it
+│   │                           # narrows AND captions say it; own parts/kinds are the subject, inherited
+│   │                           # parts only for a place. Subject.heads feed link_where; subject_kind()
+│   │                           # (the model's place/animal/thing/activity vote)
+│   ├── pool.py                 # build_pool(Translation, LibraryView, ...): the funnel, each Step keeps a
+│   │                           # count and a Reason: when; who (a face in the picture's 90-min episode);
+│   │                           # printed text (PrintedText port = Immich OCR: anchors' episodes replace
+│   │                           # where); where (scopes.py) or Immich's place names; kind of picture
+│   │                           # (photographs and videos unless a kind is named); sharpness; computed
+│   │                           # selections (farthest trip, first/last per frequent person, faces over N);
+│   │                           # one undated occasion's day; subject by caption grammar (main + extent +
+│   │                           # other names, minus left-out); company from captions. Verdict possible /
+│   │                           # thin (<12) / not possible, naming the filter that emptied it. No model
+│   │                           # looks at a picture
+│   ├── pool_questions.py       # Text-only votes the pool asks, each gated by grammar: left_out (only what
+│   │                           # follows a negation), other_names (WordNet synonyms + caption subject-slot
+│   │                           # words the model picks; quality carried), one_particular_place (GPS
+│   │                           # required), printed_words (for OCR), one_occasion (a plural is many)
+│   ├── scopes.py               # in_place(): at a home (150 m), home of the picture's time, near it (home
+│   │                           # radius), or trips detected per home; no GPS stays unless one place
+│   ├── linking.py              # Code links the spans: link_who (I = the owner for dates, never a face;
+│   │                           # we adds the partner; names/roles need faces; plural people = company),
+│   │                           # link_when (an age read as numbers, calendar in code; dates question only
+│   │                           # with time words, years or people), link_where (one voted place per
+│   │                           # phrase beyond the subject's nouns, widest of several), time_cut; each
+│   │                           # decision keeps a Reason for the trace
+│   ├── library.py              # read_library(): per picture, Immich's date/media kind/places/GPS from
+│   │                           # annotation_assets, and the configured producers' caption, doc_docling
+│   │                           # label, sharpness and people-file faces via AssetAnnotationFactRepository
+│   ├── grammar.py              # Caption grammar: is_about (the subject up to the first verb), is_thing
+│   │                           # (WordNet's noun file), free_tier (captions about the subject),
+│   │                           # subject_head (the caption subject's head noun)
+│   ├── facts.py                # link_facts(): request words -> places, picture kinds, the sharpness line,
+│   │                           # faces over N, first/last/farthest; first_pictures (the onset, never
+│   │                           # before birth), last_pictures, home_trips (trips per home of the time),
+│   │                           # farthest_trip, occasion_day; LibraryFacts.placed/of_kind/sharp_enough
+│   └── homes.py                # homes_over_time(): each year's most-photographed ~200 m cell, a new
+│                               # home past 300 m; the configured home base when none shows; Home.held_on
 │
 ├── automation/                 # Smart automation (auto suggest/run)
 │   ├── __init__.py             # Public API re-exports
@@ -895,6 +1018,7 @@ src/immich_memories/
 ├── config_models_analysis.py   # Source admission and the expected seconds per clip
 ├── config_models_auth.py       # Authentication config model (basic, OIDC, header)
 ├── config_models_automation.py # Running unattended: trips, automation, notifications, upload
+├── config_models_free_text.py  # free_text: where the pinned WordNet corpus lives and comes from
 ├── config_models_llm.py        # LLM provider settings (shared by analysis and titles)
 ├── config_models_network.py    # The three third-party hosts a run may reach; all off by default
 ├── config_models_render.py     # What the video looks like: defaults, output, title screens, photos
@@ -966,7 +1090,8 @@ generate / Memory page Cut
         └── SmartPipeline.run_editorial_source()        (smart_pipeline.py)
               └── RuntimeEditorialPlanner.plan_source()
                     ├── EditorialAttempt: lease + status.private.json   (operations/editorial_attempt.py)
-                    ├── source model: fetch_full_window_source -> prepare_editorial_source
+                    ├── source model: fetch_full_window_source (per account: fetch_household_source)
+                    │     -> prepare_editorial_source
                     ├── "Reading dates, places and people": prepare_editorial_annotations
                     ├── TextEditorialPlanner.plan_prepared             (editorial_orchestration.py)
                     │     ├── "Reading event evidence": episode reader + cull
@@ -1064,6 +1189,7 @@ version and capabilities first); deployment files are `services/render-worker/co
 - **No `_`-prefixed overflow files**: All files have descriptive names
 - **Private helpers**: Prefixed with `_`, same package
 - **Tests**: `tests/` directory, run with `make test`
+- **Free-text evaluation**: `tests/free_text/prompts/*.json`, one recorded prompt per file (the request, the model's banked answers keyed by a phrase of their question, the expected spans/links/subject/funnel/pool/verdict/film); `test_prompts.py` translates each against the invented household in `eval_library.py`, the model faked once in `banked.py` (`recorded()`)
 - **Integration tests**: run manually with `make test-integration*` (per-suite folders under `tests/integration/`, see CLAUDE.md); also run on the self-hosted GPU runner. Not a pre-commit hook.
 - **Real-Immich gate**: `make test-immich-gate` (`tests/integration/immich_gate/`: compose file, `seed.py`, `media.py`) runs on every PR against Immich v2 and v3 in Docker, each with the store on SQLite and on PostgreSQL (`IMMICH_GATE_DATABASE`; `.github/workflows/immich-gate.yml`, required check `Immich Gate`); the pinned images ride in the Actions cache per version (`scripts/immich_gate_images.sh`, `make immich-gate-fetch`/`immich-gate-save`).
 - **Launch check per backend**: `make launch-check-ci` (SQLite) and `make launch-check-ci-postgres` (each launch workspace gets its own schema in `IMMICH_MEMORIES_E2E_DATABASE_URL`); CI job `Hermetic Launch Check (sqlite|postgresql)`. `scripts/with_throwaway_postgres.sh` starts the throwaway `postgres:16` for this, `make test-store` and the gate.
@@ -1073,7 +1199,7 @@ version and capabilities first); deployment files are `services/render-worker/co
 
 The web sidebar links Memory, Suggestions, Runs and Settings. Every action in the client is the
 CLI: a cut is `generate --no-render`, a render is `runs render [--revision N]`, a people scan is
-`people scan`, a music preview is `music preview`, each run by `web/jobs.py` as a child process
+`people scan`, a music preview is `music preview`, a sentence's preview is `generate --ask --dry-run`, each run by `web/jobs.py` as a child process
 whose progress the page follows over SSE. The review page (`web/src/routes/runs/[run_id]`) reads
 the saved cut (`operations/storyboard.py`, `cut_review.py`, `story_view.py`), keeps the owner's
 edits as numbered revisions in the attempt directory (`operations/cut_revisions.py`), and renders
@@ -1086,8 +1212,11 @@ Suggestions use `AutoRunner`; nothing owns a separate job store.
 **Web client (`web/` at the repo root, served from `src/immich_memories/web/client`).** SvelteKit
 static SPA with `@immich/ui` (MIT; its logos and store badges are Immich trademarks, stripped at
 build time and gated by `scripts/check_web_brand.py`). It talks only to `/api/v1`; the server
-pages it replaced redirect to `/app/...`. `make web-check` fails on a stale bundle, a stale
-OpenAPI contract or TS types, or a shipped Immich brand asset. Import-linter keeps
+pages it replaced redirect to `/app/...`. The build is not committed (#1580): the release job
+and both Docker images build it, `hatch_build.py` refuses a wheel without it, `make dev` builds it
+for a checkout, and until then `/app` answers 503 naming `make web-build`. `make web-check` fails
+on a stale OpenAPI contract or TS types, a client that no longer builds, or a shipped Immich brand
+asset. Import-linter keeps
 `immich_memories.web` from importing the CLI, and the core packages from importing the web
 server. Labels are `t('...')`/`N_('...')` in Svelte and land in the `ui.po` catalogues
 (`make ui-catalogues`).
@@ -1098,6 +1227,8 @@ server. Labels are `t('...')`/`N_('...')` in Svelte and land in the `ui.po` cata
 boundaries share it; worker pools propagate context. `run_observations.py` owns the CLI lifecycle from
 before discovery through failure or completion. `span_store.py` persists spans and diagnostic context
 through Alembic revision `0007_timing`, on SQLite or PostgreSQL. No span writes to the database.
+`peak_memory.py` gives each span of a measured run its peak RSS, own and with child processes: the
+`ru_maxrss` lifetime high at both ends, plus one sampler thread (libproc on macOS, /proc on Linux).
 
 `tracking/report.py` allowlists diagnostic fields. `report_privacy.py` redacts the chosen strings and
 assigns per-report salted IDs. `report_service.py` assembles the same report for `report` and the HTTP

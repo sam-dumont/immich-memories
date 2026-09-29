@@ -10,13 +10,17 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass, field
 from datetime import date
+from itertools import chain
 from pathlib import Path
 from typing import Any
 
 import yaml
 
+from immich_memories.api.person_expression import PersonExpression
+from immich_memories.config_models import ACCOUNT_NAME_RULE, PRIMARY_ACCOUNT, is_account_name
 from immich_memories.db import Store
 from immich_memories.db.legacy_import import ImportOutcome
+from immich_memories.people.account_ids import PERSON_ID, entry_ids, place_ids
 from immich_memories.people.registry_store import lock_registry, read_document, write_document
 
 LEGACY_FILE = "people.yaml"
@@ -124,10 +128,10 @@ def verify_legacy(store: Store, home: Path) -> list[str]:
         return [f"{path}: not readable ({exc})"]
     with store.connect() as connection:
         standing = read_document(connection)
-    by_id = {pid: entry for entry in standing.get("people", []) for pid in entry["ids"]}
+    by_id = {pid: entry for entry in standing.get("people", []) for pid in entry_ids(entry)}
     problems = []
     for entry in checked.document.get("people", []):
-        first = entry["ids"][0]
+        first = entry_ids(entry)[0]
         held = by_id.get(first)
         if held is None:
             problems.append(f"person {first}: missing")
@@ -145,13 +149,13 @@ def _merge(standing: dict[str, Any], legacy: dict[str, Any]) -> tuple[int, int]:
         standing.update(copy.deepcopy(legacy))
         count = len(standing.get("people", []))
         return count, 0
-    by_id = {person_id: entry for entry in standing["people"] for person_id in entry["ids"]}
+    by_id = {person_id: entry for entry in standing["people"] for person_id in entry_ids(entry)}
     imported = skipped = 0
     for entry in legacy.get("people", []):
-        known = next((by_id[i] for i in entry["ids"] if i in by_id), None)
+        known = next((by_id[i] for i in entry_ids(entry) if i in by_id), None)
         if known is None:
             standing["people"].append(copy.deepcopy(entry))
-            by_id.update(dict.fromkeys(entry["ids"], standing["people"][-1]))
+            by_id.update(dict.fromkeys(entry_ids(entry), standing["people"][-1]))
             imported += 1
         elif _answered(entry) and not _answered(known):
             known["confirmed"] = copy.deepcopy(entry["confirmed"])
@@ -174,7 +178,9 @@ def _check(document: object) -> _Checked:
     raw_people = document.get("people", [])
     if not isinstance(raw_people, list):
         return _Checked({}, ["`people` is not a list"])
-    header = {key: _plain(value) for key, value in document.items() if key != "people"}
+    header = {
+        key: _plain(value) for key, value in document.items() if key not in ("people", "groups")
+    }
     checked = _Checked(header | {"people": []})
     seen: set[str] = set()
     for index, raw in enumerate(raw_people):
@@ -183,29 +189,65 @@ def _check(document: object) -> _Checked:
             checked.problems.append(f"people[{index}]: {problem}")
             checked.dropped += 1
             continue
-        seen.update(entry["ids"])
+        seen.update(entry_ids(entry))
         checked.document["people"].append(entry)
+    groups, group_problems = _checked_groups(document.get("groups"))
+    checked.problems.extend(group_problems)
+    if groups is not None:
+        checked.document["groups"] = groups
     return checked
+
+
+def _checked_groups(raw: object) -> tuple[list[dict[str, Any]] | None, list[str]]:
+    if raw is None:
+        return None, []
+    if not isinstance(raw, list):
+        return None, ["`groups` is not a list"]
+    problems: list[str] = []
+    checked: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for index, item in enumerate(raw):
+        group, problem = _group(item, seen)
+        if problem is not None:
+            problems.append(f"groups[{index}]: {problem}")
+            continue
+        seen.add(group["label"])
+        checked.append(group)
+    return checked, problems
+
+
+def _group(raw: object, seen: set[str]) -> tuple[dict[str, Any], str | None]:
+    if not isinstance(raw, dict) or set(raw) != {"label", "expression"}:
+        return {}, "must be a mapping with exactly `label` and `expression`"
+    label = raw["label"]
+    if not isinstance(label, str) or not label.strip():
+        return {}, "`label` must be a non-empty string"
+    if label in seen:
+        return {}, f"label {label!r} is listed twice"
+    try:
+        expression = PersonExpression.from_dict(raw["expression"])
+    except ValueError as exc:
+        return {}, f"`expression`: {exc}"
+    return {"label": label, "expression": expression.to_dict()}, None
 
 
 def _entry(raw: object, seen: set[str]) -> tuple[dict[str, Any], str | None]:
     if not isinstance(raw, dict):
         return {}, "not a mapping"
-    ids = raw.get("ids")
-    if not isinstance(ids, list) or not ids or not all(isinstance(i, _SCALARS) for i in ids):
-        return {}, "`ids` must be a non-empty list of ids"
-    person_ids = [str(i) for i in ids]
+    groups, problem = _ids(raw.get("ids"))
+    if problem is not None:
+        return {}, problem
+    person_ids = list(chain.from_iterable(groups.values()))
     if len(set(person_ids)) != len(person_ids) or seen.intersection(person_ids):
         return {}, f"an id is listed twice: {', '.join(person_ids)}"
-    problem = _shape_problem(raw) or _accounts_problem(raw.get("accounts"), person_ids)
+    own = raw.get(PERSON_ID)
+    if own is not None and str(own) not in person_ids:
+        return {}, f"`{PERSON_ID}` must be one of the person's ids"
+    problem = _shape_problem(raw)
     if problem is not None:
         return {}, problem
     entry = {key: _plain(value) for key, value in raw.items()}
-    entry["ids"] = person_ids
-    if raw.get("accounts"):
-        entry["accounts"] = {str(alias): str(name) for alias, name in raw["accounts"].items()}
-    else:
-        entry.pop("accounts", None)
+    place_ids(entry, groups, None if own is None else str(own))
     for key in ("name", "origin"):
         if entry.get(key) is not None:
             entry[key] = str(entry[key])
@@ -215,12 +257,34 @@ def _entry(raw: object, seen: set[str]) -> tuple[dict[str, Any], str | None]:
     return entry, None
 
 
+def _ids(raw: object) -> tuple[dict[str, list[str]], str | None]:
+    """An entry's ids by account: a flat list is the primary account's."""
+    if isinstance(raw, list):
+        raw = {PRIMARY_ACCOUNT: raw} if raw else {}
+    if not isinstance(raw, dict) or not raw:
+        return {}, "`ids` must be a non-empty list of ids, or one such list per account"
+    groups: dict[str, list[str]] = {}
+    for account, ids in raw.items():
+        name = str(account)
+        if name != PRIMARY_ACCOUNT and not is_account_name(name):
+            return {}, f"account {name!r} must be {PRIMARY_ACCOUNT!r} or {ACCOUNT_NAME_RULE}"
+        if not isinstance(ids, list) or not ids or not all(isinstance(i, _SCALARS) for i in ids):
+            return {}, f"`ids.{name}` must be a non-empty list of ids"
+        groups[name] = [str(i) for i in ids]
+    return groups, None
+
+
 def _shape_problem(raw: dict[str, Any]) -> str | None:
     for key in ("name", "origin"):
         if raw.get(key) is not None and not isinstance(raw[key], _SCALARS):
             return f"`{key}` must be text"
     if raw.get("birth_date") is not None and not isinstance(raw["birth_date"], str | date):
         return "`birth_date` must be a date"
+    if "accounts" in raw:
+        return (
+            "`accounts` is no longer read; list each account's ids under `ids` instead, "
+            "as ids: {primary: [...], partner: [...]}"
+        )
     for key in ("inferred", "confirmed"):
         if raw.get(key) is not None and not isinstance(raw[key], dict):
             return f"`{key}` must be a mapping"
@@ -229,19 +293,6 @@ def _shape_problem(raw: dict[str, Any]) -> str | None:
         isinstance(links, list) and all(isinstance(link, dict) for link in links)
     ):
         return "`confirmed.links` must be a list of mappings"
-    return None
-
-
-def _accounts_problem(accounts: object, person_ids: list[str]) -> str | None:
-    """Why an entry's `accounts` (id to the account that reads it) cannot be stored."""
-    if accounts is None:
-        return None
-    if not isinstance(accounts, dict) or not all(
-        isinstance(name, str) and name for name in accounts.values()
-    ):
-        return "`accounts` must map each id to an account name"
-    if not {str(alias) for alias in accounts} <= set(person_ids):
-        return "`accounts` names an id this person does not have"
     return None
 
 

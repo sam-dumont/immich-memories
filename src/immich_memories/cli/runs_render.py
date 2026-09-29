@@ -53,8 +53,16 @@ def register_render_command(runs: click.Group) -> None:
     @click.option("--music", default=None, help="A track to use, or 'auto' to choose as configured")
     @click.option("--no-music", is_flag=True, default=False)
     @click.option("--music-volume", type=float, default=0.5, show_default=True)
-    @click.option("--add-date", is_flag=True, default=False, help="Date overlay on each clip")
-    @click.option("--add-place", is_flag=True, default=False, help="Place overlay on each clip")
+    @click.option(
+        "--add-date/--no-add-date",
+        default=None,
+        help="Caption each clip with its date (default: defaults.add_date, on)",
+    )
+    @click.option(
+        "--add-place/--no-add-place",
+        default=None,
+        help="Caption each clip with its place (default: defaults.add_place, on)",
+    )
     @click.option("--privacy-mode", is_flag=True, default=False)
     @click.option("--upload-to-immich", is_flag=True, default=False)
     @click.option("--album", default=None, help="Immich album for the upload")
@@ -72,7 +80,7 @@ def register_render_command(runs: click.Group) -> None:
         With no RUN_ID the most recent completed run is rendered. Revisions are the ones the web
         client saved (`--revision 2`); without one, the cut renders as it was chosen.
         """
-        from immich_memories.api.sync_client import SyncImmichClient
+        from immich_memories.api.access_clients import AccessBoundClient
         from immich_memories.config import get_config
         from immich_memories.db import open_store
         from immich_memories.tracking import RunDatabase
@@ -90,6 +98,11 @@ def register_render_command(runs: click.Group) -> None:
             if chosen is None:
                 print_error(f"Run {resolved} has no revision {revision}.")
                 sys.exit(1)
+        from immich_memories.generate_captions import resolve_caption_overlays
+
+        add_date, add_place = resolve_caption_overlays(
+            config, add_date=options["add_date"], add_place=options["add_place"]
+        )
         request = CutRenderRequest(
             title=options["title"],
             subtitle=options["subtitle"],
@@ -100,8 +113,8 @@ def register_render_command(runs: click.Group) -> None:
             scale_mode=options["scale_mode"],
             output_format=options["output_format"],
             quality=options["quality"],
-            add_date_overlay=options["add_date"],
-            add_place_overlay=options["add_place"],
+            add_date_overlay=add_date,
+            add_place_overlay=add_place,
             privacy_mode=options["privacy_mode"],
             # "auto" is a request to choose, as generate reads it, not a file to load.
             music_path=Path(options["music"]) if options["music"] not in {None, "auto"} else None,
@@ -114,11 +127,7 @@ def register_render_command(runs: click.Group) -> None:
         if run is None:
             print_error(f"Run {resolved} is not in the run database.")
             sys.exit(1)
-        with SyncImmichClient(
-            base_url=config.immich.url,
-            api_key=config.immich.api_key,
-            api_version=config.immich.api_version,
-        ) as client:
+        with AccessBoundClient(config.immich) as client:
             try:
                 path = render_saved_cut(
                     config=config,

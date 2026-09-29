@@ -485,10 +485,13 @@ def test_every_published_platform_takes_torch_from_the_cpu_wheel_index() -> None
     cpu_wheel = re.search(
         r'case "\$\{TARGETARCH\}" in (?P<arches>[a-z0-9|]+)\) pip wheel [^\n]*'
         r"--no-deps [^\n]*--wheel-dir=(?P<dir>/\S+) "
-        r"--index-url https://download\.pytorch\.org/whl/cpu[^\n]* torch",
+        r"--index-url https://download\.pytorch\.org/whl/cpu[^\n]* torch(?: torchaudio)?\s*;;",
         dockerfile,
     )
     assert cpu_wheel, "the CPU index must supply torch for the platforms we publish"
+    assert re.search(r"\btorch torchaudio\s*;;", cpu_wheel.group()), (
+        "Demucs imports TorchAudio: it must use the same CPU index as Torch"
+    )
 
     workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "release.yml").read_text())
     published = {
@@ -674,7 +677,9 @@ def _first(stage: list[str], predicate) -> int:
 
 def test_a_code_only_commit_reuses_the_dependency_layers() -> None:
     """Source and the per-commit APP_VERSION come after every dependency download (#1280)."""
-    builder, runtime = _stage_instructions(_dockerfile())
+    stages = _stage_instructions(_dockerfile())
+    builder = next(stage for stage in stages if stage[0].endswith(" AS builder"))
+    runtime = stages[-1]
 
     deps = _first(builder, lambda line: "--wheel-dir=/deps" in line)
     torch = _first(builder, lambda line: "--wheel-dir=/torch-cpu" in line)
@@ -686,6 +691,27 @@ def test_a_code_only_commit_reuses_the_dependency_layers() -> None:
 
     system_packages = _first(runtime, lambda line: "apt-get install" in line)
     assert system_packages < _first(runtime, lambda line: line == "ARG APP_VERSION")
+
+
+def test_the_image_builds_its_own_web_client_after_the_dependency_layers() -> None:
+    """The client is not committed (#1580): a pinned Node stage builds it, and the builder takes
+    it in after the source, so a client change rebuilds only the app wheels."""
+    stages = _stage_instructions(_dockerfile())
+    web = next(stage for stage in stages if stage[0].endswith(" AS web-client"))
+    builder = next(stage for stage in stages if stage[0].endswith(" AS builder"))
+
+    assert web[0].startswith("FROM node:22-slim@sha256:")
+    assert any(line == "RUN npm ci --no-audit --no-fund" for line in web)
+    client = _first(builder, lambda line: line.startswith("COPY --from=web-client "))
+    assert _first(builder, lambda line: line.startswith("COPY src/")) < client
+    assert (
+        max(
+            _first(builder, lambda line: "--wheel-dir=/deps" in line),
+            _first(builder, lambda line: "--wheel-dir=/torch-cpu" in line),
+        )
+        < client
+    )
+    assert any(line == "COPY hatch_build.py ./" for line in builder)
 
 
 def test_no_page_passes_an_extends_overlay_to_compose_as_a_file() -> None:

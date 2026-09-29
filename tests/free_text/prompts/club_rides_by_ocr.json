@@ -1,0 +1,72 @@
+{
+  "request": "the Wheelers club rides",
+  "shape": "a club's rides, its name printed on the jerseys (OCR)",
+  "printed": {
+    "wheelers": [
+      "rides-0",
+      "rides-5"
+    ]
+  },
+  "answers": {
+    "Split the owner's request": {
+      "who": [],
+      "when": [],
+      "where": [],
+      "what": [
+        "the wheelers club rides"
+      ]
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": [
+        "wheelers"
+      ]
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "many occasions"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    },
+    "must mainly show": {
+      "reason": "banked",
+      "choices": [
+        "rides"
+      ]
+    }
+  },
+  "expect": {
+    "reading": {
+      "what": [
+        "the wheelers club rides"
+      ]
+    },
+    "who": {
+      "present": [],
+      "anchors": [],
+      "company": null
+    },
+    "when": [
+      null,
+      null
+    ],
+    "where": "anywhere",
+    "subject": [
+      "rides"
+    ],
+    "funnel": [
+      "library",
+      "printed text",
+      "kind of picture",
+      "subject"
+    ],
+    "pool": [
+      "rides-0",
+      "rides-5"
+    ],
+    "verdict": "thin",
+    "film": "pool"
+  }
+}
