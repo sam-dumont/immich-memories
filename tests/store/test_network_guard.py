@@ -87,5 +87,6 @@ def test_macos_mount_output_is_read():
     )
 
 
+@pytest.mark.real_mounts
 def test_this_machine_temp_dir_is_not_a_network_mount(tmp_path):
     guard_sqlite_path(tmp_path / "store.db")

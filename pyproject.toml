@@ -655,6 +655,7 @@ markers = [
     "perf: performance benchmarks (run with: make benchmark-perf)",
     "demo: renders a docs demo asset (run with: make demo-output)",
     "install_checks: meets the real pre-run install checks instead of an install that ran models fetch",
+    "real_mounts: reads this machine's own mount table instead of the suite's local one",
     "container: runs the built image through docker compose (run with: make test-container)",
 ]
 # `-p no:quadrants`: the quadrants distribution registers a pytest11 plugin, so

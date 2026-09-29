@@ -651,6 +651,20 @@ def _an_install_that_ran_models_fetch(request, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _a_local_mount_table(request, monkeypatch):
+    """Every store the suite opens sits on a local disk, as far as the network guard knows.
+
+    On macOS the guard reads the mount table by running `/sbin/mount`, once per process, so a
+    test that forbids subprocesses failed on a Mac and passed on Linux, depending on which test
+    opened a store first. A test marked `real_mounts` reads this machine's own table.
+    """
+    if request.node.get_closest_marker("real_mounts"):
+        return
+    # WHY: the mount table is host state; the guard's own tests pass their table explicitly.
+    monkeypatch.setattr("immich_memories.db.network_guard.system_mounts", lambda: (("/", "apfs"),))
+
+
+@pytest.fixture(autouse=True)
 def _forget_learned_endpoints():
     """Clear what one test taught the transport about a server, before the next runs.
 
