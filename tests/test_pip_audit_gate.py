@@ -51,6 +51,16 @@ def test_vulnerabilities_with_no_upstream_fix_still_pass() -> None:
     assert run(UNFIXABLE) == 0
 
 
+def test_a_row_with_no_fix_does_not_borrow_the_next_row_as_its_fix() -> None:
+    two_unfixable = (
+        "Name     Version ID              Fix Versions\n"
+        "-------- ------- --------------- ------------\n"
+        "nltk     3.10.3  PYSEC-2026-3740\n"
+        "pygments 2.19.2  CVE-2026-4539\n"
+    )
+    assert run(two_unfixable) == 0
+
+
 def test_unresolvable_dependencies_fail_instead_of_skipping() -> None:
     assert run("ERROR: ResolutionImpossible: could not resolve\n") != 0
 
