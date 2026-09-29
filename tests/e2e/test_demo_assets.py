@@ -115,10 +115,10 @@ def test_cut_the_demo_output_clip(
 # offer. `immich-memories generate --memory-type trip` reads every asset type.
 _TRIP_CLIP = "trip-preview.mp4"
 _TRIP_POSTER = "trip-map-flyover.jpg"
-# Inside the opening title, which runs 3.5 s at the default: late enough that
-# the map has finished travelling and both pins are on the lake, which is the
-# still the trip page shows.
-_FLYOVER_SECONDS = 3.0
+# Inside the fly-over's hold: for this trip the camera lands on the named stops
+# at about 4.8 s (MapMoveTiming's intro schedule) and holds with the title up,
+# both pins and their names clear of it. That is the still the trip page shows.
+_FLYOVER_SECONDS = 5.5
 _TRIP_MAX_BYTES = 8 * 1024 * 1024
 # CRF 26 measured 6.3 MB against the 10.5 MB the renderer writes at quality
 # low. The docs site serves this file to every reader of the trip page.
@@ -282,7 +282,9 @@ def test_cut_the_trip_memory_and_its_map(
     _frame_at(clip, _FLYOVER_SECONDS, poster)
 
     duration = _duration_of(clip)
-    assert 10.0 < duration < 40.0, f"the trip film runs {duration:.1f}s"
+    # 43.8 s since the lake week gained its Semnoz location card; the byte cap below is what
+    # the docs site pays for, this only catches a cut that went wrong.
+    assert 10.0 < duration < 50.0, f"the trip film runs {duration:.1f}s"
     assert clip.stat().st_size <= _TRIP_MAX_BYTES, f"{clip.name} is {clip.stat().st_size} bytes"
 
     flyover = Image.open(poster).convert("L")
