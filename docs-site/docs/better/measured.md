@@ -10,8 +10,10 @@ appliance are being re-measured; until then this page has none.
 
 ## LLM conformance, 29 September 2026 {#llm-conformance}
 
-All four endpoints ran the complete 34-probe command on
+The initial four-endpoint run used the complete 34-probe command on
 [`b03b6198`](https://github.com/sam-dumont/immich-video-memory-generator/commit/b03b619838074af5c4941190a3bf82baa2afbdcb).
+The hosted rows below use that run. The Gemma row uses the complete follow-up with request-specific
+JSON modes from [#1662](https://github.com/sam-dumont/immich-video-memory-generator/pull/1662).
 The probes cover all 45 model-asking functions found by the source inventory, including shared
 adapters. Each probe checks its production result and the call sites it reached. A fallback or
 an unreached declared call site fails the probe. A failed probe does not stop the remaining ones.
@@ -19,7 +21,8 @@ an unreached declared call site fails the probe. A failed probe does not stop th
 Inputs were generated text and geometric images. Each banked feature used a fresh temporary
 SQLite store. No household library, captions or people file was used. The client ran on the shared
 Apple M5 Max described below; the local server was oMLX. Each provider's probes ran sequentially,
-while provider runs overlapped. Server prompt caches could be warm from fixture validation.
+and the initial provider runs overlapped. The corrected Gemma follow-up ran on its own.
+Server prompt caches could be warm from fixture validation.
 These are single runs, with no latency distribution or claim of isolated throughput.
 
 | Endpoint | Passed | Probe time | HTTP attempts | Input / cached input / output tokens | Reported-token cost |
@@ -27,7 +30,7 @@ These are single runs, with no latency distribution or claim of isolated through
 | OpenAI, gpt-5.6-luna | 32/34 | 124.71s | 87 | 23,521 / 0 / 3,310 | $0.00868, incomplete usage |
 | z.ai, glm-5.3-flash, Anthropic-compatible route | 31/34 | 248.31s | 88 | 21,075 / 5,120 / 4,953 | $0.00502 |
 | Melious, deepseek-v4.1-flash, `structured_output: false` | 32/34 | 214.88s | 79 | 21,285 / 2,048 / 30,092 | €0.03396 |
-| Local oMLX, gemma-4-e4b-it-6bit, local schema default off | 17/34 | 128.73s | 116 | 24,334 / 6,144 / 8,038 | No API fee |
+| Local oMLX, gemma-4-e4b-it-6bit, request-specific modes | 29/34 | 161.11s | 85 | 20,862 / 6,144 / 7,541 | No API fee |
 
 Probe time sums the per-feature measurements and excludes command startup. HTTP attempts include
 retries and rejected requests. Input includes cached input; reasoning tokens are already part of
@@ -41,8 +44,8 @@ Prices per million tokens, in input / cached-input / output order:
 [Melious](https://melious.ai/pricing) €0.20 / €0.01 / €1.00. These are pay-as-you-go equivalents,
 before tax or subscription allowances, not account invoices.
 
-The [per-feature CSV](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/docs/research/2026-09-29-llm-conformance.csv)
-contains all 136 rows: calls, token categories, time, validity, quality check, estimated cost and
+The [initial four-provider CSV](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/docs/research/2026-09-29-llm-conformance.csv)
+contains all 136 initial rows: calls, token categories, time, validity, quality check, estimated cost and
 failure issue numbers. Raw request/reply evidence remains private because provider errors can
 contain account details. Reproduce the command from [Add a reader](./reader.md#provider-conformance).
 
@@ -59,24 +62,19 @@ contain account details. Reproduce the command from [Add a reader](./reader.md#p
 - Melious failed the request-reading and pool checks for the same array-contract problem
   ([#1645](https://github.com/sam-dumont/immich-video-memory-generator/issues/1645)). Its other
   32 checks passed in this run.
-- Gemma failed 13 free-text probes with JSON-schema enforcement disabled by the local-endpoint
-  default from [#1622](https://github.com/sam-dumont/immich-video-memory-generator/pull/1622).
-  The reader requested a schema, but the transport omitted it; fenced JSON was then rejected
-  ([#1646](https://github.com/sam-dumont/immich-video-memory-generator/issues/1646)). It also returned
-  an invalid trip classification
-  ([#1652](https://github.com/sam-dumont/immich-video-memory-generator/issues/1652)), failed the
-  caption/motion contracts
-  ([#1649](https://github.com/sam-dumont/immich-video-memory-generator/issues/1649)), and gave the
+- Gemma's corrected run failed two free-text meaning checks: a young form and a restrictive
+  qualifier were lost ([#1660](https://github.com/sam-dumont/immich-video-memory-generator/issues/1660)).
+  It also failed the caption/motion contracts
+  ([#1649](https://github.com/sam-dumont/immich-video-memory-generator/issues/1649)) and gave the
   routine sofa scene the same central status as the race
   ([#1653](https://github.com/sam-dumont/immich-video-memory-generator/issues/1653)).
 
 ### Gemma: JSON enforcement changes the result
 
-The 17/34 score measures the current app defaults, including an integration regression; it is
-not Gemma's score with enforced JSON. The local-endpoint default introduced for an episode-schema
-decoder stall also disables free-text schemas
+The initial 17/34 score measured the former local defaults, including an integration regression.
+The local-endpoint workaround for an episode-schema decoder stall also disabled free-text schemas
 ([#1659](https://github.com/sam-dumont/immich-video-memory-generator/issues/1659)). Captured requests
-confirm that no `response_format` reached the server in the complete run.
+confirm that no `response_format` reached the server in the initial run.
 
 A follow-up changed only `structured_output` to `true` and replayed the same 14 free-text probes.
 They improved from **1/14 to 12/14**, with 53 HTTP calls in 94.29 seconds, 5,616 input tokens and
@@ -87,8 +85,18 @@ hit their token limits, so enabling strict schemas everywhere would need separat
 of the episode-reading path.
 
 The [forced-JSON subset CSV](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/docs/research/2026-09-29-gemma-forced-json.csv)
-keeps these measurements separate. The other 20 features were not rerun in this follow-up;
-combining the two runs into a new overall score would hide the configuration difference.
+keeps these measurements separate. That subset check did not rerun the other 20 features and was
+not used to calculate an overall score.
+
+A subsequent **complete 34-probe rerun passed 29/34** with the request-specific default. It
+combined mode fix [`79062dd9`](https://github.com/sam-dumont/immich-video-memory-generator/commit/79062dd9)
+with conformance suite [`924dec19`](https://github.com/sam-dumont/immich-video-memory-generator/commit/924dec19).
+The [corrected full-run CSV](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/docs/research/2026-09-29-gemma-request-modes.csv)
+records every feature, its actual response schema and remaining issue. Both full and lean episode
+readings passed without a response schema; free-text and trip titles received their schemas.
+The [trip-classification reproduction](https://github.com/sam-dumont/immich-video-memory-generator/issues/1652)
+passed too. Six free-text replies still truncated,
+including retries within a pool probe whose final selected pool passed.
 
 A preceding Melious attempt lost DNS resolution after eleven probes and was repeated in full
 once resolution recovered ([#1657](https://github.com/sam-dumont/immich-video-memory-generator/issues/1657)).

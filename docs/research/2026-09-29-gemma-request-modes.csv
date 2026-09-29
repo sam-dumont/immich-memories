@@ -1,0 +1,35 @@
+model,feature,http_attempts,input_tokens,cached_input_tokens,output_tokens,truncated_replies,seconds,valid,quality,response_schemas,issues
+gemma-4-e4b-it-6bit,titles,1,512,0,40,0,1.05,True,title names the chess tournament,title,
+gemma-4-e4b-it-6bit,trip title and route,1,701,512,60,0,1.13,True,names Iceland and classifies the moving driving itinerary,title,
+gemma-4-e4b-it-6bit,people title,1,510,0,44,0,0.89,True,names the synthetic person without inventing a family relationship,title,
+gemma-4-e4b-it-6bit,free-text film handoff,6,657,0,359,0,5.81,True,routes the one-day wedding to its catalogue event,free_text_answer,
+gemma-4-e4b-it-6bit,free-text place scope,3,360,0,229,0,3.45,True,travel request selects trips rather than anywhere,free_text_answer,
+gemma-4-e4b-it-6bit,free-text printed words,3,339,0,193,0,3.06,True,selects VELO for OCR matching,free_text_answer,
+gemma-4-e4b-it-6bit,free-text exclusions,3,252,0,203,0,3.25,True,excludes toy cars without excluding all cars,free_text_answer,
+gemma-4-e4b-it-6bit,free-text age range,1,163,0,82,0,1.37,True,age five maps to the fixture person's fifth year,free_text_answer,
+gemma-4-e4b-it-6bit,free-text calendar dates,1,177,0,34,0,0.69,True,calendar bounds cover exactly 2030,free_text_answer,
+gemma-4-e4b-it-6bit,free-text request reading,3,396,0,133,0,2.47,True,keeps cats as subject and 2030 as time,free_text_answer,
+gemma-4-e4b-it-6bit,free-text subject kind,3,258,0,129,0,2.49,True,majority identifies cats as animals,free_text_answer,
+gemma-4-e4b-it-6bit,free-text matching pool,11,1218,0,2358,4,39.4,True,all 14 black cats retained; all 5 dogs excluded,free_text_answer,
+gemma-4-e4b-it-6bit,free-text ambiguous person,3,222,0,164,0,4.44,True,role distinguishes the cousin from the son,free_text_answer,
+gemma-4-e4b-it-6bit,free-text other names,3,282,0,192,0,4.9,False,young cats were omitted from alternate names,free_text_answer,1660
+gemma-4-e4b-it-6bit,free-text one occasion,3,252,0,115,0,4.13,True,wedding selects one occasion,free_text_answer,
+gemma-4-e4b-it-6bit,free-text particular place,3,303,0,182,0,4.46,True,childhood house requires one particular place,free_text_answer,
+gemma-4-e4b-it-6bit,free-text qualified subject,7,737,0,1398,2,31.2,False,qualified subjects were lost,free_text_answer,1660
+gemma-4-e4b-it-6bit,occasion sequence,1,405,0,50,0,1.46,True,finds the race and leaves the ordinary afternoon out,none,
+gemma-4-e4b-it-6bit,captioned occasion,1,533,512,71,0,1.58,True,recognizes and names the cycling race,none,
+gemma-4-e4b-it-6bit,recorded occasion,2,898,512,99,0,2.27,True,recognizes and names the cycling race,none,
+gemma-4-e4b-it-6bit,holiday distinction,1,114,0,7,0,0.47,True,cycling race is distinct from Christmas,none,
+gemma-4-e4b-it-6bit,music mood,1,241,0,79,0,5.59,True,"quiet cut gets a calm, low-energy mood from the model",none,
+gemma-4-e4b-it-6bit,video motion,1,302,0,26,0,0.83,False,JSONDecodeError,none,1649
+gemma-4-e4b-it-6bit,image caption,1,313,0,13,0,0.49,False,ValueError,none,1649
+gemma-4-e4b-it-6bit,month and year catalogue,3,1181,0,144,0,4.52,True,both monthly subjects survive into the year account,accounts,
+gemma-4-e4b-it-6bit,episode reading,1,584,512,153,0,3.64,True,chess episode preserves both source assets and a representative,none,
+gemma-4-e4b-it-6bit,lean episode reading,1,565,512,67,0,1.51,True,chess episode preserves both source assets and a representative,none,
+gemma-4-e4b-it-6bit,recurring activity,1,328,0,20,0,0.78,True,folds both swimming lessons while keeping the home day separate,none,
+gemma-4-e4b-it-6bit,story moment selection,2,680,0,48,0,1.29,True,selects the owner at the finish line instead of an empty rack,none,
+gemma-4-e4b-it-6bit,central story confirmation,4,2472,1024,180,0,4.51,True,both candidate comparisons confirm the race as the central story,none,
+gemma-4-e4b-it-6bit,period story,4,2707,1536,538,0,12.71,False,race did not outrank the routine home scene,none,1653
+gemma-4-e4b-it-6bit,memory worthiness,2,340,0,75,0,2.43,True,race is remarkable in both orders; ordinary afternoon is background,none,
+gemma-4-e4b-it-6bit,audience activity,1,797,512,24,0,1.1,True,private toileting activity stays out of exports,none,
+gemma-4-e4b-it-6bit,audience exposure,2,1063,512,32,0,1.74,True,recognizes stated clothing while retaining the detector hold,none,
