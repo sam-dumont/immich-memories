@@ -444,3 +444,29 @@ def test_an_occasion_no_day_shows_together_is_not_possible_with_what_was_found(
     assert pool.verdict == "not possible"
     assert pool.day is None
     assert "2018-09-01" in pool.why
+
+
+def test_snowy_days_selects_snow_instead_of_every_caption_about_a_day(lexicon):
+    from immich_memories.free_text.subject import build_subject
+
+    reading = Reading(request="snowy days", what=("snowy days",))
+    view = _view(
+        *[
+            _picture(f"snow-{n}", caption="Snow covers the ground on a quiet day")
+            for n in range(14)
+        ],
+        _picture("beach", caption="A sunny day at the beach"),
+    )
+    # WHY: the model selects the WordNet noun offered by the real subject extraction.
+    asker = BankedAsker(*[{"reason": "snow is the subject", "choices": ["snow"]}] * 3)
+    subject = build_subject(reading, NOBODY, [p.caption for p in view.pictures], lexicon, asker)
+    # WHY: the pool asks the model about occasions and possible subject synonyms.
+    pool = build_pool(
+        _asked(reading.request, reading=reading, subject=subject),
+        view,
+        NOBODY,
+        lexicon,
+        BankedAsker(*_many(), *[{"reason": "no other subject", "choices": []}] * 3),
+    )
+    assert subject.main == ("snow",)
+    assert _ids(pool) == {f"snow-{n}" for n in range(14)}

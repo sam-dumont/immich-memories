@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryPerson
 from immich_memories.free_text.linking import Household
@@ -213,3 +215,29 @@ def test_the_doer_of_an_asked_activity_may_be_the_main_subject(lexicon: Lexicon)
 
     assert subject.main == ("hiker",)
     assert set(subject.also) == {"hiking", "hike"}
+
+
+@pytest.mark.parametrize(
+    "phrase,noun",
+    [
+        ("rainy weekends", "rain"),
+        ("sunny mornings", "sunniness"),
+        ("foggy walks", "fog"),
+    ],
+)
+def test_generic_containers_take_their_subject_from_the_modifier(lexicon, phrase, noun):
+    found = subject_words(_reading(phrase, what=(phrase,)), NOBODY, lexicon)
+    adjective, container = phrase.split()
+    assert found.heads == (adjective,)
+    assert noun in found.words
+    assert container not in found.words
+    assert any("modifier" in reason.rule and container in reason.rule for reason in found.reasons)
+
+
+def test_concrete_heads_and_unmodified_containers_keep_their_meaning(lexicon):
+    for phrase, expected in (("black cat", "cat"), ("walks", "walks"), ("weekends", "weekends")):
+        found = subject_words(_reading(phrase, what=(phrase,)), NOBODY, lexicon)
+        assert found.words == (expected,)
+    found = subject_words(_reading("rainy pictures", what=("rainy pictures",)), NOBODY, lexicon)
+    assert found.heads == ("rainy",)
+    assert "rain" in found.words
