@@ -118,6 +118,11 @@ advanced:
     num_versions: 3
 ```
 
+Generated audio is decoded before mastering or stem separation. Empty, unreadable, non-finite
+(NaN/Inf), and silent tracks (peak at or below -80 dBFS) count as failed generations. The next
+enabled generator is tried; if all fail, automatic music uses the bundled library and reports
+the substitution.
+
 ## What generation adds to the mix
 
 - **Tempo fits the photos.** In a film with photos, the tempo is nudged so a photo lasts a whole
