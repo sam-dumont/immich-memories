@@ -163,6 +163,42 @@ def test_a_truncated_account_reply_salvages_the_account_it_finished_writing(tmp_
     assert len(asked.prompts) == 1
 
 
+class CutOffThenCompleteReader:
+    """The first reply is cut off before any account finished; the retry answers in full."""
+
+    def __init__(self, cut_off: str) -> None:
+        self.cut_off = cut_off
+        self.prompts: list[str] = []
+
+    def __call__(self, prompt: str) -> str:
+        self.prompts.append(prompt)
+        offered = prompt.split("Return an account for EACH of these exact keys: ")[1]
+        key = offered.split(".\n")[0].split(",")[0].strip()
+        if len(self.prompts) == 1:
+            return self.cut_off.replace("KEY", key)
+        return json.dumps({"accounts": {key: f"what {key} was about"}})
+
+
+@pytest.mark.parametrize(
+    "cut_off",
+    [
+        pytest.param("I could not read", id="no accounts at all"),
+        pytest.param('"accounts" then nothing', id="no object after the key"),
+        pytest.param('{"accounts": {42', id="a pair that does not start with a key"),
+        pytest.param('{"accounts": {"KEY', id="cut inside the key"),
+        pytest.param('{"accounts": {"KEY" "what', id="no colon after the key"),
+        pytest.param('{"accounts": {"KEY": "what KEY wa', id="cut inside the account"),
+    ],
+)
+def test_a_reply_cut_off_before_any_account_finished_is_asked_again(cut_off) -> None:
+    asked = CutOffThenCompleteReader(cut_off)
+
+    months = catalogued(annotation_store(), FEBRUARY, asked)
+
+    assert months["2024-02"].account == "what a1 was about"
+    assert len(asked.prompts) == 2
+
+
 def test_a_month_account_is_written_where_a_film_reads_it(tmp_path) -> None:
     bank = annotation_store()
 
