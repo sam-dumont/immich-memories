@@ -27,6 +27,7 @@ from immich_memories.analysis.editorial_contracts import (
     SourceEvidence,
     TraceDecision,
 )
+from immich_memories.analysis.exact_copies import CopyGroup, fold_exact_copies
 from immich_memories.analysis.picture_copies import picture_copies, starred_keepers
 from immich_memories.analysis.selection_source_groups import (
     EditorialGroup,
@@ -134,6 +135,9 @@ class EditorialSelectionRequest:
     # about again. A post-read signal, so it changes no prompt and no digest input.
     owner_required_asset_ids: tuple[str, ...] = ()
     evidence_exclusions: Mapping[str, str] = field(default_factory=dict)
+    # Whose copy stands for a picture two accounts both hold, after any favourite.
+    # None (one account, or the owner not yet known) falls through to stable ids.
+    primary_owner_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -158,6 +162,7 @@ class PreparedEditorialSource:
     episode_groups: tuple[EditorialGroup, ...]
     moment_groups: tuple[EditorialGroup, ...]
     owner_required_asset_ids: tuple[str, ...] = ()
+    copy_groups: tuple[CopyGroup, ...] = ()
 
     @property
     def candidate_ids(self) -> tuple[str, ...]:
@@ -207,6 +212,8 @@ def prepare_editorial_source(
             )
         )
     )
+    folded = fold_exact_copies(sources, primary_owner_id=request.primary_owner_id)
+    sources = folded.pool
     components = live_photo_component_ids(asset_of(source) for source in sources)
     generated = frozenset(request.scope.generated_asset_ids)
     copies = picture_copies(
@@ -289,6 +296,7 @@ def prepare_editorial_source(
         episode_groups=grouped.episode_groups,
         moment_groups=grouped.moment_groups,
         owner_required_asset_ids=_required_in_pool(request, grouped.candidates, trace),
+        copy_groups=folded.groups,
     )
     _validate_prepared_source(prepared)
     return prepared
