@@ -70,8 +70,8 @@ kubectl apply -k overlays/maximalist
 ```
 
 `overlays/maximalist/kustomization.yaml` composes `overlays/render-sidecar` (which itself pulls in
-`base`) and `overlays/captioner-cuda`, rather than duplicating either. On top: a smaller cache PVC
-(10Gi, down from the base's 20Gi), a second init container that installs `config.yaml`,
+`base`) and `overlays/captioner-cuda`, rather than duplicating either. It keeps the base's 20Gi
+cache PVC, so it applies over an existing install. On top: a second init container that installs `config.yaml`,
 `IMMICH_MEMORIES_TIER=full` on the app container (the base sets `auto`, and an env var beats
 `config.yaml`), and a NetworkPolicy that lets the app reach the LLM and ACE-Step ports. Read
 [Kubernetes](./kubernetes.md) first for the base layout this builds on.
@@ -89,8 +89,8 @@ network:
   map_tiles: true    # server.arcgisonline.com: the trip fly-over, location cards
 
 cache:
-  video_cache_max_size_gb: 5        # sized to a 10Gi cache PVC, not the 30 GB a
-  thumbnail_cache_max_size_mb: 3000 # bigger library would want
+  video_cache_max_size_gb: 5        # well inside the base's 20Gi cache PVC; a bigger
+  thumbnail_cache_max_size_mb: 3000 # library raises both, and the PVC first
 
 advanced:
   auth:

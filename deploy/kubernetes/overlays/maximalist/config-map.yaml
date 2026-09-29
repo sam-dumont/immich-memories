@@ -30,9 +30,10 @@ data:
       geocoding: true    # nominatim.openstreetmap.org: place names, trip names
       map_tiles: true    # server.arcgisonline.com: the trip fly-over, location cards
 
-    # 10 GB is the default for each cap; both lowered here to fit a 10Gi cache
-    # PVC (pvc-maximalist.yaml) alongside config.yaml, store.db and automation
-    # history. Raise both, and the PVC to match, for a bigger library.
+    # 10 GB is the default for each cap; both lowered here so they sit well
+    # inside the base's 20Gi cache PVC alongside config.yaml, store.db and
+    # automation history. Raise them for a bigger library; past about 15 GB
+    # together, grow the PVC first (a bound claim grows, it never shrinks).
     cache:
       video_cache_max_size_gb: 5
       thumbnail_cache_max_size_mb: 3000

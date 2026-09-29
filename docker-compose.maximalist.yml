@@ -41,10 +41,13 @@ services:
       IMMICH_MEMORIES_AUTH__ISSUER_URL: "${OIDC_ISSUER_URL:-https://idp.example.com}"
       IMMICH_MEMORIES_AUTH__CLIENT_ID: "${OIDC_CLIENT_ID:-immich-memories}"
       IMMICH_MEMORIES_AUTH__CLIENT_SECRET: "${OIDC_CLIENT_SECRET:-}"
-      # List-valued fields take JSON. This is the reverse proxy container's
-      # address on the compose network, not a whole subnet: `docker network
-      # inspect` names it, or give the proxy a static IP and use that.
-      IMMICH_MEMORIES_AUTH__TRUSTED_PROXIES: '["172.20.0.2"]'
+      # List-valued fields take JSON. The address the proxy's requests come
+      # from, as the app sees it. The `networks:` block at the bottom pins the
+      # compose network, so it is predictable: a proxy on the host itself,
+      # going through 127.0.0.1:8080, arrives from the gateway 172.30.10.1 (the
+      # default); a proxy container on this network, from the fixed
+      # ipv4_address you give it, e.g. TRUSTED_PROXY=172.30.10.10 in .env.
+      IMMICH_MEMORIES_AUTH__TRUSTED_PROXIES: '["${TRUSTED_PROXY:-172.30.10.1}"]'
       IMMICH_MEMORIES_SERVER__SECURE_COOKIES: "true"
 
       # ── An LLM on another LAN machine, e.g. an Apple Silicon Mac running
@@ -88,3 +91,12 @@ services:
           # caption client, an LLM client and ACE-Step polling open alongside
           # the same FFmpeg assembly.
           memory: 8G
+
+# A fixed subnet, so the trusted proxy above is a known address rather than
+# whatever Docker assigned. Change it if 172.30.10.0/24 is taken on the host.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.10.0/24
+          gateway: 172.30.10.1

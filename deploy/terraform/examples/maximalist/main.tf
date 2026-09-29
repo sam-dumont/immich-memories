@@ -49,9 +49,9 @@ module "immich_memories" {
   network_geocoding = true
   network_map_tiles = true
 
-  # Below the app's own 10 GB default for each cap, to fit cache_storage_size's
-  # 10Gi below rather than leaving a bigger claim mostly empty. Raise both,
-  # and cache_storage_size to match, for a bigger library.
+  # Below the app's own 10 GB default for each cap, well inside the module's
+  # 20Gi cache claim. Raise both for a bigger library; past about 15 GB
+  # together, grow cache_storage_size first (a bound claim never shrinks).
   cache_video_max_size_gb     = 5
   cache_thumbnail_max_size_mb = 3000
 
@@ -92,7 +92,6 @@ module "immich_memories" {
   # Storage: the render worker's own scratch (20Gi) is a separate emptyDir,
   # not part of these PVCs.
   output_storage_size = "200Gi"
-  cache_storage_size  = "10Gi"
   storage_class_name  = var.storage_class_name
 
   labels = {

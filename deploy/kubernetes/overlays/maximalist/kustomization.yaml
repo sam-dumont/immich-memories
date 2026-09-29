@@ -36,7 +36,6 @@ resources:
 
 patches:
   - path: deployment-maximalist.yaml
-  - path: pvc-maximalist.yaml
 
 # Keep equal to base's own pin (render-sidecar's overlay already restates
 # this for the same reason: a patch adding a container is not reached by a

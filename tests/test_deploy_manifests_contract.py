@@ -953,11 +953,11 @@ def test_the_maximalist_overlay_config_yaml_carries_every_advertised_feature(
 
 @pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
 def test_the_maximalist_overlay_cache_pvc_fits_its_own_cache_caps(tmp_path: Path) -> None:
-    """The reference setup's caps (5 GB video + 3 GB thumbnails) are deliberately
-    smaller than the base's own 10+10 GB defaults, so pvc-maximalist.yaml right-sizes
-    the PVC down to 10Gi instead of leaving the base's 20Gi unused. Whichever way a
-    reader changes the caps, the PVC must still hold config.yaml/store.db/automation
-    history on top of both of them."""
+    """The reference setup's caps (5 GB video + 3 GB thumbnails) sit inside the base's
+    20Gi cache PVC, which the overlay keeps: a bound claim cannot shrink, so an overlay
+    that sized it down would fail over an existing install. Whichever way a reader
+    changes the caps, the PVC must still hold config.yaml/store.db/automation history
+    on top of both of them."""
     rendered = _maximalist_rendered(tmp_path)
     config_map = next(doc for doc in rendered if doc["kind"] == "ConfigMap")
     config_yaml = yaml.safe_load(config_map["data"]["config.yaml"])
