@@ -55,13 +55,14 @@ def immich_client(config: Annotated[Config, Depends(current_config)]) -> Iterato
 
 def _picture_counts(store: Store) -> dict[str, int]:
     """Each Immich person id's picture count, from the people registry `people scan` writes."""
+    from immich_memories.people.account_ids import entry_ids
     from immich_memories.people.companion import load_document, people_entries
 
     counts: dict[str, int] = {}
     for entry in people_entries(load_document(store)):
         evidence = (entry.get("inferred") or {}).get("evidence") or {}
         if isinstance(evidence.get("count"), int):
-            counts.update(dict.fromkeys(entry["ids"], evidence["count"]))
+            counts.update(dict.fromkeys(entry_ids(entry), evidence["count"]))
     return counts
 
 

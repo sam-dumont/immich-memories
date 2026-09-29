@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
 from immich_memories.api.immich import ImmichAPIError
 from immich_memories.security import sanitize_error_message
@@ -26,8 +26,15 @@ from immich_memories.web import (
 )
 
 CLIENT_PREFIX = "/app"
-# `make web-build` writes the SvelteKit client here, so an install needs no Node.
+# `make web-build` writes the SvelteKit client here. It is not committed (#1580): the release
+# wheel and the Docker image build it, and a source checkout builds it with `make dev`.
 BUILT_CLIENT = Path(__file__).parent / "client"
+# What a source checkout shows before the client is built, instead of a bare 404.
+CLIENT_NOT_BUILT = (
+    "<!doctype html><meta charset=utf-8><title>Immich Memories</title>"
+    "<p>The web client is not built in this checkout. Run <code>make web-build</code> "
+    "(or <code>make dev</code>), then reload.</p>"
+)
 
 
 async def _immich_refused(_request: Request, error: Exception) -> JSONResponse:
@@ -62,7 +69,9 @@ def mount_web(app: FastAPI, *, client_dir: Path = BUILT_CLIENT) -> None:
                 return FileResponse(asset)
             return Response(status_code=404)
         index = root / "index.html"
-        return FileResponse(index) if index.is_file() else Response(status_code=404)
+        if index.is_file():
+            return FileResponse(index)
+        return HTMLResponse(CLIENT_NOT_BUILT, status_code=503)
 
     app.add_api_route(CLIENT_PREFIX, client, methods=["GET"], include_in_schema=False)
     app.add_api_route(

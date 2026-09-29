@@ -17,8 +17,13 @@ from immich_memories.analysis.editorial_intent import EditorialIntent
 
 __all__ = ["CarrierView", "IntentReport", "Violation", "validate_intent"]
 
-MIN_CARRIERS = 3
-MIN_CONTENT_SHARE = 0.20
+# One real shot is a film; nothing is not (#1595). The owner's ruling: "if there's something, even
+# if small, we try". A thin film is shorter, not refused; the plan still reports its shortfall.
+MIN_CARRIERS = 1
+# An on-this-day film is about recurrence: one year of it is a single-year film, which its
+# contract refuses rather than inflating. A holiday of one year is still that holiday's film.
+_RECURRING = ("on_this_day",)
+MIN_OCCURRENCES = 2
 
 
 @dataclass(frozen=True)
@@ -121,6 +126,14 @@ def _latest_year_cluster(
     ]
 
 
+def _too_thin(intent: EditorialIntent, carriers: Sequence[CarrierView]) -> bool:
+    if len(carriers) < MIN_CARRIERS:
+        return True
+    if intent.product not in _RECURRING:
+        return False
+    return sum(count > 0 for count in _coverage(intent, carriers).values()) < MIN_OCCURRENCES
+
+
 def _verdict(
     intent: EditorialIntent,
     violations: Sequence[Violation],
@@ -132,9 +145,7 @@ def _verdict(
     structural = [v.detail for v in violations if v.severity == "structural"]
     if structural:
         return "structural_violation", "; ".join(structural)
-    if len(carriers) < MIN_CARRIERS or (
-        requested_seconds > 0 and usable < MIN_CONTENT_SHARE * requested_seconds
-    ):
+    if _too_thin(intent, carriers):
         return "insufficient_material", (
             f"{len(carriers)} carrier(s), {usable:.1f} s usable of {requested_seconds:g} s requested: "
             "the material does not establish the requested memory; " + intent.abstention_policy

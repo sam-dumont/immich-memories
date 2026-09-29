@@ -30,8 +30,9 @@ and one changed asset invalidates one month instead of every page after it. The 
 applied to the answer (`_split_by_day`), not asked for in the prompt.
 
 Before the weighing, `editorial_story_trips.py` runs the app's trip detection over the film's pool
-and folds every trip's day episodes into one story; the trip reserves
-`round(slots / 2 * sqrt(trip days / film days))` pictures at its turn in the presence pass. After
+and folds every trip's day episodes into one story per leg (`trip_legs.py`: a trip that changes
+where it stays, such as a hike then a city, is two legs); each leg reserves
+`round(slots / 2 * sqrt(leg days / film days))` pictures at its turn in the presence pass. After
 the weighing, `editorial_story_threads.py` asks the reader whether stories of one place and era
 that its own words link are one recurring activity, and folds each confirmed group. At
 carrier admission, `editorial_story_lookalike.py` answers the repetition question from the cached
@@ -389,6 +390,10 @@ these helper modules:
   `DownloadCoordinator.sources_for` shares downloaded components across workers by source ID.
   `processing/memory_budget.py` sizes the pool when `source_prepare_workers` is `auto`: one worker
   per 2 GB of the cgroup memory limit (else physical RAM), at most 2 and never more than the CPUs.
+  The same budget caps each assembly decode's FFmpeg `-threads` (one per 2 GB, 1 to 4).
+  It also sets libx265's `rc-lookahead` above 1080p (5 up to 3 GB, 10 at 4-5 GB, default from 6 GB)
+  through `clip_encoder.encoder_args_for_plan` and the photo clip encoder.
+  Below 3 GB with no hardware HEVC encoder, `output_canvas` renders an `auto` 4K film at 1080p.
 - `processing/remote_render.py`: authenticated jobs, bounded polling, a SHA-256-checked download,
   and a staged film that reuses the worker's decode when the bytes match
 - `processing/remote_render_plan.py`: frozen cut serialization, including certified Live material
@@ -438,6 +443,7 @@ src/immich_memories/
 │   ├── annotation_line_fields.py # Which parts of a picture's line are its content and which we wrote; content rules read only the first
 │   ├── editorial_film_reach.py # What a film prepares: its demanded pictures, their Live families and capture runs
 │   ├── person_presence.py      # Who a person film may select: every picture of an episode its people are recognised in
+│   ├── person_resolution.py    # A name or UUID -> faces: the store's aliases per read account, else the roster
 │   ├── editorial_orchestration.py  # TextEditorialPlanner: episodes -> cards -> edit
 │   ├── editorial_rule_episodes.py  # Factual episode cards / omitted thesis; no semantic-bank writes
 │   ├── editorial_rule_reader.py    # Rules for worthiness, grouping and standing; shared allocation
@@ -502,7 +508,8 @@ src/immich_memories/
 │   ├── selection_source*.py    # The canonical source model: admission, provenance, groups, invariants
 │   ├── household_source.py     # A run naming its accounts (`EditorialRunContext.accounts`) reads the
 │   │                           # window per account, keeps chosen owners only, tags `Asset.access_accounts`
-│   │                           # and routes the run's AccessBoundClient; the kept copy of each exact-copy
+│   │                           # and routes the run's AccessBoundClient; `HouseholdWindows` is the same
+│   │                           # read for person presence in discovery; the kept copy of each exact-copy
 │   │                           # group and its account are frozen in the attempt's source snapshot, and
 │   │                           # `runs render` reads that copy through that account
 │   ├── text_episode_reader.py  # Reading event evidence (paged, banked); the same reading names
@@ -513,7 +520,7 @@ src/immich_memories/
 │   ├── text_episode_paging.py  # Its request limits: an episode cut into pages, pages packed into prompts
 │   ├── editorial_album_index.py # Album names by asset, one listing + one read per album, once per run
 │   ├── editorial_story_*.py    # Story reading, weighing, slots, shortlist, carriers: the story planner
-│   ├── editorial_story_trips.py     # Detected trips become one story each, with a reserve for their length
+│   ├── editorial_story_trips.py     # Detected trips become one story per leg, with a reserve for each leg's length
 │   ├── editorial_story_lookalike.py # A story's further picture is refused when it repeats one it holds
 │   ├── editorial_story_depth.py     # A short film's free slots as verified-different frames inside shown moments
 │   ├── editorial_story_trim.py      # The allocation in reverse when the production budget is tighter
@@ -531,6 +538,7 @@ src/immich_memories/
 │   ├── selection_trace.py      # Per-stage funnel record: what each filter received and let through
 │   ├── progress.py             # ProgressTracker: the run clock the stage reporter reads
 │   ├── trip_detection.py       # GPS-based trip detection (clustering, injected geocoder)
+│   ├── trip_legs.py            # Where a trip changes where it stays: areas of stay become legs (#1563)
 │   ├── trip_place.py           # Names a trip at the scale its pictures cover (city → country)
 │   ├── place_geocoder.py       # Opt-in Nominatim: district names per ~1 km cell, cached in the store
 │   ├── trip_discovery.py       # Shared UI/CLI all-asset discovery, including year-boundary trips
@@ -541,7 +549,7 @@ src/immich_memories/
 │   ├── album_source.py         # Album mode: the album is the candidate pool, nothing is searched for
 │   ├── source_filter.py        # Drop doorbell / dashcam / screen-recorder uploads by filename
 │   ├── source_quality.py       # Drop messaging re-encodes: sub-1080p with no camera EXIF
-│   ├── exact_copies.py         # Same SHA-1 + kind under distinct UUIDs: one item (favourite, primary owner, ids); a video equal to a Live Photo's motion folds into the Live Photo; any member's star stars the kept item
+│   ├── exact_copies.py         # Same SHA-1 + kind under distinct UUIDs: one item (a Live copy with its motion, favourite, primary owner, ids); a video equal to a Live Photo's motion folds into the Live Photo; any member's star stars the kept item
 │   ├── picture_copies.py       # One picture stored as several files: fold, keep the most pixels
 │   ├── llm_failures.py         # Separate "the model could not answer" from a bug in the calling code
 │   ├── request_heartbeat.py    # RequestHeartbeat: periodic log line for long-outstanding HTTP calls
@@ -681,6 +689,7 @@ src/immich_memories/
 │   ├── generate.py             # `generate`
 │   ├── generate_options.py     # `generate`'s flags, grouped; group order is the --help order
 │   ├── generate_resolution.py  # What those flags mean against the config, presets and conflicts
+│   ├── run_people.py           # `--person`/`--people-expression` through the people store, then the roster
 │   ├── config_cmd.py           # `config`, `years`, `preflight`
 │   ├── people_cmd.py           # `people` scan/show
 │   ├── models_cmd.py           # `models fetch`
@@ -742,7 +751,7 @@ src/immich_memories/
 │   ├── dependencies.py         # Config, thumbnail cache, Immich fetches; overridable in tests
 │   ├── openapi.json            # Generated (make web-api); web/src/lib/api-types.ts comes from it
 │   ├── static/fonts/           # The title fonts the client previews with
-│   └── client/                 # Generated SvelteKit build (make web-build), committed: no Node at runtime
+│   └── client/                 # Generated SvelteKit build (make web-build), gitignored: the wheel and image build it
 │
 ├── tracking/                   # Run history & telemetry
 │   ├── run_database.py         # RunDatabase: run history in the store (pipeline_runs, phase_stats)
@@ -849,6 +858,7 @@ src/immich_memories/
 │   ├── companion.py            # The people registry's writers (scan, confirm, add, relate), each one
 │   │                           # store transaction under the registry row lock; confirmed beats inferred
 │   ├── registry_store.py       # The registry document <-> the people tables (the only code that knows the rows)
+│   ├── account_ids.py          # A person's ids: one flat list (primary account) or one list per account
 │   ├── transfer.py             # people export/import (validated, ids kept) and import_legacy(people.yaml)
 │   ├── evidence_graph.py       # ~/.immich-memories/people-graph.json: scan measurements, a derived file
 │   ├── expression_window.py    # The earliest day a people condition can hold, from birth dates
@@ -1192,8 +1202,11 @@ Suggestions use `AutoRunner`; nothing owns a separate job store.
 **Web client (`web/` at the repo root, served from `src/immich_memories/web/client`).** SvelteKit
 static SPA with `@immich/ui` (MIT; its logos and store badges are Immich trademarks, stripped at
 build time and gated by `scripts/check_web_brand.py`). It talks only to `/api/v1`; the server
-pages it replaced redirect to `/app/...`. `make web-check` fails on a stale bundle, a stale
-OpenAPI contract or TS types, or a shipped Immich brand asset. Import-linter keeps
+pages it replaced redirect to `/app/...`. The build is not committed (#1580): the release job
+and both Docker images build it, `hatch_build.py` refuses a wheel without it, `make dev` builds it
+for a checkout, and until then `/app` answers 503 naming `make web-build`. `make web-check` fails
+on a stale OpenAPI contract or TS types, a client that no longer builds, or a shipped Immich brand
+asset. Import-linter keeps
 `immich_memories.web` from importing the CLI, and the core packages from importing the web
 server. Labels are `t('...')`/`N_('...')` in Svelte and land in the `ui.po` catalogues
 (`make ui-catalogues`).
@@ -1204,6 +1217,8 @@ server. Labels are `t('...')`/`N_('...')` in Svelte and land in the `ui.po` cata
 boundaries share it; worker pools propagate context. `run_observations.py` owns the CLI lifecycle from
 before discovery through failure or completion. `span_store.py` persists spans and diagnostic context
 through Alembic revision `0007_timing`, on SQLite or PostgreSQL. No span writes to the database.
+`peak_memory.py` gives each span of a measured run its peak RSS, own and with child processes: the
+`ru_maxrss` lifetime high at both ends, plus one sampler thread (libproc on macOS, /proc on Linux).
 
 `tracking/report.py` allowlists diagnostic fields. `report_privacy.py` redacts the chosen strings and
 assigns per-report salted IDs. `report_service.py` assembles the same report for `report` and the HTTP

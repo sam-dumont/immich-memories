@@ -235,20 +235,64 @@ def test_a_live_photo_keeps_its_own_motion_and_the_absorbed_motion_leaves_with_i
     }
 
 
-def test_a_plain_photo_kept_over_a_live_copy_gains_no_motion() -> None:
+def test_the_live_copy_of_a_still_is_kept_over_a_starred_plain_copy_and_takes_the_star() -> None:
+    """The owner's ruling: prefer the Live Photo; its motion decides later whether it moves."""
+    bytes_ = _sha1("still.heic")
+
+    folded = fold_exact_copies(
+        (
+            _photo("plain", owner="owner-a", checksum=bytes_, favourite=True),
+            _photo("live", owner="owner-b", checksum=bytes_, companion="motion"),
+            _photo("motion", owner="owner-b", kind=AssetType.VIDEO, checksum=_sha1("motion")),
+        ),
+        primary_owner_id="owner-a",
+    )
+
+    assert _ids(folded.pool) == ["live", "motion"]
+    kept = folded.pool[0]
+    assert kept.live_photo_video_id == "motion"
+    assert kept.is_favorite
+    assert folded.kept_ids(("plain",)) == ("live",)
+
+
+def test_between_two_live_copies_the_favourite_then_the_primary_owner_is_kept() -> None:
+    starred = fold_exact_copies(_shared_live_photo(favourite=True), primary_owner_id="owner-a")
+    unstarred = fold_exact_copies(_shared_live_photo(), primary_owner_id="owner-b")
+
+    assert _ids(starred.pool) == ["motion-b", "still-b"]
+    assert _ids(unstarred.pool) == ["motion-b", "still-b"]
+    assert unstarred.pool[1].live_photo_video_id == "motion-b"
+
+
+def test_a_live_copy_whose_motion_half_never_arrived_counts_as_plain() -> None:
     bytes_ = _sha1("still.heic")
 
     folded = fold_exact_copies(
         (
             _photo("plain", checksum=bytes_, favourite=True),
-            _photo("live", checksum=bytes_, companion="motion"),
-            _photo("motion", kind=AssetType.VIDEO, checksum=_sha1("motion")),
+            _photo("live", checksum=bytes_, companion="motion-not-listed"),
         ),
         primary_owner_id=None,
     )
 
     assert _ids(folded.pool) == ["plain"]
     assert folded.pool[0].live_photo_video_id is None
+
+
+def test_reversed_order_keeps_the_live_copy_the_same_way() -> None:
+    bytes_ = _sha1("still.heic")
+    pages = (
+        _photo("plain-a", owner="owner-a", checksum=bytes_, favourite=True),
+        _photo("plain-z", owner="owner-z", checksum=bytes_),
+        *_live_photo("live-m", "motion-m", owner="owner-m", motion="wave", checksum=bytes_),
+    )
+
+    forward = fold_exact_copies(pages, primary_owner_id="owner-a")
+    backward = fold_exact_copies(pages[::-1], primary_owner_id="owner-a")
+
+    assert forward == backward
+    assert _ids(forward.pool) == ["live-m", "motion-m"]
+    assert forward.pool[0].is_favorite
 
 
 def test_the_editorial_pool_admits_one_copy_and_keeps_the_group_for_the_record() -> None:
@@ -265,7 +309,8 @@ def test_the_editorial_pool_admits_one_copy_and_keeps_the_group_for_the_record()
         request, EditorialDependencies(source_fetcher=lambda _scope: pages)
     )
 
-    assert prepared.candidate_ids == ("b-copy", "other")
+    # The primary owner's copy lost its motion; the other account's Live copy stands.
+    assert prepared.candidate_ids == ("a-copy", "other")
 
 
 def test_an_owner_choice_on_either_copy_holds_for_the_picture() -> None:

@@ -132,7 +132,7 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - name: Web client (types, stale bundle or contract, Immich brand assets)
+      - name: Web client (types, contract, a fresh build, Immich brand assets)
         if: '!cancelled()'
         run: make web-check
       - name: AI Smell Audit
@@ -472,6 +472,12 @@ jobs:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
       - run: uv python install ${{ env.PYTHON_VERSION }}
+      # The wheel carries the built web client, which is not committed (#1580).
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
       - run: make build
       - name: Check package
         run: make build-check
@@ -631,12 +637,15 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: docs-site/package-lock.json
+          cache-dependency-path: |
+            docs-site/package-lock.json
+            web/package-lock.json
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Install project and browser dependencies
         run: |
           make dev-test
+          make web-client
           uv run playwright install --with-deps chromium
           cd docs-site && npm ci
       - name: Run launch readiness gate (SQLite)

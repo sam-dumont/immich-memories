@@ -56,11 +56,14 @@ Then set your Immich URL and key, and your home base, in `~/.immich-memories/con
 git clone https://github.com/sam-dumont/immich-video-memory-generator.git
 cd immich-video-memory-generator
 uv sync --extra editorial      # or --extra all-mac on Apple Silicon
+make web-client                # the web UI, built from web/; needs Node 22
 uv run immich-memories ui
 ```
 
 `uv sync` installs into the clone's `.venv` and puts nothing on your `PATH`: inside the clone it is
-always `uv run immich-memories ...`. `pip install -e .` works too.
+always `uv run immich-memories ...`. `pip install -e .` works too. A checkout is the only install
+that needs Node: the PyPI wheel and the Docker image ship the web client already built. Skip
+`make web-client` and the CLI still works, but `/app` only tells you to build the client.
 
 ## Extras
 
