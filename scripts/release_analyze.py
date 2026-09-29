@@ -246,10 +246,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--force-version", default=None)
     parser.add_argument("--channel", choices=("stable", "rc"), default="stable")
-    parser.add_argument("--inference-only", action="store_true")
+    images = parser.add_mutually_exclusive_group()
+    images.add_argument("--inference-only", action="store_true")
+    images.add_argument("--app-only", action="store_true")
     args = parser.parse_args()
 
-    if args.inference_only:
+    if args.inference_only or args.app_only:
         sha = os.environ.get("GITHUB_SHA", "")
         for key, value in {
             "should_release": "false",

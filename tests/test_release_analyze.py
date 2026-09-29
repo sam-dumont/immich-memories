@@ -227,3 +227,20 @@ def test_candidates_sort_below_their_final_version():
     """git's own version sort puts v1.0.0-rc.1 above v1.0.0; the baseline must not."""
     tags = sort_version_tags(["v1.0.0-rc.1", "v1.0.0", "v1.0.0-rc.10", "v1.0.0-rc.2", "v0.9.0"])
     assert tags == ["v1.0.0", "v1.0.0-rc.10", "v1.0.0-rc.2", "v1.0.0-rc.1", "v0.9.0"]
+
+
+def test_app_only_dispatch_names_a_commit_without_requesting_a_release(tmp_path):
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    result = subprocess.run(
+        [sys.executable, str(Path("scripts/release_analyze.py").resolve()), "--app-only"],
+        cwd=tmp_path,
+        env={**os.environ, "GITHUB_SHA": "a" * 40},
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines() == ["should_release=false", "next_version=0+g" + "a" * 40]

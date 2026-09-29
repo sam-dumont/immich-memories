@@ -26,6 +26,11 @@ on:
           - patch
           - minor
           - major
+      app_only:
+        description: 'Build and push only the main/render app image, tagged by commit'
+        required: false
+        default: false
+        type: boolean
       inference_only:
         description: 'Build and push only the inference images, tagged by commit'
         required: false
@@ -51,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       github.repository == 'sam-dumont/immich-video-memory-generator' &&
-      (github.ref == 'refs/heads/main' || inputs.dry_run || inputs.inference_only)
+      (github.ref == 'refs/heads/main' || inputs.dry_run || inputs.inference_only || inputs.app_only)
     outputs:
       should_release: ${{ steps.analyze.outputs.should_release }}
       next_version: ${{ steps.analyze.outputs.next_version }}
@@ -72,19 +77,19 @@ jobs:
           FORCE_VERSION: ${{ inputs.force_version }}
           CHANNEL: ${{ inputs.channel }}
           INFERENCE_ONLY: ${{ inputs.inference_only }}
+          APP_ONLY: ${{ inputs.app_only }}
         run: |
-          if [[ "$INFERENCE_ONLY" == "true" ]]; then
-            python3 scripts/release_analyze.py --inference-only >> "$GITHUB_OUTPUT"
-          else
-            python3 scripts/release_analyze.py --force-version "${FORCE_VERSION:-auto}" \
-              --channel "${CHANNEL:-stable}" >> "$GITHUB_OUTPUT"
-          fi
+          image_args=()
+          if [[ "$INFERENCE_ONLY" == "true" ]]; then image_args+=(--inference-only); fi
+          if [[ "${APP_ONLY:-false}" == "true" ]]; then image_args+=(--app-only); fi
+          python3 scripts/release_analyze.py --force-version "${FORCE_VERSION:-auto}" \
+            --channel "${CHANNEL:-stable}" "${image_args[@]}" >> "$GITHUB_OUTPUT"
 
   # Run CI before release
   ci:
     name: CI
     needs: [analyze]
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && (needs.analyze.outputs.should_release == 'true')
+    if: github.repository == 'sam-dumont/immich-video-memory-generator' && (inputs.app_only || needs.analyze.outputs.should_release == 'true')
     uses: ./.github/workflows/ci.yml
     secrets: inherit
     permissions:
@@ -360,7 +365,7 @@ jobs:
   docker-build:
     name: Build Docker Image (${{ matrix.platform }})
     needs: [analyze, ci]
-    if: github.repository == 'sam-dumont/immich-video-memory-generator' && (!inputs.dry_run && needs.analyze.outputs.should_release == 'true')
+    if: github.repository == 'sam-dumont/immich-video-memory-generator' && (!inputs.dry_run && (inputs.app_only || needs.analyze.outputs.should_release == 'true'))
     runs-on: ${{ matrix.runner }}
     # Keep the existing approval before the first registry write.
     environment:
@@ -648,10 +653,16 @@ jobs:
           IMAGE: ghcr.io/${{ github.repository }}
           VERSION: ${{ needs.analyze.outputs.next_version }}
           PRERELEASE: ${{ needs.analyze.outputs.prerelease }}
+          APP_ONLY: ${{ inputs.app_only }}
         run: |
-          # A candidate is pulled by its exact tag; `latest` stays on the last final.
+          # Standalone builds and candidates never move the last final's tag.
           latest=(-t "$IMAGE:latest")
-          if [ "$PRERELEASE" = "true" ]; then latest=(); fi
+          if [ "${APP_ONLY:-false}" = "true" ]; then
+            VERSION="sha-${GITHUB_SHA:0:12}"
+            latest=()
+          elif [ "$PRERELEASE" = "true" ]; then
+            latest=()
+          fi
           docker buildx imagetools create \
             -t "$IMAGE:$VERSION" \
             "${latest[@]}" \
