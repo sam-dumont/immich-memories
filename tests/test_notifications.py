@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 from immich_memories.automation.notifications import (
@@ -203,6 +204,18 @@ class TestBuildBody:
         )
         assert "Output" not in body
 
+    def test_a_completed_run_with_low_disk_space_names_it_in_the_body(self) -> None:
+        """A headless deployment reads its only signal for this from the notification."""
+        body = _build_body(
+            memory_type="monthly",
+            status="completed",
+            duration_seconds=60.0,
+            output_path="/videos/memory.mp4",
+            error=None,
+            warnings=["Low disk space on output (/videos): 2.0 GB free, below 5 GB."],
+        )
+        assert "Warning: Low disk space on output" in body
+
 
 class TestThumbnailExtraction:
     def test_returns_none_for_missing_file(self) -> None:
@@ -302,6 +315,64 @@ class TestSendNotificationHelper:
             _send_notification(mock_config, "monthly", "completed", 60.0)
 
         mock_notify.assert_not_called()
+
+    def test_forwards_run_warnings_to_the_notification(self) -> None:
+        """The cron path's own low-disk warning must reach the Apprise body it sends."""
+        from immich_memories.cli._pipeline_runner import _send_notification
+
+        mock_config = MagicMock()
+        mock_config.notifications.enabled = True
+        mock_config.notifications.urls = ["ntfy://test"]
+        mock_config.notifications.on_success = True
+
+        with patch("immich_memories.automation.notifications.notify_job_complete") as mock_notify:
+            _send_notification(
+                mock_config,
+                "monthly",
+                "completed",
+                60.0,
+                "/tmp/out.mp4",
+                warnings=["Low disk space on output"],
+            )
+
+        assert mock_notify.call_args.kwargs["warnings"] == ["Low disk space on output"]
+
+
+class TestRunCompletionWarnings:
+    def test_reads_the_finished_runs_own_warnings(self, tmp_path) -> None:
+        """The CLI's end-of-run notice reads warnings off the same run row the Runs page does."""
+        from immich_memories.automation.notifications import run_completion_warnings
+        from immich_memories.config_loader import Config
+        from immich_memories.db import open_store
+        from immich_memories.operations.run_index import record_run_attempt
+        from immich_memories.tracking import RunDatabase
+        from immich_memories.tracking.models import RunMetadata
+
+        config = Config(
+            cache={"database": str(tmp_path / "cache.db"), "directory": str(tmp_path / "cache")},
+            output={"directory": str(tmp_path / "output")},
+        )
+        attempt = tmp_path / "attempt"
+        attempt.mkdir()
+        RunDatabase(open_store(config)).save_run(
+            RunMetadata(
+                run_id="run-warn-1",
+                created_at=datetime(2026, 9, 29, tzinfo=UTC),
+                status="completed",
+                warnings=["Low disk space on output (/videos): 2.0 GB free, below 5 GB."],
+            )
+        )
+        record_run_attempt("run-warn-1", attempt, attempt / "film.mp4", store=open_store(config))
+
+        warnings = run_completion_warnings(config, attempt)
+
+        assert warnings == ["Low disk space on output (/videos): 2.0 GB free, below 5 GB."]
+
+    def test_a_run_with_no_attempt_directory_has_no_warnings(self) -> None:
+        from immich_memories.automation.notifications import run_completion_warnings
+        from immich_memories.config_loader import Config
+
+        assert run_completion_warnings(Config(), None) == []
 
 
 class TestSendTestNotification:

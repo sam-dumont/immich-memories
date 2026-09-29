@@ -808,7 +808,16 @@ def run_pipeline_and_generate(
         soft_wrap=True,
     )
 
-    _send_notification(config, memory_type, "completed", _total_time, str(result_path))
+    from immich_memories.automation.notifications import run_completion_warnings
+
+    _send_notification(
+        config,
+        memory_type,
+        "completed",
+        _total_time,
+        str(result_path),
+        warnings=run_completion_warnings(config, attempt_dir),
+    )
 
     return result_path, should_upload, album_name
 
@@ -825,6 +834,7 @@ def _send_notification(
     duration: float,
     output_path: str | None = None,
     error: str | None = None,
+    warnings: list[str] | None = None,
 ) -> None:
     """Send notification if configured (best-effort, never raises)."""
     notif = config.notifications
@@ -846,6 +856,7 @@ def _send_notification(
             duration_seconds=duration,
             output_path=output_path,
             error=error,
+            warnings=warnings,
             urls=notif.urls,
             store=notification_store(config),
             attach_thumbnail=notif.attach_thumbnail,

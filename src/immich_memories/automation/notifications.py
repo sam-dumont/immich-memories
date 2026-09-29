@@ -13,10 +13,35 @@ from immich_memories.automation.notification_state import (
 )
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from immich_memories.config_loader import Config
     from immich_memories.db import Store
 
 logger = logging.getLogger(__name__)
+
+
+def run_completion_warnings(config: Config, attempt_dir: Path | None) -> list[str]:
+    """A finished run's own warnings (e.g. low disk space), for its completion notice.
+
+    Reads the same run row the Runs page does, through the run id -> attempt
+    directory link `runs story`/`runs why` already use. Best-effort: a
+    notification is never worth failing a successful render over.
+    """
+    if attempt_dir is None:
+        return []
+    from immich_memories.db import open_store
+    from immich_memories.operations.run_index import run_id_for_attempt
+    from immich_memories.tracking import RunDatabase
+
+    run_id = run_id_for_attempt(attempt_dir)
+    if run_id is None:
+        return []
+    try:
+        run = RunDatabase(open_store(config)).get_run(run_id)
+    except (OSError, RuntimeError, SQLAlchemyError):
+        return []
+    return list(run.warnings) if run else []
 
 
 def send_configured_notification(
@@ -26,6 +51,7 @@ def send_configured_notification(
     duration_seconds: float = 0.0,
     output_path: str | None = None,
     error: str | None = None,
+    warnings: list[str] | None = None,
 ) -> None:
     """Send one enabled success/failure notification using the shared policy."""
     notif = config.notifications
@@ -40,6 +66,7 @@ def send_configured_notification(
         duration_seconds=duration_seconds,
         output_path=output_path,
         error=error,
+        warnings=warnings,
         urls=notif.urls,
         store=notification_store(config),
         attach_thumbnail=notif.attach_thumbnail,
@@ -53,6 +80,7 @@ def notify_job_complete(
     duration_seconds: float = 0.0,
     output_path: str | None = None,
     error: str | None = None,
+    warnings: list[str] | None = None,
     urls: list[str] | None = None,
     store: Store | None = None,
     attach_thumbnail: bool = False,
@@ -81,7 +109,7 @@ def notify_job_complete(
         return False
 
     title = _build_title(memory_type, status)
-    body = _build_body(memory_type, status, duration_seconds, output_path, error)
+    body = _build_body(memory_type, status, duration_seconds, output_path, error, warnings)
 
     attach = (
         _extract_thumbnail(output_path)
@@ -230,6 +258,7 @@ def _build_body(
     duration_seconds: float,
     output_path: str | None,
     error: str | None,
+    warnings: list[str] | None = None,
 ) -> str:
     lines = [f"Type: {memory_type}"]
     if duration_seconds > 0:
@@ -240,6 +269,10 @@ def _build_body(
         lines.append(f"Output: {output_path}")
     if error and status == "failed":
         lines.append(f"Error: {error[:200]}")
+    # A run that completed still needs to say so if it is running out of room --
+    # the automation channel is the one place a headless deployment sees this at all.
+    for warning in warnings or []:
+        lines.append(f"Warning: {warning}")
     return "\n".join(lines)
 
 

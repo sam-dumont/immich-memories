@@ -284,9 +284,15 @@ type, who started it (**Manual**, **Scheduled** or **Automatic**), its status an
 ran. The status buttons (completed, running, failed, cancelled, interrupted) filter the list, and older runs load as
 you scroll. Open one to review it, render it again, or play its film.
 
+If the run uploaded to Immich, its local file is removed once the upload is confirmed: the run
+record stays, and its page shows **Delivered to Immich** with a link to the asset instead of a
+player. A run kept local (upload off, or delivery still pending) still plays its film here.
+
 <ThemedScreenshot name="run-details" alt="One run's output path, Immich delivery, phase timings" />
 
-Under the review sit the run's output path, its Immich delivery, warnings and phase timings.
+Under the review sit the run's output path, its Immich delivery, warnings and phase timings. A
+run's warnings include a low-disk notice on the output or cache volume, the same one automation
+sends over Apprise: see [health, logs and caches](../run/maintenance/health-logs-cache.md#caches).
 **Download child output** fetches the full output of an automatic run, credentials removed.
 
 **Copy report** opens the same redacted report as `immich-memories report`, including logs, warnings
