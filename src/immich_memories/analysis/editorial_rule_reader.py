@@ -87,12 +87,6 @@ class RuleStructureReader:
         masses = list(days.values())
         return max(4 * median(masses), float(np.percentile(masses, 75)))
 
-    def _day_threshold(self) -> float:
-        """A day at least this dense is an occasion by its capture count alone."""
-        days = Counter(a.file_created_at.date() for a in self.source.assets.values())
-        masses = list(days.values())
-        return max(4 * median(masses), float(np.percentile(masses, 75)))
-
     def worthiness(self, wall, near_home):
         assets = self.source.assets
         days = Counter(a.file_created_at.date() for a in assets.values())
