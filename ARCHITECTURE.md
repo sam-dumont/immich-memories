@@ -387,6 +387,8 @@ these helper modules:
 - `processing/source_preparation.py`: bounded completion queue with worker-owned clients;
   `generate_clips.py` gives each source its own scratch directory and restores editorial order.
   `DownloadCoordinator.sources_for` shares downloaded components across workers by source ID.
+  `processing/memory_budget.py` sizes the pool when `source_prepare_workers` is `auto`: one worker
+  per 2 GB of the cgroup memory limit (else physical RAM), at most 2 and never more than the CPUs.
 - `processing/remote_render.py`: authenticated jobs, bounded polling, a SHA-256-checked download,
   and a staged film that reuses the worker's decode when the bytes match
 - `processing/remote_render_plan.py`: frozen cut serialization, including certified Live material

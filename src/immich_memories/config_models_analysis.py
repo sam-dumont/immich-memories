@@ -7,6 +7,8 @@ still names one.
 
 from __future__ import annotations
 
+from typing import Annotated, Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -27,11 +29,11 @@ class AnalysisConfig(BaseModel):
         le=8,
         description="Concurrent isolated clients used for video and thumbnail prefetching",
     )
-    source_prepare_workers: int = Field(
-        default=2,
-        ge=1,
-        le=4,
-        description="Concurrent selected-source download and preparation workers",
+    source_prepare_workers: Annotated[int, Field(ge=1, le=4)] | Literal["auto"] = Field(
+        default="auto",
+        description="Concurrent selected-source download and preparation workers. "
+        "'auto' prepares one source per 2 GB this process may use (the container's "
+        "memory limit, else the machine's RAM), at least 1 and at most 2",
     )
     max_album_assets: int = Field(
         default=10000,
