@@ -17,7 +17,9 @@ of your camera roll:
   binds the first month changes win, so a thin January can keep its card while a busy November loses one.
 - **Trip map**: a satellite fly-over from home to the destination, in place of the intro. Off by default, see
   [The map fly-over](#the-map-fly-over).
-- **Location cards**: the city name between trip segments.
+- **Location cards**: the place name where a trip moves on. A hop of more than 30 km always gets one. A
+  walking or cycling trip moves village to village well under that, so a change of town gets one too: at
+  most one a day, never the same town twice in a row, never a town within 50 km of home.
 - **Ending**: a fade to white, no text. Every film keeps it; a short film squeezes it to 2 s rather than dropping it.
 
 All of this works on a plain NAS. Titles come from templates, the special-day catalogue and your album names; a
