@@ -91,7 +91,7 @@ and the Docker image built from it, not on a `pip install`.
 | Reader | Local: llama.cpp, Ollama | Supported | Films on earlier releases |
 | Reader | Local: vLLM, mlx-vlm served directly | Untested | |
 | Reader | Hosted: z.ai (glm-5.3-flash) and OpenAI (gpt-5.6-luna) | Supported | Last run 2026-09-17; re-test: [#1513](https://github.com/sam-dumont/immich-video-memory-generator/issues/1513) |
-| Reader | Hosted: Melious (DeepSeek, deepseek-v4.1-flash) | Supported | Last run 2026-09-15; re-test: [#1513](https://github.com/sam-dumont/immich-video-memory-generator/issues/1513) |
+| Reader | Hosted: Melious (DeepSeek, deepseek-v4.1-flash) | Supported; [schema fallback](../better/reader.md#structured-replies), or `advanced.llm.structured_output: false` | Last run 2026-09-15; re-test: [#1513](https://github.com/sam-dumont/immich-video-memory-generator/issues/1513) |
 | Reader | Hosted: Anthropic's own API | Untested | The same code path only ran through z.ai's Anthropic-compatible route |
 | Reader | Hosted: Melious gemma-4-31b | Not supported | Its API refused every image (HTTP 400), 2026-09-15 |
 | Captions | SmolVLM2 500M, on a Mac | Tested | 2026-09-27, commit [`9eb16812`](https://github.com/sam-dumont/immich-video-memory-generator/commit/9eb168126c0f24f6cced39a0316f0045132e56c8), the `gpu` and `full` films above |
