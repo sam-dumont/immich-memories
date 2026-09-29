@@ -28,11 +28,7 @@ EXIT_VULNERABLE = 1
 EXIT_INCONCLUSIVE = 2
 
 CLEAN_MARKER = "No known vulnerabilities found"
-# Horizontal whitespace only: `\s` also matches the newline, and a row with an empty
-# Fix Versions column then read the next row as its fix.
-VULN_PATTERN = re.compile(
-    r"^(\S+)[ \t]+(\S+)[ \t]+((?:CVE|GHSA|PYSEC)-\S+)[ \t]*(.*?)$", re.MULTILINE
-)
+VULN_PATTERN = re.compile(r"^(\S+)[ \t]+(\S+)[ \t]+((?:CVE|GHSA|PYSEC)-\S+)[ \t]*(.*?)$", re.MULTILINE)
 
 
 def _inconclusive(reason: str, output: str) -> None:

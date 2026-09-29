@@ -16,9 +16,12 @@
   let busy = $state(false);
 
   onMount(async () => {
+    if (new URLSearchParams(window.location.search).get('error') === 'signin_expired') {
+      problem = t('Sign-in expired. Try again.');
+    }
     session = await api<Session>('/session');
     if (session.signed_in) await goto('/app/create', { replaceState: true });
-    else if (session.auto_launch) window.location.assign('/auth/authorize');
+    else if (session.auto_launch && !problem) window.location.assign('/auth/authorize');
   });
 
   async function signIn() {
@@ -49,6 +52,7 @@
       <Heading size="large" tag="h1">Immich Memories</Heading>
       <Text color="muted">{t('Turn your photo library into video memories')}</Text>
     </div>
+    {#if problem}<p class="text-sm text-danger" role="alert">{problem}</p>{/if}
     {#if session?.provider === 'oidc'}
       <div class="flex flex-col gap-2">
         <Button href="/auth/authorize" class="w-full">{session.button_text ?? t('Sign in')}</Button>
@@ -62,7 +66,6 @@
         <label class="flex flex-col gap-1 text-sm font-medium">{t('Password')}
           <input class="rounded-lg border border-gray-300 bg-light px-3 py-2 dark:border-gray-700" type="password" autocomplete="current-password" bind:value={password} required />
         </label>
-        {#if problem}<p class="text-sm text-danger" role="alert">{problem}</p>{/if}
         <Button type="submit" class="w-full" loading={busy}>{t('Sign in')}</Button>
       </form>
     {:else if session?.provider === 'header'}

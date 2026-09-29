@@ -385,3 +385,25 @@ def test_the_pool_s_ticks_go_into_the_film_as_a_revision_without_a_recut(
 
     render(page, resolution="720p")
     expect(the_film(page)).to_be_visible(timeout=900_000)
+
+
+def test_expired_sign_in_waits_for_manual_retry(page: Page, launch_app_url: str) -> None:
+    # WHY: the session API is the boundary; exercise auto-launch without a real IdP.
+    page.route(
+        "**/api/v1/session",
+        lambda route: route.fulfill(
+            json={
+                "signed_in": False,
+                "provider": "oidc",
+                "auto_launch": True,
+                "button_text": "Sign in with SSO",
+                "username": None,
+            }
+        ),
+    )
+    page.route("**/auth/authorize", lambda route: route.fulfill(body="Identity provider"))
+    page.goto(f"{launch_app_url}/login?error=signin_expired")
+    expect(page.get_by_role("alert")).to_have_text("Sign-in expired. Try again.")
+    expect(page).to_have_url(f"{launch_app_url}/app/login?error=signin_expired")
+    page.get_by_role("link", name="Sign in with SSO").click()
+    expect(page).to_have_url(f"{launch_app_url}/auth/authorize")

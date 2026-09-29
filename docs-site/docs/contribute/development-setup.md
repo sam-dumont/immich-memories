@@ -92,6 +92,34 @@ A real release runs CI, builds the app images, renders a CPU smoke film in the e
 and publishes the tested multi-architecture image before the GitHub release and PyPI packages.
 The package build must also pass before the Git tag is pushed. Release runs execute one at a time.
 
+### Release candidates
+
+The **Channel** input picks what a run publishes. `stable` (the default) is a final release; `rc`
+is a release candidate, tagged `vX.Y.Z-rc.N`.
+
+1. **Open a series.** Run with channel `rc` and the bump for the coming final, for example
+   `major` from `v0.103.0`. That publishes `v1.0.0-rc.1`.
+2. **Fix and repeat.** Merge fixes to `main`, then run with channel `rc` again: `v1.0.0-rc.2`,
+   `rc.3` and so on. The bump input is ignored while a series is open. A run with no commit
+   since the last candidate fails instead of publishing a duplicate.
+3. **Promote.** Run with channel `stable`. It publishes `v1.0.0` from `main`, with notes covering
+   the whole series since the previous final. The run fails if `main` gained a `feat`, `fix`,
+   `perf`, `refactor`, `build`, `revert` or breaking commit since the last candidate: that code was
+   in no candidate, so cut one more first. Docs, tests, CI and chores do not block promotion.
+
+A candidate goes through the same CI, smoke film and approval gates as a final, and differs in
+what it moves:
+
+| | Candidate | Final |
+|---|---|---|
+| GitHub release | marked pre-release, not "Latest" | marked "Latest" |
+| App image | `:1.0.0-rc.1` only | `:1.0.0` and `:latest` |
+| Inference images | `:1.0.0-rc.1`, `:1.0.0-rc.1-cuda` | also `:latest`, `:latest-cuda` |
+| PyPI | `1.0.0rc1`, installed only with `pip install --pre` | default install |
+| Docs site | not deployed | deployed |
+
+Testers pin the exact candidate tag. `latest` users stay on the previous final until promotion.
+
 CI uses `make secret-scan` for both PRs and release runs: all commits since the latest version
 tag, or all history for the first release. It also catches secrets removed by a later commit in
 that range. Install Gitleaks 8.24.3 to run the same scan locally; pre-commit uses that version too.

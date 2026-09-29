@@ -292,7 +292,6 @@ constraint-dependencies = [
     "joserfc>=1.6.8",
     "lxml>=6.1.0",
     "lxml-html-clean>=0.4.5",
-    "oauthlib>=4.0.0",
     "python-multipart>=0.0.31",
     # quadrants requires setuptools>=77 at runtime, which put it in the audited
     # set for the first time; 80.10.2 is PYSEC-2026-3447, fixed in 83.0.0.
