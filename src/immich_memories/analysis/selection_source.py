@@ -54,6 +54,7 @@ from immich_memories.analysis.source_filter import (
 )
 from immich_memories.analysis.source_quality import grounded_source_annotations
 from immich_memories.analysis.visual_atlas import AtlasSource
+from immich_memories.api.access_clients import AccountReadFailed
 from immich_memories.api.models import AssetType, VideoClipInfo
 from immich_memories.timeperiod import DateRange
 
@@ -399,6 +400,8 @@ def _preview_hash(
         try:
             preview = preview_jpeg(asset)
             return compute_thumbnail_hash(preview) if preview else None
+        except AccountReadFailed:
+            raise
         except Exception:  # WHY: one unreadable preview only means that file is not folded
             return None
 
@@ -415,6 +418,8 @@ def _visual_source_from(
     if preview_jpeg is not None:
         try:
             preview = preview_jpeg(asset)
+        except AccountReadFailed:
+            raise
         except Exception as exc:  # WHY: one failed external preview read cannot abort the corpus
             unavailable_reason = (
                 f"preview provider raised {type(exc).__name__} and no usable motion frames"
