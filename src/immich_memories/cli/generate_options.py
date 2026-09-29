@@ -70,6 +70,25 @@ def scope_options(command: FC) -> FC:
                 "every year the album holds gets a shot. Needs a model reader"
             ),
         ),
+        click.option(
+            "--ask",
+            type=str,
+            default=None,
+            help=(
+                'Highly experimental: the film in a sentence, e.g. "our cat along the '
+                'years". Read by the configured model reader against your prepared library; '
+                "the translation is printed first. Needs tier: full"
+            ),
+        ),
+        click.option(
+            "--ask-trace",
+            type=click.Path(dir_okay=False, path_type=Path),
+            default=None,
+            help=(
+                "With --ask: keep the translation (the trace, the pool counts, the verdict) in "
+                "this JSON file, for a watcher such as the web client"
+            ),
+        ),
         click.option("--person", "-p", type=str, multiple=True, help="Person name (repeatable)"),
         click.option(
             "--people-expression",

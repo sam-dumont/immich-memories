@@ -1,0 +1,82 @@
+{
+  "request": "the birth of my son",
+  "shape": "one day, dated by the people file, filmed as the special day",
+  "answers": {
+    "Split the owner's request": {
+      "who": [
+        "my son"
+      ],
+      "when": [
+        "the birth of my son"
+      ],
+      "where": [],
+      "what": [
+        "the birth"
+      ]
+    },
+    "Does it give that time": {
+      "reason": "banked",
+      "is_age": false,
+      "whose_age": "Cy Placeholder",
+      "age_from": 0,
+      "age_to": 0
+    },
+    "Give the date range": {
+      "date_from": "2018-04-02",
+      "date_to": "2018-04-02"
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": []
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "one single occasion"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    }
+  },
+  "expect": {
+    "reading": {
+      "who": [
+        "my son"
+      ],
+      "when": [
+        "the birth of my son"
+      ],
+      "what": [
+        "the birth"
+      ]
+    },
+    "who": {
+      "present": [
+        "p-child"
+      ],
+      "anchors": [
+        "p-owner",
+        "p-child"
+      ],
+      "company": null
+    },
+    "when": [
+      "2018-04-02",
+      "2018-04-02"
+    ],
+    "where": "anywhere",
+    "subject": [
+      "birth"
+    ],
+    "funnel": [
+      "library",
+      "when",
+      "who",
+      "kind of picture",
+      "subject"
+    ],
+    "pool": [],
+    "verdict": "not possible",
+    "film": "special_day"
+  }
+}

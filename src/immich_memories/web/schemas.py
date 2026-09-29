@@ -194,7 +194,7 @@ class Decision(BaseModel):
     level: Literal["anyone", "family", "just-us"] = "anyone"
 
 
-JobKind = Literal["cut", "render", "scan", "music"]
+JobKind = Literal["cut", "render", "scan", "music", "ask"]
 JobStatus = Literal["running", "succeeded", "failed", "cancelled", "interrupted"]
 
 
@@ -307,3 +307,33 @@ class SettingsForm(BaseModel):
     """The edited values, keyed by runtime path (`llm.model`); lists and mappings as JSON text."""
 
     values: dict[str, Any]
+
+
+class TraceBlock(BaseModel):
+    head: str
+    lines: list[str]
+
+
+class PoolCounts(BaseModel):
+    pictures: int
+    photos: int
+    videos: int
+
+
+class AskedFilm(BaseModel):
+    # "pool", "special_day" or "none" (no film).
+    route: str
+    line: str
+    outcome: str
+
+
+class AskPreview(BaseModel):
+    """`generate --ask --dry-run`'s translation: the trace by part, the pool and the verdict."""
+
+    request: str
+    blocks: list[TraceBlock]
+    pool: PoolCounts
+    # "possible", "thin" or "not possible".
+    verdict: str
+    why: str
+    film: AskedFilm

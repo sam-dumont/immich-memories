@@ -48,6 +48,102 @@
         "title": "Alternative",
         "type": "object"
       },
+      "AskAvailability": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "tier": {
+            "title": "Tier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "available",
+          "tier"
+        ],
+        "title": "AskAvailability",
+        "type": "object"
+      },
+      "AskPreview": {
+        "description": "`generate --ask --dry-run`'s translation: the trace by part, the pool and the verdict.",
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/TraceBlock"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "film": {
+            "$ref": "#/components/schemas/AskedFilm"
+          },
+          "pool": {
+            "$ref": "#/components/schemas/PoolCounts"
+          },
+          "request": {
+            "title": "Request",
+            "type": "string"
+          },
+          "verdict": {
+            "title": "Verdict",
+            "type": "string"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request",
+          "blocks",
+          "pool",
+          "verdict",
+          "why",
+          "film"
+        ],
+        "title": "AskPreview",
+        "type": "object"
+      },
+      "AskRequest": {
+        "properties": {
+          "sentence": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Sentence",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sentence"
+        ],
+        "title": "AskRequest",
+        "type": "object"
+      },
+      "AskedFilm": {
+        "properties": {
+          "line": {
+            "title": "Line",
+            "type": "string"
+          },
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          },
+          "route": {
+            "title": "Route",
+            "type": "string"
+          }
+        },
+        "required": [
+          "route",
+          "line",
+          "outcome"
+        ],
+        "title": "AskedFilm",
+        "type": "object"
+      },
       "AttemptView": {
         "properties": {
           "id": {
@@ -301,6 +397,17 @@
             "default": false,
             "title": "All Trips",
             "type": "boolean"
+          },
+          "ask": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ask"
           },
           "birthday": {
             "anyOf": [
@@ -976,7 +1083,8 @@
               "cut",
               "render",
               "scan",
-              "music"
+              "music",
+              "ask"
             ],
             "title": "Kind",
             "type": "string"
@@ -1323,6 +1431,29 @@
           "items"
         ],
         "title": "Pool",
+        "type": "object"
+      },
+      "PoolCounts": {
+        "properties": {
+          "photos": {
+            "title": "Photos",
+            "type": "integer"
+          },
+          "pictures": {
+            "title": "Pictures",
+            "type": "integer"
+          },
+          "videos": {
+            "title": "Videos",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pictures",
+          "photos",
+          "videos"
+        ],
+        "title": "PoolCounts",
         "type": "object"
       },
       "PoolItem": {
@@ -2761,6 +2892,27 @@
         "title": "Suggestions",
         "type": "object"
       },
+      "TraceBlock": {
+        "properties": {
+          "head": {
+            "title": "Head",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Lines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "head",
+          "lines"
+        ],
+        "title": "TraceBlock",
+        "type": "object"
+      },
       "TripChoice": {
         "properties": {
           "days": {
@@ -2925,6 +3077,116 @@
         "summary": "Albums",
         "tags": [
           "library"
+        ]
+      }
+    },
+    "/api/v1/ask": {
+      "get": {
+        "description": "Whether a film can be asked for in a sentence: the model tier reads it (`generate --ask`).",
+        "operationId": "ask_availability_api_v1_ask_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskAvailability"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ask Availability",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/ask/preview": {
+      "post": {
+        "description": "Translate a sentence with `generate --ask --dry-run`; nothing is filmed.\n\nThe CLI keeps the translation in a JSON file beside the job, which the preview reads.",
+        "operationId": "start_ask_preview_api_v1_ask_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Ask Preview",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/ask/preview/{job_id}": {
+      "get": {
+        "description": "The translation a finished preview kept; 404 until it has one.",
+        "operationId": "ask_preview_api_v1_ask_preview__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ask Preview",
+        "tags": [
+          "jobs"
         ]
       }
     },

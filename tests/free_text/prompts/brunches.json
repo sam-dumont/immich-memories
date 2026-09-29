@@ -1,0 +1,63 @@
+{
+  "request": "brunches at home or outside",
+  "shape": "a concept the captioner does not write",
+  "answers": {
+    "Split the owner's request": {
+      "who": [],
+      "when": [],
+      "where": [
+        "at home or outside"
+      ],
+      "what": [
+        "brunches"
+      ]
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": []
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "many occasions"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    },
+    "Which of these places": {
+      "reason": "banked",
+      "choice": "anywhere"
+    }
+  },
+  "expect": {
+    "reading": {
+      "where": [
+        "at home or outside"
+      ],
+      "what": [
+        "brunches"
+      ]
+    },
+    "who": {
+      "present": [],
+      "anchors": [],
+      "company": null
+    },
+    "when": [
+      null,
+      null
+    ],
+    "where": "anywhere",
+    "subject": [
+      "brunches"
+    ],
+    "funnel": [
+      "library",
+      "kind of picture",
+      "subject"
+    ],
+    "pool": [],
+    "verdict": "not possible",
+    "film": "none"
+  }
+}

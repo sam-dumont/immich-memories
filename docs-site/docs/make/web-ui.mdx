@@ -103,6 +103,25 @@ A **Special day** lists the days in `~/.immich-memories/special-days.json`, anni
 scheduled run only proposes a day on its anniversary; here you can pick any day the catalogue holds,
 or type any date into **Day**. With no catalogue yet, the page says to run `immich-memories discover-days`.
 
+### A film from a sentence
+
+On `tier: full` (a configured reader), **Memory** opens with a box: **Describe the film you want**.
+Type what you want to see ("our cat along the years"), then press **Preview**. That runs
+`generate --ask "..." --dry-run` on the server and films nothing. It shows:
+
+- the verdict: **Possible**, **Thin** (fewer than 12 pictures fit, so a short film) or **Not
+  possible** (no film, and the line under it says which filter emptied the pool)
+- the pool: how many pictures, photos and videos fit
+- the trace, one part at a time: how it read your words, who, when, where, what, what the library
+  measures, the pool step by step, and the verdict
+
+**Make the film** only shows up when there is something to film. It runs the same cut as the CLI
+(`generate --ask "..." --no-render`) and you review it like any other cut. Edit the sentence and the
+preview greys out: preview again before filming.
+
+Below `tier: full` the box says the model tier is needed instead. The feature is highly
+experimental (the **Experimental** badge links to its page): [A film from a sentence](./free-text.md).
+
 ## The cut in progress
 
 <ThemedScreenshot name="memory-cutting" alt="The cut in progress: the stage, a bar, the count and the pictures just read" />
