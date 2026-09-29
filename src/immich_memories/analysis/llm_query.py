@@ -23,6 +23,11 @@ from typing import TYPE_CHECKING, Any
 import httpx
 
 from immich_memories.analysis import llm_metrics
+from immich_memories.analysis.llm_adaptations import (
+    adaptation_for,
+    announce_adaptation,
+    apply_adaptations,
+)
 from immich_memories.analysis.llm_providers import (
     resolved_llm_config,
     structured_output_enabled,
@@ -37,14 +42,11 @@ from immich_memories.analysis.llm_wire import (
     TRANSPORT_RETRIES,
     LLMIncompleteResponse,
     LLMTransportAttempt,
-    adaptation_for,
-    announce_adaptation,
     anthropic_answer,
     anthropic_headers,
     anthropic_payload,
     anthropic_reasoned,
     anthropic_usage,
-    apply_adaptations,
     apply_anthropic_reasoning,
     apply_reasoning_headroom,
     apply_thinking_budget,
@@ -121,11 +123,13 @@ def _learn_dialect(
     if adaptation is None or adaptation in applied_adaptations:
         return False
     observe(transport_observer, 1, "dialect_adaptation", resp.status_code, adaptation)
+    newly_learned = adaptation not in adaptations
     adaptations.add(adaptation)
     applied_adaptations.add(adaptation)
     before = payload.get("thinking")
     apply_adaptations(payload, adaptations)
-    announce_adaptation(adaptation, before, payload.get("thinking"))
+    if newly_learned:
+        announce_adaptation(adaptation, before, payload.get("thinking"))
     return True
 
 

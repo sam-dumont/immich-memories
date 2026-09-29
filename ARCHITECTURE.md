@@ -561,6 +561,7 @@ src/immich_memories/
 │   ├── apple_vision.py         # macOS Vision framework face detection (smart crops)
 │   ├── apple_vision_image.py   # Vision image conversion helpers
 │   ├── llm_query.py            # The live transport: one prompt, one connection, one answer
+│   ├── llm_adaptations.py      # Capability refusals: remembered request changes, schema/object fallback
 │   ├── llm_wire.py             # The two request dialects, what a reply says, and the reasoning budget
 │   ├── llm_batch.py            # A stage's independent prompts as one provider batch (half price, async): the two wire dialects and their transports
 │   ├── llm_providers.py        # Named providers: their URL, their adapter, the way they reason
