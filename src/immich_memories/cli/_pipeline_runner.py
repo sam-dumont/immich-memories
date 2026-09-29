@@ -97,7 +97,10 @@ def _configure_output_canvas(
     output_orientation: str | None,
 ) -> OutputCanvas:
     """Resolve the one pixel canvas this run renders to."""
-    from immich_memories.processing.output_canvas import resolve_output_canvas
+    from immich_memories.processing.output_canvas import (
+        hardware_hevc_available,
+        resolve_output_canvas,
+    )
 
     planning_sources = [*clips, *(photo_assets or [])]
     return resolve_output_canvas(
@@ -105,6 +108,7 @@ def _configure_output_canvas(
         orientation=output_orientation,
         configured_resolution=config.output.resolution_tuple,
         clips=planning_sources,
+        hardware_hevc=lambda: hardware_hevc_available(config),
     )
 
 
