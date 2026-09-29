@@ -101,6 +101,19 @@ Everything lives under `~/.immich-memories/cache/` (or `cache.directory`):
 | `preview-cache/` | clip previews the old web pages played; nothing writes it now. Delete a leftover folder by hand | none |
 | `../cache.db` (one level up) | a pre-store file nothing writes; its run history and scores are imported into the [store](../database.md) once, then it can go | none |
 
+`output.directory` (default `~/Videos/Memories`, one level up from `cache/`) is not a cache, but
+it grows the same way: one file per run. A run that delivers to Immich has its local film and run
+directory removed right after the upload is confirmed, so a container with upload on stays
+bounded without any setting. A run that never uploads (`upload_enabled: false`, or a delivery
+that stays pending) keeps its output on disk, same as before: use `immich-memories runs delete`
+or `runs storage` to see and clear it by hand.
+
+Both `output.directory` and `cache.directory` get a free-space preflight before a run starts and
+again right before the film is written. Below `output.min_free_space_gb` (5 GB by default) the
+run logs a warning naming the volume and the free space; if the estimated film would not fit at
+all, the run stops before rendering instead of failing halfway through. The estimate comes from
+the target duration and the configured `output.quality`.
+
 The facts the app banked (head answers, detector verdicts, measurements, and captions and
 readings when a model is used, each keyed by producer and exact input) and your own picture
 decisions are not a cache: they live in [the store](../database.md), `~/.immich-memories/store.db`

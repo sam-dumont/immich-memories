@@ -259,6 +259,7 @@ output:
   hdr_mode: auto                  # auto, sdr, hdr
   quality: "balanced"            # high, balanced, fast (shorthand for CRF presets)
   crf: null                      # unset = derived from quality; 0-51 overrides (lower = better)
+  min_free_space_gb: 5.0         # warn below this on the output/cache volumes; 0.5-1000
 ```
 
 CRF is the image-quality authority. `quality` is only a shorthand used when `crf` is omitted; an
@@ -298,6 +299,13 @@ SDR clips, photos and title screens into the chosen HDR transfer before blending
 SDR: with `codec: h264`, `auto` tone-maps detected HDR sources and logs the reason. Use
 `hdr_mode: sdr` when SDR is intentional, or `hdr_mode: hdr` with H.265 to force an HDR output from
 SDR sources.
+
+`min_free_space_gb` is a preflight, not a cap: it runs before a film starts rendering, on both
+`output.directory` and `cache.directory`. Below the threshold the run logs a warning naming the
+volume and its free space; below what the film itself needs (estimated from target duration and
+`quality`) it stops before writing anything. A run that uploads to Immich has nothing else to do
+here: its local film is removed once the upload is confirmed. A run that keeps files locally is
+the one this protects. See [health, logs and caches](../run/maintenance/health-logs-cache.md#caches).
 
 ## Photos
 

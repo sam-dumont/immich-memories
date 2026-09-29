@@ -7,7 +7,6 @@ All UI interaction is replaced by a progress callback.
 from __future__ import annotations
 
 import logging
-import shutil
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import date
@@ -218,16 +217,50 @@ class PipelineLock:
         self._lease.release()
 
 
-# Minimum free disk space before starting generation
-_MIN_FREE_BYTES = 1024 * 1024 * 1024  # 1 GB
+def check_disk_space(
+    config: Config, output_dir: Path, *, estimated_duration_seconds: float
+) -> list[str]:
+    """Preflight the output and cache volumes before a film is written.
 
+    Hard-stops only for the output volume, where the film itself lands: a low
+    cache volume only ever warns, since this render does not write to it. On
+    the output volume, a warning below the configured threshold and an
+    estimate that would not fit are two different things -- the first is
+    surfaced, the second raises before any encoding starts.
+    """
+    from immich_memories.operations.disk_guard import (
+        InsufficientDiskSpace,
+        estimate_output_bytes,
+        low_space_warning,
+        require_room_for_film,
+        volume_space,
+    )
 
-def check_disk_space(output_dir: Path) -> None:
-    """Abort early if disk space is critically low."""
-    usage = shutil.disk_usage(output_dir)
-    if usage.free < _MIN_FREE_BYTES:
-        free_gb = usage.free / (1024**3)
-        raise GenerationError(f"Insufficient disk space: {free_gb:.1f} GB free, need at least 1 GB")
+    threshold = config.output.min_free_space_gb
+    warnings: list[str] = []
+
+    output_volume = volume_space("output", output_dir)
+    if output_volume is not None:
+        estimated_bytes = estimate_output_bytes(
+            estimated_duration_seconds, config.output.effective_crf
+        )
+        try:
+            require_room_for_film(output_volume, estimated_bytes=estimated_bytes)
+        except InsufficientDiskSpace as exc:
+            raise GenerationError(str(exc)) from None
+        warning = low_space_warning(output_volume, min_free_gb=threshold)
+        if warning:
+            warnings.append(warning)
+
+    cache_volume = volume_space("cache", config.cache.cache_path)
+    if cache_volume is not None:
+        warning = low_space_warning(cache_volume, min_free_gb=threshold)
+        if warning:
+            warnings.append(warning)
+
+    for warning in warnings:
+        logger.warning(warning)
+    return warnings
 
 
 @overload
@@ -346,11 +379,14 @@ def _fail_run_if_running(run_tracker: RunTracker, message: str) -> None:
 
 
 def _artifact_warnings(
-    params: GenerationParams, duration_warning: str | None, music_warning: str | None
+    params: GenerationParams,
+    duration_warning: str | None,
+    music_warning: str | None,
+    disk_warnings: list[str] | None = None,
 ) -> list[str]:
     from immich_memories.analysis.editorial_duration_advisory import editorial_duration_warning
 
-    return [
+    warnings = [
         warning
         for warning in (
             editorial_duration_warning(params.editorial_duration_realization),
@@ -359,6 +395,8 @@ def _artifact_warnings(
         )
         if warning
     ]
+    warnings.extend(disk_warnings or [])
+    return warnings
 
 
 def _clear_run_intermediates(
@@ -410,17 +448,21 @@ def _generate_memory_inner(
     run_output_dir = params.output_path.parent / f"{dir_slug}_{run_id}"
     run_output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Preflight: abort early if disk is critically low
-    check_disk_space(run_output_dir)
+    estimated_duration_seconds = round(
+        params.target_duration_seconds or _total_clip_duration(params)
+    )
+
+    # Preflight: name the volume, the free space and the estimate before writing a film.
+    disk_warnings = check_disk_space(
+        params.config, run_output_dir, estimated_duration_seconds=estimated_duration_seconds
+    )
     requested_output_path = run_output_dir / sanitize_filename(params.output_path.name)
 
     if observed_run is None:
         run_tracker.start_run(
             person_name=params.person_name,
             date_range=None,
-            target_duration_seconds=round(
-                params.target_duration_seconds or _total_clip_duration(params)
-            ),
+            target_duration_seconds=estimated_duration_seconds,
             memory_type=params.memory_type,
             memory_key=build_memory_key(params),
             memory_category=params.memory_category,
@@ -433,9 +475,7 @@ def _generate_memory_inner(
             replace(
                 observed_run,
                 person_name=params.person_name,
-                target_duration_seconds=round(
-                    params.target_duration_seconds or _total_clip_duration(params)
-                ),
+                target_duration_seconds=estimated_duration_seconds,
                 memory_type=params.memory_type,
                 memory_key=build_memory_key(params),
                 memory_category=params.memory_category,
@@ -497,7 +537,9 @@ def _generate_memory_inner(
         _phase_times["music"] = music_span.duration
 
         final_probe = prepared.publish(decode_check)
-        artifact_warnings = _artifact_warnings(params, duration_warning, music_result.warning)
+        artifact_warnings = _artifact_warnings(
+            params, duration_warning, music_result.warning, disk_warnings
+        )
         run_tracker.complete_artifact(
             result_path,
             final_probe,

@@ -14,7 +14,6 @@ from immich_memories.generate import (
     GenerationError,
     GenerationParams,
     PipelineLock,
-    check_disk_space,
     generate_memory,
 )
 from immich_memories.generate_clips import (
@@ -398,23 +397,8 @@ class TestPipelineLock:
 
 
 # ---------------------------------------------------------------------------
-# check_disk_space
+# check_disk_space: covered in full by tests/test_disk_space.py
 # ---------------------------------------------------------------------------
-
-
-class TestCheckDiskSpace:
-    def test_raises_on_low_disk_space(self, tmp_path):
-        # WHY: mock disk_usage to simulate low disk space without consuming real disk
-        with patch("immich_memories.generate.shutil.disk_usage") as mock_usage:
-            mock_usage.return_value = MagicMock(free=500 * 1024 * 1024)  # 500 MB
-            with pytest.raises(GenerationError, match="Insufficient disk space"):
-                check_disk_space(tmp_path)
-
-    def test_passes_with_sufficient_space(self, tmp_path):
-        # WHY: mock disk_usage to simulate sufficient disk space
-        with patch("immich_memories.generate.shutil.disk_usage") as mock_usage:
-            mock_usage.return_value = MagicMock(free=5 * 1024 * 1024 * 1024)  # 5 GB
-            check_disk_space(tmp_path)  # Should not raise
 
 
 # ---------------------------------------------------------------------------
@@ -669,7 +653,7 @@ class TestGenerateMemoryRun:
             # WHY: set_current_run_id sets thread-local state
             "set_run_id": patch("immich_memories.logging_config.set_current_run_id"),
             # WHY: check_disk_space calls shutil.disk_usage
-            "disk": patch("immich_memories.generate.check_disk_space"),
+            "disk": patch("immich_memories.generate.check_disk_space", return_value=[]),
             # WHY: extract_clips downloads from Immich + runs FFmpeg
             "extract": patch(
                 "immich_memories.generate_render.extract_clips",

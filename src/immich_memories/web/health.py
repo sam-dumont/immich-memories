@@ -139,6 +139,7 @@ _DETAIL_FIELDS = (
     "notification_health",
     "last_successful_run",
     "in_process_scheduler",
+    "disk",
 )
 
 
@@ -157,10 +158,33 @@ def _for(request: Request, snapshot: dict[str, Any]) -> dict[str, Any]:
     return snapshot | dict.fromkeys(_DETAIL_FIELDS)
 
 
+def _disk_status(config: Config) -> dict[str, Any] | None:
+    """Free space on the output and cache volumes, and whether either is running low.
+
+    The same threshold and warning text a run's own preflight uses
+    (`operations/disk_guard.py`), so an operator watching this page sees the
+    exact line a run would log rather than a second, differently-worded check.
+    """
+    from immich_memories.operations.disk_guard import low_space_warning, volume_space
+
+    threshold = config.output.min_free_space_gb
+    roots = {"output": config.output.output_path, "cache": config.cache.cache_path}
+    volumes: dict[str, Any] = {}
+    for label, path in roots.items():
+        volume = volume_space(label, path)
+        if volume is None:
+            continue
+        volumes[label] = {
+            "free_gb": round(volume.free_gb, 1),
+            "warning": low_space_warning(volume, min_free_gb=threshold),
+        }
+    return volumes or None
+
+
 def _operational_detail(
     config: Config, secrets_to_redact: tuple[str, ...]
-) -> tuple[dict[str, Any] | None, str | None]:
-    """Return (automation status, last successful run) for the health payload.
+) -> tuple[dict[str, Any] | None, str | None, dict[str, Any] | None]:
+    """Return (automation status, last successful run, disk status) for the health payload.
 
     WHY: /health is public so probes work, but automation detail carries person
     names (memory keys) and host paths. It is always gathered here and removed per
@@ -184,9 +208,15 @@ def _operational_detail(
             type(exc).__name__,
         )
 
+    disk: dict[str, Any] | None = None
+    try:
+        disk = _disk_status(config)
+    except Exception as exc:
+        logger.warning("Could not read disk status for readiness (%s)", type(exc).__name__)
+
     if automation is not None:
         automation = _redact_health_value(automation, secrets_to_redact)
-    return automation, last_successful_run
+    return automation, last_successful_run, disk
 
 
 # /health and /health/ready are unauthenticated so probes work without
@@ -234,6 +264,7 @@ async def _compute_health_snapshot() -> dict[str, Any]:
             "notification_health": None,
             "last_successful_run": None,
             "in_process_scheduler": None,
+            "disk": None,
             "version": __version__,
         }
 
@@ -249,7 +280,7 @@ async def _compute_health_snapshot() -> dict[str, Any]:
 
     # Synchronous SQLite: on the event loop each open waits on the write lock
     # while a pipeline run holds it, which stalls every other session.
-    automation, last_successful_run = await asyncio.to_thread(
+    automation, last_successful_run, disk = await asyncio.to_thread(
         _operational_detail, config, secrets_to_redact
     )
 
@@ -279,6 +310,7 @@ async def _compute_health_snapshot() -> dict[str, Any]:
         "notification_health": _automation_field(automation, "notification_health"),
         "last_successful_run": last_successful_run,
         "in_process_scheduler": automation_scheduler.snapshot().to_dict(),
+        "disk": disk,
         "version": __version__,
     }
 

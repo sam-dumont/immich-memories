@@ -126,8 +126,11 @@ Quiet output is a stable JSON object with `runtime` as its first key. Key a wrap
 ```
 
 An upload that keeps failing is dropped after `automation.max_delivery_attempts` (5) tries, with a notification
-carrying the error; the video stays on disk. Every attempt writes its full output to
-`automation-output/<attempt-id>.private.log` under the cache (owner-readable, credentials redacted,
+carrying the error; the video stays on disk. If the output or cache volume is running low
+(`output.min_free_space_gb`, 5 GB by default), a completed run's notification carries that warning too, and a
+film that would not fit at all fails the attempt with the same message before anything is rendered: this is the
+one place a headless cron deployment sees it, since nobody is watching a terminal. Every attempt writes its full
+output to `automation-output/<attempt-id>.private.log` under the cache (owner-readable, credentials redacted,
 downloadable from the **Runs** page). `auto status` shows the running code's version and commit, the timer, the
 last attempt, the cooldown and the live suggestion.
 
