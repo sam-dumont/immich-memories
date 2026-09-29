@@ -23,6 +23,7 @@ from typing import Any
 
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.config_models import PRIMARY_ACCOUNT
+from immich_memories.people.account_ids import entry_ids, ids_by_account
 
 # Manual people exist only in the store; no Immich picture carries their id.
 _MANUAL_PREFIX = "manual:"
@@ -76,17 +77,20 @@ def store_people(document: Mapping[str, Any]) -> tuple[StorePerson, ...]:
         return ()
     found = []
     for entry in people:
-        if not isinstance(entry, dict) or not isinstance(entry.get("ids"), list):
+        if not isinstance(entry, dict) or not isinstance(entry.get("ids"), list | dict):
             continue
-        if not entry["ids"]:
+        ids = entry_ids(entry)
+        if not ids:
             continue
-        accounts = entry.get("accounts") or {}
+        account_of = {
+            face: account for account, faces in ids_by_account(entry).items() for face in faces
+        }
         aliases = tuple(
-            PersonAlias(str(face), accounts.get(face) or PRIMARY_ACCOUNT)
-            for face in entry["ids"]
-            if not str(face).startswith(_MANUAL_PREFIX)
+            PersonAlias(face, account_of[face])
+            for face in ids
+            if not face.startswith(_MANUAL_PREFIX)
         )
-        found.append(StorePerson(str(entry["ids"][0]), str(entry.get("name") or ""), aliases))
+        found.append(StorePerson(ids[0], str(entry.get("name") or ""), aliases))
     return tuple(found)
 
 

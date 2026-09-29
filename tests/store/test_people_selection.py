@@ -13,6 +13,7 @@ import pytest
 
 from immich_memories.analysis.editorial_source import resolve_named_expression
 from immich_memories.analysis.household_source import HouseholdWindows
+from immich_memories.analysis.person_resolution import PersonAlias, store_people
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.api.sync_client import SyncImmichClient
@@ -20,6 +21,7 @@ from immich_memories.cli._asset_fetch import fetch_media
 from immich_memories.cli._live_display import QuietDisplay
 from immich_memories.cli.run_people import resolve_run_people
 from immich_memories.config_models import ImmichConfig
+from immich_memories.people.companion import bind_alias, load_document
 from immich_memories.people.transfer import import_document
 from immich_memories.timeperiod import DateRange
 from tests.household_fake import (
@@ -35,10 +37,9 @@ WINDOW = DateRange(datetime(2025, 6, 1, tzinfo=UTC), datetime(2025, 6, 30, 23, 5
 HOUSEHOLD = ("primary", "partner")
 
 
-def _person(ids: list[str], name: str, accounts: dict[str, str] | None = None) -> dict:
+def _person(ids: list[str] | dict[str, list[str]], name: str) -> dict:
     return {
         "ids": ids,
-        **({"accounts": accounts} if accounts else {}),
         "name": name,
         "birth_date": None,
         "inferred": {"tier": "inner", "counts_reliable": True, "evidence": {}, "links": []},
@@ -50,8 +51,8 @@ def _person(ids: list[str], name: str, accounts: dict[str, str] | None = None) -
 REGISTRY = {
     "version": 1,
     "people": [
-        _person(["alex-p", "alex-q"], "Alex", {"alex-q": "partner"}),
-        _person(["kit-q"], "Kit", {"kit-q": "partner"}),
+        _person({"primary": ["alex-p"], "partner": ["alex-q"]}, "Alex"),
+        _person({"partner": ["kit-q"]}, "Kit"),
     ],
 }
 
@@ -123,6 +124,26 @@ def test_an_alias_only_matches_its_own_accounts_pictures(store, immich):
     # A one-account run reads the primary's aliases alone, as a flat id like always.
     assert people.person_ids == ["alex-p"]
     assert primary_only == {"p-park", "p-party", "p-solo"}
+
+
+def test_ids_declared_per_account_hold_each_alias_to_its_account(store, immich):
+    import_document(store, REGISTRY)
+
+    people, found = _discover(store, HOUSEHOLD, expression='"Alex"')
+
+    assert dict(people.face_accounts) == {"alex-p": "primary", "alex-q": "partner"}
+    assert {"p-park", "q-lake"} <= found
+    assert "p-odd" not in found
+
+
+def test_a_bound_primary_id_keeps_the_store_id_selection_names(store, immich):
+    import_document(store, REGISTRY)
+    bind_alias(store, "kit-q", "kit-p")
+
+    kit = next(person for person in store_people(load_document(store)) if person.name == "Kit")
+
+    assert kit.person_id == "kit-q"
+    assert set(kit.aliases) == {PersonAlias("kit-p", "primary"), PersonAlias("kit-q", "partner")}
 
 
 def test_a_person_the_store_does_not_hold_falls_back_to_the_roster(store, immich):

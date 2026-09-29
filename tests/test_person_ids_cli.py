@@ -24,10 +24,9 @@ ROBIN = "44444444-4444-4444-8444-444444444444"
 NOBODY = "99999999-9999-4999-8999-999999999999"
 
 
-def _person(ids: list[str], name: str, accounts: dict[str, str] | None = None) -> dict:
+def _person(ids: list[str] | dict[str, list[str]], name: str) -> dict:
     return {
         "ids": ids,
-        **({"accounts": accounts} if accounts else {}),
         "name": name,
         "birth_date": None,
         "inferred": {"tier": "inner", "counts_reliable": True, "evidence": {}, "links": []},
@@ -40,7 +39,7 @@ REGISTRY = {
     "version": 1,
     "people": [
         _person([ALEX_ONE], "Alex"),
-        _person([ALEX_TWO, ALEX_TWO_PARTNER], "Alex", {ALEX_TWO_PARTNER: "partner"}),
+        _person({"primary": [ALEX_TWO], "partner": [ALEX_TWO_PARTNER]}, "Alex"),
     ],
 }
 
