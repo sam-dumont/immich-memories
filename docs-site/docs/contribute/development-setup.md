@@ -92,6 +92,17 @@ A real release runs CI, builds the app images, renders a CPU smoke film in the e
 and publishes the tested multi-architecture image before the GitHub release and PyPI packages.
 The package build must also pass before the Git tag is pushed. Release runs execute one at a time.
 
+### Images without a release
+
+For a merged container fix, dispatch **Actions → Release → Run workflow** on `main` and select
+**app_only**. It runs CI, builds the main/render app image for both architectures, and renders
+the smoke film before publishing `ghcr.io/sam-dumont/immich-video-memory-generator:sha-<12-character-commit>`.
+Pin that image by digest in your deployment.
+
+Select **inference_only** instead for the standalone inference images. Choose one image-only
+mode per run. These modes publish commit tags; they create no GitHub or PyPI release, do not
+move `latest`, and do not deploy the docs site.
+
 ### Release candidates
 
 The **Channel** input picks what a run publishes. `stable` (the default) is a final release; `rc`

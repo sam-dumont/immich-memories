@@ -254,8 +254,15 @@ def test_the_first_release_candidate_of_a_major_is_rc_1(tmp_path):
     assert "previous_tag=v0.103.0" in lines
 
 
-@pytest.mark.parametrize(("prerelease", "moves_latest"), [("true", False), ("false", True)])
-def test_only_a_final_release_moves_the_latest_image_tag(tmp_path, prerelease, moves_latest):
+@pytest.mark.parametrize(
+    ("prerelease", "app_only", "tag", "moves_latest"),
+    [
+        ("true", "false", "1.0.0-rc.1", False),
+        ("false", "false", "1.0.0-rc.1", True),
+        ("false", "true", "sha-aaaaaaaaaaaa", False),
+    ],
+)
+def test_image_tags_match_dispatch_mode(tmp_path, prerelease, app_only, tag, moves_latest):
     step = next(
         step
         for step in release_workflow()["jobs"]["docker-manifest"]["steps"]
@@ -278,14 +285,66 @@ def test_only_a_final_release_moves_the_latest_image_tag(tmp_path, prerelease, m
             "IMAGE": "ghcr.io/example/app",
             "VERSION": "1.0.0-rc.1",
             "PRERELEASE": prerelease,
+            "APP_ONLY": app_only,
+            "GITHUB_SHA": "a" * 40,
         },
         check=True,
     )
     args = args_file.read_text().splitlines()
-    assert "ghcr.io/example/app:1.0.0-rc.1" in args
+    assert f"ghcr.io/example/app:{tag}" in args
     assert ("ghcr.io/example/app:latest" in args) is moves_latest
 
 
 def test_a_release_candidate_publishes_no_docs():
     condition = release_workflow()["jobs"]["deploy-docs"]["if"]
     assert "needs.analyze.outputs.prerelease != 'true'" in condition
+
+
+@pytest.mark.parametrize(("inference_only", "succeeds"), [("false", True), ("true", False)])
+def test_app_only_workflow_runs_image_gates_without_release_publication(
+    tmp_path, inference_only, succeeds
+):
+    workflow = release_workflow()
+    assert workflow["on"]["workflow_dispatch"]["inputs"]["app_only"]["type"] == "boolean"
+    jobs = workflow["jobs"]
+    for name in ("ci", "docker-build"):
+        assert "inputs.app_only" in jobs[name]["if"]
+    for name in (
+        "release",
+        "pypi-publish",
+        "pypi-publish-music",
+        "deploy-docs",
+        "deployment-bundle",
+    ):
+        assert "needs.analyze.outputs.should_release == 'true'" in jobs[name]["if"]
+        assert "inputs.app_only" not in jobs[name]["if"]
+    manifest = next(
+        step for step in jobs["docker-manifest"]["steps"] if "imagetools" in step.get("run", "")
+    )
+    assert manifest["env"]["APP_ONLY"] == "${{ inputs.app_only }}"
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    shutil.copy(Path("scripts/release_analyze.py"), scripts / "release_analyze.py")
+    step = next(step for step in jobs["analyze"]["steps"] if step.get("id") == "analyze")
+    output = tmp_path / "outputs"
+    result = subprocess.run(
+        ["bash", "-e", "-o", "pipefail", "-c", step["run"]],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "APP_ONLY": "true",
+            "INFERENCE_ONLY": inference_only,
+            "GITHUB_SHA": "a" * 40,
+            "GITHUB_OUTPUT": str(output),
+        },
+        capture_output=True,
+        text=True,
+    )
+    assert (result.returncode == 0) is succeeds, result.stderr
+    if succeeds:
+        assert output.read_text().splitlines() == [
+            "should_release=false",
+            "next_version=0+g" + "a" * 40,
+        ]
+    else:
+        assert not output.exists() or output.read_text() == ""
