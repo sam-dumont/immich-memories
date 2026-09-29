@@ -30,9 +30,12 @@ def test_title_probe_measures_the_real_feature_transport_and_parse(monkeypatch):
     from immich_memories.conformance.cases import cases
     from immich_memories.conformance.runtime import run_case
 
-    # WHY: only the external provider response is fixed; title prompting and parsing stay real.
-    transport = httpx.MockTransport(
-        lambda _: httpx.Response(
+    def reply(request):
+        import json
+
+        prompt = json.loads(request.content)["messages"][0]["content"]
+        assert "chess tournament" in prompt.lower(), "fixture fact never reached the provider"
+        return httpx.Response(
             200,
             json={
                 "choices": [
@@ -44,7 +47,9 @@ def test_title_probe_measures_the_real_feature_transport_and_parse(monkeypatch):
                 "usage": {"prompt_tokens": 20, "completion_tokens": 5},
             },
         )
-    )
+
+    # WHY: only the external provider response is fixed; title prompting and parsing stay real.
+    transport = httpx.MockTransport(reply)
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
     result = run_case(cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))[0])
     assert result.called and result.valid

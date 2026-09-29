@@ -3,6 +3,7 @@
 import json
 
 import httpx
+import pytest
 
 from immich_memories.config_models_llm import LLMConfig
 from immich_memories.conformance.runtime import run_case
@@ -44,7 +45,8 @@ def test_caption_probe_requires_the_visible_red_rectangle(monkeypatch):
     assert result.calls == 4
 
 
-def test_motion_probe_requires_movement_across_frames(monkeypatch):
+@pytest.mark.parametrize("object_name", ["ball", "dot"])
+def test_motion_probe_requires_movement_across_frames(monkeypatch, object_name):
     from immich_memories.conformance.vision_cases import vision_cases
 
     transport = httpx.MockTransport(
@@ -55,7 +57,9 @@ def test_motion_probe_requires_movement_across_frames(monkeypatch):
                     {
                         "finish_reason": "stop",
                         "message": {
-                            "content": '{"description":"A blue ball moves from left to right."}'
+                            "content": json.dumps(
+                                {"description": f"A blue {object_name} moves from left to right."}
+                            )
                         },
                     }
                 ],

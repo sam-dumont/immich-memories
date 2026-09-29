@@ -3,6 +3,7 @@
 import json
 
 import httpx
+import pytest
 
 from immich_memories.config_models_llm import LLMConfig
 from immich_memories.conformance.runtime import run_case
@@ -33,7 +34,13 @@ def test_worthiness_probe_distinguishes_race_from_routine(monkeypatch):
     assert result.calls >= 2
 
 
-def test_period_probe_exercises_reading_grouping_and_weighing(monkeypatch):
+@pytest.mark.parametrize(
+    ("race_weight", "routine_weight", "valid"),
+    [("major", "minor", True), ("minor", "glimpse", True), ("none", "minor", False)],
+)
+def test_period_probe_exercises_reading_grouping_and_weighing(
+    monkeypatch, race_weight, routine_weight, valid
+):
     from immich_memories.conformance.editorial_cases import editorial_cases
 
     def reply(request):
@@ -62,7 +69,7 @@ def test_period_probe_exercises_reading_grouping_and_weighing(monkeypatch):
         elif "Group the day episodes" in prompt:
             body = {
                 "thesis": "A cycling race and a quiet afternoon.",
-                "about": ["S0001"],
+                "about": ["S0001"] if race_weight == "major" else [],
                 "stories": [
                     {"title": "Cycling race", "episodes": ["S0001"], "purpose": "Race day"},
                     {"title": "Quiet afternoon", "episodes": ["S0002"], "purpose": "At home"},
@@ -71,8 +78,8 @@ def test_period_probe_exercises_reading_grouping_and_weighing(monkeypatch):
             }
         else:
             body = {
-                "weights": {"K01": "major", "K02": "minor"},
-                "about": ["K01"],
+                "weights": {"K01": race_weight, "K02": routine_weight},
+                "about": ["K01"] if race_weight == "major" else [],
                 "join": [],
                 "retitle": {},
             }
@@ -90,7 +97,7 @@ def test_period_probe_exercises_reading_grouping_and_weighing(monkeypatch):
     )
     checks = editorial_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
     result = run_case(next(case for case in checks if case.name == "period story"))
-    assert result.valid, result.quality
+    assert result.valid is valid, result.quality
     assert result.calls == 4
 
 

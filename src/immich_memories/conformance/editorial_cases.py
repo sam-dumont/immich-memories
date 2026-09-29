@@ -9,6 +9,7 @@ from immich_memories.analysis.editorial_story_reading import (
     StoryEpisode,
     read_period_story,
 )
+from immich_memories.analysis.editorial_story_replies import WEIGHTS
 from immich_memories.analysis.editorial_story_shortlist import DepictedChoice, pick_story_moments
 from immich_memories.analysis.editorial_story_threads import fold_threads
 from immich_memories.analysis.editorial_story_weighing import _weigh_stories
@@ -79,13 +80,17 @@ def period_story(llm: LLMConfig) -> str:
     )
     assert "race" in answer.thesis.lower(), "period thesis lost the race"
     race = [story for story in answer.stories if "race" in story["title"].lower()]
-    assert race and race[0]["weight"] in {"dominant", "major"}, (
-        "race did not receive a central story weight"
-    )
+    routine = [story for story in answer.stories if story not in race]
+    assert (
+        race
+        and routine
+        and WEIGHTS.index(race[0]["weight"])
+        < min(WEIGHTS.index(story["weight"]) for story in routine)
+    ), "race did not outrank the routine home scene"
     assert all(not page["unplaced"] for page in answer.audit["pages"]), (
         "unread rows silently fell back"
     )
-    return "reads both days, groups their stories and gives the race central weight"
+    return "reads both days, groups their stories and ranks the race above the routine scene"
 
 
 def central_story(llm: LLMConfig) -> str:

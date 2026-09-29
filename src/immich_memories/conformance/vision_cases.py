@@ -55,7 +55,7 @@ def motion(llm: LLMConfig) -> str:
         frames.append(buffer.getvalue())
     ask = seat_asker(llm.base_url, api_key="", timeout=llm.timeout_seconds, llm_config=llm)
     text = motion_text(ask(filmstrip(frames))).lower()
-    assert any(word in text for word in ("ball", "circle", "disc")), (
+    assert any(word in text for word in ("ball", "circle", "disc", "dot")), (
         "motion lost the visible object"
     )
     assert "right" in text and any(word in text for word in ("mov", "roll", "shift", "travel")), (

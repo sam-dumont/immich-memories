@@ -26,7 +26,7 @@ def title(llm: LLMConfig) -> str:
             "2030-06-01",
             "2030-06-30",
             30,
-            clip_descriptions=["A chess tournament, with chessboards, clocks and a trophy."],
+            facts=MemoryTitleFacts(occasion_name="Chess tournament"),
             llm_config=llm,
         )
     )
