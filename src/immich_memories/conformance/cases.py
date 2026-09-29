@@ -21,11 +21,11 @@ from immich_memories.titles.llm_titles import MemoryTitleFacts, generate_title_w
 def title(llm: LLMConfig) -> str:
     answer = asyncio.run(
         generate_title_with_llm(
-            "monthly_highlights",
+            "special_day",
             "en",
             "2030-06-01",
-            "2030-06-30",
-            30,
+            "2030-06-01",
+            1,
             facts=MemoryTitleFacts(occasion_name="Chess tournament"),
             llm_config=llm,
         )

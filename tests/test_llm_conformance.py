@@ -35,6 +35,7 @@ def test_title_probe_measures_the_real_feature_transport_and_parse(monkeypatch):
 
         prompt = json.loads(request.content)["messages"][0]["content"]
         assert "chess tournament" in prompt.lower(), "fixture fact never reached the provider"
+        assert "Memory type: special_day" in prompt, "calendar titles may legitimately use a date"
         return httpx.Response(
             200,
             json={
