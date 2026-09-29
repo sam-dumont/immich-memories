@@ -283,8 +283,10 @@ Configuring it changes no film on its own. To make one film from both libraries:
    and each picture is downloaded through the account that owns it. If that account cannot read
    it, the run stops and names the account rather than make a film with half a household missing.
 
-Today only `generate` on the CLI takes `--accounts`. The web UI, automation, albums and trips read
-the primary account, and the film is uploaded to the primary only.
+`generate --accounts` on the CLI and `automation.accounts` in config both read the household
+through; albums and trips still read the primary account only, and every film is uploaded to
+the primary only. [A second account, start to finish](multi-account.md) walks the whole setup,
+including binding a person and saving a group.
 Name rules, secrets and env variables: [extra accounts](../reference/config-reference.md#extra-accounts).
 
 ## Environment variable substitution

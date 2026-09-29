@@ -87,6 +87,7 @@ const sidebars: SidebarsConfig = {
             {type: 'doc', id: 'run/environment-variables', label: 'Environment variables'},
             {type: 'doc', id: 'run/authentication', label: 'Authentication'},
             {type: 'doc', id: 'run/database', label: 'Database and the store'},
+            {type: 'doc', id: 'run/multi-account', label: 'A second Immich account'},
           ],
         },
         {

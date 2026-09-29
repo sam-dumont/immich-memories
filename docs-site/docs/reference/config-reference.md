@@ -128,7 +128,7 @@ selects, and every selected account has to answer `/users/me` with its key befor
 `generate --accounts primary,partner` reads the named accounts into one film on the CLI, and
 [`automation.accounts`](#automation) does the same for the daily scan. `config test` and
 `preflight` check each one, one line per account, with no key printed:
-[A second Immich account](../run/config-file.md#a-second-immich-account).
+[A second Immich account](../run/multi-account.md).
 
 The key is a secret like the primary one: redacted from logs and issue reports, and sealed with
 `IMMICH_MEMORIES_SECRET_KEY` when saved to the database (the whole `immich.accounts` map is one
@@ -923,10 +923,10 @@ automation:
 ```
 
 `accounts` and saved groups are the automation side of
-[a second Immich account](../run/config-file.md#a-second-immich-account): naming an extra account
-here makes the daily scan read it the same way a manual `--accounts` run does, one `/users/me`
-check per account, and a read that fails on any of them fails that day's discovery instead of
-proposing a film from half a household.
+[a second Immich account](../run/multi-account.md): naming an extra account here makes the daily
+scan read it the same way a manual `--accounts` run does, one `/users/me` check per account, and a
+read that fails on any of them fails that day's discovery instead of proposing a film from half a
+household.
 
 ## Authentication
 
