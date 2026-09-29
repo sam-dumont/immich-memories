@@ -167,6 +167,31 @@ def test_a_live_photo_that_moves_with_its_subject_in_frame_must_play():
     assert _broken(cut) == [("live_motion_plays", "live", "motion resolution")]
 
 
+def test_a_live_photo_whose_playable_clip_was_never_measured_is_reported():
+    """A skip is not a verdict: a still that could have played, with no residual, says so."""
+    cut = FinishedCut(
+        carriers=[_shot("live", kind="live-still", residual=None, video_ids=["clip"])],
+        verdict_of=_shared,
+    )
+
+    (violation,) = cut_violations(cut)
+    assert (violation.invariant, violation.subject) == ("live_motion_plays", "live")
+    assert "never measured" in violation.detail
+
+
+def test_a_live_photo_whose_clip_may_not_play_is_not_owed_a_measurement():
+    cut = FinishedCut(
+        carriers=[
+            _shot(
+                "live", kind="live-still", residual=None, video_ids=["clip"], motion_candidate=False
+            )
+        ],
+        verdict_of=_shared,
+    )
+
+    assert cut_violations(cut) == []
+
+
 def test_a_live_photo_whose_clip_misses_its_subject_stays_a_still():
     cut = FinishedCut(
         carriers=[_shot("live", kind="still", residual=None)],

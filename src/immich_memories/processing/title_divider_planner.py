@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
 from immich_memories.processing.assembly_config import AssemblyClip
+from immich_memories.processing.location_card_route import RouteStop, location_card_moves
 from immich_memories.processing.map_move_timing import map_move_timing_of
 
 if TYPE_CHECKING:
@@ -112,42 +113,9 @@ def detect_year_changes(clips: list[AssemblyClip]) -> list[tuple[int, int]]:
     return year_changes
 
 
-_LOCATION_CHANGE_KM = 30.0
-
-
-def location_card_stops(
-    clips: list[AssemblyClip], limit: int | None
-) -> list[tuple[AssemblyClip, tuple[float, float] | None]]:
-    """Each clip with the place its location card flies from, or None when it gets no card.
-
-    A clip gets a card when it is named and more than 30 km from the clip before it,
-    up to `limit` cards. The card flies from the place the previous card named, or
-    from the trip's first located clip for the first card.
-    """
-    from immich_memories.analysis.trip_detection import haversine_km
-
-    plan: list[tuple[AssemblyClip, tuple[float, float] | None]] = []
-    previous: tuple[float, float] | None = None
-    last_named: tuple[float, float] | None = None
-    inserted = 0
-    for clip in clips:
-        came_from = None
-        if clip.latitude is not None and clip.longitude is not None:
-            here = (clip.latitude, clip.longitude)
-            if (
-                previous is not None
-                and last_named is not None
-                and haversine_km(*previous, *here) > _LOCATION_CHANGE_KM
-                and clip.location_name
-                and (limit is None or inserted < limit)
-            ):
-                came_from = last_named
-                last_named = here
-                inserted += 1
-            previous = here
-            last_named = last_named or here
-        plan.append((clip, came_from))
-    return plan
+def clip_route_stop(clip: AssemblyClip) -> RouteStop:
+    """A clip as the location-card rule reads it."""
+    return RouteStop(clip.latitude, clip.longitude, clip.location_name, parse_clip_date(clip))
 
 
 class TitleDividerPlanner:
@@ -376,10 +344,11 @@ class TitleDividerPlanner:
         clips: list[AssemblyClip],
         progress_callback: Callable[[float, str], None] | None,
     ) -> list[AssemblyClip]:
-        """Insert location cards between clips when location changes (>30km).
+        """Insert a location card where the trip moves on (see `location_card_route`).
 
-        With map tiles allowed each card flies from the place the previous card named
-        (the trip's first place for the first card) to its own.
+        A hop of more than 30 km, or a new town at most once a day, away from home and
+        not the town the last card named. With map tiles allowed each card flies from
+        the place the previous card named to its own.
         """
         if progress_callback:
             progress_callback(0.05, "Generating location cards...")
@@ -387,26 +356,33 @@ class TitleDividerPlanner:
         result: list[AssemblyClip] = []
         location_card_cache: dict[str, Path] = {}
         map_moves = getattr(self._title_settings, "map_tiles", False) is True
-        limit = _divider_limit(self._title_settings)
-        for clip, came_from in location_card_stops(clips, limit):
-            # A clip is only given a place to fly from when it is named and located.
-            if came_from is not None and clip.latitude is not None and clip.longitude is not None:
+        moves = location_card_moves(
+            [clip_route_stop(clip) for clip in clips],
+            _divider_limit(self._title_settings),
+            self._home(),
+        )
+        for clip, move in zip(clips, moves, strict=True):
+            if move is not None and clip.latitude is not None and clip.longitude is not None:
                 name = clip.location_name or ""
                 if map_moves:
                     card = self.make_location_move_clip(
-                        name, location_card_cache, came_from, (clip.latitude, clip.longitude)
+                        name, location_card_cache, move.came_from, (clip.latitude, clip.longitude)
                     )
                 else:
                     card = self.make_location_card_clip(
-                        name,
-                        location_card_cache,
-                        lat=clip.latitude,
-                        lon=clip.longitude,
+                        name, location_card_cache, lat=clip.latitude, lon=clip.longitude
                     )
                 result.append(card)
-                logger.info("Location card: %s (%.1fs)", name, card.duration)
+                logger.info("Location card: %s (%s, %.1fs)", name, move.reason, card.duration)
             result.append(clip)
         return result
+
+    def _home(self) -> tuple[float, float] | None:
+        lat = getattr(self._title_settings, "home_lat", None)
+        lon = getattr(self._title_settings, "home_lon", None)
+        if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
+            return float(lat), float(lon)
+        return None
 
     def select_divider_strategy(
         self,

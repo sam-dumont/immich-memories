@@ -407,6 +407,9 @@ src/immich_memories/
 │   ├── album_service.py        # AlbumService: album operations
 │   ├── sync_client.py          # Sync wrapper for async client
 │   ├── accounts.py             # open_accounts: one /users/me-verified client per selected account (#1500)
+│   ├── access_clients.py       # AccessBoundClient: the run's client; reads each routed picture (details,
+│   │                           # preview, original, motion, playback) through its owner's account, kept
+│   │                           # open until the run ends; uploads stay primary. AccountReadFailed names it
 │   ├── compatibility.py        # Immich API-version compatibility policy (v2/v3 resolution)
 │   └── models.py               # API data models (Asset, Person, etc.)
 │
@@ -494,6 +497,7 @@ src/immich_memories/
 │   ├── selection_source*.py    # The canonical source model: admission, provenance, groups, invariants
 │   ├── household_source.py     # A run naming its accounts (`EditorialRunContext.accounts`) reads the
 │   │                           # window per account, keeps chosen owners only, tags `Asset.access_accounts`
+│   │                           # and routes the run's AccessBoundClient
 │   ├── text_episode_reader.py  # Reading event evidence (paged, banked); the same reading names
 │   │                           # each episode's notable moments, which the polish layer seats and protects
 │   ├── text_episode_prompt.py  # What that reading is asked, and what it may take a name from
@@ -574,6 +578,7 @@ src/immich_memories/
 │   ├── timeline_budget.py      # plan_timeline(): pure planning of content + title-screen timeline
 │   ├── film_timeline.py        # measure_film_timeline(): content + regular title seconds + map extra on top
 │   ├── map_move_timing.py      # MapMoveTiming: 6-8 s map moves by distance, eased flight + 2 s still hold
+│   ├── location_card_route.py  # location_card_moves(): when a trip card appears and where it flies from
 │   ├── title_inserter.py       # TitleInserter: title screen concatenation
 │   ├── title_background_renderer.py # TitleBackgroundRenderer: pre-renders the clip a title reveals into
 │   ├── title_divider_planner.py # TitleDividerPlanner: month/year/location divider cards

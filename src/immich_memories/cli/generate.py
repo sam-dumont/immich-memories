@@ -135,8 +135,8 @@ def register_generate_commands(main: click.Group) -> None:
         subject: str | None,
         ask: str | None,
         ask_trace: Path | None,
-        add_date: bool,
-        add_place: bool,
+        add_date: bool | None,
+        add_place: bool | None,
         keep_intermediates: bool,
         privacy_mode: bool,
         title_override: str | None,
@@ -182,6 +182,12 @@ def register_generate_commands(main: click.Group) -> None:
         from immich_memories.cli._live_display import LiveDisplay, ProgressDisplay, QuietDisplay
 
         config = ctx.obj["config"]
+        from immich_memories.generate_captions import resolve_caption_overlays
+
+        # One rule for every surface: a flag decides for this film, else defaults.add_*.
+        add_date, add_place = resolve_caption_overlays(
+            config, add_date=add_date, add_place=add_place
+        )
         output_selection = resolve_output_selection(
             config_codec=config.output.codec,
             config_container=config.output.format,

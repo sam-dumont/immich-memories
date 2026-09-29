@@ -17,7 +17,10 @@ of your camera roll:
   binds the first month changes win, so a thin January can keep its card while a busy November loses one.
 - **Trip map**: a satellite fly-over from home to the destination, in place of the intro. Off by default, see
   [The map fly-over](#the-map-fly-over).
-- **Location cards**: between trip segments, a flight from the last place to the new one, then its name. See
+- **Location cards**: the place name where a trip moves on. A hop of more than 30 km always gets one. A
+  walking or cycling trip moves village to village well under that, so a change of town gets one too: at
+  most one a day, never the same town twice in a row, never a town within 50 km of home. With map tiles on,
+  each card flies from the town the last card named to the new one, then holds on its name. See
   [Map moves](#map-moves).
 - **Ending**: a fade to white, no text. Every film keeps it; a short film squeezes it to 2 s rather than dropping it.
 
@@ -166,7 +169,9 @@ location cards and map pins. What that sends is on [Privacy](../run/privacy.md).
 
 ## Date and place captions
 
-`generate --add-date --add-place` burns small translucent captions on the clips: 48 px on a 1080p frame at
+Every film gets small translucent date and place captions unless you turn them off: `defaults.add_date`
+and `defaults.add_place` are on, and `--no-add-date` or `--no-add-place` drops one for a single film (the
+web render panel has the same two boxes). They are 48 px on a 1080p frame at
 85 % opacity, each one appearing when it changes. Captions stay clear of dissolves so two never overlap, and a
 caption in any alphabet draws with the title fonts above, HDR included.
 
@@ -199,8 +204,9 @@ run carries on.
 ### Map moves
 
 Every map in a trip film is one move: an eased flight, then at least 2 seconds sitting still on the destination
-with its name up. That goes for the intro and for each location card. A card flies from the place the previous
-card named (the trip's first place for the first card) to its own town.
+with its name up. That goes for the intro and for each location card, the town-change cards of a walk
+included. A card flies from the place the previous card named (the trip's first place for the first card) to
+its own town, so a hike reads as village to village on the map.
 
 A move lasts 6 seconds for a short hop and 8 for a long flight, scaled on the log of the distance: 30 km gets
 6 s, 300 km about 7 s, 3000 km and more 8 s. The 2 s hold always stays; the flight gets the rest.

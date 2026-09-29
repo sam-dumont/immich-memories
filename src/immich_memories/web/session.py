@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request
 
 from immich_memories.config import get_config
 from immich_memories.web.auth import is_auth_enabled
-from immich_memories.web.schemas import SessionView
+from immich_memories.web.schemas import CaptionDefaults, SessionView
 
 router = APIRouter(prefix="/api/v1", tags=["session"])
 
@@ -27,4 +27,7 @@ def session_view(request: Request) -> SessionView:
         auto_launch=enabled and auth.provider == "oidc" and auth.auto_launch,
         demo_mode_offered=config.server.enable_demo_mode,
         music_preview_offered=config.musicgen.enabled or config.ace_step.enabled,
+        captions=CaptionDefaults(
+            add_date=config.defaults.add_date, add_place=config.defaults.add_place
+        ),
     )

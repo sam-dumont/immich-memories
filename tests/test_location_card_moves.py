@@ -77,3 +77,62 @@ def test_without_map_tiles_a_card_stays_the_regular_still() -> None:
 
     assert cards.moves == []
     assert [clip.duration for clip in timeline if clip.is_title_screen] == [2.0, 2.0]
+
+
+# Invented villages 12-18 km apart on a walking route, far from home.
+_VILLAGE_A, _VILLAGE_B, _VILLAGE_C = (50.90, 14.00), (50.95, 14.20), (51.02, 14.40)
+
+
+def _walk() -> list[AssemblyClip]:
+    route = [
+        ("Village A", _VILLAGE_A, 4),
+        ("Village A", _VILLAGE_A, 4),
+        ("Village B", _VILLAGE_B, 5),
+        ("Village C", _VILLAGE_C, 6),
+    ]
+    return [
+        AssemblyClip(
+            path=Path(f"/{name}{day}.mp4"),
+            duration=15.0,
+            asset_id=f"{name}{day}{i}",
+            date=f"2024-07-{day:02d}",
+            latitude=point[0],
+            longitude=point[1],
+            location_name=name,
+        )
+        for i, (name, point, day) in enumerate(route)
+    ]
+
+
+def test_a_walk_flies_each_new_town_from_the_last_named_one_and_the_budget_counts_them() -> None:
+    from immich_memories.processing.film_timeline import measure_film_timeline
+    from immich_memories.processing.map_move_timing import MapMoveTiming
+    from immich_memories.processing.timeline_budget import (
+        finalize_selected_timeline,
+        plan_timeline,
+    )
+
+    titles = TitleScreenSettings(memory_type="trip", map_tiles=True, home_lat=48.0, home_lon=11.0)
+    plan = finalize_selected_timeline(
+        plan_timeline([], titles, 120.0, "trip"),
+        _walk(),
+        selected_duration=60.0,
+        title_settings=titles,
+        memory_type="trip",
+    )
+    titles.max_dividers = plan.max_dividers
+    cards = _Cards()
+
+    timeline = TitleDividerPlanner(cards, titles).build_clips_with_location_dividers(_walk(), None)
+
+    assert [move[:3] for move in cards.moves] == [
+        ("Village B", _VILLAGE_A, _VILLAGE_B),
+        ("Village C", _VILLAGE_B, _VILLAGE_C),
+    ]
+    assert plan.max_dividers == 2
+    assert plan.title_budget == titles.title_duration + titles.ending_duration + 2 * 2.0
+    frames = MapMoveTiming().schedule(cards.moves[0][3], fps=30.0)
+    assert frames[-60:] == [1.0] * 60
+    assert measure_film_timeline(timeline, titles).map_extra_seconds == sum(
+        seconds - 2.0 for *_, seconds in cards.moves
+    )

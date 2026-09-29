@@ -216,33 +216,38 @@ def _live_motion_left_still(cut: FinishedCut) -> list[Violation]:
         return []
     out = []
     for c in cut.carriers:
-        members = [c["asset_id"], *(c.get("members") or ())]
-        clips = list(c.get("video_ids") or ()) or [
-            cut.live_clip_of[m] for m in dict.fromkeys(members) if m in cut.live_clip_of
-        ]
-        # A clip that may not play (a join shorter than its still, or one missing its subject)
-        # is a still by the motion rule itself.
-        if (
-            c.get("kind") in ("live-motion", "video")
-            or not clips
-            or c.get("motion_candidate") is False
-        ):
-            continue
-        measured = [cut.residuals[m] for m in members if m in cut.residuals]
-        residual = (
-            c.get("residual") if c.get("residual") is not None else max(measured, default=None)
-        )
-        if residual is None or residual < RESIDUAL_MIN or any(map(cut.clip_misses_subject, clips)):
-            continue
-        out.append(
-            Violation(
-                "live_motion_plays",
-                c["asset_id"],
-                f"residual {residual:.2f} with its subject in frame, shipped as {c.get('kind')}",
-                "motion resolution",
-            )
-        )
+        detail = _still_that_owed_motion(cut, c)
+        if detail is not None:
+            out.append(Violation("live_motion_plays", c["asset_id"], detail, "motion resolution"))
     return out
+
+
+def _still_that_owed_motion(cut: FinishedCut, c: Mapping[str, Any]) -> str | None:
+    """Why this carrier should have played its motion, or None when shipping still was right."""
+    members = [c["asset_id"], *(c.get("members") or ())]
+    clips = list(c.get("video_ids") or ()) or [
+        cut.live_clip_of[m] for m in dict.fromkeys(members) if m in cut.live_clip_of
+    ]
+    # A clip that may not play (a join shorter than its still, or one missing its subject)
+    # is a still by the motion rule itself.
+    if (
+        c.get("kind") in ("live-motion", "video")
+        or not clips
+        or c.get("motion_candidate") is False
+        or any(map(cut.clip_misses_subject, clips))
+    ):
+        return None
+    measured = [cut.residuals[m] for m in members if m in cut.residuals]
+    residual = c.get("residual") if c.get("residual") is not None else max(measured, default=None)
+    if residual is not None:
+        if residual < RESIDUAL_MIN:
+            return None
+        return f"residual {residual:.2f} with its subject in frame, shipped as {c.get('kind')}"
+    # A carrier holding its own playable clip was owed a measurement. Without one the still is
+    # a skip, not a verdict, and a skip must not read as "still was right" (#1547).
+    if c.get("video_ids"):
+        return f"its clip may play but was never measured, shipped as {c.get('kind')}"
+    return None
 
 
 def _refused_pictures_kept(cut: FinishedCut) -> list[Violation]:

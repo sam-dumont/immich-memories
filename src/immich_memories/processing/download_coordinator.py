@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Protocol, TypeGuard
 
 import httpx
 
+from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.compatibility import ApiVersionPolicy
 from immich_memories.api.immich import ImmichAPIError, SyncImmichClient
 from immich_memories.security import sanitize_error_message
@@ -88,8 +89,11 @@ def build_sync_client_factory(
     """Capture connection settings for isolated worker clients.
 
     The factory deliberately does no I/O. In particular, AUTO stays AUTO so
-    static-photo-only and local-file-only runs do not probe the server.
+    static-photo-only and local-file-only runs do not probe the server. A run's
+    access-bound client seeds workers that read each picture through its account.
     """
+    if isinstance(source_client, AccessBoundClient):
+        return source_client.sibling
     base_url = source_client.base_url
     api_key = source_client.api_key
     timeout = source_client.timeout

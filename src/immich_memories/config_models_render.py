@@ -69,6 +69,20 @@ class DefaultsConfig(BaseModel):
             "'family' (the default) or 'shareable' (anyone: only pictures nothing held)"
         ),
     )
+    add_date: bool = Field(
+        default=True,
+        description=(
+            "Caption each clip with its date, on every surface (web, CLI, automation); "
+            "--no-add-date or the render panel turns it off for one film"
+        ),
+    )
+    add_place: bool = Field(
+        default=True,
+        description=(
+            "Caption each clip with its place, on every surface; --no-add-place or the render "
+            "panel turns it off for one film. Privacy mode never shows a place"
+        ),
+    )
 
     @field_validator("scale_mode", mode="before")
     @classmethod

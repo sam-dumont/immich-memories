@@ -43,6 +43,10 @@ class DetectedTrip:
     location_kind: str = ""
 
 
+# Pictures closer to home than this are home, not a trip; a location card never names them.
+AWAY_FROM_HOME_KM = 50.0
+
+
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Compute great-circle distance between two GPS points in kilometers."""
     r = 6371.0  # Earth radius in km
@@ -102,7 +106,7 @@ def detect_trips(
     assets: list[Asset],
     home_lat: float,
     home_lon: float,
-    min_distance_km: float = 50,
+    min_distance_km: float = AWAY_FROM_HOME_KM,
     min_duration_days: int = 2,
     max_gap_days: int = 2,
     *,

@@ -89,9 +89,7 @@ def main(
     from immich_memories.logging_config import configure_logging
 
     level = "DEBUG" if verbose else (log_level.upper() if log_level else None)
-    configure_logging(
-        level=level, stream=sys.stderr if ctx.invoked_subcommand == "report" else None
-    )
+    configure_logging(level=level)
     ctx.obj["log_level"] = level
 
     # Initialize config directory
