@@ -21,6 +21,9 @@ spec:
         app.kubernetes.io/name: immich-memories-captioner
         app.kubernetes.io/component: captioner
     spec:
+      # Off everywhere the app runs, for consistency with the pods that would
+      # otherwise crash on it (#1608).
+      enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000

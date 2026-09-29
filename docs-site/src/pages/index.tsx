@@ -315,7 +315,7 @@ function ValuesSection() {
               </svg>
             </div>
             <strong>One film a day, if you want it</strong>
-            <p>Turn on the built-in timer and it picks the one memory worth making today (a trip that just ended, last month, a birthday), with variety rules so it does not repeat itself.</p>
+            <p>Once a day, <code>immich-memories auto run</code> picks the one memory worth making (a trip that just ended, last month, a birthday), with variety rules so it does not repeat itself. Docker runs it daily on a built-in timer; bare metal installs a system job.</p>
           </div>
         </div>
       </div>

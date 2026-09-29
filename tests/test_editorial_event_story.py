@@ -75,7 +75,7 @@ def _read(days, *, gps=True, printed=None, starred=(), family=()):
                         file_created_at=taken,
                         is_favorite=day in starred and n < 3,
                         is_video=False,
-                        exif_info=SimpleNamespace(city=city),
+                        exif_info=SimpleNamespace(city=city, place_name=None),
                         people=[],
                     )
                     audience[asset_id] = SimpleNamespace(heads=[("activity", activity)])

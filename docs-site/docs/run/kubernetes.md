@@ -21,7 +21,8 @@ deploy/kubernetes/
 ├── overlays/gpu/            the app on an NVIDIA node
 ├── overlays/inference/      the inference service alone (+ -cuda, + -lan for outside callers)
 ├── overlays/captioner/      the SmolVLM caption service (+ -cuda)
-└── overlays/postgres/       the store on your PostgreSQL instead of SQLite
+├── overlays/postgres/       the store on your PostgreSQL instead of SQLite
+└── overlays/render-sidecar/ the render worker in the app's own pod, on a GPU node
 ```
 
 ## Prerequisites
@@ -108,6 +109,20 @@ read-only. Four writable paths:
 
 A deployment that predates the models claim has to add it before the next apply, or the pod stays
 `Pending` waiting for a volume that does not exist.
+
+Every pod spec here sets `enableServiceLinks: false`. Kubernetes injects one env var per Service
+in the namespace by default (`<NAME>_SERVICE_HOST`, `<NAME>_PORT`, ...), and this app's own
+`IMMICH_MEMORIES_*` prefix collides with its own Service names. A Service named
+`immich-memories-render-worker` injects `IMMICH_MEMORIES_RENDER_WORKER_PORT=tcp://10.x.x.x:8093`,
+which the worker's settings then read as its own `port` field and crash on:
+
+```
+port: Input should be a valid integer, unable to parse string as an integer [input_value='tcp://…:8093']
+```
+
+The main app carries the same risk from a Service named `immich-memories` (`IMMICH_MEMORIES_PORT`,
+`IMMICH_MEMORIES_SERVICE_HOST`, ...). If you write your own manifest instead of using these, copy
+`enableServiceLinks: false` onto every pod spec too.
 
 There is no ConfigMap. `IMMICH_URL`, `IMMICH_API_KEY` and any other secret setting come from the
 Secret (`envFrom`); everything else is an `IMMICH_MEMORIES_<SECTION>__<KEY>` env var on the
@@ -197,6 +212,37 @@ nothing else: the editor's models are separate services, each with its own CUDA 
 cannot start the title kernels, titles still render, on the CPU, and the log says why in one warning
 line.
 
+## Render worker as a sidecar
+
+The [render worker](../better/gpu-render.md) moves the render to an NVIDIA card. Its request carries
+your Immich key, so the app only talks plain HTTP to it over loopback; anywhere else it wants
+HTTPS or `render.allow_insecure_http: true`. `overlays/render-sidecar` sidesteps both: the worker
+runs as a second container in the app's own pod, and the app reaches it at `http://127.0.0.1:8093`.
+
+```bash
+cd deploy/kubernetes
+cp base/secret.yaml.example base/secret.yaml
+cp overlays/render-sidecar/render-worker-secret.yaml.example overlays/render-sidecar/render-worker-secret.yaml
+vim base/secret.yaml overlays/render-sidecar/render-worker-secret.yaml   # openssl rand -hex 32 for the token
+kubectl apply -k overlays/render-sidecar
+```
+
+Three things to know:
+
+- **The whole pod goes to the GPU node**, even though the app container needs no GPU. The overlay
+  sets `runtimeClassName: nvidia` and a `nvidia.com/gpu.present: "true"` node selector: change the
+  selector to the label your GPU node carries.
+- **Keep the two image tags equal.** The overlay pins the worker's tag in its own
+  `kustomization.yaml` (the base pin does not reach a container a patch adds), and the app refuses
+  a worker on another version before it sends any footage.
+- **One Secret, one token, both sides.** `immich-memories-render-worker` holds it; the worker reads
+  it as `IMMICH_MEMORIES_RENDER_WORKER_TOKEN`, the app as `IMMICH_MEMORIES_RENDER__WORKER_TOKEN`
+  (`render.worker_token`). No `config.yaml` change.
+
+The worker binds loopback only, so its probes run inside the container (`exec`) instead of
+`httpGet` or `tcpSocket`, which the kubelet sends to the pod IP. Keep them that way if you edit the
+overlay, or the pod never goes Ready.
+
 ## The two model services
 
 Both apply on their own, with no Secret and no `base/`. On a cluster where `base/` has not run
@@ -212,11 +258,12 @@ Point the app at them with `IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL=http://inf
 underscores between levels); the base NetworkPolicy already allows egress on 8092. What each overlay patches, and what a card is worth per picture, are on
 [the inference service](../better/inference.md) and [Caption server](../better/captions.md).
 
-Three add-ons have no overlay here: the reader (commented env vars on the Deployment,
-[Add a reader](../better/reader.md)), the render worker (its own `kubernetes.yaml`,
-[Render on a GPU box](../better/gpu-render.md)) and generated music (a server of your own,
-[Generated music](../better/music.md)). Each is a URL on the Deployment; open its port in the
-NetworkPolicy if it is not 80, 443, 8092 or 11434.
+Two add-ons have no overlay here: the reader (commented env vars on the Deployment,
+[Add a reader](../better/reader.md)) and generated music (a server of your own,
+[Generated music](../better/music.md)). The render worker has two: the sidecar above, or its own
+Deployment from `services/render-worker/kubernetes.yaml` ([Render on a GPU box](../better/gpu-render.md)).
+Each outside service is a URL on the Deployment; open its port in the NetworkPolicy if it is not
+80, 443, 8092 or 11434.
 
 ## Batch jobs
 
