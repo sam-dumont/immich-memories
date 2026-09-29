@@ -1,0 +1,276 @@
+"""English word knowledge for free-text requests: the pinned WordNet 3.0 corpus.
+
+The corpus is the zip `immich-memories models fetch` writes (`free_text.wordnet`), checked
+against its pinned digest on load. Nothing here downloads: a missing corpus is an error that
+names the command to run.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import warnings
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Protocol
+
+import nltk
+from nltk.corpus.reader.wordnet import ADJ, NOUN, VERB, WordNetCorpusReader
+from nltk.data import ZipFilePathPointer
+
+# The synsets whose kinds are people: a person, people as a whole, a group of people.
+_HUMAN = frozenset({"person.n.01", "people.n.01", "social_group.n.01"})
+# A young person, and someone's child: WordNet files a baby under offspring, not juvenile.
+_YOUNG = frozenset({"juvenile.n.01", "child.n.02"})
+_TIME_PERIOD = "time_period.n.01"
+
+# nltk_data's `packages/corpora/wordnet.zip`, WordNet 3.0 as nltk distributes it.
+WORDNET_SHA256 = "cbda5ea6eef7f36a97a43d4a75f85e07fccbb4f23657d27b4ccbc93e2646ab59"
+
+
+# How far up a thing's kinds its inherited parts are looked for: a house's walls are a building's,
+# a structure's are too general to film.
+_INHERITED_LEVELS = 3
+# How far down its kinds go: a car's kinds and their kinds, not every model of every car.
+_KIND_DEPTH = 2
+
+
+@dataclass(frozen=True)
+class Relative:
+    """A word for a kind or a part of a noun, in the noun's first sense."""
+
+    word: str
+    how: str  # "kind" or "part"
+    of: str
+    # An inherited part belongs to what the noun is a kind of: a wheel is any wheeled vehicle's.
+    shared_with: str | None = None
+
+    def label(self) -> str:
+        """How the trace and the model's options name the relation."""
+        if self.shared_with:
+            return f"part of any {self.shared_with} (a {self.of} is one)"
+        return f"{self.how} of {self.of}"
+
+
+class WordNetUnavailable(RuntimeError):
+    """The corpus is missing, or is not the pinned one."""
+
+
+class Lexicon(Protocol):
+    """What the free-text rules ask of a dictionary."""
+
+    def noun_file(self, word: str) -> str | None:
+        """The lexicographer file of the word's first noun sense ("noun.animal"), or None."""
+        ...
+
+    def is_common_word(self, word: str) -> bool:
+        """Whether the word is also an ordinary English word, not only a name."""
+        ...
+
+    def noun_base(self, word: str) -> str | None:
+        """The noun a word is a form of ("children": "child"), or None when it is no noun."""
+        ...
+
+    def is_human(self, word: str) -> bool:
+        """Whether the word's first noun sense is a kind of person, people or social group."""
+        ...
+
+    def is_young(self, word: str) -> bool:
+        """Whether the word's first noun sense is a young person or someone's child."""
+        ...
+
+    def is_time_period(self, word: str) -> bool:
+        """Whether the word's first noun sense is a period of time ("years", "summers")."""
+        ...
+
+    def names_role(self, word: str, role: str) -> bool:
+        """Whether the word names a people-file role: the role itself or a kind of it."""
+        ...
+
+    def verb_base(self, word: str) -> str | None:
+        """The verb a word is a form of ("hiking": "hike"), or None when it is no verb."""
+        ...
+
+    def relatives(self, word: str) -> tuple[Relative, ...]:
+        """The kinds and parts of the word's first noun sense, each word in its own first sense.
+
+        Its own kinds (two levels down), its own parts and their kinds, and the parts it
+        inherits from what it is a kind of (labelled with that). A word whose everyday meaning
+        is something else is left out: WordNet lists "bus" as a kind of car in an old sense.
+        """
+        ...
+
+    def is_adjective(self, word: str) -> bool:
+        """Whether WordNet holds the word as an adjective ("black", "closed", "live")."""
+        ...
+
+    def synonyms(self, word: str) -> tuple[str, ...]:
+        """Other one-word names of the word's first noun sense, each its own first sense too."""
+        ...
+
+    def derived_nouns(self, word: str) -> frozenset[str]:
+        """The nouns WordNet forms from the word as a noun or a verb, its own noun included.
+
+        "hiking" gives hiking, hike and hiker; "partying" (no noun) gives party and partier.
+        """
+        ...
+
+
+class _EnglishWordNet(WordNetCorpusReader):
+    # nltk maps every synset onto WordNet 3.0's own ids for the multilingual data, and to do
+    # that it loads a second copy of the corpus through its global search path. English needs
+    # neither the map nor the second copy, and that search path is never where this corpus is.
+    def map_wn(self, version: str = "wordnet") -> None:
+        return None
+
+
+class WordNetLexicon:
+    """Answers from the WordNet corpus."""
+
+    def __init__(self, reader: Any) -> None:
+        self._reader = reader
+
+    def noun_file(self, word: str) -> str | None:
+        folded = word.strip().lower()
+        base = self._reader.morphy(folded, NOUN) or folded
+        senses = self._reader.synsets(base, pos=NOUN)
+        return str(senses[0].lexname()) if senses else None
+
+    def is_common_word(self, word: str) -> bool:
+        # WordNet stores an ordinary word lower-case and a proper name capitalised: "meadow"
+        # is a word, "Paris" a name.
+        folded = "_".join(word.strip().lower().split())
+        return any(
+            lemma.name() == folded
+            for synset in self._reader.synsets(folded)
+            for lemma in synset.lemmas()
+        )
+
+    def noun_base(self, word: str) -> str | None:
+        folded = word.strip().lower()
+        base = self._reader.morphy(folded, NOUN)
+        return str(base) if base else None
+
+    def is_human(self, word: str) -> bool:
+        return bool(self._kinds(word) & _HUMAN)
+
+    def is_young(self, word: str) -> bool:
+        return bool(self._kinds(word) & _YOUNG)
+
+    def is_time_period(self, word: str) -> bool:
+        return _TIME_PERIOD in self._kinds(word)
+
+    def names_role(self, word: str, role: str) -> bool:
+        wanted = " ".join(role.lower().split())
+        base = self.noun_base(word) or word.strip().lower()
+        if base in {wanted, wanted.split()[-1] if wanted else ""}:
+            return True
+        # The first two senses: "wife" is a spouse, whose names include "partner".
+        return any(
+            lemma.name().lower().replace("_", " ") == wanted
+            for sense in self._reader.synsets(base, pos=NOUN)[:2]
+            for synset in (sense, *sense.hypernyms())
+            for lemma in synset.lemmas()
+        )
+
+    def verb_base(self, word: str) -> str | None:
+        base = self._reader.morphy(word.strip().lower(), VERB)
+        return str(base) if base else None
+
+    def relatives(self, word: str) -> tuple[Relative, ...]:
+        head = self.noun_base(word) or word.strip().lower()
+        found: dict[str, Relative] = {}
+        for sense in self._reader.synsets(head, pos=NOUN)[:1]:
+            for other, how, shared in self._related(sense):
+                for name in self._everyday_names(other):
+                    if name != head:
+                        found.setdefault(name, Relative(name, how, head, shared))
+        return tuple(found.values())
+
+    def synonyms(self, word: str) -> tuple[str, ...]:
+        head = self.noun_base(word) or word.strip().lower()
+        return tuple(
+            name
+            for sense in self._reader.synsets(head, pos=NOUN)[:1]
+            for name in self._everyday_names(sense)
+            if name != head
+        )
+
+    def _everyday_names(self, synset: Any) -> list[str]:
+        # One-word names whose first noun sense is this synset; captions have no multi-words.
+        names = [str(lemma.name()).lower() for lemma in synset.lemmas()]
+        return [
+            name
+            for name in names
+            if "_" not in name and self._reader.synsets(name, pos=NOUN)[:1] == [synset]
+        ]
+
+    def _related(self, sense: Any) -> list[tuple[Any, str, str | None]]:
+        related: list[tuple[Any, str, str | None]] = [
+            (kind, "kind", None)
+            for kind in sense.closure(lambda s: s.hyponyms(), depth=_KIND_DEPTH)
+        ]
+        for part in sense.part_meronyms():
+            related += [(part, "part", None)] + [(kind, "part", None) for kind in part.hyponyms()]
+        above = {
+            ancestor
+            for path in sense.hypernym_paths()
+            for ancestor in path[-1 - _INHERITED_LEVELS : -1]
+        }
+        for ancestor in sorted(above, key=lambda s: s.name()):
+            shared = str(ancestor.lemmas()[0].name()).replace("_", " ")
+            related += [(part, "part", shared) for part in ancestor.part_meronyms()]
+        return related
+
+    def is_adjective(self, word: str) -> bool:
+        return bool(self._reader.synsets(word.strip().lower(), pos=ADJ))
+
+    def derived_nouns(self, word: str) -> frozenset[str]:
+        found: set[str] = set()
+        noun = self.noun_base(word)
+        if noun:
+            found.add(noun)
+        for base, pos in ((noun, NOUN), (self.verb_base(word), VERB)):
+            if not base:
+                continue
+            found |= {
+                formed.name().lower()
+                for synset in self._reader.synsets(base, pos=pos)
+                for lemma in synset.lemmas()
+                if lemma.name().lower() == base
+                for formed in lemma.derivationally_related_forms()
+                if formed.synset().pos() == NOUN
+            }
+        return frozenset(found)
+
+    def _kinds(self, word: str) -> set[str]:
+        base = self.noun_base(word) or word.strip().lower()
+        return {
+            str(kind.name())
+            for sense in self._reader.synsets(base, pos=NOUN)[:1]
+            for path in sense.hypernym_paths()
+            for kind in path
+        }
+
+
+def load_wordnet(path: Path, *, sha256: str = WORDNET_SHA256) -> WordNetLexicon:
+    """Open the corpus zip at `path`; refuse a missing file or any other corpus."""
+    corpus = path.expanduser().resolve()
+    if not corpus.is_file():
+        raise WordNetUnavailable(
+            f"the WordNet corpus is missing at {corpus}. Run immich-memories models fetch"
+        )
+    with corpus.open("rb") as handle:
+        digest = hashlib.file_digest(handle, "sha256").hexdigest()
+    if digest != sha256:
+        raise WordNetUnavailable(
+            f"{corpus}: digest {digest[:12]} is not the pinned WordNet corpus. "
+            "Run immich-memories models fetch"
+        )
+    # nltk reads data only from directories on its own path list.
+    if str(corpus.parent) not in nltk.data.path:
+        nltk.data.path.append(str(corpus.parent))
+    with warnings.catch_warnings():
+        # The multilingual data is not loaded, and nltk says so on every open.
+        warnings.simplefilter("ignore", UserWarning)
+        reader = _EnglishWordNet(ZipFilePathPointer(str(corpus), "wordnet/"), None)
+    return WordNetLexicon(reader)

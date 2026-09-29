@@ -1,0 +1,63 @@
+{
+  "request": "races I have been participating in",
+  "shape": "an event the captions name",
+  "answers": {
+    "Split the owner's request": {
+      "who": [
+        "i"
+      ],
+      "when": [],
+      "where": [],
+      "what": [
+        "races"
+      ]
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": []
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "many occasions"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    }
+  },
+  "expect": {
+    "reading": {
+      "who": [
+        "i"
+      ],
+      "what": [
+        "races"
+      ]
+    },
+    "who": {
+      "present": [],
+      "anchors": [
+        "p-owner"
+      ],
+      "company": null
+    },
+    "when": [
+      null,
+      null
+    ],
+    "where": "anywhere",
+    "subject": [
+      "races"
+    ],
+    "funnel": [
+      "library",
+      "kind of picture",
+      "subject"
+    ],
+    "pool": [
+      "race"
+    ],
+    "verdict": "possible",
+    "film": "pool"
+  }
+}

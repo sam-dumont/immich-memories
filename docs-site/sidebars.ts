@@ -9,6 +9,7 @@ const sidebars: SidebarsConfig = {
       items: [
         {type: 'doc', id: 'welcome/introduction', label: 'Introduction'},
         {type: 'doc', id: 'welcome/about', label: 'Why this exists'},
+        {type: 'doc', id: 'welcome/how-this-was-built', label: 'How this was built'},
       ],
     },
     {
@@ -31,6 +32,7 @@ const sidebars: SidebarsConfig = {
         {type: 'doc', id: 'make/automate', label: 'Automate it'},
         {type: 'doc', id: 'make/titles-maps-music', label: 'Titles, maps and music'},
         {type: 'doc', id: 'make/photos-and-live-photos', label: 'Photos, Live Photos and HDR'},
+        {type: 'doc', id: 'make/free-text', label: 'A film from a sentence [Experimental]'},
         {
           type: 'category',
           label: 'The CLI',

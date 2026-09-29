@@ -122,6 +122,16 @@ IMMICH_MEMORIES_IMMICH__API_VERSION="auto"
 `immich-memories config test` is read-only and prints the API version it found:
 [Immich API compatibility](./config-file.md#immich-api-compatibility).
 
+An extra account puts its name in the variable (lowercase in config, any case here):
+
+```bash
+IMMICH_MEMORIES_IMMICH__ACCOUNTS__PARTNER__URL="https://photos.example.com"
+IMMICH_MEMORIES_IMMICH__ACCOUNTS__PARTNER__API_KEY="partner-api-key"
+```
+
+The file can name the account and its URL while the key comes from here; the two merge. See
+[extra accounts](../reference/config-reference.md#extra-accounts).
+
 ## The ones that do not follow the pattern
 
 **Retired keys are dropped.** The scene-detection and segment-length knobs that went with the old

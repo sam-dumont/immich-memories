@@ -151,6 +151,8 @@ immich-memories config show [OPTIONS]
 
 Check the Immich connection and the API version it resolves (read-only).
 
+Every extra account under immich.accounts is checked too, one line each.
+
 ```bash
 immich-memories config test [OPTIONS]
 ```
@@ -270,6 +272,8 @@ immich-memories generate [OPTIONS]
 | `--birthday`, `-b` | text | - | Run the year up to a birthday, plus earlier birthdays (reads Immich's birth date, or override with MM-DD, e.g. 03-15) |
 | `--from-album` | text | - | Generate from an Immich album (name or ID) instead of a date range |
 | `--subject` | text | - | With --from-album: what the album was curated for, in your words. Every picture then stands on that subject, a loaf in a bread album included, and every year the album holds gets a shot. Needs a model reader |
+| `--ask` | text | - | Highly experimental: the film in a sentence, e.g. "our cat along the years". Read by the configured model reader against your prepared library; the translation is printed first. Needs tier: full |
+| `--ask-trace` | file | - | With --ask: keep the translation (the trace, the pool counts, the verdict) in this JSON file, for a watcher such as the web client |
 | `--person`, `-p` | text | - | Person name (repeatable) |
 | `--people-expression` | text | - | Grouped people condition, e.g. ("Person A" OR "Person B") AND "Person C". Use exact library names; read per episode: a person recognised once in an episode counts in all of its pictures. |
 | `--person-match` | choice: `and` \| `or` | and | With several --person values, require everyone recognised somewhere in the same episode (and) or accept any named person (or) |
@@ -563,7 +567,7 @@ immich-memories pictures undo [OPTIONS]
 Run preflight checks to validate all provider connections.
 
 Checks:
-- Immich server connection and API key
+- Immich server connection and API key, and each extra account
 - LLM availability (Ollama or OpenAI-compatible)
 - Title rendering (GPU or PIL fallback)
 - Pinned DINOv2 encoder export (presence and digest)
@@ -624,6 +628,8 @@ immich-memories report [OPTIONS]
 | `--json` | boolean | false | Print the redacted report as JSON |
 | `--bundle` | file | - | Write the full redacted report to a ZIP file |
 | `--include-flagged-captions` | boolean | false | Include captions and reasons of flagged free-text photos; review before sharing |
+| `--wrong` | text | - | Mark a photo of a free-text film as wrong (repeatable); kept on the run |
+| `--missing` | text | - | Say what a free-text film is missing; kept on the run and checked against it |
 
 **Arguments:**
 - `run_id` (text)
