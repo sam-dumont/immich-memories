@@ -40,6 +40,18 @@ def test_an_answer_comes_back_in_the_shape_the_server_was_told_to_keep(
     assert calls[0]["response_format"]["json_schema"]["schema"] == SCHEMA
 
 
+def test_the_prompt_states_the_shape_in_words_for_a_server_told_without_the_schema(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A local endpoint may be asked with no response_format; the words are the only shape then."""
+    calls = _transport(monkeypatch, '{"what": ["cat"]}')
+
+    WireAsker(LLMConfig()).ask("which?", SCHEMA, max_tokens=300)
+
+    assert "which?" in calls[0]["prompt"]
+    assert '"what"' in calls[0]["prompt"]
+
+
 @pytest.mark.parametrize("reply", [LLMIncompleteResponse('{"what": ["ca'), "not json", "[]"])
 def test_a_cut_off_or_unreadable_answer_is_none(
     monkeypatch: pytest.MonkeyPatch, reply: str | Exception

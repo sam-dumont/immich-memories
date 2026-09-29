@@ -23,7 +23,10 @@ from typing import TYPE_CHECKING, Any
 import httpx
 
 from immich_memories.analysis import llm_metrics
-from immich_memories.analysis.llm_providers import resolved_llm_config
+from immich_memories.analysis.llm_providers import (
+    resolved_llm_config,
+    structured_output_enabled,
+)
 from immich_memories.analysis.llm_text_identity import text_judgment_key
 from immich_memories.analysis.llm_wire import (
     ANSWERED_ENDPOINTS,
@@ -219,7 +222,7 @@ async def query_llm(
             max_tokens=max_tokens,
             temperature=temperature,
             require_complete=require_complete,
-            response_format=response_format if llm_config.structured_output else None,
+            response_format=response_format if structured_output_enabled(llm_config) else None,
         )
         if not images
         else None
@@ -386,7 +389,7 @@ def _ollama_shape(
 ) -> None:
     """Ollama takes the JSON shape as `format` and the penalty as `repeat_penalty`."""
     schema = (response_format or {}).get("json_schema", {}).get("schema")
-    if schema and config.structured_output and not images:
+    if schema and structured_output_enabled(config) and not images:
         payload["format"] = schema
     if config.repetition_penalty is not None:
         payload["options"]["repeat_penalty"] = config.repetition_penalty

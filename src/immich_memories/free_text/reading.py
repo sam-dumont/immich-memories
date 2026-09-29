@@ -47,6 +47,18 @@ class Asker(Protocol):
         ...
 
 
+def _shape_hint(schema: Mapping[str, Any]) -> str:
+    """A compact, plain-English restatement of an object schema's keys.
+
+    `response_format` is not asked of every server (a local endpoint may default to none,
+    measured 2026-09-29 to stall a grammar-constrained decoder on some shapes), so the
+    prompt names the exact keys itself. Never the enum values: a phrase enum here can run
+    to hundreds of entries, which the prompt already offers in `owner_request`.
+    """
+    keys = ", ".join(f'"{key}"' for key in schema.get("properties", {}))
+    return f"Return JSON with exactly these keys and no others: {keys}."
+
+
 class WireAsker:
     """Asks the configured reader through the product's LLM transport.
 
@@ -67,12 +79,13 @@ class WireAsker:
             "type": "json_schema",
             "json_schema": {"name": "free_text_answer", "schema": schema, "strict": True},
         }
+        full_prompt = f"{prompt}\n\n{_shape_hint(schema)}"
         try:
             with recording_stage("free_text"):
                 # A running loop (the web server) cannot run another: the bridge uses a thread.
                 raw = _run_sync(
                     query_llm(
-                        prompt,
+                        full_prompt,
                         self._config,
                         temperature=0.0,
                         max_tokens=max_tokens,

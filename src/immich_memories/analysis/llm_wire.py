@@ -28,6 +28,7 @@ from immich_memories.analysis.llm_providers import (
     LOWEST_THINKING_LEVEL,
     is_local_endpoint,
     resolved_llm_config,
+    structured_output_enabled,
 )
 from immich_memories.config_models_llm import LLMConfig
 
@@ -462,7 +463,7 @@ def openai_payload(
         "max_tokens": max_tokens,
         "temperature": temperature,
     }
-    if response_format and config.structured_output and not images:
+    if response_format and structured_output_enabled(config) and not images:
         payload["response_format"] = dict(response_format)
     # Only a server of your own takes the field; a hosted API refuses unknown fields.
     if config.repetition_penalty is not None and is_local_endpoint(config):
