@@ -96,8 +96,9 @@
 <section class="flex flex-col gap-4 rounded-2xl border border-gray-200 p-5 dark:border-gray-800" aria-labelledby="ask-heading">
   <div class="flex flex-wrap items-center gap-3">
     <h2 id="ask-heading" class="text-base font-semibold">{t('Describe the film you want')}</h2>
-    <a href={docsPage('make/free-text')} target="_blank" rel="noopener noreferrer" class="rounded-full border border-warning px-2 py-0.5 text-xs font-medium text-warning hover:bg-warning/10">
-      {t('Experimental')}
+    <!-- The filled badge picks its own text colour; amber text on white read at 1.9:1. -->
+    <a href={docsPage('make/free-text')} target="_blank" rel="noopener noreferrer" class="rounded-full hover:opacity-80">
+      <Badge size="small" color="warning">{t('Experimental')}</Badge>
     </a>
   </div>
 
