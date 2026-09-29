@@ -481,15 +481,20 @@ Two settings shape what a prose request asks for:
 
 ```yaml
 llm:
-  structured_output: true   # default: ask for each answer's exact JSON shape
+  structured_output: null   # default: on for a hosted endpoint, off for one on your machine or network
   repetition_penalty: 1.0   # default: sent to a server on your own machine or network, and to Ollama
 ```
 
 `structured_output` sends the JSON shape each prose seat's parser reads (episode readings, period
-accounts, the title) as `response_format` `json_schema`, or as Ollama's `format`. A small local
-model then can't break the JSON it writes: measured on 243 public episodes, Gemma 4 E4B read every
-episode on the first try with it and lost a whole request to one broken token about one time in
-five without it. A server that refuses the field is asked again without it, and the run remembers.
+accounts, the title) as `response_format` `json_schema`, or as Ollama's `format`. Left unset, a
+hosted endpoint gets it and a server on your own machine or network doesn't: measured 2026-09-29,
+oMLX's grammar-constrained decoder for gemma-4-e4b-it-6bit stalled at the token ceiling on the
+episode-reading schema every time, always right after closing an empty array and before the next
+required key, burning the whole budget on a few hundred characters. The identical prompt with no
+`response_format` finished in under half the tokens with valid JSON. Every prompt states the exact
+JSON shape in words too, for a server asked without the schema. Set it to `true` or `false` to pin
+the behaviour for a specific endpoint either way; a server that refuses the field when it is on is
+asked again without it, and the run remembers.
 
 `repetition_penalty` is sent because local servers default to 1.1 (oMLX, Ollama), which penalises
 the repeated keys every JSON answer needs. It is never sent to a public host; a server of your own
