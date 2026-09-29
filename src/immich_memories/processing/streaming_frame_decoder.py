@@ -105,13 +105,16 @@ class FrameDecoder:
             # When privacy blur is active, skip the extra sigma=30 on the background
             # because the frame is already blurred — adding more makes it unrecognizable.
             bg_blur = "" if self._privacy_blur else ",gblur=sigma=30"
+            # WHY (#1527): overlay composites in 8-bit yuv420 unless told otherwise,
+            # which rounded every HDR frame with a blur fill to multiples of 4.
+            overlay_format = ":format=yuv420p10" if self._pix_fmt != "rgb24" else ""
             parts.extend(
                 (
                     "split[_bg][_fg]",
                     f"[_bg]scale={self._width}:{self._height}:force_original_aspect_ratio=increase:flags=lanczos,"
                     f"crop={self._width}:{self._height}{bg_blur}[_blurred]",
                     f"[_fg]scale={self._width}:{self._height}:force_original_aspect_ratio=decrease:flags=lanczos[_sharp]",
-                    "[_blurred][_sharp]overlay=(W-w)/2:(H-h)/2",
+                    f"[_blurred][_sharp]overlay=(W-w)/2:(H-h)/2{overlay_format}",
                 )
             )
             self._use_filter_complex = True
