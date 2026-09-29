@@ -626,6 +626,7 @@ src/immich_memories/
 │   ├── music_generator_models.py # Music generation data models
 │   ├── music_sources.py        # Music source providers (local library)
 │   ├── text_mood.py            # Banked music judgment from saved cut text; private answering-route record
+│   ├── generated_audio.py      # Decode and reject silent/non-finite generator output before fallback
 │   ├── music_pipeline.py       # Multi-provider pipeline (ACE-Step -> MusicGen fallback)
 │   ├── bundled_music.py        # The 28 bundled royalty-free tracks (`music` extra), used with no backend
 │   ├── track_tempo.py          # Measure a bundled track's tempo (numpy onset autocorrelation, no librosa)

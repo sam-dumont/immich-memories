@@ -19,6 +19,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from immich_memories.audio.generated_audio import validate_generated_audio
 from immich_memories.audio.generators.base import (
     GenerationRequest,
     GenerationResult,
@@ -374,7 +375,13 @@ class MusicPipeline:
                     continue
 
                 logger.info(f"Generating with {gen.name}")
-                return await gen.generate(request, _progress)
+                result = await gen.generate(request, _progress)
+                if reason := validate_generated_audio(result.audio_path):
+                    logger.warning(
+                        "Music backend %s rejected: %s; trying next backend", gen.name, reason
+                    )
+                    continue
+                return result
 
             except Exception:
                 # WHY broad: the point of a backend chain is that one backend
