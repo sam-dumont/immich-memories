@@ -283,3 +283,36 @@ def test_unknown_category_fails_before_request_creation() -> None:
 
     with pytest.raises(ValueError, match="Unsupported automation category"):
         GenerationRequest.from_candidate(unknown, upload=False)
+
+
+def test_a_candidates_account_scope_reaches_the_child_argv() -> None:
+    """A candidate discovery read with automation.accounts carries them to the launch."""
+    candidate = _candidate(CandidateCategory.YEAR_IN_REVIEW, "year_in_review")
+    candidate.extra_params["accounts"] = ["partner"]
+
+    request = GenerationRequest.from_candidate(candidate, upload=False)
+
+    assert request.accounts == ("partner",)
+    assert "--accounts=partner" in request.to_argv()
+
+
+def test_a_one_account_candidate_never_carries_accounts() -> None:
+    candidate = _candidate(CandidateCategory.YEAR_IN_REVIEW, "year_in_review")
+
+    request = GenerationRequest.from_candidate(candidate, upload=False)
+
+    assert request.accounts == ()
+    assert not any(arg.startswith("--accounts=") for arg in request.to_argv())
+
+
+def test_accounts_scope_is_refused_for_a_trip_candidate() -> None:
+    """--accounts refuses trip memories (cli/run_people.py); a trip candidate never gets one."""
+    with pytest.raises(ValueError, match="unsupported for a trip candidate"):
+        GenerationRequest(
+            memory_type="trip",
+            category=CandidateCategory.TRIP,
+            memory_key="key:trip",
+            start=date(2026, 5, 3),
+            end=date(2026, 5, 11),
+            accounts=("partner",),
+        )

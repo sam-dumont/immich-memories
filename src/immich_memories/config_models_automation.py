@@ -76,6 +76,18 @@ class AutomationConfig(BaseModel):
             "A model reading names every occasion it finds"
         ),
     )
+    accounts: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Extra Immich accounts (immich.accounts) automation reads alongside the "
+            "primary, exactly as generate --accounts does. Empty reads the primary "
+            "account alone, as before this setting existed."
+        ),
+    )
+    detect_groups: bool = Field(
+        default=True,
+        description="Propose a memory for each saved people group (people group add) with content",
+    )
 
     @field_validator("daily_at")
     @classmethod

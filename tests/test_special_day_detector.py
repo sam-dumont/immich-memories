@@ -263,6 +263,7 @@ class TestNoCatalogue:
                 {},
                 None,
                 catalogue,
+                [],
             )
 
         without = run(None)
