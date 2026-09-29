@@ -382,27 +382,42 @@ def _salvage_truncated_accounts(raw: str) -> dict[str, object] | None:
     length = len(raw)
     accounts: dict[str, object] = {}
     while index < length:
-        while index < length and raw[index] in " \t\r\n,":
-            index += 1
+        index = _skip_chars(raw, index, " \t\r\n,")
         if index >= length or raw[index] != '"':
             break
-        try:
-            key, index = decoder.raw_decode(raw, index)
-        except json.JSONDecodeError:
+        pair = _next_account_pair(raw, index, decoder)
+        if pair is None:
             break
-        while index < length and raw[index] in " \t\r\n":
-            index += 1
-        if index >= length or raw[index] != ":":
-            break
-        index += 1
-        while index < length and raw[index] in " \t\r\n":
-            index += 1
-        try:
-            value, index = decoder.raw_decode(raw, index)
-        except json.JSONDecodeError:
-            break
+        key, value, index = pair
         accounts[key] = value
     return {"accounts": accounts} if accounts else None
+
+
+def _skip_chars(raw: str, index: int, chars: str) -> int:
+    length = len(raw)
+    while index < length and raw[index] in chars:
+        index += 1
+    return index
+
+
+def _next_account_pair(
+    raw: str, index: int, decoder: json.JSONDecoder
+) -> tuple[str, object, int] | None:
+    """Decode one `"key": value` pair starting at `index`, or None if it doesn't fully parse."""
+    length = len(raw)
+    try:
+        key, index = decoder.raw_decode(raw, index)
+    except json.JSONDecodeError:
+        return None
+    index = _skip_chars(raw, index, " \t\r\n")
+    if index >= length or raw[index] != ":":
+        return None
+    index = _skip_chars(raw, index + 1, " \t\r\n")
+    try:
+        value, index = decoder.raw_decode(raw, index)
+    except json.JSONDecodeError:
+        return None
+    return key, value, index
 
 
 def _valid_accounts(raw, pending) -> dict[str, str]:
