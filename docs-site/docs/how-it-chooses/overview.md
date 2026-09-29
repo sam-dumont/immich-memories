@@ -39,7 +39,8 @@ These hold on every tier.
   goes in and how long it stays, never when.
 - **Your star wins its moment.** A favourite beats every other frame of its moment and always stands
   on its own. It does not buy a place by itself: the family-viewing gate, the capture spacing and
-  the duplicate review still apply.
+  the duplicate review still apply. When they keep it out, nothing else from that moment takes
+  its place: the moment is dropped and the slot goes to another one.
 - **Stories are weighed, days aren't counted.** A week with nothing marked gets no shot; a stretch
   away from home or an unusually busy day does. See [Moments, episodes and stories](./moments-and-stories.md).
 - **Videos are first class.** A video always plays, and a Live Photo plays as motion when its clip
