@@ -255,7 +255,7 @@ def plan_structure(
         rules = replace(
             ports,
             judge=NoModelJudge(),
-            rules=RuleStructureReader(nas),
+            rules=RuleStructureReader(nas, printed=ports.printed_near),
             thin=None,
             laya=None,
             observe_story_motion=None,

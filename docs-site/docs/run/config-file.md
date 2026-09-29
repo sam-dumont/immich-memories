@@ -280,8 +280,9 @@ network:
 
 Both off, so a default run reaches your Immich server, the endpoints named elsewhere in this file,
 and nothing else. `geocoding` buys the right district's name where Immich names the neighbouring
-town (Wilrijk, not Hoboken), trip names from the map, and place names in the film's language. It
-sends rounded coordinates, about a kilometre, once per place; answers are kept in the store.
+town (Wilrijk, not Hoboken) on every name you read, trip names from the map, and place names in the
+film's language. It sends rounded coordinates, about a kilometre, once per place; answers are kept
+in the store.
 `geocoding_url` points it at a self-hosted Nominatim. `map_tiles` buys the trip fly-over and the
 map behind location cards. Fonts are never fetched at run time (see
 [fonts](./privacy.md#fonts)). [Privacy](./privacy.md) says exactly what each host receives.

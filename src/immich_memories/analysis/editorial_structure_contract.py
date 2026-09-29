@@ -22,6 +22,7 @@ from immich_memories.processing.editorial_timing import EditorialTimingPolicy
 from immich_memories.security import write_secret_file
 
 if TYPE_CHECKING:
+    from immich_memories.analysis.editorial_event_story import PrintedNear
     from immich_memories.analysis.editorial_laya_reader import LayaReader
     from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
     from immich_memories.analysis.editorial_story_planner import StorySelection
@@ -241,6 +242,9 @@ class StructurePlannerPorts:
     # (`editorial.laya_audience`); None leaves sharing to the heads and rules.
     laya: LayaReader | None = None
     draft: RulesDraft | None = None
+    # Immich's OCR over the screens and documents near a moment, for the no-model reader's event
+    # corroboration (`editorial_event_story`); None when the run cannot search Immich.
+    printed_near: PrintedNear | None = None
     prepare_candidates: Callable[[Sequence[Mapping[str, Any]]], bool] | None = None
     refine: (
         Callable[

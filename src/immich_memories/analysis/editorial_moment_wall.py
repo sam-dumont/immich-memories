@@ -12,6 +12,7 @@ from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.editorial_people import EditorialPeople
+from immich_memories.analysis.place_names import shown_city
 
 if TYPE_CHECKING:
     from immich_memories.analysis.editorial_moment_contract import MomentCard as EditorCard
@@ -498,7 +499,7 @@ def _candidate_place(candidate: Any) -> str:
     exif = candidate.source.exif_info
     if exif is None:
         return ""
-    return ", ".join(part for part in (exif.city, exif.state, exif.country) if part)
+    return ", ".join(part for part in (shown_city(exif), exif.state, exif.country) if part)
 
 
 def _compact_age(born: str | None, when: datetime) -> str | None:
