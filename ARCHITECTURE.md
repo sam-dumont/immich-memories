@@ -1230,3 +1230,10 @@ through Alembic revision `0007_timing`, on SQLite or PostgreSQL. No span writes 
 assigns per-report salted IDs. `report_service.py` assembles the same report for `report` and the HTTP
 endpoint; neither calls Immich or sends anything. `span_progress.py` reads the saved spans for normalized
 rates and whole-run estimates. A first run has no historical total estimate.
+
+**Provider conformance** (`conformance/`): synthetic feature probes use the production prompt,
+transport and parser. The AST inventory discovers model-asking functions; HTTP observation
+counts attempted calls, and runtime function observation verifies each declared path ran.
+Uncovered sites fail the command and the inventory guard. Domain-specific case modules use
+fresh temporary stores and synthetic evidence; optional private HTTP artifacts and incremental
+usage reports make failures reproducible without reading the personal library.

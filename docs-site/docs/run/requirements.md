@@ -62,7 +62,8 @@ Timings are on [Measured](../better/measured.md).
 **Tested** means run end to end, with the date and the commit or release it ran on: check the
 date against your version. **Supported** means the code path exists and worked on an earlier
 release, but has not been checked since: it probably works, and a report is welcome if it doesn't.
-**Untested** means nobody has run it; it may work.
+**Untested** means nobody has run it; it may work. **Conformance tested** means the individual
+production features ran on synthetic fixtures; the pass count is separate from whole-film quality.
 
 The last release on PyPI is 0.103.0, from 2026-09-17. Rows tested after that date ran on `main`
 and the Docker image built from it, not on a `pip install`.
@@ -87,11 +88,12 @@ and the Docker image built from it, not on a `pip install`.
 | GPU | Intel VA-API and Quick Sync | Supported | 2026-09-11, on the DS423+ |
 | GPU | AMD VA-API | Untested | The drivers ship in the image |
 | Render worker | The service's own test suite | Tested | Every pull request that touches it; no dated deployment on a real GPU box |
-| Reader | Local: oMLX with Gemma 4 E4B (6-bit) | Tested | 2026-09-27, commit [`9eb16812`](https://github.com/sam-dumont/immich-video-memory-generator/commit/9eb168126c0f24f6cced39a0316f0045132e56c8), the `full` films above |
+| Reader | Local: oMLX with Gemma 4 E4B (6-bit) | Conformance tested, 17/34 with local schema default off | [Measured comparison](../better/measured.md#llm-conformance): free-text improves from 1/14 to 12/14 with JSON enforcement; remaining full-run failures include trip classification, vision contracts and period weighting |
 | Reader | Local: llama.cpp, Ollama | Supported | Films on earlier releases |
 | Reader | Local: vLLM, mlx-vlm served directly | Untested | |
-| Reader | Hosted: z.ai (glm-5.3-flash) and OpenAI (gpt-5.6-luna) | Supported | Last run 2026-09-17; re-test: [#1513](https://github.com/sam-dumont/immich-video-memory-generator/issues/1513) |
-| Reader | Hosted: Melious (DeepSeek, deepseek-v4.1-flash) | Supported; [schema fallback](../better/reader.md#structured-replies), or `advanced.llm.structured_output: false` | Last run 2026-09-15; re-test: [#1513](https://github.com/sam-dumont/immich-video-memory-generator/issues/1513) |
+| Reader | Hosted: OpenAI (gpt-5.6-luna) | Conformance tested, 32/34 | [Measured failures](../better/measured.md#llm-conformance): recorded trip place and motion description |
+| Reader | Hosted: z.ai (glm-5.3-flash) | Conformance tested, 31/34 | [Measured failures](../better/measured.md#llm-conformance): free-text exclusion, request reading and requested pool |
+| Reader | Hosted: Melious (deepseek-v4.1-flash) | Conformance tested, 32/34, `structured_output: false` | [Measured failures](../better/measured.md#llm-conformance): free-text request reading and requested pool |
 | Reader | Hosted: Anthropic's own API | Untested | The same code path only ran through z.ai's Anthropic-compatible route |
 | Reader | Hosted: Melious gemma-4-31b | Not supported | Its API refused every image (HTTP 400), 2026-09-15 |
 | Captions | SmolVLM2 500M, on a Mac | Tested | 2026-09-27, commit [`9eb16812`](https://github.com/sam-dumont/immich-video-memory-generator/commit/9eb168126c0f24f6cced39a0316f0045132e56c8), the `gpu` and `full` films above |

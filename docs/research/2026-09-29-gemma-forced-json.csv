@@ -1,0 +1,15 @@
+model,structured_output,feature,http_attempts,input_tokens,output_tokens,truncated_replies,seconds,valid,quality,issues
+gemma-4-e4b-it-6bit,True,free-text film handoff,6,657,359,0,5.59,True,routes the one-day wedding to its catalogue event,
+gemma-4-e4b-it-6bit,True,free-text place scope,3,360,229,0,3.32,True,travel request selects trips rather than anywhere,
+gemma-4-e4b-it-6bit,True,free-text printed words,3,339,193,0,2.91,True,selects VELO for OCR matching,
+gemma-4-e4b-it-6bit,True,free-text exclusions,3,252,203,0,3.04,True,excludes toy cars without excluding all cars,
+gemma-4-e4b-it-6bit,True,free-text age range,1,163,82,0,1.18,True,age five maps to the fixture person's fifth year,
+gemma-4-e4b-it-6bit,True,free-text calendar dates,1,177,34,0,0.62,True,calendar bounds cover exactly 2030,
+gemma-4-e4b-it-6bit,True,free-text request reading,3,396,133,0,2.18,True,keeps cats as subject and 2030 as time,
+gemma-4-e4b-it-6bit,True,free-text subject kind,3,258,129,0,2.16,True,majority identifies cats as animals,
+gemma-4-e4b-it-6bit,True,free-text matching pool,11,1218,2358,4,32.62,True,all 14 black cats retained; all 5 dogs excluded,
+gemma-4-e4b-it-6bit,True,free-text ambiguous person,3,222,164,0,4.57,True,role distinguishes the cousin from the son,
+gemma-4-e4b-it-6bit,True,free-text other names,3,282,192,0,4.8,False,young cats were omitted from alternate names,1660
+gemma-4-e4b-it-6bit,True,free-text one occasion,3,252,115,0,3.76,True,wedding selects one occasion,
+gemma-4-e4b-it-6bit,True,free-text particular place,3,303,182,0,4.67,True,childhood house requires one particular place,
+gemma-4-e4b-it-6bit,True,free-text qualified subject,7,737,1398,2,22.87,False,qualified subjects were lost,1660

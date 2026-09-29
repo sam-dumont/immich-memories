@@ -292,3 +292,39 @@ logs why, and reads in real time for the rest of the run.
 
 The prompt shapes the setup matrix probes readers with are in `scripts/reader_probe_prompts/`.
 Time, tokens and euros per reader go on [Measured](./measured.md).
+
+## Provider conformance
+
+From a checkout, run:
+
+```bash
+make llm-conformance CONFIG=/path/to/provider.yaml OUTPUT=/tmp/llm-conformance
+```
+
+The command reads only `advanced.llm` (or `llm`) from that file. It sends synthetic evidence
+through production features and can incur provider charges. Free-text cases also read the
+public WordNet corpus installed by `immich-memories models fetch`. Each banked feature gets a
+fresh temporary SQLite store. The suite opens no personal library or people file.
+
+The 34 probes cover occasion, trip and people titles; free-text reading, linking and pool
+selection; occasion discovery; music mood; image captions and motion; full and lean episode
+readings; month and year accounts; editorial grouping, weighting, picking and recurring
+activities; and both audience text readers still present in the code.
+
+Each row reports whether the provider was called, HTTP attempts, reported tokens, elapsed
+seconds, validity and a feature-specific quality check. Unknown usage is shown as unknown.
+A local fallback fails the check. A failed feature leaves its row and the other checks continue.
+The command exits with status 1 if a feature fails or a production model call site has no case.
+The guard test scans the code for model calls and shared prompt adapters; runtime observation
+also checks that each case reached its declared call sites.
+
+`OUTPUT` is optional. When set, it receives an incremental JSON report, a Markdown table,
+and private request/reply evidence without HTTP headers. Keep these files private: provider
+errors can include account details. Use the input, cached-input and completion token counters
+with the provider's rates to calculate cost. A run with missing usage gives only a cost floor.
+
+The [measured provider table](./measured.md#llm-conformance) lists passes, failures, call counts
+and reported-token cost for each tested endpoint. Every failed feature links to a separate issue.
+
+These checks measure the configured endpoint on small fixtures. They do not replace checking
+the quality of a complete film or testing asynchronous batch delivery.
