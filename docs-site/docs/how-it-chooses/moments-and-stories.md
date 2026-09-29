@@ -54,6 +54,33 @@ allowance uses. A story that only ever visited one place is never bounded. A pic
 place comes back when nothing else can fill the slot, and a starred one comes back before a shot
 nothing vouches for keeps its slot.
 
+**A one-off inside an ordinary day is its own story.** A week at home is one story, so an evening
+across town photographed in two dense bursts used to share that week's single shot with the
+morning's errands. An episode of a home story now becomes its own **event** story when all of this
+holds (`editorial_event_story.py`):
+
+- it's dense on its own: its pictures reach the same day threshold the gate uses for a whole day
+  (4x the median photographed day, or the 75th percentile if that's higher),
+- it's at least 2 moments, so one burst of a cake, a pet or a sunset never counts,
+- its activity label differs from every other episode of its day (or, alone on its day, from the
+  episodes either side of it in the story),
+- when both sides have GPS, it's at least 1 km from them.
+
+Nothing here names a kind of event: a race, a concert, a graduation and a prize evening all look
+the same to it. A story with three favourites or a big one already has the depth, so it isn't cut,
+and a trip stays whole. The event is funded first among stories of its weight (like a trip) and
+reserves 2 shots, the most a `minor` story takes.
+
+A screen or document the next day can add a third shot, never make an event. When a picture no
+camera made (a screenshot, a scan), taken within 18 hours after the event, has a result, finish,
+time or rank word on it according to Immich's own OCR, the event reserves 3. The words are
+generic ("result", "time", "rank", "record", "score", "certificate", "prize"...), and the read is
+one Immich search per word, only for the events the draft found. The events and whether a
+screen backed them up are listed under `events` in `derived-decisions/period-story.private.json`.
+
+Known limit: a dinner out photographed like an occasion (40 pictures in 3 bursts across town) is
+an event too. From counts, places and labels alone it looks exactly like one.
+
 ## How much a story weighs
 
 Each happening is first read for whether it is worth remembering, from facts alone.

@@ -13,6 +13,7 @@ from immich_memories.analysis.editorial_album_index import (
     RunAlbumNames,
     record_album_index,
 )
+from immich_memories.analysis.editorial_event_story import PrintedNear
 from immich_memories.analysis.editorial_evidence_provenance import AttemptEvidenceProvenance
 from immich_memories.analysis.editorial_film_preparation import FilmPreparation
 from immich_memories.analysis.editorial_film_reach import film_reach
@@ -69,6 +70,7 @@ from immich_memories.api.person_expression import PersonExpression
 from immich_memories.cache.editorial_verdicts import EditorialVerdicts
 from immich_memories.config_models import PRIMARY_ACCOUNT
 from immich_memories.db import open_store
+from immich_memories.free_text.printed import ImmichPrintedText
 from immich_memories.operations.cut_progress import ANALYSIS_PHASE, StageUpdate, announcing_stages
 from immich_memories.planning.auto_duration import DURATION_FROM_DURATION_FLAG
 from immich_memories.processing.editorial_timing import EditorialTimingPolicy
@@ -473,6 +475,13 @@ def _primary_owner_id(client: FullEditorialSource, accounts: tuple[str, ...]) ->
     return opened[PRIMARY_ACCOUNT].user.id if PRIMARY_ACCOUNT in opened else None
 
 
+def _printed_near(client: object) -> PrintedNear | None:
+    """Immich's OCR over screens and documents, when this client can search Immich's metadata."""
+    if not callable(getattr(client, "search_metadata", None)):
+        return None
+    return ImmichPrintedText(cast(Any, client)).screen_reads
+
+
 def build_editorial_planner(
     *,
     client: FullEditorialSource,
@@ -621,6 +630,7 @@ def build_editorial_planner(
         attached_sources=lambda: source_snapshot or (),
         episode_demand=demand,
         prepare_refinement=refinement.refine if refinement else None,
+        printed_near=_printed_near(client),
     )
 
     def attempt_directory() -> Path:
