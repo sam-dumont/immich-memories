@@ -8,6 +8,7 @@ from contextvars import ContextVar
 from dataclasses import asdict
 from functools import wraps
 
+from immich_memories import process_start
 from immich_memories.analysis import llm_metrics
 from immich_memories.db import Store, open_store
 from immich_memories.operations.cancellation import PipelineCancelled
@@ -31,8 +32,13 @@ def observe_run(
     source: str,
     memory_type: str | None = None,
     capture_system: bool = True,
+    started: float | None = None,
 ) -> Iterator[RunTracker]:
-    """Save buffered work on success, cancellation, or failure, then reset context."""
+    """Save buffered work on success, cancellation, or failure, then reset context.
+
+    `started` is when the process began on the run's clock; the time from it to here
+    is recorded as a `startup` span so a run accounts for its imports and config.
+    """
     tracker = RunTracker(store=store, capture_system=capture_system)
     tracker.start_run(source=source, memory_type=memory_type)
     token = _tracker.set(tracker)
@@ -43,7 +49,8 @@ def observe_run(
     ):
         cleanup.callback(_tracker.reset, token)
         try:
-            with timing.span("run"):
+            with timing.span("run") as root:
+                timing.open_at(root, started)
                 yield tracker
         except (PipelineCancelled, KeyboardInterrupt):
             if _still_running(tracker):
@@ -162,6 +169,7 @@ def observed_command(source: str):
                 open_store(ctx.obj["config"]),
                 source=kwargs.get("source") or source,
                 memory_type=kwargs.get("memory_type"),
+                started=process_start.claim(),
             ):
                 from immich_memories.tracking.report_context import record_config
 

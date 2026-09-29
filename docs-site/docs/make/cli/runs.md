@@ -160,5 +160,7 @@ To file an issue about a run, `immich-memories report` prints a redacted report 
 [report](./report.md).
 
 `runs show` also prints the saved span tree, rates per item, and the uncovered part of the run's wall
-clock. `prepare` records a run too. Older runs keep the timings they originally recorded.
+clock. The wall clock starts when the command starts: the first span, `startup`, is the time spent
+loading and reading the config before the run opened (usually 4 to 5 seconds). Finding the pictures is
+`discovery` on every route, trips and albums included. `prepare` records a run too. Older runs keep the timings they originally recorded.
 The setup matrix copies these same measurements from each attempt's `timings.private.json`.

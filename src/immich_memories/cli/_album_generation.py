@@ -7,10 +7,13 @@ from typing import TYPE_CHECKING
 
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
 from immich_memories.filename_builder import safe_slug
+from immich_memories.tracking.timed import timed
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from immich_memories.analysis.album_source import AlbumMedia
+    from immich_memories.api.album_service import AlbumRef
     from immich_memories.api.sync_client import SyncImmichClient
     from immich_memories.cli._live_display import ProgressDisplay
     from immich_memories.config_loader import Config
@@ -25,6 +28,40 @@ def album_output_path(
     slug = safe_slug(album_name)
     stem = f"album_{slug}" if slug else "album"
     return default_path.parent / f"{stem}.{container}"
+
+
+@timed("discovery")
+def _discover_album(
+    client: SyncImmichClient,
+    progress: ProgressDisplay,
+    album_ref: str,
+    config: Config,
+    *,
+    use_live_photos: bool,
+    use_photos: bool,
+) -> tuple[AlbumRef, AlbumMedia]:
+    import click
+
+    from immich_memories.analysis.album_source import fetch_album_media
+    from immich_memories.api.album_service import AlbumNotFoundError, AmbiguousAlbumError
+
+    task = progress.add_task(f"Resolving album: {album_ref}...", total=None)
+    try:
+        resolved = client.resolve_album(album_ref)
+    except (AlbumNotFoundError, AmbiguousAlbumError) as exc:
+        progress.update(task, completed=True)
+        progress.stop()
+        raise click.ClickException(str(exc)) from exc
+    progress.update(task, completed=True)
+    print_success(f"Album: {resolved.name} ({resolved.asset_count} assets)")
+    media = fetch_album_media(
+        client,
+        resolved,
+        config=config,
+        use_live_photos=use_live_photos,
+        use_photos=use_photos,
+    )
+    return resolved, media
 
 
 def handle_album_generation(
@@ -73,29 +110,16 @@ def handle_album_generation(
     With a written `subject`, the album is a pool curated for it: its pictures stand on that
     subject (owner ruling 2026-09-28).
     """
-    import click
-
-    from immich_memories.analysis.album_source import fetch_album_media
-    from immich_memories.api.album_service import AlbumNotFoundError, AmbiguousAlbumError
     from immich_memories.cli._pipeline_runner import run_pipeline_and_generate
     from immich_memories.cli._trip_generation import resolve_music_arg
     from immich_memories.memory_types.registry import MemoryType
     from immich_memories.processing.encoding_plan import resolve_output_selection
 
-    task = progress.add_task(f"Resolving album: {album_ref}...", total=None)
-    try:
-        resolved = client.resolve_album(album_ref)
-    except (AlbumNotFoundError, AmbiguousAlbumError) as exc:
-        progress.update(task, completed=True)
-        progress.stop()
-        raise click.ClickException(str(exc)) from exc
-    progress.update(task, completed=True)
-    print_success(f"Album: {resolved.name} ({resolved.asset_count} assets)")
-
-    media = fetch_album_media(
+    resolved, media = _discover_album(
         client,
-        resolved,
-        config=config,
+        progress,
+        album_ref,
+        config,
         use_live_photos=use_live_photos,
         use_photos=use_photos,
     )

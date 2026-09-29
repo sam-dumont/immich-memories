@@ -118,6 +118,19 @@ def collecting(*, now: Callable[[], float] = time.perf_counter) -> Iterator[Coll
         _active.reset(token)
 
 
+def open_at(root: Span, started: float | None) -> None:
+    """Move the root span back to process start and name the time before it `startup`."""
+    collector = active()
+    if collector is None or started is None or not started < root.start:
+        return
+    token = _parent.set(root)
+    try:
+        collector.interval("startup", started, root.start - started, None)
+    finally:
+        _parent.reset(token)
+    root.start = started
+
+
 @contextmanager
 def span(name: str, *, items: int | None = None, **attributes: float) -> Iterator[Span]:
     """Measure one operation, retaining its exception and application frames on failure."""
