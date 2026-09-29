@@ -285,6 +285,49 @@ def test_security_context_is_kept() -> None:
         assert container["securityContext"]["allowPrivilegeEscalation"] is False, label
 
 
+def _pod_spec(path: Path) -> dict:
+    deployment = next(doc for doc in _yaml_docs(path) if doc["kind"] == "Deployment")
+    return deployment["spec"]["template"]["spec"]
+
+
+def _overlay_deployment_pod_specs() -> list[tuple[str, dict]]:
+    """Every standalone Deployment shipped under overlays/ (not a strategic-merge patch).
+
+    A patch (deployment-gpu.yaml, deployment-cuda.yaml, deployment-database-env.yaml)
+    only sets the fields it changes and inherits the rest from base, so it is exempt:
+    base already carries enableServiceLinks: false and the merge keeps it. A file that
+    is a Deployment in its own right — inference and captioner — ships nothing from
+    base and must set the field itself.
+    """
+    specs = []
+    for path in sorted((K8S_ROOT / "overlays").glob("*/deployment.yaml")):
+        for doc in _yaml_docs(path):
+            if doc.get("kind") == "Deployment":
+                specs.append((str(path.relative_to(REPO_ROOT)), doc["spec"]["template"]["spec"]))
+    return specs
+
+
+def test_every_shipped_pod_disables_kubernetes_service_links() -> None:
+    """A Service named after a Deployment injects an env var per Service in the
+    namespace by default (SERVICE_HOST, SERVICE_PORT...), and this app's own env
+    prefix collides with its own Service name: `immich-memories-render-worker`
+    injects IMMICH_MEMORIES_RENDER_WORKER_PORT=tcp://<ip>:8093, which pydantic-settings
+    then fails to parse as the worker's `port` field ("Input should be a valid
+    integer"). The app and the inference service carry the same risk under their
+    own IMMICH_MEMORIES_*/IMMICH_MEMORIES_INFERENCE_* prefixes (#1608).
+    """
+    worker = _pod_spec(REPO_ROOT / "services" / "render-worker" / "kubernetes.yaml")
+    pods = [
+        *_pod_specs(),
+        ("services/render-worker/kubernetes.yaml", worker),
+        *_overlay_deployment_pod_specs(),
+    ]
+    assert len(pods) >= 6, pods  # sanity: base (Deployment+Job+2 CronJobs), worker, 2 overlays
+
+    for label, pod in pods:
+        assert pod.get("enableServiceLinks") is False, label
+
+
 def test_trigger_pods_keep_a_minimal_security_context() -> None:
     """The curl pod (#871) never touches the store, but it keeps the same hardening.
 
@@ -656,3 +699,91 @@ def test_the_cuda_captioner_takes_a_card_without_holding_an_allocatable_slot() -
     resources = container["resources"]
     assert "nvidia.com/gpu" not in resources["limits"]
     assert "nvidia.com/gpu" not in resources["requests"]
+
+
+def _render_sidecar_pod(tmp_path: Path) -> dict:
+    """Build overlays/render-sidecar with both secret examples copied in.
+
+    The overlay needs base/secret.yaml (Immich credentials) and its own
+    render-worker-secret.yaml (the bearer token both containers share), same
+    as the documented quick start in kubernetes.md.
+    """
+    workdir = tmp_path / "kubernetes"
+    shutil.copytree(K8S_ROOT, workdir)
+    shutil.copy(workdir / "base" / "secret.yaml.example", workdir / "base" / "secret.yaml")
+    shutil.copy(
+        workdir / "overlays" / "render-sidecar" / "render-worker-secret.yaml.example",
+        workdir / "overlays" / "render-sidecar" / "render-worker-secret.yaml",
+    )
+    result = subprocess.run(
+        ["kubectl", "kustomize", str(workdir / "overlays" / "render-sidecar")],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    rendered = list(yaml.safe_load_all(result.stdout))
+    deployment = next(doc for doc in rendered if doc["kind"] == "Deployment")
+    return deployment["spec"]["template"]["spec"]
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_render_sidecar_overlay_points_the_app_at_loopback(tmp_path: Path) -> None:
+    """The whole point of the sidecar: no TLS, no `allow_insecure_http`.
+
+    The app refuses a cleartext-HTTP render.worker_base_url to any host but
+    loopback, because the request carries the Immich API key
+    (config_models_render.py: require_explicit_cleartext_transport). Sharing
+    a pod puts the worker on 127.0.0.1, where that rule already allows plain
+    HTTP.
+    """
+    pod = _render_sidecar_pod(tmp_path)
+    app = next(c for c in pod["containers"] if c["name"] == "immich-memories")
+    env = {item["name"]: item for item in app["env"]}
+
+    assert env["IMMICH_MEMORIES_RENDER__WORKER_BASE_URL"]["value"] == "http://127.0.0.1:8093"
+    token_ref = env["IMMICH_MEMORIES_RENDER__WORKER_TOKEN"]["valueFrom"]["secretKeyRef"]
+    assert token_ref == {"name": "immich-memories-render-worker", "key": "token"}
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_render_sidecar_overlay_schedules_the_whole_pod_on_a_gpu_node(
+    tmp_path: Path,
+) -> None:
+    """The app itself needs no GPU, but sharing a pod with the worker moves it there too."""
+    pod = _render_sidecar_pod(tmp_path)
+    worker = next(c for c in pod["containers"] if c["name"] == "render-worker")
+
+    assert pod["runtimeClassName"] == "nvidia"
+    assert pod["nodeSelector"]["nvidia.com/gpu.present"] == "true"
+    assert {"key": "nvidia.com/gpu", "operator": "Exists", "effect": "NoSchedule"} in pod[
+        "tolerations"
+    ]
+    assert worker["resources"]["limits"]["nvidia.com/gpu"] == "1"
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_render_sidecar_overlay_pins_both_containers_to_the_same_release(
+    tmp_path: Path,
+) -> None:
+    """The app refuses a worker on a different app version before sending any footage."""
+    pod = _render_sidecar_pod(tmp_path)
+    images = {c["name"]: c["image"] for c in pod["containers"]}
+
+    assert images["immich-memories"] == images["render-worker"]
+    assert re.fullmatch(
+        r"ghcr\.io/sam-dumont/immich-video-memory-generator:\d+\.\d+\.\d+",
+        images["render-worker"],
+    )
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_render_sidecar_overlay_worker_container_is_hardened(tmp_path: Path) -> None:
+    pod = _render_sidecar_pod(tmp_path)
+    worker = next(c for c in pod["containers"] if c["name"] == "render-worker")
+
+    assert worker["securityContext"]["allowPrivilegeEscalation"] is False
+    assert worker["securityContext"]["readOnlyRootFilesystem"] is True
+    assert worker["securityContext"]["capabilities"]["drop"] == ["ALL"]
+    mounted = {mount["mountPath"] for mount in worker["volumeMounts"]}
+    assert {"/tmp", "/home/immich/.immich-memories", "/home/immich/.cache"} <= mounted

@@ -190,6 +190,11 @@ resource "kubernetes_deployment_v1" "this" {
         runtime_class_name = var.gpu_enabled ? var.runtime_class_name : null
         node_selector      = var.gpu_enabled ? var.gpu_node_selector : null
 
+        # A Service named "immich-memories" otherwise injects
+        # IMMICH_MEMORIES_SERVICE_HOST/PORT into a pod reading
+        # IMMICH_MEMORIES_* itself (#1608).
+        enable_service_links = false
+
         security_context {
           run_as_non_root = true
           run_as_user     = 1000
