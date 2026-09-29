@@ -117,10 +117,18 @@ class PreparationResult:
         read its preview instead, which is what every source was read on before there were
         frames, and the failure is named rather than blocking the cut. Nor is an attached
         clip Immich would not serve, which leaves its still in the film either way.
+        Motion descriptions are optional: absent lines leave the pick its plain clip facts.
         """
-        return not self.missing_by_producer and all(
-            key.startswith(
-                ("detector_frames:", f"{CLIP_COMPANION}:", CLIP_FRAMES_HEAD, VIDEO_MOTION)
+        return not any(not key.startswith("motion:") for key in self.missing_by_producer) and all(
+            key == "motion"
+            or key.startswith(
+                (
+                    "motion:",
+                    "detector_frames:",
+                    f"{CLIP_COMPANION}:",
+                    CLIP_FRAMES_HEAD,
+                    VIDEO_MOTION,
+                )
             )
             for key in self.failures
         )
@@ -578,6 +586,7 @@ def prepare_editorial_annotations(
     ports: PreparationPorts | None = None,
     read_playback: Callable[[str, int, int], tuple[bytes, int]] | None = None,
     inspect_clips: bool = True,
+    acquire_motion: bool = True,
 ) -> PreparationResult:
     """Prepare the supplied source scope, reusing facts under their exact producer identity.
 
@@ -589,6 +598,7 @@ def prepare_editorial_annotations(
     whose preview could not be read. ``read_playback`` answers a byte range of a video's
     playback rendition with its full size; without it no motion line is produced.
     ``inspect_clips=False`` defers playback and video exposure until candidate inspection.
+    Cuts set ``acquire_motion=False``: motion descriptions come from prepare, or plain facts.
     """
     cache_path = Path(getattr(thumbnail_cache, "cache_dir", thumbnail_cache))
     source = tuple({asset.id: asset for asset in assets}.values())
@@ -668,7 +678,8 @@ def prepare_editorial_annotations(
         demanded=preparation_config.demands_captions,
         producer=motion_producer(description_model),
     )
-    motion.acquire(stage.motion, store, before)
+    if acquire_motion:
+        motion.acquire(stage.motion, store, before)
     stage.check()
     after, _unavailable = outstanding()
     motion.report(store, after)

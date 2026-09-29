@@ -152,7 +152,9 @@ selected LLM caption identity, preferring valid banked SmolVLM pairs. Fact reads
 checks and provenance use the same choice. Default SmolVLM reads retain their exact producer.
 `editorial_preparation_motion.py` owns `MotionScope`, motion acquisition and bank reads. Its
 producer-specific reads reuse described SmolVLM motion lines before requesting a new LLM line;
-unchanged sources retain their existing bank entries.
+unchanged sources retain their existing bank entries. `prepare` acquires descriptions; film-time
+evidence preparation reads banked motion or falls back to plain clip facts. Missing motion
+remains in the preparation report but does not block required-fact completeness.
 
 - **Producer**: anything that writes a fact about a picture: the caption server, the heads, the
   detectors, the motion and pixel readers (`editorial_preparation*.py`). Film preparation runs

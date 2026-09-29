@@ -55,6 +55,7 @@ def _film(
     playback=None,
     playback_content=None,
     frame_reader=None,
+    motion_reader=None,
 ):
     calls = []
     # A distinct store per `directory`, so two calls with different directories in the same
@@ -65,6 +66,8 @@ def _film(
     # WHY: local model providers are external boundaries. Keep acquisition, SQLite,
     # annotation reading and the complete production selector real.
     providers = successful_ports(calls)
+    if motion_reader is not None:
+        providers = replace(providers, motion=motion_reader)
     if frame_reader is not None:
         providers = replace(providers, clip_frames=frame_reader)
     if descriptions:
@@ -316,3 +319,31 @@ def test_fresh_video_frame_facts_are_applied_before_the_nas_cut_ships(tmp_path):
     )
 
     assert not rejected
+
+
+def test_full_cut_uses_banked_motion_or_plain_facts_without_calling_the_server(tmp_path, caplog):
+    from tests.conftest import make_clip
+
+    first = datetime(2024, 2, 1, 12, tzinfo=UTC)
+    sources = [
+        make_clip(f"video-{n:02}", file_created_at=first + timedelta(days=n)).asset
+        for n in range(24)
+    ]
+    for asset in sources:
+        asset.is_favorite = True
+    calls = []
+
+    # WHY: represent the unavailable motion-description service at its provider boundary.
+    def unavailable(**_kwargs):
+        calls.append("motion")
+        raise ConnectionError("motion server is down")
+
+    selected, _ = _film(tmp_path, sources, tier="full", motion_reader=unavailable)
+    assert selected
+    assert calls == []
+    assert "motion unavailable" in caplog.text.lower()
+    reports = [
+        json.loads(p.read_text())
+        for p in (tmp_path / "artifacts").rglob("preparation.private.json")
+    ]
+    assert any(any(k.startswith("motion:") for k in r["missing_by_producer"]) for r in reports)
