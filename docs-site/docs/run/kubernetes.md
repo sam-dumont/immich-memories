@@ -211,6 +211,12 @@ your GPU node actually carries. The overlay pins the sidecar's image tag itself
 covered by `base`'s own image pin; keep the two in sync; the app refuses a worker on a different
 version before it sends any footage.
 
+The worker's `startupProbe` and `readinessProbe` run `python3` inside the worker container and
+call `/health` over loopback themselves, rather than `tcpSocket`/`httpGet`: the kubelet dials the
+pod IP for both of those, never `127.0.0.1`, and this worker only binds loopback, so the pod would
+never go Ready. Keep that pairing if you touch either probe: a worker bound wider than loopback, or
+a probe that goes back to `tcpSocket`/`httpGet`, breaks the same way.
+
 Two other ways to reach the same guarantee, each a one-line config change instead of a manifest:
 run the worker as its own Deployment behind HTTPS (the default path above), or set
 `render.allow_insecure_http: true` if the worker sits on a network you already treat as trusted.

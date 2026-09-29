@@ -787,3 +787,26 @@ def test_the_render_sidecar_overlay_worker_container_is_hardened(tmp_path: Path)
     assert worker["securityContext"]["capabilities"]["drop"] == ["ALL"]
     mounted = {mount["mountPath"] for mount in worker["volumeMounts"]}
     assert {"/tmp", "/home/immich/.immich-memories", "/home/immich/.cache"} <= mounted
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_render_sidecar_worker_probes_run_inside_the_container(tmp_path: Path) -> None:
+    """tcpSocket and httpGet both dial the pod IP, never 127.0.0.1 -- the kubelet makes
+    the call, not a process inside the container. This worker binds loopback only, so
+    either kind of probe fails forever and the pod never goes Ready (reproduced live).
+    exec runs inside the worker's own network namespace instead, where loopback is
+    reachable, and it must carry the bearer token /health sits behind.
+    """
+    pod = _render_sidecar_pod(tmp_path)
+    worker = next(c for c in pod["containers"] if c["name"] == "render-worker")
+
+    for probe_name in ("startupProbe", "readinessProbe"):
+        probe = worker[probe_name]
+        assert "tcpSocket" not in probe, probe_name
+        assert "httpGet" not in probe, probe_name
+        command = probe["exec"]["command"]
+        assert command[0] == "python3", probe_name
+        script = command[-1]
+        assert "127.0.0.1:8093/health" in script, probe_name
+        assert "IMMICH_MEMORIES_RENDER_WORKER_TOKEN" in script, probe_name
+        assert "Bearer" in script, probe_name
