@@ -29,6 +29,12 @@ What the minimum costs you:
 - **No AVX** (Intel Celeron J4125 and friends) means the CPU fallback draws the titles instead
   of the animated title kernels: [CPUs without AVX](./hardware.md#cpus-without-avx).
 - **ARM64** gets no hardware encoder: the VA-API drivers ship in the amd64 image only.
+- **Less memory** means fewer photos rendered at once. The app prepares one source per 2 GB it
+  may use: the container's memory limit when Compose sets one (the shipped file sets 4 GB),
+  otherwise the machine's RAM. 2 or 3 GB renders one photo at a time, 4 GB and up renders two.
+  `immich-memories preflight` prints what it picked, for example
+  `Photo preparation: 1 at a time (2.0 GB available, container limit)`. Setting
+  `advanced.analysis.source_prepare_workers` to a number (1 to 4) overrides it.
 
 The 25 GB covers the caches at their default budgets (10 GB of Immich previews, 10 GB of downloaded
 video kept 7 days) with room for the store to grow. The models are about 140 MB. The one file worth backing
