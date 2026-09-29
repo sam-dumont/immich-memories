@@ -35,10 +35,10 @@ WINDOW = DateRange(datetime(2025, 6, 1, tzinfo=UTC), datetime(2025, 6, 30, 23, 5
 HOUSEHOLD = ("primary", "partner")
 
 
-def _person(ids: list[str], name: str, accounts: dict[str, str] | None = None) -> dict:
+def _person(ids: list[str] | dict[str, list[str]], name: str) -> dict:
+    """A registry entry; ``ids`` is the primary's list, or one list per account."""
     return {
         "ids": ids,
-        **({"accounts": accounts} if accounts else {}),
         "name": name,
         "birth_date": None,
         "inferred": {"tier": "inner", "counts_reliable": True, "evidence": {}, "links": []},
@@ -50,8 +50,8 @@ def _person(ids: list[str], name: str, accounts: dict[str, str] | None = None) -
 REGISTRY = {
     "version": 1,
     "people": [
-        _person(["alex-p", "alex-q"], "Alex", {"alex-q": "partner"}),
-        _person(["kit-q"], "Kit", {"kit-q": "partner"}),
+        _person({"primary": ["alex-p"], "partner": ["alex-q"]}, "Alex"),
+        _person({"partner": ["kit-q"]}, "Kit"),
     ],
 }
 

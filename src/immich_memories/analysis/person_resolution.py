@@ -23,6 +23,8 @@ from typing import Any
 
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.config_models import PRIMARY_ACCOUNT
+from immich_memories.people.account_ids import entry_ids, ids_by_account
+from immich_memories.people.companion import people_entries
 
 # Manual people exist only in the store; no Immich picture carries their id.
 _MANUAL_PREFIX = "manual:"
@@ -71,22 +73,18 @@ def is_person_id(leaf: str) -> bool:
 
 def store_people(document: Mapping[str, Any]) -> tuple[StorePerson, ...]:
     """The registry document's people, each with the Immich aliases it binds."""
-    people = document.get("people")
-    if not isinstance(people, list):
-        return ()
     found = []
-    for entry in people:
-        if not isinstance(entry, dict) or not isinstance(entry.get("ids"), list):
+    for entry in people_entries(dict(document)):
+        own = entry_ids(entry)
+        if not own:
             continue
-        if not entry["ids"]:
-            continue
-        accounts = entry.get("accounts") or {}
         aliases = tuple(
-            PersonAlias(str(face), accounts.get(face) or PRIMARY_ACCOUNT)
-            for face in entry["ids"]
-            if not str(face).startswith(_MANUAL_PREFIX)
+            PersonAlias(face, account)
+            for account, faces in ids_by_account(entry).items()
+            for face in faces
+            if not face.startswith(_MANUAL_PREFIX)
         )
-        found.append(StorePerson(str(entry["ids"][0]), str(entry.get("name") or ""), aliases))
+        found.append(StorePerson(own[0], str(entry.get("name") or ""), aliases))
     return tuple(found)
 
 
