@@ -162,8 +162,8 @@ days, against 18 for the version that looked at the pixels again, at half the co
 looked at once, cheaply, and everything after that reads text.
 
 On September 8 three rules I had already ruled on broke again in one night, and a month I had graded
-"perfect" came back as one picture per day: "Respectfully what the fuck . This was litigated weeks
-ago". The fix was to stop coding, write the pipeline out in plain words, and move the weight from
+"perfect" came back as one picture per day: "Respectfully […] This was litigated weeks ago". The fix
+was to stop coding, write the pipeline out in plain words, and move the weight from
 days to stories that span days: a holiday, a festival, a week away. Graded films went from 23 good and
 8 bad to 27 good and 1 bad, and the old clip scorer was deleted: 47,528 lines in one pull request.
 
@@ -171,7 +171,8 @@ The bugs got stranger as the data got real:
 
 - Geotagging old photos put 46 of them in the wrong village because of a name printed on a
   cheesemaker's apron, pinned a mountain to Manhattan, and placed 1,616 forwarded WhatsApp pictures
-  where I was standing. 1,667 writes were rolled back. "GOD FUCKING DAMMIT".
+  where I was standing. 1,667 writes were rolled back, and what I typed next doesn't belong in
+  the docs.
 - A medical-content rule refused 1,445 pictures because the pipeline's own tag for Live Photos says a
   still "stitches" to a clip. It surfaced because a relative who is in a lot of my pictures had
   vanished from a film.
