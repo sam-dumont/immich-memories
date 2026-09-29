@@ -7,7 +7,7 @@ import logging
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
 
 from immich_memories.analysis.editorial_album_index import (
     RunAlbumNames,
@@ -62,9 +62,11 @@ from immich_memories.analysis.text_episode_prompt import (
 )
 from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
 from immich_memories.analysis.thumbnail_prefetch import cached_preview_bytes
+from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.models import Asset, VideoClipInfo
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.cache.editorial_verdicts import EditorialVerdicts
+from immich_memories.config_models import PRIMARY_ACCOUNT
 from immich_memories.db import open_store
 from immich_memories.operations.cut_progress import ANALYSIS_PHASE, StageUpdate, announcing_stages
 from immich_memories.planning.auto_duration import DURATION_FROM_DURATION_FLAG
@@ -457,6 +459,19 @@ def _reading_requesters(config, ports, reader_mode):
     )
 
 
+def _primary_owner_id(client: FullEditorialSource, accounts: tuple[str, ...]) -> str | None:
+    """Open a household run's accounts before editing; the primary's user wins copy ties.
+
+    A one-account run folds nothing across owners, so it keeps no owner (None).
+    """
+    if not accounts:
+        return None
+    if not isinstance(client, AccessBoundClient):
+        raise TypeError("a run that names accounts reads through an AccessBoundClient")
+    opened = client.open_accounts(accounts)
+    return opened[PRIMARY_ACCOUNT].user.id if PRIMARY_ACCOUNT in opened else None
+
+
 def build_editorial_planner(
     *,
     client: FullEditorialSource,
@@ -495,6 +510,7 @@ def build_editorial_planner(
         scope=scope,
         owner_excluded_asset_ids=context.owner_excluded_asset_ids,
         owner_required_asset_ids=context.owner_required_asset_ids,
+        primary_owner_id=_primary_owner_id(client, context.accounts),
     )
 
     source_snapshot: tuple[Asset | VideoClipInfo, ...] | None = (
@@ -508,7 +524,7 @@ def build_editorial_planner(
         if source_snapshot is None:
             source_snapshot = select_source_members(
                 fetch_household_source(
-                    config.immich,
+                    cast(AccessBoundClient, client),
                     context.accounts,
                     requested_scope,
                     runtime_ports.fetch_full_source,
