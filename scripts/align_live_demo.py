@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from immich_memories.processing.live_photo_merger import (  # noqa: E402
     _find_audio_offsets,
+    build_merge_command,
 )
 from immich_memories.processing.stitch_alignment import (  # noqa: E402
     companion_frames,
@@ -60,7 +61,6 @@ def continuous_windows(
     return windows
 
 
-_RENDER_HEIGHT = 270
 _RENDER_FPS = 30
 
 
@@ -153,67 +153,15 @@ def measure_join_jumps(path: Path, *, window: float = 0.4) -> list[float]:
     return jumps
 
 
-def render(paths: list[Path], windows: list[tuple[float, float]], target: Path, size: dict) -> None:
-    """Concatenate the windows at the source's own proportions."""
-    width = round(_RENDER_HEIGHT * size["width"] / size["height"])
-    width += width % 2
-    with tempfile.TemporaryDirectory(prefix="live-demo-") as directory:
-        segments = []
-        for index, (path, (start, end)) in enumerate(zip(paths, windows, strict=True)):
-            segment = Path(directory) / f"seg{index}.mp4"
-            subprocess.run(
-                [
-                    "ffmpeg",
-                    "-v",
-                    "error",
-                    "-ss",
-                    f"{start:.6f}",
-                    "-to",
-                    f"{end:.6f}",
-                    "-i",
-                    str(path),
-                    "-vf",
-                    f"scale={width}:{_RENDER_HEIGHT},fps={size['fps']:.6f},setpts=PTS-STARTPTS",
-                    "-c:v",
-                    "libx264",
-                    "-preset",
-                    "slow",
-                    "-crf",
-                    "20",
-                    "-c:a",
-                    "aac",
-                    "-b:a",
-                    "128k",
-                    "-y",
-                    str(segment),
-                ],
-                capture_output=True,
-                check=True,
-            )
-            segments.append(segment)
-        listing = Path(directory) / "list.txt"
-        listing.write_text("".join(f"file '{segment}'\n" for segment in segments))
-        subprocess.run(
-            [
-                "ffmpeg",
-                "-v",
-                "error",
-                "-f",
-                "concat",
-                "-safe",
-                "0",
-                "-i",
-                str(listing),
-                "-c",
-                "copy",
-                "-movflags",
-                "+faststart",
-                "-y",
-                str(target),
-            ],
-            capture_output=True,
-            check=True,
-        )
+def render(paths: list[Path], windows: list[tuple[float, float]], target: Path) -> None:
+    """Merge the windows through the app's own burst merge, as a film would render them.
+
+    Full resolution, per-clip exposure and white balance matching, one frame rate and a
+    30 ms fade at each audio join: whatever `build_merge_command` does today is what the
+    docs show. Software encoding, so a rebuild does not depend on the machine's GPU.
+    """
+    command = build_merge_command(paths, windows, target, hardware_enabled=False)
+    subprocess.run(command, capture_output=True, check=True)
 
 
 def main() -> int:
@@ -258,7 +206,7 @@ def main() -> int:
         positions.append(position)
     with tempfile.TemporaryDirectory(prefix="live-demo-out-") as directory:
         staged = Path(directory) / "merged.mp4"
-        render(sources, windows, staged, sizes[0])
+        render(sources, windows, staged)
         print(f"  new merged rewinds at its joins: {measure_rewind_at(staged, positions)}")
         staged.replace(merged)
     print(f"  wrote {merged}")

@@ -259,11 +259,11 @@ def _ffmpeg(*args: str) -> None:
 
 
 def _generate_videos(media_dir: Path) -> dict[str, Path]:
-    """Pan across each source photograph for four seconds, with a tone under it."""
+    """Pan across each source photograph for four seconds, over a silent audio track."""
     width, height = _VIDEO_SIZE
     stage_w, stage_h = round(width * _PAN_HEADROOM), round(height * _PAN_HEADROOM)
     videos: dict[str, Path] = {}
-    for index, picture in enumerate(_VIDEOS):
+    for picture in _VIDEOS:
         video_path = media_dir / f"{picture.asset_id}.mp4"
         _ffmpeg(
             "-loop",
@@ -274,9 +274,10 @@ def _generate_videos(media_dir: Path) -> dict[str, Path]:
             str(picture.source),
             "-f",
             "lavfi",
-            # A tone per clip: silence detection reads the audio track too.
+            # WHY silent: a phone clip carries an audio stream, and the render keeps it under the
+            # music; a test tone here was the soundtrack of every film cut from this library.
             "-i",
-            f"sine=frequency={440 + index * 110}:sample_rate=48000:duration={picture.seconds}",
+            f"anullsrc=channel_layout=stereo:sample_rate=48000:duration={picture.seconds}",
             "-map",
             "0:v:0",
             "-map",

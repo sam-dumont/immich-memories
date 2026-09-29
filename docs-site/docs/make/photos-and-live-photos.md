@@ -40,11 +40,11 @@ Three photos of an Italian hilltop, fired off in a row, each about 3 seconds and
 
 Merged, 4.5 seconds of continuous footage:
 
-<Video src="/demos/live-photos/italian_hilltop/merged.mp4" width={720} controls />
+<Video src="/demos/live-photos/italian_hilltop/merged.mp4" width={240} controls />
 
-A bike race, 6 Live Photos merged into 8.2 seconds:
+A bike race, 6 Live Photos merged into 8.1 seconds:
 
-<Video src="/demos/live-photos/bike_race/merged.mp4" width={720} controls />
+<Video src="/demos/live-photos/bike_race/merged.mp4" width={480} controls />
 
 These clips are the project author's own footage, published with permission.
 
