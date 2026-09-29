@@ -15,7 +15,7 @@ to selection_source_groups.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -27,6 +27,7 @@ from immich_memories.analysis.editorial_contracts import (
     SourceEvidence,
     TraceDecision,
 )
+from immich_memories.analysis.exact_copies import fold_exact_copies
 from immich_memories.analysis.picture_copies import picture_copies, starred_keepers
 from immich_memories.analysis.selection_source_groups import (
     EditorialGroup,
@@ -134,6 +135,9 @@ class EditorialSelectionRequest:
     # about again. A post-read signal, so it changes no prompt and no digest input.
     owner_required_asset_ids: tuple[str, ...] = ()
     evidence_exclusions: Mapping[str, str] = field(default_factory=dict)
+    # Whose copy stands for a picture two accounts both hold, after any favourite.
+    # None (one account, or the owner not yet known) falls through to stable ids.
+    primary_owner_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -198,7 +202,6 @@ def prepare_editorial_source(
     ``group=False`` leaves episodes and moments uncut, for a caller that only needs to
     know what was admitted.
     """
-    excluded = set(request.owner_excluded_asset_ids)
     sources, normalization_warnings = _coalesce_sources(
         tuple(
             sorted(
@@ -207,6 +210,14 @@ def prepare_editorial_source(
             )
         )
     )
+    folded = fold_exact_copies(sources, primary_owner_id=request.primary_owner_id)
+    sources = folded.pool
+    request = replace(
+        request,
+        owner_excluded_asset_ids=folded.kept_ids(request.owner_excluded_asset_ids),
+        owner_required_asset_ids=folded.kept_ids(request.owner_required_asset_ids),
+    )
+    excluded = set(request.owner_excluded_asset_ids)
     components = live_photo_component_ids(asset_of(source) for source in sources)
     generated = frozenset(request.scope.generated_asset_ids)
     copies = picture_copies(
@@ -445,13 +456,30 @@ def _coalesce_sources(
             warnings.append(
                 f"!! conflicting Live Photo rendering manifests for duplicate asset {asset_id}"
             )
-        coalesced[asset_id] = _with_favourite(
-            _without_rendering_evidence(preferred)
-            if asset_id in conflicting_render_manifests
-            else preferred,
-            asset_of(existing).is_favorite or asset_of(source).is_favorite,
+        coalesced[asset_id] = _with_access_accounts(
+            _with_favourite(
+                _without_rendering_evidence(preferred)
+                if asset_id in conflicting_render_manifests
+                else preferred,
+                asset_of(existing).is_favorite or asset_of(source).is_favorite,
+            ),
+            (*asset_of(existing).access_accounts, *asset_of(source).access_accounts),
         )
     return tuple(coalesced.values()), tuple(warnings)
+
+
+def _with_access_accounts(
+    source: Asset | VideoClipInfo, accounts: Sequence[str]
+) -> Asset | VideoClipInfo:
+    """Every account any read of the asset came through, in first-seen order."""
+    merged = tuple(dict.fromkeys(accounts))
+    asset = asset_of(source)
+    if asset.access_accounts == merged:
+        return source
+    merged_asset = asset.model_copy(update={"access_accounts": merged})
+    if isinstance(source, VideoClipInfo):
+        return source.model_copy(update={"asset": merged_asset})
+    return merged_asset
 
 
 def _asset_signature(source: Asset | VideoClipInfo) -> tuple[object, ...]:

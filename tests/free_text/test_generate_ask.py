@@ -13,7 +13,6 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner, Result
 
-from immich_memories.cli._helpers import set_quiet_mode
 from immich_memories.config_models_editorial import EditorialConfig
 from immich_memories.db import open_store
 from immich_memories.free_text.lexicon import WordNetLexicon
@@ -80,8 +79,6 @@ def ask(tmp_path: Path, lexicon: WordNetLexicon, monkeypatch: pytest.MonkeyPatch
             return CliRunner().invoke(main, ["-c", str(path), "generate", *args])
 
     yield _invoke
-    # A run without a terminal switches the print helpers to log lines for the whole process.
-    set_quiet_mode(False)
 
 
 def test_a_dry_run_prints_the_translation_and_the_pool_and_films_nothing(ask) -> None:
