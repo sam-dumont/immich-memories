@@ -1,7 +1,7 @@
 """The stops a trip intro flies to: every one named, close ones named once.
 
 A hike through seven villages is one area of stay, not seven destinations. Stops
-are grouped with the trip-leg rule (points that stay within `_CITY_SPREAD_KM` of
+are grouped with the trip-leg rule (points that stay within `CITY_SPREAD_KM` of
 each other). A group of three or more becomes one stop at its middle, named by
 the place its members share in the geocoder's answer (in the film's language);
 without a shared level it is named "first → last". A group of one or two keeps
@@ -15,7 +15,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from itertools import starmap
 
-from immich_memories.analysis.trip_detection import _CITY_SPREAD_KM, haversine_km
+from immich_memories.analysis.trip_detection import CITY_SPREAD_KM, haversine_km
 
 AddressOf = Callable[[float, float], Mapping[str, str]]
 
@@ -43,8 +43,7 @@ def _groups(locations: list[tuple[float, float]]) -> list[list[int]]:
                 group
                 for group in groups
                 if all(
-                    haversine_km(lat, lon, *locations[member]) <= _CITY_SPREAD_KM
-                    for member in group
+                    haversine_km(lat, lon, *locations[member]) <= CITY_SPREAD_KM for member in group
                 )
             ),
             None,

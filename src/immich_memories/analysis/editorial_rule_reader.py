@@ -36,6 +36,7 @@ from immich_memories.analysis.editorial_story_weighing import (
     _floor_weights,
     consecutive_runs,
 )
+from immich_memories.analysis.trip_legs import legs_of_days
 
 # The place labels of the shipped head bundle the standing rule reads. A picture is in a
 # private or utility interior, or in a public place; every other venue label says nothing.
@@ -216,7 +217,8 @@ class RuleStructureReader:
 
         A stretch away from home stays whole however long it lasts, because a trip is one
         story, and a day at home ends it: two trips either side of a week at home are two
-        stories, not one. A run at home is cut on the calendar week; without that, a
+        stories, not one. The one cut inside it is a change of where it stays: a hike then a
+        city stay is two legs, each its own story (`trip_legs`, #1563). A run at home is cut on the calendar week; without that, a
         densely photographed year merges into a single 129-day story whose grant is spent
         on its first week and whose remaining months never come into view. A day whose
         pictures say nothing about where they were does not end a trip.
@@ -235,8 +237,26 @@ class RuleStructureReader:
                 was_away = away
                 week = _calendar_week(hints[key]["day"]) or dated
                 chunks.setdefault((True, trips) if away else (False, week), []).append(key)
-            runs.extend(chunks.values())
+            for (away_run, _), chunk in chunks.items():
+                runs.extend(self._legs(chunk, episodes, hints) if away_run else [chunk])
         return runs
+
+    def _legs(self, keys: list[str], episodes, hints) -> list[list[str]]:
+        moments_of = {e.key: e.moments for e in episodes}
+        points: dict[str, list[tuple[float, float]]] = {}
+        for key in keys:
+            day = str(hints[key]["day"])
+            points.setdefault(day, []).extend(
+                point
+                for moment in moments_of[key]
+                for asset_id in self.source.moment_asset_ids.get(moment, ())
+                if (point := self.source.gps.get(asset_id)) is not None
+            )
+        leg_of = legs_of_days(points)
+        legs: dict[int, list[str]] = {}
+        for key in keys:
+            legs.setdefault(leg_of[str(hints[key]["day"])], []).append(key)
+        return list(legs.values())
 
     def _stories(self, episodes, hints):
         by_key = {e.key: e for e in episodes}

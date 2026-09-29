@@ -23,8 +23,9 @@ flowchart TD
   day --> home{"within 10 km of home?<br/>editorial_home_radius, trips.homebase_*"}
   home -- "yes, or no home base set" --> week["cut on the ISO week<br/>RuleStructureReader._runs"]
   home -- no --> away["the stretch away stays whole<br/>RuleStructureReader._runs"]
+  away --> legs["cut where it changes where it stays<br/>trip_legs.legs_of_days"]
   week --> story["one story per run<br/>RuleStructureReader._stories"]
-  away --> story
+  legs --> story
   story --> places["one place may not fill a story<br/>editorial_story_places.place_shares"]
 ```
 
@@ -34,11 +35,18 @@ flowchart TD
 | Episode | the same test at 90 minutes and 2 km; every moment sits in exactly one episode | `EPISODE_WINDOW_MINUTES`, `build_episode_groups` |
 | Capture run | captures each within five minutes of the one before; it spaces shots and is the unit of the exposure rule | `MIN_GAP_IN_CAPTURE_GROUP_SECONDS` |
 | Day chunk | same calendar day, or starting within 6 hours of the last picture (a late night stays one night); split only when more than 90 minutes pass **and** the city changes | `RuleStructureReader._day_chunks` |
-| Story | a run of consecutive photographed days: at home, cut on the ISO week; away, kept whole; a day back home ends it | `RuleStructureReader._runs` |
+| Story | a run of consecutive photographed days: at home, cut on the ISO week; away, kept whole unless it changes where it stays (below); a day back home ends it | `RuleStructureReader._runs` |
+| Trip leg | days stay in one area while each day's median position is within 25 km of the area's; an area of 3 days or more is a leg, a shorter one joins a neighbour; a trip splits only when two legs are more than 50 km apart | `trip_legs.legs_of_days` |
 
 "Away" is more than 10 km from `trips.homebase_latitude` / `homebase_longitude`. Without a home base
 nothing is away, so a three-week holiday arrives as three weekly stories. Setting it is step one of
 [Teach it your family](../get-started/who-is-who.md).
+
+**A trip that changes where it stays is two stories.** A week hiking village to village and then four
+days in a city are two chapters. As one story, the hike's favourites took every slot and the city got
+none. A road trip that never stays three days in one place is still one story, and so is a week on an
+island with day trips. Each leg is weighed on its own, with its own name and the same rules for days
+without a favourite. A trip film splits the same way.
 
 **One place does not take a film.** Inside a story, each place may hold only the share of shots its
 days (or its moments, on a one-day story) earn against the rest, on the same square-root curve a trip
@@ -115,8 +123,8 @@ On a model install, a film over several separate windows (on this day across yea
 across years, a birthday film) has no single period account to polish, so the model plans it whole, and so
 does any film with `advanced.editorial.thin_model_layer: false` (see [What a model adds](./what-a-model-adds.md)). Only that route adds these:
 
-- **Trips fold into one story** (`editorial_story_trips`), with a reserve of
-  `round(slots / 2 * sqrt(trip days / film days))` shots, at least one.
+- **Trips fold into one story per leg** (`editorial_story_trips`), each with a reserve of
+  `round(slots / 2 * sqrt(leg days / film days))` shots, at least one.
 - **Recurring activities become one thread** (`editorial_story_threads`): four Saturdays at the same
   climbing gym are one story, one per calendar year in a film longer than 18 months, so a year of
   progress still shows.

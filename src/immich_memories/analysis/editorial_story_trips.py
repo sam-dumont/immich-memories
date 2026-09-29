@@ -17,9 +17,11 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from operator import itemgetter
 from typing import Any
 
 from immich_memories.analysis.trip_detection import detect_trips
+from immich_memories.analysis.trip_legs import legs_of_days
 from immich_memories.api.models import Asset
 
 NO_HOME_BASE = (
@@ -37,9 +39,16 @@ class FilmTrip:
     place: str
     assets: frozenset[str]
     days: frozenset[str]
+    # Day to leg, where the trip changes where it stays (#1563); empty for a one-leg trip.
+    legs: Mapping[str, int] = field(default_factory=dict)
 
     def record(self) -> dict[str, Any]:
-        return {"key": self.key, "place": self.place, "pictures": len(self.assets)}
+        return {
+            "key": self.key,
+            "place": self.place,
+            "pictures": len(self.assets),
+            "legs": len(set(self.legs.values())) or 1,
+        }
 
 
 @dataclass
@@ -50,6 +59,8 @@ class FilmTrips:
     status: str = "detected"
     positioned: frozenset[str] = field(default_factory=frozenset)
     folded: list[dict[str, Any]] = field(default_factory=list)
+    # A trip film's own legs, day to leg: the film is one journey, but not one stay.
+    journey_legs: Mapping[str, int] = field(default_factory=dict)
 
     def record(self) -> dict[str, Any]:
         return {
@@ -65,12 +76,12 @@ def detect_film_trips(assets: Iterable[Asset], trips_config, *, journey: bool) -
     A trip film is already one journey, so its days stay the stories. Without a configured
     home base nothing can be away from home, and the film has no trip stories.
     """
+    pool = sorted(assets, key=lambda asset: asset.file_created_at)
     if journey:
-        return FilmTrips(status=JOURNEY)
+        return FilmTrips(status=JOURNEY, journey_legs=_split_legs(pool))
     home = (trips_config.homebase_latitude, trips_config.homebase_longitude)
     if home == (0.0, 0.0):
         return FilmTrips(status=NO_HOME_BASE)
-    pool = sorted(assets, key=lambda asset: asset.file_created_at)
     found = detect_trips(
         pool,
         home[0],
@@ -88,7 +99,8 @@ def detect_film_trips(assets: Iterable[Asset], trips_config, *, journey: bool) -
         and asset.exif_info.latitude is not None
         and asset.exif_info.longitude is not None
     )
-    day_of = {asset.id: asset.file_created_at.isoformat()[:10] for asset in pool}
+    day_of = {asset.id: _day(asset) for asset in pool}
+    by_id = {asset.id: asset for asset in pool}
     return FilmTrips(
         tuple(
             FilmTrip(
@@ -96,11 +108,31 @@ def detect_film_trips(assets: Iterable[Asset], trips_config, *, journey: bool) -
                 trip.location_name,
                 frozenset(trip.asset_ids),
                 frozenset(day_of[asset] for asset in trip.asset_ids),
+                _split_legs([by_id[a] for a in trip.asset_ids if a in by_id]),
             )
             for number, trip in enumerate(found, 1)
         ),
         positioned=positioned,
     )
+
+
+def _day(asset: Asset) -> str:
+    return asset.file_created_at.isoformat()[:10]
+
+
+def _split_legs(assets: Iterable[Asset]) -> dict[str, int]:
+    """Day to leg, or nothing when the pictures keep to one leg."""
+    points: dict[str, list[tuple[float, float]]] = {}
+    for asset in assets:
+        exif = asset.exif_info
+        point = (
+            (exif.latitude, exif.longitude)
+            if exif is not None and exif.latitude is not None and exif.longitude is not None
+            else None
+        )
+        points.setdefault(_day(asset), []).extend([point] if point else [])
+    legs = legs_of_days(points)
+    return legs if len(set(legs.values())) > 1 else {}
 
 
 def trip_allowance(days: int, film_days: int, slots: int) -> int:
@@ -127,13 +159,16 @@ def reserve_trip_depth(stories: Sequence[dict], *, slots: int, film_days: int) -
 
 def trip_fold(
     trips: FilmTrips | None, moment_assets: Mapping[str, Sequence[str]], *, rules: bool
-) -> tuple[FilmTrips, TripStories | None]:
+) -> tuple[FilmTrips, TripStories | LegStories | None]:
     """The trips a reading folds, or none: the rules reader keeps consecutive days together."""
     trips = trips or FilmTrips(status="trip detection was not asked for this film")
-    if not trips.trips:
-        return trips, None
     if rules:
-        trips.status = "detected; the rules reader keeps consecutive days together itself"
+        if trips.trips:
+            trips.status = "detected; the rules reader keeps consecutive days together itself"
+        return trips, None
+    if trips.journey_legs:
+        return trips, LegStories(trips.journey_legs)
+    if not trips.trips:
         return trips, None
     return trips, TripStories(
         trips, assets_of=lambda e: [a for m in e.moments for a in moment_assets.get(m, ())]
@@ -167,18 +202,19 @@ class TripStories:
             is not None
         }
         folded: list[dict] = []
-        placed: dict[str, dict] = {}
+        placed: dict[tuple[str, int], dict] = {}
         for story in stories:
             outside = [key for key in story["episodes"] if key not in trip_of]
             for key in story["episodes"]:
                 if key not in trip_of:
                     continue
                 trip = trip_of[key]
-                if trip.key not in placed:
-                    placed[trip.key] = _trip_story(story, trip)
-                    folded.append(placed[trip.key])
-                placed[trip.key]["episodes"].append(key)
-                placed[trip.key]["members"].append(story["title"])
+                leg = trip.legs.get(_hint_day(hints, key), 0)
+                if (trip.key, leg) not in placed:
+                    placed[trip.key, leg] = _trip_story(story, trip, leg)
+                    folded.append(placed[trip.key, leg])
+                placed[trip.key, leg]["episodes"].append(key)
+                placed[trip.key, leg]["members"].append(story["title"])
             if len(outside) == len(story["episodes"]):
                 folded.append(story)
             elif outside:
@@ -196,15 +232,48 @@ class TripStories:
         return folded
 
 
-def _trip_story(first: Mapping[str, Any], trip: FilmTrip) -> dict[str, Any]:
+class LegStories:
+    """Split a trip film's stories where the journey changes where it stays (#1563).
+
+    The reader may file a whole journey as one story; each leg is then its own story, so a
+    city stay after a hike is judged on its own pictures rather than on the hike's favourites.
+    """
+
+    def __init__(self, legs: Mapping[str, int]) -> None:
+        self._legs = legs
+
+    def __call__(self, stories: list[dict], episodes: Sequence[Any], hints) -> list[dict]:
+        del episodes
+        out: list[dict] = []
+        for story in stories:
+            parts: dict[int, list[str]] = {}
+            for key in story["episodes"]:
+                parts.setdefault(self._legs.get(_hint_day(hints, key), 0), []).append(key)
+            if len(parts) < 2:
+                out.append(story)
+                continue
+            out.extend(
+                story | {"key": f"{story['key']}-leg{leg + 1}", "episodes": keys}
+                for leg, keys in sorted(parts.items())
+            )
+        return out
+
+
+def _hint_day(hints, key: str) -> str:
+    return str((hints.get(key) or {}).get("day") or "")[:10]
+
+
+def _trip_story(first: Mapping[str, Any], trip: FilmTrip, leg: int) -> dict[str, Any]:
+    legged = bool(trip.legs)
     return {
-        "key": first["key"],
+        "key": f"{first['key']}-leg{leg + 1}" if legged else first["key"],
         "title": f"Trip to {trip.place}" if trip.place else "Trip away from home",
         "episodes": [],
         "weight": "",
         "purpose": first.get("purpose") or "",
         "members": [],
-        "trip": {"key": trip.key, "place": trip.place},
+        "trip": {"key": f"{trip.key}.{leg + 1}" if legged else trip.key, "place": trip.place}
+        | ({"leg": leg + 1} if legged else {}),
     }
 
 
@@ -232,6 +301,11 @@ def _describe_trip(story: dict[str, Any], hints) -> None:
             stops[-1][1] += 1
         else:
             stops.append([place, 1])
+    if "leg" in story["trip"] and stops:
+        # A leg is named by where it stayed longest, not by the whole trip's name.
+        place = max(stops, key=itemgetter(1))[0]
+        story["title"] = f"Trip to {place}"
+        story["trip"]["place"] = place
     span = f"{days[0]} to {days[-1]}" if days else "undated"
     where = "; ".join(f"{place} ({n} day{'s' if n > 1 else ''})" for place, n in stops)
     story["trip"] |= {"days": len(days), "first_day": days[:1], "stops": stops}

@@ -30,8 +30,9 @@ and one changed asset invalidates one month instead of every page after it. The 
 applied to the answer (`_split_by_day`), not asked for in the prompt.
 
 Before the weighing, `editorial_story_trips.py` runs the app's trip detection over the film's pool
-and folds every trip's day episodes into one story; the trip reserves
-`round(slots / 2 * sqrt(trip days / film days))` pictures at its turn in the presence pass. After
+and folds every trip's day episodes into one story per leg (`trip_legs.py`: a trip that changes
+where it stays, such as a hike then a city, is two legs); each leg reserves
+`round(slots / 2 * sqrt(leg days / film days))` pictures at its turn in the presence pass. After
 the weighing, `editorial_story_threads.py` asks the reader whether stories of one place and era
 that its own words link are one recurring activity, and folds each confirmed group. At
 carrier admission, `editorial_story_lookalike.py` answers the repetition question from the cached
@@ -513,7 +514,7 @@ src/immich_memories/
 │   ├── text_episode_paging.py  # Its request limits: an episode cut into pages, pages packed into prompts
 │   ├── editorial_album_index.py # Album names by asset, one listing + one read per album, once per run
 │   ├── editorial_story_*.py    # Story reading, weighing, slots, shortlist, carriers: the story planner
-│   ├── editorial_story_trips.py     # Detected trips become one story each, with a reserve for their length
+│   ├── editorial_story_trips.py     # Detected trips become one story per leg, with a reserve for each leg's length
 │   ├── editorial_story_lookalike.py # A story's further picture is refused when it repeats one it holds
 │   ├── editorial_story_depth.py     # A short film's free slots as verified-different frames inside shown moments
 │   ├── editorial_story_trim.py      # The allocation in reverse when the production budget is tighter
@@ -530,6 +531,7 @@ src/immich_memories/
 │   ├── selection_trace.py      # Per-stage funnel record: what each filter received and let through
 │   ├── progress.py             # ProgressTracker: the run clock the stage reporter reads
 │   ├── trip_detection.py       # GPS-based trip detection (clustering, injected geocoder)
+│   ├── trip_legs.py            # Where a trip changes where it stays: areas of stay become legs (#1563)
 │   ├── trip_place.py           # Names a trip at the scale its pictures cover (city → country)
 │   ├── place_geocoder.py       # Opt-in Nominatim: district names per ~1 km cell, cached in the store
 │   ├── trip_discovery.py       # Shared UI/CLI all-asset discovery, including year-boundary trips

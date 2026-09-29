@@ -164,7 +164,7 @@ def geocoder_for(config: Config) -> Geocoder | None:
 
 
 # Below this spread a trip fits one town, and the geocoder names the town.
-_CITY_SPREAD_KM = 25.0
+CITY_SPREAD_KM = 25.0
 # The village before the town or city it belongs to: in a merged municipality the village is
 # where the trip went. Never a district: a week in Barcelona is not a week in Gràcia.
 _CITY_KEYS = ("village", "town", "city")
@@ -175,14 +175,14 @@ _REGION_KEYS = ("island", "state", "state_district", "province")
 
 def _place_at_scale(address: Mapping[str, str], spread_km: float | None) -> str | None:
     keys: tuple[str, ...] = _REGION_KEYS
-    if spread_km is not None and spread_km < _CITY_SPREAD_KM:
+    if spread_km is not None and spread_km < CITY_SPREAD_KM:
         keys = _CITY_KEYS + _REGION_KEYS
     return next((name for key in keys if (name := short_place_name(address.get(key)))), None)
 
 
 @private_place_name
 def trip_place_name(address: Mapping[str, str], spread_km: float | None = None) -> str | None:
-    """The trip's place at its scale: the town under `_CITY_SPREAD_KM`, else the region.
+    """The trip's place at its scale: the town under `CITY_SPREAD_KM`, else the region.
 
     None when the address has no country or no place at that scale, so the trip keeps the
     name its own pictures give it.
@@ -240,7 +240,7 @@ def _derive_location_name(
     ):
         spread_km = _compute_spread_km(assets)
         if geocoded := geocoder(centroid_lat, centroid_lon, spread_km=spread_km):
-            return TripPlace(geocoded, "city" if spread_km < _CITY_SPREAD_KM else "region")
+            return TripPlace(geocoded, "city" if spread_km < CITY_SPREAD_KM else "region")
     if place is not None:
         return place
     cities = Counter(a.exif_info.city for a in assets if a.exif_info and a.exif_info.city)
