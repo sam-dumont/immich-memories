@@ -115,6 +115,14 @@ def scope_options(command: FC) -> FC:
             "in an episode counts in all of its pictures.",
         ),
         click.option(
+            "--group",
+            "group_label",
+            type=str,
+            default=None,
+            help="A label saved with `people group add`, resolved like --people-expression "
+            "(mutually exclusive with it, --person and --person-match)",
+        ),
+        click.option(
             "--person-match",
             type=click.Choice(["and", "or"]),
             default="and",

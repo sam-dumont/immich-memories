@@ -114,6 +114,7 @@ def register_generate_commands(main: click.Group) -> None:
         person: tuple[str, ...],
         person_match: str,
         person_expression: str | None,
+        group_label: str | None,
         accounts: tuple[str, ...],
         memory_type: str | None,
         holiday: str | None,
@@ -212,6 +213,7 @@ def register_generate_commands(main: click.Group) -> None:
 
         people_condition, person_names = resolve_people_condition(
             person_expression,
+            group_label,
             person_names=list(person) if person else [],
             person_match_typed=ctx.get_parameter_source("person_match")
             == click.core.ParameterSource.COMMANDLINE,

@@ -155,6 +155,23 @@ their ids and asks for one. `bind` only adds the id: the name, birth date and yo
 else holds is refused, never merged, and binding the same id twice changes nothing. Ids are never matched by name.
 Reading a second account arrives in a later release.
 
+### Saved groups
+
+A group is a label for a people condition, so `generate --group kids` reads the same as typing the expression
+out. It saves nothing about the people themselves, just the condition:
+
+```bash
+immich-memories people group add kids '"5f2c…" OR "a91e…"'
+immich-memories people group list
+immich-memories people group rm kids
+```
+
+`add` takes the same grammar as `--people-expression`, but the leaves are ids (what `people show` lists), not
+names: `people group list` prints them, `people group add` refuses a label already in use, and `people group rm`
+never touches the people the group named. `generate --group kids` resolves the saved expression through the
+people store exactly as `--people-expression` does, and it combines with `--accounts` the same way. Groups round-trip
+with `people export`/`people import`, next to the people.
+
 The scan also writes its measurements (every person's counts and the pairs seen together) to
 `~/.immich-memories/people-graph.json`. That one stays a file: each scan recomputes all of it from Immich and
 nothing reads it back.

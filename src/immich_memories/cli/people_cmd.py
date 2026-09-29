@@ -8,6 +8,7 @@ from typing import Any
 
 import click
 
+from immich_memories.api.person_expression import PersonExpression
 from immich_memories.cli._helpers import console, print_error, print_success
 from immich_memories.db import open_store
 from immich_memories.people.account_ids import entry_ids, ids_by_account
@@ -23,6 +24,7 @@ from immich_memories.people.evidence_graph import (
     save_evidence_graph,
 )
 from immich_memories.people.graph import DEFAULT_MIN_ASSETS, PeopleGraph
+from immich_memories.people.groups import add_group, list_groups, remove_group
 from immich_memories.people.signatures import LinkKind
 
 _TIER_ORDER = ("inner", "recurring", "episodic", "event")
@@ -52,6 +54,7 @@ def register_people_commands(cli_group: click.Group) -> None:
     _register_show(people)
     _register_transfer(people)
     _register_bind(people)
+    _register_group(people)
     cli_group.add_command(people)
 
 
@@ -258,6 +261,55 @@ def _register_bind(people: click.Group) -> None:
             print_error(str(exc))
             sys.exit(1)
         print_success(f"Bound {alias_id} ({account} account) to {_who(entry)}")
+
+
+def _register_group(people: click.Group) -> None:
+    @people.group("group")
+    def group() -> None:
+        """Saved people expressions `generate --group` can reuse."""
+
+    @group.command("add")
+    @click.argument("label")
+    @click.argument("expression")
+    def add(label: str, expression: str) -> None:
+        """Save EXPRESSION under LABEL, in the --people-expression grammar.
+
+        EXPRESSION's leaves are canonical person ids — the ids `people show`
+        lists — not names, e.g. ("id-alex" OR "id-sam") AND "id-kit". LABEL
+        must not already be in use.
+        """
+        import sys
+
+        try:
+            parsed = PersonExpression.parse(expression)
+            add_group(open_store(), label, parsed)
+        except ValueError as exc:
+            print_error(str(exc))
+            sys.exit(1)
+        print_success(f"Saved group {label!r}: {parsed.display_label}")
+
+    @group.command("list")
+    def list_command() -> None:
+        """List every saved group and its expression."""
+        saved = list_groups(open_store())
+        if not saved:
+            console.print("[yellow]No saved groups yet — `people group add` makes one.[/yellow]")
+            return
+        for entry in saved:
+            console.print(f"  [bold]{entry.label}[/bold]  {entry.expression.display_label}")
+
+    @group.command("rm")
+    @click.argument("label")
+    def rm(label: str) -> None:
+        """Remove a saved group. Never touches the people it names."""
+        import sys
+
+        try:
+            remove_group(open_store(), label)
+        except ValueError as exc:
+            print_error(str(exc))
+            sys.exit(1)
+        print_success(f"Removed group {label!r}")
 
 
 def _person_named(entries: list[dict[str, Any]], person: str) -> dict[str, Any]:
