@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from immich_memories.processing.encoding_plan import EncodingPlan
+from immich_memories.processing.map_move_timing import MapMoveTiming
 
 if TYPE_CHECKING:
     pass
@@ -51,6 +52,8 @@ class TitleScreenConfig:
     title_duration: float = 3.5  # seconds
     month_divider_duration: float = 2.0
     ending_duration: float = 4.0
+    # A trip map's flight and still hold (the intro and every location card)
+    map_move: MapMoveTiming = field(default_factory=MapMoveTiming)
 
     # Localization
     locale: str = "en"
@@ -471,6 +474,16 @@ class TitleScreenGenerator:
             home_lon=home_lon,
             location_names=location_names,
         )
+
+    def generate_location_move_screen(
+        self,
+        location_name: str,
+        came_from: tuple[float, float],
+        destination: tuple[float, float],
+        seconds: float,
+    ) -> GeneratedScreen:
+        """A location card on the satellite map: the flight from the last place, then its name."""
+        return self._trip.generate_location_move(location_name, came_from, destination, seconds)
 
     def generate_location_card_screen(
         self,

@@ -178,6 +178,8 @@ class RunMetadata:
     llm_metrics: dict[str, float | int] = field(default_factory=dict)
     # Which source produced the opening title: a TitleSource value.
     title_source: str | None = None
+    # Seconds of content, titles and map extra in the rendered film (FilmTimeline.as_dict).
+    film_timeline: dict[str, float] | None = None
 
     # System info
     system_info: SystemInfo | None = None
@@ -227,6 +229,7 @@ class RunMetadata:
             "delivery_album": self.delivery_album,
             "warnings": self.warnings,
             "title_source": self.title_source,
+            "film_timeline": self.film_timeline,
             "clips_analyzed": self.clips_analyzed,
             "clips_selected": self.clips_selected,
             "errors_count": self.errors_count,
@@ -279,6 +282,7 @@ class RunMetadata:
             delivery_album=data.get("delivery_album"),
             warnings=list(data.get("warnings") or []),
             title_source=data.get("title_source"),
+            film_timeline=data.get("film_timeline"),
             clips_analyzed=data.get("clips_analyzed", 0),
             clips_selected=data.get("clips_selected", 0),
             errors_count=data.get("errors_count", 0),

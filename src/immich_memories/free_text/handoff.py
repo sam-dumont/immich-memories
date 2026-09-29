@@ -18,6 +18,7 @@ from immich_memories.free_text.pool import NOT_POSSIBLE
 from immich_memories.free_text.pool_questions import tally
 from immich_memories.free_text.reading import Asker, choose
 from immich_memories.free_text.translate import Ask
+from immich_memories.timeperiod import DateRange
 
 _WHICH_EVENT = """The owner asked for a film of one occasion (owner_request). The library found these
 occasions on that day. Which one is the occasion asked for? Pick one. Reason first. Return JSON."""
@@ -47,6 +48,8 @@ class Film:
     # The pool route: the film's whole reach, and the subject it was curated for.
     asset_ids: tuple[str, ...] = ()
     subject: str = ""
+    # The pool's first and last capture: the window Immich reads its pictures from.
+    window: DateRange | None = None
     # The special-day route: the day, and the catalogued occasion on it when there is one.
     day: date | None = None
     event_id: str | None = None
@@ -85,6 +88,10 @@ def film_for(
         Reason("", "the pool is the film's whole reach", f"{len(pool.pictures)} pictures"),
         asset_ids=tuple(picture.asset_id for picture in pool.pictures),
         subject=ask.request,
+        window=DateRange(
+            start=min(picture.taken_at for picture in pool.pictures),
+            end=max(picture.taken_at for picture in pool.pictures),
+        ),
     )
 
 

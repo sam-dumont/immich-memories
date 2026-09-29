@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 
 import click
 
+from immich_memories.analysis.editorial_shareability import level_of
 from immich_memories.cli._album_generation import CuratedPool
 from immich_memories.cli._helpers import print_info
 from immich_memories.free_text.handoff import CatalogueEvent, Film, film_for
@@ -30,7 +31,10 @@ from immich_memories.free_text.translate import household_of, translate
 from immich_memories.security import write_secret_file
 
 if TYPE_CHECKING:
+    from immich_memories.api.sync_client import SyncImmichClient
     from immich_memories.config_loader import Config
+    from immich_memories.db import Store
+    from immich_memories.free_text.rule_preview import RulePreview
 
 
 # `--ask` is the whole scope: the sentence says what, who, when and where.
@@ -122,7 +126,9 @@ def scope_of_ask(
             accept_any_provenance=True,
         )
     ref = "ask-" + hashlib.sha256(request.encode()).hexdigest()[:12]
-    pool = CuratedPool(name=request, ref=ref, asset_ids=film.asset_ids)
+    if film.window is None:
+        raise click.ClickException("The pool holds no picture to film")
+    pool = CuratedPool(name=request, ref=ref, asset_ids=film.asset_ids, window=film.window)
     return RunScope(from_album=ref, subject=film.subject, accept_any_provenance=True, curated=pool)
 
 
@@ -168,12 +174,14 @@ def translate_ask(
             trips=config.trips,
             printed=ImmichPrintedText(client),
         )
-    film = film_for(asked, asker, events_on=catalogue_events)
-    trace = explain(asked, film=film)
+        film = film_for(asked, asker, events_on=catalogue_events)
+        # A dry run shows what the editor's rules would drop from the pool; a film run applies them.
+        rules = _rule_preview(client, config, store, film) if dry_run else None
+    trace = explain(asked, film=film, rules=rules)
     click.echo(trace)
     save_with_run(asked, film, trace, people=view.people)
     if trace_file is not None:
-        write_secret_file(trace_file, json.dumps(trace_record(asked, film)))
+        write_secret_file(trace_file, json.dumps(trace_record(asked, film, rules)))
     if dry_run:
         counts = pool_counts(asked)
         print_info(
@@ -185,6 +193,52 @@ def translate_ask(
         print_info(f"Not possible, no film: {film.reason.outcome}")
         return None
     return film
+
+
+def _rule_preview(
+    client: SyncImmichClient, config: Config, store: Store, film: Film
+) -> RulePreview | None:
+    """The editor's rules asked about the pool before render, on the run's own source and lines.
+
+    Only a pool is previewed: the special day reads its own day, and no film has no pool.
+    """
+    from immich_memories.analysis.editorial_runtime_evidence import AnnotationReadings
+    from immich_memories.analysis.editorial_source import library_source_scope
+    from immich_memories.analysis.thumbnail_prefetch import cached_preview_bytes
+    from immich_memories.cache.thumbnail_cache import ThumbnailCache
+    from immich_memories.cli._album_generation import pool_media
+    from immich_memories.free_text.rule_preview import preview_rules
+    from immich_memories.people.context import load_people_prompt_context
+
+    if film.route != "pool" or film.window is None:
+        return None
+    media = pool_media(
+        client,
+        film.asset_ids,
+        config,
+        window=film.window,
+        use_live_photos=config.analysis.include_live_photos,
+        use_photos=config.photos.enabled,
+    )
+    if media.date_range is None:
+        return None
+    thumbnails = ThumbnailCache(
+        cache_dir=config.cache.cache_path / "thumbnails",
+        max_size_mb=config.cache.thumbnail_cache_max_size_mb,
+    )
+    sources = [*media.videos, *media.photos]
+    return preview_rules(
+        sources,
+        # A pool picture Immich's timeline does not list never reaches the film.
+        missing=sorted(set(film.asset_ids) - {source.id for source in sources}),
+        # The film run's scope: `--ask` films keep forwarded pictures.
+        scope=library_source_scope(client, config, (media.date_range,), accept_any_provenance=True),
+        readings=AnnotationReadings(
+            store=store, config=config, people=load_people_prompt_context(include_derived=True)
+        ),
+        audience=level_of(config.defaults.sharing),
+        preview_jpeg=lambda asset: cached_preview_bytes(thumbnails, asset.id),
+    )
 
 
 def catalogue_events(day: date) -> list[CatalogueEvent]:

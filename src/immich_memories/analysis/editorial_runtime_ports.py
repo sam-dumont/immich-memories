@@ -90,6 +90,15 @@ def production_story_motion(source, *, store):
     )
 
 
+def _stage_reads(source):
+    """One stage's client, reading each of its pictures and companions through its account."""
+    from immich_memories.api.access_clients import reads_for
+
+    return reads_for(
+        source.config.immich, [*source.assets.values(), *source.companion_assets.values()]
+    )
+
+
 def production_live_clock_offsets(source, *, resources):
     """Measure Live companion clock offsets for content-aligned stitch joins (#1012).
 
@@ -105,12 +114,7 @@ def production_live_clock_offsets(source, *, resources):
     def fetch(video_id: str) -> bytes:
         nonlocal client
         if client is None:
-            from immich_memories.api.sync_client import SyncImmichClient
-
-            config = source.config.immich
-            client = SyncImmichClient(
-                base_url=config.url, api_key=config.api_key, api_version=config.api_version
-            )
+            client = _stage_reads(source)
             resources.callback(client.close)
         return client.get_video_playback(video_id)
 
@@ -131,12 +135,7 @@ def production_speech_resolver(source, *, resources):
     def fetch(asset_id, path):
         nonlocal client
         if client is None:
-            from immich_memories.api.sync_client import SyncImmichClient
-
-            config = source.config.immich
-            client = SyncImmichClient(
-                base_url=config.url, api_key=config.api_key, api_version=config.api_version
-            )
+            client = _stage_reads(source)
             resources.callback(client.close)
         # WHY: a whole video's rendition streams to disk; bytes would hold it in RAM
         client.download_playback(asset_id, path)
