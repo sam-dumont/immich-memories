@@ -118,7 +118,8 @@ def test_exact_source_filters_overreturn_before_annotation_and_keeps_live_link()
     sources = fetch_full_window_source(
         Client(), SourceScope(date_ranges=(WINDOW,), asset_ids=members)
     )
-    assert {s.id for s in sources} == set(members)
+    # The member still's companion travels with it (how it plays); the day's others do not.
+    assert {s.id for s in sources} == {*members, "race-motion"}
     assert next(s for s in sources if s.id == "race").live_photo_video_id == "race-motion"
     seen_by_evidence = []
     prepared = prepare_editorial_source(
@@ -240,3 +241,80 @@ def test_production_wall_receives_only_selected_event_even_if_port_returns_whole
                 event_admission=None,
             ),
         )
+
+
+def test_an_events_live_photo_with_real_motion_plays_as_its_clip(tmp_path):
+    """An event names its pictures, not their Live companions; the companion still comes
+    with its still, so a moving Live Photo with its subject in frame plays in the event's
+    film and the finished cut breaks no motion promise."""
+    from dataclasses import replace as with_facts
+    from datetime import timedelta
+
+    from immich_memories.analysis.editorial_cut_invariants import broken_promises
+    from immich_memories.analysis.editorial_structure_planner import plan_structure
+    from immich_memories.analysis.smart_pipeline import SmartPipeline
+    from immich_memories.api.models import AssetType
+    from immich_memories.cache.thumbnail_cache import ThumbnailCache
+    from tests.editorial_story_fixtures import ControlledStoryJudge
+    from tests.test_editorial_rule_reader import _distinct_preview
+
+    at = WINDOW.start.replace(hour=10)
+    stills = [
+        make_asset(
+            f"still-{n}", duration=None, file_created_at=at + timedelta(minutes=n)
+        ).model_copy(update={"type": AssetType.IMAGE, "live_photo_video_id": f"motion-{n}"})
+        for n in range(3)
+    ]
+    companions = [
+        make_asset(s.live_photo_video_id, file_created_at=s.file_created_at).model_copy(
+            update={"type": AssetType.VIDEO, "duration_seconds": 2.8}
+        )
+        for s in stills
+    ]
+    members = tuple(s.id for s in stills)
+    config = Config(
+        cache={"directory": str(tmp_path / "cache")}, analysis={"min_source_short_side": 0}
+    )
+    config.editorial.preparation.tier = "metadata_only"
+    seen = []
+
+    def plan(source, _ports):
+        seen.append(source)
+        # The residual a cut already measured and banked: far above the discriminant.
+        moving = with_facts(source, motion_residuals={a: {"residual": 4.96} for a in members})
+        return plan_structure(
+            moving,
+            StructurePlannerPorts(judge=ControlledStoryJudge(), thumbnail_hash=lambda _: None),
+        )
+
+    planner = build_editorial_planner(
+        client=object(),
+        config=config,
+        thumbnail_cache=ThumbnailCache(tmp_path / "thumbnails"),
+        context=EditorialRunContext(
+            key="event",
+            label="An occasion",
+            product="special_day",
+            date_ranges=(WINDOW,),
+            target_seconds=60,
+            artifact_dir=tmp_path / "artifacts",
+            special_event_id=event_id(members),
+            event_asset_ids=members,
+        ),
+        ports=EditorialRuntimePorts(
+            load_people=lambda: {},
+            fetch_full_source=lambda *_: (*stills, *companions),
+            fetch_preview=lambda _client, key: _distinct_preview(key),
+            structure_planner=plan,
+        ),
+    )
+    SmartPipeline(planner=planner).run_editorial_source(stills, include_live_photos=True)
+
+    ((source,),) = [seen]
+    assert set(source.companion_assets) == {c.id for c in companions}
+    carriers = json.loads((planner.last_attempt_directory / "plan.private.json").read_text())[
+        "carriers"
+    ]
+    assert carriers
+    assert all(c["kind"] == "live-motion" for c in carriers), [c["kind"] for c in carriers]
+    assert broken_promises(planner.last_attempt_directory) == 0

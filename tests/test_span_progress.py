@@ -23,6 +23,16 @@ def test_overlapping_children_are_not_double_counted_as_coverage():
     assert uncovered_seconds(spans, 100) == 20
 
 
+def test_startup_before_the_saved_run_counts_toward_the_wall_it_covers():
+    """The run record starts after imports; the root span starts at process start."""
+    spans = [
+        Span(1, "run", None, 0, 100),
+        Span(2, "startup", 1, 0, 5),
+        Span(3, "pipeline", 1, 5, 94),
+    ]
+    assert uncovered_seconds(spans, 95) == 1
+
+
 def test_stage_clock_publishes_one_overall_estimate_from_spans(monkeypatch):
     from immich_memories.operations.cut_progress import StageClock, StageUpdate
 

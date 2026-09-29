@@ -78,6 +78,9 @@ def main(
     log_level: str | None,
 ) -> None:
     """Immich Memories - Create video compilations from your Immich library."""
+    from immich_memories import process_start
+
+    process_start.mark("imports")
     ctx.ensure_object(dict)
 
     # Configure logging early
@@ -130,6 +133,7 @@ def main(
         from immich_memories.store.legacy_imports import enable_first_open_import
 
         enable_first_open_import()
+    process_start.mark("config")
 
 
 @main.command()
