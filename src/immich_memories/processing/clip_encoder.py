@@ -40,9 +40,17 @@ from immich_memories.security import validate_video_path
 logger = logging.getLogger(__name__)
 
 
-def encoder_args_for_plan(plan: EncodingPlan) -> list[str]:
-    """Build FFmpeg arguments from a resolved plan without selecting again."""
+def encoder_args_for_plan(
+    plan: EncodingPlan, *, frame_size: tuple[int, int] | None = None
+) -> list[str]:
+    """Build FFmpeg arguments from a resolved plan without selecting again.
+
+    A libx265 encode also gets the lookahead the memory budget allows for
+    ``frame_size``; without a size it is sized for 4K, the largest output.
+    """
     args = ["-c:v", plan.encoder, *plan.encoder_args]
+    if plan.encoder == "libx265":
+        with_x265_lookahead(args, *(frame_size or (3840, 2160)))
     # A VAAPI/QSV encoder reads hardware surfaces; naming a software pixel
     # format here asks it to encode frames it cannot see. The plan's format
     # reaches the encode through the upload filter instead.
@@ -73,6 +81,22 @@ def encoder_args_for_plan(plan: EncodingPlan) -> list[str]:
                 "bt709",
             ]
         )
+    return args
+
+
+def with_x265_lookahead(args: list[str], width: int, height: int) -> list[str]:
+    """Add the budget's rc-lookahead to libx265 arguments, merged into any -x265-params."""
+    from immich_memories.processing.memory_budget import encode_lookahead
+
+    frames = encode_lookahead(width, height)
+    if frames is None:
+        return args
+    param = f"rc-lookahead={frames}"
+    if "-x265-params" in args:
+        at = args.index("-x265-params") + 1
+        args[at] = f"{args[at]}:{param}"
+    else:
+        args.extend(["-x265-params", param])
     return args
 
 
