@@ -6,6 +6,7 @@ shape of the output, not who is in it.
 
 from __future__ import annotations
 
+import copy
 import json
 from dataclasses import dataclass
 from datetime import date
@@ -18,6 +19,7 @@ from click.testing import CliRunner
 
 from immich_memories.db import open_store
 from immich_memories.people.companion import add_confirmed_person, load_document, people_entries
+from immich_memories.people.transfer import import_document
 
 
 @dataclass
@@ -272,4 +274,92 @@ class TestExportAndImport:
 
         assert "nothing changed" in output
         assert "people[0]" in output
+        assert load_document() == before
+
+
+def _entry_named(name: str) -> dict:
+    return next(e for e in people_entries(load_document()) if e["name"] == name)
+
+
+class TestBind:
+    """`people bind`: the owner says which id a second account gives one person."""
+
+    def test_a_name_binds_the_other_accounts_id_and_says_what_it_bound(self):
+        _run(["people", "scan"])
+        before = _entry_named("Rowan Example")
+
+        output = _run(
+            ["people", "bind", "Rowan Example", "--account", "partner", "--id", "partner-p3"]
+        )
+
+        rowan = _entry_named("Rowan Example")
+        assert rowan["ids"] == {"primary": ["p3"], "partner": ["partner-p3"]}
+        assert {k: v for k, v in rowan.items() if k != "ids"} == {
+            k: v for k, v in before.items() if k != "ids"
+        }
+        assert "partner-p3" in output
+        assert "partner" in output
+        assert "Rowan Example" in output
+
+    def test_a_store_id_names_the_person_and_primary_is_an_account(self):
+        _run(["people", "scan"])
+
+        _run(["people", "bind", "p1", "--account", "primary", "--id", "p1-split"])
+
+        assert _entry_named("Alex Example")["ids"] == ["p1", "p1-split"]
+
+    def test_binding_the_same_id_again_changes_nothing(self):
+        _run(["people", "scan"])
+        _run(["people", "bind", "p3", "--account", "partner", "--id", "partner-p3"])
+        before = load_document()
+
+        output = _run(["people", "bind", "p3", "--account", "partner", "--id", "partner-p3"])
+
+        assert "already" in output
+        assert load_document() == before
+
+    def test_an_id_somebody_else_holds_is_refused_not_merged(self):
+        _run(["people", "scan"])
+        before = load_document()
+
+        output = _run(["people", "bind", "p3", "--account", "partner", "--id", "p1"], exit_code=1)
+
+        assert "already belongs" in output
+        assert load_document() == before
+
+    def test_a_name_two_people_share_lists_them_and_asks_for_an_id(self):
+        _run(["people", "scan"])
+        document = load_document()
+        twin = copy.deepcopy(_entry_named("Rowan Example"))
+        twin["ids"] = ["rowan-two"]
+        document["people"].append(twin)
+        import_document(open_store(), document, replace=True)
+        before = load_document()
+
+        output = _run(
+            ["people", "bind", "Rowan Example", "--account", "partner", "--id", "x"], exit_code=1
+        )
+
+        assert "p3" in output
+        assert "rowan-two" in output
+        assert "pass a person id" in output
+        assert load_document() == before
+
+    def test_somebody_the_registry_does_not_hold_is_a_clear_error(self):
+        _run(["people", "scan"])
+
+        output = _run(
+            ["people", "bind", "Nobody Example", "--account", "partner", "--id", "x"], exit_code=1
+        )
+
+        assert "Nobody Example" in output
+        assert "people show" in output
+
+    def test_an_account_name_the_config_could_never_hold_is_refused(self):
+        _run(["people", "scan"])
+        before = load_document()
+
+        output = _run(["people", "bind", "p3", "--account", "Partner", "--id", "x"], exit_code=1)
+
+        assert "account 'Partner' must be" in output
         assert load_document() == before

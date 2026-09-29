@@ -185,7 +185,7 @@ analysis:
 
   # Downloads
   download_workers: 3            # Parallel download clients for video and thumbnail prefetching (1-8)
-  source_prepare_workers: 2      # Selected-source download and preparation workers (1-4)
+  source_prepare_workers: auto   # Sources prepared at once (1-4); auto: 1 per 2 GB of the container's limit or RAM, at most 2
 
   # Duration sizing
   optimal_clip_duration: 5.0     # Expected seconds per clip when a trip or album sizes its own duration (2-15s)

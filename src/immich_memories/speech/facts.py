@@ -13,6 +13,7 @@ from typing import Any
 from sqlalchemy.exc import SQLAlchemyError
 
 from immich_memories.analysis.editorial_bound_sample import source_metadata_digest
+from immich_memories.api.access_clients import AccountReadFailed
 from immich_memories.api.models import Asset
 from immich_memories.db import Store
 from immich_memories.processing.probe_cache import ProbeCache, ProbeError
@@ -116,6 +117,8 @@ class SpeechFacts:
             path = Path(directory) / "source.mp4"
             try:
                 self.fetch(asset_id, path)
+            except AccountReadFailed:
+                raise
             except Exception as error:
                 # WHY: any transport failure is "this source cannot be measured",
                 # which degrades the refinement; only a caller seeing this class

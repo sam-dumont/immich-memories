@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from immich_memories.db import Store
+from immich_memories.people.account_ids import entry_ids
 from immich_memories.people.companion import load_document, people_entries
 from immich_memories.security import configured_secret_values
 from immich_memories.tracking.report import RunReport, build_report
@@ -32,7 +33,7 @@ def report_for_run(
     ids = set(diagnostics.get("private_ids", []))
     ids.update(filter(None, (run.run_id, run.person_id, run.immich_asset_id)))
     for person in people_entries(load_document(store)):
-        ids.update(person["ids"])
+        ids.update(entry_ids(person))
         if person.get("name"):
             terms.add(person["name"])
     privacy = ReportPrivacy(terms=terms, ids=ids)

@@ -2,8 +2,10 @@
 
 The document is the shape `people.yaml` had: a header (version, generated, owner) and a list
 of person entries with `ids`, `name`, `birth_date`, `inferred`, `confirmed` and `origin`.
-An entry whose ids come from a second Immich account adds `accounts`, id to account name;
-an id it does not list is the primary account's, so a one-account registry never has one.
+`ids` is a flat list of the primary account's ids, or, once a second Immich account reads
+the person, one list per account (`people.account_ids`); a one-account registry never has one.
+The person's row id is identity: an entry names it in `person_id` whenever it is not the
+first id listed, so adding or reordering ids never changes who the row is.
 Callers edit that document; this module is the only code that knows how it maps to rows.
 A write replaces the whole registry inside the caller's transaction, after `lock_registry`,
 so two writers queue on the registry row instead of dropping each other's change.
@@ -18,6 +20,7 @@ from typing import Any
 import sqlalchemy as sa
 from sqlalchemy.engine import Connection
 
+from immich_memories.config_models import PRIMARY_ACCOUNT
 from immich_memories.db import now_db, upsert
 from immich_memories.db.tables import (
     people,
@@ -25,10 +28,11 @@ from immich_memories.db.tables import (
     people_registry,
     people_relationships,
 )
+from immich_memories.people.account_ids import PERSON_ID, entry_ids, ids_by_account, place_ids
 
 REGISTRY = "default"
 
-_PERSON_KEYS = ("ids", "accounts", "name", "birth_date", "origin", "inferred", "confirmed")
+_PERSON_KEYS = ("ids", PERSON_ID, "name", "birth_date", "origin", "inferred", "confirmed")
 _LINK_KEYS = ("kind", "with", "reverse", "decision")
 
 
@@ -100,7 +104,7 @@ def _rows(
     alias_rows: list[dict[str, Any]] = []
     link_rows: list[dict[str, Any]] = []
     for position, entry in enumerate(entries):
-        person_id = entry["ids"][0]
+        person_id = entry_ids(entry)[0]
         confirmed = entry.get("confirmed")
         block = dict(confirmed) if isinstance(confirmed, dict) else None
         links = (block or {}).pop("links", None) or []
@@ -117,15 +121,14 @@ def _rows(
                 or None,
             }
         )
-        accounts = entry.get("accounts") or {}
+        placed = [
+            (alias, None if account == PRIMARY_ACCOUNT else account)
+            for account, aliases in ids_by_account(entry).items()
+            for alias in aliases
+        ]
         alias_rows.extend(
-            {
-                "alias_id": alias,
-                "person_id": person_id,
-                "position": index,
-                "account": accounts.get(alias),
-            }
-            for index, alias in enumerate(entry["ids"])
+            {"alias_id": alias, "person_id": person_id, "position": index, "account": account}
+            for index, (alias, account) in enumerate(placed)
         )
         link_rows.extend(
             {
@@ -163,10 +166,11 @@ def _link(row: Any) -> dict[str, Any]:
 def _entry(
     row: Any, aliases: list[tuple[str, str | None]], links: list[dict[str, Any]]
 ) -> dict[str, Any]:
-    entry: dict[str, Any] = {"ids": [alias for alias, _ in aliases]}
-    accounts = {alias: account for alias, account in aliases if account is not None}
-    if accounts:
-        entry["accounts"] = accounts
+    groups: dict[str, list[str]] = defaultdict(list)
+    for alias, account in aliases:
+        groups[account or PRIMARY_ACCOUNT].append(alias)
+    entry: dict[str, Any] = {}
+    place_ids(entry, groups, row["person_id"])
     entry |= {"name": row["name"], "birth_date": row["birth_date"]}
     if row["inferred"] is not None:
         entry["inferred"] = row["inferred"]

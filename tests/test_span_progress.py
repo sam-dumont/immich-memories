@@ -116,3 +116,16 @@ def test_counted_stage_history_scales_by_pictures_not_by_its_own_packs():
     plan = SpanPlan(first.spans, items=1000)
     estimate = plan.estimate(first.spans[0].name, fraction=0.0)
     assert 90 <= estimate.remaining_seconds <= 120
+
+
+def test_the_span_tree_shows_each_measured_peak():
+    from immich_memories.tracking.span_progress import span_tree
+    from immich_memories.tracking.timing import Span
+
+    spans = [
+        Span(1, "run", None, 0, 10.0, peak_rss=512 * 2**20, peak_tree_rss=2048 * 2**20),
+        Span(2, "render.assembly", 1, 1, 9.0),
+    ]
+    lines = span_tree(spans, 10.0)
+    assert lines[0] == "run: 10.000 s, peak 512 MB (with children 2048 MB)"
+    assert lines[1] == "  render.assembly: 9.000 s"

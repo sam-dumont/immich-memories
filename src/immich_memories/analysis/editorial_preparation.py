@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
-import io
-import os
-import tempfile
 from collections.abc import Callable, Iterator, Mapping, Sequence
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
 import sqlalchemy as sa
-from PIL import Image
 
 from immich_memories.analysis.editorial_clip_frames import (
     CLIP_FRAMES_HEAD,
@@ -45,6 +41,11 @@ from immich_memories.analysis.editorial_preparation_pixels import (
     refresh_threshold,
     remember_pixels,
 )
+from immich_memories.analysis.editorial_preparation_previews import (
+    PREVIEW_UNAVAILABLE,
+    ensure_preview,
+    preview_refused,
+)
 from immich_memories.analysis.editorial_preparation_remote import prepare_remote_facts
 from immich_memories.analysis.editorial_video_motion import (
     STAGE as VIDEO_MOTION,
@@ -57,6 +58,7 @@ from immich_memories.analysis.llm_caption_identity import llm_caption_identity
 from immich_memories.analysis.llm_providers import resolved_llm_config
 from immich_memories.analysis.remote_facts import RemoteFactsError
 from immich_memories.analysis.subject_framing import FaceBox
+from immich_memories.api.access_clients import AccountReadFailed
 from immich_memories.api.models import Asset
 from immich_memories.config_models_editorial_preparation import EditorialPreparationConfig
 from immich_memories.config_models_inference import InferenceConfig
@@ -182,23 +184,8 @@ class PreparationPorts:
     video_motion: Callable = bank_video_motion
 
 
-PREVIEW_UNAVAILABLE = "preview unavailable at Immich (HTTP 404)"
 # Pictures per write while a producer banks as it goes: a crash costs at most this many.
 BANK_BATCH = 256
-
-
-def _preview_refused(exc: BaseException) -> bool:
-    """Whether Immich answered about this source, rather than failing to answer at all.
-
-    The client has already spent its retries by the time either arrives here: a
-    404 is never retried and a timeout is raised only after the last attempt. So
-    a 404 is the server's settled answer -- it has no preview for this asset and
-    a rerun will not change that -- while everything else is unfinished work.
-    """
-    status = getattr(exc, "status_code", None)
-    if status is None:
-        status = getattr(getattr(exc, "response", None), "status_code", None)
-    return status == 404
 
 
 def _noop_progress(_stage: str, _done: int, _total: int) -> None:
@@ -211,40 +198,6 @@ def _naming_somebody(source: Sequence[Asset]) -> tuple[str, ...]:
 
 def _noop_asset(_asset_id: str) -> None:
     pass
-
-
-def _ensure_preview(path: Path, asset_id: str, fetch_preview) -> None:
-    try:
-        with Image.open(path) as image:
-            image.verify()
-    except (OSError, ValueError):
-        pass
-    else:
-        # Reuse is use. The cache evicts oldest mtime first, so without this a
-        # preview an earlier run downloaded still looks as old as that run while
-        # this one reads it back for pixels, heads, sheets and the caption --
-        # and a preview that vanishes between those stages is recorded as a
-        # missing fact rather than fetched again.
-        with suppress(OSError):
-            os.utime(path)
-        return
-    payload = fetch_preview(asset_id) if fetch_preview else None
-    if not payload:
-        raise FileNotFoundError(
-            "Immich preview missing or corrupt; provide fetch_preview or populate the configured thumbnail cache"
-        )
-    with Image.open(io.BytesIO(payload)) as image:
-        image.verify()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary = tempfile.mkstemp(
-        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
-    )
-    try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(payload)
-        os.replace(temporary, path)
-    finally:
-        Path(temporary).unlink(missing_ok=True)
 
 
 @dataclass(frozen=True)
@@ -322,12 +275,14 @@ class _Acquisition:
                 subdir = asset_id[:2] if len(asset_id) >= 2 else "00"
                 path = cache_path / subdir / f"{asset_id}_preview.jpg"
                 try:
-                    _ensure_preview(path, asset_id, fetch_preview)
+                    ensure_preview(path, asset_id, fetch_preview)
                     paths[asset_id] = path
                     self.note(asset_id)
+                except AccountReadFailed:
+                    raise
                 except Exception as exc:
                     unusable.append(asset_id)
-                    if _preview_refused(exc):
+                    if preview_refused(exc):
                         self.unservable[asset_id] = PREVIEW_UNAVAILABLE
                     else:
                         self.failures[f"preview:{asset_id}"] = f"{type(exc).__name__}: {exc}"
@@ -343,6 +298,8 @@ class _Acquisition:
                     try:
                         measured.append(pixel_row(asset_id, self.preview_for(asset_id)))
                         self.note(asset_id)
+                    except AccountReadFailed:
+                        raise
                     except Exception as exc:
                         self.failures[f"pixel:{asset_id}"] = f"{type(exc).__name__}: {exc}"
                     if len(measured) >= BANK_BATCH:
@@ -371,6 +328,8 @@ class _Acquisition:
                     self.check()
                     try:
                         read[asset_id] = fetch_faces(asset_id)
+                    except AccountReadFailed:
+                        raise
                     except Exception as exc:
                         self.failures[f"faces:{asset_id}"] = f"{type(exc).__name__}: {exc}"
                     if len(read) >= BANK_BATCH:
@@ -396,6 +355,8 @@ class _Acquisition:
                     progress=self.report,
                     provider=self.triage_config.provider,
                 )
+        except AccountReadFailed:
+            raise
         except Exception as exc:
             self.failures["public_heads"] = f"{type(exc).__name__}: {exc}"
 
@@ -460,6 +421,8 @@ class _Acquisition:
                     progress=self.report,
                 )
             self.failures.update({f"detector:{key}": value for key, value in errors.items()})
+        except AccountReadFailed:
+            raise
         except Exception as exc:
             self.failures["detectors"] = f"{type(exc).__name__}: {exc}"
 
@@ -478,6 +441,8 @@ class _Acquisition:
                     provider=self.triage_config.provider,
                 )
             self.failures.update({f"{CLIP_FRAMES_HEAD}:{k}": v for k, v in errors.items()})
+        except AccountReadFailed:
+            raise
         except Exception as exc:
             self.failures[CLIP_FRAMES_HEAD] = f"{type(exc).__name__}: {exc}"
 
@@ -493,6 +458,8 @@ class _Acquisition:
                     store=self.store, videos=videos, frame_paths=frame_paths
                 )
             self.failures.update({f"{VIDEO_MOTION}:{k}": v for k, v in errors.items()})
+        except AccountReadFailed:
+            raise
         except Exception as exc:
             self.failures[VIDEO_MOTION] = f"{type(exc).__name__}: {exc}"
 
@@ -522,6 +489,8 @@ class _Acquisition:
         except PermissionError as exc:
             # The endpoint answered and asked for a credential; repointing the URL is not the fix.
             self.failures["captions"] = str(exc)
+        except AccountReadFailed:
+            raise
         except Exception as exc:
             hint = (
                 "check the configured LLM's image and structured-output support"
@@ -576,6 +545,8 @@ class _Acquisition:
         except PermissionError as exc:
             self.failures["motion"] = str(exc)
             return
+        except AccountReadFailed:
+            raise
         except Exception as exc:
             self.failures["motion"] = f"{type(exc).__name__}: {exc}"
             return

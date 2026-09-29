@@ -8,6 +8,7 @@ import numpy as np
 import sqlalchemy as sa
 from PIL import Image, ImageOps
 
+from immich_memories.api.access_clients import AccountReadFailed
 from immich_memories.db import Store, now_db
 from immich_memories.db.tables import pixel_facts as pixel_fact_rows
 from immich_memories.db.tables import pixel_facts_thresholds
@@ -21,6 +22,8 @@ def pixel_facts(preview: bytes) -> dict[str, object]:
         width, height = original.size
         try:
             orientation_tag = int(original.getexif().get(274, 1) or 1)
+        except AccountReadFailed:
+            raise
         except Exception:  # A broken EXIF block was absent in the accepted recipe.
             orientation_tag = 1
         transposed = ImageOps.exif_transpose(original)

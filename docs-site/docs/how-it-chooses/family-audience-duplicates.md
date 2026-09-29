@@ -6,7 +6,8 @@ title: Family, audience and duplicates
 
 Once the draft is cut, a few passes make sure it is a film you'd show, to the people you cut it for. Your partner, who is on 300
 pictures of the month and starred in none, gets a shot. A picture the family-viewing gate refuses
-leaves and another frame of the same moment takes its place. Two near-identical photos of the same
+leaves and another frame of the same moment takes its place, unless the refused picture was that
+moment's favourite: then the whole moment goes and another moment gets the slot. Two near-identical photos of the same
 sunset, or the same hiking trail filmed twice twenty minutes apart, become one. Then the finished
 cut is checked against everything the passes promised.
 
@@ -101,6 +102,12 @@ A shot that leaves is replaced from its own moment first, then from a moment of 
 film doesn't show yet, never within five minutes of a shot of the same moment, and each replacement
 is judged by the same gate before it takes the slot. When every offer is refused, the slot stays
 empty.
+
+A moment you starred something in is only ever shown by a favourite. If the gate holds that
+favourite (or every favourite of it, when you starred two), no plain frame of the same moment
+stands in: the moment is dropped and the slot goes to a moment the story doesn't show yet. With two
+favourites and one held, the other one plays. The same rule applies to every later refill: the
+duplicate review, the family seat and the polish.
 
 ```mermaid
 flowchart TD

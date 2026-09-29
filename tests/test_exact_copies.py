@@ -235,20 +235,64 @@ def test_a_live_photo_keeps_its_own_motion_and_the_absorbed_motion_leaves_with_i
     }
 
 
-def test_a_plain_photo_kept_over_a_live_copy_gains_no_motion() -> None:
+def test_the_live_copy_of_a_still_is_kept_over_a_starred_plain_copy_and_takes_the_star() -> None:
+    """The owner's ruling: prefer the Live Photo; its motion decides later whether it moves."""
+    bytes_ = _sha1("still.heic")
+
+    folded = fold_exact_copies(
+        (
+            _photo("plain", owner="owner-a", checksum=bytes_, favourite=True),
+            _photo("live", owner="owner-b", checksum=bytes_, companion="motion"),
+            _photo("motion", owner="owner-b", kind=AssetType.VIDEO, checksum=_sha1("motion")),
+        ),
+        primary_owner_id="owner-a",
+    )
+
+    assert _ids(folded.pool) == ["live", "motion"]
+    kept = folded.pool[0]
+    assert kept.live_photo_video_id == "motion"
+    assert kept.is_favorite
+    assert folded.kept_ids(("plain",)) == ("live",)
+
+
+def test_between_two_live_copies_the_favourite_then_the_primary_owner_is_kept() -> None:
+    starred = fold_exact_copies(_shared_live_photo(favourite=True), primary_owner_id="owner-a")
+    unstarred = fold_exact_copies(_shared_live_photo(), primary_owner_id="owner-b")
+
+    assert _ids(starred.pool) == ["motion-b", "still-b"]
+    assert _ids(unstarred.pool) == ["motion-b", "still-b"]
+    assert unstarred.pool[1].live_photo_video_id == "motion-b"
+
+
+def test_a_live_copy_whose_motion_half_never_arrived_counts_as_plain() -> None:
     bytes_ = _sha1("still.heic")
 
     folded = fold_exact_copies(
         (
             _photo("plain", checksum=bytes_, favourite=True),
-            _photo("live", checksum=bytes_, companion="motion"),
-            _photo("motion", kind=AssetType.VIDEO, checksum=_sha1("motion")),
+            _photo("live", checksum=bytes_, companion="motion-not-listed"),
         ),
         primary_owner_id=None,
     )
 
     assert _ids(folded.pool) == ["plain"]
     assert folded.pool[0].live_photo_video_id is None
+
+
+def test_reversed_order_keeps_the_live_copy_the_same_way() -> None:
+    bytes_ = _sha1("still.heic")
+    pages = (
+        _photo("plain-a", owner="owner-a", checksum=bytes_, favourite=True),
+        _photo("plain-z", owner="owner-z", checksum=bytes_),
+        *_live_photo("live-m", "motion-m", owner="owner-m", motion="wave", checksum=bytes_),
+    )
+
+    forward = fold_exact_copies(pages, primary_owner_id="owner-a")
+    backward = fold_exact_copies(pages[::-1], primary_owner_id="owner-a")
+
+    assert forward == backward
+    assert _ids(forward.pool) == ["live-m", "motion-m"]
+    assert forward.pool[0].is_favorite
 
 
 def test_the_editorial_pool_admits_one_copy_and_keeps_the_group_for_the_record() -> None:
@@ -265,7 +309,8 @@ def test_the_editorial_pool_admits_one_copy_and_keeps_the_group_for_the_record()
         request, EditorialDependencies(source_fetcher=lambda _scope: pages)
     )
 
-    assert prepared.candidate_ids == ("b-copy", "other")
+    # The primary owner's copy lost its motion; the other account's Live copy stands.
+    assert prepared.candidate_ids == ("a-copy", "other")
 
 
 def test_an_owner_choice_on_either_copy_holds_for_the_picture() -> None:
@@ -291,6 +336,137 @@ def test_an_owner_choice_on_either_copy_holds_for_the_picture() -> None:
     assert prepared.candidate_ids == ("b-copy",)
     assert prepared.owner_required_asset_ids == ("b-copy",)
     assert prepared.excluded_ids == ("b-gone",)
+
+
+def _live_photo(still_id: str, motion_id: str, *, owner: str, motion: str, **still) -> tuple:
+    """A Live Photo as Immich lists it: the still, and its motion half as a hidden video."""
+    return (
+        _photo(still_id, owner=owner, companion=motion_id, **still),
+        _photo(motion_id, owner=owner, kind=AssetType.VIDEO, checksum=_sha1(motion)),
+    )
+
+
+def test_a_video_holding_a_live_photos_own_motion_folds_into_the_live_photo() -> None:
+    """The other account saved the motion as a plain video: the moment is the Live Photo."""
+    folded = fold_exact_copies(
+        (
+            *_live_photo(
+                "still-a", "motion-a", owner="owner-a", motion="wave", checksum=_sha1("s")
+            ),
+            _photo("video-b", owner="owner-b", kind=AssetType.VIDEO, checksum=_sha1("wave")),
+        ),
+        primary_owner_id="owner-b",
+    )
+
+    assert _ids(folded.pool) == ["motion-a", "still-a"]
+    assert folded.pool[1].live_photo_video_id == "motion-a"
+    [group] = folded.groups
+    assert group.representative_id == "still-a"
+    assert {reference.asset_id for reference in group.references} == {"still-a", "video-b"}
+
+
+def _video(asset_id: str, owner: str, content: str, *, favourite: bool = False) -> Asset:
+    return _photo(
+        asset_id, owner=owner, kind=AssetType.VIDEO, checksum=_sha1(content), favourite=favourite
+    )
+
+
+def _shared_live_photo(**b_still) -> tuple:
+    """Both accounts hold one Live Photo; each account's motion half is its own file."""
+    still = _sha1("still.heic")
+    return (
+        *_live_photo("still-a", "motion-a", owner="owner-a", motion="a", checksum=still),
+        *_live_photo("still-b", "motion-b", owner="owner-b", motion="b", checksum=still, **b_still),
+    )
+
+
+def test_a_video_holding_the_motion_of_the_absorbed_still_folds_too() -> None:
+    """The absorbed still takes its motion with it; a video equal to that motion goes as well."""
+    folded = fold_exact_copies(
+        (*_shared_live_photo(), _video("video-c", "owner-c", "b")), primary_owner_id="owner-a"
+    )
+
+    assert _ids(folded.pool) == ["motion-a", "still-a"]
+    assert folded.pool[1].live_photo_video_id == "motion-a"
+    [group] = folded.groups
+    assert {ref.asset_id for ref in group.references} == {"still-a", "still-b", "video-c"}
+
+
+def test_a_star_on_the_other_accounts_motion_half_stars_the_kept_picture() -> None:
+    *pool, motion_b = _shared_live_photo()
+    starred_motion = motion_b.model_copy(update={"is_favorite": True})
+
+    folded = fold_exact_copies((*pool, starred_motion), primary_owner_id="owner-a")
+
+    assert _ids(folded.pool) == ["motion-a", "still-a"]
+    assert folded.pool[1].is_favorite
+
+
+def test_a_star_on_the_standalone_video_stars_the_kept_live_photo() -> None:
+    folded = fold_exact_copies(
+        (
+            *_live_photo("still-a", "motion-a", owner="owner-a", motion="wave"),
+            _video("video-b", "owner-b", "wave", favourite=True),
+        ),
+        primary_owner_id="owner-b",
+    )
+
+    assert _ids(folded.pool) == ["motion-a", "still-a"]
+    assert folded.pool[1].is_favorite
+
+
+def test_an_owner_tick_on_the_standalone_video_holds_for_the_live_photo() -> None:
+    pages = (
+        *_live_photo("still-a", "motion-a", owner="owner-a", motion="wave"),
+        _video("video-b", "owner-b", "wave"),
+    )
+    request = EditorialSelectionRequest(
+        scope=SourceScope(), owner_required_asset_ids=("video-b",), primary_owner_id="owner-b"
+    )
+
+    prepared = prepare_editorial_source(
+        request, EditorialDependencies(source_fetcher=lambda _scope: pages)
+    )
+
+    assert prepared.candidate_ids == ("still-a",)
+    assert prepared.owner_required_asset_ids == ("still-a",)
+
+
+def test_videos_matching_no_live_photo_motion_fold_only_with_each_other() -> None:
+    folded = fold_exact_copies(
+        (
+            *_live_photo("still-a", "motion-a", owner="owner-a", motion="wave"),
+            _video("video-b", "owner-b", "clip"),
+            _video("video-c", "owner-c", "clip"),
+            _video("video-d", "owner-d", "other"),
+        ),
+        primary_owner_id=None,
+    )
+
+    assert _ids(folded.pool) == ["motion-a", "still-a", "video-b", "video-d"]
+    [group] = folded.groups
+    assert group.representative_id == "video-b"
+
+
+def test_reversed_order_folds_motion_copies_the_same_way() -> None:
+    pages = (
+        *_shared_live_photo(favourite=True),
+        _video("video-c", "owner-c", "a"),
+        _video("video-d", "owner-d", "b", favourite=True),
+    )
+
+    forward = fold_exact_copies(pages, primary_owner_id="owner-a")
+    backward = fold_exact_copies(pages[::-1], primary_owner_id="owner-a")
+
+    assert forward == backward
+    assert _ids(forward.pool) == ["motion-b", "still-b"]
+    [group] = forward.groups
+    assert {ref.asset_id for ref in group.references} == {
+        "still-a",
+        "still-b",
+        "video-c",
+        "video-d",
+    }
 
 
 def test_the_kept_copy_is_opened_through_the_account_that_holds_it() -> None:

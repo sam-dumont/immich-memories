@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Alert, Button } from '@immich/ui';
-  import { mdiContentCopy } from '@mdi/js';
+  import { mdiContentCopy, mdiDownload } from '@mdi/js';
   import { api, type ReportResponse } from './api';
   import { t } from './i18n.svelte';
 
@@ -12,6 +12,8 @@
   let hasFlaggedPhotos = $state(false);
   let includeCaptions = $state(false);
   let requestNumber = 0;
+  // The bundle a report on GitHub attaches: report.md, report.json and the whole redacted log.
+  const bundle = $derived(`/api/v1/runs/${encodeURIComponent(runId)}/report/bundle${includeCaptions ? '?include_flagged_captions=true' : ''}`);
 
   $effect(() => {
     void runId;
@@ -70,9 +72,15 @@
       <label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={includeCaptions} onchange={toggleCaptions} disabled={loading} />{t('Include captions of flagged photos')}</label>
     {/if}
     <pre aria-label={t('Report preview')} class="max-h-80 w-full overflow-auto rounded-lg bg-gray-100 p-3 text-xs whitespace-pre-wrap select-text dark:bg-gray-900">{markdown}</pre>
-    <Button size="small" variant="outline" leadingIcon={mdiContentCopy} disabled={loading} onclick={copy}>{copied ? t('Copied') : t('Copy report')}</Button>
+    <div class="flex flex-wrap gap-2">
+      <Button size="small" variant="outline" leadingIcon={mdiContentCopy} disabled={loading} onclick={copy}>{copied ? t('Copied') : t('Copy report')}</Button>
+      <Button size="small" variant="outline" leadingIcon={mdiDownload} href={bundle} download>{t('Download report')}</Button>
+    </div>
   {:else}
-    <Button size="small" variant="outline" leadingIcon={mdiContentCopy} disabled={loading} onclick={preview}>{t('Copy report')}</Button>
+    <div class="flex flex-wrap gap-2">
+      <Button size="small" variant="outline" leadingIcon={mdiContentCopy} disabled={loading} onclick={preview}>{t('Copy report')}</Button>
+      <Button size="small" variant="outline" leadingIcon={mdiDownload} href={bundle} download>{t('Download report')}</Button>
+    </div>
   {/if}
   {#if problem}<Alert color="warning" size="small">{problem}</Alert>{/if}
 </div>

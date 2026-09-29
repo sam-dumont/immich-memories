@@ -80,7 +80,7 @@ def register_render_command(runs: click.Group) -> None:
         With no RUN_ID the most recent completed run is rendered. Revisions are the ones the web
         client saved (`--revision 2`); without one, the cut renders as it was chosen.
         """
-        from immich_memories.api.sync_client import SyncImmichClient
+        from immich_memories.api.access_clients import AccessBoundClient
         from immich_memories.config import get_config
         from immich_memories.db import open_store
         from immich_memories.tracking import RunDatabase
@@ -127,11 +127,7 @@ def register_render_command(runs: click.Group) -> None:
         if run is None:
             print_error(f"Run {resolved} is not in the run database.")
             sys.exit(1)
-        with SyncImmichClient(
-            base_url=config.immich.url,
-            api_key=config.immich.api_key,
-            api_version=config.immich.api_version,
-        ) as client:
+        with AccessBoundClient(config.immich) as client:
             try:
                 path = render_saved_cut(
                     config=config,

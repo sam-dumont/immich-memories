@@ -149,6 +149,53 @@ def test_a_dry_run_keeps_its_translation_for_a_watcher(ask, tmp_path: Path) -> N
     assert record["film"]["route"] == "pool"
 
 
+def test_the_run_report_carries_the_translation_the_watcher_reads(
+    ask, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import json
+
+    from immich_memories.cli import main
+
+    # WHY: the album run reads Immich and renders; the run's kept translation is under test.
+    monkeypatch.setattr(
+        "immich_memories.cli._album_generation.handle_album_generation", lambda **_k: None
+    )
+    ask("--ask", "our cat along the years", "--no-render")
+
+    reported = CliRunner().invoke(main, ["-c", str(tmp_path / "config.yaml"), "report", "--json"])
+
+    assert reported.exit_code == 0, reported.output
+    translation = json.loads(reported.stdout)["free_text"]["translation"]
+    assert translation["pool"] == {"pictures": 14, "photos": 14, "videos": 0}
+    assert translation["film"]["route"] == "pool"
+
+
+def test_a_film_runs_report_carries_the_rules_its_pool_met(
+    ask, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import json
+
+    from immich_memories.cli import main
+
+    add_rows(
+        open_store(),
+        "asset_flags",
+        {"asset_id": "cat-3", "flag": "never_auto", "source": "nsfw_marqo"},
+    )
+    # WHY: the album run reads Immich and renders; the run's kept rule preview is under test.
+    monkeypatch.setattr(
+        "immich_memories.cli._album_generation.handle_album_generation", lambda **_k: None
+    )
+    ask("--ask", "our cat along the years", "--no-render")
+
+    reported = CliRunner().invoke(main, ["-c", str(tmp_path / "config.yaml"), "report", "--json"])
+
+    assert reported.exit_code == 0, reported.output
+    rules = json.loads(reported.stdout)["free_text"]["translation"]["rules"]
+    assert (rules["checked"], rules["passed"]) == (14, 13)
+    assert "cat-3" not in reported.stdout
+
+
 def test_a_dry_run_shows_which_rules_would_drop_pool_pictures(ask, tmp_path: Path) -> None:
     import json
 

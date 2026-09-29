@@ -20,6 +20,7 @@ import pytest
 
 from immich_memories.analysis.editorial_runtime import EditorialRunContext, build_editorial_planner
 from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
+from immich_memories.analysis.editorial_source_snapshot import SNAPSHOT_NAME
 from immich_memories.analysis.selection_source import prepare_editorial_source
 from immich_memories.api.access_clients import AccessBoundClient, AccountReadFailed, reads_for
 from immich_memories.api.compatibility import ApiVersionPolicy
@@ -244,6 +245,74 @@ def test_a_partner_s_live_photo_plays_its_motion_through_the_partner(tmp_path, i
     assert motion == b"bytes-of-partner-motion"
     assert {user for user, _ in immich.reads_of("partner-motion")} == {"user-partner"}
     assert client.get_asset_thumbnail("partner-still") == b"bytes-of-partner-still"
+
+
+def test_the_attempt_freezes_the_kept_copy_and_its_account_and_a_replay_reads_it(
+    tmp_path, immich, run, monkeypatch
+):
+    from immich_memories.generate_saved_cut import CutRenderRequest, render_saved_cut
+    from immich_memories.processing.render_inputs import write_render_inputs
+    from tests.test_editorial_owner_edits import original_params
+    from tests.test_generate_saved_cut import RUN
+
+    immich.hold(PRIMARY_KEY, _asset("own-video", "user-primary", bytes_of="beach"))
+    immich.hold(PARTNER_KEY, _asset("copy-video", "user-partner", bytes_of="beach", favourite=True))
+    client, source = run
+    source()
+    snapshot = json.loads((tmp_path / "attempt" / SNAPSHOT_NAME).read_text())
+
+    [frozen] = snapshot["exact_copies"]
+    assert frozen["representative_id"] == "copy-video"
+    assert frozen["access_account"] == "partner"
+    assert (
+        frozen["content_key"]
+        == f"video:sha1:{hashlib.sha1(b'beach', usedforsecurity=False).hexdigest()}"
+    )
+    assert {reference["asset_id"] for reference in frozen["references"]} == {
+        "own-video",
+        "copy-video",
+    }
+
+    # The saved cut's own inputs name the kept copy with no account on it: only the
+    # frozen record says whose client reads it.
+    attempt = tmp_path / "saved"
+    attempt.mkdir()
+    params = original_params(attempt)
+    write_render_inputs(
+        attempt,
+        params.clips,
+        params.editorial_selections,
+        params.clip_segments,
+        params.editorial_render_timing,
+    )
+    immich.owners.update({clip.asset.id: "user-primary" for clip in params.clips})
+    immich.owners["chosen-1"] = "user-partner"
+    frozen.update(representative_id="chosen-1")
+    snapshot.pop("content_sha256")
+    (attempt / SNAPSHOT_NAME).write_text(json.dumps(snapshot))
+    read = []
+
+    def generate_memory(given):
+        for clip in given.clips:
+            read.append(given.client.download_asset(clip.asset.id, tmp_path / clip.asset.id))
+        return Path("/films/film.mp4")
+
+    # WHY: the render writes a film with FFmpeg; this stands in for it, reading each
+    # clip's original through the client the render is handed, as extraction does.
+    monkeypatch.setattr("immich_memories.generate_saved_cut.generate_memory", generate_memory)
+    with AccessBoundClient(_config(tmp_path).immich) as replay:
+        render_saved_cut(
+            config=params.config,
+            client=replay,
+            run=RUN,
+            attempt_dir=attempt,
+            revision=None,
+            request=CutRenderRequest(),
+        )
+
+    assert (tmp_path / "chosen-1").read_bytes() == b"bytes-of-chosen-1"
+    assert immich.reads_of("chosen-1") == [("user-partner", True)]
+    assert immich.reads_of("chosen-0") == [("user-primary", True)]
 
 
 def test_an_owner_s_read_that_fails_mid_run_fails_the_attempt_naming_the_account(

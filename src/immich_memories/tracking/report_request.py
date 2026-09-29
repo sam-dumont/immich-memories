@@ -68,6 +68,9 @@ def request_section(record: dict, privacy: ReportPrivacy, *, include_captions: b
         "request": record.get("request", ""),
         # The translation as the owner read it: free text, so the aliases above redact it.
         "trace": record.get("trace", ""),
+        # The same translation `--ask-trace` writes, kept whole: a block added to it later is
+        # reported too, and the redaction below reaches every string in it.
+        "translation": record.get("translation", {}),
         "spec": {
             field: _value(record["spec"][field])
             for field in _FIELDS

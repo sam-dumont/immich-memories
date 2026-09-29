@@ -52,6 +52,7 @@ from immich_memories.cli.generate_resolution import (
     resolve_short_form,
     resolve_special_day,
 )
+from immich_memories.cli.run_people import resolve_run_people
 from immich_memories.filename_builder import build_memory_output_path, normalize_output_path
 from immich_memories.memory_types.date_builders import BIRTHDAY_HISTORY_FROM, birthday_anchor
 from immich_memories.planning.auto_duration import (
@@ -554,27 +555,13 @@ def register_generate_commands(main: click.Group) -> None:
                         )
                         return
 
-                    # Find person(s) if specified
-                    person_ids: list[str] = []
-                    id_condition = None
-                    if people_condition is not None:
-                        from immich_memories.analysis.editorial_source import (
-                            resolve_named_expression,
-                        )
-
-                        id_condition = resolve_named_expression(
-                            people_condition, client.get_all_people(with_hidden=True)
-                        )
-                    elif person_names:
-                        for pname in person_names:
-                            task = progress.add_task(f"Finding person: {pname}...", total=None)
-                            found_person = client.get_person_by_name(pname)
-                            if not found_person:
-                                print_error(f"Person not found: {pname}")
-                                sys.exit(1)
-                            person_ids.append(found_person.id)
-                            progress.update(task, completed=True)
-                            print_success(f"Found person: {found_person.name}")
+                    run_people = resolve_run_people(
+                        client,
+                        expression=people_condition,
+                        person_names=person_names,
+                        person_match=person_match,
+                        accounts=(),
+                    )
 
                     # Immich holds the birth date; the bare --birthday flag is
                     # how a run says "use it". Curating one there is what makes
@@ -636,10 +623,11 @@ def register_generate_commands(main: click.Group) -> None:
                         client=client,
                         progress=progress,
                         date_ranges=date_ranges,
-                        person_ids=person_ids,
+                        person_ids=run_people.person_ids,
                         person_match=person_match,
-                        person_expression=id_condition,
+                        person_expression=run_people.condition,
                         include_photos=use_photos,
+                        face_accounts=run_people.face_accounts,
                     )
                     if fetched_photos:
                         print_info(f"Found {len(fetched_photos)} photos")

@@ -141,7 +141,7 @@ def build_pool(
     funnel = _Funnel(view.pictures)
     excluded, left_out_reason = left_out(translation.reading.request, asker)
     _when(funnel, translation.when)
-    _present(funnel, translation.who)
+    _present(funnel, translation.who, view)
     rules = trips or TripsConfig()
     if not (printed and _printed(funnel, translation.reading.request, printed, asker)):
         _where(funnel, translation, household, rules, lexicon, asker)
@@ -291,7 +291,7 @@ def _names(view: LibraryView, people: frozenset[str]) -> str:
     return ", ".join(known) or "nobody known"
 
 
-def _present(funnel: _Funnel, who: WhoLink) -> None:
+def _present(funnel: _Funnel, who: WhoLink, view: LibraryView) -> None:
     # Someone is present when their face is recognised anywhere in the picture's episode: a baby
     # feeding against a chest or a child seen from behind shows no face of its own.
     if not who.present:
@@ -300,7 +300,9 @@ def _present(funnel: _Funnel, who: WhoLink) -> None:
     faces = [p.taken_at for p in funnel.pictures if wanted & p.people]
     kept = _in_episodes(funnel.pictures, faces)
     rule = "a recognised face of theirs in the picture's episode (90 minutes)"
-    funnel.keep("who", kept, Reason(", ".join(who.present), rule, "they are there"))
+    # The trace names them, never by their Immich id: a report turns a name into a role.
+    named = _names(view, frozenset(who.present))
+    funnel.keep("who", kept, Reason(named, rule, "they are there"))
 
 
 def _printed(funnel: _Funnel, request: str, printed: PrintedText, asker: Asker) -> bool:

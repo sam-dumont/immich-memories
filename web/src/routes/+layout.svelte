@@ -31,13 +31,14 @@
 {:else}
 <AppShell>
   <AppShellHeader>
-    <header class="flex h-16 w-full items-center justify-between px-4">
-      <a href="/" class="flex items-center gap-2 text-lg font-semibold text-primary">
+    <header class="flex h-16 w-full items-center justify-between gap-2 px-4">
+      <!-- A phone keeps the icon: the wordmark, the language and the theme toggle do not fit 390 px. -->
+      <a href="/" class="flex shrink-0 items-center gap-2 text-lg font-semibold text-primary" aria-label="Immich Memories">
         <svg viewBox="0 0 24 24" class="size-7 fill-current" aria-hidden="true"><path d={mdiMovieOpenStarOutline} /></svg>
-        Immich Memories
+        <span class="max-sm:hidden">Immich Memories</span>
       </a>
-      <div class="flex items-center gap-2">
-        <select class="rounded-lg border border-gray-300 bg-light px-2 py-1 text-sm dark:border-gray-700" aria-label={t('Interface language')}
+      <div class="flex min-w-0 items-center gap-2">
+        <select class="min-w-0 max-w-40 rounded-lg border border-gray-300 bg-light px-2 py-1 text-sm sm:max-w-none dark:border-gray-700" aria-label={t('Interface language')}
           value={chosenLanguage()} onchange={(event) => chooseLanguage(event.currentTarget.value)}>
           <option value="auto">{t('Automatic (browser)')}</option>
           {#each languages() as language (language.code)}<option value={language.code}>{language.name}</option>{/each}
@@ -56,8 +57,10 @@
       </div>
     </header>
   </AppShellHeader>
-  <AppShellSidebar>
-    <nav class="flex w-64 flex-col gap-1 p-3 max-md:hidden" aria-label={t('Main navigation')}>
+  <!-- Below md the shell draws its sidebar as an overlay, open by default: on a phone it covered
+       the page and took every click. Phones navigate from the bar at the bottom instead. -->
+  <AppShellSidebar class="max-md:hidden">
+    <nav class="flex w-64 flex-col gap-1 p-3" aria-label={t('Main navigation')}>
       {#each navigation as item (item.href)}
         <NavbarItem {...item} active={page.url.pathname.startsWith(item.href)} />
       {/each}

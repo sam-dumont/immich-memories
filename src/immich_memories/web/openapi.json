@@ -4912,6 +4912,58 @@
         ]
       }
     },
+    "/api/v1/runs/{run_id}/report/bundle": {
+      "get": {
+        "description": "The ZIP `report --bundle` writes: report.md, report.json and run.log, all redacted.",
+        "operationId": "download_report_api_v1_runs__run_id__report_bundle_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_flagged_captions",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Flagged Captions",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/zip": {}
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Report",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
     "/api/v1/runs/{run_id}/revisions": {
       "get": {
         "description": "Every saved revision of this cut, oldest first.",

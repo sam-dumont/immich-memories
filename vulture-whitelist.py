@@ -123,10 +123,6 @@ has_flagged_photos
 # run database (and SQLAlchemy) into the API client and the renderer.
 __getattr__  # unused function (src/immich_memories/tracking/__init__.py:43)
 
-# The confirmed bind of a second account's person id (#1500 slice 1). Its callers, the
-# `people` CLI and the people editor, land in later slices of #1500; remove this line then.
-bind_alias  # unused function (src/immich_memories/people/companion.py:207)
-
 # nltk's WordNetCorpusReader calls map_wn from its own constructor; the override in
 # free_text/lexicon.py stops it loading a second copy of the corpus. No line here names it.
 _.map_wn

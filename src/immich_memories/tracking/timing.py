@@ -14,6 +14,7 @@ from typing import Any
 
 from immich_memories.logging_config import SecretRedactionFilter, redact_secrets
 from immich_memories.process_start import Startup
+from immich_memories.tracking import peak_memory
 
 # The lines a run keeps for its report; the report shows the tail, the counts cover all.
 LOG_LINES = 5000
@@ -33,6 +34,9 @@ class Span:
     attributes: dict[str, float] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
     error: dict[str, Any] | None = None
+    # Resident bytes at the span's highest point: this process, and it plus its children.
+    peak_rss: int | None = None
+    peak_tree_rss: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Portable representation shared by the store, reports and matrix exports."""
@@ -162,6 +166,7 @@ def span(name: str, *, items: int | None = None, **attributes: float) -> Iterato
         attributes=attributes,
     )
     token = _parent.set(measured)
+    watch = peak_memory.watch_open() if collector else None
     try:
         yield measured
     except BaseException as error:
@@ -179,6 +184,9 @@ def span(name: str, *, items: int | None = None, **attributes: float) -> Iterato
         raise
     finally:
         measured.duration = max(0.0, now() - measured.start)
+        if watch is not None:
+            peak_memory.watch_close(watch)
+            measured.peak_rss, measured.peak_tree_rss = watch.own, watch.tree
         _parent.reset(token)
         if collector is not None:
             collector.spans.append(measured)
