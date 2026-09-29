@@ -10,7 +10,7 @@ the primary exactly as it always has been.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from threading import Lock
 from typing import TypeVar
@@ -31,7 +31,9 @@ _Read = TypeVar("_Read")
 
 # WHY not a RuntimeError: a render drops one clip it cannot decode and goes on, but a
 # household read that fails means the film would silently lose an owner's picture, or
-# be tempted to play another account's copy. It has to stop the attempt.
+# be tempted to play another account's copy. It has to stop the attempt. Preparation and
+# selection turn one unusable picture into unavailable evidence with broad handlers, so
+# each lets this through first (`except AccountReadFailed: raise`, held by a test).
 class AccountReadFailed(Exception):
     """The account that owns a picture could not read it. The message names the account."""
 
@@ -53,6 +55,11 @@ class AccessRoutes:
                 self._accounts[asset.id] = account
                 if asset.live_photo_video_id:
                     self._accounts.setdefault(asset.live_photo_video_id, account)
+
+    def pin(self, accounts: Mapping[str, str]) -> None:
+        """Route asset ids as a record froze them, over anything learned before."""
+        with self._lock:
+            self._accounts.update(accounts)
 
     def account_of(self, asset_id: str) -> str | None:
         with self._lock:

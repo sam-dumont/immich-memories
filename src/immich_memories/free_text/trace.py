@@ -7,7 +7,9 @@ decided it, and the votes. It is printed before anything runs and saved with the
 
 from __future__ import annotations
 
+import copy
 from collections.abc import Iterable, Mapping, Sequence
+from typing import Any
 
 from immich_memories.free_text.handoff import Film
 from immich_memories.free_text.library import LibraryPerson
@@ -102,10 +104,12 @@ def save_with_run(
     trace: str,
     *,
     people: Mapping[str, LibraryPerson] | None = None,
+    record: Mapping[str, object] | None = None,
 ) -> None:
     """Keep the trace with the run being observed, where the report builder reads it.
 
     Outside an observed run (a dry run) there is nothing to keep it with: it was printed.
+    `record` is the translation as data (`trace_record`), kept whole for the report.
     The names of the `people` the request linked and the place names it quotes join the
     run's private terms, and the report's vocabulary gives each person their role.
     """
@@ -121,6 +125,7 @@ def save_with_run(
     collected.diagnostics["free_text"] = {
         "request": ask.request,
         "trace": trace,
+        "translation": dict(record or {}),
         "verdict": pool.verdict,
         "film": film.route if film else None,
         "spec": _spec(translation, [name for name, _ in people_roles]),
@@ -137,6 +142,11 @@ def save_with_run(
     collected.private_terms.update(name for name, _ in people_roles)
     collected.private_terms.update(places)
     collected.private_terms.update(pool.printed)
+    # Immich ids of everyone the request linked: a report hashes them wherever they appear.
+    collected.private_ids.update({*translation.who.anchors, *translation.who.present})
+    # The pool's pictures too: the rule preview names them as examples.
+    if film is not None:
+        collected.private_ids.update(film.asset_ids)
     # An age or "since he was born" is dated from the birth date, which the trace then prints.
     collected.private_terms.update(str(person.birth_date) for person in linked if person.birth_date)
 
@@ -180,6 +190,25 @@ def _roles_by_name(people: Sequence[LibraryPerson]) -> dict[str, str]:
         for part in person.name.split():
             roles.setdefault(part, person.role or "")
     return roles
+
+
+def carry_to_render(saved: Mapping[str, Any]) -> None:
+    """Keep a saved cut's request with the run that renders it.
+
+    Rendering a cut records a new run, and the film links to that one: without the request
+    (and the private words that redact it) its report would not say what was asked. The
+    render's own picks replace the cut's.
+    """
+    collected = timing.active()
+    record = saved.get("free_text")
+    if collected is None or not isinstance(record, Mapping):
+        return
+    carried = copy.deepcopy(dict(record))
+    carried.pop("picks", None)
+    carried.get("funnel", {}).pop("engine_picks", None)
+    collected.diagnostics["free_text"] = carried
+    collected.private_terms.update(saved.get("private_terms", []))
+    collected.private_ids.update(saved.get("private_ids", []))
 
 
 def save_picks(asset_ids: Iterable[str]) -> None:

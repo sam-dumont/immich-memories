@@ -491,13 +491,18 @@ src/immich_memories/
 │   ├── editorial_preparation*.py   # Annotation preparation: captions, public heads, detectors, pixel facts,
 │   │                               # motion lines (one caption-seat sentence per video, read by
 │   │                               # the pick).
+│   │                               # _previews.py fetches, verifies and caches the preview every
+│   │                               # stage reads. Every broad per-picture handler here lets
+│   │                               # AccountReadFailed through (test_account_read_escapes.py).
 │   │                               # _model_facts.py plans who answers each model producer;
 │   │                               # _detector_frames.py samples a video's eight frames for the
 │   │                               # exposure head, through the motion line's keyframe reader
 │   ├── selection_source*.py    # The canonical source model: admission, provenance, groups, invariants
 │   ├── household_source.py     # A run naming its accounts (`EditorialRunContext.accounts`) reads the
 │   │                           # window per account, keeps chosen owners only, tags `Asset.access_accounts`
-│   │                           # and routes the run's AccessBoundClient
+│   │                           # and routes the run's AccessBoundClient; the kept copy of each exact-copy
+│   │                           # group and its account are frozen in the attempt's source snapshot, and
+│   │                           # `runs render` reads that copy through that account
 │   ├── text_episode_reader.py  # Reading event evidence (paged, banked); the same reading names
 │   │                           # each episode's notable moments, which the polish layer seats and protects
 │   ├── text_episode_prompt.py  # What that reading is asked, and what it may take a name from
@@ -533,7 +538,7 @@ src/immich_memories/
 │   ├── album_source.py         # Album mode: the album is the candidate pool, nothing is searched for
 │   ├── source_filter.py        # Drop doorbell / dashcam / screen-recorder uploads by filename
 │   ├── source_quality.py       # Drop messaging re-encodes: sub-1080p with no camera EXIF
-│   ├── exact_copies.py         # Same SHA-1 + kind under distinct UUIDs: one item (favourite, primary owner, ids)
+│   ├── exact_copies.py         # Same SHA-1 + kind under distinct UUIDs: one item (favourite, primary owner, ids); a video equal to a Live Photo's motion folds into the Live Photo; any member's star stars the kept item
 │   ├── picture_copies.py       # One picture stored as several files: fold, keep the most pixels
 │   ├── llm_failures.py         # Separate "the model could not answer" from a bug in the calling code
 │   ├── request_heartbeat.py    # RequestHeartbeat: periodic log line for long-outstanding HTTP calls

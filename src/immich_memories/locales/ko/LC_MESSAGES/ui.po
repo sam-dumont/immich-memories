@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-29 07:24+0200\n"
+"POT-Creation-Date: 2026-09-29 10:32+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -48,7 +48,7 @@ msgstr "추가"
 msgid "Add a relationship"
 msgstr "관계 추가"
 
-#: web/lib/RenderPanel.svelte:189
+#: web/lib/RenderPanel.svelte:191
 msgid "Add date overlay"
 msgstr "날짜 표시"
 
@@ -78,7 +78,7 @@ msgstr "기간 후"
 msgid "Album"
 msgstr "앨범"
 
-#: web/lib/RenderPanel.svelte:231
+#: web/lib/RenderPanel.svelte:233
 msgid "Album name"
 msgstr "앨범 이름"
 
@@ -109,21 +109,21 @@ msgstr "누구나"
 msgid "Anyone. Only pictures nothing held back: no detector flag, no private moment."
 msgstr "누구나. 감지기 표시나 사적인 순간 등 제한이 없는 이미지만 사용합니다."
 
-#: web/lib/RenderPanel.svelte:144 web/lib/RenderPanel.svelte:167 web/lib/RenderPanel.svelte:173
-#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:231
+#: web/lib/RenderPanel.svelte:146 web/lib/RenderPanel.svelte:169 web/lib/RenderPanel.svelte:175
+#: web/lib/RenderPanel.svelte:181 web/lib/RenderPanel.svelte:187 web/lib/RenderPanel.svelte:233
 #: web/routes/create/+page.svelte:435
 msgid "As configured"
 msgstr "설정대로"
 
-#: web/lib/RenderPanel.svelte:153
+#: web/lib/RenderPanel.svelte:155
 msgid "As generate decides"
 msgstr "생성 시 결정되는 대로"
 
-#: web/lib/RenderPanel.svelte:161 web/lib/labels.ts:23
+#: web/lib/RenderPanel.svelte:163 web/lib/labels.ts:23
 msgid "Automatic"
 msgstr "자동"
 
-#: web/lib/RenderPanel.svelte:202
+#: web/lib/RenderPanel.svelte:204
 msgid "Automatic (as configured)"
 msgstr "자동(설정대로)"
 
@@ -159,7 +159,7 @@ msgstr "생일 (MM-DD, 비워두면 Immich의 생년월일)"
 msgid "Birthday to birthday, with earlier birthdays"
 msgstr "생일부터 생일까지, 이전 생일 포함"
 
-#: web/lib/RenderPanel.svelte:185
+#: web/lib/RenderPanel.svelte:187
 msgid "Blurred background"
 msgstr "흐린 배경"
 
@@ -179,7 +179,7 @@ msgstr "취소"
 msgid "Candidate key"
 msgstr "후보 키"
 
-#: web/lib/RenderPanel.svelte:190
+#: web/lib/RenderPanel.svelte:192
 msgid "Caption clips with their place"
 msgstr "클립에 장소 표시"
 
@@ -227,7 +227,7 @@ msgstr "이 제한을 해제할까요?"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{cache}에서 {count}개 항목을 지웠습니다."
 
-#: web/lib/RunReport.svelte:61
+#: web/lib/RunReport.svelte:63
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "클립보드를 사용할 수 없습니다. 아래 보고서를 선택해 복사하세요."
 
@@ -253,7 +253,7 @@ msgstr "{name}(으)로 연결됨"
 msgid "Considered by the model"
 msgstr "모델이 검토함"
 
-#: web/lib/JobPanel.svelte:88 web/lib/RunReport.svelte:73
+#: web/lib/JobPanel.svelte:88 web/lib/RunReport.svelte:76
 msgid "Copied"
 msgstr "복사됨"
 
@@ -261,11 +261,11 @@ msgstr "복사됨"
 msgid "Copy as CLI command"
 msgstr "CLI 명령어로 복사"
 
-#: web/lib/RunReport.svelte:73 web/lib/RunReport.svelte:75
+#: web/lib/RunReport.svelte:76 web/lib/RunReport.svelte:81
 msgid "Copy report"
 msgstr "보고서 복사"
 
-#: web/lib/RenderPanel.svelte:145
+#: web/lib/RenderPanel.svelte:147
 msgid "Crossfade"
 msgstr "크로스페이드"
 
@@ -277,7 +277,7 @@ msgstr "정리"
 msgid "Custom date range"
 msgstr "직접 지정한 기간"
 
-#: web/lib/RenderPanel.svelte:145 web/routes/create/+page.svelte:451
+#: web/lib/RenderPanel.svelte:147 web/routes/create/+page.svelte:451
 msgid "Cut"
 msgstr "편집하기"
 
@@ -329,6 +329,10 @@ msgstr "검색 실패: {error}"
 #: web/routes/runs/[run_id]/+page.svelte:326
 msgid "Download child output"
 msgstr "연결된 결과 다운로드"
+
+#: web/lib/RunReport.svelte:77 web/lib/RunReport.svelte:82
+msgid "Download report"
+msgstr "보고서 다운로드"
 
 #: web/lib/ShotInspector.svelte:47
 msgid "Edit this shot"
@@ -413,11 +417,11 @@ msgstr "이름 검색"
 msgid "Finding faces"
 msgstr "얼굴을 찾는 중"
 
-#: web/lib/RenderPanel.svelte:185
+#: web/lib/RenderPanel.svelte:187
 msgid "Fit with bars"
 msgstr "여백을 두고 맞춤"
 
-#: web/lib/RenderPanel.svelte:171
+#: web/lib/RenderPanel.svelte:173
 msgid "Format"
 msgstr "형식"
 
@@ -446,7 +450,7 @@ msgstr "제한됨: {reasons}."
 msgid "Hemisphere"
 msgstr "반구"
 
-#: web/lib/RenderPanel.svelte:179
+#: web/lib/RenderPanel.svelte:181
 msgid "High"
 msgstr "높음"
 
@@ -495,7 +499,7 @@ msgstr "영상에 포함"
 msgid "Include Live Photos"
 msgstr "Live Photos 포함"
 
-#: web/lib/RunReport.svelte:70
+#: web/lib/RunReport.svelte:72
 msgid "Include captions of flagged photos"
 msgstr "표시된 사진의 캡션 포함"
 
@@ -529,7 +533,7 @@ msgstr "{stage}에서 유지됨"
 msgid "Kept because"
 msgstr "유지한 이유"
 
-#: web/lib/RenderPanel.svelte:161
+#: web/lib/RenderPanel.svelte:163
 msgid "Landscape"
 msgstr "가로"
 
@@ -549,7 +553,7 @@ msgstr "Live"
 msgid "Looking through your library for memories to suggest..."
 msgstr "라이브러리에서 추천할 추억을 찾는 중..."
 
-#: web/lib/RenderPanel.svelte:180
+#: web/lib/RenderPanel.svelte:182
 msgid "Low"
 msgstr "낮음"
 
@@ -573,7 +577,7 @@ msgstr "수동"
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr "실패한 작업을 포함한 수동·자동 작업입니다. 작업을 열어 편집 결과와 소요 시간을 확인하세요."
 
-#: web/lib/RenderPanel.svelte:167
+#: web/lib/RenderPanel.svelte:169
 msgid "Match the sources"
 msgstr "원본 해상도에 맞춤"
 
@@ -585,7 +589,7 @@ msgstr "동영상의 움직임을 측정하는 중"
 msgid "Measuring the pictures"
 msgstr "이미지를 측정하는 중"
 
-#: web/lib/RenderPanel.svelte:180
+#: web/lib/RenderPanel.svelte:182
 msgid "Medium"
 msgstr "중간"
 
@@ -617,11 +621,11 @@ msgstr "이달의 하이라이트"
 msgid "Multi-Person"
 msgstr "여러 인물"
 
-#: web/lib/RenderPanel.svelte:200
+#: web/lib/RenderPanel.svelte:202
 msgid "Music"
 msgstr "음악"
 
-#: web/lib/RenderPanel.svelte:223
+#: web/lib/RenderPanel.svelte:225
 msgid "Music volume:"
 msgstr "음악 음량:"
 
@@ -653,7 +657,7 @@ msgstr "영화 없음: 라이브러리로는 보여 줄 수 없습니다. 다른
 msgid "No model read this cut: the rules chose every picture."
 msgstr "이 편집은 모델이 읽지 않았습니다. 모든 이미지를 규칙이 골랐습니다."
 
-#: web/lib/RenderPanel.svelte:203
+#: web/lib/RenderPanel.svelte:205
 msgid "No music"
 msgstr "음악 없음"
 
@@ -709,7 +713,7 @@ msgstr "이 추억에 나오는 사람이 여기서는 인식되지 않았지만
 msgid "Nobody yet. Rescan the library to read who is in it."
 msgstr "아직 아무도 없습니다. 라이브러리를 다시 스캔하면 누가 있는지 알 수 있습니다."
 
-#: web/lib/RenderPanel.svelte:145
+#: web/lib/RenderPanel.svelte:147
 msgid "None"
 msgstr "없음"
 
@@ -753,7 +757,7 @@ msgstr "열기"
 msgid "Open run"
 msgstr "작업 열기"
 
-#: web/lib/RenderPanel.svelte:131
+#: web/lib/RenderPanel.svelte:133
 msgid "Open the film run"
 msgstr "영상 작업 열기"
 
@@ -761,7 +765,7 @@ msgstr "영상 작업 열기"
 msgid "Order and timecodes from the saved cut."
 msgstr "저장된 편집본의 순서와 타임코드입니다."
 
-#: web/lib/RenderPanel.svelte:159
+#: web/lib/RenderPanel.svelte:161
 msgid "Orientation"
 msgstr "방향"
 
@@ -834,7 +838,7 @@ msgstr "URL과 API 키를 모두 입력하세요"
 msgid "Pool"
 msgstr "후보 미디어"
 
-#: web/lib/RenderPanel.svelte:162
+#: web/lib/RenderPanel.svelte:164
 msgid "Portrait"
 msgstr "세로"
 
@@ -846,7 +850,7 @@ msgstr "가능"
 msgid "Preview"
 msgstr "미리보기"
 
-#: web/lib/RenderPanel.svelte:210
+#: web/lib/RenderPanel.svelte:212
 msgid "Preview a track"
 msgstr "트랙 미리듣기"
 
@@ -854,7 +858,7 @@ msgstr "트랙 미리듣기"
 msgid "Preview with these choices"
 msgstr "이 선택으로 미리보기"
 
-#: web/lib/RenderPanel.svelte:196
+#: web/lib/RenderPanel.svelte:198
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "개인정보 보호 모드: 모든 이미지를 흐리게 하고 이름을 가립니다"
 
@@ -866,7 +870,7 @@ msgstr "진행 상황"
 msgid "Put it back"
 msgstr "되돌리기"
 
-#: web/lib/RenderPanel.svelte:177
+#: web/lib/RenderPanel.svelte:179
 msgid "Quality"
 msgstr "화질"
 
@@ -918,7 +922,7 @@ msgstr "이 관계 삭제"
 msgid "Removed"
 msgstr "뺌"
 
-#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:234
+#: web/lib/RenderPanel.svelte:126 web/lib/RenderPanel.svelte:127 web/lib/RenderPanel.svelte:236
 msgid "Render"
 msgstr "렌더링"
 
@@ -926,7 +930,7 @@ msgstr "렌더링"
 msgid "Replaced a picture the model doubted."
 msgstr "모델이 의심한 이미지를 대체했습니다."
 
-#: web/lib/RunReport.svelte:72
+#: web/lib/RunReport.svelte:74
 msgid "Report preview"
 msgstr "보고서 미리보기"
 
@@ -934,15 +938,15 @@ msgstr "보고서 미리보기"
 msgid "Rescan the library"
 msgstr "라이브러리 다시 스캔"
 
-#: web/lib/RenderPanel.svelte:165
+#: web/lib/RenderPanel.svelte:167
 msgid "Resolution"
 msgstr "해상도"
 
-#: web/lib/RunReport.svelte:68
+#: web/lib/RunReport.svelte:70
 msgid "Review the report, then copy it. Nothing is sent automatically."
 msgstr "보고서를 검토한 뒤 복사하세요. 자동으로 전송되는 것은 없습니다."
 
-#: web/lib/RenderPanel.svelte:139 web/routes/runs/[run_id]/+page.svelte:298
+#: web/lib/RenderPanel.svelte:141 web/routes/runs/[run_id]/+page.svelte:298
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "리비전 {number}"
@@ -1016,7 +1020,7 @@ msgstr "데이터베이스에 저장했습니다"
 msgid "Saved to: {output_path}"
 msgstr "저장 위치: {output_path}"
 
-#: web/lib/RenderPanel.svelte:183
+#: web/lib/RenderPanel.svelte:185
 msgid "Scaling Mode"
 msgstr "크기 조절 방식"
 
@@ -1083,7 +1087,7 @@ msgstr "로그아웃"
 msgid "Small moment"
 msgstr "작은 순간"
 
-#: web/lib/RenderPanel.svelte:144
+#: web/lib/RenderPanel.svelte:146
 msgid "Smart (fades and cuts)"
 msgstr "스마트(페이드와 컷)"
 
@@ -1103,7 +1107,7 @@ msgstr "특별한 날"
 msgid "Spring"
 msgstr "봄"
 
-#: web/lib/RenderPanel.svelte:162
+#: web/lib/RenderPanel.svelte:164
 msgid "Square"
 msgstr "정사각형"
 
@@ -1131,7 +1135,7 @@ msgstr "중지되었습니다."
 msgid "Stories"
 msgstr "이야기"
 
-#: web/lib/RenderPanel.svelte:149
+#: web/lib/RenderPanel.svelte:151
 msgid "Subtitle"
 msgstr "부제목"
 
@@ -1164,7 +1168,7 @@ msgstr "빼기"
 msgid "Test Connection"
 msgstr "연결 테스트"
 
-#: web/lib/RenderPanel.svelte:110
+#: web/lib/RenderPanel.svelte:112
 msgid "That file is not an MP3, M4A or WAV"
 msgstr "이 파일은 MP3, M4A 또는 WAV가 아닙니다"
 
@@ -1176,7 +1180,7 @@ msgstr "이 파일은 배경음악으로 쓰기에 너무 큽니다"
 msgid "The connection could not be checked."
 msgstr "연결을 확인할 수 없습니다."
 
-#: web/lib/RenderPanel.svelte:138
+#: web/lib/RenderPanel.svelte:140
 msgid "The cut as chosen"
 msgstr "선택한 그대로의 편집"
 
@@ -1188,7 +1192,7 @@ msgstr "편집을 시작할 수 없습니다."
 msgid "The cut is ready."
 msgstr "편집이 준비되었습니다."
 
-#: web/lib/RenderPanel.svelte:155
+#: web/lib/RenderPanel.svelte:157
 msgid "The dates and places, never a model"
 msgstr "날짜와 장소만, 모델은 사용하지 않음"
 
@@ -1222,7 +1226,7 @@ msgid ""
 "part of the sentence became and how many pictures fit, and films nothing."
 msgstr "모델이 준비된 라이브러리를 기준으로 단어를 읽습니다. 먼저 미리보기: 문장의 각 부분이 무엇이 되었는지와 맞는 사진 수를 보여 주며, 아무것도 촬영하지 않습니다."
 
-#: web/lib/RenderPanel.svelte:154
+#: web/lib/RenderPanel.svelte:156
 msgid "The model, when one is configured"
 msgstr "설정된 경우 모델"
 
@@ -1238,7 +1242,7 @@ msgstr ""
 msgid "The picture it replaced"
 msgstr "대체된 이미지"
 
-#: web/lib/RenderPanel.svelte:193
+#: web/lib/RenderPanel.svelte:195
 msgid ""
 "The place is Immich's. With geocoding on (Settings, network), it names the district in the "
 "film's language, through the public Nominatim or network.geocoding_url."
@@ -1254,7 +1258,7 @@ msgstr "후보"
 msgid "The preview could not start."
 msgstr "미리보기를 시작할 수 없습니다."
 
-#: web/lib/RenderPanel.svelte:204
+#: web/lib/RenderPanel.svelte:206
 msgid "The previewed track"
 msgstr "미리 들은 트랙"
 
@@ -1262,11 +1266,11 @@ msgstr "미리 들은 트랙"
 msgid "The previous automatic memory used this category."
 msgstr "이전 자동 추억은 이 카테고리를 사용했습니다."
 
-#: web/lib/RenderPanel.svelte:89
+#: web/lib/RenderPanel.svelte:91
 msgid "The render could not start."
 msgstr "렌더링을 시작할 수 없습니다."
 
-#: web/lib/RunReport.svelte:48
+#: web/lib/RunReport.svelte:50
 msgid "The report could not be loaded."
 msgstr "보고서를 불러오지 못했습니다."
 
@@ -1314,7 +1318,7 @@ msgstr "이 작업은 후보 기록을 남기지 않았습니다. 다시 편집�
 msgid "Thumbnail cache"
 msgstr "썸네일 캐시"
 
-#: web/lib/RenderPanel.svelte:148
+#: web/lib/RenderPanel.svelte:150
 msgid "Title (decided as generate decides when empty)"
 msgstr "제목(비워두면 generate가 결정)"
 
@@ -1330,7 +1334,7 @@ msgstr "검사에서 거부된 이미지의 자리를 차지했습니다."
 msgid "Took the seat of a picture the model removed from this story."
 msgstr "모델이 이 이야기에서 뺀 이미지의 자리를 차지했습니다."
 
-#: web/lib/RenderPanel.svelte:142
+#: web/lib/RenderPanel.svelte:144
 msgid "Transition Style"
 msgstr "전환 스타일"
 
@@ -1363,11 +1367,11 @@ msgstr "되돌리기"
 msgid "Updated {when}"
 msgstr "{when} 업데이트됨"
 
-#: web/lib/RenderPanel.svelte:213
+#: web/lib/RenderPanel.svelte:215
 msgid "Upload a track"
 msgstr "트랙 업로드"
 
-#: web/lib/RenderPanel.svelte:230
+#: web/lib/RenderPanel.svelte:232
 msgid "Upload the film to Immich"
 msgstr "영상을 Immich에 업로드"
 
@@ -1423,7 +1427,7 @@ msgstr "편집 규칙이 제외할 사진"
 msgid "What the library measures"
 msgstr "라이브러리가 측정하는 것"
 
-#: web/lib/RenderPanel.svelte:136
+#: web/lib/RenderPanel.svelte:138
 msgid "What to render"
 msgstr "렌더링 대상"
 
@@ -1447,7 +1451,7 @@ msgstr "누가 누구인지, 역할과 관계입니다."
 msgid "Who may see it"
 msgstr "볼 수 있는 사람"
 
-#: web/lib/RenderPanel.svelte:151
+#: web/lib/RenderPanel.svelte:153
 msgid "Who names the film"
 msgstr "누가 영화 제목을 정하는지"
 

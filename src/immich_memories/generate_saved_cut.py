@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
+from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.models import VideoClipInfo
 from immich_memories.filename_builder import build_memory_output_path, name_after_recipe
 from immich_memories.generate import GenerationParams, generate_memory
@@ -189,6 +190,12 @@ def render_saved_cut(
         raise RenderUnavailable(
             "This cut was made before a cut kept its render inputs. Cut again to render it."
         )
+    if isinstance(client, AccessBoundClient):
+        from immich_memories.analysis.editorial_source_snapshot import frozen_access
+
+        # A household cut renders the copies it chose, each through the account that read it.
+        client.routes.learn(clip.asset for clip in inputs.clips)
+        client.routes.pin(frozen_access(attempt_dir))
     date_range = _date_range(run)
     params = _params(config, client, run, inputs.binding["policy"])
     params.editorial_attempt_dir = attempt_dir
@@ -249,4 +256,16 @@ def render_saved_cut(
             film=params.output_path,
             attempt=attempt_dir,
         )
-    return generate_memory(params)
+    return _render_as_new_run(config, run, params)
+
+
+def _render_as_new_run(config: Config, run: RunMetadata, params: GenerationParams) -> Path:
+    from immich_memories.db import open_store
+    from immich_memories.free_text.trace import carry_to_render
+    from immich_memories.tracking.run_observations import observe_render
+    from immich_memories.tracking.span_store import SpanStore
+
+    # The film is a new run: it opens its observations here, so the cut's request joins them.
+    with observe_render(config):
+        carry_to_render(SpanStore(open_store(config)).diagnostics(run.run_id))
+        return generate_memory(params)
