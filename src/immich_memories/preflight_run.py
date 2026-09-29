@@ -165,15 +165,35 @@ def check_output_directory(directory: Path) -> CheckResult:
 def check_memory(config: Config) -> CheckResult:
     """Say how many sources a render prepares at once, and the memory that decided it."""
     from immich_memories.processing.memory_budget import (
+        explicit_4k_warning,
+        film_tier,
+        floor_sentence,
         lookahead_summary,
+        memory_budget,
         source_prepare_workers,
     )
+    from immich_memories.processing.output_canvas import hardware_hevc_available
 
     _workers, why = source_prepare_workers(config.analysis.source_prepare_workers)
+    message = f"Photo preparation: {why}; {lookahead_summary()}"
+    budget = memory_budget()
+    if (
+        budget is None
+        or film_tier(
+            "4k", memory=budget.size, hardware_hevc=hardware_hevc_available(config), explicit=False
+        )
+        == "4k"
+    ):
+        return CheckResult(name="Memory", status=CheckStatus.OK, message=message)
+    # config.output.resolution defaults to 1080p, so 4k there was set on purpose.
+    if config.output.resolution == "4k":
+        return CheckResult(
+            name="Memory",
+            status=CheckStatus.WARNING,
+            message=f"{message}; {explicit_4k_warning(budget.size)}",
+        )
     return CheckResult(
-        name="Memory",
-        status=CheckStatus.OK,
-        message=f"Photo preparation: {why}; {lookahead_summary()}",
+        name="Memory", status=CheckStatus.OK, message=f"{message}; {floor_sentence(budget.size)}"
     )
 
 
