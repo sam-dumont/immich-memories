@@ -86,7 +86,10 @@ class AnalysisConfig(BaseModel):
         default=3.5,
         ge=0.0,
         le=30.0,
-        description="Below this a burst renders as a photograph rather than as motion",
+        description=(
+            "Below this a burst's stitch is not worth its cuts: the kept picture's own clip "
+            "stands in for it, and plays only if it moves"
+        ),
     )
 
     min_source_short_side: int = Field(

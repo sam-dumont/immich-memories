@@ -38,6 +38,10 @@ video...`: the bracketed run id ties one run's lines together (`-` outside a run
 `jq 'select(.run_id=="abc123")'` works. `IMMICH_MEMORIES_LOG_FILE=/path/to/file.log` writes the
 same lines to a file as well; in Docker, point it at a mounted path.
 
+Log lines go to stderr. Stdout only carries what a command prints, so `runs storage --json`,
+`report --json` and `auto status --json` give you one JSON document you can pipe straight into
+`jq`, whatever the log level. `docker logs` shows both streams.
+
 ## Model usage records
 
 Only with a model. Each selection attempt keeps `llm-usage.json` under

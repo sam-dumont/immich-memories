@@ -1,0 +1,43 @@
+{
+  "src/immich_memories/automation/calendar_detectors.py": {
+    "BirthdayDetector::detect": [17]
+  },
+  "src/immich_memories/automation/runner.py": {
+    "AutoRunner::_run_one_under_lease": [19]
+  },
+  "src/immich_memories/cli/config_cmd.py": {
+    "register_config_commands": [29]
+  },
+  "src/immich_memories/cli/generate.py": {
+    "register_generate_commands": [134]
+  },
+  "src/immich_memories/cli/music_cmd.py": {
+    "register_music_commands": [17]
+  },
+  "src/immich_memories/cli/runs.py": {
+    "register_runs_commands": [36]
+  },
+  "src/immich_memories/cli/titles.py": {
+    "_print_title_test_params": [18],
+    "register_titles_commands": [18]
+  },
+  "src/immich_memories/processing/clip_encoder.py": {
+    "ClipEncoder::encode_single_clip": [18]
+  },
+  "src/immich_memories/processing/hdr_utilities.py": {
+    "_detect_hdr_type": [17]
+  },
+  "src/immich_memories/processing/streaming_assembler.py": {
+    "assemble_streaming": [24],
+    "streaming_assemble_full": [16]
+  },
+  "src/immich_memories/titles/kernels.py": {
+    "_compile_kernels": [130]
+  },
+  "src/immich_memories/titles/sdf_font.py": {
+    "_search_font_paths": [20]
+  },
+  "src/immich_memories/titles/sdf_font_rendering.py": {
+    "_compile_sdf_kernels": [24]
+  }
+}

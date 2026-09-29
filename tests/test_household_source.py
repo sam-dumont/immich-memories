@@ -23,9 +23,9 @@ from immich_memories.analysis.selection_source import (
     EditorialSelectionRequest,
     prepare_editorial_source,
 )
+from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.accounts import AccountUnavailable
 from immich_memories.api.models import Asset
-from immich_memories.api.sync_client import SyncImmichClient
 from immich_memories.config import Config
 from immich_memories.db import open_store
 from immich_memories.store.editorial_preparation import remember_assets
@@ -144,17 +144,17 @@ def _source(tmp_path, accounts: tuple[str, ...] = ()):
         artifact_dir=tmp_path / "runs",
         accounts=accounts,
     )
-    primary = SyncImmichClient(base_url=URL, api_key=PRIMARY_KEY, api_version="v2")
-    planner = build_editorial_planner(
-        client=primary,
-        thumbnail_cache=object(),
-        context=context,
-        config=config,
-        ports=EditorialRuntimePorts(load_people=lambda: {}),
-    )
-    request = planner._planner._selection_request
-    fetcher = planner._planner._source_dependencies.source_fetcher
+    primary = AccessBoundClient(config.immich)
     try:
+        planner = build_editorial_planner(
+            client=primary,
+            thumbnail_cache=object(),
+            context=context,
+            config=config,
+            ports=EditorialRuntimePorts(load_people=lambda: {}),
+        )
+        request = planner._planner._selection_request
+        fetcher = planner._planner._source_dependencies.source_fetcher
         prepared = prepare_editorial_source(
             EditorialSelectionRequest(scope=request.scope),
             EditorialDependencies(source_fetcher=fetcher),

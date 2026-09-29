@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import ipaddress
 import os
 import shutil
+import socket
 import subprocess
 import tempfile
 import threading
 import uuid
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -38,6 +40,33 @@ _TEST_ENV_KEYS = {
 }
 _STORE_URL_ENV = "IMMICH_MEMORIES_DATABASE_URL"
 _ORIGINAL_TEST_ENV: dict[str, str | None] = {}
+# The shell's own connections: the CLI reads these as aliases, so a developer who exports
+# them for daily use pointed every CliRunner test at a live Immich or a paid model (#1540).
+_SHELL_CONNECTION_KEYS = (
+    "IMMICH_URL",
+    "IMMICH_API_KEY",
+    "OPENAI_API_KEY",
+    "OPENAI_BASE_URL",
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_BASE_URL",
+    "ZAI_API_KEY",
+    "ZAI_BASE_URL",
+)
+# The suite's own settings, read by conftests and CI jobs rather than by the product: a
+# throwaway PostgreSQL, the image under test, the private-terms list. Everything else under
+# IMMICH_MEMORIES_ configures the product and is dropped (#1540).
+_HARNESS_ENV_PREFIXES = tuple(
+    f"IMMICH_MEMORIES_{name}"
+    for name in ("TEST_", "E2E_", "CONTAINER_", "PARITY_", "PROFILE_", "PRIVATE_TERMS")
+)
+# Runs whose subject is the real world (a live Immich, the built image) keep the environment
+# they were launched with: their jobs point HOME at a seeded home on purpose.
+_REAL_WORLD_MARKERS = ("integration", "container")
+# Tools that keep their downloads under HOME; a moved HOME must still find them.
+_HOME_CACHES = {
+    "PLAYWRIGHT_BROWSERS_PATH": ("Library/Caches/ms-playwright", ".cache/ms-playwright"),
+    "UV_CACHE_DIR": ("Library/Caches/uv", ".cache/uv"),
+}
 
 # The width every CLI render is pinned to. Wide enough that a sentence with a
 # pytest temporary path in it still fits on one line.
@@ -47,10 +76,12 @@ _TERMINAL_PATCHES = pytest.MonkeyPatch()
 
 def pytest_configure(config: pytest.Config) -> None:
     """Route test configuration paths to one disposable session directory."""
-    del config
     global _TEST_ROOT
     _TEST_ROOT = Path(tempfile.mkdtemp(prefix="immich-memories-pytest-"))
+    sealed = not _selects_the_real_world(config.option.markexpr)
 
+    if sealed:
+        _leave_the_accounts_home(_TEST_ROOT / "home")
     for key, relative in _TEST_ENV_KEYS.items():
         _ORIGINAL_TEST_ENV[key] = os.environ.get(key)
         os.environ[key] = str(_TEST_ROOT / relative)
@@ -61,6 +92,174 @@ def pytest_configure(config: pytest.Config) -> None:
 
     _pin_the_cli_width()
     _refuse_the_developers_store()
+    if sealed:
+        _refuse_the_accounts_config()
+        _refuse_outside_connections()
+
+
+def _selects_the_real_world(markexpr: str) -> bool:
+    """Whether this run's `-m` can select an integration or container test.
+
+    Decided once for the run, before any conftest imports: the Immich gate reads its config
+    at import time, which a per-test fixture comes too late to hand back. The unit suite's
+    `-m 'not integration and not e2e and not container'` selects none, so it stays sealed.
+    """
+    if not markexpr:
+        return True
+    from _pytest.mark.expression import Expression
+
+    expression = Expression.compile(markexpr)
+    return any(
+        expression.evaluate(lambda name, *_, marker=marker, **__: name == marker)
+        for marker in _REAL_WORLD_MARKERS
+    )
+
+
+def _swap_env(key: str, value: str | None) -> None:
+    _ORIGINAL_TEST_ENV.setdefault(key, os.environ.get(key))
+    if value is None:
+        os.environ.pop(key, None)
+    else:
+        os.environ[key] = value
+
+
+def _leave_the_accounts_home(home: Path) -> None:
+    """Point HOME, the XDG dirs and every setting the CLI reads at a disposable home.
+
+    A test that builds a Config or invokes the CLI with no config of its own used to fall
+    through to ~/.immich-memories/config.yaml and the shell's IMMICH_URL: one `generate`
+    test read the owner's config and spent five minutes talking to their Immich (#1540).
+    A test that needs a config writes one under this home or passes --config.
+    """
+    for key, candidates in _HOME_CACHES.items():
+        if key not in os.environ:
+            found = next((Path.home() / c for c in candidates if (Path.home() / c).is_dir()), None)
+            if found is not None:
+                _swap_env(key, str(found))
+    home.mkdir(parents=True)
+    _swap_env("HOME", str(home))
+    _swap_env("USERPROFILE", str(home))
+    for key, relative in (
+        ("XDG_CONFIG_HOME", ".config"),
+        ("XDG_CACHE_HOME", ".cache"),
+        ("XDG_DATA_HOME", ".local/share"),
+        ("XDG_STATE_HOME", ".local/state"),
+    ):
+        _swap_env(key, str(home / relative))
+    for key in _product_settings(os.environ):
+        _swap_env(key, None)
+
+
+def _product_settings(environ: Iterable[str]) -> list[str]:
+    """The shell's variables that configure the product, as opposed to the suite's own."""
+    managed = {*_TEST_ENV_KEYS, _STORE_URL_ENV}
+    return [
+        key
+        for key in environ
+        if key in _SHELL_CONNECTION_KEYS
+        or (
+            key.startswith("IMMICH_MEMORIES_")
+            and key not in managed
+            and not key.startswith(_HARNESS_ENV_PREFIXES)
+        )
+    ]
+
+
+_REAL_CONFIG_READS: list[str] = []
+
+
+def _account_config_dirs() -> tuple[Path, ...]:
+    home = _account_home()
+    return home / ".immich-memories", home / ".config" / "immich-memories"
+
+
+def _refuse_the_accounts_config() -> None:
+    """Fail any test whose config load reads a file under the account's own home.
+
+    The moved HOME covers the default path; this catches a test that names the real path
+    itself, or restores HOME through a CliRunner env. Recorded as well as raised, like the
+    store guard: a caller that swallows the error must not hide the read.
+    """
+    from immich_memories import config_sources
+
+    def guarded(module: Any, name: str) -> None:
+        read = getattr(module, name)
+
+        def check(path: Path, *args: Any, **kwargs: Any) -> Any:
+            resolved = Path(path).expanduser().resolve()
+            if any(resolved.is_relative_to(d) for d in _account_config_dirs()):
+                _REAL_CONFIG_READS.append(str(resolved))
+                raise RuntimeError(f"a test read the developer's own config: {resolved}")
+            return read(path, *args, **kwargs)
+
+        _TERMINAL_PATCHES.setattr(module, name, check)
+
+    guarded(config_loader, "_load_yaml_data")
+    guarded(config_sources, "_raw_yaml")
+
+
+@pytest.fixture(autouse=True)
+def no_real_config_read() -> Iterator[None]:
+    """Fail the test that read the developer's own config, even if the error was caught."""
+    _REAL_CONFIG_READS.clear()
+    yield
+    if _REAL_CONFIG_READS:
+        read = sorted(set(_REAL_CONFIG_READS))
+        _REAL_CONFIG_READS.clear()
+        pytest.fail(f"this test read the developer's own config: {read}")
+
+
+class OutsideConnectionRefused(ConnectionRefusedError):
+    """A unit test tried to reach a host other than this machine."""
+
+
+_OUTSIDE_CONNECTIONS: list[str] = []
+
+
+def _is_loopback(address: Any) -> bool:
+    if not isinstance(address, tuple):  # an AF_UNIX path
+        return True
+    host = str(address[0])
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host.split("%")[0]).is_loopback
+    except ValueError:
+        return False
+
+
+def _refuse_outside_connections() -> None:
+    """Refuse a socket connection to anything but this machine.
+
+    A test's Immich, model server or webhook is a fake on loopback or a mocked transport;
+    a connection anywhere else is a test reaching a real service. A run that selects
+    integration or container tests never installs this: real services are their subject.
+    """
+
+    def guard(name: str) -> None:
+        connect = getattr(socket.socket, name)
+
+        def check(self: socket.socket, address: Any) -> Any:
+            if not _is_loopback(address):
+                _OUTSIDE_CONNECTIONS.append(str(address))
+                raise OutsideConnectionRefused(f"a unit test connected outside: {address}")
+            return connect(self, address)
+
+        _TERMINAL_PATCHES.setattr(socket.socket, name, check)
+
+    guard("connect")
+    guard("connect_ex")
+
+
+@pytest.fixture(autouse=True)
+def no_outside_connection() -> Iterator[None]:
+    """Fail the test that connected to another host, even if the error was caught."""
+    _OUTSIDE_CONNECTIONS.clear()
+    yield
+    if _OUTSIDE_CONNECTIONS:
+        reached = sorted(set(_OUTSIDE_CONNECTIONS))
+        _OUTSIDE_CONNECTIONS.clear()
+        pytest.fail(f"this test connected to a host outside this machine: {reached}")
 
 
 _REAL_STORE_OPENS: list[str] = []
@@ -229,24 +428,30 @@ def fresh_ffmpeg_capabilities() -> Iterator[None]:
 def isolated_user_paths() -> Iterator[Path]:
     """Reset cached settings and assert tests never resolve user directories."""
     assert _TEST_ROOT is not None
+    # The path too: a test that loaded a named file left every later reload reading it.
     config_loader._config = None
+    config_loader._config_path = None
     yield _TEST_ROOT
     config_loader._config = None
+    config_loader._config_path = None
 
     config = Config()
-    normal_user_paths = {
-        Path.home() / ".immich-memories" / "cache.db",
-        Path.home() / ".immich-memories" / "cache",
-        Path.home() / "Videos" / "Memories",
-    }
-    resolved_paths = {
+    resolved_paths = (
         config.cache.database_path,
         config.cache.cache_path,
         config.output.output_path,
-    }
-    assert not resolved_paths & normal_user_paths
-    assert Path.home() not in config.triage.encoder_path.parents
-    assert Path.home() not in config.free_text.wordnet_path.parents
+        config.triage.encoder_path,
+        config.free_text.wordnet_path,
+    )
+    # Anything under the account's home is the developer's, unless it is under the temporary
+    # directory the suite and its tmp_paths live in (a TMPDIR inside the home is still ours).
+    scratch = Path(tempfile.gettempdir()).resolve()
+    assert not [
+        path
+        for path in resolved_paths
+        if path.resolve().is_relative_to(_account_home())
+        and not path.resolve().is_relative_to(scratch)
+    ]
 
 
 @pytest.fixture()
