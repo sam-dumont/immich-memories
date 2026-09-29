@@ -35,6 +35,7 @@ from immich_memories.config_models_automation import (
     UploadConfig,
 )
 from immich_memories.config_models_editorial import EditorialConfig
+from immich_memories.config_models_free_text import FreeTextConfig
 from immich_memories.config_models_inference import InferenceConfig
 from immich_memories.config_models_llm import LLMConfig  # noqa: F401
 from immich_memories.config_models_network import NetworkConfig
@@ -69,6 +70,7 @@ _TIER2_SECTIONS = frozenset(
         "triage",
         "editorial",
         "inference",
+        "free_text",
     }
 )
 
@@ -301,8 +303,8 @@ class Config(BaseSettings):
     Config tiers (YAML layout; not the product `tier`, which picks nas, gpu or full):
       Tier 1 (top level): tier, immich, defaults, output, audio, title_screens,
                            cache, database, upload, trips, photos
-      Tier 2 (advanced:):  analysis, hardware, llm, musicgen, ace_step,
-                           server, auth, automation, notifications, triage, editorial, inference
+      Tier 2 (advanced:):  analysis, hardware, llm, musicgen, ace_step, server, auth,
+                           automation, notifications, triage, editorial, inference, free_text
       Tier 3 (internal):   title_llm
 
     At runtime, ALL sections are flat fields on Config (config.analysis, etc.).
@@ -356,6 +358,7 @@ class Config(BaseSettings):
     triage: TriageConfig = Field(default_factory=TriageConfig)
     editorial: EditorialConfig = Field(default_factory=EditorialConfig)
     inference: InferenceConfig = Field(default_factory=InferenceConfig)
+    free_text: FreeTextConfig = Field(default_factory=FreeTextConfig)
 
     @model_validator(mode="after")
     def _apply_preset(self) -> Config:

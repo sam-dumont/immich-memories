@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import sys
 from datetime import date
 from pathlib import Path
@@ -132,6 +133,8 @@ def register_generate_commands(main: click.Group) -> None:
         album: str | None,
         from_album: str | None,
         subject: str | None,
+        ask: str | None,
+        ask_trace: Path | None,
         add_date: bool,
         add_place: bool,
         keep_intermediates: bool,
@@ -221,6 +224,15 @@ def register_generate_commands(main: click.Group) -> None:
             month=month,
             memory_type=memory_type,
             person_names=person_names,
+        )
+
+        from immich_memories.cli._ask_generation import RunScope, scope_of_ask
+
+        typed = RunScope(memory_type, day, event_id, from_album, subject, accept_any_provenance)
+        memory_type, day, event_id, from_album, subject, accept_any_provenance, curated = (
+            scope_of_ask(
+                ctx, config, ask, dry_run=dry_run, typed=typed, trace_file=ask_trace
+            ).fields()
         )
 
         # Read the memory from the date flags when it was not named. Without
@@ -409,10 +421,12 @@ def register_generate_commands(main: click.Group) -> None:
             no_music=no_music,
         )
         show_interactive = not quiet and sys.stdout.isatty()
+        quiet_scope = contextlib.ExitStack()
         if not show_interactive:
-            from immich_memories.cli._helpers import set_quiet_mode
+            from immich_memories.cli._helpers import quiet_output
 
-            set_quiet_mode(True)
+            # WHY no plain set: this run prints as log lines, the process after it does not.
+            quiet_scope.enter_context(quiet_output(True))
         else:
             console.print(table)
             console.print()
@@ -483,6 +497,7 @@ def register_generate_commands(main: click.Group) -> None:
                             owner_excluded_asset_ids=exclude_asset,
                             no_render=no_render,
                             subject=subject,
+                            curated=curated,
                         )
                         return
 
@@ -722,6 +737,8 @@ def register_generate_commands(main: click.Group) -> None:
 
             print_error(f"Error: {sanitize_error_message(described_error(e))}")
             sys.exit(1)
+        finally:
+            quiet_scope.close()
 
 
 def _holiday_country(memory_type: str | None, config) -> dict:

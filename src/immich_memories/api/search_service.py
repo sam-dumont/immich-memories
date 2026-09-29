@@ -71,8 +71,9 @@ class SearchService:
         updated_after: date | datetime | None = None,
         page: int = 1,
         size: int = 100,
+        ocr: str | None = None,
     ) -> MetadataSearchResult:
-        """Search assets by metadata."""
+        """Search assets by metadata; `ocr` keeps those whose recognised text holds it."""
         payload: dict = {
             "page": page,
             "size": size,
@@ -92,6 +93,8 @@ class SearchService:
             payload["takenBefore"] = _api_datetime(taken_before, inclusive_end=True)
         if updated_after:
             payload["updatedAfter"] = _api_datetime(updated_after)
+        if ocr:
+            payload["ocr"] = ocr
 
         data = await self._request("POST", "/search/metadata", json=payload)
         return MetadataSearchResult(**data)

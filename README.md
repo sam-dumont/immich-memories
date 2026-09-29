@@ -37,7 +37,7 @@ curl -O https://raw.githubusercontent.com/sam-dumont/immich-video-memory-generat
 cp example.env .env && mkdir output
 # set IMMICH_URL and IMMICH_API_KEY in .env
 docker compose up -d
-docker compose exec immich-memories immich-memories models fetch   # the CPU classifiers, about 130 MB, once
+docker compose exec immich-memories immich-memories models fetch   # the CPU classifiers and WordNet, about 140 MB, once
 ```
 
 Open http://localhost:8080, pick **Monthly Highlights**, a month, and press **Cut**. The [Quick start](https://sam-dumont.github.io/immich-video-memory-generator/docs/get-started/quick-start) walks it step by step, and [Teach it your family](https://sam-dumont.github.io/immich-video-memory-generator/docs/get-started/who-is-who) covers the two settings that make the cut good: where home is, and who is who. Without Docker: [pip / uv](https://sam-dumont.github.io/immich-video-memory-generator/docs/run/uv-pip).

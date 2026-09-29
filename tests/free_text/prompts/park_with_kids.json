@@ -1,0 +1,67 @@
+{
+  "request": "at the park with kids",
+  "shape": "a scene, children required",
+  "answers": {
+    "Split the owner's request": {
+      "who": [
+        "kids"
+      ],
+      "when": [],
+      "where": [
+        "at the park"
+      ],
+      "what": [
+        "the park"
+      ]
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": []
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "many occasions"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    }
+  },
+  "expect": {
+    "reading": {
+      "who": [
+        "kids"
+      ],
+      "where": [
+        "at the park"
+      ],
+      "what": [
+        "the park"
+      ]
+    },
+    "who": {
+      "present": [],
+      "anchors": [],
+      "company": "children"
+    },
+    "when": [
+      null,
+      null
+    ],
+    "where": "anywhere",
+    "subject": [
+      "park"
+    ],
+    "funnel": [
+      "library",
+      "kind of picture",
+      "subject",
+      "company"
+    ],
+    "pool": [
+      "park"
+    ],
+    "verdict": "possible",
+    "film": "pool"
+  }
+}

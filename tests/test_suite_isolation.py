@@ -17,6 +17,8 @@ from tests.conftest import (
     _TEST_ROOT,
     OutsideConnectionRefused,
     _account_home,
+    _product_settings,
+    _selects_the_real_world,
 )
 
 
@@ -70,3 +72,33 @@ def test_a_connection_to_this_machine_goes_through():
             pass
 
     assert _OUTSIDE_CONNECTIONS == []
+
+
+def test_only_a_run_that_can_select_real_world_tests_keeps_the_real_environment():
+    assert not _selects_the_real_world("not integration and not e2e and not container")
+    assert not _selects_the_real_world("e2e")
+    assert _selects_the_real_world("integration")
+    assert _selects_the_real_world("container")
+    assert _selects_the_real_world("")
+
+
+def test_the_scrub_drops_product_settings_and_keeps_the_suites_own():
+    shell = [
+        "IMMICH_URL",
+        "OPENAI_API_KEY",
+        "IMMICH_MEMORIES_LLM__MODEL",
+        "IMMICH_MEMORIES_AUTH_PASSWORD",
+        "IMMICH_MEMORIES_TEST_DATABASE_URL",
+        "IMMICH_MEMORIES_E2E_DATABASE_URL",
+        "IMMICH_MEMORIES_CONTAINER_IMAGE",
+        "IMMICH_MEMORIES_PRIVATE_TERMS",
+        "IMMICH_MEMORIES_DATABASE_URL",
+        "PATH",
+    ]
+
+    assert sorted(_product_settings(shell)) == [
+        "IMMICH_MEMORIES_AUTH_PASSWORD",
+        "IMMICH_MEMORIES_LLM__MODEL",
+        "IMMICH_URL",
+        "OPENAI_API_KEY",
+    ]

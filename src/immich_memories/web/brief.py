@@ -36,6 +36,7 @@ _VALUED = (
     "duration",
     "photo_duration",
     "sharing",
+    "ask",
 )
 _REPEATED = (("person", "--person"), ("include_asset", "--include"), ("exclude_asset", "--exclude"))
 
@@ -71,6 +72,8 @@ class CutBrief(BaseModel):
     sharing: Literal["just-us", "family", "shareable"] | None = None
     include_asset: list[str] = []
     exclude_asset: list[str] = []
+    # A film in a sentence (`--ask`): the whole scope, so it comes with no scope field.
+    ask: str | None = None
 
     def _flags(self) -> list[str]:
         flags = []

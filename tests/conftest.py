@@ -10,7 +10,7 @@ import subprocess
 import tempfile
 import threading
 import uuid
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -34,6 +34,7 @@ _TEST_ENV_KEYS = {
     # there. No test reads a model it did not put in place itself.
     "IMMICH_MEMORIES_TRIAGE__ENCODER": "models/triage/dinov2-small.onnx",
     "IMMICH_MEMORIES_EDITORIAL__LAYA_CHECKPOINT": "models/laya/checkpoint",
+    "IMMICH_MEMORIES_FREE_TEXT__WORDNET": "models/wordnet/wordnet.zip",
     # The first-open import reads legacy files from here, never from the developer's home.
     "IMMICH_MEMORIES_IMPORT_FROM": "legacy",
 }
@@ -51,6 +52,16 @@ _SHELL_CONNECTION_KEYS = (
     "ZAI_API_KEY",
     "ZAI_BASE_URL",
 )
+# The suite's own settings, read by conftests and CI jobs rather than by the product: a
+# throwaway PostgreSQL, the image under test, the private-terms list. Everything else under
+# IMMICH_MEMORIES_ configures the product and is dropped (#1540).
+_HARNESS_ENV_PREFIXES = tuple(
+    f"IMMICH_MEMORIES_{name}"
+    for name in ("TEST_", "E2E_", "CONTAINER_", "PARITY_", "PROFILE_", "PRIVATE_TERMS")
+)
+# Runs whose subject is the real world (a live Immich, the built image) keep the environment
+# they were launched with: their jobs point HOME at a seeded home on purpose.
+_REAL_WORLD_MARKERS = ("integration", "container")
 # Tools that keep their downloads under HOME; a moved HOME must still find them.
 _HOME_CACHES = {
     "PLAYWRIGHT_BROWSERS_PATH": ("Library/Caches/ms-playwright", ".cache/ms-playwright"),
@@ -65,11 +76,12 @@ _TERMINAL_PATCHES = pytest.MonkeyPatch()
 
 def pytest_configure(config: pytest.Config) -> None:
     """Route test configuration paths to one disposable session directory."""
-    del config
     global _TEST_ROOT
     _TEST_ROOT = Path(tempfile.mkdtemp(prefix="immich-memories-pytest-"))
+    sealed = not _selects_the_real_world(config.option.markexpr)
 
-    _leave_the_accounts_home(_TEST_ROOT / "home")
+    if sealed:
+        _leave_the_accounts_home(_TEST_ROOT / "home")
     for key, relative in _TEST_ENV_KEYS.items():
         _ORIGINAL_TEST_ENV[key] = os.environ.get(key)
         os.environ[key] = str(_TEST_ROOT / relative)
@@ -80,8 +92,27 @@ def pytest_configure(config: pytest.Config) -> None:
 
     _pin_the_cli_width()
     _refuse_the_developers_store()
-    _refuse_the_accounts_config()
-    _refuse_outside_connections()
+    if sealed:
+        _refuse_the_accounts_config()
+        _refuse_outside_connections()
+
+
+def _selects_the_real_world(markexpr: str) -> bool:
+    """Whether this run's `-m` can select an integration or container test.
+
+    Decided once for the run, before any conftest imports: the Immich gate reads its config
+    at import time, which a per-test fixture comes too late to hand back. The unit suite's
+    `-m 'not integration and not e2e and not container'` selects none, so it stays sealed.
+    """
+    if not markexpr:
+        return True
+    from _pytest.mark.expression import Expression
+
+    expression = Expression.compile(markexpr)
+    return any(
+        expression.evaluate(lambda name, *_, marker=marker, **__: name == marker)
+        for marker in _REAL_WORLD_MARKERS
+    )
 
 
 def _swap_env(key: str, value: str | None) -> None:
@@ -115,31 +146,23 @@ def _leave_the_accounts_home(home: Path) -> None:
         ("XDG_STATE_HOME", ".local/state"),
     ):
         _swap_env(key, str(home / relative))
-    managed = {*_TEST_ENV_KEYS, _STORE_URL_ENV}
-    stray = [k for k in os.environ if k.startswith("IMMICH_MEMORIES_") and k not in managed]
-    for key in [*_SHELL_CONNECTION_KEYS, *stray]:
+    for key in _product_settings(os.environ):
         _swap_env(key, None)
 
 
-def _outside_the_suite(request: pytest.FixtureRequest) -> bool:
-    """Suites whose subject is the real world: a live Immich, a container, a browser run."""
-    return any(request.node.get_closest_marker(m) for m in ("integration", "container"))
-
-
-@pytest.fixture(autouse=True)
-def _the_accounts_home_for_real_world_suites(request, monkeypatch) -> None:
-    """Hand integration and container tests back the environment the suite started with.
-
-    They read the developer's real config on purpose (a real Immich, read-only).
-    """
-    if not _outside_the_suite(request):
-        return
-    for key in (*_SHELL_CONNECTION_KEYS, "HOME", "USERPROFILE", "XDG_CONFIG_HOME"):
-        original = _ORIGINAL_TEST_ENV.get(key)
-        if original is None:
-            monkeypatch.delenv(key, raising=False)
-        else:
-            monkeypatch.setenv(key, original)
+def _product_settings(environ: Iterable[str]) -> list[str]:
+    """The shell's variables that configure the product, as opposed to the suite's own."""
+    managed = {*_TEST_ENV_KEYS, _STORE_URL_ENV}
+    return [
+        key
+        for key in environ
+        if key in _SHELL_CONNECTION_KEYS
+        or (
+            key.startswith("IMMICH_MEMORIES_")
+            and key not in managed
+            and not key.startswith(_HARNESS_ENV_PREFIXES)
+        )
+    ]
 
 
 _REAL_CONFIG_READS: list[str] = []
@@ -176,15 +199,14 @@ def _refuse_the_accounts_config() -> None:
 
 
 @pytest.fixture(autouse=True)
-def no_real_config_read(request) -> Iterator[None]:
+def no_real_config_read() -> Iterator[None]:
     """Fail the test that read the developer's own config, even if the error was caught."""
     _REAL_CONFIG_READS.clear()
     yield
-    if _REAL_CONFIG_READS and not _outside_the_suite(request):
+    if _REAL_CONFIG_READS:
         read = sorted(set(_REAL_CONFIG_READS))
         _REAL_CONFIG_READS.clear()
         pytest.fail(f"this test read the developer's own config: {read}")
-    _REAL_CONFIG_READS.clear()
 
 
 class OutsideConnectionRefused(ConnectionRefusedError):
@@ -192,7 +214,6 @@ class OutsideConnectionRefused(ConnectionRefusedError):
 
 
 _OUTSIDE_CONNECTIONS: list[str] = []
-_REAL_WORLD_TEST = threading.local()
 
 
 def _is_loopback(address: Any) -> bool:
@@ -211,15 +232,15 @@ def _refuse_outside_connections() -> None:
     """Refuse a socket connection to anything but this machine.
 
     A test's Immich, model server or webhook is a fake on loopback or a mocked transport;
-    a connection anywhere else is a test reaching a real service. Integration and
-    container tests are exempt: talking to real services is their subject.
+    a connection anywhere else is a test reaching a real service. A run that selects
+    integration or container tests never installs this: real services are their subject.
     """
 
     def guard(name: str) -> None:
         connect = getattr(socket.socket, name)
 
         def check(self: socket.socket, address: Any) -> Any:
-            if not getattr(_REAL_WORLD_TEST, "on", False) and not _is_loopback(address):
+            if not _is_loopback(address):
                 _OUTSIDE_CONNECTIONS.append(str(address))
                 raise OutsideConnectionRefused(f"a unit test connected outside: {address}")
             return connect(self, address)
@@ -231,12 +252,10 @@ def _refuse_outside_connections() -> None:
 
 
 @pytest.fixture(autouse=True)
-def no_outside_connection(request) -> Iterator[None]:
+def no_outside_connection() -> Iterator[None]:
     """Fail the test that connected to another host, even if the error was caught."""
     _OUTSIDE_CONNECTIONS.clear()
-    _REAL_WORLD_TEST.on = _outside_the_suite(request)
     yield
-    _REAL_WORLD_TEST.on = False
     if _OUTSIDE_CONNECTIONS:
         reached = sorted(set(_OUTSIDE_CONNECTIONS))
         _OUTSIDE_CONNECTIONS.clear()
@@ -417,15 +436,21 @@ def isolated_user_paths() -> Iterator[Path]:
     config_loader._config_path = None
 
     config = Config()
-    account_dirs = (*_account_config_dirs(), _account_home() / "Videos" / "Memories")
     resolved_paths = (
         config.cache.database_path,
         config.cache.cache_path,
         config.output.output_path,
         config.triage.encoder_path,
+        config.free_text.wordnet_path,
     )
+    # Anything under the account's home is the developer's, unless it is under the temporary
+    # directory the suite and its tmp_paths live in (a TMPDIR inside the home is still ours).
+    scratch = Path(tempfile.gettempdir()).resolve()
     assert not [
-        path for path in resolved_paths if any(path.is_relative_to(d) for d in account_dirs)
+        path
+        for path in resolved_paths
+        if path.resolve().is_relative_to(_account_home())
+        and not path.resolve().is_relative_to(scratch)
     ]
 
 
