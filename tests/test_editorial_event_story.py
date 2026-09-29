@@ -248,6 +248,13 @@ def test_a_screen_two_days_later_or_without_a_result_word_adds_nothing():
     assert [e["reserve"] for e in wordless] == [2]
 
 
+def test_a_screen_with_only_a_record_abbreviation_adds_nothing():
+    """ "PR" or "PB" belongs to some activities' slang and is a common abbreviation besides."""
+    events = _event_rows(_read(QUIET | EVENING_OUT, printed=_screens((12, {"PR", "PB"}))))
+
+    assert [e["reserve"] for e in events] == [2]
+
+
 def test_a_result_screen_never_makes_an_event_on_its_own():
     """An exam morning with three pictures and a certificate on screen the next day."""
     exam = {6: [(9, 3, 1, "working", HOME)], 7: [(12, 3, 1, "playing", HOME)]}

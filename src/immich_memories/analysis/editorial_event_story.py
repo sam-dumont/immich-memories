@@ -56,8 +56,6 @@ RESULT_WORDS = (
     "certificate",
     "award",
     "prize",
-    "PR",
-    "PB",
 )
 
 # (word, taken after, taken before) -> does a screen or document in that window read the word
@@ -88,7 +86,7 @@ def split_events(
 ) -> list[dict[str, Any]]:
     """Take every event out of its story into a story of its own; returns one audit row each."""
     rows = []
-    for story in list(stories):
+    for story in stories.copy():
         if len(story["episodes"]) < 2 or away(story) or _heavy(story):
             continue
         events = [k for k in story["episodes"] if _stands_out(k, story, shape_of, threshold)]
