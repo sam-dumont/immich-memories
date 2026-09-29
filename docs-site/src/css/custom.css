@@ -35,6 +35,14 @@
   --ifm-code-font-size: 95%;
   --ifm-font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --ifm-heading-font-weight: 600;
+  /* Infima's 16 px text and 3 rem titles read large; a notch down, a tighter heading scale. */
+  --ifm-font-size-base: 93.75%;
+  --ifm-line-height-base: 1.6;
+  --ifm-h1-font-size: 2.25rem;
+  --ifm-h2-font-size: 1.6rem;
+  --ifm-h3-font-size: 1.25rem;
+  --ifm-h4-font-size: 1.05rem;
+  --ifm-table-cell-padding: 0.5rem 0.75rem;
   --ifm-border-radius: 10px;
   --docusaurus-highlighted-code-line-bg: rgba(66, 80, 175, 0.1);
 
@@ -86,6 +94,45 @@ h1, h2, h3, h4, h5, h6 {
 /* Long config keys must wrap without widening the article or the phone viewport. */
 .theme-doc-markdown {
   overflow-wrap: anywhere;
+}
+
+/* Not in tables: `anywhere` lets the layout shrink a column to one letter, so "Platform" broke
+   into "Platfo/rm". Words stay whole there; a table wider than its column scrolls on its own
+   (Infima makes it a block with overflow: auto), and it may use the column's full width. */
+.theme-doc-markdown table {
+  overflow-wrap: normal;
+}
+
+.theme-doc-markdown > table {
+  max-width: 100%;
+}
+
+/* A long variable name may still break, but no column narrows below a readable width. */
+.theme-doc-markdown table code {
+  overflow-wrap: anywhere;
+}
+
+.theme-doc-markdown table {
+  font-size: 0.875rem;
+}
+
+.theme-doc-markdown th,
+.theme-doc-markdown td {
+  min-width: 7rem;
+}
+
+@media screen and (max-width: 640px) {
+  :root {
+    --ifm-font-size-base: 87.5%;
+    --ifm-h1-font-size: 1.85rem;
+    --ifm-h2-font-size: 1.4rem;
+    --ifm-h3-font-size: 1.15rem;
+  }
+
+  .theme-doc-markdown th,
+  .theme-doc-markdown td {
+    min-width: 5.5rem;
+  }
 }
 
 .theme-doc-markdown img,

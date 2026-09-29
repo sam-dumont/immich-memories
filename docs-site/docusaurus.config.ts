@@ -123,7 +123,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Immich Memories. Built with Docusaurus.`,
+      copyright: `Copyright © 2025-${new Date().getFullYear()} Immich Memories. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,
