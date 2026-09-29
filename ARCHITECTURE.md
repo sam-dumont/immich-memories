@@ -497,7 +497,9 @@ src/immich_memories/
 │   ├── selection_source*.py    # The canonical source model: admission, provenance, groups, invariants
 │   ├── household_source.py     # A run naming its accounts (`EditorialRunContext.accounts`) reads the
 │   │                           # window per account, keeps chosen owners only, tags `Asset.access_accounts`
-│   │                           # and routes the run's AccessBoundClient
+│   │                           # and routes the run's AccessBoundClient; the kept copy of each exact-copy
+│   │                           # group and its account are frozen in the attempt's source snapshot, and
+│   │                           # `runs render` reads that copy through that account
 │   ├── text_episode_reader.py  # Reading event evidence (paged, banked); the same reading names
 │   │                           # each episode's notable moments, which the polish layer seats and protects
 │   ├── text_episode_prompt.py  # What that reading is asked, and what it may take a name from

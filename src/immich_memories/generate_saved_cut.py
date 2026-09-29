@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
+from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.models import VideoClipInfo
 from immich_memories.filename_builder import build_memory_output_path, name_after_recipe
 from immich_memories.generate import GenerationParams, generate_memory
@@ -189,6 +190,12 @@ def render_saved_cut(
         raise RenderUnavailable(
             "This cut was made before a cut kept its render inputs. Cut again to render it."
         )
+    if isinstance(client, AccessBoundClient):
+        from immich_memories.analysis.editorial_source_snapshot import frozen_access
+
+        # A household cut renders the copies it chose, each through the account that read it.
+        client.routes.learn(clip.asset for clip in inputs.clips)
+        client.routes.pin(frozen_access(attempt_dir))
     date_range = _date_range(run)
     params = _params(config, client, run, inputs.binding["policy"])
     params.editorial_attempt_dir = attempt_dir

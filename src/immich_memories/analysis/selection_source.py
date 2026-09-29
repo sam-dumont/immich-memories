@@ -27,7 +27,7 @@ from immich_memories.analysis.editorial_contracts import (
     SourceEvidence,
     TraceDecision,
 )
-from immich_memories.analysis.exact_copies import fold_exact_copies
+from immich_memories.analysis.exact_copies import FoldedPool, fold_exact_copies
 from immich_memories.analysis.picture_copies import picture_copies, starred_keepers
 from immich_memories.analysis.selection_source_groups import (
     EditorialGroup,
@@ -148,6 +148,8 @@ class EditorialDependencies:
     library_membership: Callable[[Asset, tuple[str, ...]], bool] | None = None
     source_evidence: Callable[[Asset | VideoClipInfo], SourceEvidence | None] | None = None
     preview_jpeg: Callable[[Asset], bytes | None] | None = None
+    # Keeps which copy stands for each exact-copy group, so a replay reads that one.
+    record_copies: Callable[[FoldedPool], None] = lambda _folded: None
 
 
 @dataclass(frozen=True)
@@ -211,6 +213,7 @@ def prepare_editorial_source(
         )
     )
     folded = fold_exact_copies(sources, primary_owner_id=request.primary_owner_id)
+    dependencies.record_copies(folded)
     sources = folded.pool
     request = replace(
         request,
