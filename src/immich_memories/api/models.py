@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import operator
 from contextlib import suppress
 from datetime import datetime
 from enum import StrEnum
@@ -161,6 +162,10 @@ class Asset(BaseModel):
     checksum: str | None = None
     live_photo_video_id: str | None = Field(default=None, alias="livePhotoVideoId")
     smart_info: SmartInfo | None = None
+    # Ours, not Immich's: the selected accounts that can open this asset, its owner's
+    # first (#1500). Empty on a run that names no accounts, and then left out of every
+    # dump, so a primary-only snapshot or digest reads exactly as it always has.
+    access_accounts: tuple[str, ...] = Field(default=(), exclude_if=operator.not_)
 
     model_config = ConfigDict(populate_by_name=True)
 

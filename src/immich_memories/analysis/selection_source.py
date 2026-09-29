@@ -456,13 +456,30 @@ def _coalesce_sources(
             warnings.append(
                 f"!! conflicting Live Photo rendering manifests for duplicate asset {asset_id}"
             )
-        coalesced[asset_id] = _with_favourite(
-            _without_rendering_evidence(preferred)
-            if asset_id in conflicting_render_manifests
-            else preferred,
-            asset_of(existing).is_favorite or asset_of(source).is_favorite,
+        coalesced[asset_id] = _with_access_accounts(
+            _with_favourite(
+                _without_rendering_evidence(preferred)
+                if asset_id in conflicting_render_manifests
+                else preferred,
+                asset_of(existing).is_favorite or asset_of(source).is_favorite,
+            ),
+            (*asset_of(existing).access_accounts, *asset_of(source).access_accounts),
         )
     return tuple(coalesced.values()), tuple(warnings)
+
+
+def _with_access_accounts(
+    source: Asset | VideoClipInfo, accounts: Sequence[str]
+) -> Asset | VideoClipInfo:
+    """Every account any read of the asset came through, in first-seen order."""
+    merged = tuple(dict.fromkeys(accounts))
+    asset = asset_of(source)
+    if asset.access_accounts == merged:
+        return source
+    merged_asset = asset.model_copy(update={"access_accounts": merged})
+    if isinstance(source, VideoClipInfo):
+        return source.model_copy(update={"asset": merged_asset})
+    return merged_asset
 
 
 def _asset_signature(source: Asset | VideoClipInfo) -> tuple[object, ...]:

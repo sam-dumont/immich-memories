@@ -492,6 +492,8 @@ src/immich_memories/
 │   │                               # _detector_frames.py samples a video's eight frames for the
 │   │                               # exposure head, through the motion line's keyframe reader
 │   ├── selection_source*.py    # The canonical source model: admission, provenance, groups, invariants
+│   ├── household_source.py     # A run naming its accounts (`EditorialRunContext.accounts`) reads the
+│   │                           # window per account, keeps chosen owners only, tags `Asset.access_accounts`
 │   ├── text_episode_reader.py  # Reading event evidence (paged, banked); the same reading names
 │   │                           # each episode's notable moments, which the polish layer seats and protects
 │   ├── text_episode_prompt.py  # What that reading is asked, and what it may take a name from
@@ -1048,7 +1050,8 @@ generate / Memory page Cut
         └── SmartPipeline.run_editorial_source()        (smart_pipeline.py)
               └── RuntimeEditorialPlanner.plan_source()
                     ├── EditorialAttempt: lease + status.private.json   (operations/editorial_attempt.py)
-                    ├── source model: fetch_full_window_source -> prepare_editorial_source
+                    ├── source model: fetch_full_window_source (per account: fetch_household_source)
+                    │     -> prepare_editorial_source
                     ├── "Reading dates, places and people": prepare_editorial_annotations
                     ├── TextEditorialPlanner.plan_prepared             (editorial_orchestration.py)
                     │     ├── "Reading event evidence": episode reader + cull

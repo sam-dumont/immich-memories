@@ -43,6 +43,7 @@ from immich_memories.analysis.editorial_text_gateway import (
     semantic_text_model_identity,
 )
 from immich_memories.analysis.episode_demand import demand_reader_factory
+from immich_memories.analysis.household_source import fetch_household_source
 from immich_memories.analysis.selection_source import (
     EditorialDependencies,
     EditorialSelectionRequest,
@@ -124,6 +125,9 @@ class EditorialRunContext:
     window_origin: str | None = None  # why a window nobody typed starts where it does
     # The film's sharing level: just_us, family or shareable (`editorial_shareability.LEVELS`).
     audience: str = "family"
+    # The Immich accounts the run reads (`primary` plus names under `immich.accounts`).
+    # Empty reads the primary client alone, exactly as a run always has.
+    accounts: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         """Canonicalize exact windows while preserving every intentional gap."""
@@ -503,7 +507,15 @@ def build_editorial_planner(
         nonlocal source_snapshot
         if source_snapshot is None:
             source_snapshot = select_source_members(
-                runtime_ports.fetch_full_source(client, requested_scope), requested_scope.asset_ids
+                fetch_household_source(
+                    config.immich,
+                    context.accounts,
+                    requested_scope,
+                    runtime_ports.fetch_full_source,
+                )
+                if context.accounts
+                else runtime_ports.fetch_full_source(client, requested_scope),
+                requested_scope.asset_ids,
             )
         source_snapshots.capture(
             source_snapshot,
