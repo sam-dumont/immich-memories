@@ -22,8 +22,8 @@ function HeroSection() {
               taken, and renders the film with titles, maps and music.
             </p>
             <p className={styles.heroSubtitle}>
-              <strong>Works on a plain NAS. A GPU or a model makes it better.</strong> A
-              GPU makes it faster, and a model polishes the cut.
+              <strong>One container next to Immich is enough.</strong> A GPU or a model
+              makes the cut better when you have one; nothing changes before that.
             </p>
             <div className={styles.heroCtas}>
               <Link className={styles.ctaPrimary} to="/docs/get-started/quick-start">
@@ -39,7 +39,7 @@ function HeroSection() {
               <picture>
                 <source
                   media="(prefers-reduced-motion: reduce)"
-                  srcSet={useBaseUrl('/img/screenshots/hero-memory.png')}
+                  srcSet={useBaseUrl('/img/screenshots/memory-story.png')}
                 />
                 <img
                   className={styles.heroScreenshot}
@@ -73,7 +73,7 @@ function QuickstartSection() {
     <section className={styles.quickstart}>
       <div className="container">
         <Heading as="h2" className={styles.sectionTitle}>
-          What it takes to stand up
+          Up in five minutes
         </Heading>
         <div className={styles.quickstartGrid}>
           <div className={styles.quickstartCode}>
@@ -86,13 +86,12 @@ function QuickstartSection() {
               </div>
               <pre className={styles.codeContent}>
 {`mkdir -p immich-memories/output && cd immich-memories
-curl -O https://raw.githubusercontent.com/sam-dumont/\\
-immich-video-memory-generator/main/docker-compose.yml
-export IMMICH_URL=http://your-immich-server:2283
-export IMMICH_API_KEY=your-key-here
+BASE=https://raw.githubusercontent.com/sam-dumont/immich-video-memory-generator/main
+curl -O $BASE/docker-compose.yml -O $BASE/example.env
+cp example.env .env   # set IMMICH_URL and IMMICH_API_KEY
 docker compose up -d
 
-# the small CPU classifiers, once
+# the small CPU classifiers, about 140 MB, once
 docker compose exec immich-memories \\
   immich-memories models fetch
 
@@ -100,11 +99,9 @@ docker compose exec immich-memories \\
               </pre>
             </div>
             <p className={styles.quickstartAlt}>
-              One container next to Immich, on the NAS you already have, is enough for a good
-              film. The{' '}
+              Docker with Compose v2, Immich v2 or v3, 4 GB of RAM. The{' '}
               <Link to="/docs/get-started/quick-start">Quick start</Link> walks it step by step,
-              and <Link to="/docs/better/overview">Make it better</Link> covers what a GPU
-              or a model adds.
+              and <Link to="/docs/run/uv-pip">pip / uv</Link> works without Docker.
             </p>
           </div>
           <div className={styles.quickstartSteps}>
@@ -115,7 +112,7 @@ docker compose exec immich-memories \\
               <span className={styles.stepNumber}>1</span>
               <div>
                 <strong>Brief</strong>
-                <p>Pick a memory type, its period or person, one duration</p>
+                <p>Pick a memory type and its month, year, trip or person</p>
               </div>
             </div>
             <div className={styles.step}>
@@ -136,7 +133,7 @@ docker compose exec immich-memories \\
               <span className={styles.stepNumber}>4</span>
               <div>
                 <strong>Render</strong>
-                <p>The reviewed cut, with map animations, titles, music</p>
+                <p>The reviewed cut, with titles, maps and music, into a folder or back into Immich</p>
               </div>
             </div>
           </div>
@@ -155,28 +152,28 @@ type ShowcaseItem = {
 
 const showcaseItems: ShowcaseItem[] = [
   {
-    title: '10 memory types',
-    description: 'Year in Review, Season, Person Spotlight, Multi-Person, Monthly Highlights, On This Day, Album, Trip, Holiday, and Surprise Me (a day your library says something happened on). Pick a type and it handles the rest, or take Custom date range and set the dates yourself.',
+    title: 'Ten memory types',
+    description: 'A month, a season, a year in review, a trip with its map, a holiday across the years, one person or several, on this day, an album, and a special day your library flagged on its own. Or pick the dates yourself.',
     image: '/img/screenshots/memory-brief.png',
-    alt: 'The brief: memory type, its parameters and the command it runs',
+    alt: 'The brief: memory type, month, and the command it runs',
   },
   {
-    title: 'See the cut. Refine it.',
-    description: 'Make the same film from the CLI or the browser. The review puts the whole cut in a contact sheet: open a picture to read its reason and what a model said about it, remove it, trim it, or swap in another picture of the same moment, then save it as a revision and render that. The stories still play in the order they happened.',
+    title: 'See the cut before it renders',
+    description: 'The whole film as a contact sheet, in the order it plays. Open a picture to read why it stayed. The stories keep the order they happened in, and a week at home with nothing in it stays short instead of filled with guesses.',
     image: '/img/screenshots/memory-story.png',
-    alt: 'The cut contact sheet and picture inspector',
+    alt: 'The cut contact sheet and the picture inspector',
   },
   {
-    title: 'Cinematic title screens',
-    description: 'Animated gradients, particle systems, satellite trip maps. The title kernels use a Metal, CUDA or Vulkan GPU when there is one and the CPU otherwise. The log says which one ran.',
-    image: '/img/screenshots/memory-options.png',
-    alt: 'The Render panel: title, music and output options',
+    title: 'Change what you disagree with',
+    description: 'Remove a shot, trim a video, or swap a picture for another one of the same moment. Save it as a revision and render that. Nothing gets chosen again behind your back.',
+    image: '/img/screenshots/memory-review-edit.png',
+    alt: 'A picture swapped and one removed, with the change bar',
   },
   {
-    title: 'Music that ducks',
-    description: 'Your own file or one of 28 bundled tracks, picked by the mood of the cut. A sidechain compressor ducks the music under the clips\' own sound. With a music server, ACE-Step or MusicGen writes an original track instead.',
-    image: '/img/screenshots/memory-options.png',
-    alt: 'The Render panel: music preview, upload and volume',
+    title: 'Titles, maps and music',
+    description: 'Animated title cards, month dividers, and for a trip a satellite fly-over from home to where you went. Your own music or one of 28 bundled tracks, picked by mood and ducked under the clips\' own sound.',
+    image: '/img/trip-map-flyover.jpg',
+    alt: 'The opening map of a trip film: a week by a lake, June 2024',
   },
 ];
 
@@ -202,6 +199,77 @@ function ShowcaseSection() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+type Rung = {
+  label: string;
+  title: string;
+  body: string;
+  link: string;
+  linkText: string;
+};
+
+const rungs: Rung[] = [
+  {
+    label: 'Default',
+    title: 'A plain NAS',
+    body: 'Dates, places, favourites, the people Immich recognised, and a few small classifiers on the CPU. No API key, no account, nothing else to host. Tell it where home is and who is who, and that already makes a film worth sending.',
+    link: '/docs/get-started/who-is-who',
+    linkText: 'Teach it your family',
+  },
+  {
+    label: 'Optional',
+    title: 'Add a GPU',
+    body: 'A caption for every picture in the cut and a second family-viewing check, and the reading goes faster. Everything already read stays banked, so adding one later redoes nothing.',
+    link: '/docs/get-started/what-a-gpu-or-a-model-adds',
+    linkText: 'What a GPU adds',
+  },
+  {
+    label: 'Optional',
+    title: 'Add a model',
+    body: 'A text model reads the draft and swaps out the shots that add nothing, writes the title and picks the music. Local or hosted, your choice, and the rules draft still ships if it fails.',
+    link: '/docs/better/overview',
+    linkText: 'Make it better',
+  },
+];
+
+function LadderSection() {
+  return (
+    <section className={styles.ladder}>
+      <div className="container">
+        <Heading as="h2" className={styles.sectionTitle}>
+          Grows with you
+        </Heading>
+        <p className={styles.ladderIntro}>
+          Start with the container. Every step up is optional, and each one is a setting, not a
+          reinstall.
+        </p>
+        <div className={styles.ladderGrid}>
+          {rungs.map((rung) => (
+            <div key={rung.title} className={styles.rung}>
+              <span className={styles.rungLabel}>{rung.label}</span>
+              <Heading as="h3" className={styles.rungTitle}>{rung.title}</Heading>
+              <p>{rung.body}</p>
+              <Link to={rung.link}>{rung.linkText} →</Link>
+            </div>
+          ))}
+        </div>
+        <div className={styles.ladderMore}>
+          <p>
+            <strong>Then, when you want it:</strong>{' '}
+            <Link to="/docs/make/automate">one film a day on its own</Link>, uploaded back into
+            Immich; <Link to="/docs/make/cli/generate">the CLI</Link> for scripts and cron;{' '}
+            <Link to="/docs/how-it-chooses/overview">every selection rule written down</Link> and{' '}
+            <Link to="/docs/how-it-chooses/overrule-it">every lever to overrule it</Link>;{' '}
+            <Link to="/docs/run/kubernetes">Kubernetes</Link>,{' '}
+            <Link to="/docs/run/terraform">Terraform</Link>,{' '}
+            <Link to="/docs/run/authentication">OIDC</Link> and{' '}
+            <Link to="/docs/run/database">PostgreSQL</Link> for the operators.
+          </p>
         </div>
       </div>
     </section>
@@ -237,8 +305,8 @@ function ValuesSection() {
                 <circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
               </svg>
             </div>
-            <strong>Cinematic title screens</strong>
-            <p>Satellite map fly-overs, particle systems, 5 visual styles. Not "clip 1, clip 2, clip 3": actual production polish.</p>
+            <strong>Every rule written down</strong>
+            <p>How it picks is documented with diagrams, and <code>runs why</code> says which step kept a picture or left it out. The web UI shows the CLI command behind every button.</p>
           </div>
           <div className={styles.value}>
             <div className={styles.valueIcon}>
@@ -246,8 +314,8 @@ function ValuesSection() {
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
               </svg>
             </div>
-            <strong>One decision a day</strong>
-            <p>Schedule <code>immich-memories auto run</code> daily. It picks one eligible memory or retries one pending delivery, with variety rules that stop repeat spam.</p>
+            <strong>One film a day, if you want it</strong>
+            <p>Turn on the built-in timer and it picks the one memory worth making today (a trip that just ended, last month, a birthday), with variety rules so it does not repeat itself.</p>
           </div>
         </div>
       </div>
@@ -260,10 +328,10 @@ function CtaSection() {
     <section className={styles.finalCta}>
       <div className="container">
         <Heading as="h2" className={styles.ctaTitle}>
-          Your videos deserve better than a camera roll
+          Cut your first month tonight
         </Heading>
         <p className={styles.ctaDescription}>
-          One container on the NAS you already have. Cut your first month tonight.
+          One container on the box that already runs Immich, and about ten minutes.
         </p>
         <div className={styles.heroCtas}>
           <Link className={styles.ctaPrimary} to="/docs/get-started/quick-start">
@@ -286,6 +354,7 @@ export default function Home(): ReactNode {
       <HeroSection />
       <QuickstartSection />
       <ShowcaseSection />
+      <LadderSection />
       <ValuesSection />
       <CtaSection />
     </Layout>
