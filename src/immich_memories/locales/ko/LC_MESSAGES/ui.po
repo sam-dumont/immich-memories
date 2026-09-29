@@ -1586,3 +1586,8 @@ msgstr "{years}년 전"
 msgid "~{amount} left in this stage"
 msgstr "이 단계에 약 {amount} 남음"
 
+msgid "Delivered to Immich. The local file was removed to save disk space."
+msgstr "Immich에 전달했습니다. 디스크 공간을 아끼기 위해 로컬 파일을 삭제했습니다."
+
+msgid "View in Immich"
+msgstr "Immich에서 보기"

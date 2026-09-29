@@ -1612,3 +1612,8 @@ msgstr "{years} lat temu"
 msgid "~{amount} left in this stage"
 msgstr "~{amount} pozostało na tym etapie"
 
+msgid "Delivered to Immich. The local file was removed to save disk space."
+msgstr "Przekazano do Immich. Plik lokalny został usunięty, aby zaoszczędzić miejsce na dysku."
+
+msgid "View in Immich"
+msgstr "Zobacz w Immich"

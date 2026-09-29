@@ -1613,3 +1613,8 @@ msgstr "há {years} anos"
 msgid "~{amount} left in this stage"
 msgstr "~{amount} restante nesta etapa"
 
+msgid "Delivered to Immich. The local file was removed to save disk space."
+msgstr "Entregue ao Immich. O arquivo local foi removido para economizar espaço em disco."
+
+msgid "View in Immich"
+msgstr "Ver no Immich"
