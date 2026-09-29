@@ -58,13 +58,14 @@ def _derived_relationships(document: dict[str, Any] | None) -> list[dict[str, An
     if document is None:
         return []
 
+    from immich_memories.people.account_ids import entry_ids
     from immich_memories.people.assumptions import family_assumptions
     from immich_memories.people.companion import people_entries
 
     names = {
-        str(person_id): str(entry.get("name") or "?")
+        person_id: str(entry.get("name") or "?")
         for entry in people_entries(document)
-        for person_id in entry["ids"]
+        for person_id in entry_ids(entry)
     }
     return [
         {

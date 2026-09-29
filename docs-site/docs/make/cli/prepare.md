@@ -80,6 +80,7 @@ immich-memories people scan                    # build or refresh the registry
 immich-memories people show                    # read it back, --tier narrows it
 immich-memories people export --to people.yaml # write it out as YAML to edit or keep
 immich-memories people import --from people.yaml --replace
+immich-memories people bind "Alex Example" --account partner --id <uuid>
 ```
 
 The one rule doing most of the work: volume is a burst, continuity is a relationship. 160 pictures over four
@@ -122,11 +123,37 @@ come back exactly as written, `manual:` ids included. A registry that already ho
 with `--replace`, so an old export can't silently undo newer answers. A scan never reads the file; only an
 import does.
 
-A person whose ids come from a second Immich account on the same server carries an `accounts:` map, id to
-account name, next to `ids:`. An id it doesn't list belongs to your main account, so a one-account export has
-no `accounts:` at all. An `accounts:` entry naming an id the person doesn't have is refused like any other
-mistake. One id belongs to one person, and ids are never matched by name. Reading a second account arrives in a
-later release.
+A second Immich account on the same server gives the same person a different id. You say which ids are the same
+person (the model @Mike7154 laid out in [#703](https://github.com/sam-dumont/immich-video-memory-generator/issues/703)), and `ids:` becomes one list per account, `primary` first:
+
+```yaml
+people:
+  - ids:
+      primary: [5f2c…]
+      partner: [a91e…, 07bd…]
+    name: Alex Example
+```
+
+A flat `ids: [...]` list still works and means your main account only, so a one-account export looks exactly as
+it always did. Account names follow the rule for `immich.accounts` (lowercase letters and digits joined by single
+underscores), and the account doesn't have to be configured yet. An empty list, a name that breaks the rule, or an
+id listed under two accounts or two people is refused, and nothing changes. The old `accounts:` map is refused
+too, with the new shape in the message.
+
+The first id listed is the person's own id: the one links and saved references point at. Adding ids never
+changes it. When the person's own id isn't first (someone who came in through the partner account and later got
+a `primary` id), the export names it with a `person_id:` line next to `ids:`, and an import keeps it.
+
+To add one id without editing the file:
+
+```bash
+immich-memories people bind "Alex Example" --account partner --id a91e…
+```
+
+The person is a store id or a name exactly one person carries; if two people share the name, the command lists
+their ids and asks for one. `bind` only adds the id: the name, birth date and your answers stay put. An id somebody
+else holds is refused, never merged, and binding the same id twice changes nothing. Ids are never matched by name.
+Reading a second account arrives in a later release.
 
 The scan also writes its measurements (every person's counts and the pairs seen together) to
 `~/.immich-memories/people-graph.json`. That one stays a file: each scan recomputes all of it from Immich and

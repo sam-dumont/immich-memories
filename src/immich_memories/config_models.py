@@ -71,6 +71,14 @@ PRIMARY_ACCOUNT = "primary"
 # Lowercase with single underscores: an env override lowercases the name it reads, and a
 # double underscore would split it into two levels (IMMICH_MEMORIES_IMMICH__ACCOUNTS__<NAME>__URL).
 _ACCOUNT_NAME = re.compile(r"[a-z0-9]+(?:_[a-z0-9]+)*")
+ACCOUNT_NAME_RULE = (
+    f"lowercase letters and digits joined by single underscores, and not {PRIMARY_ACCOUNT!r}"
+)
+
+
+def is_account_name(name: str) -> bool:
+    """Whether `name` may name an extra Immich account, configured or not yet."""
+    return name != PRIMARY_ACCOUNT and _ACCOUNT_NAME.fullmatch(name) is not None
 
 
 class ImmichConnection(BaseModel):
@@ -110,11 +118,8 @@ class ImmichConfig(ImmichConnection):
     @classmethod
     def _account_names(cls, value: dict[str, ImmichConnection]) -> dict[str, ImmichConnection]:
         for name in value:
-            if name == PRIMARY_ACCOUNT or not _ACCOUNT_NAME.fullmatch(name):
-                raise ValueError(
-                    f"account name {name!r} must be lowercase letters and digits joined by "
-                    f"single underscores, and not {PRIMARY_ACCOUNT!r}"
-                )
+            if not is_account_name(name):
+                raise ValueError(f"account name {name!r} must be {ACCOUNT_NAME_RULE}")
         return value
 
 

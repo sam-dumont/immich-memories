@@ -10,7 +10,9 @@ import click
 
 from immich_memories.cli._helpers import console, print_error, print_success
 from immich_memories.db import open_store
+from immich_memories.people.account_ids import entry_ids, ids_by_account
 from immich_memories.people.companion import (
+    bind_alias,
     load_document,
     people_entries,
     retained_immich_ids,
@@ -49,6 +51,7 @@ def register_people_commands(cli_group: click.Group) -> None:
     _register_scan(people)
     _register_show(people)
     _register_transfer(people)
+    _register_bind(people)
     cli_group.add_command(people)
 
 
@@ -218,6 +221,63 @@ def _register_transfer(people: click.Group) -> None:
                 console.print(f"  {problem}")
             sys.exit(1)
         print_success(f"{count} people imported from {source}")
+
+
+def _register_bind(people: click.Group) -> None:
+    @people.command("bind")
+    @click.argument("person")
+    @click.option(
+        "--account",
+        required=True,
+        help="The account that reads the id: primary, or an extra account's name",
+    )
+    @click.option(
+        "--id",
+        "alias_id",
+        required=True,
+        help="The person's id as that account's Immich knows them",
+    )
+    def bind(person: str, account: str, alias_id: str) -> None:
+        """Say that one person has this id in another Immich account.
+
+        PERSON is a store person id or a name exactly one person carries. The
+        binding only adds the id: the name, birth date and everything you
+        confirmed stay as they are. An id somebody else holds is refused,
+        never merged, and binding the same id again changes nothing.
+        """
+        import sys
+
+        store = open_store()
+        try:
+            entry = _person_named(people_entries(load_document(store)), person)
+            if alias_id in ids_by_account(entry).get(account, []):
+                console.print(f"{alias_id} is already bound to {_who(entry)}; nothing changed.")
+                return
+            bind_alias(store, entry_ids(entry)[0], alias_id, account=account)
+        except ValueError as exc:
+            print_error(str(exc))
+            sys.exit(1)
+        print_success(f"Bound {alias_id} ({account} account) to {_who(entry)}")
+
+
+def _person_named(entries: list[dict[str, Any]], person: str) -> dict[str, Any]:
+    """The one entry `person` names: an id it holds first, then an exact name."""
+
+    held = [entry for entry in entries if person in entry_ids(entry)]
+    if held:
+        return held[0]
+    named = [entry for entry in entries if entry.get("name") == person]
+    if len(named) == 1:
+        return named[0]
+    if named:
+        listed = ", ".join(entry_ids(entry)[0] for entry in named)
+        raise ValueError(f"{len(named)} people are named {person!r} ({listed}); pass a person id")
+    raise ValueError(f"No person with the id or name {person!r}; `people show` lists them")
+
+
+def _who(entry: dict[str, Any]) -> str:
+
+    return f"{entry.get('name') or '?'} ({entry_ids(entry)[0]})"
 
 
 def _report(graph: PeopleGraph) -> None:

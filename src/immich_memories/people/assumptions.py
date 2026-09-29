@@ -12,6 +12,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
 
+from immich_memories.people.account_ids import entry_ids
 from immich_memories.people.companion import people_entries
 
 _PARENT_KINDS = {"parent-of", "mother-of", "father-of"}
@@ -90,7 +91,7 @@ def family_assumptions(document: dict[str, Any]) -> tuple[RelationshipAssumption
 def _confirmed_facts(document: dict[str, Any]) -> set[ConfirmedStep]:
     facts: set[ConfirmedStep] = set()
     for entry in people_entries(document):
-        source_id = str(entry["ids"][0])
+        source_id = entry_ids(entry)[0]
         confirmed = entry.get("confirmed")
         links = confirmed.get("links") if isinstance(confirmed, dict) else None
         if not isinstance(links, list):
