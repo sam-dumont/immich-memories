@@ -16,6 +16,7 @@ from typing import Any
 
 import yaml
 
+from immich_memories.api.person_expression import PersonExpression
 from immich_memories.config_models import ACCOUNT_NAME_RULE, PRIMARY_ACCOUNT, is_account_name
 from immich_memories.db import Store
 from immich_memories.db.legacy_import import ImportOutcome
@@ -177,7 +178,9 @@ def _check(document: object) -> _Checked:
     raw_people = document.get("people", [])
     if not isinstance(raw_people, list):
         return _Checked({}, ["`people` is not a list"])
-    header = {key: _plain(value) for key, value in document.items() if key != "people"}
+    header = {
+        key: _plain(value) for key, value in document.items() if key not in ("people", "groups")
+    }
     checked = _Checked(header | {"people": []})
     seen: set[str] = set()
     for index, raw in enumerate(raw_people):
@@ -188,7 +191,44 @@ def _check(document: object) -> _Checked:
             continue
         seen.update(entry_ids(entry))
         checked.document["people"].append(entry)
+    groups, group_problems = _checked_groups(document.get("groups"))
+    checked.problems.extend(group_problems)
+    if groups is not None:
+        checked.document["groups"] = groups
     return checked
+
+
+def _checked_groups(raw: object) -> tuple[list[dict[str, Any]] | None, list[str]]:
+    if raw is None:
+        return None, []
+    if not isinstance(raw, list):
+        return None, ["`groups` is not a list"]
+    problems: list[str] = []
+    checked: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for index, item in enumerate(raw):
+        group, problem = _group(item, seen)
+        if problem is not None:
+            problems.append(f"groups[{index}]: {problem}")
+            continue
+        seen.add(group["label"])
+        checked.append(group)
+    return checked, problems
+
+
+def _group(raw: object, seen: set[str]) -> tuple[dict[str, Any], str | None]:
+    if not isinstance(raw, dict) or set(raw) != {"label", "expression"}:
+        return {}, "must be a mapping with exactly `label` and `expression`"
+    label = raw["label"]
+    if not isinstance(label, str) or not label.strip():
+        return {}, "`label` must be a non-empty string"
+    if label in seen:
+        return {}, f"label {label!r} is listed twice"
+    try:
+        expression = PersonExpression.from_dict(raw["expression"])
+    except ValueError as exc:
+        return {}, f"`expression`: {exc}"
+    return {"label": label, "expression": expression.to_dict()}, None
 
 
 def _entry(raw: object, seen: set[str]) -> tuple[dict[str, Any], str | None]:

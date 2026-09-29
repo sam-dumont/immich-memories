@@ -363,3 +363,52 @@ class TestBind:
 
         assert "account 'Partner' must be" in output
         assert load_document() == before
+
+
+class TestGroup:
+    """`people group add/list/rm`: a saved expression `generate --group` can reuse."""
+
+    def test_add_saves_it_and_says_what_it_saved(self):
+        output = _run(["people", "group", "add", "kids", '"p1" OR "p3"'])
+
+        assert "kids" in output
+        assert '"p1"' in output and '"p3"' in output
+
+    def test_list_shows_every_saved_group(self):
+        _run(["people", "group", "add", "kids", '"p1" OR "p3"'])
+        _run(["people", "group", "add", "solo", '"p2"'])
+
+        output = _run(["people", "group", "list"])
+
+        assert "kids" in output
+        assert "solo" in output
+
+    def test_list_with_nothing_saved_says_so(self):
+        output = _run(["people", "group", "list"])
+
+        assert "No saved groups" in output
+
+    def test_a_second_add_under_the_same_label_is_refused(self):
+        _run(["people", "group", "add", "kids", '"p1"'])
+
+        output = _run(["people", "group", "add", "kids", '"p2"'], exit_code=1)
+
+        assert "already exists" in output
+
+    def test_a_malformed_expression_is_refused_before_anything_is_saved(self):
+        _run(["people", "group", "add", "kids", "not an expression"], exit_code=1)
+
+        assert "No saved groups" in _run(["people", "group", "list"])
+
+    def test_rm_removes_the_saved_group(self):
+        _run(["people", "group", "add", "kids", '"p1"'])
+
+        output = _run(["people", "group", "rm", "kids"])
+
+        assert "kids" in output
+        assert "No saved groups" in _run(["people", "group", "list"])
+
+    def test_rm_of_an_unknown_label_is_a_clear_error(self):
+        output = _run(["people", "group", "rm", "kids"], exit_code=1)
+
+        assert "no saved group" in output

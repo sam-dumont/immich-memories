@@ -1,7 +1,8 @@
 """The people registry's rows, read and written as the document every caller already speaks.
 
-The document is the shape `people.yaml` had: a header (version, generated, owner) and a list
-of person entries with `ids`, `name`, `birth_date`, `inferred`, `confirmed` and `origin`.
+The document is the shape `people.yaml` had: a header (version, generated, owner), a list
+of person entries with `ids`, `name`, `birth_date`, `inferred`, `confirmed` and `origin`,
+and, when any are saved, a `groups` list of `{label, expression}` (`people/groups.py`).
 `ids` is a flat list of the primary account's ids, or, once a second Immich account reads
 the person, one list per account (`people.account_ids`); a one-account registry never has one.
 The person's row id is identity: an entry names it in `person_id` whenever it is not the
@@ -25,6 +26,7 @@ from immich_memories.db import now_db, upsert
 from immich_memories.db.tables import (
     people,
     people_aliases,
+    people_groups,
     people_registry,
     people_relationships,
 )
@@ -56,7 +58,12 @@ def read_document(connection: Connection) -> dict[str, Any]:
         sa.select(people_registry.c.header).where(people_registry.c.registry == REGISTRY)
     ).scalar_one_or_none()
     rows = connection.execute(sa.select(people).order_by(people.c.position)).mappings().all()
-    if not header and not rows:
+    group_rows = (
+        connection.execute(sa.select(people_groups).order_by(people_groups.c.position))
+        .mappings()
+        .all()
+    )
+    if not header and not rows and not group_rows:
         return {}
     aliases = _grouped(connection, people_aliases, operator.itemgetter("alias_id", "account"))
     links = _grouped(connection, people_relationships, _link)
@@ -69,6 +76,10 @@ def read_document(connection: Connection) -> dict[str, Any]:
         )
         for row in rows
     ]
+    if group_rows:
+        document["groups"] = [
+            {"label": row["label"], "expression": row["expression"]} for row in group_rows
+        ]
     return document
 
 
@@ -80,7 +91,8 @@ def write_document(connection: Connection, document: dict[str, Any]) -> None:
     connection.execute(sa.delete(people_relationships))
     connection.execute(sa.delete(people_aliases))
     connection.execute(sa.delete(people))
-    header = {key: value for key, value in document.items() if key != "people"}
+    connection.execute(sa.delete(people_groups))
+    header = {key: value for key, value in document.items() if key not in ("people", "groups")}
     upsert(
         connection,
         people_registry,
@@ -92,6 +104,7 @@ def write_document(connection: Connection, document: dict[str, Any]) -> None:
         (people, person_rows),
         (people_aliases, alias_rows),
         (people_relationships, link_rows),
+        (people_groups, _group_rows(document.get("groups") or [])),
     ):
         if rows:
             connection.execute(sa.insert(table), rows)
@@ -144,6 +157,13 @@ def _rows(
             for index, link in enumerate(links)
         )
     return person_rows, alias_rows, link_rows
+
+
+def _group_rows(groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {"label": group["label"], "position": position, "expression": group["expression"]}
+        for position, group in enumerate(groups)
+    ]
 
 
 def _grouped(connection: Connection, table: sa.Table, shape: Any) -> dict[str, list[Any]]:
