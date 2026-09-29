@@ -222,7 +222,7 @@ def _live_motion_left_still(cut: FinishedCut) -> list[Violation]:
     return out
 
 
-def _still_that_owed_motion(cut: FinishedCut, c: dict) -> str | None:
+def _still_that_owed_motion(cut: FinishedCut, c: Mapping[str, Any]) -> str | None:
     """Why this carrier should have played its motion, or None when shipping still was right."""
     members = [c["asset_id"], *(c.get("members") or ())]
     clips = list(c.get("video_ids") or ()) or [
