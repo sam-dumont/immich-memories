@@ -233,8 +233,8 @@ Photo), then a close family member's only shot, then (between two favourites) th
 faces Immich found and then the sharper, then the earlier one. A moving frame is never a
 repeat of a still. A scene repeat leaves even when no distinct replacement remains and the film
 is short of its requested duration. Its slot goes to an eligible refill when there is one.
-The one limit for two starred twins: a twin never leaves unreplaced when the film would then hold fewer than 3 shots
-or under 20 % of its length, the point where it gives up and makes no film. The record names each such pair under `collapsed_favourites`. Every
+The one limit for two starred twins: a twin never leaves unreplaced when the film would then hold no shot at all,
+the only point where it makes no film. The record names each such pair under `collapsed_favourites`. Every
 replacement passes the family-viewing gate first. The `final_duplicate_review` record lists each
 removal, the distance or cosine behind it, and who kept the slot.
 

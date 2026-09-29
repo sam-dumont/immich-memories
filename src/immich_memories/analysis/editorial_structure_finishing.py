@@ -18,7 +18,7 @@ from immich_memories.analysis import editorial_shareability as _share
 from immich_memories.analysis.editorial_completion import RetainedMotion
 from immich_memories.analysis.editorial_final_hash_review import Admits, review_cut_by_cached_hashes
 from immich_memories.analysis.editorial_intent import voiced_era_of
-from immich_memories.analysis.editorial_intent_validation import MIN_CARRIERS, MIN_CONTENT_SHARE
+from immich_memories.analysis.editorial_intent_validation import MIN_CARRIERS
 from immich_memories.analysis.editorial_source_route import retire_unprojectable
 from immich_memories.analysis.editorial_story_planner import alternatives_pool
 from immich_memories.analysis.editorial_story_trim import trim_to_timing_budget
@@ -203,7 +203,7 @@ def final_duplicate_review(
         admits=admits,
         frame_quality=frame_quality,
         # Folding starred twins never takes a film under the floor where it abstains.
-        film_floor=(MIN_CARRIERS, MIN_CONTENT_SHARE * requested_seconds),
+        film_floor=(MIN_CARRIERS, 0.0),
         # Requested duration is a ceiling. A repeated scene cannot earn its place just
         # because distinct replacements ran out; the intent check reports the shortfall.
         content_floor=0.0,
