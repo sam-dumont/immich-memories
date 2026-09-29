@@ -111,15 +111,12 @@ class LLMConfig(BaseModel):
     structured_output: bool | None = Field(
         default=None,
         description=(
-            "Ask the server for each prose answer's exact JSON shape (response_format "
-            "json_schema; Ollama's format). Left unset, it is on for a hosted endpoint and off "
-            "for a server on this machine or this private network: measured 2026-09-29, oMLX's "
-            "grammar-constrained decoder for gemma-4-e4b-it-6bit stalls forever on some schema "
-            "shapes, spending its whole completion budget short of a required key, where the "
-            "identical prompt with no response_format completes cleanly. Every prompt states the "
-            "shape in words too, for the servers asked without it. A server that refuses the "
-            "field when it is on is asked again without it, and remembered. Set true or false to "
-            "pin the behaviour for any endpoint."
+            "Ask the server for the request's JSON shape (response_format json_schema; "
+            "Ollama's format). Left unset, schemas are enabled except for episode readings "
+            "on this machine or private network, where oMLX can stall under constrained "
+            "decoding. Free-text, title and account requests retain their schemas. Set true "
+            "or false to override this request-specific policy for an endpoint. Unsupported "
+            "schema mode is retried with the provider's compatible mode and remembered."
         ),
     )
     repetition_penalty: float | None = Field(

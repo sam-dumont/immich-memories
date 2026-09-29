@@ -490,20 +490,23 @@ Two settings shape what a prose request asks for:
 
 ```yaml
 llm:
-  structured_output: null   # default: on for a hosted endpoint, off for one on your machine or network
+  structured_output: null   # default: select the mode by request type
   repetition_penalty: 1.0   # default: sent to a server on your own machine or network, and to Ollama
 ```
 
-`structured_output` sends the JSON shape each prose seat's parser reads (episode readings, period
-accounts, the title) as `response_format` `json_schema`, or as Ollama's `format`. Left unset, a
-hosted endpoint gets it and a server on your own machine or network doesn't: measured 2026-09-29,
-oMLX's grammar-constrained decoder for gemma-4-e4b-it-6bit stalled at the token ceiling on the
-episode-reading schema every time, always right after closing an empty array and before the next
-required key, burning the whole budget on a few hundred characters. The identical prompt with no
-`response_format` finished in under half the tokens with valid JSON. Every prompt states the exact
-JSON shape in words too, for a server asked without the schema. Set it to `true` or `false` to pin
-the behaviour for a specific endpoint either way; a server that refuses the field when it is on is
-asked again without it, and the run remembers.
+`structured_output` sends the JSON shape the request's parser reads as `response_format`
+`json_schema`, or as Ollama's `format`. Left unset, it selects the mode for each request:
+
+- Free-text questions, titles and period accounts keep their schemas on both local and hosted
+  endpoints.
+- Episode readings on your machine or private network use the shape written in the prompt.
+  oMLX's constrained decoder can stall on that nested schema after an empty array, spending the
+  completion budget before reaching the next required key. Hosted episode readings keep the schema.
+
+Both modes can run against the same endpoint in one process. Set `true` or `false` to override
+this selection for an endpoint. A provider that refuses schema mode is retried in its compatible
+mode, and the run remembers the refusal. Answer-cache identities include the policy and the
+request's effective schema, so changing modes cannot reuse an answer from the old policy.
 
 `repetition_penalty` is sent because local servers default to 1.1 (oMLX, Ollama), which penalises
 the repeated keys every JSON answer needs. It is never sent to a public host; a server of your own

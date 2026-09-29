@@ -1076,6 +1076,12 @@ judgment key cannot both pay for it. `provider_failure.THROTTLE` is the shared
 pause a 429 puts on every reader at once, and `retry_wait` spreads each caller's
 own wait so they do not retry in lockstep.
 
+`llm_providers.structured_output_enabled` selects schema enforcement from the named request:
+local `episode_reading` requests retain prompt-only JSON to avoid the measured decoder stall,
+while free-text, title and account schemas remain enforced. Explicit endpoint settings win.
+OpenAI-compatible and Ollama transports use the same decision; text judgment keys carry the
+effective schema and model identities version the request policy so stale answers are not reused.
+
 ### Pipeline Flow (story-first)
 
 Videos and photos are one pool, and the editor cuts from it:
