@@ -301,7 +301,7 @@ unchanged sources retain their existing bank entries.
 
 `src/immich_memories/` is the app. `services/inference/immich_memories_inference/` is a second
 top-level package — the inference service, which serves the encoder, the eight public heads and the
-two detectors over HTTP (`/ping`, `/health`, `/facts`) in its own image with its own device
+two detectors and Demucs over HTTP (`/ping`, `/health`, `/facts`, `/audio/stems`) in its own image with its own device
 variant (`docker/Dockerfile.inference`, `docker/hwaccel.inference.yml`). It imports the app's
 triage engine and detector module rather than reimplementing them, which is what keeps a fact
 computed there identical to one computed in process; two import-linter contracts hold the
@@ -640,6 +640,7 @@ src/immich_memories/
 │       ├── ace_step_runtime.py # ACE-Step in-process handlers: device, MLX/torch memory, one render
 │       ├── ace_step_isolated.py # Local subprocess using the installer's separate audio environment
 │       ├── ace_step_captions.py # Dense caption templates
+│       ├── inference_demucs.py # Owned inference HTTP stems, optional local fallback
 │       └── demucs_local.py     # Local Demucs stem separation (in-process)
 │
 ├── titles/                     # Title screen generation (film_title.py: explicit, model or template title, any surface)
