@@ -16,8 +16,8 @@
 # Walkthrough, hardware needed per piece, and the config keys:
 # docs-site/docs/run/reference-setup.md
 #
-# Composes ../render-sidecar (which itself pulls in ../../base) and
-# ../captioner-cuda rather than duplicating either: patching two Deployments
+# Composes ../render-sidecar (which itself pulls in ../../base),
+# ../captioner-cuda and ../inference-cuda rather than duplicating any: patching Deployments
 # and reusing a captioner overlay that already exists keeps one definition of
 # "how the sidecar is wired" and one of "how the caption server takes a card".
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -28,6 +28,7 @@ namespace: immich-memories
 resources:
   - ../render-sidecar   # base + render worker sidecar, on the GPU node
   - ../captioner-cuda    # the caption server the full tier needs, on a card
+  - ../inference-cuda    # the picture encoder, heads and detectors, on a card
   - config-map.yaml
   - networkpolicy-maximalist.yaml
   # cp maximalist-secret.yaml.example maximalist-secret.yaml and fill in.

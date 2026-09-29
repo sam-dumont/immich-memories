@@ -18,19 +18,21 @@ Nothing on this page is a real hostname, IP or node name.
 ```
 Always-on server (Kubernetes)                    Laptop / workstation (the Mac)
 ──────────────────────────────                    ──────────────────────────────
-gpu-node-a (NVENC + Immich ML, time-sliced)        one machine, everything local
+gpu-node-a (the newer card, time-sliced)           one machine, everything local
 ├── immich-memories pod
 │   ├── app container                              immich-memories ui
 │   └── render-worker (sidecar, loopback :8093)     ├── oMLX: gemma-4-e4b-it-6bit
-│                                                    │   (OpenAI-compatible, :9999)
-gpu-node-b (a second, older card)                   ├── mlxcel: SmolVLM caption
-└── captioner (llama.cpp server-cuda, :8092)         │   server (:8092, localhost)
-                                                     └── ACE-Step 1.5, lib mode
-Traefik (TLS) ── OIDC (Auth0) ── the app                 (XL turbo, bf16, 4B LM)
-                                                    OIDC to the same IdP
+└── inference service (encoder, heads,               │   (OpenAI-compatible, :9999)
+    detectors; ONNX Runtime CUDA, :8092)             ├── mlxcel: SmolVLM caption
+                                                     │   server (:8092, localhost)
+gpu-node-b (a second, older card)                   └── ACE-Step 1.5, lib mode
+└── captioner (llama.cpp server-cuda, :8092)             (XL turbo, bf16, 4B LM)
+
+Traefik (TLS) ── OIDC (Auth0) ── the app            OIDC to the same IdP
+the reader (LLM): an OpenAI-compatible server on the LAN, e.g. oMLX on the Mac
 ```
 
-The server profile is a Deployment plus two single-purpose GPU workloads, reached through
+The server profile is the app's Deployment plus two GPU services, reached through
 [`deploy/kubernetes/overlays/maximalist`](https://github.com/sam-dumont/immich-video-memory-generator/tree/main/deploy/kubernetes/overlays/maximalist)
 or [`deploy/terraform/examples/maximalist`](https://github.com/sam-dumont/immich-video-memory-generator/tree/main/deploy/terraform/examples/maximalist).
 The Mac profile is a source checkout with ACE-Step installed beside it, plus two local servers
@@ -43,6 +45,7 @@ and [Add a reader](../better/reader.md).
 |---|---|---|---|
 | App + UI | the Kubernetes pod, or the Mac directly | `tier: full` | any CPU |
 | Render worker | sidecar in the app pod, loopback | `render.worker_base_url`, `render.worker_token` | `gpu-node-a`: NVENC h264/hevc |
+| Picture reading (inference service) | its own pod, on the newer card | `advanced.inference.facts_base_url` | `gpu-node-a`: ONNX Runtime on CUDA; without it, the app pod's CPU |
 | Caption server | a second GPU node, cluster-only | `advanced.editorial.preparation.caption_base_url` | `gpu-node-b`: a Pascal card works (`sm_61`) |
 | Caption server (Mac) | mlxcel, localhost | same key, `http://localhost:8092/v1` | Apple Silicon, Metal |
 | Reader (LLM) | the Mac, on the LAN | `advanced.llm.base_url`, `advanced.llm.provider`, `advanced.llm.model` | Apple Silicon running oMLX |
@@ -55,7 +58,9 @@ and [Add a reader](../better/reader.md).
 Missing a piece from this table: drop the row and set `tier` to match, because a named tier never
 steps down on its own. `tier: full` refuses to load without `advanced.llm.base_url` and
 `advanced.llm.model`, and still asks for captions when no caption server answers; `tier: auto` picks
-what the install can do. No ACE-Step means a bundled track.
+`gpu` or `full` only once it finds GPU picture reading (a local CUDA runtime or the inference
+service), so without one it stays on the plain NAS tier. No ACE-Step means a bundled track. Without
+the inference service the app reads pictures on its own CPU: the same answers, a slower first cut.
 
 ## The always-on server (Kubernetes)
 
@@ -70,11 +75,27 @@ kubectl apply -k overlays/maximalist
 ```
 
 `overlays/maximalist/kustomization.yaml` composes `overlays/render-sidecar` (which itself pulls in
-`base`) and `overlays/captioner-cuda`, rather than duplicating either. It keeps the base's 20Gi
+`base`), `overlays/captioner-cuda` and `overlays/inference-cuda`, rather than duplicating any of
+them. It keeps the base's 20Gi
 cache PVC, so it applies over an existing install. On top: a second init container that installs `config.yaml`,
 `IMMICH_MEMORIES_TIER=full` on the app container (the base sets `auto`, and an env var beats
 `config.yaml`), and a NetworkPolicy that lets the app reach the LLM and ACE-Step ports. Read
 [Kubernetes](./kubernetes.md) first for the base layout this builds on.
+
+### Check the tier it really runs
+
+The tier in the file and the tier the pod runs can differ: the environment wins over
+`config.yaml`, and the base Deployment sets `IMMICH_MEMORIES_TIER=auto`. Ask the app, before and
+after any change:
+
+```bash
+kubectl -n immich-memories exec deploy/immich-memories -c immich-memories -- \
+  immich-memories config show | grep '│ tier'
+```
+
+The row names the tier and where it came from. `full` from `env` is this setup. `nas` from `env`
+means the pod has been cutting on the plain NAS tier, the caption server and the reader never
+asked; the log line above the table says why (`Automatic selection tier: nas. ...`).
 
 ### The cluster's config.yaml, annotated
 
@@ -113,6 +134,9 @@ advanced:
     preparation:
       caption_base_url: "http://captioner:8092/v1"   # gpu-node-b, server-cuda
 
+  inference:
+    facts_base_url: "http://inference:8092"   # gpu-node-a, ONNX Runtime on CUDA
+
   llm:
     provider: "openai-compatible"
     base_url: "http://192.168.1.50:9999/v1"   # oMLX on the Mac, LAN
@@ -132,13 +156,31 @@ advanced:
 
 ### The two GPU nodes
 
-`gpu-node-a` carries the app pod, with the render worker as a loopback sidecar: an NVIDIA T1000
-(Turing, 8 GB), time-sliced with Immich's own machine-learning pod and whatever else lands there.
-NVENC h264/hevc for the render, exec probes for the worker (below). `gpu-node-b` carries only the
-caption server: an older GTX 1070 (Pascal, 8 GB) that PyTorch's cu128 wheels have already dropped
-support for, but llama.cpp's CUDA build still runs on. Splitting them this way means the caption
-server never competes with the app for the busier card, and a card too old for anything built on
-PyTorch's cu128 wheels still earns its keep.
+`gpu-node-a` has the newer card, here an NVIDIA T1000 (Turing, 8 GB), time-sliced with Immich's
+own machine-learning pod. It carries the app pod with the render worker as a loopback sidecar
+(NVENC h264/hevc, exec probes, below) and the inference service, which reads every picture once:
+the encoder, the context heads and the two detectors, on ONNX Runtime's CUDA provider.
+`gpu-node-b` has an older GTX 1070 (Pascal, 8 GB) and carries only the caption server: llama.cpp's
+CUDA build runs on Pascal, and the caption server is the one GPU workload that doesn't compete
+with the app for the busier card.
+
+`overlays/inference-cuda` and `overlays/captioner-cuda` select any node with
+`nvidia.com/gpu.present`, so on a two-card cluster pin each to its node. The inference service
+belongs on the newer card; this setup was not tested with it on Pascal:
+
+```yaml
+# a patch in overlays/maximalist, listed under patches:
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-memories-inference
+  namespace: immich-memories
+spec:
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: gpu-node-a   # your newer card's node
+```
 
 ### Gotchas, with the exact strings to search for
 
@@ -183,8 +225,15 @@ refetch, so on a storage class that works this way, patch the caption server's `
 an `emptyDir` in place of the `immich-memories-caption-models` claim `overlays/captioner` ships.
 The cache, output and models PVCs the app itself needs still want real storage.
 
-**`sm_61` vs PyTorch cu128.** Covered above: llama.cpp's CUDA build runs on Pascal, PyTorch's
-cu128 wheels do not. Put the caption server, not a PyTorch workload, on the older card.
+**`tier: full` in the file, `nas` in the pod.** The base Deployment's `IMMICH_MEMORIES_TIER=auto`
+beats `config.yaml`, and `auto` stays on the plain NAS tier until it finds GPU picture reading.
+Nothing fails: films still render, from the rules alone, and the caption server and the reader
+simply never get a request. Search the log for `Automatic selection tier: nas`, and check with
+`config show` as above. The overlay sets the tier in the environment for this reason.
+
+**Which card gets what.** llama.cpp's CUDA build runs on Pascal (`sm_61`); PyTorch's cu128 wheels
+no longer do. Put the caption server on the older card, and the inference service and the render
+worker on the newer one.
 
 **MTU on a multi-site cluster.** A cluster spanning two sites over VXLAN loses bytes to the tunnel
 header; Cilium's default MTU assumes a 1500-byte path that isn't there. Symptoms are intermittent:
@@ -260,6 +309,7 @@ single-user machine reached only at `localhost`: nothing forwards a proxied `Hos
 ## Terraform
 
 `deploy/terraform/examples/maximalist` is the Terraform form of the server profile: every feature
-above as a module variable, defaulting to the minimal path (off) until set, except the tier and
-automation, which go through `env`. See
+above as a module variable, defaulting to the minimal path (off) until set, except the tier,
+automation and the inference service's URL, which go through `env`. The module does not deploy the
+inference service: apply `deploy/kubernetes/overlays/inference-cuda` beside it. See
 [`deploy/terraform/README.md`](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/deploy/terraform/README.md#the-maximalist-example).

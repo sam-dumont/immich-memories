@@ -1008,7 +1008,8 @@ def test_the_maximalist_overlay_pins_or_digests_every_third_party_image(tmp_path
         for container in spec.get("initContainers", []) + spec.get("containers", []):
             image = container["image"]
             if image.startswith(own_repo):
-                assert re.search(r":\d+\.\d+\.\d+$", image), image
+                # A release tag; the inference service's CUDA build is published as `X.Y.Z-cuda`.
+                assert re.search(r":\d+\.\d+\.\d+(-cuda)?$", image), image
             else:
                 # Third-party: llama.cpp's documented floating server/server-cuda
                 # tag, or a sha256 digest. Never a bare `latest`.
@@ -1148,3 +1149,25 @@ def test_terraform_deploy_tree_is_formatted() -> None:
         text=True,
     )
     assert result.returncode == 0, f"needs `terraform fmt -recursive {TF_DIR}`:\n{result.stdout}"
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+def test_the_maximalist_overlay_reads_pictures_on_a_gpu_and_points_the_app_at_it(
+    tmp_path: Path,
+) -> None:
+    """`tier: full` in a pod that reads pictures on its CPU is the tier the file names, not
+    what the install does: the reference setup ships the CUDA inference service (encoder,
+    context heads, detectors) beside the app, and the app's config names it."""
+    rendered = _maximalist_rendered(tmp_path)
+    inference = next(
+        doc
+        for doc in rendered
+        if doc["kind"] == "Deployment" and doc["metadata"]["name"] == "immich-memories-inference"
+    )
+    pod = inference["spec"]["template"]["spec"]
+    assert pod["runtimeClassName"] == "nvidia"
+    assert pod["containers"][0]["image"].endswith("-cuda")
+
+    config_map = next(doc for doc in rendered if doc["kind"] == "ConfigMap")
+    config_yaml = yaml.safe_load(config_map["data"]["config.yaml"])
+    assert config_yaml["advanced"]["inference"]["facts_base_url"] == "http://inference:8092"

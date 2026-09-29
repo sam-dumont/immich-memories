@@ -65,6 +65,12 @@ data:
         preparation:
           caption_base_url: "http://captioner:8092/v1"   # ../captioner-cuda's Service
 
+      # The picture encoder, context heads and detectors on a GPU, instead of
+      # this pod's CPU: ../inference-cuda's Service. Put it on the newer card
+      # (see reference-setup.md): the older one stays for the caption server.
+      inference:
+        facts_base_url: "http://inference:8092"
+
       # An OpenAI-compatible server on another LAN machine: an Apple Silicon
       # Mac running oMLX, bound to 0.0.0.0 instead of localhost.
       llm:

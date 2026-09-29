@@ -66,6 +66,12 @@ of the reference setup: what runs where, and how OIDC fails when a step is skipp
 The Kubernetes-manifests equivalent is `deploy/kubernetes/overlays/maximalist`; both express the
 same features, so pick whichever tool manages the rest of your cluster.
 
+The module has no inference-service resource. The example points the app at one
+(`IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL=http://inference:8092`) that you apply from
+`deploy/kubernetes/overlays/inference-cuda`; without it the pod reads pictures on its CPU, which
+works, only slower on a first cut. Confirm the tier the pod resolved with `immich-memories config
+show`.
+
 Every variable behind this defaults to the minimal path: `render_worker_sidecar_enabled`,
 `captioner_enabled`, `oidc_enabled`, `ace_step_enabled`, `network_geocoding`, `network_map_tiles`
 and `secure_cookies` are all `false`, and `config_yaml` is `""`, until you set them.

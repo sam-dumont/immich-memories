@@ -74,19 +74,23 @@ module "immich_memories" {
   render_worker_token           = var.render_worker_token
 
   # The caption server the full tier needs, on a card. llama.cpp's CUDA
-  # build still runs on Pascal (sm_61), where PyTorch cu128 wheels have
-  # already dropped that architecture.
+  # build still runs on Pascal (sm_61), so an older card can carry it.
   captioner_enabled = true
   captioner_cuda    = true
 
-  # The module sets IMMICH_MEMORIES_TIER=auto, which lands on nas here (no
-  # inference service) and never asks the caption server; `env` is merged
-  # last, so this pins the tier the captioner and the LLM are for. Daily
+  # The module sets IMMICH_MEMORIES_TIER=auto, which picks gpu or full only
+  # once it finds GPU picture reading, and `env` is merged last, so this pins
+  # the tier the captioner and the LLM are for. The module does not deploy
+  # the inference service (encoder, heads, detectors on a GPU): apply
+  # deploy/kubernetes/overlays/inference-cuda beside it, on the newer card,
+  # and the app reads pictures there instead of on its CPU. Check what the
+  # pod resolved with `immich-memories config show` (the tier row). Daily
   # automation inside the pod.
   env = {
-    IMMICH_MEMORIES_TIER                 = "full"
-    IMMICH_MEMORIES_AUTOMATION__ENABLED  = "true"
-    IMMICH_MEMORIES_AUTOMATION__DAILY_AT = "09:00"
+    IMMICH_MEMORIES_TIER                      = "full"
+    IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL = "http://inference:8092"
+    IMMICH_MEMORIES_AUTOMATION__ENABLED       = "true"
+    IMMICH_MEMORIES_AUTOMATION__DAILY_AT      = "09:00"
   }
 
   # Storage: the render worker's own scratch (20Gi) is a separate emptyDir,
