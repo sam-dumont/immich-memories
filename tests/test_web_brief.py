@@ -67,6 +67,8 @@ def test_every_flag_a_brief_can_emit_is_one_generate_accepts():
         people_expression="Ana",
         person_match="and",
         from_album="Trip",
+        group="kids",
+        accounts=["primary", "partner"],
         day=date(2024, 6, 1),
         trip_index=1,
         all_trips=True,
@@ -97,6 +99,17 @@ def test_a_season_brief_leaves_its_length_to_the_cli_s_date_range_curve():
 
     assert "--memory-type=season" in argv and "--season=summer" in argv
     assert not any(arg.startswith("--duration") for arg in argv)
+
+
+def test_a_group_and_an_account_scope_become_their_own_flags():
+    brief = CutBrief(memory_type="multi_person", group="kids", accounts=["primary", "partner"])
+
+    argv = brief.argv(
+        executable="immich-memories", config=Path("/c.yaml"), output=Path("/o/web-1.mp4")
+    )
+
+    assert "--group=kids" in argv
+    assert "--accounts=primary,partner" in argv
 
 
 def test_a_sentence_is_the_whole_brief_and_travels_as_one_argument():
