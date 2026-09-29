@@ -53,10 +53,21 @@ def _details(title: str, content: str) -> str:
     )
 
 
+_PEAKS = ("peak_rss_mb", "peak_tree_rss_mb")
+
+
+def _higher(held: float | None, seen: float | None) -> float | None:
+    return seen if held is None else held if seen is None else max(held, seen)
+
+
+def _megabytes(size: int | None) -> float | None:
+    return None if size is None else size / 2**20
+
+
 def _phase_table(rows: list[dict]) -> str:
     lines = [
-        "| Phase | Seconds | Items | s/item | s/output second |",
-        "| --- | ---: | ---: | ---: | ---: |",
+        "| Phase | Seconds | Items | s/item | s/output second | Peak MB | With children MB |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in rows:
         name = html.escape(row["name"]).replace("|", "&#124;").replace("\n", " ")
@@ -67,7 +78,7 @@ def _phase_table(rows: list[dict]) -> str:
         cells = [
             "n/a" if value is None else str(value) if index == 1 else f"{value:.3f}"
             for index, value in enumerate(numbers)
-        ]
+        ] + ["n/a" if row.get(key) is None else f"{row[key]:.0f}" for key in _PEAKS]
         line = "| " + " | ".join([name, *cells]) + " |"
         if sum(map(len, lines)) + len(line) > 5500:
             lines.append("\nMore phases in report.json in the bundle.")
@@ -82,13 +93,17 @@ def _phase_totals(spans: list[dict], output_seconds: float) -> list[dict]:
         name = span["name"]
         if name == "run" or name.startswith("stage."):
             continue
-        row = totals.setdefault(name, {"name": name, "seconds": 0.0, "items": 0})
+        row = totals.setdefault(
+            name, {"name": name, "seconds": 0.0, "items": 0} | dict.fromkeys(_PEAKS)
+        )
         row["seconds"] += span["seconds"]
         row["items"] = (
             row["items"] + span["items"]
             if row["items"] is not None and span["items"] is not None
             else None
         )
+        # Repeated spans sum their seconds, but memory is a high-water mark: keep the highest.
+        row.update({key: _higher(row[key], span.get(key)) for key in _PEAKS})
     for row in totals.values():
         row["seconds_per_item"] = row["seconds"] / row["items"] if row["items"] else None
         row["seconds_per_output_second"] = (
@@ -201,6 +216,8 @@ def build_report(
             "seconds_per_output_second": measured.duration / run.output_duration_seconds
             if run.output_duration_seconds
             else None,
+            "peak_rss_mb": _megabytes(measured.peak_rss),
+            "peak_tree_rss_mb": _megabytes(measured.peak_tree_rss),
             "warnings": measured.warnings,
             "error": {key: measured.error.get(key) for key in ("type", "message", "frames")}
             if measured.error

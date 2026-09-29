@@ -15,7 +15,8 @@ immich-memories report --bundle report.zip   # the full report and its logs, as 
 ```
 
 The report holds the run's settings as shape (keys, not values), its errors and warnings, the log,
-and a table of where the time went, phase by phase. That table is the first thing to read when a cut
+and a table of where the time and memory went, phase by phase (peak MB for the process, and with
+ffmpeg added). That table is the first thing to read when a cut
 is slow: `immich-memories runs show` prints the same timings in full, per picture.
 
 Before anything reaches the report, it removes credentials, the names of the people you know, albums
