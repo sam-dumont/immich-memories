@@ -430,7 +430,13 @@ class CachedTextEpisodeReader:
             if not unread:
                 break
             retries = tuple((scope,) for scope in unread)
-            for pack, response in self._read_packs(retries, facts):
+            # A retry is already down to one episode -- the smallest unit this reader
+            # ever asks about -- so repeating its own (already too small) estimate just
+            # buys the same truncation again. Ask at the full transport ceiling instead:
+            # if one episode does not fit that, nothing short of a repair would help.
+            for pack, response in self._read_packs(
+                retries, facts, min_tokens=self._limits.max_output_tokens
+            ):
                 calls += 1
                 page_readings.extend(
                     self._record_response(pack, response, diagnostics, unavailable_by_group, failed)
@@ -438,9 +444,9 @@ class CachedTextEpisodeReader:
                 self._bank_complete(missing, request_scopes, page_readings, banked)
         return calls
 
-    def _read_packs(self, packs, facts):
+    def _read_packs(self, packs, facts, *, min_tokens: int | None = None):
         def read(requester, pack):
-            return self._ask(requester, pack, facts)
+            return self._ask(requester, pack, facts, min_tokens=min_tokens)
 
         run = getattr(self._requester, "iter_independent", None)
         if callable(run):
@@ -449,14 +455,12 @@ class CachedTextEpisodeReader:
             for pack in packs:
                 yield pack, read(self._requester, pack)
 
-    def _ask(self, requester, pack, facts):
+    def _ask(self, requester, pack, facts, *, min_tokens: int | None = None):
+        budget = episode_completion_budget(pack, self._limits)
+        if min_tokens is not None:
+            budget = max(budget, min_tokens)
         try:
-            return _read_missing(
-                requester,
-                pack,
-                facts,
-                max_tokens=episode_completion_budget(pack, self._limits),
-            )
+            return _read_missing(requester, pack, facts, max_tokens=budget)
         except Exception as exc:  # WHY: one failed pack cannot remove other episodes
             return exc
 

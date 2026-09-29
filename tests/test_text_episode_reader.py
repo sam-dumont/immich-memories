@@ -508,6 +508,146 @@ def test_an_episode_omitted_from_a_pack_is_reasked_alone(
     assert "the second complete episode line" in prompts[1]
 
 
+def test_a_truncated_reply_salvages_the_episode_it_finished_writing(
+    tmp_path: Path,
+) -> None:
+    """A transport cut mid-reply must not discard episodes it already wrote in full.
+
+    Measured 2026-09-29 on a local gemma: 34 of 54 episode replies were truncated, and
+    every one of them was discarded whole -- even the ones that had already written one
+    or more complete episode objects before the cut. Salvaging what parsed cleanly turns
+    a wasted 25s call into a partial win, and leaves only the genuinely unfinished
+    episode for a retry.
+    """
+    from immich_memories.analysis.text_episode_paging import TextEpisodeRequestLimits
+    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+
+    start = datetime(2026, 8, 25, 8, tzinfo=UTC)
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(scope=SourceScope()),
+        EditorialDependencies(
+            source_fetcher=lambda _scope: (
+                make_asset("first-private", file_created_at=start),
+                make_asset("second-private", file_created_at=start + timedelta(hours=3)),
+            )
+        ),
+    )
+    projections = project_episode_groups(prepared, prepared.candidate_ids)
+    lines = _AnnotationLines(
+        {
+            "first-private": "the first complete episode line",
+            "second-private": "the second complete episode line",
+        }
+    )
+    producer = EpisodeReadingProducer(
+        model_id="qwen3-vl-30b",
+        prompt_version="episode-prompt-v1",
+        schema_version="episode-schema-v1",
+        annotation_renderer_version="annotation-line-v1",
+        annotation_versions=("description:student-v1",),
+    )
+    complete_first = json.dumps(
+        {
+            "episode": 1,
+            "what_happened": "A complete first episode is visible.",
+            "representatives": [{"asset": 1, "reason": "The frame represents it."}],
+            "cull": [],
+        }
+    )
+    # The transport stopped mid-token, part way through the second episode's row: one
+    # complete object, then the ragged start of a second that never closes.
+    truncated = (
+        '{"schema_version": "episode-reading-text-v1", "episodes": ['
+        + complete_first
+        + ', {"episode": 2, "what_happened": "The second episode was cut off be'
+    )
+
+    result = CachedTextEpisodeReader(
+        store=EpisodeReadingStore(annotation_store()),
+        producer=producer,
+        annotations=lines,
+        requester=lambda _prompt: truncated,
+        limits=TextEpisodeRequestLimits(unread_retry_rounds=0),
+    ).read(projections)
+
+    first = next(
+        episode
+        for episode in result.episodes
+        if episode.projection.group.candidate_ids == ("first-private",)
+    )
+    second = next(
+        episode
+        for episode in result.episodes
+        if episode.projection.group.candidate_ids == ("second-private",)
+    )
+    assert first.reading is not None
+    assert first.reading.what_happened == "A complete first episode is visible."
+    assert second.reading is None
+
+
+def test_a_truncated_answer_gets_a_larger_budget_on_retry(tmp_path: Path) -> None:
+    """A retry that repeats the exact budget that just truncated wastes the call.
+
+    Measured 2026-09-29: unread-retry rounds resent the same per-scope estimate that
+    had already proven too small, so many retries truncated again for no gain. A retry
+    is already down to one episode -- the smallest unit this reader ever asks about --
+    so if that alone does not fit its own estimate, only the transport ceiling can tell.
+    """
+    from immich_memories.analysis.text_episode_paging import TextEpisodeRequestLimits
+    from immich_memories.analysis.text_episode_reader import CachedTextEpisodeReader
+
+    prepared = prepare_editorial_source(
+        EditorialSelectionRequest(scope=SourceScope()),
+        EditorialDependencies(source_fetcher=lambda _scope: (make_asset("only-private"),)),
+    )
+    projections = project_episode_groups(prepared, prepared.candidate_ids)
+    lines = _AnnotationLines({"only-private": "one dense private evidence line"})
+    producer = EpisodeReadingProducer(
+        model_id="qwen3-vl-30b",
+        prompt_version="episode-prompt-v1",
+        schema_version="episode-schema-v1",
+        annotation_renderer_version="annotation-line-v1",
+        annotation_versions=("description:student-v1",),
+    )
+    complete = json.dumps(
+        {
+            "schema_version": "episode-reading-text-v1",
+            "episodes": [
+                {
+                    "episode": 1,
+                    "what_happened": "A" * 2500,
+                    "representatives": [{"asset": 1, "reason": "B" * 400}],
+                    "cull": [],
+                }
+            ],
+        }
+    )
+    # The external provider fixture bills roughly four characters per output token.
+    needed = -(-len(complete) // 4)
+    budgets: list[int] = []
+
+    class Provider:
+        def __call__(self, _prompt: str) -> str:
+            raise AssertionError("production episode requests must carry their computed budget")
+
+        def request_with_budget(self, _prompt: str, *, max_tokens: int, response_format=None):
+            budgets.append(max_tokens)
+            return complete if max_tokens >= needed else complete[: max_tokens * 4]
+
+    result = CachedTextEpisodeReader(
+        store=EpisodeReadingStore(annotation_store()),
+        producer=producer,
+        annotations=lines,
+        requester=Provider(),
+        limits=TextEpisodeRequestLimits(unread_retry_rounds=1),
+    ).read(projections)
+
+    assert len(budgets) == 2
+    assert budgets[0] < needed  # The lone episode's own estimate is too small to answer it.
+    assert budgets[1] > budgets[0]  # The retry does not repeat a budget that just failed.
+    assert result.episodes[0].reading is not None
+
+
 def test_an_invalid_episode_answer_retains_full_membership_and_is_not_banked(
     tmp_path: Path,
 ) -> None:
@@ -823,10 +963,12 @@ def test_output_packing_and_transport_budget_share_one_bounded_estimate(tmp_path
         requester=BudgetedRequester(),
     ).read(project_episode_groups(prepared, prepared.candidate_ids))
 
-    assert [rows for rows, _budget in calls] == [27, 27, 27, 9]
-    assert [budget for _rows, budget in calls] == [3980, 3980, 3980, 1460]
-    assert shaped == [27, 27, 27, 9]
-    assert result.actual_calls == 4
+    # Recalibrated 2026-09-29 (#1609): a larger per-asset output allowance packs
+    # fewer episodes per call, trading call count for a budget that actually holds.
+    assert [rows for rows, _budget in calls] == [20, 20, 20, 20, 10]
+    assert [budget for _rows, budget in calls] == [3960, 3960, 3960, 3960, 2080]
+    assert shaped == [20, 20, 20, 20, 10]
+    assert result.actual_calls == 5
     assert all(episode.reading is not None for episode in result.episodes)
 
 
