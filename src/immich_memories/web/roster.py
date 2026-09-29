@@ -8,17 +8,20 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from immich_memories.api.person_expression import PersonExpression
 from immich_memories.config_loader import Config
 from immich_memories.db import Store, open_store
 from immich_memories.people.editor import (
     ROLE_SUGGESTIONS,
     add_person,
     add_relationship,
+    bind_person_alias,
     curation_flags,
     load_people,
     remove_relationship,
     save_person,
 )
+from immich_memories.people.groups import add_group, list_groups, remove_group
 from immich_memories.people.relationships import RELATIONSHIP_CHOICES
 from immich_memories.web.dependencies import current_config
 
@@ -52,6 +55,9 @@ class RosterPerson(BaseModel):
     links: list[RosterLink]
     role: str | None = None
     notes: str | None = None
+    # Every id this person answers to, by the account that reads it: {"primary": [...]}, or
+    # with a bound partner account, {"primary": [...], "partner": [...]}.
+    aliases: dict[str, list[str]] = {}
 
 
 class RosterFlag(BaseModel):
@@ -92,6 +98,22 @@ class NewPerson(BaseModel):
 class Relationship(BaseModel):
     kind: str
     target_id: str
+
+
+class AliasBind(BaseModel):
+    account: str
+    alias_id: str
+
+
+class SavedGroupView(BaseModel):
+    label: str
+    # The grammar --people-expression takes, re-parseable as typed: e.g. ("id-a" OR "id-b").
+    expression: str
+
+
+class NewGroup(BaseModel):
+    label: str
+    expression: str
 
 
 @router.get("", response_model=Roster)
@@ -156,3 +178,57 @@ def unrelate(
     remove_relationship(store, person_id, relationship.kind, relationship.target_id)
     person = next(p for p in load_people(store) if p.person_id == person_id)
     return RosterPerson.model_validate(asdict(person))
+
+
+@router.post("/{person_id}/aliases", response_model=RosterPerson)
+def bind_alias_route(
+    person_id: str, bind: AliasBind, store: Annotated[Store, Depends(people_store)]
+) -> RosterPerson:
+    """Declare that `bind.alias_id`, as `bind.account` reads it, is this person.
+
+    The account has to be `primary` or a name under `immich.accounts` (`people bind`'s own
+    rule); an id already bound to somebody else is refused, an id this person already has
+    for this account is a no-op. Name, birth date and confirmations are untouched.
+    """
+    try:
+        bind_person_alias(store, person_id, bind.account, bind.alias_id)
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from error
+    person = next((p for p in load_people(store) if p.person_id == person_id), None)
+    if person is None:
+        raise HTTPException(404, "Nobody with that id is in the people registry.")
+    return RosterPerson.model_validate(asdict(person))
+
+
+@router.get("/groups", response_model=list[SavedGroupView])
+def groups(store: Annotated[Store, Depends(people_store)]) -> list[SavedGroupView]:
+    """Every saved group, in the order they were added — the labels `--group` takes."""
+    return [
+        SavedGroupView(label=saved.label, expression=saved.expression.display_label)
+        for saved in list_groups(store)
+    ]
+
+
+@router.post("/groups", response_model=SavedGroupView, status_code=201)
+def add_group_route(
+    new: NewGroup, store: Annotated[Store, Depends(people_store)]
+) -> SavedGroupView:
+    """Save a group. EXPRESSION is the --people-expression grammar over canonical person ids.
+
+    Parsed and size-checked first: a malformed expression saves nothing.
+    """
+    try:
+        parsed = PersonExpression.parse(new.expression)
+        add_group(store, new.label, parsed)
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from error
+    return SavedGroupView(label=new.label, expression=parsed.display_label)
+
+
+@router.delete("/groups/{label}", status_code=204)
+def remove_group_route(label: str, store: Annotated[Store, Depends(people_store)]) -> None:
+    """Remove a saved group. Never touches the people it named."""
+    try:
+        remove_group(store, label)
+    except ValueError as error:
+        raise HTTPException(404, str(error)) from error

@@ -1,6 +1,24 @@
 {
   "components": {
     "schemas": {
+      "AccountChoice": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "primary": {
+            "title": "Primary",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "primary"
+        ],
+        "title": "AccountChoice",
+        "type": "object"
+      },
       "AlbumChoice": {
         "properties": {
           "asset_count": {
@@ -22,6 +40,24 @@
           "asset_count"
         ],
         "title": "AlbumChoice",
+        "type": "object"
+      },
+      "AliasBind": {
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          },
+          "alias_id": {
+            "title": "Alias Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account",
+          "alias_id"
+        ],
+        "title": "AliasBind",
         "type": "object"
       },
       "Alternative": {
@@ -451,6 +487,14 @@
             "title": "Accept Any Provenance",
             "type": "boolean"
           },
+          "accounts": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Accounts",
+            "type": "array"
+          },
           "all_trips": {
             "default": false,
             "title": "All Trips",
@@ -542,6 +586,17 @@
               }
             ],
             "title": "From Album"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
           },
           "hemisphere": {
             "anyOf": [
@@ -1390,6 +1445,24 @@
         "title": "NamedPerson",
         "type": "object"
       },
+      "NewGroup": {
+        "properties": {
+          "expression": {
+            "title": "Expression",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "expression"
+        ],
+        "title": "NewGroup",
+        "type": "object"
+      },
       "NewPerson": {
         "properties": {
           "name": {
@@ -2033,6 +2106,17 @@
       },
       "RosterPerson": {
         "properties": {
+          "aliases": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "default": {},
+            "title": "Aliases",
+            "type": "object"
+          },
           "birth_date": {
             "anyOf": [
               {
@@ -2423,6 +2507,24 @@
           "film"
         ],
         "title": "RunSummary",
+        "type": "object"
+      },
+      "SavedGroupView": {
+        "properties": {
+          "expression": {
+            "title": "Expression",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "expression"
+        ],
+        "title": "SavedGroupView",
         "type": "object"
       },
       "SelectionPath": {
@@ -3161,6 +3263,32 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/accounts": {
+      "get": {
+        "description": "The Immich accounts a run may read: primary, plus every name under immich.accounts.\n\nConfiguring an extra account here does not add it to a film \u2014 `--accounts` (or this\nlist, for the brief) is what a run selects to read.",
+        "operationId": "accounts_api_v1_accounts_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AccountChoice"
+                  },
+                  "title": "Response Accounts Api V1 Accounts Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Accounts",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/api/v1/albums": {
       "get": {
         "description": "The albums a film can be made from, largest first; `--from-album` takes the id.",
@@ -4261,6 +4389,108 @@
         ]
       }
     },
+    "/api/v1/roster/groups": {
+      "get": {
+        "description": "Every saved group, in the order they were added \u2014 the labels `--group` takes.",
+        "operationId": "groups_api_v1_roster_groups_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SavedGroupView"
+                  },
+                  "title": "Response Groups Api V1 Roster Groups Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Groups",
+        "tags": [
+          "people"
+        ]
+      },
+      "post": {
+        "description": "Save a group. EXPRESSION is the --people-expression grammar over canonical person ids.\n\nParsed and size-checked first: a malformed expression saves nothing.",
+        "operationId": "add_group_route_api_v1_roster_groups_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewGroup"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedGroupView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Group Route",
+        "tags": [
+          "people"
+        ]
+      }
+    },
+    "/api/v1/roster/groups/{label}": {
+      "delete": {
+        "description": "Remove a saved group. Never touches the people it named.",
+        "operationId": "remove_group_route_api_v1_roster_groups__label__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "label",
+            "required": true,
+            "schema": {
+              "title": "Label",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Group Route",
+        "tags": [
+          "people"
+        ]
+      }
+    },
     "/api/v1/roster/scan": {
       "post": {
         "description": "Read the library's people again with `people scan`, keeping every answer given.",
@@ -4334,6 +4564,59 @@
           }
         },
         "summary": "Answer",
+        "tags": [
+          "people"
+        ]
+      }
+    },
+    "/api/v1/roster/{person_id}/aliases": {
+      "post": {
+        "description": "Declare that `bind.alias_id`, as `bind.account` reads it, is this person.\n\nThe account has to be `primary` or a name under `immich.accounts` (`people bind`'s own\nrule); an id already bound to somebody else is refused, an id this person already has\nfor this account is a no-op. Name, birth date and confirmations are untouched.",
+        "operationId": "bind_alias_route_api_v1_roster__person_id__aliases_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AliasBind"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RosterPerson"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Bind Alias Route",
         "tags": [
           "people"
         ]
