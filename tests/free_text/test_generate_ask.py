@@ -109,6 +109,27 @@ def test_a_dry_run_keeps_its_translation_for_a_watcher(ask, tmp_path: Path) -> N
     assert record["film"]["route"] == "pool"
 
 
+def test_the_run_report_carries_the_translation_the_watcher_reads(
+    ask, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import json
+
+    from immich_memories.cli import main
+
+    # WHY: the album run reads Immich and renders; the run's kept translation is under test.
+    monkeypatch.setattr(
+        "immich_memories.cli._album_generation.handle_album_generation", lambda **_k: None
+    )
+    ask("--ask", "our cat along the years", "--no-render")
+
+    reported = CliRunner().invoke(main, ["-c", str(tmp_path / "config.yaml"), "report", "--json"])
+
+    assert reported.exit_code == 0, reported.output
+    translation = json.loads(reported.stdout)["free_text"]["translation"]
+    assert translation["pool"] == {"pictures": 14, "photos": 14, "videos": 0}
+    assert translation["film"]["route"] == "pool"
+
+
 def test_without_the_model_tier_the_ask_says_what_it_needs(ask) -> None:
     result = ask("--ask", "our cat along the years", "--dry-run", config=IMMICH)
 

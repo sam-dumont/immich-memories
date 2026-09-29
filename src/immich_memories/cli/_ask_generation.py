@@ -171,9 +171,11 @@ def translate_ask(
     film = film_for(asked, asker, events_on=catalogue_events)
     trace = explain(asked, film=film)
     click.echo(trace)
-    save_with_run(asked, film, trace, people=view.people)
+    # One record for the watcher's file and the run's report, so both show the same translation.
+    record = trace_record(asked, film)
+    save_with_run(asked, film, trace, people=view.people, record=record)
     if trace_file is not None:
-        write_secret_file(trace_file, json.dumps(trace_record(asked, film)))
+        write_secret_file(trace_file, json.dumps(record))
     if dry_run:
         counts = pool_counts(asked)
         print_info(

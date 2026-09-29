@@ -20,13 +20,19 @@ from immich_memories.db import open_store
 from immich_memories.free_text.handoff import film_for
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryPerson, LibraryPicture, LibraryView
-from immich_memories.free_text.trace import explain, save_picks, save_with_run
+from immich_memories.free_text.trace import (
+    explain,
+    save_picks,
+    save_with_run,
+    trace_record,
+)
 from immich_memories.free_text.translate import Ask, household_of, translate
 from immich_memories.operations.run_index import record_run_attempt
 from immich_memories.tracking.report_service import report_for_run
 from immich_memories.tracking.run_observations import observe_run
 from tests.annotation_rows import add_rows
 from tests.free_text.banked import QuestionAsker
+from tests.test_revision_render import cut  # noqa: F401 - the saved-cut fixture
 
 NAME, PLACE, PRINTED = "Quillamar", "Brackwater", "Thornfield"
 CAPTION = "A cyclist in a Thornfield jersey waving beside the Quillamar farm gate"
@@ -124,6 +130,58 @@ def test_a_free_text_report_carries_the_trace_and_no_name_place_printed_word_or_
     assert "text-1" in rendered
 
 
+def _film_run(lexicon: Lexicon, tmp_path: Path, **extra: object) -> str:
+    store = open_store()
+    asked = _asked(lexicon)
+    film = film_for(asked, QuestionAsker(ANSWERS), events_on=lambda _day: [])
+    record = trace_record(asked, film) | extra
+    with observe_run(store, source="manual", capture_system=False) as tracker:
+        record_run_attempt(tracker.run_id, tmp_path, "", store=store)
+        trace = explain(asked, film=film)
+        save_with_run(asked, film, trace, people=_library().people, record=record)
+    return tracker.run_id
+
+
+def test_the_report_carries_the_translation_record_the_preview_reads(
+    lexicon: Lexicon, tmp_path: Path
+) -> None:
+    run_id = _film_run(lexicon, tmp_path)
+
+    report = report_for_run(open_store(), Config(), run_id)
+
+    translation = report.data["free_text"]["translation"]
+    assert translation["pool"] == {"pictures": 2, "photos": 2, "videos": 0}
+    assert [block["head"] for block in translation["blocks"]][:2] == ["READING", "WHO"]
+
+
+def test_a_long_trace_is_pasted_whole_in_the_markdown(lexicon: Lexicon, tmp_path: Path) -> None:
+    store = open_store()
+    asked = _asked(lexicon)
+    steps = "\n".join(f"         step {n}: kept 2 pictures" for n in range(200))
+    with observe_run(store, source="manual", capture_system=False) as tracker:
+        record_run_attempt(tracker.run_id, tmp_path, "", store=store)
+        save_with_run(asked, None, f"{explain(asked)}\n{steps}", people=_library().people)
+
+    markdown = report_for_run(store, Config(), tracker.run_id).markdown()
+
+    assert "step 199: kept 2 pictures" in markdown
+    assert NAME.lower() not in markdown.lower()
+
+
+def test_a_block_the_translation_gains_later_is_redacted_like_the_rest(
+    lexicon: Lexicon, tmp_path: Path
+) -> None:
+    rules = {"lines": [f"{NAME} Example at {PLACE}: {CAPTION}", f"born {BORN}"]}
+    run_id = _film_run(lexicon, tmp_path, rules=rules)
+
+    report = report_for_run(open_store(), Config(), run_id)
+
+    rendered = report.json() + report.markdown()
+    assert report.data["free_text"]["translation"]["rules"]["lines"]
+    for private in (NAME, PLACE, PRINTED, BORN):
+        assert private.lower() not in rendered.lower()
+
+
 def _reported_run(lexicon: Lexicon, tmp_path: Path, *, picks: tuple[str, ...] = ()) -> str:
     store = open_store()
     asked = _asked(lexicon)
@@ -218,3 +276,47 @@ def test_a_picture_marked_wrong_and_what_is_missing_are_kept_on_the_run_and_chec
         section["missing_check"],
     )
     assert [row["stage"] for row in kept["flagged"]] == ["printed text"]
+
+
+def test_the_film_rendered_from_a_free_text_cut_reports_its_request_and_picks(
+    lexicon: Lexicon,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    cut,  # noqa: F811
+) -> None:
+    from dataclasses import replace
+
+    from immich_memories.generate_saved_cut import CutRenderRequest, render_saved_cut
+    from immich_memories.tracking import RunTracker
+    from tests.test_generate_saved_cut import RUN
+
+    params, attempt = cut
+    cut_run = _film_run(lexicon, tmp_path)
+    films: list[str] = []
+
+    def render(_params):
+        tracker = RunTracker(capture_system=False)
+        tracker.start_run(source="manual")
+        tracker.complete_run()
+        films.append(tracker.run_id)
+        return tmp_path / "film.mp4"
+
+    # WHY: the render writes a film with FFmpeg; the run it records is what is under test.
+    monkeypatch.setattr("immich_memories.generate._generate_memory_inner", render)
+    render_saved_cut(
+        config=params.config,
+        client=None,
+        run=replace(RUN, run_id=cut_run),
+        attempt_dir=attempt,
+        revision=None,
+        request=CutRenderRequest(llm_title=False),
+    )
+
+    report = report_for_run(open_store(), Config(), films[0])
+
+    section = report.data["free_text"]
+    assert section["translation"]["pool"] == {"pictures": 2, "photos": 2, "videos": 0}
+    assert section["funnel"]["engine_picks"] == len(params.clips)
+    rendered = report.json() + report.markdown()
+    for private in (NAME, PLACE, PRINTED, BORN):
+        assert private.lower() not in rendered.lower()
