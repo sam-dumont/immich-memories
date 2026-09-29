@@ -71,9 +71,9 @@ help:
 	@echo "  clean        Remove build artifacts"
 	@echo "  clean-all    Remove everything (build + cache + venv)"
 
-# =============================================================================
+# ======================================================================
 # Development
-# =============================================================================
+# ======================================================================
 
 install:
 	uv sync --no-dev
@@ -139,9 +139,9 @@ cli:
 preflight:
 	uv run immich-memories preflight -v
 
-# =============================================================================
+# ======================================================================
 # Testing
-# =============================================================================
+# ======================================================================
 
 test:
 	uv run pytest -v
@@ -435,9 +435,9 @@ test-integration:  ## Run ALL integration tests per-suite (requires FFmpeg/Immic
 	[print(f'    {float(t.get(\"time\",0)):>7.1f}s  {t.get(\"classname\").split(\".\")[-1]}::{t.get(\"name\")}') for t in tests]; \
 	print('═══════════════════════════════════════════════════')"
 
-# =============================================================================
+# ======================================================================
 # E2E Tests (Playwright)
-# =============================================================================
+# ======================================================================
 
 playwright-install:  ## Install Playwright browsers for E2E tests
 	uv run playwright install chromium
@@ -484,9 +484,9 @@ test-one:  ## Run one test file or node id: make test-one T=tests/test_foo.py
 test-scoring:
 	uv run pytest tests/test_scoring.py -v
 
-# =============================================================================
+# ======================================================================
 # Code Quality
-# =============================================================================
+# ======================================================================
 
 # Every Python tree the gates cover. The inference service ships as its own
 # image and is its own top-level package, so naming it once here is what keeps
@@ -823,9 +823,9 @@ critique:  ## Run self-critique checks for AI code smells
 pre-commit:
 	uv run pre-commit run --all-files
 
-# =============================================================================
+# ======================================================================
 # Building
-# =============================================================================
+# ======================================================================
 
 # A wheel carries the built client (hatch_build.py refuses one without it), so build it first.
 build: web-client
@@ -836,9 +836,9 @@ build-wheel: web-client
 	uv run python scripts/check_web_brand.py --require-bundle
 	uv build --wheel
 
-# =============================================================================
+# ======================================================================
 # Docker
-# =============================================================================
+# ======================================================================
 
 DOCKER_IMAGE := immich-memories
 DOCKER_TAG := latest
@@ -913,9 +913,9 @@ compose-check:  ## Fail when docker-compose.yml needs a file that a curl of it a
 		echo "docker-compose.yml stands alone, all three profiles, and takes example.env as .env"; \
 	fi
 
-# =============================================================================
+# ======================================================================
 # Cleanup
-# =============================================================================
+# ======================================================================
 
 clean:
 	rm -rf build/
@@ -950,9 +950,9 @@ clean-all: clean clean-all-cache
 	rm -rf uv.lock
 	@echo "All artifacts removed"
 
-# =============================================================================
+# ======================================================================
 # Utilities
-# =============================================================================
+# ======================================================================
 
 # Show project info
 info:
@@ -972,9 +972,9 @@ release:
 	uv run semantic-release version
 	uv run semantic-release publish
 
-# =============================================================================
+# ======================================================================
 # Documentation (Docusaurus)
-# =============================================================================
+# ======================================================================
 
 docs-cli:
 	uv run python scripts/generate_cli_docs.py
@@ -1150,3 +1150,15 @@ demo-hero:  ## Cut the README hero GIF: brief, cut, review, render, and the film
 llm-conformance:  ## Exercise production LLM features on synthetic evidence: CONFIG=provider.yaml
 	@test -n "$(CONFIG)" || { echo 'Set CONFIG to the provider YAML file'; exit 2; }
 	uv run python -m immich_memories.conformance --config "$(CONFIG)"
+
+.PHONY: demucs-locks
+demucs-locks:  ## Refresh the Linux inference audio locks without changing Mac dependencies
+	@constraints=$$(mktemp); trap 'rm -f "$$constraints"' EXIT; \
+	uv export --frozen --no-dev --extra demucs --extra editorial --prune torch --prune torchaudio \
+	  --no-emit-project --no-emit-package immich-memories-music --no-hashes -o "$$constraints" >/dev/null && \
+	uv pip compile docker/demucs-requirements.in --constraint "$$constraints" --python-version 3.11 \
+	  --python-platform linux --torch-backend cpu --generate-hashes --no-annotate --no-header \
+	  -o docker/demucs-cpu-requirements.txt && \
+	uv pip compile docker/demucs-requirements.in --constraint "$$constraints" --python-version 3.12 \
+	  --python-platform linux --torch-backend cu128 --generate-hashes --no-annotate --no-header \
+	  -o docker/demucs-cuda-requirements.txt

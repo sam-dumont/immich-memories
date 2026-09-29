@@ -386,13 +386,14 @@ def test_a_full_pass_describes_each_video_once_and_a_warm_pass_asks_nothing(tmp_
     assert warm.complete and calls == []
 
 
-def test_an_unfinished_motion_line_blocks_the_cut_like_a_caption(tmp_path):
+def test_an_unfinished_motion_line_is_reported_without_blocking_the_cut(tmp_path):
     from immich_memories.analysis.editorial_preparation_motion import MOTION_PRODUCER
 
     result = prepare(tmp_path, banking_motion([], fail=True))
 
     assert result.missing_by_producer == {f"motion:{MOTION_PRODUCER}": ("vv1",)}
     assert result.failures["motion:vv1"] == "OSError: reset"
+    assert result.complete
 
 
 @pytest.mark.parametrize("tier", ["no_captions", "metadata_only"])

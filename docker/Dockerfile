@@ -63,6 +63,8 @@ RUN grep -E '^[A-Za-z0-9_.[-]+==' /constraints.txt > /constraints.pins && \
 # retires the failure where a CPU-index torch met a PyPI torchvision, the C++
 # operators never registered, and the detector died on import with `operator
 # torchvision::nms does not exist` (#805, #806).
+# TorchAudio comes from that same CPU index: its PyPI wheel requires CUDA
+# shared libraries even when Torch itself is CPU-only (#1627).
 # The wheels are built into their own directory, not /wheels, so a torch-free
 # INSTALL_EXTRAS never installs them, and uv.lock is untouched so Apple
 # development resolves exactly as before. The case list is what release.yml
@@ -73,7 +75,7 @@ RUN mkdir -p /torch-cpu && \
         amd64|arm64) \
             pip wheel --no-cache-dir --no-deps --wheel-dir=/torch-cpu \
                 --index-url https://download.pytorch.org/whl/cpu \
-                --constraint /constraints.txt torch ;; \
+                --constraint /constraints.txt torch torchaudio ;; \
     esac
 
 # The dependency wheels for INSTALL_EXTRAS, fetched from the lock alone so this
@@ -158,6 +160,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # arm64 with INSTALL_EXTRAS=all: 10.5 GB -> 7.08 GB, one fewer layer.
 RUN --mount=type=bind,from=builder,source=/wheels,target=/wheels \
     pip install --no-cache-dir /wheels/*.whl
+
+# Import the real model loader: find_spec alone misses broken native libraries.
+RUN python -c "import importlib.util; importlib.util.find_spec('demucs') and __import__('demucs.pretrained')"
 
 # The Noto faces for every script the wheel does not carry (Arabic, Hebrew, the
 # Indic scripts, Thai, CJK and more): 43 MB, 39.5 MB of it the two CJK

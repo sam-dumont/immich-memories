@@ -22,7 +22,9 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel, Field
 
+from immich_memories.audio.generators.base import StemSeparator
 from immich_memories.triage.encoder import provider_chain
+from immich_memories_inference.audio import register_audio
 from immich_memories_inference.producers import (
     DOC_DOCLING,
     HEADS,
@@ -100,7 +102,10 @@ def would_use_provider(choice: str, available: tuple[str, ...]) -> str | None:
 
 
 def create_app(
-    settings: InferenceSettings | None = None, *, runtime: ProducerRuntime | None = None
+    settings: InferenceSettings | None = None,
+    *,
+    runtime: ProducerRuntime | None = None,
+    audio_separator: StemSeparator | None = None,
 ) -> FastAPI:
     """The service, on the settings in the environment unless they are supplied."""
     settings = settings or InferenceSettings()
@@ -112,6 +117,7 @@ def create_app(
     # one line worth reading and 3999 worth nothing.
     app.state.warned = set()
     _routes(app, settings, runtime)
+    register_audio(app, settings.cache_dir, audio_separator)
     return app
 
 

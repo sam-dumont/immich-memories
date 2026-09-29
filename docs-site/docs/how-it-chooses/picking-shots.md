@@ -189,4 +189,5 @@ the moments of each story from a shortlist of their captions, and reads each vid
 sentence the caption server wrote at ingest from three keyframes. A Live Photo's sentence reaches it
 only once its residual measured at least 1.5, and a video whose frames measured under 1.5 has its
 sentence withheld unless you starred it. Standing, spacing and the look-alike check are the same
-facts as above.
+facts as above. Missing motion sentences use plain clip facts and produce a visible warning;
+the cut does not contact the motion-description server.

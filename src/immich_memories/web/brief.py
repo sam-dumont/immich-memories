@@ -26,6 +26,7 @@ _VALUED = (
     "holiday",
     "birthday",
     "people_expression",
+    "group",
     "person_match",
     "from_album",
     "day",
@@ -56,7 +57,11 @@ class CutBrief(BaseModel):
     birthday: str | None = None
     person: list[str] = []
     people_expression: str | None = None
+    group: str | None = None
     person_match: Literal["and", "or"] | None = None
+    # Immich accounts the film reads: primary, or names under immich.accounts. Empty leaves
+    # --accounts out, so the CLI's own default (the primary account alone) applies.
+    accounts: list[str] = []
     from_album: str | None = None
     day: date | None = None
     trip_index: int | None = None
@@ -83,6 +88,8 @@ class CutBrief(BaseModel):
                 flags.append(f"--{name.replace('_', '-')}={value}")
         for name, flag in _REPEATED:
             flags.extend(f"{flag}={value}" for value in getattr(self, name))
+        if self.accounts:
+            flags.append(f"--accounts={','.join(self.accounts)}")
         if self.all_trips:
             flags.append("--all-trips")
         if self.accept_any_provenance:
