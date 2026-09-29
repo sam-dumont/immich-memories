@@ -1642,3 +1642,7 @@ msgstr "已交付到 Immich。为节省磁盘空间，本地文件已删除。"
 
 msgid "View in Immich"
 msgstr "在 Immich 中查看"
+
+#: web/routes/login/+page.svelte
+msgid "Sign-in expired. Try again."
+msgstr "登录已过期。请重试。"

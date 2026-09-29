@@ -1681,3 +1681,7 @@ msgstr "Consegnato a Immich. Il file locale è stato rimosso per risparmiare spa
 
 msgid "View in Immich"
 msgstr "Visualizza in Immich"
+
+#: web/routes/login/+page.svelte
+msgid "Sign-in expired. Try again."
+msgstr "L’accesso è scaduto. Riprova."

@@ -1681,3 +1681,7 @@ msgstr "Levererad till Immich. Den lokala filen togs bort för att spara diskutr
 
 msgid "View in Immich"
 msgstr "Visa i Immich"
+
+#: web/routes/login/+page.svelte
+msgid "Sign-in expired. Try again."
+msgstr "Inloggningen har gått ut. Försök igen."
