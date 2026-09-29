@@ -88,3 +88,63 @@ def test_the_trip_intro_lands_and_holds_on_its_named_stops(tmp_path) -> None:
     assert 6.0 <= seconds <= 8.0
     assert len(pipe.frames) == round(seconds * _FPS)
     assert len(set(pipe.frames[-20:])) == 1
+
+
+def _held_frame(tmp_path: Path, w: int, h: int) -> Image.Image:
+    from immich_memories.processing.map_move_timing import MapMoveTiming
+    from immich_memories.titles.map_animation import create_map_fly_video
+
+    # Two stops north and south of each other, as a lakeside town and the ridge above it.
+    stops = [(45.90, 6.13), (45.78, 6.08)]
+    seconds = MapMoveTiming().intro_seconds((50.85, 4.35), stops)
+    pipe = _Pipe()
+    with (
+        # WHY: replaces the satellite tile fetch, which goes to a third-party tile server
+        patch("immich_memories.titles.map_animation._render_satellite", _camera_colour),
+        # WHY: replaces the FFmpeg encode; the frames it would have written are what we check
+        patch("immich_memories.titles.map_animation.subprocess.Popen", return_value=pipe),
+        # WHY: the stderr reader thread needs a real pipe
+        patch("immich_memories.titles.map_animation.StderrDrain"),
+    ):
+        create_map_fly_video(
+            (50.85, 4.35),
+            stops,
+            "A WEEK IN FRANCE",
+            tmp_path / "intro.mp4",
+            w,
+            h,
+            duration=seconds,
+            fps=5.0,
+            destination_names=["Lakeside", "Ridge"],
+        )
+    return Image.frombytes("RGB", (w, h), pipe.frames[-1])
+
+
+def _pin_rows(frame: Image.Image) -> list[int]:
+    """Rows holding a pin's red dot, which nothing else on a fake-tile frame is."""
+    return sorted(
+        {
+            y
+            for y in range(frame.height)
+            for x in range(frame.width)
+            if (p := frame.getpixel((x, y)))[0] > 150 and p[0] - p[1] > 60 and p[0] - p[2] > 70
+        }
+    )
+
+
+def test_the_held_stops_sit_clear_of_the_trip_title_in_landscape(tmp_path) -> None:
+    rows = _pin_rows(_held_frame(tmp_path, 320, 180))
+
+    assert rows, "no pin drawn"
+    # The title's band starts about 63 % down a landscape frame; each name sits above its pin.
+    assert rows[-1] < 0.6 * 180
+    assert rows[0] >= 27
+
+
+def test_the_held_stops_sit_clear_of_the_trip_title_in_portrait(tmp_path) -> None:
+    rows = _pin_rows(_held_frame(tmp_path, 180, 320))
+
+    assert rows, "no pin drawn"
+    # A portrait title sits in the middle, its band from about 37 % down.
+    assert rows[-1] < 0.37 * 320
+    assert rows[0] >= 27

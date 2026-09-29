@@ -283,18 +283,41 @@ def _destination_overview(
     destinations: list[tuple[float, float]],
     width: int,
     height: int,
+    free: tuple[float, float] = (0.0, 1.0),
 ) -> tuple[float, float, float]:
-    """Compute (wx, wy, w) that shows all destinations with 2x padding."""
+    """Compute the (wx, wy, w) view that shows every destination inside `free`.
+
+    `free` is the band of the frame's height, as shares from the top, where the stops may sit:
+    the part the trip title leaves open. The view is widened until the stops fit that band and
+    shifted so they sit in its middle.
+    """
     worlds = list(starmap(_to_world, destinations))
     wxs, wys = [v[0] for v in worlds], [v[1] for v in worlds]
-    cx, cy = sum(wxs) / len(wxs), sum(wys) / len(wys)
+    cx = (max(wxs) + min(wxs)) / 2
+    cy = (max(wys) + min(wys)) / 2
     span_x = (max(wxs) - min(wxs)) if len(wxs) > 1 else 0.0
     span_y = (max(wys) - min(wys)) if len(wys) > 1 else 0.0
+    top, bottom = free
     # 1.5x padding around pins (not 2x — keeps destinations more visible)
-    w_overview = max(span_x * 1.5, span_y * (width / height) * 1.5)
+    w_overview = max(span_x * 1.5, span_y * (width / height) * 1.5 / (bottom - top))
     # Clamp: min zoom _CITY_ZOOM (close), max zoom _MIN_ZOOM_FLOOR (world)
     w_overview = max(width / (2.0**_CITY_ZOOM), min(width / (2.0**_MIN_ZOOM_FLOOR), w_overview))
-    return cx, cy, w_overview
+    # Screen y grows with world y, so moving the camera south lifts the stops up the frame.
+    visible_h = w_overview * height / width
+    return cx, cy + (0.5 - (top + bottom) / 2) * visible_h, w_overview
+
+
+def _free_band(title_overlay: Image.Image | None, height: int) -> tuple[float, float]:
+    """The share of the frame's height the stops may use: above the title's band, with room
+    over each pin for its name. Without a title, the whole frame."""
+    if title_overlay is None:
+        return 0.0, 1.0
+    alpha_rows = title_overlay.getchannel("A").getbbox()
+    if alpha_rows is None:
+        return 0.0, 1.0
+    band_top = alpha_rows[1] / height
+    label_room = 0.12
+    return label_room, max(label_room + 0.1, band_top - 0.04)
 
 
 def create_map_fly_video(
@@ -328,17 +351,21 @@ def create_map_fly_video(
         if i < len(names) and names[i]
     ]
 
+    hdr = bool(encoding_plan and encoding_plan.hdr)
+    title_overlay = _render_title_overlay(title_text, width, height, hdr)
     dep_wx, dep_wy = _to_world(*departure)
     w_city = width / (2.0**_CITY_ZOOM)
-    dest_cx, dest_cy, w_overview = _destination_overview(destinations, width, height)
+    # The hold is where the title is read, so the stops land in the part of the frame it leaves.
+    dest_cx, dest_cy, w_overview = _destination_overview(
+        destinations, width, height, _free_band(title_overlay, height)
+    )
     interp = _pick_interpolator((dep_wx, dep_wy, w_city), (dest_cx, dest_cy, w_overview), width)
 
     dz = math.log2(width / w_overview) if w_overview > 0 else float(_CITY_ZOOM)
-    hdr = bool(encoding_plan and encoding_plan.hdr)
     cfg = _FlyConfig(
         interps=[interp],
         pins=pins,
-        title_overlay=_render_title_overlay(title_text, width, height, hdr),
+        title_overlay=title_overlay,
         width=width,
         height=height,
         dest_zoom=max(3.0, min(14.0, dz)),
