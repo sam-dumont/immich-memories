@@ -10,8 +10,7 @@ from __future__ import annotations
 
 import functools
 import sys
-from collections.abc import Callable, Iterator, Mapping, Sequence
-from contextlib import contextmanager
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Literal
@@ -19,6 +18,7 @@ from typing import TYPE_CHECKING, Literal
 import click
 
 from immich_memories.analysis.editorial_source import resolve_named_expression
+from immich_memories.analysis.household_source import HouseholdWindows
 from immich_memories.analysis.person_presence import people_condition as flat_condition
 from immich_memories.analysis.person_resolution import (
     ResolvedPeople,
@@ -27,6 +27,8 @@ from immich_memories.analysis.person_resolution import (
     resolve_people,
     store_people,
 )
+from immich_memories.api import immich as immich_api
+from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.accounts import AccountUnavailable, check_account_names
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.cli._helpers import print_error, print_success, print_warning
@@ -66,18 +68,26 @@ def accounts_record(accounts: Sequence[str]) -> dict[str, list[str]]:
     return {"accounts": list(accounts)} if accounts else {}
 
 
-@contextmanager
-def run_windows(
-    immich: ImmichConfig, accounts: Sequence[str], primary: SyncImmichClient
-) -> Iterator[WindowSource]:
+def run_client(immich: ImmichConfig, accounts: Sequence[str]) -> SyncImmichClient:
+    """The run's Immich client: the primary's, or one that reads each picture through its owner.
+
+    A one-account run keeps the plain primary client it always had.
+    """
+    if accounts:
+        return AccessBoundClient(immich)
+    # Looked up on the module at call time, where a test replaces the Immich boundary.
+    return immich_api.SyncImmichClient(
+        base_url=immich.url, api_key=immich.api_key, api_version=immich.api_version
+    )
+
+
+def run_windows(client: SyncImmichClient, accounts: Sequence[str]) -> WindowSource:
     """The window reads discovery uses: the primary client, or every chosen account."""
     if not accounts:
-        yield primary
-        return
-    from immich_memories.analysis.household_source import household_windows
-
-    with household_windows(immich, accounts) as household:
-        yield household
+        return client
+    if not isinstance(client, AccessBoundClient):
+        raise TypeError("a run that names accounts reads through an AccessBoundClient")
+    return HouseholdWindows(client, accounts)
 
 
 @dataclass(frozen=True)

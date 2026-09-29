@@ -57,6 +57,7 @@ from immich_memories.cli.run_people import (
     refuse_household_scope,
     resolve_run_people,
     run_accounts,
+    run_client,
     run_windows,
 )
 from immich_memories.filename_builder import build_memory_output_path, normalize_output_path
@@ -449,7 +450,7 @@ def register_generate_commands(main: click.Group) -> None:
             console.print(table)
             console.print()
 
-        from immich_memories.api.immich import ImmichAPIError, SyncImmichClient
+        from immich_memories.api.immich import ImmichAPIError
         from immich_memories.generate import GenerationError
 
         try:
@@ -464,11 +465,7 @@ def register_generate_commands(main: click.Group) -> None:
                 # Connect to Immich
                 task = progress.add_task("Connecting to Immich...", total=None)
 
-                with SyncImmichClient(
-                    base_url=config.immich.url,
-                    api_key=config.immich.api_key,
-                    api_version=config.immich.api_version,
-                ) as client:
+                with run_client(config.immich, household) as client:
                     progress.update(task, completed=True)
                     # Album flow: the album is the pool, so branch before discovery
                     if from_album:
@@ -629,18 +626,17 @@ def register_generate_commands(main: click.Group) -> None:
                     # A birthday memory's flashback windows are single days years
                     # apart, so most of them are empty and #661's per-window
                     # warning would bury the one that matters — the rolling year.
-                    with run_windows(config.immich, household, client) as windows:
-                        assets, fetched_photos = fetch_media(
-                            history_from=BIRTHDAY_HISTORY_FROM if birthday else None,
-                            client=windows,
-                            progress=progress,
-                            date_ranges=date_ranges,
-                            person_ids=run_people.person_ids,
-                            person_match=person_match,
-                            person_expression=run_people.condition,
-                            include_photos=use_photos,
-                            face_accounts=run_people.face_accounts,
-                        )
+                    assets, fetched_photos = fetch_media(
+                        history_from=BIRTHDAY_HISTORY_FROM if birthday else None,
+                        client=run_windows(client, household),
+                        progress=progress,
+                        date_ranges=date_ranges,
+                        person_ids=run_people.person_ids,
+                        person_match=person_match,
+                        person_expression=run_people.condition,
+                        include_photos=use_photos,
+                        face_accounts=run_people.face_accounts,
+                    )
                     if fetched_photos:
                         print_info(f"Found {len(fetched_photos)} photos")
 
