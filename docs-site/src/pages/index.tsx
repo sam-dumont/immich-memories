@@ -22,8 +22,8 @@ function HeroSection() {
               taken, and renders the film with titles, maps and music.
             </p>
             <p className={styles.heroSubtitle}>
-              <strong>One container next to Immich is enough.</strong> A GPU or a model
-              makes the cut better when you have one; nothing changes before that.
+              <strong>One container next to Immich is enough.</strong> A GPU adds
+              captions and speed when you have one, and a model on top of it polishes the cut.
             </p>
             <div className={styles.heroCtas}>
               <Link className={styles.ctaPrimary} to="/docs/get-started/quick-start">
@@ -217,7 +217,7 @@ const rungs: Rung[] = [
   {
     label: 'Default',
     title: 'A plain NAS',
-    body: 'Dates, places, favourites, the people Immich recognised, and a few small classifiers on the CPU. No API key, no account, nothing else to host. Tell it where home is and who is who, and that already makes a film worth sending.',
+    body: 'Dates, places, favourites, the people Immich recognised, and a few small classifiers on the CPU. No key beyond the Immich one, no account, nothing else to host. Tell it where home is and who is who, and that already makes a film worth sending.',
     link: '/docs/get-started/who-is-who',
     linkText: 'Teach it your family',
   },
@@ -231,7 +231,7 @@ const rungs: Rung[] = [
   {
     label: 'Optional',
     title: 'Add a model',
-    body: 'A text model reads the draft and swaps out the shots that add nothing, writes the title and picks the music. Local or hosted, your choice, and the rules draft still ships if it fails.',
+    body: 'With a GPU there too, a text model reads the draft and swaps out the shots that add nothing, writes the title and picks the music. Local or hosted, your choice, and the rules draft still ships if it fails.',
     link: '/docs/better/overview',
     linkText: 'Make it better',
   },
@@ -245,7 +245,7 @@ function LadderSection() {
           Grows with you
         </Heading>
         <p className={styles.ladderIntro}>
-          Start with the container. Every step up is optional, and each one is a setting, not a
+          Start with the container. Every step up is optional, and none of them means a
           reinstall.
         </p>
         <div className={styles.ladderGrid}>
@@ -262,7 +262,7 @@ function LadderSection() {
           <p>
             <strong>Then, when you want it:</strong>{' '}
             <Link to="/docs/make/automate">one film a day on its own</Link>, uploaded back into
-            Immich; <Link to="/docs/make/cli/generate">the CLI</Link> for scripts and cron;{' '}
+            Immich if you ask; <Link to="/docs/make/cli/generate">the CLI</Link> for scripts and cron;{' '}
             <Link to="/docs/how-it-chooses/overview">every selection rule written down</Link> and{' '}
             <Link to="/docs/how-it-chooses/overrule-it">every lever to overrule it</Link>;{' '}
             <Link to="/docs/run/kubernetes">Kubernetes</Link>,{' '}
@@ -306,7 +306,7 @@ function ValuesSection() {
               </svg>
             </div>
             <strong>Every rule written down</strong>
-            <p>How it picks is documented with diagrams, and <code>runs why</code> says which step kept a picture or left it out. The web UI shows the CLI command behind every button.</p>
+            <p>How it picks is documented with diagrams, and <code>runs why</code> says which step kept a picture or left it out. The web UI shows the CLI command behind every job it starts.</p>
           </div>
           <div className={styles.value}>
             <div className={styles.valueIcon}>
@@ -315,7 +315,7 @@ function ValuesSection() {
               </svg>
             </div>
             <strong>One film a day, if you want it</strong>
-            <p>Once a day, <code>immich-memories auto run</code> picks the one memory worth making (a trip that just ended, last month, a birthday), with variety rules so it does not repeat itself. Docker runs it daily on a built-in timer; bare metal installs a system job.</p>
+            <p>Once a day, <code>immich-memories auto run</code> picks the one memory worth making (a trip that just ended, last month, a birthday), with variety rules so it does not repeat itself. In Docker a built-in timer runs it daily once you switch it on; bare metal installs a system job.</p>
           </div>
         </div>
       </div>
@@ -331,7 +331,7 @@ function CtaSection() {
           Cut your first month tonight
         </Heading>
         <p className={styles.ctaDescription}>
-          One container on the box that already runs Immich, and about ten minutes.
+          One container on the box that already runs Immich.
         </p>
         <div className={styles.heroCtas}>
           <Link className={styles.ctaPrimary} to="/docs/get-started/quick-start">

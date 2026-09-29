@@ -145,7 +145,7 @@ immich-memories auto history --limit 5  # the last five films it made on its own
 ## Get told when it runs
 
 Notifications go through [Apprise](https://github.com/caronc/apprise), so one URL per target covers ntfy,
-Discord, Telegram, email and about a hundred others. They are off by default:
+Discord, Telegram, email and more than a hundred others. They are off by default:
 
 ```yaml
 advanced:

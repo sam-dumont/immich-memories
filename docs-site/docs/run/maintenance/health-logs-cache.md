@@ -39,7 +39,7 @@ In Docker: `docker compose exec immich-memories immich-memories preflight`.
 It checks the Immich connection and API key (and each extra account), the model files and their digests,
 the title renderer, hardware encoding, the output folder, the home base, config paths that don't exist on
 this machine, notification delivery, the memory the box has, and every server you configured: caption
-server, text model, render worker, generated music. It also prints one row per outside host you switched on
+server, text model, render worker, and ACE-Step when it is set to run on this machine. It also prints one row per outside host you switched on
 ([Privacy](../privacy.md)). A warning names what is missing and the cut still runs
 without it, for example `Music (ACE-Step)` falling back to a bundled track. Any error exits 1, so a
 script or a setup step can stop on it. Run it after an install, an upgrade or a config change.
@@ -55,7 +55,7 @@ immich-memories models fetch --no-detectors
 
 About 140 MB of pinned files, each checked against a SHA-256: the DINOv2 encoder (88 MB) behind the eight
 context heads, the sensitive-content detector, the document classifier and the WordNet dictionary. They
-land under `~/.immich-memories/models/` (in Docker: the config volume, so a `docker compose pull` keeps
+land under `~/.immich-memories/models/`, the document classifier in the Hugging Face cache (in Docker both sit on the config volume, so a `docker compose pull` keeps
 them). A file already there with the right digest is not downloaded again, so running it twice costs
 nothing. On the `gpu` and `full` tiers it fetches the Laya audience checkpoint too
 ([tiers](../requirements.md#which-tier-you-get)). `--no-detectors` skips the detector files, for an

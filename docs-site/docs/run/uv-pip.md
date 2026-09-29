@@ -117,8 +117,8 @@ parser trips on an unusual file. `brew install exiftool`, or `apt install libima
 ## Daily automation
 
 `immich-memories ui` is usually not running all day on a laptop, so the system scheduler runs the
-daily job. One command installs it: a launchd job on macOS, a systemd user timer on Linux, or a
-crontab line to paste anywhere else.
+daily job. One command writes it: a launchd job on macOS, a systemd user timer on Linux, or a
+crontab line anywhere else. It then prints the `Activate:` line to run once, which switches it on.
 
 ```bash
 immich-memories auto install --hour 9     # --uninstall removes it

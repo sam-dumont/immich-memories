@@ -105,7 +105,8 @@ im generate --memory-type monthly_highlights --year 2025 --month 6
 
 ## Films into Immich
 
-Every film lands in `./output`. To have each one uploaded to Immich as well, into an album, add
+Every film lands in `./output`. To have each `generate` and daily film uploaded to Immich as well,
+into an album (a render from the web UI has its own upload box), add
 these to the compose file's `environment:` block (a line in `.env` alone does not reach the
 container) and run `docker compose up -d`:
 
@@ -230,7 +231,7 @@ upload, or make one eligible memory, then notify. A container that was down catc
 [Automate it](../make/automate.md).
 
 The daily film stays in `./output` unless upload is on: set `IMMICH_MEMORIES_UPLOAD__ENABLED` as in
-[Films into Immich](#films-into-immich) (every run), or
+[Films into Immich](#films-into-immich) (every `generate`), or
 `IMMICH_MEMORIES_AUTOMATION__UPLOAD_TO_IMMICH: "true"` (the daily runs only). To fire the same
 decision from outside instead (Home Assistant, an Immich workflow, a cron on another box):
 [Trigger it over HTTP](../make/automate.md#trigger-it-over-http).
@@ -244,8 +245,11 @@ configuration and Immich are usable, `503` otherwise, and it reports the daily a
 
 ```bash
 docker inspect --format='{{.State.Health.Status}}' immich-memories
-docker compose logs -f immich-memories      # the UI, every cut and every daily run
+docker compose logs -f immich-memories      # the UI and the daily timer
 ```
+
+A cut's own output is kept per job under `cache/web-jobs/`, a daily run's under
+`cache/automation-output/`, both on the config volume.
 
 Log level, JSON lines and a log file: [Health, logs and caches](./maintenance/health-logs-cache.md#logging).
 

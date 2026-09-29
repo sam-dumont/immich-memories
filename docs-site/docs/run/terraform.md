@@ -67,11 +67,10 @@ terraform init
 terraform plan
 terraform apply
 
-$(terraform output -raw port_forward_command)   # basic example; then http://localhost:8080
+$(terraform output -raw port_forward_command)   # http://localhost:8080
 ```
 
-The production example has no `port_forward_command` output: it serves the UI through its
-Ingress.
+The production example also serves the UI through its Ingress.
 
 ## After the apply
 

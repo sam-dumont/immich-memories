@@ -197,7 +197,8 @@ kubectl get pods -n immich-memories             # the immich-memories-<hash> pod
 kubectl cp immich-memories/<pod>:/app/output ./output
 ```
 
-or have each one uploaded to Immich: `IMMICH_MEMORIES_UPLOAD__ENABLED=true` (and
+or have each `generate` and daily film uploaded to Immich (a web UI render has its own upload box):
+`IMMICH_MEMORIES_UPLOAD__ENABLED=true` (and
 `IMMICH_MEMORIES_UPLOAD__ALBUM_NAME`) on the Deployment, with a key that may upload
 ([the permissions](./docker.md#the-api-key), [Upload back to Immich](./config-file.md#upload-back-to-immich)).
 
@@ -302,7 +303,7 @@ kubectl apply -k overlays/postgres           # instead of base, not after it
 The overlay builds on `base/` and only adds the database Secret to the Deployment; it does not run
 PostgreSQL for you. It and `overlays/gpu` each build on `base/`, so applying one after the other
 drops the first one's patch. For both, make one overlay of your own: copy the two patch files and
-`database-secret.yaml` into it, next to a kustomization that lists `../../base` once and both
+`database-secret.yaml` into it, next to a kustomization whose resources are `../../base` and `database-secret.yaml`, with both
 patches. The one-off `generate` Job in `base/job.yaml` does not get the database Secret either;
 add the second `secretRef` there if you run it. The four modes, and the SQL for a dedicated schema
 in Immich's own database, are on [Database and the store](./database.md).
@@ -337,7 +338,8 @@ is not a probe.
 kubectl logs -n immich-memories deploy/immich-memories -f
 ```
 
-The UI, every cut and every daily run log there. `IMMICH_MEMORIES_LOG_LEVEL` and
+The UI and the daily timer log there; a cut's own output is kept per job under `cache/web-jobs/`
+on the cache PVC, a daily run's under `cache/automation-output/`. `IMMICH_MEMORIES_LOG_LEVEL` and
 `IMMICH_MEMORIES_LOG_FORMAT=json` on the Deployment: [Logging](./maintenance/health-logs-cache.md#logging).
 
 ## Upgrading and rollback
