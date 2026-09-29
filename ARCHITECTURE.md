@@ -841,6 +841,7 @@ src/immich_memories/
 │   ├── companion.py            # The people registry's writers (scan, confirm, add, relate), each one
 │   │                           # store transaction under the registry row lock; confirmed beats inferred
 │   ├── registry_store.py       # The registry document <-> the people tables (the only code that knows the rows)
+│   ├── account_ids.py          # A person's ids: one flat list (primary account) or one list per account
 │   ├── transfer.py             # people export/import (validated, ids kept) and import_legacy(people.yaml)
 │   ├── evidence_graph.py       # ~/.immich-memories/people-graph.json: scan measurements, a derived file
 │   ├── expression_window.py    # The earliest day a people condition can hold, from birth dates

@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from immich_memories.db import Store
+from immich_memories.people.account_ids import entry_ids
 from immich_memories.people.companion import (
     add_confirmed_person,
     load_document,
@@ -221,7 +222,7 @@ def _view(entry: dict[str, Any], names: dict[str, str]) -> PersonView:
     confirmed = _mapping(entry.get(CONFIRMED))
     evidence = _mapping(inferred.get("evidence"))
     return PersonView(
-        person_id=str(entry["ids"][0]),
+        person_id=entry_ids(entry)[0],
         name=str(entry.get("name") or "?"),
         birth_date=_text(entry.get("birth_date")),
         tier=str(inferred.get("tier") or ""),
@@ -313,9 +314,9 @@ def _evidence_line(evidence: dict[str, Any]) -> str:
 
 def _names_by_id(entries: list[dict[str, Any]]) -> dict[str, str]:
     return {
-        str(person_id): str(entry.get("name") or "?")
+        person_id: str(entry.get("name") or "?")
         for entry in entries
-        for person_id in entry["ids"]
+        for person_id in entry_ids(entry)
     }
 
 

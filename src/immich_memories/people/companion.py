@@ -20,7 +20,9 @@ from collections.abc import Callable
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
+from immich_memories.config_models import ACCOUNT_NAME_RULE, PRIMARY_ACCOUNT, is_account_name
 from immich_memories.db import Store, open_store
+from immich_memories.people.account_ids import entry_ids, ids_by_account, ids_value, primary_ids
 from immich_memories.people.registry_store import lock_registry, read_document, write_document
 from immich_memories.people.relationships import owner_role, reciprocal_kind
 
@@ -45,25 +47,28 @@ def load_document(store: Store | None = None) -> dict[str, Any]:
 def people_entries(document: dict[str, Any]) -> list[dict[str, Any]]:
     """The person entries in a document, skipping anything malformed.
 
-    An entry has to carry a list of ids to be an entry at all. The store only holds valid
+    An entry has to carry its ids (a list, or a list per account) to be an entry at all.
+    The store only holds valid
     entries, but a document handed over from elsewhere (an import) may not.
     """
     people = document.get("people")
     if not isinstance(people, list):
         return []
     return [
-        entry for entry in people if isinstance(entry, dict) and isinstance(entry.get("ids"), list)
+        entry
+        for entry in people
+        if isinstance(entry, dict) and isinstance(entry.get("ids"), list | dict)
     ]
 
 
 def retained_immich_ids(document: dict[str, Any]) -> set[str]:
-    """Face ids a user deliberately kept, even if they sit below the scan floor."""
+    """Primary-account face ids a user deliberately kept, even below the scan floor."""
     retained: set[str] = set()
     for entry in people_entries(document):
         if not (_has_content(entry.get("confirmed")) or entry.get("origin") == "immich"):
             continue
         retained.update(
-            str(person_id) for person_id in entry["ids"] if not str(person_id).startswith("manual:")
+            person_id for person_id in primary_ids(entry) if not person_id.startswith("manual:")
         )
     return retained
 
@@ -97,7 +102,7 @@ def save_graph(document: dict[str, Any], graph: PeopleGraph) -> None:
     kept = _confirmed_by_id(document)
     bound = _bound_aliases(document, {node.evidence.person_id for node in graph.people})
     # A node that is somebody's bound alias is that person already, not a second entry.
-    aliased = {alias for entry in bound.values() for alias in entry["ids"][1:]}
+    aliased = {alias for entry in bound.values() for alias in entry_ids(entry)[1:]}
     entries = [
         _entry_for(node, kept, bound.get(node.evidence.person_id))
         for node in graph.people
@@ -118,7 +123,7 @@ def save_graph(document: dict[str, Any], graph: PeopleGraph) -> None:
 @_one_writer
 def save_confirmed(document: dict[str, Any], person_id: str, confirmed: dict[str, Any]) -> None:
     """Replace one person's confirmed block, leaving everybody else alone."""
-    entries = [entry for entry in people_entries(document) if person_id in entry["ids"]]
+    entries = [entry for entry in people_entries(document) if person_id in entry_ids(entry)]
     if not entries:
         logger.warning("Nothing in the people registry to confirm for that person")
         return
@@ -147,10 +152,10 @@ def add_confirmed_person(
         msg = f"More than one person is named {name!r}; use a person id"
         raise ValueError(msg)
     if matches:
-        return str(matches[0]["ids"][0])
-    holder = next((entry for entry in entries if person_id in entry["ids"]), None)
+        return entry_ids(matches[0])[0]
+    holder = next((entry for entry in entries if person_id in entry_ids(entry)), None)
     if holder is not None:
-        return str(holder["ids"][0])
+        return entry_ids(holder)[0]
 
     local_id = person_id or f"manual:{uuid.uuid4()}"
     document.setdefault("people", []).append(
@@ -210,29 +215,35 @@ def bind_alias(
 ) -> None:
     """Confirm that `alias_id`, as `account` reads it, is the person `person_id` names.
 
-    `account` None is the primary account. The binding only adds an id: the person's name,
+    `account` None or `primary` is the primary account; any other name has to be one the
+    config could hold, configured yet or not. The binding only adds an id: the person's name,
     birth date and confirmations stay exactly as they were, whatever the other account
     calls them. An id that already belongs to somebody else is an error, never a merge;
     binding the same id to the same person again changes nothing.
     """
-    person = _entry_with_id(document, person_id)
-    holder = next((entry for entry in people_entries(document) if alias_id in entry["ids"]), None)
-    if holder is not None and holder is not person:
-        msg = f"{alias_id!r} already belongs to {holder.get('name') or holder['ids'][0]!r}"
+    name = account or PRIMARY_ACCOUNT
+    if name != PRIMARY_ACCOUNT and not is_account_name(name):
+        msg = f"account {name!r} must be {PRIMARY_ACCOUNT!r} or {ACCOUNT_NAME_RULE}"
         raise ValueError(msg)
-    accounts = person.get("accounts") or {}
+    person = _entry_with_id(document, person_id)
+    holder = next(
+        (entry for entry in people_entries(document) if alias_id in entry_ids(entry)), None
+    )
+    if holder is not None and holder is not person:
+        msg = f"{alias_id!r} already belongs to {holder.get('name') or entry_ids(holder)[0]!r}"
+        raise ValueError(msg)
+    groups = ids_by_account(person)
     if holder is person:
-        if accounts.get(alias_id) != account:
+        if alias_id not in groups.get(name, []):
             msg = f"{alias_id!r} is already bound to this person for another account"
             raise ValueError(msg)
         return
-    person["ids"].append(alias_id)
-    if account is not None:
-        person["accounts"] = accounts | {alias_id: account}
+    groups.setdefault(name, []).append(alias_id)
+    person["ids"] = ids_value(groups)
 
 
 def _entry_with_id(document: dict[str, Any], person_id: str) -> dict[str, Any]:
-    matches = [entry for entry in people_entries(document) if person_id in entry["ids"]]
+    matches = [entry for entry in people_entries(document) if person_id in entry_ids(entry)]
     if len(matches) != 1:
         msg = f"Expected one people entry for {person_id!r}, found {len(matches)}"
         raise ValueError(msg)
@@ -324,9 +335,9 @@ def _owner_block(graph: PeopleGraph) -> dict[str, Any] | None:
 def _bound_aliases(document: dict[str, Any], scanned: set[str]) -> dict[str, dict[str, Any]]:
     """The entries the scan sees under their canonical id that answer to more than one id."""
     return {
-        entry["ids"][0]: entry
+        ids[0]: entry
         for entry in people_entries(document)
-        if len(entry["ids"]) > 1 and entry["ids"][0] in scanned
+        if len(ids := entry_ids(entry)) > 1 and ids[0] in scanned
     }
 
 
@@ -334,11 +345,8 @@ def _entry_for(
     node: PersonNode, kept: dict[str, dict[str, Any]], bound: dict[str, Any] | None = None
 ) -> dict[str, Any]:
     person = node.evidence
-    ids = list(bound["ids"]) if bound else [person.person_id]
-    accounts = {"accounts": dict(bound["accounts"])} if bound and bound.get("accounts") else {}
     return {
-        "ids": ids,
-        **accounts,
+        "ids": copy.deepcopy(bound["ids"]) if bound else [person.person_id],
         "name": person.name,
         "birth_date": _iso(person.birth_date),
         "inferred": {
@@ -399,7 +407,7 @@ def _confirmed_by_id(document: dict[str, Any]) -> dict[str, dict[str, Any]]:
         confirmed = entry.get("confirmed")
         if not isinstance(confirmed, dict):
             continue
-        for person_id in entry["ids"]:
+        for person_id in entry_ids(entry):
             kept[person_id] = confirmed
     return kept
 
@@ -416,7 +424,7 @@ def _annotated_strangers(document: dict[str, Any], graph: PeopleGraph) -> list[d
     return [
         entry
         for entry in people_entries(document)
-        if not present.intersection(entry["ids"])
+        if not present.intersection(entry_ids(entry))
         and (_has_content(entry.get("confirmed")) or entry.get("origin") == "manual")
     ]
 

@@ -429,6 +429,27 @@ what `immich-memories people` has always done.
 immich-memories people [OPTIONS]
 ```
 
+### `people bind`
+
+Say that one person has this id in another Immich account.
+
+PERSON is a store person id or a name exactly one person carries. The
+binding only adds the id: the name, birth date and everything you
+confirmed stay as they are. An id somebody else holds is refused,
+never merged, and binding the same id again changes nothing.
+
+```bash
+immich-memories people bind [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--account` | text | - | The account that reads the id: primary, or an extra account's name |
+| `--id` | text | - | The person's id as that account's Immich knows them |
+
+**Arguments:**
+- `person` (text)
+
 ### `people export`
 
 Write the people registry out as YAML, in the shape people.yaml had.
