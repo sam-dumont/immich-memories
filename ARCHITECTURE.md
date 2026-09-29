@@ -1234,5 +1234,6 @@ rates and whole-run estimates. A first run has no historical total estimate.
 **Provider conformance** (`conformance/`): synthetic feature probes use the production prompt,
 transport and parser. The AST inventory discovers model-asking functions; HTTP observation
 counts attempted calls, and runtime function observation verifies each declared path ran.
-Uncovered sites fail the command. `pending.json` records the remaining #1513 fixture work;
-the inventory guard rejects new unregistered call sites while that work lands.
+Uncovered sites fail the command and the inventory guard. Domain-specific case modules use
+fresh temporary stores and synthetic evidence; optional private HTTP artifacts and incremental
+usage reports make failures reproducible without reading the personal library.

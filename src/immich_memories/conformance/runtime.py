@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 import sys
 import threading
 import time
@@ -13,6 +15,7 @@ from unittest.mock import patch
 import httpx
 
 from immich_memories.analysis.llm_metrics import collecting
+from immich_memories.security import write_secret_file
 
 
 @dataclass(frozen=True)
@@ -30,6 +33,7 @@ class Result:
     seconds: float = 0
     valid: bool = False
     quality: str = ""
+    usage: dict[str, float | int] = field(default_factory=dict)
     observed: set[str] = field(default_factory=set, repr=False)
 
     @property
@@ -40,15 +44,42 @@ class Result:
 _MODEL_PATHS = ("/chat/completions", "/messages", "/api/generate")
 
 
-def run_case(case: Case) -> Result:
+def _wire_body(raw: bytes):
+    try:
+        return json.loads(raw)
+    except ValueError:
+        return raw.decode("utf-8", errors="replace")
+
+
+async def _record_exchange(root, name, number, request, response):
+    if root is None or not request.url.path.endswith(_MODEL_PATHS):
+        return
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+    write_secret_file(
+        root / slug / f"{number:03d}.private.json",
+        json.dumps(
+            {
+                "request": _wire_body(request.content),
+                "response": _wire_body(await response.aread()),
+                "status": response.status_code,
+            },
+            indent=2,
+        ),
+    )
+
+
+def run_case(case: Case, *, evidence_dir: Path | None = None) -> Result:
     result = Result(case.name)
     source = str(Path(__file__).resolve().parents[1]) + "/"
     original_send = httpx.AsyncClient.send
 
     async def counted_send(client, request, *args, **kwargs):
-        if request.url.path.endswith(_MODEL_PATHS):
-            result.calls += 1
-        return await original_send(client, request, *args, **kwargs)
+        is_model = request.url.path.endswith(_MODEL_PATHS)
+        result.calls += int(is_model)
+        number = result.calls
+        response = await original_send(client, request, *args, **kwargs)
+        await _record_exchange(evidence_dir, case.name, number, request, response)
+        return response
 
     def observe(frame, event, _arg):
         filename = frame.f_code.co_filename
@@ -72,8 +103,11 @@ def run_case(case: Case) -> Result:
         finally:
             sys.setprofile(old_profile)
             threading.setprofile(old_thread_profile)
+        result.usage = usage.as_metrics()
         result.tokens = (
-            None if usage.unmetered_calls else usage.prompt_tokens + usage.completion_tokens
+            None
+            if usage.unmetered_calls or usage.calls < result.calls
+            else usage.prompt_tokens + usage.completion_tokens
         )
     result.seconds = round(time.monotonic() - started, 2)
     missing = case.sites - result.observed
@@ -93,8 +127,9 @@ def table(results: list[Result]) -> str:
     ]
     for row in results:
         quality = row.quality.replace("|", "/").replace("\n", " ")
+        tokens = "unknown" if row.tokens is None else str(row.tokens)
         lines.append(
-            f"| {row.name} | {row.called} | {row.calls} | {row.tokens} | "
+            f"| {row.name} | {row.called} | {row.calls} | {tokens} | "
             f"{row.seconds:.2f} | {row.valid} | {quality} |"
         )
     return "\n".join(lines)

@@ -295,14 +295,33 @@ Time, tokens and euros per reader go on [Measured](./measured.md).
 
 ## Provider conformance
 
-From a checkout, `make llm-conformance CONFIG=/path/to/provider.yaml` exercises the configured
-`advanced.llm` endpoint with synthetic evidence. It reads only the LLM section of that file;
-no library, captions, people file or live store is opened. The command can incur provider charges.
+From a checkout, run:
 
-Each row reports whether the provider was called, HTTP attempts, reported tokens, elapsed seconds,
-validity and a feature-specific quality check. A local fallback fails the check. Unknown token
-usage stays unknown. A failed feature leaves its row and the other checks continue.
+```bash
+make llm-conformance CONFIG=/path/to/provider.yaml OUTPUT=/tmp/llm-conformance
+```
 
-The suite is being filled in under [#1513](https://github.com/sam-dumont/immich-video-memory-generator/issues/1513).
-The first probe covers title generation. The command prints every uncovered production call site
-and exits with status 1 while any remain, so an incomplete run cannot count as provider validation.
+The command reads only `advanced.llm` (or `llm`) from that file. It sends synthetic evidence
+through production features and can incur provider charges. Free-text cases also read the
+public WordNet corpus installed by `immich-memories models fetch`. Each banked feature gets a
+fresh temporary SQLite store. The suite opens no personal library or people file.
+
+The 34 probes cover occasion, trip and people titles; free-text reading, linking and pool
+selection; occasion discovery; music mood; image captions and motion; full and lean episode
+readings; month and year accounts; editorial grouping, weighting, picking and recurring
+activities; and both audience text readers still present in the code.
+
+Each row reports whether the provider was called, HTTP attempts, reported tokens, elapsed
+seconds, validity and a feature-specific quality check. Unknown usage is shown as unknown.
+A local fallback fails the check. A failed feature leaves its row and the other checks continue.
+The command exits with status 1 if a feature fails or a production model call site has no case.
+The guard test scans the code for model calls and shared prompt adapters; runtime observation
+also checks that each case reached its declared call sites.
+
+`OUTPUT` is optional. When set, it receives an incremental JSON report, a Markdown table,
+and private request/reply evidence without HTTP headers. Keep these files private: provider
+errors can include account details. Use the input, cached-input and completion token counters
+with the provider's rates to calculate cost. A run with missing usage gives only a cost floor.
+
+These checks measure the configured endpoint on small fixtures. They do not replace checking
+the quality of a complete film or testing asynchronous batch delivery.

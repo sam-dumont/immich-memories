@@ -1149,7 +1149,7 @@ demo-hero:  ## Cut the README hero GIF: brief, cut, review, render, and the film
 .PHONY: llm-conformance
 llm-conformance:  ## Exercise production LLM features on synthetic evidence: CONFIG=provider.yaml
 	@test -n "$(CONFIG)" || { echo 'Set CONFIG to the provider YAML file'; exit 2; }
-	uv run python -m immich_memories.conformance --config "$(CONFIG)"
+	uv run python -m immich_memories.conformance --config "$(CONFIG)" $(if $(OUTPUT),--output "$(OUTPUT)",)
 
 .PHONY: demucs-locks
 demucs-locks:  ## Refresh the Linux inference audio locks without changing Mac dependencies

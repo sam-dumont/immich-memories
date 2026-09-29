@@ -33,7 +33,7 @@ def _asks(node: ast.Call, aliases: dict[str, str]) -> bool:
         return node.func.attr in ASKERS or (
             node.func.attr == "ask"
             and isinstance(node.func.value, ast.Name)
-            and node.func.value.id == "judge"
+            and node.func.value.id in {"judge", "asker"}
         )
     return False
 
