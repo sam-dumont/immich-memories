@@ -485,10 +485,13 @@ def test_every_published_platform_takes_torch_from_the_cpu_wheel_index() -> None
     cpu_wheel = re.search(
         r'case "\$\{TARGETARCH\}" in (?P<arches>[a-z0-9|]+)\) pip wheel [^\n]*'
         r"--no-deps [^\n]*--wheel-dir=(?P<dir>/\S+) "
-        r"--index-url https://download\.pytorch\.org/whl/cpu[^\n]* torch",
+        r"--index-url https://download\.pytorch\.org/whl/cpu[^\n]* torch(?: torchaudio)?\s*;;",
         dockerfile,
     )
     assert cpu_wheel, "the CPU index must supply torch for the platforms we publish"
+    assert re.search(r"\btorch torchaudio\s*;;", cpu_wheel.group()), (
+        "Demucs imports TorchAudio: it must use the same CPU index as Torch"
+    )
 
     workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "release.yml").read_text())
     published = {

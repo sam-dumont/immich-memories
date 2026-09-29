@@ -1145,3 +1145,15 @@ demo-hero:  ## Cut the README hero GIF: brief, cut, review, render, and the film
 	ffmpeg -y -loglevel error -i docs-site/static/demo/demo.mp4 -i docs-site/remotion/public/output-preview.mp4 \
 	  -filter_complex "[0:v]trim=4.0:13.6,setpts=PTS-STARTPTS,$(HERO_FILTER)[a];[0:v]trim=29.0:34.43,setpts=PTS-STARTPTS,$(HERO_FILTER)[b];[1:v]trim=20.63:24.13,setpts=PTS-STARTPTS,$(HERO_FILTER)[c];[a][b]xfade=transition=fade:duration=0.3:offset=9.3[ab];[ab][c]xfade=transition=fade:duration=0.5:offset=14.23,hqdn3d,split[x][y];[y]palettegen=max_colors=255:stats_mode=diff[p];[x][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \
 	  docs-site/static/img/demo-hero.gif
+
+.PHONY: demucs-locks
+demucs-locks:  ## Refresh the Linux inference audio locks without changing Mac dependencies
+	@constraints=$$(mktemp); trap 'rm -f "$$constraints"' EXIT; \
+	uv export --frozen --no-dev --extra demucs --extra editorial --prune torch --prune torchaudio \
+	  --no-emit-project --no-emit-package immich-memories-music --no-hashes -o "$$constraints" >/dev/null && \
+	uv pip compile docker/demucs-requirements.in --constraint "$$constraints" --python-version 3.11 \
+	  --python-platform linux --torch-backend cpu --generate-hashes --no-annotate --no-header \
+	  -o docker/demucs-cpu-requirements.txt && \
+	uv pip compile docker/demucs-requirements.in --constraint "$$constraints" --python-version 3.12 \
+	  --python-platform linux --torch-backend cu128 --generate-hashes --no-annotate --no-header \
+	  -o docker/demucs-cuda-requirements.txt
