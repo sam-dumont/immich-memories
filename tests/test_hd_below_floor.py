@@ -93,3 +93,37 @@ def test_preflight_says_the_film_renders_at_1080p(two_gigabyte_container):
     assert message.endswith(
         "4K needs about 3 GB for software HEVC; this box has 2.0 GB, so the film renders at 1080p"
     )
+
+
+def test_an_explicit_4k_below_the_floor_is_kept_with_a_warning(two_gigabyte_container):
+    from immich_memories.config import Config
+    from immich_memories.preflight import CheckStatus
+    from immich_memories.preflight_run import check_memory
+
+    memory_budget.encode_lookahead.cache_clear()
+    config = Config()
+    config.hardware.enabled = False
+    config.output.resolution = "4k"
+    result = check_memory(config)
+    memory_budget.encode_lookahead.cache_clear()
+    assert result.status is CheckStatus.WARNING
+    assert result.message.endswith(
+        "4K set explicitly: software HEVC needs about 3 GB, this box has 2.0 GB, so the render "
+        "may run out of memory; set resolution to auto or 1080p"
+    )
+
+
+def test_the_run_log_warns_once_about_an_explicit_4k(two_gigabyte_container, caplog):
+    canvas = resolve_output_canvas(
+        resolution="4k",
+        orientation=None,
+        configured_resolution=(1920, 1080),
+        clips=_four_k_portrait_clips(),
+        hardware_hevc=lambda: False,
+    )
+    assert (canvas.width, canvas.height) == (2160, 3840)
+    warnings = [r.getMessage() for r in caplog.records if r.levelname == "WARNING"]
+    assert warnings == [
+        "4K set explicitly: software HEVC needs about 3 GB, this box has 2.0 GB, so the render "
+        "may run out of memory; set resolution to auto or 1080p"
+    ]

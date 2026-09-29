@@ -175,3 +175,12 @@ def floor_sentence(memory: int) -> str:
         f"4K needs about {SOFTWARE_4K_FLOOR_GB} GB for software HEVC; this box has "
         f"{memory / _GIB:.1f} GB, so the film renders at 1080p"
     )
+
+
+def explicit_4k_warning(memory: int) -> str:
+    """What a run set to 4K on purpose is told below the floor: kept, but it may not fit."""
+    return (
+        f"4K set explicitly: software HEVC needs about {SOFTWARE_4K_FLOOR_GB} GB, this box has "
+        f"{memory / _GIB:.1f} GB, so the render may run out of memory; set resolution to auto "
+        "or 1080p"
+    )
