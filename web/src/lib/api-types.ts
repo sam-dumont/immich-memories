@@ -694,6 +694,10 @@ export interface paths {
         /**
          * Film
          * @description The rendered film, by byte range so the player can seek.
+         *
+         *     A run's page checks `film_available` before ever requesting this, so
+         *     reaching here for a delivered run means a stale link, not a broken
+         *     player: the local copy was reclaimed once Immich confirmed the upload.
          */
         get: operations["film_api_v1_runs__run_id__film_get"];
         put?: never;
@@ -1772,8 +1776,14 @@ export interface components {
             delivery_status: string;
             /** Film */
             film: boolean;
+            /** Film Available */
+            film_available: boolean;
             /** Has Cut */
             has_cut: boolean;
+            /** Immich Asset Id */
+            immich_asset_id: string | null;
+            /** Immich Asset Url */
+            immich_asset_url: string | null;
             /** Memory Type */
             memory_type: string | null;
             /** Output Path */
@@ -1818,6 +1828,8 @@ export interface components {
             date_range_start: string | null;
             /** Film */
             film: boolean;
+            /** Film Available */
+            film_available: boolean;
             /** Memory Type */
             memory_type: string | null;
             /** Preview Asset Ids */

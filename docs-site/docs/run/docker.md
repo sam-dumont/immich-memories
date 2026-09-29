@@ -177,6 +177,21 @@ is `memory: 4G`: fine for 1080p, give it 8 GB for 4K.
 There is no CPU limit, on purpose: `cpus:` is a CFS quota, and a Synology kernel refuses the whole
 `up` over it. Use `cpuset: "0-3"` to pin cores instead: [On a NAS](./nas.md#do-not-use-cpus-on-a-synology).
 
+## Disk
+
+A film that uploads to Immich does not stay on the output volume: once the upload is confirmed,
+the container removes the local file and its run directory, keeping only the run record. On a
+node where this container shares a disk with other workloads, that is what keeps a daily cron job
+from filling it. If `upload_enabled: false`, or delivery keeps failing, films pile up on
+`output.directory` the same way they always did: `immich-memories runs storage` shows what is
+using space, and `runs delete` clears a run's output.
+
+Both the output and cache volumes get a preflight before a run starts and again right before the
+film is written: below `output.min_free_space_gb` (5 GB by default) a run logs a warning naming
+the volume, and if the estimated film would not fit at all, it stops before rendering instead of
+filling the volume mid-encode. See
+[health, logs and caches](./maintenance/health-logs-cache.md#caches).
+
 ## Hardening
 
 The compose file carries this block commented out; uncomment it:

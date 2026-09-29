@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from immich_memories.config_loader import Config
+from immich_memories.tracking.models import DeliveryStatus
 from tests.web_api_fixtures import api_client, config_in, save_run, selection_trace
 
 RUN = "20260913_080000_ab12"
@@ -113,6 +114,42 @@ def test_a_hand_typed_attempt_id_has_no_child_output_instead_of_failing(client, 
 
     assert client.get(f"/api/v1/runs/{RUN}").json()["child_output"] is False
     assert client.get(f"/api/v1/runs/{RUN}/child-output").status_code == 404
+
+
+def test_a_delivered_run_whose_local_film_was_reclaimed_names_the_immich_asset(client, config):
+    """The run page must never claim a film is playable once Immich holds the only copy."""
+    save_run(
+        config,
+        RUN,
+        cut=False,
+        status="completed",
+        # The reclaimed film's directory never exists in this test; the run row
+        # keeps naming it, the same as after a real cleanup.
+        output_path=str(config.output.output_path / f"memory_{RUN}" / "memory.mp4"),
+        delivery_status=DeliveryStatus.DELIVERED,
+        immich_asset_id="asset-delivered-42",
+    )
+
+    run = client.get(f"/api/v1/runs/{RUN}").json()
+    film_response = client.get(f"/api/v1/runs/{RUN}/film")
+
+    assert run["film"] is True
+    assert run["film_available"] is False
+    assert run["delivery_status"] == "delivered"
+    assert run["immich_asset_id"] == "asset-delivered-42"
+    assert film_response.status_code == 404
+    assert "Immich" in film_response.json()["detail"]
+
+
+def test_a_run_still_holding_its_film_reports_it_available(client, config, tmp_path):
+    output_path = tmp_path / "memory.mp4"
+    output_path.write_bytes(b"film")
+    save_run(config, RUN, cut=False, status="completed", output_path=str(output_path))
+
+    run = client.get(f"/api/v1/runs/{RUN}").json()
+
+    assert run["film"] is True
+    assert run["film_available"] is True
 
 
 def test_a_shot_offers_the_rest_of_its_moment_with_what_became_of_each(client, config):

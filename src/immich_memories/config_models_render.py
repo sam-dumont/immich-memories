@@ -101,6 +101,14 @@ class OutputConfig(BaseModel):
     codec_policy: Literal["prefer_hardware", "strict"] = "prefer_hardware"
     hdr_mode: HdrMode = HdrMode.AUTO
     quality: Literal["high", "balanced", "fast"] = "balanced"
+    # Shared threshold for the output and cache volumes: below it, a run warns;
+    # unable to fit the estimated film at all, it stops before rendering.
+    # One number for both because they are usually the same disk, and a
+    # container/NAS deployment is exactly the case a single sane default
+    # should protect without asking for a second setting.
+    min_free_space_gb: float = Field(
+        default=5.0, ge=0.5, le=1000, description="Warn/stop below this much free disk space"
+    )
     crf: int | None = Field(default=None, ge=0, le=51)
 
     @field_serializer("hdr_mode")
