@@ -88,7 +88,7 @@ and the Docker image built from it, not on a `pip install`.
 | GPU | Intel VA-API and Quick Sync | Supported | 2026-09-11, on the DS423+ |
 | GPU | AMD VA-API | Untested | The drivers ship in the image |
 | Render worker | The service's own test suite | Tested | Every pull request that touches it; no dated deployment on a real GPU box |
-| Reader | Local: oMLX with Gemma 4 E4B (6-bit) | Conformance tested, 17/34 | [Measured failures](../better/measured.md#llm-conformance): free-text parsing, trip classification, vision contracts and period weighting; earlier whole-film results are on the same page |
+| Reader | Local: oMLX with Gemma 4 E4B (6-bit) | Conformance tested, 17/34 with local schema default off | [Measured comparison](../better/measured.md#llm-conformance): free-text improves from 1/14 to 12/14 with JSON enforcement; remaining full-run failures include trip classification, vision contracts and period weighting |
 | Reader | Local: llama.cpp, Ollama | Supported | Films on earlier releases |
 | Reader | Local: vLLM, mlx-vlm served directly | Untested | |
 | Reader | Hosted: OpenAI (gpt-5.6-luna) | Conformance tested, 32/34 | [Measured failures](../better/measured.md#llm-conformance): recorded trip place and motion description |

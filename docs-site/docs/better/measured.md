@@ -27,7 +27,7 @@ These are single runs, with no latency distribution or claim of isolated through
 | OpenAI, gpt-5.6-luna | 32/34 | 124.71s | 87 | 23,521 / 0 / 3,310 | $0.00868, incomplete usage |
 | z.ai, glm-5.3-flash, Anthropic-compatible route | 31/34 | 248.31s | 88 | 21,075 / 5,120 / 4,953 | $0.00502 |
 | Melious, deepseek-v4.1-flash, `structured_output: false` | 32/34 | 214.88s | 79 | 21,285 / 2,048 / 30,092 | €0.03396 |
-| Local oMLX, gemma-4-e4b-it-6bit | 17/34 | 128.73s | 116 | 24,334 / 6,144 / 8,038 | No API fee |
+| Local oMLX, gemma-4-e4b-it-6bit, local schema default off | 17/34 | 128.73s | 116 | 24,334 / 6,144 / 8,038 | No API fee |
 
 Probe time sums the per-feature measurements and excludes command startup. HTTP attempts include
 retries and rejected requests. Input includes cached input; reasoning tokens are already part of
@@ -59,7 +59,9 @@ contain account details. Reproduce the command from [Add a reader](./reader.md#p
 - Melious failed the request-reading and pool checks for the same array-contract problem
   ([#1645](https://github.com/sam-dumont/immich-video-memory-generator/issues/1645)). Its other
   32 checks passed in this run.
-- Gemma failed 13 free-text probes, mostly because fenced JSON was rejected
+- Gemma failed 13 free-text probes with JSON-schema enforcement disabled by the local-endpoint
+  default from [#1622](https://github.com/sam-dumont/immich-video-memory-generator/pull/1622).
+  The reader requested a schema, but the transport omitted it; fenced JSON was then rejected
   ([#1646](https://github.com/sam-dumont/immich-video-memory-generator/issues/1646)). It also returned
   an invalid trip classification
   ([#1652](https://github.com/sam-dumont/immich-video-memory-generator/issues/1652)), failed the
@@ -67,6 +69,26 @@ contain account details. Reproduce the command from [Add a reader](./reader.md#p
   ([#1649](https://github.com/sam-dumont/immich-video-memory-generator/issues/1649)), and gave the
   routine sofa scene the same central status as the race
   ([#1653](https://github.com/sam-dumont/immich-video-memory-generator/issues/1653)).
+
+### Gemma: JSON enforcement changes the result
+
+The 17/34 score measures the current app defaults, including an integration regression; it is
+not Gemma's score with enforced JSON. The local-endpoint default introduced for an episode-schema
+decoder stall also disables free-text schemas
+([#1659](https://github.com/sam-dumont/immich-video-memory-generator/issues/1659)). Captured requests
+confirm that no `response_format` reached the server in the complete run.
+
+A follow-up changed only `structured_output` to `true` and replayed the same 14 free-text probes.
+They improved from **1/14 to 12/14**, with 53 HTTP calls in 94.29 seconds, 5,616 input tokens and
+5,771 output tokens. All requests carried `response_format.type=json_schema`. The two remaining
+failures lost young forms and a restrictive subject qualifier
+([#1660](https://github.com/sam-dumont/immich-video-memory-generator/issues/1660)). Six replies still
+hit their token limits, so enabling strict schemas everywhere would need separate verification
+of the episode-reading path.
+
+The [forced-JSON subset CSV](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/docs/research/2026-09-29-gemma-forced-json.csv)
+keeps these measurements separate. The other 20 features were not rerun in this follow-up;
+combining the two runs into a new overall score would hide the configuration difference.
 
 A preceding Melious attempt lost DNS resolution after eleven probes and was repeated in full
 once resolution recovered ([#1657](https://github.com/sam-dumont/immich-video-memory-generator/issues/1657)).
