@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-29 01:32+0200\n"
+"POT-Creation-Date: 2026-09-29 07:25+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: it\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: web/lib/AskPanel.svelte:106
+#: web/lib/AskPanel.svelte:107
 msgid ""
 "A film from a sentence needs the model tier: set advanced.llm.base_url and advanced.llm.model"
 " to the reader that answers it (tier: full)."
@@ -231,7 +231,7 @@ msgstr "Rimuovere questa restrizione?"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{count} voci rimosse da {cache}."
 
-#: web/lib/RunReport.svelte:61
+#: web/lib/RunReport.svelte:63
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "Appunti non disponibili. Seleziona il report qui sotto e copialo."
 
@@ -257,7 +257,7 @@ msgstr "Connesso come: {name}"
 msgid "Considered by the model"
 msgstr "Considerata dal modello"
 
-#: web/lib/JobPanel.svelte:88 web/lib/RunReport.svelte:73
+#: web/lib/JobPanel.svelte:88 web/lib/RunReport.svelte:76
 msgid "Copied"
 msgstr "Copiato"
 
@@ -265,7 +265,7 @@ msgstr "Copiato"
 msgid "Copy as CLI command"
 msgstr "Copia come comando CLI"
 
-#: web/lib/RunReport.svelte:73 web/lib/RunReport.svelte:75
+#: web/lib/RunReport.svelte:76 web/lib/RunReport.svelte:81
 msgid "Copy report"
 msgstr "Copia report"
 
@@ -305,7 +305,7 @@ msgstr "Predefinito"
 msgid "Demo mode"
 msgstr "Modalità demo"
 
-#: web/lib/AskPanel.svelte:98 web/lib/AskPanel.svelte:115
+#: web/lib/AskPanel.svelte:98 web/lib/AskPanel.svelte:116
 msgid "Describe the film you want"
 msgstr "Descrivi il film che vuoi"
 
@@ -329,6 +329,10 @@ msgstr "Ricerca non riuscita: {error}"
 #: web/routes/runs/[run_id]/+page.svelte:326
 msgid "Download child output"
 msgstr "Scarica il risultato associato"
+
+#: web/lib/RunReport.svelte:77 web/lib/RunReport.svelte:82
+msgid "Download report"
+msgstr "Scarica report"
 
 #: web/lib/ShotInspector.svelte:47
 msgid "Edit this shot"
@@ -389,7 +393,7 @@ msgstr ""
 msgid "Every trip of the year"
 msgstr "Tutti i viaggi dell’anno"
 
-#: web/lib/AskPanel.svelte:100
+#: web/lib/AskPanel.svelte:101
 msgid "Experimental"
 msgstr "Sperimentale"
 
@@ -402,7 +406,7 @@ msgstr "Famiglia"
 msgid "Fetching picture previews"
 msgstr "Recupero delle anteprime delle foto"
 
-#: web/lib/AskPanel.svelte:139
+#: web/lib/AskPanel.svelte:140
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "Corrispondono meno di 12 immagini: il film sarà corto."
 
@@ -467,7 +471,7 @@ msgstr "Come sono state lette le tue parole"
 msgid "How the rules got here"
 msgstr "Come ci sono arrivate le regole"
 
-#: web/lib/AskPanel.svelte:145
+#: web/lib/AskPanel.svelte:146
 msgid "How the sentence was read"
 msgstr "Come è stata letta la frase"
 
@@ -500,7 +504,7 @@ msgstr "Nel film"
 msgid "Include Live Photos"
 msgstr "Includi Live Photos"
 
-#: web/lib/RunReport.svelte:70
+#: web/lib/RunReport.svelte:72
 msgid "Include captions of flagged photos"
 msgstr "Includi le didascalie delle foto segnalate"
 
@@ -566,7 +570,7 @@ msgstr "Navigazione principale"
 msgid "Main story"
 msgstr "Storia principale"
 
-#: web/lib/AskPanel.svelte:121
+#: web/lib/AskPanel.svelte:122
 msgid "Make the film"
 msgstr "Crea il film"
 
@@ -650,7 +654,7 @@ msgstr ""
 msgid "No child output was retained for this run."
 msgstr "Nessun risultato associato conservato per questa esecuzione."
 
-#: web/lib/AskPanel.svelte:137
+#: web/lib/AskPanel.svelte:138
 msgid ""
 "No film: the library cannot show this. Try other words, or read below what each part of the "
 "sentence found."
@@ -814,7 +818,7 @@ msgstr "Esame dell’immagine"
 msgid "Pictures just read"
 msgstr "Foto appena lette"
 
-#: web/lib/AskPanel.svelte:152
+#: web/lib/AskPanel.svelte:153
 msgid "Pictures left after each step"
 msgstr "Immagini rimaste dopo ogni passaggio"
 
@@ -845,7 +849,7 @@ msgstr "Verticale"
 msgid "Possible"
 msgstr "Possibile"
 
-#: web/lib/AskPanel.svelte:119 web/lib/AskPanel.svelte:129
+#: web/lib/AskPanel.svelte:120 web/lib/AskPanel.svelte:130
 msgid "Preview"
 msgstr "Anteprima"
 
@@ -929,7 +933,7 @@ msgstr "Renderizza"
 msgid "Replaced a picture the model doubted."
 msgstr "Ha sostituito un'immagine su cui il modello aveva dubbi."
 
-#: web/lib/RunReport.svelte:72
+#: web/lib/RunReport.svelte:74
 msgid "Report preview"
 msgstr "Anteprima del report"
 
@@ -941,7 +945,7 @@ msgstr "Analizza di nuovo la libreria"
 msgid "Resolution"
 msgstr "Risoluzione"
 
-#: web/lib/RunReport.svelte:68
+#: web/lib/RunReport.svelte:70
 msgid "Review the report, then copy it. Nothing is sent automatically."
 msgstr "Controlla il report, poi copialo. Nulla viene inviato automaticamente."
 
@@ -1218,7 +1222,7 @@ msgstr "La casa. Sono inclusi anche i momenti privati citati da una descrizione,
 msgid "The model had nothing to say about this picture."
 msgstr "Il modello non aveva nulla da dire su questa immagine."
 
-#: web/lib/AskPanel.svelte:109
+#: web/lib/AskPanel.svelte:110
 msgid ""
 "The model reads your words against your prepared library. Preview first: it shows what each "
 "part of the sentence became and how many pictures fit, and films nothing."
@@ -1271,7 +1275,7 @@ msgstr "Il ricordo automatico precedente ha usato questa categoria."
 msgid "The render could not start."
 msgstr "Impossibile avviare il rendering."
 
-#: web/lib/RunReport.svelte:48
+#: web/lib/RunReport.svelte:50
 msgid "The report could not be loaded."
 msgstr "Impossibile caricare il report."
 
@@ -1291,7 +1295,7 @@ msgstr "L'URL del server è cambiato: inserisci la chiave API del nuovo server."
 msgid "The settings could not be saved."
 msgstr "Non è stato possibile salvare le impostazioni."
 
-#: web/lib/AskPanel.svelte:142
+#: web/lib/AskPanel.svelte:143
 msgid "The words changed since this preview: preview again before making the film."
 msgstr "Le parole sono cambiate da questa anteprima: rifai l’anteprima prima di creare il film."
 
@@ -1524,7 +1528,7 @@ msgstr "tutte insieme"
 msgid "any of them"
 msgstr "una qualunque di loro"
 
-#: web/lib/AskPanel.svelte:115
+#: web/lib/AskPanel.svelte:116
 msgid "our cat along the years"
 msgstr "il nostro gatto negli anni"
 
@@ -1557,7 +1561,7 @@ msgstr "{days} giorni · {count} immagini"
 msgid "{done} of {total}"
 msgstr "{done} di {total}"
 
-#: web/lib/AskPanel.svelte:133
+#: web/lib/AskPanel.svelte:134
 #, python-brace-format
 msgid "{pictures} pictures: {photos} photos, {videos} videos"
 msgstr "{pictures} immagini: {photos} foto, {videos} video"

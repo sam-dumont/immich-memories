@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-29 01:32+0200\n"
+"POT-Creation-Date: 2026-09-29 07:25+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: web/lib/AskPanel.svelte:106
+#: web/lib/AskPanel.svelte:107
 msgid ""
 "A film from a sentence needs the model tier: set advanced.llm.base_url and advanced.llm.model"
 " to the reader that answers it (tier: full)."
@@ -227,7 +227,7 @@ msgstr "この制限を解除しますか？"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{cache} から {count} 件のエントリを消去しました。"
 
-#: web/lib/RunReport.svelte:61
+#: web/lib/RunReport.svelte:63
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "クリップボードを使用できません。下のレポートを選択してコピーしてください。"
 
@@ -253,7 +253,7 @@ msgstr "{name} として接続中"
 msgid "Considered by the model"
 msgstr "モデルが検討"
 
-#: web/lib/JobPanel.svelte:88 web/lib/RunReport.svelte:73
+#: web/lib/JobPanel.svelte:88 web/lib/RunReport.svelte:76
 msgid "Copied"
 msgstr "コピーしました"
 
@@ -261,7 +261,7 @@ msgstr "コピーしました"
 msgid "Copy as CLI command"
 msgstr "コマンドラインのコマンドとしてコピー"
 
-#: web/lib/RunReport.svelte:73 web/lib/RunReport.svelte:75
+#: web/lib/RunReport.svelte:76 web/lib/RunReport.svelte:81
 msgid "Copy report"
 msgstr "レポートをコピー"
 
@@ -301,7 +301,7 @@ msgstr "既定値"
 msgid "Demo mode"
 msgstr "デモモード"
 
-#: web/lib/AskPanel.svelte:98 web/lib/AskPanel.svelte:115
+#: web/lib/AskPanel.svelte:98 web/lib/AskPanel.svelte:116
 msgid "Describe the film you want"
 msgstr "作りたい映画を文章で"
 
@@ -325,6 +325,10 @@ msgstr "検索に失敗しました：{error}"
 #: web/routes/runs/[run_id]/+page.svelte:326
 msgid "Download child output"
 msgstr "関連する出力をダウンロード"
+
+#: web/lib/RunReport.svelte:77 web/lib/RunReport.svelte:82
+msgid "Download report"
+msgstr "レポートをダウンロード"
 
 #: web/lib/ShotInspector.svelte:47
 msgid "Edit this shot"
@@ -378,7 +382,7 @@ msgstr "各設定とその値の出所。ここで保存した内容はデータ
 msgid "Every trip of the year"
 msgstr "その年のすべての旅行"
 
-#: web/lib/AskPanel.svelte:100
+#: web/lib/AskPanel.svelte:101
 msgid "Experimental"
 msgstr "実験的"
 
@@ -391,7 +395,7 @@ msgstr "家族"
 msgid "Fetching picture previews"
 msgstr "画像のプレビューを取得しています"
 
-#: web/lib/AskPanel.svelte:139
+#: web/lib/AskPanel.svelte:140
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "合う写真が 12 枚未満です: 映画は短くなります。"
 
@@ -456,7 +460,7 @@ msgstr "言葉の読み取り方"
 msgid "How the rules got here"
 msgstr "ルールがここに至った経緯"
 
-#: web/lib/AskPanel.svelte:145
+#: web/lib/AskPanel.svelte:146
 msgid "How the sentence was read"
 msgstr "文章の読み取り方"
 
@@ -489,7 +493,7 @@ msgstr "動画に使用"
 msgid "Include Live Photos"
 msgstr "Live Photos を含める"
 
-#: web/lib/RunReport.svelte:70
+#: web/lib/RunReport.svelte:72
 msgid "Include captions of flagged photos"
 msgstr "フラグ付き写真のキャプションを含める"
 
@@ -555,7 +559,7 @@ msgstr "メインナビゲーション"
 msgid "Main story"
 msgstr "主要ストーリー"
 
-#: web/lib/AskPanel.svelte:121
+#: web/lib/AskPanel.svelte:122
 msgid "Make the film"
 msgstr "映画を作る"
 
@@ -637,7 +641,7 @@ msgstr "まだ記録済みの日がありません。`immich-memories discover-d
 msgid "No child output was retained for this run."
 msgstr "この実行には関連する出力が保存されていません。"
 
-#: web/lib/AskPanel.svelte:137
+#: web/lib/AskPanel.svelte:138
 msgid ""
 "No film: the library cannot show this. Try other words, or read below what each part of the "
 "sentence found."
@@ -797,7 +801,7 @@ msgstr "画像の確認"
 msgid "Pictures just read"
 msgstr "直前に読み取った画像"
 
-#: web/lib/AskPanel.svelte:152
+#: web/lib/AskPanel.svelte:153
 msgid "Pictures left after each step"
 msgstr "各ステップ後に残った写真"
 
@@ -828,7 +832,7 @@ msgstr "縦向き"
 msgid "Possible"
 msgstr "可能"
 
-#: web/lib/AskPanel.svelte:119 web/lib/AskPanel.svelte:129
+#: web/lib/AskPanel.svelte:120 web/lib/AskPanel.svelte:130
 msgid "Preview"
 msgstr "プレビュー"
 
@@ -912,7 +916,7 @@ msgstr "レンダリングする"
 msgid "Replaced a picture the model doubted."
 msgstr "モデルが疑問を持った画像を置き換えました。"
 
-#: web/lib/RunReport.svelte:72
+#: web/lib/RunReport.svelte:74
 msgid "Report preview"
 msgstr "レポートのプレビュー"
 
@@ -924,7 +928,7 @@ msgstr "ライブラリを再スキャン"
 msgid "Resolution"
 msgstr "解像度"
 
-#: web/lib/RunReport.svelte:68
+#: web/lib/RunReport.svelte:70
 msgid "Review the report, then copy it. Nothing is sent automatically."
 msgstr "レポートを確認してからコピーしてください。自動で送信されるものはありません。"
 
@@ -1198,7 +1202,7 @@ msgstr "同居家族。説明文に記された入浴などの私的な場面も
 msgid "The model had nothing to say about this picture."
 msgstr "モデルはこの画像について何も記録していません。"
 
-#: web/lib/AskPanel.svelte:109
+#: web/lib/AskPanel.svelte:110
 msgid ""
 "The model reads your words against your prepared library. Preview first: it shows what each "
 "part of the sentence became and how many pictures fit, and films nothing."
@@ -1248,7 +1252,7 @@ msgstr "前回の自動思い出はこのカテゴリーを使用しました。
 msgid "The render could not start."
 msgstr "レンダリングを開始できませんでした。"
 
-#: web/lib/RunReport.svelte:48
+#: web/lib/RunReport.svelte:50
 msgid "The report could not be loaded."
 msgstr "レポートを読み込めませんでした。"
 
@@ -1268,7 +1272,7 @@ msgstr "サーバーのURLが変更されました。新しいサーバーのAPI
 msgid "The settings could not be saved."
 msgstr "設定を保存できませんでした。"
 
-#: web/lib/AskPanel.svelte:142
+#: web/lib/AskPanel.svelte:143
 msgid "The words changed since this preview: preview again before making the film."
 msgstr "このプレビューの後に言葉が変わりました: 映画を作る前にもう一度プレビューしてください。"
 
@@ -1495,7 +1499,7 @@ msgstr "全員一緒"
 msgid "any of them"
 msgstr "いずれか"
 
-#: web/lib/AskPanel.svelte:115
+#: web/lib/AskPanel.svelte:116
 msgid "our cat along the years"
 msgstr "うちの猫の年月"
 
@@ -1528,7 +1532,7 @@ msgstr "{days} 日間・{count} 枚"
 msgid "{done} of {total}"
 msgstr "{done}/{total}"
 
-#: web/lib/AskPanel.svelte:133
+#: web/lib/AskPanel.svelte:134
 #, python-brace-format
 msgid "{pictures} pictures: {photos} photos, {videos} videos"
 msgstr "写真 {pictures} 枚: 静止画 {photos}、動画 {videos}"
