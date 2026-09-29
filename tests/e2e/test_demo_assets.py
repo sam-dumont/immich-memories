@@ -14,6 +14,7 @@ session workspace and the launch smoke counts what is in there.
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -120,9 +121,15 @@ _TRIP_POSTER = "trip-map-flyover.jpg"
 # both pins and their names clear of it. That is the still the trip page shows.
 _FLYOVER_SECONDS = 5.5
 _TRIP_MAX_BYTES = 8 * 1024 * 1024
-# CRF 26 measured 6.3 MB against the 10.5 MB the renderer writes at quality
-# low. The docs site serves this file to every reader of the trip page.
-_TRIP_WEB_CRF = "26"
+# The finished film carries a soundtrack, as a real one does: a bundled track, pinned so a
+# re-cut sounds the same. Calm, for a week by a lake.
+_TRIP_TRACK = (
+    _REPO_ROOT
+    / "packages/immich-memories-music/immich_memories_music/tracks/calm/calm_acoustic_s411.opus"
+)
+# CRF 26 came to 8.06 MB once the film carried its soundtrack, over the cap below; 27 keeps
+# the same picture under it. The docs site serves this file to every reader of the trip page.
+_TRIP_WEB_CRF = "27"
 
 
 @pytest.fixture
@@ -180,6 +187,32 @@ def _frame_at(video: Path, seconds: float, destination: Path) -> None:
         check=True,
         capture_output=True,
     )
+
+
+def _silences_in(video: Path) -> list[tuple[float, float]]:
+    """Every stretch of two seconds or more under -50 dB, as (start, end)."""
+    report = subprocess.run(  # noqa: S603
+        [
+            "ffmpeg",
+            "-hide_banner",
+            "-nostats",
+            "-i",
+            str(video),
+            "-vn",
+            "-af",
+            "silencedetect=noise=-50dB:d=2",
+            "-f",
+            "null",
+            "-",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stderr
+    starts = [float(m) for m in re.findall(r"silence_start: ([\d.]+)", report)]
+    ends = [float(m) for m in re.findall(r"silence_end: ([\d.]+)", report)]
+    ends += [_duration_of(video)] * (len(starts) - len(ends))
+    return list(zip(starts, ends, strict=True))
 
 
 def _encode_for_the_web(source: Path, destination: Path) -> None:
@@ -241,7 +274,8 @@ def _run_trip_cli(workspace, output_dir: Path) -> Path:
             "2024",
             "--trip-index",
             "1",
-            "--no-music",
+            "--music",
+            str(_TRIP_TRACK),
             "--quiet",
             "--output",
             str(output_dir / "trip.mp4"),
@@ -286,6 +320,10 @@ def test_cut_the_trip_memory_and_its_map(
     # the docs site pays for, this only catches a cut that went wrong.
     assert 10.0 < duration < 50.0, f"the trip film runs {duration:.1f}s"
     assert clip.stat().st_size <= _TRIP_MAX_BYTES, f"{clip.name} is {clip.stat().st_size} bytes"
+    # The music runs under the whole film, the map and the closing card included; only its
+    # final fade may dip under the floor.
+    gaps = [(a, b) for a, b in _silences_in(clip) if a < duration - 3.0]
+    assert not gaps, f"the trip film goes silent at {gaps}"
 
     flyover = Image.open(poster).convert("L")
     assert ImageStat.Stat(flyover).mean[0] > 20, "the fly-over frame is black"
