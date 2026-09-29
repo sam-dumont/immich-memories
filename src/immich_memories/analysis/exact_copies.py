@@ -55,6 +55,18 @@ class FoldedPool:
     pool: tuple[Asset | VideoClipInfo, ...]
     groups: tuple[CopyGroup, ...]
 
+    def kept_ids(self, asset_ids: Sequence[str]) -> tuple[str, ...]:
+        """Each id as the copy that stands for its picture, in order and without repeats.
+
+        An owner who ticked or excluded one copy meant the picture, whichever copy is kept.
+        """
+        kept = {
+            reference.asset_id: group.representative_id
+            for group in self.groups
+            for reference in group.references
+        }
+        return tuple(dict.fromkeys(kept.get(asset_id, asset_id) for asset_id in asset_ids))
+
 
 def fold_exact_copies(
     sources: Sequence[Asset | VideoClipInfo], *, primary_owner_id: str | None
@@ -90,7 +102,7 @@ def fold_exact_copies(
                 references=tuple(_reference(source) for source in ordered),
             )
         )
-    absorbed |= _orphaned_companions(sources, absorbed)
+    absorbed |= _orphaned_companions(sources, absorbed, groups)
     pool = tuple(
         sorted(
             (
@@ -146,7 +158,9 @@ def _with_people_of(
     return kept.model_copy(update={"asset": merged}) if isinstance(kept, VideoClipInfo) else merged
 
 
-def _orphaned_companions(sources: Sequence[Asset | VideoClipInfo], absorbed: set[str]) -> set[str]:
+def _orphaned_companions(
+    sources: Sequence[Asset | VideoClipInfo], absorbed: set[str], groups: Sequence[CopyGroup]
+) -> set[str]:
     """Motion halves whose only still was absorbed: they leave with it."""
     claimed = {
         asset_of(source).live_photo_video_id
@@ -154,9 +168,10 @@ def _orphaned_companions(sources: Sequence[Asset | VideoClipInfo], absorbed: set
         if asset_id_of(source) not in absorbed
     }
     return {
-        companion
-        for source in sources
-        if asset_id_of(source) in absorbed
-        and (companion := asset_of(source).live_photo_video_id) is not None
-        and companion not in claimed
+        reference.companion_id
+        for group in groups
+        for reference in group.references
+        if reference.asset_id != group.representative_id
+        and reference.companion_id is not None
+        and reference.companion_id not in claimed
     }

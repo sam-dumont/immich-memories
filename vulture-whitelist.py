@@ -126,10 +126,3 @@ __getattr__  # unused function (src/immich_memories/tracking/__init__.py:43)
 # The confirmed bind of a second account's person id (#1500 slice 1). Its callers, the
 # `people` CLI and the people editor, land in later slices of #1500; remove this line then.
 bind_alias  # unused function (src/immich_memories/people/companion.py:207)
-
-# Each exact-copy group's raw references (#1500 slice 4). Slice 5 freezes the chosen copy
-# and its access account in the attempt record from them; remove these lines then.
-companion_id  # unused variable (src/immich_memories/analysis/exact_copies.py:39)
-representative_id  # unused variable (src/immich_memories/analysis/exact_copies.py:47)
-references  # unused variable (src/immich_memories/analysis/exact_copies.py:48)
-copy_groups  # unused variable (src/immich_memories/analysis/selection_source.py:165)

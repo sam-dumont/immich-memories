@@ -266,6 +266,28 @@ def test_the_editorial_pool_admits_one_copy_and_keeps_the_group_for_the_record()
     )
 
     assert prepared.candidate_ids == ("b-copy", "other")
-    [group] = prepared.copy_groups
-    assert group.representative_id == "b-copy"
-    assert {ref.asset_id for ref in group.references} == {"a-copy", "b-copy"}
+
+
+def test_an_owner_choice_on_either_copy_holds_for_the_picture() -> None:
+    """A tick or an exclusion set on the absorbed copy lands on the copy that is kept."""
+    shared, excluded_shared = _sha1("shared.heic"), _sha1("excluded.heic")
+    pages = (
+        _photo("a-copy", owner="owner-a", checksum=shared),
+        _photo("b-copy", owner="owner-b", checksum=shared),
+        _photo("a-gone", owner="owner-a", checksum=excluded_shared),
+        _photo("b-gone", owner="owner-b", checksum=excluded_shared),
+    )
+    request = EditorialSelectionRequest(
+        scope=SourceScope(),
+        owner_required_asset_ids=("a-copy",),
+        owner_excluded_asset_ids=("a-gone",),
+        primary_owner_id="owner-b",
+    )
+
+    prepared = prepare_editorial_source(
+        request, EditorialDependencies(source_fetcher=lambda _scope: pages)
+    )
+
+    assert prepared.candidate_ids == ("b-copy",)
+    assert prepared.owner_required_asset_ids == ("b-copy",)
+    assert prepared.excluded_ids == ("b-gone",)

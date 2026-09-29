@@ -15,7 +15,7 @@ to selection_source_groups.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -27,7 +27,7 @@ from immich_memories.analysis.editorial_contracts import (
     SourceEvidence,
     TraceDecision,
 )
-from immich_memories.analysis.exact_copies import CopyGroup, fold_exact_copies
+from immich_memories.analysis.exact_copies import fold_exact_copies
 from immich_memories.analysis.picture_copies import picture_copies, starred_keepers
 from immich_memories.analysis.selection_source_groups import (
     EditorialGroup,
@@ -162,7 +162,6 @@ class PreparedEditorialSource:
     episode_groups: tuple[EditorialGroup, ...]
     moment_groups: tuple[EditorialGroup, ...]
     owner_required_asset_ids: tuple[str, ...] = ()
-    copy_groups: tuple[CopyGroup, ...] = ()
 
     @property
     def candidate_ids(self) -> tuple[str, ...]:
@@ -203,7 +202,6 @@ def prepare_editorial_source(
     ``group=False`` leaves episodes and moments uncut, for a caller that only needs to
     know what was admitted.
     """
-    excluded = set(request.owner_excluded_asset_ids)
     sources, normalization_warnings = _coalesce_sources(
         tuple(
             sorted(
@@ -214,6 +212,12 @@ def prepare_editorial_source(
     )
     folded = fold_exact_copies(sources, primary_owner_id=request.primary_owner_id)
     sources = folded.pool
+    request = replace(
+        request,
+        owner_excluded_asset_ids=folded.kept_ids(request.owner_excluded_asset_ids),
+        owner_required_asset_ids=folded.kept_ids(request.owner_required_asset_ids),
+    )
+    excluded = set(request.owner_excluded_asset_ids)
     components = live_photo_component_ids(asset_of(source) for source in sources)
     generated = frozenset(request.scope.generated_asset_ids)
     copies = picture_copies(
@@ -296,7 +300,6 @@ def prepare_editorial_source(
         episode_groups=grouped.episode_groups,
         moment_groups=grouped.moment_groups,
         owner_required_asset_ids=_required_in_pool(request, grouped.candidates, trace),
-        copy_groups=folded.groups,
     )
     _validate_prepared_source(prepared)
     return prepared
