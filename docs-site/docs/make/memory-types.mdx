@@ -6,8 +6,6 @@ import Video from '@site/src/components/Video';
 
 # Memory types
 
-hold for it to work.
-
 Ten types. Most are a date range with a filter on it. Trip, album, holiday and special day are not,
 and those are the ones worth reading about. Every type works on a plain NAS: the default
 install cuts each of them from what Immich already knows (dates, places, faces, favourites).
@@ -52,7 +50,7 @@ those seconds is in [Length, quiet weeks and filler](../how-it-chooses/length-an
 ## Filtering by people
 
 Repeating `--person` means pictures holding **every** name. `--person-match or` makes it a union;
-the web UI's **Together / Any of these people** toggle is the same switch. For anything else,
+the web UI's **Pictures with** select (**all of them together** or **any of them**) is the same switch. For anything else,
 `--people-expression` takes the condition directly:
 
 ```bash
@@ -64,8 +62,8 @@ immich-memories generate --memory-type multi_person --year 2025 \
 pictures with no 90-minute gap) where Immich recognised their face at least once, so the back of a
 head or a baby asleep on a chest still belongs to a person film. `AND` means everybody recognised
 somewhere in the same episode, not in one frame. The expression replaces `--person` and
-`--person-match`. The web UI has it under **Advanced people
-condition**. Trips, albums and a single-person birthday refuse it.
+`--person-match`. The web UI has it under **Grouped condition**. Trips, albums, person spotlights and any
+`--birthday` run refuse it.
 
 ## Year in review
 
@@ -146,9 +144,11 @@ The film reaches back to five earlier birthdays, each ±1 day, for the "look how
 those days hold nothing and the run prints one line (`history: 2 of 5 earlier windows hold material`)
 rather than a warning per year. 29 February is celebrated on the 28th in other years.
 
-In the web UI: **Person Spotlight**, then tick **Birthday to birthday** (greyed out when Immich has
-no birth date). **Custom date range**, **Year**, **From Birthday** gives the rolling year without
-cutaways. Cut it the night before: a year of one person is a cold run the first time.
+In the web UI: **Person Spotlight**, then tick **Birthday to birthday, with earlier birthdays**. The
+**Birthday (MM-DD)** field under it overrides Immich's birth date, and **Years back** sets how many
+earlier birthdays it reaches for (five when left empty). For the rolling year without the cutaways, use **Custom date range**
+from the day after last year's birthday to this year's. Cut it the night before: a year of one person
+is a cold run the first time.
 
 ## On this day
 
@@ -326,7 +326,7 @@ Sharing, the family-viewing holds, duplicates and the length still apply, and th
 each shot that got in on the subject alone ([Picking each shot](../how-it-chooses/picking-shots.md#what-a-frame-must-pass)).
 `--subject` needs `--from-album` and a model reader: the plain NAS reader refuses a written subject.
 
-## Special day (Surprise me)
+## Special day
 
 The nine types above cover something you named. A special day is one you did not: a day from your
 own library that a scan flagged, wrote down, and offers back when its anniversary comes round.
@@ -350,7 +350,7 @@ night out is not cut at 00:00. It never reaches past its own first and last pict
 than 48 hours is not one occasion. `window_origin` in the run record says what bounded the film.
 
 Three routes bring a day back: `auto run` offers anniversaries within 3 days (round ones first, a
-decade before a seventh), **Surprise me** on the Memory page offers the whole catalogue, and
+decade before a seventh), the **Special day** type on the Memory page offers the whole catalogue, and
 `generate --day` takes any day, catalogued or not. An uncatalogued day is scoped to itself and named
 by `--title`, else by its date.
 

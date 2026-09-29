@@ -166,9 +166,10 @@ Privacy mode stops the cut's places from being asked about, but not the trip nam
 
 ## Thumbnails in the web UI
 
-Your browser fetches every thumbnail from the app itself (`/media/thumb/<asset id>`), out of the
-cache preparation filled, behind the same login as every page, and only for assets the current
-session prepared.
+Your browser never talks to Immich. It asks the app (`/api/v1/assets/<asset id>/thumbnail`,
+`.../video`, and `/api/v1/people/<id>/face`), behind the same login as every page. The app serves a
+picture from the preview cache, or fetches it from Immich once and keeps it; a video streams through
+the app by byte range, so the API key stays on the server.
 
 ## Privacy mode
 

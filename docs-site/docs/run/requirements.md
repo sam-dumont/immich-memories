@@ -104,11 +104,15 @@ and the Docker image built from it, not on a `pip install`.
 
 `tier: auto`, the default, picks one tier for preparation and selection alike:
 
-| Tier | Picked when | What runs | Family-viewing check |
-|---|---|---|---|
-| **`nas`** | No GPU inference is found (the default) | Immich metadata, and the DINOv2 encoder with eight heads and two detectors on the CPU. Needs `models fetch` | Rules and the detectors |
-| **`gpu`** | A GPU inference runtime (the [inference service](../better/inference.md) reporting CUDA, a local CUDA runtime, or a Mac's Metal GPU), plus a [caption server](../better/captions.md) and the Laya checkpoint | NAS, plus captions and Laya for the pictures in the cut and the candidates to replace them | Laya can add holds; it never lifts one |
-| **`full`** | GPU, plus a configured [text model](../better/reader.md) with a 32k context | GPU, plus the text model's account of the period, its polish of the draft, the title and the music mood | Same as GPU. The text model never decides what is shareable |
+| Tier | Picked when | Also needs | What runs | Family-viewing check |
+|---|---|---|---|---|
+| **`nas`** | No GPU inference is found (the default) | `models fetch` | Immich metadata, and the DINOv2 encoder with eight heads and two detectors on the CPU | Rules and the detectors |
+| **`gpu`** | A GPU inference runtime is found: the [inference service](../better/inference.md) reporting CUDA, a local CUDA runtime, or a Mac's Metal GPU | A [caption server](../better/captions.md) and the Laya checkpoint | NAS, plus captions and Laya for the pictures in the cut and the candidates to replace them | Laya can add holds; it never lifts one |
+| **`full`** | GPU, plus a [text model](../better/reader.md) whose `llm.base_url` and `llm.model` are both set | A text model with a 32k context | GPU, plus the text model's account of the period, its polish of the draft, the title and the music mood | Same as GPU. The text model never decides what is shareable |
+
+`auto` looks only at the GPU runtime and the two `llm` keys, not at the caption server or the
+Laya checkpoint. `immich-memories preflight` checks the caption server, and `models fetch` also
+downloads the Laya checkpoint once the tier is `gpu` or `full`.
 
 A [render worker](../better/gpu-render.md) or [hardware encoding](./hardware.md) moves or speeds up
 the encode. Neither changes the tier: a GPU that encodes video is not a GPU that runs the models.

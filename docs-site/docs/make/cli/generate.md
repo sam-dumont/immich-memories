@@ -208,16 +208,17 @@ the run attempt directory, and `runs why` names one when you ask about it. A run
 
 ## Output
 
-`--output` names the file you want, not the path you get. Every run writes into its own folder,
-named after the file plus the run id, so a rerun never overwrites an earlier result:
+`--output` names the file you want, not the path you get. The name gains an 8-character recipe hash
+(the same clips in the same order over the same dates hash the same), and every run writes into its own
+folder, named after that file plus the run id, so a rerun never overwrites an earlier result:
 
 ```bash
 immich-memories generate --year 2025 --output ~/Videos/summer.mp4
-# writes ~/Videos/summer_20260105_143052_a7b3/summer.mp4
+# writes ~/Videos/summer_3c9e1f0a_20260105_143052_a7b3/summer_3c9e1f0a.mp4
 ```
 
-Without `--output` the file lands in `output.directory` (`~/Videos/Memories/`) as
-`{person}_{memory-type}_{date}.mp4`. Nothing prunes those folders; `runs delete` removes a run and
+Without `--output` the file lands in the same kind of folder in `output.directory` (`~/Videos/Memories/`),
+named `{people}_{memory-type}_{dates}_{hash}.mp4`, with `all` when no one is named. Nothing prunes those folders; `runs delete` removes a run and
 its output.
 
 `--upload-to-immich --album "2024 Memories"` creates the album if it does not exist; the

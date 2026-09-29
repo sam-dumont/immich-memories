@@ -67,6 +67,10 @@ Yes, one a day at most: [Automate it](../make/automate.md).
 **Several people on one Immich server?**
 
 The web UI is single-user, single-replica: one Immich API key, one library. Run one instance per library.
+A couple whose phones upload to two accounts can still get one film from both: add the second account under
+`immich.accounts` and run `generate --accounts primary,partner` on the CLI
+([A second Immich account](../run/config-file.md#a-second-immich-account)). The web UI and automation read
+the main account only for now.
 
 **Is it stable?**
 

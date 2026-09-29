@@ -4,8 +4,6 @@ title: Title screens, maps and music
 
 # Title screens, maps and music
 
-down.
-
 The clips are the film, but the cards around them are what make it read as a memory and not an FFmpeg concat
 of your camera roll:
 
@@ -106,7 +104,7 @@ the end of February is `Summer 2024–25`. Without a home base, or for any other
 August 2025`).
 
 The web UI's suggested title is the same template in the same language, so with no reader a French trip made
-in the wizard opens on "DEUX SEMAINES EN CRÈTE, GRÈCE, ÉTÉ 2025", exactly as the CLI would.
+in the web UI opens on "DEUX SEMAINES EN CRÈTE, GRÈCE, ÉTÉ 2025", exactly as the CLI would.
 
 | Language | Code | Trip titles |
 |---|---|---|
@@ -339,5 +337,6 @@ immich-memories music add compilation.mp4 output.mp4 --mood nostalgic
 `music search` reads `audio.local_music_dir` (`~/Music/Memories`). `music add` mixes a track under a video you
 already have, with the same ducking. Without `--music` it picks a track from that folder by `--mood`, and by
 `calm` when you give none. A standalone video has no cut text to read, and no command here sends a frame to a
-model: pictures are read once, at ingest. Every flag is in the
+model: pictures are read once, at ingest. To hear what a finished cut would get before you render it,
+`music preview RUN` generates its track ([runs render](./cli/runs.md#runs-render)). Every flag is in the
 [CLI reference](../reference/cli-reference.md#music).

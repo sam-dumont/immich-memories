@@ -6,8 +6,6 @@ import Video from '@site/src/components/Video';
 
 # Photos, Live Photos and HDR
 
-survives from the phone to the film.
-
 Photos compete in the same pool as videos, on every tier. There is no separate photo pipeline: a
 still that wins a slot is animated at render time and holds the screen for the seconds the editor
 gave it. Every image in range comes back from Immich, Live Photo stills included.
@@ -151,6 +149,5 @@ per-channel gamma and offsets.
 over HDR is drawn at HLG graphics white, so a caption does not glare above the picture.
 
 `output.hdr_mode` is `auto` (HDR when any selected source is HDR), `hdr` or `sdr`. HDR output is
-H.265 only: `hdr` with H.264 or ProRes is refused, never silently flattened. **HDR clips only** on
-the Memory page (`hdr_only`) drops SDR video from the pool. Which encoders take 10-bit is on
+H.265 only: `hdr` with H.264 or ProRes is refused, never silently flattened. Which encoders take 10-bit is on
 [Hardware encoding](../run/hardware.md).

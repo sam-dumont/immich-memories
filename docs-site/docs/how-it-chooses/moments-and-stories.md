@@ -167,9 +167,10 @@ one. A year-in-review film is one year, so this does not apply to it.
 
 ## When the model plans the whole film
 
-On a model install, a film over several separate windows (on this day across years, a holiday
-across years, a birthday film) has no single period account to polish, so the model plans it whole, and so
-does any film with `advanced.editorial.thin_model_layer: false` (see [What a model adds](./what-a-model-adds.md)). Only that route adds these:
+On a model install, the model plans the whole film only when `advanced.editorial.thin_model_layer`
+is `false` (Route C in [What a model adds](./what-a-model-adds.md)). Every other film, one over
+several separate windows included (on this day across years, a birthday with flashbacks), starts
+from the no-model draft on this page and gets the polish. Only Route C adds these:
 
 - **Trips fold into one story per leg** (`editorial_story_trips`), each with a reserve of
   `round(slots / 2 * sqrt(leg days / film days))` shots, at least one.

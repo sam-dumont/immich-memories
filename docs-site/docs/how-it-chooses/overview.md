@@ -4,7 +4,9 @@ title: From library to film
 
 # From library to film
 
-route through the code, for when you want to see every step.
+How a period of your library becomes a film: the short version and the rules that always hold
+first, then the route through the code, for when you want to see every step. The pages after this
+one take each stage in turn.
 
 ## The short version
 
@@ -110,8 +112,8 @@ flowchart TD
 ```
 
 Admission refuses a few things before anything is read: a video over five minutes
-(`max_source_video_seconds`), the video half of a Live Photo (it plays inside its still), anything
-tagged `immich-memories/generated` or listed in this install's upload receipts (a film this app made
+(`advanced.analysis.max_source_video_seconds`, 300 s), the video half of a Live Photo (it plays
+inside its still), anything tagged `immich-memories/generated` or listed in this install's upload receipts (a film this app made
 is not footage), and pictures that look forwarded rather than shot on your camera. After the heads
 run, screenshots and photos of screens go too: a phone-screen pixel size, the `screen` head, or the
 document detector calling it a screenshot, a table or a QR code.

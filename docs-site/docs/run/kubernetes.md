@@ -20,7 +20,8 @@ deploy/kubernetes/
 │   └── ingress.yaml.example optional Ingress, only after enabling authentication
 ├── overlays/gpu/            the app on an NVIDIA node
 ├── overlays/inference/      the inference service alone (+ -cuda, + -lan for outside callers)
-└── overlays/captioner/      the SmolVLM caption service (+ -cuda)
+├── overlays/captioner/      the SmolVLM caption service (+ -cuda)
+└── overlays/postgres/       the store on your PostgreSQL instead of SQLite
 ```
 
 ## Prerequisites
@@ -111,23 +112,25 @@ A deployment that predates the models claim has to add it before the next apply,
 There is no ConfigMap. `IMMICH_URL`, `IMMICH_API_KEY` and any other secret setting come from the
 Secret (`envFrom`); everything else is an `IMMICH_MEMORIES_<SECTION>__<KEY>` env var on the
 Deployment, which carries commented examples for the reader and the daily automation. Settings
-saved from the UI go to `config.yaml` on the PVC; env vars override them.
+saved from the UI go to the store (`store.db` on the PVC by default); env vars override them
+([where a setting comes from](./config-file.md#where-a-setting-comes-from)).
 
 The NetworkPolicy allows egress to DNS, 80 and 443, Immich on 2283, a reader on 11434 (Ollama's
 port; oMLX serves on 8000) and the caption server on 8092. Edit the ports if yours differ.
 
 ## The models the first cut needs
 
-Every pod in `base/` runs a `fetch-models` init container first, writing the four pinned artifacts
-onto the `/models` claim, so there is nothing to run by hand. It exits without a download when all
-four are there, so a restart costs nothing and a nightly CronJob never goes back to the network.
+The Deployment and the one-off `generate` Job run a `fetch-models` init container first, writing
+the four pinned artifacts onto the `/models` claim, so there is nothing to run by hand. It exits
+without a download when all four are there, so a restart costs nothing. The CronJobs only `curl`
+the Deployment and need no models.
 `kubectl logs -n immich-memories deploy/immich-memories -c fetch-models` shows what it did.
 
 ## Automatic product tiers {#set-the-preparation-tier}
 
-The Deployment, Job and CronJobs set `IMMICH_MEMORIES_TIER` to `auto`, so a CPU-only base runs
-the `nas` tier. To reach `gpu`, point every pod you run at a GPU inference service and a caption
-server, and install the Laya checkpoint:
+The Deployment and the Job set `IMMICH_MEMORIES_TIER` to `auto`, so a CPU-only base runs the
+`nas` tier. `auto` moves to `gpu` once it finds a GPU inference service; that tier then needs a
+caption server and the Laya checkpoint too. Point every pod you run at both services:
 
 ```yaml
             - name: IMMICH_MEMORIES_TIER
@@ -154,8 +157,39 @@ kubectl exec -n immich-memories deploy/immich-memories -- immich-memories prefli
 
 Preflight follows the reader and tier the Deployment sets, so run it after the change above.
 
+## Home base, time zone and the first cut
+
+Set the home base on the Deployment, beside the commented `TZ` example the daily timer reads, so
+trips read as one story and your country's public holidays count:
+
+```bash
+kubectl -n immich-memories set env deployment/immich-memories \
+  IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE=50.8503 \
+  IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE=4.3517 \
+  TZ=Europe/Brussels
+```
+
+`set env` changes the live object only; put the same pairs in `base/deployment.yaml` so a fresh
+apply has them too. Then port-forward, cut a month ([Your first film](../get-started/first-film.mdx)) and
+confirm who's who once ([Teach it your family](../get-started/who-is-who.md)).
+
+## Getting the films
+
+Films land on the `immich-memories-output` PVC. Either copy them out:
+
+```bash
+kubectl get pods -n immich-memories             # the immich-memories-<hash> pod
+kubectl cp immich-memories/<pod>:/app/output ./output
+```
+
+or have each one uploaded to Immich: `IMMICH_MEMORIES_UPLOAD__ENABLED=true` (and
+`IMMICH_MEMORIES_UPLOAD__ALBUM_NAME`) on the Deployment, with a key that may upload
+([the permissions](./docker.md#the-api-key), [Upload back to Immich](./config-file.md#upload-back-to-immich)).
+
 ## GPU
 
+Intel Quick Sync and AMD VA-API need `/dev/dri` in the pod, which takes a device plugin these
+manifests do not ship; without one the encode runs on the CPU.
 `overlays/gpu/deployment-gpu.yaml` patches the Deployment with `runtimeClassName: nvidia`, one
 `nvidia.com/gpu`, the two `NVIDIA_*` env vars, the `nvidia.com/gpu.present=true` node selector and
 the matching toleration. The app uses that card for NVENC encoding and the title kernels and
@@ -165,17 +199,24 @@ line.
 
 ## The two model services
 
-Both apply on their own, with no Secret and no `base/`:
+Both apply on their own, with no Secret and no `base/`. On a cluster where `base/` has not run
+yet, create the namespace first (`kubectl create namespace immich-memories`):
 
 ```bash
 kubectl apply -k deploy/kubernetes/overlays/inference    # heads and detectors, -cuda for a card
 kubectl apply -k deploy/kubernetes/overlays/captioner    # the caption server the gpu and full tiers need
 ```
 
-Point the app at them with `IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL=http://inference:8092` (two
-underscores) and `caption_base_url: http://captioner:8092/v1`; the base NetworkPolicy already
-allows egress on 8092. What each overlay patches, and what a card is worth per picture, are on
+Point the app at them with `IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL=http://inference:8092` and
+`IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL=http://captioner:8092/v1` (two
+underscores between levels); the base NetworkPolicy already allows egress on 8092. What each overlay patches, and what a card is worth per picture, are on
 [the inference service](../better/inference.md) and [Caption server](../better/captions.md).
+
+Three add-ons have no overlay here: the reader (commented env vars on the Deployment,
+[Add a reader](../better/reader.md)), the render worker (its own `kubernetes.yaml`,
+[Render on a GPU box](../better/gpu-render.md)) and generated music (a server of your own,
+[Generated music](../better/music.md)). Each is a URL on the Deployment; open its port in the
+NetworkPolicy if it is not 80, 443, 8092 or 11434.
 
 ## Batch jobs
 
@@ -194,18 +235,45 @@ no `--year`/`--person` parameters: prefer
 Deployment, and keep the Job for a batch cluster where the Deployment stays scaled to 0 between
 runs.
 
+Whichever clock fires it, the daily film stays on the output PVC unless upload is on
+([Getting the films](#getting-the-films)); `IMMICH_MEMORIES_AUTOMATION__UPLOAD_TO_IMMICH=true`
+uploads the daily runs only. The trigger route itself: [Trigger it over HTTP](../make/automate.md#trigger-it-over-http).
+
 ## Database
 
 The store defaults to a SQLite file on the cache PVC. `overlays/postgres` is not referenced by
-`base/kustomization.yaml`, so applying `base` alone keeps that default; apply the overlay yourself
-to point the store at PostgreSQL instead. The four modes, and the SQL for a dedicated schema in
-Immich's own database, are on [Database and the store](./database.md).
+`base/kustomization.yaml`, so applying `base` alone keeps that default. To put the store on
+PostgreSQL:
+
+```bash
+cd deploy/kubernetes
+cp overlays/postgres/database-secret.yaml.example overlays/postgres/database-secret.yaml
+vim overlays/postgres/database-secret.yaml   # IMMICH_MEMORIES_DATABASE_URL, and the schema if shared
+kubectl apply -k overlays/postgres           # instead of base, not after it
+```
+
+The overlay builds on `base/` and only adds the database Secret to the Deployment; it does not run
+PostgreSQL for you. It and `overlays/gpu` each build on `base/`, so applying one after the other
+drops the first one's patch. For both, make one overlay of your own: copy the two patch files and
+`database-secret.yaml` into it, next to a kustomization that lists `../../base` once and both
+patches. The one-off `generate` Job in `base/job.yaml` does not get the database Secret either;
+add the second `secretRef` there if you run it. The four modes, and the SQL for a dedicated schema
+in Immich's own database, are on [Database and the store](./database.md).
 
 ## Backups
 
 Back up the cache PVC: `store.db` on it is the expensive part (unless the store is PostgreSQL), and
 losing it means re-reading the library. `immich-memories store backup` writes the whole store to one
-file. For secrets in git, use
+file on that PVC, live, on either backend (the image ships `pg_dump`):
+
+```bash
+kubectl exec -n immich-memories deploy/immich-memories -- immich-memories store backup
+kubectl cp immich-memories/<pod>:/home/immich/.immich-memories/backups ./backups
+```
+
+A restore needs the Deployment scaled to 0: [Restore in a container](./database.md#restore-in-a-container).
+Caches on the same PVC (previews, clips) are safe to delete:
+[Caches](./maintenance/health-logs-cache.md#caches). For secrets in git, use
 [sealed-secrets](https://github.com/bitnami-labs/sealed-secrets):
 `kubeseal --format=yaml < base/secret.yaml > base/sealed-secret.yaml`.
 
@@ -215,3 +283,28 @@ file. For secrets in git, use
 (`200` only with config present and Immich reachable, else `503`) is the readiness probe, every
 15 s, and keeps the pod out of the Service while Immich is down. `/health` always returns `200` and
 is not a probe.
+
+## Logs
+
+```bash
+kubectl logs -n immich-memories deploy/immich-memories -f
+```
+
+The UI, every cut and every daily run log there. `IMMICH_MEMORIES_LOG_LEVEL` and
+`IMMICH_MEMORIES_LOG_FORMAT=json` on the Deployment: [Logging](./maintenance/health-logs-cache.md#logging).
+
+## Upgrading and rollback
+
+```bash
+kubectl exec -n immich-memories deploy/immich-memories -- immich-memories store backup
+cd deploy/kubernetes/base && kustomize edit set image \
+  ghcr.io/sam-dumont/immich-video-memory-generator=:X.Y.Z
+kubectl apply -k .                      # or the overlay you applied
+kubectl exec -n immich-memories deploy/immich-memories -- immich-memories models fetch
+```
+
+Run the last line on every upgrade. The `fetch-models` init container only checks that the four
+files exist, not that they are the new release's pins, so after a release that moves a pin it skips
+the download and the next cut refuses to start. `models fetch` is a no-op otherwise. Rollback is the
+same `set image` with the old tag, then the store backup you took before:
+[Rollback](./maintenance/upgrading.md#rollback).

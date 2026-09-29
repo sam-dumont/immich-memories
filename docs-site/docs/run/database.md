@@ -46,14 +46,23 @@ at (a library in the tens of thousands of assets, not millions).
 
 ## 2. A separate PostgreSQL service
 
-`docker-compose.yml` ships a commented `postgres` service (`postgres:16`, pinned by digest) and a
-commented `IMMICH_MEMORIES_DATABASE_URL` line on the app service. Uncomment both, set
-`POSTGRES_PASSWORD` in `.env`, and `docker compose --profile postgres up -d`. On Kubernetes,
+`docker-compose.yml` ships a commented `postgres` service (`postgres:16`, pinned by digest), a
+commented `IMMICH_MEMORIES_DATABASE_URL` line on the app service, and a commented
+`immich-memories-postgres-data` volume at the bottom. Uncomment all three, then in `.env`:
+
+```bash
+POSTGRES_PASSWORD=a-long-random-password
+COMPOSE_PROFILES=postgres
+```
+
+and `docker compose up -d`. The service sits behind the `postgres` profile, and
+`COMPOSE_PROFILES` turns it on for every later `up` too, so an update with a plain
+`docker compose up -d` does not leave the app without its database. On Kubernetes,
 `deploy/kubernetes/overlays/postgres` does the equivalent: it is not referenced by
 `base/kustomization.yaml`, so applying `base` alone keeps SQLite, and applying the overlay points
 the Deployment at a `database-secret.yaml` you fill in yourself; it does not run PostgreSQL for
-you. Terraform: set `database_url` (and, only if you share the instance, `database_schema`), both
-empty by default.
+you. Terraform: set `database_url` (empty by default, which keeps SQLite) and, only if you share
+the instance, `database_schema` (default `immich_memories`).
 
 ```
 IMMICH_MEMORIES_DATABASE_URL=postgresql+psycopg://immich_memories:change-me@postgres:5432/immich_memories
@@ -69,8 +78,12 @@ The same URL, pointed at a database on an instance you already run for something
 Immich's own PostgreSQL container, if you want to reuse it without touching Immich's schema):
 
 ```
-IMMICH_MEMORIES_DATABASE_URL=postgresql+psycopg://immich_memories:change-me@immich-postgres:5432/immich_memories
+IMMICH_MEMORIES_DATABASE_URL=postgresql+psycopg://immich_memories:change-me@database:5432/immich_memories
 ```
+
+`database` is the service name in Immich's own compose file, so the host resolves when this app
+runs in that file ([next to your Immich stack](./docker.md#next-to-your-immich-stack)). From
+anywhere else, use the address that reaches your PostgreSQL.
 
 Create the database and a role scoped to it first:
 
@@ -89,11 +102,15 @@ Point the URL at Immich's database, and set the schema so the store's tables lan
 is not `public`:
 
 ```
-IMMICH_MEMORIES_DATABASE_URL=postgresql+psycopg://immich_memories:change-me@immich-postgres:5432/immich
+IMMICH_MEMORIES_DATABASE_URL=postgresql+psycopg://immich_memories:change-me@database:5432/immich
 IMMICH_MEMORIES_DATABASE_SCHEMA=immich_memories
 ```
 
-Create the role and schema, with no grants on anything Immich owns:
+`IMMICH_MEMORIES_DATABASE_SCHEMA` is not in the shipped compose file: add it to the service's
+`environment:` block next to the URL.
+
+Create the role and schema while connected to Immich's database (`immich`), with no grants on
+anything Immich owns:
 
 ```sql
 CREATE ROLE immich_memories WITH LOGIN PASSWORD 'change-me';
@@ -187,6 +204,34 @@ Stop the app first: a restore replaces the database under it.
 
 A SQLite backup restores into SQLite and a PostgreSQL one into PostgreSQL. To change backend,
 restore into the backend the backup came from, then `store copy`.
+
+#### Restore in a container {#restore-in-a-container}
+
+In a container the app is the process that holds the store, so `exec` into it is the wrong place.
+Stop it and run the restore in a one-off container on the same volumes.
+
+**Docker Compose:**
+
+```bash
+docker compose stop immich-memories
+docker compose run --rm immich-memories immich-memories store restore \
+  --from /home/immich/.immich-memories/backups/store-<UTC time>.db --force
+docker compose up -d
+```
+
+**Kubernetes and Terraform:** scale the Deployment to 0, run a copy of the one-off `generate` Job in
+`deploy/kubernetes/base/job.yaml` with its command replaced by
+`immich-memories store restore --from /home/immich/.immich-memories/backups/<file> --force` (add the
+database Secret to it when the store is on PostgreSQL), then scale back to 1:
+
+```bash
+kubectl -n immich-memories scale deploy/immich-memories --replicas=0
+kubectl -n immich-memories apply -f restore-job.yaml && kubectl -n immich-memories wait --for=condition=complete job/<name>
+kubectl -n immich-memories scale deploy/immich-memories --replicas=1
+```
+
+On a uv or pip install, stop `immich-memories ui` and run the restore from a shell, outside the time
+the daily job fires.
 
 ### Moving from SQLite to PostgreSQL: `store copy --to URL`
 

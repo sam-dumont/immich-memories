@@ -62,7 +62,8 @@ for in a sentence is read with. All four are checked against a SHA-256 and land 
 Immich, the model digests, the home base and whether the output folder takes a file.
 
 **5. Open [http://localhost:8080](http://localhost:8080)** and cut a month:
-[Your first film](../get-started/first-film.mdx).
+[Your first film](../get-started/first-film.mdx). Then confirm who's who once:
+[Teach it your family](../get-started/who-is-who.md).
 
 ### When a step is missing
 
@@ -102,6 +103,20 @@ alias im='docker compose exec immich-memories immich-memories'
 im generate --memory-type monthly_highlights --year 2025 --month 6
 ```
 
+## Films into Immich
+
+Every film lands in `./output`. To have each one uploaded to Immich as well, into an album, add
+these to the compose file's `environment:` block (a line in `.env` alone does not reach the
+container) and run `docker compose up -d`:
+
+```yaml
+      IMMICH_MEMORIES_UPLOAD__ENABLED: "true"
+      IMMICH_MEMORIES_UPLOAD__ALBUM_NAME: "Memories"
+```
+
+The key needs the upload permissions in the table above. What it writes to Immich:
+[Upload back to Immich](./config-file.md#upload-back-to-immich).
+
 ## Reaching the UI from another machine
 
 The compose file publishes `127.0.0.1:8080:8080`, so nothing else on your network reaches it.
@@ -120,7 +135,8 @@ then change the mapping to `"8080:8080"`. Port 8080 taken already? Change the le
 
 ## Next to your Immich stack
 
-Paste the `immich-memories` service into Immich's own compose file, set
+Paste the `immich-memories` service into Immich's own compose file, add
+`immich-memories-config:` to that file's top-level `volumes:`, set
 `IMMICH_URL=http://immich-server:2283`, and add `depends_on: [immich-server]`. It then reaches
 Immich over the internal network. `immich-server` listens on 2283 in every Immich v2 and v3
 release. An unknown major version stops the run:
@@ -129,7 +145,7 @@ release. An unknown major version stops the run:
 ## The product tier in compose {#the-preparation-tier-in-compose}
 
 The compose file sets `IMMICH_MEMORIES_TIER: "auto"`, so the app picks its tier from what it
-finds: a plain NAS until a GPU and a caption server are there. How it decides:
+finds: a plain NAS until it finds GPU inference. How it decides, and what the `gpu` tier then needs:
 [The three tiers](./requirements.md#the-preparation-tier).
 
 `IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` puts the document classifier on the
@@ -143,9 +159,12 @@ Everything optional sits in the same file, off until you ask for it:
 | Add-on | Start it with | Page |
 |---|---|---|
 | Inference service (heads and detectors on another process or a GPU) | `docker compose --profile inference up -d` | [Inference on a GPU box](../better/inference.md) |
-| Caption server (for `tier: full`) | `docker compose --profile captioner up -d` | [Add captions](../better/captions.md) |
+| Caption server (for the `gpu` and `full` tiers) | `docker compose --profile captioner up -d` | [Add captions](../better/captions.md) |
 | A reader | two env vars pointing at a model server | [Add a reader](../better/reader.md) |
-| Hardware encoding (Intel Quick Sync, VA-API) | the commented `devices:` block | [Hardware encoding](./hardware.md) |
+| Hardware encoding (Intel Quick Sync, VA-API) | the commented `devices:` block | [Hardware encoding](./hardware.md#intel-quick-sync-and-amd-vaapi) |
+| Hardware encoding (NVIDIA NVENC) | a device reservation and one env var | [Hardware encoding](./hardware.md#nvidia) |
+| Render worker (the encode on a GPU box) | a second compose file, on that box | [Render on a GPU box](../better/gpu-render.md) |
+| Generated music (ACE-Step, MusicGen) | a music server of your own, then its URL | [Generated music](../better/music.md) |
 
 Banked facts are the same rows whichever process wrote them, so adding or removing an add-on
 re-derives nothing.
@@ -210,15 +229,25 @@ Every day at that time the UI process runs what `auto run` does on the CLI: retr
 upload, or make one eligible memory, then notify. A container that was down catches up on start.
 [Automate it](../make/automate.md).
 
-## Health check
+The daily film stays in `./output` unless upload is on: set `IMMICH_MEMORIES_UPLOAD__ENABLED` as in
+[Films into Immich](#films-into-immich) (every run), or
+`IMMICH_MEMORIES_AUTOMATION__UPLOAD_TO_IMMICH: "true"` (the daily runs only). To fire the same
+decision from outside instead (Home Assistant, an Immich workflow, a cron on another box):
+[Trigger it over HTTP](../make/automate.md#trigger-it-over-http).
+
+## Health check and logs
 
 The image's health check hits `/health/live`. For readiness, use `/health/ready`: `200` when the
 configuration and Immich are usable, `503` otherwise, and it reports the daily automation under
-`in_process_scheduler`. `/health` always answers `200` and is not a probe.
+`in_process_scheduler` (with login on, only to a signed-in session). `/health` always answers
+`200` and is not a probe.
 
 ```bash
 docker inspect --format='{{.State.Health.Status}}' immich-memories
+docker compose logs -f immich-memories      # the UI, every cut and every daily run
 ```
+
+Log level, JSON lines and a log file: [Health, logs and caches](./maintenance/health-logs-cache.md#logging).
 
 ## What to keep
 
@@ -236,7 +265,12 @@ docker compose exec immich-memories immich-memories store backup
 
 It lands in `/home/immich/.immich-memories/backups/` with a manifest beside it. The image ships the
 PostgreSQL client tools, so the same command works when the store is on PostgreSQL
-([backup and restore](./database.md#managing-the-store)).
+([backup and restore](./database.md#managing-the-store)). To copy the backups off the volume:
+`docker compose cp immich-memories:/home/immich/.immich-memories/backups ./backups`. A restore
+needs the app stopped: [Restore in a container](./database.md#restore-in-a-container).
+
+The previews and clips a cut downloads sit on the same volume, under `cache/`: up to 10 GB of each
+by default, and safe to delete. Sizes and caps: [Caches](./maintenance/health-logs-cache.md#caches).
 
 ## The store: SQLite or PostgreSQL
 
@@ -257,7 +291,8 @@ docker compose exec immich-memories immich-memories models fetch
 
 `up` does not re-pull a `latest` the machine already has, so `pull` comes first. `models fetch` is a
 no-op when the files are right, and downloads again when a release moves a pin. Config, banks and
-films live on the volume and the bind mount, so a recreate loses nothing.
+films live on the volume and the bind mount, so a recreate loses nothing. Take a `store backup`
+first if you might go back: [Rollback](./maintenance/upgrading.md#rollback).
 
 ## Custom music
 

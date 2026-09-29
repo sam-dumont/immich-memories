@@ -165,7 +165,9 @@ server on your own machine or network and 4 for a public host.
 - **The thesis**, the period's account in up to 150 words. It steers the vote, and the storyboard and
   `runs story` show it on every film the model polished or planned.
 
-The captions under the pictures are dates and places from Immich metadata on every tier.
+The captions under the pictures are dates and places, on every tier: the date from Immich
+metadata, the place from Immich's city, or the district when `network.geocoding` is on and found
+one. Story titles and the storyboard read the same place name.
 
 ## The keys
 

@@ -184,7 +184,7 @@ unless you starred it: a starred video of a wall means something happened there.
 
 ## With a model planning the whole film
 
-On the model's own route (films over several windows, or `thin_model_layer: false`), the model picks
+On the model's own route (`thin_model_layer: false`), the model picks
 the moments of each story from a shortlist of their captions, and reads each video's motion line: the
 sentence the caption server wrote at ingest from three keyframes. A Live Photo's sentence reaches it
 only once its residual measured at least 1.5, and a video whose frames measured under 1.5 has its

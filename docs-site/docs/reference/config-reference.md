@@ -125,9 +125,9 @@ A name is lowercase letters and digits joined by single underscores (`partner`, 
 `primary` is taken: it means the top-level account. The name is what a person alias bound to that
 account records. Configuring an account adds nothing to your films: a run reads only the accounts it
 selects, and every selected account has to answer `/users/me` with its key before anything is read.
-Films don't read extra accounts yet; `config test` and `preflight` already check each one, one line
-per account, with no key printed. Multi-account films are tracked in
-[#1500](https://github.com/sam-dumont/immich-video-memory-generator/issues/1500).
+`generate --accounts primary,partner` reads the named accounts into one film (the CLI only, for
+now), and `config test` and `preflight` check each one, one line per account, with no key printed:
+[A second Immich account](../run/config-file.md#a-second-immich-account).
 
 The key is a secret like the primary one: redacted from logs and issue reports, and sealed with
 `IMMICH_MEMORIES_SECRET_KEY` when saved to the database (the whole `immich.accounts` map is one

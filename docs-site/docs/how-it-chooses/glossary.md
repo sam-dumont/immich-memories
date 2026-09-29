@@ -4,6 +4,7 @@ title: Glossary
 
 # Glossary
 
+The words the pages of this section use, what each one means, and the file where the code
 meets them. Where the code and this page disagree, the code wins.
 
 ```mermaid

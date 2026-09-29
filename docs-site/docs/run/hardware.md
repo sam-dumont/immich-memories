@@ -77,7 +77,22 @@ No hardware acceleration detected, using software encoding
 
 Set `NVIDIA_DRIVER_CAPABILITIES=compute,video,utility` on the container, with
 `runtimeClassName: nvidia` in Kubernetes or `capabilities: [gpu, video]` in the compose device
-reservation. `kubectl apply -k overlays/gpu` sets both.
+reservation. `kubectl apply -k overlays/gpu` sets both. The shipped compose file has no GPU block on
+the app service: add the variable to its `environment:` block, and the reservation under the
+`deploy:` it already has:
+
+```yaml
+      NVIDIA_DRIVER_CAPABILITIES: "compute,video,utility"   # in environment:
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, video]
+```
 
 An FFmpeg built against a newer NVENC SDK than your driver refuses to open the encoder at render
 time. This project's image works on the 570 driver; the one-frame probe catches a mismatch and

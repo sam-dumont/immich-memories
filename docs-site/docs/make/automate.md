@@ -131,6 +131,43 @@ carrying the error; the video stays on disk. Every attempt writes its full outpu
 downloadable from the **Runs** page). `auto status` shows the running code's version and commit, the timer, the
 last attempt, the cooldown and the live suggestion.
 
+## Check on it
+
+```bash
+immich-memories auto status             # is the timer installed, when did it last run, what is next
+immich-memories auto status --json      # the same, for a script or jq
+immich-memories auto history --limit 5  # the last five films it made on its own
+```
+
+`auto history` lists only completed automatic runs; a film you made with `generate` or the web UI is in
+`runs list` ([runs](./cli/runs.md)). In Docker, prefix each with `docker compose exec immich-memories`.
+
+## Get told when it runs
+
+Notifications go through [Apprise](https://github.com/caronc/apprise), so one URL per target covers ntfy,
+Discord, Telegram, email and about a hundred others. They are off by default:
+
+```yaml
+advanced:
+  notifications:
+    enabled: true
+    urls:
+      - "ntfy://ntfy.sh/my-topic"
+    on_success: true
+    on_failure: true
+```
+
+```bash
+immich-memories auto test-notification
+```
+
+`auto test-notification` sends one message to every URL and says whether it went through. It ignores the
+cooldown that follows a failed delivery (`cooldown_hours`, 24), and a test that succeeds clears it. Every film
+then sends one: `auto run`, the Docker timer and a plain `generate`. The message carries the memory type, the
+outcome, the duration, the output path and, on a failure, a redacted error tail; no picture unless you set
+`attach_thumbnail: true`. The URLs hold credentials, so `config show` masks them and the database stores them encrypted.
+Every key is in the [config reference](../reference/config-reference.md#notifications).
+
 ## Trigger it over HTTP
 
 One POST starts the decision `auto run` would have made, on the same detectors, rules, cooldown and history.
