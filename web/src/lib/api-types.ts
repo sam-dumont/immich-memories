@@ -957,6 +957,22 @@ export interface components {
              */
             name: "video" | "thumbnail";
         };
+        /**
+         * CaptionDefaults
+         * @description `defaults.add_date` and `defaults.add_place`: what the render panel starts ticked.
+         */
+        CaptionDefaults: {
+            /**
+             * Add Date
+             * @default true
+             */
+            add_date: boolean;
+            /**
+             * Add Place
+             * @default true
+             */
+            add_place: boolean;
+        };
         /** Choice */
         Choice: {
             /** Kind */
@@ -1383,16 +1399,10 @@ export interface components {
          * @description `runs render`'s flags; None keeps the CLI's own default.
          */
         RenderOptions: {
-            /**
-             * Add Date
-             * @default false
-             */
-            add_date: boolean;
-            /**
-             * Add Place
-             * @default false
-             */
-            add_place: boolean;
+            /** Add Date */
+            add_date?: boolean | null;
+            /** Add Place */
+            add_place?: boolean | null;
             /** Album */
             album?: string | null;
             /** Format */
@@ -1675,6 +1685,13 @@ export interface components {
             auto_launch: boolean;
             /** Button Text */
             button_text: string | null;
+            /**
+             * @default {
+             *       "add_date": true,
+             *       "add_place": true
+             *     }
+             */
+            captions: components["schemas"]["CaptionDefaults"];
             /**
              * Demo Mode Offered
              * @default false

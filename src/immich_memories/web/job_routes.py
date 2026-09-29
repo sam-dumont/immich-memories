@@ -70,8 +70,9 @@ class RenderOptions(BaseModel):
     # "none", "auto" (as configured), or the id of a previewed or uploaded track.
     music: str = "auto"
     music_volume: float | None = None
-    add_date: bool = False
-    add_place: bool = False
+    # None follows defaults.add_date / add_place, as `runs render` does with neither flag.
+    add_date: bool | None = None
+    add_place: bool | None = None
     privacy_mode: bool = False
     upload_to_immich: bool = False
     album: str | None = None
@@ -93,7 +94,8 @@ class RenderOptions(BaseModel):
             "music_volume",
             "album",
         )
-        switches = ("add_date", "add_place", "privacy_mode", "upload_to_immich")
+        switches = ("privacy_mode", "upload_to_immich")
+        either_way = ("add_date", "add_place")
         return [
             *(
                 f"--{n.replace('_', '-')}={getattr(self, n)}"
@@ -101,6 +103,11 @@ class RenderOptions(BaseModel):
                 if getattr(self, n) is not None
             ),
             *(f"--{n.replace('_', '-')}" for n in switches if getattr(self, n)),
+            *(
+                f"--{'' if getattr(self, n) else 'no-'}{n.replace('_', '-')}"
+                for n in either_way
+                if getattr(self, n) is not None
+            ),
             *(["--no-music"] if self.music == "none" else []),
             *([f"--music={music_path}"] if music_path else []),
             *(

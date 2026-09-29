@@ -227,7 +227,14 @@ defaults:
   transition: "smart"            # cut, crossfade, smart, none (used when --transition is left on smart)
   transition_duration: 0.5       # 0-2 seconds
   sharing: "family"              # just-us | family | shareable; used when --sharing is not given
+  add_date: true                 # caption each clip with its date; --no-add-date turns it off for one film
+  add_place: true                # caption each clip with its place; --no-add-place turns it off for one film
 ```
+
+`add_date` and `add_place` are the one rule for captions on every surface: the web render panel
+starts from them, `generate` and `runs render` use them when neither `--add-date` nor
+`--no-add-date` is given, and automation follows them. Set one to `false` to turn that caption off
+everywhere, automation included. Privacy mode never shows a place, whatever `add_place` says.
 
 `sharing` is who a film is for when the run doesn't say (`generate --sharing`, or **Who will watch
 it** in the web brief). `just-us` is the household: a private moment a caption names, like a bath,

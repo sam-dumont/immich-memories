@@ -114,7 +114,8 @@ It lands in your output folder and shows up in `runs list` as a new run.
 
 It takes `generate`'s output flags under the same names: `--title`, `--subtitle`,
 `--llm-title/--no-llm-title`, `--transition`, `--resolution`, `--orientation`, `--scale-mode`,
-`--format`, `--quality`, `--music`, `--no-music`, `--music-volume`, `--add-date`, `--add-place`,
+`--format`, `--quality`, `--music`, `--no-music`, `--music-volume`, `--add-date/--no-add-date`,
+`--add-place/--no-add-place` (both on unless the config says otherwise),
 `--privacy-mode`, `--upload-to-immich`, `--album`. The length is the cut's, unless a revision
 keeps more than the titles left room for: then the film grows to hold it.
 

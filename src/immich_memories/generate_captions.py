@@ -16,6 +16,7 @@ from immich_memories.i18n import DEFAULT_LOCALE
 from immich_memories.i18n_places import is_country, localise_place
 
 if TYPE_CHECKING:
+    from immich_memories.config_loader import Config
     from immich_memories.generate import GenerationParams
     from immich_memories.processing.assembly_config import AssemblyClip
 
@@ -72,6 +73,20 @@ def apply_location_captions(
         )
         for clip in clips
     ]
+
+
+def resolve_caption_overlays(
+    config: Config, *, add_date: bool | None, add_place: bool | None
+) -> tuple[bool, bool]:
+    """Whether a film is captioned with dates and with places: what the film asked, else the config.
+
+    `defaults.add_date` and `defaults.add_place` are the one rule the web client, the CLI and
+    automation start from, so no surface can quietly render without captions the others show.
+    """
+    return (
+        config.defaults.add_date if add_date is None else add_date,
+        config.defaults.add_place if add_place is None else add_place,
+    )
 
 
 def prepare_location_captions(

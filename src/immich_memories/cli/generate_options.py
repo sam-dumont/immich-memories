@@ -269,10 +269,14 @@ def run_options(command: FC) -> FC:
             "--album", type=str, default=None, help="Immich album name for uploaded video"
         ),
         click.option(
-            "--add-date", is_flag=True, default=False, help="Caption each clip with its date"
+            "--add-date/--no-add-date",
+            default=None,
+            help="Caption each clip with its date (default: defaults.add_date, on)",
         ),
         click.option(
-            "--add-place", is_flag=True, default=False, help="Caption each clip with its place"
+            "--add-place/--no-add-place",
+            default=None,
+            help="Caption each clip with its place (default: defaults.add_place, on)",
         ),
         click.option(
             "--keep-intermediates",

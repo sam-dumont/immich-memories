@@ -300,8 +300,8 @@ immich-memories generate [OPTIONS]
 | `--sharing` | choice: `just-us` \| `family` \| `shareable` | - | Who the film is for: just-us (the household), family (default: defaults.sharing) or shareable (anyone) |
 | `--upload-to-immich` | boolean | false | Upload generated video back to Immich |
 | `--album` | text | - | Immich album name for uploaded video |
-| `--add-date` | boolean | false | Caption each clip with its date |
-| `--add-place` | boolean | false | Caption each clip with its place |
+| `--add-date` | boolean | - | Caption each clip with its date (default: defaults.add_date, on) |
+| `--add-place` | boolean | - | Caption each clip with its place (default: defaults.add_place, on) |
 | `--keep-intermediates` | boolean | false | Keep intermediate files for debugging |
 | `--privacy-mode` | boolean | false | Demo mode: blur every clip frame, scramble the audio, fake the person names |
 | `--title` | text | - | Override video title text |
@@ -723,8 +723,8 @@ immich-memories runs render [OPTIONS]
 | `--music` | text | - | A track to use, or 'auto' to choose as configured |
 | `--no-music` | boolean | false |  |
 | `--music-volume` | float | 0.5 |  |
-| `--add-date` | boolean | false | Date overlay on each clip |
-| `--add-place` | boolean | false | Place overlay on each clip |
+| `--add-date` | boolean | - | Caption each clip with its date (default: defaults.add_date, on) |
+| `--add-place` | boolean | - | Caption each clip with its place (default: defaults.add_place, on) |
 | `--privacy-mode` | boolean | false |  |
 | `--upload-to-immich` | boolean | false |  |
 | `--album` | text | - | Immich album for the upload |
