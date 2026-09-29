@@ -73,7 +73,7 @@ editor's job, see [How it chooses](../how-it-chooses/overview.md).
 | Multi-person | pairs who appear together | 0.55, by estimated shared pictures up to 500, 50 minimum |
 | On this day | dates with content in 5+ years | 0.35, by years the same month has content, up to 10 |
 | Special day | a catalogued day whose anniversary is within 3 days | 0.8, ×1.0 for a decade, ×0.85 for a half-decade, ×0.6 otherwise |
-| Saved group | last year's film of each [saved group](../run/multi-account.md#saved-groups), once | 0.65, counted as multi-person |
+| Saved group | last year's film of each [saved group](../run/multi-account.mdx#saved-groups), once | 0.65, counted as multi-person |
 
 Then, in order: a 1.2× boost for a memory that does not exist yet, recency (linear decay over 365 days from
 when the memory is timely, floor 0.5), content richness (up to 30 % of the score, log scale), and a same-type
@@ -99,7 +99,7 @@ one failure never counts, and a success clears it.
 
 ## Across accounts, and saved groups
 
-With a [second Immich account](../run/multi-account.md) connected, name the accounts automation reads:
+With a [second Immich account](../run/multi-account.mdx) connected, name the accounts automation reads:
 
 ```yaml
 advanced:
@@ -115,7 +115,7 @@ account.
 `detect_groups` proposes one `multi_person` film of last year for each saved group (`people group add`). A
 group's film is not proposed again once made, and a group none of whose people is among the most-pictured
 people discovery counts is skipped. It shares the multi-person cap and rotation rules. The whole walkthrough:
-[A second Immich account](../run/multi-account.md#what-automation-does-across-accounts).
+[A second Immich account](../run/multi-account.mdx#what-automation-does-across-accounts).
 
 ## What auto run does, exactly
 
