@@ -41,13 +41,15 @@ services:
       IMMICH_MEMORIES_AUTH__ISSUER_URL: "${OIDC_ISSUER_URL:-https://idp.example.com}"
       IMMICH_MEMORIES_AUTH__CLIENT_ID: "${OIDC_CLIENT_ID:-immich-memories}"
       IMMICH_MEMORIES_AUTH__CLIENT_SECRET: "${OIDC_CLIENT_SECRET:-}"
-      # List-valued fields take JSON. The address the proxy's requests come
-      # from, as the app sees it. The `networks:` block at the bottom pins the
-      # compose network, so it is predictable: a proxy on the host itself,
-      # going through 127.0.0.1:8080, arrives from the gateway 172.30.10.1 (the
-      # default); a proxy container on this network, from the fixed
-      # ipv4_address you give it, e.g. TRUSTED_PROXY=172.30.10.10 in .env.
-      IMMICH_MEMORIES_AUTH__TRUSTED_PROXIES: '["${TRUSTED_PROXY:-172.30.10.1}"]'
+      # List-valued fields take JSON; a range works as well as an address.
+      # The app listens on 0.0.0.0 inside its container, so a proxy reaches
+      # it either as a container on this network or from the host through
+      # 127.0.0.1:8080 (arriving from the gateway, 172.30.10.1). Both come
+      # from the compose network the `networks:` block at the bottom pins, so
+      # trusting that range covers either. Anything else on the network is
+      # trusted too; to narrow it, set TRUSTED_PROXY in .env to the proxy's
+      # own fixed address.
+      IMMICH_MEMORIES_AUTH__TRUSTED_PROXIES: '["${TRUSTED_PROXY:-172.30.10.0/24}"]'
       IMMICH_MEMORIES_SERVER__SECURE_COOKIES: "true"
 
       # ── An LLM on another LAN machine, e.g. an Apple Silicon Mac running
@@ -92,8 +94,8 @@ services:
           # the same FFmpeg assembly.
           memory: 8G
 
-# A fixed subnet, so the trusted proxy above is a known address rather than
-# whatever Docker assigned. Change it if 172.30.10.0/24 is taken on the host.
+# A fixed subnet, so the trusted proxy range above is known rather than
+# whatever Docker assigned. Change both if 172.30.10.0/24 is taken on the host.
 networks:
   default:
     ipam:
