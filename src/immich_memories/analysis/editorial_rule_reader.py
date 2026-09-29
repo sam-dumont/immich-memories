@@ -14,6 +14,7 @@ import numpy as np
 from immich_memories.analysis.editorial_clip_frames import CLIP_FRAMES_HEAD, SUBJECT_OFTEN_MISSING
 from immich_memories.analysis.editorial_home_radius import home_of, near_home_of
 from immich_memories.analysis.editorial_rule_episodes import RULES_VERSION
+from immich_memories.analysis.editorial_same_kind import EpisodeKind, same_kind_threads
 from immich_memories.analysis.editorial_shareability import SHAREABLE, owner_cleared_ids
 from immich_memories.analysis.editorial_shareability_audience import exposure_flagged
 from immich_memories.analysis.editorial_standing_facts import (
@@ -71,11 +72,16 @@ class RuleStructureReader:
         self.source = source
         self._face: Callable[[str], bool | None] | None = None
 
+    def _day_threshold(self) -> float:
+        """A day at least this dense is an occasion by its capture count alone."""
+        days = Counter(a.file_created_at.date() for a in self.source.assets.values())
+        masses = list(days.values())
+        return max(4 * median(masses), float(np.percentile(masses, 75)))
+
     def worthiness(self, wall, near_home):
         assets = self.source.assets
         days = Counter(a.file_created_at.date() for a in assets.values())
-        masses = list(days.values())
-        threshold = max(4 * median(masses), float(np.percentile(masses, 75)))
+        threshold = self._day_threshold()
         cities = Counter(self._city(a) for a in assets.values() if self._city(a))
         usual = {city for city, _ in cities.most_common(12)}
         required = self._required_families(wall)
@@ -134,9 +140,7 @@ class RuleStructureReader:
     def _city(asset) -> str:
         return (asset.exif_info.city or "") if asset.exif_info else ""
 
-    def _title(self, members) -> str:
-        cities = Counter(self._city(a) for a in members if self._city(a))
-        city = cities.most_common(1)[0][0] if cities else ""
+    def _activity(self, members) -> str:
         activities = Counter(
             label
             for a in members
@@ -144,7 +148,11 @@ class RuleStructureReader:
             for head, label in record.heads
             if head == "activity" and label != "other"
         )
-        activity = activities.most_common(1)[0][0] if activities else ""
+        return activities.most_common(1)[0][0] if activities else ""
+
+    def _title(self, members) -> str:
+        city = self._dominant_city(members)
+        activity = self._activity(members)
         return (
             f"{activity} at {city}"
             if activity and city
@@ -326,6 +334,12 @@ class RuleStructureReader:
         by_key = {e.key: e for e in episodes}
         big = self._big_stories(stories, episodes)
         floors = _floor_weights(stories, journey=False)
+        kinds = same_kind_threads(
+            stories,
+            kind_of=self._episode_kinds(episodes),
+            threshold=self._day_threshold(),
+            away=lambda story: any(self._away_from_home(by_key[k]) for k in story["episodes"]),
+        )
         for story in stories:
             for key in story["episodes"]:
                 by_key[key].role = WEIGHT_ROLE[story["weight"]]
@@ -335,11 +349,36 @@ class RuleStructureReader:
             [],
             [],
             [],
-            {"producer": RULES_VERSION, "hints": hints, "floors": floors, "big_stories": big},
+            {
+                "producer": RULES_VERSION,
+                "hints": hints,
+                "floors": floors,
+                "big_stories": big,
+                "same_kind": kinds,
+            },
             stories,
         )
         record(result.as_record())
         return result
+
+    def _episode_kinds(self, episodes) -> dict[str, EpisodeKind]:
+        partition_for = getattr(self.source.intent, "partition_for", lambda _day: None)
+        kinds = {}
+        for episode in episodes:
+            ids = [a for m in episode.moments for a in self.source.moment_asset_ids.get(m, ())]
+            members = [self.source.assets[a] for a in ids]
+            points = [p for a in ids if (p := self.source.gps.get(a)) is not None]
+            part = partition_for(members[0].file_created_at.date()) if members else None
+            kinds[episode.key] = EpisodeKind(
+                pictures=len(members),
+                activity=self._activity(members),
+                place=self._dominant_city(members),
+                gps=(median(p[0] for p in points), median(p[1] for p in points))
+                if points
+                else None,
+                partition=part.key if part is not None else None,
+            )
+        return kinds
 
     def _face_on(self, asset_id: str) -> bool | None:
         if self._face is None:

@@ -97,6 +97,27 @@ Slots are handed out in order: one for each `major` story, then one `minor` per 
 stories up to their ceiling, the remaining `minor` stories, one `glimpse` per day, and whatever is
 left deepens the heavier stories one moment at a time.
 
+In a long film the `major` ceiling rarely binds. The budget runs out first, so every `major` story
+ends up at the same depth: a two-evening story with a handful of stars gets as many shots as a
+ten-day trip with a hundred.
+
+**A recurring kind is one story's worth.** Three starred evenings of the same thing at the same
+place in one month (three concerts at the same hall, three matches at the same club) used to take
+three full `major` shares. Now they count as one kind when all of this holds:
+
+- the densest episode of each story carries the same activity label,
+- that episode alone reaches the day threshold the gate already uses (4x the median photographed
+  day, or the 75th percentile if that's higher), so a label on a few ordinary pictures links nothing,
+- they happen at the same place: the GPS medians of those episodes are within 10 km, or they have
+  the same place name when one of them has no GPS,
+- they fall in the same part of the film (a month in a year film, the whole film otherwise).
+
+Every story of the kind keeps its own shot. Only the heaviest one (most favourites, then most
+moments) goes deeper, as deep as any other `major` story. A trip and a big family story never fold:
+they carry their own weight, so a birth-sized day next to smaller days of the same label keeps
+everything it had. The kinds found are listed under `same_kind` in
+`derived-decisions/period-story.private.json` (`editorial_same_kind.py`).
+
 **Every year gets a shot.** A person film longer than 18 months (548 days) is split into calendar
 years, a person film over several date ranges into those ranges, and a custom film over several
 ranges likewise. Before any story takes a second shot, each year (or range) that holds a funded
@@ -119,6 +140,6 @@ does any film with `advanced.editorial.thin_model_layer: false` (see [What a mod
   `round(slots / 2 * sqrt(trip days / film days))` shots, at least one.
 - **Recurring activities become one thread** (`editorial_story_threads`): four Saturdays at the same
   climbing gym are one story, one per calendar year in a film longer than 18 months, so a year of
-  progress still shows.
+  progress still shows. The no-model draft has its own, narrower version: the recurring kind above.
 - **`dominant`** is set by the model naming at most two central stories. The no-model draft never
   sets it, so its heaviest weight is `major`.

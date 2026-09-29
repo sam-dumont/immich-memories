@@ -518,6 +518,7 @@ src/immich_memories/
 │   ├── editorial_story_depth.py     # A short film's free slots as verified-different frames inside shown moments
 │   ├── editorial_story_trim.py      # The allocation in reverse when the production budget is tighter
 │   ├── editorial_story_threads.py   # A recurring activity at one place is one story per era, if the reader agrees
+│   ├── editorial_same_kind.py       # No-model: dense same-label stories at one place in one partition share one story's depth
 │   ├── editorial_story_places.py    # One place of a scope holds only the share of it a trip of that length would
 │   ├── editorial_page_recovery.py  # Bounded ask/retry/repair for a stage that reads its own JSON envelope
 │   ├── provider_failure.py     # What a 4xx/5xx means: refused, come back later, down, or a bad credential
