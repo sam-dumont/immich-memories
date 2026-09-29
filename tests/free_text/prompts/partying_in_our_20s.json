@@ -1,0 +1,93 @@
+{
+  "request": "me and friends partying in our 20s",
+  "shape": "ages read as numbers, the calendar in code",
+  "answers": {
+    "Split the owner's request": {
+      "who": [
+        "me",
+        "friends"
+      ],
+      "when": [
+        "in our 20s"
+      ],
+      "where": [],
+      "what": [
+        "partying"
+      ]
+    },
+    "Does it give that time": {
+      "reason": "banked",
+      "is_age": true,
+      "whose_age": "Ada Placeholder",
+      "age_from": 20,
+      "age_to": 29
+    },
+    "would be written on something": {
+      "reason": "banked",
+      "choices": []
+    },
+    "one single occasion": {
+      "reason": "banked",
+      "choice": "many occasions"
+    },
+    "name the main subject itself too": {
+      "reason": "banked",
+      "choices": []
+    },
+    "must mainly show": {
+      "reason": "banked",
+      "choices": [
+        "party"
+      ]
+    }
+  },
+  "expect": {
+    "reading": {
+      "who": [
+        "me",
+        "friends"
+      ],
+      "when": [
+        "in our 20s"
+      ],
+      "what": [
+        "partying"
+      ]
+    },
+    "who": {
+      "present": [],
+      "anchors": [
+        "p-owner",
+        "p-partner"
+      ],
+      "company": "people"
+    },
+    "when": [
+      "2010-06-15",
+      "2020-06-14"
+    ],
+    "where": "anywhere",
+    "subject": [
+      "party"
+    ],
+    "funnel": [
+      "library",
+      "when",
+      "kind of picture",
+      "subject",
+      "company"
+    ],
+    "pool": [
+      "party-6",
+      "party-7",
+      "party-8",
+      "party-9",
+      "party-10",
+      "party-11",
+      "party-12",
+      "party-13"
+    ],
+    "verdict": "thin",
+    "film": "pool"
+  }
+}

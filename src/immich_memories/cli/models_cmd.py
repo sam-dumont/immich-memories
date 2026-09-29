@@ -15,6 +15,7 @@ from immich_memories.pinned_models import (
     LAYA_AUDIENCE_ONNX,
     LAYA_MAX_BYTES,
     MARQO_ONNX,
+    WORDNET,
     fetch_pinned_model,
 )
 
@@ -48,6 +49,13 @@ def register_models_commands(cli_group: click.Group) -> None:
             url=config.triage.encoder_url,
             destination=config.triage.encoder_path,
             sha256=ENCODER.sha256,
+            force=force,
+        )
+        _fetch_pinned(
+            label="wordnet",
+            url=config.free_text.wordnet_url,
+            destination=config.free_text.wordnet_path,
+            sha256=WORDNET.sha256,
             force=force,
         )
         if laya or config.editorial.laya_audience:

@@ -108,6 +108,30 @@ Four things the examples hide:
 is a pool you picked for that subject, so a lone loaf or a parked car is not refused for having
 nobody in it. See [an album made for one subject](../memory-types.mdx#an-album-made-for-one-subject).
 
+## A film from a sentence
+
+**Highly experimental.** Tuned on one real library and a few synthetic ones: expect wrong
+translations on yours. How it reads a sentence, what works and how to report a bad result:
+[A film from a sentence](../free-text.md).
+
+```bash
+immich-memories generate --ask "our cat along the years" --dry-run
+immich-memories generate --ask "our cat along the years" --duration 120
+```
+
+`--ask` needs `tier: full` (a configured reader) and a prepared library: it reads the captions,
+faces and place names `prepare` banked, plus the letters Immich's OCR found. It prints the
+translation before anything runs, one line per decision (which words went where, the rule or
+the question behind each, the votes, and how many pictures each filter kept). With `--dry-run`
+it stops there. `--ask-trace FILE` keeps the same translation as JSON, which is where the web UI's
+preview reads it from.
+
+The sentence is the whole scope, so `--year`, `--person`, `--from-album` and the other scope flags
+are refused next to it. The pool it finds is filmed like an album whose subject is your sentence,
+forwarded pictures included. One occasion of one day ("our wedding") goes to the special-day
+product instead. A sentence the library cannot show makes no film and says which filter emptied
+it. The translation is kept with the run, for [`report`](./report.md).
+
 ## Trips
 
 With `trips.homebase_latitude` and `trips.homebase_longitude` set, the tool finds clusters of

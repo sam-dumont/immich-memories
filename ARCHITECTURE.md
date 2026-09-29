@@ -179,7 +179,8 @@ unchanged sources retain their existing bank entries.
   Explicit tiers remain available for comparisons. Sharing never asks the prose
   LLM (`config_tiers.py`, `config_models_editorial*.py`, `editorial_shareability_tiers.py`).
   `laya_checkpoints.py` selects platform-matched archive, path and threshold defaults;
-  `pinned_models.py` owns the SHA-256 pins used by `models fetch`.
+  `pinned_models.py` owns the SHA-256 pins used by `models fetch` (the encoder, the detector
+  exports, Laya, and the WordNet corpus free-text requests are read with).
 - **Reach**: the pictures a film can actually select (for a person film, its person presence),
   plus their Live Photo siblings and capture runs. This bounds cheap preparation; captions
   and playback have the narrower selected/candidate scope. The rest of the window is read as
@@ -682,7 +683,10 @@ src/immich_memories/
 │   ├── _editorial_context.py   # CLI flags + presets -> one EditorialRunContext
 │   ├── _run_timeline.py        # The run's timeline: selection budget, then the settled plan
 │   ├── _asset_fetch.py         # What a memory asks Immich for: videos, Live Photos, stills
-│   ├── _album_generation.py    # Album mode: an Immich album is the candidate pool
+│   ├── _album_generation.py    # Album mode: an Immich album is the candidate pool; a CuratedPool
+│   │                           # (generate --ask) is read by asset id in its place
+│   ├── _ask_generation.py      # generate --ask: model tier required, translate against the store,
+│   │                           # print + save the trace, then a RunScope (pool as album, or special day)
 │   ├── runs_render.py          # `runs render`: a saved cut or revision → generate_saved_cut
 │   ├── _trip_generation.py     # Trip detection, selection, per-trip generation
 │   ├── _trip_display.py        # Trip table formatting & selection logic
@@ -709,6 +713,8 @@ src/immich_memories/
 │   ├── job_routes.py           # POST /cuts (generate --no-render), /runs/{id}/renders (runs render),
 │   │                           #   /runs/{id}/music-preview, /music uploads, /roster/scan,
 │   │                           #   /jobs/{id}[/events|/cancel|/output] (SSE progress), /runs/{id}/film
+│   │                           #   /ask (tier: full?), /ask/preview[/{id}] (generate --ask --dry-run
+│   │                           #   --ask-trace: the translation as JSON); the film is a /cuts brief with `ask`
 │   ├── library.py              # GET /people, /albums, /trips, /special-days for the brief's pickers
 │   ├── connection.py           # /connection: the Immich URL + key saved to the database; never follows a new URL
 │   ├── suggestions.py          # /suggestions: what `auto suggest` offers, generate one as `auto run` would
@@ -830,6 +836,84 @@ src/immich_memories/
 │   ├── expression_window.py    # The earliest day a people condition can hold, from birth dates
 │   └── editor.py               # The companion editor's model: the registry as rows, and back
 │
+├── free_text/                  # A film asked for in a sentence (#1436, experimental; design in
+│   │                           # docs/designs/free-text-memories.md, user page docs-site/docs/make/free-text.md). Only reading.py and the
+│   │                           # model's picks in linking.py, subject.py and pool_questions.py reach an LLM
+│   ├── __init__.py             # The package API (the pool, the reading and the CLI build on it)
+│   ├── lexicon.py              # Lexicon Protocol; load_wordnet(): the pinned WordNet 3.0 zip that
+│   │                           # `models fetch` writes (free_text.wordnet), digest-checked, read through
+│   │                           # nltk; never downloaded at run time. Noun files, plurals, people words,
+│   │                           # young people, time periods, roles through their kinds, verb bases,
+│   │                           # adjectives, derived nouns, relatives() (own kinds/parts, inherited parts),
+│   │                           # synonyms() (the first sense's other everyday names)
+│   ├── reading.py              # read_request(): the model picks who/when/where/what from an enum of the
+│   │                           # request's own n-grams, 3 field orders, 2-of-3 token votes, where+what
+│   │                           # voted as content; choose() (one option, 3 orders), choose_several()
+│   │                           # (a list, 2-of-3 per option); Asker Protocol and WireAsker
+│   │                           # (llm_query.query_llm with the answer's json_schema, through the async
+│   │                           # bridge so it also answers under a running loop)
+│   ├── translate.py            # translate(): reading -> link_who -> link_when -> build_subject ->
+│   │                           # link_where (Subject.heads) -> link_facts -> build_pool, as an Ask
+│   │                           # (Translation + Pool); household_of(): people file, owner, homes
+│   ├── handoff.py              # film_for(): one occasion of one day (the pool's found day, a one-day
+│   │                           # date range, or the model's voted "one day or longer") -> special day,
+│   │                           # the model picking between the catalogue's occasions that day; else the
+│   │                           # pool as the film's whole reach with the request as written subject;
+│   │                           # "not possible" -> no film
+│   ├── trace.py                # explain(): READING/WHO/WHEN/WHERE/WHAT/FACTS/POOL/VERDICT/FILM lines;
+│   │                           # save_with_run(): the run's diagnostics["free_text"] (report builder)
+│   │                           # and free-text-trace.private.txt in the attempt directory; the report's
+│   │                           # vocabulary (name parts -> role, places, OCR words) and the marks basis
+│   │                           # (pool, OCR anchors, admitting step, words read). save_picks(): the
+│   │                           # clips generate_memory() was handed
+│   ├── marks.py                # marked(): `report --wrong/--missing` on a free-text run: each photo's
+│   │                           # admitting stage and pick; missing words read/offered/picked/in the pool
+│   ├── printed.py              # ImmichPrintedText: the PrintedText port on Immich's /search/metadata
+│   │                           # `ocr` filter (the store banks no OCR text)
+│   ├── subject.py              # subject_words(): the head noun per coordinated part of the what-spans
+│   │                           # (time phrase cut; people, picture words never), -ing activities add
+│   │                           # WordNet's derived nouns, "X making" is X. build_subject(): candidates
+│   │                           # = those words + own kinds/parts the captions use; people words only when
+│   │                           # said or formed from the request; the model votes the main subject (2-of-3,
+│   │                           # fallback: the request's words); a quality stays when the model says it
+│   │                           # narrows AND captions say it; own parts/kinds are the subject, inherited
+│   │                           # parts only for a place. Subject.heads feed link_where; subject_kind()
+│   │                           # (the model's place/animal/thing/activity vote)
+│   ├── pool.py                 # build_pool(Translation, LibraryView, ...): the funnel, each Step keeps a
+│   │                           # count and a Reason: when; who (a face in the picture's 90-min episode);
+│   │                           # printed text (PrintedText port = Immich OCR: anchors' episodes replace
+│   │                           # where); where (scopes.py) or Immich's place names; kind of picture
+│   │                           # (photographs and videos unless a kind is named); sharpness; computed
+│   │                           # selections (farthest trip, first/last per frequent person, faces over N);
+│   │                           # one undated occasion's day; subject by caption grammar (main + extent +
+│   │                           # other names, minus left-out); company from captions. Verdict possible /
+│   │                           # thin (<12) / not possible, naming the filter that emptied it. No model
+│   │                           # looks at a picture
+│   ├── pool_questions.py       # Text-only votes the pool asks, each gated by grammar: left_out (only what
+│   │                           # follows a negation), other_names (WordNet synonyms + caption subject-slot
+│   │                           # words the model picks; quality carried), one_particular_place (GPS
+│   │                           # required), printed_words (for OCR), one_occasion (a plural is many)
+│   ├── scopes.py               # in_place(): at a home (150 m), home of the picture's time, near it (home
+│   │                           # radius), or trips detected per home; no GPS stays unless one place
+│   ├── linking.py              # Code links the spans: link_who (I = the owner for dates, never a face;
+│   │                           # we adds the partner; names/roles need faces; plural people = company),
+│   │                           # link_when (an age read as numbers, calendar in code; dates question only
+│   │                           # with time words, years or people), link_where (one voted place per
+│   │                           # phrase beyond the subject's nouns, widest of several), time_cut; each
+│   │                           # decision keeps a Reason for the trace
+│   ├── library.py              # read_library(): per picture, Immich's date/media kind/places/GPS from
+│   │                           # annotation_assets, and the configured producers' caption, doc_docling
+│   │                           # label, sharpness and people-file faces via AssetAnnotationFactRepository
+│   ├── grammar.py              # Caption grammar: is_about (the subject up to the first verb), is_thing
+│   │                           # (WordNet's noun file), free_tier (captions about the subject),
+│   │                           # subject_head (the caption subject's head noun)
+│   ├── facts.py                # link_facts(): request words -> places, picture kinds, the sharpness line,
+│   │                           # faces over N, first/last/farthest; first_pictures (the onset, never
+│   │                           # before birth), last_pictures, home_trips (trips per home of the time),
+│   │                           # farthest_trip, occasion_day; LibraryFacts.placed/of_kind/sharp_enough
+│   └── homes.py                # homes_over_time(): each year's most-photographed ~200 m cell, a new
+│                               # home past 300 m; the configured home base when none shows; Home.held_on
+│
 ├── automation/                 # Smart automation (auto suggest/run)
 │   ├── __init__.py             # Public API re-exports
 │   ├── candidates.py           # Memory candidate detection
@@ -892,6 +976,7 @@ src/immich_memories/
 ├── config_models_analysis.py   # Source admission and the expected seconds per clip
 ├── config_models_auth.py       # Authentication config model (basic, OIDC, header)
 ├── config_models_automation.py # Running unattended: trips, automation, notifications, upload
+├── config_models_free_text.py  # free_text: where the pinned WordNet corpus lives and comes from
 ├── config_models_llm.py        # LLM provider settings (shared by analysis and titles)
 ├── config_models_network.py    # The three third-party hosts a run may reach; all off by default
 ├── config_models_render.py     # What the video looks like: defaults, output, title screens, photos
@@ -1061,6 +1146,7 @@ version and capabilities first); deployment files are `services/render-worker/co
 - **No `_`-prefixed overflow files**: All files have descriptive names
 - **Private helpers**: Prefixed with `_`, same package
 - **Tests**: `tests/` directory, run with `make test`
+- **Free-text evaluation**: `tests/free_text/prompts/*.json`, one recorded prompt per file (the request, the model's banked answers keyed by a phrase of their question, the expected spans/links/subject/funnel/pool/verdict/film); `test_prompts.py` translates each against the invented household in `eval_library.py`, the model faked once in `banked.py` (`recorded()`)
 - **Integration tests**: run manually with `make test-integration*` (per-suite folders under `tests/integration/`, see CLAUDE.md); also run on the self-hosted GPU runner. Not a pre-commit hook.
 - **Real-Immich gate**: `make test-immich-gate` (`tests/integration/immich_gate/`: compose file, `seed.py`, `media.py`) runs on every PR against Immich v2 and v3 in Docker, each with the store on SQLite and on PostgreSQL (`IMMICH_GATE_DATABASE`; `.github/workflows/immich-gate.yml`, required check `Immich Gate`); the pinned images ride in the Actions cache per version (`scripts/immich_gate_images.sh`, `make immich-gate-fetch`/`immich-gate-save`).
 - **Launch check per backend**: `make launch-check-ci` (SQLite) and `make launch-check-ci-postgres` (each launch workspace gets its own schema in `IMMICH_MEMORIES_E2E_DATABASE_URL`); CI job `Hermetic Launch Check (sqlite|postgresql)`. `scripts/with_throwaway_postgres.sh` starts the throwaway `postgres:16` for this, `make test-store` and the gate.
@@ -1070,7 +1156,7 @@ version and capabilities first); deployment files are `services/render-worker/co
 
 The web sidebar links Memory, Suggestions, Runs and Settings. Every action in the client is the
 CLI: a cut is `generate --no-render`, a render is `runs render [--revision N]`, a people scan is
-`people scan`, a music preview is `music preview`, each run by `web/jobs.py` as a child process
+`people scan`, a music preview is `music preview`, a sentence's preview is `generate --ask --dry-run`, each run by `web/jobs.py` as a child process
 whose progress the page follows over SSE. The review page (`web/src/routes/runs/[run_id]`) reads
 the saved cut (`operations/storyboard.py`, `cut_review.py`, `story_view.py`), keeps the owner's
 edits as numbered revisions in the attempt directory (`operations/cut_revisions.py`), and renders
