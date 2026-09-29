@@ -272,9 +272,11 @@ Under the review sit the run's output path, its Immich delivery, warnings and ph
 **Download child output** fetches the full output of an automatic run, credentials removed.
 
 **Copy report** opens the same redacted report as `immich-memories report`, including logs, warnings
-and timings. Read the preview, then copy it into an issue. Nothing is sent automatically. On a
+and timings. Read the preview, then copy it into an issue. **Download report** saves the ZIP
+`report --bundle` writes (report.md, report.json and the whole redacted log), for a log too long to
+paste. Nothing is sent automatically. On a
 free-text run with flagged photos, **Include captions of flagged photos** adds only those captions
-to the preview; it starts off. Pictures are never included. Failed runs have reports too.
+to the preview and the download; it starts off. Pictures are never included. Failed runs have reports too.
 
 ## Suggestions
 

@@ -181,7 +181,12 @@ Each photo marked wrong gets the filter that let it into the pool and whether th
 it. The missing words are checked against the run: did the reading keep them, were they offered
 or picked as the subject, and does any caption in the pool say them.
 
-The report carries the trace, the funnel and the editor's picks. Before anything is copied:
+In the web UI, open the film's run and use **Copy report**, or **Download report** for the ZIP
+with the whole log. Same report, same redaction. A film made from the web UI is cut first, then
+rendered as a run of its own: the report of either run carries your sentence.
+
+The report carries the sentence, the trace, the translation as data (the same JSON `--ask-trace`
+writes), the funnel, the editor's picks and the run's logs. Before anything is copied:
 
 - IDs become hashes that only match inside that one report;
 - the names of people the sentence linked become their roles ("the owner's son"), and a birth
