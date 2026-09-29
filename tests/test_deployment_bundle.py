@@ -33,3 +33,19 @@ def test_release_bundle_pins_all_images_and_omits_untracked_secrets(tmp_path, mo
 def test_release_bundle_rejects_unversioned_tags(tmp_path):
     with pytest.raises(ValueError, match="release version"):
         package_bundle(tmp_path, "latest", tmp_path / "bundle.tgz")
+
+
+def test_release_bundle_accepts_a_release_candidate(tmp_path, monkeypatch):
+    for name in tuple(os.environ):
+        if name.startswith("GIT_"):
+            monkeypatch.delenv(name)
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    path = tmp_path / "deploy/kubernetes/base/kustomization.yaml"
+    path.parent.mkdir(parents=True)
+    path.write_text('images:\n  - newTag: "0.1.0"\n')
+    subprocess.run(["git", "add", "deploy"], cwd=tmp_path, check=True)
+    destination = tmp_path / "bundle.tgz"
+    package_bundle(tmp_path, "1.0.0-rc.1", destination)
+    with tarfile.open(destination) as archive:
+        value = yaml.safe_load(archive.extractfile(archive.getnames()[0]).read())
+    assert value["images"][0]["newTag"] == "1.0.0-rc.1"
