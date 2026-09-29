@@ -45,6 +45,23 @@ class _Grants:
         self.granted = {s["key"]: 0 for s in stories}
         self.remaining = slots
         self._reserve = reserve_slot
+        self._members: dict[str, list[str]] = {}
+        present = {s["key"] for s in stories}
+        for s in stories:
+            if s.get("depth_to") in present:
+                self._members.setdefault(s["depth_to"], []).append(s["key"])
+
+    def held(self, s) -> int:
+        """What a story holds so far; the depth holder of a recurring kind counts its whole kind."""
+        keys = (
+            self._members.get(s["key"], [s["key"]]) if s.get("depth_to") == s["key"] else [s["key"]]
+        )
+        return sum(self.granted.get(k, 0) + self.already.get(k, 0) for k in keys)
+
+    def deepens(self, s) -> bool:
+        """Every member of a recurring kind keeps one picture; only its depth holder takes more."""
+        own = self.granted[s["key"]] + self.already.get(s["key"], 0)
+        return own == 0 or s.get("depth_to") not in self._members or s.get("depth_to") == s["key"]
 
     def of_weight(self, weight: str) -> list[Mapping[str, Any]]:
         return [s for s in self.stories if s["weight"] == weight]
@@ -62,10 +79,12 @@ class _Grants:
     def take(self, s, cap: int) -> bool:
         """Dominant and major stories need presence before depth. The dominant allowance is
         up to half, not a reservation that can erase another must-show occasion."""
+        own = self.granted[s["key"]] + self.already.get(s["key"], 0)
         if (
             self.remaining > 0
             and self.room(s) > 0
-            and self.granted[s["key"]] + self.already.get(s["key"], 0) < cap
+            and self.deepens(s)
+            and (self.held(s) < cap or (own == 0 and cap > 0))
             and (self._reserve is None or self._reserve(s))
         ):
             self.grant(s)
@@ -161,7 +180,8 @@ def allocate_slots(
     take their first picture. Leftover slots deepen dominant, then major, then minor stories one
     moment at a time while they have moments; a glimpse stays one picture and "none" is never
     funded, except as its era's voice in a pool chosen for the film's subject
-    (`pool_is_subject`)."""
+    (`pool_is_subject`). Stories of one recurring kind name their depth holder in `depth_to`:
+    every member keeps one picture, and only the holder deepens, counting the whole kind."""
     counted = dict(already or {})
     plan = _Grants(stories, slots, capacity, counted, reserve_slot)
     caps = weight_caps(slots + sum(counted.values()))
