@@ -130,17 +130,21 @@ class _Sampler:
     def close(self, watch: Watch) -> Watch:
         lifetime = _lifetime_peak(resource.RUSAGE_SELF)
         children = _lifetime_peak(resource.RUSAGE_CHILDREN)
-        with self._lock:
-            self._open.remove(watch)
-            if not self._open and self._stop is not None:
-                self._stop.set()
-                self._stop = None
         watch.see(rss_bytes(os.getpid()), None)
         if lifetime > watch.lifetime_at_open:
             watch.see(lifetime, None)
         # A child that ended inside the span with a new record was alive in it.
         if children > watch.children_at_open:
             watch.see(None, children)
+        with self._lock:
+            self._open.remove(watch)
+            # Every span still open was open through this one, so it saw this peak too:
+            # without this a parent can report less than its child between samples.
+            for enclosing in self._open:
+                enclosing.see(watch.own, watch.tree)
+            if not self._open and self._stop is not None:
+                self._stop.set()
+                self._stop = None
         return watch
 
     def _run(self, stop: threading.Event) -> None:

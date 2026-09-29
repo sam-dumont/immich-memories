@@ -214,3 +214,22 @@ def test_spans_outside_a_run_measure_no_memory():
     with timing.span("loose") as measured:
         pass
     assert measured.peak_rss is None
+
+
+def test_a_parent_span_reports_at_least_its_childs_peak(monkeypatch):
+    from immich_memories.tracking import peak_memory
+
+    resident = {"bytes": 10**14}
+    # WHY: RSS is read from the OS; a scripted reading makes the child's high point
+    # one that only the child's own close sees, which real sampling hits by chance.
+    monkeypatch.setattr(peak_memory, "rss_bytes", lambda _pid: resident["bytes"])
+    monkeypatch.setattr(peak_memory, "SAMPLE_SECONDS", 3600.0)
+    with timing.collecting() as collected, timing.span("run"):
+        with timing.span("download"):
+            resident["bytes"] = 10**15
+        resident["bytes"] = 10**14
+
+    download, run = collected.spans
+    assert download.peak_rss == 10**15
+    assert run.peak_rss >= download.peak_rss
+    assert run.peak_tree_rss >= download.peak_tree_rss
