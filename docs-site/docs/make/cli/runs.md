@@ -161,6 +161,9 @@ To file an issue about a run, `immich-memories report` prints a redacted report 
 
 `runs show` also prints the saved span tree, rates per item, and the uncovered part of the run's wall
 clock. The wall clock starts when the command starts: the first span, `startup`, is the time spent
-loading and reading the config before the run opened (usually 4 to 5 seconds). Finding the pictures is
+loading and reading the config before the run opened (usually 4 to 5 seconds). Its children say where
+it went: `startup.imports`, `startup.config`, `startup.store`, `startup.system`, `startup.title_kernels`
+(the title kernels compile here, about 2 to 3 seconds on a Mac) and `startup.run_record`. A first run
+from a fresh checkout is slower: nothing is compiled yet. Finding the pictures is
 `discovery` on every route, trips and albums included. `prepare` records a run too. Older runs keep the timings they originally recorded.
 The setup matrix copies these same measurements from each attempt's `timings.private.json`.

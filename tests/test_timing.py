@@ -121,11 +121,12 @@ def test_a_run_opened_after_imports_names_that_time_startup():
     import time
 
     from immich_memories.db import open_store
+    from immich_memories.process_start import Startup
     from immich_memories.tracking.run_observations import observe_run
     from immich_memories.tracking.span_progress import uncovered_seconds
 
-    started = time.perf_counter() - 4.0
-    with observe_run(open_store(), source="manual", capture_system=False, started=started) as run:
+    startup = Startup(time.perf_counter() - 4.0)
+    with observe_run(open_store(), source="manual", capture_system=False, startup=startup) as run:
         pass
     spans = {span.name: span for span in _spans(run)}
     assert spans["startup"].duration >= 4.0
@@ -145,7 +146,9 @@ def test_only_the_first_cli_run_of_a_process_claims_its_startup(monkeypatch):
     from immich_memories.tracking.run_observations import current_tracker, observed_command
 
     # WHY: this test process began long before; a fresh mark stands in for a CLI that just did.
-    monkeypatch.setattr(process_start, "_unclaimed", [time.perf_counter() - 2.0])
+    fresh = process_start.Startup(time.perf_counter() - 2.0)
+    monkeypatch.setattr(process_start, "_process", fresh)
+    monkeypatch.setattr(process_start, "_unclaimed", [fresh])
     runs = []
 
     @click.command()
@@ -160,3 +163,21 @@ def test_only_the_first_cli_run_of_a_process_claims_its_startup(monkeypatch):
     first, second = ({span.name for span in _spans(run)} for run in runs)
     assert "startup" in first
     assert "startup" not in second
+
+
+def test_a_cold_start_is_split_into_named_phases_that_sum_to_it():
+    from immich_memories.process_start import Startup
+
+    cold = Startup(started=0.0, marks=[("imports", 2.0), ("config", 3.5), ("system", 9.0)])
+    with timing.collecting(now=lambda: 30.0) as collected, timing.span("run") as root:
+        timing.open_at(root, cold)
+
+    startup = next(span for span in collected.spans if span.name == "startup")
+    children = [span for span in collected.spans if span.parent_id == startup.span_id]
+    assert [(span.name, span.start, span.duration) for span in children] == [
+        ("startup.imports", 0.0, 2.0),
+        ("startup.config", 2.0, 1.5),
+        ("startup.system", 3.5, 5.5),
+        ("startup.run_record", 9.0, 21.0),
+    ]
+    assert startup.duration == 30.0
