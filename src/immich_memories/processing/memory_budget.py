@@ -150,3 +150,28 @@ def lookahead_summary() -> str:
 
 def _frames(frames: int | None) -> str:
     return "x265 default" if frames is None else f"{frames} frames"
+
+
+# The smallest budget, in whole GB, that holds a 4K software HEVC film. With no lookahead
+# the encoder alone measured 951 MB, beside two decodes (about 0.95 GB) and Python (about
+# 0.35 GB): about 2.3 GB, and the smallest lookahead the rule above uses (5) needs about
+# 3 GB. Below it, an automatic 4K film renders at 1080p (owner: "1080p only below the floor").
+SOFTWARE_4K_FLOOR_GB = 3
+
+
+def film_tier(tier: str, *, memory: int | None, hardware_hevc: bool, explicit: bool) -> str:
+    """The resolution tier a film renders at: 4K drops to 1080p only when nothing else fits.
+
+    An explicit request, a hardware HEVC encoder or an unknown budget keeps ``tier``.
+    """
+    if tier != "4k" or explicit or hardware_hevc or memory is None:
+        return tier
+    return "1080p" if round(memory / _GIB) < SOFTWARE_4K_FLOOR_GB else tier
+
+
+def floor_sentence(memory: int) -> str:
+    """Why a film renders at 1080p, as the run log and preflight say it."""
+    return (
+        f"4K needs about {SOFTWARE_4K_FLOOR_GB} GB for software HEVC; this box has "
+        f"{memory / _GIB:.1f} GB, so the film renders at 1080p"
+    )

@@ -22,7 +22,10 @@ from immich_memories.operations.phases import OperationalPhase
 from immich_memories.operations.revision_render import RenderUnavailable, project_revision
 from immich_memories.processing.editorial_timing import timing_policy_for_params
 from immich_memories.processing.encoding_plan import resolve_output_selection
-from immich_memories.processing.output_canvas import resolve_output_canvas
+from immich_memories.processing.output_canvas import (
+    hardware_hevc_available,
+    resolve_output_canvas,
+)
 from immich_memories.processing.render_inputs import CutTitles, read_cut_titles, read_render_inputs
 from immich_memories.timeperiod import DateRange
 from immich_memories.titles.film_title import resolve_film_title
@@ -224,6 +227,7 @@ def render_saved_cut(
             orientation=request.output_orientation,
             configured_resolution=config.output.resolution_tuple,
             clips=params.clips,
+            hardware_hevc=lambda: hardware_hevc_available(config),
         )
     params.output_path = name_after_recipe(
         build_memory_output_path(

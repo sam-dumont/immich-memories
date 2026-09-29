@@ -43,6 +43,10 @@ What the minimum costs you:
   percent smaller at a slightly lower quality: at 1080p with a lookahead of 10, 3% smaller and
   0.03 dB lower. `preflight` shows the choice on its Memory line. 1080p output keeps the
   default everywhere.
+  Below 3 GB there is no room for a 4K software HEVC film at all, so when the film's resolution
+  is `auto` and the box has no hardware HEVC encoder, a 4K film renders at 1080p instead, in the
+  same orientation. `preflight` and the run log say so. A resolution you set yourself, in the
+  config or with `--resolution`, is kept.
 
 The 25 GB covers the caches at their default budgets (10 GB of Immich previews, 10 GB of downloaded
 video kept 7 days) with room for the store to grow. The models are about 140 MB. The one file worth backing

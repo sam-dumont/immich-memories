@@ -165,16 +165,26 @@ def check_output_directory(directory: Path) -> CheckResult:
 def check_memory(config: Config) -> CheckResult:
     """Say how many sources a render prepares at once, and the memory that decided it."""
     from immich_memories.processing.memory_budget import (
+        film_tier,
+        floor_sentence,
         lookahead_summary,
+        memory_budget,
         source_prepare_workers,
     )
+    from immich_memories.processing.output_canvas import hardware_hevc_available
 
     _workers, why = source_prepare_workers(config.analysis.source_prepare_workers)
-    return CheckResult(
-        name="Memory",
-        status=CheckStatus.OK,
-        message=f"Photo preparation: {why}; {lookahead_summary()}",
-    )
+    message = f"Photo preparation: {why}; {lookahead_summary()}"
+    budget = memory_budget()
+    if (
+        budget is not None
+        and film_tier(
+            "4k", memory=budget.size, hardware_hevc=hardware_hevc_available(config), explicit=False
+        )
+        != "4k"
+    ):
+        message = f"{message}; {floor_sentence(budget.size)}"
+    return CheckResult(name="Memory", status=CheckStatus.OK, message=message)
 
 
 def run_blockers(config: Config, *, output_directory: Path | None) -> list[CheckResult]:
