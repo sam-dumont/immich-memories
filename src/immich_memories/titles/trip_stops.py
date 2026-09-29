@@ -43,8 +43,7 @@ def _groups(locations: list[tuple[float, float]]) -> list[list[int]]:
                 group
                 for group in groups
                 if all(
-                    haversine_km(lat, lon, *locations[member]) <= CITY_SPREAD_KM
-                    for member in group
+                    haversine_km(lat, lon, *locations[member]) <= CITY_SPREAD_KM for member in group
                 )
             ),
             None,
