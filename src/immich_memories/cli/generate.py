@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import sys
 from datetime import date
 from pathlib import Path
@@ -420,10 +421,12 @@ def register_generate_commands(main: click.Group) -> None:
             no_music=no_music,
         )
         show_interactive = not quiet and sys.stdout.isatty()
+        quiet_scope = contextlib.ExitStack()
         if not show_interactive:
-            from immich_memories.cli._helpers import set_quiet_mode
+            from immich_memories.cli._helpers import quiet_output
 
-            set_quiet_mode(True)
+            # WHY no plain set: this run prints as log lines, the process after it does not.
+            quiet_scope.enter_context(quiet_output(True))
         else:
             console.print(table)
             console.print()
@@ -734,6 +737,8 @@ def register_generate_commands(main: click.Group) -> None:
 
             print_error(f"Error: {sanitize_error_message(described_error(e))}")
             sys.exit(1)
+        finally:
+            quiet_scope.close()
 
 
 def _holiday_country(memory_type: str | None, config) -> dict:
