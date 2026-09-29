@@ -7,6 +7,7 @@ from time import monotonic
 from PIL import Image
 
 from immich_memories.analysis.thumbnail_prefetch import THUMBNAIL_SIZE, cached_preview_bytes
+from immich_memories.api.access_clients import AccountReadFailed
 from immich_memories.cache.thumbnail_cache import ThumbnailCache
 
 
@@ -46,6 +47,8 @@ class DemandedPreviewReader:
                     image.verify()
                 self._cache.put(asset_id, THUMBNAIL_SIZE, payload)
                 self._metrics["download_bytes"] += len(payload)
+            except AccountReadFailed:
+                raise
             except Exception as exc:  # One missing preview is explicit unavailable evidence.
                 payload = None
                 self._metrics["unavailable"] += 1

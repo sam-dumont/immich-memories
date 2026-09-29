@@ -491,6 +491,9 @@ src/immich_memories/
 │   ├── editorial_preparation*.py   # Annotation preparation: captions, public heads, detectors, pixel facts,
 │   │                               # motion lines (one caption-seat sentence per video, read by
 │   │                               # the pick).
+│   │                               # _previews.py fetches, verifies and caches the preview every
+│   │                               # stage reads. Every broad per-picture handler here lets
+│   │                               # AccountReadFailed through (test_account_read_escapes.py).
 │   │                               # _model_facts.py plans who answers each model producer;
 │   │                               # _detector_frames.py samples a video's eight frames for the
 │   │                               # exposure head, through the motion line's keyframe reader

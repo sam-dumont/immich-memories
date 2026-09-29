@@ -31,7 +31,9 @@ _Read = TypeVar("_Read")
 
 # WHY not a RuntimeError: a render drops one clip it cannot decode and goes on, but a
 # household read that fails means the film would silently lose an owner's picture, or
-# be tempted to play another account's copy. It has to stop the attempt.
+# be tempted to play another account's copy. It has to stop the attempt. Preparation and
+# selection turn one unusable picture into unavailable evidence with broad handlers, so
+# each lets this through first (`except AccountReadFailed: raise`, held by a test).
 class AccountReadFailed(Exception):
     """The account that owns a picture could not read it. The message names the account."""
 
