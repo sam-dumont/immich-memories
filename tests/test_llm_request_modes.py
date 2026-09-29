@@ -128,3 +128,35 @@ async def test_cached_answers_stay_with_their_request_mode():
         ]
     assert answers == ['{"mode":"strict"}', '{"mode":"prompt"}', '{"mode":"strict"}']
     assert sent == [True, False]
+
+
+@pytest.mark.parametrize(
+    ("provider", "endpoint", "model", "override", "banked_identity"),
+    [
+        ("openai", "https://api.openai.com/v1", "gpt", None, "gpt@text-1c5a4ef763333d2ed58e"),
+        (
+            "openai-compatible",
+            "http://localhost:9999/v1",
+            "small",
+            True,
+            "small@text-64bf26bdf9e34da9fd96",
+        ),
+        (
+            "openai-compatible",
+            "http://localhost:9999/v1",
+            "small",
+            False,
+            "small@text-fe51037e35bac7f942c5",
+        ),
+    ],
+)
+def test_unchanged_modes_keep_their_existing_banked_answers(
+    provider, endpoint, model, override, banked_identity
+):
+    from immich_memories.analysis.editorial_text_gateway import semantic_text_model_identity
+
+    config = LLMConfig(
+        provider=provider, base_url=endpoint, model=model, structured_output=override
+    )
+    # Persisted producer identities measured on main 9ab1bf52, before request-specific selection.
+    assert semantic_text_model_identity(config, thinking=False) == banked_identity

@@ -7,6 +7,7 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
+from immich_memories.analysis.llm_providers import is_local_endpoint, structured_output_enabled
 from immich_memories.config_models_llm import LLMConfig
 
 COMPLETE_RETRY_POLICY = "complete-with-one-double-budget-retry-v1"
@@ -26,8 +27,11 @@ def text_model_identity(resolved: LLMConfig, *, thinking: bool) -> str:
         "max_tokens_param": resolved.max_tokens_param,
         "drop_params": sorted(resolved.drop_params),
         "extra_params": resolved.extra_params,
-        "structured_output": resolved.structured_output,
-        "structured_output_policy": "request-kind-v1",
+        "structured_output": (
+            "request-kind-v1"
+            if resolved.structured_output is None and is_local_endpoint(resolved)
+            else structured_output_enabled(resolved)
+        ),
         "repetition_penalty": resolved.repetition_penalty,
     }
     digest = _digest(material)
