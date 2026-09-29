@@ -204,6 +204,8 @@ async def oidc_authorize(request: Request) -> RedirectResponse:
 
 async def oidc_callback(request: Request) -> Response:
     """Exchange the code, check the allow-list, and start the session."""
+    from authlib.integrations.base_client import OAuthError  # type: ignore[import-untyped]
+
     config = get_config()
     from immich_memories.web.auth_oidc import (
         create_oidc_client,
@@ -215,7 +217,11 @@ async def oidc_callback(request: Request) -> Response:
     if not validate_callback_origin(request, config.auth.public_url):
         logger.warning("OIDC callback origin mismatch: %s", request.url)
         return JSONResponse({"detail": "Invalid callback origin"}, status_code=400)
-    token = await create_oidc_client(config.auth).oidc.authorize_access_token(request)
+    try:
+        token = await create_oidc_client(config.auth).oidc.authorize_access_token(request)
+    except OAuthError:
+        logger.warning("OIDC sign-in expired or was refused; retry sign-in")
+        return RedirectResponse(f"{LOGIN_PAGE}?error=signin_expired", status_code=303)
     username, email = extract_user_from_token(token)
     verified = (token.get("userinfo") or {}).get("email_verified")
     if not is_user_allowed(email, config.auth, email_verified=verified):

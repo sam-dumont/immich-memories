@@ -1650,3 +1650,7 @@ msgstr "Immich に送信しました。ディスク容量を節約するため�
 
 msgid "View in Immich"
 msgstr "Immich で見る"
+
+#: web/routes/login/+page.svelte
+msgid "Sign-in expired. Try again."
+msgstr "ログインの有効期限が切れました。もう一度お試しください。"

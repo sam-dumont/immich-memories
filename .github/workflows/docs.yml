@@ -32,6 +32,7 @@ jobs:
     if: >-
       github.repository == 'sam-dumont/immich-video-memory-generator'
       && !(github.event_name == 'release' && startsWith(github.event.release.tag_name, 'models-'))
+      && !(github.event_name == 'release' && github.event.release.prerelease)
     # Building only reads the tree; the Pages artifact upload runs on the
     # Actions runtime token, not GITHUB_TOKEN.
     permissions:

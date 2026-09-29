@@ -1687,3 +1687,7 @@ msgstr "Entregado a Immich. El archivo local se eliminó para ahorrar espacio en
 
 msgid "View in Immich"
 msgstr "Ver en Immich"
+
+#: web/routes/login/+page.svelte
+msgid "Sign-in expired. Try again."
+msgstr "El inicio de sesión ha caducado. Inténtalo de nuevo."

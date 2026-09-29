@@ -1678,3 +1678,7 @@ msgstr "Przekazano do Immich. Plik lokalny został usunięty, aby zaoszczędzić
 
 msgid "View in Immich"
 msgstr "Zobacz w Immich"
+
+#: web/routes/login/+page.svelte
+msgid "Sign-in expired. Try again."
+msgstr "Logowanie wygasło. Spróbuj ponownie."

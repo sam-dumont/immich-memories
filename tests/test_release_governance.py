@@ -204,3 +204,88 @@ def test_an_interrupted_release_is_resumed_with_the_same_version(tmp_path):
     lines = output.read_text().splitlines()
     assert "should_release=true" in lines
     assert "next_version=1.2.4" in lines, "the stranded version, not an advance past it"
+
+
+def test_the_first_release_candidate_of_a_major_is_rc_1(tmp_path):
+    env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+    for args in (
+        ("init", "-q"),
+        ("config", "user.name", "Release test"),
+        ("config", "user.email", "release@example.test"),
+        ("commit", "--allow-empty", "-qm", "fix: released"),
+        ("tag", "v0.103.0"),
+        ("commit", "--allow-empty", "-qm", "fix: after the last final"),
+    ):
+        subprocess.run(["git", *args], cwd=tmp_path, env=env, check=True, capture_output=True)
+    # WHY: v0.103.0 stands for a published release; the fake gh answers the
+    # release-existence question the analyze step asks GitHub in production.
+    (tmp_path / "gh").write_text("#!/bin/sh\nexit 0\n")
+    (tmp_path / "gh").chmod(0o755)
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    shutil.copy(
+        Path(__file__).parents[1] / "scripts" / "release_analyze.py",
+        scripts / "release_analyze.py",
+    )
+    analyze = next(
+        step
+        for step in release_workflow()["jobs"]["analyze"]["steps"]
+        if step.get("id") == "analyze"
+    )
+    output = tmp_path / "outputs"
+    subprocess.run(
+        ["bash", "-e", "-o", "pipefail", "-c", analyze["run"]],
+        cwd=tmp_path,
+        env={
+            **env,
+            "PATH": f"{tmp_path}:{env['PATH']}",
+            "GITHUB_OUTPUT": str(output),
+            "FORCE_VERSION": "major",
+            "CHANNEL": "rc",
+            "INFERENCE_ONLY": "false",
+        },
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    lines = output.read_text().splitlines()
+    assert "next_version=1.0.0-rc.1" in lines
+    assert "prerelease=true" in lines
+    assert "previous_tag=v0.103.0" in lines
+
+
+@pytest.mark.parametrize(("prerelease", "moves_latest"), [("true", False), ("false", True)])
+def test_only_a_final_release_moves_the_latest_image_tag(tmp_path, prerelease, moves_latest):
+    step = next(
+        step
+        for step in release_workflow()["jobs"]["docker-manifest"]["steps"]
+        if "imagetools" in step.get("run", "")
+    )
+    digests = tmp_path / "digests"
+    digests.mkdir()
+    (digests / "abc123").touch()
+    # WHY: records the tags the step would push instead of writing to the registry.
+    (tmp_path / "docker").write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$ARGS_FILE"\n')
+    (tmp_path / "docker").chmod(0o755)
+    args_file = tmp_path / "args.txt"
+    subprocess.run(
+        ["bash", "-e", "-c", step["run"]],
+        cwd=digests,
+        env={
+            **os.environ,
+            "PATH": f"{tmp_path}:{os.environ['PATH']}",
+            "ARGS_FILE": str(args_file),
+            "IMAGE": "ghcr.io/example/app",
+            "VERSION": "1.0.0-rc.1",
+            "PRERELEASE": prerelease,
+        },
+        check=True,
+    )
+    args = args_file.read_text().splitlines()
+    assert "ghcr.io/example/app:1.0.0-rc.1" in args
+    assert ("ghcr.io/example/app:latest" in args) is moves_latest
+
+
+def test_a_release_candidate_publishes_no_docs():
+    condition = release_workflow()["jobs"]["deploy-docs"]["if"]
+    assert "needs.analyze.outputs.prerelease != 'true'" in condition

@@ -74,6 +74,10 @@ Web Application. Keycloak: a client with client authentication enabled. Authelia
 `authorization_code`. The rest of the `auth` keys are in the
 [config reference](../reference/config-reference.md).
 
+An expired sign-in or a reused callback returns you to the sign-in page with
+"Sign-in expired. Try again." Click the SSO button to start a fresh sign-in.
+This page waits for your click even with `auto_launch: true`.
+
 :::warning Your IdP decides who you are, not whether you may enter
 With no allow-list, anyone your IdP authenticates becomes a full admin of this app, Immich API key
 included. Fine for a personal tenant; wrong for a shared realm or an Auth0 tenant with social
