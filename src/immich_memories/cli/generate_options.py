@@ -89,7 +89,13 @@ def scope_options(command: FC) -> FC:
                 "the verdict) in this JSON file, for a watcher such as the web client"
             ),
         ),
-        click.option("--person", "-p", type=str, multiple=True, help="Person name (repeatable)"),
+        click.option(
+            "--person",
+            "-p",
+            type=str,
+            multiple=True,
+            help="Person name, or a UUID for exactly one person (repeatable)",
+        ),
         click.option(
             "--people-expression",
             "person_expression",

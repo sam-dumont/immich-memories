@@ -439,6 +439,7 @@ src/immich_memories/
 │   ├── annotation_line_fields.py # Which parts of a picture's line are its content and which we wrote; content rules read only the first
 │   ├── editorial_film_reach.py # What a film prepares: its demanded pictures, their Live families and capture runs
 │   ├── person_presence.py      # Who a person film may select: every picture of an episode its people are recognised in
+│   ├── person_resolution.py    # A name or UUID -> faces: the store's aliases per read account, else the roster
 │   ├── editorial_orchestration.py  # TextEditorialPlanner: episodes -> cards -> edit
 │   ├── editorial_rule_episodes.py  # Factual episode cards / omitted thesis; no semantic-bank writes
 │   ├── editorial_rule_reader.py    # Rules for worthiness, grouping and standing; shared allocation
@@ -503,7 +504,8 @@ src/immich_memories/
 │   ├── selection_source*.py    # The canonical source model: admission, provenance, groups, invariants
 │   ├── household_source.py     # A run naming its accounts (`EditorialRunContext.accounts`) reads the
 │   │                           # window per account, keeps chosen owners only, tags `Asset.access_accounts`
-│   │                           # and routes the run's AccessBoundClient; the kept copy of each exact-copy
+│   │                           # and routes the run's AccessBoundClient; `HouseholdWindows` is the same
+│   │                           # read for person presence in discovery; the kept copy of each exact-copy
 │   │                           # group and its account are frozen in the attempt's source snapshot, and
 │   │                           # `runs render` reads that copy through that account
 │   ├── text_episode_reader.py  # Reading event evidence (paged, banked); the same reading names
@@ -682,6 +684,7 @@ src/immich_memories/
 │   ├── generate.py             # `generate`
 │   ├── generate_options.py     # `generate`'s flags, grouped; group order is the --help order
 │   ├── generate_resolution.py  # What those flags mean against the config, presets and conflicts
+│   ├── run_people.py           # `--person`/`--people-expression` through the people store, then the roster
 │   ├── config_cmd.py           # `config`, `years`, `preflight`
 │   ├── people_cmd.py           # `people` scan/show
 │   ├── models_cmd.py           # `models fetch`
