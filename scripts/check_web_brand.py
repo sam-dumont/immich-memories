@@ -25,7 +25,16 @@ BRAND_FILES = re.compile(
 )
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    """0 when no Immich brand asset is used or shipped.
+
+    `--require-bundle` also fails when there is no built client to scan: the client is not
+    committed (#1580), so a guard run before `make web-build` would otherwise pass on nothing.
+    """
+    require_bundle = "--require-bundle" in (sys.argv[1:] if argv is None else argv)
+    if require_bundle and not (BUNDLE / "index.html").is_file():
+        print(f"{BUNDLE} is not built: run make web-build before checking what it ships")
+        return 1
     problems = [
         f"{path.relative_to(ROOT)} imports {name} from @immich/ui"
         for path in SOURCE.rglob("*")

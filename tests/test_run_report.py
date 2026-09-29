@@ -44,7 +44,10 @@ def test_private_fixture_has_no_names_paths_or_secrets_in_any_format():
         assert not any(value in rendered for value in [*private, asset_id, run.run_id])
         assert privacy.hash_id(asset_id) in rendered
     assert privacy.hash_id(asset_id) != ReportPrivacy(ids=[asset_id]).hash_id(asset_id)
-    assert "| Phase | Seconds | Items | s/item | s/output second |" in report.markdown()
+    assert (
+        "| Phase | Seconds | Items | s/item | s/output second | Peak MB | With children MB |"
+        in report.markdown()
+    )
     assert "| preparation.detectors | 2.000 | 4 | 0.500 |" in report.markdown()
 
 
@@ -68,6 +71,29 @@ def test_many_reader_calls_do_not_push_render_rates_out_of_the_report():
     )
     assert "| reader.call | 500.000 | 500 | 1.000 |" in report.markdown()
     assert "| render.assembly | 10.000 | 5 | 2.000 |" in report.markdown()
+
+
+def test_the_phase_table_keeps_the_highest_peak_of_a_repeated_phase():
+    mebibyte = 2**20
+    spans = [
+        Span(1, "download.original", None, 0, 1.0, items=1, peak_rss=300 * mebibyte),
+        Span(
+            2,
+            "download.original",
+            None,
+            1,
+            1.0,
+            items=1,
+            peak_rss=700 * mebibyte,
+            peak_tree_rss=900 * mebibyte,
+        ),
+        Span(3, "render.assembly", None, 2, 5.0, items=5),
+    ]
+    markdown = build_report(
+        RunMetadata("peaks", datetime.now(UTC)), Collector(spans=spans), privacy=ReportPrivacy()
+    ).markdown()
+    assert "| download.original | 2.000 | 2 | 1.000 | n/a | 700 | 900 |" in markdown
+    assert "| render.assembly | 5.000 | 5 | 1.000 | n/a | n/a | n/a |" in markdown
 
 
 def test_cli_report_defaults_to_latest_failed_run(tmp_path):

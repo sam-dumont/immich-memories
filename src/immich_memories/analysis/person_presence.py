@@ -13,7 +13,7 @@ exclusion removes a picture for its own reason, never the presence of its neighb
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import Literal
 
 from immich_memories.analysis.moment_grouping import (
@@ -46,18 +46,31 @@ def episodes_of(assets: Sequence[Asset]) -> tuple[tuple[Asset, ...], ...]:
 
 
 def present_in_episodes(
-    episodes: Iterable[Sequence[Asset]], condition: PersonExpression
+    episodes: Iterable[Sequence[Asset]],
+    condition: PersonExpression,
+    *,
+    face_accounts: Mapping[str, str] | None = None,
 ) -> frozenset[str]:
     """Every picture whose episode satisfies ``condition``, whose leaves are face IDs.
 
     A leaf holds in an episode when that face is recognised on any of its pictures, so
-    ``all`` asks for every named person somewhere in the episode, not in one frame.
+    ``all`` asks for every named person somewhere in the episode, not in one frame. In a
+    household run the episode holds every chosen account's copies, and ``face_accounts``
+    holds each face to the pictures its own account owns (the first of
+    ``access_accounts``): one person found in either account's copy is in the episode.
     """
     episodes = tuple(episodes)
+    held = face_accounts or {}
     held_by_face: dict[str, set[int]] = {}
     for index, episode in enumerate(episodes):
         for asset in episode:
             for person in asset.people:
-                held_by_face.setdefault(person.id, set()).add(index)
-    held = condition.evaluate(lambda face: held_by_face.get(face, ()))
-    return frozenset(asset.id for index in held for asset in episodes[index])
+                if _counts_on(asset, person.id, held):
+                    held_by_face.setdefault(person.id, set()).add(index)
+    holding = condition.evaluate(lambda face: held_by_face.get(face, ()))
+    return frozenset(asset.id for index in holding for asset in episodes[index])
+
+
+def _counts_on(asset: Asset, face: str, held: Mapping[str, str]) -> bool:
+    """A face held to an account counts only on the pictures that account owns."""
+    return face not in held or held[face] == next(iter(asset.access_accounts), None)
