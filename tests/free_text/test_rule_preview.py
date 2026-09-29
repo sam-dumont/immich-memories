@@ -145,3 +145,18 @@ def test_rules_known_only_while_cutting_are_named_without_a_count() -> None:
     ]
     assert "family film" in preview.at_cut[0].why
     assert [note.rule for note in preview.lifted] == ["provenance", "standing"]
+
+
+def test_a_pool_picture_immich_no_longer_lists_counts_as_hidden() -> None:
+    window = DateRange(start=START, end=START + timedelta(days=1))
+    scope = library_source_scope(None, CONFIG, (window,), accept_any_provenance=True)
+    readings = AnnotationReadings(store=open_store(), config=CONFIG, people={})
+
+    preview = preview_rules(
+        [_photo("cat-1", 0)], scope=scope, readings=readings, audience="family", missing=["gone-1"]
+    )
+
+    assert [(drop.rule, drop.asset_ids) for drop in preview.drops] == [
+        ("hidden in Immich", ("gone-1",))
+    ]
+    assert (preview.checked, preview.passed) == (2, 1)

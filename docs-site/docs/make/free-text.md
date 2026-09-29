@@ -143,7 +143,8 @@ RULES    451 of 457 pictures pass the rules checked before cutting
 ```
 
 These are the run's own checks, called on the same banked facts, so the preview and the film
-agree. It reads the pool's pictures from Immich by id first, like the film run does. Each picture
+agree. It reads the pool's pictures from Immich first, like the film run does: one search call
+per 1,000 pictures between the pool's first and last date, never one call per picture. Each picture
 counts once, under the first rule that drops it. The ids are hashed the way
 [`report`](./cli/report.md) hashes them: the terminal never prints a real one.
 
@@ -151,7 +152,7 @@ What it checks, in the run's order:
 
 | Rule | Drops |
 |---|---|
-| hidden in Immich, a film this app made, long video | archived or locked pictures, uploaded memories, recordings over the source cap |
+| hidden in Immich, a film this app made, long video | archived, locked or deleted pictures, uploaded memories, recordings over the source cap |
 | another file of the same picture | the smaller copy (a shared album's downscale, a chat's re-send) |
 | screens and documents | screenshots, screens, documents, by the document head, the screen head, the caption or a phone's screen size |
 | held for review | a `never_auto` flag on the picture or its Live Photo clip, until you clear it |

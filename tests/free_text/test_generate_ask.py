@@ -12,7 +12,7 @@ from typing import Any
 import pytest
 from click.testing import CliRunner, Result
 
-from immich_memories.api.models import Asset
+from immich_memories.api.models import Asset, MetadataSearchResult
 from immich_memories.cli._helpers import set_quiet_mode
 from immich_memories.config_models_editorial import EditorialConfig
 from immich_memories.db import open_store
@@ -56,21 +56,38 @@ def _library() -> None:
     )
 
 
+def _asset(asset_id: str, at: datetime) -> Asset:
+    return Asset(
+        id=asset_id,
+        type="IMAGE",
+        file_created_at=at,
+        file_modified_at=at,
+        updated_at=at,
+        original_file_name=f"IMG_{asset_id}.JPG",
+        width=4032,
+        height=3024,
+    )
+
+
 class _InventedImmich:
-    """WHY: replaces the Immich HTTP API; it answers for the invented library's pictures."""
+    """WHY: replaces the Immich HTTP API; it answers for the invented library and counts calls."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def search_metadata(self, *, page, size, taken_after, taken_before, **_filters):
+        self.calls += 1
+        inside = [
+            _asset(shot, taken) for shot, taken, _ in SHOTS if taken_after <= taken <= taken_before
+        ]
+        items = inside[(page - 1) * size : page * size]
+        more = page * size < len(inside)
+        return MetadataSearchResult.model_validate(
+            {"assets": {"items": items, "total": len(items), "nextPage": "2" if more else None}}
+        )
 
     def get_asset(self, asset_id: str) -> Asset:
-        at = next(taken for shot, taken, _ in SHOTS if shot == asset_id)
-        return Asset(
-            id=asset_id,
-            type="IMAGE",
-            file_created_at=at,
-            file_modified_at=at,
-            updated_at=at,
-            original_file_name=f"IMG_{asset_id}.JPG",
-            width=4032,
-            height=3024,
-        )
+        raise AssertionError(f"one read per picture ({asset_id}): read the pool in pages")
 
     def __enter__(self) -> _InventedImmich:
         return self
@@ -89,9 +106,8 @@ def ask(tmp_path: Path, lexicon: WordNetLexicon, monkeypatch: pytest.MonkeyPatch
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
     # WHY: the pinned WordNet corpus is a model download; this one holds the test's words.
     monkeypatch.setattr("immich_memories.cli._ask_generation.load_wordnet", lambda _path: lexicon)
-    monkeypatch.setattr(
-        "immich_memories.api.immich.SyncImmichClient", lambda **_k: _InventedImmich()
-    )
+    immich = _InventedImmich()
+    monkeypatch.setattr("immich_memories.api.immich.SyncImmichClient", lambda **_k: immich)
 
     def _invoke(
         *args: str, config: str = IMMICH + MODEL_TIER, answers: dict[str, Any] = ANSWERS
@@ -105,6 +121,7 @@ def ask(tmp_path: Path, lexicon: WordNetLexicon, monkeypatch: pytest.MonkeyPatch
         path.write_text(config)
         return CliRunner().invoke(main, ["-c", str(path), "generate", *args])
 
+    _invoke.immich = immich  # type: ignore[attr-defined]
     yield _invoke
     # A run without a terminal switches the print helpers to log lines for the whole process.
     set_quiet_mode(False)
@@ -152,6 +169,8 @@ def test_a_dry_run_shows_which_rules_would_drop_pool_pictures(ask, tmp_path: Pat
     held = next(line for line in result.output.splitlines() if "held for review: 1" in line)
     assert " id-" in held and "cat-3" not in result.output.split("RULES", 1)[1]
     assert "decided while cutting: who sees it" in result.output
+    # The 14-picture pool is one page of Immich's search, not 14 single reads.
+    assert ask.immich.calls == 1
     rules = json.loads(kept.read_text())["rules"]
     assert (rules["checked"], rules["passed"]) == (14, 13)
     assert [(d["rule"], d["count"], d["examples"]) for d in rules["drops"]] == [

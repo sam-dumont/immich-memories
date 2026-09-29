@@ -126,7 +126,9 @@ def scope_of_ask(
             accept_any_provenance=True,
         )
     ref = "ask-" + hashlib.sha256(request.encode()).hexdigest()[:12]
-    pool = CuratedPool(name=request, ref=ref, asset_ids=film.asset_ids)
+    if film.window is None:
+        raise click.ClickException("The pool holds no picture to film")
+    pool = CuratedPool(name=request, ref=ref, asset_ids=film.asset_ids, window=film.window)
     return RunScope(from_album=ref, subject=film.subject, accept_any_provenance=True, curated=pool)
 
 
@@ -200,8 +202,6 @@ def _rule_preview(
 
     Only a pool is previewed: the special day reads its own day, and no film has no pool.
     """
-    if film.route != "pool":
-        return None
     from immich_memories.analysis.editorial_runtime_evidence import AnnotationReadings
     from immich_memories.analysis.editorial_source import library_source_scope
     from immich_memories.analysis.thumbnail_prefetch import cached_preview_bytes
@@ -210,10 +210,13 @@ def _rule_preview(
     from immich_memories.free_text.rule_preview import preview_rules
     from immich_memories.people.context import load_people_prompt_context
 
+    if film.route != "pool" or film.window is None:
+        return None
     media = pool_media(
         client,
         film.asset_ids,
         config,
+        window=film.window,
         use_live_photos=config.analysis.include_live_photos,
         use_photos=config.photos.enabled,
     )
@@ -223,8 +226,11 @@ def _rule_preview(
         cache_dir=config.cache.cache_path / "thumbnails",
         max_size_mb=config.cache.thumbnail_cache_max_size_mb,
     )
+    sources = [*media.videos, *media.photos]
     return preview_rules(
-        [*media.videos, *media.photos],
+        sources,
+        # A pool picture Immich's timeline does not list never reaches the film.
+        missing=sorted(set(film.asset_ids) - {source.id for source in sources}),
         # The film run's scope: `--ask` films keep forwarded pictures.
         scope=library_source_scope(client, config, (media.date_range,), accept_any_provenance=True),
         readings=AnnotationReadings(

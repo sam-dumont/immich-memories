@@ -4,10 +4,15 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
 from immich_memories.filename_builder import safe_slug
+from immich_memories.timeperiod import DateRange
+
+# Immich's largest metadata search page.
+_PAGE = 1000
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -28,6 +33,8 @@ class CuratedPool:
     # The film's identity where an album would put its Immich id.
     ref: str
     asset_ids: tuple[str, ...]
+    # The pool's first and last capture: the window its pictures are read from.
+    window: DateRange
 
 
 def album_output_path(
@@ -225,10 +232,17 @@ def _read_pool(
     from immich_memories.api.album_service import AlbumRef
 
     media = pool_media(
-        client, pool.asset_ids, config, use_live_photos=use_live_photos, use_photos=use_photos
+        client,
+        pool.asset_ids,
+        config,
+        window=pool.window,
+        use_live_photos=use_live_photos,
+        use_photos=use_photos,
     )
     count = len(pool.asset_ids)
     print_success(f"Pool: {count} pictures")
+    if missing := count - len(media.videos) - len(media.photos):
+        print_info(f"{missing} pool pictures are not on Immich's timeline and are left out")
     return AlbumRef(id=pool.ref, name=pool.name, asset_count=count), media
 
 
@@ -237,16 +251,39 @@ def pool_media(
     asset_ids: Sequence[str],
     config: Config,
     *,
+    window: DateRange,
     use_live_photos: bool,
     use_photos: bool,
 ) -> AlbumMedia:
-    """A curated pool's pictures read from Immich by id, split as an album's are.
+    """A curated pool's pictures read from Immich, split as an album's are.
 
     The one read of a pool: the film run and the rule preview before it see the same media.
+    Immich has no read by many ids, so the pool's `window` is read in pages of 1,000 and the
+    pool's pictures kept: one call per 1,000 pictures in the window, where one read per pool
+    picture made 7,422 sequential calls for one pool. A picture Immich's timeline does not list (archived, hidden, locked, deleted) is
+    not returned, as the source pass would refuse it anyway.
     """
     from immich_memories.analysis.album_source import split_album_assets
 
-    assets = [client.get_asset(asset_id) for asset_id in asset_ids]
+    wanted = set(asset_ids)
+    # The store's capture time and Immich's taken filter can sit in different time zones.
+    margin = timedelta(days=1)
+    assets = []
+    page = 1
+    while True:
+        result = client.search_metadata(
+            taken_after=window.start - margin,
+            taken_before=window.end + margin,
+            page=page,
+            size=_PAGE,
+        )
+        assets += [asset for asset in result.all_assets if asset.id in wanted]
+        if not result.next_page:
+            break
+        page += 1
     return split_album_assets(
-        assets, config=config, use_live_photos=use_live_photos, use_photos=use_photos
+        list({asset.id: asset for asset in assets}.values()),
+        config=config,
+        use_live_photos=use_live_photos,
+        use_photos=use_photos,
     )

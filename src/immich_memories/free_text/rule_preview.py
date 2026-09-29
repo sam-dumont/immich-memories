@@ -39,11 +39,12 @@ if TYPE_CHECKING:
 
 # How many pictures a rule shows as its examples.
 EXAMPLES = 3
+HIDDEN = "hidden in Immich"
 
 # A source refusal's reason, as the source pass words it, and the rule it belongs to.
 _SOURCE_RULES = (
     ("another file of the same picture", "another file of the same picture"),
-    ("not on the timeline", "hidden in Immich"),
+    ("not on the timeline", HIDDEN),
     ("a film this app generated", "a film this app made"),
     ("source video runs", "long video"),
     ("video duration metadata is missing", "long video"),
@@ -56,7 +57,7 @@ _CARRIER_RULES = {
 }
 _WHY = {
     "another file of the same picture": "the full-size file of the same picture plays instead",
-    "hidden in Immich": "archived, hidden or locked: not on the timeline",
+    HIDDEN: "archived, hidden, locked or deleted: not on Immich's timeline",
     "a film this app made": "a finished memory is not footage of anything",
     "long video": "a recording over the source cap is never downloaded",
     "screens and documents": "a screenshot, a screen or a document is never a source",
@@ -156,11 +157,13 @@ def preview_rules(
     readings: AnnotationReadings,
     audience: str,
     preview_jpeg: Callable[[Asset], bytes | None] | None = None,
+    missing: Sequence[str] = (),
 ) -> RulePreview:
     """Ask the editor's rules about the pool's `sources`, as the run would before cutting.
 
     `scope` is the run's source scope and `readings` its line reader; `preview_jpeg` reads the
-    cached previews the run's copy check reads. Each picture counts under the first rule that
+    cached previews the run's copy check reads. `missing` are pool pictures Immich's timeline
+    did not return, which the film never reads. Each picture counts under the first rule that
     drops it, in the run's order: source, screens, holds, carrier rules, then video frames.
     """
     prepared = prepare_editorial_source(
@@ -168,8 +171,8 @@ def preview_rules(
         EditorialDependencies(source_fetcher=lambda _scope: sources, preview_jpeg=preview_jpeg),
         group=False,
     )
-    order = tuple(dict.fromkeys(asset_of(source).id for source in sources))
-    fates = _source_fates(prepared)
+    order = tuple(dict.fromkeys([*missing, *(asset_of(source).id for source in sources)]))
+    fates = dict.fromkeys(missing, HIDDEN) | _source_fates(prepared)
     readable = tuple(prepared.candidate_ids)
     unread = 0
     if readable:
