@@ -33,6 +33,10 @@ class DividerCardGenerator(Protocol):
     ) -> GeneratedScreen: ...
 
 
+# A hop this long is a new place whatever the geocoder calls it.
+_LONG_HOP_KM = 30.0
+
+
 def _divider_limit(title_settings: Any) -> int | None:
     """Return only a real timeline cap; MagicMock/standalone callers remain uncapped."""
     value = getattr(title_settings, "max_dividers", None)
@@ -299,42 +303,43 @@ class TitleDividerPlanner:
         clips: list[AssemblyClip],
         progress_callback: Callable[[float, str], None] | None,
     ) -> list[AssemblyClip]:
-        """Insert location cards between clips when location changes (>30km)."""
-        from immich_memories.analysis.trip_detection import haversine_km
+        """Insert a location card where the trip moves on.
 
+        A hop of more than 30 km always gets one. A walking or cycling trip moves from village
+        to village well under that, so a change of geocoded town also gets one: at most one a
+        day, never the town the last card named, never a town at home.
+        """
         if progress_callback:
             progress_callback(0.05, "Generating location cards...")
 
         result: list[AssemblyClip] = []
         location_card_cache: dict[str, Path] = {}
-        prev_lat: float | None = None
-        prev_lon: float | None = None
-        threshold_km = 30.0
-        inserted = 0
+        route = _RouteSoFar()
         limit = _divider_limit(self._title_settings)
 
         for clip in clips:
-            if clip.latitude is not None and clip.longitude is not None:
-                if prev_lat is not None and prev_lon is not None:
-                    dist = haversine_km(prev_lat, prev_lon, clip.latitude, clip.longitude)
-                    if (
-                        dist > threshold_km
-                        and clip.location_name
-                        and (limit is None or inserted < limit)
-                    ):
-                        card = self.make_location_card_clip(
-                            clip.location_name,
-                            location_card_cache,
-                            lat=clip.latitude,
-                            lon=clip.longitude,
-                        )
-                        result.append(card)
-                        inserted += 1
-                        logger.info(f"Location card: {clip.location_name} (dist={dist:.0f}km)")
-                prev_lat = clip.latitude
-                prev_lon = clip.longitude
+            reason = route.card_reason(clip, self._home())
+            if reason and clip.location_name and (limit is None or route.cards < limit):
+                result.append(
+                    self.make_location_card_clip(
+                        clip.location_name,
+                        location_card_cache,
+                        lat=clip.latitude,
+                        lon=clip.longitude,
+                    )
+                )
+                route.carded(clip)
+                logger.info(f"Location card: {clip.location_name} ({reason})")
+            route.passed(clip)
             result.append(clip)
         return result
+
+    def _home(self) -> tuple[float, float] | None:
+        lat = getattr(self._title_settings, "home_lat", None)
+        lon = getattr(self._title_settings, "home_lon", None)
+        if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
+            return float(lat), float(lon)
+        return None
 
     def select_divider_strategy(
         self,
@@ -356,3 +361,45 @@ class TitleDividerPlanner:
             return self.build_clips_with_dividers(clips, month_divider_paths)
 
         return clips.copy()
+
+
+class _RouteSoFar:
+    """Where a trip film has been, as far as its location cards are concerned."""
+
+    def __init__(self) -> None:
+        self.cards = 0
+        self._point: tuple[float, float] | None = None
+        self._town: str | None = None
+        self._last_card: str | None = None
+        self._carded_days: set[date] = set()
+
+    def card_reason(self, clip: AssemblyClip, home: tuple[float, float] | None) -> str | None:
+        from immich_memories.analysis.trip_detection import AWAY_FROM_HOME_KM, haversine_km
+
+        if clip.latitude is None or clip.longitude is None or self._point is None:
+            return None
+        hop = haversine_km(*self._point, clip.latitude, clip.longitude)
+        if hop > _LONG_HOP_KM:
+            return f"{hop:.0f} km"
+        day = parse_clip_date(clip)
+        if (
+            day is None
+            or day in self._carded_days
+            or not clip.location_name
+            or clip.location_name in (self._town, self._last_card)
+        ):
+            return None
+        if home and haversine_km(*home, clip.latitude, clip.longitude) <= AWAY_FROM_HOME_KM:
+            return None
+        return "new town"
+
+    def carded(self, clip: AssemblyClip) -> None:
+        self.cards += 1
+        self._last_card = clip.location_name
+        if (day := parse_clip_date(clip)) is not None:
+            self._carded_days.add(day)
+
+    def passed(self, clip: AssemblyClip) -> None:
+        if clip.latitude is not None and clip.longitude is not None:
+            self._point = (clip.latitude, clip.longitude)
+            self._town = clip.location_name
