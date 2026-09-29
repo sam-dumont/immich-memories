@@ -16,7 +16,9 @@ from pathlib import Path
 from threading import Lock
 from typing import Any
 
+from immich_memories.analysis.exact_copies import FoldedPool
 from immich_memories.analysis.selection_source import SourceScope
+from immich_memories.analysis.source_filter import asset_id_of, asset_of
 from immich_memories.api.models import Asset, VideoClipInfo
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.security import write_secret_file
@@ -64,6 +66,28 @@ def sources_from_payload(payload: Mapping[str, Any]) -> tuple[Asset | VideoClipI
 
 def load_sources(path: Path) -> tuple[Asset | VideoClipInfo, ...]:
     return sources_from_payload(json.loads(Path(path).read_text()))
+
+
+def frozen_access(attempt_dir: Path) -> dict[str, str]:
+    """The account each of an attempt's pictures was read through, as its snapshot froze it.
+
+    Each source's owner account, then each exact-copy group's kept copy over it: a replay
+    reads the copy the attempt chose, through the account that chose it. Empty for an
+    attempt that read one account or kept no snapshot.
+    """
+    path = Path(attempt_dir) / SNAPSHOT_NAME
+    if not path.exists():
+        return {}
+    payload = json.loads(path.read_text())
+    access = {
+        asset.id: asset.access_accounts[0]
+        for asset in map(asset_of, sources_from_payload(payload))
+        if asset.access_accounts
+    }
+    for group in payload.get("exact_copies", ()):
+        if group["access_account"] is not None:
+            access[group["representative_id"]] = group["access_account"]
+    return access
 
 
 def _json_default(value: Any) -> str:
@@ -123,3 +147,28 @@ class AttemptSourceSnapshots:
             payload["content_sha256"] = _digest(payload)
             write_secret_file(path, _json(payload))
             self._written.add(path)
+
+    def freeze_copies(self, folded: FoldedPool, *, directory: Path) -> None:
+        """Add the copy each exact-copy group kept, and the account it reads through.
+
+        A replay then renders that copy even if a star moved since. A pool without
+        copies leaves the snapshot as it was written.
+        """
+        path = Path(directory).resolve() / SNAPSHOT_NAME
+        if not folded.groups or not path.exists():
+            return
+        accounts = {asset_id_of(source): asset_of(source).access_accounts for source in folded.pool}
+        with self._lock:
+            payload = json.loads(path.read_text())
+            payload.pop("content_sha256", None)
+            payload["exact_copies"] = [
+                {
+                    "content_key": group.content_key,
+                    "representative_id": group.representative_id,
+                    "access_account": next(iter(accounts.get(group.representative_id, ())), None),
+                    "references": [asdict(reference) for reference in group.references],
+                }
+                for group in folded.groups
+            ]
+            payload["content_sha256"] = _digest(payload)
+            write_secret_file(path, _json(payload))

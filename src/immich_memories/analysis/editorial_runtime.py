@@ -624,6 +624,9 @@ def build_editorial_planner(
         selection_request=selection_request,
         source_dependencies=EditorialDependencies(
             source_fetcher=source_fetcher,
+            record_copies=lambda folded: source_snapshots.freeze_copies(
+                folded, directory=backend._context.artifact_dir
+            ),
             preview_jpeg=lambda asset: cached_preview_bytes(thumbnail_cache, asset.id),
         ),
         episode_reader_factory=episode_reader_factory,

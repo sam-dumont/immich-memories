@@ -10,7 +10,7 @@ the primary exactly as it always has been.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from threading import Lock
 from typing import TypeVar
@@ -53,6 +53,11 @@ class AccessRoutes:
                 self._accounts[asset.id] = account
                 if asset.live_photo_video_id:
                     self._accounts.setdefault(asset.live_photo_video_id, account)
+
+    def pin(self, accounts: Mapping[str, str]) -> None:
+        """Route asset ids as a record froze them, over anything learned before."""
+        with self._lock:
+            self._accounts.update(accounts)
 
     def account_of(self, asset_id: str) -> str | None:
         with self._lock:
