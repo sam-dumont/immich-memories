@@ -99,6 +99,17 @@ def test_a_deep_link_into_the_client_loads_the_app_and_assets_load_as_files(tmp_
     assert browser.get("/app/_app/..%2F..%2Fsecret.txt").status_code == 404
 
 
+def test_a_checkout_without_a_built_client_says_how_to_build_it(tmp_path):
+    """A source checkout has no client until `make web-build` runs (#1580): say so, not 404."""
+    app = FastAPI()
+    mount_web(app, client_dir=tmp_path / "client")
+    page = TestClient(app).get("/app/runs")
+
+    assert page.status_code == 503
+    assert "make web-build" in page.text
+    assert page.headers["content-type"].startswith("text/html")
+
+
 def test_the_client_api_answers_401_while_the_client_page_goes_to_login():
     from immich_memories.web.server import unauthenticated_response
 

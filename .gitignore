@@ -167,3 +167,6 @@ people*.yaml
 
 # Real-Immich PR gate: generated media, seeded config, logs (make test-immich-gate)
 .immich-gate/
+
+# The built web client (make web-build). The release wheel and the Docker image build it (#1580).
+src/immich_memories/web/client/

@@ -734,7 +734,7 @@ src/immich_memories/
 │   ├── dependencies.py         # Config, thumbnail cache, Immich fetches; overridable in tests
 │   ├── openapi.json            # Generated (make web-api); web/src/lib/api-types.ts comes from it
 │   ├── static/fonts/           # The title fonts the client previews with
-│   └── client/                 # Generated SvelteKit build (make web-build), committed: no Node at runtime
+│   └── client/                 # Generated SvelteKit build (make web-build), gitignored: the wheel and image build it
 │
 ├── tracking/                   # Run history & telemetry
 │   ├── run_database.py         # RunDatabase: run history in the store (pipeline_runs, phase_stats)
@@ -1184,8 +1184,11 @@ Suggestions use `AutoRunner`; nothing owns a separate job store.
 **Web client (`web/` at the repo root, served from `src/immich_memories/web/client`).** SvelteKit
 static SPA with `@immich/ui` (MIT; its logos and store badges are Immich trademarks, stripped at
 build time and gated by `scripts/check_web_brand.py`). It talks only to `/api/v1`; the server
-pages it replaced redirect to `/app/...`. `make web-check` fails on a stale bundle, a stale
-OpenAPI contract or TS types, or a shipped Immich brand asset. Import-linter keeps
+pages it replaced redirect to `/app/...`. The build is not committed (#1580): the release job
+and both Docker images build it, `hatch_build.py` refuses a wheel without it, `make dev` builds it
+for a checkout, and until then `/app` answers 503 naming `make web-build`. `make web-check` fails
+on a stale OpenAPI contract or TS types, a client that no longer builds, or a shipped Immich brand
+asset. Import-linter keeps
 `immich_memories.web` from importing the CLI, and the core packages from importing the web
 server. Labels are `t('...')`/`N_('...')` in Svelte and land in the `ui.po` catalogues
 (`make ui-catalogues`).

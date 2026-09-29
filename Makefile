@@ -79,8 +79,12 @@ help:
 install:
 	uv sync --no-dev
 
+# A source checkout builds its own web client (#1580): it is not committed.
 dev:
 	uv sync --all-extras
+	@command -v npm >/dev/null || { echo "make dev builds the web client and needs Node 22 (npm)."; \
+		echo "Install Node, or run 'uv sync --all-extras' for the Python side only."; exit 1; }
+	$(MAKE) --no-print-directory web-client
 
 .PHONY: install-acestep check-local-audio
 install-acestep:  ## Install the tested ACE-Step 1.5 inference stack and local Demucs
@@ -439,7 +443,7 @@ test-integration:  ## Run ALL integration tests per-suite (requires FFmpeg/Immic
 playwright-install:  ## Install Playwright browsers for E2E tests
 	uv run playwright install chromium
 
-e2e:  ## Run required fake-service contracts and real hermetic browser render
+e2e: web-client-present  ## Run required fake-service contracts and real hermetic browser render
 	uv run pytest tests/e2e/test_fake_immich.py tests/e2e/test_launch_smoke.py \
 		tests/e2e/test_memory_page.py tests/e2e/test_picture_decisions.py tests/e2e/test_sharing_levels.py \
 		tests/e2e/test_web_client.py \
@@ -457,7 +461,7 @@ contact-sheets:  ## Render contact sheets for a sweep of memories (SPEC=path OUT
 	@test -n "$(SPEC)" || (echo "SPEC=path/to/spec.json required — see examples/sweep-spec.example.json"; exit 1)
 	uv run python scripts/sweep_contact_sheets.py --spec "$(SPEC)" --out "$(or $(OUT),output/contact-sheets)"
 
-screenshots:  ## Capture UI screenshots in light + dark mode (coverage from server subprocess)
+screenshots: web-client-present  ## Capture UI screenshots in light + dark mode (coverage from server subprocess)
 	uv run pytest tests/e2e/test_screenshots.py -v -m visual --log-cli-level=INFO --tb=short \
 		--junitxml=tests/e2e-junit.xml
 
@@ -762,6 +766,10 @@ diff-cover-ci:
 # Build check (twine)
 build-check:
 	uvx twine check dist/*
+	@for wheel in dist/*.whl; do \
+		unzip -l "$$wheel" | grep -q "immich_memories/web/client/index.html" || { \
+			echo "$$wheel has no web client"; exit 1; }; \
+	done
 
 # Ensure dev dependencies are installed
 # --inexact: an exact sync deletes anything this project does not declare, which
@@ -829,10 +837,13 @@ pre-commit:
 # Building
 # =============================================================================
 
-build:
+# A wheel carries the built client (hatch_build.py refuses one without it), so build it first.
+build: web-client
+	uv run python scripts/check_web_brand.py --require-bundle
 	uv build
 
-build-wheel:
+build-wheel: web-client
+	uv run python scripts/check_web_brand.py --require-bundle
 	uv build --wheel
 
 # =============================================================================
@@ -1017,7 +1028,7 @@ docs-install:
 ui-catalogues:  ## Extract UI labels and update the per-language PO files
 	uv run python scripts/update-ui-catalogues.py
 
-.PHONY: web-install web-build web-api web-check
+.PHONY: web-install web-build web-api web-check web-client web-client-present
 web-install:  ## Install the Svelte web client's pinned dependencies
 	cd web && npm ci
 
@@ -1028,10 +1039,16 @@ web-api:  ## Regenerate the /api/v1 OpenAPI document and the client's TypeScript
 web-build:  ## Build the Svelte web client into the Python package (served at /app)
 	cd web && npm run build
 
-# The client is committed so an install needs no Node: a fresh build, the OpenAPI document and
-# the generated types must all match what is committed. The Immich logos in @immich/ui are
-# trademarks, not part of its MIT grant, and must never reach the bundle.
-web-check: web-install  ## Type-check the web client and fail on a stale bundle, contract or Immich logo
+web-client: web-install web-build  ## Install the client's pinned dependencies and build it
+
+# The browser suites serve the client; build it once when a checkout does not have it yet.
+web-client-present:
+	@[ -f src/immich_memories/web/client/index.html ] || $(MAKE) --no-print-directory web-client
+
+# The client is built where it ships (#1580), not committed. The OpenAPI document and the
+# generated types still are, and must match the API. A fresh build proves the client builds, and
+# the Immich logos in @immich/ui (trademarks, not part of its MIT grant) must never reach it.
+web-check: web-install  ## Type-check the web client, check the contract and types, build it, refuse Immich logos
 	cd web && npm run -s check
 	@fresh=$$(mktemp -d); \
 	uv run python scripts/export-web-openapi.py --out "$$fresh/openapi.json" && \
@@ -1041,14 +1058,9 @@ web-check: web-install  ## Type-check the web client and fail on a stale bundle,
 	diff -q "$$fresh/api-types.ts" web/src/lib/api-types.ts >/dev/null || { \
 		rm -rf "$$fresh"; echo "web/src/lib/api-types.ts is stale: run make web-api"; exit 1; }; \
 	rm -rf "$$fresh"
-	@fresh=$$(mktemp -d); cp -R src/immich_memories/web/client "$$fresh/committed"; \
-	(cd web && npm run -s build >/dev/null 2>&1) && \
-	diff -r "$$fresh/committed" src/immich_memories/web/client >/dev/null || { \
-		rm -rf src/immich_memories/web/client; cp -R "$$fresh/committed" src/immich_memories/web/client; \
-		rm -rf "$$fresh"; echo "src/immich_memories/web/client is stale: run make web-build"; exit 1; }; \
-	rm -rf "$$fresh"
-	uv run python scripts/check_web_brand.py
-	@echo "web client matches web/src, the contract and the types; no Immich logo shipped"
+	cd web && npm run -s build >/dev/null
+	uv run python scripts/check_web_brand.py --require-bundle
+	@echo "web client builds from web/src, matches the contract and the types; no Immich logo shipped"
 
 docs-dev:
 	cd docs-site && npm start

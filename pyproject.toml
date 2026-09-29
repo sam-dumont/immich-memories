@@ -203,9 +203,17 @@ version-file = "src/immich_memories/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/immich_memories"]
+# The built web client is gitignored (#1580); artifacts ship it anyway, and hatch_build.py
+# refuses a standard wheel that would go out without it.
+artifacts = ["src/immich_memories/web/client"]
+
+[tool.hatch.build.targets.wheel.hooks.custom]
 
 [tool.hatch.build.targets.sdist]
+# `uv build` makes the wheel from the sdist, so the sdist carries the built client too.
+artifacts = ["src/immich_memories/web/client"]
 include = [
+    "/hatch_build.py",
     "/src",
     "/tests",
     "/web/src",
