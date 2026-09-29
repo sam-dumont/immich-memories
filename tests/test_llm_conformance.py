@@ -76,3 +76,13 @@ def test_every_model_call_site_is_covered_or_explicitly_pending():
     pending = set(json.loads((root / "conformance" / "pending.json").read_text()))
     assert not covered & pending
     assert discover_sites(root) == covered | pending, "New LLM call site needs a conformance case"
+
+
+def test_nested_asking_function_is_not_misattributed_to_its_factory(tmp_path):
+    (tmp_path / "feature.py").write_text(
+        "def factory():\n"
+        "    def ask():\n"
+        "        return ask_llm_image(config, image)\n"
+        "    return ask\n"
+    )
+    assert discover_sites(tmp_path) == {"feature:factory.ask"}
