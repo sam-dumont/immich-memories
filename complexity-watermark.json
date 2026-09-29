@@ -9,7 +9,7 @@
     "register_config_commands": [29]
   },
   "src/immich_memories/cli/generate.py": {
-    "register_generate_commands": [134]
+    "register_generate_commands": [115]
   },
   "src/immich_memories/cli/music_cmd.py": {
     "register_music_commands": [17]

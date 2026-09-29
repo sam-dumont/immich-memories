@@ -10,6 +10,7 @@ offered to selection in both forms.
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from immich_memories.api.person_expression import PersonExpression
@@ -26,7 +27,7 @@ from immich_memories.tracking.timed import timed
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from immich_memories.api.immich import SyncImmichClient
+    from immich_memories.api.person_scope import WindowSource
     from immich_memories.cli._live_display import ProgressDisplay
 
 
@@ -126,7 +127,7 @@ def _report_history(counts: list[int], anchor: str | None) -> None:
 
 def fetch_photos(
     *,
-    client: SyncImmichClient,
+    client: WindowSource,
     date_ranges: list[DateRange],
     person_ids: list[str],
     person_match: str = "and",
@@ -175,7 +176,7 @@ def fetch_photos(
 
 def fetch_videos(
     *,
-    client: SyncImmichClient,
+    client: WindowSource,
     progress: ProgressDisplay,
     date_ranges: list[DateRange],
     person_ids: list[str],
@@ -229,7 +230,7 @@ def fetch_videos(
 @timed("discovery")
 def fetch_media(
     *,
-    client: SyncImmichClient,
+    client: WindowSource,
     progress: ProgressDisplay,
     date_ranges: list[DateRange],
     person_ids: list[str],
@@ -237,6 +238,7 @@ def fetch_media(
     person_expression: PersonExpression | None = None,
     include_photos: bool = True,
     history_from: int | None = None,
+    face_accounts: Mapping[str, str] | None = None,
 ) -> tuple[list, list]:
     """The videos and photos a memory's windows hold, as one fetch.
 
@@ -244,6 +246,8 @@ def fetch_media(
     `fetch_photos` do. A memory about people reads each window once per kind and
     keeps the episodes those people are in (`people_in_window`): an episode mixes
     videos and photos, so both reads are needed even when photos are left out.
+    ``client`` may be every chosen account read as one (`HouseholdWindows`), and then
+    ``face_accounts`` holds each face to its own account's pictures.
     """
     condition = window_condition(
         person_ids, person_match=person_match, person_expression=person_expression
@@ -263,7 +267,9 @@ def fetch_media(
     videos: list = []
     photos: list = []
     for date_range in date_ranges:
-        window_videos, window_photos = people_in_window(client, date_range, condition)
+        window_videos, window_photos = people_in_window(
+            client, date_range, condition, face_accounts=face_accounts
+        )
         videos.extend(window_videos)
         photos.extend(window_photos)
     progress.update(task, completed=True)
