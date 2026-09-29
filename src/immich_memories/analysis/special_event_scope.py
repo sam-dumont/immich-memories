@@ -118,12 +118,24 @@ def read_special_event_admission(value: object) -> SpecialEventAdmission | None:
 def select_source_members(
     sources: Iterable[_Source], asset_ids: Sequence[str] | None
 ) -> tuple[_Source, ...]:
-    """Intersect visual members while retaining each still's Live Photo link."""
+    """Intersect visual members, keeping each kept still's Live Photo companion beside it.
+
+    An event names its pictures, never their companions: the companion is how a Live still
+    plays, not a picture of its own. Without it every Live Photo in the event ships as a
+    still, whatever its motion. The component filter downstream still keeps the companion
+    out of the selectable pool.
+    """
+    fetched = tuple(sources)
     if asset_ids is None:
-        return tuple(sources)
+        return fetched
     allowed = set(asset_ids)
-    return tuple(
-        source
-        for source in sources
-        if (source.asset if isinstance(source, VideoClipInfo) else source).id in allowed
-    )
+    companions = {
+        _asset_of(source).live_photo_video_id
+        for source in fetched
+        if _asset_of(source).id in allowed
+    } - {None}
+    return tuple(source for source in fetched if _asset_of(source).id in allowed | companions)
+
+
+def _asset_of(source: Asset | VideoClipInfo) -> Asset:
+    return source.asset if isinstance(source, VideoClipInfo) else source
