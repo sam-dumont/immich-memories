@@ -129,6 +129,40 @@ def test_a_fenced_account_reply_is_read_like_a_bare_one(tmp_path) -> None:
     assert len(asked.prompts) == 1
 
 
+class TruncatedThenCompleteReader:
+    """The transport cuts off right after one complete account, before the object closes.
+
+    Measured on the episode reader (#1609): a reply cut off mid-transport was discarded
+    whole even when it had already finished writing a complete answer, wasting the call
+    and re-asking for something already answered. The same shape applies here: a page
+    with one offered key writes a complete `"key": "value"` pair and then stops.
+    """
+
+    def __init__(self) -> None:
+        self.prompts: list[str] = []
+
+    def __call__(self, prompt: str) -> str:
+        self.prompts.append(prompt)
+        offered = prompt.split("Return an account for EACH of these exact keys: ")[1]
+        keys = [key.strip() for key in offered.split(".\n")[0].split(",")]
+        assert len(keys) == 1
+        key = keys[0]
+        if len(self.prompts) == 1:
+            # No closing brace for the value, the object, or the reply -- the transport
+            # stopped right here, but the account it had just finished is complete.
+            return '{"accounts": {"' + key + '": "what ' + key + ' was about"'
+        return json.dumps({"accounts": {key: f"what {key} was about"}})
+
+
+def test_a_truncated_account_reply_salvages_the_account_it_finished_writing(tmp_path) -> None:
+    asked = TruncatedThenCompleteReader()
+
+    months = catalogued(annotation_store(), FEBRUARY, asked)
+
+    assert months["2024-02"].account == "what a1 was about"
+    assert len(asked.prompts) == 1
+
+
 def test_a_month_account_is_written_where_a_film_reads_it(tmp_path) -> None:
     bank = annotation_store()
 
