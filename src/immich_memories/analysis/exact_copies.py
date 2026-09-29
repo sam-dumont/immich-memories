@@ -8,8 +8,11 @@ equal are one item.
 
 Only a checksum proves identity here. A missing or unreadable one leaves the copy alone,
 and a similar picture, an edited export or a re-encode has different bytes, so none of
-them folds. Which copy stands for the item: a favourited one, then the primary owner's,
-then the smallest (owner id, asset id), so response order never decides it.
+them folds. Which copy stands for the item: a Live Photo whose motion half is in the pool,
+since a plain copy of the same still has lost its motion; then a favourited one, then the
+primary owner's, then the smallest (owner id, asset id), so response order never decides it.
+Keeping the Live copy never decides that it moves: its measured motion does, later, and a
+Live Photo that barely moves is shown as the still the plain copy would have been.
 
 A Live Photo still's checksum says nothing about its motion. The kept still keeps its own
 companion; an absorbed still takes its companion with it, recorded on its reference, so
@@ -127,9 +130,10 @@ def _copy_members(
         if key is not None and asset_id_of(source) not in companions:
             by_content[key].append(source)
     motions = _live_photos_by_motion(sources)
+    by_id = {asset_id_of(source): source for source in sources}
 
-    def precedence(source: Asset | VideoClipInfo) -> tuple[bool, bool, str, str]:
-        return _precedence(source, primary_owner_id)
+    def precedence(source: Asset | VideoClipInfo) -> tuple[bool, bool, bool, str, str]:
+        return _precedence(source, primary_owner_id, by_id)
 
     members: dict[str, tuple[str, list[Asset | VideoClipInfo]]] = {}
     for content_key, copies in by_content.items():
@@ -141,7 +145,6 @@ def _copy_members(
         for representative_id, (_key, ordered) in members.items()
         for copy in ordered
     }
-    by_id = {asset_id_of(source): source for source in sources}
     # Key order, not page order, decides where each motion-equal video lands in its group.
     for content_key, videos in sorted(by_content.items()):
         if content_key not in motions:
@@ -190,10 +193,15 @@ def _sha1_digest(checksum: str | None) -> bytes | None:
 
 
 def _precedence(
-    source: Asset | VideoClipInfo, primary_owner_id: str | None
-) -> tuple[bool, bool, str, str]:
+    source: Asset | VideoClipInfo,
+    primary_owner_id: str | None,
+    by_id: Mapping[str, Asset | VideoClipInfo],
+) -> tuple[bool, bool, bool, str, str]:
+    """A Live copy whose motion half is in the pool first: a companion that never arrived
+    counts as no motion, so the kept copy never points at a missing half."""
     asset = asset_of(source)
     return (
+        (asset.live_photo_video_id or "") not in by_id,
         not asset.is_favorite,
         primary_owner_id is None or asset.owner_id != primary_owner_id,
         asset.owner_id,
