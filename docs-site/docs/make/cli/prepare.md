@@ -78,7 +78,7 @@ registry, and never overwrites an answer you gave it. It reads counts and dates 
 
 ```bash
 immich-memories people scan                    # build or refresh the registry
-immich-memories people show                    # read it back, --tier narrows it
+immich-memories people show                    # read it back with each ID, --tier narrows it
 immich-memories people export --to people.yaml # write it out as YAML to edit or keep
 immich-memories people import --from people.yaml --replace
 immich-memories people bind "Alex Example" --account partner --id <uuid>

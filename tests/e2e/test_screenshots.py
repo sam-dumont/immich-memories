@@ -15,14 +15,16 @@ from __future__ import annotations
 import base64
 import re
 import subprocess
+from collections.abc import Generator
 from pathlib import Path
 from urllib.parse import urljoin
 
 import pytest
+import yaml
 from playwright.sync_api import Page, expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-from tests.e2e.conftest import set_theme
+from tests.e2e.conftest import _launch_workspace, _serve_launch, set_theme
 from tests.e2e.fake_library import CARRIERS, LIBRARY, THESIS
 from tests.e2e.redaction import redact_page
 from tests.e2e.web_flow import contact_sheet, cut_june, render, the_film
@@ -426,3 +428,83 @@ def test_capture_the_sign_in_page(
         set_theme(page, theme)
         expect(page.get_by_role("button", name="Sign in")).to_be_visible()
         _save(page, screenshot_dir, _name("login", theme))
+
+
+@pytest.fixture(scope="module")
+def accounts_app_url(
+    tmp_path_factory, fake_immich_server, unused_tcp_port_factory
+) -> Generator[str, None, None]:
+    """The hermetic launch with a second account, `partner`, which the fake service also answers."""
+    workspace = _launch_workspace(tmp_path_factory.mktemp("accounts-shots"), fake_immich_server)
+    config = yaml.safe_load(workspace.config_path.read_text())
+    config["immich"]["accounts"] = {
+        "partner": {"url": fake_immich_server.base_url, "api_key": fake_immich_server.api_key}
+    }
+    workspace.config_path.write_text(yaml.safe_dump(config))
+    yield from _serve_launch(workspace, unused_tcp_port_factory(), models_fetched=True)
+
+
+@pytest.mark.parametrize("theme", _THEMES)
+def test_capture_a_second_account(
+    page: Page, accounts_app_url: str, screenshot_dir: Path, theme: str
+) -> None:
+    """A person bound across two accounts, a saved group, and both on the New memory page."""
+    d = screenshot_dir
+    _open(page, f"{accounts_app_url}/app/settings/people", theme)
+    page.wait_for_load_state("networkidle")
+    if page.get_by_text("Nobody yet.", exact=False).count():
+        page.get_by_role("button", name="Rescan the library").click()
+    # Every card's relationship picker names Robin too; the card's own title is its first line.
+    card = page.get_by_role("listitem").filter(
+        has=page.locator("p.font-semibold", has_text="Robin")
+    )
+    expect(card).to_be_visible(timeout=120_000)
+    bound = card.get_by_text("partner: partner-face-01")
+    # The first theme's pass binds and saves; the second finds both already there.
+    if not bound.count():
+        card.get_by_label("Account", exact=True).select_option("partner")
+        card.get_by_label("Their id in that account").fill("partner-face-01")
+        card.get_by_role("button", name="Bind", exact=True).click()
+    expect(bound).to_be_visible(timeout=15_000)
+    groups = page.get_by_role("region", name="Saved groups")
+    if not groups.get_by_text("Kids", exact=True).count():
+        groups.get_by_label("Label", exact=True).fill("Kids")
+        groups.get_by_label("Expression", exact=True).fill('"person-robin" OR "person-charlie"')
+        groups.get_by_role("button", name="Save group", exact=True).click()
+    expect(groups.get_by_text("Kids", exact=True)).to_be_visible(timeout=15_000)
+    # Opened again, so the bind form is back to empty, as someone returning to the page sees it.
+    page.reload()
+    expect(bound).to_be_visible(timeout=30_000)
+    page.wait_for_load_state("networkidle")
+    # The cards sit 16 px apart; a narrower margin keeps the neighbours out of the frame.
+    _save_padded(page, card, d, _name("people-accounts-bind", theme), pad=8)
+    _save_padded(page, groups, d, _name("people-saved-groups", theme))
+
+    page.goto(f"{accounts_app_url}/app/create", wait_until="domcontentloaded")
+    page.get_by_text("Multi-Person", exact=True).click()
+    page.get_by_label("Year", exact=True).fill("2024")
+    kids = page.get_by_role("button", name=re.compile(r"^Kids"))
+    with page.expect_response(lambda r: r.url.endswith("/api/v1/cuts/command")):
+        kids.click()
+    for account in ("primary", "partner"):
+        with page.expect_response(lambda r: r.url.endswith("/api/v1/cuts/command")):
+            page.get_by_text(account, exact=True).click()
+    command = page.locator("code[aria-label='Command']")
+    expect(command).to_contain_text("--accounts=primary,partner")
+    _blur(page)
+    # From the people to the command they turn into, the two collapsed panels between them.
+    people = page.get_by_role("group", name="People")
+    _to_top(people, 96)
+    _settle(page)
+    top, bottom = people.bounding_box(), command.bounding_box()
+    assert top is not None and bottom is not None
+    page.screenshot(
+        path=str(d / f"{_name('memory-brief-accounts', theme)}.png"),
+        clip={
+            "x": top["x"] - 24,
+            "y": top["y"] - 24,
+            "width": top["width"] + 48,
+            # Only 6 px under the command: the Cut button starts 8 px below it.
+            "height": bottom["y"] + bottom["height"] - top["y"] + 30,
+        },
+    )

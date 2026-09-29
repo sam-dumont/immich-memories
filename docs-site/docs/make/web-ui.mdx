@@ -91,15 +91,17 @@ of them** (`--person-match or`).
 command line shows which one the cut will use.
 
 **Saved groups** are a shortcut for a condition you reuse, "the kids", say. Give one a label and an
-expression in the same grammar on the **People** settings page (below), and its card shows up here:
-pick it and the film's people are exactly what `generate --group` would give. Picking a card clears
+expression in the same grammar on the **People** settings page (below), and it shows up here as a chip
+for a Multi-Person film: pick it and the film's people are exactly what `generate --group` would
+give. Picking a group clears
 the names and the grouped condition above, the same way typing an expression does.
 
 If a second Immich account is configured (`immich.accounts` in [the config file](../run/config-file.md),
 the household case where two people upload to their own accounts on the same server), **Immich
-accounts to read** lists it as a chip next to the people picker. Nothing is added to the film's
+accounts to read** lists it as a chip under the people picker. Nothing is added to the film's
 household by default: leave every chip unpicked and the film reads the primary account alone, as
-`--accounts` does on the command line.
+`--accounts` does on the command line. The whole setup, with screenshots:
+[A second Immich account](../run/multi-account.mdx).
 
 With two names or more, a person recognised once in an episode counts in all of its pictures, so the
 pool shows those pictures too, marked **Same episode**: untick any that are not really about them.
@@ -404,5 +406,5 @@ nothing.
 **Saved groups**, above the people list, is where a reusable people condition gets a label: type a
 label and an expression in the `--people-expression` grammar (quoted canonical ids, `AND`/`OR`,
 parentheses), then **Save group**. A malformed expression saves nothing. The label then shows as a
-card on the New memory page, and `generate --group LABEL` resolves it the same way. **Remove** drops
+chip on the New memory page, and `generate --group LABEL` resolves it the same way. **Remove** drops
 the label only; it never touches the people it names.

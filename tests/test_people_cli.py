@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -204,6 +205,15 @@ class TestShow:
 
         assert "people scan" in output
 
+    def test_each_person_carries_the_id_a_group_or_a_bind_names_them_by(self):
+        _run(["people", "scan"])
+
+        output = _run(["people", "show"])
+
+        roster = [line for line in output.splitlines() if "owner:" not in line]
+        alex = next(line for line in roster if "Alex Example" in line)
+        assert re.search(r"\bp1\b", alex)
+
     def test_show_carries_the_era_day_share(self):
         _run(["people", "scan"])
 
@@ -263,6 +273,20 @@ class TestExportAndImport:
 
         assert "--replace" in output
         assert load_document() == before
+
+    def test_a_person_only_the_partner_sees_comes_in_by_import_and_outlives_a_scan(self, tmp_path):
+        _run(["people", "scan"])
+        target = tmp_path / "people.yaml"
+        _run(["people", "export", "--to", str(target)])
+        document = yaml.safe_load(target.read_text())
+        document["people"].append({"name": "Jo Partnerside", "ids": {"partner": ["q9"]}})
+        target.write_text(yaml.dump(document, sort_keys=False))
+        _run(["people", "import", "--from", str(target), "--replace"])
+
+        _run(["people", "scan"])
+
+        assert _entry_named("Jo Partnerside")["ids"] == {"partner": ["q9"]}
+        assert re.search(r"Jo Partnerside\s+q9\b", _run(["people", "show"]))
 
     def test_a_broken_file_is_refused_and_changes_nothing(self, tmp_path):
         _run(["people", "scan"])

@@ -128,7 +128,7 @@ selects, and every selected account has to answer `/users/me` with its key befor
 `generate --accounts primary,partner` reads the named accounts into one film on the CLI, and
 [`automation.accounts`](#automation) does the same for the daily scan. `config test` and
 `preflight` check each one, one line per account, with no key printed:
-[A second Immich account](../run/config-file.md#a-second-immich-account).
+[A second Immich account](../run/multi-account.mdx).
 
 The key is a secret like the primary one: redacted from logs and issue reports, and sealed with
 `IMMICH_MEMORIES_SECRET_KEY` when saved to the database (the whole `immich.accounts` map is one
@@ -916,17 +916,18 @@ automation:
   detect_activity_burst: true     # unusually active months
   burst_threshold: 2.0            # multiplier above rolling average to trigger burst
   special_days_per_year: 6        # days a year discover-days keeps without a model, strongest first
-  accounts: []                    # extra immich.accounts names automation reads alongside the
-                                   # primary, exactly as generate --accounts does (default: primary alone)
-  detect_groups: true             # propose a film for each saved people group (people group add)
-                                   # that has content
+  accounts: []                    # accounts automation reads, as generate --accounts does: list
+                                  # primary too, e.g. ["primary", "partner"] (default: primary alone)
+  detect_groups: true             # propose last year's film for each saved people group
+                                  # (people group add) whose people have pictures
 ```
 
 `accounts` and saved groups are the automation side of
-[a second Immich account](../run/config-file.md#a-second-immich-account): naming an extra account
-here makes the daily scan read it the same way a manual `--accounts` run does, one `/users/me`
-check per account, and a read that fails on any of them fails that day's discovery instead of
-proposing a film from half a household.
+[a second Immich account](../run/multi-account.mdx): the daily scan reads the listed accounts the
+same way a manual `--accounts` run does, one `/users/me` check per account, and a read that fails
+on any of them fails that day's discovery instead of proposing a film from half a household. The
+list is exactly what is read, so keep `primary` in it: `["partner"]` alone leaves the primary
+library, and trips, out.
 
 ## Authentication
 
