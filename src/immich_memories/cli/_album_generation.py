@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from immich_memories.cli._helpers import console, print_error, print_info, print_success
 from immich_memories.filename_builder import safe_slug
+from immich_memories.tracking.timed import timed
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -184,6 +185,7 @@ def handle_album_generation(
         print_success(f"Uploaded to Immich (album: {album_name or 'none'})")
 
 
+@timed("discovery")
 def _read_album(
     client: SyncImmichClient,
     album_ref: str,
@@ -213,6 +215,7 @@ def _read_album(
     return resolved, media
 
 
+@timed("discovery")
 def _read_pool(
     client: SyncImmichClient,
     pool: CuratedPool,
