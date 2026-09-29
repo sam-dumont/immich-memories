@@ -34,6 +34,9 @@ htmlcov
 node_modules
 .DS_Store
 
+# A local build of the web client never reaches the image: the web-client stage builds it
+src/immich_memories/web/client
+
 # Renders and anything marked private stay on the machine that made them
 output
 .immich-gate
