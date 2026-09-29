@@ -23,8 +23,12 @@ and places, GPS coordinates, IP addresses, hostnames, URLs and absolute paths. I
 that only match inside that one report. Pictures are never included. Exactly what is removed, and
 how: [Privacy](../../run/privacy.md#diagnostic-reports).
 
-A run of `generate --ask` ([a film from a sentence](../free-text.md)) adds a free-text section: the translation trace,
-the pool funnel and the engine's picks as hashed IDs. Names become roles ("the owner's son"), place
+A run of `generate --ask` ([a film from a sentence](../free-text.md)) adds a free-text section: the sentence, the
+translation trace, the translation as data (the same JSON `--ask-trace` writes: each part, the pool's
+photo and video counts, the verdict), the pool funnel and the engine's picks as hashed IDs. The trace
+gets its own block in the Markdown, so a long one is pasted whole. A film rendered later from a
+saved cut (`runs render`, or **Render** in the web UI) is a run of its own, and its report carries
+the request its cut was made for, with the render's picks. Names become roles ("the owner's son"), place
 names become "area A", words read by OCR become "text-1", and a birth date the trace dated from
 becomes `[private]`. Captions stay out unless you pass `--include-flagged-captions`.
 
@@ -39,5 +43,6 @@ The missing words are checked against the run: did the reading keep them, were t
 picked as the subject, and does any caption in the pool say them. The marks stay on the run, so a
 later `report` shows them too.
 
-The web UI has the same report behind **Copy report** on a run's page. Every flag is in the
+The web UI has the same report behind **Copy report** on a run's page, and the `--bundle` ZIP
+behind **Download report**. Every flag is in the
 [CLI reference](../../reference/cli-reference.md#report).

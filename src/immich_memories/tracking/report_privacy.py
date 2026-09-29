@@ -85,7 +85,12 @@ class ReportPrivacy:
         return "[private]"
 
     def hash_id(self, value: str) -> str:
-        """Keep an identity joinable inside this report only; never export the salt."""
+        """Keep an identity joinable inside this report only; never export the salt.
+
+        An Immich id is one id in any case, so it hashes the same wherever the report meets it.
+        """
+        if _UUID.fullmatch(value):
+            value = value.lower()
         return "id-" + hashlib.blake2s(value.encode(), key=self._salt, digest_size=8).hexdigest()
 
     def text(self, value: str) -> str:

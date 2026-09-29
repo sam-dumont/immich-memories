@@ -256,4 +256,16 @@ def render_saved_cut(
             film=params.output_path,
             attempt=attempt_dir,
         )
-    return generate_memory(params)
+    return _render_as_new_run(config, run, params)
+
+
+def _render_as_new_run(config: Config, run: RunMetadata, params: GenerationParams) -> Path:
+    from immich_memories.db import open_store
+    from immich_memories.free_text.trace import carry_to_render
+    from immich_memories.tracking.run_observations import observe_render
+    from immich_memories.tracking.span_store import SpanStore
+
+    # The film is a new run: it opens its observations here, so the cut's request joins them.
+    with observe_render(config):
+        carry_to_render(SpanStore(open_store(config)).diagnostics(run.run_id))
+        return generate_memory(params)

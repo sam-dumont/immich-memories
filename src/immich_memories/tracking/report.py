@@ -97,6 +97,31 @@ def _phase_totals(spans: list[dict], output_seconds: float) -> list[dict]:
     return list(totals.values())
 
 
+_TRACE_LIMIT = 20_000
+
+
+def _free_text_trace(data: dict[str, Any]) -> str:
+    """The free-text trace as its own folding block, out of the per-section budget.
+
+    The trace is what a bad result is read from, so it is pasted whole up to its own limit.
+    Its data twin (the translation's blocks) stays in report.json only.
+    """
+    section = data.get("free_text")
+    if not isinstance(section, dict):
+        return ""
+    translation = {
+        key: value for key, value in section.get("translation", {}).items() if key != "blocks"
+    }
+    data["free_text"] = {key: value for key, value in section.items() if key != "trace"} | {
+        "translation": translation
+    }
+    trace = section.get("trace", "")
+    if len(trace) > _TRACE_LIMIT:
+        cut = trace.rfind("\n", 0, _TRACE_LIMIT)
+        trace = trace[: cut if cut > 0 else _TRACE_LIMIT] + "\n... more in report.json"
+    return _details("Free-text trace", trace) + "\n" if trace else ""
+
+
 @dataclass(frozen=True)
 class RunReport:
     data: dict[str, Any]
@@ -108,6 +133,7 @@ class RunReport:
     def markdown(self, *, limit: int = 59_000) -> str:
         """Keep complete folding blocks and whole trailing log lines below the issue limit."""
         data = {key: value for key, value in self.data.items() if key not in {"logs", "phases"}}
+        trace = _free_text_trace(data)
         sections = []
         section_limit = min(3500, max(200, (limit - 7000) // max(1, len(data))))
         for key, value in data.items():
@@ -122,6 +148,7 @@ class RunReport:
             "## Immich Memories run report\n\nRepeated spans are summed; nested phases overlap.\n\n"
             + table
             + "\n"
+            + trace
             + "\n".join(sections)
         )
         lines = self.data["logs"]

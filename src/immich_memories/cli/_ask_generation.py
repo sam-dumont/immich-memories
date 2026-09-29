@@ -175,13 +175,16 @@ def translate_ask(
             printed=ImmichPrintedText(client),
         )
         film = film_for(asked, asker, events_on=catalogue_events)
-        # A dry run shows what the editor's rules would drop from the pool; a film run applies them.
-        rules = _rule_preview(client, config, store, film) if dry_run else None
+        # What the editor's rules would drop from the pool: shown by a dry run, and kept with a
+        # film run so its report says which rules its pictures met.
+        rules = _rule_preview(client, config, store, film)
     trace = explain(asked, film=film, rules=rules)
     click.echo(trace)
-    save_with_run(asked, film, trace, people=view.people)
+    # One record for the watcher's file and the run's report, so both show the same translation.
+    record = trace_record(asked, film, rules)
+    save_with_run(asked, film, trace, people=view.people, record=record)
     if trace_file is not None:
-        write_secret_file(trace_file, json.dumps(trace_record(asked, film, rules)))
+        write_secret_file(trace_file, json.dumps(record))
     if dry_run:
         counts = pool_counts(asked)
         print_info(

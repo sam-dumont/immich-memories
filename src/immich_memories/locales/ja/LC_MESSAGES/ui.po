@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-29 07:24+0200\n"
+"POT-Creation-Date: 2026-09-29 10:32+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -48,7 +48,7 @@ msgstr "追加"
 msgid "Add a relationship"
 msgstr "関係を追加"
 
-#: web/lib/RenderPanel.svelte:189
+#: web/lib/RenderPanel.svelte:191
 msgid "Add date overlay"
 msgstr "日付を表示"
 
@@ -78,7 +78,7 @@ msgstr "期間の後"
 msgid "Album"
 msgstr "アルバム"
 
-#: web/lib/RenderPanel.svelte:231
+#: web/lib/RenderPanel.svelte:233
 msgid "Album name"
 msgstr "アルバム名"
 
@@ -109,21 +109,21 @@ msgstr "誰でも"
 msgid "Anyone. Only pictures nothing held back: no detector flag, no private moment."
 msgstr "誰でも。検出器の警告や私的な場面など、制限のない画像だけを使います。"
 
-#: web/lib/RenderPanel.svelte:144 web/lib/RenderPanel.svelte:167 web/lib/RenderPanel.svelte:173
-#: web/lib/RenderPanel.svelte:179 web/lib/RenderPanel.svelte:185 web/lib/RenderPanel.svelte:231
+#: web/lib/RenderPanel.svelte:146 web/lib/RenderPanel.svelte:169 web/lib/RenderPanel.svelte:175
+#: web/lib/RenderPanel.svelte:181 web/lib/RenderPanel.svelte:187 web/lib/RenderPanel.svelte:233
 #: web/routes/create/+page.svelte:435
 msgid "As configured"
 msgstr "設定どおり"
 
-#: web/lib/RenderPanel.svelte:153
+#: web/lib/RenderPanel.svelte:155
 msgid "As generate decides"
 msgstr "生成時に決定"
 
-#: web/lib/RenderPanel.svelte:161 web/lib/labels.ts:23
+#: web/lib/RenderPanel.svelte:163 web/lib/labels.ts:23
 msgid "Automatic"
 msgstr "自動"
 
-#: web/lib/RenderPanel.svelte:202
+#: web/lib/RenderPanel.svelte:204
 msgid "Automatic (as configured)"
 msgstr "自動（設定どおり）"
 
@@ -159,7 +159,7 @@ msgstr "誕生日 (MM-DD、空欄の場合はImmichの生年月日)"
 msgid "Birthday to birthday, with earlier birthdays"
 msgstr "誕生日から誕生日へ、それ以前の誕生日も含む"
 
-#: web/lib/RenderPanel.svelte:185
+#: web/lib/RenderPanel.svelte:187
 msgid "Blurred background"
 msgstr "ぼかした背景"
 
@@ -179,7 +179,7 @@ msgstr "キャンセル"
 msgid "Candidate key"
 msgstr "候補キー"
 
-#: web/lib/RenderPanel.svelte:190
+#: web/lib/RenderPanel.svelte:192
 msgid "Caption clips with their place"
 msgstr "クリップに場所を表示"
 
@@ -227,7 +227,7 @@ msgstr "この制限を解除しますか？"
 msgid "Cleared {count} entries from the {cache}."
 msgstr "{cache} から {count} 件のエントリを消去しました。"
 
-#: web/lib/RunReport.svelte:61
+#: web/lib/RunReport.svelte:63
 msgid "Clipboard unavailable. Select the report below and copy it."
 msgstr "クリップボードを使用できません。下のレポートを選択してコピーしてください。"
 
@@ -253,7 +253,7 @@ msgstr "{name} として接続中"
 msgid "Considered by the model"
 msgstr "モデルが検討"
 
-#: web/lib/JobPanel.svelte:88 web/lib/RunReport.svelte:73
+#: web/lib/JobPanel.svelte:88 web/lib/RunReport.svelte:76
 msgid "Copied"
 msgstr "コピーしました"
 
@@ -261,11 +261,11 @@ msgstr "コピーしました"
 msgid "Copy as CLI command"
 msgstr "コマンドラインのコマンドとしてコピー"
 
-#: web/lib/RunReport.svelte:73 web/lib/RunReport.svelte:75
+#: web/lib/RunReport.svelte:76 web/lib/RunReport.svelte:81
 msgid "Copy report"
 msgstr "レポートをコピー"
 
-#: web/lib/RenderPanel.svelte:145
+#: web/lib/RenderPanel.svelte:147
 msgid "Crossfade"
 msgstr "クロスフェード"
 
@@ -277,7 +277,7 @@ msgstr "整理"
 msgid "Custom date range"
 msgstr "日付範囲を指定"
 
-#: web/lib/RenderPanel.svelte:145 web/routes/create/+page.svelte:451
+#: web/lib/RenderPanel.svelte:147 web/routes/create/+page.svelte:451
 msgid "Cut"
 msgstr "編集する"
 
@@ -329,6 +329,10 @@ msgstr "検索に失敗しました：{error}"
 #: web/routes/runs/[run_id]/+page.svelte:326
 msgid "Download child output"
 msgstr "関連する出力をダウンロード"
+
+#: web/lib/RunReport.svelte:77 web/lib/RunReport.svelte:82
+msgid "Download report"
+msgstr "レポートをダウンロード"
 
 #: web/lib/ShotInspector.svelte:47
 msgid "Edit this shot"
@@ -411,11 +415,11 @@ msgstr "名前を検索"
 msgid "Finding faces"
 msgstr "顔を検出しています"
 
-#: web/lib/RenderPanel.svelte:185
+#: web/lib/RenderPanel.svelte:187
 msgid "Fit with bars"
 msgstr "帯を付けて収める"
 
-#: web/lib/RenderPanel.svelte:171
+#: web/lib/RenderPanel.svelte:173
 msgid "Format"
 msgstr "形式"
 
@@ -444,7 +448,7 @@ msgstr "制限あり：{reasons}。"
 msgid "Hemisphere"
 msgstr "半球"
 
-#: web/lib/RenderPanel.svelte:179
+#: web/lib/RenderPanel.svelte:181
 msgid "High"
 msgstr "高"
 
@@ -493,7 +497,7 @@ msgstr "動画に使用"
 msgid "Include Live Photos"
 msgstr "Live Photos を含める"
 
-#: web/lib/RunReport.svelte:70
+#: web/lib/RunReport.svelte:72
 msgid "Include captions of flagged photos"
 msgstr "フラグ付き写真のキャプションを含める"
 
@@ -527,7 +531,7 @@ msgstr "{stage}で残されました"
 msgid "Kept because"
 msgstr "残された理由"
 
-#: web/lib/RenderPanel.svelte:161
+#: web/lib/RenderPanel.svelte:163
 msgid "Landscape"
 msgstr "横向き"
 
@@ -547,7 +551,7 @@ msgstr "Live"
 msgid "Looking through your library for memories to suggest..."
 msgstr "提案できる思い出をライブラリから探しています..."
 
-#: web/lib/RenderPanel.svelte:180
+#: web/lib/RenderPanel.svelte:182
 msgid "Low"
 msgstr "低"
 
@@ -571,7 +575,7 @@ msgstr "手動"
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr "手動・自動の実行履歴です。失敗も含みます。実行を開くと編集結果と所要時間を確認できます。"
 
-#: web/lib/RenderPanel.svelte:167
+#: web/lib/RenderPanel.svelte:169
 msgid "Match the sources"
 msgstr "元の解像度に合わせる"
 
@@ -583,7 +587,7 @@ msgstr "動画内の動きを測定しています"
 msgid "Measuring the pictures"
 msgstr "画像を測定しています"
 
-#: web/lib/RenderPanel.svelte:180
+#: web/lib/RenderPanel.svelte:182
 msgid "Medium"
 msgstr "中"
 
@@ -615,11 +619,11 @@ msgstr "月のハイライト"
 msgid "Multi-Person"
 msgstr "複数の人物"
 
-#: web/lib/RenderPanel.svelte:200
+#: web/lib/RenderPanel.svelte:202
 msgid "Music"
 msgstr "音楽"
 
-#: web/lib/RenderPanel.svelte:223
+#: web/lib/RenderPanel.svelte:225
 msgid "Music volume:"
 msgstr "音楽の音量："
 
@@ -651,7 +655,7 @@ msgstr "映画なし: ライブラリではこれを表せません。別の言�
 msgid "No model read this cut: the rules chose every picture."
 msgstr "この編集はモデルが読んでいません。すべての画像をルールが選びました。"
 
-#: web/lib/RenderPanel.svelte:203
+#: web/lib/RenderPanel.svelte:205
 msgid "No music"
 msgstr "音楽なし"
 
@@ -707,7 +711,7 @@ msgstr "この思い出に写っている人はここでは認識されません
 msgid "Nobody yet. Rescan the library to read who is in it."
 msgstr "まだ誰もいません。ライブラリを再スキャンして誰がいるか確認してください。"
 
-#: web/lib/RenderPanel.svelte:145
+#: web/lib/RenderPanel.svelte:147
 msgid "None"
 msgstr "なし"
 
@@ -751,7 +755,7 @@ msgstr "開く"
 msgid "Open run"
 msgstr "実行を開く"
 
-#: web/lib/RenderPanel.svelte:131
+#: web/lib/RenderPanel.svelte:133
 msgid "Open the film run"
 msgstr "動画の実行を開く"
 
@@ -759,7 +763,7 @@ msgstr "動画の実行を開く"
 msgid "Order and timecodes from the saved cut."
 msgstr "保存済みの編集内容の順序とタイムコードです。"
 
-#: web/lib/RenderPanel.svelte:159
+#: web/lib/RenderPanel.svelte:161
 msgid "Orientation"
 msgstr "向き"
 
@@ -832,7 +836,7 @@ msgstr "URLとAPIキーの両方を入力してください"
 msgid "Pool"
 msgstr "候補メディア"
 
-#: web/lib/RenderPanel.svelte:162
+#: web/lib/RenderPanel.svelte:164
 msgid "Portrait"
 msgstr "縦向き"
 
@@ -844,7 +848,7 @@ msgstr "可能"
 msgid "Preview"
 msgstr "プレビュー"
 
-#: web/lib/RenderPanel.svelte:210
+#: web/lib/RenderPanel.svelte:212
 msgid "Preview a track"
 msgstr "曲を試聴"
 
@@ -852,7 +856,7 @@ msgstr "曲を試聴"
 msgid "Preview with these choices"
 msgstr "この選択でプレビュー"
 
-#: web/lib/RenderPanel.svelte:196
+#: web/lib/RenderPanel.svelte:198
 msgid "Privacy mode: blur every picture and scramble names"
 msgstr "プライバシーモード: すべての画像をぼかし、名前を隠します"
 
@@ -864,7 +868,7 @@ msgstr "進行状況"
 msgid "Put it back"
 msgstr "元に戻す"
 
-#: web/lib/RenderPanel.svelte:177
+#: web/lib/RenderPanel.svelte:179
 msgid "Quality"
 msgstr "画質"
 
@@ -916,7 +920,7 @@ msgstr "この関係を削除"
 msgid "Removed"
 msgstr "外しました"
 
-#: web/lib/RenderPanel.svelte:124 web/lib/RenderPanel.svelte:125 web/lib/RenderPanel.svelte:234
+#: web/lib/RenderPanel.svelte:126 web/lib/RenderPanel.svelte:127 web/lib/RenderPanel.svelte:236
 msgid "Render"
 msgstr "レンダリングする"
 
@@ -924,7 +928,7 @@ msgstr "レンダリングする"
 msgid "Replaced a picture the model doubted."
 msgstr "モデルが疑問を持った画像を置き換えました。"
 
-#: web/lib/RunReport.svelte:72
+#: web/lib/RunReport.svelte:74
 msgid "Report preview"
 msgstr "レポートのプレビュー"
 
@@ -932,15 +936,15 @@ msgstr "レポートのプレビュー"
 msgid "Rescan the library"
 msgstr "ライブラリを再スキャン"
 
-#: web/lib/RenderPanel.svelte:165
+#: web/lib/RenderPanel.svelte:167
 msgid "Resolution"
 msgstr "解像度"
 
-#: web/lib/RunReport.svelte:68
+#: web/lib/RunReport.svelte:70
 msgid "Review the report, then copy it. Nothing is sent automatically."
 msgstr "レポートを確認してからコピーしてください。自動で送信されるものはありません。"
 
-#: web/lib/RenderPanel.svelte:139 web/routes/runs/[run_id]/+page.svelte:298
+#: web/lib/RenderPanel.svelte:141 web/routes/runs/[run_id]/+page.svelte:298
 #, python-brace-format
 msgid "Revision {number}"
 msgstr "リビジョン {number}"
@@ -1014,7 +1018,7 @@ msgstr "データベースに保存しました"
 msgid "Saved to: {output_path}"
 msgstr "保存先：{output_path}"
 
-#: web/lib/RenderPanel.svelte:183
+#: web/lib/RenderPanel.svelte:185
 msgid "Scaling Mode"
 msgstr "拡大縮小の方法"
 
@@ -1081,7 +1085,7 @@ msgstr "サインアウト"
 msgid "Small moment"
 msgstr "小さな瞬間"
 
-#: web/lib/RenderPanel.svelte:144
+#: web/lib/RenderPanel.svelte:146
 msgid "Smart (fades and cuts)"
 msgstr "スマート（フェードとカット）"
 
@@ -1101,7 +1105,7 @@ msgstr "特別な日"
 msgid "Spring"
 msgstr "春"
 
-#: web/lib/RenderPanel.svelte:162
+#: web/lib/RenderPanel.svelte:164
 msgid "Square"
 msgstr "正方形"
 
@@ -1129,7 +1133,7 @@ msgstr "停止しました。"
 msgid "Stories"
 msgstr "ストーリー"
 
-#: web/lib/RenderPanel.svelte:149
+#: web/lib/RenderPanel.svelte:151
 msgid "Subtitle"
 msgstr "サブタイトル"
 
@@ -1162,7 +1166,7 @@ msgstr "外す"
 msgid "Test Connection"
 msgstr "接続をテスト"
 
-#: web/lib/RenderPanel.svelte:110
+#: web/lib/RenderPanel.svelte:112
 msgid "That file is not an MP3, M4A or WAV"
 msgstr "このファイルは MP3、M4A、WAV ではありません"
 
@@ -1174,7 +1178,7 @@ msgstr "そのファイルはサウンドトラックには大きすぎます"
 msgid "The connection could not be checked."
 msgstr "接続を確認できませんでした。"
 
-#: web/lib/RenderPanel.svelte:138
+#: web/lib/RenderPanel.svelte:140
 msgid "The cut as chosen"
 msgstr "選択した編集結果"
 
@@ -1186,7 +1190,7 @@ msgstr "編集を開始できませんでした。"
 msgid "The cut is ready."
 msgstr "編集結果の準備ができました。"
 
-#: web/lib/RenderPanel.svelte:155
+#: web/lib/RenderPanel.svelte:157
 msgid "The dates and places, never a model"
 msgstr "日付と場所のみ、モデルは使いません"
 
@@ -1220,7 +1224,7 @@ msgid ""
 "part of the sentence became and how many pictures fit, and films nothing."
 msgstr "モデルが準備済みのライブラリに照らして言葉を読みます。まずプレビュー: 文章の各部分が何になったか、何枚の写真が合うかを示し、何も撮影しません。"
 
-#: web/lib/RenderPanel.svelte:154
+#: web/lib/RenderPanel.svelte:156
 msgid "The model, when one is configured"
 msgstr "設定されている場合はモデル"
 
@@ -1236,7 +1240,7 @@ msgstr ""
 msgid "The picture it replaced"
 msgstr "置き換えられた画像"
 
-#: web/lib/RenderPanel.svelte:193
+#: web/lib/RenderPanel.svelte:195
 msgid ""
 "The place is Immich's. With geocoding on (Settings, network), it names the district in the "
 "film's language, through the public Nominatim or network.geocoding_url."
@@ -1252,7 +1256,7 @@ msgstr "候補"
 msgid "The preview could not start."
 msgstr "プレビューを開始できませんでした。"
 
-#: web/lib/RenderPanel.svelte:204
+#: web/lib/RenderPanel.svelte:206
 msgid "The previewed track"
 msgstr "試聴した曲"
 
@@ -1260,11 +1264,11 @@ msgstr "試聴した曲"
 msgid "The previous automatic memory used this category."
 msgstr "前回の自動思い出はこのカテゴリーを使用しました。"
 
-#: web/lib/RenderPanel.svelte:89
+#: web/lib/RenderPanel.svelte:91
 msgid "The render could not start."
 msgstr "レンダリングを開始できませんでした。"
 
-#: web/lib/RunReport.svelte:48
+#: web/lib/RunReport.svelte:50
 msgid "The report could not be loaded."
 msgstr "レポートを読み込めませんでした。"
 
@@ -1312,7 +1316,7 @@ msgstr "この実行には候補の記録が保存されていません。再編
 msgid "Thumbnail cache"
 msgstr "サムネイルキャッシュ"
 
-#: web/lib/RenderPanel.svelte:148
+#: web/lib/RenderPanel.svelte:150
 msgid "Title (decided as generate decides when empty)"
 msgstr "タイトル（空欄の場合は `generate` が決定）"
 
@@ -1328,7 +1332,7 @@ msgstr "チェックで除外された画像の枠に入りました。"
 msgid "Took the seat of a picture the model removed from this story."
 msgstr "モデルがこのストーリーから外した画像の枠に入りました。"
 
-#: web/lib/RenderPanel.svelte:142
+#: web/lib/RenderPanel.svelte:144
 msgid "Transition Style"
 msgstr "切り替えスタイル"
 
@@ -1361,11 +1365,11 @@ msgstr "元に戻す"
 msgid "Updated {when}"
 msgstr "{when}に更新"
 
-#: web/lib/RenderPanel.svelte:213
+#: web/lib/RenderPanel.svelte:215
 msgid "Upload a track"
 msgstr "曲をアップロード"
 
-#: web/lib/RenderPanel.svelte:230
+#: web/lib/RenderPanel.svelte:232
 msgid "Upload the film to Immich"
 msgstr "動画を Immich にアップロード"
 
@@ -1421,7 +1425,7 @@ msgstr "編集ルールで外れる写真"
 msgid "What the library measures"
 msgstr "ライブラリが測るもの"
 
-#: web/lib/RenderPanel.svelte:136
+#: web/lib/RenderPanel.svelte:138
 msgid "What to render"
 msgstr "レンダリングする対象"
 
@@ -1445,7 +1449,7 @@ msgstr "誰が誰か、その役割と関係です。"
 msgid "Who may see it"
 msgstr "公開範囲"
 
-#: web/lib/RenderPanel.svelte:151
+#: web/lib/RenderPanel.svelte:153
 msgid "Who names the film"
 msgstr "誰が映画に名前を付けるか"
 
