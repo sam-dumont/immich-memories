@@ -19,6 +19,10 @@ class RunSummary(BaseModel):
     preview_asset_ids: list[str]
     # False for a cut that stopped before rendering: it can be reviewed and rendered.
     film: bool
+    # False either way `film` is False, or the delivered film's local copy was
+    # already reclaimed after a confirmed Immich upload -- the run page tells
+    # those two apart using `delivery_status`.
+    film_available: bool
 
     @field_serializer("created_at")
     def _rfc3339(self, value: datetime) -> str:
@@ -138,6 +142,8 @@ class RunDetail(RunSummary):
     completed_at: datetime | None
     output_path: str | None
     delivery_status: str
+    immich_asset_id: str | None
+    immich_asset_url: str | None
     warnings: list[str]
     phases: list[PhaseTiming]
     clips_selected: int

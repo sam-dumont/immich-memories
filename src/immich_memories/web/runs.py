@@ -31,6 +31,16 @@ def _preview(config: Config, run_id: str) -> list[str]:
     return [shot.asset_id for shot in board.shots[:_PREVIEW_SHOTS]] if board else []
 
 
+def _film_available(record: RunMetadata) -> bool:
+    """Whether the local file is still on disk, not merely whether one was ever made.
+
+    A delivered run has its local film reclaimed once Immich confirms the
+    upload; the run page reads `delivery_status` to tell that apart from a
+    file that is simply missing.
+    """
+    return bool(record.output_path) and Path(record.output_path or "").is_file()
+
+
 def _summary(config: Config, record: RunMetadata) -> RunSummary:
     return RunSummary(
         run_id=record.run_id,
@@ -42,7 +52,15 @@ def _summary(config: Config, record: RunMetadata) -> RunSummary:
         date_range_end=record.date_range_end,
         preview_asset_ids=_preview(config, record.run_id),
         film=bool(record.output_path),
+        film_available=_film_available(record),
     )
+
+
+def _immich_asset_url(config: Config, asset_id: str | None) -> str | None:
+    """A link straight to the delivered asset, when the server is configured with a URL."""
+    if not asset_id or not config.immich.url:
+        return None
+    return f"{config.immich.url.rstrip('/')}/photos/{asset_id}"
 
 
 @router.get("", response_model=RunPage)
@@ -91,6 +109,8 @@ def read_run(run_id: str, config: Annotated[Config, Depends(current_config)]) ->
         completed_at=record.completed_at,
         output_path=record.output_path,
         delivery_status=record.delivery_status.value,
+        immich_asset_id=record.immich_asset_id,
+        immich_asset_url=_immich_asset_url(config, record.immich_asset_id),
         warnings=record.warnings.copy(),
         phases=[
             PhaseTiming(

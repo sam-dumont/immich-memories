@@ -442,9 +442,20 @@ def job_output(job_id: str, runner: Annotated[JobRunner, Depends(job_runner)]) -
 
 @router.get("/runs/{run_id}/film", response_class=FileResponse)
 def film(run_id: str, config: Annotated[Config, Depends(current_config)]) -> FileResponse:
-    """The rendered film, by byte range so the player can seek."""
+    """The rendered film, by byte range so the player can seek.
+
+    A run's page checks `film_available` before ever requesting this, so
+    reaching here for a delivered run means a stale link, not a broken
+    player: the local copy was reclaimed once Immich confirmed the upload.
+    """
     record = RunDatabase(open_store(config)).get_run(run_id)
-    if record is None or not record.output_path or not Path(record.output_path).is_file():
+    if record is None or not record.output_path:
+        raise HTTPException(404, "This run has no film on disk.")
+    if not Path(record.output_path).is_file():
+        if record.delivery_status.value == "delivered":
+            raise HTTPException(
+                404, "The local film was removed after delivery; it is in Immich now."
+            )
         raise HTTPException(404, "This run has no film on disk.")
     return FileResponse(record.output_path, media_type="video/mp4")
 
