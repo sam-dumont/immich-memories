@@ -35,6 +35,8 @@ What the minimum costs you:
   `immich-memories preflight` prints what it picked, for example
   `Photo preparation: 1 at a time (2.0 GB available, container limit)`. Setting
   `advanced.analysis.source_prepare_workers` to a number (1 to 4) overrides it.
+  The same memory figure caps the threads of each clip decode in the render (one per 2 GB, up
+  to 4): FFmpeg's own default of one per core cost 1.2 GB per 4K decode on an 18-core Mac.
 
 The 25 GB covers the caches at their default budgets (10 GB of Immich previews, 10 GB of downloaded
 video kept 7 days) with room for the store to grow. The models are about 140 MB. The one file worth backing

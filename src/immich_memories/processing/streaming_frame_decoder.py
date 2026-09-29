@@ -25,6 +25,7 @@ from immich_memories.processing.hdr_utilities import (
     _resolve_clip_hdr,
     get_colorspace_filter,
 )
+from immich_memories.processing.memory_budget import assembly_decoder_threads
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +52,10 @@ class FrameDecoder:
         caption: ClipCaption | None = None,
         caption_font: str | None = None,
         caption_window: tuple[int, int] | None = None,
+        threads: int | None = None,
     ) -> None:
         self._clip_path = clip_path
+        self._threads = threads
         self._input_seek = input_seek
         self._audio_output = audio_output
         self._width = width
@@ -193,8 +196,11 @@ class FrameDecoder:
                 str(self._audio_output),
             ]
 
+        threads = self._threads if self._threads is not None else assembly_decoder_threads()
         cmd = [
             "ffmpeg",
+            "-threads",
+            str(threads),
             *seek_args,
             "-i",
             str(self._clip_path),

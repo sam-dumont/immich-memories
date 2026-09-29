@@ -6,10 +6,14 @@ so the container's cgroup limit wins over physical RAM when it is lower.
 
 from __future__ import annotations
 
+import functools
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
+
+logger = logging.getLogger(__name__)
 
 _CGROUP = Path("/sys/fs/cgroup")
 _GIB = 2**30
@@ -18,6 +22,7 @@ _GIB = 2**30
 _GIB_PER_WORKER = 2
 # The fixed default before auto; a config that sets the key can go higher.
 _MOST_AUTO_WORKERS = 2
+_MOST_DECODER_THREADS = 4
 
 
 @dataclass(frozen=True)
@@ -62,16 +67,37 @@ def memory_budget(
     return MemoryBudget(physical, "physical RAM") if physical else None
 
 
-def prepare_workers(memory: int | None, *, cpus: int) -> int:
-    """One worker per 2 GB, at least one, at most two and never more than the CPUs.
-
-    Memory is rounded to whole GB first: a "4 GB" NAS reports about 3.8 GiB once the
-    kernel takes its share, and it should still get two.
-    """
-    ceiling = max(1, min(_MOST_AUTO_WORKERS, cpus))
+def _per_two_gigabytes(memory: int | None, *, cpus: int, most: int) -> int:
+    # Memory is rounded to whole GB first: a "4 GB" NAS reports about 3.8 GiB once
+    # the kernel takes its share, and it should still count as 4.
+    ceiling = max(1, min(most, cpus))
     if memory is None:
         return ceiling
     return max(1, min(ceiling, round(memory / _GIB) // _GIB_PER_WORKER))
+
+
+def prepare_workers(memory: int | None, *, cpus: int) -> int:
+    """One worker per 2 GB, at least one, at most two and never more than the CPUs."""
+    return _per_two_gigabytes(memory, cpus=cpus, most=_MOST_AUTO_WORKERS)
+
+
+def decoder_threads(memory: int | None, *, cpus: int) -> int:
+    """Threads for each FFmpeg decode feeding the assembly: one per 2 GB, 1 to 4.
+
+    FFmpeg's default is one per core, and each holds its own frames: a 4K HEVC
+    decode measured 1199 MB at 18 threads, 565 MB at 4 and 479 MB at 2, in the
+    same wall time, because the blur fill, not the decode, sets the pace.
+    """
+    return _per_two_gigabytes(memory, cpus=cpus, most=_MOST_DECODER_THREADS)
+
+
+@functools.cache
+def assembly_decoder_threads() -> int:
+    """`decoder_threads` for this process's memory budget, read once."""
+    budget = memory_budget()
+    threads = decoder_threads(budget.size if budget else None, cpus=_cpus())
+    logger.info("Assembly decodes: %d thread(s) each", threads)
+    return threads
 
 
 def source_prepare_workers(
