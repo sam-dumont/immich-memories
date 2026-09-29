@@ -998,7 +998,8 @@ export interface components {
         };
         /**
          * AskPreview
-         * @description `generate --ask --dry-run`'s translation: the trace by part, the pool and the verdict.
+         * @description `generate --ask --dry-run`'s translation: the trace by part, the pool, the rule preview
+         *     and the verdict.
          */
         AskPreview: {
             /** Blocks */
@@ -1007,6 +1008,7 @@ export interface components {
             pool: components["schemas"]["PoolCounts"];
             /** Request */
             request: string;
+            rules?: components["schemas"]["AskRules"] | null;
             /** Verdict */
             verdict: string;
             /** Why */
@@ -1016,6 +1018,24 @@ export interface components {
         AskRequest: {
             /** Sentence */
             sentence: string;
+        };
+        /**
+         * AskRules
+         * @description What the editor's rules would drop from the pool, asked before render.
+         */
+        AskRules: {
+            /** At Cut */
+            at_cut: components["schemas"]["RuleNoteView"][];
+            /** Checked */
+            checked: number;
+            /** Drops */
+            drops: components["schemas"]["RuleDropView"][];
+            /** Lifted */
+            lifted: components["schemas"]["RuleNoteView"][];
+            /** Passed */
+            passed: number;
+            /** Unread */
+            unread: number;
         };
         /** AskedFilm */
         AskedFilm: {
@@ -1695,6 +1715,24 @@ export interface components {
             role?: string | null;
             /** Tier */
             tier: string;
+        };
+        /** RuleDropView */
+        RuleDropView: {
+            /** Count */
+            count: number;
+            /** Examples */
+            examples: string[];
+            /** Rule */
+            rule: string;
+            /** Why */
+            why: string;
+        };
+        /** RuleNoteView */
+        RuleNoteView: {
+            /** Rule */
+            rule: string;
+            /** Why */
+            why: string;
         };
         /** RunDetail */
         RunDetail: {
