@@ -1,7 +1,8 @@
 """A picture that cannot carry a frame must not spend one of its moment's rungs.
 
-A short film deepens the moments it already shows, up to three frames a moment. The model
-ranks a moment's members, so its ladder walks the top three by position. Ranked by capture
+A short film deepens the moments it already shows while it has slots free (#1601): three frames a
+moment was the banked ladder, never a cap on a film that is still short. The model ranks a
+moment's members, so its ladder walks them by position. Ranked by capture
 facts alone, position says little: an eight-picture moment whose third-ranked frame fails
 the standing gate was shipping two frames and leaving five usable ones behind.
 """
@@ -88,12 +89,12 @@ def _admission(*, mechanical, slots=8, favourites=()):
     )
 
 
-def test_a_model_ladder_walks_the_moment_s_top_three_by_position():
+def test_a_model_ladder_walks_the_moment_by_position_past_a_refused_frame():
     admission = _admission(mechanical=False)
 
     admission.run()
 
-    assert [c["asset_id"] for c in admission.carriers] == ["first", "third"]
+    assert [c["asset_id"] for c in admission.carriers] == ["first", "third", "fourth"]
 
 
 def test_the_rules_ladder_skips_a_picture_that_cannot_carry_a_frame():
@@ -104,13 +105,13 @@ def test_the_rules_ladder_skips_a_picture_that_cannot_carry_a_frame():
     assert [c["asset_id"] for c in admission.carriers] == ["first", "third", "fourth"]
 
 
-def test_a_moment_never_carries_more_than_three_frames():
+def test_a_short_film_takes_every_distinct_frame_of_its_moment():
     admission = _admission(mechanical=True, slots=8)
     admission.gate.scores["refused"] = 2
 
     admission.run()
 
-    assert len(admission.carriers) == 3
+    assert len(admission.carriers) == 4
 
 
 def test_a_film_that_has_filled_its_slots_takes_no_second_pick_of_a_group():

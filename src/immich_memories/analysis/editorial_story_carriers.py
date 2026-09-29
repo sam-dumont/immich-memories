@@ -689,6 +689,7 @@ class CarrierAdmission:
                 (a for a in good if a not in carried),
                 key=lambda a: (
                     not self._unit_by_asset[a][1].get("favourite"),
+                    self._unit_by_asset[a][1].get("kind") not in ("video", "live-motion"),
                     -_seconds_apart(self._unit_by_asset[a][1]["taken"], kept),
                 ),
             )
@@ -703,17 +704,18 @@ class CarrierAdmission:
             or not self.chosen_by_story[s["key"]]
         ):
             return False
+        held = sum(c["story_episode"] == s["key"] for c in self.carriers)
+        self.places.widen(s["key"], held + self.slots - len(self.carriers))
         ladder = list(
             depth_ladder(
                 self._offerable(s),
                 chosen=self.chosen_by_story[s["key"]],
                 used=self._used_choice_keys,
                 group_of=lambda asset: self._unit_by_asset[asset][1].get("moment"),
-                frames_of=Counter(c["depicted_moment"] for c in self.carriers),
+                kept=[c["asset_id"] for c in self.carriers if c["story_episode"] == s["key"]],
             )
         )
         self.gate.ensure([asset for _choice, asset in ladder if self.free(asset)])
-        added = False
         for choice, asset in ladder:
             if len(self.carriers) >= self.slots:
                 break
@@ -730,8 +732,9 @@ class CarrierAdmission:
                     continue
                 self._used_choice_keys.add(choice.key)
                 self._admit(s, choice, row, [])
-                added = True
-        return added
+                # One frame at a time: the next is spread from the frames kept, this one included.
+                return True
+        return False
 
     # -- occasion integrity -----------------------------------------------------------
 

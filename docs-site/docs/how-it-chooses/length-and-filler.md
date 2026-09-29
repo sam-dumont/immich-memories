@@ -92,7 +92,10 @@ The draft tries to reach its length before it gives up the seconds:
 
 - **Depth.** When a story has slots left after every pass, it spends them inside the moments it
   already shows (`editorial_story_depth.py`): first moments no pick took, alternating between
-  capture groups, then up to 3 frames of each chosen moment. Eligible favourites come first;
+  capture groups, then further frames of each chosen moment, one round at a time, until the
+  slots run out. A 36-minute moment of laps on a track can fill a short film this way. Videos
+  come before stills, frames are spread across the moment's time, and the story's place bound
+  grows with the slots it now spends. Eligible favourites come first;
   equally preferred frames spread furthest in time from those already in. Every one must stand
   and must not look like its neighbours. A film of one repeated
   scene stays short.
