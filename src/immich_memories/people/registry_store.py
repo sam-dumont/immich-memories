@@ -4,6 +4,8 @@ The document is the shape `people.yaml` had: a header (version, generated, owner
 of person entries with `ids`, `name`, `birth_date`, `inferred`, `confirmed` and `origin`.
 `ids` is a flat list of the primary account's ids, or, once a second Immich account reads
 the person, one list per account (`people.account_ids`); a one-account registry never has one.
+The person's row id is identity: an entry names it in `person_id` whenever it is not the
+first id listed, so adding or reordering ids never changes who the row is.
 Callers edit that document; this module is the only code that knows how it maps to rows.
 A write replaces the whole registry inside the caller's transaction, after `lock_registry`,
 so two writers queue on the registry row instead of dropping each other's change.
@@ -26,11 +28,11 @@ from immich_memories.db.tables import (
     people_registry,
     people_relationships,
 )
-from immich_memories.people.account_ids import entry_ids, ids_by_account, ids_value
+from immich_memories.people.account_ids import PERSON_ID, entry_ids, ids_by_account, place_ids
 
 REGISTRY = "default"
 
-_PERSON_KEYS = ("ids", "name", "birth_date", "origin", "inferred", "confirmed")
+_PERSON_KEYS = ("ids", PERSON_ID, "name", "birth_date", "origin", "inferred", "confirmed")
 _LINK_KEYS = ("kind", "with", "reverse", "decision")
 
 
@@ -167,7 +169,8 @@ def _entry(
     groups: dict[str, list[str]] = defaultdict(list)
     for alias, account in aliases:
         groups[account or PRIMARY_ACCOUNT].append(alias)
-    entry: dict[str, Any] = {"ids": ids_value(groups)}
+    entry: dict[str, Any] = {}
+    place_ids(entry, groups, row["person_id"])
     entry |= {"name": row["name"], "birth_date": row["birth_date"]}
     if row["inferred"] is not None:
         entry["inferred"] = row["inferred"]

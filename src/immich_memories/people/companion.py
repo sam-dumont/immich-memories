@@ -22,7 +22,13 @@ from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
 from immich_memories.config_models import ACCOUNT_NAME_RULE, PRIMARY_ACCOUNT, is_account_name
 from immich_memories.db import Store, open_store
-from immich_memories.people.account_ids import entry_ids, ids_by_account, ids_value, primary_ids
+from immich_memories.people.account_ids import (
+    PERSON_ID,
+    entry_ids,
+    ids_by_account,
+    place_ids,
+    primary_ids,
+)
 from immich_memories.people.registry_store import lock_registry, read_document, write_document
 from immich_memories.people.relationships import owner_role, reciprocal_kind
 
@@ -102,7 +108,9 @@ def save_graph(document: dict[str, Any], graph: PeopleGraph) -> None:
     kept = _confirmed_by_id(document)
     bound = _bound_aliases(document, {node.evidence.person_id for node in graph.people})
     # A node that is somebody's bound alias is that person already, not a second entry.
-    aliased = {alias for entry in bound.values() for alias in entry_ids(entry)[1:]}
+    aliased = {
+        alias for seen, entry in bound.items() for alias in entry_ids(entry) if alias != seen
+    }
     entries = [
         _entry_for(node, kept, bound.get(node.evidence.person_id))
         for node in graph.people
@@ -238,8 +246,9 @@ def bind_alias(
             msg = f"{alias_id!r} is already bound to this person for another account"
             raise ValueError(msg)
         return
+    own = entry_ids(person)[0]
     groups.setdefault(name, []).append(alias_id)
-    person["ids"] = ids_value(groups)
+    place_ids(person, groups, own)
 
 
 def _entry_with_id(document: dict[str, Any], person_id: str) -> dict[str, Any]:
@@ -333,20 +342,29 @@ def _owner_block(graph: PeopleGraph) -> dict[str, Any] | None:
 
 
 def _bound_aliases(document: dict[str, Any], scanned: set[str]) -> dict[str, dict[str, Any]]:
-    """The entries the scan sees under their canonical id that answer to more than one id."""
-    return {
-        ids[0]: entry
-        for entry in people_entries(document)
-        if len(ids := entry_ids(entry)) > 1 and ids[0] in scanned
-    }
+    """Entries answering to more than one id, keyed by the id the scan finds them under.
+
+    That is the person's own id. The scan reads the primary account only, so a person whose
+    own id came from another account is found under their first bound primary id instead;
+    the entry, and its own id, carry over whole.
+    """
+    bound: dict[str, dict[str, Any]] = {}
+    for entry in people_entries(document):
+        ids, primary = entry_ids(entry), primary_ids(entry)
+        seen = ids[0] if ids[0] in primary else next(iter(primary), None)
+        if len(ids) > 1 and seen in scanned:
+            bound[seen] = entry
+    return bound
 
 
 def _entry_for(
     node: PersonNode, kept: dict[str, dict[str, Any]], bound: dict[str, Any] | None = None
 ) -> dict[str, Any]:
     person = node.evidence
+    own = {PERSON_ID: bound[PERSON_ID]} if bound and bound.get(PERSON_ID) else {}
     return {
         "ids": copy.deepcopy(bound["ids"]) if bound else [person.person_id],
+        **own,
         "name": person.name,
         "birth_date": _iso(person.birth_date),
         "inferred": {
@@ -418,14 +436,19 @@ def _annotated_strangers(document: dict[str, Any], graph: PeopleGraph) -> list[d
     Falling off the roster is a thing the library does — a person merged, a
     threshold moved, Immich unreachable for one call. None of those is a reason
     to delete an answer a person gave, so an entry carrying anything confirmed
-    is carried forward exactly as it was.
+    is carried forward exactly as it was. So is one holding an id another account
+    reads: the primary scan cannot see it, and binding it was the owner's answer.
     """
     present = {node.evidence.person_id for node in graph.people}
     return [
         entry
         for entry in people_entries(document)
         if not present.intersection(entry_ids(entry))
-        and (_has_content(entry.get("confirmed")) or entry.get("origin") == "manual")
+        and (
+            _has_content(entry.get("confirmed"))
+            or entry.get("origin") == "manual"
+            or len(primary_ids(entry)) < len(entry_ids(entry))
+        )
     ]
 
 

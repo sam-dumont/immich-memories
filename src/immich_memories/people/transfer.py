@@ -19,7 +19,7 @@ import yaml
 from immich_memories.config_models import ACCOUNT_NAME_RULE, PRIMARY_ACCOUNT, is_account_name
 from immich_memories.db import Store
 from immich_memories.db.legacy_import import ImportOutcome
-from immich_memories.people.account_ids import entry_ids, ids_value
+from immich_memories.people.account_ids import PERSON_ID, entry_ids, place_ids
 from immich_memories.people.registry_store import lock_registry, read_document, write_document
 
 LEGACY_FILE = "people.yaml"
@@ -200,11 +200,14 @@ def _entry(raw: object, seen: set[str]) -> tuple[dict[str, Any], str | None]:
     person_ids = list(chain.from_iterable(groups.values()))
     if len(set(person_ids)) != len(person_ids) or seen.intersection(person_ids):
         return {}, f"an id is listed twice: {', '.join(person_ids)}"
+    own = raw.get(PERSON_ID)
+    if own is not None and str(own) not in person_ids:
+        return {}, f"`{PERSON_ID}` must be one of the person's ids"
     problem = _shape_problem(raw)
     if problem is not None:
         return {}, problem
     entry = {key: _plain(value) for key, value in raw.items()}
-    entry["ids"] = ids_value(groups)
+    place_ids(entry, groups, None if own is None else str(own))
     for key in ("name", "origin"):
         if entry.get(key) is not None:
             entry[key] = str(entry[key])

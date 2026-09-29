@@ -15,11 +15,13 @@ import pytest
 import sqlalchemy as sa
 import yaml
 
-from immich_memories.db.tables import people_aliases
+from immich_memories.db.tables import people, people_aliases
+from immich_memories.people.account_ids import entry_ids
 from immich_memories.people.companion import (
     bind_alias,
     load_document,
     people_entries,
+    save_confirmed_relationship,
     save_graph,
 )
 from immich_memories.people.graph import PeopleGraph, PersonNode
@@ -297,3 +299,88 @@ def test_the_alias_rows_say_which_account_reads_each_id(store):
         "partner-alex-split": "partner",
         "id-kit": None,
     }
+
+
+def _partner_only_robin(store):
+    """Robin reached the registry through the partner account; Kit is linked to that id."""
+    document = copy.deepcopy(TWO_ACCOUNTS)
+    robin = copy.deepcopy(document["people"][1])
+    robin |= {"ids": {"partner": ["partner-robin"]}, "name": "Robin Example"}
+    document["people"].append(robin)
+    import_document(store, document)
+    save_confirmed_relationship(store, "id-kit", "partner-of", "partner-robin")
+
+
+def _person_ids(store):
+    with store.connect() as connection:
+        return set(connection.execute(sa.select(people.c.person_id)).scalars())
+
+
+class TestTheStoreIdIsIdentity:
+    """#951: the canonical person reference never moves because ids were added or reordered."""
+
+    def test_binding_a_primary_id_keeps_the_person_id_the_partner_account_gave(self, store):
+        _partner_only_robin(store)
+
+        bind_alias(store, "partner-robin", "id-robin")
+
+        assert "partner-robin" in _person_ids(store)
+        robin = people_entries(load_document(store))[2]
+        assert robin["ids"] == {"primary": ["id-robin"], "partner": ["partner-robin"]}
+        assert entry_ids(robin)[0] == "partner-robin"
+
+    def test_the_export_says_which_id_is_the_person_and_round_trips_it(self, store):
+        _partner_only_robin(store)
+        bind_alias(store, "partner-robin", "id-robin")
+        exported = export_yaml(store)
+
+        import_document(store, parse_yaml(exported), replace=True)
+
+        assert yaml.safe_load(exported)["people"][2]["person_id"] == "partner-robin"
+        assert "partner-robin" in _person_ids(store)
+        assert export_yaml(store) == exported
+
+    def test_a_person_whose_first_listed_id_is_its_own_carries_no_person_id(self, store):
+        import_document(store, copy.deepcopy(TWO_ACCOUNTS))
+
+        assert "person_id" not in export_yaml(store)
+
+    def test_relationship_links_still_name_the_person(self, store):
+        _partner_only_robin(store)
+
+        bind_alias(store, "partner-robin", "id-robin")
+
+        kit = people_entries(load_document(store))[1]
+        assert [link["with"] for link in kit["confirmed"]["links"]] == ["partner-robin"]
+
+    def test_a_rescan_of_the_primary_account_keeps_the_identity(self, store):
+        _partner_only_robin(store)
+        bind_alias(store, "partner-robin", "id-robin")
+
+        save_graph(store, _scan_of("id-alex", "id-robin", "id-kit"))
+
+        entries = people_entries(load_document(store))
+        assert [entry_ids(entry)[0] for entry in entries] == ["id-alex", "partner-robin", "id-kit"]
+        assert "partner-robin" in _person_ids(store)
+
+    def test_an_import_refuses_a_person_id_the_entry_does_not_hold(self, store):
+        document = copy.deepcopy(TWO_ACCOUNTS)
+        document["people"][0]["person_id"] = "id-kit"
+
+        with pytest.raises(PeopleImportError) as refused:
+            import_document(store, document)
+
+        assert refused.value.problems == ("people[0]: `person_id` must be one of the person's ids",)
+
+
+def test_a_rescan_keeps_a_person_only_a_second_account_reads(store):
+    document = copy.deepcopy(TWO_ACCOUNTS)
+    document["people"][1]["ids"] = {"partner": ["partner-kit"]}
+    import_document(store, document)
+
+    save_graph(store, _scan_of("id-alex"))
+
+    assert [entry_ids(entry) for entry in people_entries(load_document(store))] == [
+        ["id-alex", "partner-alex", "partner-alex-split"],
+        ["partner-kit"],
+    ]

@@ -140,6 +140,10 @@ underscores), and the account doesn't have to be configured yet. An empty list, 
 id listed under two accounts or two people is refused, and nothing changes. The old `accounts:` map is refused
 too, with the new shape in the message.
 
+The first id listed is the person's own id: the one links and saved references point at. Adding ids never
+changes it. When the person's own id isn't first (someone who came in through the partner account and later got
+a `primary` id), the export names it with a `person_id:` line next to `ids:`, and an import keeps it.
+
 To add one id without editing the file:
 
 ```bash
