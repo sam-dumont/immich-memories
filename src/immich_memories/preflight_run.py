@@ -164,10 +164,17 @@ def check_output_directory(directory: Path) -> CheckResult:
 
 def check_memory(config: Config) -> CheckResult:
     """Say how many sources a render prepares at once, and the memory that decided it."""
-    from immich_memories.processing.memory_budget import source_prepare_workers
+    from immich_memories.processing.memory_budget import (
+        lookahead_summary,
+        source_prepare_workers,
+    )
 
     _workers, why = source_prepare_workers(config.analysis.source_prepare_workers)
-    return CheckResult(name="Memory", status=CheckStatus.OK, message=f"Photo preparation: {why}")
+    return CheckResult(
+        name="Memory",
+        status=CheckStatus.OK,
+        message=f"Photo preparation: {why}; {lookahead_summary()}",
+    )
 
 
 def run_blockers(config: Config, *, output_directory: Path | None) -> list[CheckResult]:

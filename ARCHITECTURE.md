@@ -390,6 +390,8 @@ these helper modules:
   `processing/memory_budget.py` sizes the pool when `source_prepare_workers` is `auto`: one worker
   per 2 GB of the cgroup memory limit (else physical RAM), at most 2 and never more than the CPUs.
   The same budget caps each assembly decode's FFmpeg `-threads` (one per 2 GB, 1 to 4).
+  It also sets libx265's `rc-lookahead` above 1080p (5 up to 3 GB, 10 at 4-5 GB, default from 6 GB)
+  through `clip_encoder.encoder_args_for_plan` and the photo clip encoder.
 - `processing/remote_render.py`: authenticated jobs, bounded polling, a SHA-256-checked download,
   and a staged film that reuses the worker's decode when the bytes match
 - `processing/remote_render_plan.py`: frozen cut serialization, including certified Live material

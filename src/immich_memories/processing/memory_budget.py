@@ -23,6 +23,16 @@ _GIB_PER_WORKER = 2
 # The fixed default before auto; a config that sets the key can go higher.
 _MOST_AUTO_WORKERS = 2
 _MOST_DECODER_THREADS = 4
+# libx265's rc-lookahead by budget in GB, for frames above 1080p (#1527). Measured on a
+# synthetic 4K vertical 10-bit encode (medium, crf 20, frame-threads 1): 951 MB with no
+# lookahead, 1700 MB at 5, 1961 MB at 10: about 52 MB a lookahead frame, so x265's own
+# default of 20 comes to about 2.5 GB. Beside it run two clip decodes (about 0.5 GB each
+# at the capped thread count) and Python (about 0.35 GB): 4K fits 6 GB at the default,
+# 4 GB at 10 and, just, 3 GB at 5. None keeps x265's default.
+_LOOKAHEAD_BY_GB: tuple[tuple[int, int | None], ...] = ((6, None), (4, 10), (0, 5))
+# A default 1080p encode measured 811 MB, which every budget holds.
+_ABOVE_1080P = 1920 * 1088
+_FOUR_K = (3840, 2160)
 
 
 @dataclass(frozen=True)
@@ -57,11 +67,11 @@ def _cpus() -> int:
 
 
 def memory_budget(
-    cgroup_root: Path = _CGROUP, *, physical: int | None = None
+    cgroup_root: Path | None = None, *, physical: int | None = None
 ) -> MemoryBudget | None:
     """The container's memory limit when it is below physical RAM, else physical RAM."""
     physical = _physical_ram() if physical is None else physical
-    limit = _cgroup_limit(cgroup_root)
+    limit = _cgroup_limit(cgroup_root or _CGROUP)
     if limit is not None and (physical is None or limit < physical):
         return MemoryBudget(limit, "container limit")
     return MemoryBudget(physical, "physical RAM") if physical else None
@@ -103,7 +113,7 @@ def assembly_decoder_threads() -> int:
 def source_prepare_workers(
     configured: int | Literal["auto"],
     *,
-    cgroup_root: Path = _CGROUP,
+    cgroup_root: Path | None = None,
     cpus: int | None = None,
 ) -> tuple[int, str]:
     """How many sources to prepare at once, and the sentence that says why."""
@@ -114,3 +124,29 @@ def source_prepare_workers(
     if budget is None:
         return workers, f"{workers} at a time (memory unknown)"
     return workers, f"{workers} at a time ({budget.size / _GIB:.1f} GB available, {budget.source})"
+
+
+def x265_lookahead(memory: int | None, *, pixels: int) -> int | None:
+    """libx265's rc-lookahead for this budget and frame size; None keeps x265's default."""
+    if memory is None or pixels <= _ABOVE_1080P:
+        return None
+    gigabytes = round(memory / _GIB)
+    return next(frames for floor, frames in _LOOKAHEAD_BY_GB if gigabytes >= floor)
+
+
+@functools.cache
+def encode_lookahead(width: int, height: int) -> int | None:
+    """`x265_lookahead` for this process's memory budget and one output size, read once."""
+    budget = memory_budget()
+    frames = x265_lookahead(budget.size if budget else None, pixels=width * height)
+    logger.info("libx265 lookahead at %dx%d: %s", width, height, _frames(frames))
+    return frames
+
+
+def lookahead_summary() -> str:
+    """The 4K libx265 lookahead this budget gets, as preflight prints it."""
+    return f"libx265 lookahead at 4K: {_frames(encode_lookahead(*_FOUR_K))}"
+
+
+def _frames(frames: int | None) -> str:
+    return "x265 default" if frames is None else f"{frames} frames"

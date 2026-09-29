@@ -37,6 +37,12 @@ What the minimum costs you:
   `advanced.analysis.source_prepare_workers` to a number (1 to 4) overrides it.
   The same memory figure caps the threads of each clip decode in the render (one per 2 GB, up
   to 4): FFmpeg's own default of one per core cost 1.2 GB per 4K decode on an 18-core Mac.
+  A box with no hardware HEVC encoder encodes in libx265, which holds about 52 MB per frame it
+  looks ahead at 4K. Above 1080p the app lets it look 5 frames ahead up to 3 GB, 10 at 4 or
+  5 GB, and x265's default (20 at the `medium` preset) from 6 GB. The files come out a few
+  percent smaller at a slightly lower quality: at 1080p with a lookahead of 10, 3% smaller and
+  0.03 dB lower. `preflight` shows the choice on its Memory line. 1080p output keeps the
+  default everywhere.
 
 The 25 GB covers the caches at their default budgets (10 GB of Immich previews, 10 GB of downloaded
 video kept 7 days) with room for the store to grow. The models are about 140 MB. The one file worth backing

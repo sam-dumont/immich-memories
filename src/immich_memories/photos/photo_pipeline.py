@@ -28,6 +28,7 @@ from immich_memories.photos.renderer import (
     render_ken_burns_streaming,
 )
 from immich_memories.processing.assembly_config import AssemblyClip
+from immich_memories.processing.clip_encoder import with_x265_lookahead
 from immich_memories.processing.ffmpeg_runner import write_frames_to_ffmpeg
 
 logger = logging.getLogger(__name__)
@@ -220,7 +221,11 @@ def _stream_render_to_mp4(
     # so nothing downstream can lift the shadows. Video clips stay HLG, which
     # is what iPhone video is, and the assembler converts between the two.
     transfer = "smpte2084"
-    encoder_args = _get_photo_encoder_args(transfer) if has_zscale else _get_sdr_encoder_args()
+    encoder_args = (
+        _get_photo_encoder_args(transfer, (target_w, target_h))
+        if has_zscale
+        else _get_sdr_encoder_args()
+    )
     pix_fmt, vf = photo_filter_chain(
         gain_map_hdr=gain_map_hdr, has_zscale=has_zscale, peak_nits=peak_nits, primaries=primaries
     )
@@ -269,7 +274,9 @@ def _stream_render_to_mp4(
         raise RuntimeError(f"Photo FFmpeg encoding failed (exit {returncode}): {stderr_text}")
 
 
-def _get_photo_encoder_args(transfer: str = "arib-std-b67") -> list[str]:
+def _get_photo_encoder_args(
+    transfer: str = "arib-std-b67", frame_size: tuple[int, int] = (3840, 2160)
+) -> list[str]:
     """Encoder args for a 10-bit BT.2020 HEVC photo clip.
 
     WHY: iPhone videos are HEVC HLG 10-bit BT.2020, and a photo clip has to
@@ -306,7 +313,7 @@ def _get_photo_encoder_args(transfer: str = "arib-std-b67") -> list[str]:
             transfer,
         ]
 
-    return [
+    software = [
         "-c:v",
         "libx265",
         "-preset",
@@ -324,6 +331,7 @@ def _get_photo_encoder_args(transfer: str = "arib-std-b67") -> list[str]:
         "-x265-params",
         f"hdr-opt=1:repeat-headers=1:colorprim=bt2020:transfer={transfer}:colormatrix=bt2020nc",
     ]
+    return with_x265_lookahead(software, *frame_size)
 
 
 def _get_sdr_encoder_args() -> list[str]:
