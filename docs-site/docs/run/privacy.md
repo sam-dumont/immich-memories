@@ -69,7 +69,7 @@ touches nothing.
 | `llm.base_url` (caption provider) | explicit `advanced.editorial.preparation.caption_provider: llm`, on any tier | synthetic schema controls, then missing picture tiles and candidate video frame strips; configured LLM credentials | off; existing valid SmolVLM captions are reused first |
 | `inference.facts_base_url` | preparation, when set | each picture's preview, for the heads and detectors | unset: the app runs them itself |
 | `render.worker_base_url` | rendering on another box | the chosen cut, plus your Immich URL and API key so the worker can fetch the clips | unset: renders here |
-| `nominatim.openstreetmap.org`, or your `network.geocoding_url` | `network.geocoding: true` | each trip's centre, and the coordinates of every clip on the cut, home included, rounded to about a kilometre, once per place | off |
+| `nominatim.openstreetmap.org`, or your `network.geocoding_url` | `network.geocoding: true` | each trip's centre, and the coordinates of the pictures in the film's own window, home included, rounded to about a kilometre, once per place ever | off |
 | `server.arcgisonline.com` | `network.map_tiles: true` | tile requests over the trip area and your home base | off |
 | `ace_step.api_url`, `musicgen.base_url` | AI music through a remote API | mood, tempo and genre text; MusicGen is also sent the generated track, for stem separation | off |
 | Apprise or ntfy targets | `notifications.enabled: true` | memory type, outcome, duration, output path, a redacted error tail; a frame if `attach_thumbnail: true` | off |
@@ -135,11 +135,13 @@ network:
   map_tiles: false
 ```
 
-**`geocoding`** asks Nominatim about each trip's centre and about the place of every clip on the
-cut, home included, each rounded to 2 decimals (about a kilometre) before it leaves. Nothing else
-goes with it: no picture, no date, no name. One request per place, at most one a second, with a
-User-Agent naming this app, and every answer is kept in the [store](./database.md), so a place is
-asked about once, not once per render. The library itself is never walked.
+**`geocoding`** asks Nominatim about each trip's centre and about the places of the pictures in
+the film's own window (a month, a year), home included, each rounded to 2 decimals (about a
+kilometre) before it leaves. Nothing else goes with it: no picture, no date, no name. One request
+per place, at most one a second, with a User-Agent naming this app, and every answer is kept in the
+[store](./database.md), "nothing here" included, so a place is asked about once, ever, not once per
+film. A first year at home is a few hundred places; after that almost nothing. The rest of the
+library is never walked.
 
 What it buys:
 

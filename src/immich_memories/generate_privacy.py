@@ -144,7 +144,9 @@ def clip_location_name(exif, locale: str = "en") -> str | None:
     """
     if not exif:
         return None
-    return place_label(exif.city, exif.country, locale)
+    from immich_memories.analysis.place_names import shown_city
+
+    return place_label(shown_city(exif), exif.country, locale)
 
 
 def extract_trip_pins(

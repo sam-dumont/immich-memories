@@ -17,6 +17,7 @@ from immich_memories.analysis.editorial_clip_frames import (
     LINE_NAME,
     SHOWS_ITS_MOMENT,
 )
+from immich_memories.analysis.place_names import shown_city
 from immich_memories.analysis.subject_framing import framing_annotation, subject_framing
 from immich_memories.store.asset_annotations import (
     AssetAnnotationFactBatch,
@@ -564,7 +565,7 @@ def _place(candidate: EditorialCandidate) -> str:
     exif = candidate.source.exif_info
     if exif is None:
         return ""
-    named = tuple(_clean(value) for value in (exif.city, exif.state, exif.country) if value)
+    named = tuple(_clean(value) for value in (shown_city(exif), exif.state, exif.country) if value)
     if named:
         return ", ".join(named)
     if exif.latitude is not None and exif.longitude is not None:

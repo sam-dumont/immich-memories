@@ -22,9 +22,9 @@ class NetworkConfig(BaseModel):
         default=False,
         description=(
             f"Reverse geocode through {GEOCODING_HOST}: the right district's name where "
-            "Immich names a neighbouring town, better trip names, and place names in the "
-            "film's language. Sends each trip centroid and the coordinates of the places "
-            "on the cut, rounded to about a kilometre, once per place"
+            "Immich names a neighbouring town, on every name shown, better trip names, and "
+            "place names in the film's language. Sends each trip centroid and the coordinates "
+            "of the pictures in the film's window, rounded to about a kilometre, once per place"
         ),
     )
     geocoding_url: str = Field(

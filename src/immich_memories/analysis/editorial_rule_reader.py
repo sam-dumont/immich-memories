@@ -37,6 +37,7 @@ from immich_memories.analysis.editorial_story_weighing import (
     _floor_weights,
     consecutive_runs,
 )
+from immich_memories.analysis.place_names import shown_city
 from immich_memories.analysis.trip_legs import legs_of_days
 
 # The place labels of the shipped head bundle the standing rule reads. A picture is in a
@@ -152,7 +153,9 @@ class RuleStructureReader:
         return activities.most_common(1)[0][0] if activities else ""
 
     def _title(self, members) -> str:
-        city = self._dominant_city(members)
+        # The title is read by a viewer: the shown place, not the city the usual-city vote uses.
+        cities = Counter(shown for a in members if (shown := shown_city(a.exif_info)))
+        city = cities.most_common(1)[0][0] if cities else ""
         activity = self._activity(members)
         return (
             f"{activity} at {city}"

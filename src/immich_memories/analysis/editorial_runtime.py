@@ -44,6 +44,7 @@ from immich_memories.analysis.editorial_text_gateway import (
 )
 from immich_memories.analysis.episode_demand import demand_reader_factory
 from immich_memories.analysis.household_source import fetch_household_source
+from immich_memories.analysis.place_names import place_names_for
 from immich_memories.analysis.selection_source import (
     EditorialDependencies,
     EditorialSelectionRequest,
@@ -518,9 +519,12 @@ def build_editorial_planner(
     )
     source_snapshots = AttemptSourceSnapshots()
     evidence_provenance = AttemptEvidenceProvenance()
+    # Every place a viewer reads is named here, once, and travels on the pictures (#1591).
+    place_names = place_names_for(config)
+    named = False
 
     def source_fetcher(requested_scope: SourceScope) -> Sequence[Asset | VideoClipInfo]:
-        nonlocal source_snapshot
+        nonlocal source_snapshot, named
         if source_snapshot is None:
             source_snapshot = select_source_members(
                 fetch_household_source(
@@ -533,6 +537,9 @@ def build_editorial_planner(
                 else runtime_ports.fetch_full_source(client, requested_scope),
                 requested_scope.asset_ids,
             )
+        if not named:
+            place_names.name(source_snapshot)
+            named = True
         source_snapshots.capture(
             source_snapshot,
             directory=backend._context.artifact_dir,

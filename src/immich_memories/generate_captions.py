@@ -127,16 +127,16 @@ def district_place_names(params: GenerationParams, clips: list[AssemblyClip]) ->
     """
     if params.privacy_mode:
         return clips
-    from immich_memories.analysis.place_geocoder import district_of, place_geocoder_for
+    from immich_memories.analysis.place_names import place_names_for
 
-    places = place_geocoder_for(params.config)
-    if places is None:
-        return clips
+    # The same resolver the film's pictures were named with (#1591), asked again here only for
+    # a replay of a snapshot written before names travelled on the pictures; the store answers.
+    places = place_names_for(params.config)
     named = []
     for clip in clips:
         district = None
         if clip.latitude is not None and clip.longitude is not None:
-            district = district_of(places.address(clip.latitude, clip.longitude))
+            district = places.district_at(clip.latitude, clip.longitude)
         named.append(
             replace(clip, location_name=_with_district(district, clip.location_name))
             if district
