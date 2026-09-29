@@ -323,5 +323,8 @@ and private request/reply evidence without HTTP headers. Keep these files privat
 errors can include account details. Use the input, cached-input and completion token counters
 with the provider's rates to calculate cost. A run with missing usage gives only a cost floor.
 
+The [measured provider table](./measured.md#llm-conformance) lists passes, failures, call counts
+and reported-token cost for each tested endpoint. Every failed feature links to a separate issue.
+
 These checks measure the configured endpoint on small fixtures. They do not replace checking
 the quality of a complete film or testing asynchronous batch delivery.
