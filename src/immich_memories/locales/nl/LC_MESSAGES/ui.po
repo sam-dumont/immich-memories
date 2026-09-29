@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Immich Memories UI VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-29 01:32+0200\n"
+"POT-Creation-Date: 2026-09-29 07:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: web/lib/AskPanel.svelte:106
+#: web/lib/AskPanel.svelte:107
 msgid ""
 "A film from a sentence needs the model tier: set advanced.llm.base_url and advanced.llm.model"
 " to the reader that answers it (tier: full)."
@@ -297,6 +297,10 @@ msgstr "Dag"
 msgid "Day (MM-DD)"
 msgstr "Dag (MM-DD)"
 
+#: web/lib/AskPanel.svelte:177
+msgid "Decided while cutting"
+msgstr "Beslist tijdens het monteren"
+
 #: web/lib/SettingsEditor.svelte:41
 msgid "Default"
 msgstr "Standaard"
@@ -305,7 +309,7 @@ msgstr "Standaard"
 msgid "Demo mode"
 msgstr "Demomodus"
 
-#: web/lib/AskPanel.svelte:98 web/lib/AskPanel.svelte:115
+#: web/lib/AskPanel.svelte:98 web/lib/AskPanel.svelte:116
 msgid "Describe the film you want"
 msgstr "Beschrijf de film die je wilt"
 
@@ -389,7 +393,7 @@ msgstr ""
 msgid "Every trip of the year"
 msgstr "Elke reis van het jaar"
 
-#: web/lib/AskPanel.svelte:100
+#: web/lib/AskPanel.svelte:101
 msgid "Experimental"
 msgstr "Experimenteel"
 
@@ -402,7 +406,7 @@ msgstr "Familie"
 msgid "Fetching picture previews"
 msgstr "Voorbeelden van beelden worden opgehaald"
 
-#: web/lib/AskPanel.svelte:139
+#: web/lib/AskPanel.svelte:140
 msgid "Fewer than 12 pictures fit: the film will be short."
 msgstr "Minder dan 12 beelden passen: de film wordt kort."
 
@@ -467,7 +471,7 @@ msgstr "Hoe je woorden gelezen zijn"
 msgid "How the rules got here"
 msgstr "Hoe de regels hier kwamen"
 
-#: web/lib/AskPanel.svelte:145
+#: web/lib/AskPanel.svelte:193
 msgid "How the sentence was read"
 msgstr "Hoe de zin gelezen is"
 
@@ -566,7 +570,7 @@ msgstr "Hoofdnavigatie"
 msgid "Main story"
 msgstr "Hoofdverhaal"
 
-#: web/lib/AskPanel.svelte:121
+#: web/lib/AskPanel.svelte:122
 msgid "Make the film"
 msgstr "Maak de film"
 
@@ -652,7 +656,7 @@ msgstr ""
 msgid "No child output was retained for this run."
 msgstr "Er is geen onderliggend resultaat bewaard voor deze uitvoering."
 
-#: web/lib/AskPanel.svelte:137
+#: web/lib/AskPanel.svelte:138
 msgid ""
 "No film: the library cannot show this. Try other words, or read below what each part of the "
 "sentence found."
@@ -687,6 +691,10 @@ msgstr "Geen beelden komen overeen met dit filter."
 #: web/lib/ShotInspector.svelte:84
 msgid "No reason recorded for this picture."
 msgstr "Geen reden vastgelegd voor dit beeld."
+
+#: web/lib/AskPanel.svelte:174
+msgid "No rule the preview can check would drop a picture."
+msgstr "Geen regel die de preview kan controleren zou een foto weglaten."
 
 #: web/routes/runs/+page.svelte:121
 msgid "No runs match this view. Make a memory from Memory or Suggestions."
@@ -723,6 +731,10 @@ msgstr "Geen"
 #: web/routes/create/+page.svelte:300
 msgid "North"
 msgstr "Noord"
+
+#: web/lib/AskPanel.svelte:177
+msgid "Not applied to a film you asked for"
+msgstr "Niet toegepast op een film die je zelf vroeg"
 
 #: web/lib/AskPanel.svelte:29
 msgid "Not possible"
@@ -814,7 +826,7 @@ msgstr "Beeld beoordelen"
 msgid "Pictures just read"
 msgstr "Net gelezen beelden"
 
-#: web/lib/AskPanel.svelte:152
+#: web/lib/AskPanel.svelte:201
 msgid "Pictures left after each step"
 msgstr "Beelden over na elke stap"
 
@@ -845,7 +857,7 @@ msgstr "Staand"
 msgid "Possible"
 msgstr "Mogelijk"
 
-#: web/lib/AskPanel.svelte:119 web/lib/AskPanel.svelte:129
+#: web/lib/AskPanel.svelte:120 web/lib/AskPanel.svelte:130
 msgid "Preview"
 msgstr "Voorbeeld"
 
@@ -1092,6 +1104,10 @@ msgstr "Klein moment"
 msgid "Smart (fades and cuts)"
 msgstr "Slim (overvloeiingen en sneden)"
 
+#: web/lib/AskPanel.svelte:165
+msgid "Some of its pictures"
+msgstr "Enkele van de foto's"
+
 #: web/routes/create/+page.svelte:300
 msgid "South"
 msgstr "Zuid"
@@ -1218,7 +1234,7 @@ msgstr "Het huishouden. Privémomenten die een bijschrift benoemt, zoals een bad
 msgid "The model had nothing to say about this picture."
 msgstr "Het model had niets te zeggen over dit beeld."
 
-#: web/lib/AskPanel.svelte:109
+#: web/lib/AskPanel.svelte:110
 msgid ""
 "The model reads your words against your prepared library. Preview first: it shows what each "
 "part of the sentence became and how many pictures fit, and films nothing."
@@ -1291,7 +1307,7 @@ msgstr "De server-URL is gewijzigd: voer de API-sleutel voor de nieuwe server in
 msgid "The settings could not be saved."
 msgstr "De instellingen konden niet worden opgeslagen."
 
-#: web/lib/AskPanel.svelte:142
+#: web/lib/AskPanel.svelte:143
 msgid "The words changed since this preview: preview again before making the film."
 msgstr ""
 "De woorden zijn veranderd sinds dit voorbeeld: vraag een nieuw voorbeeld voor je de film "
@@ -1428,6 +1444,10 @@ msgstr ""
 "Wat de automatisering hierna zou maken, dezelfde lijst die `auto suggest` toont. Voer er een "
 "uit zoals `auto run` zou doen, of controleer het eerst zonder te renderen."
 
+#: web/lib/AskPanel.svelte:149
+msgid "What the editor's rules would drop"
+msgstr "Wat de regels van de montage zouden weglaten"
+
 #: web/lib/AskPanel.svelte:21
 msgid "What the library measures"
 msgstr "Wat de bibliotheek meet"
@@ -1526,7 +1546,7 @@ msgstr "allemaal samen"
 msgid "any of them"
 msgstr "een van hen"
 
-#: web/lib/AskPanel.svelte:115
+#: web/lib/AskPanel.svelte:116
 msgid "our cat along the years"
 msgstr "onze kat door de jaren heen"
 
@@ -1559,7 +1579,21 @@ msgstr "{days} dagen · {count} beelden"
 msgid "{done} of {total}"
 msgstr "{done} van {total}"
 
-#: web/lib/AskPanel.svelte:133
+#: web/lib/AskPanel.svelte:154
+#, python-brace-format
+msgid "{passed} of {checked} pictures pass the rules checked before cutting."
+msgstr "{passed} van {checked} foto's komen door de regels die vóór de montage worden gecontroleerd."
+
+#: web/lib/AskPanel.svelte:152
+#, python-brace-format
+msgid ""
+"{passed} of {checked} prepared pictures pass the rules checked before cutting; {unread} are "
+"not prepared yet."
+msgstr ""
+"{passed} van {checked} voorbereide foto's komen door de regels die vóór de montage worden "
+"gecontroleerd; {unread} zijn nog niet voorbereid."
+
+#: web/lib/AskPanel.svelte:134
 #, python-brace-format
 msgid "{pictures} pictures: {photos} photos, {videos} videos"
 msgstr "{pictures} beelden: {photos} foto’s, {videos} video’s"

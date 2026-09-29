@@ -34,6 +34,21 @@ TRANSLATION = {
     "request": "our cat along the years",
     "blocks": [{"head": "VERDICT", "lines": ["possible: 14 pictures"]}],
     "pool": {"pictures": 14, "photos": 14, "videos": 0},
+    "rules": {
+        "checked": 14,
+        "passed": 13,
+        "unread": 0,
+        "drops": [
+            {
+                "rule": "held for review",
+                "why": "only your clearance lifts it",
+                "count": 1,
+                "examples": ["cat-3"],
+            }
+        ],
+        "at_cut": [{"rule": "look-alikes", "why": "a shot that repeats one already in the cut"}],
+        "lifted": [{"rule": "provenance", "why": "forwarded pictures stay"}],
+    },
     "verdict": "possible",
     "why": "14 pictures",
     "film": {"route": "pool", "line": "the engine films the pool", "outcome": "14 pictures"},

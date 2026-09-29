@@ -14,6 +14,7 @@ from immich_memories.free_text.library import LibraryPerson
 from immich_memories.free_text.linking import Reason
 from immich_memories.free_text.pool import Translation
 from immich_memories.free_text.reading import PARTS, Reading, words_of
+from immich_memories.free_text.rule_preview import RulePreview
 from immich_memories.free_text.translate import Ask
 from immich_memories.tracking import timing
 
@@ -24,15 +25,18 @@ TRACE_FILE = "free-text-trace.private.txt"
 _SCOPE_STEPS = frozenset({"library", "when", "who", "where", "place names", "printed text"})
 
 
-def explain(ask: Ask, *, film: Film | None = None) -> str:
-    """The trace: READING, WHO, WHEN, WHERE, WHAT, FACTS, POOL, VERDICT, then FILM when given."""
+def explain(ask: Ask, *, film: Film | None = None, rules: RulePreview | None = None) -> str:
+    """The trace: READING, WHO, WHEN, WHERE, WHAT, FACTS, POOL, then RULES, VERDICT and FILM
+    when given."""
     lines = [f'"{ask.request}"']
-    for head, said in trace_blocks(ask, film=film):
+    for head, said in trace_blocks(ask, film=film, rules=rules):
         lines += [f"{head if n == 0 else '':<8} {line}" for n, line in enumerate(said)]
     return "\n".join(lines)
 
 
-def trace_blocks(ask: Ask, *, film: Film | None = None) -> list[tuple[str, list[str]]]:
+def trace_blocks(
+    ask: Ask, *, film: Film | None = None, rules: RulePreview | None = None
+) -> list[tuple[str, list[str]]]:
     """The trace's parts in order, each head with its lines; a part with nothing to say is left out."""
     translation, pool = ask.translation, ask.pool
     path = " -> ".join(f"{step.name} {step.kept}" for step in pool.funnel)
@@ -46,6 +50,7 @@ def trace_blocks(ask: Ask, *, film: Film | None = None) -> list[tuple[str, list[
         ("WHAT", _said(translation.subject.reasons)),
         ("FACTS", list(translation.facts.reasons)),
         ("POOL", [path, *steps, *occasion]),
+        ("RULES", rules.lines() if rules else []),
         ("VERDICT", [f"{pool.verdict}: {pool.why}"]),
         ("FILM", [film.line()] if film else []),
     ]
@@ -59,12 +64,15 @@ def pool_counts(ask: Ask) -> dict[str, int]:
     return {"pictures": len(pictures), "photos": len(pictures) - videos, "videos": videos}
 
 
-def trace_record(ask: Ask, film: Film) -> dict[str, object]:
-    """The trace as data for a watcher such as the web client: the parts, the pool, the verdict."""
+def trace_record(ask: Ask, film: Film, rules: RulePreview | None = None) -> dict[str, object]:
+    """The trace as data for a watcher such as the web client: the parts, the pool, the rule
+    preview, the verdict."""
+    blocks = trace_blocks(ask, film=film, rules=rules)
     return {
         "request": ask.request,
-        "blocks": [{"head": head, "lines": said} for head, said in trace_blocks(ask, film=film)],
+        "blocks": [{"head": head, "lines": said} for head, said in blocks],
         "pool": pool_counts(ask),
+        "rules": rules.record() if rules else None,
         "verdict": ask.pool.verdict,
         "why": ask.pool.why,
         "film": {"route": film.route, "line": film.line(), "outcome": film.reason.outcome},

@@ -578,6 +578,9 @@ src/immich_memories/
 │   ├── output_canvas.py        # Resolve the single pixel canvas used by one run
 │   ├── output_contract.py      # metadata probe, render-bounded full decode check, atomic publish
 │   ├── timeline_budget.py      # plan_timeline(): pure planning of content + title-screen timeline
+│   ├── film_timeline.py        # measure_film_timeline(): content + regular title seconds + map extra on top
+│   ├── map_move_timing.py      # MapMoveTiming: 6-8 s map moves by distance, eased flight + 2 s still hold
+│   ├── location_card_route.py  # location_card_moves(): when a trip card appears and where it flies from
 │   ├── title_inserter.py       # TitleInserter: title screen concatenation
 │   ├── title_background_renderer.py # TitleBackgroundRenderer: pre-renders the clip a title reveals into
 │   ├── title_divider_planner.py # TitleDividerPlanner: month/year/location divider cards
@@ -650,7 +653,8 @@ src/immich_memories/
 │   ├── kernel_video.py         # GPU title video creation
 │   ├── ffmpeg_pipe.py          # Feed raw frames to FFmpeg without deadlocking on an unread stderr
 │   ├── safe_zones.py           # Keep vertical titles clear of the Reels/Shorts/TikTok button rail
-│   ├── map_animation.py        # Satellite map fly-over (van Wijk zoom)
+│   ├── map_animation.py        # Satellite map fly-over and location-card flights (van Wijk zoom)
+│   ├── trip_stops.py           # group_trip_stops(): intro pins grouped within 25 km, every pin named
 │   ├── map_renderer.py         # Map tile rendering (staticmap + PIL overlay)
 │   ├── backgrounds.py          # Background generation
 │   ├── backgrounds_animated.py # Animated gradient backgrounds
@@ -869,7 +873,11 @@ src/immich_memories/
 │   │                           # the model picking between the catalogue's occasions that day; else the
 │   │                           # pool as the film's whole reach with the request as written subject;
 │   │                           # "not possible" -> no film
-│   ├── trace.py                # explain(): READING/WHO/WHEN/WHERE/WHAT/FACTS/POOL/VERDICT/FILM lines;
+│   ├── rule_preview.py         # preview_rules(): a dry run asks the editor's rules about the pool
+│   │                           # before render, through the run's own functions (source pass, screen
+│   │                           # gate, never_auto, carrier sources, video frames); count + hashed ids
+│   │                           # per rule; at-cut rules (audience, look-alikes, spacing) named only
+│   ├── trace.py                # explain(): READING/WHO/WHEN/WHERE/WHAT/FACTS/POOL/RULES/VERDICT/FILM;
 │   │                           # save_with_run(): the run's diagnostics["free_text"] (report builder)
 │   │                           # and free-text-trace.private.txt in the attempt directory; the report's
 │   │                           # vocabulary (name parts -> role, places, OCR words) and the marks basis
