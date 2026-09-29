@@ -1,0 +1,21 @@
+namespace = "immich-memories"
+image_tag = "latest" # pin to a release: check the releases page first
+
+immich_url     = "https://photos.example.com"
+immich_api_key = "your-immich-api-key"
+
+oidc_issuer_url      = "https://idp.example.com/realms/family"
+oidc_client_id       = "immich-memories"
+oidc_client_secret   = "change-me" # empty for a public client
+oidc_public_url      = "https://memories.example.com"
+oidc_trusted_proxies = ["10.42.0.0/16", "fd42::/48"] # your cluster's pod CIDR
+oidc_allowed_emails  = ["you@example.com"]
+
+render_worker_token = "change-me"
+
+lan_llm_base_url = "http://192.168.1.50:9999/v1" # e.g. oMLX on an Apple Silicon Mac, bound to 0.0.0.0
+lan_llm_model    = "gemma-4-e4b-it-6bit"
+ace_step_api_url = "http://acestep-api:8001" # in-cluster; use the LAN machine's address instead if it runs there
+ace_step_api_key = ""
+
+storage_class_name = null

@@ -22,7 +22,8 @@ deploy/kubernetes/
 ├── overlays/inference/      the inference service alone (+ -cuda, + -lan for outside callers)
 ├── overlays/captioner/      the SmolVLM caption service (+ -cuda)
 ├── overlays/postgres/       the store on your PostgreSQL instead of SQLite
-└── overlays/render-sidecar/ the render worker in the app's own pod, on a GPU node
+├── overlays/render-sidecar/ the render worker in the app's own pod, on a GPU node
+└── overlays/maximalist/     every optional piece composed together
 ```
 
 ## Prerequisites
@@ -285,6 +286,13 @@ runs.
 Whichever clock fires it, the daily film stays on the output PVC unless upload is on
 ([Getting the films](#getting-the-films)); `IMMICH_MEMORIES_AUTOMATION__UPLOAD_TO_IMMICH=true`
 uploads the daily runs only. The trigger route itself: [Trigger it over HTTP](../make/automate.md#trigger-it-over-http).
+
+## Everything at once
+
+`overlays/maximalist` composes `overlays/render-sidecar` and `overlays/captioner-cuda` with OIDC
+behind a reverse proxy, a declarative `config.yaml`, an LLM and ACE-Step on a LAN machine,
+geocoding, map tiles and cache caps sized to the PVC that holds them: the [reference
+setup](./reference-setup.md), written up from a real two-GPU-node cluster.
 
 ## Database
 
