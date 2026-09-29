@@ -88,13 +88,18 @@ immich-memories generate --memory-type special_day --day 2021-04-04
 immich-memories generate --year 2025 --month 8 --short-form 30
 ```
 
-Five things the examples hide:
+Six things the examples hide:
 
 - `--people-expression` takes exact library names, binds `AND` tighter than `OR`, and works on
   date-range memories (months, years, seasons). Trips, albums and single-person presets refuse it.
 - `--person` and `--people-expression` look a name up in the people registry first: a person
   there is every face cluster bound to them, in every account the run reads. A name the registry
   doesn't hold matches Immich's own people list, the same as before the registry existed.
+- A name two registry people share picks both, and the run prints a warning listing each one
+  with its id. Pass that id instead (`--person 3f2a9c1e-...`) to pick one. A UUID is always read
+  as an id, never a name: a registry person's id, or an Immich person id from either account,
+  which picks the registry person holding it (or just that face if nobody does). An id nothing
+  holds stops the run before it reads a picture.
 - A person or multi-person memory with no dates at all is not an error. It runs from the first day
   one of its pictures could exist to today, read off the birth dates Immich holds (and the people registry
   where Immich holds none). See [memory types](../memory-types.mdx#a-people-memory-with-no-dates).

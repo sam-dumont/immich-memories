@@ -436,7 +436,7 @@ src/immich_memories/
 │   ├── annotation_line_fields.py # Which parts of a picture's line are its content and which we wrote; content rules read only the first
 │   ├── editorial_film_reach.py # What a film prepares: its demanded pictures, their Live families and capture runs
 │   ├── person_presence.py      # Who a person film may select: every picture of an episode its people are recognised in
-│   ├── person_resolution.py    # A name -> faces: the people store's aliases per read account, else the roster
+│   ├── person_resolution.py    # A name or UUID -> faces: the store's aliases per read account, else the roster
 │   ├── editorial_orchestration.py  # TextEditorialPlanner: episodes -> cards -> edit
 │   ├── editorial_rule_episodes.py  # Factual episode cards / omitted thesis; no semantic-bank writes
 │   ├── editorial_rule_reader.py    # Rules for worthiness, grouping and standing; shared allocation
