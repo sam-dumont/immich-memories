@@ -58,7 +58,7 @@ On macOS a missed job runs when the Mac wakes; launchd does not wake it.
 
 ## How it picks one memory
 
-Nine detectors propose candidates, hard rotation rules reject some, the rest are scored, and the top one is
+Ten detectors propose candidates, hard rotation rules reject some, the rest are scored, and the top one is
 made. The score ranks memories against each other; it never touches which pictures go in a film. That is the
 editor's job, see [How it chooses](../how-it-chooses/overview.md).
 
@@ -73,6 +73,7 @@ editor's job, see [How it chooses](../how-it-chooses/overview.md).
 | Multi-person | pairs who appear together | 0.55, by estimated shared pictures up to 500, 50 minimum |
 | On this day | dates with content in 5+ years | 0.35, by years the same month has content, up to 10 |
 | Special day | a catalogued day whose anniversary is within 3 days | 0.8, ×1.0 for a decade, ×0.85 for a half-decade, ×0.6 otherwise |
+| Saved group | last year's film of each [saved group](../run/multi-account.mdx#saved-groups), once | 0.65, counted as multi-person |
 
 Then, in order: a 1.2× boost for a memory that does not exist yet, recency (linear decay over 365 days from
 when the memory is timely, floor 0.5), content richness (up to 30 % of the score, log scale), and a same-type
@@ -90,11 +91,31 @@ another video out:
 Timing: birthdays fire 2 days after the date and trips 7 days after coming home, so the phone has uploaded.
 Trips need `trips.homebase_latitude` and `trips.homebase_longitude` (see
 [Teach it your family](../get-started/who-is-who.md)). Special days come from the catalogue `discover-days`
-writes.
+writes. A birth date you gave the people store wins over the one Immich holds.
 
 `auto suggest` prints the ranked list, each candidate's reason, the rule that rejected the others and anything
 held back. A candidate that failed twice in a row waits before it comes back (24 hours, then 3 days, then 7);
 one failure never counts, and a success clears it.
+
+## Across accounts, and saved groups
+
+With a [second Immich account](../run/multi-account.mdx) connected, name the accounts automation reads:
+
+```yaml
+advanced:
+  automation:
+    accounts: ["primary", "partner"]  # empty reads the primary alone
+    detect_groups: true               # the default
+```
+
+The list is exactly what is read: `["partner"]` alone leaves the primary library out, and trips with it. Every
+candidate but a trip carries that scope to its `generate --accounts` run; trips always come from the primary
+account.
+
+`detect_groups` proposes one `multi_person` film of last year for each saved group (`people group add`). A
+group's film is not proposed again once made, and a group none of whose people is among the most-pictured
+people discovery counts is skipped. It shares the multi-person cap and rotation rules. The whole walkthrough:
+[A second Immich account](../run/multi-account.mdx#what-automation-does-across-accounts).
 
 ## What auto run does, exactly
 

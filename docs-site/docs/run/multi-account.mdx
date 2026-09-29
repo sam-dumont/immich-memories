@@ -108,7 +108,8 @@ immich-memories people bind "Alex" --account partner --id <person-id-in-partner-
 ✓ Bound 5b1f0c2e-… (partner account) to Alex (a93d7e41-…)
 ```
 
-The ID in brackets is Alex's store ID, the one a [saved group](#saved-groups) names them by.
+The ID in brackets is Alex's store ID, the one a [saved group](#saved-groups) names them by;
+`people show` lists everyone's.
 
 Or in the web UI: **Settings > People**, the person's **Accounts** section, pick the account, paste
 the ID and **Bind** ([The web UI](../make/web-ui.mdx)). It makes the same declaration, and the
@@ -122,6 +123,32 @@ ID: the person's name, birth date and everything already confirmed about them st
 as they were, whatever the partner account calls them. An ID already bound to somebody else
 is refused, never merged; binding the same ID again changes nothing. A missing binding is
 unresolved evidence, not permission to match the two accounts by name.
+
+### Someone only the partner account knows
+
+The scan reads the primary account only, and `bind` adds to somebody the store already holds, so
+a person tagged only in the partner's library (their side of the family, say) comes in by hand.
+Export the store, add them with the partner's ID, and import it back:
+
+```bash
+immich-memories people export --to people.yaml
+```
+
+```yaml
+people:
+  # ...everyone already there, left as it is...
+  - name: Jo
+    ids:
+      partner: [<person-id-in-partner-account>]
+```
+
+```bash
+immich-memories people import --from people.yaml --replace
+```
+
+`--replace` is needed because the store already holds people; the import checks every entry
+before it writes anything. A later `people scan` keeps the entry, since its ID belongs to
+another account, and `people show` lists it with that ID for a group to name.
 
 ## Read both accounts into one film
 
@@ -170,8 +197,9 @@ People settings page:
 On the New memory page, a saved group is a chip under **People** for a **Multi-Person** film
 (pictured above, with both accounts picked); picking it replaces the names.
 
-Write the people as store person IDs, not names: `people bind` prints the ID next to the name
-(`Alex (<id>)`), and `people export` lists every person's `ids`. A name is accepted but kept as
+Write the people as store person IDs, not names: `people show` lists each person's ID next
+to their name, `people bind` prints it too (`Alex (<id>)`), and `people export` lists every
+person's `ids`. A name is accepted but kept as
 typed: a rename breaks it, and automation, which counts a group's pictures by ID, skips a named
 group under its default settings.
 
