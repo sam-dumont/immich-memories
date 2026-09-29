@@ -48,6 +48,7 @@ from immich_memories.analysis.llm_metrics import record_reply, recording_stage
 from immich_memories.analysis.llm_preparation_usage import record_preparation_attempt
 from immich_memories.analysis.llm_providers import resolved_llm_config
 from immich_memories.analysis.llm_query import query_llm
+from immich_memories.api.access_clients import AccountReadFailed
 from immich_memories.config_models_llm import LLMConfig
 from immich_memories.db import Store, now_db
 from immich_memories.db.tables import description_fields, descriptions
@@ -277,6 +278,8 @@ def _ask_llm(
         envelope = _validate_envelope(json.loads(raw))
     except PermissionError:
         raise
+    except AccountReadFailed:
+        raise
     except Exception as exc:
         error = f"{type(exc).__name__}: {exc}"
     return CallOutcome(
@@ -449,6 +452,8 @@ class _Settled:
         try:
             _asset_id, preview, outcomes = future.result()
             return self.settle(asset_id, preview, outcomes, llm=llm)
+        except AccountReadFailed:
+            raise
         except Exception as exc:
             return f"{type(exc).__name__}: {exc}"
 
@@ -485,6 +490,8 @@ class _Settled:
         for row, preview in self.unavailable:
             try:
                 caption_outcomes.remember_unavailable(store, row, preview)
+            except AccountReadFailed:
+                raise
             except Exception as exc:
                 failures[str(row["asset_id"])] = f"{type(exc).__name__}: {exc}"
         return failures
