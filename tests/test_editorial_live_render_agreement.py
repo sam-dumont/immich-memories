@@ -74,7 +74,7 @@ def probes(monkeypatch):
 
         def quantized_segment(self, _path, start, end, rate):
             frames = round((end - start) * rate)
-            return {"frames": frames, "seconds": float(frames / rate)}
+            return {"frames": frames, "seconds": float(frames / rate), "time_base": "1/600"}
 
         def get(self, path):
             state.calls.append(path)
@@ -122,6 +122,7 @@ def test_positive_segments_keep_alias_lineage_and_exact_warm_skips_probe_and_mer
         "strict_material": True,
         "render_frame_rate": "25",
         "config": None,
+        "segment_frame_holds": [25, 25],
     }
     assert material.still_ids == ("still-a", "still-b", "still-c")
     record = json.loads(first.with_suffix(".json").read_text())

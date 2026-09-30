@@ -16,7 +16,7 @@ from immich_memories.processing.probe_cache import ProbeCache, ProbeError, trim_
 from immich_memories.security import write_secret_file
 
 RENDER_VERSION = "editorial-live-render-v1"
-FRAME_QUANTIZATION = "source-packet-segment-quantization-and-qualified-container-display-hold-v8"
+FRAME_QUANTIZATION = "source-packet-segment-quantization-and-shared-av-boundaries-v9"
 
 
 def validate_editorial_live_clip(clip: Any) -> LiveRenderMaterial:
@@ -320,38 +320,30 @@ def _source_timings(probes, paths, material) -> list[dict]:
 def _predicted_encode(probes, paths, material, render_rate: Fraction, source_timing) -> float:
     """The length the concatenation of grid-quantized segments must encode to.
 
-    Each segment is quantized on its own before ``concat`` joins them, so the
-    merge carries every cut's rounding, not one output frame in total.
+    Each segment retains its proven packet grid and every selected audio sample.
+    Its shared picture/audio endpoint rounds up on the source clock before concat.
     """
     frames = 0
     for path, entry, evidence in zip(paths, material.segments, source_timing, strict=True):
         segment = probes.quantized_segment(path, entry.start, entry.end, render_rate)
-        hold = evidence.get("audio_tail_hold", evidence.get("container_frame_hold"))
-        if hold is not None:
-            clock = Fraction(segment["time_base"])
-            end = trim_ticks(entry.end, clock) + segment["origin_pts"]
-            held_frames = math.ceil((end - segment["first_pts"]) * clock * render_rate)
-            hold.update(
-                before_frames=segment["frames"],
-                target_frames=held_frames,
-                render_frame_rate=str(render_rate),
-                audio_silence_pad_to_seconds=float(Fraction(held_frames) / render_rate),
-            )
-            segment["frames"] = held_frames
-            segment["seconds"] = float(Fraction(held_frames) / render_rate)
-        elif "presentation_interval" in evidence:
-            proof = evidence["presentation_interval"]
-            before = math.ceil(
-                (proof["reported_packet_end_ticks"] - segment["first_pts"])
-                * Fraction(segment["time_base"])
-                * render_rate
-            )
-            proof.update(
-                before_frames=before,
-                target_frames=segment["frames"],
-                render_frame_rate=str(render_rate),
-                audio_silence_pad_to_seconds=segment["seconds"],
-            )
+        clock = Fraction(segment["time_base"])
+        span = trim_ticks(entry.end, clock) - trim_ticks(entry.start, clock)
+        packet_frames = segment["frames"]
+        selected_frames = math.ceil(span * clock * render_rate)
+        segment["frames"] = max(packet_frames, selected_frames)
+        segment["seconds"] = float(Fraction(segment["frames"]) / render_rate)
+        boundary = {
+            "packet_grid_frames": packet_frames,
+            "selected_interval_ticks": span,
+            "selected_interval_frames": selected_frames,
+            "target_frames": segment["frames"],
+            "render_frame_rate": str(render_rate),
+            "audio_silence_pad_to_seconds": segment["seconds"],
+        }
+        evidence["certified_segment_boundary"] = boundary
+        for key in ("audio_tail_hold", "container_frame_hold", "presentation_interval"):
+            if key in evidence:
+                evidence[key].update(before_frames=packet_frames, **boundary)
         evidence["quantized_segment"] = segment
         frames += segment["frames"]
     return float(Fraction(frames) / render_rate)
@@ -428,15 +420,7 @@ def render_certified_live(
     source_timing = _source_timings(probes, paths, material)
     render_rate = max(Fraction(row["render_cadence"]["rate"]) for row in source_timing)
     predicted = _predicted_encode(probes, paths, material, render_rate, source_timing)
-    holds = [
-        row["quantized_segment"]["frames"]
-        if any(
-            key in row
-            for key in ("audio_tail_hold", "container_frame_hold", "presentation_interval")
-        )
-        else 0
-        for row in source_timing
-    ]
+    holds = [row["quantized_segment"]["frames"] for row in source_timing]
     result = merge(
         list(paths),
         list(material.trim_points),
@@ -446,7 +430,7 @@ def render_certified_live(
         strict_material=True,
         render_frame_rate=str(render_rate),
         config=config,
-        **({"segment_frame_holds": holds} if any(holds) else {}),
+        segment_frame_holds=holds,
     )
     if result != target or not target.is_file():
         raise ValueError("Editorial Live merge failed; material fallback is forbidden")
