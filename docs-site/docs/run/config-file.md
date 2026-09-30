@@ -49,10 +49,16 @@ titles and picks the music, and with the GPU tier it polishes the cut:
 
 ```yaml
 llm:
+  enabled: true
   provider: "openai-compatible"
   base_url: "http://localhost:8000/v1"
   model: "gemma-4-e4b-it-6bit"
 ```
+
+Set `enabled: false` to turn LLM calls off while keeping the connection settings. With it on,
+an empty `base_url` starts the [app-owned local Gemma reader](../better/reader.md#let-the-app-run-the-local-model)
+on Linux or macOS; a URL forwards requests to that server. Local ownership lets the app release
+the reader's memory before loading local music models.
 
 ## What each top-level section is for
 

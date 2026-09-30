@@ -43,7 +43,7 @@ def test_a_prepared_day_is_answered_once_and_then_from_the_bank(tmp_path):
         },
     )
 
-    config = LLMConfig(model="text-reader", provider="ollama")
+    config = LLMConfig(base_url="http://localhost:11434", model="text-reader", provider="ollama")
     # WHY: intercept the external LLM HTTP request; the scan and bank run unchanged.
     with patch("httpx.AsyncClient.post", return_value=response) as post:
         found = scan_year(
@@ -117,7 +117,9 @@ def test_a_day_the_bank_barely_touched_is_not_guessed_at(tmp_path):
     with patch("httpx.AsyncClient.post", return_value=_verdict_response(_VERDICT)) as post:
         found = scan_year(
             assets,
-            llm_config=LLMConfig(model="text-reader", provider="ollama"),
+            llm_config=LLMConfig(
+                base_url="http://localhost:11434", model="text-reader", provider="ollama"
+            ),
             home=None,
             captions=captions,
             judgments=annotation_store(),
@@ -165,7 +167,9 @@ def test_the_caption_ask_is_given_a_reasoning_host_s_leash():
     from immich_memories.analysis.special_day import _THINKING_TIMEOUT_SECONDS
 
     assets, captions = _a_real_day(captioned=30)
-    config = LLMConfig(model="text-reader", provider="ollama", thinking="high")
+    config = LLMConfig(
+        base_url="http://localhost:11434", model="text-reader", provider="ollama", thinking="high"
+    )
     waited = []
 
     async def record(prompt, llm_config, **kwargs):
@@ -185,7 +189,9 @@ def test_a_fenced_answer_is_still_an_answer_without_a_bank():
     # WHY: intercept the external LLM HTTP request; the reply shape is what is under test.
     with patch("httpx.AsyncClient.post", return_value=fenced):
         verdict = ask_if_special(
-            assets, LLMConfig(model="text-reader", provider="ollama"), captions=captions
+            assets,
+            LLMConfig(base_url="http://localhost:11434", model="text-reader", provider="ollama"),
+            captions=captions,
         )
     assert verdict.special
     assert verdict.title == "At the finish line"

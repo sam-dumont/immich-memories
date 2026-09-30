@@ -74,6 +74,20 @@ The 0.6B name refers to the planner; the audio generator is still 2B. A reader t
 in oMLX still uses unified memory while idle. Unloading it can make a smaller music profile fit;
 the command reports a refusal separately from a generation failure.
 
+On a memory-constrained Linux or macOS machine, the [app-owned reader](./reader.md#let-the-app-run-the-local-model)
+lets the app release the reader's model memory before local ACE-Step loads. An API endpoint keeps
+that decision with the external server. The model does not get smaller; sequential loading lets
+the reader and music generator use the same available memory at different times.
+
+Local CUDA generation defaults to `advanced.ace_step.cpu_offload: true`: models move back to
+CPU between phases to reduce VRAM use. Set it to `false` only when your card has room to keep
+them resident. Apple Silicon keeps its existing local memory policy; API mode ignores this
+option. Offloading does not bypass the host or container memory guard.
+
+Use `immich-memories capabilities --verify-local` to test the configured owned reader and local
+audio path with existing weights. The report distinguishes a blocked setup from a verified
+15-second smoke test. That is not proof that a complete film fits.
+
 Per file, under `~/.cache/ace-step/checkpoints/`: the 2B models about 4.5 GB each, XL-turbo about
 19 GB, the planners 1.2, 3.4 and 7.8 GB (0.6B, 1.7B, 4B), the shared VAE and embedding about
 1.4 GB. Demucs' htdemucs is about 80 MB under `~/.cache/torch/hub/`. Old checkpoints are never
@@ -81,9 +95,18 @@ removed for you.
 
 A full XL render with the 4B planner peaks around 53 GB of unified memory, most of it cache the OS
 takes back under pressure, which is why the check tests the weights and not the peak. The MLX
-buffer cache is capped at 4 GiB and the DiT runs in bf16 (7.8 GB instead of 15.5 GB for XL;
+buffer cache is disabled on machines with at most 16 GiB of physical RAM and capped at 4 GiB
+on larger Macs. The DiT runs in bf16 (7.8 GB instead of 15.5 GB for XL;
 `IMMICH_MEMORIES_ACESTEP_MLX_DIT_FP32=1` keeps fp32). A local reader holding its 17 GB is often what
 stops XL fitting, so stop the model server before a music-heavy run.
+
+A complete Full film was verified on a 16 GiB M2 Pro with the owned Gemma Q4 reader, 90 seconds
+of local 2B turbo music without the planner, and local Demucs. The audio child peaked at
+9.22 GiB physical footprint. Cold startup briefly grew swap by 1.16 GiB; the film and all four
+stems passed full decoding, and memory recovered after the owned processes exited. This is
+heavy machinery on 16 GiB, not a zero-swap promise. The available-memory guard stays in place.
+The owned Apple Silicon turbo path parks inactive Torch weights before native diffusion and
+releases the native decoder before VAE decoding, retaining the checkpoint's execution precision.
 
 ### Install locally on a Mac
 

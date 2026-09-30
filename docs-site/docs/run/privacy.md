@@ -14,7 +14,7 @@ source and is kept by hand: if you find a call that is not here,
 ```mermaid
 flowchart LR
   app["Immich Memories"] <-->|"always: reads, plus one upload if you turn it on"| immich[("Your Immich")]
-  app -.->|"llm.base_url, default localhost:8080"| reader["Reader (model)"]
+  app -.->|"llm.base_url, default local when enabled"| reader["Reader (model)"]
   app -.->|"SmolVLM captions: GPU and Full"| captioner["Caption server"]
   app -.->|"caption_provider: llm, explicit opt-in"| vision["LLM image captions"]
   app -.->|"inference.facts_base_url, default unset"| inference["Inference service"]
@@ -56,15 +56,19 @@ The one write is delivery, and only with `upload.enabled: true` (off by default)
 `immich-memories config test` is read-only: it checks the connection and the API version and
 touches nothing.
 
+With `llm.enabled: true` and an empty `llm.base_url`, the app starts its local llama.cpp model
+on Linux or macOS. Reader and explicit LLM-caption requests stay on loopback. A URL sends those
+requests to that server; `llm.enabled: false` prevents both local and remote calls.
+
 ## Everything that can leave, and when
 
 | Destination | When | What leaves your network | Default |
 |---|---|---|---|
 | Your Immich server | always | the reads above; the film, its tag and its album with upload on | upload off |
-| `llm.base_url` (reader) | a model reads a period | text only: the annotation lines of the candidates, with people and place names, and the Immich album names holding those pictures. Never a picture | blank `llm.model`: no call |
+| `llm.base_url` (reader) | a model reads a period | text only: the annotation lines of the candidates, with people and place names, and the Immich album names holding those pictures. Never a picture | `llm.enabled: false`: no call |
 | `llm.base_url` (titles) | a people or occasion film's opening title, whenever a reader is configured; trips only with `--llm-title` | text only: first names, birth dates and ages, the relationships your people registry records, the span, place names, the album the cut mostly sits in | `--no-llm-title` or `--title` |
-| `llm.base_url` (music, special days) | music selection and special-day scans, with a model | text only: the cut's story labels and captions; for a day, capture times, places, coordinates and recognised names | no model: no call |
-| `api.openai.com`, `api.anthropic.com`, `api.z.ai` | `llm.provider` is `openai`, `anthropic` or `zai` and `base_url` is left at its default | the reader rows above, to that vendor | set `base_url` yourself |
+| `llm.base_url` (music, special days) | music selection and special-day scans, with a model | text only: the cut's story labels and captions; for a day, capture times, places, coordinates and recognised names | `llm.enabled: false`: no call |
+| `api.openai.com`, `api.anthropic.com`, `api.z.ai` | enabled with an explicit vendor `llm.base_url` | the reader rows above, to that vendor | blank URL: app-owned local model |
 | `caption_base_url` | GPU and Full with the default SmolVLM provider, for selected shots and actual candidates; a wider scope only with an explicit `prepare` job | a 400 px JPEG per picture; a strip of three keyframes per video and per playing Live Photo; `caption_api_key` as a bearer token if set | `localhost:8092`; NAS does not call it |
 | `llm.base_url` (caption provider) | explicit `advanced.editorial.preparation.caption_provider: llm`, on any tier | synthetic schema controls, then missing picture tiles and candidate video frame strips; configured LLM credentials | off; existing valid SmolVLM captions are reused first |
 | `inference.facts_base_url` | preparation, when set | picture previews and up to eight sampled frames per video or Live Photo companion, for the heads and detectors | unset: the app runs them itself |

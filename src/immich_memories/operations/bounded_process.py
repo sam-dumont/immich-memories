@@ -64,7 +64,8 @@ def _signal_group(process: subprocess.Popen, sig: int) -> None:
                 process.send_signal(sig)
 
 
-def _stop_group(process, *, terminate_grace_seconds, kill_grace_seconds):
+def stop_process_group(process, *, terminate_grace_seconds, kill_grace_seconds):
+    """Stop an owned session's group, including descendants of an exited leader."""
     # The leader may already have exited while one of its descendants continues.
     # Signal the session's original group even when process.poll() is non-None.
     _signal_group(process, signal.SIGTERM)
@@ -172,7 +173,7 @@ def run_bounded_process(
                 poll_interval_seconds=poll_interval_seconds,
             )
         except BaseException as error:
-            _stop_group(
+            stop_process_group(
                 process,
                 terminate_grace_seconds=terminate_grace_seconds,
                 kill_grace_seconds=kill_grace_seconds,

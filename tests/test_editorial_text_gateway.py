@@ -74,6 +74,7 @@ def test_query_text_requester_preserves_the_exact_request_contract(
                 "thinking": True,
                 "judgments": None,  # The gateway owns the bounded request cache.
                 "require_complete": True,
+                "response_format": None,
             },
         )
     ]

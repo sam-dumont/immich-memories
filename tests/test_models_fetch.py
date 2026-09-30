@@ -139,6 +139,44 @@ def _invoke(args: list[str], config: Config) -> Result:
         return runner.invoke(main, args, catch_exceptions=False)
 
 
+def test_fetch_includes_default_gemma_only_when_owned_reader_is_enabled(monkeypatch):
+    downloads = []
+
+    def download(**kwargs):
+        downloads.append(kwargs["url"])
+        return "present"
+
+    # WHY: do not download multi-gigabyte weights; exercise the real CLI's artifact choices.
+    monkeypatch.setattr(models_cmd, "fetch_pinned_model", download)
+    config = Config(llm={"enabled": True})
+    assert _invoke(["models", "fetch", "--no-detectors"], config).exit_code == 0
+    assert sum("gemma-4-E4B-it-GGUF" in url for url in downloads) == 2
+    downloads.clear()
+    config.llm.enabled = False
+    assert _invoke(["models", "fetch", "--no-detectors"], config).exit_code == 0
+    assert not any("gemma" in url for url in downloads)
+
+
+def test_fetch_preserves_a_custom_gemma_projector(tmp_path, monkeypatch):
+    from immich_memories.local_inference import local_reader_paths
+
+    projector = tmp_path / "custom.gguf"
+    projector.write_bytes(b"custom projector")
+    downloads = []
+    # WHY: replace the network boundary, while checking actual artifact destinations.
+    monkeypatch.setattr(
+        models_cmd, "fetch_pinned_model", lambda **kw: downloads.append(kw) or "present"
+    )
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    config = Config(llm={"enabled": True, "local_mmproj": str(projector)})
+    assert local_reader_paths(config.llm)[1] == projector
+    assert _invoke(["models", "fetch", "--no-detectors", "--force"], config).exit_code == 0
+    reader_downloads = [d for d in downloads if "gemma-4-E4B-it-GGUF" in d["url"]]
+    assert len(reader_downloads) == 1
+    assert all(d["destination"] != projector for d in downloads)
+    assert projector.read_bytes() == b"custom projector"
+
+
 def test_models_fetch_lands_the_configured_path_from_the_configured_url(
     served: _Fixture, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

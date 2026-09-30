@@ -232,7 +232,12 @@ class TestTitleGenerationThinks:
         from immich_memories.config_models_llm import LLMConfig
         from immich_memories.titles.llm_titles import generate_title_with_llm
 
-        config = LLMConfig(provider="openai-compatible", model="qwen", thinking=True)
+        config = LLMConfig(
+            base_url="http://localhost:8080/v1",
+            provider="openai-compatible",
+            model="qwen",
+            thinking=True,
+        )
         # WHY: query_llm is the boundary to the LLM server; only the request is under test.
         with patch(
             "immich_memories.titles.llm_titles.query_llm",

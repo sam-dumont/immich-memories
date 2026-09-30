@@ -20,8 +20,8 @@ from tests.conftest import make_asset
 LLM = {"base_url": "http://localhost:43210/v1", "model": "fixture-vision-model"}
 
 
-def test_llm_caption_opt_in_requires_a_configured_llm():
-    with pytest.raises(ValueError, match="caption_provider.*configured LLM"):
+def test_llm_caption_opt_in_requires_an_enabled_llm():
+    with pytest.raises(ValueError, match="caption_provider.*enabled LLM"):
         Config(tier="nas", editorial={"preparation": {"caption_provider": "llm"}})
 
 

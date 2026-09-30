@@ -8,13 +8,18 @@ from pathlib import Path
 import click
 
 from immich_memories.analysis.editorial_preparation_detectors import DETECTOR_SNAPSHOTS
+from immich_memories.config_models_llm import DEFAULT_LOCAL_MODEL
 from immich_memories.laya_checkpoints import LAYA_ONNX_NAME
+from immich_memories.local_inference import local_reader_paths
 from immich_memories.pinned_models import (
     ENCODER,
     LAYA_AUDIENCE,
     LAYA_AUDIENCE_ONNX,
     LAYA_MAX_BYTES,
     MARQO_ONNX,
+    READER_MAX_BYTES,
+    READER_MODEL,
+    READER_PROJECTOR,
     WORDNET,
     fetch_pinned_model,
 )
@@ -44,6 +49,7 @@ def register_models_commands(cli_group: click.Group) -> None:
         """Download every pinned model artifact a first cut needs, in one command."""
         config = ctx.obj["config"]
         preparation = config.editorial.preparation
+        _fetch_reader(config.llm, force=force)
         _fetch_pinned(
             label="encoder",
             url=config.triage.encoder_url,
@@ -93,6 +99,23 @@ def register_models_commands(cli_group: click.Group) -> None:
         except (ImportError, OSError, ValueError) as exc:
             click.echo(f"detectors: {exc}")
             raise SystemExit(1) from exc
+
+
+def _fetch_reader(config, *, force: bool) -> None:
+    if config.runs_locally and config.model == DEFAULT_LOCAL_MODEL:
+        for artifact, destination in zip(
+            (READER_MODEL, READER_PROJECTOR), local_reader_paths(config), strict=True
+        ):
+            if artifact == READER_PROJECTOR and config.local_mmproj:
+                continue
+            _fetch_pinned(
+                label=artifact.label,
+                url=artifact.url,
+                destination=destination,
+                sha256=artifact.sha256,
+                force=force,
+                max_bytes=READER_MAX_BYTES,
+            )
 
 
 def _fetch_pinned(

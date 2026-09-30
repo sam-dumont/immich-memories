@@ -79,7 +79,12 @@ def test_every_model_call_site_has_a_conformance_case():
     from immich_memories.conformance.cases import cases
 
     root = Path(__file__).parents[1] / "src" / "immich_memories"
-    covered = set().union(*(case.sites for case in cases(LLMConfig(model="fixture"))))
+    covered = set().union(
+        *(
+            case.sites
+            for case in cases(LLMConfig(base_url="http://localhost:8080/v1", model="fixture"))
+        )
+    )
     assert discover_sites(root) == covered, "New LLM call site needs a conformance case"
 
 

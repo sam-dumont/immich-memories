@@ -19,27 +19,24 @@ Nothing on this page is a real hostname, IP or node name.
 ## The two profiles
 
 ```
-Always-on server (Kubernetes)                    Laptop / workstation (the Mac)
-──────────────────────────────                    ──────────────────────────────
-gpu-node-a (the newer card, time-sliced)           one machine, everything local
-├── immich-memories pod
-│   ├── app container                              immich-memories ui
-│   └── render-worker (sidecar, loopback :8093)     ├── oMLX: gemma-4-e4b-it-6bit
-└── inference service (encoder, heads,               │   (OpenAI-compatible, :9999)
-    detectors; ONNX Runtime CUDA, :8092)             ├── mlxcel: SmolVLM caption
-                                                     │   server (:8092, localhost)
-gpu-node-b (a second, older card)                   └── ACE-Step 1.5, lib mode
-└── captioner (llama.cpp server-cuda, :8092)             (XL turbo, bf16, 4B LM)
-
-Traefik (TLS) ── OIDC (Auth0) ── the app            OIDC to the same IdP
-the reader (LLM): an OpenAI-compatible server on the LAN, e.g. oMLX on the Mac
+Always-on server (Kubernetes)                 Laptop / workstation (the Mac)
+gpu-node-a (newer card, time-sliced)           one machine, everything local
+├── app + render-worker (:8093)               immich-memories ui
+└── inference service (:8092)                 ├── owned llama.cpp reader
+                                              │   Gemma text + vision, loaded on demand
+gpu-node-b (older card)                       ├── local picture classifiers + Laya
+└── captioner (llama.cpp CUDA, :8092)          └── ACE-Step lib + Demucs
+                                                  reader released before audio
+Traefik → OIDC → app
+Reader: an explicit OpenAI-compatible URL
+ACE-Step: its existing separate API deployment
 ```
 
 The server profile is the app's Deployment plus two GPU services, reached through
 [`deploy/kubernetes/overlays/maximalist`](https://github.com/sam-dumont/immich-video-memory-generator/tree/main/deploy/kubernetes/overlays/maximalist)
 or [`deploy/terraform/examples/maximalist`](https://github.com/sam-dumont/immich-video-memory-generator/tree/main/deploy/terraform/examples/maximalist).
-The Mac profile is a source checkout with ACE-Step installed beside it, plus two local servers
-(the reader and the caption server): see [Generated music](../better/music.md#install-locally-on-a-mac)
+The Mac profile is a source checkout with ACE-Step installed beside it. The app starts its own
+local reader for text and vision: see [Generated music](../better/music.md#install-locally-on-a-mac)
 and [Add a reader](../better/reader.md).
 
 ## One GPU service
@@ -111,9 +108,9 @@ or Terraform profiles below.
 | Render worker | sidecar in the app pod, loopback | `render.worker_base_url`, `render.worker_token` | `gpu-node-a`: NVENC h264/hevc |
 | Picture reading (inference service) | its own pod, on the newer card | `advanced.inference.facts_base_url` | `gpu-node-a`: ONNX Runtime on CUDA; without it, the app pod's CPU |
 | Caption server | a second GPU node, cluster-only | `advanced.editorial.preparation.caption_base_url` | `gpu-node-b`: a Pascal card works (`sm_61`) |
-| Caption server (Mac) | mlxcel, localhost | same key, `http://localhost:8092/v1` | Apple Silicon, Metal |
-| Reader (LLM) | the Mac, on the LAN | `advanced.llm.base_url`, `advanced.llm.provider`, `advanced.llm.model` | Apple Silicon running oMLX |
-| Music | ACE-Step 1.5 API (cluster) or lib mode (Mac) | `advanced.ace_step.mode`, `advanced.ace_step.api_url` | cluster: any card; Mac: Apple Silicon, XL wants more RAM |
+| Picture captions (Mac) | the owned local reader | `advanced.editorial.preparation.caption_provider: llm` | Apple Silicon, Metal |
+| Reader (LLM) | owned locally, or an explicit external server | `advanced.llm.enabled`, `advanced.llm.base_url`, `advanced.llm.model` | local llama.cpp on CPU, Metal or CUDA; external server chooses its hardware |
+| Music | ACE-Step 1.5 API (cluster) or local lib mode (Linux/macOS) | `advanced.ace_step.mode`, `advanced.ace_step.api_url` | cluster: compatible CUDA hardware ([check capabilities](../better/music.md#memory-and-disk)); local: compatible CUDA or Apple Silicon, XL wants more RAM; Linux full-film verification is pending |
 | Music stems | Demucs in the inference service | `advanced.inference.facts_base_url` | inference: CUDA or CPU; app/render fallback: CPU; Mac fallback: Metal |
 | OIDC behind a proxy | the reverse proxy + the app | `advanced.auth.public_url`, `advanced.auth.trusted_proxies`, `advanced.server.secure_cookies` | none |
 | Geocoding + map tiles | `nominatim.openstreetmap.org`, `server.arcgisonline.com` | `network.geocoding`, `network.map_tiles` | none |
@@ -121,8 +118,8 @@ or Terraform profiles below.
 | Automation | in-process timer, or a CronJob to `/api/trigger` | `advanced.automation.enabled`, `advanced.automation.daily_at` | none |
 
 Missing a piece from this table: drop the row and set `tier` to match, because a named tier never
-steps down on its own. `tier: full` refuses to load without `advanced.llm.base_url` and
-`advanced.llm.model`, and still asks for captions when no caption server answers; `tier: auto` picks
+steps down on its own. `tier: full` needs an enabled reader and captions. A blank
+`advanced.llm.base_url` selects the owned local reader; an explicit URL selects a server you run; `tier: auto` picks
 `gpu` or `full` only once it finds GPU picture reading (a local CUDA runtime or the inference
 service), so without one it stays on the plain NAS tier. No ACE-Step means a bundled track. Without
 the inference service the app reads pictures on its own CPU: the same answers, a slower first cut.
@@ -344,7 +341,8 @@ rather than discovering it one timeout at a time.
 ## The laptop / workstation (the Mac)
 
 Nothing above needs a second machine or a cluster; this profile runs the same app, the same
-config keys, entirely on one Mac, with two local servers instead of a cluster. `lib` mode is not in
+config keys, entirely on one Mac. The app owns the reader process, so this profile needs no
+separately managed reader or caption server. `lib` mode is not in
 `uv tool install` or the `all-mac` extra: ACE-Step runs from a `.venv-acestep` beside a checkout
 ([Install locally on a Mac](../better/music.md#install-locally-on-a-mac)). OIDC needs `authlib`,
 which `all-mac` and `make dev-mac` leave out; `make dev` installs every extra and builds the web
@@ -383,21 +381,34 @@ advanced:
 
   editorial:
     preparation:
-      # mlxcel, serving the same SmolVLM2 alias as the llama.cpp recipe
-      caption_base_url: "http://localhost:8092/v1"
+      caption_provider: llm   # the same owned reader reads pictures
 
   llm:
     provider: "openai-compatible"
-    base_url: "http://localhost:9999/v1"   # oMLX, also the cluster's reader over the LAN
-    model: "gemma-4-e4b-it-6bit"
+    enabled: true
+    base_url: ""             # the app owns the local llama.cpp process
+    # Omit model for the pinned Gemma 4 E4B Q4 default.
+    # Or set model to your GGUF and local_mmproj to its vision projector.
+    local_server: "llama-server"
 
   ace_step:
     enabled: true
     mode: lib                        # a local library, not an API server
-    model_variant: "acestep-v15-xl-turbo"   # the XL variant
-    lm_model_size: "4B"
-    use_lm: true
+    model_variant: turbo     # use XL only with room for its larger model
+    use_lm: false             # no extra music planner model on constrained RAM
 ```
+
+The reader switch has three states: `enabled: false` makes no local or external LLM requests;
+`enabled: true` with a blank `base_url` runs the owned local model; an explicit `base_url` uses
+that external service. The local model is configurable, with Gemma 4 E4B Q4 as the default.
+Install a compatible llama.cpp runtime and fetch the pinned reader weights before preflight;
+[Add a reader](../better/reader.md) covers the commands and custom GGUF paths.
+
+Before local ACE-Step or Demucs runs, the app releases its owned reader process and clears idle
+local inference allocator caches. It starts the reader again when another request needs it.
+This leaves more RAM for audio on a constrained machine; it does not shrink the audio models or
+remove their memory checks. A reader behind an explicit URL has its own lifetime and remains
+that server's responsibility.
 
 `mode: lib` needs Python 3.12 specifically ([ACE-Step config reference](../reference/config-reference.md));
 `mode: api` (the cluster profile's choice) has no such constraint, which is why the two profiles

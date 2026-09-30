@@ -1045,6 +1045,8 @@ src/immich_memories/
 ├── config_models_automation.py # Running unattended: trips, automation, notifications, upload
 ├── config_models_free_text.py  # free_text: where the pinned WordNet corpus lives and comes from
 ├── config_models_llm.py        # LLM provider settings (shared by analysis and titles)
+├── local_inference.py          # App-owned llama.cpp lifecycle and shared local audio memory lease
+├── local_reader_process.py     # Lifetime-pipe supervisor reaps the model after app crashes
 ├── config_models_network.py    # The three third-party hosts a run may reach; all off by default
 ├── config_models_render.py     # What the video looks like: defaults, output, title screens, photos
 ├── config_models_server.py     # UI server bind settings + secure-by-default host rule
@@ -1111,6 +1113,21 @@ local `episode_reading` requests retain prompt-only JSON to avoid the measured d
 while free-text, title and account schemas remain enforced. Explicit endpoint settings win.
 OpenAI-compatible and Ollama transports use the same decision; text judgment keys carry the
 effective schema and model identities version the request policy so stale answers are not reused.
+
+### App-owned local reader
+
+`LLMConfig.enabled` gates every request. An enabled reader with a blank `base_url` uses
+`local_inference.LocalModels` on Linux or macOS; a URL forwards to the configured dialect.
+The managed process binds loopback with a private API key and starts lazily. A small
+`local_reader_process` supervisor watches the app's lifetime pipe and stops the native process
+group even when the app crashes or receives SIGKILL; ordinary shutdown reaps the supervisor too. Its bank identity
+uses model/projector SHA-256 digests and context length, independent of its ephemeral port.
+`models fetch` installs the pinned default Gemma GGUF and projector; custom paths stay explicit.
+
+A process-wide lease serializes requests across event loops and hands memory to local ACE-Step
+and Demucs only after the reader process group has stopped. Audio drops its pipeline and native
+allocator caches before releasing that lease. Cancellation drains native work before unlocking;
+external API servers are never unloaded by this lifecycle. The next read restarts the model.
 
 ### Pipeline Flow (story-first)
 
@@ -1179,7 +1196,7 @@ At runtime, all sections are flat fields on `Config` (e.g. `config.analysis`).
 Both flat and nested YAML formats are accepted.
 
 These YAML tiers are not the product `tier` (`config_tiers.py`): `nas` (inexpensive CPU classifiers), `gpu`
-(every light model, no LLM) or `full` (plus an LLM, whose endpoint it requires). The product
+(every light model, no LLM) or `full` (plus an enabled local or server LLM). The product
 tier owns `editorial.reader`, `editorial.preparation.tier` and `editorial.laya_audience`.
 `auto` resolves from inference capability and the configured LLM; conflicting legacy preparation
 settings are ignored with a notice. A save stores only the keys that changed, so an automatic

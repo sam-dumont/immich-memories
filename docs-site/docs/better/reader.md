@@ -40,7 +40,57 @@ Laya must also be ready. Without GPU inference, selection stays on NAS and the a
 is missing; the LLM can still supply titles and music mood. It is never used automatically as a
 captioner. See [Requirements and tiers](../run/requirements.md#which-tier-you-get).
 
-## Local, on a Mac
+## Let the app run the local model
+
+Linux and macOS can run an app-owned llama.cpp process. Set the reader's enable switch and
+endpoint independently:
+
+| `enabled` | `base_url` | What happens |
+|---|---|---|
+| `false` | Any value | No reader requests are sent |
+| `true` | Empty | The app starts the local model when needed |
+| `true` | An API URL | Requests go to that server |
+
+```yaml
+advanced:
+  llm:
+    enabled: true
+    base_url: ""
+    model: gemma-4-E4B-it-Q4_0
+    local_server: llama-server
+    local_context: 32768
+```
+
+Gemma 4 E4B Q4 is the local default. `model` can instead name another local GGUF file;
+`local_mmproj` supplies that model's vision projector when images are needed. For a server,
+`model` is the name its API advertises. Install [llama.cpp](https://github.com/ggml-org/llama.cpp/blob/master/docs/install.md)
+and run `immich-memories models fetch` with this config before the first request. On a Mac,
+`brew install llama.cpp` supplies `llama-server`; Linux needs a build for its CPU or GPU.
+
+The default Q4 model passed local text, JSON and vision smoke checks. Those checks prove the
+request path, not every editorial judgment: the measured model still missed an alternate-name
+choice and changed a memory-worthiness judgment when input order changed. Model choice remains
+configurable; run the [provider conformance suite](#provider-conformance) for the model you use.
+
+### Why ownership matters on a small-memory machine
+
+An idle model still occupies RAM or GPU memory. This matters on a 16 GB Mac where the reader
+and ACE-Step share unified memory. When the app owns the reader process, it can stop that process
+and reclaim its model memory before local ACE-Step generation or Demucs stem separation. The next reader request loads it
+again. The app waits for an active request before handing memory over. Cancelling local audio waits
+for its native work to finish or time out before releasing the shared memory lease; cancellation
+is not an immediate stop button for a running model.
+
+With `base_url` set, the model's server owns its memory. The app sends requests but cannot assume
+that unloading the server's model is safe for other clients. That server needs its own unload or
+idle-memory policy. An ACE-Step memory-budget refusal can therefore mean the reader is still
+resident, even when no reader request is running.
+
+The local reader is one part of Full. Captions, the audience model, detectors and music must
+also be available; check `immich-memories capabilities`. The installation check does not claim
+that generation succeeded. A different quantization needs its own quality and memory checks.
+
+## Use an existing local server
 
 [oMLX](https://github.com/jundot/omlx) serves MLX models over an OpenAI-compatible API (macOS 15+):
 
@@ -61,8 +111,8 @@ advanced:
     model: gemma-4-e4b-it-6bit
 ```
 
-`model` must be exactly what the server reports at `GET /v1/models`. `base_url` defaults to
-`http://localhost:8080/v1`, the app's own port, so always set it. From the app in Docker the host
+`model` must be exactly what the server reports at `GET /v1/models`. Set `base_url` to use this
+server; an empty URL runs the app-owned model instead. From the app in Docker the host
 is `host.docker.internal`, and from a NAS it is the Mac's LAN name:
 [Reaching a model server](../run/docker.md#reaching-a-model-server). A server that answers `401`
 wants its token in `llm.api_key` (`IMMICH_MEMORIES_LLM__API_KEY`).
@@ -80,11 +130,13 @@ does. If that text should stay home, run the model locally.
 advanced:
   llm:
     provider: "openai"             # ollama | openai-compatible | openai | zai | anthropic
+    enabled: true
+    base_url: https://api.openai.com/v1
     model: "gpt-4.1-mini"
     api_key: "${OPENAI_API_KEY}"
 ```
 
-Leave `base_url` unset and `openai`, `anthropic` and `zai` fill in their own. The prose is banked,
+Set `base_url` explicitly for a hosted reader. `provider` selects its request dialect. The prose is banked,
 so a week is read and paid for once, not once per film. Every outbound request is on
 [Privacy](../run/privacy.md).
 
@@ -97,7 +149,8 @@ immich-memories preflight
 The `LLM` row checks that the endpoint answers for your model (Ollama's tag list, a minimal chat
 call on an OpenAI-compatible host, the model list or a one-token ask on an Anthropic one). It
 checks a configured LLM on NAS and GPU too, because titles and music mood can use it even when
-selection uses rules. With no model configured it reads `SKIPPED`. A model reader with a blank
+selection uses rules. With `enabled: false` it reads `SKIPPED`. For the app-owned reader it checks the executable
+and model files without loading weights. A model reader with a blank
 model stops with
 `editorial runtime needs a nonblank LLM model`.
 
@@ -159,8 +212,8 @@ itself. `zai` is the `anthropic` adapter with z.ai's URL and reasoning level fil
 the one provider that picks its adapter from the `base_url` path, because z.ai serves both dialects
 on one host: `.../api/anthropic` gets `/v1/messages`, `.../api/paas/v4` gets `/chat/completions`.
 
-`openai`, `anthropic` and `zai` fill in the vendor's base URL and reasoning dialect where you left
-the field at its default. `openai-compatible` fills in nothing. An explicit `base_url` always wins.
+`openai`, `anthropic` and `zai` fill in the vendor's reasoning dialect. Set the vendor's
+`base_url` explicitly: a blank URL always selects the app-owned reader when enabled.
 
 The Messages API path is `POST {base_url}/v1/messages` with `x-api-key`,
 `anthropic-version: 2023-06-01` and the prompt as one user message. Nothing about it is
@@ -172,6 +225,8 @@ loses nothing.
 advanced:
   llm:
     provider: "anthropic"
+    enabled: true
+    base_url: https://api.anthropic.com
     model: "claude-sonnet-5"        # or claude-haiku-4-5 for the cheap seat
     api_key: "${ANTHROPIC_API_KEY}"
     thinking: "high"                # disabled | low | high | max | auto
@@ -188,12 +243,14 @@ no answer in it. A model older than that dialect needs the switch written out:
 advanced:
   llm:
     provider: "zai"
+    enabled: true
+    base_url: https://api.z.ai/api/anthropic
     model: "glm-5.3-flash"
     api_key: "${ZAI_API_KEY}"
     thinking: "low"
 ```
 
-`base_url` defaults to `https://api.z.ai/api/anthropic`, where a coding-plan account is served. The
+`https://api.z.ai/api/anthropic` is where a coding-plan account is served. The
 other route, `https://api.z.ai/api/paas/v4`, is the OpenAI-compatible one and answers that account
 `429 code 1113, Insufficient balance`; set it explicitly if your account is the other kind. The
 GLM-5 line refuses `disabled`, so the preset sends `low`.
@@ -239,6 +296,7 @@ and `message` go into the log line, cut at 300 characters.
 The default selects the mode by request type. Free-text questions, titles and period accounts
 request their JSON schemas on local and hosted endpoints. Local episode readings use prompt-only
 JSON because oMLX can stall on their nested schema; hosted episode readings retain the schema.
+Music mood requests carry their allowed mood, energy, tempo and genre enums as a JSON schema.
 Both modes work against the same endpoint in one process. `advanced.llm.structured_output` can
 explicitly enable or disable schemas for that endpoint.
 

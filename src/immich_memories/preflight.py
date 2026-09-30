@@ -356,6 +356,8 @@ def check_llm(config: Config) -> CheckResult:
     Returns:
         CheckResult with status and details.
     """
+    if not config.llm.enabled:
+        return CheckResult(name="LLM", status=CheckStatus.SKIPPED, message="LLM disabled")
     try:
         reader = config.editorial.resolve_reader(config.llm.model)
     except ValueError as exc:
@@ -368,6 +370,19 @@ def check_llm(config: Config) -> CheckResult:
     # the endpoint the run will: `zai` and `openai` both resolve to one of the
     # two adapters, and to the vendor URL where none was set.
     llm = resolved_llm_config(config.llm)
+    if llm.runs_locally:
+        from immich_memories.local_inference import local_reader_files
+
+        try:
+            local_reader_files(llm)
+        except (OSError, RuntimeError) as exc:
+            return CheckResult(name="LLM", status=CheckStatus.ERROR, message=str(exc))
+        return CheckResult(
+            name="LLM",
+            status=CheckStatus.OK,
+            message="Local reader installed; generation not tested",
+            details="The app starts llama.cpp when a request needs it",
+        )
     base_url = llm.base_url
     model = llm.model
 

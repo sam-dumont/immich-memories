@@ -71,6 +71,22 @@ CAPTION_PROJECTOR = PinnedModel(
     "921dc7e259f308e5b027111fa185efcbf33db13f6e35749ddf7f5cdb60ef520b",
 )
 
+_READER_BASE = (
+    "https://huggingface.co/ggml-org/gemma-4-E4B-it-GGUF/resolve/"
+    "b8093469224f83f5c38f691eb906c380e9e63114/"
+)
+READER_MODEL = PinnedModel(
+    "Gemma 4 E4B reader (Q4)",
+    _READER_BASE + "gemma-4-E4B-it-Q4_0.gguf",
+    "a555b900214b477d8880e7832e0b8925e139b0159640036b09fe472b6f2097f2",
+)
+READER_PROJECTOR = PinnedModel(
+    "Gemma 4 E4B image projector (Q8)",
+    _READER_BASE + "mmproj-gemma-4-E4B-it-Q8_0.gguf",
+    "197f49a93027f9843772bd24a6a9e0be2a32a788de5a3def330e9c585d86edd1",
+)
+READER_MAX_BYTES = 5 * 1024**3
+
 
 def fetch_pinned_model(
     *,

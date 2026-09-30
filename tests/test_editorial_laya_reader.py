@@ -19,6 +19,7 @@ from immich_memories.analysis.editorial_laya_reader import (
 from immich_memories.analysis.editorial_structure_audience import AudienceBank, AudienceGate
 from immich_memories.config_models_editorial import EditorialConfig
 from immich_memories.config_models_free_text import FreeTextConfig
+from immich_memories.config_models_llm import LLMConfig
 from immich_memories.db import open_store
 from tests.editorial_thin_fixtures import PRIVATE, CountingJudge
 
@@ -200,6 +201,7 @@ def _fetch_models(monkeypatch, tmp_path, editorial, *flags):
     config = type("C", (), {})()
     config.triage = type("T", (), {"encoder_url": "u", "encoder_path": tmp_path / "e"})()
     config.free_text = FreeTextConfig(wordnet=str(tmp_path / "wordnet.zip"))
+    config.llm = LLMConfig(enabled=False)
     config.editorial = editorial
     import click
 

@@ -240,6 +240,7 @@ class QueryTextRequester:
                     judgments=None,  # The gateway banks the complete bounded-recovery request.
                     transport_observer=watch,
                     require_complete=not request.json_object,
+                    response_format=request.response_format,
                 )
             except httpx.HTTPStatusError as exc:
                 refusal = provider_failure(exc, images_attached=False)

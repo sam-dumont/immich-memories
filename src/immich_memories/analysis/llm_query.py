@@ -210,6 +210,8 @@ async def query_llm(
     measured cost is 5-10x latency and 10-20x tokens.
     """
     check_cancelled()
+    if not llm_config.enabled:
+        raise ValueError("LLM requests are disabled")
     llm_config = resolved_llm_config(llm_config)
     llm_metrics.begin_request(llm_config.model)
     # A prompt hash cannot see the pictures, so an image-bearing call with a
@@ -305,6 +307,25 @@ async def _dispatch(
     require_complete: bool = False,
     response_format: Mapping[str, Any] | None = None,
 ) -> str:
+    if llm_config.runs_locally:
+        from immich_memories.local_inference import local_models
+
+        async with local_models.reader(llm_config) as endpoint:
+            return await _query_openai(
+                prompt,
+                endpoint,
+                temperature,
+                max_tokens,
+                timeout_seconds,
+                thinking and endpoint.reasons and not images,
+                images,
+                image_detail,
+                transport_observer,
+                require_complete,
+                response_format,
+                trust_env=False,
+                vision_schema=True,
+            )
     think = thinking and llm_config.reasons and not images
     if llm_config.provider == "ollama":
         return await _query_ollama(
@@ -618,10 +639,19 @@ def _openai_request(
     image_detail: str,
     endpoint: tuple[str, str],
     response_format: Mapping[str, Any] | None = None,
+    *,
+    vision_schema: bool = False,
 ) -> tuple[dict, int, set[str]]:
     """The body to post, the read budget it earns, and this endpoint's learned dialect."""
     payload = openai_payload(
-        prompt, config, temperature, max_tokens, images, image_detail, response_format
+        prompt,
+        config,
+        temperature,
+        max_tokens,
+        images,
+        image_detail,
+        response_format,
+        vision_schema=vision_schema,
     )
     if thinking:
         timeout = apply_thinking_budget(payload, config, max_tokens, timeout)
@@ -645,6 +675,9 @@ async def _query_openai(
     transport_observer: Callable[[LLMTransportAttempt], None] | None = None,
     require_complete: bool = False,
     response_format: Mapping[str, Any] | None = None,
+    *,
+    trust_env: bool = True,
+    vision_schema: bool = False,
 ) -> str:
     base_url = config.base_url.rstrip("/")
     headers = openai_headers(config)
@@ -660,6 +693,7 @@ async def _query_openai(
         image_detail,
         endpoint,
         response_format,
+        vision_schema=vision_schema,
     )
     again = partial(
         _query_openai,
@@ -673,12 +707,16 @@ async def _query_openai(
         transport_observer=transport_observer,
         require_complete=require_complete,
         response_format=response_format,
+        trust_env=trust_env,
+        vision_schema=vision_schema,
     )
     # Retry up to 3x — some models (Qwen/mlx-vlm) return null content
     # Per-phase, not a scalar: a stuck server should fail while connecting
     # rather than hold the whole generation budget on one read.
     async with httpx.AsyncClient(
-        timeout=build_llm_timeout(float(timeout)), headers=headers
+        timeout=build_llm_timeout(float(timeout)),
+        headers=headers,
+        trust_env=trust_env,
     ) as client:
         for attempt in range(3):
             resp = await _post_adapted(

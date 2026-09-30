@@ -7,7 +7,7 @@ for preparation and selection. Only ``full`` uses an LLM for selection:
 * ``gpu``: every light model. The caption server, the heads and detectors, and Laya for the
   sharing question. Selection still uses the rules reader.
 * ``full``: the ``gpu`` tier plus an LLM for prose and polish. It refuses to load without the
-  LLM's ``base_url`` and ``model``.
+  LLM enabled with a nonblank ``model``; a blank ``base_url`` runs locally.
 
 Configured text features (titles and music mood) work on every tier. The sharing question
 never goes to an LLM on any tier.
@@ -74,7 +74,7 @@ def apply_tier(config: Config) -> dict[str, Any]:
         logger.info("Automatic selection tier: %s. %s", config.tier, reason)
     if config.tier == "full":
         _require_llm_endpoint(config)
-    elif config.llm.model.strip():
+    elif config.llm.enabled and config.llm.model.strip():
         logger.warning(
             "The configured LLM can supply titles and music mood; selection stays on %s. "
             "Model refinement requires GPU capability and the full tier's caption and Laya services.",
@@ -98,7 +98,7 @@ def _apply_caption_provider(config: Config) -> dict[str, Any]:
     if config.editorial.preparation.caption_provider != "llm":
         return {}
     if not _llm_configured(config):
-        raise ValueError("caption_provider: llm needs a configured LLM endpoint and model")
+        raise ValueError("caption_provider: llm needs an enabled LLM and model")
     logger.warning(LLM_CAPTION_WARNING)
     config.editorial.description_model = llm_caption_identity(
         config.llm, config.editorial.preparation.caption_artifact_id
@@ -106,23 +106,15 @@ def _apply_caption_provider(config: Config) -> dict[str, Any]:
     return {"editorial.description_model": config.editorial.description_model}
 
 
-# Providers that name their own host, so stating one of them states the endpoint.
-_HOSTED_PROVIDERS = frozenset({"openai", "anthropic", "zai"})
-
-
 def _llm_configured(config: Config) -> bool:
     llm = config.llm
-    stated = llm.model_fields_set
-    endpoint = ("base_url" in stated and llm.base_url.strip()) or (
-        "provider" in stated and llm.provider in _HOSTED_PROVIDERS
-    )
-    return bool(endpoint and llm.model.strip())
+    return bool(llm.enabled and llm.model.strip())
 
 
 def _require_llm_endpoint(config: Config) -> None:
     if not _llm_configured(config):
         raise ValueError(
-            "tier: full needs an LLM: set advanced.llm.base_url and advanced.llm.model "
-            "to the server that answers it, or choose tier: gpu for every light model "
-            "and no LLM"
+            "tier: full needs an enabled LLM: set advanced.llm.enabled: true and choose "
+            "a model. A blank base_url runs locally; a URL uses that server. "
+            "Choose tier: gpu for every light model and no LLM"
         )

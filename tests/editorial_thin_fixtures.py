@@ -36,7 +36,9 @@ class CountingJudge:
     """Answers every question the thin layer asks, and counts each request it is sent."""
 
     def __init__(self) -> None:
-        self.config = SimpleNamespace(llm=LLMConfig(model="model-a"))
+        self.config = SimpleNamespace(
+            llm=LLMConfig(base_url="http://localhost:8080/v1", model="model-a")
+        )
         self.calls: list[str] = []
         self.prompts: list[tuple[str, str]] = []
         self.failures: list[str] = []

@@ -145,6 +145,14 @@ class ACEStepConfig(BaseModel):
             "60s track when disabled). Enable for prompt-following on complex briefs."
         ),
     )
+    cpu_offload: bool = Field(
+        default=True,
+        description=(
+            "Move local CUDA music models back to CPU between phases to reduce VRAM use. "
+            "False keeps them on CUDA for speed when memory permits. Ignored by the "
+            "Apple Silicon runtime and API mode; the host memory guard still applies."
+        ),
+    )
     num_versions: int = Field(
         default=3,
         ge=1,

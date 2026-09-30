@@ -120,8 +120,12 @@ secret saved from the UI has to be saved again. You don't need it at all if your
 
 | Variable | Config key | Default | Placement | Compose | What it does |
 |---|---|---|---|---|---|
-| `IMMICH_MEMORIES_LLM__BASE_URL` | `llm.base_url` | `http://localhost:8080/v1` | advanced | commented | The reader's endpoint. The default is the app's own port: set it |
-| `IMMICH_MEMORIES_LLM__MODEL` | `llm.model` | empty | advanced | commented | The reader. Empty means the rules editor works alone. Must match `GET /v1/models`; a text model is enough |
+| `IMMICH_MEMORIES_LLM__ENABLED` | `llm.enabled` | `false` | advanced | no | Allow reader calls. `false` disables both local and server requests |
+| `IMMICH_MEMORIES_LLM__BASE_URL` | `llm.base_url` | empty | advanced | commented | Empty runs an app-owned local llama.cpp reader when enabled; an API URL forwards requests to that server |
+| `IMMICH_MEMORIES_LLM__MODEL` | `llm.model` | `gemma-4-E4B-it-Q4_0` | advanced | commented | Local default or a GGUF path; for a server, match `GET /v1/models` |
+| `IMMICH_MEMORIES_LLM__LOCAL_SERVER` | `llm.local_server` | `llama-server` | advanced | no | Local llama.cpp executable, on Linux or macOS |
+| `IMMICH_MEMORIES_LLM__LOCAL_MMPROJ` | `llm.local_mmproj` | empty | advanced | no | Custom GGUF vision projector; the default Gemma model uses its pinned projector |
+| `IMMICH_MEMORIES_LLM__LOCAL_CONTEXT` | `llm.local_context` | `32768` | advanced | no | Context tokens for the app-owned reader |
 | `IMMICH_MEMORIES_LLM__API_KEY` | `llm.api_key` | empty | advanced | no | The reader's token, for a server that answers `401` |
 | `IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL` | `inference.facts_base_url` | empty | advanced | commented | Send the heads and detectors to the [inference service](../better/inference.md) |
 

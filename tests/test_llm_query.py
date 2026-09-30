@@ -146,7 +146,11 @@ class TestQueryLlmOpenAI:
         ):
             await query_llm(
                 "Generate a title",
-                LLMConfig(provider="openai-compatible", model="hosted"),
+                LLMConfig(
+                    base_url="http://localhost:8080/v1",
+                    provider="openai-compatible",
+                    model="hosted",
+                ),
             )
 
 
@@ -528,7 +532,9 @@ class TestTimeoutShape:
 
         from immich_memories.analysis.llm_query import CONNECT_TIMEOUT_SECONDS, query_llm
 
-        config = LLMConfig(provider="anthropic", model="m", api_key="k")
+        config = LLMConfig(
+            base_url="https://api.anthropic.com", provider="anthropic", model="m", api_key="k"
+        )
         anthropic_ok = AsyncMock()
         anthropic_ok.status_code = 200
         anthropic_ok.json = MagicMock(

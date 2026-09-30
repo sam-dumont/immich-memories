@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from immich_memories.audio.generators.memory_budget import memory_shortfall
+from immich_memories.tracking.system_info import _get_ram_gb as _physical_memory_gb
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,13 @@ def _bound_mlx_memory() -> int | None:
     with suppress(ImportError):
         import mlx.core as mx  # type: ignore[import-not-found]
 
-        mx.set_cache_limit(_MLX_CACHE_LIMIT_BYTES)
+        # On a 16 GiB machine, 4 GiB of idle MLX buffers coexist with VAE
+        # activations. A measured 90 s / chunk256 run fell from 13.69 to
+        # 10.40 GiB physical footprint with cache disabled, without changing
+        # precision or temporal context. Keep the established large-Mac cap.
+        physical_gb = _physical_memory_gb()
+        cache_limit = 0 if physical_gb <= 16 else _MLX_CACHE_LIMIT_BYTES
+        mx.set_cache_limit(cache_limit)
 
     override = os.environ.get("ACESTEP_MLX_VAE_CHUNK")
     if override is None:
@@ -121,6 +128,8 @@ def release_runtime_memory() -> None:
 
         if torch.backends.mps.is_available():
             torch.mps.empty_cache()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
     _release_mlx_cache()
 
 
@@ -185,9 +194,15 @@ def _initialize_dit_handler(
     offload: bool,
     use_mlx_dit: bool,
     mlx_vae_chunk: int | None = None,
+    owned_mlx_checkpoint: Path | None = None,
 ) -> Any:
     """Initialize and validate the ACE-Step 1.5 DiT handler."""
     handler = handler_type()
+    owned_handoff = False
+    if owned_mlx_checkpoint is not None:
+        from immich_memories.audio.generators.ace_step_mlx_handoff import install_mlx_memory_handoff
+
+        owned_handoff = install_mlx_memory_handoff(handler, owned_mlx_checkpoint)
     if mlx_vae_chunk is not None and hasattr(handler, "mlx_vae_chunk_size"):
         # WHY: belt and braces — the env override is ignored if ACE-Step's
         # global GPU config was already cached earlier in this process.
@@ -205,7 +220,7 @@ def _initialize_dit_handler(
     )
     if not initialized:
         raise RuntimeError(f"ACE-Step DiT initialization failed: {status}")
-    if use_mlx_dit:
+    if use_mlx_dit and not owned_handoff:
         _cast_mlx_decoder_to_bf16(handler)
     return handler
 
@@ -341,6 +356,11 @@ def build_v15_runtime(
             offload=offload,
             use_mlx_dit=use_mlx_dit,
             mlx_vae_chunk=mlx_vae_chunk,
+            owned_mlx_checkpoint=(
+                checkpoint_dir / dit_model / "model.safetensors"
+                if use_mlx_dit and not lm_model and dit_model == "acestep-v15-turbo"
+                else None
+            ),
         )
         llm_handler = _initialize_lm_handler(
             LLMHandler,

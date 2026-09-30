@@ -1349,7 +1349,13 @@ def test_a_cold_episode_can_be_read_from_a_provider_batch(tmp_path: Path) -> Non
             return httpx.Response(200, json={"data": []})
         raise AssertionError(f"a batched answer must not be asked live: {path}")
 
-    config = LLMConfig(provider="openai", model="m", api_key="k", batch="auto")
+    config = LLMConfig(
+        base_url="https://api.openai.com/v1",
+        provider="openai",
+        model="m",
+        api_key="k",
+        batch="auto",
+    )
     coordinator = BatchCoordinator(
         config,
         BatchPolicy(mode="auto", min_requests=1, max_wait_minutes=5),

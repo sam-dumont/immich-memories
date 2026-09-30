@@ -845,7 +845,7 @@ tzdata 2025.3
   License: Apache-2.0
   URL: https://github.com/python/tzdata
 
-urllib3 2.7.0
+urllib3 2.8.0
   License: MIT
   URL: https://github.com/urllib3/urllib3/blob/main/CHANGES.rst
 
