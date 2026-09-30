@@ -24,6 +24,11 @@ from immich_memories.processing.hardware import (
     get_ffmpeg_hwaccel_args,
 )
 from immich_memories.processing.hardware_encode import apply_hardware_encode
+from immich_memories.processing.hdr_utilities import (
+    _detect_hdr_type,
+    get_colorspace_filter,
+    get_hdr_conversion_filter,
+)
 from immich_memories.security import private_temp_dir, validate_video_path
 
 logger = logging.getLogger(__name__)
@@ -228,13 +233,31 @@ class ClipExtractor:
 
         # Add hardware decode args if available
         if hw_caps and hw_caps.has_decoding and config.hardware.gpu_decode:
-            hwaccel_args = get_ffmpeg_hwaccel_args(hw_caps, operation="decode", codec=codec)
+            hwaccel_args = get_ffmpeg_hwaccel_args(
+                hw_caps,
+                operation="decode",
+                codec=codec,
+                for_software_filters=config.tier == "nas",
+            )
             cmd.extend(hwaccel_args)
 
         # Input seeking and file
         cmd.extend(["-ss", str(segment.start_time)])
         cmd.extend(["-i", str(segment.source_path)])
         cmd.extend(["-t", str(segment.duration)])
+
+        if config.tier == "nas":
+            # Fit the displayed orientation before tone mapping allocates float RGB frames.
+            filters = (
+                "scale=w='if(gte(iw,ih),min(iw,1920),min(iw,1080))':"
+                "h='if(gte(iw,ih),min(ih,1080),min(ih,1920))':"
+                "force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1"
+                + get_hdr_conversion_filter(
+                    _detect_hdr_type(segment.source_path), "sdr", required=True
+                )
+                + get_colorspace_filter("sdr")
+            )
+            cmd.extend(["-vf", filters])
 
         # Get encoder and its args
         self._append_encoder_args(cmd, hw_caps, codec, config)

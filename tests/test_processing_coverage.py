@@ -399,7 +399,7 @@ class TestExtractWithReencode:
     """Re-encode path with HW fallback."""
 
     def test_reencode_without_progress(self, tmp_path):
-        config = _make_config()
+        config = _make_config(tier="gpu")
         segment = _make_segment(tmp_path)
         output = tmp_path / "out.mp4"
         extractor = ClipExtractor(tmp_path, config=config)

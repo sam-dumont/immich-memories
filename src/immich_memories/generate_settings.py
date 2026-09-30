@@ -23,6 +23,7 @@ from immich_memories.processing.clip_caption import resolve_caption_locale
 from immich_memories.processing.encoding_plan import (
     EncodingPlan,
     EncodingRequest,
+    HdrMode,
     resolve_encoding_plan,
     resolve_output_selection,
 )
@@ -107,10 +108,20 @@ def build_assembly_settings(
         else HWAccelCapabilities()
     )
     output_crf = params.output_crf if params.output_crf is not None else config.output.effective_crf
+    hdr_mode = config.output.hdr_mode
+    if (
+        config.tier == "nas"
+        and hdr_mode is HdrMode.AUTO
+        and config.output.codec_policy == "prefer_hardware"
+        and capabilities.supports_h264_encode
+        and not capabilities.supports_h265_encode
+    ):
+        hdr_mode = HdrMode.SDR
+        logger.info("NAS automatic output uses hardware H.264 with HDR-to-SDR tone mapping")
     encoding_plan = resolve_encoding_plan(
         EncodingRequest(
             codec=output_selection.codec,
-            hdr_mode=config.output.hdr_mode,
+            hdr_mode=hdr_mode,
             hardware_enabled=config.hardware.enabled,
             preset=quality_encoder_preset(config.output.quality, config.hardware.encoder_preset),
             crf=output_crf,
@@ -123,7 +134,7 @@ def build_assembly_settings(
             probe_cache=probe_cache,
         ),
     )
-    if encoding_plan.tone_map_to_sdr and config.output.hdr_mode.value == "auto":
+    if encoding_plan.tone_map_to_sdr and hdr_mode is HdrMode.AUTO:
         logger.warning(
             "HDR input was detected, but %s output cannot preserve HDR; "
             "tone-mapping the final video to SDR. Set output.codec: h265 with "
