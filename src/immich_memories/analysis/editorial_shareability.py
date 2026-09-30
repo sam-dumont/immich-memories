@@ -83,7 +83,17 @@ PROMPT_VERSION = "shareability-check-v5-family-milestones-and-private-content"
 AUDIENCE_PROMPT_VERSION = "audience-evidence-v17-every-finding-needs-its-activity"
 AUDIENCE_CHECK_POLICY_VERSION = "all-captioned-carrier-members-v1"
 _AUDIENCE_HEADS = frozenset(
-    {"nsfw_marqo", "uncovered_person", "people", "children", "doc_docling", "venue", "location"}
+    {
+        "nsfw_marqo",
+        "uncovered_person",
+        "people",
+        "children",
+        "doc_docling",
+        "venue",
+        "location",
+        "screen",
+        "frame_kind",
+    }
 )
 
 

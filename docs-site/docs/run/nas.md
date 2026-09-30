@@ -23,14 +23,23 @@ sudo docker compose exec immich-memories immich-memories models fetch
 sudo docker compose exec immich-memories immich-memories preflight
 ```
 
-The compose file uses `tier: auto`, which picks the `nas` tier here: the eight context heads and
-two detectors run on the NAS CPU, and no caption or model service is needed.
+The compose file uses `tier: auto`, which picks the `nas` tier here: the eight context heads share
+one DINO encoder on the NAS CPU, and no caption or model service is needed.
 
 Set the home base in `.env` before the first cut
 (`IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE` and `..._LONGITUDE`). It also picks your country's public
 holidays. Without it no day counts as
 away from home, so a three-week holiday arrives as three weekly stories instead of one trip. Then
 confirm who's who once: [Teach it your family](../get-started/who-is-who.md).
+
+After `models fetch` and a clean `preflight`, start with one month:
+
+```bash
+sudo docker compose exec immich-memories immich-memories generate --year 2025 --month 8
+```
+
+The first cut includes fresh preparation. The [measured preparation times](../better/measured.md#nas-preparation)
+exclude downloads, music and rendering; they are not a promise for the whole film.
 
 ### The output folder
 
@@ -69,13 +78,14 @@ to that port.
 ## What to expect
 
 The first cut of a month reads every picture it can reach once and banks the answers in the
-persistent store. The eight context heads share one DINO encoder; Docling and Marqo are two
-additional models. They run on the NAS CPU by default, or on a configured
-[inference service](../better/inference.md) while selection and rendering stay on the NAS. Run it in the evening. Later cuts reuse matching facts; new pictures and changed producers
+persistent store. The eight context heads share one DINO encoder. NAS disables Docling and Marqo;
+GPU and Full enable both, using a configured [inference service](../better/inference.md) when
+available. The `screen`, `frame_kind` and `uncovered_person` heads still run on NAS. This saves
+work but gives up detector coverage; it is not proven equivalent to GPU or Full. Run it in the
+evening. Later cuts reuse matching facts; new pictures and changed producers
 can require more work. `immich-memories runs show` prints where the time went, phase by phase and
-per picture. A 162-image test on the DS423+ took 246 seconds for fresh classifier preparation
-and 0.15 seconds to reuse it, with no model calls on the repeat. The same NAS client with a
-T1000 service took 63 seconds fresh. Downloads, captions and rendering are separate costs; see
+per picture. A 162-image test on the DS423+ took 112 seconds for fresh DINO-only classifier preparation.
+Warm preparation made no model calls. Downloads, captions and rendering are separate costs; see
 [the preparation measurements](../better/measured.md#nas-preparation).
 
 Start with one month, not a year: preparation grows with the pictures in the window, not with the

@@ -188,7 +188,7 @@ def _annotations(prepared: PreparedEditorialSource, config: Config):
         store=open_store(config),
         candidates=prepared.candidates,
         description_model=editorial.description_model,
-        head_versions=editorial.head_versions,
+        head_versions=editorial.active_head_versions,
         pixel_producer_key=editorial.pixel_producer_key,
         people_context=load_people_prompt_context(include_derived=True),
     )

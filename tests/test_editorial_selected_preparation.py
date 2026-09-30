@@ -159,10 +159,14 @@ def test_banked_captions_do_not_change_the_initial_nas_draft(tmp_path, tier):
     sources = [photo(f"picture-{n:02}", at=first + timedelta(days=n)) for n in range(24)]
     for asset in sources:
         asset.is_favorite = True
-    _film(tmp_path, sources, tier="gpu")
+    _film(tmp_path, sources, tier=tier)
     drafts = set((tmp_path / "artifacts").glob("**/nas-draft/plan.private.json"))
     assert len(drafts) == 1
     cold = json.loads(next(iter(drafts)).read_text())["carriers"]
+    # Compare the same detector policy before and after captions are banked. GPU's
+    # first draft includes Docling facts; NAS deliberately does not read those rows.
+    _film(tmp_path, sources, tier="gpu")
+    drafts = set((tmp_path / "artifacts").glob("**/nas-draft/plan.private.json"))
 
     _, calls = _film(tmp_path, sources, tier=tier)
 
@@ -258,7 +262,8 @@ def test_a_refinement_replacement_is_captioned_before_it_enters_the_film(tmp_pat
     assert {asset for report in reports for asset in report["requested_asset_ids"]} == captioned
 
 
-def test_nas_inspects_only_the_live_clips_its_draft_can_use(tmp_path):
+@pytest.mark.parametrize("tier", ["nas", "gpu"])
+def test_live_clip_detector_reads_follow_the_tier_and_draft_scope(tmp_path, tier):
     first = datetime(2024, 2, 1, 12, tzinfo=UTC)
     sources = [
         photo(f"picture-{n:02}", at=first + timedelta(days=n), live=f"clip-{n:02}")
@@ -268,10 +273,15 @@ def test_nas_inspects_only_the_live_clips_its_draft_can_use(tmp_path):
         asset.is_favorite = True
     playback = set()
 
-    selected, _ = _film(tmp_path / "nas", sources, tier="nas", playback=playback)
+    selected, _ = _film(tmp_path / tier, sources, tier=tier, playback=playback)
 
     assert 0 < len(selected) < len(sources)
-    assert playback == {asset.live_photo_video_id for asset in sources if asset.id in selected}
+    expected = (
+        {asset.live_photo_video_id for asset in sources if asset.id in selected}
+        if tier == "gpu"
+        else set()
+    )
+    assert playback == expected
 
 
 @requires_ffmpeg

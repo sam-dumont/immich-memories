@@ -11,7 +11,10 @@ moment's favourite: then the whole moment goes and another moment gets the slot.
 sunset, or the same hiking trail filmed twice twenty minutes apart, become one. Then the finished
 cut is checked against everything the passes promised.
 
-NAS runs these passes with rules and inexpensive picture classifiers. GPU and Full add Laya
+NAS runs these passes with rules and the eight shared-DINO heads, including `screen`,
+`frame_kind` and `uncovered_person`. Marqo and Docling are off on NAS. This is a measured cost
+tradeoff, with less detector coverage, not proven equivalence to Full. GPU and Full add both
+detectors and Laya
 over the selected shots' captions. No tier asks the prose LLM to decide sharing.
 
 ## After the draft

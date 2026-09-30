@@ -31,7 +31,7 @@ flowchart LR
 | **Heads** | eight small classifiers over one pinned DINOv2 encoder: location, people, children, activity, venue, frame_kind, screen, uncovered_person | `editorial_preparation_heads.py` |
 | **Detectors** | `nsfw_marqo` (exposure, read on up to eight frames of a video) and `doc_docling` (documents) | `editorial_preparation_detectors.py` |
 | **Caption** | a banked description or motion line, acquired for selected shots and candidates by SmolVLM2 500M or an explicitly approved LLM provider | `editorial_description_contract.py` |
-| **Tier** | `nas` (CPU heads and detectors), `gpu` (adds captions and Laya), `full` (adds prose refinement); `auto` resolves from GPU inference and LLM configuration | `tier`, `config_tiers.py` |
+| **Tier** | `nas` (CPU heads), `gpu` (adds Marqo, Docling, captions and Laya), `full` (adds prose refinement); `auto` resolves from GPU inference and LLM configuration | `tier`, `config_tiers.py` |
 | **Scene print** | the pooled DINOv2 vector of a preview; two prints at a cosine of 0.65 or more are the same scene | `editorial_scene_prints.py` |
 | **Residual** | the motion left in a clip once the camera's own movement is removed; 1.5 or more plays as motion | `RESIDUAL_MIN`, `editorial_motion_facts.py` |
 | **Bank** | an answer stored under its exact inputs and producer version, so the next run asks nothing; no row means nobody asked | the store |

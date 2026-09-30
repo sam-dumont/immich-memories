@@ -17,9 +17,9 @@ is configured as well. The GPU and Full tiers then expect the caption server, an
 
 | Feature | Plain NAS | + GPU | + GPU and a model (Full) |
 |---|---|---|---|
-| **Choosing the pictures** | The rules editor builds the film from dates, places, favourites, the people Immich knows, and a picture encoder with eight small classifiers and two detectors, all on the CPU | Same draft | The model reads the finished draft in blocks of 12 shots, names the ones that add nothing and swaps in better pictures of the same moments |
+| **Choosing the pictures** | The rules editor builds the film from dates, places, favourites, the people Immich knows, and a picture encoder with eight small classifiers, all on the CPU | Same rules draft, with Marqo and Docling added | The model reads the finished draft in blocks of 12 shots, names the ones that add nothing and swaps in better pictures of the same moments |
 | **A description of each picture** | None | A one-line caption for every picture in the cut and every candidate to replace one | Same, and the model reads them |
-| **Family-viewing check** | Rules and a sensitive-content detector hold back what isn't for sharing | A second reader checks the captions and can hold more pictures back (never fewer) | Same as GPU. The text model never decides what is shareable |
+| **Family-viewing check** | Rules and the eight context heads hold back what isn't for sharing | Marqo and Docling add picture checks; a second reader checks the captions and can hold more pictures back (never fewer) | Same as GPU. The text model never decides what is shareable |
 | **The title** | Built from the dates, the people and the year, or the album, holiday or trip name | Same | Written by the model from what the film holds |
 | **The music** | A bundled track, calm by default | Same | The model picks the mood, tempo and genre from what the cut is about |
 | **Reading the pictures** | On the CPU, once per picture, then banked | The encoder and classifiers run on the GPU: the same answers, sooner | Same as GPU |

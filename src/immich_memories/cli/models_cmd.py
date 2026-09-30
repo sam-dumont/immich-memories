@@ -31,8 +31,8 @@ def register_models_commands(cli_group: click.Group) -> None:
     @click.option("--force", is_flag=True, help="Re-download even when the file is already right")
     @click.option(
         "--detectors/--no-detectors",
-        default=True,
-        help="Also fetch the pinned detector export and warm the pinned detector snapshot",
+        default=None,
+        help="Fetch detector models (default: gpu/full only); --detectors also fetches on nas",
     )
     @click.option(
         "--laya",
@@ -40,7 +40,7 @@ def register_models_commands(cli_group: click.Group) -> None:
         help="Fetch the Laya audience checkpoint even on the nas tier (gpu and full fetch it anyway)",
     )
     @click.pass_context
-    def fetch(ctx: click.Context, force: bool, detectors: bool, laya: bool) -> None:
+    def fetch(ctx: click.Context, force: bool, detectors: bool | None, laya: bool) -> None:
         """Download every pinned model artifact a first cut needs, in one command."""
         config = ctx.obj["config"]
         preparation = config.editorial.preparation
@@ -76,6 +76,8 @@ def register_models_commands(cli_group: click.Group) -> None:
                 force=force,
                 max_bytes=LAYA_MAX_BYTES,
             )
+        if detectors is None:
+            detectors = config.editorial.detectors_enabled
         if not detectors:
             return
         _fetch_pinned(

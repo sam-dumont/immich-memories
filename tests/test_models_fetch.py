@@ -239,7 +239,7 @@ def test_models_fetch_lands_every_artifact_a_first_run_needs(
     monkeypatch.setitem(sys.modules, "huggingface_hub", _recording_hub(calls))
     config = _pinned_everywhere(served, tmp_path, monkeypatch)
 
-    result = _invoke(["models", "fetch"], config)
+    result = _invoke(["models", "fetch", "--detectors"], config)
 
     assert result.exit_code == 0
     assert (tmp_path / "dinov2.onnx").read_bytes() == EXPORT
@@ -262,7 +262,7 @@ def test_models_fetch_refuses_a_detector_export_that_is_not_the_pinned_one(
         free_text=_served_wordnet(served, tmp_path, monkeypatch),
     )
 
-    result = _invoke(["models", "fetch"], config)
+    result = _invoke(["models", "fetch", "--detectors"], config)
 
     assert result.exit_code == 1
     assert not (tmp_path / "nsfw-marqo-384.onnx").exists()
@@ -282,4 +282,13 @@ def test_no_detectors_leaves_the_detector_artifacts_alone(
 
     assert result.exit_code == 0
     assert calls == []
+    assert not (tmp_path / "nsfw-marqo-384.onnx").exists()
+
+
+def test_nas_default_fetch_omits_detector_downloads(served, tmp_path, monkeypatch):
+    config = _pinned_everywhere(served, tmp_path, monkeypatch)
+    assert config.tier == "nas"
+    result = _invoke(["models", "fetch"], config)
+    assert result.exit_code == 0
+    assert (tmp_path / "dinov2.onnx").exists()
     assert not (tmp_path / "nsfw-marqo-384.onnx").exists()

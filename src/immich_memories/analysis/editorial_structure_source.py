@@ -155,7 +155,9 @@ def capture_structure_input(
         gps=gps,
         pixel_facts=read_pixel_facts(store, config.editorial.pixel_producer_key),
         shareability_flags=load_flags(store, {*assets, *companions}),
-        companion_detectors=load_detector_heads(store, companions, config.editorial.head_versions),
+        companion_detectors=load_detector_heads(
+            store, companions, config.editorial.active_head_versions
+        ),
         clip_frames=load_clip_frames(
             store,
             [str(a.live_photo_video_id) for a in assets.values() if a.live_photo_video_id],

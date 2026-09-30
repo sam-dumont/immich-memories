@@ -91,26 +91,34 @@ def rule_audience(_judge: Any, evidence: Mapping[str, Any], _stage: str) -> dict
     }
 
 
-CLEAN_EVIDENCE_POLICY = "audience-rules-v2-clean-evidence-under-strict-sharing"
+CLEAN_EVIDENCE_POLICY = "audience-rules-v3-cheap-heads-under-strict-sharing"
 # A room a picture can be private in whatever is in frame; the rules reader keeps the same set.
 _PRIVATE_VENUES = frozenset({"bedroom", "medical", "private_facility"})
 _PHOTOGRAPH = "photograph"
 
 
 def _clean_heads(heads: Mapping[str, str]) -> bool:
-    """Every head that could object read this frame and none did."""
+    """Require read exposure evidence and reject objections from either head family."""
+    exposure_read = heads.get("nsfw_marqo") == "no" or (
+        heads.get("uncovered_person") == heads.get("screen") == "no"
+        and heads.get("frame_kind")
+        in {"people_moment", "place_or_scenery", "meaningful_record", "lone_everyday_object"}
+    )
     return (
-        heads.get("nsfw_marqo") == heads.get("uncovered_person", "no") == "no"
+        exposure_read
+        and heads.get("nsfw_marqo", "no") == heads.get("uncovered_person", "no") == "no"
+        and heads.get("screen", "no") == "no"
+        and heads.get("frame_kind") not in {"screen_or_document", "body_part_closeup"}
         and heads.get("doc_docling", _PHOTOGRAPH) == _PHOTOGRAPH
         and heads.get("venue") not in _PRIVATE_VENUES
     )
 
 
 def clean_evidence(evidence: Mapping[str, Any]) -> bool:
-    """Nothing marked any picture of this unit, and the nudity detector read every one of them.
+    """Nothing marked any picture, and exposure evidence was read for every member.
 
-    A picture nothing looked at is not clean: an unread member, a Live clip whose detector row
-    is missing a head, any flag at all or a flagged capture run keeps it in the family.
+    An unread member or Live clip, any flag, or a flagged capture run keeps it in the family.
+    Each member needs complete cheap heads or a negative Marqo row.
     """
     members = evidence.get("members", ())
     return (
@@ -141,7 +149,7 @@ def rule_audience_with_clean_share(
         "policy": CLEAN_EVIDENCE_POLICY,
         "verdict": "share",
         "finding": "clean_evidence",
-        "why": "every detector read it and none objected, and nothing flagged it",
+        "why": "exposure evidence was read, no head objected, and nothing flagged it",
     }
 
 

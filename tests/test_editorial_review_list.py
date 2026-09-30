@@ -133,10 +133,12 @@ def test_a_finished_cut_writes_its_grey_zone_shots_at_the_version_the_run_reads(
 
     from types import SimpleNamespace
 
+    from immich_memories.config_loader import Config
+
     source = SimpleNamespace(
         store=store,
         artifact_dir=tmp_path,
-        config=SimpleNamespace(editorial=SimpleNamespace(head_versions={"nsfw_marqo": "det-v3"})),
+        config=Config(tier="gpu", editorial={"head_versions": {"nsfw_marqo": "det-v3"}}),
     )
     written = write_for_cut(
         source,

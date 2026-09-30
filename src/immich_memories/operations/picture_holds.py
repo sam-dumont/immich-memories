@@ -88,7 +88,9 @@ def read(
     store = store_of(config)
     clips = owner_decisions.live_clips(store, ids) | {a: c for a, c in (clips or {}).items() if c}
     decided = owner_decisions.decisions(store, ids)
-    heads = load_detector_heads(store, [*ids, *clips.values()], config.editorial.head_versions)
+    heads = load_detector_heads(
+        store, [*ids, *clips.values()], config.editorial.active_head_versions
+    )
     flags = _producer_never_auto(store, ids)
     bank = AudienceBank(store, answerer="")
     out = {}

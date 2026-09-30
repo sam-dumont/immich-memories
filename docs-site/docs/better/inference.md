@@ -4,8 +4,9 @@ title: Inference on a GPU box
 
 # Inference on a GPU box
 
-On a plain NAS the app runs the DINOv2 encoder, its eight heads and the two detectors in its own
-process, on the CPU, once per picture. The inference service moves that work to another machine:
+On a plain NAS the app runs the DINOv2 encoder and its eight heads in its own process, on the
+CPU, once per picture. GPU and Full also enable Marqo and Docling. The inference service moves
+the active producers to another machine:
 a GPU box, a Kubernetes node, or just a container you can restart on its own. The facts are the
 same rows either way, so you can add it, move it or drop it without re-deriving anything.
 

@@ -121,6 +121,7 @@ def test_a_detector_interpreter_that_is_gone_stops_the_run_before_touching_immic
     gone = tmp_path / "deleted-venv" / "bin" / "python"
     config = _config_file(
         tmp_path,
+        tier="gpu",
         advanced={
             "triage": {"encoder": str(tmp_path / "models" / "dinov2-small.onnx")},
             "editorial": {"preparation": {"detector_python": str(gone)}},

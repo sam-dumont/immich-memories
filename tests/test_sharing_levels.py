@@ -144,6 +144,38 @@ def test_a_picture_every_head_read_as_clean_is_shareable_on_a_nas():
     assert result["finding"] == "clean_evidence"
 
 
+def test_cheap_heads_can_clear_a_nas_picture_without_model_detectors():
+    heads = (("uncovered_person", "no"), ("screen", "no"), ("frame_kind", "people_moment"))
+    assert nas_verdict(heads)["verdict"] == "share"
+    assert nas_verdict(clip=dict(heads))["verdict"] == "share"
+
+
+@pytest.mark.parametrize("missing", ["uncovered_person", "screen", "frame_kind"])
+def test_missing_cheap_evidence_never_clears_a_member_or_clip(missing):
+    heads = {"uncovered_person": "no", "screen": "no", "frame_kind": "people_moment"}
+    del heads[missing]
+    assert nas_verdict(tuple(heads.items()))["verdict"] == "family_only"
+    assert nas_verdict(clip=heads)["verdict"] == "family_only"
+
+
+@pytest.mark.parametrize(
+    "head,label",
+    [
+        ("screen", "yes"),
+        ("frame_kind", "screen_or_document"),
+        ("frame_kind", "body_part_closeup"),
+        ("uncovered_person", "yes"),
+        ("venue", "bedroom"),
+        ("doc_docling", "table"),
+        ("nsfw_marqo", "yes"),
+    ],
+)
+def test_cheap_clearance_retains_every_observed_objection(head, label):
+    heads = {"uncovered_person": "no", "screen": "no", "frame_kind": "people_moment", head: label}
+    assert nas_verdict(tuple(heads.items()))["verdict"] == "family_only"
+    assert nas_verdict(clip=heads)["verdict"] == "family_only"
+
+
 @pytest.mark.parametrize(
     "heads",
     [
