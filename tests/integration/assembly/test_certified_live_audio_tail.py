@@ -146,7 +146,32 @@ def test_decoded_audio_outside_its_visible_edit_cannot_authorize_a_hold(tmp_path
         )  # fmt: skip
 
 
-@pytest.mark.parametrize("invalid", ["missing-audio", "incomplete-video-edit"])
+def test_valid_video_edit_counts_reference_samples_without_displaying_them(tmp_path):
+    source = _audio_tail_source(tmp_path / "valid-edit.mov")
+    data = bytearray(source.read_bytes())
+    edit, movie = data.index(b"elst"), data.index(b"mvhd")
+    timescale = struct.unpack_from(">I", data, movie + 16)[0]
+    struct.pack_into(">I", data, edit + 12, round(1.9 * timescale))
+    source.write_bytes(data)
+    material = LiveRenderMaterial((LiveSourceEntry("still", "video", 0.0, 0.0, 2.4),))
+
+    merged = certified.render_certified_live(
+        _certified_clip(material), [source], tmp_path,
+        merge=downloads._try_merge_burst, hardware_enabled=False,
+    )  # fmt: skip
+
+    proof = json.loads(merged.with_suffix(".json").read_text())["frame_quantization"]["sources"][0][
+        "audio_tail_hold"
+    ]
+    assert proof["video_compressed_packets"] == 60
+    assert proof["video_visible_packets"] == proof["video_decoded_frames"] == 57
+    assert proof["video_end_seconds"] == 1.9
+    video, audio = _decode_streams(merged)
+    assert int(video["nb_read_frames"]) == 72
+    assert float(audio["duration"]) == pytest.approx(2.4, abs=1 / 48000)
+
+
+@pytest.mark.parametrize("invalid", ["missing-audio", "corrupt-visible-sample"])
 def test_audio_tail_needs_audio_and_every_declared_visible_video_sample(tmp_path, invalid):
     source = _audio_tail_source(tmp_path / "source.mov")
     if invalid == "missing-audio":
@@ -158,9 +183,13 @@ def test_audio_tail_needs_audio_and_every_declared_visible_video_sample(tmp_path
         source = target
     else:
         data = bytearray(source.read_bytes())
-        edit, movie = data.index(b"elst"), data.index(b"mvhd")
-        timescale = struct.unpack_from(">I", data, movie + 16)[0]
-        struct.pack_into(">I", data, edit + 12, round(1.9 * timescale))
+        packets = json.loads(subprocess.check_output([
+            "ffprobe", "-v", "error", "-select_streams", "v:0", "-show_packets",
+            "-show_entries", "packet=pos,size", "-of", "json", str(source),
+        ]))["packets"]  # fmt: skip
+        packet = packets[30]
+        start, size = int(packet["pos"]), int(packet["size"])
+        data[start : start + size] = bytes(size)
         source.write_bytes(data)
     material = LiveRenderMaterial((LiveSourceEntry("still", "video", 0.0, 0.0, 2.4),))
 

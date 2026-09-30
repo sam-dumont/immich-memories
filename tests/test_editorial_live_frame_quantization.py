@@ -91,7 +91,9 @@ def test_packet_tail_uses_presentation_order_and_exact_timebase(tmp_path, monkey
     path = tmp_path / "source.mov"
     path.write_bytes(b"source")
     cache = ProbeCache()
-    monkeypatch.setattr(cache, "get", lambda _p: SimpleNamespace(video_stream_index=2))
+    monkeypatch.setattr(
+        cache, "get", lambda _p: SimpleNamespace(video_stream_index=2, container_format=None)
+    )
     payload = {
         "streams": [{"time_base": "1/600"}],
         "packets": [{"pts": 1751, "duration": 27}, {"pts": 1696, "duration": 28}],

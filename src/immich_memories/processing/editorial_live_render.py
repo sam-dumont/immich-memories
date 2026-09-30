@@ -16,7 +16,7 @@ from immich_memories.processing.probe_cache import ProbeCache, ProbeError, trim_
 from immich_memories.security import write_secret_file
 
 RENDER_VERSION = "editorial-live-render-v1"
-FRAME_QUANTIZATION = "source-packet-segment-quantization-and-verified-audio-tail-hold-v6"
+FRAME_QUANTIZATION = "source-packet-segment-quantization-and-complete-presentation-hold-v7"
 
 
 def validate_editorial_live_clip(clip: Any) -> LiveRenderMaterial:
@@ -167,7 +167,9 @@ def _bind_audio_tail(probes, path, entry, probe, evidence) -> None:
         raise _reject(evidence)
     tail = probes.last_video_frame(path)
     try:
-        proof = certify_audio_tail(path, entry, probe, tail)
+        proof = certify_audio_tail(
+            path, entry, probe, tail, video_proof=probes.complete_video_presentation(path)
+        )
     except ProbeError as exc:
         raise _reject(evidence | {"audio_tail_rejection": str(exc)}) from exc
     evidence.update(final_packet=tail, audio_tail_hold=proof, boundary=proof["boundary"])
@@ -267,6 +269,15 @@ def _source_timings(probes, paths, material) -> list[dict]:
     for path, entry in zip(paths, material.segments, strict=True):
         evidence = _source_timing(probes, path, entry)
         evidence["render_cadence"] = probes.render_frame_rate(path)
+        tail = probes.last_video_frame(path)
+        if "presentation_proof" in tail:
+            origin = probes.get(path).container_start_seconds
+            if (
+                _declared_ticks(tail, entry.start, origin)
+                <= tail["pts"]
+                < _declared_ticks(tail, entry.end, origin)
+            ):
+                evidence["presentation_interval"] = dict(tail["presentation_proof"])
         source_timing.append(evidence)
     return source_timing
 
@@ -291,6 +302,18 @@ def _predicted_encode(probes, paths, material, render_rate: Fraction, source_tim
             )
             segment["frames"] = held_frames
             segment["seconds"] = float(Fraction(held_frames) / render_rate)
+        elif "presentation_interval" in evidence:
+            proof = evidence["presentation_interval"]
+            before = math.ceil(
+                (proof["reported_packet_end_ticks"] - segment["first_pts"])
+                * Fraction(segment["time_base"])
+                * render_rate
+            )
+            proof.update(
+                before_frames=before,
+                target_frames=segment["frames"],
+                render_frame_rate=str(render_rate),
+            )
         evidence["quantized_segment"] = segment
         frames += segment["frames"]
     return float(Fraction(frames) / render_rate)
@@ -368,7 +391,9 @@ def render_certified_live(
     render_rate = max(Fraction(row["render_cadence"]["rate"]) for row in source_timing)
     predicted = _predicted_encode(probes, paths, material, render_rate, source_timing)
     holds = [
-        row["quantized_segment"]["frames"] if "audio_tail_hold" in row else 0
+        row["quantized_segment"]["frames"]
+        if "audio_tail_hold" in row or "presentation_interval" in row
+        else 0
         for row in source_timing
     ]
     result = merge(

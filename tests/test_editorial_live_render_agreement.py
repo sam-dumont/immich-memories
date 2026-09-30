@@ -66,6 +66,9 @@ def probes(monkeypatch):
     state = SimpleNamespace(calls=[], source_duration=2.0, output_duration=2.0, fps=25.0)
 
     class FakeProbeCache:
+        def last_video_frame(self, _path):
+            return {"pts": round(state.source_duration * state.fps) - 1}
+
         def render_frame_rate(self, _path):
             return {"basis": "matching-stream-rates", "rate": str(int(state.fps)), "fps": state.fps}
 
