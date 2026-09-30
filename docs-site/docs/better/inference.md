@@ -256,6 +256,13 @@ picture's preview to `/facts` once, asking for every producer the tier still nee
 keys, `producers`, `timeout_seconds`, `facts_concurrency` and `fallback_to_local`, are in the
 [config reference](../reference/config-reference.md#inference-service).
 
+Videos send up to eight sampled frames as well. Marqo keeps the strongest exposure
+answer across those frames and the preview; the clip-quality head reads the sampled
+frames only. Live Photo companions send their frames and available preview for Marqo.
+The app banks the completed clip fact under the same producer version as local inference,
+so a warm run reuses it. `remote_frames` records this work separately from preview facts.
+If a frame request fails, `fallback_to_local` also controls whether local models take over.
+
 `facts_concurrency` (default 8, 1 to 32) decides whether the card behind the service is worth
 anything: one request at a time measured 0.69 s a picture whatever the card was doing, because the
 round trip and not the classifier was the cost. Match it to the service's `REQUEST_THREADS` and

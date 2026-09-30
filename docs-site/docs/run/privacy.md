@@ -67,7 +67,7 @@ touches nothing.
 | `api.openai.com`, `api.anthropic.com`, `api.z.ai` | `llm.provider` is `openai`, `anthropic` or `zai` and `base_url` is left at its default | the reader rows above, to that vendor | set `base_url` yourself |
 | `caption_base_url` | GPU and Full with the default SmolVLM provider, for selected shots and actual candidates; a wider scope only with an explicit `prepare` job | a 400 px JPEG per picture; a strip of three keyframes per video and per playing Live Photo; `caption_api_key` as a bearer token if set | `localhost:8092`; NAS does not call it |
 | `llm.base_url` (caption provider) | explicit `advanced.editorial.preparation.caption_provider: llm`, on any tier | synthetic schema controls, then missing picture tiles and candidate video frame strips; configured LLM credentials | off; existing valid SmolVLM captions are reused first |
-| `inference.facts_base_url` | preparation, when set | each picture's preview, for the heads and detectors | unset: the app runs them itself |
+| `inference.facts_base_url` | preparation, when set | picture previews and up to eight sampled frames per video or Live Photo companion, for the heads and detectors | unset: the app runs them itself |
 | `render.worker_base_url` | rendering on another box | the chosen cut, plus your Immich URL and API key so the worker can fetch the clips | unset: renders here |
 | `nominatim.openstreetmap.org`, or your `network.geocoding_url` | `network.geocoding: true` | each trip's centre, and the coordinates of the pictures in the film's own window, home included, rounded to about a kilometre, once per place ever | off |
 | `server.arcgisonline.com` | `network.map_tiles: true` | tile requests over the trip area and your home base | off |
