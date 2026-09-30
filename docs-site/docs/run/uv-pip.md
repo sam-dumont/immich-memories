@@ -9,10 +9,19 @@ For a Mac, a Linux box without Docker, or a checkout you want to hack on. Docker
 
 You need **Python 3.11 or newer** and FFmpeg on your `PATH`:
 
+On macOS:
+
 ```bash
-brew install ffmpeg        # macOS
-sudo apt install ffmpeg    # Debian, Ubuntu
+brew install ffmpeg-full
+export PATH="$(brew --prefix ffmpeg-full)/bin:$PATH"
 ```
+
+Keep the export in your shell's startup file. Homebrew's standard `ffmpeg` package can lack
+`zscale`, which the app needs to convert HDR and SDR correctly. `ffmpeg-full` includes it but
+does not replace the standard binary on your `PATH`. Check with
+`ffmpeg -hide_banner -filters | grep zscale`.
+
+On Debian or Ubuntu: `sudo apt install ffmpeg`.
 
 ## Install
 
