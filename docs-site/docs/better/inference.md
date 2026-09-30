@@ -239,6 +239,14 @@ Every setting is an environment variable prefixed `IMMICH_MEMORIES_INFERENCE_`:
 | `ALLOW_MODEL_DOWNLOADS` | `false` | let a cold cache fetch the pinned exports and the Docling snapshot itself |
 | `MAX_IMAGE_BYTES` | `16777216` | refuse anything larger |
 
+The CUDA image sets `OPENBLAS_NUM_THREADS=1` for NumPy's small per-picture head projection.
+On a T1000 service limited to four CPUs, with 16 host CPUs visible, the default BLAS pool caused
+CPU throttling even though model execution used CUDA. Two alternating 32-image comparisons at
+four concurrent requests took 8.85 to 9.22 seconds with the default pool and 1.88 to 1.98 seconds
+with one BLAS thread. Every returned fact matched, and neither one-thread pass was throttled.
+This controls NumPy's worker pool; `REQUEST_THREADS` still sets service request concurrency.
+An environment override can change it for a different workload.
+
 Idle unload drops the weights and **keeps the process**: the next request reloads them. Changing
 the provider re-keys nothing, so any of this can be retried without re-deriving a fact.
 
