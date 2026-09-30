@@ -28,9 +28,9 @@ def store_of(launch_workspace) -> Store:
 
 
 def flag_by_the_detector(store: Store, asset_id: str) -> None:
-    """Bank a nudity-detector `yes` for one stock picture, as ingest would."""
-    version = Config().editorial.head_versions["nsfw_marqo"]
-    row = {"asset_id": asset_id, "head": "nsfw_marqo", "version": version, "label": "yes"}
+    """Bank the exposure head that remains active on every tier."""
+    version = Config().editorial.head_versions["uncovered_person"]
+    row = {"asset_id": asset_id, "head": "uncovered_person", "version": version, "label": "yes"}
     with store.begin() as connection:
         upsert(connection, head_facts, [row], keys=["asset_id", "head", "version"])
 
