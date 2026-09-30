@@ -16,7 +16,7 @@ from immich_memories.processing.probe_cache import ProbeCache, ProbeError, trim_
 from immich_memories.security import write_secret_file
 
 RENDER_VERSION = "editorial-live-render-v1"
-FRAME_QUANTIZATION = "source-packet-segment-quantization-and-complete-presentation-hold-v7"
+FRAME_QUANTIZATION = "source-packet-segment-quantization-and-qualified-container-display-hold-v8"
 
 
 def validate_editorial_live_clip(clip: Any) -> LiveRenderMaterial:
@@ -140,6 +140,8 @@ def _bind_trailing_frame(probes, path, entry, probe, origin: float, evidence: di
     # rounded depending on its formatter; either reading can extend just beyond
     # the final video packet.
     if not -0.001 < entry.end - probe.duration_seconds <= 0.0005:
+        if _bind_container_frame(probes, path, entry, probe, origin, evidence):
+            return
         _bind_audio_tail(probes, path, entry, probe, evidence)
         return
     tail = probes.last_video_frame(path)
@@ -158,6 +160,39 @@ def _bind_trailing_frame(probes, path, entry, probe, origin: float, evidence: di
         source_tail_seconds=gap,
         boundary="millisecond-container-end-within-final-source-frame",
     )
+
+
+def _bind_container_frame(probes, path, entry, probe, origin, evidence) -> bool:
+    """A shorter cut retains an independently qualified complete container boundary."""
+    if entry.end >= probe.duration_seconds:
+        return False
+    tail = probes.last_video_frame(path)
+    endpoint = tail["pts"] + tail["duration_ticks"]
+    container = _declared_ticks(tail, probe.duration_seconds, origin)
+    selected = _declared_ticks(tail, entry.end, origin)
+    observed = max(tail["duration_ticks"], tail.get("presentation_spacing_ticks", 0))
+    if (
+        not 0 <= container - endpoint <= observed
+        or selected > container
+        or _declared_ticks(tail, entry.start, origin) >= endpoint
+    ):
+        return False
+    try:
+        proof = probes.complete_video_presentation(path)
+    except ProbeError as exc:
+        raise _reject(evidence | {"container_frame_rejection": str(exc)}) from exc
+    evidence.update(
+        final_packet=tail,
+        container_frame_hold=proof
+        | {
+            "container_end_ticks": container,
+            "observed_interval_ticks": observed,
+            "selected_end_seconds": entry.end,
+            "hold_seconds": entry.end - (tail["end_seconds"] - origin),
+        },
+        boundary="complete-container-end-within-final-source-frame",
+    )
+    return True
 
 
 def _bind_audio_tail(probes, path, entry, probe, evidence) -> None:
@@ -291,14 +326,16 @@ def _predicted_encode(probes, paths, material, render_rate: Fraction, source_tim
     frames = 0
     for path, entry, evidence in zip(paths, material.segments, source_timing, strict=True):
         segment = probes.quantized_segment(path, entry.start, entry.end, render_rate)
-        if "audio_tail_hold" in evidence:
+        hold = evidence.get("audio_tail_hold", evidence.get("container_frame_hold"))
+        if hold is not None:
             clock = Fraction(segment["time_base"])
             end = trim_ticks(entry.end, clock) + segment["origin_pts"]
             held_frames = math.ceil((end - segment["first_pts"]) * clock * render_rate)
-            evidence["audio_tail_hold"].update(
+            hold.update(
                 before_frames=segment["frames"],
                 target_frames=held_frames,
                 render_frame_rate=str(render_rate),
+                audio_silence_pad_to_seconds=float(Fraction(held_frames) / render_rate),
             )
             segment["frames"] = held_frames
             segment["seconds"] = float(Fraction(held_frames) / render_rate)
@@ -313,6 +350,7 @@ def _predicted_encode(probes, paths, material, render_rate: Fraction, source_tim
                 before_frames=before,
                 target_frames=segment["frames"],
                 render_frame_rate=str(render_rate),
+                audio_silence_pad_to_seconds=segment["seconds"],
             )
         evidence["quantized_segment"] = segment
         frames += segment["frames"]
@@ -392,7 +430,10 @@ def render_certified_live(
     predicted = _predicted_encode(probes, paths, material, render_rate, source_timing)
     holds = [
         row["quantized_segment"]["frames"]
-        if "audio_tail_hold" in row or "presentation_interval" in row
+        if any(
+            key in row
+            for key in ("audio_tail_hold", "container_frame_hold", "presentation_interval")
+        )
         else 0
         for row in source_timing
     ]

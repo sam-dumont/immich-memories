@@ -9,6 +9,7 @@ import pytest
 
 from immich_memories.processing import editorial_live_render as renderer
 from immich_memories.processing.live_material import LiveSourceEntry
+from immich_memories.processing.probe_cache import ProbeError
 from tests.conftest import source_packet as packet
 
 
@@ -37,6 +38,9 @@ class Probes:
     def last_video_frame(self, _path):
         self.packet_reads += 1
         return self.tail
+
+    def complete_video_presentation(self, _path):
+        raise ProbeError("This clock-only fixture has no complete presentation proof")
 
 
 def test_video_starting_with_its_container_is_at_zero_for_ffmpeg():
@@ -116,6 +120,8 @@ def test_container_end_is_accepted_at_either_millisecond_reading(declared_end):
 
 @pytest.mark.parametrize("declared_end", [2.965, 2.9675, 2.968])
 def test_container_end_more_than_a_millisecond_off_is_not_a_reading(declared_end):
+    # The shorter 2.965 s cut now needs independent complete-presentation proof.
+    # Clock-only metadata cannot certify it; the later ends still exceed the bound.
     tail = packet(pts=1751, ticks=27)
     probes = Probes(probe(video=1778 / 600, container=2.966667), tail=tail)
     with pytest.raises(ValueError, match="exceeds actual video source"):

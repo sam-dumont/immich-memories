@@ -1,6 +1,7 @@
 """Complete Live video may finish before its independently decoded audio track."""
 
 import json
+import math
 import struct
 import subprocess
 from pathlib import Path
@@ -125,6 +126,79 @@ def test_audio_tail_cannot_authorize_material_after_actual_audio_end(tmp_path):
             _certified_clip(material), [source], tmp_path,
             merge=downloads._try_merge_burst, hardware_enabled=False,
         )  # fmt: skip
+
+
+@pytest.mark.parametrize("audio_end", [1.99, 2.03, 2.4])
+def test_certified_held_segment_keeps_its_picture_and_audio_boundary(tmp_path, audio_end):
+    primary = _audio_tail_source(tmp_path / "primary.mov")
+    auxiliary, audio = tmp_path / "auxiliary.mov", tmp_path / "short.wav"
+    subprocess.run([
+        "ffmpeg", "-v", "error", "-i", str(primary), "-map", "0:v:0",
+        "-vf", "tpad=stop_mode=clone:stop_duration=0.03333333333333333",
+        "-r", "30", "-frames:v", "61", "-c:v", "libx264",
+        "-video_track_timescale", "600", str(auxiliary),
+    ], check=True)  # fmt: skip
+    subprocess.run([
+        "ffmpeg", "-v", "error", "-i", str(primary), "-map", "0:a:0",
+        "-af", f"atrim=end={audio_end}", "-c:a", "pcm_s16le", str(audio),
+    ], check=True)  # fmt: skip
+    first = tmp_path / "multitrack.mov"
+    subprocess.run([
+        "ffmpeg", "-v", "error", "-i", str(primary), "-i", str(auxiliary),
+        "-i", str(audio), "-map", "0:v:0", "-map", "1:v:0", "-map", "2:a:0",
+        "-c", "copy", "-video_track_timescale", "600", str(first),
+    ], check=True)  # fmt: skip
+    second = _audio_tail_source(tmp_path / "blue.mov", color="blue", frequency=880)
+    material = LiveRenderMaterial(
+        (
+            LiveSourceEntry("still-a", "video-a", 0.0, 0.0, 2.02),
+            LiveSourceEntry("still-b", "video-b", 1.0, 0.0, 1.0),
+        )
+    )
+
+    merged = certified.render_certified_live(
+        _certified_clip(material), [first, second], tmp_path,
+        merge=downloads._try_merge_burst, hardware_enabled=False,
+    )  # fmt: skip
+
+    record = json.loads(merged.with_suffix(".json").read_text())
+    timing = record["frame_quantization"]["sources"][0]
+    proof = timing["audio_tail_hold" if audio_end == 2.4 else "container_frame_hold"]
+    assert proof["video_end_seconds"] == 2.0
+    if audio_end < 2.4:
+        assert proof["container_end_ticks"] == 1220
+        assert proof["observed_interval_ticks"] == 20
+        assert "audio_tail_hold" not in timing
+    else:
+        assert proof["audio_end_seconds"] == 2.4
+        assert "container_frame_hold" not in timing
+    assert proof["selected_end_seconds"] == 2.02
+    pixels = subprocess.check_output([
+        "ffmpeg", "-v", "error", "-xerror", "-i", str(merged),
+        "-vf", "scale=1:1", "-pix_fmt", "rgb24", "-f", "rawvideo", "-",
+    ])  # fmt: skip
+    frames = [pixels[i : i + 3] for i in range(0, len(pixels), 3)]
+    assert len(frames) == 91
+    assert all(red > blue + 100 for red, _green, blue in frames[:61])
+    assert all(blue > red + 100 for red, _green, blue in frames[61:])
+    video, audio_stream = _decode_streams(merged)
+    assert int(video["nb_read_frames"]) == 91
+    # MP4's existing movie edit clock is milliseconds; AAC's final visible edit
+    # therefore floors the fractional frame boundary, without moving its seam.
+    assert float(audio_stream["duration"]) == pytest.approx(
+        math.floor(91 / 30 * 1000) / 1000, abs=1 / 48000
+    )
+    pcm = subprocess.check_output([
+        "ffmpeg", "-v", "error", "-xerror", "-i", str(merged), "-map", "0:a:0",
+        "-ac", "1", "-ar", "48000", "-f", "s16le", "-",
+    ])  # fmt: skip
+    samples = np.frombuffer(pcm, dtype="<i2")
+    if audio_end == 1.99:
+        silence = samples[round(2.005 * 48000) : round(2.025 * 48000)]
+        assert np.sqrt(np.mean(silence.astype(float) ** 2)) < 150
+    tone = samples[round(2.04 * 48000) : round(2.09 * 48000)]
+    frequency = np.count_nonzero((tone[:-1] <= 0) & (tone[1:] > 0)) / 0.05
+    assert frequency == pytest.approx(880, abs=20)
 
 
 def test_decoded_audio_outside_its_visible_edit_cannot_authorize_a_hold(tmp_path):

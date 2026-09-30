@@ -72,6 +72,35 @@ def test_interval_cannot_consist_only_of_unavailable_tail():
         )
 
 
+@pytest.mark.parametrize("container,start,end", [(3.0, 0.0, 2.865), (2.873333, 2.84, 2.865)])
+def test_partial_cut_cannot_use_an_unqualified_container_or_only_missing_video(
+    container, start, end
+):
+    probes = SourceProbes(
+        source_probe(video=2.84, container=container, fps=30),
+        source_packet(pts=1684, ticks=20),
+    )
+    with pytest.raises(ValueError, match="exceeds actual video source"):
+        renderer._source_timing(
+            probes, Path("source.mov"), LiveSourceEntry("s", "v", 0.0, start, end)
+        )
+
+
+def test_qualified_container_still_requires_complete_primary_presentation():
+    class IncompleteSource(SourceProbes):
+        def complete_video_presentation(self, _path):
+            raise ProbeError("Primary source has missing decoded samples")
+
+    probes = IncompleteSource(
+        source_probe(video=2.84, container=2.873333, fps=30),
+        source_packet(pts=1684, ticks=20),
+    )
+    with pytest.raises(ValueError, match="container_frame_rejection"):
+        renderer._source_timing(
+            probes, Path("source.mov"), LiveSourceEntry("s", "v", 0.0, 0.0, 2.865)
+        )
+
+
 def test_video_duration_is_not_mistaken_for_absolute_endpoint():
     probes = SourceProbes(source_probe(video=2.0, container=3.0, start=1.0), None)
     evidence = renderer._source_timing(
@@ -124,7 +153,7 @@ def test_packet_tail_uses_presentation_order_and_exact_timebase(tmp_path, monkey
 def test_only_certified_merge_opts_into_eof_frame_retention(monkeypatch):
     paths = [Path("one.mov"), Path("two.mov")]
     monkeypatch.setattr(merger, "_detect_clip_hdr", lambda _p: False)
-    monkeypatch.setattr(merger, "probe_clip_has_audio", lambda _p: False)
+    monkeypatch.setattr(merger, "probe_clip_has_audio", lambda _p: True)
     monkeypatch.setattr(merger, "burst_fps", lambda _p: 240.0)
     # WHY: burst_encoding_plan is typed to return an EncodingPlan and never returns
     # None. Stubbing None passed only while build_merge_command stopped at
@@ -139,6 +168,9 @@ def test_only_certified_merge_opts_into_eof_frame_retention(monkeypatch):
     )
     assert "eof_action" not in " ".join(plain)
     assert "fps=240:eof_action=pass" in " ".join(certified)
+    assert "atrim" in " ".join(plain)
+    assert "apad" not in " ".join(plain)
+    assert "apad" not in " ".join(certified)
 
 
 def test_subframe_hold_preserves_encoded_frames_and_records_ceil_target(tmp_path, monkeypatch):

@@ -14,6 +14,7 @@ import logging
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass
+from fractions import Fraction
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -589,8 +590,6 @@ def build_merge_command(
     quality, comes from ``burst_encoding_plan`` rather than being hardcoded.
     """
     if quantize_material and render_frame_rate is None:
-        from fractions import Fraction
-
         from immich_memories.processing.probe_cache import ProbeCache
 
         probes = ProbeCache()
@@ -685,12 +684,14 @@ def _build_trim_filters(
         if has_audio:
             a_start, a_end = a_trims[i]
             seg_dur = a_end - a_start
+            audio_pad = _segment_audio_pad(segment_frame_holds, i, rate)
             fade_in = f",afade=t=in:st=0:d={fade_dur}" if i > 0 else ""
             fade_out = (
                 f",afade=t=out:st={max(0.01, seg_dur - fade_dur)}:d={fade_dur}" if i < n - 1 else ""
             )
             parts.append(
-                f"[{i}:a]atrim=start={a_start}:end={a_end},asetpts=PTS-STARTPTS{fade_in}{fade_out}[a{i}]"
+                f"[{i}:a]atrim=start={a_start}:end={a_end},asetpts=PTS-STARTPTS"
+                f"{audio_pad}{fade_in}{fade_out}[a{i}]"
             )
             a_labels.append(f"[a{i}]")
 
@@ -704,6 +705,12 @@ def _segment_frame_hold(holds: list[int] | None, index: int, certified: bool) ->
     if not certified or type(frames) is not int or frames <= 0:
         raise ValueError("Segment frame holds require certified positive frame counts")
     return f",tpad=stop_mode=clone:stop={frames},trim=end_frame={frames}"
+
+
+def _segment_audio_pad(holds: list[int] | None, index: int, rate: str) -> str:
+    if not holds or not holds[index]:
+        return ""
+    return f",apad=whole_dur={holds[index] / float(Fraction(rate)):.17g}"
 
 
 def _build_concat_and_map(
