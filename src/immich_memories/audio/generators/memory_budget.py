@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 _GIB = 1024**3
 _MEMORY_PROBE_TIMEOUT_SECONDS = 5
 _MEMINFO_PATH = Path("/proc/meminfo")
+_CGROUP = Path("/sys/fs/cgroup")
+_PROC_ROOT = Path("/proc")
 _RECLAIMABLE_VM_STAT_LABELS = frozenset(
     {"Pages free", "Pages inactive", "Pages speculative", "Pages purgeable"}
 )
@@ -124,7 +126,16 @@ def _macos_available_bytes() -> int | None:
 
 
 def _linux_available_bytes() -> int | None:
-    return parse_meminfo(_MEMINFO_PATH.read_text())
+    try:
+        host = parse_meminfo(_MEMINFO_PATH.read_text())
+    except OSError:
+        host = None
+    from immich_memories.audio.generators.cgroup_memory import remaining_memory_bytes
+
+    remaining = remaining_memory_bytes(_CGROUP, _PROC_ROOT)
+    if host is None:
+        return remaining
+    return min(host, remaining) if remaining is not None else host
 
 
 def available_memory_bytes() -> int | None:

@@ -56,6 +56,10 @@ instrumental briefs off target, and takes a 60 s track from about 17 s to 45 s.
 with a named shortfall rather than letting macOS kill the process mid-render. A refusal is an
 ordinary backend failure: MusicGen is next, then a bundled track.
 
+On Linux, the budget follows the process's container limit and any tighter parent limit, capped
+by the host's available memory. Clean, inactive, unmapped file cache can be reclaimed; live
+allocations and shared, mapped, dirty or pinned pages remain occupied.
+
 | Profile | Resident weights it needs free | On disk |
 |---|---|---|
 | XL (4B) with the 4B planner | about 29 GB | about 28 GB |
