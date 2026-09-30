@@ -26,10 +26,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .cpu_video import create_title_video
 from .encoding import get_resolution_for_orientation
 from .styles import TitleStyle, get_random_style
 from .text_builder import generate_month_divider_text
-from .video_encoding import create_title_video
 
 
 def generate_title_screen(

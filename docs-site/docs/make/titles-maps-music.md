@@ -50,8 +50,10 @@ Both ship inside the package (OFL-1.1).
 `warm_dark`, calm and peaceful `deep_teal`, energetic and playful `midnight`, exciting `cinematic_dark`.
 `style_mode: random` picks a named style.
 
-The renderer is picked for you: GPU kernels where Metal, CUDA or Vulkan start, Pillow elsewhere (static
-gradients, same text). Which one your box gets is on [Hardware encoding](../run/hardware.md#title-kernels).
+The renderer is picked for you: GPU kernels where Metal, CUDA or Vulkan start. On a CPU or NAS, Pillow
+draws the background and text once, and FFmpeg fades the text in and out at the film’s frame rate.
+The font, layout and palette stay the same; bokeh, moving gradients and animated deblur need a rendering
+GPU. Hardware video encoding still works on the NAS. Which renderer your box gets is on [Hardware encoding](../run/hardware.md#title-kernels).
 
 Preview a card without running anything:
 
