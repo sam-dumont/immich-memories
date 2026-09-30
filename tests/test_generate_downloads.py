@@ -75,7 +75,7 @@ def test_disabled_cache_extraction_preserves_existing_local_path(
     clip.local_path = str(local)
     params = GenerationParams(clips=[clip], output_path=tmp_path / "film.mp4", config=Config())
 
-    monkeypatch.setattr("immich_memories.generate_downloads.download_clip", lambda *_args: local)
+    # WHY: Extraction and probing write/read media; this test owns only placeholder bytes.
     monkeypatch.setattr(
         "immich_memories.processing.clips.extract_clip", lambda *_args, **_kwargs: segment
     )

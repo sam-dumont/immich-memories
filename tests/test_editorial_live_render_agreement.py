@@ -118,6 +118,7 @@ def test_positive_segments_keep_alias_lineage_and_exact_warm_skips_probe_and_mer
         "hardware_enabled": True,
         "strict_material": True,
         "render_frame_rate": "25",
+        "config": None,
     }
     assert material.still_ids == ("still-a", "still-b", "still-c")
     record = json.loads(first.with_suffix(".json").read_text())
@@ -128,7 +129,7 @@ def test_positive_segments_keep_alias_lineage_and_exact_warm_skips_probe_and_mer
     assert record["identity"]["certificate"] == clip.editorial_live_manifest
 
 
-@pytest.mark.parametrize("change", ["source_bytes", "selected_interval", "hardware"])
+@pytest.mark.parametrize("change", ["source_bytes", "selected_interval", "hardware", "tier"])
 def test_changed_render_identity_cannot_reuse_an_old_merge(source, probes, tmp_path, change):
     clip, paths, _ = source
     calls = []
@@ -138,12 +139,15 @@ def test_changed_render_identity_cannot_reuse_an_old_merge(source, probes, tmp_p
         paths[0].write_bytes(b"new-source-bytes")
     if change == "selected_interval":
         clip.editorial_live_manifest["selected_interval"] = [0.0, 1.5]
+    from immich_memories.config_loader import Config
+
     second = certified.render_certified_live(
         clip,
         paths,
         tmp_path,
         merge=merge,
         hardware_enabled=change != "hardware",
+        config=Config(tier="nas") if change == "tier" else None,
     )
     assert second != first
     assert first.is_file() and second.is_file()
@@ -315,6 +319,7 @@ def test_strict_merge_never_filters_sources_or_rewrites_video_trims(source, tmp_
                 "hardware_enabled": True,
                 "quantize_material": True,
                 "render_frame_rate": None,
+                "config": None,
             },
         )
     ]

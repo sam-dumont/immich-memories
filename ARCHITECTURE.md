@@ -622,7 +622,8 @@ src/immich_memories/
 │   ├── hardware_detection.py   # Hardware detection backends
 │   ├── hardware_encode.py      # VAAPI/QSV device init + hwupload for built commands
 │   ├── rate_control.py         # CRF -> per-encoder constant-quality flags
-│   └── live_photo_merger.py    # Live Photo merging with a common canvas for mixed source sizes
+│   ├── live_geometry.py        # Shared burst canvas, with a 1080p limit on NAS intermediates
+│   └── live_photo_merger.py    # Live merging; measured transfer conversion and NAS hardware policy
 │
 ├── audio/                      # Audio processing
 │   ├── mixer.py                # Audio mixing & ducking
