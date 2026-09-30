@@ -126,6 +126,9 @@ resource "kubernetes_deployment_v1" "captioner" {
               "--port", "8092",
               "--jinja",
               "--ctx-size", "8192",
+              # Bound llama.cpp's prompt cache inside the 2Gi memory limit.
+              "--cache-ram", "128",
+              "--parallel", "1",
               "--threads", "4",
             ],
             # No nvidia.com/gpu request below on purpose (see

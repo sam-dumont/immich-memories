@@ -285,6 +285,11 @@ services:
       - "--jinja"
       - "--ctx-size"
       - "8192"
+      # Bound llama.cpp's prompt cache inside the container memory limit.
+      - "--cache-ram"
+      - "128"
+      - "--parallel"
+      - "1"
       # Threads, not a CPU quota: Synology's DSM kernel has no CFS bandwidth
       # controller, so `cpus:` fails there with `NanoCPUs can not be set`.
       - "--threads"
