@@ -1255,3 +1255,11 @@ counts attempted calls, and runtime function observation verifies each declared 
 Uncovered sites fail the command and the inventory guard. Domain-specific case modules use
 fresh temporary stores and synthetic evidence; optional private HTTP artifacts and incremental
 usage reports make failures reproducible without reading the personal library.
+
+### Detector cache compatibility
+
+`store/detector_cache.py` inspects the frozen `detector-facts-v1` head bank, migrates proven
+Marqo still equivalents without overwriting current answers, and explicitly refreshes selected
+head/asset pairs. `cli/store_facts.py` exposes status and preview/apply maintenance under
+`store facts`. No model runs in these commands. `tests/fixtures/detector-cache-v1.json` freezes
+the payload keys, model pins, bundle, labels and sampling; app versions do not re-key facts.

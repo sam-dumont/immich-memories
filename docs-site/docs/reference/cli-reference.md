@@ -891,6 +891,14 @@ immich-memories store copy [OPTIONS]
 | `--schema` | text | - | The PostgreSQL schema to copy into (default: the configured one) |
 | `--force` | boolean | false | Empty a target that already holds rows |
 
+### `store facts`
+
+Inspect detector compatibility and plan selective refreshes.
+
+```bash
+immich-memories store facts [OPTIONS]
+```
+
 ### `store import`
 
 Bring the files the app used before the store into it.

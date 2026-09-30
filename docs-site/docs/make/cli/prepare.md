@@ -30,7 +30,9 @@ or hidden assets, no forwarded or re-encoded media, none of the films this app u
 `--year`. Each run resumes where the last stopped, so a loop over twelve months works through a year.
 
 Results are banked per picture, and stay free for every later cut until a producer's version changes (a new
-head is paid for once, at the next run).
+head is paid for once, at the next run). App upgrades preserve compatible facts. See the
+[v1 detector cache contract](../../run/database.md#detector-cache-contract-for-100) for
+refresh conditions and the `store facts status`, `migrate` and selective `refresh` commands.
 
 ```text
 ℹ Preparing 1,440 pictures over 1 window(s)
