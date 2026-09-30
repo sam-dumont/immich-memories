@@ -32,6 +32,9 @@ with a warning.
 
 ## Live Photos
 
+Short final-frame holds use the available hardware encoder, including VAAPI on a NAS.
+The hold keeps the source cadence and records its encoder alongside the verified frame count.
+
 A selected motion interval keeps its verified frame rate through encoding. When frame rounding
 leaves a permitted shortfall, the renderer holds the final frame and checks the encoded duration
 before assembly. This applies to software and hardware encoders.
