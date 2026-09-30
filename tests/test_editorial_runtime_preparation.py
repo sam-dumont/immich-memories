@@ -18,6 +18,7 @@ from immich_memories.analysis.editorial_runtime_evidence import EditorialInputsR
 from immich_memories.analysis.editorial_runtime_ports import EditorialRuntimePorts
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.api.immich import ImmichAPIError, ImmichNotFoundError
+from immich_memories.cache.thumbnail_cache import ThumbnailCache
 from immich_memories.config_loader import Config
 from immich_memories.db.tables import head_facts
 from immich_memories.operations.cut_progress import read_stage_progress
@@ -27,7 +28,17 @@ from tests.test_editorial_runtime import _window
 from tests.test_editorial_source_route import photo
 
 
-def build(tmp_path, *, providers, fetched, tier="full", sources=None, preview_port=None):
+def build(
+    tmp_path,
+    *,
+    providers,
+    fetched,
+    tier="full",
+    sources=None,
+    preview_port=None,
+    product_tier="auto",
+):
+
     window = _window(2020, 5, 2)
     if sources is None:
         sources = [
@@ -36,6 +47,7 @@ def build(tmp_path, *, providers, fetched, tier="full", sources=None, preview_po
             photo("later", at=window.start + timedelta(hours=11)),
         ]
     config = Config(
+        tier=product_tier,
         llm={"model": "offline-editor"},
         cache={"directory": str(tmp_path / "cache")},
         analysis={"min_source_short_side": 0},
@@ -57,7 +69,7 @@ def build(tmp_path, *, providers, fetched, tier="full", sources=None, preview_po
     planner = build_editorial_planner(
         client=object(),
         config=config,
-        thumbnail_cache=tmp_path / "previews",
+        thumbnail_cache=ThumbnailCache(tmp_path / "previews"),
         context=EditorialRunContext(
             "month", "A month", "monthly_highlights", (window,), 60, tmp_path / "runs"
         ),
@@ -115,6 +127,23 @@ def test_cold_cheap_facts_gate_before_the_draft_and_warm_reuses_them(tmp_path, m
     assert len(acquired) == 1 and len(observed) == 2
 
 
+def test_nas_prepares_and_selects_without_marqo_or_docling(tmp_path):
+    produced = []
+
+    def forbidden_detector(**_kwargs):
+        pytest.fail("NAS selection requested Marqo or Docling")
+
+    # WHY: replace only the model producers; use the real rules planner and store.
+    providers = replace(successful_ports(produced), detectors=forbidden_detector)
+    planner, sources, _ = build(tmp_path, providers=providers, fetched=[], product_tier="nas")
+
+    planner.plan_source(sources, trace=Trace())
+
+    assert produced == [("heads", tuple(asset.id for asset in sources))]
+    report = json.loads((planner.last_attempt_directory / "preparation.private.json").read_text())
+    assert report["missing_by_producer"] == {}
+
+
 def test_missing_required_producer_blocks_all_editing_and_records_failed_attempt(
     tmp_path, monkeypatch
 ):
@@ -145,7 +174,7 @@ def test_a_refusing_producer_puts_its_own_reason_in_the_message_that_stops_the_r
     """
     reason = "doc_docling has no model: run `immich-memories models fetch`"
     providers = replace(successful_ports([]), detectors=lambda **_: {"doc_docling": reason})
-    planner, sources, _ = build(tmp_path, providers=providers, fetched=[])
+    planner, sources, _ = build(tmp_path, providers=providers, fetched=[], product_tier="gpu")
     monkeypatch.setattr(
         planner._planner,
         "plan_prepared",

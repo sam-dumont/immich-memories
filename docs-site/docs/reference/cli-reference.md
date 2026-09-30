@@ -367,7 +367,7 @@ immich-memories models fetch [OPTIONS]
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
 | `--force` | boolean | false | Re-download even when the file is already right |
-| `--detectors` | boolean | true | Also fetch the pinned detector export and warm the pinned detector snapshot |
+| `--detectors` | boolean | - | Fetch detector models (default: gpu/full only); --detectors also fetches on nas |
 | `--laya` | boolean | false | Fetch the Laya audience checkpoint even on the nas tier (gpu and full fetch it anyway) |
 
 ## `music`

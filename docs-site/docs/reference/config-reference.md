@@ -38,8 +38,8 @@ tier: auto                         # auto | nas | gpu | full
 
 | `tier` | Models | Reader | Needs |
 | --- | --- | --- | --- |
-| `nas` | inexpensive CPU heads and detectors, no captions | rules | `models fetch` |
-| `gpu` | every light model: captions, heads, detectors, Laya | rules | a caption server, `models fetch` |
+| `nas` | eight shared-DINO CPU heads, no captions | rules | `models fetch` |
+| `gpu` | heads, Marqo, Docling, captions and Laya | rules | a caption server, `models fetch` |
 | `full` | everything in `gpu` | an LLM polishes the rules draft and writes the prose | `advanced.llm.base_url` and `advanced.llm.model` |
 
 `auto` is the default. A healthy inference service reporting CUDA, or a local CUDA or MLX/Metal
@@ -558,6 +558,7 @@ editorial:
   strict_sharing: true           # anything a head or exposure flag marked stays out of shared films
   annotation_database: ""        # deprecated: a legacy annotations.sqlite imported into the store once; blank = the cache directory
   laya_audience: false           # derived: off for NAS, on for GPU and Full
+  detectors_enabled: false      # derived: Marqo and Docling off for NAS, on for GPU and Full
   # Apple silicon defaults below; elsewhere the ONNX archive and threshold 0.185 are used.
   laya_checkpoint: "~/.immich-memories/models/laya/laya-audience-a79ad9fa.tar"
   laya_checkpoint_url: "https://github.com/sam-dumont/immich-video-memory-generator/releases/download/models-v2/laya-audience-a79ad9fa.tar"
@@ -650,7 +651,8 @@ the whole film even when an account exists.
 `strict_sharing` keeps any picture a detector head or an exposure flag marked out of a shareable
 film. Only your own clearance on the picture can lift a detector or exposure hold.
 It is also what lets a NAS with no captions cut a shareable film at all: with it on, a picture every
-detector read as clean and nothing flagged is `share`; with it off, a NAS clears nothing. Just-us
+active head or detector read as clean and nothing flagged is `share`; with it off, a NAS clears
+nothing. Just-us
 and family films are unchanged. Turning it off does not let a caption clear an exposure flag.
 
 `laya_audience` answers the sharing question with a local Laya model:
@@ -665,12 +667,17 @@ See [Add a reader](../better/reader.md#the-laya-audience-pre-screen).
 
 ### Preparation tiers
 
-Preparation follows the product tier. NAS acquires cheap picture facts; GPU and Full add
-captions and Laya. Internally, older audit rows call those producer modes `no_captions` and
+Preparation follows the product tier. NAS acquires pixel facts and the eight shared-DINO heads.
+GPU and Full add Marqo, Docling, captions and Laya. `detectors_enabled` is tier-owned; a saved
+value does not override the tier. `head_versions` keeps all producer identities, while the active
+view filters out Marqo and Docling on NAS. Banked facts remain available when you switch back.
+Saved review decisions and automatic permanent holds also remain: an old exposure hold does not
+record which producer cast it. Internally, older audit rows call those producer modes `no_captions` and
 `full`. They are not a second config choice. `metadata_only` is no longer a selectable product
 configuration.
 
-A film starts with the NAS draft, then captions and checks only selected shots and actual
+A film starts with a caption-free rules draft, retaining the resolved tier's detector policy, then
+captions and checks only selected shots and actual
 replacement candidates. `prepare` remains the explicit job for a larger scope. Changing tier
 does not erase banked captions or other producer facts.
 
@@ -719,7 +726,8 @@ producers and the key is computed over the model artifact, never over where it r
 provider or the host and nothing is re-derived.
 
 `producers` narrows what is offloaded. `[heads]` sends the DINOv2 encoder and the eight context heads
-and keeps the two cheaper detectors in the app.
+and keeps Marqo and Docling in the app when the tier enables them. Offloading does not
+enable producers disabled by the tier.
 
 `facts_concurrency` is how many pictures are in the air at once. One at a time, measured on a
 cluster against a T1000, costs 0.69 s a picture whatever the card is doing, because almost all of

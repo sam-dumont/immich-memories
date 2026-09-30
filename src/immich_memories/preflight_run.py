@@ -57,11 +57,11 @@ def check_detector_export(config: Config) -> CheckResult:
     It is checked here because the alternative is finding out during the cut:
     the detector worker is a separate process reached hours into preparation.
     """
-    if not config.editorial.preparation.demands_models:
+    if not config.editorial.detectors_enabled or not config.editorial.preparation.demands_models:
         return CheckResult(
             name="Sensitive-content detector",
             status=CheckStatus.SKIPPED,
-            message="Not required by metadata_only",
+            message="Detector models are not required by this tier",
         )
     from immich_memories.analysis.editorial_preparation_detectors import (
         MARQO_ONNX_ID,
@@ -101,6 +101,12 @@ def check_detector_interpreter(config: Config) -> CheckResult:
     (a separate detector venv) that has since been deleted used to fail only when
     the worker started, after every picture was already prepared.
     """
+    if not config.editorial.detectors_enabled or not config.editorial.preparation.demands_models:
+        return CheckResult(
+            name="Detector interpreter",
+            status=CheckStatus.SKIPPED,
+            message="Detector models are not required by this tier",
+        )
     configured = config.editorial.preparation.detector_python.strip()
     if not configured:
         return CheckResult(

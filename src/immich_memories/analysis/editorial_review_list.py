@@ -154,7 +154,7 @@ def write_for_cut(
     probabilities = exposure_probabilities(
         source.store,
         [str(carrier.get("asset_id")) for carrier in carriers],
-        source.config.editorial.head_versions.get(MARQO_HEAD, ""),
+        source.config.editorial.active_head_versions.get(MARQO_HEAD, ""),
     )
     return write_review_list(source.artifact_dir, to_check(carriers, verdicts, probabilities))
 

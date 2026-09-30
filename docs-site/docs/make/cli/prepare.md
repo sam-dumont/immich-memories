@@ -13,7 +13,7 @@ that needs a model.
 ## `prepare`
 
 Preparation is the part of a cut that looks at pixels: a preview, its measurements, the encoder and eight
-context heads, the two detectors, and on the `full` tier a caption. Everything after it (grouping, reading,
+context heads. GPU and Full add Marqo, Docling and captions; NAS leaves those two detectors off. Everything after it (grouping, reading,
 selection, render) is text and arithmetic.
 
 A film prepares only the pictures it can reach: the ones selection can pick, their Live Photo clips and the

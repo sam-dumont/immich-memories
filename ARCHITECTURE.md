@@ -160,7 +160,7 @@ remains in the preparation report but does not block required-fact completeness.
 
 - **Producer**: anything that writes a fact about a picture: the caption server, the heads, the
   detectors, the motion and pixel readers (`editorial_preparation*.py`). Film preparation runs
-  cheap picture facts before the NAS draft, then captions and clip inspection for that draft
+  active picture facts before the rules draft, then captions and clip inspection for that draft
   and actual replacement candidates (`editorial_film_preparation.py`). Bulk `prepare` keeps its
   explicit whole-source scope. Deferred video exposure is never banked as a completed frame check.
   The first draft and its source gate use a caption-free annotation view, even when descriptions
@@ -170,13 +170,16 @@ remains in the preparation report but does not block required-fact completeness.
   people, children, activity, venue, frame_kind, screen, uncovered_person
   (`triage/bundled_heads/public-8heads-v4.npz`, `editorial_preparation_heads.py`). Beside them sit
   two detectors, `nsfw_marqo` (exposure) and `doc_docling` (documents)
-  (`editorial_preparation_detectors.py`).
-- **Tiers**: `tier: auto` resolves `nas` (CPU heads and detectors), `gpu` (adds captions and Laya),
+  (`editorial_preparation_detectors.py`). `EditorialConfig.active_head_versions` filters both
+  out when tier-owned `detectors_enabled` is false on NAS. Raw `head_versions`, banked rows and
+  producer identities stay unchanged; GPU/Full reuse matching detector facts or fill missing ones.
+  Saved review and automatic permanent holds remain, since old exposure holds lack producer attribution.
+- **Tiers**: `tier: auto` resolves `nas` (CPU heads), `gpu` (adds Marqo, Docling, captions and Laya),
   or `full` (adds an explicitly configured prose LLM). NAS and GPU always use the rules reader.
   Text-only titles and music mood may use a configured LLM on every tier; they neither enable
   model selection nor image captioning. Explicit `caption_provider: llm` lets preparation use
   that LLM for missing still and motion captions, without promoting NAS to Full. Config and
-  preflight warn about cost; the NAS draft defers these requests to selected/candidate refinement.
+  preflight warn about cost; the rules draft defers these requests to selected/candidate refinement.
   CLI and film preparation pass the configured provider; motion provenance records its origin.
   LLM preflight checks configured text services too.
   Preparation follows that same product tier; legacy overrides no longer win. `config_compute.py`
@@ -278,7 +281,8 @@ remains in the preparation report but does not block required-fact completeness.
   further review, and an unanswered caption stays with the family. Answer banks distinguish
   Laya from the rules check. `editorial_shareability_tiers.py` selects this policy independently
   of whether the film uses prose or polish.
-- **Picture evidence is banked**: heads and detectors prepare cheap facts before the NAS draft.
+- **Picture evidence is banked**: the eight heads prepare facts before the rules draft. GPU and
+  Full also prepare Marqo and Docling; their first draft retains that tier's detector policy.
   Caption and clip producers acquire missing evidence for selected shots and actual candidates;
   matching banked evidence is reused. A wider preparation scope requires an explicit `prepare`
   job. The prose reader is text only, and so is music: its mood comes from the cut's thesis, story titles and

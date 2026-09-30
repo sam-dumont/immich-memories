@@ -79,7 +79,7 @@ Each film is cut for one sharing level: **Who may see it** in the brief, `genera
 - **Just us**: the household. A bath or a nappy change the caption names plays too.
 - **Family**: the default. Those private moments stay out; everything the family may see plays.
 - **Shareable**: anyone. Only what nothing held back plays: no detector flag, no private moment, and
-  on a NAS nothing the detectors didn't read as clean.
+  on a NAS nothing the active heads didn't read as clean.
 
 Details: [Sharing levels](./family-audience-duplicates.md#sharing-levels).
 

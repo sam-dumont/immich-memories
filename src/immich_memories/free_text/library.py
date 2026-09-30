@@ -90,7 +90,7 @@ def read_library(
     batch = AssetAnnotationFactRepository(
         store,
         description_model=editorial.description_model,
-        head_versions=editorial.head_versions,
+        head_versions=editorial.active_head_versions,
         pixel_producer_key=editorial.pixel_producer_key,
     ).facts_for(tuple(row["asset_id"] for row in sources))
     if batch.unavailable_asset_ids:

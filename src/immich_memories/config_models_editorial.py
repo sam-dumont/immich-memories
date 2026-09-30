@@ -135,6 +135,20 @@ class EditorialConfig(BaseModel):
         default_factory=_default_head_versions,
         description="Exact producer version selected for each annotation head",
     )
+    detectors_enabled: bool = Field(
+        default=True,
+        description="Use Marqo and Docling: disabled by the NAS tier, enabled by GPU and Full",
+    )
+
+    @property
+    def active_head_versions(self) -> dict[str, str]:
+        """Select this tier's producers without discarding saved versions or banked facts."""
+        return {
+            head: version
+            for head, version in self.head_versions.items()
+            if self.detectors_enabled or head not in {"nsfw_marqo", "doc_docling"}
+        }
+
     pixel_producer_key: str = Field(
         default="pixel-facts-v1",
         description="Exact producer of pixel facts and thresholds",

@@ -3,7 +3,7 @@
 `tier: auto` resolves inference capability and the configured LLM, then sets one contract
 for preparation and selection. Only ``full`` uses an LLM for selection:
 
-* ``nas``: inexpensive CPU heads and detectors, rules, no captions, no Laya.
+* ``nas``: inexpensive CPU heads and rules, no Marqo/Docling, captions or Laya.
 * ``gpu``: every light model. The caption server, the heads and detectors, and Laya for the
   sharing question. Selection still uses the rules reader.
 * ``full``: the ``gpu`` tier plus an LLM for prose and polish. It refuses to load without the
@@ -34,16 +34,17 @@ TierSetting = Literal["auto", ProductTier]
 _READER = ("editorial",), "reader"
 _PREPARATION = ("editorial", "preparation"), "tier"
 _LAYA = ("editorial",), "laya_audience"
+_DETECTORS = ("editorial",), "detectors_enabled"
 
 TIERS: dict[str, dict[tuple[tuple[str, ...], str], Any]] = {
-    "nas": {_READER: "rules", _PREPARATION: "no_captions", _LAYA: False},
-    "gpu": {_READER: "rules", _PREPARATION: "full", _LAYA: True},
-    "full": {_READER: "model", _PREPARATION: "full", _LAYA: True},
+    "nas": {_READER: "rules", _PREPARATION: "no_captions", _LAYA: False, _DETECTORS: False},
+    "gpu": {_READER: "rules", _PREPARATION: "full", _LAYA: True, _DETECTORS: True},
+    "full": {_READER: "model", _PREPARATION: "full", _LAYA: True, _DETECTORS: True},
 }
 
 
 def nas_draft_config(config: Config) -> Config:
-    """Keep the film's policies while limiting its first pass to the NAS producers."""
+    """Keep the film's detector policies while making its first pass without captions or Laya."""
     draft = config.model_copy(deep=True)
     draft.tier = "nas"
     draft.editorial.reader = "rules"

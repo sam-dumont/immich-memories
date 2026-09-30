@@ -15,7 +15,7 @@ def prepared_captions(config: Config, asset_ids: tuple[str, ...]) -> dict[str, s
     batch = AssetAnnotationFactRepository(
         open_store(config),
         description_model=editorial.description_model,
-        head_versions=editorial.head_versions,
+        head_versions=editorial.active_head_versions,
         pixel_producer_key=editorial.pixel_producer_key,
     ).facts_for(asset_ids)
     return {fact.asset_id: fact.description for fact in batch.facts if fact.description}

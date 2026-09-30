@@ -62,7 +62,7 @@ class FilmPreparation:
             shareability_flags=dict(source.shareability_flags)
             | load_flags(store, ids | companions),
             companion_detectors=dict(source.companion_detectors)
-            | load_detector_heads(store, companions, source.config.editorial.head_versions),
+            | load_detector_heads(store, companions, source.config.editorial.active_head_versions),
             clip_frames=dict(source.clip_frames) | load_clip_frames(store, companions),
             motion_residuals=dict(source.motion_residuals) | read_motion_residuals(store, assets),
         )

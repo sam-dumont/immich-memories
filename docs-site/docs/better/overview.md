@@ -14,7 +14,7 @@ practical side: what each add-on needs, and what it sends where.
 
 ```mermaid
 flowchart LR
-    nas["The NAS makes the film<br/><small>rules editor, heads, detectors, render</small>"]
+    nas["The NAS makes the film<br/><small>rules editor, eight heads, render</small>"]
     reader(["A reader model<br/><small>titles; Full refinement</small>"]) -.-> nas
     captions(["A caption server<br/><small>selected shots and candidates</small>"]) -.-> nas
     inference(["Inference on a GPU box<br/><small>the same facts, sooner</small>"]) -.-> nas
@@ -28,7 +28,7 @@ flowchart LR
 |---|---|---|---|
 | [A reader](./reader.md) | Titles and music mood on every tier; on Full, an account of the period and refinement of the NAS draft | A text model with a 32k context, such as local Gemma 4 E4B. Selection refinement also needs GPU capability, captions and Laya | The candidates' annotation lines, people and place names included, to the model. Never a picture |
 | [Captions](./captions.md) | Descriptions for selected pictures and replacement candidates, used by the reader and Laya | The supported 500M vision model, or explicit opt-in to a vision-capable LLM | A 400 px tile of each requested picture, once per caption generation, to the chosen provider |
-| [Inference on a GPU box](./inference.md) | The encoder, its eight heads and the two detectors on a card or a bigger CPU | A second machine, CPU or NVIDIA | A preview of each picture, once, to your service |
+| [Inference on a GPU box](./inference.md) | The encoder and its eight heads on a card or a bigger CPU; GPU and Full also run Marqo and Docling | A second machine, CPU or NVIDIA | A preview of each picture, once, to your service |
 | [A render worker](./gpu-render.md) | The encode on a GPU box instead of the NAS | An NVIDIA box running the same app version | The chosen cut and your Immich key; the worker fetches the originals itself |
 | [Generated music](./music.md) | An original track per film instead of a bundled one | ACE-Step on a Mac or an NVIDIA box (7 to 29 GB free for its weights), or a MusicGen server | A text prompt (mood, tempo, length) to your music server |
 

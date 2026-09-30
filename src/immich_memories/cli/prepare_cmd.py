@@ -88,7 +88,7 @@ def _run_preparation(client, config: Config, assets) -> tuple[ProducerClock, Pre
         thumbnail_cache=thumbnail_cache,
         preparation_config=config.editorial.preparation,
         triage_config=config.triage,
-        head_versions=config.editorial.head_versions,
+        head_versions=config.editorial.active_head_versions,
         inference_config=config.inference,
         llm_config=config.llm,
         description_model=config.editorial.description_model,

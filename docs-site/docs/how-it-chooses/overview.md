@@ -89,7 +89,7 @@ picture of an episode where Immich recognised that person at least once), the ot
 five-minute capture run, because the exposure rule reads the whole run. The rest of the window is
 read as Immich metadata only, since moments and episodes are cut from all of it. A cut that selects
 a picture it never prepared stops rather than ship it. Captions and clip checks wait until after
-the NAS draft, for selected shots and actual candidates. A reader may use the selected shot's
+the rules draft, for selected shots and actual candidates. A reader may use the selected shot's
 whole episode for context without captioning every neighbour. `immich-memories prepare` reads a
 whole scope ahead of time when explicitly requested.
 
@@ -100,8 +100,9 @@ flowchart TD
   ev --> ann["Acquire missing facts"]
   ann --> previews["previews"] --> pixels["pixel facts"] --> faces["Immich face boxes"]
   faces --> heads["DINOv2 and eight heads"]
-  heads --> det["Picture detectors"]
-  det --> draft["NAS draft from banked facts"]
+  heads --> det{"GPU or Full?"}
+  det -- yes --> heavy["Marqo and Docling"] --> draft["Rules draft from banked facts"]
+  det -- no --> draft
   draft --> demand["selected shots and actual candidates"]
   demand --> clip["clip and Live Photo checks<br/>only where needed"]
   clip --> cap{"Captions enabled?"}
@@ -116,19 +117,20 @@ Admission refuses a few things before anything is read: a video over five minute
 inside its still), anything tagged `immich-memories/generated` or listed in this install's upload receipts (a film this app made
 is not footage), and pictures that look forwarded rather than shot on your camera. After the heads
 run, screenshots and photos of screens go too: a phone-screen pixel size, the `screen` head, or the
-document detector calling it a screenshot, a table or a QR code.
+document detector, enabled on GPU and Full, calling it a screenshot, a table or a QR code.
 
 The eight heads are small classifiers over one pinned DINOv2 encoder: `location`, `people`,
 `children`, `activity`, `venue`, `frame_kind`, `screen` and `uncovered_person`. The two detectors are
-`nsfw_marqo` (exposure) and `doc_docling` (documents). Every fact is banked in the store
+`nsfw_marqo` (exposure) and `doc_docling` (documents), enabled on GPU and Full only. NAS keeps
+the eight heads, including screen, frame-kind and uncovered-person checks. Every fact is banked in the store
 under its producer's version, so the next cut asks nothing twice.
 
 Preparation follows the resolved product tier (`tier: auto` by default):
 
 | Tier | What reads the pixels | When you get it |
 |---|---|---|
-| `nas` | previews, pixel facts, face boxes, the eight heads, the two detectors | no usable local GPU or GPU inference service |
-| `gpu` | NAS facts, plus missing captions and clip evidence for selected shots and candidates; Laya reads their captions | GPU inference without a configured prose LLM |
+| `nas` | previews, pixel facts, face boxes, the eight heads | no usable local GPU or GPU inference service |
+| `gpu` | NAS facts, Marqo and Docling, plus missing captions and clip evidence for selected shots and candidates; Laya reads their captions | GPU inference without a configured prose LLM |
 | `full` | the same pixel producers as GPU; a prose LLM reads annotation text to refine selection | GPU inference and a configured prose LLM |
 
 NAS needs `immich-memories models fetch` once. A configured LLM alone does not change selection

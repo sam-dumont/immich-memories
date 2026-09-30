@@ -399,7 +399,9 @@ def test_encoder_check_rejects_an_export_that_is_not_the_pinned_one(tmp_path) ->
 
 
 def test_detector_check_names_the_fetch_command_when_the_export_is_absent(tmp_path) -> None:
-    config = Config(editorial={"preparation": {"marqo_onnx": str(tmp_path / "marqo.onnx")}})
+    config = Config(
+        tier="gpu", editorial={"preparation": {"marqo_onnx": str(tmp_path / "marqo.onnx")}}
+    )
 
     result = check_detector_export(config)
 
@@ -410,7 +412,7 @@ def test_detector_check_names_the_fetch_command_when_the_export_is_absent(tmp_pa
 def test_detector_check_rejects_an_export_that_is_not_the_pinned_one(tmp_path) -> None:
     path = tmp_path / "marqo.onnx"
     path.write_bytes(b"some other onnx export")
-    config = Config(editorial={"preparation": {"marqo_onnx": str(path)}})
+    config = Config(tier="gpu", editorial={"preparation": {"marqo_onnx": str(path)}})
 
     result = check_detector_export(config)
 
@@ -425,7 +427,7 @@ def test_detector_check_accepts_the_pinned_export(tmp_path, monkeypatch) -> None
     # WHY: the real 22.5 MB export cannot live in the repo, so this file's own
     # digest stands in for the pin; the check itself is the production one.
     monkeypatch.setattr(detectors, "MARQO_ONNX_SHA256", digest)
-    config = Config(editorial={"preparation": {"marqo_onnx": str(path)}})
+    config = Config(tier="gpu", editorial={"preparation": {"marqo_onnx": str(path)}})
 
     result = check_detector_export(config)
 

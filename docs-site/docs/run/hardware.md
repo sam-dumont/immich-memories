@@ -21,7 +21,8 @@ Which encoders have been checked, and when: [Supported and tested](./requirement
 | Video encoding | NVENC / VideoToolbox / VAAPI / QSV | libx264 / libx265 |
 | Video scaling | scale_cuda, scale_vaapi, scale_qsv | FFmpeg swscale |
 
-Everything else runs the same: clip discovery, the eight context heads and two detectors, burst
+Everything else follows the same product tier: clip discovery, the eight context heads,
+Marqo and Docling on GPU/Full, burst
 collapsing, audio ducking, assembly and the whole UI. Title cost scales with title length and
 resolution, not clip count, so a 12-clip film and a 40-clip film pay about the same title bill.
 

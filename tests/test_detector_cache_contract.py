@@ -51,3 +51,46 @@ def test_v1_pins_payload_keys_models_labels_and_sampling():
         "A changed detector contract needs a new producer version and a documented compatibility "
         "migration. Do not silently overwrite the v1 snapshot."
     )
+
+
+def test_switching_tiers_preserves_banked_detector_versions_and_gpu_reads():
+    from immich_memories.analysis.editorial_shareability import load_detector_heads
+    from immich_memories.config_loader import Config
+    from immich_memories.config_tiers import apply_tier
+    from tests.annotation_rows import add_rows, annotation_store
+
+    config = Config(tier="gpu")
+    versions = dict(config.editorial.head_versions)
+    store = annotation_store()
+    add_rows(
+        store,
+        "head_facts",
+        *[
+            {"asset_id": "picture", "head": head, "version": versions[head], "label": label}
+            for head, label in (
+                ("nsfw_marqo", "yes"),
+                ("doc_docling", "table"),
+                ("uncovered_person", "no"),
+            )
+        ],
+    )
+    assert (
+        load_detector_heads(store, ["picture"], config.editorial.active_head_versions)["picture"][
+            "nsfw_marqo"
+        ]
+        == "yes"
+    )
+    config.tier = "nas"
+    apply_tier(config)
+    assert load_detector_heads(store, ["picture"], config.editorial.active_head_versions) == {
+        "picture": {"uncovered_person": "no"}
+    }
+    config.tier = "gpu"
+    apply_tier(config)
+    assert config.editorial.head_versions == versions
+    assert (
+        load_detector_heads(store, ["picture"], config.editorial.active_head_versions)["picture"][
+            "doc_docling"
+        ]
+        == "table"
+    )

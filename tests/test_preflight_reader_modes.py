@@ -8,7 +8,11 @@ from immich_memories.preflight import (
     check_caption_endpoint,
     check_llm,
 )
-from immich_memories.preflight_run import check_detector_export, check_encoder
+from immich_memories.preflight_run import (
+    check_detector_export,
+    check_detector_interpreter,
+    check_encoder,
+)
 
 
 @pytest.mark.parametrize("reader", ["auto", "rules"])
@@ -53,7 +57,7 @@ def test_no_captions_still_requires_model_files(tmp_path, monkeypatch):
     config.editorial.preparation.marqo_onnx = str(tmp_path / "missing-detector.onnx")
     assert check_caption_endpoint(config).status is CheckStatus.SKIPPED
     assert check_encoder(config).status is CheckStatus.ERROR
-    assert check_detector_export(config).status is CheckStatus.ERROR
+    assert check_detector_export(config).status is CheckStatus.SKIPPED
 
 
 def test_explicit_model_reader_without_a_model_is_a_configuration_error(monkeypatch):
@@ -63,3 +67,11 @@ def test_explicit_model_reader_without_a_model_is_a_configuration_error(monkeypa
     config = Config(tier="full", llm={"base_url": "http://llm.test/v1", "model": "reader"})
     config.llm.model = ""
     assert check_llm(config).status is CheckStatus.ERROR
+
+
+def test_nas_preflight_skips_absent_detector_export_and_interpreter(tmp_path):
+    config = Config(tier="nas")
+    config.editorial.preparation.marqo_onnx = str(tmp_path / "missing.onnx")
+    config.editorial.preparation.detector_python = str(tmp_path / "missing-python")
+    assert check_detector_export(config).status is CheckStatus.SKIPPED
+    assert check_detector_interpreter(config).status is CheckStatus.SKIPPED
