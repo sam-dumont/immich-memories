@@ -197,6 +197,7 @@ credential, so do not give it a routable address, and
 |---|---|
 | `GET /ping` | are you up |
 | `GET /health` | which producers are loaded, at which versions, on which provider each |
+| `GET /queue` | waiting and active classifier work, completions, failures and timings |
 | `POST /facts` | one picture in: what do the frozen classifiers say about it |
 
 ```bash
@@ -220,6 +221,29 @@ A fact on the wire is the bank row without its asset id, and the client stores i
 hostname, device or provider name enters any key, so the same picture through the `cpu` and the
 `cuda` image lands on one row, label-identical rather than byte-identical.
 
+## Watching classifier work
+
+```bash
+curl -s localhost:8092/queue
+```
+
+The response reports `queued`, `active`, `completed`, `failed`, `cancelled` and `rejected`
+for each producer, plus `oldest_wait_seconds`, `mean_wait_seconds`, `mean_run_seconds` and
+`completed_per_second`. Counts and averages cover this service process since startup;
+throughput includes idle time. Waiting time includes admission to the shared worker pool.
+Model loading counts as run time. The response contains no pictures or asset identifiers.
+
+Each model has a FIFO queue. Waiting callers yield the worker so another model can run.
+At most `REQUEST_THREADS` model calls run at once, with one active call per model. The service
+accepts 32 waiting calls across the classifier queues by default. A full queue returns
+HTTP 429 with `Retry-After: 1`; callers should reduce concurrency and retry later. The app's
+configured local fallback still applies if the request fails. Cancelling a waiting call removes
+it; cancelling active native work keeps its worker reserved until that work finishes.
+
+These queues cover `/facts`. Demucs and the separately deployed caption server have their own
+scheduling. Caption servers based on llama.cpp expose active slots at `/slots`; their metrics
+endpoint requires the server's metrics option.
+
 ## Settings
 
 Every setting is an environment variable prefixed `IMMICH_MEMORIES_INFERENCE_`:
@@ -233,6 +257,7 @@ Every setting is an environment variable prefixed `IMMICH_MEMORIES_INFERENCE_`:
 | `BUNDLE` | the packaged public bundle | head bundle `.npz` |
 | `PROVIDER` | `auto` | `auto`, `cpu`, `cuda` or `coreml`. `auto` takes CUDA where the provider is present and CPU otherwise. CoreML is selectable but measured 6 to 8 times slower than the CPU provider on this export, at 9 times the resident memory |
 | `REQUEST_THREADS` | `4` | the thread pool in front of ONNX Runtime. The app's `facts_concurrency` is what fills it |
+| `MAX_QUEUED_REQUESTS` | `32` | maximum waiting calls across classifier queues; excess requests get HTTP 429 |
 | `IDLE_UNLOAD_SECONDS` | `300` | drop idle weights; `0` holds them |
 | `PRELOAD` | `false` | load every producer at boot instead of on first use |
 | `DETECTOR_CACHE_DIR` | `/cache/huggingface` in the published image (`$HF_HOME` otherwise) | where the detector snapshots live |

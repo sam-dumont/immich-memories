@@ -33,6 +33,7 @@ class InferenceSettings(BaseSettings):
     bundle: Path | None = None
     provider: Literal["auto", "cpu", "cuda", "coreml"] = "auto"
     request_threads: int = Field(default=4, ge=1, le=64)
+    max_queued_requests: int = Field(default=32, ge=1, le=1024)
     # The weights go, the process stays. immich-ml sends itself SIGINT after its
     # TTL; a restart loop on a NAS costs more than a resident idle process.
     idle_unload_seconds: float = Field(default=300.0, ge=0)
