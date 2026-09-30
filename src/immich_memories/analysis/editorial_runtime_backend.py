@@ -44,6 +44,10 @@ from immich_memories.analysis.editorial_thin_layer import (
 from immich_memories.analysis.editorial_thin_short import ShortReads
 from immich_memories.analysis.editorial_thumbnail_hashes import CachedThumbnailHasher
 from immich_memories.analysis.episode_demand import DemandEpisodeReadings
+from immich_memories.analysis.live_source_integrity import (
+    OriginalSourceIntegrity,
+    production_live_source_integrity,
+)
 from immich_memories.analysis.selection_trace import Trace
 from immich_memories.analysis.thumbnail_prefetch import cached_preview_bytes
 from immich_memories.api.models import Asset, VideoClipInfo
@@ -101,6 +105,16 @@ class ProductionPostCardBackend:
         # One measurement engine per run: planning and the render projection
         # must re-derive the same Live stitch material (#1012).
         self._clock_offsets_provider = None
+        self._source_integrity_provider: OriginalSourceIntegrity | None = None
+
+    def source_integrity(self, source: StructurePlanningInput, resources):
+        """One original-byte verifier for retained carriers across refinement passes."""
+        if self._source_integrity_provider is None:
+            self._source_integrity_provider = production_live_source_integrity(
+                source, resources=resources
+            )
+            resources.callback(setattr, self, "_source_integrity_provider", None)
+        return self._source_integrity_provider
 
     def clock_offsets(self, source: StructurePlanningInput, resources):
         """The run's Live companion clock measurements, built once and memoised."""
@@ -301,6 +315,7 @@ class ProductionPostCardBackend:
                 resolve_speech=production_speech_resolver(source, resources=resources),
                 resolve_motion=production_motion_resolver(source),
                 clock_offsets=self.clock_offsets(source, resources),
+                live_source_integrity=self.source_integrity(source, resources),
             )
         # The model reads text only. Pictures were read once, at ingest, by the caption model
         # and the heads; nothing below sends a picture to it.
@@ -315,6 +330,7 @@ class ProductionPostCardBackend:
             observe_story_motion=story_motion.observe,
             story_motion_metrics=story_motion.metrics,
             clock_offsets=self.clock_offsets(source, resources),
+            live_source_integrity=self.source_integrity(source, resources),
             printed_near=self._printed_near,
             **self._thin_polish(source),
         )

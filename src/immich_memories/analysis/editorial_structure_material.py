@@ -186,6 +186,7 @@ class UnitBuilder:
         self._assets = source.assets
         self._residuals = source.motion_residuals
         self._clip_frames = source.clip_frames
+        self._live_source_integrity = ports.live_source_integrity
         self._speech = source.speech_regions
         self._speech_buffer = speech_buffer(source.config)
         self._pixel_facts = source.pixel_facts
@@ -335,6 +336,21 @@ class UnitBuilder:
     def refresh_clip_facts(self, carrier: dict) -> dict:
         """Keep the selected photograph when newly inspected clip frames refuse playback."""
         if (
+            self._live_source_integrity is not None
+            and str(carrier.get("kind", "")).startswith("live")
+            and carrier.get("motion_candidate")
+        ):
+            proofs = self._live_source_integrity(carrier.get("video_ids", ()))
+            if set(proofs) != set(carrier.get("video_ids", ())):
+                raise ValueError("Presentation proof required for every declared Live original")
+            carrier = carrier | {"source_integrity": proofs}
+            if any(not proof["valid"] for proof in proofs.values()):
+                return carrier | {
+                    "kind": "live-still",
+                    "motion_candidate": False,
+                    "seconds": self._still_hold(carrier["members"]),
+                }
+        if (
             not str(carrier.get("kind", "")).startswith("live")
             or not (carrier.get("motion_candidate") or carrier["kind"] == "live-motion")
             or not clips_miss_subject(self._clip_frames, carrier.get("video_ids", ()))
@@ -357,6 +373,8 @@ class UnitBuilder:
         photograph otherwise.
         """
         carrier = self.refresh_clip_facts(carrier)
+        if any(not proof["valid"] for proof in carrier.get("source_integrity", {}).values()):
+            return carrier
         rendering = self._renderings.get(carrier["asset_id"])
         if (
             self._measure is None
@@ -371,7 +389,7 @@ class UnitBuilder:
             self._bound[key] = self._measured_unit(
                 measured, carrier["asset_id"], carrier["members"]
             )
-        stale = _RENDERED_FIELDS - self._bound[key].keys()
+        stale = _RENDERED_FIELDS - self._bound[key].keys() - {"source_integrity"}
         return {k: v for k, v in carrier.items() if k not in stale} | self._bound[key]
 
     def _measured_unit(
@@ -478,6 +496,7 @@ _RENDERED_FIELDS = frozenset(
         "raw_seconds",
         "residual",
         "speech_regions",
+        "source_integrity",
     }
 )
 

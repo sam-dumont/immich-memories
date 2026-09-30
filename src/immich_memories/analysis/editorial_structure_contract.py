@@ -235,6 +235,8 @@ class StructurePlannerPorts:
     # (#1012); None keeps the metadata plan. The draft never asks it: only the
     # bursts the cut keeps are measured, and production banks every answer.
     clock_offsets: Callable[[Sequence[str]], list[float | None] | None] | None = None
+    # Original-byte presentation proof, asked only about retained Live carriers.
+    live_source_integrity: Callable[[Sequence[str]], Mapping[str, dict]] | None = None
     # A frame's scene print (`editorial_scene_prints`), so the final review reads the scene a
     # cut repeats and not only the frame; None reads the cached hash alone.
     scene_print: Callable[[str], Any] | None = None

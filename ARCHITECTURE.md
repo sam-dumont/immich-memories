@@ -63,6 +63,14 @@ go through the `frame_kind` head (`prepare_clip_frames` in `editorial_preparatio
 `editorial_clip_frames.py` banks the clip's `clip_frames` fact: a clip that shows its moment in
 fewer than three frames of four reads `frames=subject_often_missing` on its line, which the rules
 reader scores 0 (a favourite still wins), and `StandingGate` refuses on every tier.
+Before a retained Live carrier is certified, `live_source_integrity.py` checks the complete
+presentation of its original companion bytes through `ProbeCache`. Sampled playback frames
+are still semantic evidence; they do not prove that the original decodes completely. A
+byte-proven decoder or presentation failure uses the existing `live-still` disposition,
+keeping the selected photograph and member IDs. The carrier records the original SHA,
+selected stream, decoder identity, presentation policy and refusal reason. Those verdicts
+are cached by original-byte identity; unavailable downloads or tools remain failures.
+This happens before sealing, and certified Live rendering continues to fail closed.
 The same frames give a video its measured motion: `editorial_video_motion.py` runs the Live Photo
 optical-flow residual (`flow_residual` in `editorial_motion_facts.py`) over them and banks it in
 `motion_residuals` under its own producer; `UnitBuilder._video_unit` carries it, and
