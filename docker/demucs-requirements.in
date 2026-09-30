@@ -1,5 +1,5 @@
 demucs==4.0.1
 soundfile==0.13.1
-torch==2.10.0
-torchaudio==2.10.0
+torch==2.13.0
+torchaudio==2.11.0
 setuptools==84.0.0

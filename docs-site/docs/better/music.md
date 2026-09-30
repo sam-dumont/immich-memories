@@ -108,6 +108,14 @@ installer after moving the checkout or changing the app version; it also repairs
 `operator torchvision::nms does not exist`. A bare `uv sync` can remove Demucs from the editor's
 environment, and the installer puts it back.
 
+The isolated stack uses patched PyTorch 2.13, TorchAudio 2.11's stable ABI, and TorchVision 0.28;
+Linux uses the CUDA 12.6 wheels, and the Mac wheels require macOS 14 or newer. This tested stack
+overrides ACE-Step v0.1.8's older Linux package pins, so its upstream dependency metadata still
+reports that mismatch. The app disables PyTorch native JIT kernels in its own audio child before
+PyTorch imports, keeping the existing eager path free of a compiler requirement. A custom direct
+library process needs `TORCH_DISABLE_NATIVE_JIT=1` before Python starts; setting it after importing
+PyTorch is too late. Existing `extra_args.cpu_offload: true` can reduce GPU residency on smaller cards.
+
 ### In a container
 
 A separate ACE-Step container serves the editor with `mode: api` and `api_url` pointing at it; keep

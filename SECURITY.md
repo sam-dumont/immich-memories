@@ -103,3 +103,12 @@ patches, upgrade:
 uv tool upgrade immich-memories        # or: pip install --upgrade immich-memories
 docker compose pull                    # Docker installs
 ```
+
+### Reviewed NLTK advisory
+
+NLTK 3.10.3 remains affected by [GHSA-8mgp-746c-j5xp](https://github.com/advisories/GHSA-8mgp-746c-j5xp),
+with no official patched release as of September 30, 2026. The app actively uses NLTK for WordNet:
+it verifies the pinned corpus hash before opening the reader, and request words enter read-only
+dictionary lookups. The supported WordNet and ACE-Step routes do not call the affected model
+save/load APIs. This is a reviewed reachability finding, not a patched package or a blanket
+scanner exception. Keep the advisory tracked and re-audit any new NLTK training or export integration.
