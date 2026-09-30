@@ -382,7 +382,10 @@ def active_job(
 
 
 def _job(runner: JobRunner, job_id: str) -> Job:
-    job = runner.get(job_id)
+    try:
+        job = runner.get(job_id)
+    except ValueError as error:
+        raise HTTPException(404, "No such job.") from error
     if job is None:
         raise HTTPException(404, "No such job.")
     return job
@@ -430,7 +433,8 @@ def cancel_job(
     runner: Annotated[JobRunner, Depends(job_runner)],
 ) -> JobView:
     """Stop the job's child, from this tab or any other."""
-    return _view(config, runner.cancel(job_id) or _job(runner, job_id))
+    job = _job(runner, job_id)
+    return _view(config, runner.cancel(job_id) or job)
 
 
 @router.get("/jobs/{job_id}/output", response_class=JSONResponse)

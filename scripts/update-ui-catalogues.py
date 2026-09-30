@@ -12,7 +12,7 @@ from immich_memories.i18n import LOCALES_DIR, SUPPORTED_LOCALES
 
 WEB_ROOT = Path(__file__).resolve().parents[1] / "web/src"
 # The Svelte client marks labels as t('...') or N_('...'); only literal first arguments count.
-_WEB_LABEL = re.compile(r"""\b(?:t|N_)\(\s*(['"])((?:\\.|(?!\1).)+)\1""")
+_WEB_LABEL = re.compile(r"""\b(?:t|N_)\(\s*(['"])((?:\\.|(?!\1)[^\\])+)\1""")
 
 
 def _web_labels() -> Iterator[tuple[str, int, str]]:
