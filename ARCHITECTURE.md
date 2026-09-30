@@ -399,6 +399,8 @@ these helper modules:
   through `clip_encoder.encoder_args_for_plan` and the photo clip encoder. Bounded x265 encodes
   use one frame thread, as required by the measured lookahead memory curve.
   Below 3 GB with no hardware HEVC encoder, `output_canvas` renders an `auto` 4K film at 1080p.
+  NAS tier caps the shared photo/assembly canvas at 1080p even for an explicit 4K request;
+  lower requested resolutions remain unchanged.
 - `processing/remote_render.py`: authenticated jobs, bounded polling, a SHA-256-checked download,
   and a staged film that reuses the worker's decode when the bytes match
 - `processing/remote_render_plan.py`: frozen cut serialization, including certified Live material

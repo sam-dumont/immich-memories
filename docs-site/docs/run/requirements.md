@@ -29,6 +29,9 @@ What the minimum costs you:
 - **No AVX** (Intel Celeron J4125 and friends) means the CPU fallback draws the titles instead
   of the animated title kernels: [CPUs without AVX](./hardware.md#cpus-without-avx).
 - **ARM64** gets no hardware encoder: the VA-API drivers ship in the amd64 image only.
+- **NAS tier output is capped at 1080p**, including an explicit 4K request. Portrait films use
+  1080×1920, landscape films use 1920×1080, and square films use 1080×1080. Lower resolutions
+  stay lower. Photo preparation and final assembly share the same capped canvas.
 - **Less memory** means fewer photos rendered at once. The app reserves 1 GiB for the parent
   process, then allows 3 GiB per preparation worker, with at least one and at most two workers.
   It uses the container memory limit when set, otherwise the machine's RAM. A 4 GiB container

@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from immich_memories.config_loader import Config
 from immich_memories.generate import GenerationParams
 from immich_memories.generate_photos import detect_photo_resolution
@@ -89,3 +91,32 @@ def test_photo_and_assembly_consume_the_same_explicit_canvas() -> None:
     assert detect_photo_resolution(params) == (1920, 1080)
     assert settings.target_resolution == (1920, 1080)
     assert params.output_canvas == OutputCanvas(1920, 1080, "landscape")
+
+
+@pytest.mark.parametrize(
+    ("tier", "resolution", "orientation", "expected"),
+    [
+        ("nas", "4k", "portrait", (1080, 1920)),
+        ("nas", "auto", "landscape", (1920, 1080)),
+        ("nas", "4k", "square", (1080, 1080)),
+        ("nas", "720p", "portrait", (720, 1280)),
+        ("gpu", "4k", "portrait", (2160, 3840)),
+        ("full", "4k", "portrait", (2160, 3840)),
+    ],
+)
+def test_generation_tier_bounds_both_photo_and_assembly_canvas(
+    tier, resolution, orientation, expected
+):
+    params = GenerationParams(
+        clips=[make_clip("portrait", width=2160, height=3840)],
+        output_path=Path("/tmp/nas-out.mp4"),
+        config=Config(
+            tier=tier,
+            output={"resolution": "4k"},
+            llm={"base_url": "http://localhost:11434/v1", "model": "test-model"},
+        ),
+        output_resolution=resolution,
+        output_orientation=orientation,
+    )
+    assert detect_photo_resolution(params) == expected
+    assert build_assembly_settings(params, []).target_resolution == expected
