@@ -336,21 +336,6 @@ class UnitBuilder:
     def refresh_clip_facts(self, carrier: dict) -> dict:
         """Keep the selected photograph when newly inspected clip frames refuse playback."""
         if (
-            self._live_source_integrity is not None
-            and str(carrier.get("kind", "")).startswith("live")
-            and carrier.get("motion_candidate")
-        ):
-            proofs = self._live_source_integrity(carrier.get("video_ids", ()))
-            if set(proofs) != set(carrier.get("video_ids", ())):
-                raise ValueError("Presentation proof required for every declared Live original")
-            carrier = carrier | {"source_integrity": proofs}
-            if any(not proof["valid"] for proof in proofs.values()):
-                return carrier | {
-                    "kind": "live-still",
-                    "motion_candidate": False,
-                    "seconds": self._still_hold(carrier["members"]),
-                }
-        if (
             not str(carrier.get("kind", "")).startswith("live")
             or not (carrier.get("motion_candidate") or carrier["kind"] == "live-motion")
             or not clips_miss_subject(self._clip_frames, carrier.get("video_ids", ()))
@@ -361,6 +346,27 @@ class UnitBuilder:
             "motion_candidate": False,
             "seconds": self._still_hold(carrier["members"]),
         }
+
+    def admit_original_motion(self, carrier: dict) -> dict:
+        """Check only final measured motion, before its cut is certified."""
+        if self._live_source_integrity is not None and carrier.get("kind") == "live-motion":
+            from immich_memories.processing.live_material import LiveRenderMaterial
+
+            video_ids = LiveRenderMaterial.from_dict(carrier["live_material"]).video_ids
+            proofs = self._live_source_integrity(video_ids)
+            if set(proofs) != set(video_ids):
+                raise ValueError("Presentation proof required for every declared Live original")
+            carrier = carrier | {"source_integrity": proofs}
+            if any(not proof["valid"] for proof in proofs.values()):
+                carrier = carrier.copy()
+                for field in ("start_time", "end_time", "render_frame_seconds", "speech_regions"):
+                    carrier.pop(field, None)
+                return carrier | {
+                    "kind": "live-still",
+                    "motion_candidate": False,
+                    "seconds": self._still_hold(carrier["members"]),
+                }
+        return carrier
 
     def measured_stitch(self, carrier: dict) -> dict:
         """A carrier the draft planned on an unmeasured stitch, bound to its measured one.
@@ -373,8 +379,6 @@ class UnitBuilder:
         photograph otherwise.
         """
         carrier = self.refresh_clip_facts(carrier)
-        if any(not proof["valid"] for proof in carrier.get("source_integrity", {}).values()):
-            return carrier
         rendering = self._renderings.get(carrier["asset_id"])
         if (
             self._measure is None

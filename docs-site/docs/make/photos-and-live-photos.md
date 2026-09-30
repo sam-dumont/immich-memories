@@ -50,13 +50,17 @@ toward source completeness but never become displayed pictures. Each segment kee
 final interval before joining the next segment. The proof records the original hash, decoder
 version, frame timestamps and source clock; unchanged sources reuse it within the run.
 
-Before sealing the cut, selected motion companions also get a complete original-video
+After selection and measured burst binding, before sealing the cut, retained motion companions get a complete original-video
 integrity check. A malformed companion keeps its selected photograph and member IDs as a
 still, with the original hash and failure reason recorded in the new plan. The proof cache
 is keyed by the original byte SHA, selected stream, decoder version and presentation policy.
 Changing those invalidates only this proof; detector facts do not need preparation again.
 Unavailable files, downloads or tools stop the check rather than becoming corruption verdicts.
 Once the cut is sealed, source verification still fails closed.
+
+Each certified segment uses one frame endpoint for both picture and sound. It covers the verified
+video packets and the selected source-clock interval; missing audio up to that endpoint is padded
+with silence before concatenation. This prevents the next picture and its sound from drifting apart.
 
 Some companions have a complete video track that ends before their audio. For those files,
 the renderer verifies every visible video sample and its bounded video endpoint.
