@@ -181,6 +181,15 @@ The app image takes both Torch and TorchAudio from the CPU wheel index. The infe
 pin matching CPU or CUDA 12.8 wheels. Every image checks the real Demucs model-loader import at
 build time, catching missing native libraries before release.
 
+### Preparation cost and reuse
+
+Picture facts are banked in the app's persistent store. A later cut reuses matching asset and
+producer versions, whether the original preparation ran on the Mac, the NAS CPU or the inference
+GPU. Keep that store when replacing an app container. The
+[measured preparation comparison](../better/measured.md#nas-preparation) separates CPU cost,
+GPU offload, warm reuse and captioning; those timings do not include rendering. Start by measuring
+one small month before preparing a larger library window.
+
 ### The two GPU nodes
 
 `gpu-node-a` has the newer card, here an NVIDIA T1000 (Turing, 8 GB), time-sliced with Immich's

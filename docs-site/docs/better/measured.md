@@ -5,8 +5,56 @@ title: Measured
 # Measured
 
 What each setup costs in time and calls, measured on a named machine and commit. The quality side
-(which pictures each tier keeps) is judged on contact sheets, not in this table. Timings on a NAS
-appliance are being re-measured; until then this page has none.
+(which pictures each tier keeps) is judged on contact sheets, not in this table. The NAS measurements below cover classifier preparation. Whole-film memory and timing on the
+current NAS build are still being validated.
+
+## NAS preparation, 30 September 2026 {#nas-preparation}
+
+A physical Synology DS423+ processed the same 162 still-image previews with fresh fact stores,
+then repeated each pass against its completed store. Previews and model weights were already
+local. The client ran commit `c14bb057`, with four CPU cores and a 4 GiB container limit; the
+classifier code was unchanged through `f31ee608`. Both GPU services used inference commit
+`88a6d9a4eb7b`, with limits of four CPUs and 4 GiB. Their host CPUs differ and the cards are shared,
+so this compares deployed services, not the cards in isolation.
+
+| Preparation hardware | DINO and eight heads | DINO, Docling and Marqo |
+|---|---:|---:|
+| NAS CPU | 112.07 s | 246.28 s |
+| Same NAS client, T1000 service | 54.01 s | 63.38 s |
+| Same NAS client, GTX 1070 service | 26.83 s | 34.46 s |
+
+These totals include pixel facts and store work. They exclude media downloads, captions, sampled
+video frames, music and rendering. CPU throughput was 5,204 images/hour with DINO only and 2,368
+with all three models. Peak whole-container memory was 0.895 GiB and 2.869 GiB respectively.
+Those are small-sample preparation measurements, not a minimum RAM claim for a whole film.
+
+All six warm passes took 0.14 to 0.19 seconds and made **zero model or remote HTTP calls**.
+Facts live in the persistent store, keyed by asset, head and producer version. New assets,
+missing facts and changed producer versions require more work. Moving a matching producer from
+CPU to GPU preserves its fact identity. Labels and encoder identities matched across all three
+machines; the largest confidence difference was below 0.000235. All three remote producers
+reported CUDA as their active primary provider.
+
+On the T1000 all-model pass, about 97% of summed request latency was inside the service, including
+queueing. Median time outside it was 53 ms per request. The NAS also spent about 14 seconds on
+its local pixel facts. Summed concurrent request times are different from wall time; these
+measurements do not support describing that pass as mainly network-bound.
+
+Removing Docling and Marqo was also tested in copied stores on the Mac, with the NAS selection
+tier. Three paired cases kept identical complete render projections: 15, 159 and 35 shots, with
+the same order, intervals and adjustments. The lean copies contained no detector facts. That is
+no observed selection change in these three cases; both detectors remain enabled by default.
+
+The caption server separately processed 48 distinct 400-pixel previews through the compact
+caption contract on a GTX 1070. Three groups of 16 measured about 119, 138 and 141 images/minute
+at client concurrency 1, 4 and 8. All 48 replies passed the response contract, peak container
+memory was 0.984 GiB, and no restart or OOM occurred. Median request latency rose from 0.45 to
+1.69 to 3.24 seconds. Different images were used in each group, so this does not establish an
+optimal concurrency, long-run capacity or semantic accuracy. No paid API calls were made in
+these classifier or caption tests; electricity cost was not measured.
+
+Progress and the remaining real-film checks are tracked in
+[#1527](https://github.com/sam-dumont/immich-video-memory-generator/issues/1527).
 
 ## LLM conformance, 29 September 2026 {#llm-conformance}
 
