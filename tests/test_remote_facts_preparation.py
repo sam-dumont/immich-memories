@@ -375,10 +375,10 @@ def test_a_stop_mid_pass_keeps_what_was_banked_and_asks_for_nothing_more(tmp_pat
     assert len(asked) <= 4
 
 
-def test_a_video_keeps_its_exposure_head_in_process_because_the_service_reads_one_frame(
+def test_unreadable_video_frames_use_remote_preview_exposure_and_report_the_failure(
     monkeypatch, tmp_path
 ):
-    """The service is handed one picture per source; det-v3 promises a video eight."""
+    """An unavailable playback has the same explicit preview fallback as local inference."""
     from dataclasses import replace
 
     from tests.test_editorial_preparation import asset
@@ -411,5 +411,7 @@ def test_a_video_keeps_its_exposure_head_in_process_because_the_service_reads_on
     assert sorted(map(sorted, asked)) == [
         ["doc_docling", "heads"],
         ["doc_docling", "heads", "nsfw_marqo"],
+        ["nsfw_marqo"],
     ]
-    assert handed == {"nsfw_marqo": ("vv1",)}
+    assert handed == {} and local_calls == []
+    assert "detector_frames:vv1" in result.failures

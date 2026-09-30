@@ -14,6 +14,7 @@ from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Any, Protocol
 
+from immich_memories.analysis.editorial_clip_frames import CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
 from immich_memories.analysis.editorial_preparation_detector_frames import (
     DetectorFrames,
     served_locally,
@@ -25,7 +26,8 @@ from immich_memories.analysis.editorial_preparation_detectors import (
     MARQO_STILL_EQUIVALENT,
 )
 from immich_memories.analysis.editorial_preparation_heads import PUBLIC_HEAD_VERSIONS
-from immich_memories.analysis.remote_facts import offloaded_versions
+from immich_memories.analysis.editorial_preparation_remote_frames import prepare_remote_frame_facts
+from immich_memories.analysis.remote_facts import RemoteFactsError, offloaded_versions
 from immich_memories.api.models import Asset
 from immich_memories.config_models_inference import InferenceConfig
 from immich_memories.db import Store
@@ -37,6 +39,9 @@ class ModelFactStage(Protocol):
 
     @property
     def failures(self) -> dict[str, str]: ...
+
+    @property
+    def service_seconds(self) -> dict[str, float]: ...
 
     @property
     def store(self) -> Store: ...
@@ -161,7 +166,7 @@ def acquire_clip_companions(
                 stage.failures[f"{CLIP_COMPANION}:{asset_id}"] = reason
         readable = tuple(asset_id for asset_id in owed if asset_id in paths or asset_id in sampled)
         if readable:
-            stage.detectors({MARQO_HEAD: readable}, paths, sampled)
+            _sampled_models(stage, {MARQO_HEAD: readable}, paths, sampled, {})
 
 
 def acquire_model_facts(
@@ -199,13 +204,69 @@ def acquire_model_facts(
             failures=stage.failures,
             timed=stage.timed,
         ) as sampled:
-            if detector_pending:
-                stage.detectors(detector_pending, preview_paths, sampled)
-            if owed := {clip: sampled[clip] for clip in clips if clip in sampled}:
-                stage.clip_frames(owed)
+            owed = {clip: sampled[clip] for clip in clips if clip in sampled}
+            _sampled_models(stage, detector_pending, preview_paths, sampled, owed)
             if measurable := {video: sampled[video] for video in motion if video in sampled}:
                 stage.video_motion(measurable, motion)
     _record_unpackaged_heads(pending, head_versions, stage.failures)
+
+
+def _sampled_models(stage, pending, previews, frames, clips) -> None:
+    if stage.inference_config.enabled:
+        pending, clips = _offload_sampled(stage, pending, previews, frames, clips)
+    if local := {head: ids for head, ids in pending.items() if ids}:
+        stage.detectors(local, previews, frames)
+    if clips:
+        stage.clip_frames(clips)
+
+
+def _offload_sampled(stage, pending, previews, frames, clips):
+    config = stage.inference_config
+    exposure = pending.get(MARQO_HEAD, ()) if MARQO_HEAD in config.producers else ()
+    remote_clips = clips if "heads" in config.producers else {}
+    if not exposure and not remote_clips:
+        return pending, clips
+    _read_remote_samples(stage, exposure, remote_clips, previews, frames)
+    pending = dict(pending)
+    if exposure:
+        pending[MARQO_HEAD] = (
+            heads_missing_for(stage.store, exposure, MARQO_HEAD, DETECTOR_VERSIONS[MARQO_HEAD])
+            if config.fallback_to_local
+            else ()
+        )
+    if remote_clips:
+        missing = (
+            heads_missing_for(
+                stage.store, list(remote_clips), CLIP_FRAMES_HEAD, CLIP_FRAMES_VERSION
+            )
+            if config.fallback_to_local
+            else ()
+        )
+        clips = {asset_id: clips[asset_id] for asset_id in missing}
+    return pending, clips
+
+
+def _read_remote_samples(stage, exposure, clips, previews, frames) -> None:
+    config = stage.inference_config
+    try:
+        with stage.timed("remote_frames", len(set(exposure) | set(clips))):
+            charged = prepare_remote_frame_facts(
+                exposure=exposure,
+                clips=clips,
+                frame_paths=frames,
+                preview_paths=previews,
+                store=stage.store,
+                config=config,
+                check=stage.check,
+            )
+        if charged is not None:
+            stage.service_seconds["remote_frames"] = (
+                stage.service_seconds.get("remote_frames", 0) + charged
+            )
+    except (RemoteFactsError, OSError) as exc:
+        outcome = "local producers took over" if config.fallback_to_local else "no local fallback"
+        key = "remote_frames" if exposure else CLIP_FRAMES_HEAD
+        stage.failures[key] = f"inference service at {config.facts_base_url}: {exc}; {outcome}"
 
 
 def _after_remote(
