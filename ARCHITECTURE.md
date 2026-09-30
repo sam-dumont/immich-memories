@@ -303,13 +303,14 @@ remains in the preparation report but does not block required-fact completeness.
 
 `src/immich_memories/` is the app. `services/inference/immich_memories_inference/` is a second
 top-level package — the inference service, which serves the encoder, the eight public heads and the
-two detectors and Demucs over HTTP (`/ping`, `/health`, `/facts`, `/audio/stems`) in its own image with its own device
+two detectors and Demucs over HTTP (`/ping`, `/health`, `/queue`, `/facts`, `/audio/stems`) in its own image with its own device
 variant (`docker/Dockerfile.inference`, `docker/hwaccel.inference.yml`). It imports the app's
 triage engine and detector module rather than reimplementing them, which is what keeps a fact
 computed there identical to one computed in process; two import-linter contracts hold the
 direction of that dependency and keep the UI and CLI out of it. The service is not a distribution:
 the image puts it on `PYTHONPATH`, and `pythonpath` in `[tool.pytest.ini_options]` does the same
-for the suite. Its `seeding.py` fills a cold cache volume from the app's `pinned_models.py` table,
+for the suite. Its `queue.py` bounds classifier waits and admits one call per producer without
+occupying native workers while waiting; `/queue` reports aggregate counts and timings. Its `seeding.py` fills a cold cache volume from the app's `pinned_models.py` table,
 so a fresh PVC needs no `kubectl cp`. Design:
 `docs/implementation-plans/2026-09-11-phase5-inference-service.md`.
 

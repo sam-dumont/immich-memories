@@ -8,6 +8,7 @@ the in-process path and needs no container.
 ```
 GET  /ping     are you up
 GET  /health   which producers are loaded, at which versions, on which provider
+GET  /queue    classifier queue depth, active work, completions, failures and timings
 POST /facts    one picture in, what the frozen classifiers say about it
 ```
 
@@ -51,7 +52,8 @@ Every setting is read from the environment with the prefix
 | `ENCODER` | `$CACHE_DIR/dinov2-small.onnx` | the pinned DINOv2 export, digest-verified on load |
 | `BUNDLE` | the packaged public bundle | head bundle `.npz` |
 | `PROVIDER` | `auto` | `auto`, `cpu`, `cuda` or `coreml` |
-| `REQUEST_THREADS` | `4` | the thread pool in front of ONNX Runtime |
+| `REQUEST_THREADS` | `4` | maximum active model calls, at most one per producer |
+| `MAX_QUEUED_REQUESTS` | `32` | maximum waiting classifier calls; overflow returns 429 with Retry-After |
 | `IDLE_UNLOAD_SECONDS` | `300` | drop idle weights; `0` holds them |
 | `PRELOAD` | `false` | load every producer at boot |
 | `DETECTOR_CACHE_DIR` | the Hugging Face cache | where the detector snapshots live |

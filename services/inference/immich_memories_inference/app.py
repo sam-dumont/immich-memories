@@ -1,4 +1,4 @@
-"""The HTTP surface: ``/ping``, ``/health`` and ``/facts``.
+"""The HTTP surface: ``/ping``, ``/health``, ``/queue`` and ``/facts``.
 
 One picture in, the frozen classifiers' answer out. Nothing about this service —
 its host, its device or its execution provider — reaches a producer key: the
@@ -34,6 +34,7 @@ from immich_memories_inference.producers import (
     detector_loader,
     heads_loader,
 )
+from immich_memories_inference.queue import InferenceQueue, QueueFull
 from immich_memories_inference.runtime import ProducerRuntime, ProducerUnavailable
 from immich_memories_inference.settings import InferenceSettings
 
@@ -41,9 +42,9 @@ logger = logging.getLogger(__name__)
 
 # How often the idle sweep runs, whatever the TTL is.
 SWEEP_SECONDS = 15.0
-# What the producers themselves took, on every answer. A client that is waiting
+# Service elapsed time, including queue wait, on every answer. A client that is waiting
 # 0.69 s a picture on a service that decides one in 0.03 s is waiting on the wire
-# and its own request rate, and nothing else here can tell it which.
+# and its own request rate. The queue endpoint separates waiting from execution.
 SERVICE_SECONDS_HEADER = "X-Facts-Seconds"
 
 # How many distinct 503 details are remembered as already said. A message that
@@ -129,6 +130,9 @@ def _lifespan(settings: InferenceSettings, runtime: ProducerRuntime) -> Callable
         app.state.pool = ThreadPoolExecutor(
             max_workers=settings.request_threads, thread_name_prefix="inference"
         )
+        app.state.queue = InferenceQueue(
+            runtime.names, app.state.pool, settings.request_threads, settings.max_queued_requests
+        )
         if settings.preload:
             await _preload(app, runtime)
         sweeper = asyncio.create_task(_sweep_forever(runtime))
@@ -176,6 +180,10 @@ def _routes(app: FastAPI, settings: InferenceSettings, runtime: ProducerRuntime)
     async def health() -> dict[str, Any]:
         return _health(settings, runtime)
 
+    @app.get("/queue")
+    async def queue() -> dict[str, object]:
+        return app.state.queue.snapshot()
+
     @app.post("/facts")
     async def facts(request: FactsRequest, response: Response) -> dict[str, Any]:
         image = _decode(request.image, settings.max_image_bytes)
@@ -199,9 +207,10 @@ def _routes(app: FastAPI, settings: InferenceSettings, runtime: ProducerRuntime)
 
 
 async def _decide(app: FastAPI, runtime: ProducerRuntime, name: str, image: bytes) -> ProducerFacts:
-    loop = asyncio.get_running_loop()
     try:
-        return await loop.run_in_executor(app.state.pool, runtime.decide, name, image)
+        return await app.state.queue.run(name, lambda: runtime.decide(name, image))
+    except QueueFull as exc:
+        raise HTTPException(429, str(exc), headers={"Retry-After": "1"}) from exc
     except ProducerUnavailable as exc:
         raise _unavailable(app, str(exc)) from exc
     except (OSError, ValueError) as exc:
