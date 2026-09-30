@@ -16,7 +16,7 @@ ci:
 	cd $(ROOT) && PYTHONPATH=services/render-worker PYTEST_ADDOPTS='tests services/render-worker/tests' $(MAKE) -f Makefile -f services/render-worker/checks.mk ci SERVICE_TREES=services/render-worker SERVICE_PACKAGES=$(PACKAGE)
 
 coverage:
-	cd $(ROOT) && PYTHONPATH=services/render-worker PYTEST_ADDOPTS='--cov-config=services/render-worker/pyproject.toml --cov=$(PACKAGE) --cov=immich_memories.processing.remote_render --cov=immich_memories.processing.remote_render_plan --cov-report=term-missing --cov-report=xml:tests/render-worker-coverage.xml --cov-fail-under=80 -m "not e2e" services/render-worker/tests' $(MAKE) test
+	cd $(ROOT) && PYTHONPATH=services/render-worker PYTEST_ADDOPTS='--cov-config=services/render-worker/pyproject.toml --cov=$(PACKAGE) --cov=immich_memories.processing.remote_render --cov=immich_memories.processing.remote_render_plan --cov=services/inference/immich_memories_inference --cov-report=term-missing --cov-report=xml:tests/render-worker-coverage.xml --cov-fail-under=80 -m "not e2e" services/render-worker/tests tests/test_inference_service.py tests/test_inference_queue.py tests/test_inference_audio.py tests/test_inference_encoder_key_parity.py tests/test_inference_model_bundle.py' $(MAKE) test
 
 package:
 	cd $(ROOT) && uv build --wheel services/render-worker --out-dir dist

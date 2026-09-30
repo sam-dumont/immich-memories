@@ -111,6 +111,7 @@ RUN pip install --no-cache-dir --require-hashes \
 FROM builder AS bundled-cuda-models
 RUN python -m immich_memories.model_bundle /opt/immich-models
 RUN TORCH_HOME=/opt/immich-models/torch python -c "from demucs.pretrained import get_model; get_model('htdemucs')"
+RUN IMMICH_MEMORIES_FONTS_DIR=/opt/immich-models/fonts python -c "from immich_memories.titles.script_fonts import install_script_fonts; install_script_fonts()"
 
 
 # ─── runtime ─────────────────────────────────────────────────────────────────
@@ -138,6 +139,7 @@ ENV IMMICH_MEMORIES_INFERENCE_ENCODER=/opt/immich-models/dinov2-small.onnx
 ENV IMMICH_MEMORIES_INFERENCE_MARQO_ONNX=/opt/immich-models/nsfw-marqo-384.onnx
 ENV IMMICH_MEMORIES_INFERENCE_DETECTOR_CACHE_DIR=/opt/immich-models/huggingface
 ENV IMMICH_MEMORIES_INFERENCE_PROVIDER=cuda
+ENV IMMICH_MEMORIES_FONTS_DIR=/opt/immich-models/fonts
 ENV IMMICH_MEMORIES_TRIAGE__ENCODER=/opt/immich-models/dinov2-small.onnx
 ENV IMMICH_MEMORIES_TRIAGE__PROVIDER=cuda
 ENV IMMICH_MEMORIES_EDITORIAL__PREPARATION__MARQO_ONNX=/opt/immich-models/nsfw-marqo-384.onnx
@@ -179,6 +181,7 @@ COPY --from=builder /opt/venv /opt/venv
 # is what makes a fact computed here indistinguishable from one computed in
 # process. It travels as source on PYTHONPATH.
 COPY services/inference /app/services/inference
+COPY services/render-worker/immich_memories_render_worker /app/services/render-worker/immich_memories_render_worker
 COPY THIRD_PARTY_NOTICES /usr/share/licenses/immich-memories/THIRD_PARTY_NOTICES
 
 # UID/GID 1000 on purpose: it matches the app image, the first Linux user on
@@ -194,7 +197,7 @@ RUN existing_group="$(getent group 1000 | cut -d: -f1)" && \
 
 ENV PATH=/opt/venv/bin:$PATH
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app/services/inference
+ENV PYTHONPATH=/app/services/inference:/app/services/render-worker
 # Published on the port `caption_base_url` already defaults to, and reachable:
 # the service's own default is loopback so an unconfigured laptop run does not
 # put a model server on the LAN, which is not what a container wants.

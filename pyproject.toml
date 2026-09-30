@@ -351,6 +351,7 @@ known-first-party = ["immich_memories", "immich_memories_inference"]
 
 [tool.mypy]
 python_version = "3.11"
+mypy_path = ["services/inference", "services/render-worker"]
 warn_return_any = false
 warn_unused_ignores = true
 disallow_untyped_defs = false

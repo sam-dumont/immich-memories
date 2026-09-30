@@ -172,6 +172,31 @@ def test_the_service_tree_is_importable_in_the_image() -> None:
     assert "PYTHONPATH=/app/services/inference" in prod
 
 
+def test_cuda_can_run_the_combined_worker_without_changing_standalone_inference() -> None:
+    prod = " ".join(stage("prod"))
+    models = " ".join(stage("bundled-cuda-models"))
+    cuda = " ".join(stage("prod-cuda"))
+    assert "COPY services/render-worker/immich_memories_render_worker" in prod
+    assert "PYTHONPATH=/app/services/inference:/app/services/render-worker" in prod
+    assert "install_script_fonts" in models
+    assert "IMMICH_MEMORIES_FONTS_DIR=/opt/immich-models/fonts" in cuda
+    assert 'CMD ["python", "-m", "immich_memories_inference"]' in prod
+
+
+def test_combined_compose_uses_one_address_and_one_gpu_allocation() -> None:
+    deployment = yaml.safe_load(
+        (REPO_ROOT / "services/inference/compose.gpu-worker.yaml").read_text()
+    )
+    assert set(deployment["services"]) == {"gpu-worker"}
+    worker = deployment["services"]["gpu-worker"]
+    assert worker["command"] == ["python", "-m", "immich_memories_inference.gpu_worker"]
+    assert len(worker["ports"]) == 1
+    assert worker["environment"]["NVIDIA_DRIVER_CAPABILITIES"] == "compute,video,utility"
+    devices = worker["deploy"]["resources"]["reservations"]["devices"]
+    assert devices == [{"driver": "nvidia", "count": 1, "capabilities": ["gpu"]}]
+    assert "/render/health" in str(worker["healthcheck"])
+
+
 def test_the_model_cache_is_a_volume_the_service_user_can_write() -> None:
     prod = " ".join(stage("prod"))
 

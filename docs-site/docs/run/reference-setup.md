@@ -10,6 +10,9 @@ Written up from a real deployment. Most installs want a fraction of this: read [
 model adds](../get-started/what-a-gpu-or-a-model-adds.md) first, and come back here for the pieces
 worth adding.
 
+For one GPU box and one address, use the [combined CUDA worker](#one-gpu-service).
+It runs the existing inference, caption, Demucs and render services in one container.
+
 Placeholders throughout: `photos.example.com`, `192.168.1.50`, `gpu-node-a`, `idp.example.com`.
 Nothing on this page is a real hostname, IP or node name.
 
@@ -38,6 +41,67 @@ or [`deploy/terraform/examples/maximalist`](https://github.com/sam-dumont/immich
 The Mac profile is a source checkout with ACE-Step installed beside it, plus two local servers
 (the reader and the caption server): see [Generated music](../better/music.md#install-locally-on-a-mac)
 and [Add a reader](../better/reader.md).
+
+## One GPU service
+
+The CUDA inference image can also run all four heavy services together. It reserves one GPU
+and publishes port 8092. Use the same app version for the worker and the app:
+
+```bash
+export GPU_WORKER_IMAGE=ghcr.io/sam-dumont/immich-video-memory-generator/inference:YOUR_APP_TAG-cuda
+export IMMICH_URL=https://photos.example.com
+export RENDER_WORKER_TOKEN=replace-with-openssl-rand-hex-32
+export GPU_WORKER_BIND_ADDRESS=192.168.1.50
+docker compose -f services/inference/compose.gpu-worker.yaml up -d
+```
+
+The exact container command is `python -m immich_memories_inference.gpu_worker`. The regular
+inference image entrypoint and the separate render and caption deployments still work.
+
+Point the app's three existing settings at the same address:
+
+```yaml
+advanced:
+  inference:
+    facts_base_url: http://192.168.1.50:8092
+  editorial:
+    preparation:
+      caption_base_url: http://192.168.1.50:8092/v1
+
+render:
+  worker_base_url: http://192.168.1.50:8092/render
+  worker_token: ${RENDER_WORKER_TOKEN}
+  allow_insecure_http: true
+```
+
+That HTTP example is for a trusted LAN. Behind HTTPS, use the same three paths and leave
+`allow_insecure_http` false. Rendering keeps its bearer-token authentication; the token is never
+forwarded to the caption process. Picture facts and captions keep their existing LAN-only,
+unauthenticated contract.
+
+| Work | Endpoint |
+|---|---|
+| Picture facts | `POST /facts` |
+| Music stems | `POST /audio/stems`, selected by the same inference URL |
+| Caption model and streaming completions | `/v1/models`, `/v1/chat/completions` |
+| Authenticated rendering | `/render/health`, `/render/jobs`, `/render/jobs/{id}/output` |
+
+The app already asks for these phases in sequence. The worker lets the current model calls
+finish, drops classifier weights and stops the caption process before rendering. Demucs releases
+its model after separation. A model request arriving during rendering gets HTTP 503 with
+`Retry-After: 1`; health and render-job status remain available. Rendering waits up to 60 seconds
+for active model calls, then fails that job rather than unloading a model mid-call. Each service
+keeps its existing queue. The next caption request starts the bundled caption process again.
+
+Check `GET /health` for the inference provider and authenticated `GET /render/health` for
+`titles: CUDA`, NVENC encoders and `accelerated: true`. Seeing the card in `nvidia-smi` alone
+does not prove it is rendering. The Compose file includes `compute,video,utility`, so the driver
+can expose both CUDA and NVENC.
+
+ACE-Step stays in its separate deployment. Keep `advanced.ace_step.api_url` and its key as they
+are; the combined worker only separates the generated track with Demucs. The reader LLM can
+also keep its existing address. This option does not require changing the maximalist Kubernetes
+or Terraform profiles below.
 
 ## Feature → where it runs → config keys → hardware
 
