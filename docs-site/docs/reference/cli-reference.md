@@ -96,6 +96,23 @@ Send a test notification to verify Apprise URL configuration.
 immich-memories auto test-notification [OPTIONS]
 ```
 
+## `capabilities`
+
+Show what this setup supports, what is missing, and which music profiles work.
+
+Connection and installation checks are labelled separately from real generation.
+Saved settings and running model servers are left alone. Use --test-music after
+unloading idle models if you want to test music with their memory freed.
+
+```bash
+immich-memories capabilities [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--test-music` | boolean | false | Generate 15 seconds for each local ACE-Step profile that fits; may download models. |
+| `--json` | boolean | false | Print the report as JSON |
+
 ## `config`
 
 Configure the Immich connection, or inspect where each setting comes from.

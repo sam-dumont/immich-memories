@@ -9,6 +9,25 @@ film there. A GPU or a text model makes it better:
 [what each one adds](../get-started/what-a-gpu-or-a-model-adds.md), feature by feature. This page
 is what each setup needs, and how the app picks between them.
 
+## Check this setup
+
+Run `immich-memories capabilities` with the config you will use for your films. It reports the
+resolved selection tier, provider connections, model files, hardware encoding, render memory
+budget and local ACE-Step profiles. NAS output stays capped at 1080p. Add `--json` to save the
+same results in a script.
+
+`immich-memories capabilities --test-music` also generates a 15-second synthetic track with each
+local profile that passes the memory check: your configured profile, 2B turbo without a planner,
+and 2B turbo with the 0.6B planner. Duplicate profiles run once. The first test can download model
+weights. Each track must be local, finite, audible and the requested length to earn `verified`.
+Failed tests remain in the report, and settings stay unchanged.
+
+An installed model or a successful connection is labelled as a check; it is not a completed film.
+Memory estimates cover resident weights, with more needed for generation. A local reader such
+as oMLX can keep its model loaded while idle. Unload that model and rerun the music test to measure
+what fits with its memory freed. The command leaves model servers alone. Music that works after
+unloading a reader has not been proven to fit alongside it.
+
 ## Hardware
 
 For this app's container, on top of what Immich itself uses:
