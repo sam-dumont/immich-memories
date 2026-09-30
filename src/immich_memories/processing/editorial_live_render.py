@@ -12,11 +12,11 @@ from typing import Any
 
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 from immich_memories.processing.live_material import LiveRenderMaterial
-from immich_memories.processing.probe_cache import ProbeCache, trim_ticks
+from immich_memories.processing.probe_cache import ProbeCache, ProbeError, trim_ticks
 from immich_memories.security import write_secret_file
 
 RENDER_VERSION = "editorial-live-render-v1"
-FRAME_QUANTIZATION = "source-packet-segment-quantization-and-presentation-frame-hold-v5"
+FRAME_QUANTIZATION = "source-packet-segment-quantization-and-verified-audio-tail-hold-v6"
 
 
 def validate_editorial_live_clip(clip: Any) -> LiveRenderMaterial:
@@ -140,7 +140,8 @@ def _bind_trailing_frame(probes, path, entry, probe, origin: float, evidence: di
     # rounded depending on its formatter; either reading can extend just beyond
     # the final video packet.
     if not -0.001 < entry.end - probe.duration_seconds <= 0.0005:
-        raise _reject(evidence)
+        _bind_audio_tail(probes, path, entry, probe, evidence)
+        return
     tail = probes.last_video_frame(path)
     tail_start, tail_end = tail["start_seconds"] - origin, tail["end_seconds"] - origin
     # Some MOV probes report a sample duration shorter than the observed PTS
@@ -150,12 +151,26 @@ def _bind_trailing_frame(probes, path, entry, probe, origin: float, evidence: di
     overrun = _declared_ticks(tail, entry.end, origin) - (tail["pts"] + tail["duration_ticks"])
     gap = entry.end - tail_end
     if entry.start >= tail_end or entry.end < tail_start or overrun > hold_ticks:
-        raise _reject(evidence | {"final_packet": tail, "source_tail_seconds": gap})
+        _bind_audio_tail(probes, path, entry, probe, evidence)
+        return
     evidence.update(
         final_packet=tail,
         source_tail_seconds=gap,
         boundary="millisecond-container-end-within-final-source-frame",
     )
+
+
+def _bind_audio_tail(probes, path, entry, probe, evidence) -> None:
+    from immich_memories.processing.live_audio_tail import certify_audio_tail
+
+    if not getattr(probe, "has_audio", False):
+        raise _reject(evidence)
+    tail = probes.last_video_frame(path)
+    try:
+        proof = certify_audio_tail(path, entry, probe, tail)
+    except ProbeError as exc:
+        raise _reject(evidence | {"audio_tail_rejection": str(exc)}) from exc
+    evidence.update(final_packet=tail, audio_tail_hold=proof, boundary=proof["boundary"])
 
 
 def _hold_last_frame(
@@ -265,6 +280,17 @@ def _predicted_encode(probes, paths, material, render_rate: Fraction, source_tim
     frames = 0
     for path, entry, evidence in zip(paths, material.segments, source_timing, strict=True):
         segment = probes.quantized_segment(path, entry.start, entry.end, render_rate)
+        if "audio_tail_hold" in evidence:
+            clock = Fraction(segment["time_base"])
+            end = trim_ticks(entry.end, clock) + segment["origin_pts"]
+            held_frames = math.ceil((end - segment["first_pts"]) * clock * render_rate)
+            evidence["audio_tail_hold"].update(
+                before_frames=segment["frames"],
+                target_frames=held_frames,
+                render_frame_rate=str(render_rate),
+            )
+            segment["frames"] = held_frames
+            segment["seconds"] = float(Fraction(held_frames) / render_rate)
         evidence["quantized_segment"] = segment
         frames += segment["frames"]
     return float(Fraction(frames) / render_rate)
@@ -341,6 +367,10 @@ def render_certified_live(
     source_timing = _source_timings(probes, paths, material)
     render_rate = max(Fraction(row["render_cadence"]["rate"]) for row in source_timing)
     predicted = _predicted_encode(probes, paths, material, render_rate, source_timing)
+    holds = [
+        row["quantized_segment"]["frames"] if "audio_tail_hold" in row else 0
+        for row in source_timing
+    ]
     result = merge(
         list(paths),
         list(material.trim_points),
@@ -350,6 +380,7 @@ def render_certified_live(
         strict_material=True,
         render_frame_rate=str(render_rate),
         config=config,
+        **({"segment_frame_holds": holds} if any(holds) else {}),
     )
     if result != target or not target.is_file():
         raise ValueError("Editorial Live merge failed; material fallback is forbidden")
