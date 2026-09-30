@@ -22,14 +22,17 @@ from immich_memories.api.models import Asset
 from immich_memories.config_models_render import PhotoConfig
 from immich_memories.generate_privacy import clip_location_name
 from immich_memories.photos.animator import prepare_photo_source
+from immich_memories.photos.encoding import photo_encoding_plan
 from immich_memories.photos.renderer import (
     KenBurnsParams,
     face_aware_pan,
     render_ken_burns_streaming,
 )
 from immich_memories.processing.assembly_config import AssemblyClip
-from immich_memories.processing.clip_encoder import with_x265_lookahead
+from immich_memories.processing.clip_encoder import encoder_args_for_plan
+from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer
 from immich_memories.processing.ffmpeg_runner import write_frames_to_ffmpeg
+from immich_memories.processing.hardware_encode import apply_hardware_encode
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +99,7 @@ def render_single_photo(
     fps: int = 30,
     *,
     source_path: Path | None = None,
+    encoding_plan: EncodingPlan | None = None,
 ) -> AssemblyClip | None:
     """Download, prepare, render (streaming), and encode a single photo."""
     try:
@@ -122,6 +126,7 @@ def render_single_photo(
             gain_map_hdr=prepared.has_gain_map,
             peak_nits=peak_nits,
             primaries=getattr(prepared, "primaries", "bt709"),
+            encoding_plan=encoding_plan,
         )
 
         if not output_path.exists() or output_path.stat().st_size < 100:
@@ -200,10 +205,11 @@ def _stream_render_to_mp4(
     gain_map_hdr: bool = False,
     peak_nits: int = 203,
     primaries: str = "bt709",
+    encoding_plan: EncodingPlan | None = None,
 ) -> None:
     """Render Ken Burns frames and stream directly to FFmpeg.
 
-    Encodes as HEVC 10-bit HLG/BT.2020 to match iPhone video clips.
+    Preserves PQ in HEVC, or tone-maps to SDR for a NAS H.264 hardware plan.
 
     For gain-mapped HDR sources (16-bit linear from Apple gain map),
     pipes rgb48le and uses zscale tin=linear. For SDR sources (8-bit sRGB),
@@ -211,7 +217,10 @@ def _stream_render_to_mp4(
 
     Streams one frame at a time — O(1) memory.
     """
-    from immich_memories.processing.hdr_utilities import check_zscale_available
+    from immich_memories.processing.hdr_utilities import (
+        check_zscale_available,
+        get_hdr_conversion_filter,
+    )
 
     has_zscale = check_zscale_available()
     # WHY: photo clips are PQ, gain-mapped or not. HLG is relative -- its OETF
@@ -220,15 +229,17 @@ def _stream_render_to_mp4(
     # out every photograph, HDR and SDR alike. PQ names an absolute luminance,
     # so nothing downstream can lift the shadows. Video clips stay HLG, which
     # is what iPhone video is, and the assembler converts between the two.
-    transfer = "smpte2084"
-    encoder_args = (
-        _get_photo_encoder_args(transfer, (target_w, target_h))
-        if has_zscale
-        else _get_sdr_encoder_args()
+    plan = encoding_plan or photo_encoding_plan(
+        transfer=HdrTransfer.PQ if has_zscale else HdrTransfer.NONE
     )
+    encoder_args = encoder_args_for_plan(plan, frame_size=(target_w, target_h))
     pix_fmt, vf = photo_filter_chain(
         gain_map_hdr=gain_map_hdr, has_zscale=has_zscale, peak_nits=peak_nits, primaries=primaries
     )
+    if has_zscale:
+        vf += get_hdr_conversion_filter(
+            "pq", plan.target_transfer.value if plan.hdr else "sdr", required=True
+        )
 
     source = _at_pipe_depth(img, sixteen_bit=pix_fmt == "rgb48le")
 
@@ -237,103 +248,41 @@ def _stream_render_to_mp4(
             yield frame.tobytes()
 
     returncode, stderr_text = write_frames_to_ffmpeg(
-        [
-            "ffmpeg",
-            "-y",
-            "-f",
-            "rawvideo",
-            "-pix_fmt",
-            pix_fmt,
-            "-s",
-            f"{target_w}x{target_h}",
-            "-r",
-            str(params.fps),
-            "-i",
-            "pipe:0",
-            "-f",
-            "lavfi",
-            "-i",
-            "anullsrc=r=48000:cl=stereo",
-            "-vf",
-            vf,
-            *encoder_args,
-            "-c:a",
-            "aac",
-            "-b:a",
-            "128k",
-            "-t",
-            str(params.duration),
-            "-shortest",
-            str(output_path),
-        ],
+        apply_hardware_encode(
+            [
+                "ffmpeg",
+                "-y",
+                "-f",
+                "rawvideo",
+                "-pix_fmt",
+                pix_fmt,
+                "-s",
+                f"{target_w}x{target_h}",
+                "-r",
+                str(params.fps),
+                "-i",
+                "pipe:0",
+                "-f",
+                "lavfi",
+                "-i",
+                "anullsrc=r=48000:cl=stereo",
+                "-vf",
+                vf,
+                *encoder_args,
+                "-c:a",
+                "aac",
+                "-b:a",
+                "128k",
+                "-t",
+                str(params.duration),
+                "-shortest",
+                str(output_path),
+            ],
+            pixel_format=plan.pixel_format,
+        ),
         _frames(),
         wait_timeout=300,
     )
 
     if returncode != 0:
         raise RuntimeError(f"Photo FFmpeg encoding failed (exit {returncode}): {stderr_text}")
-
-
-def _get_photo_encoder_args(
-    transfer: str = "arib-std-b67", frame_size: tuple[int, int] = (3840, 2160)
-) -> list[str]:
-    """Encoder args for a 10-bit BT.2020 HEVC photo clip.
-
-    WHY: iPhone videos are HEVC HLG 10-bit BT.2020, and a photo clip has to
-    reach the assembler already in BT.2020 or the SDR->HDR zscale conversion
-    tints it red. The TRANSFER differs by source: a gain-mapped photograph is
-    natively PQ and says so, while everything else stays HLG to match video.
-    The assembler converts between the two where a cut needs it.
-    """
-    try:
-        result = subprocess.run(
-            ["ffmpeg", "-hide_banner", "-encoders"], capture_output=True, text=True, timeout=5
-        )
-        has_vt = "hevc_videotoolbox" in result.stdout
-    except (OSError, subprocess.SubprocessError, ValueError):
-        has_vt = False
-
-    # WHY: zscale in the filter already converts to yuv420p10le with
-    # HLG/BT.2020 color. Encoder just needs to preserve the metadata.
-    if has_vt:
-        return [
-            "-c:v",
-            "hevc_videotoolbox",
-            "-profile:v",
-            "main10",
-            "-tag:v",
-            "hvc1",
-            "-b:v",
-            "20M",
-            "-colorspace",
-            "bt2020nc",
-            "-color_primaries",
-            "bt2020",
-            "-color_trc",
-            transfer,
-        ]
-
-    software = [
-        "-c:v",
-        "libx265",
-        "-preset",
-        "medium",
-        "-crf",
-        "8",
-        "-tag:v",
-        "hvc1",
-        "-colorspace",
-        "bt2020nc",
-        "-color_primaries",
-        "bt2020",
-        "-color_trc",
-        transfer,
-        "-x265-params",
-        f"hdr-opt=1:repeat-headers=1:colorprim=bt2020:transfer={transfer}:colormatrix=bt2020nc",
-    ]
-    return with_x265_lookahead(software, *frame_size)
-
-
-def _get_sdr_encoder_args() -> list[str]:
-    """SDR encoder args for when zscale is unavailable."""
-    return ["-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p"]

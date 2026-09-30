@@ -19,6 +19,11 @@ same way, panning toward the largest face Immich found. With no face on the pict
 the centre, which suits landscapes, food and the dog. The face boxes come from Immich; framing runs
 no face detector of its own.
 
+Photo preparation uses the hardware encoder the app has verified, including NVIDIA and VAAPI.
+On NAS tier, a device with hardware H.264 but no hardware HEVC prepares photos as SDR H.264;
+HDR photos are tone-mapped before encoding. Devices with hardware HEVC keep HDR photo
+intermediates. Disabling hardware encoding keeps preparation in software.
+
 Video clips are never cropped. A landscape clip in a portrait film keeps its whole frame and
 [`scale_mode`](../reference/config-reference.md) fills the rest: `blur` (default) puts a blurred, zoomed
 copy behind the sharp one, `fit` uses black bars. Face-aware video cropping is not offered: a moving
