@@ -20,17 +20,21 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import numpy as np
 
+    from immich_memories.config_loader import Config
+
 from immich_memories.api.models import Asset
 from immich_memories.processing.encoding_plan import (
     EncodingPlan,
     EncodingRequest,
     HdrMode,
+    HdrTransfer,
     OutputCodec,
     resolve_encoding_plan,
 )
 from immich_memories.processing.hardware import HWAccelCapabilities
 from immich_memories.processing.hardware_detection import detect_hardware_acceleration
 from immich_memories.processing.hardware_encode import apply_hardware_encode
+from immich_memories.processing.live_geometry import burst_geometry_filter
 
 # Default Live Photo clip duration (1.5s before + 1.5s after shutter)
 DEFAULT_CLIP_DURATION = 3.0
@@ -395,32 +399,9 @@ def burst_fps(clip_paths: list[Path]) -> float:
 
 
 def _detect_clip_hdr(clip_path: Path) -> bool:
-    """Check if a video clip is HDR by probing color_transfer."""
-    import subprocess
+    from immich_memories.processing.hdr_utilities import _detect_hdr_type
 
-    try:
-        result = subprocess.run(
-            [
-                "ffprobe",
-                "-v",
-                "quiet",
-                "-select_streams",
-                "v:0",
-                "-show_entries",
-                "stream=color_transfer",
-                "-of",
-                "csv=p=0",
-                str(clip_path),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        transfer = result.stdout.strip().lower()
-        return transfer in ("arib-std-b67", "smpte2084")
-    except (OSError, subprocess.SubprocessError) as e:
-        logging.getLogger(__name__).debug("ffprobe HDR check failed: %s", e)
-        return False
+    return _detect_hdr_type(clip_path) is not None
 
 
 def align_clips_spectrogram(
@@ -591,6 +572,7 @@ def build_merge_command(
     hardware_enabled: bool = True,
     quantize_material: bool = False,
     render_frame_rate: str | None = None,
+    config: Config | None = None,
 ) -> list[str]:
     """Build an FFmpeg command that trims and merges Live Photo clips.
 
@@ -614,7 +596,23 @@ def build_merge_command(
         render_frame_rate = str(
             max(Fraction(probes.render_frame_rate(path)["rate"]) for path in clip_paths)
         )
-    is_hdr = bool(clip_paths) and _detect_clip_hdr(clip_paths[0])
+    from immich_memories.processing.hdr_utilities import (
+        _detect_hdr_type,
+        get_hdr_conversion_filter,
+    )
+
+    source_types = (
+        [_detect_hdr_type(path) for path in clip_paths]
+        if config is not None
+        else ["hlg" if clip_paths and _detect_clip_hdr(clip_paths[0]) else None] * len(clip_paths)
+    )
+    transfer = HdrTransfer(source_types[0] or "none")
+    plan = burst_encoding_plan(
+        is_hdr=transfer is not HdrTransfer.NONE,
+        hardware_enabled=hardware_enabled,
+        config=config,
+        input_transfer=transfer,
+    )
     has_audio = all(probe_clip_has_audio(p) for p in clip_paths)
     a_trims = audio_trim_points or trim_points
     n = len(clip_paths)
@@ -630,39 +628,20 @@ def build_merge_command(
         has_audio,
         render_frame_rate or (burst_fps(clip_paths) if n > 1 or quantize_material else 0.0),
         quantize_material=quantize_material,
-        geometry_filter=_burst_geometry_filter(clip_paths),
+        geometry_filter=burst_geometry_filter(
+            clip_paths, nas=config is not None and config.tier == "nas"
+        ),
+        color_filters=[
+            get_hdr_conversion_filter(
+                source, plan.target_transfer.value if plan.hdr else "sdr", required=True
+            )
+            for source in source_types
+        ],
     )
     video_label = _build_concat_and_map(cmd, parts, v_labels, a_labels, n, has_audio)
 
-    plan = burst_encoding_plan(is_hdr=is_hdr, hardware_enabled=hardware_enabled)
     _append_encoding_args(cmd, plan, has_audio, output)
     return apply_hardware_encode(cmd, pixel_format=plan.pixel_format, video_label=video_label)
-
-
-def _burst_geometry_filter(paths: list[Path]) -> str:
-    from immich_memories.processing.probe_cache import ProbeCache, ProbeError
-
-    if len(paths) < 2:
-        return ""
-    probes = ProbeCache()
-    sizes = []
-    for path in paths:
-        try:
-            size = probes.get(path).resolution
-        except (ProbeError, OSError, ValueError):
-            continue  # The legacy path still lets FFmpeg report an unreadable input.
-        if size is not None:
-            sizes.append(size)
-    if not sizes:
-        return ""
-    width, height = max(sizes, key=lambda size: size[0] * size[1])
-    width += width % 2
-    height += height % 2
-    # Companions can mix original and reduced resolutions; concat needs one canvas.
-    return (
-        f",scale={width}:{height}:force_original_aspect_ratio=decrease:"
-        f"force_divisible_by=2:flags=lanczos,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1"
-    )
 
 
 def _build_trim_filters(
@@ -672,6 +651,7 @@ def _build_trim_filters(
     has_audio: bool,
     target_fps: float | str,
     *,
+    color_filters: list[str],
     quantize_material: bool = False,
     geometry_filter: str = "",
 ) -> tuple[list[str], list[str], list[str]]:
@@ -682,6 +662,7 @@ def _build_trim_filters(
     fade_dur = 0.03  # 30ms anti-crackle fade
 
     for i, (v_start, v_end) in enumerate(v_trims):
+        color = color_filters[i]
         normalize = ",normalize=smoothing=20:independence=0:strength=0.4"
         # Selected-source cadence supplies a grid fine enough for dense VFR
         # sections. Average metadata alone does not prove this.
@@ -693,7 +674,7 @@ def _build_trim_filters(
             fps_filter = f",fps={rate}:eof_action=pass"
         parts.append(
             f"[{i}:v]trim=start={v_start}:end={v_end},setpts=PTS-STARTPTS"
-            f"{normalize}{geometry_filter}{fps_filter}[v{i}]"
+            f"{normalize}{geometry_filter}{color}{fps_filter}[v{i}]"
         )
         v_labels.append(f"[v{i}]")
 
@@ -737,34 +718,43 @@ def _build_concat_and_map(
     return video_label
 
 
-def burst_encoding_plan(*, is_hdr: bool, hardware_enabled: bool = True) -> EncodingPlan:
+def burst_encoding_plan(
+    *,
+    is_hdr: bool,
+    hardware_enabled: bool = True,
+    config: Config | None = None,
+    input_transfer: HdrTransfer | None = None,
+) -> EncodingPlan:
     """The encoding contract for a merged burst.
 
-    Bursts merge at download time, before the run has resolved its own
-    ``EncodingPlan``, which is why this path used to hardcode an encoder. It
-    does not need the run's plan: the merged file is an intermediate that the
-    assembler re-encodes, and adopting an SDR output plan here would tone-map an
-    HDR burst before anything had chosen to. What it needs is the run's machine,
-    and ``detect_hardware_acceleration`` is ``lru_cache``d process-wide, so
-    asking for it here costs a dict lookup after the first probe.
-
-    The codec follows the source rather than the output: HLG bursts stay H.265
-    10-bit so the transfer survives to the assembler.
+    The source transfer survives preparation unless NAS hardware needs H.264.
+    That case explicitly tone-maps to SDR. Certified caches bind the tier and
+    hardware settings, so their intermediates cannot cross this policy boundary.
     """
-    capabilities = detect_hardware_acceleration() if hardware_enabled else HWAccelCapabilities()
+    hardware_enabled = hardware_enabled and (config is None or config.hardware.enabled)
+    capabilities = (
+        detect_hardware_acceleration(config.hardware.backend if config else "auto")
+        if hardware_enabled
+        else HWAccelCapabilities()
+    )
+    nas = config is not None and config.tier == "nas"
+    preserve_hdr = is_hdr and not (
+        nas and capabilities.supports_h264_encode and not capabilities.supports_h265_encode
+    )
     request = EncodingRequest(
-        codec=OutputCodec.H265 if is_hdr else OutputCodec.H264,
-        hdr_mode=HdrMode.HDR if is_hdr else HdrMode.SDR,
+        codec=OutputCodec.H265 if preserve_hdr else OutputCodec.H264,
+        hdr_mode=HdrMode.HDR if preserve_hdr else HdrMode.SDR,
         hardware_enabled=hardware_enabled,
         # An intermediate is not worth a slow preset; the CRF carries the quality.
         preset="fast",
         crf=BURST_CRF,
         container="mp4",
-        # An intermediate is cached and read back by the assembler, so its codec
-        # must not depend on what this machine can encode today.
-        codec_policy="strict",
+        # NAS preparation chooses a codec its verified hardware can encode.
+        codec_policy="prefer_hardware" if nas else "strict",
     )
-    return resolve_encoding_plan(request, capabilities, input_has_hdr=is_hdr)
+    return resolve_encoding_plan(
+        request, capabilities, input_has_hdr=is_hdr, input_transfer=input_transfer
+    )
 
 
 def _append_encoding_args(

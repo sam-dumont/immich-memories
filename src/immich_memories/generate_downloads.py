@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from immich_memories.api.immich import SyncImmichClient
     from immich_memories.api.models import Asset, VideoClipInfo
     from immich_memories.cache.video_cache import CacheBatch
+    from immich_memories.config_loader import Config
     from immich_memories.processing.download_coordinator import DownloadResult
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ def download_clip(
     *,
     prefetched_burst_results: Mapping[str, DownloadResult] | None = None,
     hardware_enabled: bool = True,
+    config: Config | None = None,
 ) -> Path | None:
     """Download a single clip, handling live photo bursts.
 
@@ -49,6 +51,7 @@ def download_clip(
             output_dir,
             prefetched_burst_results=prefetched_burst_results,
             hardware_enabled=hardware_enabled,
+            config=config,
         )
     # Use pre-downloaded clip if available (e.g., from analysis cache)
     if clip.local_path and Path(clip.local_path).exists():
@@ -65,6 +68,7 @@ def download_clip(
             output_dir,
             prefetched_burst_results=prefetched_burst_results,
             hardware_enabled=hardware_enabled,
+            config=config,
         )
 
     if video_cache is None:
@@ -80,6 +84,7 @@ def _download_and_merge_burst(
     *,
     prefetched_burst_results: Mapping[str, DownloadResult] | None = None,
     hardware_enabled: bool = True,
+    config: Config | None = None,
 ) -> Path | None:
     """Download live photo burst videos and merge into one file."""
     burst_ids = clip.live_burst_video_ids or []
@@ -101,13 +106,15 @@ def _download_and_merge_burst(
             output_dir,
             merge=_try_merge_burst,
             hardware_enabled=hardware_enabled,
+            config=config,
         )
 
     assert client is not None  # Legacy download_clip has already handled no-client mode.
 
     merge_dir = output_dir / ".live_merges"
     merge_dir.mkdir(parents=True, exist_ok=True)
-    merged_path = merge_dir / f"{clip.asset.id}_merged.mp4"
+    profile = f"_{config.tier}" if config is not None else ""
+    merged_path = merge_dir / f"{clip.asset.id}{profile}_merged.mp4"
     if merged_path.exists() and merged_path.stat().st_size > 1000:
         return merged_path
 
@@ -131,6 +138,7 @@ def _download_and_merge_burst(
         merged_path,
         shutter_timestamps=clip.live_burst_shutter_timestamps,
         hardware_enabled=hardware_enabled,
+        config=config,
     )
     return merged or _download_fallback(client, video_cache, clip.asset, output_dir)
 
@@ -307,6 +315,7 @@ def _try_merge_burst(
     hardware_enabled: bool = True,
     strict_material: bool = False,
     render_frame_rate: str | None = None,
+    config: Config | None = None,
 ) -> Path | None:
     """Try to merge burst clips with spectrogram-aligned audio/video.
 
@@ -374,6 +383,7 @@ def _try_merge_burst(
         hardware_enabled=hardware_enabled,
         quantize_material=strict_material,
         render_frame_rate=render_frame_rate,
+        config=config,
     )
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)  # noqa: S603

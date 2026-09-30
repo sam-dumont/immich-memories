@@ -196,6 +196,7 @@ def _download_video_path(
             output_dir,
             prefetched_burst_results=burst_results,
             hardware_enabled=params.config.hardware.enabled,
+            config=params.config,
         )
 
     prefetched_result = prefetched.get(clip.asset.id) if prefetched is not None else None
@@ -204,7 +205,7 @@ def _download_video_path(
     if prefetched_result and prefetched_result.error:
         logger.warning("Failed to prefetch %s: %s", clip.asset.id, prefetched_result.error)
         return None
-    return download_clip(params.client, video_cache, clip, output_dir)
+    return download_clip(params.client, video_cache, clip, output_dir, config=params.config)
 
 
 @dataclass(frozen=True)

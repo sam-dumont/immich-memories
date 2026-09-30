@@ -100,6 +100,11 @@ agree. With it off, a Live Photo is used as its still, never dropped.
 A shared album can hold a downscaled copy of a Live Photo pointing at the same video. The video
 belongs to both copies, so whichever the cut keeps plays it.
 
+On NAS tier, Live Photo merges fit within 1920×1080 in landscape or 1080×1920 in portrait.
+If the hardware encodes H.264 but cannot encode HEVC, HDR companions are tone-mapped to SDR
+during preparation. Each companion's HLG or PQ transfer determines its color conversion.
+Changing the tier or hardware settings rebuilds certified merges under the new policy.
+
 :::note Person-filtered memories
 The person tag is the boundary. An untagged Live Photo does not enter a person memory because it was
 shot beside a tagged one. A tagged frame can then lack neighbours to render as motion; it stays a

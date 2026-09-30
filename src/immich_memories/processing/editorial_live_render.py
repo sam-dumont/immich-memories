@@ -303,7 +303,9 @@ def _quantized_encode(
     return actual_duration, hold, actual.fps
 
 
-def render_certified_live(clip, paths, output_dir, *, merge, hardware_enabled=True) -> Path:
+def render_certified_live(
+    clip, paths, output_dir, *, merge, hardware_enabled=True, config=None
+) -> Path:
     """The only reusable merge is bound to this manifest and exact original bytes."""
     material = validate_editorial_live_clip(clip)
     if len(paths) != len(material.segments) or any(
@@ -317,6 +319,11 @@ def render_certified_live(clip, paths, output_dir, *, merge, hardware_enabled=Tr
         "certificate": clip.editorial_live_manifest,
         "input_sha256": inputs,
         "hardware_enabled": hardware_enabled,
+        "source_policy": (
+            {"tier": config.tier, "hardware": config.hardware.model_dump(mode="json")}
+            if config is not None
+            else None
+        ),
     }
     key = hashlib.sha256(
         json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
@@ -340,6 +347,7 @@ def render_certified_live(clip, paths, output_dir, *, merge, hardware_enabled=Tr
         hardware_enabled=hardware_enabled,
         strict_material=True,
         render_frame_rate=str(render_rate),
+        config=config,
     )
     if result != target or not target.is_file():
         raise ValueError("Editorial Live merge failed; material fallback is forbidden")
