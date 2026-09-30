@@ -371,7 +371,7 @@ def extract_and_mix_audio(
     # The reversed audio is saved to temp WAVs that replace clip inputs.
     reversed_paths: list[Path] = []
     if privacy_mode:
-        reversed_paths = _preprocess_privacy_audio(clips, output_path.parent)
+        reversed_paths = _preprocess_privacy_audio(clips, output_path.parent, pre_extracted_audio)
 
     if len(clips) == 1:
         audio_src = _resolve_single_clip_audio(clips[0], reversed_paths, pre_extracted_audio)
@@ -444,7 +444,9 @@ def _resolve_single_clip_audio(
     return str(getattr(clip, "path", ""))
 
 
-def _preprocess_privacy_audio(clips: list, work_dir: Path) -> list[Path]:
+def _preprocess_privacy_audio(
+    clips: list, work_dir: Path, pre_extracted: list[Path] | None = None
+) -> list[Path]:
     """Pre-process non-title clip audio with segment-wise reversal.
 
     Returns list of WAV paths (one per non-title clip) in clip order.
@@ -456,7 +458,12 @@ def _preprocess_privacy_audio(clips: list, work_dir: Path) -> list[Path]:
         if getattr(clip, "is_title_screen", False):
             continue
         out = work_dir / f".privacy_audio_{i}.wav"
-        apply_privacy_audio(clip.path, out)
+        source = (
+            pre_extracted[i]
+            if pre_extracted and i < len(pre_extracted) and pre_extracted[i].is_file()
+            else clip.path
+        )
+        apply_privacy_audio(source, out)
         paths.append(out)
     return paths
 

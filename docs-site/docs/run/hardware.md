@@ -156,6 +156,22 @@ per codec; `nvidia-smi` or `intel_gpu_top` shows the card busy.
 Nothing to redo after enabling a backend: prepared facts don't depend on the encoder, so the next
 render encodes faster.
 
+### NAS output and HDR
+
+The NAS tier caps the film at 1920 pixels on the long side and 1080 on the short side,
+including a `4k` request. Re-encoded source clips use the same bound; portrait clips keep
+their orientation. HDR sources are tone-mapped when the intermediate is H.264.
+
+With `output.hdr_mode: auto` and the default `output.codec_policy: prefer_hardware`, a NAS
+whose verified encoder supports H.264 but not H.265 produces an SDR H.264 film. The same
+encoding plan reaches titles, maps and final assembly. This avoids a software H.265 encode
+just because one source carries HDR. A strict codec policy or explicit HDR request keeps
+the requested output, which can require software encoding. GPU and FULL tiers retain their
+existing HDR behavior.
+
+A source without an audio track still contributes its video frames. Assembly generates
+silence for its duration, including when privacy audio processing is enabled.
+
 ## Quality: one dial, calibrated per encoder
 
 `output.quality` (or an explicit `output.crf`) is on libx265's CRF scale, the reference because
