@@ -165,8 +165,15 @@ The inference service must report CUDA for automatic GPU selection. A CPU servic
 selection on NAS. Preparation follows the product tier; do not set a separate preparation tier.
 
 Running `ghcr.io/ggml-org/llama.cpp:server` by hand works the same way, with the weights
-bind-mounted at `/models` and `--host 0.0.0.0 --ctx-size 8192 --threads 4`. Three of its flags
-carry the contract, and each fails as something else:
+bind-mounted at `/models` and
+`--host 0.0.0.0 --ctx-size 8192 --cache-ram 128 --parallel 1 --threads 4`.
+The RAM prompt cache is bounded at 128 MiB, with one processing slot. Leaving these at
+llama.cpp's automatic defaults allowed an 8 GiB cache and four slots inside a 2 GiB pod,
+which was killed during preparation. A CUDA canary with these limits handled single-image
+and eight-frame requests at a measured peak of 0.97 GiB. Longer library runs still need
+their own memory measurement. Completed captions remain banked in the app's persistent store.
+
+Three more flags carry the serving contract:
 
 | Flag | Leave it out and |
 |---|---|
