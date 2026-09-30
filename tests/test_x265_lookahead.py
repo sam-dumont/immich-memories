@@ -47,10 +47,8 @@ def container(tmp_path, monkeypatch):
     def limit(gigabytes: int) -> None:
         (tmp_path / "memory.max").write_text(f"{gigabytes * GIB}\n")
         monkeypatch.setattr(memory_budget, "_CGROUP", tmp_path)
-        memory_budget.encode_lookahead.cache_clear()
 
     yield limit
-    memory_budget.encode_lookahead.cache_clear()
 
 
 def _started_encode(monkeypatch, tmp_path, encoder: str, width: int, height: int) -> list[str]:
@@ -79,7 +77,7 @@ def _started_encode(monkeypatch, tmp_path, encoder: str, width: int, height: int
 def test_a_4k_software_encode_on_4_gb_carries_a_lookahead_of_10(tmp_path, monkeypatch, container):
     container(4)
     cmd = _started_encode(monkeypatch, tmp_path, "libx265", 2160, 3840)
-    assert cmd[cmd.index("-x265-params") + 1] == "rc-lookahead=10"
+    assert cmd[cmd.index("-x265-params") + 1] == "frame-threads=1:rc-lookahead=10"
     assert cmd.index("-x265-params") > cmd.index("libx265")
 
 
@@ -110,3 +108,31 @@ def test_photo_clips_merge_the_lookahead_into_their_own_x265_params(container, m
     params = args[args.index("-x265-params") + 1]
     assert params.startswith("hdr-opt=1:")
     assert params.endswith(":rc-lookahead=5")
+
+
+def test_parallel_sources_share_encoder_budget_without_leaking_into_assembly(container):
+    from contextlib import nullcontext
+
+    from immich_memories.processing.clip_encoder import encoder_args_for_plan
+    from immich_memories.processing.live_photo_merger import burst_encoding_plan
+    from immich_memories.processing.source_preparation import prepare_sources
+
+    container(8)
+    plan = burst_encoding_plan(is_hdr=True, hardware_enabled=False)
+    outside = encoder_args_for_plan(plan)
+    assert "-x265-params" not in outside
+    prepared = list(
+        prepare_sources(
+            ["first", "second"],
+            client=lambda: nullcontext(None),
+            workers=2,
+            prepare=lambda _client, _source: encoder_args_for_plan(plan),
+        )
+    )
+    assert len(prepared) == 2
+    for _index, args in prepared:
+        assert "-x265-params" in args
+        params = args[args.index("-x265-params") + 1]
+        assert "rc-lookahead=5" in params
+        assert "frame-threads=1" in params
+    assert encoder_args_for_plan(plan) == outside

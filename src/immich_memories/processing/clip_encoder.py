@@ -91,7 +91,8 @@ def with_x265_lookahead(args: list[str], width: int, height: int) -> list[str]:
     frames = encode_lookahead(width, height)
     if frames is None:
         return args
-    param = f"rc-lookahead={frames}"
+    # The measured lookahead budget assumes only one concurrently encoded frame.
+    param = f"frame-threads=1:rc-lookahead={frames}"
     if "-x265-params" in args:
         at = args.index("-x265-params") + 1
         args[at] = f"{args[at]}:{param}"
