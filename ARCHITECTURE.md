@@ -427,6 +427,7 @@ src/immich_memories/
 │   ├── renderer.py             # Frame-by-frame renderer: Ken Burns, face_aware_pan, render_split (parked)
 │   ├── animator.py             # Photo source prep: HEIC decode, downscale cap, HDR detection
 │   ├── photo_pipeline.py       # Render one photograph as a Ken Burns clip, streamed to FFmpeg
+│   ├── encoding.py             # Verified photo encoder; NAS H.264/SDR on hardware without HEVC
 │   ├── ultrahdr.py             # Ultra HDR JPEG (Android/Pixel): MPF parser, gain map, ISO 21496-1
 │   └── burst_dedup.py          # One photo per burst: near-duplicates shot within minutes of each other
 │

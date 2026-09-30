@@ -11,9 +11,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 from PIL import Image
 
+from immich_memories.config_loader import Config
 from immich_memories.config_models_render import PhotoConfig
+from immich_memories.generate import GenerationParams
+from immich_memories.generate_photos import render_photo_as_clip
 from immich_memories.photos.photo_pipeline import render_single_photo
-from tests.conftest import make_asset
+from immich_memories.processing.hardware import HWAccelBackend, HWAccelCapabilities
+from tests.conftest import make_asset, make_clip
 from tests.test_photo_format_dispatch import _rotated_ultrahdr_jpeg
 
 CONFIG = PhotoConfig(duration=1.0)
@@ -31,12 +35,12 @@ def _gain_mapped_photo(tmp_path: Path) -> Path:
     return path
 
 
-def _render(tmp_path: Path, source: Path):
+def _render(tmp_path: Path, source: Path, frame_size=(96, 64)):
     work = tmp_path / "work"
     work.mkdir(exist_ok=True)
     download = MagicMock()  # WHY: the source is local, so Immich must never be asked
     clip = render_single_photo(
-        make_asset("photo-1"), CONFIG, 96, 64, work, download, fps=5, source_path=source
+        make_asset("photo-1"), CONFIG, *frame_size, work, download, fps=5, source_path=source
     )
     download.assert_not_called()
     return clip
@@ -59,21 +63,26 @@ class _FFmpeg:
         return self.returncode, self.stderr
 
 
-def _command(tmp_path, source, *, zscale: bool, encoders: str = "libx265") -> list[str]:
+def _command(
+    tmp_path, source, *, zscale: bool, encoders: str = "libx265", frame_size=(96, 64)
+) -> list[str]:
     ffmpeg = _FFmpeg()
+    capabilities = HWAccelCapabilities()
+    if "hevc_videotoolbox" in encoders:
+        capabilities = HWAccelCapabilities(backend=HWAccelBackend.APPLE, supports_h265_encode=True)
     # WHY: three FFmpeg boundaries: the encode, and the two capability probes
     with (
         # WHY: the encode itself; the command is what is under test
         patch("immich_memories.photos.photo_pipeline.write_frames_to_ffmpeg", ffmpeg),
         # WHY: which filters the installed FFmpeg has decides the route
         patch("immich_memories.processing.hdr_utilities.check_zscale_available", lambda: zscale),
-        # WHY: which encoders the installed FFmpeg has decides the codec
+        # WHY: the real hardware probe decides which encoder can actually run.
         patch(
-            "immich_memories.photos.photo_pipeline.subprocess.run",
-            return_value=MagicMock(stdout=encoders),
+            "immich_memories.processing.hardware.detect_hardware_acceleration",
+            return_value=capabilities,
         ),
     ):
-        clip = _render(tmp_path, source)
+        clip = _render(tmp_path, source, frame_size)
     assert clip is not None
     assert clip.is_photo
     assert clip.duration == CONFIG.duration
@@ -93,6 +102,57 @@ def test_a_gain_mapped_photo_is_piped_16_bit_linear(tmp_path):
 
     assert command[command.index("-pix_fmt") + 1] == "rgb48le"
     assert "tin=linear" in command[command.index("-vf") + 1]
+
+
+def test_photo_preparation_uses_verified_nvidia_hardware(tmp_path):
+    ffmpeg = _FFmpeg()
+    capabilities = HWAccelCapabilities(backend=HWAccelBackend.NVIDIA, supports_h265_encode=True)
+    with (
+        # WHY: capture the actual encoder command at the subprocess boundary.
+        patch("immich_memories.photos.photo_pipeline.write_frames_to_ffmpeg", ffmpeg),
+        # WHY: the installed FFmpeg filter capability determines color conversion.
+        patch("immich_memories.processing.hdr_utilities.check_zscale_available", lambda: True),
+        # WHY: model the real encoder probe result on an NVIDIA host.
+        patch(
+            "immich_memories.processing.hardware.detect_hardware_acceleration",
+            return_value=capabilities,
+        ),
+    ):
+        clip = _render(tmp_path, _sdr_photo(tmp_path))
+    assert clip is not None
+    assert ffmpeg.command[ffmpeg.command.index("-c:v") + 1] == "hevc_nvenc"
+    assert ffmpeg.command[ffmpeg.command.index("-color_trc") + 1] == "smpte2084"
+
+
+def test_nas_photo_uses_hardware_h264_with_real_tone_mapping(tmp_path):
+    ffmpeg = _FFmpeg()
+    capabilities = HWAccelCapabilities(backend=HWAccelBackend.VAAPI, supports_h264_encode=True)
+    params = GenerationParams(
+        clips=[],
+        output_path=tmp_path / "film.mp4",
+        config=Config(tier="nas", photos={"duration": 1}),
+        output_resolution="720p",
+    )
+    with (
+        # WHY: inspect the emitted FFmpeg command without requiring a local VAAPI device.
+        patch("immich_memories.photos.photo_pipeline.write_frames_to_ffmpeg", ffmpeg),
+        # WHY: the installed FFmpeg color-conversion capability is external.
+        patch("immich_memories.processing.hdr_utilities.check_zscale_available", lambda: True),
+        # WHY: this is the capability actually measured on the NAS.
+        patch(
+            "immich_memories.processing.hardware.detect_hardware_acceleration",
+            return_value=capabilities,
+        ),
+    ):
+        clip = render_photo_as_clip(
+            make_clip("photo"), params, tmp_path, source_path=_gain_mapped_photo(tmp_path)
+        )
+    assert clip is not None
+    command = ffmpeg.command
+    assert command[command.index("-c:v") + 1] == "h264_vaapi"
+    assert "tonemap=" in command[command.index("-vf") + 1]
+    assert "hwupload" in command[command.index("-vf") + 1]
+    assert command[command.index("-color_trc") + 1] == "bt709"
 
 
 @pytest.mark.parametrize("source", [_sdr_photo, _gain_mapped_photo])

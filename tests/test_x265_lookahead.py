@@ -96,17 +96,12 @@ def test_a_hardware_encode_is_untouched(tmp_path, monkeypatch, container):
     assert not any("rc-lookahead" in part for part in cmd)
 
 
-def test_photo_clips_merge_the_lookahead_into_their_own_x265_params(container, monkeypatch):
-    from immich_memories.photos import photo_pipeline
+def test_photo_clips_merge_the_lookahead_into_their_own_x265_params(container, tmp_path):
+    from tests.test_photo_render import _command, _sdr_photo
 
     container(3)
 
-    # WHY: whether this machine has VideoToolbox decides the branch; the test takes libx265.
-    class NoHardware:
-        stdout = ""
-
-    monkeypatch.setattr(subprocess, "run", lambda *_a, **_k: NoHardware())
-    args = photo_pipeline._get_photo_encoder_args("smpte2084", (2160, 3840))
+    args = _command(tmp_path, _sdr_photo(tmp_path), zscale=True, frame_size=(2160, 3840))
     params = args[args.index("-x265-params") + 1]
     assert params.startswith("hdr-opt=1:")
     assert params.endswith(":rc-lookahead=5")

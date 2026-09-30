@@ -39,7 +39,10 @@ def render_photo_as_clip(
     downloads from Immich, prepares the source (HEIC decode, gain map),
     then streams Ken Burns frames to FFmpeg.
     """
+    from immich_memories.photos.encoding import photo_encoding_plan
     from immich_memories.photos.photo_pipeline import render_single_photo
+    from immich_memories.processing.encoding_plan import HdrTransfer
+    from immich_memories.processing.hdr_utilities import check_zscale_available
 
     if not params.client and source_path is None:
         logger.warning("No Immich client — cannot render photo clip")
@@ -61,6 +64,10 @@ def render_photo_as_clip(
         work_dir=photo_dir,
         download_fn=params.client.download_asset if params.client else None,
         source_path=source_path,
+        encoding_plan=photo_encoding_plan(
+            params.config,
+            transfer=HdrTransfer.PQ if check_zscale_available() else HdrTransfer.NONE,
+        ),
     )
     if result is None:
         logger.warning(f"Failed to render photo {clip.asset.id}")
