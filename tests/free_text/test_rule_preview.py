@@ -17,7 +17,7 @@ from immich_memories.free_text.rule_preview import preview_rules
 from immich_memories.timeperiod import DateRange
 from tests.annotation_rows import add_rows
 
-CONFIG = Config()
+CONFIG = Config(tier="gpu")
 EDITORIAL = CONFIG.editorial
 START = datetime(2021, 3, 1, 10, tzinfo=UTC)
 

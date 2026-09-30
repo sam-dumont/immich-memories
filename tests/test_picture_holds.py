@@ -11,7 +11,7 @@ from tests.annotation_rows import add_rows
 
 def config_at(tmp_path):
     del tmp_path  # kept for call-site symmetry; the store is the one this test's env names
-    return Config()
+    return Config(tier="gpu")
 
 
 def bank_a_head(config, asset_id, label="yes"):

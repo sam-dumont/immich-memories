@@ -28,7 +28,7 @@ def _prepare_with_progress(tmp_path, updates):
         # WHY: generated source records stand in for the Immich API boundary.
         EditorialDependencies(source_fetcher=lambda _scope: sources),
     )
-    config = Config(editorial={"preparation": {"tier": "no_captions", "batch_size": 32}})
+    config = Config(tier="gpu", editorial={"preparation": {"batch_size": 32}})
     store = open_store()
     providers = successful_ports([])
 
