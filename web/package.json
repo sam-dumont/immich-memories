@@ -25,6 +25,7 @@
   "overrides": {
     "openapi-typescript": {
       "typescript": "$typescript"
-    }
+    },
+    "cookie": "0.7.2"
   }
 }
