@@ -121,6 +121,9 @@ time, so its memory does not grow with the number of clips.
 Size `cache.thumbnail_cache_max_size_mb` against your library: too small and the next overlapping
 memory downloads every preview again, which on a NAS is the slow part. The budget per picture is in
 the [config reference](../reference/config-reference.md#size-the-thumbnail-cache-by-your-library).
+Selection reads those previews from disk as needed. It retains the per-picture availability result,
+not every JPEG in RAM, so a large cached person or trip scope does not need its entire preview cache
+in memory. Cached detector facts still avoid model inference.
 
 A NAS volume is usually the smallest disk in the setup, and often shared with everything else on
 the box. A run that uploads to Immich has its local film removed as soon as the upload is
