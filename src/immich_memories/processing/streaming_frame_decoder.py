@@ -201,10 +201,11 @@ class FrameDecoder:
         # Audio timing matches the decoded video frames exactly, preventing
         # the cumulative drift from independent video/audio assembly.
         audio_args: list[str] = []
+        audio_inputs, audio_map = self._audio_input()
         if self._audio_output:
             audio_args = [
                 "-map",
-                "0:a?",
+                audio_map,
                 "-c:a",
                 "pcm_s16le",
                 "-ar",
@@ -222,6 +223,7 @@ class FrameDecoder:
             *seek_args,
             "-i",
             str(self._clip_path),
+            *audio_inputs,
             "-f",
             "rawvideo",
             "-pix_fmt",
@@ -259,6 +261,19 @@ class FrameDecoder:
         finally:
             proc.stdout.close()
             stop_owned_process(proc)
+
+    def _audio_input(self) -> tuple[list[str], str]:
+        if self._audio_output is None:
+            return [], "0:a?"
+        from immich_memories.processing.probe_cache import ProbeCache
+
+        probe = ProbeCache().get(self._clip_path)
+        if probe.has_audio:
+            return [], "0:a?"
+        # Optional mapping still fails when the WAV has no stream. Supply silence
+        # for exactly the remaining source time, so video decoding can proceed.
+        duration = max(0.0, probe.duration_seconds - self._input_seek)
+        return ["-f", "lavfi", "-i", f"anullsrc=r=48000:cl=stereo:d={duration}"], "1:a:0"
 
 
 def make_decoder(

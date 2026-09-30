@@ -169,6 +169,9 @@ just because one source carries HDR. A strict codec policy or explicit HDR reque
 the requested output, which can require software encoding. GPU and FULL tiers retain their
 existing HDR behavior.
 
+A source without an audio track still contributes its video frames. Assembly generates
+silence for its duration, including when privacy audio processing is enabled.
+
 ## Quality: one dial, calibrated per encoder
 
 `output.quality` (or an explicit `output.crf`) is on libx265's CRF scale, the reference because
