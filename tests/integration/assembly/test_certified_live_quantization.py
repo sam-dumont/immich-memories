@@ -180,3 +180,98 @@ def test_mov_edit_list_reference_packets_do_not_extend_visible_material(tmp_path
     segment = probes.quantized_segment(source, 0.0, 4.0, Fraction(30))
     assert segment["frames"] == visible_frames
     assert segment["kept_packets"] == visible_frames
+
+
+def _short_terminal_companion(path: Path, audio_seconds: str = "2.866667") -> Path:
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=size=160x120:rate=30",
+            "-f",
+            "lavfi",
+            "-t",
+            audio_seconds,
+            "-i",
+            "sine=frequency=440:sample_rate=48000",
+            "-frames:v",
+            "86",
+            "-c:a",
+            "pcm_s16le",
+            "-c:v",
+            "libx264",
+            "-bf",
+            "0",
+            "-pix_fmt",
+            "yuv420p",
+            "-video_track_timescale",
+            "600",
+            str(path),
+        ],
+        check=True,
+    )
+    data = bytearray(path.read_bytes())
+    sample = data.index(b"stts") - 4
+    assert struct.unpack_from(">III", data, sample + 12) == (1, 86, 20)
+
+    def grow_ancestors(start, end):
+        cursor = start
+        while cursor < end:
+            size = struct.unpack_from(">I", data, cursor)[0]
+            if cursor <= sample < cursor + size:
+                struct.pack_into(">I", data, cursor, size + 8)
+                if cursor != sample:
+                    grow_ancestors(cursor + 8, cursor + size)
+                return
+            cursor += size
+
+    grow_ancestors(0, len(data))
+    struct.pack_into(">III", data, sample + 12, 2, 85, 20)
+    data[sample + 24 : sample + 24] = struct.pack(">II", 1, 4)
+    # Keep the original movie/track endpoints: camera headers may outlive a
+    # clipped terminal sample. The sample table itself carries the short duration.
+    path.write_bytes(data)
+    return path
+
+
+def test_short_terminal_sample_uses_visible_cadence_for_final_hold(tmp_path):
+    source = _short_terminal_companion(tmp_path / "short-terminal.mov")
+    probes = ProbeCache()
+    tail = probes.last_video_frame(source)
+    assert tail["pts"] == 1700
+    assert tail["duration_ticks"] == 4
+    assert probes.get(source).duration_seconds == pytest.approx(2.867, abs=0.001)
+    material = LiveRenderMaterial((LiveSourceEntry("still-a", "video-a", 0.0, 0.0, 2.867),))
+
+    merged = certified.render_certified_live(
+        _certified_clip(material),
+        [source],
+        tmp_path,
+        merge=downloads._try_merge_burst,
+        hardware_enabled=False,
+    )
+    record = json.loads(merged.with_suffix(".json").read_text())
+    timing = record["frame_quantization"]["sources"][0]
+    assert timing["final_packet"]["duration_ticks"] == 4
+    assert timing["final_packet"]["presentation_spacing_ticks"] == 20
+    assert timing["source_tail_seconds"] == pytest.approx(0.027)
+    assert record["encoded_duration_seconds"] >= 2.867
+    assert timing["quantized_segment"]["kept_packets"] == 86
+
+
+def test_short_sample_with_more_than_one_missing_visible_interval_is_refused(tmp_path):
+    source = _short_terminal_companion(tmp_path / "missing-tail.mov", audio_seconds="2.9")
+    material = LiveRenderMaterial((LiveSourceEntry("still-a", "video-a", 0.0, 0.0, 2.9),))
+    with pytest.raises(ValueError, match="exceeds actual video source"):
+        certified.render_certified_live(
+            _certified_clip(material),
+            [source],
+            tmp_path,
+            merge=downloads._try_merge_burst,
+            hardware_enabled=False,
+        )

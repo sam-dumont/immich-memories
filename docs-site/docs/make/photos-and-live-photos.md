@@ -39,6 +39,11 @@ A selected motion interval keeps its verified frame rate through encoding. When 
 leaves a permitted shortfall, the renderer holds the final frame and checks the encoded duration
 before assembly. This applies to software and hardware encoders.
 
+Some MOV probes report a 4-tick sample duration even when successive pictures arrive every
+20 ticks. The renderer checks those actual presentation timestamps before allowing one final
+frame hold. A rounded container endpoint can use that measured interval; a larger missing tail
+still stops the render.
+
 An iPhone records about 3 seconds of video with every photo. Most libraries hold thousands of them,
 and a rapid burst of them is several seconds of continuous footage nobody meant to shoot.
 

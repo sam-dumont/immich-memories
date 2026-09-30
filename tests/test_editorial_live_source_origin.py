@@ -167,3 +167,13 @@ def test_container_end_before_the_final_packet_starts_is_refused():
         renderer._source_timing(
             probes, Path("gap.mov"), LiveSourceEntry("s", "v", 0.0, 1.0165, 2.767)
         )
+
+
+@pytest.mark.parametrize("container_end", [2.9, 3.0])
+def test_short_reported_sample_does_not_allow_a_tail_beyond_visible_cadence(container_end):
+    tail = packet(pts=1700, ticks=4) | {"presentation_spacing_ticks": 20}
+    probes = Probes(probe(video=2.84, container=container_end), tail=tail)
+    with pytest.raises(ValueError, match="exceeds actual video source"):
+        renderer._source_timing(
+            probes, Path("short-sample.mov"), LiveSourceEntry("s", "v", 0.0, 0.0, container_end)
+        )

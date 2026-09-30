@@ -108,6 +108,7 @@ def test_packet_tail_uses_presentation_order_and_exact_timebase(tmp_path, monkey
         "time_base": "1/600",
         "pts": 1751,
         "duration_ticks": 27,
+        "presentation_spacing_ticks": 55,
         "start_seconds": 1751 / 600,
         "end_seconds": 1778 / 600,
         "frame_seconds": 27 / 600,

@@ -16,7 +16,7 @@ from immich_memories.processing.probe_cache import ProbeCache, trim_ticks
 from immich_memories.security import write_secret_file
 
 RENDER_VERSION = "editorial-live-render-v1"
-FRAME_QUANTIZATION = "source-packet-segment-quantization-and-frame-hold-v4"
+FRAME_QUANTIZATION = "source-packet-segment-quantization-and-presentation-frame-hold-v5"
 
 
 def validate_editorial_live_clip(clip: Any) -> LiveRenderMaterial:
@@ -143,14 +143,13 @@ def _bind_trailing_frame(probes, path, entry, probe, origin: float, evidence: di
         raise _reject(evidence)
     tail = probes.last_video_frame(path)
     tail_start, tail_end = tail["start_seconds"] - origin, tail["end_seconds"] - origin
-    # The material ends where the final packet ends, whatever the header claims. That
-    # packet may outlive the container it is counted in, and a container that counts
-    # one frame more than its packets deliver is covered by holding the final frame
-    # once; an end before the packet starts, or further out than that one held frame,
-    # is material this file does not have.
+    # Some MOV probes report a sample duration shorter than the observed PTS
+    # cadence. That duration still defines the packet end; one held frame is
+    # bounded by actual adjacent presentation timestamps, never nominal fps.
+    hold_ticks = max(tail["duration_ticks"], tail.get("presentation_spacing_ticks", 0))
     overrun = _declared_ticks(tail, entry.end, origin) - (tail["pts"] + tail["duration_ticks"])
     gap = entry.end - tail_end
-    if entry.start >= tail_end or entry.end < tail_start or overrun > tail["duration_ticks"]:
+    if entry.start >= tail_end or entry.end < tail_start or overrun > hold_ticks:
         raise _reject(evidence | {"final_packet": tail, "source_tail_seconds": gap})
     evidence.update(
         final_packet=tail,
