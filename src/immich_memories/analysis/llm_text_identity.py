@@ -34,6 +34,10 @@ def text_model_identity(resolved: LLMConfig, *, thinking: bool) -> str:
         ),
         "repetition_penalty": resolved.repetition_penalty,
     }
+    if resolved.runs_locally:
+        from immich_memories.local_inference import local_reader_identity
+
+        material["local_model"] = local_reader_identity(resolved)
     digest = _digest(material)
     return f"{resolved.model or 'unnamed-model'}@text-{digest[:20]}"
 

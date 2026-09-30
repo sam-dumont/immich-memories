@@ -123,7 +123,9 @@ class TestAnthropicProvider:
     async def test_native_anthropic_does_not_receive_qwen_default_params(self):
         from immich_memories.analysis.llm_query import query_llm
 
-        config = LLMConfig(provider="anthropic", model="claude", api_key="k")
+        config = LLMConfig(
+            base_url="https://api.anthropic.com", provider="anthropic", model="claude", api_key="k"
+        )
 
         # WHY: inspect the native Anthropic payload without making a hosted request.
         with patch("httpx.AsyncClient.post", return_value=_anthropic_response()) as mock_post:
@@ -158,10 +160,16 @@ class TestProviderPresets:
     """provider: openai / zai = the generic adapter plus the provider's dialect."""
 
     @pytest.mark.asyncio
-    async def test_zai_preset_fills_the_anthropic_route_and_its_level(self):
+    async def test_zai_applies_its_level_to_the_configured_anthropic_route(self):
         from immich_memories.analysis.llm_query import query_llm
 
-        config = LLMConfig(provider="zai", model="glm-5.3", api_key="k", thinking=True)
+        config = LLMConfig(
+            base_url="https://api.z.ai/api/anthropic",
+            provider="zai",
+            model="glm-5.3",
+            api_key="k",
+            thinking=True,
+        )
 
         # WHY: the LLM server is the external boundary this request reaches.
         with patch("httpx.AsyncClient.post", return_value=_anthropic_response()) as mock_post:
@@ -193,10 +201,16 @@ class TestProviderPresets:
         assert mock_post.call_args[1]["json"]["thinking"] == {"type": "high"}
 
     @pytest.mark.asyncio
-    async def test_openai_preset_fills_url_and_reasoning_dialect(self):
+    async def test_openai_applies_its_dialect_to_the_configured_url(self):
         from immich_memories.analysis.llm_query import query_llm
 
-        config = LLMConfig(provider="openai", model="gpt-5.6-terra", api_key="k", thinking=True)
+        config = LLMConfig(
+            base_url="https://api.openai.com/v1",
+            provider="openai",
+            model="gpt-5.6-terra",
+            api_key="k",
+            thinking=True,
+        )
 
         def _ok(url, json):  # noqa: A002
             response = AsyncMock()
@@ -295,10 +309,15 @@ class TestAnthropicIsAGenericProvider:
     """`provider: anthropic` is Claude's own API and every host that copies it."""
 
     @pytest.mark.asyncio
-    async def test_the_preset_fills_anthropics_own_url_and_pins_the_version(self):
+    async def test_anthropic_uses_the_configured_url_and_pins_the_version(self):
         from immich_memories.analysis.llm_query import query_llm
 
-        config = LLMConfig(provider="anthropic", model="claude-sonnet-4-5", api_key="k")
+        config = LLMConfig(
+            base_url="https://api.anthropic.com",
+            provider="anthropic",
+            model="claude-sonnet-4-5",
+            api_key="k",
+        )
         seen: list[tuple] = []
 
         # WHY: the LLM server is the external boundary; autospec hands the test
@@ -340,7 +359,12 @@ class TestAnthropicIsAGenericProvider:
 
         from immich_memories.analysis.llm_query import query_llm
 
-        config = LLMConfig(provider="anthropic", model="claude-sonnet-4-5", api_key="k")
+        config = LLMConfig(
+            base_url="https://api.anthropic.com",
+            provider="anthropic",
+            model="claude-sonnet-4-5",
+            api_key="k",
+        )
 
         # WHY: the LLM server is the external boundary this request reaches.
         with patch("httpx.AsyncClient.post", return_value=_anthropic_response()) as mock_post:
@@ -364,7 +388,11 @@ class TestThinkingIsALevel:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
-            provider="anthropic", model="claude-sonnet-4-5", api_key="k", thinking=level
+            base_url="https://api.anthropic.com",
+            provider="anthropic",
+            model="claude-sonnet-4-5",
+            api_key="k",
+            thinking=level,
         )
 
         # WHY: the LLM server is the external boundary this request reaches.
@@ -380,7 +408,11 @@ class TestThinkingIsALevel:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
-            provider="anthropic", model="claude-sonnet-4-5", api_key="k", thinking="auto"
+            base_url="https://api.anthropic.com",
+            provider="anthropic",
+            model="claude-sonnet-4-5",
+            api_key="k",
+            thinking="auto",
         )
 
         # WHY: the LLM server is the external boundary this request reaches.
@@ -415,7 +447,11 @@ class TestThinkingIsALevel:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
-            provider="anthropic", model="claude-sonnet-4-5", api_key="k", thinking="disabled"
+            base_url="https://api.anthropic.com",
+            provider="anthropic",
+            model="claude-sonnet-4-5",
+            api_key="k",
+            thinking="disabled",
         )
 
         # WHY: the LLM server is the external boundary this request reaches.
@@ -431,7 +467,13 @@ class TestThinkingIsALevel:
     async def test_zai_gets_its_own_vocabulary_for_the_same_level(self):
         from immich_memories.analysis.llm_query import query_llm
 
-        config = LLMConfig(provider="zai", model="glm-5.3", api_key="k", thinking="max")
+        config = LLMConfig(
+            base_url="https://api.z.ai/api/anthropic",
+            provider="zai",
+            model="glm-5.3",
+            api_key="k",
+            thinking="max",
+        )
 
         # WHY: the LLM server is the external boundary this request reaches.
         with patch("httpx.AsyncClient.post", return_value=_anthropic_response()) as mock_post:
@@ -440,10 +482,10 @@ class TestThinkingIsALevel:
         assert mock_post.call_args.kwargs["json"]["thinking"] == {"type": "max"}
 
     def test_the_switch_this_field_used_to_be_is_still_read(self):
-        assert LLMConfig(thinking=True).thinking == "high"
-        assert LLMConfig(thinking=False).thinking == "disabled"
-        assert LLMConfig(thinking="true").reasons
-        assert not LLMConfig(thinking="false").reasons
+        assert LLMConfig(base_url="http://localhost:8080/v1", thinking=True).thinking == "high"
+        assert LLMConfig(base_url="http://localhost:8080/v1", thinking=False).thinking == "disabled"
+        assert LLMConfig(base_url="http://localhost:8080/v1", thinking="true").reasons
+        assert not LLMConfig(base_url="http://localhost:8080/v1", thinking="false").reasons
 
 
 def _completion(url=None, json=None):  # noqa: A002
@@ -566,7 +608,12 @@ class TestProviderErrorsAreLegible:
     async def test_a_4xx_carries_the_providers_code_and_message(self):
         from immich_memories.analysis.llm_query import query_llm
 
-        config = LLMConfig(provider="zai", model="glm-5.3-flash", api_key="k")
+        config = LLMConfig(
+            base_url="https://api.z.ai/api/anthropic",
+            provider="zai",
+            model="glm-5.3-flash",
+            api_key="k",
+        )
         refused = httpx.Response(
             429,
             json={"error": {"code": "1113", "message": "Insufficient balance"}},
@@ -701,7 +748,9 @@ class TestAnthropicReasoningBlocks:
     async def test_a_server_that_reasons_only_when_asked_keeps_the_callers_cap(self):
         from immich_memories.analysis.llm_query import query_llm
 
-        config = LLMConfig(provider="anthropic", model="claude", api_key="k")
+        config = LLMConfig(
+            base_url="https://api.anthropic.com", provider="anthropic", model="claude", api_key="k"
+        )
 
         # WHY: the LLM server is the external boundary this request reaches.
         with patch("httpx.AsyncClient.post", return_value=_anthropic_response()) as mock_post:
@@ -816,7 +865,12 @@ class TestAnthropicImageCallsGetReasoningRoom:
         from immich_memories.analysis.llm_query import query_llm
         from immich_memories.analysis.llm_wire import _REASONING_HEADROOM
 
-        config = LLMConfig(provider="anthropic", model="claude-sonnet-4-5", api_key="k")
+        config = LLMConfig(
+            base_url="https://api.anthropic.com",
+            provider="anthropic",
+            model="claude-sonnet-4-5",
+            api_key="k",
+        )
         reasoned = _anthropic_blocks(
             [
                 {"type": "thinking", "thinking": "Considering", "signature": "s"},

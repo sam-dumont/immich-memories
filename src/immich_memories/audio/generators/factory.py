@@ -88,9 +88,11 @@ def _app_config_to_ace_step(app_config) -> Any:
         if hasattr(app_config, field_name):
             kwargs[field_name] = getattr(app_config, field_name)
 
+    # CUDA offload is a local runtime option; API requests only consume api_key.
+    kwargs["extra_args"] = {"cpu_offload": getattr(app_config, "cpu_offload", True)}
     # Pass API key via extra_args (used for Bearer auth in API mode)
     api_key = getattr(app_config, "api_key", "")
     if api_key:
-        kwargs["extra_args"] = {"api_key": api_key}
+        kwargs["extra_args"]["api_key"] = api_key
 
     return ACEStepConfig(**kwargs)

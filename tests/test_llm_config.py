@@ -10,7 +10,8 @@ from immich_memories.config_models_llm import LLMConfig
 class TestLLMConfigDefaults:
     def test_default_base_url(self):
         config = LLMConfig()
-        assert config.base_url == "http://localhost:8080/v1"
+        assert config.base_url == ""
+        assert not config.enabled
 
 
 class TestLLMConfigNoMigration:
@@ -22,8 +23,9 @@ class TestLLMConfigNoMigration:
             {"ollama_url": "http://old:11434", "ollama_model": "llava"}
         )
         # Old values are ignored — defaults are used instead
-        assert config.base_url == "http://localhost:8080/v1"
-        assert config.model == ""
+        assert config.base_url == ""
+        assert config.model == "gemma-4-E4B-it-Q4_0"
+        assert not config.enabled
 
     def test_new_fields_work(self):
         """Current field names are accepted."""

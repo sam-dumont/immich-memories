@@ -133,9 +133,22 @@ def _openai_wire(
 
 
 def test_a_provider_with_no_batch_shape_declares_no_route():
-    assert batch_route_for(LLMConfig(provider="ollama", model="m")) is None
-    assert batch_route_for(LLMConfig(provider="openai", model="m")) == "openai"
-    assert batch_route_for(LLMConfig(provider="anthropic", model="m")) == "anthropic"
+    assert (
+        batch_route_for(LLMConfig(base_url="http://localhost:11434", provider="ollama", model="m"))
+        is None
+    )
+    assert (
+        batch_route_for(
+            LLMConfig(base_url="https://api.openai.com/v1", provider="openai", model="m")
+        )
+        == "openai"
+    )
+    assert (
+        batch_route_for(
+            LLMConfig(base_url="https://api.anthropic.com", provider="anthropic", model="m")
+        )
+        == "anthropic"
+    )
 
 
 def test_a_stage_smaller_than_the_minimum_is_never_queued():

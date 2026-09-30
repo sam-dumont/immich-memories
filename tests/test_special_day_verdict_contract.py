@@ -28,7 +28,7 @@ from tests.test_special_day_captions import _a_real_day, _verdict_response
 def test_an_explicit_negative_is_banked_without_validating_unused_display_copy(tmp_path, display):
     assets, captions = _a_real_day(captioned=30)
     reply = _verdict_response(json.dumps({"special": False, **display}))
-    config = LLMConfig(model="day-reader", provider="ollama")
+    config = LLMConfig(base_url="http://localhost:11434", model="day-reader", provider="ollama")
     # WHY: the provider is external; the public reader and its bank stay real.
     with patch("httpx.AsyncClient.post", return_value=reply) as post:
         first = ask_if_special(assets, config, captions=captions, judgments=annotation_store())
@@ -54,7 +54,7 @@ def test_a_positive_day_can_have_an_optional_subtitle(tmp_path, banked, subtitle
     with patch("httpx.AsyncClient.post", return_value=reply) as post:
         verdict = ask_if_special(
             assets,
-            LLMConfig(model="day-reader", provider="ollama"),
+            LLMConfig(base_url="http://localhost:11434", model="day-reader", provider="ollama"),
             captions=captions,
             judgments=annotation_store() if banked else None,
         )
@@ -91,7 +91,7 @@ def test_an_invalid_day_answer_stays_unjudged_on_every_route(tmp_path, route, ra
     with patch("httpx.AsyncClient.post", return_value=_verdict_response(raw)):
         verdict = ask_if_special(
             assets,
-            LLMConfig(model="day-reader", provider="ollama"),
+            LLMConfig(base_url="http://localhost:11434", model="day-reader", provider="ollama"),
             captions=captions,
             judgments=annotation_store() if route == "banked" else None,
         )
@@ -115,7 +115,7 @@ def test_a_description_longer_than_asked_is_cut_not_a_reason_to_drop_the_day(tmp
     with patch("httpx.AsyncClient.post", return_value=_verdict_response(raw)):
         verdict = ask_if_special(
             assets,
-            LLMConfig(model="day-reader", provider="ollama"),
+            LLMConfig(base_url="http://localhost:11434", model="day-reader", provider="ollama"),
             captions=captions,
             judgments=annotation_store() if route == "banked" else None,
         )
@@ -127,7 +127,7 @@ def test_a_description_longer_than_asked_is_cut_not_a_reason_to_drop_the_day(tmp
 
 def test_a_valid_negative_day_verdict_vetoes_the_months_proposed_occasion(tmp_path):
     assets, captions = _a_real_day(captioned=30)
-    config = LLMConfig(model="day-reader", provider="ollama")
+    config = LLMConfig(base_url="http://localhost:11434", model="day-reader", provider="ollama")
     # WHY: simulate the external model's month proposal and independent day rejection.
     replies = [
         _verdict_response('{"occasions":[{"run":"R1","what":"A race"}]}'),

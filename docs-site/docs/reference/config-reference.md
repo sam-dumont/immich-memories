@@ -40,7 +40,7 @@ tier: auto                         # auto | nas | gpu | full
 | --- | --- | --- | --- |
 | `nas` | eight shared-DINO CPU heads, no captions | rules | `models fetch` |
 | `gpu` | heads, Marqo, Docling, captions and Laya | rules | a caption server, `models fetch` |
-| `full` | everything in `gpu` | an LLM polishes the rules draft and writes the prose | `advanced.llm.base_url` and `advanced.llm.model` |
+| `full` | everything in `gpu` | an LLM polishes the rules draft and writes the prose | enable `advanced.llm`; owned local model by default, or an explicit `base_url` and server model |
 
 `auto` is the default. A healthy inference service reporting CUDA, or a local CUDA or MLX/Metal
 runtime, selects `gpu`. A configured LLM alongside that capability selects `full`. Without GPU
@@ -371,6 +371,7 @@ ace_step:
   model_variant: "turbo"         # Default 2B; use acestep-v15-xl-turbo for the 4B production profile
   lm_model_size: "1.7B"          # Default planner; use 4B with the XL production profile
   use_lm: false
+  cpu_offload: true              # Local CUDA: move models back to CPU between phases
   num_versions: 3                # 1-5
   hemisphere: "north"
   timeout_seconds: 3600          # 60-18000
@@ -381,6 +382,12 @@ audio:
   music_block_seconds: 120              # Longest single take before auto mode chains distinct takes (30-300)
   max_music_blocks: 3                   # Distinct takes to chain for a longer video (1-6)
 ```
+
+`advanced.ace_step.cpu_offload` defaults to `true` for local generation. CUDA moves models back
+to CPU between phases to reduce VRAM use; `false` keeps them resident when enough VRAM is
+available. The existing Apple Silicon runtime ignores this option, and API requests stay
+unchanged. Host and container memory guards still apply. The environment override is
+`IMMICH_MEMORIES_ACE_STEP__CPU_OFFLOAD=false`.
 
 `audio.local_music_dir` only feeds the `immich-memories music` helper commands; generation never
 picks music from it on its own: pass the file with `--music`.
@@ -402,9 +409,13 @@ works: mlx-vlm, oMLX, Ollama, vLLM, Groq, OpenAI, Claude, z.ai.
 
 ```yaml
 llm:
+  enabled: false                  # false: no LLM calls; true: local or API, chosen by base_url
   provider: "openai-compatible"   # openai-compatible | openai | zai | anthropic | ollama
-  base_url: "http://localhost:8080/v1"
-  model: ""                        # e.g. gemma-4-e4b-it-6bit (the default reader)
+  base_url: ""                     # blank: app-owned llama.cpp; URL: use that API
+  model: "gemma-4-E4B-it-Q4_0"     # default local Gemma, another GGUF path, or API model name
+  local_server: "llama-server"     # local executable on PATH or its full path
+  local_mmproj: ""                 # custom GGUF vision projector; default Gemma has a pinned pair
+  local_context: 32768             # bounded local context; affects memory use
   api_key: ""                      # optional, only for cloud APIs
   timeout_seconds: 300             # increase for slow local models (10-3600)
   send_image_detail: true          # off: APIs whose strict schema rejects image_url.detail
@@ -428,8 +439,13 @@ providers exist so that people without the means to run a local model can still 
 Using one sends each analyzed clip's frames or thumbnails and the derived descriptions to that
 provider.
 
-`openai`, `anthropic` and `zai` are presets: the right adapter with the vendor's URL and reasoning
-dialect filled in. An explicit `base_url` always wins, and under `zai` it also picks the adapter (a
+`enabled: false` stops requests even when a model and URL remain configured. Existing configs
+that explicitly named a model or endpoint before the enable switch remain enabled until it is set
+to false. New installs start disabled with Gemma selected as the default model.
+
+An empty `base_url` with `enabled: true` runs llama.cpp locally on Linux or macOS. Set a URL to
+use an API server. `openai`, `anthropic` and `zai` select the adapter and reasoning dialect for
+that URL; under `zai` the URL also picks the adapter (a
 `.../api/anthropic` base takes the Messages route). Which dialect goes where, what `thinking` does
 on each host, how `thinking_params` and `no_thinking_params` differ, and what batching pays are all
 on [The reader](../better/reader.md), with the measured comparison of ten models.

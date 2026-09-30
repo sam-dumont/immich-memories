@@ -125,7 +125,9 @@ async def test_token_usage_is_recorded_when_the_server_reports_it() -> None:
 async def test_anthropic_cache_tokens_are_in_the_total_and_discount_subset() -> None:
     from immich_memories.analysis.llm_query import query_llm
 
-    config = LLMConfig(provider="anthropic", model="glm", api_key="k")
+    config = LLMConfig(
+        base_url="https://api.anthropic.com", provider="anthropic", model="glm", api_key="k"
+    )
     reply = _anthropic_response(
         {
             "input_tokens": 6,

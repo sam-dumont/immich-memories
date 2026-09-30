@@ -30,7 +30,7 @@ one go. In Docker, prefix both with `docker compose exec immich-memories`.
 | `nsfw_marqo has no model: …` or `doc_docling has no model: …` | Same: `models fetch` |
 | `Output directory is not writable` | In Docker the container runs as uid 1000: `mkdir output` before `up`, or `sudo chown 1000:1000 output` |
 | `Story-first selection needs prepared annotations in the store at …` | The store this run opened has no prepared facts for these pictures: check `IMMICH_MEMORIES_DATABASE_URL` / `database.url` names the store you prepared into, or run `prepare` |
-| `tier: full needs an LLM: set advanced.llm.base_url and advanced.llm.model …` | `tier: full` without a model server. Set both keys, or use `tier: auto` or `tier: gpu` |
+| `tier: full needs an enabled LLM …` | Enable `advanced.llm.enabled`. Leave `base_url` empty for the owned local model and install its weights/server, or set an external endpoint; `tier: gpu` uses the rules reader |
 | `Waiting for the reader at host:port` | A configured model server stopped answering. See [below](#waiting-for-a-model-server) |
 | `caption endpoint must advertise smolvlm2-500m-base-public` | Right weights, wrong name: alias it. See [Add captions](../better/captions.md) |
 | `caption endpoint failed the compact-v3 schema control` | The server ignores the JSON schema, or it is the wrong model |
@@ -103,8 +103,10 @@ with a partial batch. Stage changes, counter resets and completion appear immedi
 ## Waiting for a model server
 
 Only on the `full` tier, where an LLM reads the film. The run names the endpoint and tries three times, two then
-four seconds apart, then stops with `Gave up on the reader at host:port`. Start the server or fix
-`advanced.llm.base_url`, then **Cut again** or rerun: everything already read is banked. To cut without it, set
+four seconds apart, then stops with `Gave up on the reader at host:port`. With an explicit
+`advanced.llm.base_url`, start that server or fix its URL. With an empty URL, check the configured
+`local_server`, model/projector files and available memory; the app starts its own server. Then
+**Cut again** or rerun: everything already read is banked. To cut without it, set
 `tier: gpu` (or `nas`): selection then uses the rules reader.
 
 ## A clip fails with "Could not write header (incorrect codec parameters ?)"
@@ -135,9 +137,11 @@ already in it).
 On a NAS, it is almost always a long film's audio mix on a small container: the mixer runs one FFmpeg per clip
 and the failure names the clip. Raise the container's memory limit.
 
-With a model on the same box, it is the model: the default Gemma 4 E4B holds about 7 GB for as long as its server
-is up, and ACE-Step in `lib` mode refuses a render it cannot hold. Stop the model servers before a music-heavy
-run, or give them their own machine.
+An idle external model server can still hold gigabytes of RAM. The app-owned reader releases its process
+before local ACE-Step or Demucs; an explicit API endpoint retains its own memory policy. ACE-Step in
+`lib` mode refuses a profile whose weights do not fit. Check `immich-memories capabilities`; stop an
+external server yourself if it is safe, or give it its own machine. On 16 GiB Apple Silicon, a verified
+90-second local run still needed brief cold-start swap; see [music memory measurements](../better/music.md#memory-and-disk).
 
 ## FFmpeg not found
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from immich_memories.config_models import expand_env_vars
 
@@ -19,6 +19,7 @@ ThinkingLevel = Literal["disabled", "low", "high", "max", "auto"]
 BatchMode = Literal["off", "auto"]
 
 _SWITCH_LEVELS = {"true": "high", "false": "disabled", "1": "high", "0": "disabled"}
+DEFAULT_LOCAL_MODEL = "gemma-4-E4B-it-Q4_0"
 
 
 class LLMConfig(BaseModel):
@@ -30,6 +31,9 @@ class LLMConfig(BaseModel):
     (OpenAI, Groq, mlx-vlm, vLLM).
     """
 
+    enabled: bool = Field(
+        default=False, description="Allow LLM requests; false disables local and remote calls"
+    )
     provider: Literal["ollama", "openai-compatible", "openai", "zai", "anthropic"] = Field(
         default="openai-compatible",
         description=(
@@ -42,13 +46,16 @@ class LLMConfig(BaseModel):
         ),
     )
     base_url: str = Field(
-        default="http://localhost:8080/v1",
-        description="API base URL",
+        default="",
+        description="API base URL; blank runs an app-owned local llama.cpp model",
     )
     model: str = Field(
-        default="",
-        description="Model name",
+        default=DEFAULT_LOCAL_MODEL,
+        description="API model name or local GGUF path; local default is Gemma 4 E4B Q4",
     )
+    local_server: str = Field(default="llama-server", description="Local llama.cpp executable")
+    local_mmproj: str = Field(default="", description="Local GGUF vision projector, when needed")
+    local_context: int = Field(default=32768, ge=1024, description="Local reader context tokens")
     api_key: str = Field(
         default="",
         description="API key (optional, only needed for cloud APIs)",
@@ -188,6 +195,23 @@ class LLMConfig(BaseModel):
             "real time, so a slow queue costs a run its discount and not its run."
         ),
     )
+
+    @property
+    def runs_locally(self) -> bool:
+        """An enabled reader without an API endpoint is owned by this process."""
+        return self.enabled and not self.base_url.strip()
+
+    @model_validator(mode="before")
+    @classmethod
+    def keep_explicit_connections_enabled(cls, data: Any) -> Any:
+        """Existing configs named a model or endpoint before there was an enable switch."""
+        if (
+            isinstance(data, dict)
+            and "enabled" not in data
+            and (data.get("model") or data.get("base_url"))
+        ):
+            return {**data, "enabled": True}
+        return data
 
     @property
     def reasons(self) -> bool:

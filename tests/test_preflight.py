@@ -146,7 +146,13 @@ def _messages_host(models=None, probe_status=200, probe_body=None):
 
 def test_llm_preflight_reports_the_model_list_an_anthropic_host_publishes() -> None:
     config = Config(
-        tier="full", llm={"provider": "anthropic", "model": "claude-sonnet-4-5", "api_key": "k"}
+        tier="full",
+        llm={
+            "provider": "anthropic",
+            "base_url": "https://api.anthropic.com",
+            "model": "claude-sonnet-4-5",
+            "api_key": "k",
+        },
     )
     client = _messages_host([{"id": "claude-sonnet-4-5"}, {"id": "claude-opus-4-1"}])
 
@@ -161,7 +167,13 @@ def test_llm_preflight_reports_the_model_list_an_anthropic_host_publishes() -> N
 
 def test_llm_preflight_names_a_model_the_anthropic_host_does_not_serve() -> None:
     config = Config(
-        tier="full", llm={"provider": "anthropic", "model": "claude-retired", "api_key": "k"}
+        tier="full",
+        llm={
+            "provider": "anthropic",
+            "base_url": "https://api.anthropic.com",
+            "model": "claude-retired",
+            "api_key": "k",
+        },
     )
     client = _messages_host([{"id": "claude-sonnet-4-5"}])
 
@@ -197,7 +209,13 @@ def test_llm_preflight_falls_back_to_one_token_where_no_catalogue_is_served() ->
 
 def test_llm_preflight_reports_a_rejected_key_on_the_messages_route() -> None:
     config = Config(
-        tier="full", llm={"provider": "anthropic", "model": "claude-sonnet-4-5", "api_key": "bad"}
+        tier="full",
+        llm={
+            "provider": "anthropic",
+            "base_url": "https://api.anthropic.com",
+            "model": "claude-sonnet-4-5",
+            "api_key": "bad",
+        },
     )
     client = _messages_host(models=None, probe_status=401, probe_body={"error": {"type": "auth"}})
 
@@ -210,7 +228,15 @@ def test_llm_preflight_reports_a_rejected_key_on_the_messages_route() -> None:
 
 def test_llm_preflight_checks_the_route_a_named_preset_actually_uses() -> None:
     """`zai` resolves to the Messages API, so the check must not probe the other one."""
-    config = Config(tier="full", llm={"provider": "zai", "model": "glm-5.3-flash", "api_key": "k"})
+    config = Config(
+        tier="full",
+        llm={
+            "provider": "zai",
+            "base_url": "https://api.z.ai/api/anthropic",
+            "model": "glm-5.3-flash",
+            "api_key": "k",
+        },
+    )
     client = _messages_host([{"id": "glm-5.3-flash"}])
 
     with patch("immich_memories.preflight.httpx.Client", return_value=client):

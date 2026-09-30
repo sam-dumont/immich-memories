@@ -25,7 +25,9 @@ class PolishJudge:
     """Answers the two questions this layer asks, and banks every request by its exact prompt."""
 
     def __init__(self, bank=None, *, require_hits=False) -> None:
-        self.config = SimpleNamespace(llm=LLMConfig(model="model-a"))
+        self.config = SimpleNamespace(
+            llm=LLMConfig(base_url="http://localhost:8080/v1", model="model-a")
+        )
         self.bank = {} if bank is None else bank
         self.calls: list[str] = []
         self.require_hits = require_hits

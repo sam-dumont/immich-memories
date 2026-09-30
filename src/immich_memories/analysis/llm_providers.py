@@ -184,12 +184,16 @@ _BATCH_ROUTES = {"openai-compatible": "openai", "anthropic": "anthropic"}
 
 def batch_route_for(config: LLMConfig) -> str | None:
     """The batch route this provider declares, before any host has been asked."""
+    if not config.enabled or config.runs_locally:
+        return None
     return _BATCH_ROUTES.get(resolved_llm_config(config).provider)
 
 
 def resolved_llm_config(config: LLMConfig) -> LLMConfig:
     """Return the provider configuration that will actually reach the wire."""
-    updates = _preset_updates(config)
+    updates = (
+        _preset_updates(config) if config.base_url.strip() else {"provider": "openai-compatible"}
+    )
     if config.thinking == "auto":
         # Leaving it to the host is a request field that is not there, in
         # either direction: nothing turning reasoning on, nothing turning it off.
@@ -241,7 +245,9 @@ def _reachable_only_from_here(host: str) -> bool:
 
 def is_local_endpoint(config: LLMConfig) -> bool:
     """Whether this endpoint is a server on this machine or this private network."""
-    return _reachable_only_from_here(urlsplit(config.base_url).hostname or "")
+    return config.runs_locally or _reachable_only_from_here(
+        urlsplit(config.base_url).hostname or ""
+    )
 
 
 def structured_output_enabled(
@@ -260,6 +266,8 @@ def structured_output_enabled(
 
 def reader_concurrency(config: LLMConfig) -> int:
     """How many independent reader jobs this endpoint is worth asking at once."""
+    if config.runs_locally:
+        return LOCAL_READER_CONCURRENCY
     if config.reader_concurrency is not None:
         return config.reader_concurrency
     host = urlsplit(resolved_llm_config(config).base_url).hostname or ""

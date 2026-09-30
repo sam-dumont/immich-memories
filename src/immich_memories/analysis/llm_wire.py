@@ -370,6 +370,8 @@ def openai_payload(
     images: Sequence[bytes],
     image_detail: str,
     response_format: Mapping[str, Any] | None = None,
+    *,
+    vision_schema: bool = False,
 ) -> dict:
     payload = {
         "model": config.model,
@@ -384,7 +386,11 @@ def openai_payload(
         "max_tokens": max_tokens,
         "temperature": temperature,
     }
-    if response_format and structured_output_enabled(config, response_format) and not images:
+    if (
+        response_format
+        and structured_output_enabled(config, response_format)
+        and (not images or vision_schema)
+    ):
         payload["response_format"] = dict(response_format)
     # Only a server of your own takes the field; a hosted API refuses unknown fields.
     if config.repetition_penalty is not None and is_local_endpoint(config):

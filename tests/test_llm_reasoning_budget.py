@@ -229,7 +229,9 @@ async def test_a_host_that_refuses_the_effort_field_still_gets_the_room(error):
     "model", ["gpt-5.6-luna", "gpt-5.6-luna-2026-09-01", "gpt-6-luna", "gpt-6-luna-2026-09-20"]
 )
 async def test_luna_disables_reasoning_and_keeps_the_answer_budget_in_live_and_batch(model):
-    config = LLMConfig(provider="openai", model=model, api_key="sk-test")
+    config = LLMConfig(
+        base_url="https://api.openai.com/v1", provider="openai", model=model, api_key="sk-test"
+    )
     # WHY: the provider's HTTP endpoint is the one boundary these tests replace.
     with patch("httpx.AsyncClient.post", return_value=_reply()) as post:
         await query_llm("pick the moments", config, max_tokens=300)
@@ -257,6 +259,7 @@ async def test_an_unsupported_effort_value_is_reported_without_disabling_the_par
     code, message
 ):
     config = LLMConfig(
+        base_url="https://api.openai.com/v1",
         provider="openai",
         model="gpt-5.6-luna",
         no_thinking_params={"reasoning_effort": "minimal"},
@@ -287,7 +290,7 @@ async def test_an_unsupported_effort_value_is_reported_without_disabling_the_par
 @pytest.mark.asyncio
 @pytest.mark.parametrize("model", ["gpt-5", "gpt-5-mini", "gpt-5-nano"])
 async def test_older_openai_models_keep_minimal_effort_and_reasoning_room(model):
-    config = LLMConfig(provider="openai", model=model)
+    config = LLMConfig(base_url="https://api.openai.com/v1", provider="openai", model=model)
     # WHY: older GPT-5 models still require reasoning; Luna's fix must not disable it for them.
     with patch("httpx.AsyncClient.post", return_value=_reply()) as post:
         await query_llm("pick", config, max_tokens=300)
@@ -302,6 +305,7 @@ async def test_older_openai_models_keep_minimal_effort_and_reasoning_room(model)
 @pytest.mark.parametrize("effort", ["none", "low", "medium", "high"])
 async def test_luna_preserves_explicit_bulk_effort_in_live_and_batch(effort):
     config = LLMConfig(
+        base_url="https://api.openai.com/v1",
         provider="openai",
         model="gpt-5.6-luna",
         no_thinking_params={"reasoning_effort": effort},
@@ -318,7 +322,12 @@ async def test_luna_preserves_explicit_bulk_effort_in_live_and_batch(effort):
 
 @pytest.mark.asyncio
 async def test_luna_auto_still_leaves_reasoning_to_the_provider():
-    config = LLMConfig(provider="openai", model="gpt-5.6-luna", thinking="auto")
+    config = LLMConfig(
+        base_url="https://api.openai.com/v1",
+        provider="openai",
+        model="gpt-5.6-luna",
+        thinking="auto",
+    )
     # WHY: auto deliberately delegates reasoning to the provider; it must stay distinct from off.
     with patch("httpx.AsyncClient.post", return_value=_reply()) as post:
         await query_llm("pick", config, max_tokens=300)
@@ -358,7 +367,12 @@ async def test_luna_auto_still_leaves_reasoning_to_the_provider():
 async def test_luna_budgets_for_the_bulk_effort_that_reaches_the_wire(
     overrides, effort, max_tokens
 ):
-    config = LLMConfig(provider="openai", model="gpt-5.6-luna", **overrides)
+    config = LLMConfig(
+        base_url="https://api.openai.com/v1",
+        provider="openai",
+        model="gpt-5.6-luna",
+        **overrides,
+    )
     # WHY: provider shaping can replace or remove the preset's off switch before the POST.
     with patch("httpx.AsyncClient.post", return_value=_reply()) as post:
         await query_llm("pick", config, max_tokens=300)
@@ -372,6 +386,7 @@ async def test_luna_budgets_for_the_bulk_effort_that_reaches_the_wire(
 @pytest.mark.asyncio
 async def test_luna_can_still_request_reasoning_with_an_explicit_effort():
     config = LLMConfig(
+        base_url="https://api.openai.com/v1",
         provider="openai",
         model="gpt-5.6-luna",
         thinking=True,

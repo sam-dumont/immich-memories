@@ -460,6 +460,10 @@ class TestACEStepBackendV15Library:
             patch.dict(sys.modules, modules),
             patch.dict(os.environ, env, clear=False),
             patch("platform.system", return_value="Darwin"),
+            patch(
+                "immich_memories.audio.generators.ace_step_runtime._physical_memory_gb",
+                return_value=96.0,
+            ),
         ):
             for key in ("ACESTEP_MLX_VAE_CHUNK", "ACESTEP_DISABLE_TQDM"):
                 os.environ.pop(key, None)
@@ -478,6 +482,11 @@ class TestACEStepBackendV15Library:
         captured = {}
         modules, _ = self._fake_v15_modules(tmp_path, captured)
         modules.update(self._fake_mlx_modules(captured))
+        # WHY: cleanup also checks torch allocators; this test uses no native GPU runtime.
+        fake_torch = ModuleType("torch")
+        fake_torch.backends = SimpleNamespace(mps=SimpleNamespace(is_available=lambda: False))
+        fake_torch.cuda = SimpleNamespace(is_available=lambda: False)
+        modules["torch"] = fake_torch
         if upstream_fails:
 
             def failing_generate(**_kwargs):
@@ -501,8 +510,10 @@ class TestACEStepBackendV15Library:
             else:
                 asyncio.run(backend.generate(request))
 
-        assert captured.get("clear_cache_calls") == [True]
-        assert captured.get("synchronize_calls") == [True]
+        # Preparation drops idle planning buffers, the job drops temporary buffers,
+        # then the backend drops weights before another model acquires the memory lease.
+        assert captured.get("clear_cache_calls") == [True, True, True]
+        assert captured.get("synchronize_calls") == [True, True, True]
 
     def test_v15_library_exit_returns_gpu_memory_to_the_os(self, tmp_path):
         """Leaving the context drops the runtime AND empties torch/MLX caches.
@@ -525,6 +536,7 @@ class TestACEStepBackendV15Library:
         # GPU extra, absent in CI) — we assert the release call, not real GPU work.
         fake_torch = ModuleType("torch")
         fake_torch.backends = SimpleNamespace(mps=SimpleNamespace(is_available=lambda: True))
+        fake_torch.cuda = SimpleNamespace(is_available=lambda: False)
         fake_torch.mps = SimpleNamespace(
             empty_cache=lambda: captured.setdefault("torch_empty_cache", []).append(True)
         )

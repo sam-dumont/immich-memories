@@ -111,6 +111,7 @@ immich-memories capabilities [OPTIONS]
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
 | `--test-music` | boolean | false | Generate 15 seconds for each local ACE-Step profile that fits; may download models. |
+| `--verify-local` | boolean | false | Verify configured owned reader and cached local audio with synthetic inputs; no full-film certification |
 | `--json` | boolean | false | Print the report as JSON |
 
 ## `config`

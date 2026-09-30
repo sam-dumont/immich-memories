@@ -569,7 +569,7 @@ DEP001 = [
     # ACE-Step stack installed out of band; nothing in this project declares it
     # any more, now that both detector seats are ONNX graphs.
     "torch", "torchaudio", "demucs", "torchcodec", "loguru",
-    "mlx",                                              # Optional: Apple Silicon ACE-Step path
+    "mlx", "safetensors",                               # Optional: owned ACE-Step MLX/weight path
     "laya_mlx",                                         # Optional: Laya audience pre-screen, out of band
     "transformers", "huggingface_hub",                  # Optional: smart-turn, off by default
     "PIL", "av", "freetype", "streamlit",               # Alt package names (Pillow→PIL, pyav→av)

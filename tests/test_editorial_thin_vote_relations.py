@@ -26,7 +26,9 @@ class FitJudge:
     """Names every row whose line says `filler`, in both orders, and keeps each prompt."""
 
     def __init__(self) -> None:
-        self.config = SimpleNamespace(llm=LLMConfig(model="model-a"))
+        self.config = SimpleNamespace(
+            llm=LLMConfig(base_url="http://localhost:8080/v1", model="model-a")
+        )
         self.prompts: list[str] = []
 
     def ask(self, stage, prompt, **_kwargs):

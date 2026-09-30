@@ -120,6 +120,20 @@ class DemucsLocalBackend:
         Returns:
             MusicStems with paths to the 4 separated stem files.
         """
+        from immich_memories.local_inference import finish_model_work, local_models
+
+        async with local_models.exclusive():
+            local_models.prepare_audio()
+            try:
+                return await finish_model_work(
+                    self._separate_stems(audio_path, output_dir, progress_callback)
+                )
+            finally:
+                self.release()
+
+    async def _separate_stems(
+        self, audio_path: Path, output_dir: Path, progress_callback: Any | None
+    ) -> MusicStems:
         import asyncio
 
         self._load_model()
@@ -184,4 +198,9 @@ class DemucsLocalBackend:
 
     def release(self) -> None:
         """Release model memory."""
+        had_model = self._model is not None
         self._model = None
+        if had_model:
+            from immich_memories.audio.generators.ace_step_runtime import release_runtime_memory
+
+            release_runtime_memory()

@@ -57,7 +57,7 @@ BUDGET = {
 
 
 def test_projected_spend_includes_all_calls_without_double_billing_reasoning(capsys):
-    config = LLMConfig(model="reader", reader_concurrency=4)
+    config = LLMConfig(base_url="http://localhost:8080/v1", model="reader", reader_concurrency=4)
     problems = probe.check_budget(
         [_result()],
         budget=BUDGET,
@@ -72,7 +72,7 @@ def test_projected_spend_includes_all_calls_without_double_billing_reasoning(cap
 
 
 def test_a_serial_reader_is_refused_on_time_even_when_it_costs_no_tokens(capsys):
-    config = LLMConfig(model="reader", reader_concurrency=1)
+    config = LLMConfig(base_url="http://localhost:8080/v1", model="reader", reader_concurrency=1)
     problems = probe.check_budget(
         [_result()],
         budget=BUDGET,
@@ -85,7 +85,7 @@ def test_a_serial_reader_is_refused_on_time_even_when_it_costs_no_tokens(capsys)
 
 
 def test_an_unpriced_hosted_reader_does_not_silently_pass_the_cost_gate():
-    config = LLMConfig(model="reader", reader_concurrency=4)
+    config = LLMConfig(base_url="http://localhost:8080/v1", model="reader", reader_concurrency=4)
     problems = probe.check_budget(
         [_result()],
         budget=BUDGET,
@@ -111,7 +111,12 @@ def test_every_probe_shape_is_text_and_sends_no_picture(monkeypatch):
     # WHY: query_llm is the reader's HTTP boundary, and no reader listens in a test.
     monkeypatch.setattr(probe, "query_llm", query)
     for shape in probe.SHAPES:
-        probe.probe_shape(shape, LLMConfig(model="reader"), reader="local_model", pricing={})
+        probe.probe_shape(
+            shape,
+            LLMConfig(base_url="http://localhost:8080/v1", model="reader"),
+            reader="local_model",
+            pricing={},
+        )
 
     assert [shape[0] for shape in probe.SHAPES] == ["episodes", "story-pick"]
     assert observed and not any(kwargs.get("images") for kwargs in observed)
@@ -125,7 +130,7 @@ def test_a_reader_that_errors_fails_the_first_shape(monkeypatch):
     monkeypatch.setattr(probe, "query_llm", query)
     result = probe.probe_shape(
         probe.SHAPES[0],
-        LLMConfig(model="reader"),
+        LLMConfig(base_url="http://localhost:8080/v1", model="reader"),
         reader="local_model",
         pricing={},
     )

@@ -126,3 +126,7 @@ __getattr__  # unused function (src/immich_memories/tracking/__init__.py:43)
 # nltk's WordNetCorpusReader calls map_wn from its own constructor; the override in
 # free_text/lexicon.py stops it loading a second copy of the corpus. No line here names it.
 _.map_wn
+
+# ACE-Step diffusion.py reads this owned handler flag through getattr before
+# calling its native decoder; keep compilation disabled on the parked-weight path.
+_.mlx_dit_compiled

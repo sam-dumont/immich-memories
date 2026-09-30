@@ -98,6 +98,10 @@ async def test_cut_text_answers_once_and_is_reused_without_images(tmp_path, tier
     assert post.call_count == 1
     payload = post.call_args.kwargs["json"]
     assert "images" not in payload
+    shape = payload["format"]
+    assert shape["properties"]["genre_suggestions"]["items"]["enum"]
+    assert "relaxings" not in shape["properties"]["genre_suggestions"]["items"]["enum"]
+    assert shape["properties"]["primary_mood"]["enum"]
     assert "A noisy afternoon at the fair" in payload["prompt"]
     assert "The carousel" in payload["prompt"]
     assert "Laughing on a carousel" in payload["prompt"]

@@ -22,6 +22,13 @@ and 2B turbo with the 0.6B planner. Duplicate profiles run once. The first test 
 weights. Each track must be local, finite, audible and the requested length to earn `verified`.
 Failed tests remain in the report, and settings stay unchanged.
 
+`immich-memories capabilities --verify-local` tests the configured owned reader with synthetic
+text, JSON and vision requests, then the configured local ACE-Step profile with 15 seconds of
+audio and local Demucs with four finite stems. It restarts the reader between audio phases and
+releases its owned processes afterwards. Existing model weights are required; this option does
+not download them or certify an external provider. Disabled, missing and blocked components stay
+explicit in the report. Use `--json` to save the evidence. This smoke test is not a full-film check.
+
 An installed model or a successful connection is labelled as a check; it is not a completed film.
 Memory estimates cover resident weights, with more needed for generation. A local reader such
 as oMLX can keep its model loaded while idle. Unload that model and rerun the music test to measure

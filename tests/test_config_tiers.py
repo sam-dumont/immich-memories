@@ -35,10 +35,10 @@ def test_the_full_tier_adds_the_reader_to_the_gpu_tier() -> None:
 
 
 @pytest.mark.parametrize(
-    "llm", [{}, {"model": "gemma-4-e4b"}, {"base_url": "", "model": "gemma-4-e4b"}]
+    "llm", [{}, {"enabled": False, "model": "gemma-4-e4b"}, {"enabled": True, "model": ""}]
 )
-def test_the_full_tier_refuses_to_load_without_an_llm_endpoint(llm: dict) -> None:
-    with pytest.raises(ValueError, match="tier: full needs an LLM"):
+def test_the_full_tier_refuses_to_load_without_an_enabled_model(llm: dict) -> None:
+    with pytest.raises(ValueError, match="tier: full needs an enabled LLM"):
         Config(tier="full", llm=llm)
 
 

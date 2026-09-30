@@ -207,10 +207,19 @@ class ACEStepBackend(MusicGenerator):
         mode = self._get_effective_mode()
 
         if mode == "lib":
-            if python := ace_step_isolated.isolated_python():
-                logger.info("Generating ACE-Step music in the local audio environment")
-                return await ace_step_isolated.generate_isolated(python, self.config, request)
-            return await self._generate_lib(request, progress_callback)
+            from immich_memories.local_inference import finish_model_work, local_models
+
+            async with local_models.exclusive():
+                local_models.prepare_audio()
+                try:
+                    if python := ace_step_isolated.isolated_python():
+                        logger.info("Generating ACE-Step music in the local audio environment")
+                        work = ace_step_isolated.generate_isolated(python, self.config, request)
+                    else:
+                        work = self._generate_lib(request, progress_callback)
+                    return await finish_model_work(work)
+                finally:
+                    self._release_pipeline()
         return await self._generate_api(request, progress_callback)
 
     async def _generate_lib(
@@ -541,6 +550,9 @@ class ACEStepBackend(MusicGenerator):
         return info
 
     async def __aexit__(self, *args):
+        self._release_pipeline()
+
+    def _release_pipeline(self) -> None:
         had_runtime = self._pipeline is not None
         self._pipeline = None
         if had_runtime:

@@ -6,6 +6,7 @@ Extracted from the retired post-card moment editor; only the contracts survive h
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -86,6 +87,7 @@ class TextRequest:
     json_fields: tuple[str, ...] = ()
     json_empty_array_pairs: tuple[tuple[str, str], ...] = ()
     json_optional_fields: tuple[str, ...] = ()
+    response_format: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         from immich_memories.analysis.editorial_json_completion import (
@@ -114,6 +116,7 @@ class TextRequest:
             max_tokens=self.max_tokens,
             temperature=0.0,
             require_complete=True,
+            response_format=self.response_format,
             policy=COMPLETE_RETRY_POLICY
             + (f"/{JSON_RECOVERY_POLICY}" if self.json_object else "")
             + (

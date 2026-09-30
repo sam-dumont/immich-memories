@@ -208,3 +208,55 @@ def test_capability_report_catches_missing_laya_before_a_gpu_film(tmp_path):
     laya = next(row for row in rows if row.name == "Laya audience check")
     assert laya.status == "missing"
     assert "models fetch" in laya.message
+
+
+def test_verify_local_flag_reports_scoped_evidence_without_changing_legacy_checks(monkeypatch):
+    from click.testing import CliRunner
+
+    from immich_memories.cli import main
+    from immich_memories.setup_capabilities import Capability
+
+    monkeypatch.setattr("immich_memories.preflight.run_preflight_checks", lambda _: [])
+
+    async def verify(_config):
+        return [
+            Capability(
+                "Owned reader", "verified", "Synthetic text/JSON/vision only; not a full film"
+            )
+        ]
+
+    monkeypatch.setattr("immich_memories.local_capabilities.verify_local_capabilities", verify)
+    result = CliRunner().invoke(
+        main.commands["capabilities"], ["--verify-local", "--json"], obj={"config": Config()}
+    )
+    assert result.exit_code == 0, result.output
+    assert '"verified"' in result.output
+    assert "not a full film" in result.output
+    conflict = CliRunner().invoke(
+        main.commands["capabilities"], ["--verify-local", "--test-music"], obj={"config": Config()}
+    )
+    assert conflict.exit_code == 2
+
+
+def test_verify_local_does_not_run_external_llm_preflight(monkeypatch):
+    from click.testing import CliRunner
+
+    from immich_memories.cli import main
+
+    config = Config()
+    config.llm.enabled = True
+    config.llm.base_url = "https://example.invalid/v1"
+    observed = []
+
+    def checks(candidate):
+        observed.append(candidate.llm.enabled)
+        return []
+
+    monkeypatch.setattr("immich_memories.preflight.run_preflight_checks", checks)
+    result = CliRunner().invoke(
+        main.commands["capabilities"], ["--verify-local", "--json"], obj={"config": config}
+    )
+    assert result.exit_code == 0, result.output
+    assert observed == [False]
+    assert config.llm.enabled
+    assert "configured-external" in result.output

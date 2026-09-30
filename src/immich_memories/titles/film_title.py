@@ -95,7 +95,7 @@ def resolve_film_title(
     if not _asks_the_model(
         enabled=enabled,
         memory_type=memory_type,
-        configured=bool(llm_config.model),
+        configured=bool(llm_config.enabled and llm_config.model),
     ):
         return None, subtitle_override, None
 
