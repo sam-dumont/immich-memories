@@ -718,6 +718,7 @@ src/immich_memories/
 │   ├── pictures_cmd.py         # `pictures show/clear-hold/never-use/undo/list`: the owner's word on one picture
 │   ├── music_cmd.py            # `music search/analyze/add`
 │   ├── hardware_cmd.py         # `hardware` info display
+│   ├── capabilities_cmd.py     # Setup report and optional real local music profile tests
 │   ├── _helpers.py             # Shared console/print utilities
 │   ├── _generation_preview.py  # Plain-text summary for read-only generation planning (--dry-run)
 │   ├── _config_errors.py       # Config error formatting
@@ -1055,6 +1056,7 @@ src/immich_memories/
 ├── place_phrases/              # Per-language trip-title place phrases, one module per language; none = no preposition
 ├── locales/                    # Fourteen languages: messages.po for films, ui.po for the interface
 ├── preflight.py                # Dependency checks
+├── setup_capabilities.py       # ACE-Step profile memory advice and synthetic audio validation
 ├── preflight_network.py        # One row per outside host the config allows; silent when none
 ├── preflight_render.py         # Authenticated worker version and render capability check
 ├── preflight_run.py            # Pinned models + writable output dir; `generate`/`prepare` and the web

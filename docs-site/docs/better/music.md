@@ -61,7 +61,14 @@ ordinary backend failure: MusicGen is next, then a bundled track.
 | XL (4B) with the 4B planner | about 29 GB | about 28 GB |
 | XL (4B), `use_lm: false` | about 21 GB | about 20 GB |
 | 2B with the 1.7B planner | about 11 GB | about 9 GB |
+| 2B with the 0.6B planner | about 9 GB | about 7 GB |
 | 2B, `use_lm: false` | about 7 GB | about 6 GB |
+
+Check this machine with `immich-memories capabilities --test-music`. It tries the configured
+profile and the smaller 2B profiles when their weight budgets fit the memory available now.
+The 0.6B name refers to the planner; the audio generator is still 2B. A reader that stays loaded
+in oMLX still uses unified memory while idle. Unloading it can make a smaller music profile fit;
+the command reports a refusal separately from a generation failure.
 
 Per file, under `~/.cache/ace-step/checkpoints/`: the 2B models about 4.5 GB each, XL-turbo about
 19 GB, the planners 1.2, 3.4 and 7.8 GB (0.6B, 1.7B, 4B), the shared VAE and embedding about
