@@ -85,3 +85,24 @@ makes a fact computed here indistinguishable from one computed in process. Its
 web stack (fastapi, uvicorn) comes from the application's own dependency set.
 
 The service uses the same per-detector versions as in-process preparation. Marqo loads the digest-pinned ONNX export from `/cache/nsfw-marqo-384.onnx` (override with `IMMICH_MEMORIES_INFERENCE_MARQO_ONNX`); Docling uses the configured Hugging Face cache. Neither detector requires PyTorch. CPU and CUDA images install separate extras, and CUDA uses ONNX Runtime GPU 1.26 with CUDA 12/cuDNN 9.
+
+## One CUDA worker address
+
+The CUDA image also supports `python -m immich_memories_inference.gpu_worker`. Run
+`docker compose -f services/inference/compose.gpu-worker.yaml up -d` from the repository with
+`GPU_WORKER_IMAGE` set to the versioned CUDA inference image matching the app, `IMMICH_URL`
+set to its Immich server, and `RENDER_WORKER_TOKEN` set to the shared render token.
+`GPU_WORKER_BIND_ADDRESS` defaults to loopback; set the GPU box's trusted LAN address when
+the app runs elsewhere.
+
+One port, 8092: inference keeps `/facts`, `/health`, `/queue` and `/audio/stems`; captions use
+`/v1`; authenticated rendering uses `/render`. Configure the app's inference URL at the root,
+caption URL at `/v1`, and `render.worker_base_url` at `/render`. The render token never reaches
+the caption subprocess. See [the reference setup](../../docs-site/docs/run/reference-setup.md#one-gpu-service)
+for the exact app settings and HTTPS/LAN configuration.
+
+Existing service queues remain. Active native model calls retain GPU ownership even if their
+HTTP client cancels. Rendering waits up to 60 seconds, unloads classifier weights and stops
+the caption process before starting; model requests during render receive 503 with
+`Retry-After: 1`. Demucs releases after separation. Captions restart lazily on the next request.
+ACE-Step and the reader LLM remain external. The ordinary inference command is unchanged.

@@ -22,6 +22,10 @@ compose file publishes captions on 8094 for that reason).
 
 The service also runs Demucs for [music stems](./music.md). ACE-Step stays in its own deployment.
 
+For inference, captions, Demucs and rendering on one GPU allocation and one address, use the
+[combined CUDA worker](../run/reference-setup.md#one-gpu-service). It uses this same CUDA image
+with the optional `python -m immich_memories_inference.gpu_worker` command.
+
 What leaves the app: picture previews and generated full music tracks sent for separation. Nothing behind the port
 checks a credential, so keep it on your LAN.
 

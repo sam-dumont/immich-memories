@@ -9,6 +9,10 @@ encode is not, so a second cut of the same month still encodes the whole film on
 The render worker takes that one stage to a machine with an NVIDIA card. Selection stays on the
 NAS, and so do music and the upload back to Immich.
 
+The [combined CUDA worker](../run/reference-setup.md#one-gpu-service) puts this render service,
+picture inference, captions and Demucs in one container on port 8092. Its render URL ends in
+`/render`; the standalone setup below keeps port 8093.
+
 ```mermaid
 flowchart LR
     nas["The app, on the NAS<br/><small>selection, timing</small>"] -->|"the cut + the Immich key"| worker["Render worker<br/><small>NVENC, CUDA titles</small>"]

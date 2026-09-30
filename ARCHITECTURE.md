@@ -320,6 +320,16 @@ occupying native workers while waiting; `/queue` reports aggregate counts and ti
 so a fresh PVC needs no `kubectl cp`. Design:
 `docs/implementation-plans/2026-09-11-phase5-inference-service.md`.
 
+The optional `immich_memories_inference.gpu_worker` entrypoint runs both existing service
+lifespans, mounts authenticated rendering at `/render`, and proxies `/v1` to the CUDA image's
+bundled caption process. `gpu_phases.py` admits model phases around the existing queues and
+retains active native work through client cancellation. The existing render thread waits with
+a deadline, unloads classifier weights and stops captions before rendering; Demucs releases
+after each separation. `caption_runtime.py` bounds subprocess start/stop, and `caption_proxy.py`
+streams responses without forwarding render credentials. `services/inference/compose.gpu-worker.yaml`
+reserves one GPU and publishes one port. Standalone service entrypoints and external ACE-Step
+remain unchanged.
+
 ## Build System
 
 The **Makefile** is the single source of truth for all commands:
