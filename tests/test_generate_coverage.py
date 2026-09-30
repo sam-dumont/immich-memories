@@ -532,15 +532,16 @@ class TestBuildAssemblySettingsExtraBranches:
         settings = build_assembly_settings(params, [])
         assert settings.scale_mode == "fit"
 
-    def test_4k_resolution(self):
+    @pytest.mark.parametrize(("tier", "expected"), [("nas", (1920, 1080)), ("gpu", (3840, 2160))])
+    def test_4k_resolution_respects_the_tier(self, tier, expected):
         params = GenerationParams(
             clips=[],
             output_path=Path("/out/o.mp4"),
-            config=Config(),
+            config=Config(tier=tier),
             output_resolution="4k",
         )
         settings = build_assembly_settings(params, [])
-        assert settings.target_resolution == (3840, 2160)
+        assert settings.target_resolution == expected
         assert settings.auto_resolution is False
 
     def test_date_overlay_passed(self):
