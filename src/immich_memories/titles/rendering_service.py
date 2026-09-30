@@ -18,8 +18,8 @@ import numpy as np
 from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer
 from immich_memories.processing.hdr_utilities import get_hdr_conversion_filter
 
+from .cpu_video import create_title_video
 from .styles import TitleStyle
-from .video_encoding import create_title_video
 
 if TYPE_CHECKING:
     from .generator import TitleScreenConfig
@@ -79,7 +79,7 @@ class RenderingService:
             self._kernels = load_kernel_renderer()
             if self._kernels is not None:
                 self.backend = self._kernels.init_kernels()
-                self._use_gpu = self.backend is not None
+                self._use_gpu = self.backend in _GPU_BACKENDS
             self._log_backend()
 
     def _log_backend(self) -> None:
@@ -92,14 +92,17 @@ class RenderingService:
         card — and titles are the most expensive stage there is.
         """
         if self.backend is None:
-            logger.warning("Title rendering: %s", self._no_backend_reason())
+            logger.warning(
+                "Title rendering: %s; using static title plates with fades",
+                self._no_backend_reason(),
+            )
         elif self.backend in _GPU_BACKENDS:
             logger.info("Title rendering on GPU: %s", self.backend)
         else:
             failures = self._kernels.gpu_failures() if self._kernels is not None else ()
             logger.warning(
-                "Title rendering on CPU: %s; the kernel renderer runs on %s instead. "
-                "Titles will be markedly slower than the footage around them.",
+                "Title rendering on CPU: %s; the kernel backend is %s. "
+                "Using static title plates with fades.",
                 "; ".join(failures) or "the kernel library found no GPU backend",
                 self.backend,
             )
@@ -118,11 +121,9 @@ class RenderingService:
 
     @property
     def use_gpu(self) -> bool:
-        """Whether the GPU renderer is in use, not whether it has a GPU.
+        """Whether title effects use a Metal, CUDA or Vulkan backend.
 
-        Kept as-is because it selects the renderer, and the kernel path is the
-        right choice even on CPU: it is the only one that can do the animated
-        slow-mo deblur. Read `backend` to find out what is underneath.
+        CPU backends use still plates with fades instead of animated kernels.
         """
         return self._use_gpu
 
@@ -195,6 +196,8 @@ class RenderingService:
             fade_from_white=fade_from_white,
             background_image=background_image,
             encoding_plan=encoding_plan,
+            fade_to_white=fade_to_white,
+            frame_progress=frame_progress,
         )
 
     def _create_gpu_title(

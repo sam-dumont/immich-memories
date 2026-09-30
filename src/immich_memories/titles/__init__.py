@@ -41,6 +41,7 @@ from .convenience import (
     generate_month_divider,
     generate_title_screen,
 )
+from .cpu_video import create_title_video
 from .encoding import (
     ORIENTATION_RESOLUTIONS,
     get_resolution_for_orientation,
@@ -76,7 +77,6 @@ from .text_builder import (
     get_month_name,
     get_ordinal,
 )
-from .video_encoding import create_title_video
 
 __all__ = [
     # Styles

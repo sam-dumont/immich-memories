@@ -366,6 +366,7 @@ and the planner, and `ProgressTracker` (progress.py) is the run clock the stage 
 
 **TitleScreenGenerator** (titles/generator.py) composes 3 services:
 - `RenderingService` (rendering_service.py): GPU/CPU renderer selection, video creation
+  - `cpu_video.py`: synthesizes two Pillow plates once; FFmpeg fades and encodes them on CPU-only/NAS hosts
 - `EndingService` (ending_service.py): fade-to-white ending generation
 - `TripService` (trip_service.py): trip map and location card screens
 
@@ -670,6 +671,7 @@ src/immich_memories/
 │   ├── _text_memory_types.py   # Memory type title helpers
 │   ├── _trip_titles.py         # Trip title text generation
 │   ├── convenience.py          # Convenience/factory functions
+│   ├── cpu_video.py            # CPU/NAS still plates, FFmpeg text fades and plan-owned encoding
 │   ├── encoding.py             # Title video encoding
 │   ├── video_encoding.py       # Video encoding helpers
 │   ├── text_builder.py         # Text layout & positioning

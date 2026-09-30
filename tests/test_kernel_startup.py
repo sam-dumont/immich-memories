@@ -178,7 +178,7 @@ def test_a_gpu_that_cannot_start_leaves_one_warning_naming_it(
         service = RenderingService(config)
 
     warnings = [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
-    assert service.use_gpu and service.backend == "CPU"
+    assert not service.use_gpu and service.backend == "CPU"
     assert len(warnings) == 1
     assert "CUDA: crashed (sigabrt)" in warnings[0]
     assert "on CPU" in warnings[0]

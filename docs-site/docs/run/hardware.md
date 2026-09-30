@@ -17,7 +17,7 @@ Which encoders have been checked, and when: [Supported and tested](./requirement
 
 | Feature | With a GPU | Without |
 |---------|----------|-------------|
-| Title screens | kernel effects: bokeh particles, SDF text, the animated deblur of a content-backed card | PIL: same text, timing and animated gradient, without the effects |
+| Title screens | kernel effects: bokeh particles, SDF text, the animated deblur of a content-backed card | Pillow still plates: same text, timing and palette, with FFmpeg opacity fades |
 | Video encoding | NVENC / VideoToolbox / VAAPI / QSV | libx264 / libx265 |
 | Video scaling | scale_cuda, scale_vaapi, scale_qsv | FFmpeg swscale |
 
@@ -219,10 +219,10 @@ line says what is drawing:
 Title kernels: quadrants 1.3.0 on the Metal backend
 ```
 
-Metal on Apple Silicon, CUDA on NVIDIA, Vulkan on an integrated GPU, CPU everywhere else. Each GPU
+Metal on Apple Silicon, CUDA on NVIDIA, Vulkan on an integrated GPU. A machine without a working
+rendering GPU uses still title plates with FFmpeg fades. Each GPU
 backend is tried in a throwaway child process first; one that fails is skipped and named in the
-log once. Kernels are cached in `~/.immich-memories/cache/kernels`. `IMMICH_FORCE_CPU=1` keeps the
-kernel renderer but runs it on the processor.
+log once. Kernels are cached in `~/.immich-memories/cache/kernels`. `IMMICH_FORCE_CPU=1` selects the CPU fallback for title videos.
 
 Quadrants publishes wheels for Python 3.10 to 3.13 on Linux (x86_64, aarch64), macOS arm64 and
 Windows, and none for Intel macOS or Python 3.14. This app needs 3.11 or later, so the kernels need
@@ -240,4 +240,6 @@ Title rendering       WARNING   kernel backend crashed on this CPU: illegal
                                 instruction; titles fall back to the PIL renderer
 ```
 
-On that box PIL is also the faster renderer, so nothing is lost but the effects.
+Pillow draws the background and text once. FFmpeg supplies the fades and still uses the resolved
+hardware encoder. The font, layout, palette, duration and frame rate stay the same; moving gradients,
+bokeh and animated deblur are reserved for rendering GPUs.
