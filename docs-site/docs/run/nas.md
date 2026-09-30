@@ -68,10 +68,15 @@ to that port.
 
 ## What to expect
 
-The first cut of a month reads every picture it can reach once, on the NAS CPU, and banks the
-answers. Run it in the evening. Later cuts reuse matching facts; new pictures and changed producers
+The first cut of a month reads every picture it can reach once and banks the answers in the
+persistent store. The eight context heads share one DINO encoder; Docling and Marqo are two
+additional models. They run on the NAS CPU by default, or on a configured
+[inference service](../better/inference.md) while selection and rendering stay on the NAS. Run it in the evening. Later cuts reuse matching facts; new pictures and changed producers
 can require more work. `immich-memories runs show` prints where the time went, phase by phase and
-per picture. NAS timings are being re-measured; [Measured](../better/measured.md) has the rest.
+per picture. A 162-image test on the DS423+ took 246 seconds for fresh classifier preparation
+and 0.15 seconds to reuse it, with no model calls on the repeat. The same NAS client with a
+T1000 service took 63 seconds fresh. Downloads, captions and rendering are separate costs; see
+[the preparation measurements](../better/measured.md#nas-preparation).
 
 Start with one month, not a year: preparation grows with the pictures in the window, not with the
 length of the film. To read a bigger window ahead of time, run
