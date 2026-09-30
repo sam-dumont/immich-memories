@@ -20,8 +20,9 @@ pytestmark = pytest.mark.integration
     "rate,source_frames,output_frames,duration",
     [("30", 59, 60, 2.0), ("60", 119, 120, 2.0), ("30000/1001", 59, 60, 2.002)],
 )
+@pytest.mark.parametrize("hardware_enabled", [False, True])
 def test_certified_hold_keeps_all_frames_at_the_declared_cadence(
-    tmp_path: Path, rate, source_frames, output_frames, duration
+    tmp_path: Path, rate, source_frames, output_frames, duration, hardware_enabled
 ):
     source = tmp_path / "short.mp4"
     subprocess.run(
@@ -55,7 +56,9 @@ def test_certified_hold_keeps_all_frames_at_the_declared_cadence(
 
     output, nominal = extract_certified_live(
         clip, source, tmp_path, extract=rounded_extract,
-        config=SimpleNamespace(hardware=HardwareAccelConfig(enabled=False), output=OutputConfig()),
+        config=SimpleNamespace(
+            hardware=HardwareAccelConfig(enabled=hardware_enabled), output=OutputConfig()
+        ),
     )  # fmt: skip
     stream = json.loads(subprocess.check_output([
         "ffprobe", "-v", "error", "-select_streams", "v:0", "-count_frames",
@@ -66,4 +69,12 @@ def test_certified_hold_keeps_all_frames_at_the_declared_cadence(
     assert stream["avg_frame_rate"] == (rate if "/" in rate else rate + "/1")
     assert int(stream["nb_read_frames"]) == output_frames
     record = json.loads(output.with_suffix(".json").read_text())
-    assert record["frame_quantization"]["final_frame_hold"]["target_frames"] == output_frames
+    hold = record["frame_quantization"]["final_frame_hold"]
+    assert hold["target_frames"] == output_frames
+    if hardware_enabled:
+        from immich_memories.processing.hardware import detect_hardware_acceleration
+
+        if detect_hardware_acceleration().supports_h264_encode:
+            assert hold["encoder"] not in {"libx264", "libx265"}
+    else:
+        assert hold["encoder"] == "libx264"

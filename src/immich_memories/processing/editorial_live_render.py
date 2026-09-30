@@ -10,6 +10,7 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
+from immich_memories.processing.hardware_encode import apply_hardware_encode
 from immich_memories.processing.live_material import LiveRenderMaterial
 from immich_memories.processing.probe_cache import ProbeCache, trim_ticks
 from immich_memories.security import write_secret_file
@@ -208,6 +209,7 @@ def _hold_last_frame(
         is_hdr=bool(getattr(probe, "hdr_type", None)), hardware_enabled=hardware_enabled
     )
     _append_encoding_args(command, plan, getattr(probe, "has_audio", False), target)
+    command = apply_hardware_encode(command, pixel_format=plan.pixel_format)
     result = subprocess.run(command, capture_output=True, text=True, timeout=60, check=False)
     write_secret_file(target.with_suffix(".stderr.log"), result.stderr)
     if result.returncode or not target.is_file():
@@ -226,6 +228,7 @@ def _hold_last_frame(
         "nominal_seconds": nominal,
         "render_fps": fps,
         "target_frames": frames,
+        "encoder": plan.encoder,
         "after_seconds": actual_end,
         "output_sha256": _sha(target),
         "hold_seconds": actual_end - duration,
