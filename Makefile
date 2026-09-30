@@ -91,12 +91,12 @@ install-acestep:  ## Install the tested ACE-Step 1.5 inference stack and local D
 	uv venv --python 3.12 --allow-existing .venv-acestep
 	uv pip install --python .venv-acestep/bin/python --no-deps \
 	  'ace-step @ git+https://github.com/ace-step/ACE-Step-1.5.git@v0.1.8'
-	uv pip install --python .venv-acestep/bin/python -e '.[demucs]' \
+	uv pip install --python .venv-acestep/bin/python $(if $(filter Linux,$(shell uname -s)),--torch-backend cu126) -e '.[demucs]' \
 	  'accelerate>=1.12.0' 'diffusers>=0.37.0' diskcache 'loguru>=0.7.3' \
 	  'soundfile>=0.13.1' 'scipy>=1.10.1' 'numba>=0.63.1' 'matplotlib>=3.7.5' \
 	  'einops>=0.8.1' \
 	  'mlx>=0.25.2' 'mlx-lm>=0.20.0' 'pytorch-wavelets>=1.3.0' \
-	  'pywavelets>=1.9.0' toml 'torch==2.10.0' 'torchvision==0.25.0' 'torchaudio==2.10.0' \
+	  'pywavelets>=1.9.0' toml 'torch==2.13.0' 'torchvision==0.28.0' 'torchaudio==2.11.0' \
 	  'transformers>=4.51.0,<4.58.0' 'typer-slim>=0.21.1' \
 	  'vector-quantize-pytorch>=1.27.15'
 	@.venv-acestep/bin/python -c "from acestep.handler import AceStepHandler; from acestep.llm_inference import LLMHandler; from demucs.pretrained import get_model; import torch, torchvision.ops as o; o.nms(torch.zeros((0,4)), torch.zeros((0,)), 0.5); print('Local ACE-Step and Demucs imports OK')"
@@ -1160,5 +1160,5 @@ demucs-locks:  ## Refresh the Linux inference audio locks without changing Mac d
 	  --python-platform linux --torch-backend cpu --generate-hashes --no-annotate --no-header \
 	  -o docker/demucs-cpu-requirements.txt && \
 	uv pip compile docker/demucs-requirements.in --constraint "$$constraints" --python-version 3.12 \
-	  --python-platform linux --torch-backend cu128 --generate-hashes --no-annotate --no-header \
+	  --python-platform linux --torch-backend cu126 --generate-hashes --no-annotate --no-header \
 	  -o docker/demucs-cuda-requirements.txt

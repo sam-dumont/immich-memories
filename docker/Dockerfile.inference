@@ -56,7 +56,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 # The device extra locks a CUDA 12 / cuDNN 9-compatible runtime.
 ENV INFERENCE_EXTRA=editorial-cuda
-ENV TORCH_INDEX=cu128
+ENV TORCH_INDEX=cu126
 
 
 FROM builder-${DEVICE} AS builder

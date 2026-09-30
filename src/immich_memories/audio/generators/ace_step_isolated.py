@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import subprocess
 import sys
 import tempfile
@@ -36,6 +37,8 @@ async def generate_isolated(
     payload["config"]["extra_args"] = {
         "cpu_offload": bool(config.extra_args.get("cpu_offload", False))
     }
+    # PyTorch caches this during import. Keep this eager audio worker free of native JIT kernels.
+    child_env = os.environ | {"TORCH_DISABLE_NATIVE_JIT": "1"}
     with tempfile.TemporaryDirectory(prefix="acestep-result-") as directory:
         result_path = Path(directory) / "result.json"
         await asyncio.to_thread(
@@ -45,6 +48,7 @@ async def generate_isolated(
             text=True,
             check=True,
             timeout=config.timeout_seconds,
+            env=child_env,
         )
         data = json.loads(result_path.read_text())
     data["audio_path"] = Path(data["audio_path"])

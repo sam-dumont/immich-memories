@@ -2,6 +2,7 @@
 
 import io
 import json
+import os
 import subprocess
 import sys
 from dataclasses import asdict
@@ -89,6 +90,43 @@ async def test_worker_runs_the_library_without_api_fallback(tmp_path, monkeypatc
     destination = tmp_path / "result.json"
     await _worker(destination)
     assert json.loads(destination.read_text())["audio_path"] == str(track)
+
+
+async def test_isolated_audio_disables_native_jit_before_child_imports(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from immich_memories.audio.generators.ace_step_isolated import generate_isolated
+
+    track = tmp_path / "track.wav"
+    track.write_bytes(b"audio")
+    real_run = subprocess.run
+    monkeypatch.setenv("TORCH_DISABLE_NATIVE_JIT", "0")
+    monkeypatch.setenv("IMMICH_AUDIO_TEST_MARKER", "inherited")
+
+    def run(command, *, input, **kwargs):
+        # WHY: replace model generation, but execute a real child to observe its startup environment.
+        child = real_run(
+            [
+                sys.executable,
+                "-c",
+                "import os; print(os.environ.get('TORCH_DISABLE_NATIVE_JIT')); "
+                "print(os.environ.get('IMMICH_AUDIO_TEST_MARKER'))",
+            ],
+            env=kwargs.get("env"),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        assert child.stdout.splitlines() == ["1", "inherited"]
+        Path(command[-1]).write_text(
+            json.dumps({"audio_path": str(track), "metadata": {"mode": "lib"}})
+        )
+
+    monkeypatch.setattr(subprocess, "run", run)
+    await generate_isolated(
+        tmp_path / "python", ACEStepConfig(mode="lib"), GenerationRequest(output_dir=tmp_path)
+    )
+    assert os.environ["TORCH_DISABLE_NATIVE_JIT"] == "0"
 
 
 def test_the_worker_receives_the_mood_the_editor_sent(tmp_path):
