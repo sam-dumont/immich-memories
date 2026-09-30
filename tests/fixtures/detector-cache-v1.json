@@ -1,0 +1,83 @@
+{
+  "contract": "detector-facts-v1",
+  "primary_key": [
+    "asset_id",
+    "head",
+    "version"
+  ],
+  "fields": [
+    "asset_id",
+    "head",
+    "version",
+    "label",
+    "confidence",
+    "encoder_key",
+    "decided_at"
+  ],
+  "versions": {
+    "activity": "public-v1",
+    "children": "public-v1",
+    "location": "public-v1",
+    "people": "public-v1",
+    "venue": "oi-v3",
+    "frame_kind": "public-v1",
+    "screen": "public-v1-strict",
+    "uncovered_person": "public-v1",
+    "nsfw_marqo": "det-v3",
+    "doc_docling": "det-v2",
+    "clip_frames": "frame_kind-public-v1/8-frames"
+  },
+  "dino": {
+    "model": "facebook/dinov2-small@ed25f3a31f01632728cabb09d1542f84ab7b0056",
+    "sha256": "478164cd290ee78e5ddb4fcc474136eec714b4b8253a3609cc7164b592e958af",
+    "preprocess": "dinov2-s14-224-crop-v1",
+    "layout": "cls+mean+quad2x2/pca256/fp16",
+    "bundle_sha256": "cfa2cf067c517e783c43771b78cdb0a5b7a42a43b7629e55165c2cf82c6cc117"
+  },
+  "marqo": {
+    "model": "Marqo/nsfw-image-detection-384@0c26ec22/onnx-384",
+    "sha256": "924658f1ac638d96e9126ecb29de047dc8d31c9c9defcab77a26a5c96ed69e11",
+    "classes": [
+      "NSFW",
+      "SFW"
+    ],
+    "side": 384,
+    "equivalent_stills": "det-v2"
+  },
+  "docling": {
+    "model": "docling-project/DocumentFigureClassifier-v2.0",
+    "revision": "2a12e02668b98ca40216eab41cdf19530577cba4",
+    "classes": [
+      "logo",
+      "photograph",
+      "icon",
+      "engineering_drawing",
+      "line_chart",
+      "bar_chart",
+      "other",
+      "table",
+      "flow_chart",
+      "screenshot_from_computer",
+      "signature",
+      "screenshot_from_manual",
+      "geographical_map",
+      "pie_chart",
+      "page_thumbnail",
+      "stamp",
+      "music",
+      "calendar",
+      "qr_code",
+      "bar_code",
+      "full_page_image",
+      "scatter_plot",
+      "chemistry_structure",
+      "topographical_map",
+      "crossword_puzzle",
+      "box_plot"
+    ]
+  },
+  "sampling": {
+    "frames": 8,
+    "width": 768
+  }
+}

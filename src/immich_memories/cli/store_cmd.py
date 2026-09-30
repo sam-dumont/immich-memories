@@ -23,6 +23,9 @@ def register_store_commands(cli_group: click.Group) -> None:
         `database.url`) names another one. Stop the app before `restore`.
         """
 
+    from immich_memories.cli.store_facts import register_fact_commands
+
+    register_fact_commands(store)
     _register_status(store)
     _register_import(store)
     _register_copy(store)
