@@ -18,7 +18,7 @@ class DemandedPreviewReader:
         self, cache: ThumbnailCache, fetch: Callable[[str], bytes | None], *, allowed_ids: set[str]
     ):
         self._cache, self._fetch, self._allowed = cache, fetch, frozenset(allowed_ids)
-        self._seen: dict[str, bytes | None] = {}
+        self._seen: dict[str, bool] = {}
         self._metrics = {
             "fetch_attempts": 0,
             "cache_hits": 0,
@@ -32,7 +32,7 @@ class DemandedPreviewReader:
         if asset_id not in self._allowed:
             raise ValueError("picture preview requested outside the conserved card material")
         if asset_id in self._seen:
-            return self._seen[asset_id]
+            return cached_preview_bytes(self._cache, asset_id) if self._seen[asset_id] else None
         payload = cached_preview_bytes(self._cache, asset_id)
         if payload is not None:
             self._metrics["cache_hits"] += 1
@@ -55,7 +55,9 @@ class DemandedPreviewReader:
                 self._failures[asset_id] = type(exc).__name__
             finally:
                 self._metrics["fetch_seconds"] += monotonic() - started
-        self._seen[asset_id] = payload
+        # Preview bytes already live on disk. Keeping them here made a large
+        # cached selection retain gigabytes even without any model inference.
+        self._seen[asset_id] = payload is not None
         return payload
 
     def metrics(self) -> dict:

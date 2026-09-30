@@ -2,6 +2,7 @@
 
 import dataclasses
 import io
+import tracemalloc
 
 import pytest
 from PIL import Image
@@ -21,6 +22,30 @@ def preview(color="blue"):
     buffer = io.BytesIO()
     image.save(buffer, "JPEG", quality=95)
     return buffer.getvalue()
+
+
+def test_reading_a_large_cached_pool_does_not_keep_every_jpeg_in_memory(tmp_path):
+    cache = ThumbnailCache(tmp_path / "previews")
+    payload = preview() + bytes(256 * 1024)
+    ids = {f"photo-{index}" for index in range(80)}
+    for asset_id in ids:
+        cache.put(asset_id, "preview", payload)
+
+    def fetch(asset_id):
+        pytest.fail(f"Cached preview unexpectedly fetched: {asset_id}")
+
+    reader = DemandedPreviewReader(cache, fetch, allowed_ids=ids)
+    tracemalloc.start()
+    try:
+        for _ in range(2):
+            for asset_id in ids:
+                assert reader(asset_id) == payload
+        retained, _ = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert retained < 2 * 1024 * 1024
+    assert reader.metrics()["cache_hits"] == len(ids)
+    assert reader.metrics()["fetch_attempts"] == 0
 
 
 def test_default_runtime_hashes_demanded_previews_then_replays_without_http(tmp_path, monkeypatch):
