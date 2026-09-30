@@ -199,6 +199,10 @@ def _hold_last_frame(
         "-vf",
         f"tpad=stop_mode=clone:stop_duration={clones / fps:.17g},"
         f"fps={fps:.17g},trim=end_frame={frames},setpts=PTS-STARTPTS",
+        # FFmpeg 7 loses the final sample duration after this filter chain unless
+        # the encoder receives the same cadence as the filtered frames.
+        "-r",
+        f"{fps:.17g}",
     ]
     plan = burst_encoding_plan(
         is_hdr=bool(getattr(probe, "hdr_type", None)), hardware_enabled=hardware_enabled

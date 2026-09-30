@@ -27,6 +27,10 @@ with a warning.
 
 ## Live Photos
 
+A selected motion interval keeps its verified frame rate through encoding. When frame rounding
+leaves a permitted shortfall, the renderer holds the final frame and checks the encoded duration
+before assembly. This applies to software and hardware encoders.
+
 An iPhone records about 3 seconds of video with every photo. Most libraries hold thousands of them,
 and a rapid burst of them is several seconds of continuous footage nobody meant to shoot.
 
