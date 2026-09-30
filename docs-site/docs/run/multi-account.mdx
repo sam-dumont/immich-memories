@@ -6,41 +6,27 @@ import ThemedScreenshot from '@site/src/components/ThemedScreenshot';
 
 # A second Immich account
 
-The classic couple: two phones, two Immich accounts, one server. Without any of this, a
-film only ever sees the primary account's library, and a person tagged on the partner's
-photos is invisible to `--person`. This page connects a second account, proves the person
-in both accounts is the same person, and reads both into one film, by hand and on
-automation's schedule.
-
-Nothing here writes to Immich beyond the film upload you may already have on: no face reset,
-no re-tagging, no upgrade to Immich 3.2. Two separate, already-tagged accounts on the current
-server are all this needs.
+Two phones, two Immich accounts, one family film. By default, the app reads only your primary
+account. Connect a second account and explicitly select both when making a people film.
+The primary remains the only upload destination.
 
 ## What you need
 
-- **The partner's own Immich login**, to create an API key as them and to look up their person
-  IDs. The key only reads; you never need their password in this app.
-- **Faces named in both libraries.** Each account keeps its own people: a face named in yours is
-  unnamed in theirs until they name it too.
-- **The primary account set up already**, with `immich-memories people scan` run once
-  ([Teach it your family](../get-started/who-is-who.md)).
-- **The config file or the environment.** The Settings page shows the primary account only;
-  a second one is added in `config.yaml` or as environment variables, below.
+- A read-only API key created while signed in as the partner.
+- Faces named in both libraries; each account has its own people IDs.
+- Your primary account already connected and [family set up](../get-started/who-is-who.md).
+
+Extra accounts are configured in YAML or environment variables. Settings shows the primary
+connection only. The second account can be on another Immich server.
 
 ## The steps
 
-1. [Connect the account](#connect-the-account) and prove its key with `config test`.
-2. [Bind](#bind-the-same-person-across-accounts) each person the two libraries share: their ID in
-   the partner's library, once.
-3. [Read both accounts](#read-both-accounts-into-one-film) into a film, on the CLI or on the New
-   memory page.
-4. Optional: [save a group](#saved-groups) you'll reuse, and let
-   [automation](#what-automation-does-across-accounts) read both accounts.
+Connect the account, bind matching people once, then make a film with both accounts selected.
+The setup does not reset or re-tag faces in Immich.
 
 ## Connect the account
 
-Add it under `immich.accounts`, by name, next to the primary account, which stays the only
-upload target. In `~/.immich-memories/config.yaml` (pip, or a file mounted into the container):
+Add the partner alongside your primary connection:
 
 ```yaml
 immich:
@@ -52,91 +38,121 @@ immich:
       api_key: "${PARTNER_IMMICH_API_KEY}"
 ```
 
-A name is lowercase letters and digits joined by single underscores (`partner`,
-`grandma_2`); `primary` is reserved for the top-level account. The key is a secret like the
-primary one: redacted from logs and issue reports, sealed with `IMMICH_MEMORIES_SECRET_KEY` when
-saved to the database, and settable from the environment as
-`IMMICH_MEMORIES_IMMICH__ACCOUNTS__PARTNER__API_KEY`. Full field reference:
-[extra accounts](../reference/config-reference.md#extra-accounts).
-
-On Docker Compose, add the two lines to the `environment:` block of `docker-compose.yml`, with the
-key itself in `.env` (a line in `.env` alone does not reach the container), then
-`docker compose up -d`:
+For Docker, put the partner's key in `.env` and add this to the service's `environment:` block:
 
 ```yaml
-      IMMICH_MEMORIES_IMMICH__ACCOUNTS__PARTNER__URL: "${IMMICH_URL:-http://immich-server:2283}"
+      IMMICH_MEMORIES_IMMICH__ACCOUNTS__PARTNER__URL: "${IMMICH_URL}"
       IMMICH_MEMORIES_IMMICH__ACCOUNTS__PARTNER__API_KEY: "${PARTNER_IMMICH_API_KEY}"
 ```
 
-The account can sit on another Immich server: give it that server's `url`.
-
-Create the key while signed in to Immich as the partner. It only ever reads: the read
-permissions in [the API key table](docker.md#the-api-key) are enough, since nothing is uploaded,
-tagged or deleted through it.
-
-Configuring it changes no film by itself. Prove the key first:
+Recreate with `docker compose up -d`. A line in `.env` alone does not reach the container.
+Test the connection:
 
 ```bash
 immich-memories config test
 ```
+
+In Docker, prefix commands with `docker compose exec immich-memories`.
+The output identifies the owner of each key:
 
 ```text
 ✓ Connected as Alex: Server: https://photos.example.com; API: v3
 ✓ Immich account partner: Connected as Sam: API: v3
 ```
 
-One line per account, each proving who its key belongs to against `/users/me`. The second line
-must name the partner: if it names you, the key was created in your account. Nothing else is read
-until a run explicitly asks for the account.
+The partner line must name the partner. If it names you, recreate the key while signed in as them.
+Configuring the account alone does not change a film's source scope.
 
 ## Bind the same person across accounts
 
-Immich gives the same real person a different person ID in each account it's tagged in.
-Nothing here guesses that two IDs are one person: you say so, once, and it's confirmed from
-then on.
-
-Binding adds to a person the people store already holds, so run `immich-memories people scan`
-first if you never have: it fills the store from the primary account. Then find the person's ID
-in the partner account: sign in to Immich as the partner, open the person from the People page,
-and copy the ID from the address bar (`/people/<id>`). Then:
+Sign in to Immich as the partner, open the person and copy their ID from `/people/<id>` in the URL.
+Then bind it to the same person in this app:
 
 ```bash
 immich-memories people bind "Alex" --account partner --id <person-id-in-partner-account>
 ```
 
-```text
-✓ Bound 5b1f0c2e-… (partner account) to Alex (a93d7e41-…)
+Or use **Settings > People > Accounts**, choose the account, paste the ID and **Bind**.
+The Accounts section appears once a second account is configured.
+
+<ThemedScreenshot name="people-accounts-bind" alt="Person settings with a partner-account ID binding" />
+
+Names are not used to guess identity. A binding preserves the person's confirmed details.
+An ID already bound to somebody else is refused.
+
+## Read both accounts into one film
+
+```bash
+immich-memories generate \
+  --accounts primary,partner \
+  --person "Alex" --memory-type person_spotlight --year 2026
 ```
 
-The ID in brackets is Alex's store ID, the one a [saved group](#saved-groups) names them by;
-`people show` lists everyone's.
+In the web **New memory** page, select both under **Immich accounts to read**.
 
-Or in the web UI: **Settings > People**, the person's **Accounts** section, pick the account, paste
-the ID and **Bind** ([The web UI](../make/web-ui.mdx)). It makes the same declaration, and the
-card then lists the person's ID in each account. The section only shows once a second account is
-configured.
+<ThemedScreenshot name="memory-brief-accounts" alt="New memory brief with both household accounts selected" />
 
-<ThemedScreenshot name="people-accounts-bind" alt="A person's card on the People page: their ID in the primary and the partner account, and the form that binds another" />
+The scope is exact: `primary,partner` reads both; `partner` alone excludes your primary.
+Omitting accounts reads primary only. Identical files count once, downloads use the owning
+account, and either owner's favourite counts. If one selected account cannot be read, the run
+stops instead of silently dropping half the family.
 
-`PERSON` is a store person ID or a name exactly one person carries. Binding only adds the
-ID: the person's name, birth date and everything already confirmed about them stay exactly
-as they were, whatever the partner account calls them. An ID already bound to somebody else
-is refused, never merged; binding the same ID again changes nothing. A missing binding is
-unresolved evidence, not permission to match the two accounts by name.
+Albums and trips still use primary only: `--accounts` is refused for those recipes.
+[Duplicates and sharing](../how-it-chooses/family-audience-duplicates.md) covers the selection rules.
+
+## What automation does across accounts
+
+Set the same account scope for daily discovery:
+
+```yaml
+advanced:
+  automation:
+    accounts: [primary, partner]
+```
+
+Docker equivalent, in `environment:`:
+
+```yaml
+      IMMICH_MEMORIES_AUTOMATION__ACCOUNTS: '["primary", "partner"]'
+```
+
+Check the next proposal without making it:
+
+```bash
+immich-memories auto suggest
+```
+
+Trips stay primary-only. Saved-group films can use both accounts.
+[Automation](../make/automate.md) explains priorities and cooldowns.
+
+## Saved groups
+
+Save a repeated people condition, such as either child:
+
+```bash
+immich-memories people group add "Kids" '"<alex-id>" OR "<sam-jr-id>"'
+immich-memories generate --group "Kids" --accounts primary,partner --memory-type multi_person --year 2026
+```
+
+Use store person IDs from `people show`, so renaming does not break the group. `OR` means either
+person; `AND` means both. The UI has **Saved groups** in People settings and group chips in the
+memory brief. [CLI people tools](../make/cli/prepare.md) gives the complete group syntax.
+
+<ThemedScreenshot name="people-saved-groups" alt="Saved people groups in Settings" />
 
 ### Someone only the partner account knows
 
-The scan reads the primary account only, and `bind` adds to somebody the store already holds, so
-a person tagged only in the partner's library (their side of the family, say) comes in by hand.
-Export the store, add them with the partner's ID, and import it back:
+The scan reads primary only, so a partner-only person needs an explicit entry:
 
 ```bash
 immich-memories people export --to people.yaml
 ```
 
+Keep every existing entry and add the person:
+
 ```yaml
 people:
-  # ...everyone already there, left as it is...
+  # Keep the exported people above this entry.
   - name: Jo
     ids:
       partner: [<person-id-in-partner-account>]
@@ -146,110 +162,12 @@ people:
 immich-memories people import --from people.yaml --replace
 ```
 
-`--replace` is needed because the store already holds people; the import checks every entry
-before it writes anything. A later `people scan` keeps the entry, since its ID belongs to
-another account, and `people show` lists it with that ID for a group to name.
-
-## Read both accounts into one film
-
-```bash
-immich-memories generate --accounts primary,partner --person "Alex" --memory-type person_spotlight --year 2026
-```
-
-`--accounts` takes the household through: the same file in both libraries (identical bytes, such
-as a photo one partner saved from the other), or a picture one partner shares with the other,
-counts once ([duplicates](../how-it-chooses/family-audience-duplicates.md#duplicates)); each picture
-downloads through the account that owns it; and either owner's favourite counts. If a
-selected account can't be read, the run stops and names the account, rather than delivering
-a film with half a household silently missing.
-
-Leaving `--accounts` off reads the primary account alone, exactly as before this existed.
-`--accounts` reads exactly the accounts it names, so keep `primary` in the list: `--accounts partner`
-reads the partner alone. Albums and trips still read the primary account only: `--accounts` is
-refused there. In the web UI, **Immich accounts to read** on the New memory page is the same
-choice, shown under **People** once a second account is configured: pick both accounts; none
-picked reads the primary alone. The command at the bottom of the brief is the `generate` it runs,
-`--accounts` included.
-
-<ThemedScreenshot name="memory-brief-accounts" alt="The New memory page for a Multi-Person film: the Kids group and both accounts picked, and the command they make" />
-
-## Saved groups
-
-A label for a people condition you'll reuse, instead of retyping `--person` every time:
-
-```bash
-immich-memories people group add "Kids" '"<alex-id>" OR "<sam-jr-id>"'
-immich-memories people group list
-immich-memories generate --group "Kids" --accounts primary,partner --memory-type multi_person --year 2026
-```
-
-```text
-✓ Saved group 'Kids': ("<alex-id>" OR "<sam-jr-id>")
-```
-
-The expression takes `OR`, `AND` and brackets, like `--people-expression`: `OR` keeps a moment with
-either child in it, `AND` one with both, even when each is only on one partner's copy of that
-afternoon ([generate](../make/cli/generate.md)). The web UI has the same thing under **Saved groups** on the
-People settings page:
-
-<ThemedScreenshot name="people-saved-groups" alt="The Saved groups section of the People page, with one group and the form that adds another" />
-
-On the New memory page, a saved group is a chip under **People** for a **Multi-Person** film
-(pictured above, with both accounts picked); picking it replaces the names.
-
-Write the people as store person IDs, not names: `people show` lists each person's ID next
-to their name, `people bind` prints it too (`Alex (<id>)`), and `people export` lists every
-person's `ids`. A name is accepted but kept as
-typed: a rename breaks it, and automation, which counts a group's pictures by ID, skips a named
-group under its default settings.
-
-`--group` resolves like `--people-expression`, against the people store, at generate time:
-renaming or re-binding somebody in the store is picked up the next time the group runs,
-with no group edit needed. A group holds no copied names or dates, and groups don't nest.
-
-## What automation does across accounts
-
-Automation (`immich-memories auto suggest` / the scheduled daily run) reads the accounts
-named in `automation.accounts`, the same way a manual `--accounts` run does: each proven
-with `/users/me` first, and a read that fails on any of them fails that day's discovery
-rather than silently proposing a film from half a household.
-
-```yaml
-advanced:
-  automation:
-    accounts: ["primary", "partner"]  # list primary too; empty reads the primary alone
-    detect_groups: true               # propose last year's film for each saved group
-```
-
-On Docker Compose, the same in the `environment:` block (`detect_groups` is on by default):
-
-```yaml
-      IMMICH_MEMORIES_AUTOMATION__ACCOUNTS: '["primary", "partner"]'
-```
-
-`immich-memories auto suggest` shows what the next run would pick, saved groups included, without
-making anything ([Automate it](../make/automate.md)).
-
-As with `--accounts`, the list is exactly what is read: `["partner"]` alone leaves the primary
-library out, and with it trips. A saved group's film is a `multi_person` film of the year
-before, not proposed again once made, and skipped when none of its people is among the
-most-pictured people discovery counts.
-
-Every film automation proposes, trips aside, carries the same `--accounts` scope
-automatically; you don't repeat it. Trips still discover from the primary account only, the
-same restriction `--accounts` has on the CLI. A birth date in the people store wins over what
-either account's Immich says.
+`--replace` replaces the registry from that file; do not discard the exported entries.
+A later primary scan preserves partner-only entries.
 
 ## Privacy notes
 
-- The partner account's key is only sent to the partner's own `url`. It's sealed when saved to
-  the database, and redacted from logs, issue reports and `config test` output the same way the
-  primary key is.
-- Reading a second account never contacts a third one. Partner sharing can make an account
-  visible in another's response; only pictures the accounts you actually selected *own* are
-  kept, so sharing doesn't pull a stranger's library into the film.
-- Favourites are read live, through the account that owns the picture. A partner's response
-  saying `false` proves nothing about whether the owner starred it; the run reads the
-  owner's own account for that.
-- The primary account stays the only upload target, always. Connecting a second account
-  never adds it as somewhere a finished film gets written back to.
+The partner key only goes to its configured server. The app reads the selected accounts' owned
+pictures; partner sharing does not pull in a third person's library. Keys are redacted from logs
+and diagnostic reports. Uploads always go to the primary account.
+[Account-name rules and fields](../reference/config-reference.md#extra-accounts) are in the reference.

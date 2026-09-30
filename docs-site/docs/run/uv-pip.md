@@ -4,36 +4,36 @@ title: uv / pip
 
 # uv or pip
 
-For a Mac, a Linux box without Docker, or a checkout you want to hack on. Docker Compose is the
-[recommended install](./docker.md); this one gives the same app with your Python.
-
-You need **Python 3.11 or newer** and FFmpeg on your `PATH`:
-
-On macOS:
-
-```bash
-brew install ffmpeg-full
-export PATH="$(brew --prefix ffmpeg-full)/bin:$PATH"
-```
-
-Keep the export in your shell's startup file. Homebrew's standard `ffmpeg` package can lack
-`zscale`, which the app needs to convert HDR and SDR correctly. `ffmpeg-full` includes it but
-does not replace the standard binary on your `PATH`. Check with
-`ffmpeg -hide_banner -filters | grep zscale`.
-
-On Debian or Ubuntu: `sudo apt install ffmpeg`.
+For a Mac or Linux machine without Docker. You need Python 3.11+ and FFmpeg on your `PATH`.
+The [Docker install](./docker.md) is the other option.
 
 ## Install
 
-Always with an extra. A bare install has no ONNX Runtime, which even NAS needs for its inexpensive
-picture classifiers.
+On macOS, install the FFmpeg build with `zscale` for HDR conversion:
 
 ```bash
-uv tool install "immich-memories[all]"       # or [all-mac] on Apple Silicon
+brew install uv ffmpeg-full
+export PATH="$(brew --prefix ffmpeg-full)/bin:$PATH"
 ```
 
-Tell it where Immich is, in `~/.immich-memories/config.yaml` (the key's minimal permissions are on
-[the Docker page](./docker.md#the-api-key)):
+Keep the PATH export in your shell's startup file. On Debian/Ubuntu, install FFmpeg with
+`sudo apt install ffmpeg`. Verify HDR support:
+
+```bash
+ffmpeg -hide_banner -filters | grep zscale
+```
+
+Install the app (quotes matter in zsh):
+
+```bash
+uv tool install "immich-memories[all]"
+```
+
+On Apple Silicon, use `"immich-memories[all-mac]"`. It includes the Metal bindings; add
+`[all-mac,auth]` if you want OIDC. For pip, use the same package spec inside a virtual environment.
+A bare install lacks the ONNX runtime needed for picture classifiers.
+
+Create `~/.immich-memories/config.yaml`:
 
 ```yaml
 immich:
@@ -41,140 +41,100 @@ immich:
   api_key: your-api-key
 ```
 
-Then fetch the models, check, and start the UI:
+Create the key in Immich's **Account Settings > API Keys**.
+[Permissions](./docker.md#the-api-key) depend on whether you will upload films.
+Then:
 
 ```bash
-immich-memories models fetch                 # about 140 MB, once
-immich-memories preflight                    # Immich, models, output folder, home base
-immich-memories ui                           # http://localhost:8080
+immich-memories models fetch
+immich-memories preflight
+immich-memories ui
 ```
 
-Or with pip, in a virtual environment (not your system Python):
-
-```bash
-pip install "immich-memories[all]"          # or [all-mac] on Apple Silicon
-```
-
-Quote the spec: zsh reads `[...]` as a glob and fails with `no matches found` otherwise.
-
-To try it without installing anything:
-`uvx --from "immich-memories[editorial]" immich-memories ui` (the classifiers only: `[all]` adds
-authentication, generated music and the audio extras). To get uv itself: `brew install uv`,
-or `curl -LsSf https://astral.sh/uv/install.sh | sh`.
-
-`models fetch` writes the encoder to `~/.immich-memories/models/triage/`, the sensitive-content
-detector to `~/.immich-memories/models/detectors/`, the WordNet dictionary to
-`~/.immich-memories/models/wordnet/`, and the document classifier into the Hugging Face cache
-(`~/.cache/huggingface`, or `advanced.editorial.preparation.detector_cache_dir`). Each is checked
-against a SHA-256. It needs the `editorial` extra (every `all*` extra has it).
-
-A cut checks the two ONNX files and the output folder (`~/Videos/Memories` by default,
-`output.directory` to move it) before it asks Immich for anything, and stops with
-`Run immich-memories models fetch` if a model is missing.
-Everything else goes in the same file ([Configuration file](./config-file.md)) or the environment
-([Environment variables](./environment-variables.md)). Then [your first film](../get-started/first-film.mdx),
-and [who's who](../get-started/who-is-who.md) once: home base and close family.
+Open [http://localhost:8080](http://localhost:8080) and make [your first film](../get-started/first-film.mdx).
+Films default to `~/Videos/Memories`. Set home coordinates for trips and public holidays:
+[Teach it your family](../get-started/who-is-who.md).
 
 ## Reaching the UI from another machine
 
-With authentication off, `immich-memories ui` listens on `127.0.0.1:8080` only. Turn on basic auth
-or OIDC ([Authentication](./authentication.mdx); OIDC needs the `auth` extra, which `[all]` has) and
-it listens on every interface. `--host` and `--port` override both (`immich-memories ui --host
-0.0.0.0 --port 8080`), and an explicit `--host` wins even with authentication off, so only use it
-that way on a network you trust. Behind a reverse proxy, read
-[the four proxy settings](./authentication.mdx#behind-a-reverse-proxy-with-tls) first.
+Without authentication, the app binds to localhost. Enabling [Basic auth or OIDC](./authentication.mdx)
+makes it listen beyond localhost. To keep an authenticated laptop install local, be explicit:
+
+```bash
+immich-memories ui --host 127.0.0.1
+```
+
+`--host` overrides the safety default, even with auth off. Enable login before exposing the UI.
+For a proxy with HTTPS, use [the proxy checklist](./authentication.mdx#behind-a-reverse-proxy-with-tls).
+
+## Extras
+
+For most installs, use `all` or `all-mac`. Smaller/custom installs:
+
+| Extra | Adds |
+|---|---|
+| `editorial` | CPU picture classifiers; the minimum for films |
+| `editorial-cuda` | CUDA classifiers on Linux; replaces `editorial` |
+| `mac` | Apple hardware bindings; not enough on its own |
+| `music`, `audio` | Bundled music and local-track metadata |
+| `auth` | OIDC login |
+| `demucs` | Local music stem separation |
+
+Never install `editorial` and `editorial-cuda` together: both provide `onnxruntime`.
+`all` includes editorial/music/audio/auth/demucs. `all-mac` includes the same except auth, plus mac.
+Local ACE-Step is a [separate checkout setup](../better/music.md), not a pip extra.
+
+## Daily automation
+
+A laptop's UI is rarely running all day. Install a system schedule:
+
+```bash
+immich-memories auto install --hour 9
+```
+
+Run the printed `Activate:` command once. The installer uses launchd on macOS, a systemd user
+timer on Linux, or cron otherwise. `--uninstall` removes it.
+
+Keep credentials in `config.yaml`: scheduled jobs do not inherit your interactive shell.
+On macOS, a missed run happens after wake; launchd does not wake the machine.
+If you run the UI as a permanent service, you can use its built-in daily timer instead.
+Use one scheduler. [Automate it](../make/automate.md#bare-metal-auto-install) covers both.
+
+## What to keep
+
+Back up `~/.immich-memories/store.db` with `immich-memories store backup`.
+Keep the encryption key too if you save credentials in Settings.
+[Database and backups](./database.md) covers restore and PostgreSQL.
+
+## Logs, health and hardware
+
+Logs go to stderr. Use `immich-memories -v ...` for debug output.
+[Diagnostics](./maintenance/health-logs-cache.md) covers probes, preflight and log files.
+[Hardware encoding](./hardware.md) covers Apple, Intel/AMD and NVIDIA setups.
+
+## Add-ons
+
+Point the app at the services you want: [a reader](../better/reader.md),
+[captions](../better/captions.md), [inference](../better/inference.md),
+[a render worker](../better/gpu-render.md) or [generated music](../better/music.md).
+
+## Updating
+
+Use [Upgrading](./maintenance/upgrading.md#uv--pip). Keep the same extras when using pip.
 
 ## From a checkout
+
+For development, you also need Node 22 to build the web client:
 
 ```bash
 git clone https://github.com/sam-dumont/immich-video-memory-generator.git
 cd immich-video-memory-generator
-uv sync --extra editorial      # or --extra all-mac on Apple Silicon
-make web-client                # the web UI, built from web/; needs Node 22
+uv sync --extra editorial
+make web-client
+uv run immich-memories models fetch
 uv run immich-memories ui
 ```
 
-`uv sync` installs into the clone's `.venv` and puts nothing on your `PATH`: inside the clone it is
-always `uv run immich-memories ...`. `pip install -e .` works too. A checkout is the only install
-that needs Node: the PyPI wheel and the Docker image ship the web client already built. Skip
-`make web-client` and the CLI still works, but `/app` only tells you to build the client.
-
-## Extras
-
-| Extra | What it adds |
-|---|---|
-| `editorial` | ONNX Runtime and Hugging Face Hub, for the context heads and the two detectors. The one you need |
-| `editorial-cuda` | The same on a CUDA host. **Replaces** `editorial`, never joins it |
-| `mac` | pyobjc bindings (Quartz, Metal, Vision) for hardware probing. Not enough to cut with alone |
-| `music` | The bundled royalty-free track library |
-| `audio` | Local music metadata (mutagen) for `immich-memories music search` |
-| `auth` | OIDC login (authlib) |
-| `demucs` | Local Demucs stem separation for music ducking (Torch, about 80 MB of model) |
-| `all` | All of the above except `mac` and `editorial-cuda` |
-| `all-mac` | `editorial`, `mac`, `music`, `audio` and `demucs`. No `auth`: add `[all-mac,auth]` for OIDC |
-
-Never install `editorial` and `editorial-cuda` together: `onnxruntime` and `onnxruntime-gpu` own
-the same import name, and the one that answers is whichever pip wrote last.
-
-GPU title rendering needs no extra: its kernel library is a base dependency wherever it publishes a
-wheel ([Title kernels](./hardware.md#title-kernels)). Local ACE-Step music on a Mac is a checkout
-job (`make install-acestep`, then `make check-local-audio`): [Generated music](../better/music.md).
-
-exiftool is worth having on an Apple HEIC library: it is the fallback when the Python HDR headroom
-parser trips on an unusual file. `brew install exiftool`, or `apt install libimage-exiftool-perl`.
-
-## Daily automation
-
-`immich-memories ui` is usually not running all day on a laptop, so the system scheduler runs the
-daily job. One command writes it: a launchd job on macOS, a systemd user timer on Linux, or a
-crontab line anywhere else. It then prints the `Activate:` line to run once, which switches it on.
-
-```bash
-immich-memories auto install --hour 9     # --uninstall removes it
-```
-
-The job does not inherit your shell's environment, so keep the Immich URL and key in
-`~/.immich-memories/config.yaml`. It refuses to schedule a git worktree or a checkout behind its
-upstream unless you pass `--force`. On macOS a missed run happens when the Mac wakes; launchd
-does not wake it. The hour is the machine's own clock. What it picks each day and why:
-[Automate it](../make/automate.md#bare-metal-auto-install).
-
-If you keep `immich-memories ui` running as a service instead, the built-in timer Docker uses works
-here too (`advanced.automation.enabled: true`, `daily_at`): pick one, not both. Either way the film
-stays in the output folder unless `upload.enabled` or `advanced.automation.upload_to_immich` is on:
-[Upload back to Immich](./config-file.md#upload-back-to-immich).
-
-## What to keep
-
-`~/.immich-memories/store.db` is the file that costs a re-read to lose: banked facts, your
-decisions, people and run history. `immich-memories store backup` copies it, live, to
-`~/.immich-memories/backups/`; `IMMICH_MEMORIES_DATABASE_URL` moves the store to PostgreSQL, and
-then `store backup` needs `pg_dump` on your `PATH`: [Database and the store](./database.md).
-`~/.immich-memories/cache/` is the part you can delete: [Caches](./maintenance/health-logs-cache.md#caches).
-
-## Logs, health and hardware
-
-Logs go to the terminal (stderr); `-v` or `--log-level` go before the subcommand, and the daily
-job's own output is kept per attempt: [Health, logs and caches](./maintenance/health-logs-cache.md).
-`/health/ready` answers on the UI's port.
-
-`immich-memories hardware` prints the encoder it found. A Mac needs nothing: VideoToolbox and Metal
-are there ([Apple Silicon](./hardware.md#apple-silicon)). On Linux, install the VA-API driver or the
-NVIDIA driver on the host: [Hardware encoding](./hardware.md).
-
-## Add-ons
-
-The same services as in Docker, each pointed at by URL in `config.yaml`:
-[a reader](../better/reader.md), [captions](../better/captions.md),
-[the inference service](../better/inference.md), [a render worker](../better/gpu-render.md) and
-[generated music](../better/music.md).
-
-## Updating
-
-```bash
-uv tool upgrade immich-memories
-immich-memories models fetch       # a no-op unless a release moved a pin
-```
-
-With pip, keep the extra (`pip install --upgrade "immich-memories[all]"`). Going back to a release:
-[Rollback](./maintenance/upgrading.md#rollback).
+On Apple Silicon, use `--extra all-mac`. Add `--extra auth` for OIDC.
+Inside a checkout, use `uv run immich-memories ...`; it does not install a global command.
+The published wheel and Docker image already contain the web client.

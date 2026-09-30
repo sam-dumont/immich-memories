@@ -5,6 +5,21 @@ title: Demo assets
 
 # Regenerating the demo assets
 
+After changing the UI or fixture, regenerate in this order from the repository root:
+
+```bash
+make screenshots
+make demo-output
+make demo-output-trip
+make demo-cli
+make demo-ui
+make demo-hero
+```
+
+The trip preview needs the network for map tiles and place naming. The other demo media use the public fixture. The README’s hosted hero updates when the docs site deploys.
+
+## Fixture and asset contracts
+
 Nothing on the docs site or in the README is a screenshot of a real library. The demo is a
 React recreation of the UI rendered with Remotion over a CC0 fixture library, the CLI demo is a
 VHS recording, and the screenshots come from a hermetic run over the same library. The library

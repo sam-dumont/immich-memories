@@ -798,7 +798,7 @@ launch-check-ci-postgres: ensure-dev
 	@echo "Hermetic launch check (PostgreSQL) passed!"
 
 # Full CI-equivalent pipeline (locally)
-ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check docs-voice notices-check compose-check web-check test
+ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check docs-brand docs-voice notices-check compose-check web-check test
 	@echo "Full CI pipeline passed!"
 
 # Self-critique for AI code smells
@@ -992,6 +992,10 @@ docs-cli-check:
 # Fail when the hand-written config reference and the pydantic schema disagree on keys
 docs-config-check:
 	uv run python scripts/check_config_docs.py
+
+.PHONY: docs-brand
+docs-brand:  ## Check shared product descriptions across release surfaces
+	uv run python scripts/check_product_copy.py
 
 # Fail when the docs or the README use the words and punctuation the owner's voice bans
 docs-voice:  ## Voice gate: no em dashes, no chatbot words, in README.md and docs-site/docs

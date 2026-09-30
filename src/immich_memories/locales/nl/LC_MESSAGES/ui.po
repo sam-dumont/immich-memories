@@ -1441,8 +1441,8 @@ msgid "Try again"
 msgstr "Opnieuw proberen"
 
 #: web/routes/login/+page.svelte:50
-msgid "Turn your photo library into video memories"
-msgstr "Maak van je fotobibliotheek video-herinneringen"
+msgid "Turn your Immich photos and videos into memory films."
+msgstr "Maak van je Immich-foto’s en -video’s herinneringsfilms."
 
 #: web/routes/runs/[run_id]/+page.svelte:282 web/routes/runs/[run_id]/pool/+page.svelte:139
 msgid "Undo"

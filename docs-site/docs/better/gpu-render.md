@@ -14,11 +14,10 @@ picture inference, captions and Demucs in one container on port 8092. Its render
 `/render`; the standalone setup below keeps port 8093.
 
 ```mermaid
-flowchart LR
-    nas["The app, on the NAS<br/><small>selection, timing</small>"] -->|"the cut + the Immich key"| worker["Render worker<br/><small>NVENC, CUDA titles</small>"]
-    immich[("Immich")] -->|"originals"| worker
-    worker -->|"the base film + its SHA-256"| check["The app checks it<br/><small>bytes, canvas, duration, audio</small>"]
-    check --> music["Music, upload<br/><small>on the NAS</small>"]
+flowchart TD
+    app["App: selection and timing"] -->|"Cut and Immich key"| worker["Trusted NVIDIA worker"]
+    immich["Immich originals"] --> worker
+    worker -->|"Rendered film"| finish["App: verify, music, upload"]
 ```
 
 ## What it holds
@@ -36,7 +35,7 @@ sends any footage. On the GPU box, with the NVIDIA container toolkit installed, 
 [`services/render-worker/compose.yaml`](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/services/render-worker/compose.yaml)
 into an empty directory with this `.env`:
 
-```dotenv
+```bash
 IMMICH_MEMORIES_IMAGE=ghcr.io/sam-dumont/immich-video-memory-generator:YOUR_APP_TAG
 IMMICH_URL=https://photos.example.com
 RENDER_WORKER_TOKEN=replace-with-openssl-rand-hex-32

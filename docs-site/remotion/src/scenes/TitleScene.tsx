@@ -89,7 +89,7 @@ export const TitleScene: React.FC = () => {
               transform: `translateY(${subY}px)`,
             }}
           >
-            Turn your photo library into cinematic recap videos
+            Turn your Immich photos and videos into memory films.
           </div>
         </div>
       </AbsoluteFill>

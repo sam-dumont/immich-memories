@@ -14,8 +14,10 @@ export default function ThemedScreenshot({name, alt}: Props) {
     dark: useBaseUrl(`/img/screenshots/dark-${name}.png`),
   };
   return (
-    <a href={sources[colorMode]} aria-label={`Open full-size screenshot: ${alt}`}>
-      <ThemedImage alt={alt} sources={sources} loading="lazy" style={{cursor: 'zoom-in'}} />
-    </a>
+    <figure className="docs-screenshot">
+      <a href={sources[colorMode]} aria-label={`Open full-size screenshot: ${alt}`} target="_blank" rel="noopener noreferrer">
+        <ThemedImage alt={alt} sources={sources} loading="lazy" style={{cursor: 'zoom-in'}} />
+      </a>
+    </figure>
   );
 }

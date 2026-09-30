@@ -4,7 +4,7 @@ title: FAQ
 
 # FAQ
 
-[Troubleshooting](./troubleshooting.md).
+If something is broken, start with [Troubleshooting](./troubleshooting.md).
 
 ## Before you install
 
@@ -25,7 +25,7 @@ place names in your language and the map fly-over are all opt-in, each one liste
 
 Yes, it works on a plain NAS: the default install cuts films on a NAS CPU from dates, places, favourites,
 people and what small local classifiers measure on each picture. A GPU makes it faster and adds captions,
-and a model on top makes the cut better
+and a text model can refine the draft
 ([What a GPU or a model adds](../get-started/what-a-gpu-or-a-model-adds.md)). Sizes and the one Synology trap are on
 [On a NAS](../run/nas.md) and [Requirements](../run/requirements.md).
 
@@ -47,7 +47,7 @@ Anything FFmpeg decodes. Live Photos are tested on iPhones; Samsung and Pixel mo
 
 **Can I pick pictures myself?**
 
-Yes. Tick or untick on the web UI's pool and cut again, star it in Immich, or pass `--include` / `--exclude`.
+Yes. Tick or untick in the web UI’s pool and select **Preview with these choices**, star it in Immich, or pass `--include` / `--exclude`.
 A tick outranks the editor. See [Overrule it](../how-it-chooses/overrule-it.md).
 
 **Why is the first cut slow and the second fast?**

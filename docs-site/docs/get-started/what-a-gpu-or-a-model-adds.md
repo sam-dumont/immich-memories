@@ -1,50 +1,23 @@
 ---
 title: What a GPU or a model adds
+description: Choose an optional add-on by what it changes in your films.
 ---
 
 # What a GPU or a model adds
 
-Immich Memories makes the whole film on a plain NAS: one container, one `models fetch`, no GPU, no
-model to host. A GPU and a text model each add features on top of that. Nothing is lost when you
-add one later, because everything the app works out about a picture is banked and reused.
+Make a few films on the default install first. A plain NAS prepares pictures on its CPU, chooses the shots and renders with template titles and bundled music. You do not need to host another service.
 
-The app picks its setup by itself (`tier: auto`): a plain NAS by default, **GPU** once it finds a
-GPU to read pictures on (in this box or through the inference service), **Full** when a text model
-is configured as well. The GPU and Full tiers then expect the caption server, and
-`immich-memories preflight` says when it is missing.
+| You want | Add | What changes |
+|---|---|---|
+| Faster picture preparation | [GPU inference](../better/inference.md) | Picture measurements run on a GPU, locally or on another machine |
+| Picture descriptions and extra sharing checks | [Captions](../better/captions.md) with the GPU tier | The cut gains descriptions and additional checks |
+| A second pass over the edit | [A text reader](../better/reader.md) with GPU preparation and captions | The Full tier reads the draft and can replace weak shots |
+| Written titles and a music mood | [A text reader](../better/reader.md) | Works on the NAS tier too; these calls use text |
+| Faster encoding | [Hardware encoding](../run/hardware.md) | Makes the finished video faster; this is separate from selecting pictures |
+| An original soundtrack | [Generated music](../better/music.md) | Generates a track instead of choosing a bundled one |
 
-## Feature by feature
+The app detects the selection tier with `tier: auto`: NAS, GPU, or Full (GPU plus a reader). GPU and Full also need the configured caption service. Run `immich-memories preflight` after changing the setup.
 
-| Feature | Plain NAS | + GPU | + GPU and a model (Full) |
-|---|---|---|---|
-| **Choosing the pictures** | The rules editor builds the film from dates, places, favourites, the people Immich knows, and a picture encoder with eight small classifiers, all on the CPU | Same rules draft, with Marqo and Docling added | The model reads the finished draft in blocks of 12 shots, names the ones that add nothing and swaps in better pictures of the same moments |
-| **A description of each picture** | None | A one-line caption for every picture in the cut and every candidate to replace one | Same, and the model reads them |
-| **Family-viewing check** | Rules and the eight context heads hold back what isn't for sharing | Marqo and Docling add picture checks; a second reader checks the captions and can hold more pictures back (never fewer) | Same as GPU. The text model never decides what is shareable |
-| **The title** | Built from the dates, the people and the year, or the album, holiday or trip name | Same | Written by the model from what the film holds |
-| **The music** | A bundled track, calm by default | Same | The model picks the mood, tempo and genre from what the cut is about |
-| **Reading the pictures** | On the CPU, once per picture, then banked | The encoder and classifiers run on the GPU: the same answers, sooner | Same as GPU |
+Adding an encoding GPU alone does not enable Full selection. Adding a text reader alone does not enable sentence films or the model's edit pass.
 
-A text model on its own, with no GPU, still writes titles and picks the music mood. Choosing the
-pictures stays on the NAS rules until the GPU tier is there too, because the model's polish reads the
-captions.
-
-## What each one needs
-
-- **A GPU:** an NVIDIA card or a Mac, either in this box or running the
-  [inference service](../better/inference.md) on another machine, plus the
-  [caption server](../better/captions.md).
-- **A model:** any OpenAI-compatible text model with a 32k context, local (such as Gemma 4 E4B)
-  or hosted: [Add a reader](../better/reader.md).
-
-## Two more, separate from the tiers
-
-- **Encoding and title effects:** any GPU the render can reach (an Intel or AMD iGPU through VA-API
-  or Quick Sync, NVIDIA through NVENC, a Mac through VideoToolbox) encodes the film faster and draws
-  the animated title effects. Without one, the CPU encodes and the titles keep their text and timing
-  without the effects: [Hardware encoding](../run/hardware.md). A
-  [render worker](../better/gpu-render.md) moves the whole render to an NVIDIA box.
-- **Generated music:** an original track for each film instead of a bundled one, from ACE-Step or
-  MusicGen: [Generated music](../better/music.md).
-
-What each add-on sends where is on [Privacy](../run/privacy.md), and the time and memory each one
-costs is on [Measured](../better/measured.md).
+Compatible prepared facts are reused after an upgrade or an add-on change; newly required facts are computed when needed. [Measured results](../better/measured.md) give the costs. [Privacy](../run/privacy.md) describes what each service receives.

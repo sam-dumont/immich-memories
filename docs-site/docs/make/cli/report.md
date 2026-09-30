@@ -4,46 +4,32 @@ title: report
 
 # report
 
-`immich-memories report` prints a report of one run that you can paste into a GitHub issue. It runs
-on your machine, makes no network request and sends nothing: you read it, then decide what to share.
+Create a redacted report of one run for a GitHub issue. This command sends nothing; review the report before sharing it.
 
 ```bash
-immich-memories report                 # the latest run, as Markdown
-immich-memories report <run-id>        # one run
-immich-memories report --json          # the same, for tooling
-immich-memories report --bundle report.zip   # the full report and its logs, as a ZIP
+immich-memories report
+immich-memories report RUN_ID
+immich-memories report RUN_ID --bundle report.zip
 ```
 
-The report holds the run's settings as shape (keys, not values), its errors and warnings, the log,
-and a table of where the time and memory went, phase by phase (peak MB for the process, and with
-ffmpeg added). That table is the first thing to read when a cut
-is slow: `immich-memories runs show` prints the same timings in full, per picture.
+Without an ID it uses the latest run. The ZIP includes the report and full redacted logs. `--json` gives the report as data.
 
-Before anything reaches the report, it removes credentials, the names of the people you know, albums
-and places, GPS coordinates, IP addresses, hostnames, URLs and absolute paths. IDs become hashes
-that only match inside that one report. Pictures are never included. Exactly what is removed, and
-how: [Privacy](../../run/privacy.md#diagnostic-reports).
+## What it includes
 
-A run of `generate --ask` ([a film from a sentence](../free-text.md)) adds a free-text section: the sentence, the
-translation trace, the translation as data (the same JSON `--ask-trace` writes: each part, the pool's
-photo and video counts, the verdict), the pool funnel and the engine's picks as hashed IDs. The trace
-gets its own block in the Markdown, so a long one is pasted whole. A film rendered later from a
-saved cut (`runs render`, or **Render** in the web UI) is a run of its own, and its report carries
-the request its cut was made for, with the render's picks. Names become roles ("the owner's son"), place
-names become "area A", words read by OCR become "text-1", and a birth date the trace dated from
-becomes `[private]`. Captions stay out unless you pass `--include-flagged-captions`.
+Errors, warnings, logs and a table of time and memory by phase. When the film is slow, start with that table.
 
-When the film got it wrong, say so on the run, then paste the report:
+The report removes credentials, names, places, coordinates, network addresses and absolute paths. Asset IDs become report-local hashes. Pictures are never included. [Exact redaction rules](../../run/privacy.md#diagnostic-reports).
+
+Sentence requests also include a redacted interpretation trace. Captions stay out unless you explicitly include flagged captions.
+
+## Mark a wrong result
+
+For a sentence request, persist wrong-picture IDs and missing words on the run:
 
 ```bash
-immich-memories report <run-id> --wrong <asset-id> --wrong <asset-id> --missing "the farm gate"
+immich-memories report RUN_ID --wrong ASSET_ID --missing "the red bike"
 ```
 
-Each photo marked wrong gets the step that let it into the pool and whether the engine picked it.
-The missing words are checked against the run: did the reading keep them, were they offered or
-picked as the subject, and does any caption in the pool say them. The marks stay on the run, so a
-later `report` shows them too.
+The report then shows the filter that admitted the picture and checks how the missing words were interpreted. Later reports retain these marks.
 
-The web UI has the same report behind **Copy report** on a run's page, and the `--bundle` ZIP
-behind **Download report**. Every flag is in the
-[CLI reference](../../reference/cli-reference.md#report).
+In the web UI, open a run and use **Copy report** or **Download report**. Every flag: [CLI reference](../../reference/cli-reference.md#report).

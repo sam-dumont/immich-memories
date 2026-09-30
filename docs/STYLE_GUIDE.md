@@ -92,3 +92,13 @@ All interactive elements: `transition: all 0.15s ease`
 
 - **NiceGUI app:** `src/immich_memories/ui/theme.py`
 - **Docusaurus:** `docs-site/src/css/custom.css`
+
+## Documentation presentation
+
+- Discovery and task pages explain the next action. Link exact thresholds, service contracts and implementation details into advanced reference pages.
+- One diagram answers one question. Use short labels, a vertical flow on narrow pages, and split a graph when unrelated branches compete for space. Architecture diagrams name services and show real data or control flow.
+- Mermaid labels stay at 16 px. The wrapper preserves native SVG size and offers keyboard scrolling only when a graph is wider than the article. Do not shrink it to fit.
+- Use the blue app palette in light and dark mode. Diagrams inherit Inter and the docs theme. Add `accTitle` and `accDescr` when a diagram needs an accessible description.
+- Every code fence names its language. Commands use `bash`; command output and logs use `text`. YAML, SQL, HCL and diffs get their own syntax highlighting. Keep outputs out of copyable command blocks.
+- Homepage examples use the shared Docusaurus `CodeBlock`, including its copy button. No imitation terminal chrome.
+- Public product copy uses “Turn your Immich photos and videos into memory films.” The output is a film; the selection before rendering is a cut. Page descriptions describe the page's task.

@@ -3,6 +3,35 @@
 > This document is optimized for LLM consumption. Reference it from CLAUDE.md
 > to avoid re-reading the full codebase each session.
 
+## Human overview
+
+The [contributor architecture page](docs-site/docs/contribute/architecture.md) has the runtime and service diagrams. This file keeps the detailed module and contract map.
+
+```mermaid
+flowchart TD
+    entry["Web or CLI"] --> selection["Selection builds a cut"]
+    selection --> render["Render and mix audio"]
+    render --> output["Save or upload film"]
+    selection -.-> store["Reusable facts and run history"]
+```
+
+## Runtime map
+
+```mermaid
+flowchart TD
+  web["Browser client"] --> api["Web API"]
+  api -->|"starts a child process"| cli["CLI"]
+  terminal["Terminal"] --> cli
+  cli --> editor["Editorial planner"]
+  editor --> store[("Store: facts and answers")]
+  editor --> attempt[("Attempt: cut and revisions")]
+  attempt --> renderer["Generator and assembler"]
+  editor --> immich["Immich"]
+  renderer --> immich
+```
+
+The human introduction is [Codebase architecture](docs-site/docs/contribute/architecture.md). This document retains the full technical inventory.
+
 ## Overview
 
 Immich Memories generates video compilations from an Immich photo library.
@@ -436,7 +465,7 @@ these helper modules:
 
 ## Package Structure
 
-```
+```text
 src/immich_memories/
 ├── api/                        # Immich server communication
 │   ├── immich.py               # ImmichClient (composes 5 services)
@@ -1141,35 +1170,27 @@ external API servers are never unloaded by this lifecycle. The next read restart
 
 Videos and photos are one pool, and the editor cuts from it:
 
-```
-generate / Memory page Cut
-  └── build_smart_pipeline(editorial_context)           (editorial_runtime.py)
-        └── SmartPipeline.run_editorial_source()        (smart_pipeline.py)
-              └── RuntimeEditorialPlanner.plan_source()
-                    ├── EditorialAttempt: lease + status.private.json   (operations/editorial_attempt.py)
-                    ├── source model: fetch_full_window_source (per account: fetch_household_source)
-                    │     -> prepare_editorial_source
-                    ├── "Reading dates, places and people": prepare_editorial_annotations
-                    ├── TextEditorialPlanner.plan_prepared             (editorial_orchestration.py)
-                    │     ├── "Reading event evidence": episode reader + cull
-                    │     ├── "Building editorial cards": build_moment_cards -> moment wall
-                    │     └── "Editing the memory": plan_structure -> select_story_first
-                    ├── "Validating selected source timing": bind_editorial_timeline
-                    └── project_source_rendering -> render-projection.private.json
-              └── PipelineResult with editorial_selections  (editorial_projection.py)
+```mermaid
+flowchart TD
+  command["generate or web Cut"] --> build["build_smart_pipeline"]
+  build --> planner["RuntimeEditorialPlanner"]
+  planner --> preparation["Prepare source evidence"]
+  preparation --> cards["Read events and build cards"]
+  cards --> selection["Plan stories and select shots"]
+  selection --> timing["Certify source timing"]
+  timing --> projection["Project render inputs"]
 ```
 
 ### Assembly Flow
 
-```
-VideoAssembler.assemble()
-  ├── AssemblyEngine resolves target resolution and transitions
-  └── AssemblyEngine → streaming assembly → FFmpeg execution
-
-VideoAssembler.assemble_with_titles()
-  ├── TitleScreenGenerator → title/month/ending screens
-  ├── assemble() → main content
-  └── AudioMixerService → background music
+```mermaid
+flowchart TD
+  cut["Selected clips and title settings"] --> titles["TitleScreenGenerator"]
+  cut --> engine["AssemblyEngine"]
+  titles --> engine
+  engine --> ffmpeg["Streaming assembly and FFmpeg"]
+  ffmpeg --> audio["AudioMixerService"]
+  audio --> film["Validated film"]
 ```
 
 ## Configuration
@@ -1186,10 +1207,12 @@ VideoAssembler.assemble_with_titles()
 
 ## Data Flow
 
-```
-Immich API → Asset models → ClipExtractor → VideoClipInfo
-  → SmartPipeline.run_editorial_source → EditorialSelection (asset, interval, render mode)
-  → ClipWithSegment → VideoAssembler → final .mp4
+```mermaid
+flowchart TD
+  immich["Immich asset metadata"] --> selection["Editorial selection: asset and interval"]
+  selection --> material["Downloaded and prepared source material"]
+  material --> assembly["Assembler"]
+  assembly --> film["Final MP4"]
 ```
 
 ## Configuration Tiers

@@ -1,29 +1,10 @@
 ---
-sidebar_label: "Health, logs and caches"
+title: "Diagnostics and monitoring"
 ---
 
-# Health, logs and caches
+# Diagnostics and monitoring
 
-## Health endpoints
-
-| Endpoint | Returns | Use it for |
-|---|---|---|
-| `GET /health/live` | `200` while the web process answers, `{"status": "alive", "version": …}`. Never contacts Immich | liveness probe |
-| `GET /health/ready` | `200` with `status: ready` when configuration and authenticated Immich access work; `503` with `status: degraded` otherwise | readiness probe, Uptime Kuma, blackbox exporter |
-| `GET /health` | always `200`: a ready payload is rewritten to `ok`, a degraded one passes through as `degraded` | compatibility only, never a probe |
-
-Because `GET /health` always returns HTTP `200` and rewrites a ready payload to `ok`, it is
-useless as a probe.
-
-All three are unauthenticated, on purpose: a container runtime has no session. The Immich check is
-bounded at 5 seconds, and the answer is reused for up to 10 seconds so a busy poller doesn't hammer
-Immich. With login on, only a logged-in session sees the automation and run detail (it carries
-person names and paths); a probe gets the status and the version. A degraded status never stops
-the app: the UI still serves.
-
-```json
-{"status": "ready", "immich_reachable": true, "last_successful_run": "2025-12-15T10:30:00", "version": "<the running version>"}
-```
+Start with preflight when a film fails. Health endpoints are for monitoring the running web process.
 
 ## Preflight
 
@@ -44,23 +25,27 @@ server, text model, render worker, and ACE-Step when it is set to run on this ma
 without it, for example `Music (ACE-Step)` falling back to a bundled track. Any error exits 1, so a
 script or a setup step can stop on it. Run it after an install, an upgrade or a config change.
 
-## Model files
 
-```bash
-immich-memories models fetch               # once per install, and after an upgrade
-immich-memories models fetch --force       # download again even when the files check out
-immich-memories models fetch --laya        # also the Laya checkpoint on the nas tier
-immich-memories models fetch --no-detectors
+## Health endpoints
+
+| Endpoint | Returns | Use it for |
+|---|---|---|
+| `GET /health/live` | `200` while the web process answers, `{"status": "alive", "version": …}`. Never contacts Immich | liveness probe |
+| `GET /health/ready` | `200` with `status: ready` when configuration and authenticated Immich access work; `503` with `status: degraded` otherwise | readiness probe, Uptime Kuma, blackbox exporter |
+| `GET /health` | always `200`: a ready payload is rewritten to `ok`, a degraded one passes through as `degraded` | compatibility only, never a probe |
+
+All three are unauthenticated, on purpose: a container runtime has no session. The Immich check is
+bounded at 5 seconds, and the answer is reused for up to 10 seconds so a busy poller doesn't hammer
+Immich. With login on, only a logged-in session sees the automation and run detail (it carries
+person names and paths); a probe gets the status and the version. A degraded status never stops
+the app: the UI still serves.
+
+Example for an authenticated session (unauthenticated probes receive reduced detail):
+
+```json
+{"status": "ready", "immich_reachable": true, "last_successful_run": "2025-12-15T10:30:00", "version": "<the running version>"}
 ```
 
-About 140 MB of pinned files, each checked against a SHA-256: the DINOv2 encoder (88 MB) behind the eight
-context heads, the sensitive-content detector, the document classifier and the WordNet dictionary. They
-land under `~/.immich-memories/models/`, the document classifier in the Hugging Face cache (in Docker both sit on the config volume, so a `docker compose pull` keeps
-them). A file already there with the right digest is not downloaded again, so running it twice costs
-nothing. On the `gpu` and `full` tiers it fetches the Laya audience checkpoint too
-([tiers](../requirements.md#which-tier-you-get)). `--no-detectors` skips the detector files, for an
-install without the `editorial` extra. A cut that needs a missing file stops with an error naming this
-command; `preflight` flags it first.
 
 ## Logging
 
@@ -79,114 +64,67 @@ Log lines go to stderr. Stdout only carries what a command prints, so `runs stor
 `report --json` and `auto status --json` give you one JSON document you can pipe straight into
 `jq`, whatever the log level. `docker logs` shows both streams.
 
+
+## Model files
+
+```bash
+immich-memories models fetch
+```
+
+Run it on installation and after an upgrade. NAS fetches the encoder and WordNet; GPU/Full also
+fetch detectors and Laya. Matching pinned files are reused. `--force` downloads again;
+`--detectors` fetches detectors even on NAS. `--no-detectors` skips them, but does not make a
+GPU/Full cut work without required models.
+
+## Find the run's output
+
+Docker:
+
+```bash
+docker compose logs -f immich-memories
+```
+
+Kubernetes:
+
+```bash
+kubectl logs -n immich-memories deploy/immich-memories -c immich-memories -f
+```
+
+Web jobs keep their own output under `cache/web-jobs/`; daily automation uses
+`cache/automation-output/`. These are on the persistent data volume.
+For selection-model costs, inspect the attempt's `llm-usage.json`; token totals are a lower bound
+when a provider does not report usage.
+
 ## Model usage records
 
-Only with a model. Each selection attempt keeps `llm-usage.json` under
-`cache/editorial-runs/<memory>/attempts/<attempt>/`: calls, cache hits and tokens, split
-`by_stage` (`caption_controls`, `caption`, `motion`, `reader`) and `by_model`. It is checkpointed as
-the run goes, so a killed run leaves its last count. When a server returns no token counts,
-`unmetered_calls` counts those calls and `usage_complete` is `false`: the totals are then a floor.
-Provider batch lines count the same way, with `batch_unmetered_calls` and `batch_usage_complete`.
+Selection attempts record model calls, cache hits and token counts in `llm-usage.json` beneath
+`cache/editorial-runs/`. [Reader setup](../../better/reader.md) explains service behavior.
 
 ## Caches
 
-Everything lives under `~/.immich-memories/cache/` (or `cache.directory`):
-
-| Directory or file | What it holds | Cap |
-|---|---|---|
-| `thumbnails/` | one Immich preview per candidate a film can reach | `thumbnail_cache_max_size_mb`, 10 GB |
-| `video-cache/` | downloaded Immich clips | `video_cache_max_size_gb` 10 GB, `video_cache_max_age_days` 7 |
-| `editorial-runs/` | each cut's attempt directories: the plan, its progress and `llm-usage.json`. The store links each run to one | none |
-| `structure-banks/` | the thumbnail-hash and scene-print caches; rebuilt when missing | none |
-| `preview-cache/` | clip previews the old web pages played; nothing writes it now. Delete a leftover folder by hand | none |
-| `../cache.db` (one level up) | a pre-store file nothing writes; its run history and scores are imported into the [store](../database.md) once, then it can go | none |
-
-`output.directory` (default `~/Videos/Memories`, one level up from `cache/`) is not a cache, but
-it grows the same way: one file per run. A run that delivers to Immich has its local film and run
-directory removed right after the upload is confirmed, so a container with upload on stays
-bounded without any setting. A run that never uploads (`upload_enabled: false`, or a delivery
-that stays pending) keeps its output on disk, same as before: use `immich-memories runs delete`
-or `runs storage` to see and clear it by hand.
-
-Both `output.directory` and `cache.directory` get a free-space preflight before a run starts and
-again right before the film is written. Below `output.min_free_space_gb` (5 GB by default) the
-run logs a warning naming the volume and the free space; if the estimated film would not fit at
-all, the run stops before rendering instead of failing halfway through. The estimate comes from
-the target duration and the configured `output.quality`.
-
-The facts the app banked (head answers, detector verdicts, measurements, and captions and
-readings when a model is used, each keyed by producer and exact input) and your own picture
-decisions are not a cache: they live in [the store](../database.md), `~/.immich-memories/store.db`
-by default. An `annotations.sqlite` from an older install is imported into it once and then left
-alone.
-
-```yaml
-cache:
-  directory: ~/.immich-memories/cache
-  database: ~/.immich-memories/cache.db
-  video_cache_enabled: true
-  video_cache_max_size_gb: 10.0
-  video_cache_max_age_days: 7
-  thumbnail_cache_max_size_mb: 10000
-```
-
-### What a second cut asks again
-
-Nothing in the store's banked facts is keyed to a run, so a second cut over the same pictures reuses
-every fact the first one banked. Standing is read from each picture's facts and asks nothing at all.
-With a model, the period reading is banked one calendar month at a time, so a monthly cut after a
-yearly one asks nothing again for that month. A warm cut spends its time on video work. When a
-release changes a prompt, the answers that prompt produced are asked again once; captions, head
-answers and detector verdicts are keyed by their own producers and stay warm.
-
-### The facts a cut measures
-
-Three facts are measured only once a cut has chosen a picture, and banked in the store:
-
-| Table | What it holds | Written when |
-|---|---|---|
-| `motion_residuals` | the optical flow of one Live Photo's companion video, including the residual the 1.5 threshold reads | a cut measures a chosen Live Photo |
-| `speech_regions` | the utterances a clip holds, in its own seconds; an empty list means "listened, heard none" | a cut keeps a video or a playing Live Photo |
-| `live_clock_offsets` | how the clocks of a Live burst's companion videos line up; an empty answer means the burst ships as its photograph | a cut keeps a burst of two or more Live Photos |
-
-Each row is keyed by the picture, its source metadata, and a producer version that includes the
-method and, for speech, `speech.vad_threshold` and `speech.min_silence_ms`. Change any of those and
-the next cut measures again. The next cut reads these before it plans: a Live Photo whose banked
-residual is under 1.5 is planned as a still from the start. Only pictures a cut reaches are
-measured, and every later cut reads them for free.
-
-### The preview cache scales with your library
-
-A run reads each candidate's preview several times. One preview is about 315 KB, so size the cache
-as `thumbnail_cache_max_size_mb ≈ 0.35 × pictures a film can reach`; the 10 GB default holds about
-31,000. Previews the current run uses are never evicted, so a run that doesn't fit overflows the
-cap rather than losing facts, and one `WARNING` says how far over you are. The next overlapping
-run pays for it by downloading those previews again.
-
-### Video cache mechanics
-
-Files sit at `{id[:2]}/{id}{ext}`. A hit is `ffprobe`d first and fetched again if unreadable. A
-download streams into `{id}{ext}.part` and is renamed only when complete, so a killed run leaves
-nothing the next one would trust; `.part` files idle for an hour go at the next start. Age eviction
-runs at the start of every run, size eviction after each download and once at the end.
+[Storage and backups](./storage-backups.md#caches) covers disk growth and safe cleanup.
 
 ### Clearing
 
-The **Caches** section of the Settings page shows each cache's usage, with a **Clear** button per cache. From
-a shell, the video and thumbnail caches are plain directories, safe to delete while the app is
-idle:
-
-```bash
-rm -rf ~/.immich-memories/cache/video-cache
-rm -rf ~/.immich-memories/cache/thumbnails
-```
-
-Deleting `~/.immich-memories/cache` costs previews, clips and the attempt directories under
-`editorial-runs/`, not facts: those are in the store.
-Don't delete `store.db`: without it every fact about your library is prepared again, and every
-picture you cleared or ruled out is held again.
+[Clear only disposable caches](./storage-backups.md#clearing), while idle.
 
 ### Moving an install
 
-`immich-memories store backup` and `store restore` move everything the [store](../database.md)
-holds. Or copy `~/.immich-memories` (in Docker: the config volume) whole.
+[Move config, keys and the store](./storage-backups.md#moving-an-install).
+
+### What a second cut asks again
+
+Compatible facts are reused. New inputs or changed producers may need preparation again.
+[Detector versions](../reference/detector-facts.md) explain reuse and refresh.
+
+### The facts a cut measures
+
+[Selection internals](../../reference/selection-internals/pixel-evidence.md) describe banked measurements.
+
+### The preview cache scales with your library
+
+[Preview sizing](./storage-backups.md#caches).
+
+### Video cache mechanics
+
+Downloaded files are checked before reuse; incomplete downloads are not treated as valid hits.

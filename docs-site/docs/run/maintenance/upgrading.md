@@ -1,67 +1,60 @@
 ---
-sidebar_label: "Upgrading"
+title: Upgrading
+sidebar_label: Upgrading
 ---
 
 # Upgrading
 
-Read the [release notes](https://github.com/sam-dumont/immich-video-memory-generator/releases)
-first (the repo's `CHANGELOG.md` points there). What bites: a config key renamed or removed, a
-default that changes your output, a new system requirement such as an FFmpeg version.
+Read the [release notes](https://github.com/sam-dumont/immich-video-memory-generator/releases),
+back up the store, then upgrade. Keep the backup for rollback: a newer release can migrate the
+store to a revision older code will refuse.
 
 ## Docker
-
-Take a store backup first if you might roll back ([Rollback](#rollback)):
 
 ```bash
 docker compose exec immich-memories immich-memories store backup
 docker compose pull
 docker compose up -d
 docker compose exec immich-memories immich-memories models fetch
+docker compose exec immich-memories immich-memories preflight
 ```
 
-The code is in the image; the model files live on the config volume. `models fetch` checks each
-file against the pins of the new release and downloads only what moved, so on most upgrades it
-prints `already present at` for each file. Skip it after a release that moved a pin, and the next
-run refuses to start, before any Immich call, because the file on the volume is not the pinned one.
+Copy the backup and manifest off the volume. Config and films survive a recreate.
+`models fetch` checks the new release's pins and downloads only changed files.
+Pin `image:` to a release tag if you want controlled upgrades; tags have no `v` prefix.
 
 ## uv / pip
 
-Keep your extras, or the upgrade comes back without the ONNX runtime:
+```bash
+immich-memories store backup
+uv tool upgrade immich-memories
+immich-memories models fetch
+immich-memories preflight
+```
+
+For pip, keep the same extras:
 
 ```bash
-uv tool upgrade immich-memories
-# or
 pip install --upgrade "immich-memories[all]"
-immich-memories models fetch
 ```
+
+Use `all-mac` (and `auth` if added) for the corresponding Mac install.
 
 ## Kubernetes and Terraform
 
-A new image tag, then `models fetch` by hand, because the init container does not re-check the
-pins: [Kubernetes](../kubernetes.md#upgrading-and-rollback), [Terraform](../terraform.md#upgrading).
+Back up, change the pinned image tag, apply, then run `models fetch` and `preflight` in the app
+container. The init container only checks file existence, so it does not update changed pins.
+See [Kubernetes upgrades](../kubernetes.md#upgrading-and-rollback) or
+[Terraform upgrades](../terraform.md#upgrading).
 
 ## Upgrading Immich from v2 to v3
 
-Both majors work ([Immich API compatibility](../config-file.md#immich-api-compatibility)). Leave
-this alone through the server upgrade:
+Leave version detection on auto:
 
 ```yaml
 immich:
-  api_version: auto  # auto | v2 | v3
+  api_version: auto
 ```
-
-On the next start, `auto` detects the server major and uses its API contract. Explicit `v2`
-and `v3` are manual troubleshooting escape hatches for unusual proxies or deployments that prevent
-correct detection; they force the selected contract. They are not an upgrade step.
-
-The client handles the three v3 wire changes that affect generation:
-
-- **Duration:** v2 duration strings and v3 integer milliseconds are normalized to seconds.
-- **Upload:** v2 keeps the device identity fields; v3 sends `filename` and omits the removed
-  `deviceAssetId` and `deviceId` fields. v3 assets report no device, so a re-render recognises its
-  earlier upload by the `immich-memories/generated` tag on both versions. The tag goes on once
-  Immich has finished reading the file, because Immich's own metadata read rewrites an asset's tags.
-- **Search dates:** date bounds include a UTC offset, which v3 requires.
 
 After upgrading Immich:
 
@@ -69,80 +62,34 @@ After upgrading Immich:
 immich-memories config test
 ```
 
-This is a read-only authentication and compatibility check. It does not search assets, generate a
-video, create an album, or upload anything. It prints the `v2` or `v3` contract it resolved.
+This read-only check prints the resolved v2/v3 contract. Overrides are for troubleshooting a
+proxy, not an upgrade step. Originals are unchanged.
 
 ## Config compatibility
 
-There is no automatic config migration. An unknown key inside a known section is ignored, so a
-renamed field stops doing anything; an unknown top-level key or an invalid value fails at
-startup. When a setting seems to have stopped working, look for its rename in the release notes.
-
-Keys of the retired per-clip scorer (`content_analysis`, `audio_content`, `transcription`,
-`analysis.max_refinement_passes`, `analysis.scene_threshold` and the other pacing dials,
-`photos.max_ratio`, `photos.read_moments`, `hardware.gpu_analysis` and their family) load with one
-warning listing each one. Delete them to silence it; nothing reads them. The same goes for the
-`scheduler:` section (its command is gone, see below), `cache.max_age_days`,
-`title_screens.show_decorative_lines`, `triage.enabled` and `triage.bundle`: nothing read the last
-four. Head weights of your own go in `editorial.preparation.head_bundle`.
-
-## Removed commands
-
-These commands went in the release that closed
-[#973](https://github.com/sam-dumont/immich-video-memory-generator/issues/973). A script that still
-calls one fails with `No such command`.
-
-| Removed | Use instead |
-|---------|-------------|
-| `scheduler list/status/start` | `auto run` on a timer for the daily candidate ([Automation](../../make/automate.md)). For a fixed film on a fixed date, a cron job or Kubernetes CronJob that runs `generate` ([below](#a-fixed-film-on-a-fixed-date)) |
-| `analyze` | `prepare`. `analyze` only counted a year's videos; `years` lists the years |
-| `export-project` | Nothing. It wrote a JSON list of videos that nothing read back |
-| `cache stats`, `cache export`, `cache import` | `store status` for row counts, `store backup` / `store restore` to move data. They only read the retired scorer's asset scores, which nothing writes any more |
-| `cache backup` | `store backup`. It copied `cache.db`, which holds only a cache now |
-
-### A fixed film on a fixed date
-
-The old `scheduler:` block filled the date in for you (January fires a year in review of the year
-before). A cron line does it with `date`:
-
-```bash
-# 15 January, 09:00: last year's review, uploaded to an album
-0 9 15 1 * immich-memories generate --memory-type year_in_review --year $(( $(date +\%Y) - 1 )) --upload-to-immich --album "Memories"
-```
+Unknown fields inside a known section are ignored; invalid values or unknown top-level sections
+fail startup. A renamed setting can stop taking effect, so check the release notes.
+For retired settings/commands and pre-store imports, see [Migrating older installs](../reference/migration.md).
 
 ## Data compatibility
 
-The store migrates forward when it opens, so an upgrade never loses run history or banked facts.
+The store migrates forward when opened. Older file-based installs are imported once, without
+changing or deleting their source files. Verify an import with:
 
-**The first start after the store arrived** imports what the install kept in files: `people.yaml`,
-`special-days.json`, the run history, automation attempts, notification health and asset scores in
-`cache.db`, the run index, `annotations.sqlite` (owner decisions included), `judgments.db`, the `structure-banks/` audience
-and vote banks, and the owner edits saved beside reviewed films. It
-happens once, the first time a process opens a store that has no import record while those files
-exist, and the log says what it brought in:
-
-```
-Importing the legacy files under /home/immich/.immich-memories into sqlite:////home/immich/.immich-memories/store.db (once)
-  /home/immich/.immich-memories/people.yaml: 14 imported, 0 already there
-  ...
+```bash
+immich-memories store import --verify
 ```
 
-- The files are read, never changed or deleted.
-- Two processes starting at the same moment (the UI and a scheduled run, say) queue on a lock; the
-  second finds the first one's record and skips.
-- Every later start costs one read of that record.
-- A failed import is logged and retried at the next start. `immich-memories store import --verify`
-  runs it by hand and checks every record ([the store commands](../database.md#managing-the-store)).
-- `IMMICH_MEMORIES_IMPORT_FROM` (or `database.import_from` in `config.yaml`) points it at another
-  directory, for a container that mounts an old data volume somewhere other than `~/.immich-memories`.
-
-`cache.db` itself stays where it is: the import reads it and never writes it, and nothing else
-opens it any more. Once `store import --verify` passes you can delete it. The video cache is safe to delete at any time; it costs a re-download. Finished MP4s depend
-on nothing.
+The [migration notes](../reference/migration.md#data-compatibility) list what is imported and how
+to point at an older data directory. Keep original files until verification passes.
 
 ## Rollback
 
-**Docker:** pin the `image:` line to a release tag (no `v` prefix), then pull and recreate:
+Restore the backup taken before upgrading if the newer release migrated the store.
+Stop the app before restoring. [Container restore](../database.md#restore-in-a-container)
+uses a one-off process, not `exec` in the running app.
+
+Docker: set the old image tag, pull and recreate:
 
 ```yaml
 image: ghcr.io/sam-dumont/immich-video-memory-generator:X.Y.Z
@@ -153,33 +100,19 @@ docker compose pull
 docker compose up -d
 ```
 
-**uv / pip:**
+Python:
 
 ```bash
 uv tool install --force "immich-memories[all]==X.Y.Z"
-# or
-pip install "immich-memories[all]==X.Y.Z"
 ```
 
-**Kubernetes and Terraform:** set the old image tag and apply.
+Kubernetes/Terraform: restore the old image tag and apply, then restore the old store backup with
+that release. Schema downgrades can drop tables and rows; the backup is the rollback.
 
-When the store needs restoring (below), a container install stops the app first and restores from a
-one-off container: [Restore in a container](../database.md#restore-in-a-container).
+A release from before the store reads the untouched legacy files, but cannot see new decisions
+or runs saved only in the store.
 
-Take a backup before an upgrade you might undo:
+## Removed commands
 
-```bash
-immich-memories store backup
-```
-
-**Rolling back to a release from before the store** is safe for what the files held: the import
-left them untouched, so the old release finds them as they were. Whatever you did in between
-(new decisions, new runs) lives only in the store, and the old release cannot see it.
-
-**Rolling back between two releases with the store** means old code opening a store a newer release
-has migrated, which it refuses (it does not know the newer revision). Restore the backup you took
-with the old release (`store restore --from FILE --force`) after reinstalling it. The store's
-revisions can go down as well as up, as far as `0001_foundation`, but each step down drops the
-tables that revision added, rows and all. A backup is the rollback; a downgrade is for development.
-
-`cache.db` needs nothing: this release never writes it, so an old release finds it as it left it.
+[The migration table](../reference/migration.md#removed-commands) maps retired commands to their
+replacements. For a fixed-date film, use a system schedule as in [Automation](../../make/automate.md).

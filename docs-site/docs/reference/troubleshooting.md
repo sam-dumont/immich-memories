@@ -10,17 +10,15 @@ title: Troubleshooting
 one with the output of `immich-memories report`. It defaults to the latest run, including failed runs.
 Pass a run ID to report an older one. Review the report before pasting it.
 
-The report includes redacted run logs, system details, stage timings, model usage and the selection
-funnel when the run recorded them. Names, places, albums, coordinates, hosts, IP addresses, URLs, paths
-and credentials are removed; IDs become
-randomized hashes that agree inside one report. `--json` prints structured data, and
-`--bundle report.zip` writes the full report and logs as an attachment. Nothing is sent automatically.
-A run keeps its last 5,000 log lines and a count of every line per level. Long pasted logs keep
-their last complete lines; the ZIP keeps all 5,000.
+Start with the connection check and preflight:
 
-Two commands answer most questions: `immich-memories -v <command>` logs at DEBUG for one run, and
-`immich-memories preflight` checks Immich, the model files, the output directory and every configured server in
-one go. In Docker, prefix both with `docker compose exec immich-memories`.
+```bash
+immich-memories config test
+immich-memories preflight
+immich-memories report --bundle report.zip
+```
+
+In Docker, prefix the command with `docker compose exec immich-memories`. The report is redacted and nothing is sent automatically. Review it before attaching it to an issue. [Report details](../make/cli/report.md).
 
 ## When it stops
 
@@ -84,8 +82,7 @@ immich-memories runs why <asset id> --run <run id>
 ```
 
 says where it passed and where it was dropped, and why. To overrule it, tick it on the web UI's pool and
-**Cut again**, or pass `--include <asset id>`: a tick outranks the editor. Neither overrides the family-viewing
-gate, and neither brings back a picture whose preview Immich answers HTTP 404 for. The run logs those as
+**Preview with these choices** to save a revision. Those final edits bypass the automatic sharing and length checks. For a new cut, `--include <asset id>` still passes the sharing gate. Neither can render a picture whose preview Immich answers HTTP 404 for. The run logs those as
 `preview unavailable at Immich (HTTP 404)` and cuts the rest; regenerate that asset's thumbnails in Immich and
 cut again. Every lever is on [Overrule it](../how-it-chooses/overrule-it.md).
 
@@ -134,7 +131,7 @@ already in it).
 
 ## Out of memory
 
-On a NAS, it is almost always a long film's audio mix on a small container: the mixer runs one FFmpeg per clip
+Check the failed stage and the container limit. A long film’s audio mix can exhaust a small container: the mixer runs one FFmpeg per clip
 and the failure names the clip. Raise the container's memory limit.
 
 An idle external model server can still hold gigabytes of RAM. The app-owned reader releases its process

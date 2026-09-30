@@ -4,8 +4,7 @@ title: Testing Guide
 
 # Testing guide
 
-Two suites: fast unit tests that run everywhere, and integration and E2E tests that need real
-services. `uv run pytest tests/ --collect-only -q` prints the current split.
+Start with unit tests, then run the checks for the boundaries your change touches: optional backends, real Immich, the store or the browser. `make help` lists the available suites.
 
 | Tier | Command | What it needs |
 |------|---------|---------------|
@@ -22,8 +21,7 @@ services. `uv run pytest tests/ --collect-only -q` prints the current split.
 Integration suites skip rather than fail when their services aren't there, unless `REQUIRE_IMMICH=1` (the gate below sets it). `make help` lists every
 per-suite target with its runtime. Three suites are outside `make test-integration`: `cli`, which
 re-runs the pipeline `pipeline` already covers and is the slowest in the tree; `audio`, which wants
-the demucs and ACE-Step packages; and `automation`, which has no target at all (run
-`pytest tests/integration/automation`).
+the demucs and ACE-Step packages; and `automation`, which has no dedicated make target. For that suite only, use `uv run pytest tests/integration/automation`.
 
 ## The real-Immich gate
 
@@ -151,47 +149,18 @@ class TestMyFeature:
         assert get_duration(ffprobe_json(result)) > 0
 ```
 
-## When CI fails but nothing failed
+## Failed or cancelled CI
 
-A red `Test (Python 3.12, ubuntu-latest)` often means the runner was reclaimed mid-suite, not that
-your code broke on Linux. A cancelled job is a job that did not run, so merging while one is
-outstanding means merging on the strength of whichever jobs happened to survive.
-`TestPhotoPlaceCaption` reached `main` broken and stayed there through two PRs that way: red and
-ignored once, reclaimed and never run the second time.
-
-Read the step, not the log:
+Read the failed step. An assertion failure names a test; exit 137 can mean the runner ran out of memory. A cancelled test job did not finish and is not a pass. Check whether a newer run superseded it before rerunning failed jobs.
 
 ```bash
-gh api repos/<owner>/<repo>/actions/jobs/<job-id> \
-  -q '.steps[] | select(.conclusion=="cancelled" or .conclusion=="failure") | "\(.name) -> \(.conclusion)"'
+gh run list --branch YOUR_BRANCH
+gh run rerun RUN_ID --failed
 ```
 
-`Run tests with coverage -> cancelled` with everything downstream `skipped` is a runner that died.
-No assertion ever ran, which is why `gh run view --log-failed` returns nothing: an empty failure
-log is evidence, not a broken tool. Swap the query for `.started_at` and `.completed_at` to see how
-far it got. Four minutes against a suite that takes eleven means it never finished.
+Wait until the run finishes before requesting a rerun. If the same job repeatedly runs out of memory, investigate resource use instead of treating retries as validation.
 
-The matrix is a control group: one cell red with its siblings green on the same OS points at a dead
-runner, every Linux cell red with macOS green at a real platform difference. It is a hint, not the
-verdict, because two cells can be reclaimed at once under memory pressure. The log decides:
-`FAILED` lines mean a real failure, `Error 137` after a run of `PASSED` lines means the runner was
-killed. One photo-caption test failed with `Error 137` on Python 3.12 and passed on 3.11 and 3.13
-in the same run on the same image. The test was correct: it was the slowest thing running when the
-runner was killed.
-
-The OOM lands on whatever is running, which skews toward the slow tests. Two have been trimmed for
-that reason rather than because they were wrong: the loudnorm fixtures (thirty FFmpeg calls to one)
-and the photo-caption test (120 encoded frames to 30, to assert one string). If a unit test renders
-video to check metadata, shrink the render.
-
-The `CI Success` gate accepts `success` and `skipped` only. A job the change scope left out reports
-`skipped`. `cancelled` fails, because a job that runs past its `timeout-minutes` ends cancelled; a
-run the concurrency group cancelled was superseded, so its verdict does not count. Check
-`gh run list --branch <branch>` to confirm a newer run covered it.
-
-`gh run rerun <run-id> --failed` is rejected while any job in the run is still in progress; the
-error message about a broken workflow file is misleading. Wait for the run to complete. If the same
-cell is reclaimed three times, treat it as a resource problem rather than luck.
+The [CI guide](./ci.md) describes change scope, matrix jobs and required rollups.
 
 ## Hardware encoders are absent on CI
 

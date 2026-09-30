@@ -238,7 +238,7 @@ def output_options(command: FC) -> FC:
             "-q",
             type=click.Choice(["high", "medium", "low"]),
             default=None,
-            help="Output quality (default: from config, typically high)",
+            help="Output quality (default: from config, typically balanced; medium selects balanced)",
         ),
         click.option(
             "--output",

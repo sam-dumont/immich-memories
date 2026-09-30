@@ -50,7 +50,7 @@
     <div class="flex flex-col items-center gap-2 text-center">
       <svg viewBox="0 0 24 24" class="size-12 fill-current text-primary" aria-hidden="true"><path d={mdiMovieOpenStarOutline} /></svg>
       <Heading size="large" tag="h1">Immich Memories</Heading>
-      <Text color="muted">{t('Turn your photo library into video memories')}</Text>
+      <Text color="muted">{t('Turn your Immich photos and videos into memory films.')}</Text>
     </div>
     {#if problem}<p class="text-sm text-danger" role="alert">{problem}</p>{/if}
     {#if session?.provider === 'oidc'}
