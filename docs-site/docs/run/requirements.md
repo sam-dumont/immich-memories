@@ -29,19 +29,26 @@ What the minimum costs you:
 - **No AVX** (Intel Celeron J4125 and friends) means the CPU fallback draws the titles instead
   of the animated title kernels: [CPUs without AVX](./hardware.md#cpus-without-avx).
 - **ARM64** gets no hardware encoder: the VA-API drivers ship in the amd64 image only.
-- **Less memory** means fewer photos rendered at once. The app prepares one source per 2 GB it
-  may use: the container's memory limit when Compose sets one (the shipped file sets 4 GB),
-  otherwise the machine's RAM. 2 or 3 GB renders one photo at a time, 4 GB and up renders two.
+- **NAS tier output is capped at 1080p**, including an explicit 4K request. Portrait films use
+  1080×1920, landscape films use 1920×1080, and square films use 1080×1080. Lower resolutions
+  stay lower. Photo preparation and final assembly share the same capped canvas.
+- **Less memory** means fewer photos rendered at once. The app reserves 1 GiB for the parent
+  process, then allows 3 GiB per preparation worker, with at least one and at most two workers.
+  It uses the container memory limit when set, otherwise the machine's RAM. A 4 GiB container
+  prepares one source at a time; an 8 GiB container can prepare two.
   `immich-memories preflight` prints what it picked, for example
   `Photo preparation: 1 at a time (2.0 GB available, container limit)`. Setting
   `advanced.analysis.source_prepare_workers` to a number (1 to 4) overrides it.
   The same memory figure caps the threads of each clip decode in the render (one per 2 GB, up
   to 4): FFmpeg's own default of one per core cost 1.2 GB per 4K decode on an 18-core Mac.
   A box with no hardware HEVC encoder encodes in libx265, which holds about 52 MB per frame it
-  looks ahead at 4K. Above 1080p the app lets it look 5 frames ahead up to 3 GB, 10 at 4 or
-  5 GB, and x265's default (20 at the `medium` preset) from 6 GB. The files come out a few
+  looks ahead at 4K. Source encoders share the memory left after the parent reserve; each
+  encoder uses its own share to size its lookahead. Above 1080p, a share below 4 GiB allows
+  5 frames, 4 to less than 6 GiB allows 10, and larger shares keep the x265 default. A bounded
+  encoder processes one frame at a time, matching the memory measurements. Assembly uses the
+  whole process budget after source preparation finishes. The files come out a few
   percent smaller at a slightly lower quality: at 1080p with a lookahead of 10, 3% smaller and
-  0.03 dB lower. `preflight` shows the choice on its Memory line. 1080p output keeps the
+  0.03 dB lower. `preflight` shows the assembly choice on its Memory line. 1080p output keeps the
   default everywhere.
   Below 3 GB there is no room for a 4K software HEVC film at all, so when the film's resolution
   is `auto` and the box has no hardware HEVC encoder, a 4K film renders at 1080p instead, in the

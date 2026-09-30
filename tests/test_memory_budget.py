@@ -16,10 +16,9 @@ GIB = 2**30
 
 @pytest.mark.parametrize(
     ("gigabytes", "workers"),
-    [(2, 1), (3, 1), (4, 2), (16, 2), (1, 1), (3.8, 2), (1.9, 1)],
+    [(2, 1), (3, 1), (4, 1), (6, 1), (8, 2), (16, 2), (1, 1), (3.8, 1), (1.9, 1)],
 )
-def test_one_worker_per_two_gigabytes_capped_at_two(gigabytes, workers):
-    # A "4 GB" box reports a little under 4 GiB once the kernel takes its share.
+def test_workers_leave_parent_reserve_before_admitting_sources(gigabytes, workers):
     assert prepare_workers(int(gigabytes * GIB), cpus=8) == workers
 
 
@@ -92,3 +91,9 @@ def test_preflight_says_how_many_sources_a_render_prepares():
     )
     config.analysis.source_prepare_workers = "auto"
     assert check_memory(config).message.startswith("Photo preparation: ")
+
+
+def test_four_gib_container_leaves_room_for_parent_during_photo_preparation(tmp_path):
+    (tmp_path / "memory.max").write_text(f"{4 * GIB}\n")
+    workers, _reason = source_prepare_workers("auto", cgroup_root=tmp_path, cpus=4)
+    assert workers == 1

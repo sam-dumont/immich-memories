@@ -8,6 +8,8 @@ from queue import Full, Queue
 from threading import Event, Lock, Thread
 from typing import Generic, TypeVar
 
+from immich_memories.processing.memory_budget import source_encoder_budget
+
 _Item = TypeVar("_Item")
 _Result = TypeVar("_Result")
 _Client = TypeVar("_Client")
@@ -55,6 +57,7 @@ class _SourceWorkers(Generic[_Item, _Client, _Result]):
     """Own admission, backpressure and per-thread resource cleanup for one iterator."""
 
     def __init__(self, items, client, prepare, count):
+        self.count = count
         self.client = client
         self.prepare = prepare
         self.ready: Queue[tuple[int, _Result] | BaseException | None] = Queue(maxsize=count)
@@ -72,7 +75,7 @@ class _SourceWorkers(Generic[_Item, _Client, _Result]):
 
     def work(self):
         try:
-            with self.client() as resource:
+            with source_encoder_budget(self.count), self.client() as resource:
                 self.prepare_remaining(resource)
         except BaseException as exc:
             self.publish(exc)

@@ -391,11 +391,16 @@ these helper modules:
   `generate_clips.py` gives each source its own scratch directory and restores editorial order.
   `DownloadCoordinator.sources_for` shares downloaded components across workers by source ID.
   `processing/memory_budget.py` sizes the pool when `source_prepare_workers` is `auto`: one worker
-  per 2 GB of the cgroup memory limit (else physical RAM), at most 2 and never more than the CPUs.
+  per 3 GiB after a 1 GiB parent reserve, at least 1, at most 2 and never more than the CPUs.
+  The cgroup limit wins over physical RAM. Worker-local encoder budgets divide the remaining
+  memory by the actual worker count; they do not alter the subsequent assembly budget.
   The same budget caps each assembly decode's FFmpeg `-threads` (one per 2 GB, 1 to 4).
   It also sets libx265's `rc-lookahead` above 1080p (5 up to 3 GB, 10 at 4-5 GB, default from 6 GB)
-  through `clip_encoder.encoder_args_for_plan` and the photo clip encoder.
+  through `clip_encoder.encoder_args_for_plan` and the photo clip encoder. Bounded x265 encodes
+  use one frame thread, as required by the measured lookahead memory curve.
   Below 3 GB with no hardware HEVC encoder, `output_canvas` renders an `auto` 4K film at 1080p.
+  NAS tier caps the shared photo/assembly canvas at 1080p even for an explicit 4K request;
+  lower requested resolutions remain unchanged.
 - `processing/remote_render.py`: authenticated jobs, bounded polling, a SHA-256-checked download,
   and a staged film that reuses the worker's decode when the bytes match
 - `processing/remote_render_plan.py`: frozen cut serialization, including certified Live material

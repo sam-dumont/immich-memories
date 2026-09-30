@@ -9,6 +9,9 @@ from __future__ import annotations
 import functools
 import logging
 import os
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -17,9 +20,10 @@ logger = logging.getLogger(__name__)
 
 _CGROUP = Path("/sys/fs/cgroup")
 _GIB = 2**30
-# One photo at 4K peaks near 1.2 GB with its ffmpeg encode (synthetic, #1569),
-# so each preparation worker gets 2 GB.
-_GIB_PER_WORKER = 2
+# A 4K HDR photo encoder alone exceeds 2 GB. Reserve the parent process
+# separately, then allow 3 GiB per source including its decoded photo.
+_SOURCE_GIB_PER_WORKER = 3
+_PARENT_RESERVE = _GIB
 # The fixed default before auto; a config that sets the key can go higher.
 _MOST_AUTO_WORKERS = 2
 _MOST_DECODER_THREADS = 4
@@ -33,6 +37,7 @@ _LOOKAHEAD_BY_GB: tuple[tuple[int, int | None], ...] = ((6, None), (4, 10), (0, 
 # A default 1080p encode measured 811 MB, which every budget holds.
 _ABOVE_1080P = 1920 * 1088
 _FOUR_K = (3840, 2160)
+_SOURCE_ENCODER_MEMORY: ContextVar[int | None] = ContextVar("source_encoder_memory", default=None)
 
 
 @dataclass(frozen=True)
@@ -83,12 +88,16 @@ def _per_two_gigabytes(memory: int | None, *, cpus: int, most: int) -> int:
     ceiling = max(1, min(most, cpus))
     if memory is None:
         return ceiling
-    return max(1, min(ceiling, round(memory / _GIB) // _GIB_PER_WORKER))
+    return max(1, min(ceiling, round(memory / _GIB) // 2))
 
 
 def prepare_workers(memory: int | None, *, cpus: int) -> int:
-    """One worker per 2 GB, at least one, at most two and never more than the CPUs."""
-    return _per_two_gigabytes(memory, cpus=cpus, most=_MOST_AUTO_WORKERS)
+    """Reserve the parent, then allow 3 GiB per source, one to two workers."""
+    ceiling = max(1, min(_MOST_AUTO_WORKERS, cpus))
+    if memory is None:
+        return ceiling
+    available = max(0, memory - _PARENT_RESERVE)
+    return max(1, min(ceiling, available // (_SOURCE_GIB_PER_WORKER * _GIB)))
 
 
 def decoder_threads(memory: int | None, *, cpus: int) -> int:
@@ -130,17 +139,31 @@ def x265_lookahead(memory: int | None, *, pixels: int) -> int | None:
     """libx265's rc-lookahead for this budget and frame size; None keeps x265's default."""
     if memory is None or pixels <= _ABOVE_1080P:
         return None
-    gigabytes = round(memory / _GIB)
+    gigabytes = memory // _GIB
     return next(frames for floor, frames in _LOOKAHEAD_BY_GB if gigabytes >= floor)
 
 
-@functools.cache
 def encode_lookahead(width: int, height: int) -> int | None:
-    """`x265_lookahead` for this process's memory budget and one output size, read once."""
-    budget = memory_budget()
-    frames = x265_lookahead(budget.size if budget else None, pixels=width * height)
+    """Lookahead for this encoder's share of memory and its output size."""
+    memory = _SOURCE_ENCODER_MEMORY.get()
+    if memory is None:
+        budget = memory_budget()
+        memory = budget.size if budget else None
+    frames = x265_lookahead(memory, pixels=width * height)
     logger.info("libx265 lookahead at %dx%d: %s", width, height, _frames(frames))
     return frames
+
+
+@contextmanager
+def source_encoder_budget(workers: int) -> Iterator[None]:
+    """Share encoder memory between source workers while reserving their parent."""
+    budget = memory_budget()
+    share = max(0, budget.size - _PARENT_RESERVE) // workers if budget else None
+    token = _SOURCE_ENCODER_MEMORY.set(share)
+    try:
+        yield
+    finally:
+        _SOURCE_ENCODER_MEMORY.reset(token)
 
 
 def lookahead_summary() -> str:
