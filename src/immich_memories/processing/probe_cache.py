@@ -296,7 +296,7 @@ class ProbeCache:
         ticks = packet.get("duration")
         if type(ticks) is not int or ticks <= 0:
             raise ProbeError(f"Source has no verified {label} presentation frame")
-        return {
+        evidence = {
             "time_base": str(clock),
             "pts": packet["pts"],
             "duration_ticks": ticks,
@@ -304,6 +304,9 @@ class ProbeCache:
             "end_seconds": float((packet["pts"] + ticks) * clock),
             "frame_seconds": float(ticks * clock),
         }
+        if index == -1 and len(data["packets"]) > 1:
+            evidence["presentation_spacing_ticks"] = packet["pts"] - data["packets"][-2]["pts"]
+        return evidence
 
     def quantized_segment(
         self, path: Path | str, start: float, end: float, rate: Fraction
