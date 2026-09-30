@@ -164,6 +164,7 @@ and people* is the long one; a later cut over the same pictures reuses what it b
 running cut and follows it again. **Cancel** stops it. A cut that fails shows the command's own last
 lines, and keeps showing them after a reload, because they usually name the command that fixes it
 (`immich-memories models fetch` on a fresh install). One job runs at a time.
+The job API accepts saved job IDs; a missing or invalid ID returns HTTP 404.
 
 When the cut is done the page opens its review.
 

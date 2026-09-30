@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import signal
 import subprocess  # noqa: S404 - runs this package's own CLI, argv built from typed requests
 import threading
@@ -52,15 +53,24 @@ class JobRunner:
         self._lock = threading.RLock()
         self._processes: dict[str, subprocess.Popen] = {}
 
+    def _path(self, job_id: str, suffix: str, *, progress: bool = False) -> Path:
+        if re.fullmatch(r"[0-9a-f]{32}", job_id) is None:
+            raise ValueError("Invalid job ID")
+        root = self._dir.resolve()
+        path = (root / "progress" if progress else root) / f"{job_id}.{suffix}"
+        if not path.resolve().is_relative_to(root):
+            raise ValueError("Invalid job ID")
+        return path
+
     def _record(self, job_id: str) -> Path:
-        return self._dir / f"{job_id}.json"
+        return self._path(job_id, "json")
 
     def _log(self, job_id: str) -> Path:
-        return self._dir / f"{job_id}.log"
+        return self._path(job_id, "log")
 
     def progress_path(self, job_id: str) -> Path:
         """Where a job's child keeps its `--progress-file`: apart from the records, never one."""
-        return self._dir / "progress" / f"{job_id}.json"
+        return self._path(job_id, "json", progress=True)
 
     def _save(self, job: Job) -> None:
         self._dir.mkdir(parents=True, exist_ok=True)

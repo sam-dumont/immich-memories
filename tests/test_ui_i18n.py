@@ -63,3 +63,20 @@ def _fields(template: str) -> set[tuple]:
         for _, field, spec, conversion in Formatter().parse(template)
         if field is not None
     }
+
+
+def test_catalogue_extraction_finishes_on_an_unterminated_escaped_label(tmp_path):
+    import subprocess
+    import sys
+
+    root = tmp_path / "web"
+    root.mkdir()
+    (root / "example.ts").write_text("t('" + "\\a" * 40 + "\n")
+    script = Path(__file__).resolve().parents[1] / "scripts" / "update-ui-catalogues.py"
+    code = (
+        "import runpy; from pathlib import Path; "
+        f"module = runpy.run_path({str(script)!r}); "
+        f"module['_web_labels'].__globals__['WEB_ROOT'] = Path({str(root)!r}); "
+        "assert list(module['_web_labels']()) == []"
+    )
+    subprocess.run([sys.executable, "-c", code], check=True, timeout=3)

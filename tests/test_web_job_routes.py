@@ -274,3 +274,10 @@ def test_the_brief_offers_the_people_with_the_most_pictures_first(tmp_path):
     found = client.get("/api/v1/people").json()
 
     assert [(p["name"], p["pictures"]) for p in found] == [("Zoé", 900), ("Bo", 40), ("Ana", None)]
+
+
+def test_invalid_job_ids_are_missing_jobs_in_every_endpoint(client):
+    for suffix in ("", "/output", "/events"):
+        assert client.get(f"/api/v1/jobs/invalid{suffix}").status_code == 404
+    assert client.post("/api/v1/jobs/invalid/cancel").status_code == 404
+    assert client.get("/api/v1/ask/preview/invalid").status_code == 404

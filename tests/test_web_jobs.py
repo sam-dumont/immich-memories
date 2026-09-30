@@ -78,3 +78,31 @@ def test_a_finished_child_whose_result_cannot_be_read_ends_failed_not_running(tm
     finished = _wait(runner, job.id, timeout=5)
     assert finished.status == "failed" and finished.exit_code == 0
     assert runner.active() is None
+
+
+@pytest.mark.parametrize("job_id", ["../outside", "/tmp/outside", "bad/id", "bad\\id"])
+def test_job_paths_refuse_ids_outside_the_job_namespace(tmp_path, job_id):
+    runner = JobRunner(tmp_path)
+    for operation in (runner.get, runner.output, runner.progress_path, runner.cancel):
+        with pytest.raises(ValueError, match="Invalid job ID"):
+            operation(job_id)
+    with pytest.raises(ValueError, match="Invalid job ID"):
+        runner.start("cut", [sys.executable, "-c", "pass"], job_id=job_id)
+
+
+def test_job_files_cannot_follow_symlinks_outside_the_cache(tmp_path):
+    runner = JobRunner(tmp_path / "cache")
+    job_id = "a" * 32
+    directory = tmp_path / "cache" / "web-jobs"
+    directory.mkdir(parents=True)
+    outside = tmp_path / "outside.json"
+    outside.write_text('{"private": true}')
+    (directory / f"{job_id}.json").symlink_to(outside)
+    with pytest.raises(ValueError, match="Invalid job ID"):
+        runner.get(job_id)
+    (directory / f"{job_id}.log").symlink_to(outside)
+    with pytest.raises(ValueError, match="Invalid job ID"):
+        runner.output(job_id)
+    (directory / "progress").symlink_to(tmp_path, target_is_directory=True)
+    with pytest.raises(ValueError, match="Invalid job ID"):
+        runner.progress_path(job_id)
