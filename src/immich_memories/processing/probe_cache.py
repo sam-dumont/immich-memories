@@ -70,6 +70,7 @@ class VideoProbe:
     video_time_base: str | None = None
     container_start_seconds: float = 0.0
     container_format: str | None = None
+    audio_sample_rate: int = 0
 
     @property
     def resolution(self) -> tuple[int, int] | None:
@@ -164,6 +165,7 @@ def _parse_video_probe(data: dict[str, Any]) -> VideoProbe:
         has_audio=bool(audio_streams),
         audio_codec=str(audio.get("codec_name")) if audio.get("codec_name") else None,
         audio_bitrate=_integer(audio.get("bit_rate")),
+        audio_sample_rate=_integer(audio.get("sample_rate")),
         video_start_seconds=_number(video.get("start_time")),
         average_frame_rate=video.get("avg_frame_rate"),
         nominal_frame_rate=video.get("r_frame_rate"),

@@ -16,7 +16,9 @@ from immich_memories.processing.probe_cache import ProbeCache, ProbeError, trim_
 from immich_memories.security import write_secret_file
 
 RENDER_VERSION = "editorial-live-render-v1"
-FRAME_QUANTIZATION = "source-packet-segment-quantization-and-shared-av-boundaries-v9"
+FRAME_QUANTIZATION = (
+    "source-packet-segment-quantization-and-shared-video-audio-sample-boundaries-v10"
+)
 
 
 def validate_editorial_live_clip(clip: Any) -> LiveRenderMaterial:
@@ -330,7 +332,8 @@ def _predicted_encode(probes, paths, material, render_rate: Fraction, source_tim
         span = trim_ticks(entry.end, clock) - trim_ticks(entry.start, clock)
         packet_frames = segment["frames"]
         selected_frames = math.ceil(span * clock * render_rate)
-        segment["frames"] = max(packet_frames, selected_frames)
+        audio = _selected_audio_boundary(probes.get(path), entry, render_rate)
+        segment["frames"] = max(packet_frames, selected_frames, audio["audio_selected_frames"])
         segment["seconds"] = float(Fraction(segment["frames"]) / render_rate)
         boundary = {
             "packet_grid_frames": packet_frames,
@@ -340,6 +343,7 @@ def _predicted_encode(probes, paths, material, render_rate: Fraction, source_tim
             "render_frame_rate": str(render_rate),
             "audio_silence_pad_to_seconds": segment["seconds"],
         }
+        boundary.update(audio)
         evidence["certified_segment_boundary"] = boundary
         for key in ("audio_tail_hold", "container_frame_hold", "presentation_interval"):
             if key in evidence:
@@ -347,6 +351,22 @@ def _predicted_encode(probes, paths, material, render_rate: Fraction, source_tim
         evidence["quantized_segment"] = segment
         frames += segment["frames"]
     return float(Fraction(frames) / render_rate)
+
+
+def _selected_audio_boundary(probe, entry, render_rate: Fraction) -> dict:
+    """atrim rescales parsed microseconds on 1/sample_rate, independently of video."""
+    if not getattr(probe, "has_audio", False):
+        return {"audio_selected_frames": 0}
+    rate = getattr(probe, "audio_sample_rate", 0)
+    if type(rate) is not int or rate <= 0:
+        raise ProbeError("Certified audio segment has no verified sample rate")
+    clock = Fraction(1, rate)
+    samples = trim_ticks(entry.end, clock) - trim_ticks(entry.start, clock)
+    return {
+        "audio_sample_rate": rate,
+        "audio_selected_samples": samples,
+        "audio_selected_frames": math.ceil(Fraction(samples, rate) * render_rate),
+    }
 
 
 def _quantized_encode(

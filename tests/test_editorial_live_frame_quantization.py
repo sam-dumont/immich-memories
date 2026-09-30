@@ -303,3 +303,23 @@ def test_source_frame_shortfall_is_held_within_its_certified_allowance(tmp_path,
     assert duration == TWO_CUTS.duration_seconds
     assert held == [(TWO_CUTS.duration_seconds, pytest.approx(0.06 + 1 / 30))]
     assert probes.invalidated == [tmp_path / "merge.mp4"]
+
+
+@pytest.mark.parametrize("rate", [None, 0, -1, "48000"])
+def test_audio_bearing_segment_cannot_use_an_unavailable_sample_clock(rate):
+    from fractions import Fraction
+
+    entry = LiveSourceEntry("still", "video", 0.0, 0.0, 1.0)
+    with pytest.raises(ProbeError, match="no verified sample rate"):
+        renderer._selected_audio_boundary(
+            SimpleNamespace(has_audio=True, audio_sample_rate=rate), entry, Fraction(30)
+        )
+
+
+def test_video_only_segment_needs_no_audio_clock():
+    from fractions import Fraction
+
+    entry = LiveSourceEntry("still", "video", 0.0, 0.0, 1.0)
+    assert renderer._selected_audio_boundary(
+        SimpleNamespace(has_audio=False), entry, Fraction(30)
+    ) == {"audio_selected_frames": 0}

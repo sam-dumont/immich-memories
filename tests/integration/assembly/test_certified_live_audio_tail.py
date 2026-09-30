@@ -324,31 +324,33 @@ def test_certified_segments_share_picture_and_tone_seams_on_their_source_grid(tm
     record = json.loads(merged.with_suffix(".json").read_text())
     timing = record["frame_quantization"]["sources"]
     assert timing[0]["boundary"] == "millisecond-container-end-within-final-source-frame"
-    assert [r["quantized_segment"]["frames"] for r in timing] == [62, 31, 30]
+    assert [r["quantized_segment"]["frames"] for r in timing] == [63, 31, 30]
     assert record["frame_quantization"]["final_frame_hold"] is None
     pixels = subprocess.check_output([
         "ffmpeg", "-v", "error", "-xerror", "-i", str(merged),
         "-vf", "scale=1:1", "-pix_fmt", "rgb24", "-f", "rawvideo", "-",
     ])  # fmt: skip
     frames = np.frombuffer(pixels, dtype=np.uint8).reshape(-1, 3).astype(int)
-    assert len(frames) == 123
-    assert np.all(frames[:62, 0] > frames[:62, 2] + 100)
-    assert np.all(frames[62:93, 2] > frames[62:93, 0] + 100)
-    assert np.all(frames[93:, 1] > frames[93:, 0] + 100)
+    assert len(frames) == 124
+    assert np.all(frames[:63, 0] > frames[:63, 2] + 100)
+    assert np.all(frames[63:94, 2] > frames[63:94, 0] + 100)
+    assert np.all(frames[94:, 1] > frames[94:, 0] + 100)
     video, audio = _decode_streams(merged)
-    assert float(video["duration"]) == pytest.approx(4.1)
-    assert float(audio["duration"]) == pytest.approx(4.1, abs=1 / 48000)
+    assert float(video["duration"]) == pytest.approx(124 / 30)
+    assert float(audio["duration"]) == pytest.approx(
+        math.floor(124 / 30 * 1000) / 1000, abs=1 / 48000
+    )
     pcm = subprocess.check_output([
         "ffmpeg", "-v", "error", "-xerror", "-i", str(merged), "-map", "0:a:0",
         "-ac", "1", "-ar", "48000", "-f", "s16le", "-",
     ])  # fmt: skip
     samples = np.frombuffer(pcm, dtype="<i2")
-    for start, expected in [(2.11, 880), (3.14, 1320)]:
+    for start, expected in [(2.145, 880), (3.17, 1320)]:
         window = samples[round(start * 48000) : round((start + 0.05) * 48000)]
         frequency = np.count_nonzero((window[:-1] <= 0) & (window[1:] > 0)) / 0.05
         assert frequency == pytest.approx(expected, abs=20)
     # The interior blue cut has one extra grid frame, independently of a source tail.
-    silence = samples[round(3.075 * 48000) : round(3.09 * 48000)]
+    silence = samples[round(3.11 * 48000) : round(3.125 * 48000)]
     assert np.sqrt(np.mean(silence.astype(float) ** 2)) < 150
 
 
@@ -374,3 +376,46 @@ def test_first_kept_picture_offset_preserves_the_selected_audio_span(tmp_path):
     video, audio = _decode_streams(merged)
     assert int(video["nb_read_frames"]) == 60
     assert float(video["duration"]) == float(audio["duration"]) == 2.0
+
+
+@pytest.mark.parametrize("start,selected_samples", [(0.0, 99216), (0.0001, 99211)])
+def test_audio_sample_clock_cannot_outlive_its_shared_segment_grid(
+    tmp_path, start, selected_samples
+):
+    first = _clocked_tone_source(tmp_path / "red.mov", "red", 440, 15, "2.4")
+    second = _clocked_tone_source(tmp_path / "blue.mov", "blue", 880, 30, "2.0")
+    original_pcm = subprocess.check_output([
+        "ffmpeg", "-v", "error", "-i", str(first), "-map", "0:a:0",
+        "-af", f"atrim=start={start}:end=2.067,asetpts=PTS-STARTPTS",
+        "-ac", "1", "-ar", "48000", "-f", "s16le", "-",
+    ])  # fmt: skip
+    assert len(original_pcm) // 2 == selected_samples
+    material = LiveRenderMaterial(
+        (
+            LiveSourceEntry("still-a", "video-a", 0.0, start, 2.067),
+            LiveSourceEntry("still-b", "video-b", 1.0, 0.0, 1.0),
+        )
+    )
+    merged = certified.render_certified_live(
+        _certified_clip(material), [first, second], tmp_path,
+        merge=downloads._try_merge_burst, hardware_enabled=False,
+    )  # fmt: skip
+    record = json.loads(merged.with_suffix(".json").read_text())
+    rows = record["frame_quantization"]["sources"]
+    assert [row["quantized_segment"]["frames"] for row in rows] == [63, 30]
+    boundary = rows[0]["certified_segment_boundary"]
+    assert boundary["selected_interval_frames"] == 62
+    assert boundary["audio_selected_samples"] == selected_samples
+    assert boundary["audio_sample_rate"] == 48000
+    assert boundary["audio_selected_frames"] == 63
+    assert record["frame_quantization"]["final_frame_hold"] is None
+    pixels = subprocess.check_output([
+        "ffmpeg", "-v", "error", "-xerror", "-i", str(merged),
+        "-vf", "scale=1:1", "-pix_fmt", "rgb24", "-f", "rawvideo", "-",
+    ])  # fmt: skip
+    frames = np.frombuffer(pixels, dtype=np.uint8).reshape(-1, 3).astype(int)
+    assert len(frames) == 93
+    assert np.all(frames[:63, 0] > frames[:63, 2] + 100)
+    assert np.all(frames[63:, 2] > frames[63:, 0] + 100)
+    video, audio = _decode_streams(merged)
+    assert float(video["duration"]) == float(audio["duration"]) == 3.1
