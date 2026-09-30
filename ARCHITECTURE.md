@@ -654,6 +654,7 @@ src/immich_memories/
 │       ├── factory.py          # Generator factory
 │       ├── memory_budget.py    # Will this ACE-Step profile fit in currently available memory?
 │       ├── cgroup_memory.py    # Linux process/ancestor limits and conservative reclaimable file cache
+│       ├── cuda_usability.py   # Tiny kernel and synchronization before automatic audio CUDA routing
 │       ├── musicgen_backend.py # MusicGen API (generation + remote Demucs stems)
 │       ├── ace_step_backend.py # ACE-Step lib/API (mode choice, captions, REST protocol)
 │       ├── ace_step_runtime.py # ACE-Step in-process handlers: device, MLX/torch memory, one render

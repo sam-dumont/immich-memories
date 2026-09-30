@@ -55,12 +55,14 @@ def _detect_device() -> str:
     """Auto-detect best available device for Demucs inference."""
     from contextlib import suppress
 
+    from immich_memories.audio.generators.cuda_usability import cuda_is_usable
+
     with suppress(ImportError):
         import torch
 
         if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
             return "mps"
-        if torch.cuda.is_available():
+        if cuda_is_usable():
             return "cuda"
     return "cpu"
 

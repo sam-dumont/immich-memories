@@ -114,7 +114,11 @@ overrides ACE-Step v0.1.8's older Linux package pins, so its upstream dependency
 reports that mismatch. The app disables PyTorch native JIT kernels in its own audio child before
 PyTorch imports, keeping the existing eager path free of a compiler requirement. A custom direct
 library process needs `TORCH_DISABLE_NATIVE_JIT=1` before Python starts; setting it after importing
-PyTorch is too late. Existing `extra_args.cpu_offload: true` can reduce GPU residency on smaller cards.
+PyTorch is too late. Direct library callers can set `extra_args.cpu_offload: true` to reduce GPU residency on smaller cards.
+
+Automatic local ACE-Step and Demucs selection checks that a CUDA kernel actually runs and
+synchronizes. A detected GPU whose installed PyTorch build cannot execute it falls back to CPU;
+ACE-Step still checks available memory before loading weights.
 
 ### In a container
 

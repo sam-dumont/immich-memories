@@ -266,11 +266,10 @@ def _local_runtime_target() -> tuple[str, str, bool]:
     if platform.system() == "Darwin":
         return "mps", "mlx", True
 
-    with suppress(ImportError, RuntimeError):
-        import torch
+    from immich_memories.audio.generators.cuda_usability import cuda_is_usable
 
-        if torch.cuda.is_available():
-            return "cuda", "vllm", False
+    if cuda_is_usable():
+        return "cuda", "vllm", False
     return "cpu", "pt", False
 
 
