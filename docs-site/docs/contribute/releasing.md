@@ -68,7 +68,11 @@ that range. Install Gitleaks 8.24.3 to run the same scan locally; pre-commit use
 
 ## Household validation before release
 
-Before publishing the first RC, recheck the maintainer's eight test households across different family setups. Record the exact candidate revision, the scenarios checked and any failures. Check people and saved groups, selection, titles and wording, and the holidays or celebrations relevant to each household. Fix failures or state the remaining limits before publishing.
+Before publishing the first RC, recheck all eight households in the maintainer's private testlab. Update its pinned product dependency to the exact candidate revision and refresh the environment before running the household scenarios. An older report does not validate the candidate.
+
+Record the revision, tier, scenarios checked and failures. Check people and saved groups, selection, titles and wording, and the holidays or celebrations relevant to each household. Verify expected no-film outcomes as well as successful films. NAS results establish NAS coverage; check other tiers separately before claiming they passed. Fix failures or state the remaining limits before publishing.
+
+Keep household material and detailed reports private. Publish only the aggregate report approved by the testlab's public-report check.
 
 This is a release validation requirement, not a claim that eight households cover every family or culture. New examples from contributors should extend that coverage. See [Households and cultures](./development-setup.md#households-and-cultures).
 
