@@ -102,3 +102,40 @@ def test_sqlite_corruption_stops_the_campaign_instead_of_silently_recomputing(tm
             hasher("a")
     finally:
         hasher.close()
+
+
+def test_cached_fingerprint_does_not_copy_the_entire_preview(tmp_path):
+    import tracemalloc
+
+    payload = preview() + bytes(2 * 1024 * 1024)
+    hasher = CachedThumbnailHasher(tmp_path / "hashes.sqlite", lambda _: payload)
+    try:
+        expected = hasher("picture")
+        assert expected is not None
+        tracemalloc.start()
+        try:
+            assert hasher("picture") == expected
+            _current, peak = tracemalloc.get_traced_memory()
+        finally:
+            tracemalloc.stop()
+        assert peak < len(payload) // 2
+        assert hasher.metrics()["cache_hits"] == 1
+    finally:
+        hasher.close()
+
+
+def test_streamed_fingerprint_keeps_the_existing_persistent_key(tmp_path):
+    import hashlib
+
+    payload = preview()
+    path = tmp_path / "hashes.sqlite"
+    hasher = CachedThumbnailHasher(path, lambda _: payload, hash_size=16)
+    try:
+        expected = hasher("picture")
+    finally:
+        hasher.close()
+    legacy_key = hashlib.sha256(f"{module.METHOD}\0{16}\0".encode() + payload).hexdigest()
+    with sqlite3.connect(path) as connection:
+        assert connection.execute(
+            "SELECT source_key, thumbnail_hash FROM thumbnail_hashes"
+        ).fetchall() == [(legacy_key, expected)]
