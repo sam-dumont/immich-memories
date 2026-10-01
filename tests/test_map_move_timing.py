@@ -37,3 +37,10 @@ def test_the_name_is_fully_up_for_the_whole_hold() -> None:
     assert len(alphas) == 180
     assert alphas[0] == 0.0
     assert alphas[-60:] == [1.0] * 60
+
+
+def test_the_intro_times_the_first_leg_without_including_future_stops() -> None:
+    home, paris, brest = (50.85, 4.35), (48.86, 2.35), (48.39, -4.49)
+    timing = MapMoveTiming()
+
+    assert timing.intro_seconds(home, [paris, brest]) == timing.seconds_between(home, paris)

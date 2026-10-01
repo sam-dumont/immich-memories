@@ -15,3 +15,10 @@ Downloaded from Fontsource CDN (https://fontsource.org), which redistributes
 Google Fonts under their original open-source licenses.
 
 Full OFL-1.1 license text: https://openfontlicense.org/
+
+Noto Sans Symbols — The Noto Project Authors (OFL-1.1)
+             noto-sans-symbols/route-arrow.ttf: U+2192 from NotoSansSymbols-Regular.ttf
+             (unhinted), same notofonts/notofonts.github.io commit above.
+             Source SHA-256: 6eea9cb4cd39269ea9f95ba5c2735f80ae74049dfc9e1a7c932a5cfc8f0c3030
+             Reproduce with fontTools pyftsubset: --unicodes=U+2192 --no-hinting
+             --no-recalc-timestamp --output-file=route-arrow.ttf

@@ -104,7 +104,7 @@ class TestPickInterpolator:
         p0 = (*_to_world(lat0, lon0), 1920 / (2**14))
         p1 = (*_to_world(lat1, lon1), 1920 / (2**14))
 
-        interp = _pick_interpolator(p0, p1, width=1920)
+        interp = _pick_interpolator(p0, p1)
 
         # Linear pan: viewport width stays constant (max of the two inputs)
         _, _, w_mid = interp(0.5)

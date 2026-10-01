@@ -26,7 +26,8 @@ from .map_renderer import _draw_gradient_band, _overlay_composite, _wrap_text
 
 logger = logging.getLogger(__name__)
 
-_CITY_ZOOM = 14  # Start/end zoom (city-level, ~30 m/px)
+_CITY_ZOOM = 14  # Reference framing at 1080p; more pixels need a higher tile zoom.
+_MAX_TILE_ZOOM = 19
 _MIN_ZOOM_FLOOR = 3  # Never zoom out past this
 _RHO = math.sqrt(2)  # Zoom/pan trade-off (d3 default)
 _SAT_URL = (
@@ -34,10 +35,6 @@ _SAT_URL = (
 )
 
 _ViewInterp = Callable[[float], tuple[float, float, float]]
-_PAN_THRESHOLD_ZOOM = 10  # If mid-transit zoom > this, pan instead of zoom
-# A location card flies at region scale (about 150 km across at 1920 px): a 30 km hop
-# keeps both towns in frame, and the landing shows the place among its neighbours.
-_CARD_ZOOM = 11
 # A card's name sits in the lower third in either orientation, clear of the pin in the middle.
 _CARD_LABEL_Y = 0.72
 _TITLE_FADE_SECONDS = 0.5
@@ -170,15 +167,12 @@ def _linear_pan(p0: tuple[float, float, float], p1: tuple[float, float, float]) 
 def _pick_interpolator(
     p0: tuple[float, float, float],
     p1: tuple[float, float, float],
-    width: int,
 ) -> _ViewInterp:
-    """Van Wijk zoom for long distances, linear pan for short hops."""
+    """Pull back for a route that does not fit the close endpoint view; otherwise pan."""
     dx, dy = p1[0] - p0[0], p1[1] - p0[1]
     d = math.sqrt(dx * dx + dy * dy)
-    mid_w = max(p0[2], p1[2], d * 1.5)
-    mid_zoom = math.log2(width / mid_w) if mid_w > 0 else _CITY_ZOOM
-    if mid_zoom >= _PAN_THRESHOLD_ZOOM:
-        logger.info("Short hop — linear pan (mid-zoom %.1f)", mid_zoom)
+    if d * 1.5 <= min(p0[2], p1[2]):
+        logger.info("Short hop — linear pan within the city view")
         return _linear_pan(p0, p1)
     return _van_wijk(p0, p1)
 
@@ -279,6 +273,11 @@ def _render_frame(
     return _draw_pins(frame, lat, lon, zoom, cfg)
 
 
+def _city_view_width(width: int, height: int) -> float:
+    # Keep the short side's geographic span, including when the film is portrait.
+    return 1080.0 / 2**_CITY_ZOOM * width / min(width, height)
+
+
 def _destination_overview(
     destinations: list[tuple[float, float]],
     width: int,
@@ -301,7 +300,9 @@ def _destination_overview(
     # 1.5x padding around pins (not 2x — keeps destinations more visible)
     w_overview = max(span_x * 1.5, span_y * (width / height) * 1.5 / (bottom - top))
     # Clamp: min zoom _CITY_ZOOM (close), max zoom _MIN_ZOOM_FLOOR (world)
-    w_overview = max(width / (2.0**_CITY_ZOOM), min(width / (2.0**_MIN_ZOOM_FLOOR), w_overview))
+    w_overview = max(
+        _city_view_width(width, height), min(width / (2.0**_MIN_ZOOM_FLOOR), w_overview)
+    )
     # Screen y grows with world y, so moving the camera south lifts the stops up the frame.
     visible_h = w_overview * height / width
     return cx, cy + (0.5 - (top + bottom) / 2) * visible_h, w_overview
@@ -333,11 +334,11 @@ def create_map_fly_video(
     encoding_plan: EncodingPlan | None = None,
     destination_names: list[str] | None = None,
 ) -> Path:
-    """Google Earth-style fly-over from home to the trip, then a still hold on its stops.
+    """Fly from home to the first trip stop, then hold close on it with the trip title.
 
     Van Wijk smooth zoom for a long flight, a pan for a short one, eased by the
-    map-move schedule so the last `timing.hold_seconds` sit still on the named
-    stops with the trip title up.
+    map-move schedule so the last `timing.hold_seconds` sit still on the first
+    stop with the trip title up. Later stops arrive with their own location cards.
     """
     output_path.parent.mkdir(parents=True, exist_ok=True)
     timing = timing or MapMoveTiming()
@@ -347,19 +348,19 @@ def create_map_fly_video(
     names = destination_names or []
     pins = [
         _PinData(lat=lat, lon=lon, name=names[i])
-        for i, (lat, lon) in enumerate(destinations)
+        for i, (lat, lon) in enumerate(destinations[:1])
         if i < len(names) and names[i]
     ]
 
     hdr = bool(encoding_plan and encoding_plan.hdr)
     title_overlay = _render_title_overlay(title_text, width, height, hdr)
     dep_wx, dep_wy = _to_world(*departure)
-    w_city = width / (2.0**_CITY_ZOOM)
-    # The hold is where the title is read, so the stops land in the part of the frame it leaves.
+    w_city = _city_view_width(width, height)
+    # Leave the first stop and its name clear of the title during the landing hold.
     dest_cx, dest_cy, w_overview = _destination_overview(
-        destinations, width, height, _free_band(title_overlay, height)
+        destinations[:1], width, height, _free_band(title_overlay, height)
     )
-    interp = _pick_interpolator((dep_wx, dep_wy, w_city), (dest_cx, dest_cy, w_overview), width)
+    interp = _pick_interpolator((dep_wx, dep_wy, w_city), (dest_cx, dest_cy, w_overview))
 
     dz = math.log2(width / w_overview) if w_overview > 0 else float(_CITY_ZOOM)
     cfg = _FlyConfig(
@@ -368,7 +369,7 @@ def create_map_fly_video(
         title_overlay=title_overlay,
         width=width,
         height=height,
-        dest_zoom=max(3.0, min(14.0, dz)),
+        dest_zoom=dz,
         hdr=hdr,
     )
     progress = timing.schedule(duration, fps)
@@ -398,23 +399,23 @@ def create_map_move_video(
 ) -> Path:
     """A location card: fly from the last place to this one, then hold on it with its name.
 
-    Both ends sit at `_CARD_ZOOM`, wide enough that a 30 km hop keeps both towns in
-    frame on a pan and a long one climbs out and back in. The name fades in as the
-    camera lands and stays for the whole still hold.
+    Both endpoints show the town close up, with the same geographic framing at
+    every resolution. Longer routes pull back and descend again; a hop already
+    inside the city view pans. The name fades in as the camera lands.
     """
     output_path.parent.mkdir(parents=True, exist_ok=True)
     timing = timing or MapMoveTiming()
-    w_card = width / (2.0**_CARD_ZOOM)
+    w_card = _city_view_width(width, height)
     start = (*_to_world(*came_from), w_card)
     end = (*_to_world(*destination), w_card)
     hdr = bool(encoding_plan and encoding_plan.hdr)
     cfg = _FlyConfig(
-        interps=[_pick_interpolator(start, end, width)],
+        interps=[_pick_interpolator(start, end)],
         pins=[_PinData(lat=destination[0], lon=destination[1])],
         title_overlay=_render_title_overlay(label, width, height, hdr, anchor=_CARD_LABEL_Y),
         width=width,
         height=height,
-        dest_zoom=float(_CARD_ZOOM),
+        dest_zoom=math.log2(width / w_card),
         hdr=hdr,
     )
     progress = timing.schedule(duration, fps)
@@ -446,7 +447,7 @@ def _view_at(
     wx, wy, vw = interps[idx](local)
     lat, lon = _to_latlon(wx, wy)
     zoom = math.log2(w / vw) if vw > 0 else float(_CITY_ZOOM)
-    return lat, lon, max(float(_MIN_ZOOM_FLOOR), min(float(_CITY_ZOOM), zoom))
+    return lat, lon, max(float(_MIN_ZOOM_FLOOR), min(float(_MAX_TILE_ZOOM), zoom))
 
 
 def _frame_at(progress: float, cfg: _FlyConfig) -> tuple[Image.Image, float]:

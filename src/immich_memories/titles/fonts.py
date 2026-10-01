@@ -13,7 +13,8 @@ Supported fonts:
 
 Those five are Latin subsets (Montserrat also carries Latin Extended and
 Vietnamese). A letter they lack comes from Noto Sans, bundled for Latin,
-Greek, Cyrillic and Vietnamese, or from the Noto script faces installed by
+Greek, Cyrillic and Vietnamese. The route arrow comes from a bundled Noto Sans
+Symbols subset. Other letters come from the Noto script faces installed by
 `titles fonts --install`: see `font_chain` and `script_fonts`.
 """
 
