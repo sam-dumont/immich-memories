@@ -4,9 +4,10 @@ title: "Multi-service cluster example"
 
 # Multi-service cluster example
 
-A worked example with two GPU nodes, an external text reader, ACE-Step API, Immich and an identity
+A separate-service example with two GPU nodes, an external text reader, ACE-Step API, Immich and an identity
 provider. This is an advanced deployment, not the minimum install. Set up the
-[base app](../kubernetes.md) first.
+[base app](../kubernetes.md) first. For one card and one listener, prefer the
+[unified worker recipe](../reference-setup.md#one-gpu-service).
 
 ```mermaid
 flowchart TB
@@ -150,23 +151,20 @@ build time, catching missing native libraries before release.
 Picture facts are banked in the app's persistent store. A later cut reuses matching asset and
 producer versions, whether the original preparation ran on the Mac, the NAS CPU or the inference
 GPU. Keep that store when replacing an app container. The
-[measured preparation comparison](../../better/measured.md#nas-preparation) separates CPU cost,
-GPU offload, warm reuse and captioning; those timings do not include rendering. Start by measuring
+[performance guide](../../better/measured.md) separates preparation, rendering and warm reuse. Start by measuring
 one small month before preparing a larger library window.
 
 ### The two GPU nodes
 
-`gpu-node-a` has the newer card, here an NVIDIA T1000 (Turing, 8 GB), time-sliced with Immich's
-own machine-learning pod. It carries the app pod with the render worker as a loopback sidecar
+In this example, `gpu-node-a` is the newer CUDA/NVENC-capable node. It carries the app pod with the render worker as a loopback sidecar
 (NVENC h264/hevc, exec probes, below) and the inference service, which reads every picture once:
 the encoder, the context heads and the two detectors, on ONNX Runtime's CUDA provider.
-`gpu-node-b` has an older GTX 1070 (Pascal, 8 GB) and carries only the caption server: llama.cpp's
-CUDA build runs on Pascal, and the caption server is the one GPU workload that doesn't compete
-with the app for the busier card.
+`gpu-node-b` carries the separate caption server. Check the image runtime against your card
+and driver; distributing services does not certify compatibility or enough free VRAM.
 
 `overlays/inference-cuda` and `overlays/captioner-cuda` select any node with
 `nvidia.com/gpu.present`, so on a two-card cluster pin each to its node. The inference service
-belongs on the newer card; this setup was not tested with it on Pascal:
+needs a node compatible with the shipped CUDA runtime:
 
 ```yaml
 # a patch in overlays/maximalist, listed under patches:

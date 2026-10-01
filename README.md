@@ -39,6 +39,10 @@ The app groups photos and videos into moments, picks shots and keeps them in tim
 
 A default film talks to your Immich server. Originals are never modified, and uploading a finished film back is opt-in. Maps and external model services need separate configuration. [Privacy](https://sam-dumont.github.io/immich-video-memory-generator/docs/run/privacy) lists what leaves your network.
 
+## Families and cultures
+
+I built this from my life as a white, middle-aged Belgian man in a heteronormative family. The goal is to support all households; the holiday defaults currently reflect Western Europe. Different family setups and cultural calendars are welcome. [Share an example and help check the result](https://sam-dumont.github.io/immich-video-memory-generator/docs/contribute/development-setup#households-and-cultures).
+
 ## Development
 
 `make dev` installs everything, `make ci` runs the checks, and `make help` lists the rest. See [CONTRIBUTING.md](CONTRIBUTING.md). Claude and Codex write most of the code; I set the direction and test the films on a real library. [DISCLAIMER.md](DISCLAIMER.md) explains the process and its limits.

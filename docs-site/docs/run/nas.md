@@ -69,7 +69,7 @@ The CPU classifiers provide less detector coverage than GPU/Full. Those tiers ad
 document/sensitive-content detectors and the Laya pre-screen. See
 [what the upgrades add](../get-started/what-a-gpu-or-a-model-adds.md).
 
-Preparation timings are on [Measured](../better/measured.md#nas-preparation); they exclude
+Preparation timings are on [Performance](../better/measured.md); they exclude
 downloads, music and rendering. A long film also gets a full playback check after rendering,
 which can take time. The log reports progress once a minute.
 

@@ -246,10 +246,3 @@ CronJob like the monthly one above) that runs `generate` says it:
 # 15 January, 09:00: last year's review, uploaded to an album
 0 9 15 1 * immich-memories generate --memory-type year_in_review --year $(( $(date +\%Y) - 1 )) --upload-to-immich --album "Memories"
 ```
-
-The `scheduler` command group that used to do this is gone
-([Upgrading](../run/maintenance/upgrading.md#removed-commands)).
-
-Every `automation:` and `notifications:` key is in the
-[config reference](config-reference.md#automation), every flag in the
-[CLI reference](cli-reference.md#auto).

@@ -20,7 +20,7 @@ flowchart TB
    [environment variables](.././environment-variables.md) (`IMMICH_URL`, `IMMICH_API_KEY`, ...).
 2. **`config.yaml`**: this file, which only you write.
 3. **Database**: what the settings page, **Save Config** on the Settings page, and
-   `immich-memories config --url/--api-key` saved. One row per key; a key you never saved has no
+   `immich-memories config --url URL --api-key KEY` saved. One row per key; a key you never saved has no
    row, so a new default still reaches you after an upgrade.
 4. **Default**: the value in the [config reference](../../reference/config-reference.md).
 
@@ -96,16 +96,10 @@ every depth, and the top-level value wins a tie, so a hand-written
 `editorial: {preparation: {caption_concurrency: 4}}` changes concurrency and keeps the rest of an
 `advanced.editorial` block. The database, `config show` and `config move-to-db` use the runtime
 path without `advanced.` (`llm.model`); the UI and `config show` name a file key the way you wrote
-it (`advanced.llm.model`). Preparation's former tier override no longer takes precedence
-over the product tier.
+it (`advanced.llm.model`). The product tier controls preparation.
 
-Unknown keys inside a section are ignored. The keys of the retired per-clip scorer
-(`content_analysis`, `audio_content`, `transcription`, `description_llm`,
-`analysis.max_refinement_passes`, `photos.max_ratio` and their family), the retired `scheduler:`
-section and a few dials nothing read (`cache.max_age_days`, `title_screens.show_decorative_lines`,
-`triage.enabled`, `triage.bundle`) are dropped by name with a warning, so an old file loads and
-tells you what it ignored. Unknown top-level keys and invalid
-values (`codec: av1`) fail with a validation error.
+Unknown keys inside a section are ignored; unknown top-level keys and invalid values
+(`codec: av1`) fail with a validation error. Check effective values with `config show` after editing.
 
 
 ## Paths in the config are host paths
@@ -118,9 +112,9 @@ path that is missing here, so a copied config fails up front instead of hours in
 |---|---|
 | `output.directory` | where finished films are written |
 | `cache.directory` | previews, thumbnails, downloaded clips |
-| `cache.database` | a pre-store `cache.db` the store imports once; its directory holds the run lock files |
+| `cache.database` | its directory holds run lock files; operational facts and history live in the store |
 | `database.url` | the store (banked facts and readings, your picture decisions and review edits, people, settings, run history, automation state, special days), when it is a SQLite file (`sqlite:///~/.immich-memories/store.db`) |
-| `advanced.editorial.annotation_database` | deprecated: a legacy `annotations.sqlite` the store imports once; its directory still holds `structure-banks/` (the thumbnail-hash and scene-print caches, and any legacy JSON banks the store imports) |
+| `advanced.editorial.annotation_database` | its parent directory holds `structure-banks/` thumbnail-hash and scene-print caches; facts live in the store |
 | `advanced.triage.encoder` | the pinned DINOv2 ONNX export |
 | `advanced.editorial.preparation.head_bundle` | a head bundle of your own, for the eight context heads |
 | `advanced.editorial.preparation.marqo_onnx` | the pinned sensitive-content export |
@@ -175,6 +169,23 @@ immich-memories config test
 ```
 
 Read-only: it reports the connection and the resolved contract, and does nothing else.
+
+### API wire details
+
+Explicit `v2` and `v3` are manual troubleshooting escape hatches for unusual proxies
+or deployments that prevent correct detection; they force the selected contract.
+
+- **Duration:** v2 duration strings and v3 integer milliseconds are normalized to seconds.
+- **Upload:** v2 keeps the device identity fields; v3 sends `filename` and omits the
+  removed `deviceAssetId` and `deviceId` fields.
+- **Search dates:** date bounds include a UTC offset, which v3 requires.
+
+```bash
+immich-memories config test
+```
+
+This is a read-only authentication and compatibility check. It does not search assets,
+generate a video, create an album, or upload anything.
 
 ## Output codecs and HDR
 

@@ -27,8 +27,7 @@ intermediates. Disabling hardware encoding keeps preparation in software.
 Video clips are never cropped. A landscape clip in a portrait film keeps its whole frame and
 [`scale_mode`](config-reference.md) fills the rest: `blur` (default) puts a blurred, zoomed
 copy behind the sharp one, `fit` uses black bars. Face-aware video cropping is not offered: a moving
-subject needs per-frame tracking, not one face position. An old `smart_crop` value loads as `blur`
-with a warning.
+subject needs per-frame tracking, not one face position.
 
 ## Live Photos
 
@@ -43,6 +42,18 @@ Some MOV probes report a 4-tick sample duration even when successive pictures ar
 20 ticks. The renderer checks those actual presentation timestamps before allowing one final
 frame hold. A rounded container endpoint can use that measured interval; a larger missing tail
 still stops the render.
+
+### Original-source admission
+
+Before sealing a cut, the app downloads only the final retained Live motion originals and checks their complete presentation. The proof is bound to the source bytes, video stream, decoder identity and presentation policy. Matching proofs are reused; rejected candidates are not downloaded for this check.
+
+An invalid Live motion original becomes the same selected picture as a still. This does not choose another picture. Timing is recalculated for that disposition before the cut is certified. A missing source or decoder/infrastructure failure remains an error; it is not treated as corrupt media or silently filled.
+
+### Presentation and audio boundaries
+
+The renderer checks compressed samples and decoded presentation, then uses the MOV track's verified sample-table and edit boundary. Reference samples establish completeness but are not displayed. Every joined segment keeps its own video and audio boundary; audio samples retain their own clock.
+
+A permitted rounding gap holds the final video frame. An audible audio tail is not replaced with silence to make it fit, and a larger missing video tail is not invented. The encoded segment is checked against the certified interval before assembly.
 
 An iPhone records about 3 seconds of video with every photo. Most libraries hold thousands of them,
 and a rapid burst of them is several seconds of continuous footage nobody meant to shoot.

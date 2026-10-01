@@ -25,7 +25,7 @@ immich-memories runs why ASSET_ID --run RUN_ID
 
 `story` shows shots in playback order, with timecode, capture date and explanation. `why` shows where one picture was kept or dropped and your current persistent decision about it.
 
-Without an ID, `story` reads the most recent completed run; `why` uses that run unless `--run` selects another. Older runs that did not save a decision log say so.
+Without an ID, `story` reads the most recent completed run; `why` uses that run unless `--run` selects another. The command reports when a decision log is unavailable.
 
 ## runs render
 
@@ -40,7 +40,7 @@ A revision is the version saved from the browser editor. Output options such as 
 
 For a film across accounts, the saved cut also keeps the exact file copy and the account that can read it. Moving a favourite to another copy does not change which file a replay uses.
 
-Every render is a new run. Older cuts without saved render inputs cannot be rendered this way; make a fresh cut.
+Every render is a new run. A saved cut needs its render inputs to replay; if they are unavailable, make a fresh cut.
 
 To listen to generated music first (requires a generator):
 

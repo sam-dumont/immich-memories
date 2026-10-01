@@ -4,8 +4,9 @@ title: "All-features Mac example"
 
 # All-features Mac example
 
-This profile uses a source checkout for local ACE-Step, plus separate local caption and reader
-servers. If you only want the app, use the [Python install](../uv-pip.md).
+This profile uses a source checkout for local ACE-Step, plus an external local caption server
+and reader endpoint. An owned reader with blank `base_url` is another option; see
+[reader setup](../../better/reader.md). If you only want the app, use the [Python install](../uv-pip.md).
 
 ```mermaid
 flowchart TB

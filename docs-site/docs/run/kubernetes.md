@@ -6,7 +6,7 @@ title: Kubernetes
 
 For an existing cluster with persistent storage. [Docker Compose](./docker.md) is the simpler
 install. The Kustomize manifests live in `deploy/kubernetes/`; CI renders them but does not deploy
-them to a live cluster. [Compatibility evidence](./reference/compatibility.md) lists tested setups.
+them to a live cluster. [Requirements](./requirements.md) explains platform and memory constraints.
 
 ## Prerequisites
 

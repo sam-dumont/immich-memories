@@ -11,7 +11,7 @@ commits on a `history/` branch. Pick a name for that integration and date, then 
 the branch being merged:
 
 ```bash
-git push origin HEAD:refs/heads/history/my-integration-2026-09-15
+git push origin HEAD:refs/heads/history/my-integration
 ```
 
 Link that branch in the PR before squashing. Keep the archive when deleting the working branch.
@@ -41,13 +41,11 @@ move `latest`, and do not deploy the docs site.
 The **Channel** input picks what a run publishes. `stable` (the default) is a final release; `rc`
 is a release candidate, tagged `vX.Y.Z-rc.N`.
 
-1. **Open a series.** Run with channel `rc` and the bump for the coming final, for example
-   `major` from `v0.103.0`. That publishes `v1.0.0-rc.1`.
+1. **Open a series.** Run with channel `rc` and choose the version bump for the candidate series. The workflow calculates and displays the candidate tag.
 2. **Fix and repeat.** Merge fixes to `main`, then run with channel `rc` again: `v1.0.0-rc.2`,
    `rc.3` and so on. The bump input is ignored while a series is open. A run with no commit
    since the last candidate fails instead of publishing a duplicate.
-3. **Promote.** Run with channel `stable`. It publishes `v1.0.0` from `main`, with notes covering
-   the whole series since the previous final. The run fails if `main` gained a `feat`, `fix`,
+3. **Promote.** Run with channel `stable`. It publishes `v1.0.0` from `main`, with notes covering the candidate series. The run fails if `main` gained a `feat`, `fix`,
    `perf`, `refactor`, `build`, `revert` or breaking commit since the last candidate: that code was
    in no candidate, so cut one more first. Docs, tests, CI and chores do not block promotion.
 
@@ -62,11 +60,17 @@ what it moves:
 | PyPI | `1.0.0rc1`, installed only with `pip install --pre` | default install |
 | Docs site | not deployed | deployed |
 
-Testers pin the exact candidate tag. `latest` users stay on the previous final until promotion.
+Testers pin the exact candidate tag. Candidates do not move `latest`; a final release does.
 
 CI uses `make secret-scan` for both PRs and release runs: all commits since the latest version
 tag, or all history for the first release. It also catches secrets removed by a later commit in
 that range. Install Gitleaks 8.24.3 to run the same scan locally; pre-commit uses that version too.
+
+## Household validation before release
+
+Before publishing the first RC, recheck the maintainer's eight test households across different family setups. Record the exact candidate revision, the scenarios checked and any failures. Check people and saved groups, selection, titles and wording, and the holidays or celebrations relevant to each household. Fix failures or state the remaining limits before publishing.
+
+This is a release validation requirement, not a claim that eight households cover every family or culture. New examples from contributors should extend that coverage. See [Households and cultures](./development-setup.md#households-and-cultures).
 
 ## Private terms gate
 

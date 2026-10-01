@@ -71,7 +71,7 @@ manifests do not ship; without one the encode runs on the CPU.
 `overlays/gpu/deployment-gpu.yaml` patches the Deployment with `runtimeClassName: nvidia`, one
 `nvidia.com/gpu`, the two `NVIDIA_*` env vars, the `nvidia.com/gpu.present=true` node selector and
 the matching toleration. The app uses that card for NVENC encoding and the title kernels and
-nothing else. The editor's optional services run separately; classifiers and Demucs share the inference service, and captions can reuse its CUDA image. See [container boundaries](../../better/inference.md#what-shares-a-container). When the card
+nothing else. These overlays run separate services: classifiers and Demucs share inference; captions and the render sidecar have their own processes. The [unified CUDA worker](../reference-setup.md#one-gpu-service) is a separate Compose recipe, not part of these overlays. See [container boundaries](../../better/inference.md#one-nvidia-container). When the card
 cannot start the title kernels, titles still render, on the CPU, and the log says why in one warning
 line.
 

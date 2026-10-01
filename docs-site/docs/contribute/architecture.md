@@ -31,7 +31,7 @@ flowchart TD
     app -->|"Annotation text"| reader["Optional text reader"]
 ```
 
-A render worker additionally receives the chosen cut and Immich key, then fetches originals. Keep these services inside the network boundaries described in [Privacy](../run/privacy.md).
+The text reader can be an app-owned local process or an API server. Captioning is a separate role; explicitly enabling LLM captions sends pictures to that configured model. A render worker additionally receives the chosen cut and Immich key, then fetches originals. Keep these services inside the network boundaries described in [Privacy](../run/privacy.md).
 
 ## Composition over inheritance
 
@@ -96,7 +96,7 @@ names every port and the file it lives in, with the full module map.
 
 ## File naming conventions
 
-- `_prefixed.py`: private helpers for their own package. Nothing enforces that, and one cross-package import has leaked in (`generate_privacy.py` reaching into `titles._trip_titles`)
+- `_prefixed.py`: private helpers for their own package. Keep imports inside the owning package; public package entry points expose shared behavior
 - `*_service.py`: composed service classes
 - `*_models.py`: data models (Pydantic or dataclass)
 - `*_helpers.py`: standalone helper functions

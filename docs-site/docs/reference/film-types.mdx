@@ -24,8 +24,7 @@ install uses Immich metadata and the locally prepared picture facts (dates, plac
 | `special_day` | one day the library says something happened on | 30 s + 6 s an active hour | nothing, or the `discover-days` catalogue |
 
 Two setup steps make every type better, not only trips: a home base, so the editor can tell a week
-away from a week at home, and who's who, so it knows your family from the neighbours. Both take five
-minutes: [Teach it your family](../get-started/who-is-who.md).
+away from a week at home, and who's who, so it knows your family from the neighbours. Set them in [Teach it your family](../get-started/who-is-who.md).
 
 ## How long a film runs
 
@@ -369,8 +368,8 @@ A text model adds three things here, and changes nothing else about the types:
 - `discover-days` first reads each month's days together, then checks each proposed occasion
   against that day's own picture descriptions. Both readings must agree it was an occasion;
   a title alone does not qualify it. No picture is sent. Confirmed occasions need enough varied
-  material for a film, with no six-per-year cap. Unread days remain marked for retry. Run
-  `discover-days --rescan` to check an older catalogue with this confirmation rule.
+  material for a film, with no six-per-year cap. Unread days remain marked for retry. Use
+  `discover-days --rescan` to recheck catalogue entries.
 - An uncatalogued special day, and people and occasion films, get a title written from their facts.
   The reader invents no event name the facts do not carry.
 - A month or year gets a light polish on top of the NAS draft. What that polish does and costs

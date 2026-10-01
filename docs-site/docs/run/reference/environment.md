@@ -9,10 +9,6 @@ For credential precedence, logging, local music and scheduling. Start with the
 
 ## The ones that do not follow the pattern
 
-**Retired keys are dropped.** The scene-detection and segment-length knobs that went with the old
-clip scorer are dropped by name from a config file with one warning; the environment-variable form
-gets no warning at all. Delete both.
-
 **The captioner has its own credential.** `OPENAI_API_KEY` does not reach it: give it
 `IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_API_KEY`, or leave it blank for a server that
 needs none.

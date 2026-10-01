@@ -5,10 +5,7 @@ title: Sentence parsing and pool rules
 # Sentence parsing and pool rules
 
 :::caution[Highly experimental]
-Tuned and tried on a single real library (about 76,000 pictures, one family) plus a few
-synthetic test households. Two rounds of prompts written cold went from about 1 in 7 translated
-right to all of them, but those rounds were then used to fix it, so they no longer count as
-tests. On your library, expect some wrong translations and read the trace before trusting a film.
+The parser is developed against one real family library and synthetic households. Those examples do not establish its accuracy on another library. Inspect the translation and pool before trusting a film.
 :::
 
 You type what you want to see ("the cars I drove", "at the park with kids", "the first picture
@@ -178,31 +175,17 @@ so asking the same question twice does not ask the model twice.
 
 ## Where it is good, where it is less good
 
-From the prompts tried so far (redacted: the real ones are private):
+Requests work through the evidence the library actually contains. Captions supply named subjects and activities; Immich metadata supplies recognised people, dates and places; OCR supplies visible words. A concept that none of those sources names cannot be recovered by a clever sentence.
 
-| Asked for | Result |
-|---|---|
-| things the captions name: the cars I drove, bread making, a pet over the years | good |
-| scenes with people in them: at the park with kids, races, partying in our 20s, closed eyes | good |
-| what the library measures: I love &lt;a country&gt;, blurry pictures, first or last picture of each person | good |
-| a club's rides, with the name on the jerseys | good, thin: the OCR finds the club |
-| one known occasion: the birth of a child | good, filmed as the special day |
-| a concept the captioner rarely writes: brunches, breastfeeding | thin |
-| an occasion nothing marks: an unconventional wedding | not possible |
-| sport app screenshots | not possible: the screenshots are found, their captions rarely say "sport" |
-| one picture per person | a few people are cut to fit the film's length |
-
-Captions name things well and people doing things well. Concepts the captioner does not write come
-out thin or not possible.
+A request for one picture per person still goes through the film's length and selection rules. It is not a guarantee that every person survives the final cut.
 
 ## Limits
 
-- **One library.** Every rule was found on one family's pictures and a few synthetic households.
+- **One library.** The parser is developed against one family's pictures and synthetic households.
   Your words, habits and cameras differ, so will the results.
-- **Captions are the basis.** "Brunch" was in 3 captions out of 76,000. If the captioner never
-  writes the word, no rule finds it.
+- **Captions are the basis.** If the captioner does not name the requested concept, the subject filter may return a thin or empty pool.
 - **Occasions without a date.** A wedding the captions never call a wedding can only be found by
-  its date, and there is no place to tell it that date yet (birth dates in the people file work).
+  its date, and there is no place to tell it that date yet (birth dates in the people registry work).
 - **Two senses.** "Races" found running races AND motor-racing track days. Say which one you mean.
 - **WordNet is from 2006.** It has no "screenshot" or "app", and some first senses are odd
   ("dashboard" is a carriage's mud panel).

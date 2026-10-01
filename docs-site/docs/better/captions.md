@@ -10,7 +10,16 @@ NAS works without them. GPU and Full describe the selected pictures and replacem
 
 The default captioner is **SmolVLM2 500M**. It receives small picture previews. Keep the service on your private network.
 
-## Docker Compose
+## One NVIDIA worker
+
+If you are adding GPU inference and rendering too, use the [one-GPU setup](../run/reference-setup.md#one-gpu-service).
+It serves captions at `/v1` in the same container, starting its bundled caption process on demand.
+Set `caption_base_url` to `http://gpu-box:8092/v1`. No separate caption container is needed.
+
+The routes are unauthenticated. Keep the worker private. The GPU and Full tiers still need Laya
+in the app; captions alone do not enable GPU selection.
+
+## Separate Docker Compose captioner
 
 The repository’s Compose file includes a captioner profile:
 

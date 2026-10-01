@@ -6,6 +6,18 @@ title: Caption service contract
 
 The [caption setup guide](../better/captions.md) gets the Compose service running. This reference keeps explicit LLM captioning, pinned artifacts, alternative deployments and the contract every server must meet.
 
+## Unified or separate service
+
+The [unified NVIDIA worker](../run/reference-setup.md#one-gpu-service) already exposes captions
+at `/v1`. Its phase manager stops the owned caption subprocess between other GPU phases and
+restarts it on demand. The standalone Compose/Kubernetes recipes below run their own server;
+do not add one just to use unified captions.
+
+The unified caption route has no authentication, even though `/render` on the same listener
+requires a token. Keep it private. The standalone recipes explicitly set `--cache-ram 128` and
+`--parallel 1`; the unified bundled command does not set those bounds. Context size is 8192
+in both llama.cpp recipes. Neither configuration guarantees a fixed VRAM peak.
+
 ## Explicit LLM captions
 
 SmolVLM is the default caption provider. An LLM configured for titles or prose never receives
@@ -57,7 +69,7 @@ option above uses the configured model's own identity instead.
 `llm.api_key` is never borrowed for it.
 
 Caption reports name the producer of the caption actually reused, which can differ from the
-currently configured model. Older captions without provenance stay marked unknown. A description
+currently configured model. A description
 and its setting are read as one complete pair from the same producer.
 
 ## Accepted artifacts
@@ -74,12 +86,11 @@ Same 500M model either way; pick what your hardware runs. The GGUF files this pa
 | `SmolVLM2-500M-Video-Instruct-Q8_0.gguf` | 437 MB | `6f67b8036b2469fcd71728702720c6b51aebd759b78137a8120733b4d66438bc` |
 | `mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf` | 109 MB | `921dc7e259f308e5b027111fa185efcbf33db13f6e35749ddf7f5cdb60ef520b` |
 
-Q8_0 is the quantisation to run. Q4_K_M measured twice as slow and worse; f16 is eighteen times
-slower for no gain.
+Use the pinned Q8_0 artifacts to match the bundled serving contract.
 
 ## Apple Silicon, with mlxcel
 
-The Apple Silicon caption server used for this project's controls.
+A native Apple Silicon serving option:
 
 ```bash
 brew install lablup/tap/mlxcel
@@ -141,11 +152,8 @@ selection on NAS. Preparation follows the product tier; do not set a separate pr
 Running `ghcr.io/ggml-org/llama.cpp:server` by hand works the same way, with the weights
 bind-mounted at `/models` and
 `--host 0.0.0.0 --ctx-size 8192 --cache-ram 128 --parallel 1 --threads 4`.
-The RAM prompt cache is bounded at 128 MiB, with one processing slot. Leaving these at
-llama.cpp's automatic defaults allowed an 8 GiB cache and four slots inside a 2 GiB pod,
-which was killed during preparation. A CUDA canary with these limits handled single-image
-and eight-frame requests at a measured peak of 0.97 GiB. Longer library runs still need
-their own memory measurement. Completed captions remain banked in the app's persistent store.
+The RAM prompt cache is bounded at 128 MiB, with one processing slot. These are host-RAM prompt-cache and processing-slot limits, not a total RAM or VRAM ceiling.
+Measure them alongside other GPU users. Completed captions stay in the app's persistent store.
 
 Three more flags carry the serving contract:
 
@@ -155,10 +163,8 @@ Three more flags carry the serving contract:
 | `--mmproj …` | the model loads and answers, but it is blind: the control tiles fail and no library picture is sent |
 | `--port 8092` | nothing answers where the app looks, and the row reads unreachable |
 
-This recipe clears the alias and all three schema controls first attempt; 136 of 136 fixture
-pictures validated. Do not reach for `--model-url` and `--mmproj-url` to skip the download: on
-build b10920 they are accepted, ignored, and the server starts with zero models loaded, so
-`/models` comes back empty and preflight reports the wrong problem.
+Use local model and projector files with the pinned runtime. Validate `/models` and the synthetic
+controls with preflight before sending library pictures.
 
 ### On an NVIDIA host
 
@@ -194,7 +200,7 @@ captioner service commented out. Uncomment both:
 ```
 
 99 is "all of them", and a 500M model has 32. By hand that is `--gpus all`, the `server-cuda` image
-and `--n-gpu-layers 99`. Raise the concurrency with it:
+and `--n-gpu-layers 99`. Optional app concurrency, after measuring the server under load:
 
 ```yaml
 IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_CONCURRENCY: "4"
@@ -251,8 +257,9 @@ block above plus `caption_concurrency: 4`.
 
 It deliberately does not request `nvidia.com/gpu: 1`. Where one card is time-sliced per node that
 resource has a single slot, the inference Deployment holds it, and a captioner asking for a second
-stays Pending beside an idle card. Without the request it shares, which works because the weights
-are 546 MB. With a card to spare, put the request back:
+stays Pending beside an idle card. Without the request, it relies on the NVIDIA runtime exposing the same card. This is not a
+portable GPU-sharing or memory-budget guarantee. The unified worker avoids separate inference
+and caption Deployments; use its Compose recipe when one service fits your deployment. With a card to spare, put the request back:
 
 ```yaml
 resources:
@@ -262,8 +269,8 @@ resources:
     nvidia.com/gpu: "1"
 ```
 
-Both overlays float their tag, `server` and `server-cuda`, and the two have to be one llama.cpp
-build: pinning means `server-bNNNNN` and `server-cuda-bNNNNN`, both or neither.
+The standalone overlays use floating `server` and `server-cuda` tags. Pin a matching llama.cpp
+build for unattended operation and validate it against the serving contract.
 
 ## How preflight reports it
 
@@ -302,10 +309,9 @@ which carries no format, no quantisation and no weights digest. Swapping MLX for
 nothing: every banked picture keeps the wording the old server gave it, and short of clearing the
 description rows there is no way to ask for a re-caption.
 
-That matters because the two builds word it differently. Same picture, same prompt, MLX against
-GGUF Q8_0: `A bunch of balloons tied together with a string.` / `sky and clouds` against `A bunch
-of balloons in the sky,` / `insufficient evidence`. `description` stays close, `setting` diverges,
-and neither is graded better than the other. A mixed bank keeps each result’s available provenance, but switching servers does not normalise their wording. If consistency matters for your library, pick one server and keep it.
+Different runtimes can phrase the same picture differently. A mixed bank keeps each result's
+provenance, but switching servers does not normalise existing wording. Pick one if consistency
+matters for your library.
 
 ## Motion lines
 
@@ -320,16 +326,9 @@ so preparation reads the index (tens of kilobytes), picks the three keyframes ne
 half and three quarters of the clip, and reads only those. FFmpeg copies exactly those packets
 out of a sparse local copy and decodes them, which behaves the same on FFmpeg 5.1 (the app
 image), 6.1, 7.1 and 8.1. A codec other than H.264, HEVC, VP9 or AV1 also costs its first
-keyframe, which FFmpeg needs to read the stream at all. Measured on ten real playbacks of 6 to 49 seconds: 235 to 528 KB and 0.1 to 0.4 s
-each, against 10 to 60 MB for the whole file. A clip with a single keyframe is a short one, and
-is read whole (0.5 to 2.2 MB for the Live Photo companions measured). The three frames go to the
+keyframe, which FFmpeg needs to read the stream at all. The three frames go to the
 server as one 960 × 320 JPEG strip with a one-field schema (`description`, 120 characters), under
 the same temperature, penalty, token cap and `caption_api_key` as captions.
-
-A whole year of one library, cold, on an Apple Silicon laptop with the MLX captioner: 888 videos in
-373 s (0.42 s each), 3,227 range requests, 888 caption calls and 891 MB read. The median video
-cost 416 KB. The 54 single-keyframe clips read whole took 394 MB of the total. A warm pass reads
-and asks nothing.
 
 The bank keys on the picture, its complete source metadata and
 `motion-line-v1@smolvlm2-500m-base-public/3-keyframes-320px`, so a changed source is asked again
@@ -341,16 +340,15 @@ four at a time.
 
 Each row also records what produced it: a digest of the question asked, the keyframe times it
 read, and what made the source owe a line (`video`, or the Live Photo's residual and the
-measurement that produced it). Rows banked before this existed have no record and still answer;
-the cut counts how many of those it read as `unrecorded` in its motion metrics.
+measurement that produced it). Missing provenance is reported as `unrecorded` in the motion metrics.
 
 A video's sentence counts only where its motion is measured. On every tier that samples a
 video's frames for the exposure head, preparation also measures their optical-flow residual and
 banks it under the picture, its source metadata and
 `motion-residual-v1@median-flow-v1-detector-frames-320x240`, with the frame count it was measured
 on. A video that measures under 1.5 has its sentence withheld (a favourite keeps it); see
-[Picking each shot](../how-it-chooses/picking-shots.md). A video already prepared before this is sampled once more
-for the residual alone; a frame read or measurement that fails is named and never blocks the cut.
+[Picking each shot](../how-it-chooses/picking-shots.md). A missing residual can require another sample; a frame read or measurement failure is named
+and does not block the cut.
 
 `prepare` owns motion-description requests. It banks true videos and Live Photo companions whose
 measured residual already qualifies them. A first cut can discover motion in an unmeasured Live

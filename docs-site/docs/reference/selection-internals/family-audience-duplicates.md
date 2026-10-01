@@ -89,7 +89,7 @@ brief, `generate --sharing`), and `defaults.sharing` is the default, `family` un
 | **Shareable** (`shareable`) | anyone | `share` only, with `strict_sharing` |
 
 A caption that explicitly describes a person wearing only underwear holds the picture to
-**Just us**, including when an older cached verdict allowed Family viewing. Swimwear and babies
+**Just us**. Swimwear and babies
 in nappies are separate; an uncovered-person flag alone does not identify underwear. A NAS run
 without that caption cannot make this distinction. Use **Never use** for a picture you want out
 of every future film, or clear its hold yourself after reviewing it.
@@ -180,6 +180,8 @@ the shots whose exposure probability sits between 0.2 and 0.5 that nothing else 
 Nothing in the cut changes. The run summary prints the count, and `runs why` shows the note.
 
 ## Your word on a picture
+
+These decisions govern automatic selection. Editing an existing saved cut is a separate final-owner revision; its selected pictures follow the review choices, subject to renderable media.
 
 You answer a hold per picture, in the media pool, on the storyboard or with `pictures` in the CLI.
 The walkthrough with screenshots is on [Overrule it](../../how-it-chooses/overrule-it.md#your-word-on-a-picture). The

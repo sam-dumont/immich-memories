@@ -74,7 +74,7 @@ const sidebars: SidebarsConfig = {
         ]},
         {type: 'category', label: 'Services and performance', items: [
           'reference/llm-providers', 'reference/caption-service', 'reference/inference-service',
-          'reference/local-audio', 'reference/performance-evidence', 'reference/benchmark-history',
+          'reference/local-audio', 'reference/performance-evidence',
           'run/reference-setup',
         ]},
         {type: 'category', label: 'Operational details', items: [
@@ -93,7 +93,7 @@ const sidebars: SidebarsConfig = {
         'contribute/ci', 'contribute/releasing', 'contribute/demo-assets',
         'contribute/code-of-conduct',
         {type: 'category', label: 'Project background', items: [
-          'welcome/about', 'welcome/how-this-was-built', 'contribute/setup-matrix',
+          'welcome/about', 'contribute/setup-matrix',
         ]},
       ],
     },

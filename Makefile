@@ -798,7 +798,7 @@ launch-check-ci-postgres: ensure-dev
 	@echo "Hermetic launch check (PostgreSQL) passed!"
 
 # Full CI-equivalent pipeline (locally)
-ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check docs-brand docs-voice notices-check compose-check web-check test
+ci: ensure-dev research-data-check lint format-check typecheck file-length complexity cognitive-complexity dead-code security-lint semgrep refurb dep-check arch-check duplication critique docs-cli-check docs-config-check docs-brand docs-commands docs-voice notices-check compose-check web-check test
 	@echo "Full CI pipeline passed!"
 
 # Self-critique for AI code smells
@@ -1166,3 +1166,7 @@ demucs-locks:  ## Refresh the Linux inference audio locks without changing Mac d
 	uv pip compile docker/demucs-requirements.in --constraint "$$constraints" --python-version 3.12 \
 	  --python-platform linux --torch-backend cu126 --generate-hashes --no-annotate --no-header \
 	  -o docker/demucs-cuda-requirements.txt
+
+.PHONY: docs-commands
+docs-commands:  ## Statically check documented CLI commands and Make targets
+	uv run python scripts/check_docs_commands.py

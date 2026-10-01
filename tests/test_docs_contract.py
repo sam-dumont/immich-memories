@@ -146,12 +146,12 @@ def test_immich_environment_override_is_documented() -> None:
     )
 
 
-def test_upgrade_manual_explains_the_complete_v2_to_v3_contract() -> None:
-    """The upgrade section must keep every compatibility boundary together."""
+def test_api_reference_explains_the_complete_v2_v3_contract() -> None:
+    """The API section must keep every compatibility boundary together."""
     section = _normalized_section(
-        "docs-site/docs/run/reference/migration.md",
-        "## Upgrading Immich from v2 to v3",
-        "## End of API compatibility notes",
+        "docs-site/docs/run/reference/configuration.md",
+        "### API wire details",
+        "## Output codecs and HDR",
     )
 
     _assert_upgrade_contract(section)
@@ -190,12 +190,12 @@ def test_upgrade_manual_explains_the_complete_v2_to_v3_contract() -> None:
         ),
     ],
 )
-def test_upgrade_contract_rejects_semantic_mutations(documented: str, weakened: str) -> None:
+def test_api_contract_rejects_semantic_mutations(documented: str, weakened: str) -> None:
     """Each launch-critical sentence must fail independently when its meaning is removed."""
     section = _normalized_section(
-        "docs-site/docs/run/reference/migration.md",
-        "## Upgrading Immich from v2 to v3",
-        "## End of API compatibility notes",
+        "docs-site/docs/run/reference/configuration.md",
+        "### API wire details",
+        "## Output codecs and HDR",
     )
     mutated = section.replace(documented, weakened, 1)
 
@@ -307,12 +307,12 @@ def test_daily_auto_run_is_the_recommended_entry_point() -> None:
     assert "single daily entry point" in text
 
 
-def test_automation_docs_send_a_fixed_date_film_to_cron_not_the_retired_scheduler() -> None:
+def test_automation_docs_send_a_fixed_date_film_to_cron() -> None:
     text = _read("docs-site/docs/reference/automation-contract.md")
 
     assert "immich-memories generate --memory-type year_in_review" in text
     assert "scheduler start" not in text
-    assert "upgrading.md#removed-commands" in text
+    assert "0 9 15 1 * immich-memories generate" in text
 
 
 def test_health_docs_distinguish_liveness_from_readiness() -> None:
@@ -353,7 +353,7 @@ def test_ui_deployment_docs_are_explicit_about_exposure_and_replica_limits() -> 
 
 def test_api_compatibility_docs_describe_auto_and_manual_overrides() -> None:
     text = _read("docs-site/docs/reference/config-reference.md").lower()
-    upgrade = _read("docs-site/docs/run/reference/migration.md").lower()
+    upgrade = _read("docs-site/docs/run/reference/configuration.md").lower()
 
     assert "api_version: auto  # auto | v2 | v3" in text
     assert "runtime" in text

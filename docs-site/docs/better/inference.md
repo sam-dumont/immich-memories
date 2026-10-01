@@ -4,67 +4,70 @@ title: Run inference on another machine
 
 # Run inference on another machine
 
-The inference service moves picture classifiers off the app’s machine. It helps a slow NAS; it does not speed up video encoding. Use a [render worker](./gpu-render.md) for that.
+Move picture analysis off a slow NAS. On NVIDIA, one CUDA worker can also caption pictures,
+split music into stems and render the film. Start with the app alone; add this when preparation
+or rendering takes too long.
 
-The service receives picture previews and, for music stem separation, audio tracks. It has no built-in authentication. Keep it on a private network.
+## One NVIDIA container
 
-## What shares a container
+Use the [one-GPU setup](../run/reference-setup.md#one-gpu-service). It serves these URLs from
+one container on port 8092:
 
-| Work | Where it runs |
-|---|---|
-| Picture classifiers and Demucs stem separation | One inference service; CPU or CUDA image |
-| Captions | A separate container that can reuse the CUDA image and its bundled weights |
-| Text reader, ACE-Step music and render worker | Separate optional services |
-| Laya family-viewing check | In the app process |
+| App setting | Worker URL | Work |
+|---|---|---|
+| `advanced.inference.facts_base_url` | `http://gpu-box:8092` | Picture classifiers and Demucs stems |
+| `advanced.editorial.preparation.caption_base_url` | `http://gpu-box:8092/v1` | SmolVLM captions |
+| `render.worker_base_url` | `http://gpu-box:8092/render` | Video rendering |
 
-Start with the app alone. Add inference when classification or stem separation holds up a cut. You do not need a separate Demucs container. Add the other services only for the features you use.
+The worker switches between classifier, caption, audio and render phases. It unloads classifier
+weights or stops its caption process when another phase needs the GPU. It keeps existing queues
+within each phase; it does not run all the models at once or promise that every card will fit them.
+The text reader, Laya family-viewing check and ACE-Step generation remain outside this container.
 
-Reusing an image saves downloads and disk space. Each running container still needs its own RAM and GPU memory. Classifier queues do not schedule caption or audio work; the [service reference](../reference/inference-service.md#watching-classifier-work) explains the limits.
+Only `/render` requires the render bearer token. Classifiers, captions and stems are
+unauthenticated. Keep the entire address on a trusted private network. The render worker also
+receives your Immich API key to download originals.
 
-## Start the service
+## Classifiers and stems only
 
-The Compose profile starts a CPU service:
+The ordinary inference profile remains useful for CPU deployments or when you already operate
+separate caption and render services:
 
 ```bash
 docker compose --profile inference up -d
-curl -s localhost:8092/health
+curl -s http://localhost:8092/health
 ```
 
-For NVIDIA, install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html), uncomment the inference service’s GPU device reservation in Compose, and select the CUDA image:
-
-```bash
-INFERENCE_TAG=latest-cuda docker compose --profile inference up -d
-curl -s localhost:8092/health
-```
-
-The tag and device reservation both matter. Pin an exact release for unattended deployments. [Full device and Kubernetes recipes](../reference/inference-service.md#running-it-with-compose).
-
-## Connect the app
+Connect the app using the shipped Compose service name:
 
 ```yaml
 advanced:
   inference:
-    facts_base_url: http://inference:8092
+    facts_base_url: http://immich-memories-inference:8092
     fallback_to_local: true
 ```
 
-Use `http://immich-memories-inference:8092` within the shipped Compose network. From another machine, use the service’s private LAN address. A Kubernetes Service name only resolves inside its cluster; [LAN access](../reference/inference-service.md#reach-the-service-from-outside-the-cluster) needs its own address.
+From another machine, use its private LAN address. For NVIDIA standalone inference, select the
+CUDA image **and** its GPU device reservation; [deployment recipes](../reference/inference-service.md#running-it-with-compose)
+show both. This profile does not start the unified worker or a caption server.
 
-## Verify acceleration
+## Check it
 
 ```bash
 immich-memories preflight
-curl -s http://inference:8092/health
+curl -s http://gpu-box:8092/health
 ```
 
-The health response names each loaded producer’s provider. Look for `CUDAExecutionProvider` when you expect NVIDIA. A producer’s list is empty until it loads. A CUDA image can fall back to CPU, so a reachable endpoint alone is not proof of acceleration.
+Health names each loaded producer's execution provider; empty lists mean it has not loaded yet.
+Look for `CUDAExecutionProvider` when you expect NVIDIA. A CUDA image can fall back to CPU, so
+an answering port alone does not prove acceleration.
 
-With `tier: auto`, CUDA inference enables GPU; a configured text reader enables Full. Those tiers also need [captions](./captions.md) and Laya. Hardware encoding does not count as inference capability.
+With `tier: auto`, GPU inference enables GPU; an enabled reader with a model makes that Full.
+Captions and Laya still need to be ready. Hardware video encoding alone does not change selection tier.
 
-## Persistence and failures
+Keep caches on volumes. Completed matching facts stay in the app's store when you move the
+service. `fallback_to_local: true` lets the app attempt missing facts or stems locally if its
+runtime and model files are installed. Set it to `false` when a failed service should stop the cut.
 
-Keep the model cache on a volume. The CUDA image bundles its model weights; the CPU image can download missing pinned weights when allowed. The app keeps completed facts in its store, so switching service hosts does not discard matching work.
-
-With `fallback_to_local: true`, missing remote facts can be computed locally if the app has the required models. Set it to `false` if a failed service should stop the cut instead.
-
-Endpoint contracts, queues, concurrency, environment variables and cache provisioning are in the [inference service reference](../reference/inference-service.md). [Performance and costs](./measured.md) contains the measurements.
+[Service reference](../reference/inference-service.md): artifact paths, queue limits, offline
+setup and memory ownership. [Render setup](./gpu-render.md): tokens, transport and output checks.

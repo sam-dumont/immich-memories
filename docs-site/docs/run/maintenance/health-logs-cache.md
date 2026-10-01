@@ -26,6 +26,16 @@ without it, for example `Music (ACE-Step)` falling back to a bundled track. Any 
 script or a setup step can stop on it. Run it after an install, an upgrade or a config change.
 
 
+For an explicitly requested local model check:
+
+```bash
+immich-memories capabilities --verify-local
+```
+
+This executes synthetic reader/vision and configured local audio checks. It does not download
+missing models. Use it after installing local runtimes; ordinary `capabilities` reports the
+configuration without this verification work.
+
 ## Health endpoints
 
 | Endpoint | Returns | Use it for |
@@ -72,7 +82,8 @@ immich-memories models fetch
 ```
 
 Run it on installation and after an upgrade. NAS fetches the encoder and WordNet; GPU/Full also
-fetch detectors and Laya. Matching pinned files are reused. `--force` downloads again;
+fetch detectors and Laya. An enabled owned local reader also fetches its pinned reader/model
+projector; custom GGUF paths remain your responsibility. Matching pinned files are reused. `--force` downloads again;
 `--detectors` fetches detectors even on NAS. `--no-detectors` skips them, but does not make a
 GPU/Full cut work without required models.
 

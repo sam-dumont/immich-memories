@@ -27,7 +27,7 @@ flowchart TD
 ```
 
 - `tier: auto` picks the tier: [The three tiers](../../run/requirements.md#the-preparation-tier).
-  Conflicting legacy switches are reported and ignored.
+  The tier owns the reader and preparation switches; they are not independent choices.
 - The first draft uses metadata and CPU facts on every tier, even when captions are already banked,
   so it never depends on an earlier caption job. Captions arrive during the polish, for the
   selected shots and their candidates.

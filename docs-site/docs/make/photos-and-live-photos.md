@@ -19,7 +19,7 @@ To make a video-only film, pass `--no-photos` on the CLI, or disable photos in t
 
 ## Live Photos
 
-A Live Photo enters the cut as one photograph. If its video shows useful motion, it plays as motion; if not, the still stays. Nearby Live Photos can be stitched into a longer clip.
+A Live Photo enters the cut as one photograph. If its video shows useful motion, it plays as motion; if not, the still stays. Nearby Live Photos can be stitched into a longer clip. The app verifies selected motion companions before sealing the cut: a malformed video keeps the photograph as a still, while unavailable sources or tools stop the check.
 
 Three overlapping Live Photos can become this continuous 4.5-second shot:
 

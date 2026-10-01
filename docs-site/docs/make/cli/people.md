@@ -54,4 +54,4 @@ immich-memories people group rm kids
 
 Removing a group removes the label, not its people. The UI can create groups under **Settings > People**, then select them from **Memory**.
 
-The [people registry reference](../../reference/people-registry.md) documents inference, export format, ID validation and migrations. Every flag: [CLI reference](../../reference/cli-reference.md#people).
+The [people registry reference](../../reference/people-registry.md) documents inference, export format and ID validation. Every flag: [CLI reference](../../reference/cli-reference.md#people).

@@ -8,6 +8,7 @@ Make a few films before adding services. A plain NAS already selects, renders an
 
 | You want | Start here | What it sends |
 |---|---|---|
+| One NVIDIA service for analysis, captions, stems and rendering | [One GPU service](../run/reference-setup.md#one-gpu-service) | Previews, audio, the cut and Immich API key |
 | Faster picture analysis on a slow NAS | [GPU inference](./inference.md) | Picture previews to your service |
 | Faster video rendering | [GPU render worker](./gpu-render.md) | Your cut and Immich API key; the worker downloads originals |
 | Titles or music mood from a text model | [Text reader](./reader.md) | Annotation text, including people and place names |

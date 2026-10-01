@@ -6,6 +6,31 @@ title: Text reader and provider contracts
 
 For the working local and hosted recipes, start with [Add a text reader](../better/reader.md). This reference covers the audience classifier and provider transport. The selection reader receives text; image captions require a separate explicit choice.
 
+## Reader operating modes
+
+`advanced.llm.enabled` defaults to `false`. With it enabled, an empty `base_url` selects the app-owned llama.cpp process; a nonempty URL selects an external server. The default local model is `gemma-4-E4B-it-Q4_0`. For the install recipe, use [Add a reader](../better/reader.md).
+
+```yaml
+advanced:
+  llm:
+    enabled: true
+    base_url: ""
+    model: gemma-4-E4B-it-Q4_0
+    local_server: llama-server
+    local_context: 32768
+```
+
+Owned inference supports Linux and macOS. `models fetch` downloads the pinned default GGUF and projector when this local reader is configured. A custom `model` names a GGUF path; `local_mmproj` supplies its projector. Preflight checks the executable and files without loading the model.
+
+The app loads the owned reader on demand and waits for active requests before stopping it to release memory for local ACE-Step or Demucs. The next reader call loads it again. Cancellation waits for native audio work to finish or time out before releasing its memory lease. An external server owns its own model lifetime: the app cannot assume it is safe to unload it for other clients.
+
+```bash
+immich-memories capabilities
+immich-memories capabilities --verify-local
+```
+
+`--verify-local` uses synthetic inputs and installed weights to check the configured owned reader and local audio path. It does not certify external services or a complete film, and cannot be combined with `--test-music`, which may download models.
+
 ## The Laya audience pre-screen
 
 Laya answers the sharing question locally: does the caption describe
@@ -29,7 +54,7 @@ its calibrated default threshold is
 archive's filename. When configuring a checkpoint for a different backend manually, set its
 threshold explicitly too.
 
-The GPU and Full product tiers enable Laya automatically. A legacy `laya_audience` setting cannot
+The GPU and Full product tiers enable Laya automatically. A saved `laya_audience` value cannot
 override the resolved tier. Fetch the checkpoint and check the services with `immich-memories preflight`.
 
 It only adds holds. The detector holds (the sensitive-content detector and the uncovered-person
@@ -60,8 +85,7 @@ itself. `zai` is the `anthropic` adapter with z.ai's URL and reasoning level fil
 the one provider that picks its adapter from the `base_url` path, because z.ai serves both dialects
 on one host: `.../api/anthropic` gets `/v1/messages`, `.../api/paas/v4` gets `/chat/completions`.
 
-`openai`, `anthropic` and `zai` fill in the vendor's base URL and reasoning dialect where you left
-the field at its default. `openai-compatible` fills in nothing. An explicit `base_url` always wins.
+Set `base_url` explicitly for every external server, including hosted providers. An empty URL selects owned local inference regardless of the provider name. The named providers supply their reasoning dialect where settings retain their defaults; explicit request parameters take precedence.
 
 The Messages API path is `POST {base_url}/v1/messages` with `x-api-key`,
 `anthropic-version: 2023-06-01` and the prompt as one user message. Nothing about it is
@@ -88,13 +112,15 @@ no answer in it. A model older than that dialect needs the switch written out:
 ```yaml
 advanced:
   llm:
+    enabled: true
     provider: "zai"
+    base_url: https://api.z.ai/api/anthropic
     model: "glm-5.3-flash"
     api_key: "${ZAI_API_KEY}"
     thinking: "low"
 ```
 
-`base_url` defaults to `https://api.z.ai/api/anthropic`, where a coding-plan account is served. The
+Set `base_url: https://api.z.ai/api/anthropic` for its Messages API; use the endpoint your account supports. The
 other route, `https://api.z.ai/api/paas/v4`, is the OpenAI-compatible one and answers that account
 `429 code 1113, Insufficient balance`; set it explicitly if your account is the other kind. The
 GLM-5 line refuses `disabled`, so the preset sends `low`.
@@ -120,7 +146,7 @@ A server that reasons only when asked wants `no_thinking_params: {}` instead. `l
 `max` switch two calls to reasoning (title generation and the special-day question in
 `discover-days`) while everything else stays fast. `thinking_params` carries the fields those calls
 send; OpenAI's reasoning models want `{"reasoning_effort": "medium"}` there, which `provider:
-openai` fills in. `true` and `false` still parse, as `high` and `disabled`. The provider's own switch
+openai` fills in. The provider's own switch
 is merged in even when you set your own params, and a `thinking` key you write yourself wins.
 
 Ollama has neither chat dialect: its switch is a bare top-level `think`, billed inside
@@ -151,9 +177,7 @@ For a provider already known to lack schema support, `structured_output: false` 
 
 ## Batch mode
 
-The episode readings are one prompt per episode, and those prompts don't read each other. Every
-hosted provider sells that shape cheaper: hand the pile over at once, get it back within the day,
-pay half.
+Episode readings are independent prompts. Supported external providers can submit them as batches; pricing and completion latency depend on the host. Owned local inference does not use batch APIs.
 
 ```yaml
 advanced:
@@ -169,12 +193,13 @@ promise you want between a click and a film. If it goes wrong you lose the disco
 else. Anything unanswered by `batch_max_wait_minutes`, any line the provider refused and any
 answer the parser won't read is asked again in real time.
 
-| Provider | Route | Discount |
-|---|---|---|
-| OpenAI | `/v1/batches` (Batch API) | 50 %, documented |
-| Anthropic, and hosts serving its API | `/v1/messages/batches` (Message Batches) | 50 %, documented |
-| Melious | `/v1/batches`, same shape as OpenAI | none: their docs say batches run at the same per-token rate |
-| z.ai | answers 404 on `/v1/messages/batches` | no batch route; stays real time, with the reason in the log |
+| Provider dialect | Batch route |
+|---|---|
+| OpenAI-compatible | `/v1/batches` |
+| Anthropic-compatible | `/v1/messages/batches` |
+| Ollama native | No batch route |
+
+The endpoint must support the route. A compatibility dialect alone does not establish that it does, and pricing comes from the provider. Owned local inference stays in real time.
 
 The route is probed once before anything is queued. A host that doesn't serve it is asked once,
 logs why, and reads in real time for the rest of the run.
@@ -182,8 +207,7 @@ logs why, and reads in real time for the rest of the run.
 ## What the software sends
 
 - **Prompts are bounded before they go out**: episode reads at 24,000 characters and 90 pictures a
-  page, story synthesis at 32,000, the period account split into pages. A 32k context holds every
-  one.
+  page, story synthesis at 32,000, the period account split into pages. The owned reader defaults to a 32k context; context memory also depends on the server and concurrent work.
 - **Answers are parsed against the stage's contract.** An answer the contract refuses costs one
   repair round on that call. A moment pick still refused after its repair doesn't end the film:
   those rows get the moments the no-model film would pick, and the story's pick record says why
@@ -226,8 +250,8 @@ and private request/reply evidence without HTTP headers. Keep these files privat
 errors can include account details. Use the input, cached-input and completion token counters
 with the provider's rates to calculate cost. A run with missing usage gives only a cost floor.
 
-The [measured provider table](performance-evidence.md#llm-conformance) lists passes, failures, call counts
-and reported-token cost for each tested endpoint. Every failed feature links to a separate issue.
+Use the report to compare passes, failures, call counts and reported-token cost for your endpoint.
+[Measure your setup](performance-evidence.md#cost-and-quality) explains what to record.
 
 These checks measure the configured endpoint on small fixtures. They do not replace checking
 the quality of a complete film or testing asynchronous batch delivery.

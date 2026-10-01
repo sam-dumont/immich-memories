@@ -49,10 +49,10 @@ does not establish inference capability. The runtime check loads no model weight
 pictures; preflight and acquisition still check the actual producers.
 
 `editorial.reader`, `editorial.preparation.tier` and `editorial.laya_audience` are derived from
-the product tier. Conflicting legacy settings are ignored with a notice. Save omits these
+the product tier. These values are derived rather than separate user controls. Save omits these
 derived settings and keeps automatic resolution automatic when the file moves to another host.
 An explicit `nas`, `gpu` or `full` pins a tier for a controlled comparison; it does not install or
-start its services. `full` requires a stated LLM endpoint or hosted provider and a model.
+start its services. `full` requires an enabled reader: the app-owned local model or a configured API.
 
 Configured LLM titles and music mood work on every tier. NAS and GPU still select with rules,
 and sharing never asks the prose LLM. Captions use their own configured service; a text LLM is
@@ -277,8 +277,7 @@ The presets are points on that curve, measured on 1080p60 film:
 
 There is no tier below `balanced`: around SSIM 0.980 gradients start to band. `fast` keeps the
 balanced picture and buys its speed from the encoder effort preset instead, overriding
-`hardware.encoder_preset`. `medium` and `low` are retired names that still load, resolving to
-`balanced` and `fast`.
+`hardware.encoder_preset`. Choose `balanced`, `high`, `ultra` or `fast` for a new configuration.
 
 `codec_policy` decides what happens when the machine has no hardware encoder for the codec you
 asked for but does have one for the other. `prefer_hardware` (the default) switches codec and says
@@ -419,7 +418,7 @@ llm:
   always_reasons: false            # true: the endpoint thinks on every call, asked or not
   thinking: "disabled"             # disabled | low | high | max | auto
   reader_concurrency:              # independent reader jobs; unset reads it from base_url
-  batch: "off"                     # off | auto: queue a stage's independent prompts, half price
+  batch: "off"                     # off | auto: provider-supported batching of independent prompts
   batch_min_requests: 8            # fewest independent prompts in a stage worth queueing
   batch_max_wait_minutes: 60       # then ask whatever the batch has not answered in real time
   # thinking_params:               # what the switch looks like on your server
@@ -432,9 +431,7 @@ llm:
 
 The selection reader receives text: dates, people and place names, and descriptions. A hosted reader sends that text to its provider. Images are sent to the LLM only with explicit `editorial.preparation.caption_provider: llm`; otherwise captions use their separately configured service. See [Privacy](../run/privacy.md).
 
-`enabled: false` stops requests even when a model and URL remain configured. Existing configs
-that explicitly named a model or endpoint before the enable switch remain enabled until it is set
-to false. New installs start disabled with Gemma selected as the default model.
+`enabled: false` stops requests even when a model and URL remain configured. Set it to `true` to use a reader. The default model is Gemma.
 
 An empty `base_url` with `enabled: true` runs llama.cpp locally on Linux or macOS. Set a URL to
 use an API server. `openai`, `anthropic` and `zai` select the adapter and reasoning dialect for
@@ -548,11 +545,7 @@ triage:
   provider: auto                 # ONNX Runtime provider for the encoder: auto, cpu, cuda, coreml
 ```
 
-`provider: auto` takes CUDA where that provider is present and CPU everywhere else. It never takes
-CoreML: measured on the pinned export, CoreML claims 274 of the 513 nodes and splits the graph into
-87 partitions, so it runs 6 to 8 times slower than the CPU provider and holds 9 times the resident
-memory. Set `provider: coreml` to re-measure it. The choice is operational: it does not enter the
-encoder key, so changing it re-derives nothing.
+`provider: auto` takes CUDA where that provider is present and CPU everywhere else. CoreML is opt-in. The provider is operational and does not enter the encoder key, so switching providers does not invalidate matching facts.
 
 Editorial preparation uses `triage.encoder` with the public eight-head bundle from
 `editorial.preparation.head_bundle`, and checks its digest on load. Missing required head facts
@@ -565,7 +558,7 @@ editorial:
   reader: rules                 # derived from the product tier; not an independent choice
   thin_model_layer: true         # the model polishes a rules draft; false makes it plan the film
   strict_sharing: true           # anything a head or exposure flag marked stays out of shared films
-  annotation_database: ""        # deprecated: a legacy annotations.sqlite imported into the store once; blank = the cache directory
+  annotation_database: ""        # compatibility field; leave blank for the default cache directory
   laya_audience: false           # derived: off for NAS, on for GPU and Full
   detectors_enabled: false      # derived: Marqo and Docling off for NAS, on for GPU and Full
   # Apple silicon defaults below; elsewhere the ONNX archive and threshold 0.185 are used.
@@ -678,21 +671,12 @@ Preparation follows the product tier. NAS acquires pixel facts and the eight sha
 GPU and Full add Marqo, Docling, captions and Laya. `detectors_enabled` is tier-owned; a saved
 value does not override the tier. `head_versions` keeps all producer identities, while the active
 view filters out Marqo and Docling on NAS. Banked facts remain available when you switch back.
-Saved review decisions and automatic permanent holds also remain: an old exposure hold does not
-record which producer cast it. Internally, older audit rows call those producer modes `no_captions` and
-`full`. They are not a second config choice. `metadata_only` is no longer a selectable product
-configuration.
+Saved review decisions and permanent holds persist across tier changes.
 
 A film starts with a caption-free rules draft, retaining the resolved tier's detector policy, then
 captions and checks only selected shots and actual
 replacement candidates. `prepare` remains the explicit job for a larger scope. Changing tier
 does not erase banked captions or other producer facts.
-
-The `swim` head is retired, and a configuration that still names it loses the name with one
-log line. Measured against a typed picture reader over 3,564 photographs it answered `yes`
-on 551 where the reader saw swimwear on 22, and the one rule that read it, the
-child-in-swimwear hold, fired on 515 of those and was right about 5. Nothing raises a
-swimwear hold now: on this tier every unit stays at family viewing regardless.
 
 The sharing level decides what a caption reading refuses. Ordinary family material, including a
 shirtless baby or a parent holding a newborn in hospital, plays at every level. Bath time,

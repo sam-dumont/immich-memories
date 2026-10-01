@@ -6,8 +6,6 @@ title: Benchmarking and release films
 
 Compare routes with fixed material and settings. Keep fresh and warm caches separate, record the commit and hardware, and retain failures as failures. Elapsed time, reported token cost and the film you prefer are separate results.
 
-The [historical setup matrix](../reference/benchmark-history.md) retains earlier experiments and their caveats. Its retired profiles are not installation recommendations.
-
 ## Rendering one of each memory type
 
 A different driver, for a different question. When selection changes, one film tells you almost

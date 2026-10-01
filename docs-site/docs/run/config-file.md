@@ -122,7 +122,7 @@ advanced:
 Both placements are accepted and merge key by key; a top-level key wins a tie.
 Environment variables and CLI paths always omit `advanced.` (`llm.model`). Unknown fields inside
 a section are ignored; unknown top-level sections or invalid values fail validation.
-[Migration notes](./reference/migration.md) cover retired keys.
+Use `config show` to check effective values after editing.
 
 ## Paths in the config are host paths
 

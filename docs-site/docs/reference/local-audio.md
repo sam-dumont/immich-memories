@@ -30,16 +30,20 @@ The 0.6B name refers to the planner; the audio generator is still 2B. A reader t
 in oMLX still uses unified memory while idle. Unloading it can make a smaller music profile fit;
 the command reports a refusal separately from a generation failure.
 
+The [app-owned reader](../better/reader.md) releases its model process before local music or stem separation, so those stages can use the same memory at different times. An external reader needs its own unload policy. On Apple Silicon's turbo path, inactive Torch weights are parked before native diffusion; the native decoder is released before VAE decoding.
+
+```bash
+immich-memories capabilities --verify-local
+```
+
+This checks the configured owned reader and local audio with installed weights and synthetic inputs. A verified result covers that smoke check, not every track length or a full film. Use `--test-music` instead to try fitting smaller profiles; it may download their weights.
+
 Per file, under `~/.cache/ace-step/checkpoints/`: the 2B models about 4.5 GB each, XL-turbo about
 19 GB, the planners 1.2, 3.4 and 7.8 GB (0.6B, 1.7B, 4B), the shared VAE and embedding about
 1.4 GB. Demucs' htdemucs is about 80 MB under `~/.cache/torch/hub/`. Old checkpoints are never
 removed for you.
 
-A full XL render with the 4B planner peaks around 53 GB of unified memory, most of it cache the OS
-takes back under pressure, which is why the check tests the weights and not the peak. The MLX
-buffer cache is capped at 4 GiB and the DiT runs in bf16 (7.8 GB instead of 15.5 GB for XL;
-`IMMICH_MEMORIES_ACESTEP_MLX_DIT_FP32=1` keeps fp32). A local reader holding its 17 GB is often what
-stops XL fitting, so stop the model server before a music-heavy run.
+Weight budgets are not peak-memory guarantees: generation also allocates working buffers. The MLX buffer cache is disabled on Macs with at most 16 GiB physical RAM and capped at 4 GiB on larger Macs. The DiT uses bf16 by default; `IMMICH_MEMORIES_ACESTEP_MLX_DIT_FP32=1` selects fp32 and increases its memory use. An external reader can keep memory occupied while idle; unload it through that server’s controls when local music cannot fit.
 
 ## Local runtime and repairs
 
@@ -58,7 +62,7 @@ overrides ACE-Step v0.1.8's older Linux package pins, so its upstream dependency
 reports that mismatch. The app disables PyTorch native JIT kernels in its own audio child before
 PyTorch imports, keeping the existing eager path free of a compiler requirement. A custom direct
 library process needs `TORCH_DISABLE_NATIVE_JIT=1` before Python starts; setting it after importing
-PyTorch is too late. Direct library callers can set `extra_args.cpu_offload: true` to reduce GPU residency on smaller cards.
+PyTorch is too late. Local CUDA generation defaults to `advanced.ace_step.cpu_offload: true`: inactive models move back to CPU between phases to reduce VRAM use. Set it to `false` only when the card has room to keep them resident. API mode and Apple Silicon ignore this CUDA setting; the host and container memory guard still applies.
 
 Automatic local ACE-Step and Demucs selection checks that a CUDA kernel actually runs and synchronizes. A detected GPU whose installed PyTorch build cannot execute it falls back to CPU. ACE-Step still checks available memory before loading weights.
 

@@ -7,7 +7,8 @@ title: Render on a GPU box
 On a plain NAS the render is the long part of every run: what the editor read is banked, the
 encode is not, so a second cut of the same month still encodes the whole film on the NAS's cores.
 The render worker takes that one stage to a machine with an NVIDIA card. Selection stays on the
-NAS, and so do music and the upload back to Immich.
+NAS, and so does the upload back to Immich. Music generation stays with its configured backend;
+Demucs stem separation can share the inference worker.
 
 The [combined CUDA worker](../run/reference-setup.md#one-gpu-service) puts this render service,
 picture inference, captions and Demucs in one container on port 8092. Its render URL ends in

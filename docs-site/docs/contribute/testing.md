@@ -17,7 +17,7 @@ Start with unit tests, then run the checks for the boundaries your change touche
 | Launch check | `make launch-check-ci`, `make launch-check-ci-postgres` | The required E2E set. The PostgreSQL one gives each launch its own schema in `IMMICH_MEMORIES_E2E_DATABASE_URL`, or starts a throwaway `postgres:16` when that is unset |
 | Container | `make test-container` (`CONTAINER_E2E_DATABASE=postgresql` for PostgreSQL) | Docker. Builds the image and runs it; see below |
 
-`make test` takes about 3 minutes on an M-series Mac; `make test-fast` skips the slow ones.
+`make test-fast` skips tests marked slow; the full suite is `make test`.
 Integration suites skip rather than fail when their services aren't there, unless `REQUIRE_IMMICH=1` (the gate below sets it). `make help` lists every
 per-suite target with its runtime. Three suites are outside `make test-integration`: `cli`, which
 re-runs the pipeline `pipeline` already covers and is the slowest in the tree; `audio`, which wants
@@ -74,10 +74,10 @@ CI builds the Docker image on every PR; `make test-container` is what runs it. I
 image with the `editorial` extra (`CONTAINER_E2E_BUILD=0` reuses one already built), then drives
 the repo's own `docker-compose.yml` from `tests/container/`:
 
-1. **Upgrade.** A volume laid out the way a pre-store install left `~/.immich-memories`
+1. **Import.** A synthetic file-backed volume under `~/.immich-memories`
    (`tests/store/legacy_home.py`: people, runs, automation attempts, owner decisions, model
    answers, banks, all synthetic) goes on the config volume before the new image first starts.
-   The first start imports it, and `store import --verify` finds every legacy record.
+   The first start imports it, and `store import --verify` finds every fixture record.
 2. **Store commands.** `store status`, `store backup`, and `store restore --force` into a scratch
    store inside the container, with every table's count equal. On PostgreSQL that is the image's
    own `pg_dump` and `pg_restore` against a `postgres:16` server, restoring into a second database
@@ -90,10 +90,7 @@ the repo's own `docker-compose.yml` from `tests/container/`:
    is under test. A wrong token gets a 401.
 
 `CONTAINER_E2E_DATABASE=postgresql` switches on the compose file's commented PostgreSQL example,
-exactly as a user would uncomment it, so that example is tested too. Why the volume is written by
-the fixture and not by the previous release's image: that image cannot write owner decisions or
-model answers without a live Immich and a model endpoint, and the fixture covers every legacy
-file the import reads.
+exactly as a user would uncomment it, so that example is tested too. The synthetic fixture covers every file the importer reads without requiring a live library or model endpoint.
 
 ## Coverage and diff-cover
 
@@ -126,7 +123,7 @@ suite locally before pushing, so you catch FFmpeg regressions before the GPU run
 1. **Mock WRITES, not READS**: real Immich for fetching assets, real FFmpeg for encoding. Only mock upload and mutation.
 2. **Use short clips**: under 30s, 2-3 per test. Full pipeline tests should finish in under 2 minutes.
 3. **Skip gracefully**: use the `requires_ffmpeg` and `requires_immich` markers.
-4. **Assert properties, not content**: "valid video exists" and "duration > 0", not exact pixels or durations. Content is non-deterministic.
+4. **Assert the contract**: check valid output and duration, and use exact timing or content assertions when deterministic (for example, a certified frame endpoint).
 5. **Log during tests**: `make test-integration` shows live logs (`--log-cli-level=INFO`).
 
 ```python

@@ -4,60 +4,78 @@ title: Add a text reader
 
 # Add a text reader
 
-A reader writes titles and music mood on any tier. With GPU capability, captions and Laya ready, it also enables **Full**: a refinement of the rules draft. The selection reader receives text, not pictures.
+A reader writes titles and music mood on any tier. With GPU inference, captions and Laya ready, it also enables **Full**: refinement of the rules draft. The selection reader receives text, not pictures.
 
-You need a model with at least a **32k context** and an OpenAI-compatible, Anthropic-compatible or Ollama endpoint. The local default used by this project is Gemma 4 E4B. See [tested setups](../run/requirements.md#supported-and-tested) for the limits of that support.
+Use a model with a 32k context and valid structured replies. The app can run its local default, or call an API server you already use.
 
-## Local on a Mac
+## Let the app run the local model
 
-[oMLX](https://github.com/jundot/omlx) serves MLX models on macOS 15+.
+On native Linux or macOS, install llama.cpp with `llama-server` on your `PATH`. On a Mac:
 
 ```bash
-brew tap jundot/omlx https://github.com/jundot/omlx
-brew install jundot/omlx/omlx
-omlx start
+brew install llama.cpp
 ```
 
-Download `mlx-community/gemma-4-e4b-it-6bit` from the server’s admin page at `http://localhost:8000/admin/chat`, then configure the app:
+Linux needs a llama.cpp build for its CPU or GPU; follow the [installation reference](../reference/llm-providers.md). Then enable the reader in your config:
 
 ```yaml
 advanced:
   llm:
-    provider: openai-compatible
-    base_url: http://localhost:8000/v1
-    model: gemma-4-e4b-it-6bit
+    enabled: true
+    base_url: ""
+    model: gemma-4-E4B-it-Q4_0
 ```
 
-Use the exact model name returned by `/v1/models`. From Docker Desktop, use `host.docker.internal` instead of `localhost`; from a NAS, use the Mac’s LAN address. Add `api_key` if your server requires a token.
+Fetch its pinned files before the first request:
 
-On Linux, vLLM or Ollama can serve the model. Use the matching provider and the endpoint your server exposes. [Provider examples](../reference/llm-providers.md#providers-and-dialects).
+```bash
+immich-memories models fetch
+immich-memories preflight
+```
+
+The app starts the model when needed. It can stop its own reader to free memory before local music generation or stem separation. A custom GGUF can replace the default; [local reader settings](../reference/llm-providers.md) cover paths and context size.
+
+## Use an existing server
+
+For oMLX, vLLM, Ollama's compatible API or another `/v1/chat/completions` endpoint:
+
+```yaml
+advanced:
+  llm:
+    enabled: true
+    provider: openai-compatible
+    base_url: http://reader.example.lan:8000/v1
+    model: your-server-model-name
+```
+
+Use the exact name the server advertises. From Docker Desktop, `host.docker.internal` reaches a native server on the host; `localhost` reaches the container itself. Add `api_key` when the server requires one.
+
+The server manages its own model memory. The app does not unload an external server's models, so account for that memory alongside captions and music.
 
 ## Hosted
 
-Descriptions, dates, people and place names leave your network. If they should stay home, use a local endpoint.
+A hosted reader receives descriptions, dates, people and place names from your cut. Use a local reader if that text should stay home.
 
 ```yaml
 advanced:
   llm:
+    enabled: true
     provider: openai
     model: gpt-4.1-mini
     api_key: ${OPENAI_API_KEY}
 ```
 
-Hosted presets fill in the provider URL. Existing matching answers are reused. [Measured provider checks](./measured.md) describe tested features and failures; a working API alone does not prove good film choices.
+The provider preset supplies the API URL. Provider names, native Ollama and Anthropic examples, token settings and batching live in the [LLM reference](../reference/llm-providers.md).
 
-## Check it
+## Check the setup
 
 ```bash
 immich-memories preflight
+immich-memories capabilities
 ```
 
-The **LLM** row checks the configured model. With `tier: auto`, GPU inference plus a reader selects Full; without GPU inference, selection remains NAS and the reader can still write titles and music mood.
+These report connections, installation and available features; they do not certify the quality of a film. With `tier: auto`, GPU inference plus an enabled reader selects Full. Without GPU inference, selection remains NAS and the reader can still write titles and music mood.
 
-If refinement cannot read the period account after its retry, the rules draft remains and the run reports that refinement did not run. Check the result rather than assuming the model improved it.
+Review the result. A failed refinement can leave the rules draft and reports that refinement did not run. [Laya](../reference/llm-providers.md#the-laya-audience-pre-screen) handles caption-based sharing separately; sharing never asks the prose reader.
 
-## Laya and advanced settings
-
-Laya is the local caption-based sharing classifier enabled by GPU and Full. Install the [platform runtime and checkpoint](../reference/llm-providers.md#the-laya-audience-pre-screen), then check preflight. Sharing never asks the prose reader.
-
-Provider dialects, reasoning, JSON replies, batching and conformance are in the [LLM reference](../reference/llm-providers.md). Explicit image captions are a separate [opt-in](./captions.md#explicit-llm-captions).
+Image captioning with the reader is a separate [opt-in](./captions.md#explicit-llm-captions). That role sends pictures and needs a vision-capable model.

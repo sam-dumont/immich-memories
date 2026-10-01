@@ -12,7 +12,7 @@ Build a catalogue of occasions from your library. The app can then offer them on
 immich-memories discover-days --since 2015
 ```
 
-Choose the first year you want scanned. It works on a plain NAS from library facts; a configured reader can check proposed occasions using text.
+Choose the first year you want scanned. It works on a plain NAS from library facts; Full selection can check proposed occasions using its text reader.
 
 A scan resumes by default, skipping years already catalogued. It can take time across a large library. Set [People and home](../../get-started/who-is-who.md) first so the scan can distinguish family activity and time away.
 
@@ -49,4 +49,4 @@ immich-memories days-import --from days.json
 
 Import replaces the catalogue with the edited list. Use this for a missed day or a wrong title.
 
-[Special-day discovery rules](../../reference/special-days.md) covers windows, evidence, reader confirmation, repetition checks and migrations. [CLI reference](../../reference/cli-reference.md#discover-days) lists the options.
+[Special-day discovery rules](../../reference/special-days.md) covers windows, evidence, reader confirmation and repetition checks. [CLI reference](../../reference/cli-reference.md#discover-days) lists the options.

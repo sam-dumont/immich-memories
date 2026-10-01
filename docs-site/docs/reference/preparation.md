@@ -25,8 +25,8 @@ or hidden assets, no forwarded or re-encoded media, none of the films this app u
 `--year`. Each run resumes where the last stopped, so a loop over twelve months works through a year.
 
 Results are banked per picture, and stay free for every later cut until a producer's version changes (a new
-head is paid for once, at the next run). App upgrades preserve compatible facts. See the
-[v1 detector cache contract](../run/database.md#detector-cache-contract-for-100) for
+head is paid for once, at the next run). Compatible facts are reused. See the
+[prepared facts](../run/database.md#prepared-facts) for
 refresh conditions and the `store facts status`, `migrate` and selective `refresh` commands.
 
 ```text
@@ -53,13 +53,13 @@ it exits 0.
 
 Preparation can send previews to the caption and inference endpoints you configure. A remote render worker receives source media separately during rendering. The default local setup sends neither. See [Privacy](../run/privacy.md).
 
-### `--overviews` (needs a reader)
+### `--overviews` (needs Full)
 
 ```bash
 immich-memories prepare --year 2024 --month 6 --overviews
 ```
 
-Make it better (optional). With a model reader configured, `--overviews` also reads each 90-minute episode once
+Make it better (optional). On Full with a model reader configured, `--overviews` also reads each 90-minute episode once
 and writes one account per calendar month: a couple of sentences saying what the month was. A model cut of that
 month reads it as its thesis instead of paying for it during the cut. It is banked by the readings it
 summarises and the model that wrote them, so a rerun over an unchanged month asks nothing. You never have to run

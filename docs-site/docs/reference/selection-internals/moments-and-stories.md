@@ -54,8 +54,8 @@ place comes back when nothing else can fill the slot, and a starred one comes ba
 nothing vouches for keeps its slot.
 
 **A one-off inside an ordinary day is its own story.** A week at home is one story, so an evening
-across town photographed in two dense bursts used to share that week's single shot with the
-morning's errands. An episode of a home story now becomes its own **event** story when all of this
+across town photographed in two dense bursts deserves different coverage from the
+morning's errands. An episode of a home story becomes its own **event** story when all of this
 holds (`editorial_event_story.py`):
 
 - it's dense on its own: its pictures reach the same day threshold the gate uses for a whole day
@@ -134,8 +134,7 @@ ends up at the same depth: a two-evening story with a handful of stars gets as m
 ten-day trip with a hundred.
 
 **A recurring kind is one story's worth.** Three starred evenings of the same thing at the same
-place in one month (three concerts at the same hall, three matches at the same club) used to take
-three full `major` shares. Now they count as one kind when all of this holds:
+place in one month (three concerts at the same hall, three matches at the same club) count as one kind when all of this holds:
 
 - the densest episode of each story carries the same activity label,
 - that episode alone reaches the day threshold the gate already uses (4x the median photographed

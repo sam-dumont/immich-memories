@@ -32,7 +32,7 @@ A few limits worth knowing before you install:
 - **ARM64 Docker uses software encoding.** The bundled VA-API drivers are amd64 only.
 - **4K on GPU/Full needs more room.** Allow 8 GB for the app, plus memory for any model services.
 
-See [measured timings](../better/measured.md) and [the exact test evidence](#supported-and-tested).
+See [performance guidance](../better/measured.md) and [platform scope](#supported-and-tested).
 Ready? [Install with Docker Compose](./docker.md), or read the [NAS notes](./nas.md).
 
 ## The three tiers {#the-preparation-tier}
@@ -56,8 +56,8 @@ With one of those it chooses GPU; a configured reader makes that Full. It does *
 whether the caption server or Laya files are ready: run `preflight` after adding services.
 
 A reader on NAS still writes titles and chooses the music mood. Selection stays on NAS.
-On Apple Silicon, install the `all-mac` extra for GPU discovery; reader and caption servers run
-as separate processes.
+On Apple Silicon, install the `all-mac` extra for GPU discovery. Captions need their own server;
+an enabled reader with blank `base_url` is started locally by the app when `llama-server` is installed.
 
 `IMMICH_MEMORIES_TIER` overrides `tier:` in the file. Compose and Kubernetes set it to `auto`.
 You may force `nas`, `gpu` or `full`, but that does not install models or start servers.
@@ -78,9 +78,10 @@ encoding and memory budget. In Docker, prefix both with
 
 ## Supported and tested
 
-Docker Compose is the primary install. SQLite and PostgreSQL are supported. Some GPU/platform
-combinations have only been tested on earlier releases; Terraform is an example module, not a
-verified deployment on every cluster.
+Docker Compose is the primary install. SQLite and PostgreSQL are supported. The app supports
+Immich v2 and v3 API contracts, x86-64/ARM64 CPU deployments, NVIDIA CUDA inference and native
+Apple Silicon inference. Hardware and driver combinations still need checking on your machine;
+Terraform is an example module to adapt to your cluster.
 
-The [compatibility table](./reference/compatibility.md) lists each platform, provider, date and
-release. [Render memory details](./reference/rendering.md) explain worker limits and 4K fallbacks.
+This release candidate does not certify every deployment combination. Use preflight after install
+and [render memory details](./reference/rendering.md) when planning 4K or a worker.

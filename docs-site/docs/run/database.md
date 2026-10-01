@@ -105,8 +105,8 @@ History, automation cooldowns and saved decisions are store rows. Attempt artifa
 SQLite uses local file locks; PostgreSQL uses advisory locks for background work across hosts.
 Those leases protect CLI jobs, not the UI's in-memory workflow: keep one UI replica.
 
-## Detector cache contract for 1.0.0
+## Prepared facts
 
-Normal upgrades reuse compatible facts. For producer versions, migrations or refreshing a known
+Normal upgrades reuse compatible facts. For producer versions or refreshing a known
 bad answer, use [Detector facts and refreshes](./reference/detector-facts.md).
-The [store command reference](./reference/store-commands.md) covers status, copy and legacy imports.
+The [store command reference](./reference/store-commands.md) covers status, backup, restore and backend copies.

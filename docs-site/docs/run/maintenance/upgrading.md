@@ -21,7 +21,7 @@ docker compose exec immich-memories immich-memories preflight
 
 Copy the backup and manifest off the volume. Config and films survive a recreate.
 `models fetch` checks the new release's pins and downloads only changed files.
-Pin `image:` to a release tag if you want controlled upgrades; tags have no `v` prefix.
+Change the pinned `image:` tag before pulling. Keep worker image tags aligned; tags have no `v` prefix.
 
 ## uv / pip
 
@@ -69,19 +69,9 @@ proxy, not an upgrade step. Originals are unchanged.
 
 Unknown fields inside a known section are ignored; invalid values or unknown top-level sections
 fail startup. A renamed setting can stop taking effect, so check the release notes.
-For retired settings/commands and pre-store imports, see [Migrating older installs](../reference/migration.md).
-
-## Data compatibility
-
-The store migrates forward when opened. Older file-based installs are imported once, without
-changing or deleting their source files. Verify an import with:
-
-```bash
-immich-memories store import --verify
-```
-
-The [migration notes](../reference/migration.md#data-compatibility) list what is imported and how
-to point at an older data directory. Keep original files until verification passes.
+The store upgrades its schema when opened. Keep a backup and its manifest from before an update;
+if you roll back the app, restore the matching backup rather than downgrading a live schema.
+Keep the app, inference image and render worker on matching version tags.
 
 ## Rollback
 
@@ -108,11 +98,3 @@ uv tool install --force "immich-memories[all]==X.Y.Z"
 
 Kubernetes/Terraform: restore the old image tag and apply, then restore the old store backup with
 that release. Schema downgrades can drop tables and rows; the backup is the rollback.
-
-A release from before the store reads the untouched legacy files, but cannot see new decisions
-or runs saved only in the store.
-
-## Removed commands
-
-[The migration table](../reference/migration.md#removed-commands) maps retired commands to their
-replacements. For a fixed-date film, use a system schedule as in [Automation](../../make/automate.md).

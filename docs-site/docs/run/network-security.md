@@ -81,7 +81,7 @@ Enable secure cookies only once users reach HTTPS; plain HTTP LAN logins then fa
 | App to inference/captions | 8092 | Configured model services |
 | App to Ollama | 11434 | Reader endpoint uses it |
 | App to another reader | Its configured port, often 8000/9999 | That reader |
-| App to render worker | 8093 | Remote rendering |
+| App to render worker | 8093 standalone; 8092 with `/render` in the unified worker | Remote rendering |
 | DNS / HTTPS downloads | 53 / 443 | Name resolution / explicit setup downloads |
 
 Other music/map/notification endpoints use their configured ports.

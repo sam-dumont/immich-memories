@@ -16,8 +16,8 @@ Make a few films on the default install first. A plain NAS prepares pictures on 
 | Faster encoding | [Hardware encoding](../run/hardware.md) | Makes the finished video faster; this is separate from selecting pictures |
 | An original soundtrack | [Generated music](../better/music.md) | Generates a track instead of choosing a bundled one |
 
-The app detects the selection tier with `tier: auto`: NAS, GPU, or Full (GPU plus a reader). GPU and Full also need the configured caption service. Run `immich-memories preflight` after changing the setup.
+The app detects the selection tier with `tier: auto`: NAS, GPU, or Full (GPU plus a reader). GPU and Full also need the configured caption service. Run `immich-memories preflight` after changing the setup. The reader can run inside the app on Linux or macOS, or use an API server you configure.
 
 Adding an encoding GPU alone does not enable Full selection. Adding a text reader alone does not enable sentence films or the model's edit pass.
 
-Compatible prepared facts are reused after an upgrade or an add-on change; newly required facts are computed when needed. [Measured results](../better/measured.md) give the costs. [Privacy](../run/privacy.md) describes what each service receives.
+Compatible prepared facts are reused when you add a service; newly required facts are computed when needed. [Measure your setup](../better/measured.md) to find which stage costs time and memory. [Privacy](../run/privacy.md) describes what each service receives.

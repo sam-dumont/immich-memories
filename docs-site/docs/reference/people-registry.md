@@ -41,9 +41,9 @@ people:
 ```
 
 `people import --from FILE` replaces the registry with an edited export. It checks the whole file first: a
-person without a list of `ids`, or an id listed twice, is refused with its position, and nothing changes. Ids
+person without valid `ids` (a primary list or per-account lists), or an id listed twice, is refused with its position, and nothing changes. Ids
 come back exactly as written, `manual:` ids included. A registry that already holds people is only overwritten
-with `--replace`, so an old export can't silently undo newer answers. A scan never reads the file; only an
+with `--replace`, so an import cannot silently replace confirmed answers. A scan never reads the file; only an
 import does.
 
 A second Immich account on the same server gives the same person a different id. You say which ids are the same
@@ -60,7 +60,7 @@ people:
 A flat `ids: [...]` list still works and means your main account only, so a one-account export looks exactly as
 it always did. Account names follow the rule for `immich.accounts` (lowercase letters and digits joined by single
 underscores), and the account doesn't have to be configured yet. An empty list, a name that breaks the rule, or an
-id listed under two accounts or two people is refused, and nothing changes. The old `accounts:` map is refused
+id listed under two accounts or two people is refused, and nothing changes. A top-level `accounts:` map is refused
 too, with the new shape in the message.
 
 The first id listed is the person's own id: the one links and saved references point at. Adding ids never
@@ -99,10 +99,6 @@ with `people export`/`people import`, next to the people.
 The scan also writes its measurements (every person's counts and the pairs seen together) to
 `~/.immich-memories/people-graph.json`. That one stays a file: each scan recomputes all of it from Immich and
 nothing reads it back.
-
-Upgrading from a version that kept `~/.immich-memories/people.yaml`: the store imports that file once, never
-changes or deletes it, and skips anyone it already holds. An answer in the old file fills a person the store
-knows but nobody answered for; it never replaces one you gave since.
 
 It is the same registry as the **People** page in the web UI. The roles you confirm there decide who counts as close
 family, and selection reads that on every tier: the family seat, the big-story rule, and the relations a model

@@ -11,7 +11,8 @@ Choose the route for your machine:
 | Setup | Route |
 |---|---|
 | Apple Silicon checkout | Local ACE-Step, in a separate audio environment. |
-| NVIDIA host or app container | An ACE-Step API server. |
+| Native NVIDIA checkout | Local ACE-Step, or an ACE-Step API server. |
+| App container | An ACE-Step API server. |
 | Existing MusicGen server | MusicGen API, also usable as an ACE-Step fallback. |
 
 ## Local on a Mac
@@ -37,7 +38,13 @@ advanced:
     use_lm: false
 ```
 
-The 2B profile without its planner needs about **7 GB free for resident weights** and **6 GB on disk**. A loaded reader uses memory too. Larger profiles, supported platform versions and audio-environment repairs are in the [audio runtime reference](../reference/local-audio.md#memory-and-disk).
+The 2B profile without its planner needs about **7 GB free for resident weights** and **6 GB on disk**. An app-owned local reader releases its model memory before local music or stem separation. An external reader server owns its own memory and must leave enough free for audio. Larger profiles, supported platform versions and audio-environment repairs are in the [audio runtime reference](../reference/local-audio.md#memory-and-disk).
+
+## Local on NVIDIA
+
+Native Linux checkouts can use the same `lib` configuration. CUDA offload is on by default: models move back to CPU between audio phases to reduce VRAM use. Set `advanced.ace_step.cpu_offload: false` only when the GPU can keep them resident.
+
+The setting does not affect Apple Silicon or API servers. See [runtime requirements](../reference/local-audio.md) before installing the native audio stack.
 
 ## API server
 

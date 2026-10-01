@@ -95,7 +95,7 @@ Seven things the examples hide:
   date-range memories (months, years, seasons). Trips, albums and single-person presets refuse it.
 - `--person` and `--people-expression` look a name up in the people registry first: a person
   there is every face cluster bound to them, in every account the run reads. A name the registry
-  doesn't hold matches Immich's own people list, the same as before the registry existed.
+  doesn't hold matches Immich's own people list.
 - A name two registry people share picks both, and the run prints a warning listing each one
   with its id. Pass that id instead (`--person 3f2a9c1e-...`) to pick one. A UUID is always read
   as an id, never a name: a registry person's id, or an Immich person id from either account,

@@ -223,20 +223,17 @@ catalogue is a memory nobody asked for (five years to the day since
 the wedding), and that needs the days found in advance.
 
 Days inside a trip are skipped, since a trip memory already tells that
-story, and so are holidays, which have their own. With no model
-configured, a day counts when one recorded fact stands out (away from
+story, and so are holidays, which have their own. On NAS and GPU tiers, a day counts when one recorded fact stands out (away from
 home, three favourites, mostly video, or a long day with close family)
-and each year keeps its strongest few. With a model, every other day
+and each year keeps its strongest few. On Full tier, every other day
 is read a month at a time and the model says which were occasions.
 
 Resumes by default: years already in the catalogue are not scanned
 again, which matters for a command that runs for hours. --rescan
 starts over.
 
-A catalogue that accumulated over several releases holds rows judged by
-questions this build no longer asks. --replace re-scans the years
-between --since and --until and replaces what they hold, so a period
-can be cleaned without editing JSON by hand. It says how many rows it
+--replace re-scans the years between --since and --until and replaces
+their catalogue rows with the newly qualifying days. It says how many rows it
 will replace before it starts, and it never touches a year outside the
 period.
 

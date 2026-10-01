@@ -119,7 +119,7 @@ sofa stands; the sofa alone does not. In a library where Immich recognised nobod
 says nothing, and the heads and the caption are taken at their word.
 
 The same face rule decides whether a picture "shows life" for the gate: a picture with life in a
-major story is only ordered, never refused, and a person Immich found no face for no longer counts.
+major story is only ordered, never refused, and a person counts only when Immich supplies a recognised face.
 A picture with nobody in it serves its story only when it is starred, or when the story is major,
 dominant or minor and holds more than two pictures. Anywhere else it is refused as context
 (`context_rejected` in `derived-decisions/story-selection.private.json`). A custom film about
@@ -129,7 +129,7 @@ stands. A custom film of its window alone keeps the rule.
 
 An album handed over with a written subject (`generate --from-album "Bread" --subject "bread making
 along the years"`) goes one step further. The album is a pool picked for that subject, so its
-pictures stand on the subject and a score of 0 no longer refuses them: a loaf on a counter scores 0
+pictures stand on the subject even with a standing score of 0: a loaf on a counter scores 0
 like any lone object, and stays. A video whose frames mostly miss its subject is still refused, and
 every other gate still runs: sharing and the family-viewing holds, source eligibility, provenance,
 look-alikes, duplicates and length. The allocation gives every year the album holds a shot, even a

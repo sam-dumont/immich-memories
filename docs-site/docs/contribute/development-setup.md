@@ -34,6 +34,14 @@ clone and every git worktree needs its own `make install-acestep`**. Without it,
 `immich-memories preflight` shows a **Music (ACE-Step)** warning when it is missing, and
 `make check-local-audio` proves the install end to end. Details: [Generated music](../reference/local-audio.md#local-runtime-and-repairs).
 
+## Households and cultures
+
+Changes for different families, households and celebrations are welcome. An issue is enough to start; you don't have to write code.
+
+Give an anonymized example: who belongs to the household, which people or dates matter, what the app does now, and what you expected instead. For holidays, include the country or culture and how the date is determined. Made-up names and synthetic pictures are fine. Please keep API keys, birth dates and private photos out of public issues.
+
+Help me check the result against your example. Inclusive labels alone don't prove the selection, people groups, titles or calendar behave correctly. Once we have a reproducible case, it can become a regression test.
+
 ## Check the install
 
 `make check` runs lint, format check, type check, the file length and complexity gates, and the
@@ -58,13 +66,17 @@ client is not built and names the command.
 
 ```bash
 make web-client         # npm ci, then build the client into the package
-cd web && npm run dev   # the Vite dev server, with hot reload
 make web-build          # rebuild the client after a change, as the app serves it
 make web-check          # type-check, check the API contract and types, build, refuse Immich logos
 ```
 
-The build lands in `src/immich_memories/web/client/`, which git ignores, so two web PRs never
-conflict on hashed file names again. A wheel can't be built without it: `hatch_build.py` refuses
+For hot reload, run the development server separately from the repository root:
+
+```bash
+npm --prefix web run dev
+```
+
+The build lands in `src/immich_memories/web/client/`, which git ignores, so generated hashed filenames stay out of source control. A wheel can't be built without it: `hatch_build.py` refuses
 one and names `make web-build`. `make build` builds the client first.
 
 The client talks to the app through `/api/v1`. After changing an endpoint, run `make web-api`: it
@@ -84,7 +96,7 @@ src/immich_memories/
   store/        # The annotation store: every banked fact and reading
   db/           # The store's engine, tables, migrations, backup and restore
   triage/       # The pinned ONNX encoder and its eight context heads
-  people/       # The people graph and the companion file
+  people/       # The people graph and registry
   photos/       # Photo-to-video animation
   processing/   # Video assembly (FFmpeg)
   titles/       # Title screens, map fly-overs

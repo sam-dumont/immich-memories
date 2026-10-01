@@ -11,14 +11,14 @@ Make and review a few films manually first. Set [home and people](../get-started
 
 ## Docker: switch on the built-in timer
 
-Add this to `.env`:
+In `docker-compose.yml`, uncomment these two lines under the app's `environment:` block:
 
-```bash
-IMMICH_MEMORIES_AUTOMATION__ENABLED=true
-IMMICH_MEMORIES_AUTOMATION__DAILY_AT=09:00
+```yaml
+IMMICH_MEMORIES_AUTOMATION__ENABLED: "true"
+IMMICH_MEMORIES_AUTOMATION__DAILY_AT: "09:00"
 ```
 
-Then recreate the container:
+Change the time there, then recreate the container:
 
 ```bash
 docker compose up -d

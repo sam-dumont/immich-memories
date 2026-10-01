@@ -1,6 +1,5 @@
 import type {ReactNode} from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-import Link from '@docusaurus/Link';
 import CodeBlock from '@theme/CodeBlock';
 
 const repository = 'https://github.com/sam-dumont/immich-video-memory-generator';
@@ -8,7 +7,7 @@ const repository = 'https://github.com/sam-dumont/immich-video-memory-generator'
 export default function InstallationFiles(): ReactNode {
   const {siteConfig} = useDocusaurusContext();
   const version = String(siteConfig.customFields?.version || 'development');
-  const released = /^v?\d+\.\d+\.\d+$/.test(version);
+  const released = /^v?\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(version);
   const tag = version.startsWith('v') ? version : `v${version}`;
   const image = released
     ? `ghcr.io/sam-dumont/immich-video-memory-generator:${version.replace(/^v/, '')}`
@@ -19,7 +18,7 @@ export default function InstallationFiles(): ReactNode {
   return <>
     <p>{released
       ? `These instructions install ${tag}. The files and image use the same release.`
-      : <>These are development docs. The commands build from source; for the released install, use the <Link href="https://sam-dumont.github.io/immich-video-memory-generator/docs/get-started/quick-start">published quick start</Link>.</>}</p>
+      : <>This preview builds from source. The release docs pin these files and the image to the RC tag.</>}</p>
     <CodeBlock language="bash" title={released ? `Download ${tag}` : 'Build the development image'}>
       {`${commands}\ncp example.env .env\nmkdir -p output`}
     </CodeBlock>

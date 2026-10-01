@@ -1,239 +1,93 @@
 ---
-title: Advanced reference setup
+title: One GPU service
 ---
 
-# Advanced reference setup
+# One GPU service
 
-Two examples for an operator who wants the optional services: a two-GPU Kubernetes cluster,
-and a Mac running everything locally. You do not need either to make a film.
-Start with [what each add-on buys](../get-started/what-a-gpu-or-a-model-adds.md).
+Keep the app on the NAS and move classifiers, captions, Demucs stems and rendering to one NVIDIA
+container. The text reader and ACE-Step music generation are separate choices. Laya runs in the app.
 
-The hostnames, IPs and node names below are placeholders.
+## One GPU service {#one-gpu-service}
 
-## The two profiles
-
-| Profile | Best fit |
-|---|---|
-| Always-on cluster | Daily films, GPU services and authenticated remote access |
-| Local Mac | Interactive editing, local model servers and local generated music |
-
-## The always-on server (Kubernetes)
-
-This profile uses the shipped `overlays/maximalist`: app + render sidecar, CUDA inference and
-CUDA captions. You supply the reader, ACE-Step API and TLS/identity provider.
-
-```mermaid
-flowchart TB
-    browser[Browser] -->|HTTPS| proxy[TLS proxy + OIDC]
-    proxy --> app[App]
-    subgraph a[GPU node A]
-      app -->|Loopback| worker[Render sidecar]
-      inference[Inference service]
-    end
-    subgraph b[GPU node B]
-      captioner[Caption server]
-    end
-    app --> inference
-    app --> captioner
-    app --> reader[LAN reader]
-    app --> music[ACE-Step API]
-    app --> immich[Immich]
-```
-
-Read the [Kubernetes base setup](./kubernetes.md) first. Prepare secrets and edit the example
-configuration:
+Use the CUDA inference image matching the app version, the NVIDIA Container Toolkit and a
+private address reachable from the app. From a checkout of that release:
 
 ```bash
-cd deploy/kubernetes
-cp base/secret.yaml.example base/secret.yaml
-cp overlays/render-sidecar/render-worker-secret.yaml.example overlays/render-sidecar/render-worker-secret.yaml
-cp overlays/maximalist/maximalist-secret.yaml.example overlays/maximalist/maximalist-secret.yaml
+export GPU_WORKER_IMAGE=ghcr.io/sam-dumont/immich-video-memory-generator/inference:YOUR_APP_TAG-cuda
+export IMMICH_URL=https://photos.example.com
+export RENDER_WORKER_TOKEN=$(openssl rand -hex 32)
+export GPU_WORKER_BIND_ADDRESS=192.168.1.50
+docker compose -f services/inference/compose.gpu-worker.yaml up -d
 ```
 
-Fill in the Immich key, shared worker token, OIDC/reader/music secrets and
-`overlays/maximalist/config-map.yaml`. Set all image pins to the same chosen release.
-Render the result before applying:
+Save the token in your secret manager and use the same value in the app. The recipe defaults to
+loopback binding if you omit `GPU_WORKER_BIND_ADDRESS`. It mounts separate model-cache and
+render-scratch volumes and reserves one NVIDIA GPU. It does not set a RAM limit.
 
-```bash
-kubectl kustomize overlays/maximalist
-kubectl apply -k overlays/maximalist
-```
-
-### The cluster's config.yaml, annotated
-
-The shipped ConfigMap contains the complete example. These are the connections you must change:
+Configure the app:
 
 ```yaml
-tier: full
 advanced:
-  auth:
-    enabled: true
-    provider: oidc
-    public_url: "https://memories.example.com"
-    issuer_url: "${OIDC_ISSUER_URL}"
-    client_id: "${OIDC_CLIENT_ID}"
-    client_secret: "${OIDC_CLIENT_SECRET}"
-    allowed_emails: [you@example.com]
-    trusted_proxies: ["10.42.0.2"] # replace with your immediate proxy address
-  server:
-    secure_cookies: true
   inference:
-    facts_base_url: "http://inference:8092"
+    facts_base_url: http://192.168.1.50:8092
+    fallback_to_local: false
   editorial:
     preparation:
-      caption_base_url: "http://captioner:8092/v1"
-  llm:
-    provider: openai-compatible
-    base_url: "http://192.168.1.50:9999/v1"
-    model: "your-model-name"
-    api_key: "${LLM_API_KEY}"
-  ace_step:
-    enabled: true
-    mode: api
-    api_url: "http://acestep-api:8001"
-    api_key: "${ACE_STEP_API_KEY}"
+      caption_base_url: http://192.168.1.50:8092/v1
+render:
+  worker_base_url: http://192.168.1.50:8092/render
+  worker_token: ${RENDER_WORKER_TOKEN}
+  allow_insecure_http: true
+  fallback_to_local: false
 ```
 
-Replace the example trusted proxy address with your proxy's actual peer address. The model name must match the
-reader's served model. Keep Basic/OIDC access configured before exposing the app.
-[Authentication](./authentication.mdx) has callback and forwarded-header requirements.
-
-Geocoding/maps in the shipped example are opt-in outside calls; leave them off unless you want
-that result. Size the caches below the data PVC's capacity.
-
-### Check the tier it really runs
-
-The overlay sets `IMMICH_MEMORIES_TIER=full`; an environment variable beats the file.
-After adding services:
-
-```bash
-kubectl exec -n immich-memories deploy/immich-memories -c immich-memories -- immich-memories models fetch
-kubectl exec -n immich-memories deploy/immich-memories -c immich-memories -- immich-memories preflight
-kubectl exec -n immich-memories deploy/immich-memories -c immich-memories -- immich-memories config show tier
-```
-
-Full needs a configured reader, captions and Laya. With `auto`, missing GPU inference means NAS:
-selection stays rules-based, although a configured reader can still supply titles/music mood.
-
-### The two GPU nodes
-
-The reference deployment used a T1000 (Turing, 8 GB) for inference/rendering, and a GTX 1070
-(Pascal, 8 GB) for captions. llama.cpp captions can use Pascal; newer PyTorch CUDA wheels may not.
-These are tested examples, not required cards.
-
-Pin inference/caption deployments to their intended nodes with your own overlay patches:
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: immich-memories-inference
-spec:
-  template:
-    spec:
-      nodeSelector:
-        kubernetes.io/hostname: gpu-node-a
-```
-
-Add the corresponding patch for `immich-memories-captioner` on `gpu-node-b`.
-If sharing GPUs with other workloads, configure time slicing/resource scheduling in your GPU
-Operator setup; the app does not do that for you.
-
-### Music stems
-
-ACE-Step supplies music; Demucs can split it through the inference service. The CUDA inference
-image includes its weights. CPU/local fallbacks may download weights on first use: keep their
-cache persistent. [Generated music](../better/music.md) covers memory, precision and verification.
-
-### Gotchas, with the exact strings to search for
-
-| Symptom | Check |
-|---|---|
-| OIDC `Invalid callback origin` | `public_url`, proxy trust and forwarded HTTPS scheme |
-| A service port parsed as `tcp://...` | `enableServiceLinks: false` on custom pods |
-| Loopback worker never Ready | `exec` probes, not HTTP/TCP probes to pod IP |
-| PVC stuck Pending | Storage class/provisioner, capacity and binding mode |
-| Full requested, NAS selected under auto | Actual environment source and GPU inference endpoint |
-| Large responses stall, small ones work | CNI/tunnel MTU on multi-site clusters |
-
-See [Kubernetes](./kubernetes.md) for network policy, storage, probes and overlay composition.
-
-### Preparation cost and reuse
-
-Keep the store when replacing containers. Compatible prepared facts survive tier and machine
-changes. Measure one month before preparing a whole library.
-[Measured](../better/measured.md#nas-preparation) separates preparation, captions and rendering.
-
-## The laptop / workstation (the Mac)
-
-Everything runs on one Apple Silicon Mac: the app, an OpenAI-compatible reader, a SmolVLM
-caption server and optional local ACE-Step. Full still needs the reader/caption services running.
+`allow_insecure_http` is an explicit opt-in for this trusted LAN: render requests include the
+Immich API key. Use HTTPS through a proxy otherwise, and omit that opt-in. Only `/render` checks
+the bearer token; `/facts`, `/audio/stems` and `/v1` have no built-in authentication. Do not expose
+this listener to the internet.
 
 ```mermaid
 flowchart TB
-    browser[Local browser] --> app[App on localhost]
-    subgraph mac[Apple Silicon Mac]
-      app --> reader[Text reader]
-      app --> captioner[Caption server]
-      app --> music[Local ACE-Step]
-    end
-    app --> immich[Your Immich]
+  app["NAS · app and store"] --> gpu["NVIDIA worker · port 8092"]
+  gpu --> facts["Classifiers and stems"]
+  gpu --> captions["Captions · /v1"]
+  gpu --> render["Rendering · /render + token"]
+  render --> immich["Immich originals"]
 ```
 
-For this checkout setup, use Python 3.12 for local ACE-Step and Node 22 for the web client:
+Check from the app's environment:
 
 ```bash
-git clone https://github.com/sam-dumont/immich-video-memory-generator.git
-cd immich-video-memory-generator
-uv sync --extra all-mac --extra auth
-make web-client
-make install-acestep
+immich-memories preflight -v
 ```
 
-Start your [reader](../better/reader.md) and [caption server](../better/captions.md), then configure
-the endpoints below. [Local music setup](../better/music.md) explains the ACE-Step installation
-and validation command.
+The Compose health check verifies the inference listener and authenticated render health. It
+does not certify caption responses or every model's provider; preflight supplies those checks.
 
-### The Mac's config.yaml, annotated
+## Memory and scheduling
 
-Add this to your existing Immich/home configuration:
+Work changes phase between classifiers, captions, audio and rendering. The worker unloads
+classifier weights and stops its owned caption subprocess when switching away from them.
+Demucs releases after separation. Captions restart on demand.
 
-```yaml
-tier: full
-advanced:
-  editorial:
-    preparation:
-      caption_base_url: "http://localhost:8092/v1"
-  llm:
-    provider: openai-compatible
-    base_url: "http://localhost:9999/v1"
-    model: "your-model-name"
-  ace_step:
-    enabled: true
-    mode: lib
-    model_variant: "acestep-v15-xl-turbo"
-    lm_model_size: "4B"
-    use_lm: true
-```
+Rendering waits up to 60 seconds for active model work to finish. Conflicting requests return
+`503` with `Retry-After: 1`; classifier queue overflow separately returns `429`. Native work keeps
+its GPU ownership even when its client cancels. `/queue` reports classifiers, not a combined
+queue for all phases.
 
-XL/4B is the reference choice, not a low-memory default. Use the music guide to choose what fits.
-For local-only access, pin the host even if you later enable authentication:
+One container saves duplicate services and image layers. It still needs enough host RAM and
+VRAM for the largest active phase, scratch space for originals and output, and headroom for other
+GPU users. The bundled caption command sets an 8192-token context; it does not explicitly bound
+llama.cpp's RAM prompt cache or processing slots. Separate-reader or music services can still
+compete for the card. Measure your workload before raising concurrency.
 
-```bash
-uv run immich-memories models fetch
-uv run immich-memories preflight
-uv run immich-memories ui --host 127.0.0.1
-```
+## Other deployments
 
-## Feature → where it runs → config keys → hardware
+The shipped Kubernetes inference and caption overlays and render sidecar deploy **separate**
+services; there is no unified-worker overlay. Use the [Kubernetes reference](./reference/kubernetes.md)
+for those manifests. The [multi-service cluster example](./reference/cluster-example.md) is for
+operators deliberately distributing work across nodes.
 
-[The configuration guide](./config-file.md#what-each-top-level-section-is-for) maps tasks to keys.
-Inference, video encoding and music are separate GPU workloads; adding one does not configure
-the others.
-
-## Terraform
-
-`deploy/terraform/examples/maximalist` is the module form of the cluster example. Optional
-captioner/sidecar variables create those components; inference remains a separate Kustomize
-service. Reader and ACE-Step are external endpoints.
-[Terraform](./terraform.md) covers module ownership, secrets and applying changes.
+For Apple Silicon, use the [Mac example](./reference/mac-example.md). The CUDA worker cannot use
+Metal. Service API details and offline model provisioning are in the
+[inference reference](../reference/inference-service.md).

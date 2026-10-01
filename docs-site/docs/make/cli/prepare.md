@@ -20,7 +20,7 @@ A whole year is useful overnight on a NAS. Scope can also be an explicit start/e
 
 ## Resume and reuse
 
-Rerunning resumes missing work. Compatible facts survive later cuts and app upgrades; a changed producer may need to refresh its own facts. Changing home coordinates or people roles does not invalidate picture facts.
+Rerunning resumes missing work. Later cuts reuse compatible facts; a changed producer may need to refresh its own facts. Changing home coordinates or people roles does not invalidate picture facts.
 
 Exit 0 means preparation completed for the scope. Exit 1 means some facts are missing; the output names the producer and the count. On a captioned setup, check the caption service before rerunning.
 
@@ -32,7 +32,7 @@ The output lists each producer's elapsed time and rate per picture, then project
 
 ## Optional text summaries
 
-With a model reader configured:
+With Full selection configured and its caption and reader services ready:
 
 ```bash
 immich-memories prepare --year 2025 --overviews
