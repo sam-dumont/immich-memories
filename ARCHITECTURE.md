@@ -338,6 +338,8 @@ remains in the preparation report but does not block required-fact completeness.
   `TextEditorialWorkprint` in `editorial_orchestration.py`).
 - **Moment wall**: the moment cards rendered as compact TSV rows, at most 256 characters each and
   no ids, for the text-only editor (`editorial_moment_wall.py`, `editorial_wall_rows.py`).
+  The wall and annotation lines compile exact literal checks through `private_token_matcher.py`;
+  each caller retains its own identifier collection policy.
 - **Post-card**: after the moment cards are built ("Building editorial cards -> Editing the
   memory"). The original post-card moment editor is retired; its contracts live in
   `editorial_case.py`.

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Protocol
@@ -18,6 +18,7 @@ from immich_memories.analysis.editorial_clip_frames import (
     SHOWS_ITS_MOMENT,
 )
 from immich_memories.analysis.place_names import shown_city
+from immich_memories.analysis.private_token_matcher import private_token_matcher
 from immich_memories.analysis.subject_framing import framing_annotation, subject_framing
 from immich_memories.store.asset_annotations import (
     AssetAnnotationFactBatch,
@@ -268,7 +269,7 @@ class StoredAnnotationLineReader:
             tuple(self._candidate_by_id[asset_id] for asset_id in ordered_ids),
             tuple(facts[asset_id] for asset_id in ordered_ids),
         )
-        contains_private_token = _private_token_matcher(private_tokens)
+        contains_private_token = private_token_matcher(private_tokens)
         lines = tuple(line for line in rendered_lines if not contains_private_token(line.text))
         line_ids = {line.asset_id for line in lines}
         missing_ids = tuple(asset_id for asset_id in ordered_ids if asset_id not in line_ids)
@@ -439,38 +440,6 @@ def _private_tokens(
         else:
             tokens.add(identifier[:8])
     return frozenset(tokens)
-
-
-def _private_token_matcher(tokens: frozenset[str]) -> Callable[[str], bool]:
-    """Compile literal substring checks once per annotation cohort.
-
-    Identifier prefixes are already part of the privacy policy. Indexing them
-    avoids searching every line once for every identifier in a large period.
-    Longer identifiers still require their full literal match; an index prefix
-    alone never withholds a line unless it is itself a policy token.
-    """
-    if not tokens:
-        return lambda _text: False
-    width = min(8, min(map(len, tokens)))
-    terminal = frozenset(token for token in tokens if len(token) == width)
-    longer: dict[str, list[str]] = {}
-    for token in tokens:
-        prefix = token[:width]
-        if prefix not in terminal:
-            longer.setdefault(prefix, []).append(token)
-
-    def contains(text: str) -> bool:
-        rendered = text.casefold()
-        for offset in range(len(rendered) - width + 1):
-            prefix = rendered[offset : offset + width]
-            if prefix in terminal:
-                return True
-            matches = longer.get(prefix)
-            if matches and any(rendered.startswith(token, offset) for token in matches):
-                return True
-        return False
-
-    return contains
 
 
 def _people(
