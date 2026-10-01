@@ -11,9 +11,10 @@ from __future__ import annotations
 import logging
 import subprocess
 from collections.abc import Iterator
+from fractions import Fraction
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -28,6 +29,9 @@ from immich_memories.processing.hdr_utilities import (
 from immich_memories.processing.memory_budget import assembly_decoder_threads
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from immich_memories.processing.probe_cache import VideoProbe
 
 
 class FrameDecoder:
@@ -54,10 +58,12 @@ class FrameDecoder:
         caption_window: tuple[int, int] | None = None,
         source_size: tuple[int, int] | None = None,
         threads: int | None = None,
+        source_frame_rate: Fraction | None = None,
     ) -> None:
         self._clip_path = clip_path
         self._source_size = source_size
         self._threads = threads
+        self._source_frame_rate = source_frame_rate
         self._input_seek = input_seek
         self._audio_output = audio_output
         self._width = width
@@ -148,8 +154,19 @@ class FrameDecoder:
         # Scale + fill to target resolution
         parts.extend(self._fill_filters())
 
-        # FPS + timebase reset
-        parts.append(f"fps={self._fps},settb=1/{self._fps}")
+        # A frame-local transfer need only run once per source frame. Duplication
+        # before it made a 30 → 60 fps HDR conversion do the same work twice.
+        # Keep the original order for privacy noise, unknown/ambiguous cadence,
+        # equal rates and downsampling. Captions still see the final frame grid.
+        defer_fps = (
+            self._pix_fmt == "yuv420p10le"
+            and not self._privacy_blur
+            and self._source_frame_rate is not None
+            and 0 < self._source_frame_rate < self._fps
+            and bool(self._hdr_conversion or self._sdr_to_hdr_filter)
+        )
+        if not defer_fps:
+            parts.append(f"fps={self._fps},settb=1/{self._fps}")
 
         # SDR→HDR conversion (only for SDR clips in HDR output)
         if self._sdr_to_hdr_filter:
@@ -164,6 +181,9 @@ class FrameDecoder:
         ):
             if color_filter:
                 parts.append(color_filter.removeprefix(","))
+
+        if defer_fps:
+            parts.append(f"fps={self._fps},settb=1/{self._fps}")
 
         # Drawn last so the text is never scaled, padded or blurred with the
         # source, and lands in target-frame coordinates.
@@ -254,7 +274,10 @@ class FrameDecoder:
                 if self._pix_fmt == "yuv420p10le":
                     # WHY: Keep as flat uint16 — YUV planar can't reshape to (H,W,3).
                     # Crossfade blends each sample independently which works for all planes.
-                    frame = np.frombuffer(raw, dtype=np.uint16).copy()
+                    # The array retains `raw`; body writes, previews and crossfades
+                    # only read it. Keep the same bytes-backed view as SDR rather
+                    # than copying another 25 MB for every 4K HDR frame.
+                    frame = np.frombuffer(raw, dtype=np.uint16)
                 else:
                     frame = np.frombuffer(raw, dtype=np.uint8).reshape(self._height, self._width, 3)
                 yield frame
@@ -328,6 +351,7 @@ def make_decoder(
     if audio_work_dir:
         audio_output = audio_work_dir / f"clip_{clip_idx}_audio.wav"
 
+    source_size, source_frame_rate = _source_properties(clip.path)
     return FrameDecoder(
         clip_path=clip.path,
         width=width,
@@ -346,15 +370,27 @@ def make_decoder(
         caption=caption if not is_title else None,
         caption_font=caption_font,
         caption_window=caption_window,
-        source_size=_display_size(clip.path),
+        source_size=source_size,
+        source_frame_rate=source_frame_rate,
     )
 
 
-def _display_size(path: Path) -> tuple[int, int] | None:
-    """The source's width and height as FFmpeg shows it (rotation applied), if it probes."""
+def _source_properties(path: Path) -> tuple[tuple[int, int] | None, Fraction | None]:
+    """Read geometry and cadence from one probe, retaining the unprobed fallback."""
     from immich_memories.processing.probe_cache import ProbeCache, ProbeError
 
     try:
-        return ProbeCache().get(path).resolution
+        probe = ProbeCache().get(path)
     except (ProbeError, OSError, ValueError):
+        return None, None
+    return probe.resolution, _matching_stream_rate(probe)
+
+
+def _matching_stream_rate(probe: VideoProbe) -> Fraction | None:
+    """Use the existing matching-stream-rates fast path; ambiguity keeps the graph."""
+    try:
+        average = Fraction(probe.average_frame_rate or "0")
+        nominal = Fraction(probe.nominal_frame_rate or "0")
+    except (ValueError, ZeroDivisionError):
         return None
+    return average if average > 0 and average == nominal else None
