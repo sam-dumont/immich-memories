@@ -49,10 +49,10 @@ does not establish inference capability. The runtime check loads no model weight
 pictures; preflight and acquisition still check the actual producers.
 
 `editorial.reader`, `editorial.preparation.tier` and `editorial.laya_audience` are derived from
-the product tier. Conflicting legacy settings are ignored with a notice. Save omits these
+the product tier. These values are derived rather than separate user controls. Save omits these
 derived settings and keeps automatic resolution automatic when the file moves to another host.
 An explicit `nas`, `gpu` or `full` pins a tier for a controlled comparison; it does not install or
-start its services. `full` requires a stated LLM endpoint or hosted provider and a model.
+start its services. `full` requires an enabled reader: the app-owned local model or a configured API.
 
 Configured LLM titles and music mood work on every tier. NAS and GPU still select with rules,
 and sharing never asks the prose LLM. Captions use their own configured service; a text LLM is
@@ -79,10 +79,7 @@ off by default and stays wherever you put it.
 Env: `IMMICH_MEMORIES_PRESET=fast`. One-off on the CLI: `immich-memories --preset fast generate …`
 (root option, before the subcommand).
 
-Caveat: the Memory page's **Save Config** (under Advanced) writes every value to `config.yaml`, not
-just the connection fields it appears to be about. They then all count as set by you and the preset
-has nothing left to fill in. Remove the keys you want the preset to own again. `server.host` is the
-single exception; see [Server (UI)](#server-ui).
+Settings saved in the UI or CLI go to the database. Environment variables and `config.yaml` still win; the app refuses to save a database value that they would override.
 
 ## Immich connection
 
@@ -105,8 +102,7 @@ contract without generating or uploading a memory.
 
 ### Extra accounts
 
-A second person on the same Immich server (the classic couple where each phone uploads to its own
-account) goes under `accounts`, by name. The top-level `url` and `api_key` stay the primary account,
+People can upload to separate Immich accounts. Put additional accounts under `accounts`, by name. The top-level `url` and `api_key` stay the primary account,
 and the primary is the only account a film is ever uploaded to.
 
 ```yaml
@@ -240,7 +236,7 @@ everywhere, automation included. Privacy mode never shows a place, whatever `add
 `sharing` is who a film is for when the run doesn't say (`generate --sharing`, or **Who will watch
 it** in the web brief). `just-us` is the household: a private moment a caption names, like a bath,
 plays too. `family` keeps those out. `shareable` plays only what nothing held back. The rules:
-[Sharing levels](../how-it-chooses/family-audience-duplicates.md#sharing-levels).
+[Sharing levels](selection-internals/family-audience-duplicates.md#sharing-levels).
 
 Target duration and orientation are per run (`--duration`, `--orientation`, or the UI), with the
 memory type preset supplying the default duration; there is no config default for either. The
@@ -280,8 +276,7 @@ The presets are points on that curve, measured on 1080p60 film:
 
 There is no tier below `balanced`: around SSIM 0.980 gradients start to band. `fast` keeps the
 balanced picture and buys its speed from the encoder effort preset instead, overriding
-`hardware.encoder_preset`. `medium` and `low` are retired names that still load, resolving to
-`balanced` and `fast`.
+`hardware.encoder_preset`. Choose `balanced`, `high`, `ultra` or `fast` for a new configuration.
 
 `codec_policy` decides what happens when the machine has no hardware encoder for the codec you
 asked for but does have one for the other. `prefer_hardware` (the default) switches codec and says
@@ -348,7 +343,7 @@ the video render; the burst merge during download still detects for itself.
 
 ## Audio and music
 
-Background music needs `ace_step.enabled` or `musicgen.enabled`. With both on, ACE-Step generates
+Background music uses a bundled track by default. Generated music needs `ace_step.enabled` or `musicgen.enabled`. With both on, ACE-Step generates
 and MusicGen is the fallback generator and the stem separator used for ducking; with MusicGen off,
 stems come from a local Demucs install if there is one. Per run, `--music PATH` uses your own file
 and `--no-music` skips music. Music volume is per run too (`--music-volume`); the ducking and the
@@ -402,7 +397,7 @@ to `audio.max_music_blocks` distinct same-caption takes and joins them with cros
 the sequence to fill the remaining length. One long take reads as a metronomic ramble, and one
 short phrase on repeat is its own kind of monotony; a chain of a few distinct takes is neither.
 
-## LLM (vision model)
+## Text model and optional vision captions
 
 Used by the reader and by title generation. Any OpenAI-compatible or Anthropic-compatible endpoint
 works: mlx-vlm, oMLX, Ollama, vLLM, Groq, OpenAI, Claude, z.ai.
@@ -422,7 +417,7 @@ llm:
   always_reasons: false            # true: the endpoint thinks on every call, asked or not
   thinking: "disabled"             # disabled | low | high | max | auto
   reader_concurrency:              # independent reader jobs; unset reads it from base_url
-  batch: "off"                     # off | auto: queue a stage's independent prompts, half price
+  batch: "off"                     # off | auto: provider-supported batching of independent prompts
   batch_min_requests: 8            # fewest independent prompts in a stage worth queueing
   batch_max_wait_minutes: 60       # then ask whatever the batch has not answered in real time
   # thinking_params:               # what the switch looks like on your server
@@ -433,22 +428,16 @@ llm:
   #     enable_thinking: false
 ```
 
-**The goal of this product is a fully local process**: your photos analyzed on your own hardware,
-nothing leaving your network. A local server (mlx, vLLM, Ollama) is the intended setup. The cloud
-providers exist so that people without the means to run a local model can still use the product.
-Using one sends each analyzed clip's frames or thumbnails and the derived descriptions to that
-provider.
+The selection reader receives text: dates, people and place names, and descriptions. A hosted reader sends that text to its provider. Images are sent to the LLM only with explicit `editorial.preparation.caption_provider: llm`; otherwise captions use their separately configured service. See [Privacy](../run/privacy.md).
 
-`enabled: false` stops requests even when a model and URL remain configured. Existing configs
-that explicitly named a model or endpoint before the enable switch remain enabled until it is set
-to false. New installs start disabled with Gemma selected as the default model.
+`enabled: false` stops requests even when a model and URL remain configured. Set it to `true` to use a reader. The default model is Gemma.
 
 An empty `base_url` with `enabled: true` runs llama.cpp locally on Linux or macOS. Set a URL to
 use an API server. `openai`, `anthropic` and `zai` select the adapter and reasoning dialect for
 that URL; under `zai` the URL also picks the adapter (a
 `.../api/anthropic` base takes the Messages route). Which dialect goes where, what `thinking` does
 on each host, how `thinking_params` and `no_thinking_params` differ, and what batching pays are all
-on [The reader](../better/reader.md), with the measured comparison of ten models.
+on [The reader](../better/reader.md), with links to dated measurements.
 
 `thinking` has five settings. `disabled` never asks for reasoning. `low`, `high` and `max` run the
 model in reasoning mode for two calls: title generation, and the special-day question in
@@ -555,11 +544,7 @@ triage:
   provider: auto                 # ONNX Runtime provider for the encoder: auto, cpu, cuda, coreml
 ```
 
-`provider: auto` takes CUDA where that provider is present and CPU everywhere else. It never takes
-CoreML: measured on the pinned export, CoreML claims 274 of the 513 nodes and splits the graph into
-87 partitions, so it runs 6 to 8 times slower than the CPU provider and holds 9 times the resident
-memory. Set `provider: coreml` to re-measure it. The choice is operational: it does not enter the
-encoder key, so changing it re-derives nothing.
+`provider: auto` takes CUDA where that provider is present and CPU everywhere else. CoreML is opt-in. The provider is operational and does not enter the encoder key, so switching providers does not invalidate matching facts.
 
 Editorial preparation uses `triage.encoder` with the public eight-head bundle from
 `editorial.preparation.head_bundle`, and checks its digest on load. Missing required head facts
@@ -572,7 +557,7 @@ editorial:
   reader: rules                 # derived from the product tier; not an independent choice
   thin_model_layer: true         # the model polishes a rules draft; false makes it plan the film
   strict_sharing: true           # anything a head or exposure flag marked stays out of shared films
-  annotation_database: ""        # deprecated: a legacy annotations.sqlite imported into the store once; blank = the cache directory
+  annotation_database: ""        # compatibility field; leave blank for the default cache directory
   laya_audience: false           # derived: off for NAS, on for GPU and Full
   detectors_enabled: false      # derived: Marqo and Docling off for NAS, on for GPU and Full
   # Apple silicon defaults below; elsewhere the ONNX archive and threshold 0.185 are used.
@@ -614,16 +599,16 @@ editorial:
     big_story_family_share: 0.3  # ...with at least this share of its pictures showing close family
 ```
 
-Tier 2: lives under `advanced:` when the app writes the file.
+In YAML, place this section under `advanced:`.
 
 `people` is how the people registry's close family (partner, child, parent) reach the selection. A close
 family member on at least `seat_min_pictures` of the period's pictures, or `seat_min_share` of them,
 who is in none of the film's shots gets one seat: see
-[the family seat](../how-it-chooses/family-audience-duplicates.md#the-family-seat). A story without three favourites is floored
+[the family seat](selection-internals/family-audience-duplicates.md#the-family-seat). A story without three favourites is floored
 to `major` only when it is both dense (`big_story_density` times the period's median photographed
 day, in pictures per day) and mostly close family (`big_story_family_share` of its pictures); both
 defaults were measured on real months, see
-[editing without a language model](../how-it-chooses/moments-and-stories.md#how-much-a-story-weighs).
+[editing without a language model](selection-internals/moments-and-stories.md#how-much-a-story-weighs).
 
 Docling uses `det-v2`, because ONNX layout optimization mislabels documents on the Celeron J4125.
 Saved `doc_docling: det-v1` settings upgrade on load, and the next run recomputes that head's facts
@@ -659,9 +644,7 @@ leave open is refilled from the same stories, and nothing else moves.
 It needs a period the library holds an account of, which cataloguing writes:
 `immich-memories prepare --overviews` banks one per calendar month, and a cut of a whole month or
 year that finds none writes its own from the readings it has just paid for. Any other single
-window (a season, a trip) is its own period and writes its own account the same way. A film over
-several windows has no single account, and plans the film with the story-first planner, so a
-library is never left without a film. `false` makes the model plan
+window (a season, a trip) is its own period and writes its own account the same way. Films over several windows also use the rules draft and refinement by default. `false` makes the model plan
 the whole film even when an account exists.
 
 `strict_sharing` keeps any picture a detector head or an exposure flag marked out of a shareable
@@ -673,13 +656,13 @@ and family films are unchanged. Turning it off does not let a caption clear an e
 
 `laya_audience` answers the sharing question with a local Laya model:
 `tier: gpu` and `tier: full` turn it on, and `immich-memories models fetch` downloads it.
-This version needs Apple silicon and `pip install laya-mlx`. A missing checkpoint or runtime
+Apple Silicon uses `laya-mlx`; Linux, Windows and Intel Macs use the portable ONNX checkpoint with the appropriate editorial runtime. A missing checkpoint or runtime
 is reported, and the run continues with the conservative rules fallback.
 It reads the compact caption and adds holds; detector and rule holds still apply and
 are never lifted. It works with the rules reader as well as the prose reader. A captioned shot
 without a Laya answer stays held to the family. Sharing never calls an LLM, including exposure
 checks and missing-answer fallbacks. The former `thin_batched_audience` option is removed.
-See [Add a reader](../better/reader.md#the-laya-audience-pre-screen).
+See [Add a reader](llm-providers.md#the-laya-audience-pre-screen).
 
 ### Preparation tiers
 
@@ -687,32 +670,14 @@ Preparation follows the product tier. NAS acquires pixel facts and the eight sha
 GPU and Full add Marqo, Docling, captions and Laya. `detectors_enabled` is tier-owned; a saved
 value does not override the tier. `head_versions` keeps all producer identities, while the active
 view filters out Marqo and Docling on NAS. Banked facts remain available when you switch back.
-Saved review decisions and automatic permanent holds also remain: an old exposure hold does not
-record which producer cast it. Internally, older audit rows call those producer modes `no_captions` and
-`full`. They are not a second config choice. `metadata_only` is no longer a selectable product
-configuration.
+Saved review decisions and permanent holds persist across tier changes.
 
 A film starts with a caption-free rules draft, retaining the resolved tier's detector policy, then
 captions and checks only selected shots and actual
 replacement candidates. `prepare` remains the explicit job for a larger scope. Changing tier
 does not erase banked captions or other producer facts.
 
-The `swim` head is retired, and a configuration that still names it loses the name with one
-log line. Measured against a typed picture reader over 3,564 photographs it answered `yes`
-on 551 where the reader saw swimwear on 22, and the one rule that read it, the
-child-in-swimwear hold, fired on 515 of those and was right about 5. Nothing raises a
-swimwear hold now: on this tier every unit stays at family viewing regardless.
-
-`metadata_only` also drops the eight heads and both detectors, so the gate loses its evidence.
-It therefore holds **every** unit to `family_only`, and a shareable film is refused before the cut
-starts.
-Use it only on a machine that cannot run ONNX at all.
-
-Captions are banked per picture, so a `no_captions` deployment can add them later and switch
-the tier to `full` when it finishes.
-
-The sharing level decides what a caption reading refuses. Ordinary family material, including a
-shirtless baby or a parent holding a newborn in hospital, plays at every level. Bath time,
+The sharing level decides what a caption reading refuses. A caption describing a shirtless baby or a parent holding a newborn in hospital does not, by itself, cause an activity-based hold. Other detector and selection rules still apply. Bath time,
 breastfeeding, a nappy change and intimate hygiene play only in a just-us film. Graphic medical
 procedures, sexual content, exposed adult changing and identifying records never play.
 
@@ -784,14 +749,15 @@ title_screens:
   map_move_max_seconds: 8.0      # trip map to a far place, 2 s still hold included (3-15)
   locale: "auto"                 # en fr nl de es it pt-BR pt-PT pl sv ru ja zh-Hans ko, or auto
   style_mode: "auto"             # auto (mood-based) or random
+  fade_color: "white"            # white or black at the opening and closing
   animated_background: true      # Animated titles and smooth map flights
   show_month_dividers: true      # When the video spans several months (all-or-none)
   month_divider_threshold: 2     # Min clips in a month to show its divider (1-10)
   use_first_name_only: true      # "Riley" instead of "Riley Smith" in titles
 ```
 
-`animated_background` is all the look-and-feel the config file
-exposes; the colour palette and custom fonts are not configurable today.
+`fade_color` chooses the opening and closing fade. `animated_background` controls movement;
+the colour palette and custom fonts are not configurable today.
 `animated_background: false` keeps the gradient still (no rotation, colour pulse or vignette pulse)
 and uses three-view map journeys, which is what `preset: fast` selects. The
 `immich-memories titles` command exposes more of the look as flags for previewing.
@@ -847,7 +813,7 @@ Tight on disk: lower `video_cache_max_size_gb`, or turn it off with `video_cache
 
 `thumbnail_cache_max_size_mb` is the one cache budget that scales with the library. Every candidate asset in a memory's scope gets an Immich preview fetched and read back several times. Measured on a real library, one preview is about **315 KB**, so:
 
-```
+```text
 budget in MB ≈ 0.35 × (assets a memory's scope can reach)
 ```
 
@@ -877,7 +843,7 @@ beat the file. Both are read
 before the store opens, so the UI can never change them. SQLite on local disk is the default and
 fits a single-host install; point `url` at PostgreSQL 14+ (no extensions) to share a server,
 including Immich's own, in a schema of its own. A SQLite file on NFS, SMB or CIFS is refused:
-see [Environment variables](../run/environment-variables.md#not-config-keys).
+see [Environment variables](../run/reference/environment.md#not-config-keys).
 
 ## Server (UI)
 
@@ -905,12 +871,7 @@ Keep it out of `config.yaml` with `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN`: `serv
 a `${VAR}` reference, so writing one here stores the six literal characters as your token. Either
 way the value is redacted from `/health`, the config viewer and the logs, from config load onwards.
 
-`host` is the one value "save" leaves out of `config.yaml` when you never set it: writing the
-`0.0.0.0` default would make the next load treat it as your decision and retire the localhost bind.
-A `server.host: 0.0.0.0` already in your file is ignored with a warning and disappears the next
-time the file is saved. Any other address is kept, and so are `--host` and
-`IMMICH_MEMORIES_SERVER__HOST`. To keep a LAN bind with authentication off, use
-`allow_unauthenticated_lan: true`.
+Saving settings does not write `config.yaml`. Set a LAN bind deliberately, with authentication or `allow_unauthenticated_lan: true`; otherwise the secure default is localhost.
 
 ## Upload to Immich
 
@@ -926,7 +887,7 @@ The render day is what you get when no picture in the cut carries a usable time.
 
 ## Automation
 
-Controls what `immich-memories auto suggest` and `auto run` detect and generate. See [Automate it](../make/automate.md) for the commands. Tier 2: lives under `advanced:` when the app writes the file.
+Controls what `immich-memories auto suggest` and `auto run` detect and generate. See [Automate it](../make/automate.md) for the commands. In YAML, place this section under `advanced:`.
 
 ```yaml
 automation:
@@ -995,7 +956,7 @@ Place under `advanced:` in your config file (like all Tier 2 sections).
 
 ## Notifications
 
-Get notified when auto-generation or scheduled jobs complete. Uses [Apprise](https://github.com/caronc/apprise) (130+ services: ntfy, Discord, Telegram, Slack, email, webhooks). Apprise ships with the base package, no extra to install. Tier 2: lives under `advanced:` when the app writes the file.
+Get notified when auto-generation or scheduled jobs complete. Uses [Apprise](https://github.com/caronc/apprise) (130+ services: ntfy, Discord, Telegram, Slack, email, webhooks). Apprise ships with the base package, no extra to install. In YAML, place this section under `advanced:`.
 
 ```yaml
 notifications:

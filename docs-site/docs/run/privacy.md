@@ -1,217 +1,123 @@
 ---
-title: "Privacy: what leaves your network"
+title: Privacy
 ---
 
-# Privacy: what leaves your network
+# Privacy
 
-**A NAS run with no optional services talks to your Immich server only.** No telemetry, no update check, no
-analytics, and no font or model download while a film renders (ACE-Step and Demucs fetch their
-weights once, the first time you turn them on). Every other host on this page is a
-switch you turn on, and each one says below what it sends. The list comes from a sweep of the
-source and is kept by hand: if you find a call that is not here,
-[open an issue](https://github.com/sam-dumont/immich-video-memory-generator/issues).
+A default NAS film talks only to your Immich server. No telemetry, analytics or update checks.
+Model files are fetched explicitly during setup; rendering does not download them.
+
+Optional features can contact other services. You choose which ones, and whether they run on
+your own hardware or outside your network.
 
 ```mermaid
-flowchart LR
-  app["Immich Memories"] <-->|"always: reads, plus one upload if you turn it on"| immich[("Your Immich")]
-  app -.->|"llm.base_url, default local when enabled"| reader["Reader (model)"]
-  app -.->|"SmolVLM captions: GPU and Full"| captioner["Caption server"]
-  app -.->|"caption_provider: llm, explicit opt-in"| vision["LLM image captions"]
-  app -.->|"inference.facts_base_url, default unset"| inference["Inference service"]
-  app -.->|"render.worker_base_url, default unset"| worker["Render worker"]
-  app -.->|"network.geocoding, default off"| nominatim["nominatim.openstreetmap.org"]
-  app -.->|"network.map_tiles, default off"| arcgis["server.arcgisonline.com"]
-  app -.->|"ace_step.enabled / musicgen.enabled, default off"| music["Music generator"]
-  app -.->|"notifications.enabled, default off"| notify["Apprise / ntfy"]
-  app -.->|"auth.provider: oidc, default off"| oidc["Your OIDC provider"]
+flowchart TB
+    app[Immich Memories] -->|Default| immich[Your Immich]
+    app -.->|Optional| local[Your model / render services]
+    app -.->|Explicit opt-in| outside[Hosted AI / maps / notifications]
 ```
 
-Solid is the one connection every run makes. Dotted is a switch, labelled with the key that turns
-it on and its default. The reader, captioner and music generator default to this machine, so even
-turned on they leave your network only when you point them somewhere else.
+## Before adding a service
 
-What that means per setup:
+| Feature | What it receives |
+|---|---|
+| Text reader | Candidate annotations, including people/place names and album names |
+| Caption server | Small picture tiles and video-frame strips |
+| LLM captions | Pictures, only with explicit `caption_provider: llm` |
+| Inference service | Previews and sampled frames for classification |
+| Render worker | The chosen cut **and your Immich URL/API key** |
+| Geocoding/maps | Rounded coordinates or map tile requests |
+| Generated music | Mood/genre/tempo text; stem separation can send audio |
+| Notifications | Run outcome/details, optionally a thumbnail |
+| OIDC | The usual login flow to your provider |
 
-- **A plain NAS (the default).** Your Immich server. That's the whole list.
-- **A reader or caption server on your own box or LAN.** Still your network. The pictures the
-  caption server reads land on that box's disk and in its logs.
-- **A hosted reader.** The annotation text of the candidates, and the names on it, go to that
-  provider. Pointing `llm.base_url` at it enables text requests. Images go there only if you also
-  opt into `advanced.editorial.preparation.caption_provider: llm`.
+The reader is disabled by default. Enable it with blank `base_url` for an owned local reader;
+an explicit remote URL sends text to that endpoint. Configuring a reader does
+not enable image captions. Check the [full request inventory](reference/privacy-egress.md) for exact
+hosts, switches and defaults. `preflight` also lists outside hosts you have enabled.
 
 ## What Immich sees
 
-The app reads your library and never edits it. Metadata, previews and originals come down; for a
-video, preparation reads the index and three keyframes of its playback rendition by byte range.
+The app reads metadata, previews and source media. It never changes your originals.
+With upload off (the default), it does not write to the library.
+With delivery enabled:
 
-The one write is delivery, and only with `upload.enabled: true` (off by default):
+1. Upload the finished film as a new asset.
+2. Tag it `immich-memories/generated`, so it is not selected as source footage later.
+3. Add it to the configured album (create the album if needed).
+4. Move a recognised previous render of the same recipe to trash, if the API key permits it.
 
-1. the finished film is uploaded as a new asset;
-2. it gets the tag `immich-memories/generated` once Immich has finished reading the file, so a
-   later run knows the film is its own and never uses it as source footage;
-3. with `upload.album_name` set, it goes into that album (created if missing);
-4. an earlier upload of the same recipe, recognised as the app's own, moves to Immich's trash.
-   Trash, not a delete: you can restore it.
+`immich-memories config test` only checks authentication/API compatibility.
 
-`immich-memories config test` is read-only: it checks the connection and the API version and
-touches nothing.
+## Geocoding and maps
 
-With `llm.enabled: true` and an empty `llm.base_url`, the app starts its local llama.cpp model
-on Linux or macOS. Reader and explicit LLM-caption requests stay on loopback. A URL sends those
-requests to that server; `llm.enabled: false` prevents both local and remote calls.
+Both are off by default:
 
-## Everything that can leave, and when
+```yaml
+network:
+  geocoding: false
+  geocoding_url: ""
+  map_tiles: false
+```
 
-| Destination | When | What leaves your network | Default |
-|---|---|---|---|
-| Your Immich server | always | the reads above; the film, its tag and its album with upload on | upload off |
-| `llm.base_url` (reader) | a model reads a period | text only: the annotation lines of the candidates, with people and place names, and the Immich album names holding those pictures. Never a picture | `llm.enabled: false`: no call |
-| `llm.base_url` (titles) | a people or occasion film's opening title, whenever a reader is configured; trips only with `--llm-title` | text only: first names, birth dates and ages, the relationships your people registry records, the span, place names, the album the cut mostly sits in | `--no-llm-title` or `--title` |
-| `llm.base_url` (music, special days) | music selection and special-day scans, with a model | text only: the cut's story labels and captions; for a day, capture times, places, coordinates and recognised names | `llm.enabled: false`: no call |
-| `api.openai.com`, `api.anthropic.com`, `api.z.ai` | enabled with an explicit vendor `llm.base_url` | the reader rows above, to that vendor | blank URL: app-owned local model |
-| `caption_base_url` | GPU and Full with the default SmolVLM provider, for selected shots and actual candidates; a wider scope only with an explicit `prepare` job | a 400 px JPEG per picture; a strip of three keyframes per video and per playing Live Photo; `caption_api_key` as a bearer token if set | `localhost:8092`; NAS does not call it |
-| `llm.base_url` (caption provider) | explicit `advanced.editorial.preparation.caption_provider: llm`, on any tier | synthetic schema controls, then missing picture tiles and candidate video frame strips; configured LLM credentials | off; existing valid SmolVLM captions are reused first |
-| `inference.facts_base_url` | preparation, when set | picture previews and up to eight sampled frames per video or Live Photo companion, for the heads and detectors | unset: the app runs them itself |
-| `render.worker_base_url` | rendering on another box | the chosen cut, plus your Immich URL and API key so the worker can fetch the clips | unset: renders here |
-| `nominatim.openstreetmap.org`, or your `network.geocoding_url` | `network.geocoding: true` | each trip's centre, and the coordinates of the pictures in the film's own window, home included, rounded to about a kilometre, once per place ever | off |
-| `server.arcgisonline.com` | `network.map_tiles: true` | tile requests over the trip area and your home base | off |
-| `ace_step.api_url`, `musicgen.base_url` | AI music through a remote API | mood, tempo and genre text; MusicGen is also sent the generated track, for stem separation | off |
-| Apprise or ntfy targets | `notifications.enabled: true` | memory type, outcome, duration, output path, a redacted error tail; a frame if `attach_thumbnail: true` | off |
-| Your OIDC provider | login with `provider: oidc` | the standard OIDC flow with PKCE | basic auth |
-| Hugging Face, `github.com` | only when you run `models fetch` (and ACE-Step or Demucs on first use) | nothing about your library: pinned weights, checked by SHA-256 | a run never downloads |
-| `raw.githubusercontent.com` | only `titles fonts --install`, `models fetch`, or while the Docker image builds | nothing about your library: 42 Noto files, 43 MB; the WordNet 3.0 corpus, 11 MB, checked by SHA-256 | a render never downloads |
+Geocoding gets more accurate district/trip names and names in the film's language. It sends
+coordinates rounded to two decimals (about a kilometre) to Nominatim, once per place. That can
+include home. Answers stay in the store. Set `geocoding_url` for your own Nominatim.
 
-`preflight` prints one row per outside switch you turned on, naming the host. A default install
-prints none.
-
-## The one picture seat
-
-| Seat | Setting | What it is shown |
-|---|---|---|
-| captioner | `editorial.preparation.caption_base_url` | 400 px tiles, a 960 × 320 strip of three keyframes per video, no metadata |
-| explicit LLM caption provider | `editorial.preparation.caption_provider: llm` | the same tiles and frame strips, sent through the configured LLM provider |
-
-The LLM caption option is less efficient and can be much more expensive, especially on hosted
-infrastructure. Configuring a prose reader alone never enables it.
-
-The heads and detectors run locally or on `advanced.inference.facts_base_url` and bank their facts.
-The rules editor builds the NAS draft first. GPU and Full then acquire missing captions and clip
-evidence for selected shots and actual candidates. An explicit LLM-caption opt-in permits those
-image requests on NAS too. Later films reuse valid entries under their actual producer;
-missing facts or a changed producer can require another read. `prepare` can explicitly cover a
-wider scope. The selection reader uses the resulting text and never decides sharing.
-A film you share outside the family also leaves out every picture a detector or an exposure flag
-marked, whatever the reader says about it (`advanced.editorial.strict_sharing`, on by default).
-
-Two features ask a reader something besides the editor, and both send text only. Music
-selection reads the cut's text (thesis, story titles, ingest captions) and falls back to the clips'
-own mood, then `calm`; `music add` on a standalone video takes `--mood` or plays calm, and sends
-nothing. A special-day scan uses prepared captions for a day with at least 20 described pictures
-over 6 hours of the clock, and the day's recorded facts below that.
+Map tiles come from ArcGIS World Imagery for trip maps and location-card backgrounds. Requests
+reveal the area, including home base. With tiles off, ordinary title/location cards still work.
+[Maps and titles](../make/titles-maps-music.md) explains the result.
 
 ## Fonts
 
-A render never downloads a font. Titles need a face for every alphabet, and where it comes from
-depends on how you installed:
-
-- **Docker:** the image fetches all 42 Noto script files at build time, each checked against a
-  SHA-256 pinned in the code. A running container has every script and asks nobody.
-- **pip / uv:** the wheel carries the title families and Noto Sans (Latin, Greek, Cyrillic,
-  Vietnamese). Arabic, Hebrew, the Indic scripts, Thai, Chinese, Japanese, Korean and the rest are
-  43 MB, so they come from one explicit step:
+Docker includes script fonts. Python installs include the core fonts; other alphabets use one
+explicit download:
 
 ```bash
 immich-memories titles fonts --install
 ```
 
-It fetches from `raw.githubusercontent.com` (the Noto project's repositories, pinned to one commit
-and one tag) and refuses any file whose digest doesn't match. Skip it, and a title with letters no
-installed font covers draws what it can and logs one line naming the step.
-
-## Geocoding and maps
-
-Both off. Both worth turning on if you are fine with what they send.
-
-```yaml
-network:
-  geocoding: false
-  geocoding_url: ""       # a self-hosted Nominatim, e.g. http://nominatim.lan:8080
-  map_tiles: false
-```
-
-**`geocoding`** asks Nominatim about each trip's centre and about the places of the pictures in
-the film's own window (a month, a year), home included, each rounded to 2 decimals (about a
-kilometre) before it leaves. Nothing else goes with it: no picture, no date, no name. One request
-per place, at most one a second, with a User-Agent naming this app, and every answer is kept in the
-[store](./database.md), "nothing here" included, so a place is asked about once, ever, not once per
-film. A first year at home is a few hundred places; after that almost nothing. The rest of the
-library is never walked.
-
-What it buys:
-
-- **The right district.** Immich names a picture after the nearest town in GeoNames' list of
-  places over 500 people. A district that is not its own municipality gets its neighbour's name:
-  a picture in Wilrijk says "Hoboken". OpenStreetMap knows the district, so captions, location
-  cards and trip map pins say "Wilrijk".
-- **Trip names from the map**, at the trip's scale: the village rather than the merged
-  municipality it belongs to, the town, or the region.
-- **Names in the film's language** ("Nicosie" instead of "Nicosia"). Country names are translated
-  offline either way.
-
-A nightly `auto run` that finds a trip geocodes it the same way. Set `geocoding_url` to your own
-Nominatim and the requests go there instead; the switch still has to be on.
-
-**`map_tiles`** fetches ArcGIS World Imagery for the trip fly-over, the static trip map and the
-background of location cards: hundreds of tiles for a fly-over, a handful for a card. Off, a trip
-opens on the ordinary title card and location cards keep their text on the style's background.
-
-Privacy mode stops the cut's places from being asked about, but not the trip names: with
-`geocoding: true` a trip's real centre has been asked about before the fake city is picked.
+Font files are pinned and digest-checked. A render never fetches a font. ACE-Step and local Demucs
+can fetch their own weights on first use; those downloads contain no library data.
 
 ## Thumbnails in the web UI
 
-Your browser never talks to Immich. It asks the app (`/api/v1/assets/<asset id>/thumbnail`,
-`.../video`, and `/api/v1/people/<id>/face`), behind the same login as every page. The app serves a
-picture from the preview cache, or fetches it from Immich once and keeps it; a video streams through
-the app by byte range, so the API key stays on the server.
+Your browser asks this app for pictures/video, behind the same login. The app fetches or serves
+cached media from Immich. The API key stays on the server.
 
 ## Privacy mode
 
-For showing someone how the app edits without showing your pictures.
+For sharing a demonstration without showing the actual film:
 
 ```bash
 immich-memories generate --privacy-mode --year 2024
 ```
 
-In the web UI, set `server.enable_demo_mode: true` and a **Demo mode** switch (the eye) appears in
-the top bar; on, it blurs every image and video the UI shows. Each browser keeps its own choice.
+The encoded film blurs pictures, scrambles speech, substitutes names and moves places to a fake
+city. **This changes the film, not network requests.** Trip geocoding can happen before names
+are substituted. The output filename can still contain real information: rename it before sharing.
 
-| Data | What happens |
-|------|-----------------|
-| Video | Whole-frame blur plus a noise texture on every pixel of every clip, inside the encode |
-| Audio | 200 ms segment reversal and a 300 Hz lowpass on all clip audio: voices, no words |
-| GPS | The whole memory moves onto one fake city, each clip keeping its bearing and distance from the centre; home base moves with it |
-| Place names | The fake city's name |
-| Person names | One of twelve fake names, picked by a hash of the real one, so a person gets the same alias every run |
-| Titles and maps | Fake names and the fake city; the fly-over flies to the fake destination |
-
-The move is the same every run, so repeated renders give nothing away by averaging. Two gaps: the
-output file name is built before anonymisation, so rename it before sharing, and privacy mode
-changes what the film shows, not what the app sends.
+For a screen share, enable `server.enable_demo_mode` and turn on the UI's **Demo mode** eye button.
+Each browser has its own choice. This only blurs what the UI displays.
 
 ## Diagnostic reports
 
-`immich-memories report` builds a local report from selected diagnostic fields. From the included
-logs and errors it removes configured credentials, known personal names, albums and places, GPS
-coordinates, IP addresses, hostnames with ports, URLs of any scheme (`postgresql://user:pw@host/db`
-too) and absolute paths, in field names as well as values. Names match as whole words, so "Al" goes
-but "Alarm" stays; only single letters are left alone. IDs become hashes that match within that report and
-change in the next one. Config appears as shape, without hostnames or values. Pictures are never
-included. Read the report before sharing it. Nothing is sent automatically.
+`immich-memories report` creates a local report, with configured credentials, known personal
+names/places, coordinates, addresses, URLs and absolute paths removed. Asset IDs become report-local
+hashes. It contains no pictures and sends nothing automatically.
+Read it before sharing; automatic redaction is not a substitute for checking the file.
+
+## Everything that can leave, and when
+
+The [network request inventory](reference/privacy-egress.md) keeps the complete egress table and
+image-provider details together for operators.
+
+## The one picture seat
+
+The ordinary reader receives text. Picture tiles go to the caption server, or to the configured
+LLM only after an explicit image-caption opt-in. See the [inventory](reference/privacy-egress.md#the-one-picture-seat).
 
 ## Files on disk, and cancellation
 
-The annotation database and its SQLite sidecars are restricted to the current user. Previews are
-replaced atomically at mode `0600`; a corrupt preview gets one fresh fetch. Cancellation stops
-before the next caption request and terminates the detector worker's process group; committed
-facts stay for the next run.
+[Technical privacy details](reference/privacy-egress.md#files-on-disk-and-cancellation) cover local file
+permissions and cancellation. Keep the [store backed up](./database.md).

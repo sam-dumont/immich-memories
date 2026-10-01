@@ -1,355 +1,89 @@
 ---
-title: Title screens, maps and music
+title: Titles, maps and music
+description: Change your film's title, language, soundtrack and optional trip maps.
 ---
 
-# Title screens, maps and music
+# Titles, maps and music
 
-The clips are the film, but the cards around them are what make it read as a memory and not an FFmpeg concat
-of your camera roll:
+These are render choices. You can change them after reviewing the cut, without asking the app to choose the shots again.
 
-- **Intro card**: a blurred, darkened frame from the first clip behind white text, 3.5 seconds
-  (`title_screens.title_duration`). Title and subtitle shrink together when the pair would pass 80 % of the
-  frame height.
-- **Month dividers**: at each month change in a single-year film spanning four months or more. The first
-  month gets none: the intro already said it. `month_divider_threshold` sizes a budget, and when the budget
-  binds the first month changes win, so a thin January can keep its card while a busy November loses one.
-- **Trip map**: a satellite fly-over from home to the destination, in place of the intro. Off by default, see
-  [The map fly-over](#the-map-fly-over).
-- **Location cards**: the place name where a trip moves on. A hop of more than 30 km always gets one. A
-  walking or cycling trip moves village to village well under that, so a change of town gets one too: at
-  most one a day, never the same town twice in a row, never a town within 50 km of home. With map tiles on,
-  each card flies from the town the last card named to the new one, then holds on its name. See
-  [Map moves](#map-moves).
-- **Ending**: a fade to white, no text. Every film keeps it; a short film squeezes it to 2 s rather than dropping it.
+## Titles and language
 
-All of this works on a plain NAS. Titles come from templates, the special-day catalogue and your album names; a
-reader only rewrites people and occasion titles (see [When a model names the film](#when-a-model-names-the-film)).
+Under **Render**, type a **Title** and **Subtitle**, or leave them empty for the app's suggestion. Template titles use the dates, people and occasion. An optional [text reader](../better/reader.md) can write a title from the cut's facts.
 
-A configured LLM can write titles and choose music mood from the cut's text on every selection
-tier, including NAS. These requests send no pictures and need no local GPU. If the model is
-missing or fails, the template title and local music mood still work. Adding a text model does
-not opt you into using it to caption pictures.
+The film's language is separate from the interface language. Set it in your configuration:
 
-`title_screens.enabled: false` turns every card off. The other keys are in the
-[config reference](../reference/config-reference.md#title-screens).
+```yaml
+title_screens:
+  locale: fr
+```
+
+## Opening and closing fades
+
+Choose **Opening and closing fade** under **Render**: white, black, or **As configured**. This changes the fade at both ends of the title sequence for this film. Title screens must be enabled.
+
+Set the default in **Settings → title screens → fade_color**, or in your configuration:
+
+```yaml
+title_screens:
+  fade_color: black  # white is the default
+```
+
+For one CLI render, add `--fade-color black` to `generate` or `runs render`. The override leaves your saved default alone.
 
 ## Styles
 
-Every title is Montserrat, white on a dark palette. The date and place captions burned on clips use Outfit.
-Both ship inside the package (OFL-1.1).
-
-| Style | Palette | Character |
-|-------|---------|-----------|
-| `modern_warm` | Warm charcoal/stone | Bold, semibold. Amber accents |
-| `elegant_minimal` | Deep navy/black | Clean, medium weight. Cyan accents |
-| `vintage_charm` | Warm charcoal | Nostalgic. Amber/gold accents |
-| `playful_bright` | Deep teal | Energetic, semibold. Teal accents |
-| `soft_romantic` | Dark amber-tinted | Gentle scale-in. Warm amber accents |
-
-`style_mode: auto` (the default) picks the palette from the film's mood: happy, nostalgic and romantic get
-`warm_dark`, calm and peaceful `deep_teal`, energetic and playful `midnight`, exciting `cinematic_dark`.
-`style_mode: random` picks a named style.
-
-The renderer is picked for you: GPU kernels where Metal, CUDA or Vulkan start. On a CPU or NAS, Pillow
-draws the background and text once, and FFmpeg fades the text in and out at the film’s frame rate.
-The font, layout and palette stay the same; bokeh, moving gradients and animated deblur need a rendering
-GPU. Hardware video encoding still works on the NAS. Which renderer your box gets is on [Hardware encoding](../run/hardware.md#title-kernels).
-
-Preview a card without running anything:
+Choose a title style in your configuration, then try a preview before rendering the whole film:
 
 ```bash
 immich-memories titles test --year 2025 --style elegant_minimal
-immich-memories titles test --month 6 --year 2025 --type month
-immich-memories titles test --year 2025 --locale fr --orientation portrait
 ```
 
-## Every alphabet
+The [style and font reference](../reference/output-rendering.md#styles) lists the palettes and supported alphabets. Docker includes the fonts; native installs may need `immich-memories titles fonts --install`.
 
-Montserrat draws Latin, Polish, Czech, Turkish and Vietnamese included. A letter it lacks comes from Noto
-Sans, word by word, so `DEUX SEMAINES EN CRÈTE · Κρήτη` keeps its French in Montserrat and its Greek in Noto.
-A word never switches typeface halfway through.
-
-| Script | Where the font comes from |
-|---|---|
-| Latin, Greek, Cyrillic, Vietnamese | inside the package (Noto Sans) |
-| Arabic, Hebrew, Thaana, the Indic scripts, Sinhala, Thai, Lao, Khmer, Myanmar, Armenian, Georgian, Ethiopic | `titles fonts --install` (3.8 MB for all of them) |
-| Chinese, Japanese, Korean | `titles fonts --install` (Noto Sans CJK, 39.5 MB) |
-
-The Docker image runs that install at build time, each file checked against a pinned SHA-256, so a Docker
-user has every alphabet out of the box. On pip or uv, run it once:
-
-```bash
-immich-memories titles fonts --install
-```
-
-That command is the only thing that ever downloads a font. A render never does: a letter no installed font
-has draws as a box, and the log names the command once. Where the files come from is on
-[Privacy](../run/privacy.md).
-
-Arabic and Hebrew run right to left and Arabic letters join; the Indic scripts form their clusters. That is
-HarfBuzz and FriBiDi through Pillow. The Docker image has both. Elsewhere, install FriBiDi from the system
-(`apt install libfribidi0`, or `brew install fribidi` and start the app with
-`DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib`). Without it the letters still draw, unjoined.
-
-Greek in capitals drops its stress accents, the way Greek signs print it (`ΗΡΑΚΛΕΙΟ`, and `ΜΑΪΟΣ` where the
-accent kept two vowels apart). Chinese characters use the Simplified forms unless the title holds kana
-(Japanese forms) or Hangul (Korean).
-
-## Languages
-
-`title_screens.locale` sets the language of everything the film prints: titles, months, weekdays, trip cards,
-holidays. `auto` (the default) follows the host's locale.
-
-A film whose window is exactly a meteorological season opens on the season's name (`Summer 2025`, `Été 2025`,
-`2025年の夏`), counted in your home's hemisphere: with `trips.homebase_latitude` south of the equator, 1 December to
-the end of February is `Summer 2024–25`. Without a home base, or for any other window, the months name it (`June to
-August 2025`).
-
-The web UI's suggested title is the same template in the same language, so with no reader a French trip made
-in the web UI opens on "DEUX SEMAINES EN CRÈTE, GRÈCE, ÉTÉ 2025", exactly as the CLI would.
-
-| Language | Code | Trip titles |
-|---|---|---|
-| English | `en` | full: "A WEEK IN THE NETHERLANDS" |
-| French | `fr` | full: "UNE SEMAINE AUX PAYS-BAS" |
-| Dutch | `nl` | full: "op Kreta", "in de Verenigde Staten" |
-| German | `de` | full: "auf Kreta", "in der Schweiz" |
-| Spanish | `es` | full: "en el Reino Unido" |
-| Italian | `it` | full: "a Creta", "negli Stati Uniti" |
-| Portuguese (Brazil) | `pt-BR` | full: "na Itália", "nos Estados Unidos" |
-| Portuguese (Portugal) | `pt-PT` | full: "em França", "no Japão" |
-| Polish | `pl` | full for the places it lists, the fallback design for the rest |
-| Swedish | `sv` | full: "på Kreta", "i Italien" |
-| Russian | `ru` | fallback design |
-| Japanese | `ja` | fallback design |
-| Chinese (Simplified) | `zh-Hans` | fallback design |
-| Korean | `ko` | fallback design |
-
-:::caution[Twelve of these catalogues were drafted by an AI]
-Months and weekdays come from CLDR, so they are right everywhere. The rest of the wording lives in one
-catalogue per language under `src/immich_memories/locales/`. English and French are written by hand. The
-other twelve catalogues, and the preposition rules for Dutch, German, Spanish, Italian, Portuguese, Polish
-and Swedish, were drafted by an AI and checked by tests, not yet by native speakers. Each file says so at the
-top. A fix is a one-line pull request.
-:::
-
-"Fallback design" means the trip card never guesses a preposition: the place is the big line, the duration and
-date sit under it. A wrong preposition never reaches the screen.
-
-Why these fourteen: Immich publishes no usage numbers per language, and 44 of its languages on
-[Hosted Weblate](https://hosted.weblate.org/projects/immich/) are 95 % translated or more. The first ten are
-the Western European and American languages with the most speakers, plus Dutch; the last four are the largest
-non-Latin ones.
-
-## Trip titles: the place at the right scale
-
-A trip is named after the smallest place that holds 85 % of its located pictures, counted per picture: the
-city, else the island, else a town holding more than half of them, else the region, else two regions, else the
-country, else the countries in the order you crossed them. A day with forty pictures in one town weighs more than a travel day with two.
-
-The places are Immich's own reverse geocoding (GeoNames, offline) plus a small bundled table of islands,
-because GeoNames files most islands under a region. No outside call.
-
-| Scale | English | French |
-|---|---|---|
-| A country | `IN THE NETHERLANDS`, `IN ITALY` | `AUX PAYS-BAS`, `EN ITALIE` |
-| An island | `IN CRETE, GREECE`, `IN CYPRUS` | `EN CRÈTE, GRÈCE`, `À CHYPRE` |
-| A region | `IN APULIA, ITALY` | `DANS LES POUILLES, ITALIE` |
-| Two regions | `IN UTAH AND NEVADA, UNITED STATES` | `DANS L'UTAH ET AU NEVADA, ÉTATS-UNIS` |
-| A city | `IN LAS VEGAS, UNITED STATES` | `À LAS VEGAS, ÉTATS-UNIS` |
-| Several countries | `ACROSS BELGIUM → SPAIN` | no phrase, place first |
-
-The full title adds the length and the season or month: `TWO WEEKS IN CRETE, GREECE, SUMMER 2025`.
-
-Immich stores places in English. Country, island and region names are translated offline (CLDR and the bundled
-tables). City names stay as Immich stored them unless you switch on `network.geocoding`, which asks Nominatim
-for the district each picture is in, in the film's language, one request per distinct place and kept for the
-next film. That also fixes the district Immich names after its neighbour (Wilrijk, not Hoboken) everywhere a
-place is named: story titles, captions, location cards, map pins and the report. What that sends is on [Privacy](../run/privacy.md).
+On a CPU or NAS, title cards keep the font, layout and palette, with text fading in and out. Moving gradients, bokeh and animated deblur need a rendering GPU.
 
 ## Date and place captions
 
-Every film gets small translucent date and place captions unless you turn them off: `defaults.add_date`
-and `defaults.add_place` are on, and `--no-add-date` or `--no-add-place` drops one for a single film (the
-web render panel has the same two boxes). They are 48 px on a 1080p frame at
-85 % opacity, each one appearing when it changes. Captions stay clear of dissolves so two never overlap, and a
-caption in any alphabet draws with the title fonts above, HDR included.
-
-The date says only what is new: the weekday and day inside one month, the day and month inside one year, the
-full date across years. Each language writes it its own way (`10. AUGUST`, `10 DE AGOSTO`, `10 SIERPNIA`,
-`8月10日`).
-
-Places you are at all the time stay unlabelled (the name of your own town over every third clip is noise). A
-spot is familiar when it recurs within 250 m of the picture over many weeks in several years; a yearly summer
-holiday never qualifies. `trips.homebase_latitude` and `trips.homebase_longitude` mark home too, and the home
-country drops out of domestic captions. The scan reads metadata only, is cached for seven days under
-`cache.directory/familiar-places/`, and is skipped in privacy mode.
+In **Render**, untick **Add date overlay** or **Caption clips with their place** if you want a cleaner frame. Frequently visited places are not labelled over and over. The lasting defaults are `defaults.add_date` and `defaults.add_place`.
 
 ## The map fly-over
 
-The fly-over needs satellite tiles from a third party, so it is off until you say so:
+Trip maps are off by default. Enable them when you want an animated route and are comfortable requesting satellite tiles from an outside provider:
 
 ```yaml
 network:
   map_tiles: true
 ```
 
-Off, a trip film opens on the ordinary title card, location cards show the town name on the style's own
-background, and nothing about where you went leaves the machine. On, the camera starts over home at city zoom
-and flies to the first trip stop. Later cards travel from the previous stop to the next one. Long distances use a Van Wijk zoom (the d3 `interpolateZoom` path, which
-pulls out further the further apart the points are); hops that already fit the close view pan.
-The camera arrives close to the destination, with the same geographic framing at 1080p and 4K. Tiles come from ArcGIS World Imagery at
-`server.arcgisonline.com`, no key. Tile count varies with the route and resolution and can exceed 1000 per
-map. A box that cannot reach it renders grey frames and the
-run carries on.
-
-### Map moves
-
-Every map in a trip film is one move: an eased flight, then at least 2 seconds sitting still on the destination
-with its name up. That goes for the intro and for each location card, the town-change cards of a walk
-included. A card flies from the place the previous card named (the trip's first place for the first card) to
-its own town, so a hike reads as village to village on the map.
-
-A move lasts 6 seconds for a short hop and 8 for a long flight, scaled on the log of the distance: 30 km gets
-6 s, 300 km about 7 s, 3000 km and more 8 s. The 2 s hold always stays; the flight gets the rest.
-
-```yaml
-title_screens:
-  map_move_min_seconds: 6.0   # nearby place, hold included
-  map_move_max_seconds: 8.0   # far place, hold included
-```
-
-With animated backgrounds enabled, a card renders every flight frame once and the hold once, so a 7 s card at 30 fps is about 150 map renders.
-Tiles are cached for the whole card. The log line per card gives frames, renders and tiles.
-
-`preset: fast` sets `title_screens.animated_background: false`. Maps then use three views: close to the
-previous stop, the route's wider midpoint, and close to the next stop. Short fades join these views;
-this replaces the smooth flight. Satellite detail is rendered at a 360-pixel short side and enlarged,
-while names and pins are drawn at the film's full resolution. Each leg needs only three map renders.
-Static spans reuse those plates in one frame stream; only the two brief fades blend new frames.
-The output resolution, frame rate, encoding plan, move duration and destination hold stay the same.
-Set `animated_background: true` explicitly to keep the smooth map flight, even with the fast preset.
-
-### Stops on the intro
-
-The intro lands on the first trip stop. Later stops appear as the film reaches them. Only named stops
-get pins, since an unlabelled dot tells you nothing.
-
-Close stops are grouped with the trip-leg rule: points that stay within 25 km of each other are one area of stay.
-
-- A group of 1 or 2 stops keeps each town's own name.
-- A group of 3 or more is one pin in its middle, named by the place its members share: the municipality,
-  county, district, island, province or region, from the geocoder, in the film's language. With
-  [geocoding](../run/privacy.md) off, or no level in common, it is named "first → last" (`Village A → Village G`). The arrow is bundled with the fonts and needs no
-  extra font installation.
-
-So a hike through seven villages in one valley is one stop with the valley's county on it, and the intro flies
-there as one hop. The intro never hops stop by stop: each location card already flies that leg at a
-watchable speed, and an 8-stop trip at 2 s a hop would open on 18 s of map before any picture.
-
-### Maps and film length
-
-Maps run on top of the length you asked for. The budget counts each map at the price of what it replaces (a
-location card at `month_divider_duration`, the intro at `title_duration`), so a 3-minute trip keeps its
-3 minutes of pictures and regular cards, and the seconds the maps run past that are added on top. Three
-location cards and an intro add about 20 s.
-
-The render log says it once the film is composed:
-
-```
-Final timeline: 163.5s content + 16.5s titles + 21.0s map extra
-```
-
-`immich-memories runs show <run-id>` prints the same line as **Timeline**, and
-[`immich-memories report`](./cli/report.md) carries it under `run.timeline`.
-
-## When a model names the film
-
-Make it better (optional): with a [reader](../better/reader.md) configured, the model names people and
-occasion films ("Ada and her grandparents" instead of three stacked full names). `--llm-title` adds trips,
-`--no-llm-title` pins the template everywhere, and `--title` always wins.
-
-The title reader gets facts, never pictures and never coordinates: first names, birth dates and ages, the
-relations your [people registry](../get-started/who-is-who.md) confirms, the special-day catalogue's words, the
-album that holds most of the cut, and the place names by day. A capitalised word found in none of those facts
-gets the title refused in favour of the template, and so does a country, island or region the facts do not
-name, even as the title's first word. A trip title has to name the trip's place. Refusing
-costs a plainer title, so the check leans towards refusing.
-
-### Where the title came from
-
-Every render stores the source of its opening title on the run. `immich-memories runs show <run-id>` prints it
-as **Title From**:
-
-| Source | The title is |
-|---|---|
-| `override` | what you typed: `--title`, or your edit in the web UI |
-| `album` | an album film's album name |
-| `occasion` | a holiday's name, or the special-day catalogue's title |
-| `model` | what the title reader wrote |
-| `place` | a trip title, built from where it went |
-| `fallback` | the template: the year, the dates, the people |
-
-`fallback` on a film you expected the model to name means the reader was not asked, failed, or had its title
-refused.
+With maps off, a trip uses ordinary title and location cards. Smooth maps fly between stops; the fast preset uses three views joined by short fades. Maps add time to the finished film beyond the picture budget. [Map rendering](../reference/output-rendering.md#the-map-fly-over) covers providers, route grouping and timing.
 
 ## Music
 
+In **Render**, choose **Automatic**, **No music**, or upload your own MP3, M4A or WAV. **Music volume** changes the mix; the music drops under the clips' own sound.
+
+Automatic uses a bundled track by default. A configured [music generator](../better/music.md) can make an original one and enables **Preview a track** so you can listen first. A failed generator falls back to a bundled track and leaves a warning.
+
 ```mermaid
-flowchart LR
-    start["Pick the music<br/><small>generate_music.resolve_music</small>"] --> nomusic{"--no-music?"}
-    nomusic -- yes --> silent["No music"]
-    nomusic -- no --> file{"A track you chose?<br/><small>--music FILE, or an upload</small>"}
-    file -- yes --> yours["Your file, as you made it"]
-    file -- no --> mood["A mood for the cut<br/><small>audio/text_mood.mood_for_cut</small>"]
-    mood --> gen{"ACE-Step or MusicGen<br/>enabled?"}
-    gen -- yes --> generated["Generated track<br/><small>auto_generate_music</small>"]
-    gen -- no --> bundled["Bundled track for the mood<br/><small>audio/bundled_music.bundled_track_for_mood</small>"]
-    generated -. fails .-> bundled
-    generated --> duck["Ducked under the clips' own sound<br/><small>audio/mixer</small>"]
-    bundled --> duck
-    yours --> duck
+flowchart TD
+  A[Music choice] --> B{Your own track?}
+  B -- Yes --> C[Use your file]
+  B -- No --> D[Automatic track]
+  D --> E[Bundled or generated]
+  C --> F[Mix under clip audio]
+  E --> F
 ```
 
-The mood comes from text only. With a reader configured, `mood_for_cut` sends the saved cut's text (story
-labels, captions of kept pictures) and gets back a mood, an energy, a tempo and up to five genres; no picture
-goes out. Without a reader, or when that call fails, the film gets the mood its clips carry, else `calm`.
-
-A generator that fails falls through to a bundled track, and the swap comes back as a warning on the finished
-video and in the notification, so a dead backend never passes for working music.
-
-The bundled tracks come with the `music` extra, which the Docker image and the `all` extra include: 28
-royalty-free tracks in five moods (calm, energetic, happy, nostalgic, tender), about 30 s each, looped with a
-crossfade. They were generated locally with ACE-Step from nothing sampled; tempo, key and seed per track are in
-`LICENSE-MUSIC`. A pip install without the extra renders silent unless you pass a file. In a film with photos,
-the pick prefers a track whose beat lands within 0.2 beats of the photo cadence.
-
-Ducking is a sidechain compressor keyed on the clips' audio, so speech, laughter and wind all lower the music.
-`--music-volume` (0.0 to 1.0, default 0.5) maps onto -20 dB to 0 dB before ducking. When a generator gave four
-stems, vocals duck most and drums keep their rhythm. None of the ducking constants is a config key.
-
-| Where | Switch |
-|---|---|
-| CLI | `--music PATH`, `--no-music`, `--music-volume` |
-| Web UI, Render | **Music**: Automatic (as configured), No music, a previewed track, an uploaded one, and **Music volume** |
-| Config | `advanced.ace_step.enabled`, `advanced.musicgen.enabled` |
-
-### Generated music {#install-locally-on-a-mac}
-
-Generated music (ACE-Step on a Mac or a GPU box, MusicGen on a server) is an add-on with its own install and
-memory needs: [Generated music](../better/music.md).
-
-### The music commands
+On the CLI:
 
 ```bash
-immich-memories music search --mood happy --genre acoustic --limit 5
-immich-memories music add compilation.mp4 output.mp4 --music ~/Music/track.mp3 --fade-in 3 --fade-out 5
-immich-memories music add compilation.mp4 output.mp4 --mood nostalgic
+immich-memories generate --year 2025 --music ~/Music/track.mp3 --music-volume 0.4
 ```
 
-`music search` reads `audio.local_music_dir` (`~/Music/Memories`). `music add` mixes a track under a video you
-already have, with the same ducking. Without `--music` it picks a track from that folder by `--mood`, and by
-`calm` when you give none. A standalone video has no cut text to read, and no command here sends a frame to a
-model: pictures are read once, at ingest. To hear what a finished cut would get before you render it,
-`music preview RUN` generates its track ([runs render](./cli/runs.md#runs-render)). Every flag is in the
-[CLI reference](../reference/cli-reference.md#music).
+## When a model names the film
+
+A text reader can write titles and choose the music mood on the NAS tier too. Those calls use text, not pictures. Your typed title wins; template titles remain the fallback. [Title provenance](../reference/output-rendering.md#where-the-title-came-from) explains the source shown on a run.
+
+## Generated music {#install-locally-on-a-mac}
+
+[Set up generated music](../better/music.md) when you want it. The [output reference](../reference/output-rendering.md) has language catalogues, typography, map timing and audio mixing details.

@@ -209,7 +209,7 @@ ARG VCS_REF=unknown
 ARG SOURCE_URL=https://github.com/sam-dumont/immich-video-memory-generator
 
 LABEL maintainer="Immich Memories Contributors"
-LABEL description="Create video compilations from your Immich library"
+LABEL description="Turn your Immich photos and videos into memory films."
 LABEL org.opencontainers.image.version="${APP_VERSION}" \
       org.opencontainers.image.revision="${VCS_REF}" \
       org.opencontainers.image.source="${SOURCE_URL}"

@@ -172,3 +172,6 @@ people*.yaml
 
 # The built web client (make web-build). The release wheel and the Docker image build it (#1580).
 src/immich_memories/web/client/
+
+# Theme-specific public documentation walkthrough (CC0 fixture only).
+!docs-site/static/demo/dark-demo.mp4

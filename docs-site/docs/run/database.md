@@ -1,355 +1,112 @@
 ---
-title: Database and the store
+title: Database and backups
 ---
 
-# Database and the store
+# Database and backups
 
-The store holds the parts of a memory that are not files: people, aliases and confirmations,
-owner decisions, model answers someone paid for, run history, settings the UI edits, and
-the place names an opt-in geocoder answered. It
-defaults to a SQLite file next to `config.yaml`. Nothing else needs installing for that default,
-and it is not a fallback: SQLite is a first-class backend, and so is PostgreSQL when you want one.
-Media, previews, thumbnails and per-attempt artifacts stay files either way; the cache (derived
-analysis, hashes, scene prints) is always local SQLite and is never migrated or backed
-up.
-
-Four ways to point it, in increasing order of "I already run PostgreSQL for something else":
-
-```mermaid
-flowchart LR
-    A["1. SQLite file<br/>(default)"] --> B["2. Separate PostgreSQL<br/>service"]
-    B --> C["3. Separate database on<br/>your existing PostgreSQL"]
-    C --> D["4. Dedicated schema in<br/>Immich's own database"]
-```
-
-All four are the same `IMMICH_MEMORIES_DATABASE_URL` setting (unset means mode 1); nothing else in
-the app changes. `store copy --to <url>` moves an existing SQLite store to any of the others.
+Keep the store. It holds your people, settings, review decisions, prepared model answers and run
+history. Losing it means preparing the library again and losing your saved decisions.
+Previews, downloaded clips and finished films are separate files.
 
 ## 1. SQLite file on local disk (default)
 
-`sqlite:///~/.immich-memories/store.db`, expanded per call so a container's `HOME` still works.
-This is the right choice for the common case: one host, one container, one writer. WAL mode,
-`busy_timeout=30000` and short write transactions make it hold up fine at the scale this app runs
-at (a library in the tens of thousands of assets, not millions).
+The default is `~/.immich-memories/store.db`. No database server to install.
+Docker keeps it on the config volume; Kubernetes keeps it on the data/cache PVC.
 
-**SQLite's rules, and why they exist:**
+Use local disk and one writer host. NFS, SMB and CIFS are refused because SQLite WAL locking
+needs local shared memory. `IMMICH_MEMORIES_ALLOW_NETWORK_SQLITE=1` bypasses that check with a
+warning; it does not make multi-host writing safe.
 
-- **Local disk only.** Opening the file over NFS, SMB or CIFS is refused unless you set
-  `IMMICH_MEMORIES_ALLOW_NETWORK_SQLITE=1`, and even then it warns on every start. WAL mode needs
-  shared memory between the writer and the lock file, which a network filesystem does not give two
-  hosts. This is not a permissions problem you can work around: the file corrupts silently, and you
-  find out when a read comes back wrong.
-- **One writer host.** A second process on a second host writing the same file, even on local
-  disk mounted twice, is the same problem. On Kubernetes this is why the CronJobs in
-  `deploy/kubernetes/base/job.yaml` call the running Deployment's `POST /api/trigger` route instead
-  of mounting the store PVC themselves: see [Kubernetes](./kubernetes.md#database).
-
-## 2. A separate PostgreSQL service
-
-`docker-compose.yml` ships a commented `postgres` service (`postgres:16`, pinned by digest), a
-commented `IMMICH_MEMORIES_DATABASE_URL` line on the app service, and a commented
-`immich-memories-postgres-data` volume at the bottom. Uncomment all three, then in `.env`:
-
-```bash
-POSTGRES_PASSWORD=a-long-random-password
-COMPOSE_PROFILES=postgres
-```
-
-and `docker compose up -d`. The service sits behind the `postgres` profile, and
-`COMPOSE_PROFILES` turns it on for every later `up` too, so an update with a plain
-`docker compose up -d` does not leave the app without its database. On Kubernetes,
-`deploy/kubernetes/overlays/postgres` does the equivalent: it is not referenced by
-`base/kustomization.yaml`, so applying `base` alone keeps SQLite, and applying the overlay points
-the Deployment at a `database-secret.yaml` you fill in yourself; it does not run PostgreSQL for
-you. Terraform: set `database_url` (empty by default, which keeps SQLite) and, only if you share
-the instance, `database_schema` (default `immich_memories`).
-
-```
-IMMICH_MEMORIES_DATABASE_URL=postgresql+psycopg://immich_memories:change-me@postgres:5432/immich_memories
-```
-
-Plain PostgreSQL 14+. No extensions, no `vchord`, no pgvector: every vector comparison in this app
-is exact numpy over a small candidate set (one film, one story, a 14-day window), so there is no
-extension to install and no extension to keep in step with an upstream image.
-
-## 3. A separate database on your existing PostgreSQL instance
-
-The same URL, pointed at a database on an instance you already run for something else (including
-Immich's own PostgreSQL container, if you want to reuse it without touching Immich's schema):
-
-```
-IMMICH_MEMORIES_DATABASE_URL=postgresql+psycopg://immich_memories:change-me@database:5432/immich_memories
-```
-
-`database` is the service name in Immich's own compose file, so the host resolves when this app
-runs in that file ([next to your Immich stack](./docker.md#next-to-your-immich-stack)). From
-anywhere else, use the address that reaches your PostgreSQL.
-
-Create the database and a role scoped to it first:
-
-```sql
-CREATE ROLE immich_memories WITH LOGIN PASSWORD 'change-me';
-CREATE DATABASE immich_memories OWNER immich_memories;
-```
-
-Nothing here reads or writes Immich's own database. This mode exists for hosts that already pay
-for one PostgreSQL instance and want a second logical database on it rather than a second
-container.
-
-## 4. A dedicated schema in Immich's own database
-
-Point the URL at Immich's database, and set the schema so the store's tables land somewhere that
-is not `public`:
-
-```
-IMMICH_MEMORIES_DATABASE_URL=postgresql+psycopg://immich_memories:change-me@database:5432/immich
-IMMICH_MEMORIES_DATABASE_SCHEMA=immich_memories
-```
-
-`IMMICH_MEMORIES_DATABASE_SCHEMA` is not in the shipped compose file: add it to the service's
-`environment:` block next to the URL.
-
-Create the role and schema while connected to Immich's database (`immich`), with no grants on
-anything Immich owns:
-
-```sql
-CREATE ROLE immich_memories WITH LOGIN PASSWORD 'change-me';
-CREATE SCHEMA immich_memories AUTHORIZATION immich_memories;
-```
-
-That is the whole grant. The role owns its own schema and nothing else: no `GRANT` on `public`, no
-grant on any Immich table, no cross-schema foreign key, no search-path change on Immich's own
-role. Alembic's version table (`alembic_version`) lives inside `immich_memories`, and autogenerate
-is scoped to this app's own `MetaData`, so a migration here never touches Immich's tables and an
-Immich migration never touches this schema. No extensions are needed for either side, so there is
-nothing to reconcile between the two.
-
-**The one thing this mode does not protect against:** a whole-database restore of Immich (`pg_dump
--d immich` or a snapshot restore) restores every schema in that database, this one included. If you
-restore Immich from a backup taken before a memory run, that run's decisions and banked answers go
-back with it. `immich-memories store backup` dumps only this schema, independent of Immich's own
-backup schedule, if you want the two to have separate retention.
-
-## Run history and automation
-
-Every run (its phases, delivery state and what it spent on the model), every nightly automation
-attempt, the notification cooldown, the special-days catalogue, and the link from a run id to the
-attempt directory it was cut from are store rows. That is what automation's cooldown and "already
-made this memory" checks read, so wiping `cache.db` no longer re-films a memory you already have.
-The attempt directories themselves, and the `run_metadata.json` beside each film, stay files.
-
-Three kinds of work must never run twice at once: a nightly automation pass, an assembly, and a
-film attempt. Each takes a lease first, and the store decides what a lease is:
-
-- **SQLite:** a lock file beside `cache.db` (`.auto.lock`, `.lock`) or in the attempt directory
-  (`.lease`). The operating system drops it when the process dies. One host, as SQLite always is.
-- **PostgreSQL:** an advisory lock in the database, held on a connection the holder keeps open.
-  The server drops it the moment that connection closes, a crash included. So several app
-  instances, on as many machines as you like, can share one PostgreSQL store: whichever takes the
-  lease runs, and the others say another run holds it. Two stores in one database (two schemas)
-  never block each other.
+PostgreSQL is optional. It does not make the UI multi-replica.
 
 ## Managing the store
 
-Five commands, all under `immich-memories store`. They act on whatever store the config points at
-(`IMMICH_MEMORIES_DATABASE_URL`, or `database.url`, or the default SQLite file).
+### Back up
 
-```mermaid
-flowchart LR
-    L["Legacy files<br/>(people.yaml, cache.db,<br/>annotations.sqlite, ...)"] -- "store import" --> S[("Store")]
-    S -- "store backup" --> B["Backup file<br/>+ manifest.json"]
-    B -- "store restore" --> S
-    S -- "store copy --to URL" --> T[("Another store<br/>(SQLite or PostgreSQL)")]
-    S -- "store status" --> R["Revision, row counts,<br/>size, import record"]
+```bash
+immich-memories store backup
 ```
 
-### `store status`
+Docker:
 
-Backend, URL (password shown as `***`), schema, Alembic revision and whether it is at head, the
-import record, rows per table, and the file size (SQLite, WAL included) or schema size
-(PostgreSQL). It reads the database as it is: it never migrates it, and a SQLite file that does not
-exist yet is reported, not created. A SQLite file on NFS, SMB or CIFS gets a warning line.
+```bash
+docker compose exec immich-memories immich-memories store backup
+docker compose cp immich-memories:/home/immich/.immich-memories/backups ./backups
+```
 
-### `store backup [--to FILE]`
+The app can keep running. The command creates a `.db` (SQLite) or `.dump` (PostgreSQL), plus a
+`.manifest.json`, under `~/.immich-memories/backups/`. Keep both together and copy them off the
+host. Restore requires the manifest.
 
-A consistent copy while the app keeps running:
+Also keep:
 
-- **SQLite:** `VACUUM INTO`, a compact single file.
-- **PostgreSQL:** `pg_dump --format=custom --schema=<schema>`. Only the store's schema, never the
-  rest of the database. The row counts and the dump read one snapshot, so the manifest describes
-  the file exactly.
+- `config.yaml` and deployment files;
+- `IMMICH_MEMORIES_SECRET_KEY`, if used for saved credentials;
+- finished films you keep locally.
 
-Without `--to` the file lands in `~/.immich-memories/backups/store-<UTC time>.db` (or `.dump`).
-Beside it goes `<file>.manifest.json`: app version, Alembic revision, backend, schema, rows per table
-and when it was taken. Keep the two together; a restore refuses a file without its manifest.
-Existing files are never overwritten.
+PostgreSQL backups need `pg_dump` at least as new as the server. The Docker image includes client
+17, so a newer PostgreSQL server needs a matching client. Python installs need client tools on
+`PATH`.
 
-PostgreSQL backups need `pg_dump` on `PATH`, at least as new as the server. The Docker image ships
-it (`postgresql-client`, currently 17, which dumps any server up to 17). On a uv/pip install, install
-your distribution's `postgresql-client`; without it the command says so and stops.
+### Restore in a container {#restore-in-a-container}
 
-### `store restore --from FILE [--force]`
-
-Stop the app first: a restore replaces the database under it.
-
-- It refuses a store that holds any row unless you pass `--force`.
-- **SQLite:** the backup is copied beside the store file and swapped in, with the old `-wal` and
-  `-shm` sidecars removed so they cannot be replayed into it.
-- **PostgreSQL:** the store's schema is dropped and `pg_restore` rebuilds it. A backup restores under
-  a different schema name too (it is renamed afterwards), as long as the original name is free in
-  that database. A schema that holds tables that are not the store's is refused outright, so a
-  mistyped `IMMICH_MEMORIES_DATABASE_SCHEMA=public` cannot take Immich with it.
-- Afterwards the store is migrated to head and every table's row count is checked against the
-  manifest. A backup from an older release restores and then upgrades like any other old store.
-
-A SQLite backup restores into SQLite and a PostgreSQL one into PostgreSQL. To change backend,
-restore into the backend the backup came from, then `store copy`.
-
-#### Restore in a container {#restore-in-a-container}
-
-In a container the app is the process that holds the store, so `exec` into it is the wrong place.
-Stop it and run the restore in a one-off container on the same volumes.
-
-**Docker Compose:**
+Stop the app first. A restore replaces its database.
 
 ```bash
 docker compose stop immich-memories
 docker compose run --rm immich-memories immich-memories store restore \
-  --from /home/immich/.immich-memories/backups/store-<UTC time>.db --force
+  --from /home/immich/.immich-memories/backups/store-20260930T090000Z.db --force
 docker compose up -d
 ```
 
-**Kubernetes and Terraform:** scale the Deployment to 0, run a copy of the one-off `generate` Job in
-`deploy/kubernetes/base/job.yaml` with its command replaced by
-`immich-memories store restore --from /home/immich/.immich-memories/backups/<file> --force` (add the
-database Secret to it when the store is on PostgreSQL), then scale back to 1:
+The filename above is an example; use your actual backup (`.dump` for PostgreSQL). Keep its manifest beside it.
+`--force` permits replacing a non-empty store.
+
+For Kubernetes, scale the Deployment to zero and run a one-off restore Job on the same volumes
+(and database Secret, when applicable), then scale back to one. The
+[store command reference](./reference/store-commands.md#restore-in-a-container) gives the Job
+procedure. Do not `exec` a restore into the running app.
+
+A SQLite backup restores into SQLite; a PostgreSQL backup restores into PostgreSQL.
+To change backend, restore first, then copy.
+
+### Move to PostgreSQL
+
+Create the target database/role using one of the [PostgreSQL modes](./reference/database.md), then:
 
 ```bash
-kubectl -n immich-memories scale deploy/immich-memories --replicas=0
-kubectl -n immich-memories apply -f restore-job.yaml && kubectl -n immich-memories wait --for=condition=complete job/<name>
-kubectl -n immich-memories scale deploy/immich-memories --replicas=1
+immich-memories store copy --to 'postgresql+psycopg://immich_memories:password@postgres:5432/immich_memories'
 ```
 
-On a uv or pip install, stop `immich-memories ui` and run the restore from a shell, outside the time
-the daily job fires.
+The target must be empty unless you deliberately use `--force`. The command compares row counts
+and content after copying. Point `IMMICH_MEMORIES_DATABASE_URL` at the target and restart.
+The old SQLite file remains your way back. Protect URLs containing passwords like other secrets.
 
-### Moving from SQLite to PostgreSQL: `store copy --to URL`
+## 2. A separate PostgreSQL service
 
-```bash
-immich-memories store copy --to postgresql+psycopg://immich_memories:change-me@postgres:5432/immich_memories
-```
+Compose ships a commented service, database URL and volume. Enable all three and set
+`POSTGRES_PASSWORD`/`COMPOSE_PROFILES=postgres` in `.env`.
+[Complete setup](./reference/database.md#2-a-separate-postgresql-service).
 
-The target is migrated to head, then every table is copied in batches, parents before children,
-in one transaction. Afterwards each table's row count and a content digest are compared between the
-two stores, and any difference fails the command. A target that already holds rows is refused
-unless you pass `--force`, which empties it first. `--schema` picks the PostgreSQL schema
-(default: the configured one).
+## 3. A separate database on your existing PostgreSQL instance
 
-Then point `IMMICH_MEMORIES_DATABASE_URL` at the target and restart. The SQLite file stays where it
-was; it is your way back. The same command works the other way, PostgreSQL to SQLite
-(`--to sqlite:////data/store.db`).
+A dedicated database and role can share an instance with Immich without touching Immich's tables.
+[SQL and connection setup](./reference/database.md#3-a-separate-database-on-your-existing-postgresql-instance).
 
-### `store import [--from DIR] [--verify]`
+## 4. A dedicated schema in Immich's own database
 
-Brings the files an install from before the store kept (`people.yaml`, `special-days.json`,
-`cache.db`'s run history and asset scores, the run index, `annotations.sqlite`, `judgments.db`, the
-`structure-banks/` audience and vote banks, the owner edits beside reviewed films) into the store. It runs by itself once, the first time a new version opens a store with no import record
-while those files exist ([upgrading](./maintenance/upgrading.md#data-compatibility)); this command is
-for running it by hand, from another directory, or again.
+This is the expert option. Use a separate role/schema, not Immich's role or `public`.
+A whole-Immich database restore also rewinds this schema.
+[Isolation and restore details](./reference/database.md#4-a-dedicated-schema-in-immichs-own-database).
 
-- The files are opened read-only and never changed or deleted.
-- A record the store already holds is never replaced by an older one from a file.
-- After each domain (people, then annotations and owner decisions, then run history, then the
-  banks) completes, its
-  files' path, size, mtime and SHA-256 are recorded in the store. A rerun skips a domain whose files
-  have not changed, and an interrupted import finishes where it stopped.
-- `--verify` reads the files again and checks that every legacy record is in the store with the
-  same values: exactly for owner decisions, owner edits, people and special days, to within float
-  rounding for model answers. An audience hold passes when the store's is the same or stricter: the
-  import may tighten a hold, never loosen one. Any difference is listed (table and key, never the values) and the command exits 1.
+## Run history and automation
 
-`--from` defaults to `IMMICH_MEMORIES_IMPORT_FROM`, then `database.import_from` in `config.yaml`, then
-`~/.immich-memories`.
+History, automation cooldowns and saved decisions are store rows. Attempt artifacts stay files.
+SQLite uses local file locks; PostgreSQL uses advisory locks for background work across hosts.
+Those leases protect CLI jobs, not the UI's in-memory workflow: keep one UI replica.
 
-## Detector cache contract for 1.0.0
+## Prepared facts
 
-`detector-facts-v1` freezes the banked detector format. A fact keeps its asset ID, head name,
-producer version, label, confidence, encoder identity and decision time. The lookup key remains
-`(asset_id, head, version)`. The application version is not part of that key: installing 1.0.0 or
-upgrading a container does not, by itself, make a prepared library cold again.
-
-The frozen producer versions are:
-
-| Producer | Version |
-|---|---|
-| DINO activity, children, location, people, frame kind and uncovered person | `public-v1` |
-| DINO venue | `oi-v3` |
-| DINO screen | `public-v1-strict` |
-| Marqo exposure | `det-v3` |
-| Docling document type | `det-v2` |
-| Sampled video frame kind | `frame_kind-public-v1/8-frames` |
-
-The v1 fixture also pins model/export digests, the head bundle, label sets, the preprocessing
-identity and video sampling. A producer that changes those semantics needs a new producer version
-and an explicit compatibility decision. Existing answers keep their original version.
-
-### Inspect and migrate
-
-```bash
-immich-memories store facts status
-immich-memories store facts status --json
-immich-memories store facts migrate          # preview only; no inference
-immich-memories store facts migrate --apply  # copy proven compatible answers
-```
-
-`status` groups existing facts by producer, version and compatibility. `reusable` means the row
-matches the configured producer and has a valid label/confidence. `superseded` means a current row
-already exists beside an older one. `migrate` means an answer can carry forward without inference.
-`refresh` means the old or malformed answer does not satisfy the current producer. `unrecognized`
-means that head is outside the configured set; it is preserved. This reports stored facts, not
-missing assets across an entire library. `prepare` reports missing coverage for a chosen scope.
-
-The compatible migration in v1 copies Marqo `det-v2` still-photo answers to `det-v3`, only when
-stored metadata confirms a photo and the encoder identity matches. The newer contract changed
-video sampling, not still inference. Videos, Live Photo clips, unknown media kinds and answers
-from a different encoder cannot use that migration. Preparation already carries qualifying stills
-forward as it reaches them; this command lets you do it ahead of time.
-
-Migration retains the old row, timestamp, label and confidence, and never overwrites an existing
-newer answer. Repeating it is safe. Its report names the producer, count and up to 20 asset IDs.
-It changes no media, captions or owner decisions. Run `store backup` before maintenance if you
-want a rollback point. Database schema upgrades and legacy-file imports remain separate from
-this detector migration.
-
-### When a refresh is needed
-
-| Change | Detector work |
-|---|---|
-| App version, image rebuild, CPU/GPU host, inference URL or concurrency | Reuse facts with the same producer contract |
-| Selection tier, film duration, output resolution or music | Reuse compatible facts; prepare only newly required producers |
-| New asset | Prepare that asset once |
-| Changed weights, preprocessing, labels, confidence meaning or frame sampling | New producer version; migrate only proven equivalents, otherwise prepare affected facts |
-| Source pixels replaced under the same asset ID, or a known bad cached answer | Explicitly refresh the affected asset/head pairs |
-
-V1 detector lookups do not compare source-file checksums on every cut. Replacing source pixels
-under the same Immich asset ID therefore needs an explicit refresh; changing a filename or date
-alone does not require new pixel inference. Custom head bundles must use new head versions when
-their meaning changes. Reusing an old version for different weights breaks the cache contract.
-
-Stop preparation workers before an explicit refresh, then preview the exact scope:
-
-```bash
-immich-memories store facts refresh --head nsfw_marqo --asset ASSET_ID
-immich-memories store facts refresh --head nsfw_marqo --asset ASSET_ID --apply
-immich-memories prepare --year 2024 --month 6
-```
-
-Repeat `--head` or `--asset` for more than one. Both are required. `--apply` removes all versions
-of only those head/asset pairs, so an older equivalent answer cannot immediately migrate back.
-Other detector facts, captions, pixel measurements and owner decisions stay banked. This command
-runs no model; the next `prepare` or cut recomputes the missing required facts and banks them as
-usual. An interrupted preparation resumes the remaining work. For a changed producer version,
-ordinary `prepare` already finds what is missing; you do not need to delete the old version first.
-
-Keep the store volume, as well as downloaded model weights, across container upgrades. Deleting
-`store.db` discards these banked answers. Use `store copy` to move them between SQLite and PostgreSQL.
+Normal upgrades reuse compatible facts. For producer versions or refreshing a known
+bad answer, use [Detector facts and refreshes](./reference/detector-facts.md).
+The [store command reference](./reference/store-commands.md) covers status, backup, restore and backend copies.

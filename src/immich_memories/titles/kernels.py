@@ -664,21 +664,28 @@ def _hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
 
 
 def _finalize_to_output(
-    frame, output, max_val: float, *, fade_in: float = 1.0, fade_out: float = 0.0
+    frame,
+    output,
+    max_val: float,
+    *,
+    fade_in: float = 1.0,
+    fade_out: float = 0.0,
+    fade_color: str = "white",
 ) -> None:
     """Quantize and fade on device before the single u8/u16 readback.
 
-    Compute the white offsets on the host: the previous NumPy path truncated
+    Compute the edge-color offsets on the host: the previous NumPy path truncated
     them separately before blending the already-quantized frame.
     """
+    edge_val = 0.0 if fade_color == "black" else max_val
     _finalize_output(
         frame,
         output,
         max_val,
         fade_in,
-        int(max_val * (1.0 - fade_in)),
+        int(edge_val * (1.0 - fade_in)),
         1.0 - fade_out,
-        int(max_val * fade_out),
+        int(edge_val * fade_out),
     )
 
 

@@ -1,55 +1,22 @@
 ---
-title: Add a reader
-sidebar_label: "Add a reader (local or hosted)"
+title: Add a text reader
 ---
 
-# Add a reader
+# Add a text reader
 
-The NAS makes the film without one. A reader is a text model that writes the prose (what happened
-in each episode, an account of the period, the film's title, the music's mood). On Full it can
-refine the rules draft: a proposed replacement must pass the shared checks before taking a shot's
-seat. It can also keep the existing cut. It starts from the NAS draft and never sees a picture. The captioner reads selected shots
-and replacement candidates; existing captions are reused. The reader can read a selected shot's
-whole episode for context, without asking the captioner to fill every neighbour first. What exactly it
-changes, with diagrams: [What a model adds](../how-it-chooses/what-a-model-adds.md).
+A reader writes titles and music mood on any tier. With GPU inference, captions and Laya ready, it also enables **Full**: refinement of the rules draft. The selection reader receives text, not pictures.
 
-The same endpoint can separately act as the caption provider only when you explicitly enable
-[LLM captions](./captions.md#explicit-llm-captions). That role sends images, needs vision support,
-and can cost much more, especially hosted. The selection reader still receives text.
-
-## What you need
-
-Which servers and hosted models have been checked, and when: [Supported and tested](../run/requirements.md#supported-and-tested).
-
-- A text model with at least a 32k context. No vision needed.
-- An endpoint that speaks the OpenAI `/v1/chat/completions` or the Anthropic `/v1/messages` API, or
-  Ollama's own.
-- For a local model, a machine that holds it for as long as its server is up. The default is
-  **Gemma 4 E4B** (`mlx-community/gemma-4-e4b-it-6bit` on a Mac, `google/gemma-4-E4B-it` under vLLM
-  or Ollama; Apache 2.0). Allow room for the context cache and caption server as well as the
-  weights. Context length and concurrent requests affect memory use; see [Measured](./measured.md).
-
-Gemma 4 E4B is the default. Another model needs the context window and valid JSON responses,
-but that alone does not establish the quality of its choices. Compare the finished pictures
-against NAS on the same inputs and settings. A larger model is not an automatic upgrade.
-Current measurements belong on [Measured](./measured.md); older whole-period-reader timings
-do not describe the bounded refinement path.
-
-With `tier: auto`, a configured reader and GPU inference select Full. The caption service and
-Laya must also be ready. Without GPU inference, selection stays on NAS and the app explains what
-is missing; the LLM can still supply titles and music mood. It is never used automatically as a
-captioner. See [Requirements and tiers](../run/requirements.md#which-tier-you-get).
+Use a model with a 32k context and valid structured replies. The app can run its local default, or call an API server you already use.
 
 ## Let the app run the local model
 
-Linux and macOS can run an app-owned llama.cpp process. Set the reader's enable switch and
-endpoint independently:
+On native Linux or macOS, install llama.cpp with `llama-server` on your `PATH`. On a Mac:
 
-| `enabled` | `base_url` | What happens |
-|---|---|---|
-| `false` | Any value | No reader requests are sent |
-| `true` | Empty | The app starts the local model when needed |
-| `true` | An API URL | Requests go to that server |
+```bash
+brew install llama.cpp
+```
+
+Linux needs a llama.cpp build for its CPU or GPU; follow the [installation reference](../reference/llm-providers.md). Then enable the reader in your config:
 
 ```yaml
 advanced:
@@ -57,334 +24,58 @@ advanced:
     enabled: true
     base_url: ""
     model: gemma-4-E4B-it-Q4_0
-    local_server: llama-server
-    local_context: 32768
 ```
 
-Gemma 4 E4B Q4 is the local default. `model` can instead name another local GGUF file;
-`local_mmproj` supplies that model's vision projector when images are needed. For a server,
-`model` is the name its API advertises. Install [llama.cpp](https://github.com/ggml-org/llama.cpp/blob/master/docs/install.md)
-and run `immich-memories models fetch` with this config before the first request. On a Mac,
-`brew install llama.cpp` supplies `llama-server`; Linux needs a build for its CPU or GPU.
-
-The default Q4 model passed local text, JSON and vision smoke checks. Those checks prove the
-request path, not every editorial judgment: the measured model still missed an alternate-name
-choice and changed a memory-worthiness judgment when input order changed. Model choice remains
-configurable; run the [provider conformance suite](#provider-conformance) for the model you use.
-
-### Why ownership matters on a small-memory machine
-
-An idle model still occupies RAM or GPU memory. This matters on a 16 GB Mac where the reader
-and ACE-Step share unified memory. When the app owns the reader process, it can stop that process
-and reclaim its model memory before local ACE-Step generation or Demucs stem separation. The next reader request loads it
-again. The app waits for an active request before handing memory over. Cancelling local audio waits
-for its native work to finish or time out before releasing the shared memory lease; cancellation
-is not an immediate stop button for a running model.
-
-With `base_url` set, the model's server owns its memory. The app sends requests but cannot assume
-that unloading the server's model is safe for other clients. That server needs its own unload or
-idle-memory policy. An ACE-Step memory-budget refusal can therefore mean the reader is still
-resident, even when no reader request is running.
-
-The local reader is one part of Full. Captions, the audience model, detectors and music must
-also be available; check `immich-memories capabilities`. The installation check does not claim
-that generation succeeded. A different quantization needs its own quality and memory checks.
-
-## Use an existing local server
-
-[oMLX](https://github.com/jundot/omlx) serves MLX models over an OpenAI-compatible API (macOS 15+):
+Fetch its pinned files before the first request:
 
 ```bash
-brew tap jundot/omlx https://github.com/jundot/omlx
-brew install jundot/omlx/omlx
-omlx start        # serves on port 8000
-```
-
-Pull `mlx-community/gemma-4-e4b-it-6bit` from `http://localhost:8000/admin/chat`, then point the
-app at it:
-
-```yaml
-advanced:
-  llm:
-    provider: openai-compatible
-    base_url: http://localhost:8000/v1
-    model: gemma-4-e4b-it-6bit
-```
-
-`model` must be exactly what the server reports at `GET /v1/models`. Set `base_url` to use this
-server; an empty URL runs the app-owned model instead. From the app in Docker the host
-is `host.docker.internal`, and from a NAS it is the Mac's LAN name:
-[Reaching a model server](../run/docker.md#reaching-a-model-server). A server that answers `401`
-wants its token in `llm.api_key` (`IMMICH_MEMORIES_LLM__API_KEY`).
-
-On Linux with a card, serve the same model with vLLM or Ollama and set `base_url` and `model` the
-same way. [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) is another way to serve it on a Mac.
-
-## Hosted
-
-Same contract, a provider URL and a key. Read this first: **the candidates' annotation lines leave
-your network**, with the people and place names on them, the dates and the captions. No picture
-does. If that text should stay home, run the model locally.
-
-```yaml
-advanced:
-  llm:
-    provider: "openai"             # ollama | openai-compatible | openai | zai | anthropic
-    enabled: true
-    base_url: https://api.openai.com/v1
-    model: "gpt-4.1-mini"
-    api_key: "${OPENAI_API_KEY}"
-```
-
-Set `base_url` explicitly for a hosted reader. `provider` selects its request dialect. The prose is banked,
-so a week is read and paid for once, not once per film. Every outbound request is on
-[Privacy](../run/privacy.md).
-
-## Check it
-
-```bash
+immich-memories models fetch
 immich-memories preflight
 ```
 
-The `LLM` row checks that the endpoint answers for your model (Ollama's tag list, a minimal chat
-call on an OpenAI-compatible host, the model list or a one-token ask on an Anthropic one). It
-checks a configured LLM on NAS and GPU too, because titles and music mood can use it even when
-selection uses rules. With `enabled: false` it reads `SKIPPED`. For the app-owned reader it checks the executable
-and model files without loading weights. A model reader with a blank
-model stops with
-`editorial runtime needs a nonblank LLM model`.
+The app starts the model when needed and stops its owned reader before local music, stem separation and rendering. Selection also releases its Laya scorer before rendering. Later requests load the models again. With `enabled: false`, the reader sends no requests and starts no model. A custom GGUF can replace the default; [local reader settings](../reference/llm-providers.md) cover paths and context size.
 
-A reader that fails mid-film does not fail the film. The period account is asked twice; after the
-second failure the rules draft ships with the passes a no-model film gets, and the log says so:
-`The model polish did not run (<reason>); the film is the rules draft`.
+## Use an existing server
 
-## The Laya audience pre-screen
+For oMLX, vLLM, Ollama's compatible API or another `/v1/chat/completions` endpoint:
 
-Laya answers the sharing question locally: does the caption describe
-a bath, a nappy change, breastfeeding or one of the other
-private activities a family film holds back. Laya is a 0.4B text classifier (Apache-2.0),
-fine-tuned on captions of public CC BY photographs whose authors are credited in the archive. It
-reads the ingest caption, in about 14 ms a shot on Apple silicon. It works with the rules reader
-and the prose reader when preparation produces captions. The `gpu` and `full` tiers enable it;
-the default `nas` tier uses the picture classifiers and rules.
+```yaml
+advanced:
+  llm:
+    enabled: true
+    provider: openai-compatible
+    base_url: http://reader.example.lan:8000/v1
+    model: your-server-model-name
+```
+
+Use the exact name the server advertises. From Docker Desktop, `host.docker.internal` reaches a native server on the host; `localhost` reaches the container itself. Add `api_key` when the server requires one.
+
+The server manages its own model memory. The app does not unload an external server's models, so account for that memory alongside captions and music.
+
+## Hosted
+
+A hosted reader receives descriptions, dates, people and place names from your cut. Use a local reader if that text should stay home.
+
+```yaml
+advanced:
+  llm:
+    enabled: true
+    provider: openai
+    model: gpt-4.1-mini
+    api_key: ${OPENAI_API_KEY}
+```
+
+The provider preset supplies the API URL. Provider names, native Ollama and Anthropic examples, token settings and batching live in the [LLM reference](../reference/llm-providers.md).
+
+## Check the setup
 
 ```bash
-pip install laya-mlx                         # Apple Silicon only
-immich-memories models fetch --laya          # platform-specific, digest-pinned
+immich-memories preflight
+immich-memories capabilities
 ```
 
-`models fetch` chooses the Apple archive on Apple silicon and the portable ONNX archive on
-Linux, Windows and Intel Macs. ONNX needs the `editorial` extra for CPU or `editorial-cuda` for
-NVIDIA. The Apple download is 811 MB. The ONNX download is 877 MB and expands to 1.70 GB;
-its calibrated default threshold is
-0.185, while MLX keeps 0.186. Both archives are SHA-256 checked. A download mirror must keep the
-archive's filename. When configuring a checkpoint for a different backend manually, set its
-threshold explicitly too.
+These report connections, installation and available features; they do not certify the quality of a film. With `tier: auto`, GPU inference plus an enabled reader selects Full. Without GPU inference, selection remains NAS and the reader can still write titles and music mood.
 
-The GPU and Full product tiers enable Laya automatically. A legacy `laya_audience` setting cannot
-override the resolved tier. Fetch the checkpoint and check the services with `immich-memories preflight`.
+Review the result. A failed refinement can leave the rules draft and reports that refinement did not run. [Laya](../reference/llm-providers.md#the-laya-audience-pre-screen) handles caption-based sharing separately; sharing never asks the prose reader.
 
-It only adds holds. The detector holds (the sensitive-content detector and the uncovered-person
-head) apply first and are never lifted, its findings go through the same support checks as the
-reader's, and a shot it doesn't answer stays held to the family. Sharing never asks the prose
-LLM, including when Laya is absent or a detector flags exposure. The MLX threshold,
-`laya_audience_threshold: 0.186`, kept every hold of its public calibration split. Its known gap:
-a travel or administrative document (a boarding pass, an invoice) can slip
-through, since few such captions were in its training data. The detectors stay the floor either way.
-
-To use an extracted ONNX checkpoint, point `advanced.editorial.laya_checkpoint` at the
-directory containing `model.onnx`, `model.onnx.data`, `rl_agent_config.json` and `tokenizer/`.
-The scorer chooses CUDA when available and otherwise uses CPU. This path needs neither
-PyTorch nor MLX.
-
-For the audience ONNX export, set `laya_audience_threshold: 0.185`. This threshold was
-chosen on the public calibration split to retain all 15 MLX holds. On 3,143 held-out
-captions it retained all 23 MLX holds and added one. These are classifier checks; validation
-of the complete NVIDIA image is tracked in
-[#1385](https://github.com/sam-dumont/immich-video-memory-generator/issues/1385).
-
-## Providers and dialects
-
-Five provider values, three code paths. `ollama` speaks Ollama's native API, `anthropic` speaks
-`/v1/messages`, and `openai-compatible` and `openai` speak `/v1/chat/completions`, so anything
-serving that endpoint works: mlx-vlm, oMLX, vLLM, Ollama's compatibility layer, Groq, OpenAI
-itself. `zai` is the `anthropic` adapter with z.ai's URL and reasoning level filled in, and it is
-the one provider that picks its adapter from the `base_url` path, because z.ai serves both dialects
-on one host: `.../api/anthropic` gets `/v1/messages`, `.../api/paas/v4` gets `/chat/completions`.
-
-`openai`, `anthropic` and `zai` fill in the vendor's reasoning dialect. Set the vendor's
-`base_url` explicitly: a blank URL always selects the app-owned reader when enabled.
-
-The Messages API path is `POST {base_url}/v1/messages` with `x-api-key`,
-`anthropic-version: 2023-06-01` and the prompt as one user message. Nothing about it is
-Claude-specific: point `base_url` at whoever serves the dialect. Answers come back as a JSON
-envelope the app validates itself, and no provider-side JSON mode is used, so a host without one
-loses nothing.
-
-```yaml
-advanced:
-  llm:
-    provider: "anthropic"
-    enabled: true
-    base_url: https://api.anthropic.com
-    model: "claude-sonnet-5"        # or claude-haiku-4-5 for the cheap seat
-    api_key: "${ANTHROPIC_API_KEY}"
-    thinking: "high"                # disabled | low | high | max | auto
-```
-
-That preset handles two things Claude answers HTTP 400 to otherwise: no `temperature` goes out
-(from the 4.7 line on, Claude refuses any sampling parameter), and reasoning is asked for as
-`thinking: {"type": "adaptive"}` with the level as `output_config.effort`. Bulk calls send
-`thinking: {"type": "disabled"}`, because a bulk call at a 140-token cap that reasons comes back with
-no answer in it. A model older than that dialect needs the switch written out:
-`thinking_params: {thinking: {type: "enabled", budget_tokens: 2048}}`.
-
-```yaml
-advanced:
-  llm:
-    provider: "zai"
-    enabled: true
-    base_url: https://api.z.ai/api/anthropic
-    model: "glm-5.3-flash"
-    api_key: "${ZAI_API_KEY}"
-    thinking: "low"
-```
-
-`https://api.z.ai/api/anthropic` is where a coding-plan account is served. The
-other route, `https://api.z.ai/api/paas/v4`, is the OpenAI-compatible one and answers that account
-`429 code 1113, Insufficient balance`; set it explicitly if your account is the other kind. The
-GLM-5 line refuses `disabled`, so the preset sends `low`.
-
-For any other host serving the Messages API, set `base_url` yourself and use `thinking: "auto"`,
-which sends no reasoning field and takes the host's default.
-
-### Reasoning
-
-On a server whose chat template reasons by default, a bulk call reasons through its small token
-budget, stops mid-thought and returns nothing parseable. `llm.no_thinking_params` stops that, and
-its default is already the Qwen dialect:
-
-```yaml
-llm:
-  thinking: "disabled"            # default
-  no_thinking_params:             # merged into every non-thinking call
-    chat_template_kwargs:
-      enable_thinking: false
-```
-
-A server that reasons only when asked wants `no_thinking_params: {}` instead. `low`, `high` or
-`max` switch two calls to reasoning (title generation and the special-day question in
-`discover-days`) while everything else stays fast. `thinking_params` carries the fields those calls
-send; OpenAI's reasoning models want `{"reasoning_effort": "medium"}` there, which `provider:
-openai` fills in. `true` and `false` still parse, as `high` and `disabled`. The provider's own switch
-is merged in even when you set your own params, and a `thinking` key you write yourself wins.
-
-Ollama has neither chat dialect: its switch is a bare top-level `think`, billed inside
-`num_predict`. A load-bearing call gets `think: true`, a bulk call gets no switch at all (a model
-without a thinking mode answers `think` with a 400), and a server that reasons unasked is learned
-from its first thinking block: every later call then gets 16,384 extra tokens in `num_predict`. An
-`extra_params.options.num_predict` you set yourself wins.
-
-A level is a request, not a promise. z.ai's `.../api/anthropic` route answers HTTP 200 to every
-setting and then reasons on its own terms, so on that route the reader reads the first `text` block
-and skips the reasoning in front of it, asks for 1,024 tokens on top of the caller's cap, and turns
-a reply with no `text` block into an error naming the `stop_reason`. A provider's own error `code`
-and `message` go into the log line, cut at 300 characters.
-
-## Structured replies
-
-The default selects the mode by request type. Free-text questions, titles and period accounts
-request their JSON schemas on local and hosted endpoints. Local episode readings use prompt-only
-JSON because oMLX can stall on their nested schema; hosted episode readings retain the schema.
-Music mood requests carry their allowed mood, energy, tempo and genre enums as a JSON schema.
-Both modes work against the same endpoint in one process. `advanced.llm.structured_output` can
-explicitly enable or disable schemas for that endpoint.
-
-If a provider refuses schema mode and asks for `json_object`, the app retries once in object
-mode and carries the schema in the prompt. It remembers that choice for the endpoint and model
-for the rest of the process and logs the adaptation once. A refusal of the whole response-format
-parameter removes that parameter. An invalid schema or another ordinary HTTP 400 still fails.
-For a provider already known to lack schema support, `structured_output: false` skips negotiation.
-
-## Batch mode
-
-The episode readings are one prompt per episode, and those prompts don't read each other. Every
-hosted provider sells that shape cheaper: hand the pile over at once, get it back within the day,
-pay half.
-
-```yaml
-advanced:
-  llm:
-    batch: "auto"               # off (default) | auto
-    batch_min_requests: 8       # below this, asking one at a time is quicker
-    batch_max_wait_minutes: 60  # then ask whatever is left in real time
-```
-
-It pays on an unattended run (the nightly `auto run`, a `prepare --overviews` over a year) and not
-on a run someone is waiting for: a batch is queued work, and "usually within minutes" is not a
-promise you want between a click and a film. If it goes wrong you lose the discount and nothing
-else. Anything unanswered by `batch_max_wait_minutes`, any line the provider refused and any
-answer the parser won't read is asked again in real time.
-
-| Provider | Route | Discount |
-|---|---|---|
-| OpenAI | `/v1/batches` (Batch API) | 50 %, documented |
-| Anthropic, and hosts serving its API | `/v1/messages/batches` (Message Batches) | 50 %, documented |
-| Melious | `/v1/batches`, same shape as OpenAI | none: their docs say batches run at the same per-token rate |
-| z.ai | answers 404 on `/v1/messages/batches` | no batch route; stays real time, with the reason in the log |
-
-The route is probed once before anything is queued. A host that doesn't serve it is asked once,
-logs why, and reads in real time for the rest of the run.
-
-## What the software sends
-
-- **Prompts are bounded before they go out**: episode reads at 24,000 characters and 90 pictures a
-  page, story synthesis at 32,000, the period account split into pages. A 32k context holds every
-  one.
-- **Answers are parsed against the stage's contract.** An answer the contract refuses costs one
-  repair round on that call. A moment pick still refused after its repair doesn't end the film:
-  those rows get the moments the no-model film would pick, and the story's pick record says why
-  (`pick-rules-fallback`).
-- **A reply cut off at its token cap keeps what it finished.** The episode readings or period
-  accounts it wrote whole are kept, and only the unfinished ones are asked again. An episode asked
-  again gets the full 4,000-token ceiling rather than its own estimate.
-- **Text only.** No request to the reader carries a picture; a test fails the build if one does.
-
-The prompt shapes the setup matrix probes readers with are in `scripts/reader_probe_prompts/`.
-Time, tokens and euros per reader go on [Measured](./measured.md).
-
-## Provider conformance
-
-From a checkout, run:
-
-```bash
-make llm-conformance CONFIG=/path/to/provider.yaml OUTPUT=/tmp/llm-conformance
-```
-
-The command reads only `advanced.llm` (or `llm`) from that file. It sends synthetic evidence
-through production features and can incur provider charges. Free-text cases also read the
-public WordNet corpus installed by `immich-memories models fetch`. Each banked feature gets a
-fresh temporary SQLite store. The suite opens no personal library or people file.
-
-The 34 probes cover occasion, trip and people titles; free-text reading, linking and pool
-selection; occasion discovery; music mood; image captions and motion; full and lean episode
-readings; month and year accounts; editorial grouping, weighting, picking and recurring
-activities; and both audience text readers still present in the code.
-
-Each row reports whether the provider was called, HTTP attempts, reported tokens, elapsed
-seconds, validity and a feature-specific quality check. Unknown usage is shown as unknown.
-A local fallback fails the check. A failed feature leaves its row and the other checks continue.
-The command exits with status 1 if a feature fails or a production model call site has no case.
-The guard test scans the code for model calls and shared prompt adapters; runtime observation
-also checks that each case reached its declared call sites.
-
-`OUTPUT` is optional. When set, it receives an incremental JSON report, a Markdown table,
-and private request/reply evidence without HTTP headers. Keep these files private: provider
-errors can include account details. Use the input, cached-input and completion token counters
-with the provider's rates to calculate cost. A run with missing usage gives only a cost floor.
-
-The [measured provider table](./measured.md#llm-conformance) lists passes, failures, call counts
-and reported-token cost for each tested endpoint. Every failed feature links to a separate issue.
-
-These checks measure the configured endpoint on small fixtures. They do not replace checking
-the quality of a complete film or testing asynchronous batch delivery.
+Image captioning with the reader is a separate [opt-in](./captions.md#explicit-llm-captions). That role sends pictures and needs a vision-capable model.

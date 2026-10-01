@@ -38,6 +38,7 @@ def create_title_video(
     encoding_plan: EncodingPlan | None = None,
     fade_to_white: bool = False,
     frame_progress: Callable[[int, int], None] | None = None,
+    fade_color: str = "white",
 ) -> Path:
     """Render typography once, then encode a static background with text fades.
 
@@ -83,10 +84,10 @@ def create_title_video(
             "[bg][text]overlay=format=rgb"
         )
         if fade_from_white:
-            graph += f",fade=t=in:st=0:d={min(0.8, duration / 3)}:color=white"
+            graph += f",fade=t=in:st=0:d={min(0.8, duration / 3)}:color={fade_color}"
         if fade_to_white:
             fade = min(1.5, duration)
-            graph += f",fade=t=out:st={duration - fade}:d={fade}:color=white"
+            graph += f",fade=t=out:st={duration - fade}:d={fade}:color={fade_color}"
         graph += f",{title_color_filter(plan)}[video]"
         cmd = [
             "ffmpeg", "-y", "-filter_complex_threads", "1",

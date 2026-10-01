@@ -177,6 +177,9 @@ def test_capture_memory_walkthrough(
     # The brief as a first visit sees it: the type, the month, the command and Cut, no panel open.
     _blur(page)
     _save(page, d, _name("memory-brief", theme))
+    _save_padded(
+        page, page.get_by_role("main").locator("form").first, d, _name("first-film-brief", theme)
+    )
     page.get_by_text("Length and pictures").click()
     # The fixture month holds 79 s of pictures and video; 1.5 minutes leaves room for the titles
     # and stays inside the accepted shortfall, so the review shows no "selected less" notice.
@@ -191,6 +194,7 @@ def test_capture_memory_walkthrough(
     expect(progress).to_be_visible(timeout=60_000)
     _hold_a_counted_stage(page)
     _save(page, d, _name("memory-cutting", theme))
+    _save_padded(page, progress, d, _name("first-film-progress", theme))
     page.evaluate("window.__holdJobs = false")
 
     page.wait_for_url("**/app/runs/**", timeout=240_000)
@@ -216,6 +220,37 @@ def test_capture_memory_walkthrough(
     # Both edits sit in the first row: show that row, the inspector beside it and the change bar.
     _to_top(page.get_by_role("list", name="Cut contact sheet"), 64)
     _save(page, d, _name("memory-review-edit", theme))
+    # Close the comparison so the focused capture ends after the replacement strip.
+    inspector.get_by_role("list", name="Other pictures of this moment").locator(
+        'button[aria-pressed="true"]'
+    ).click()
+    # Capture the editing controls with room around the complete replacement strip.
+    # The full inspector is taller than the viewport and its sticky change bar obscures it.
+    # Give the inspector enough vertical room that the sticky revision bar cannot cover it.
+    capture_viewport = page.viewport_size
+    assert capture_viewport is not None
+    page.set_viewport_size({**capture_viewport, "height": 1600})
+    _to_top(inspector, 64)
+    # Add breathing room after this section, without altering its controls or content.
+    alternatives_section = inspector.get_by_role(
+        "list", name="Other pictures of this moment"
+    ).locator("xpath=..")
+    alternatives_section.evaluate("el => el.style.paddingBottom = '24px'")
+    _settle(page)
+    box = inspector.bounding_box()
+    alternatives = alternatives_section.bounding_box()
+    assert box is not None and alternatives is not None
+    page.screenshot(
+        path=str(d / f"{_name('first-film-edit', theme)}.png"),
+        clip={
+            "x": box["x"] - 24,
+            "y": box["y"] - 24,
+            "width": box["width"] + 48,
+            "height": alternatives["y"] + alternatives["height"] - box["y"] + 24,
+        },
+    )
+    alternatives_section.evaluate("el => el.style.paddingBottom = ''")
+    page.set_viewport_size(capture_viewport)
     page.get_by_role("button", name="Save revision").click()
     expect(page.get_by_role("status").filter(has_text="Saved as revision")).to_be_visible()
 

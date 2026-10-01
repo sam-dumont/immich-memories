@@ -2,10 +2,15 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 import {redirects} from './redirects';
+import {productTagline} from './src/product';
+
+const docsVersion = process.env.DOCS_VERSION || 'development';
+const releaseDocs = /^v?\d+\.\d+\.\d+$/.test(docsVersion);
 
 const config: Config = {
   title: 'Immich Memories',
-  tagline: 'Reads a period of your Immich library as a story and cuts it into a memory video',
+  tagline: productTagline,
+  customFields: {version: docsVersion},
   favicon: 'img/favicon.png',
 
   future: {
@@ -19,8 +24,7 @@ const config: Config = {
   projectName: 'immich-video-memory-generator',
 
   onBrokenLinks: 'throw',
-  // TODO(launch): flip to 'throw' once the full docs build reports zero broken anchors.
-  onBrokenAnchors: 'warn',
+  onBrokenAnchors: 'throw',
   markdown: {
     mermaid: true,
     hooks: {
@@ -57,7 +61,9 @@ const config: Config = {
   themeConfig: {
     mermaid: {
       theme: {light: 'neutral', dark: 'dark'},
-      options: {flowchart: {useMaxWidth: false}},
+      options: {
+        flowchart: {useMaxWidth: false, curve: 'monotoneY', nodeSpacing: 28, rankSpacing: 36, padding: 16},
+      },
     },
     colorMode: {
       respectPrefersColorScheme: true,
@@ -75,7 +81,12 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
           position: 'left',
-          label: 'Docs',
+          label: 'Start here',
+        },
+        {
+          href: `https://github.com/sam-dumont/immich-video-memory-generator/tree/${releaseDocs ? (docsVersion.startsWith('v') ? docsVersion : `v${docsVersion}`) : 'main'}`,
+          label: releaseDocs ? `Docs ${docsVersion}` : 'Development docs',
+          position: 'right',
         },
         {
           href: 'https://github.com/sam-dumont/immich-video-memory-generator',
@@ -95,8 +106,8 @@ const config: Config = {
               to: '/docs/get-started/quick-start',
             },
             {
-              label: 'CLI Reference',
-              to: '/docs/reference/cli-reference',
+              label: 'Improve a film',
+              to: '/docs/make/improve-a-film',
             },
           ],
         },
@@ -114,11 +125,11 @@ const config: Config = {
           ],
         },
         {
-          title: 'More',
+          title: 'Operate',
           items: [
             {
-              label: 'GitHub',
-              href: 'https://github.com/sam-dumont/immich-video-memory-generator',
+              label: 'Operate and configure',
+              to: '/docs/run/overview',
             },
           ],
         },
@@ -128,7 +139,7 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
-      additionalLanguages: ['bash', 'yaml', 'toml'],
+      additionalLanguages: ['bash', 'yaml', 'toml', 'hcl', 'sql', 'diff', 'docker', 'ini', 'nginx'],
     },
   } satisfies Preset.ThemeConfig,
 };

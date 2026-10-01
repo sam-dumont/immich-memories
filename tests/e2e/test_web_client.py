@@ -15,7 +15,7 @@ from immich_memories.operations.storyboard import PLAN_FILE, PROJECTION_FILE
 from immich_memories.tracking import RunDatabase
 from immich_memories.tracking.models import RunMetadata
 from tests.e2e.fake_library import CARRIERS, LIBRARY
-from tests.e2e.web_flow import contact_sheet, render, the_film
+from tests.e2e.web_flow import contact_sheet, cut_june, render, the_film
 
 pytestmark = pytest.mark.e2e
 
@@ -407,3 +407,41 @@ def test_expired_sign_in_waits_for_manual_retry(page: Page, launch_app_url: str)
     expect(page).to_have_url(f"{launch_app_url}/app/login?error=signin_expired")
     page.get_by_role("link", name="Sign in with SSO").click()
     expect(page).to_have_url(f"{launch_app_url}/auth/authorize")
+
+
+def test_fade_controls_save_a_default_and_submit_a_film_override(
+    page: Page, launch_app_url: str, launch_workspace
+) -> None:
+    _seed(launch_workspace)
+    page.goto(f"{launch_app_url}/app/settings")
+    page.get_by_text("title screens", exact=True).click()
+    fade = page.get_by_label("title_screens.fade_color", exact=True)
+    expect(fade).to_have_value("white")
+    fade.select_option("black")
+    section = page.locator("details").filter(has=fade)
+    section.get_by_role("button", name="Save", exact=True).click()
+    expect(section.get_by_role("status")).to_have_text("Saved to the database")
+    page.reload()
+    page.get_by_text("title screens", exact=True).click()
+    expect(fade).to_have_value("black")
+
+    sent = []
+
+    def record_render(route):
+        sent.append(route.request.post_data_json)
+        # WHY: inspect the browser's request without writing a whole film.
+        route.fulfill(status=422, json={"detail": "Test captured the render request"})
+
+    page.route("**/api/v1/runs/*/renders", record_render)
+    cut_june(page, launch_app_url)
+    panel = page.get_by_role("region", name="Render")
+    choice = panel.get_by_label("Opening and closing fade")
+    expect(choice).to_have_value("")
+    choice.select_option("white")
+    panel.get_by_role("button", name="Render", exact=True).click()
+    expect(panel.get_by_role("alert")).to_have_text("Test captured the render request")
+    assert sent[-1]["fade_color"] == "white"
+    choice.select_option("")
+    with page.expect_response("**/api/v1/runs/*/renders"):
+        panel.get_by_role("button", name="Render", exact=True).click()
+    assert sent[-1]["fade_color"] is None

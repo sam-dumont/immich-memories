@@ -1,187 +1,74 @@
 ---
-title: Generated music
+title: Generate a soundtrack
 ---
 
-# Generated music
+# Generate a soundtrack
 
-Every film already gets music on a plain NAS: your own file, or one of 28 bundled tracks picked by
-the film's mood and ducked under the clips' own sound
-([Music](../make/titles-maps-music.md#music)). A generator writes an original track for each film
-instead, in the mood, tempo and length the film asks for. Two are supported: ACE-Step, local or
-behind an API, and MusicGen behind a server. Nothing here is on by default, and a generator that
-fails falls through to a bundled track with a warning on the finished film, so a dead backend never
-passes for working music.
+Your film already gets music: a bundled track, or an audio file you choose. A generator makes an original track for the film’s mood and length. It is optional and off by default.
 
-:::tip Local music on a Mac needs `make install-acestep`, in every checkout
-`lib` mode runs ACE-Step from a `.venv-acestep` next to the checkout, and no `make dev*` target
-creates it. A fresh clone or a new git worktree has none, and then every film gets a bundled track.
-`immich-memories preflight` warns about it (**Music (ACE-Step)**); the fix is
-[`make install-acestep`](#install-locally-on-a-mac) in that checkout.
-:::
+Choose the route for your machine:
 
-## ACE-Step
+| Setup | Route |
+|---|---|
+| Apple Silicon checkout | Local ACE-Step, in a separate audio environment. |
+| Native NVIDIA checkout | Local ACE-Step, or an ACE-Step API server. |
+| App container | An ACE-Step API server. |
+| Existing MusicGen server | MusicGen API, also usable as an ACE-Step fallback. |
 
-ACE-Step 1.5 takes the tempo, key and time signature as structured fields. Two modes:
+## Local on a Mac
 
-- `api` (the default): HTTP to an ACE-Step server, polled every 3 s. The server owns the models, so
-  the app's box needs nothing.
-- `lib`: the model runs in the app's own process: MLX on Apple Silicon, CUDA on NVIDIA, CPU
-  otherwise. It needs Python 3.12 and falls back to `api` when the package is missing.
+From your checkout:
 
-A worked example, not the defaults (those are `enabled: false`, `mode: api`, `model_variant: turbo`,
-`lm_model_size: 1.7B`):
+```bash
+make dev-mac
+make install-acestep
+make check-local-audio
+```
+
+Every checkout and worktree needs its own `make install-acestep`. The audio stack lives in `.venv-acestep` next to the checkout. The check generates and separates real audio locally; a bundled fallback does not pass it.
+
+Start with the smaller default model:
 
 ```yaml
 advanced:
   ace_step:
     enabled: true
     mode: lib
-    model_variant: acestep-v15-xl-turbo   # 4B, 8 steps
-    lm_model_size: 4B
+    model_variant: turbo
     use_lm: false
-    num_versions: 1
-  musicgen:
-    enabled: false                        # inference service or local Demucs does the stems
 ```
 
-The variants are `turbo` and `base` (2B, 8 and 50 steps), `acestep-v15-xl-turbo` (4B, 8 steps), and
-`acestep-v15-xl-sft` and `-base` (4B, 50 steps). On v0.1.8 the non-turbo XL models can produce
-garbled audio on Apple Silicon, so use `xl-turbo` for anything unattended. `use_lm` stays off: with
-it on, ACE-Step's language model rewrites the brief before the audio model sees it, pulls
-instrumental briefs off target, and takes a 60 s track from about 17 s to 45 s.
+The 2B profile without its planner needs about **7 GB free for resident weights** and **6 GB on disk**. An app-owned local reader releases its model memory before local music or stem separation. An external reader server owns its own memory and must leave enough free for audio. Larger profiles, supported platform versions and audio-environment repairs are in the [audio runtime reference](../reference/local-audio.md#memory-and-disk).
 
-### Memory and disk
+## Local on NVIDIA
 
-`lib` mode checks free memory against the weights the profile has to keep resident, and refuses
-with a named shortfall rather than letting macOS kill the process mid-render. A refusal is an
-ordinary backend failure: MusicGen is next, then a bundled track.
+Native Linux checkouts can use the same `lib` configuration. CUDA offload is on by default: models move back to CPU between audio phases to reduce VRAM use. Set `advanced.ace_step.cpu_offload: false` only when the GPU can keep them resident.
 
-On Linux, the budget follows the process's container limit and any tighter parent limit, capped
-by the host's available memory. Clean, inactive, unmapped file cache can be reclaimed; live
-allocations and shared, mapped, dirty or pinned pages remain occupied.
+The setting does not affect Apple Silicon or API servers. See [runtime requirements](../reference/local-audio.md) before installing the native audio stack.
 
-| Profile | Resident weights it needs free | On disk |
-|---|---|---|
-| XL (4B) with the 4B planner | about 29 GB | about 28 GB |
-| XL (4B), `use_lm: false` | about 21 GB | about 20 GB |
-| 2B with the 1.7B planner | about 11 GB | about 9 GB |
-| 2B with the 0.6B planner | about 9 GB | about 7 GB |
-| 2B, `use_lm: false` | about 7 GB | about 6 GB |
+## API server
 
-Check this machine with `immich-memories capabilities --test-music`. It tries the configured
-profile and the smaller 2B profiles when their weight budgets fit the memory available now.
-The 0.6B name refers to the planner; the audio generator is still 2B. A reader that stays loaded
-in oMLX still uses unified memory while idle. Unloading it can make a smaller music profile fit;
-the command reports a refusal separately from a generation failure.
-
-On a memory-constrained Linux or macOS machine, the [app-owned reader](./reader.md#let-the-app-run-the-local-model)
-lets the app release the reader's model memory before local ACE-Step loads. An API endpoint keeps
-that decision with the external server. The model does not get smaller; sequential loading lets
-the reader and music generator use the same available memory at different times.
-
-Local CUDA generation defaults to `advanced.ace_step.cpu_offload: true`: models move back to
-CPU between phases to reduce VRAM use. Set it to `false` only when your card has room to keep
-them resident. Apple Silicon keeps its existing local memory policy; API mode ignores this
-option. Offloading does not bypass the host or container memory guard.
-
-Use `immich-memories capabilities --verify-local` to test the configured owned reader and local
-audio path with existing weights. The report distinguishes a blocked setup from a verified
-15-second smoke test. That is not proof that a complete film fits.
-
-Per file, under `~/.cache/ace-step/checkpoints/`: the 2B models about 4.5 GB each, XL-turbo about
-19 GB, the planners 1.2, 3.4 and 7.8 GB (0.6B, 1.7B, 4B), the shared VAE and embedding about
-1.4 GB. Demucs' htdemucs is about 80 MB under `~/.cache/torch/hub/`. Old checkpoints are never
-removed for you.
-
-A full XL render with the 4B planner peaks around 53 GB of unified memory, most of it cache the OS
-takes back under pressure, which is why the check tests the weights and not the peak. The MLX
-buffer cache is disabled on machines with at most 16 GiB of physical RAM and capped at 4 GiB
-on larger Macs. The DiT runs in bf16 (7.8 GB instead of 15.5 GB for XL;
-`IMMICH_MEMORIES_ACESTEP_MLX_DIT_FP32=1` keeps fp32). A local reader holding its 17 GB is often what
-stops XL fitting, so stop the model server before a music-heavy run.
-
-A complete Full film was verified on a 16 GiB M2 Pro with the owned Gemma Q4 reader, 90 seconds
-of local 2B turbo music without the planner, and local Demucs. The audio child peaked at
-9.22 GiB physical footprint. Cold startup briefly grew swap by 1.16 GiB; the film and all four
-stems passed full decoding, and memory recovered after the owned processes exited. This is
-heavy machinery on 16 GiB, not a zero-swap promise. The available-memory guard stays in place.
-The owned Apple Silicon turbo path parks inactive Torch weights before native diffusion and
-releases the native decoder before VAE decoding, retaining the checkpoint's execution precision.
-
-### Install locally on a Mac
-
-`lib` mode is not in `uv tool install` or the `all-mac` extra. From a checkout:
-
-```bash
-brew install uv ffmpeg
-git clone https://github.com/sam-dumont/immich-video-memory-generator.git
-cd immich-video-memory-generator
-make dev-mac
-make install-acestep
-make check-local-audio          # AUDIO_CHECK_ARGS="--quality high" tries XL-turbo
-uv run immich-memories ui
-```
-
-`make install-acestep` installs ACE-Step v0.1.8 and Demucs into a sibling `.venv-acestep`, because
-ACE-Step's Transformers pin wants an older Hugging Face library than the editor. `make
-check-local-audio` generates 15 seconds, splits all four stems and fails loudly if any of it didn't
-happen locally, so a remote server or a bundled track can't pass it. Every clone and every
-git worktree needs its own run, since the environment sits next to the checkout. Rerun the
-installer after moving the checkout or changing the app version; it also repairs
-`operator torchvision::nms does not exist`. A bare `uv sync` can remove Demucs from the editor's
-environment, and the installer puts it back.
-
-The isolated stack uses patched PyTorch 2.13, TorchAudio 2.11's stable ABI, and TorchVision 0.28;
-Linux uses the CUDA 12.6 wheels, and the Mac wheels require macOS 14 or newer. This tested stack
-overrides ACE-Step v0.1.8's older Linux package pins, so its upstream dependency metadata still
-reports that mismatch. The app disables PyTorch native JIT kernels in its own audio child before
-PyTorch imports, keeping the existing eager path free of a compiler requirement. A custom direct
-library process needs `TORCH_DISABLE_NATIVE_JIT=1` before Python starts; setting it after importing
-PyTorch is too late. Direct library callers can set `extra_args.cpu_offload: true` to reduce GPU residency on smaller cards.
-
-Automatic local ACE-Step and Demucs selection checks that a CUDA kernel actually runs and
-synchronizes. A detected GPU whose installed PyTorch build cannot execute it falls back to CPU;
-ACE-Step still checks available memory before loading weights.
-
-### In a container
-
-A separate ACE-Step container serves the editor with `mode: api` and `api_url` pointing at it; keep
-its model cache on a volume. On an NVIDIA box that is the way to go. On a Mac, a container can't
-reach Metal, so run ACE-Step natively and point the app in Docker at
-`http://host.docker.internal:8000`.
-
-## MusicGen
-
-Meta's MusicGen, through a remote server only: text-to-music, and Demucs stem separation on its
-`/separate` endpoint. With ACE-Step enabled it is the fallback; alone, it generates.
+Configure a server you already run:
 
 ```yaml
 advanced:
-  musicgen:
+  ace_step:
     enabled: true
-    base_url: "http://musicgen-server:8000"
-    timeout_seconds: 10800
-    num_versions: 3
+    mode: api
+    api_url: http://music.example.lan:8000
 ```
 
-Generated audio is decoded before mastering or stem separation. Empty, unreadable, non-finite
-(NaN/Inf), and silent tracks (peak at or below -80 dBFS) count as failed generations. The next
-enabled generator is tried; if all fail, automatic music uses the bundled library and reports
-the substitution.
+The server owns its weights and GPU. An app in Docker Desktop can reach a native Mac server through `host.docker.internal`. A Mac container cannot use Metal.
 
-## What generation adds to the mix
+[MusicGen configuration](../reference/local-audio.md#musicgen) uses its own server and endpoint.
 
-- **Tempo fits the photos.** In a film with photos, the tempo is nudged so a photo lasts a whole
-  number of beats, within the genre's range and 15 % of the mood's tempo. Videos are never
-  re-timed.
-- **A stuck loop is re-rolled.** Each take is checked for a metronomic, repetitive grid, and a
-  flagged one is replaced by up to `audio.max_regenerations` (2) more takes, keeping the best.
-  Music is never dropped for it.
-- **Long films chain takes.** Past `audio.music_block_seconds` (120), up to
-  `audio.max_music_blocks` (3) distinct takes are crossfaded and looped, rather than one long
-  generation.
-- **Four stems.** The track is split with Demucs: vocals duck most under the clips' sound, drums
-  keep their rhythm. Local Demucs uses Metal on Apple Silicon (`immich-memories[demucs]` alone);
-  the configured [inference service](./inference.md#music-stems) handles separation over HTTP,
-  with local fallback controlled by `advanced.inference.fallback_to_local`. An explicitly enabled
-  MusicGen server's `/separate` keeps priority.
+## Check the result
+
+```bash
+immich-memories preflight
+immich-memories music preview RUN_ID
+```
+
+Preview before rendering. If generation fails, the app tries the next enabled backend and then a bundled track. The finished run reports the substitution.
+
+Generated music can be separated into stems for ducking under clip audio. The configured inference service, a local Demucs install or an enabled MusicGen server can do that job. [Runtime and mixing details](../reference/local-audio.md).

@@ -89,6 +89,11 @@
               {#if typeof row.value === 'boolean'}
                 <input type="checkbox" class="size-5 justify-self-start" aria-label={row.key} disabled={!row.editable}
                   checked={(drafts[row.key] ?? row.value) as boolean} onchange={(event) => (drafts[row.key] = event.currentTarget.checked)} />
+              {:else if row.key === 'title_screens.fade_color'}
+                <select class={field} aria-label={row.key} disabled={!row.editable}
+                  value={asText(drafts[row.key] ?? row.value)} onchange={(event) => (drafts[row.key] = event.currentTarget.value)}>
+                  <option value="white">{t('White')}</option><option value="black">{t('Black')}</option>
+                </select>
               {:else if row.secret}
                 <input class={field} type="password" autocomplete="off" aria-label={row.key} disabled={!row.editable}
                   placeholder={row.value ? t('Saved - type a new key to replace it') : ''} oninput={(event) => (drafts[row.key] = event.currentTarget.value)} />

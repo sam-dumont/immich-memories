@@ -6,30 +6,11 @@ not at the hardcoded 1080x1920 that the tier-based lookup returns.
 
 from __future__ import annotations
 
-from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+from immich_memories.processing.assembly_config import TitleScreenSettings
 from immich_memories.processing.title_inserter import TitleInserter
 from immich_memories.titles.generator import TitleScreenConfig
-
-
-def _fake_title_settings(**overrides) -> SimpleNamespace:
-    """Minimal title_settings stub with required attributes."""
-    defaults = {
-        "title_duration": 3.5,
-        "month_divider_duration": 2.0,
-        "ending_duration": 4.0,
-        "locale": "en",
-        "style_mode": "auto",
-        "show_month_dividers": True,
-        "month_divider_threshold": 2,
-        "animated_background": True,
-        "title_override": None,
-        "subtitle_override": None,
-        "memory_type": None,
-    }
-    defaults.update(overrides)
-    return SimpleNamespace(**defaults)
 
 
 class TestTitleScreenConfigResolutionOverride:
@@ -59,7 +40,7 @@ class TestBuildTitleConfigResolution:
         # WHY: mock prober — it probes video files via FFmpeg subprocess
         inserter = TitleInserter(settings=MagicMock(), prober=MagicMock())
         config = inserter._build_title_config(
-            title_settings=_fake_title_settings(),
+            title_settings=TitleScreenSettings(),
             target_w=720,
             target_h=1280,
             fps=30,
@@ -70,7 +51,7 @@ class TestBuildTitleConfigResolution:
         # WHY: mock prober — it probes video files via FFmpeg subprocess
         inserter = TitleInserter(settings=MagicMock(), prober=MagicMock())
         config = inserter._build_title_config(
-            title_settings=_fake_title_settings(),
+            title_settings=TitleScreenSettings(),
             target_w=1920,
             target_h=1080,
             fps=30,
