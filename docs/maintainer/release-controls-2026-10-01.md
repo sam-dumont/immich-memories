@@ -41,6 +41,17 @@ The CUDA trip's original 4073.2 s includes failed music attempts. Its worker ren
 film passed complete video and audio decoding. These are separate measured intervals, not a
 clean uninterrupted whole-film benchmark.
 
+### Failed CUDA person attempt and scratch correction
+
+The preceding CUDA person attempt was last observed preparing source 129 of 159 before eviction.
+Kubernetes evicted the pod because its disk-backed `/tmp` `emptyDir` exceeded the 1 GiB limit.
+Exit 137 was a disk-scratch eviction, not an out-of-memory result; it receives no control credit.
+
+The deployment correction raises that disk-backed scratch limit to 8 GiB. The application source
+remains `4913c3892695`, the container RAM limit remains 8 GiB, and the model volume stays
+persistent. Output retains its separate 20 GiB temporary volume. The next complete person-film
+result remains pending; the failed attempt is retained separately.
+
 ### Where the time went
 
 | Hardware and tier | Film | Source preparation, s | Assembly, s | Music, s |
@@ -187,6 +198,7 @@ records the HDR title path falling back to CPU interpolation, blank-text composi
 endings and white-fade arithmetic after GPU readback. Their implementation and timing validation
 remain follow-up work.
 
-The accepted controls stay evidence for their original revisions. Hosted-model comparisons and
-the larger 28-by-2 film batch need their own matched scope and validation. Neither was run for
-this report.
+The accepted controls stay evidence for their original revisions. The
+[hosted-provider benchmark (#1718)](https://github.com/sam-dumont/immich-video-memory-generator/issues/1718)
+and [28-by-2 shared-Mac-cache comparison (#1719)](https://github.com/sam-dumont/immich-video-memory-generator/issues/1719)
+are separate follow-up work. Neither was executed for this closeout.

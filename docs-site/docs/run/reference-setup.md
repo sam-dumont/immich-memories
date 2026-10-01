@@ -85,6 +85,17 @@ GPU users. The bundled caption command sets an 8192-token context; it does not e
 llama.cpp's RAM prompt cache or processing slots. Separate-reader or music services can still
 compete for the card. Measure your workload before raising concurrency.
 
+## Scratch space for 4K
+
+For 4K rendering, [the Kubernetes storage guidance](./reference/kubernetes.md) recommends
+**8 GiB of disk-backed `/tmp`**; size it for your workload. Keep model files and finished output
+on their own volumes. A model-only service's small temporary volume can fill during
+source preparation after rendering is added.
+
+In Kubernetes, leave the scratch `emptyDir` disk-backed and set its `sizeLimit` for that work.
+The node also needs the corresponding free ephemeral storage. A RAM-backed `emptyDir` charges
+the container's memory budget; increasing a RAM limit does not increase disk scratch space.
+
 ## Other deployments
 
 The shipped Kubernetes inference and caption overlays and render sidecar deploy **separate**
