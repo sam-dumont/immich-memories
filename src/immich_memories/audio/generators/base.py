@@ -47,6 +47,10 @@ class GenerationRequest:
     # Output
     output_dir: Path = field(default_factory=lambda: private_temp_dir("musicgen"))
 
+    # A bounded take keeps all scene moods, without generating their full combined length.
+    # None preserves backends' ordinary multi-scene duration behavior.
+    duration_limit_seconds: int | None = None
+
     @property
     def is_multi_scene(self) -> bool:
         """Whether this is a multi-scene soundtrack request."""

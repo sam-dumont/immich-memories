@@ -310,6 +310,7 @@ class MusicPipeline:
                 prompt=primary_mood,
                 scenes=scenes,
                 duration_seconds=self._block_seconds,
+                duration_limit_seconds=self._block_seconds,
                 variation_index=b,
                 crossfade_duration=crossfade_duration,
                 output_dir=output_dir,

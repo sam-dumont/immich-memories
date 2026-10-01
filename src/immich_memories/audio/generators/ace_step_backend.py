@@ -99,6 +99,18 @@ def _mood_to_structured_prompt(
     )
 
 
+def _take_duration(request: GenerationRequest) -> float:
+    """Keep legacy scene timing, within an optional per-take bound and ACE's five-minute cap."""
+    duration = (
+        sum(scene.get("duration", 30) for scene in request.scenes)
+        if request.is_multi_scene
+        else request.duration_seconds
+    )
+    if request.duration_limit_seconds is not None:
+        duration = min(duration, request.duration_limit_seconds)
+    return float(min(duration, 300))
+
+
 class ACEStepBackend(MusicGenerator):
     """ACE-Step 1.5 music generation backend.
 
@@ -248,7 +260,6 @@ class ACEStepBackend(MusicGenerator):
                 cadence_seconds=request.photo_cadence_seconds,
                 mood_detail=request.mood_detail,
             )
-            duration = sum(s.get("duration", 30) for s in request.scenes)
         else:
             caption_result = _mood_to_structured_prompt(
                 request.prompt,
@@ -256,9 +267,8 @@ class ACEStepBackend(MusicGenerator):
                 cadence_seconds=request.photo_cadence_seconds,
                 mood_detail=request.mood_detail,
             )
-            duration = request.duration_seconds
 
-        duration = min(duration, 300)  # Cap at 5 minutes
+        duration = _take_duration(request)
         output_path = request.output_dir / f"ace_step_v{request.variation_index}.wav"
 
         if progress_callback:
@@ -282,7 +292,7 @@ class ACEStepBackend(MusicGenerator):
             # infer, and only pinning BPM (which the caption also states in tags).
             keyscale="",
             timesignature="",
-            duration=float(duration),
+            duration=duration,
             inference_steps=infer_step,
             guidance_scale=1.0 if is_turbo else 7.0,
             shift=timestep_shift,
@@ -330,7 +340,7 @@ class ACEStepBackend(MusicGenerator):
 
         return GenerationResult(
             audio_path=output_path,
-            duration_seconds=float(duration),
+            duration_seconds=duration,
             prompt=caption_result.caption,
             backend_name=self.name,
             metadata={
@@ -369,7 +379,6 @@ class ACEStepBackend(MusicGenerator):
                 cadence_seconds=request.photo_cadence_seconds,
                 mood_detail=request.mood_detail,
             )
-            duration = sum(s.get("duration", 30) for s in request.scenes)
         else:
             caption_result = _mood_to_structured_prompt(
                 request.prompt,
@@ -377,9 +386,8 @@ class ACEStepBackend(MusicGenerator):
                 cadence_seconds=request.photo_cadence_seconds,
                 mood_detail=request.mood_detail,
             )
-            duration = request.duration_seconds
 
-        duration = min(duration, 300)  # Cap at 5 minutes
+        duration = _take_duration(request)
 
         if progress_callback:
             progress_callback("Submitting task...", 0, {})
@@ -424,7 +432,7 @@ class ACEStepBackend(MusicGenerator):
 
         return GenerationResult(
             audio_path=output_path,
-            duration_seconds=float(duration),
+            duration_seconds=duration,
             prompt=caption_result.caption,
             backend_name=self.name,
             metadata={
