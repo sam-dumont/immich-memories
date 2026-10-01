@@ -48,6 +48,64 @@ Maps can dominate a trip render. In one M2 Full trip, nine smooth 4K maps took 9
 about 43% of the whole run. The NAS version used lower resolution and reduced motion. For
 cheaper maps, choose `preset: fast`; [titles and maps](../make/titles-maps-music.md) explains it.
 
+## LLM contract fixes, 1 October 2026 {#llm-contract-fixes}
+
+The follow-up for [#1645–#1660](https://github.com/sam-dumont/immich-video-memory-generator/issues/1645)
+uses fixes based on `b96d7d6a`, the four models listed below, and synthetic inputs only.
+Provider runs overlapped on the shared Mac. Raw request/reply evidence stays private.
+Server schema modes were left unchanged, including Melious's `structured_output: false`.
+
+The complete 34-feature command was rerun after the fixes:
+
+| Endpoint | Passed | Summed probe time | HTTP attempts | Failed feature |
+|---|---:|---:|---:|---|
+| Gemma, gemma-4-e4b-it-6bit | 33/34 | 213.63 s | 86 | Video motion |
+| OpenAI, gpt-5.6-luna | 33/34 | 206.59 s | 87 | Video motion |
+| z.ai, glm-5.3-flash | 34/34 | 294.78 s | 85 | None in this run |
+| Melious, deepseek-v4.1-flash | 34/34 | 223.44 s | 85 | None in this run |
+
+The [aggregate CSV](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/docs/research/2026-10-01-llm-contract-fixes.csv)
+contains the 136 complete-suite rows and 74 separate held-out checks. Blank token counters
+mean unreported. These are single runs with potentially warm server caches; the timings are
+not isolated throughput measurements. The held-out rows are not added to the 34-feature score.
+
+The request reader now states and validates field types before voting, retains complete fenced
+JSON, and stops when too few valid readings remain. Weather modifiers survive the time/subject
+handoff; picture-quality adjectives no longer acquire dictionary noun subjects. Caption prompts
+state their required fields. Story weighting repairs contradictory central/minor assignments,
+and trip-title instructions consistently prefer the recorded place, including a country.
+
+Separate held-out checks passed on Gemma, z.ai and Melious: otters and sailboats in 2030;
+rainy, foggy, sunny and snowy caption pools; Norway-only and Brittany/France trip titles;
+and graduation or wedding scenes against an ordinary desk scene. The weather rows use the final
+rerun after fixing split adjective/time readings and derived noun choices. Young forms
+(puppy, foal, duckling) and restrictive modifiers (striped horse, wooden chair, red car) passed
+on all four providers. These small checks do not establish general selection quality.
+
+### Motion is still a provider limitation
+
+The serialized JPEG was inspected: its three numbered panels preserve the generated positions
+and their order. The prompt explicitly compares positions within each panel. Neither change
+makes every reader reliable. Five separate controls ask for right, left, up, down and stationary:
+
+| Endpoint | Passed | Remaining failures |
+|---|---:|---|
+| Gemma | 1/5 | Both horizontal movements called stationary; vertical replies exceeded the 120-character contract |
+| OpenAI | 2/5 | Both horizontal movements called stationary; downward movement also acquired a horizontal direction |
+| z.ai | 3/5 | Both vertical movements also acquired a horizontal direction |
+| Melious | 3/5 | Both vertical movements also acquired a horizontal direction |
+
+All four passed the stationary control in this final set. An earlier Melious run invented leftward
+movement on the same stationary input, so that pass is not a reliability guarantee. Direction
+checks reject orthogonal movement and stationary descriptions of moving frames. The character
+cap remains enforced. [#1650](https://github.com/sam-dumont/immich-video-memory-generator/issues/1650)
+records the remaining capability gap.
+
+Story comparisons can also vary: z.ai tied the race and routine scene in one complete run,
+although both held-out occasion comparisons passed. Contradictory central/minor answers now
+receive bounded repair; a valid but poor ranking still fails the conformance check
+([#1653](https://github.com/sam-dumont/immich-video-memory-generator/issues/1653)).
+
 ## Compare fairly
 
 Render the same saved cut twice. The first run may acquire media; the second can reuse compatible

@@ -23,6 +23,7 @@ def llm_caption_identity(config: LLMConfig, artifact_id: str = "") -> str:
         "model": text_model_identity(resolved_llm_config(config), thinking=False),
         "artifact": artifact_id,
         "prompt": PROMPT,
+        "prompt_contract": "explicit-fields-v1",
         "schema": RESPONSE_SCHEMA,
         "tile": TILE_VERSION,
         "detail": "high" if config.send_image_detail else None,

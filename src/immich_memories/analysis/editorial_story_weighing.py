@@ -129,6 +129,7 @@ def _weighing_prompt(rows, *, thesis, contract, candidates) -> str:
 {contract}
 
 Confirm which of the stories below (one, rarely two) this memory is ABOUT in the "about" list. It takes up to half the film. Only a story the reading named can be chosen; leave the list empty if none deserves half.
+A story named in "about" cannot also have a minor, glimpse, or none weight. Resolve that contradiction before answering.
 Then weigh every other story for THIS memory (month, year, journey, person, anniversary, album or subject):
 "major" = an occasion that must be there, with several moments;
 "minor" = one or two moments;

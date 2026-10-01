@@ -1,0 +1,211 @@
+provider,model,suite,feature,http_attempts,seconds,valid,quality,reported_input_tokens,reported_cached_input_tokens,reported_output_tokens,reported_reasoning_tokens
+Gemma,gemma-4-e4b-it-6bit,complete-34,titles,1,3.2,True,title names the chess tournament,512,,40,
+Gemma,gemma-4-e4b-it-6bit,complete-34,trip title and route,1,1.75,True,names Iceland and classifies the moving driving itinerary,729,512,57,
+Gemma,gemma-4-e4b-it-6bit,complete-34,people title,1,2.87,True,names the synthetic person without inventing a family relationship,510,,44,
+Gemma,gemma-4-e4b-it-6bit,complete-34,free-text film handoff,6,10.59,True,routes the one-day wedding to its catalogue event,999,,299,
+Gemma,gemma-4-e4b-it-6bit,complete-34,free-text place scope,3,5.8,True,travel request selects trips rather than anywhere,591,,183,
+Gemma,gemma-4-e4b-it-6bit,complete-34,free-text printed words,3,5.89,True,selects VELO for OCR matching,564,,179,
+Gemma,gemma-4-e4b-it-6bit,complete-34,free-text exclusions,3,5.35,True,excludes toy cars without excluding all cars,465,,162,
+Gemma,gemma-4-e4b-it-6bit,complete-34,free-text age range,1,2.28,True,age five maps to the fixture person's fifth year,276,,75,
+Gemma,gemma-4-e4b-it-6bit,complete-34,free-text calendar dates,1,1.45,True,calendar bounds cover exactly 2030,282,,34,
+Gemma,gemma-4-e4b-it-6bit,complete-34,free-text request reading,3,4.16,True,keeps cats as subject and 2030 as time,1176,,108,
+Gemma,gemma-4-e4b-it-6bit,complete-34,free-text subject kind,3,4.03,True,majority identifies cats as animals,450,,105,
+Gemma,gemma-4-e4b-it-6bit,complete-34,free-text matching pool,9,22.54,True,all 14 black cats retained; all 5 dogs excluded,2178,,368,
+Gemma,gemma-4-e4b-it-6bit,complete-34,free-text ambiguous person,3,14.12,True,role distinguishes the cousin from the son,408,,135,
+Gemma,gemma-4-e4b-it-6bit,complete-34,free-text other names,3,12.35,True,kitten remains a name for a young cat,600,,132,
+Gemma,gemma-4-e4b-it-6bit,complete-34,free-text one occasion,3,13.62,True,wedding selects one occasion,417,,109,
+Gemma,gemma-4-e4b-it-6bit,complete-34,free-text particular place,3,12.74,True,childhood house requires one particular place,474,,148,
+Gemma,gemma-4-e4b-it-6bit,complete-34,free-text qualified subject,6,21.42,True,keeps black cat and dog as requested subjects,1149,,394,
+Gemma,gemma-4-e4b-it-6bit,complete-34,occasion sequence,1,2.35,True,finds the race and leaves the ordinary afternoon out,405,,50,
+Gemma,gemma-4-e4b-it-6bit,complete-34,captioned occasion,1,2.85,True,recognizes and names the cycling race,533,512,71,
+Gemma,gemma-4-e4b-it-6bit,complete-34,recorded occasion,2,4.39,True,recognizes and names the cycling race,898,512,99,
+Gemma,gemma-4-e4b-it-6bit,complete-34,holiday distinction,1,0.78,True,cycling race is distinct from Christmas,114,,7,
+Gemma,gemma-4-e4b-it-6bit,complete-34,music mood,1,3.42,True,"quiet cut gets a calm, low-energy mood from the model",241,,74,
+Gemma,gemma-4-e4b-it-6bit,complete-34,video motion,1,1.77,False,motion did not describe right movement,405,,30,
+Gemma,gemma-4-e4b-it-6bit,complete-34,image caption,4,4.4,True,caption identifies the generated red rectangle,1504,,85,
+Gemma,gemma-4-e4b-it-6bit,complete-34,month and year catalogue,3,5.66,True,both monthly subjects survive into the year account,1181,,144,
+Gemma,gemma-4-e4b-it-6bit,complete-34,episode reading,1,4.58,True,chess episode preserves both source assets and a representative,584,512,153,
+Gemma,gemma-4-e4b-it-6bit,complete-34,lean episode reading,1,2.53,True,chess episode preserves both source assets and a representative,565,512,67,
+Gemma,gemma-4-e4b-it-6bit,complete-34,recurring activity,1,2.2,True,folds both swimming lessons while keeping the home day separate,328,,20,
+Gemma,gemma-4-e4b-it-6bit,complete-34,story moment selection,2,2.78,True,selects the owner at the finish line instead of an empty rack,680,,48,
+Gemma,gemma-4-e4b-it-6bit,complete-34,central story confirmation,4,7.09,True,both candidate comparisons confirm the race as the central story,2528,1024,180,
+Gemma,gemma-4-e4b-it-6bit,complete-34,period story,5,16.3,True,"reads both days, groups their stories and ranks the race above the routine scene",3768,2048,577,
+Gemma,gemma-4-e4b-it-6bit,complete-34,memory worthiness,2,3.45,True,race is remarkable in both orders; ordinary afternoon is background,340,,75,
+Gemma,gemma-4-e4b-it-6bit,complete-34,audience activity,1,2.24,True,private toileting activity stays out of exports,797,512,24,
+Gemma,gemma-4-e4b-it-6bit,complete-34,audience exposure,2,2.68,True,recognizes stated clothing while retaining the detector hold,1063,512,32,
+Gemma,gemma-4-e4b-it-6bit,motion-five-controls,motion right,1,1.3,False,motion did not describe right movement,405,,30,
+Gemma,gemma-4-e4b-it-6bit,motion-five-controls,motion left,1,1.44,False,motion did not describe left movement,405,,30,
+Gemma,gemma-4-e4b-it-6bit,motion-five-controls,motion up,1,1.85,False,ValueError,405,,45,
+Gemma,gemma-4-e4b-it-6bit,motion-five-controls,motion down,1,1.73,False,ValueError,405,,45,
+Gemma,gemma-4-e4b-it-6bit,motion-five-controls,motion stationary,1,1.44,True,describes the blue object's stationary movement,405,,30,
+Gemma,gemma-4-e4b-it-6bit,held-out-meaning,young dog,3,4.16,True,young form retained,606,,144,
+Gemma,gemma-4-e4b-it-6bit,held-out-meaning,young horse,3,4.13,True,young form retained,606,,144,
+Gemma,gemma-4-e4b-it-6bit,held-out-meaning,young duck,3,3.93,True,young form retained,606,,138,
+Gemma,gemma-4-e4b-it-6bit,held-out-weather-final,weather rainy,9,15.34,True,matching weather retained; unrelated scene excluded,1809,,438,
+Gemma,gemma-4-e4b-it-6bit,held-out-weather-final,weather foggy,9,15.32,True,matching weather retained; unrelated scene excluded,1839,,461,
+Gemma,gemma-4-e4b-it-6bit,held-out-weather-final,weather sunny,9,14.9,True,matching weather retained; unrelated scene excluded,1782,,425,
+Gemma,gemma-4-e4b-it-6bit,held-out-weather-final,weather snowy,9,14.7,True,matching weather retained; unrelated scene excluded,1809,,431,
+Gemma,gemma-4-e4b-it-6bit,held-out-request-title-story,request otters,3,6.66,True,held-out subject and date retained,1215,,85,
+Gemma,gemma-4-e4b-it-6bit,held-out-request-title-story,request sailboats,3,6.01,True,held-out subject and date retained,1215,,110,
+Gemma,gemma-4-e4b-it-6bit,held-out-request-title-story,trip Norway,1,1.95,True,recorded country or region retained,695,512,65,
+Gemma,gemma-4-e4b-it-6bit,held-out-request-title-story,trip Brittany,1,1.84,True,recorded country or region retained,695,512,57,
+Gemma,gemma-4-e4b-it-6bit,held-out-request-title-story,period graduation,4,13.59,True,held-out occasion outranks ordinary desk scene,2780,1024,519,
+Gemma,gemma-4-e4b-it-6bit,held-out-request-title-story,period wedding,4,12.68,True,held-out occasion outranks ordinary desk scene,2760,1024,505,
+z.ai,glm-5.3-flash,complete-34,titles,1,3.43,True,title names the chess tournament,497,,43,
+z.ai,glm-5.3-flash,complete-34,trip title and route,1,2.16,True,names Iceland and classifies the moving driving itinerary,700,,55,
+z.ai,glm-5.3-flash,complete-34,people title,1,3.63,True,names the synthetic person without inventing a family relationship,492,,72,
+z.ai,glm-5.3-flash,complete-34,free-text film handoff,6,13.45,True,routes the one-day wedding to its catalogue event,966,,283,
+z.ai,glm-5.3-flash,complete-34,free-text place scope,3,5.38,True,travel request selects trips rather than anywhere,576,,143,
+z.ai,glm-5.3-flash,complete-34,free-text printed words,3,6.25,True,selects VELO for OCR matching,570,,120,
+z.ai,glm-5.3-flash,complete-34,free-text exclusions,3,6.06,True,excludes toy cars without excluding all cars,465,,152,
+z.ai,glm-5.3-flash,complete-34,free-text age range,1,2.2,True,age five maps to the fixture person's fifth year,255,,69,
+z.ai,glm-5.3-flash,complete-34,free-text calendar dates,1,14.77,True,calendar bounds cover exactly 2030,257,,48,
+z.ai,glm-5.3-flash,complete-34,free-text request reading,3,4.58,True,keeps cats as subject and 2030 as time,1098,,94,
+z.ai,glm-5.3-flash,complete-34,free-text subject kind,3,6.12,True,majority identifies cats as animals,444,,91,
+z.ai,glm-5.3-flash,complete-34,free-text matching pool,9,27.59,True,all 14 black cats retained; all 5 dogs excluded,2175,,334,
+z.ai,glm-5.3-flash,complete-34,free-text ambiguous person,3,16.36,True,role distinguishes the cousin from the son,408,,120,
+z.ai,glm-5.3-flash,complete-34,free-text other names,3,14.68,True,kitten remains a name for a young cat,600,,93,
+z.ai,glm-5.3-flash,complete-34,free-text one occasion,3,20.12,True,wedding selects one occasion,414,,92,
+z.ai,glm-5.3-flash,complete-34,free-text particular place,3,28.92,True,childhood house requires one particular place,465,,126,
+z.ai,glm-5.3-flash,complete-34,free-text qualified subject,6,40.73,True,keeps black cat and dog as requested subjects,1146,,320,
+z.ai,glm-5.3-flash,complete-34,occasion sequence,1,2.1,True,finds the race and leaves the ordinary afternoon out,381,,37,
+z.ai,glm-5.3-flash,complete-34,captioned occasion,1,2.06,True,recognizes and names the cycling race,448,,64,
+z.ai,glm-5.3-flash,complete-34,recorded occasion,2,7.07,True,recognizes and names the cycling race,858,,129,
+z.ai,glm-5.3-flash,complete-34,holiday distinction,1,1.21,True,cycling race is distinct from Christmas,115,,16,
+z.ai,glm-5.3-flash,complete-34,music mood,1,3.05,True,"quiet cut gets a calm, low-energy mood from the model",233,,81,
+z.ai,glm-5.3-flash,complete-34,video motion,1,1.49,True,describes the blue object's right movement,591,,19,
+z.ai,glm-5.3-flash,complete-34,image caption,4,6.03,True,caption identifies the generated red rectangle,1376,,111,
+z.ai,glm-5.3-flash,complete-34,month and year catalogue,3,8.85,True,both monthly subjects survive into the year account,1108,,210,
+z.ai,glm-5.3-flash,complete-34,episode reading,1,4.95,True,chess episode preserves both source assets and a representative,569,512,121,
+z.ai,glm-5.3-flash,complete-34,lean episode reading,1,2.75,True,chess episode preserves both source assets and a representative,548,,59,
+z.ai,glm-5.3-flash,complete-34,recurring activity,1,1.58,True,folds both swimming lessons while keeping the home day separate,303,,14,
+z.ai,glm-5.3-flash,complete-34,story moment selection,2,4.08,True,selects the owner at the finish line instead of an empty rack,636,,25,
+z.ai,glm-5.3-flash,complete-34,central story confirmation,4,6.22,True,both candidate comparisons confirm the race as the central story,2318,768,82,
+z.ai,glm-5.3-flash,complete-34,period story,4,17.86,True,"reads both days, groups their stories and ranks the race above the routine scene",2717,,523,
+z.ai,glm-5.3-flash,complete-34,memory worthiness,2,3.76,True,race is remarkable in both orders; ordinary afternoon is background,332,,63,
+z.ai,glm-5.3-flash,complete-34,audience activity,1,2.06,True,private toileting activity stays out of exports,778,768,23,
+z.ai,glm-5.3-flash,complete-34,audience exposure,2,3.23,True,recognizes stated clothing while retaining the detector hold,1038,,37,
+z.ai,glm-5.3-flash,motion-five-controls,motion right,1,1.84,True,describes the blue object's right movement,591,,20,
+z.ai,glm-5.3-flash,motion-five-controls,motion left,1,1.59,True,describes the blue object's left movement,591,,29,
+z.ai,glm-5.3-flash,motion-five-controls,motion up,1,1.52,False,motion did not describe up movement,591,,20,
+z.ai,glm-5.3-flash,motion-five-controls,motion down,1,1.58,False,motion did not describe down movement,591,,22,
+z.ai,glm-5.3-flash,motion-five-controls,motion stationary,1,1.87,True,describes the blue object's stationary movement,591,,19,
+z.ai,glm-5.3-flash,held-out-meaning,young dog,3,6.43,True,young form retained,600,,90,
+z.ai,glm-5.3-flash,held-out-meaning,young horse,3,4.28,True,young form retained,600,,93,
+z.ai,glm-5.3-flash,held-out-meaning,young duck,3,5.17,True,young form retained,600,,91,
+z.ai,glm-5.3-flash,held-out-weather-final,weather rainy,10,25.34,True,matching weather retained; unrelated scene excluded,2053,,542,
+z.ai,glm-5.3-flash,held-out-weather-final,weather foggy,11,28.3,True,matching weather retained; unrelated scene excluded,2248,,754,
+z.ai,glm-5.3-flash,held-out-weather-final,weather sunny,11,32.82,True,matching weather retained; unrelated scene excluded,2226,,725,
+z.ai,glm-5.3-flash,held-out-weather-final,weather snowy,11,26.83,True,matching weather retained; unrelated scene excluded,2210,,708,
+z.ai,glm-5.3-flash,held-out-request-title-story,request otters,3,6.82,True,held-out subject and date retained,1137,,183,
+z.ai,glm-5.3-flash,held-out-request-title-story,request sailboats,3,5.42,True,held-out subject and date retained,1176,,112,
+z.ai,glm-5.3-flash,held-out-request-title-story,trip Norway,1,2.29,True,recorded country or region retained,664,,59,
+z.ai,glm-5.3-flash,held-out-request-title-story,trip Brittany,1,2.27,True,recorded country or region retained,664,,60,
+z.ai,glm-5.3-flash,held-out-request-title-story,period graduation,4,13.46,True,held-out occasion outranks ordinary desk scene,2702,,443,
+z.ai,glm-5.3-flash,held-out-request-title-story,period wedding,4,11.23,True,held-out occasion outranks ordinary desk scene,2683,,309,
+Melious,deepseek-v4.1-flash,complete-34,titles,1,2.82,True,title names the chess tournament,515,512,384,350
+Melious,deepseek-v4.1-flash,complete-34,trip title and route,1,1.44,True,names Iceland and classifies the moving driving itinerary,725,512,429,352
+Melious,deepseek-v4.1-flash,complete-34,people title,1,8.42,True,names the synthetic person without inventing a family relationship,511,256,2810,2779
+Melious,deepseek-v4.1-flash,complete-34,free-text film handoff,6,3.88,True,routes the one-day wedding to its catalogue event,1089,,637,425
+Melious,deepseek-v4.1-flash,complete-34,free-text place scope,3,3.09,True,travel request selects trips rather than anywhere,636,,385,243
+Melious,deepseek-v4.1-flash,complete-34,free-text printed words,3,3.14,True,selects VELO for OCR matching,636,,575,435
+Melious,deepseek-v4.1-flash,complete-34,free-text exclusions,3,3.34,True,excludes toy cars without excluding all cars,537,,864,726
+Melious,deepseek-v4.1-flash,complete-34,free-text age range,1,0.94,True,age five maps to the fixture person's fifth year,276,256,194,128
+Melious,deepseek-v4.1-flash,complete-34,free-text calendar dates,1,0.92,True,calendar bounds cover exactly 2030,279,256,101,79
+Melious,deepseek-v4.1-flash,complete-34,free-text request reading,3,4.11,True,keeps cats as subject and 2030 as time,1158,768,968,893
+Melious,deepseek-v4.1-flash,complete-34,free-text subject kind,3,2.09,True,majority identifies cats as animals,504,,259,157
+Melious,deepseek-v4.1-flash,complete-34,free-text matching pool,9,33.38,True,all 14 black cats retained; all 5 dogs excluded,2361,768,4271,3977
+Melious,deepseek-v4.1-flash,complete-34,free-text ambiguous person,3,13.0,True,role distinguishes the cousin from the son,462,,214,115
+Melious,deepseek-v4.1-flash,complete-34,free-text other names,3,12.5,True,kitten remains a name for a young cat,663,,719,626
+Melious,deepseek-v4.1-flash,complete-34,free-text one occasion,3,13.7,True,wedding selects one occasion,477,,200,109
+Melious,deepseek-v4.1-flash,complete-34,free-text particular place,3,12.18,True,childhood house requires one particular place,525,,263,130
+Melious,deepseek-v4.1-flash,complete-34,free-text qualified subject,6,17.4,True,keeps black cat and dog as requested subjects,1269,,1250,1031
+Melious,deepseek-v4.1-flash,complete-34,occasion sequence,1,2.45,True,finds the race and leaves the ordinary afternoon out,403,256,126,94
+Melious,deepseek-v4.1-flash,complete-34,captioned occasion,1,2.68,True,recognizes and names the cycling race,458,256,288,233
+Melious,deepseek-v4.1-flash,complete-34,recorded occasion,2,12.44,True,recognizes and names the cycling race,883,768,2710,2642
+Melious,deepseek-v4.1-flash,complete-34,holiday distinction,1,0.82,True,cycling race is distinct from Christmas,138,,139,130
+Melious,deepseek-v4.1-flash,complete-34,music mood,1,2.47,True,"quiet cut gets a calm, low-energy mood from the model",254,,197,131
+Melious,deepseek-v4.1-flash,complete-34,video motion,1,1.58,True,describes the blue object's right movement,371,256,147,120
+Melious,deepseek-v4.1-flash,complete-34,image caption,4,4.38,True,caption identifies the generated red rectangle,1284,1024,479,392
+Melious,deepseek-v4.1-flash,complete-34,month and year catalogue,3,10.8,True,both monthly subjects survive into the year account,1109,512,2056,1892
+Melious,deepseek-v4.1-flash,complete-34,episode reading,1,2.68,True,chess episode preserves both source assets and a representative,598,512,264,197
+Melious,deepseek-v4.1-flash,complete-34,lean episode reading,1,2.83,True,chess episode preserves both source assets and a representative,574,512,262,198
+Melious,deepseek-v4.1-flash,complete-34,recurring activity,1,1.75,True,folds both swimming lessons while keeping the home day separate,323,256,86,73
+Melious,deepseek-v4.1-flash,complete-34,story moment selection,2,2.89,True,selects the owner at the finish line instead of an empty rack,678,512,228,210
+Melious,deepseek-v4.1-flash,complete-34,central story confirmation,4,5.82,True,both candidate comparisons confirm the race as the central story,2400,2048,616,508
+Melious,deepseek-v4.1-flash,complete-34,period story,4,27.23,True,"reads both days, groups their stories and ranks the race above the routine scene",2848,1024,5714,5380
+Melious,deepseek-v4.1-flash,complete-34,memory worthiness,2,1.93,True,race is remarkable in both orders; ordinary afternoon is background,368,,242,204
+Melious,deepseek-v4.1-flash,complete-34,audience activity,1,2.76,True,private toileting activity stays out of exports,807,768,50,31
+Melious,deepseek-v4.1-flash,complete-34,audience exposure,2,1.58,True,recognizes stated clothing while retaining the detector hold,1090,1024,126,91
+Melious,deepseek-v4.1-flash,motion-five-controls,motion right,2,2.92,True,describes the blue object's right movement,742,256,290,276
+Melious,deepseek-v4.1-flash,motion-five-controls,motion left,1,1.84,True,describes the blue object's left movement,371,256,135,118
+Melious,deepseek-v4.1-flash,motion-five-controls,motion up,1,1.19,False,motion did not describe up movement,371,256,143,125
+Melious,deepseek-v4.1-flash,motion-five-controls,motion down,1,0.87,False,motion did not describe down movement,371,256,115,95
+Melious,deepseek-v4.1-flash,motion-five-controls,motion stationary,1,2.86,True,describes the blue object's stationary movement,371,256,577,560
+Melious,deepseek-v4.1-flash,held-out-meaning,young dog,3,3.71,True,young form retained,669,,609,502
+Melious,deepseek-v4.1-flash,held-out-meaning,young horse,3,2.34,True,young form retained,663,,711,600
+Melious,deepseek-v4.1-flash,held-out-meaning,young duck,3,2.92,True,young form retained,675,,602,491
+Melious,deepseek-v4.1-flash,held-out-weather-final,weather rainy,11,50.18,True,matching weather retained; unrelated scene excluded,2580,768,12892,12551
+Melious,deepseek-v4.1-flash,held-out-weather-final,weather foggy,10,50.31,True,matching weather retained; unrelated scene excluded,2335,1024,11916,11535
+Melious,deepseek-v4.1-flash,held-out-weather-final,weather sunny,11,90.04,True,matching weather retained; unrelated scene excluded,2449,768,23866,23426
+Melious,deepseek-v4.1-flash,held-out-weather-final,weather snowy,9,33.72,True,matching weather retained; unrelated scene excluded,2028,768,8494,8138
+Melious,deepseek-v4.1-flash,held-out-request-title-story,request otters,3,5.04,True,held-out subject and date retained,1197,,1316,1238
+Melious,deepseek-v4.1-flash,held-out-request-title-story,request sailboats,3,4.7,True,held-out subject and date retained,1236,,1099,1018
+Melious,deepseek-v4.1-flash,held-out-request-title-story,trip Norway,1,1.05,True,recorded country or region retained,688,512,231,162
+Melious,deepseek-v4.1-flash,held-out-request-title-story,trip Brittany,1,1.51,True,recorded country or region retained,688,512,417,348
+Melious,deepseek-v4.1-flash,held-out-request-title-story,period graduation,4,8.05,True,held-out occasion outranks ordinary desk scene,2805,,1819,1507
+Melious,deepseek-v4.1-flash,held-out-request-title-story,period wedding,4,7.6,True,held-out occasion outranks ordinary desk scene,2841,,1902,1550
+OpenAI,gpt-5.6-luna,complete-34,titles,3,4.89,True,title names the chess tournament,528,,71,35
+OpenAI,gpt-5.6-luna,complete-34,trip title and route,1,3.01,True,names Iceland and classifies the moving driving itinerary,772,,116,48
+OpenAI,gpt-5.6-luna,complete-34,people title,1,3.99,True,names the synthetic person without inventing a family relationship,524,,136,94
+OpenAI,gpt-5.6-luna,complete-34,free-text film handoff,6,8.36,True,routes the one-day wedding to its catalogue event,1224,,248,
+OpenAI,gpt-5.6-luna,complete-34,free-text place scope,3,4.58,True,travel request selects trips rather than anywhere,762,,139,
+OpenAI,gpt-5.6-luna,complete-34,free-text printed words,3,4.06,True,selects VELO for OCR matching,720,,88,
+OpenAI,gpt-5.6-luna,complete-34,free-text exclusions,3,3.53,True,excludes toy cars without excluding all cars,603,,81,
+OpenAI,gpt-5.6-luna,complete-34,free-text age range,1,1.41,True,age five maps to the fixture person's fifth year,316,,51,
+OpenAI,gpt-5.6-luna,complete-34,free-text calendar dates,1,1.21,True,calendar bounds cover exactly 2030,293,,29,
+OpenAI,gpt-5.6-luna,complete-34,free-text request reading,3,3.69,True,keeps cats as subject and 2030 as time,1584,,84,
+OpenAI,gpt-5.6-luna,complete-34,free-text subject kind,3,3.9,True,majority identifies cats as animals,582,,82,
+OpenAI,gpt-5.6-luna,complete-34,free-text matching pool,9,23.05,True,all 14 black cats retained; all 5 dogs excluded,2769,,307,
+OpenAI,gpt-5.6-luna,complete-34,free-text ambiguous person,3,15.3,True,role distinguishes the cousin from the son,552,,114,
+OpenAI,gpt-5.6-luna,complete-34,free-text other names,3,11.72,True,kitten remains a name for a young cat,726,,102,
+OpenAI,gpt-5.6-luna,complete-34,free-text one occasion,3,15.34,True,wedding selects one occasion,534,,103,
+OpenAI,gpt-5.6-luna,complete-34,free-text particular place,3,11.88,True,childhood house requires one particular place,588,,116,
+OpenAI,gpt-5.6-luna,complete-34,free-text qualified subject,6,19.18,True,keeps black cat and dog as requested subjects,1419,,237,
+OpenAI,gpt-5.6-luna,complete-34,occasion sequence,1,2.64,True,finds the race and leaves the ordinary afternoon out,373,,21,
+OpenAI,gpt-5.6-luna,complete-34,captioned occasion,1,2.91,True,recognizes and names the cycling race,440,,44,
+OpenAI,gpt-5.6-luna,complete-34,recorded occasion,2,4.02,True,recognizes and names the cycling race,845,,61,
+OpenAI,gpt-5.6-luna,complete-34,holiday distinction,1,1.12,True,cycling race is distinct from Christmas,108,,10,
+OpenAI,gpt-5.6-luna,complete-34,music mood,1,5.03,True,"quiet cut gets a calm, low-energy mood from the model",412,,49,
+OpenAI,gpt-5.6-luna,complete-34,video motion,1,1.06,False,motion did not describe right movement,525,,16,
+OpenAI,gpt-5.6-luna,complete-34,image caption,4,6.17,True,caption identifies the generated red rectangle,1260,,82,
+OpenAI,gpt-5.6-luna,complete-34,month and year catalogue,3,5.63,True,both monthly subjects survive into the year account,1110,,160,
+OpenAI,gpt-5.6-luna,complete-34,episode reading,1,3.14,True,chess episode preserves both source assets and a representative,725,,78,
+OpenAI,gpt-5.6-luna,complete-34,lean episode reading,1,4.08,True,chess episode preserves both source assets and a representative,670,,60,
+OpenAI,gpt-5.6-luna,complete-34,recurring activity,1,2.5,True,folds both swimming lessons while keeping the home day separate,295,,14,
+OpenAI,gpt-5.6-luna,complete-34,story moment selection,2,2.81,True,selects the owner at the finish line instead of an empty rack,624,,20,
+OpenAI,gpt-5.6-luna,complete-34,central story confirmation,4,5.26,True,both candidate comparisons confirm the race as the central story,2282,,82,
+OpenAI,gpt-5.6-luna,complete-34,period story,4,9.72,True,"reads both days, groups their stories and ranks the race above the routine scene",2669,,299,
+OpenAI,gpt-5.6-luna,complete-34,memory worthiness,2,4.68,True,race is remarkable in both orders; ordinary afternoon is background,316,,46,
+OpenAI,gpt-5.6-luna,complete-34,audience activity,1,2.91,True,private toileting activity stays out of exports,773,,24,
+OpenAI,gpt-5.6-luna,complete-34,audience exposure,2,3.81,True,recognizes stated clothing while retaining the detector hold,1027,,46,
+OpenAI,gpt-5.6-luna,motion-five-controls,motion right,2,2.56,False,motion did not describe right movement,525,,19,
+OpenAI,gpt-5.6-luna,motion-five-controls,motion left,1,1.52,False,motion did not describe left movement,525,,17,
+OpenAI,gpt-5.6-luna,motion-five-controls,motion up,1,1.85,True,describes the blue object's up movement,525,,17,
+OpenAI,gpt-5.6-luna,motion-five-controls,motion down,1,4.07,False,motion did not describe down movement,525,,22,
+OpenAI,gpt-5.6-luna,motion-five-controls,motion stationary,1,1.04,True,describes the blue object's stationary movement,525,,19,
+OpenAI,gpt-5.6-luna,held-out-meaning,young dog,3,4.09,True,young form retained,726,,104,
+OpenAI,gpt-5.6-luna,held-out-meaning,young horse,3,4.57,True,young form retained,726,,105,
+OpenAI,gpt-5.6-luna,held-out-meaning,young duck,3,3.37,True,young form retained,726,,107,
+Gemma,gemma-4-e4b-it-6bit,held-out-meaning,qualified striped,6,8.98,True,restriction retained,1149,,346,
+Gemma,gemma-4-e4b-it-6bit,held-out-meaning,qualified wooden,6,9.87,True,restriction retained,1149,,377,
+Gemma,gemma-4-e4b-it-6bit,held-out-meaning,qualified red,6,9.62,True,restriction retained,1149,,352,
+z.ai,glm-5.3-flash,held-out-meaning,qualified striped,7,20.31,True,restriction retained,1320,,342,
+z.ai,glm-5.3-flash,held-out-meaning,qualified wooden,6,10.69,True,restriction retained,1155,,253,
+z.ai,glm-5.3-flash,held-out-meaning,qualified red,6,12.51,True,restriction retained,1152,,290,
+Melious,deepseek-v4.1-flash,held-out-meaning,qualified striped,6,6.68,True,restriction retained,1284,,1120,885
+Melious,deepseek-v4.1-flash,held-out-meaning,qualified wooden,6,5.93,True,restriction retained,1278,,1289,1057
+Melious,deepseek-v4.1-flash,held-out-meaning,qualified red,6,4.71,True,restriction retained,1275,,1103,874
+OpenAI,gpt-5.6-luna,held-out-meaning,qualified striped,6,7.75,True,restriction retained,1437,,226,
+OpenAI,gpt-5.6-luna,held-out-meaning,qualified wooden,6,9.11,True,restriction retained,1428,,226,
+OpenAI,gpt-5.6-luna,held-out-meaning,qualified red,6,7.33,True,restriction retained,1428,,217,

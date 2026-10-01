@@ -7,7 +7,7 @@ from collections.abc import Callable, Mapping, Sequence
 
 from immich_memories.analysis.editorial_story_weight_audit import weight_reply_audit
 
-WEIGHING_CONTRACT_VERSION = "complete-story-weights-v2-arrivals"
+WEIGHING_CONTRACT_VERSION = "complete-story-weights-v3-consistent-centres"
 REPAIR_ROUNDS = 2
 # The first repair keeps its historical stage name so banked repairs stay warm.
 _REPAIR_SUFFIXES = ("", "-repair", "-repair-2")
@@ -116,6 +116,19 @@ def _retitles_name_offered_stories(retitles: object, story_keys: Sequence[str]) 
 
 def _invalid_fields(obj: Mapping, about: Sequence[str], story_keys: Sequence[str]) -> list[str]:
     errors = []
+    weights = obj.get("weights")
+    overlap = [
+        key
+        for key in about
+        if isinstance(weights, Mapping) and weights.get(key) in ("minor", "glimpse", "none")
+    ]
+    if overlap:
+        errors.append(
+            "Stories cannot be both central in about and minor, glimpse, or none in weights: "
+            + json.dumps(sorted(overlap))
+            + ". Reassess their relative priority. Keep only stories deserving half the film in "
+            "about; give every other story its own weight."
+        )
     if len(about) > 2 or len(set(about)) != len(about):
         errors.append("about must contain at most two distinct offered candidates")
     if not _joins_are_pairs(obj.get("join", []), story_keys):
