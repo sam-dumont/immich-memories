@@ -12,7 +12,10 @@ from immich_memories.analysis.editorial_moment_wall import (
     MomentCardEvidence,
     RepresentativeEvidence,
 )
-from immich_memories.analysis.selection_source_groups import EditorialGroupProjection
+from immich_memories.analysis.selection_source_groups import (
+    EditorialGroupProjection,
+    EpisodeMembershipIndex,
+)
 from immich_memories.analysis.text_episode_reader import (
     EpisodeEditorialEvidence,
     TextEpisodeReadResult,
@@ -59,7 +62,10 @@ def build_moment_cards(
     """Build scope-stable cards without another model call or evidence pre-trim."""
     lines = episodes.annotation_batch.as_mapping()
     records = episodes.annotation_batch.records_by_id()
-    return tuple(_build_card(projection, episodes, lines, records) for projection in projections)
+    membership = EpisodeMembershipIndex(tuple(e.projection.group for e in episodes.episodes))
+    return tuple(
+        _build_card(projection, episodes, lines, records, membership) for projection in projections
+    )
 
 
 def _build_card(
@@ -67,6 +73,7 @@ def _build_card(
     episodes: TextEpisodeReadResult,
     lines: Mapping[str, str],
     records: Mapping[str, AssetAnnotationLine],
+    membership: EpisodeMembershipIndex,
 ) -> MomentCard:
     full_asset_ids = projection.group.candidate_ids
     missing = tuple(
@@ -74,7 +81,7 @@ def _build_card(
     )
     if missing:
         raise ValueError(f"moment card missing annotations for {len(missing)} full member(s)")
-    episode = _episode_for(full_asset_ids, episodes.episodes)
+    episode = _episode_for(full_asset_ids, episodes.episodes, membership)
     representatives = _representatives_for(projection, episode)
     representative_evidence = tuple(
         RepresentativeEvidence(
@@ -129,12 +136,10 @@ def _build_card(
 def _episode_for(
     moment_asset_ids: tuple[str, ...],
     episodes: tuple[EpisodeEditorialEvidence, ...],
+    membership: EpisodeMembershipIndex,
 ) -> EpisodeEditorialEvidence:
-    moment_members = set(moment_asset_ids)
     carrying = tuple(
-        episode
-        for episode in episodes
-        if moment_members.issubset(episode.projection.group.candidate_ids)
+        episodes[position] for position in membership.carrying_positions(moment_asset_ids)
     )
     if len(carrying) != 1:
         raise ValueError("each full moment card must inherit exactly one canonical episode")

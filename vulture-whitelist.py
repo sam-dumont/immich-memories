@@ -35,6 +35,9 @@ AUDIO  # unused variable (src/immich_memories/api/models.py:50)
 # spliced into the judge line at editorial_structure_lines.py:118 via
 # with_person_context. The model is the reader; no source line names the keys,
 # and dropping one would silently change the cut.
+# The stateless public projection remains available to callers; production
+# reuses PersonPeriodProjection for successive subsets of one sealed wall.
+person_period_facts  # unused function (src/immich_memories/analysis/editorial_person_period_facts.py)
 person_token  # unused variable (src/immich_memories/analysis/editorial_person_period_facts.py:18)
 current_relationship  # unused variable (src/immich_memories/analysis/editorial_person_period_facts.py:20)
 first_library_month  # unused variable (src/immich_memories/analysis/editorial_person_period_facts.py:23)

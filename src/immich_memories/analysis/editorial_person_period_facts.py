@@ -100,20 +100,40 @@ def person_period_facts(
     Current graph roles and inferred library dates remain distinct facts. No person
     receives admission, funding or a picture requirement from this projection.
     """
-    people, moments = _people_and_moments(tables)
-    selected = set(moment_ids)
-    if selected - moments.keys():
-        raise ValueError("person period facts reference an unknown moment")
-    associations = _associations(tables, moments)
-    matched: dict[str, set[str]] = {}
-    for moment_id in selected:
-        month = _taken_month(moments[moment_id].get("taken"))
-        for token in _matched_on_a_dated_month(moment_id, month, associations, people):
-            matched.setdefault(token, set()).add(moment_id)
-    return tuple(
-        _period_fact(token, people[token], grounding, moments)
-        for token, grounding in sorted(matched.items())
-    )
+    return PersonPeriodProjection(tables).facts(moment_ids)
+
+
+class PersonPeriodProjection:
+    """Reuse one sealed wall's row indexes across its request-scoped projections.
+
+    Initialization remains lazy so an unused arrival callback does not validate
+    tables, and unknown selected moments still fail before association validation.
+    No result or table is cached across requests.
+    """
+
+    def __init__(self, tables: Mapping[str, tuple[list[str], list[list[str]]]]) -> None:
+        self._tables = tables
+        self._indexed: tuple[dict, dict] | None = None
+        self._associations: dict | None = None
+
+    def facts(self, moment_ids: Sequence[str]) -> tuple[PersonPeriodFact, ...]:
+        if self._indexed is None:
+            self._indexed = _people_and_moments(self._tables)
+        people, moments = self._indexed
+        selected = set(moment_ids)
+        if selected - moments.keys():
+            raise ValueError("person period facts reference an unknown moment")
+        if self._associations is None:
+            self._associations = _associations(self._tables, moments)
+        matched: dict[str, set[str]] = {}
+        for moment_id in selected:
+            month = _taken_month(moments[moment_id].get("taken"))
+            for token in _matched_on_a_dated_month(moment_id, month, self._associations, people):
+                matched.setdefault(token, set()).add(moment_id)
+        return tuple(
+            _period_fact(token, people[token], grounding, moments)
+            for token, grounding in sorted(matched.items())
+        )
 
 
 def render_person_period_facts(facts: Sequence[PersonPeriodFact]) -> str:
