@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
@@ -50,8 +51,8 @@ def build_render_request(params: GenerationParams) -> dict:
         "memory": {
             "memory_type": params.memory_type,
             "target_duration_seconds": params.target_duration_seconds,
-            "date_start": params.date_start.isoformat() if params.date_start else None,
-            "date_end": params.date_end.isoformat() if params.date_end else None,
+            "date_start": _calendar_date(params.date_start),
+            "date_end": _calendar_date(params.date_end),
             "person_name": params.person_name,
             "preset_params": params.memory_preset_params,
         },
@@ -85,6 +86,13 @@ def build_render_request(params: GenerationParams) -> dict:
             "homebase_longitude": params.config.trips.homebase_longitude,
         },
     }
+
+
+def _calendar_date(value: date | None) -> str | None:
+    """The wire contract carries calendar days, including datetime-based presets."""
+    if value is None:
+        return None
+    return (value.date() if isinstance(value, datetime) else value).isoformat()
 
 
 def _live_certificate(clip, mode: str, start: float, end: float) -> dict | None:

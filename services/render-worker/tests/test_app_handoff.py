@@ -62,6 +62,8 @@ def test_app_envelope_preserves_manual_cut_and_square_canvas(tmp_path):
     assert received.output_resolution == "720p"
     assert received.target_duration_seconds == 30
     assert received.editorial_render_timing == body["timing"]
+    assert body["memory"]["date_start"] is None
+    assert body["memory"]["date_end"] is None
 
 
 def test_an_editorial_directive_keeps_its_cut_without_a_manual_segment_map(tmp_path):
@@ -178,3 +180,59 @@ def test_a_manually_selected_live_carrier_keeps_motion_and_its_stitched_duration
     assert chosen["live"]["material"] == material.as_dict()
     assert received.clips[0].duration_seconds == material.duration_seconds
     assert chosen["live"]["selected_interval"] == [0.5, 2.5]
+
+
+def test_monthly_preset_datetime_bounds_round_trip_as_calendar_dates(tmp_path):
+    from datetime import date
+
+    from immich_memories.memory_types.date_builders import build_month
+
+    params = manual_params(tmp_path)
+    period = build_month(2, 2024)
+    params.date_start = period.start
+    params.date_end = period.end
+    params.memory_type = "monthly_highlights"
+    params.memory_key_override = None
+    from immich_memories.generate import build_memory_key
+
+    expected_key = build_memory_key(params)
+    received, body = round_trip(params, tmp_path)
+    assert body["memory"]["date_start"] == "2024-02-01"
+    assert body["memory"]["date_end"] == "2024-02-29"
+    assert received.date_start == date(2024, 2, 1)
+    assert received.date_end == date(2024, 2, 29)
+    assert body["memory_key"] == expected_key
+    assert received.editorial_render_timing == body["timing"]
+
+    params.date_start = period.start.date()
+    params.date_end = period.end.date()
+    _, plain_dates = round_trip(params, tmp_path)
+    assert plain_dates["memory"] == body["memory"]
+    assert plain_dates["timing"] == body["timing"]
+    assert plain_dates["memory_key"] == build_memory_key(params)
+
+
+def test_remote_dates_keep_the_presets_local_calendar_day(tmp_path):
+    from datetime import datetime, timedelta, timezone
+
+    params = manual_params(tmp_path)
+    params.date_start = datetime(2024, 2, 1, 0, 30, tzinfo=timezone(timedelta(hours=14)))
+    params.date_end = datetime(2024, 2, 29, 23, 59, tzinfo=timezone(timedelta(hours=-12)))
+    _, body = round_trip(params, tmp_path)
+    assert body["memory"]["date_start"] == "2024-02-01"
+    assert body["memory"]["date_end"] == "2024-02-29"
+
+
+def test_worker_still_refuses_timestamp_in_calendar_date_field(tmp_path):
+    import pytest
+    from immich_memories_render_worker.models import RenderRequest
+    from pydantic import ValidationError
+
+    from immich_memories.processing.remote_render_plan import build_render_request
+
+    body = build_render_request(manual_params(tmp_path))
+    body["memory"]["date_end"] = "2024-02-29T23:59:59"
+    with pytest.raises(ValidationError) as error:
+        RenderRequest.model_validate(body)
+    assert error.value.errors()[0]["loc"] == ("memory", "date_end")
+    assert error.value.errors()[0]["type"] == "date_from_datetime_inexact"
