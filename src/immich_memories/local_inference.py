@@ -98,7 +98,7 @@ def local_reader_files(config: LLMConfig) -> tuple[str, list[Path]]:
 
 
 class LocalModels:
-    """Keep a reader warm between calls, then free its process before local audio."""
+    """Keep a reader warm between calls, then release it at render and audio boundaries."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -127,10 +127,13 @@ class LocalModels:
                 self.close()
                 raise
 
-    async def release(self) -> None:
-        """Wait for in-flight work, then release only the process this app started."""
+    async def release(self, *, unused_buffers: bool = False) -> None:
+        """Drain leased work, then release the owned reader and optionally runtime buffers."""
         async with self.exclusive():
-            self.close()
+            if unused_buffers:
+                self.prepare_audio()
+            else:
+                self.close()
 
     def close(self) -> None:
         """Reap the owned process group, including on interpreter exit."""

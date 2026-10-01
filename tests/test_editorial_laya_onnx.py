@@ -146,3 +146,33 @@ def test_the_configured_onnx_checkpoint_answers_without_mlx(monkeypatch, checkpo
     assert reader is not None
     answer = json.loads(reader.activity_answers({"one": (["bath"], True)})["one"])
     assert answer["finding"] == "bathing"
+
+
+def test_close_drops_session_and_reloads_same_probabilities(monkeypatch, checkpoint):
+    import weakref
+
+    from immich_memories.analysis.editorial_laya_onnx import OnnxLayaScorer
+
+    class Session:
+        # WHY: the ONNX native session boundary; tokenizer and scoring remain real.
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def run(self, names, feed):
+            return [np.ones((len(feed["input_ids"]), 10), dtype=np.float32)]
+
+    monkeypatch.setitem(
+        sys.modules,
+        "onnxruntime",
+        SimpleNamespace(
+            get_available_providers=lambda: ["CPUExecutionProvider"], InferenceSession=Session
+        ),
+    )
+    scorer = OnnxLayaScorer(checkpoint)
+    before = scorer.probabilities(["bath"], AUDIENCE_QUESTION)
+    session, tokens = weakref.ref(scorer._session), weakref.ref(scorer._tokens)
+    scorer.close()
+    scorer.close()
+    assert session() is None and tokens() is None
+    assert scorer.probabilities(["bath"], AUDIENCE_QUESTION) == before
+    scorer.close()
