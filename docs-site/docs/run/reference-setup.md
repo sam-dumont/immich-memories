@@ -87,8 +87,10 @@ The app already asks for these phases in sequence. The worker lets the current m
 finish, drops classifier weights and stops the caption process before rendering. Demucs releases
 its model after separation. A model request arriving during rendering gets HTTP 503 with
 `Retry-After: 1`; health and render-job status remain available. Rendering waits up to 60 seconds
-for active model calls, then fails that job rather than unloading a model mid-call. Each service
-keeps its existing queue. The next caption request starts the bundled caption process again.
+for active model calls, then fails that job rather than unloading a model mid-call. Concurrent
+requests for the same model phase wait up to 60 seconds for its cleanup to finish, then enter
+the existing service queue. Each service keeps its queue capacity. The next caption request
+starts the bundled caption process again.
 
 Check `GET /health` for the inference provider and authenticated `GET /render/health` for
 `titles: CUDA`, NVENC encoders and `accelerated: true`. Seeing the card in `nvidia-smi` alone
