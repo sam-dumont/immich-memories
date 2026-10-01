@@ -32,7 +32,7 @@
     "streaming_assemble_full": [16]
   },
   "src/immich_memories/titles/kernels.py": {
-    "_compile_kernels": [130]
+    "_compile_kernels": [120]
   },
   "src/immich_memories/titles/sdf_font.py": {
     "_search_font_paths": [20]

@@ -77,12 +77,16 @@ class _OneFrameRenderer:
     def __init__(self, _config) -> None:
         pass
 
-    def render_frame(self, _frame_num: int, _title: str, _subtitle: str | None) -> np.ndarray:
+    def render_frame(
+        self, _frame_num: int, _title: str, _subtitle: str | None, **_kwargs
+    ) -> np.ndarray:
         return np.zeros((1, 1, 3), dtype=np.uint8)
 
 
 class _FailingRenderer(_OneFrameRenderer):
-    def render_frame(self, _frame_num: int, _title: str, _subtitle: str | None) -> np.ndarray:
+    def render_frame(
+        self, _frame_num: int, _title: str, _subtitle: str | None, **_kwargs
+    ) -> np.ndarray:
         raise ValueError("render exploded")
 
 
