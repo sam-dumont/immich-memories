@@ -57,6 +57,7 @@ def build_render_request(params: GenerationParams) -> dict:
             "preset_params": _preset_request(params.memory_preset_params),
         },
         "titles": titles | {"title": params.title or "", "subtitle": params.subtitle or ""},
+        "network": params.config.network.model_dump(),
         "timing": binding,
         "certified_content_intervals": {
             clip["asset_id"]: clip["live"]["selected_interval"]
