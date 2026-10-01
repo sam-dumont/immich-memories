@@ -1170,4 +1170,3 @@ demucs-locks:  ## Refresh the Linux inference audio locks without changing Mac d
 	uv pip compile docker/demucs-requirements.in --constraint "$$constraints" --python-version 3.12 \
 	  --python-platform linux --torch-backend cu126 --generate-hashes --no-annotate --no-header \
 	  -o docker/demucs-cuda-requirements.txt
-
