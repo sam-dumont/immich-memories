@@ -22,11 +22,13 @@ pytestmark = [pytest.mark.integration, requires_ffmpeg]
         ("blur", "30", "hlg"),
         ("blur", "30000/1001", "hlg"),
         ("blur", "30", "sdr"),
+        ("black", "120", "hlg"),
+        ("blur", "240", "hlg"),
+        ("blur", "120000/1001", "hlg"),
+        ("blur", "120", "sdr"),
     ],
 )
-def test_hdr_duplication_after_conversion_keeps_seek_caption_and_frame_hashes(
-    tmp_path, fill, rate, transfer
-):
+def test_cadence_order_keeps_seek_caption_and_frame_hashes(tmp_path, fill, rate, transfer):
     source = tmp_path / "source.mkv"
     source_hdr = transfer == "hlg"
     subprocess.run(
