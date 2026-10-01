@@ -20,6 +20,8 @@ The trip preview needs the network for map tiles and place naming. The other dem
 
 ## Fixture and asset contracts
 
+Use only the credited CC0 demo fixture for public visual assets. The private household testlab is separate: its real-person photos stay on the maintainer's laptop and must never appear in screenshots, demos, hosted previews or the public website. Only anonymous aggregate test results may leave it.
+
 Nothing on the docs site or in the README is a screenshot of a real library. The demo is a
 React recreation of the UI rendered with Remotion over a CC0 fixture library, the CLI demo is a
 VHS recording, and the screenshots come from a hermetic run over the same library. The library

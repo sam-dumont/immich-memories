@@ -72,7 +72,9 @@ Before publishing the first RC, recheck all eight households in the maintainer's
 
 Record the revision, tier, scenarios checked and failures. Check people and saved groups, selection, titles and wording, and the holidays or celebrations relevant to each household. Verify expected no-film outcomes as well as successful films. NAS results establish NAS coverage; check other tiers separately before claiming they passed. Fix failures or state the remaining limits before publishing.
 
-Keep household material and detailed reports private. Publish only the aggregate report approved by the testlab's public-report check.
+The testlab uses real people's photos from a controversial dataset. Its household material and detailed reports stay on the maintainer's laptop. Do not upload them to CI, hosted previews or the public website. This includes photos, thumbnails, screenshots and rendered films.
+
+Only anonymous aggregate results may be published, after the testlab's public-report check: counts, pass rates and timings, without names, identifiers, source links, locations or picture-level details. Public screenshots and demos use the separate [CC0 demo fixture](./demo-assets.md#fixture-and-asset-contracts).
 
 This is a release validation requirement, not a claim that eight households cover every family or culture. New examples from contributors should extend that coverage. See [Households and cultures](./development-setup.md#households-and-cultures).
 
