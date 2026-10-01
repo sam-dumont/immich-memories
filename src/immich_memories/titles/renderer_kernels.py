@@ -192,15 +192,13 @@ class KernelTitleRenderer:
         from .kernels import GPUBuffers
 
         self.gpu = GPUBuffers(h, w, hdr=self.config.hdr)
-        # The slow-mo sources are the same handful of frames for the whole
-        # animation, so they go to the device once and the per-frame blend
-        # happens there. Falls back to the numpy path when the reader cannot
-        # offer them — different resolution, 16-bit HDR, or no reader at all.
+        # Interpolate native SDR/HDR sources on device in a bounded window.
+        # Readers without compatible sources retain the NumPy fallback.
         reader = self.config.background_reader
         frames: list = getattr(reader, "source_frames", None) or [] if reader else []
         self._sources_resident = bool(frames) and self.gpu.load_sources(frames)
         if self._sources_resident:
-            logger.debug("Slow-mo sources resident on device: %d frames", len(frames))
+            logger.debug("Slow-mo sources: %d frames, at most four resident on device", len(frames))
 
         self._blur_kernel_np = _create_gaussian_kernel(self.config.blur_radius)
         self._animated_blur = animated_blur
@@ -217,9 +215,16 @@ class KernelTitleRenderer:
         )
 
     def render_frame(
-        self, frame_number: int, title: str, subtitle: str | None = None
+        self,
+        frame_number: int,
+        title: str,
+        subtitle: str | None = None,
+        *,
+        fade_from_white: bool = False,
+        fade_to_white: bool = False,
+        fade_color: str = "white",
     ) -> np.ndarray:
-        """Render a single frame. One CPU-to-GPU in, one GPU-to-CPU out."""
+        """Render and optionally fade a frame, with one final device readback."""
         t = frame_number / self.config.fps
         progress = frame_number / self.total_frames
         cfg = self.config
@@ -270,7 +275,23 @@ class KernelTitleRenderer:
 
         # 7. Finalize on GPU: clip + scale + convert, then single GPU→CPU readback
         max_val = 65535.0 if cfg.hdr else 255.0
-        kernels._finalize_to_output(self.gpu.frame, self.gpu.output, max_val, hdr=cfg.hdr)
+        fade_in_frames = int(0.8 * cfg.fps) if fade_from_white else 0
+        fade_out_frames = int(1.5 * cfg.fps) if fade_to_white else 0
+        fade_out_start = self.total_frames - fade_out_frames
+        fade_in = 1.0
+        fade_out = 0.0
+        if frame_number < fade_in_frames:
+            fade_in = 1.0 - (1.0 - frame_number / fade_in_frames) ** 2
+        if fade_out_frames > 0 and frame_number >= fade_out_start:
+            fade_out = ((frame_number - fade_out_start) / fade_out_frames) ** 2
+        kernels._finalize_to_output(
+            self.gpu.frame,
+            self.gpu.output,
+            max_val,
+            fade_in=fade_in,
+            fade_out=fade_out,
+            fade_color=fade_color,
+        )
         return self.gpu.read_output()
 
     def _load_background(self, cfg, t: float, progress: float) -> bool:
@@ -282,8 +303,8 @@ class KernelTitleRenderer:
         reader = cfg.background_reader
         if reader is not None:
             if self._sources_resident:
-                # Sources already on the device: interpolate there and send
-                # four indices instead of a 25 MB frame.
+                # Keep interpolation on device; upload only sources entering
+                # the four-frame window instead of a float frame every time.
                 window = reader.next_blend()
                 if window is not None:
                     self.gpu.blend_sources(*window)
@@ -417,9 +438,8 @@ class KernelTitleRenderer:
         # updated on CPU each frame. The implicit transfer is negligible vs
         # the ~13MB frame buffers that now stay on GPU.
         self.particles.update(progress)
-        kernels._zero_field_4(self.gpu.bokeh)
         kernels._render_bokeh_particles(
             self.gpu.bokeh, self.particles.buffer, self.particles.count, cfg.width, cfg.height
         )
-        kernels._composite_rgba_over(self.gpu.frame, self.gpu.bokeh, self.gpu.temp, opacity)
-        kernels._copy_field_3(self.gpu.temp, self.gpu.frame)
+        # Each pixel reads only its own background, so the composite is safe in place.
+        kernels._composite_rgba_over(self.gpu.frame, self.gpu.bokeh, self.gpu.frame, opacity)

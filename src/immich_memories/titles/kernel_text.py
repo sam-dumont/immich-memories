@@ -125,9 +125,6 @@ class FrameBuffers(Protocol):
     @property
     def frame(self) -> Any: ...
 
-    @property
-    def temp(self) -> Any: ...
-
 
 @dataclass(frozen=True)
 class TextPlan:
@@ -179,6 +176,8 @@ class TitleTextRenderer:
 
     def render(self, t: float, progress: float, title: str, subtitle: str | None):
         """Render title and subtitle text onto the frame."""
+        if not title and not subtitle:
+            return
         title_anim = self._compute_animation(t, progress, is_subtitle=False)
         if self.use_sdf and self._sdf_draws(title, subtitle):
             self._render_text_sdf(title, subtitle, title_anim, t, progress)
@@ -328,9 +327,8 @@ class TitleTextRenderer:
 
     def _composite(self, layer: Any, opacity: float, y_offset: float, x_offset: float) -> None:
         kernels._composite_text_with_offset(
-            self.gpu.frame, layer, self.gpu.temp, opacity, y_offset, x_offset
+            self.gpu.frame, layer, self.gpu.frame, opacity, y_offset, x_offset
         )
-        kernels._copy_field_3(self.gpu.temp, self.gpu.frame)
 
     def _init_sdf_atlas(self):
         """Initialize SDF font atlas for GPU text rendering."""
