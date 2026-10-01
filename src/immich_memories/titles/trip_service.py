@@ -81,6 +81,7 @@ class TripService:
             fps=self.config.fps,
             timing=timing,
             encoding_plan=self.config.encoding_plan,
+            animated_background=self.config.animated_background,
             destination_names=location_names,
         )
 
@@ -153,5 +154,6 @@ class TripService:
             fps=self.config.fps,
             timing=self.config.map_move,
             encoding_plan=self.config.encoding_plan,
+            animated_background=self.config.animated_background,
         )
         return GeneratedScreen(path=output_path, duration=seconds, screen_type="location_card")

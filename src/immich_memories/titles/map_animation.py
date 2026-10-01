@@ -6,8 +6,9 @@ import contextlib
 import logging
 import math
 import subprocess
-from collections.abc import Callable
-from dataclasses import dataclass, field
+import time
+from collections.abc import Callable, Iterator
+from dataclasses import dataclass, field, replace
 from itertools import starmap
 from pathlib import Path
 
@@ -333,6 +334,7 @@ def create_map_fly_video(
     timing: MapMoveTiming | None = None,
     encoding_plan: EncodingPlan | None = None,
     destination_names: list[str] | None = None,
+    animated_background: bool = True,
 ) -> Path:
     """Fly from home to the first trip stop, then hold close on it with the trip title.
 
@@ -378,7 +380,9 @@ def create_map_fly_video(
     alphas = [min(1.0, i / title_in) for i in range(len(progress))]
 
     _tile_cache.clear()
-    rendered = _pipe_frames(cfg, output_path, progress, alphas, fps, encoding_plan)
+    rendered = _create_map_video(
+        cfg, output_path, progress, alphas, fps, encoding_plan, animated_background
+    )
     logger.info(
         "Map fly done: %d frames (%d rendered), %d tiles", len(progress), rendered, len(_tile_cache)
     )
@@ -396,6 +400,7 @@ def create_map_move_video(
     fps: float = 30.0,
     timing: MapMoveTiming | None = None,
     encoding_plan: EncodingPlan | None = None,
+    animated_background: bool = True,
 ) -> Path:
     """A location card: fly from the last place to this one, then hold on it with its name.
 
@@ -420,8 +425,14 @@ def create_map_move_video(
     )
     progress = timing.schedule(duration, fps)
     _tile_cache.clear()
-    rendered = _pipe_frames(
-        cfg, output_path, progress, timing.label_alphas(duration, fps), fps, encoding_plan
+    rendered = _create_map_video(
+        cfg,
+        output_path,
+        progress,
+        timing.label_alphas(duration, fps),
+        fps,
+        encoding_plan,
+        animated_background,
     )
     logger.info(
         "Map move card: %d frames (%d rendered), %d tiles, %.1fs",
@@ -577,3 +588,99 @@ def _render_title_overlay(
         draw.text((x, y), line, fill=(*white, 240), font=font)
 
     return img
+
+
+def _map_plate(progress: float, cfg: _FlyConfig, show_title: bool) -> Image.Image:
+    lat, lon, zoom = _view_at(progress, cfg.interps, len(cfg.interps), cfg.width)
+    scale = min(1.0, 360 / min(cfg.width, cfg.height))
+    w, h = round(cfg.width * scale), round(cfg.height * scale)
+    # A smaller raster needs a lower pixel zoom to keep the same geographic viewport.
+    frame = _render_satellite(lat, lon, zoom + math.log2(w / cfg.width), w, h)
+    frame = frame.resize((cfg.width, cfg.height), Image.Resampling.BILINEAR)
+    # The route overview still needs its destination marker, even at its wider zoom.
+    frame = _draw_pins(frame, lat, lon, zoom, replace(cfg, dest_zoom=zoom))
+    if show_title and cfg.title_overlay is not None:
+        frame = _overlay_composite(frame, cfg.title_overlay, 1.0)
+    return frame
+
+
+def _plate_frames(
+    plates: list[Image.Image], total: int, fps: float, arrival: float, fade: float
+) -> Iterator[bytes]:
+    # Static spans reuse the same bytes; only the two brief fades create transient frames.
+    raw = [plate.tobytes() for plate in plates]
+    for i in range(total):
+        t = i / fps
+        if t < arrival / 3:
+            yield raw[0]
+        elif t < arrival / 3 + fade:
+            yield Image.blend(plates[0], plates[1], (t - arrival / 3) / fade).tobytes()
+        elif t < arrival - fade:
+            yield raw[1]
+        elif t < arrival:
+            yield Image.blend(plates[1], plates[2], (t - arrival + fade) / fade).tobytes()
+        else:
+            yield raw[2]
+
+
+def _pipe_map_plates(
+    cfg: _FlyConfig,
+    output_path: Path,
+    progress: list[float],
+    overlay_alphas: list[float],
+    fps: float,
+    encoding_plan: EncodingPlan | None,
+) -> int:
+    from immich_memories.processing.ffmpeg_runner import write_frames_to_ffmpeg
+
+    started = time.perf_counter()
+    plan = encoding_plan or standalone_title_encoding_plan()
+    total = len(progress)
+    duration = total / fps
+    moving = next((i for i, t in enumerate(progress) if t == 1.0), total - 1)
+    arrival = max(1 / fps, moving / fps)
+    fade = min(0.5, arrival / 4)
+    plates = [
+        _map_plate(t, cfg, i == 2 or overlay_alphas[min(1, total - 1)] > 0)
+        for i, t in enumerate((0.0, 0.5, 1.0))
+    ]
+    synthesized = time.perf_counter()
+    cmd = [
+        "ffmpeg", "-y", "-f", "rawvideo", "-vcodec", "rawvideo",
+        "-s", f"{cfg.width}x{cfg.height}", "-pix_fmt", "rgb24", "-r", str(fps), "-i", "-",
+        "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
+        "-vf", title_color_filter(plan), *title_encoder_args(plan),
+        "-c:a", "aac", "-b:a", "128k", "-t", str(duration),
+        "-movflags", "+faststart", str(output_path),
+    ]  # fmt: skip
+    cmd = apply_hardware_encode(cmd, pixel_format=plan.pixel_format)
+    code, tail = write_frames_to_ffmpeg(
+        cmd,
+        _plate_frames(plates, total, fps, arrival, fade),
+        wait_timeout=60,
+        total_timeout=max(60, duration * 30),
+    )
+    if code:
+        raise RuntimeError(f"Map plates FFmpeg failed: {tail[-2000:]}")
+    logger.info(
+        "Map plates: synthesis %.2fs; stream blends/encode %.2fs; 3 views, %d frames, %dx%d",
+        synthesized - started,
+        time.perf_counter() - synthesized,
+        total,
+        cfg.width,
+        cfg.height,
+    )
+    return 3
+
+
+def _create_map_video(
+    cfg: _FlyConfig,
+    output_path: Path,
+    progress: list[float],
+    overlay_alphas: list[float],
+    fps: float,
+    encoding_plan: EncodingPlan | None,
+    animated_background: bool,
+) -> int:
+    render = _pipe_frames if animated_background else _pipe_map_plates
+    return render(cfg, output_path, progress, overlay_alphas, fps, encoding_plan)
