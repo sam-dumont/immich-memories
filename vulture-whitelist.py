@@ -133,3 +133,7 @@ _.map_wn
 # ACE-Step diffusion.py reads this owned handler flag through getattr before
 # calling its native decoder; keep compilation disabled on the parked-weight path.
 _.mlx_dit_compiled
+
+# StaticMap.render calls this override inside the external staticmap package;
+# real HTTP/pixel tests in test_map_tile_layer exercise it on cold and warm frames.
+_._draw_base_layer
