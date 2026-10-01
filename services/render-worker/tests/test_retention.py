@@ -298,3 +298,35 @@ def test_boot_sweeps_a_session_a_hard_kill_left_behind(tmp_path):
         assert not stranded.exists()
     finally:
         service.close()
+
+
+def test_failed_retry_reserves_capacity_and_live_resubmission_is_idempotent():
+    from immich_memories_render_worker.store import MemoryJobRepository, QueueFull
+
+    store = MemoryJobRepository(1, 60)
+    failed, live = _job(uuid4()), _job(uuid4())
+    store.admit(failed, "failed-fingerprint")
+    store.update(failed.job_id, state="failed")
+    store.admit(live, "live-fingerprint")
+    with pytest.raises(QueueFull):
+        store.admit(failed, "failed-fingerprint")
+    assert store.get(failed.job_id).state == "failed"
+    assert store.admit(live, "live-fingerprint") == (live, False)
+    store.update(live.job_id, state="ready")
+    with pytest.raises(QueueFull):
+        store.admit(failed, "failed-fingerprint")
+    store.claim(live.job_id)
+    assert store.admit(failed, "failed-fingerprint") == (failed, True)
+
+
+def test_failed_retry_reuses_its_record_at_the_retained_record_limit():
+    from immich_memories_render_worker.store import MemoryJobRepository, QueueFull
+
+    store = MemoryJobRepository(1, 60)
+    for _ in range(128):
+        failed = _job(uuid4())
+        store.admit(failed, "fingerprint")
+        store.update(failed.job_id, state="failed")
+    with pytest.raises(QueueFull):
+        store.admit(_job(uuid4()), "new-record")
+    assert store.admit(failed, "fingerprint") == (failed, True)

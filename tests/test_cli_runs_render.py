@@ -149,3 +149,15 @@ def test_a_render_that_cannot_measure_its_progress_fails_before_rendering(tmp_pa
     assert result.exit_code != 0
     assert isinstance(result.exception, ImportError)
     assert rendered == []
+
+
+def test_runs_render_can_override_the_fade_for_one_film(tmp_path):
+    config = _config(tmp_path)
+    save_run(config, RUN)
+    rendered: list[dict] = []
+
+    result = _invoke(config, ["runs", "render", RUN, "--fade-color", "black"], rendered)
+
+    assert result.exit_code == 0, result.output
+    assert rendered[0]["request"].fade_color == "black"
+    assert config.title_screens.fade_color == "white"

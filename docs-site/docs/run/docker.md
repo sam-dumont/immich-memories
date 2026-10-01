@@ -4,17 +4,15 @@ title: Docker Compose
 
 # Docker Compose
 
-The reference install: two files from the repo, two values to fill in, one container. It works
-on a plain NAS; a GPU or a model makes it better. The shortest path through it is the
-[Quick start](../get-started/quick-start.md); this page is every step with the reasons.
+One container, next to your existing Immich server. This is the recommended install.
+You need Docker Compose v2 and [4 GB free for the app](./requirements.md). On a NAS, check the
+[NAS notes](./nas.md) for folder permissions and device access.
 
 ## Install
 
-You need Docker Engine with Compose v2 (`docker compose version` answers), Immich v2 or v3, and
-the hardware on [Requirements](./requirements.md). What the image has been checked on, and when:
-[Supported and tested](./requirements.md#supported-and-tested).
+### 1. Get the two files
 
-**1. Download the compose file and `example.env`** into an empty directory:
+In an empty directory:
 
 ```bash
 mkdir immich-memories && cd immich-memories
@@ -23,198 +21,231 @@ curl -O https://raw.githubusercontent.com/sam-dumont/immich-video-memory-generat
 cp example.env .env
 ```
 
-**2. Fill in `.env`.** Two values are required, and the home base makes trips and your country's public holidays work:
+### 2. Connect Immich
 
-```bash
-IMMICH_URL=http://192.168.1.10:2283       # your Immich, as the container reaches it
+In Immich, open **Account Settings > API Keys > New API Key**. **All** works; the
+[minimal permissions](#the-api-key) are below. Fill in `.env`:
+
+```ini
+IMMICH_URL=http://192.168.1.10:2283
 IMMICH_API_KEY=your-api-key-here
-IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE=50.8503
-IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE=4.3517
 TZ=Europe/Brussels
 ```
 
-`localhost` in `IMMICH_URL` is the container itself, so use the address of your NAS or server.
-Every variable `.env` can hold is on [Environment variables](./environment-variables.md). The
-compose file also works alone: export `IMMICH_URL` and `IMMICH_API_KEY` in your shell instead.
+Use the address **the container can reach**. `localhost` means the container itself.
+For trips and local public holidays, also set home coordinates:
 
-**3. Create the output folder and start it:**
+```ini
+IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE=50.8503
+IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE=4.3517
+```
+
+### 3. Start and check
 
 ```bash
 mkdir -p output
 docker compose up -d
-```
-
-The container runs as UID and GID 1000 and writes films to `./output`. If Docker creates that
-folder for you, root owns it and the container cannot write there. `mkdir` it first, or fix it in
-place with `sudo chown -R 1000:1000 output`. If your user is not 1000, set `user: "<uid>:<gid>"` on
-the service and chown the config volume to match.
-
-**4. Fetch the models, once:**
-
-```bash
 docker compose exec immich-memories immich-memories models fetch
 docker compose exec immich-memories immich-memories preflight
 ```
 
-`models fetch` downloads about 140 MB: the pinned DINOv2 encoder behind the eight context heads,
-the sensitive-content detector, the document classifier, and the WordNet dictionary a film asked
-for in a sentence is read with. All four are checked against a SHA-256 and land on the config volume, so a `docker compose pull` keeps them. `preflight` checks
-Immich, the model digests, the home base and whether the output folder takes a file.
+Create `output` first so Docker does not create it as root. The container runs as UID/GID 1000.
+If preflight reports **Output directory is not writable**:
 
-**5. Open [http://localhost:8080](http://localhost:8080)** and cut a month:
-[Your first film](../get-started/first-film.mdx). Then confirm who's who once:
-[Teach it your family](../get-started/who-is-who.md).
+```bash
+sudo chown -R 1000:1000 output
+```
+
+If your user is not 1000, see the [NAS permissions recipe](./nas.md#the-output-folder).
+`models fetch` downloads the pinned encoder and WordNet data. When an owned local reader is
+enabled, it also fetches the pinned reader and projector; custom GGUF files need manual provisioning. GPU/Full also fetch detector models
+and Laya. Files stay on the persistent volume; a recreate keeps them.
+
+### 4. Open the app
+
+On the Docker host: [http://localhost:8080](http://localhost:8080).
+If the host is your NAS or another server, [tunnel or enable LAN access](#reaching-the-ui-from-another-machine).
+
+Then make [your first film](../get-started/first-film.mdx). Start with one month.
 
 ### When a step is missing
 
-A cut (from the web UI, `generate` or `prepare`) checks the models and the output folder before it
-asks Immich for anything, and refuses to start if one is wrong:
-
-| It says | Fix |
+| Preflight says | Fix |
 |---|---|
-| `Pinned DINOv2 export missing: ... Run immich-memories models fetch` | Step 4 |
-| `Pinned ... export missing: nsfw_marqo has no model: ...` | Step 4 |
-| `Output directory is not writable: /app/output: Permission denied` | Step 3: `sudo chown -R 1000:1000 output` |
-| `Home coordinates are not configured` (a preflight warning) | Step 2. The cut runs, but no day counts as away from home |
+| Pinned model missing or wrong digest | Run `models fetch` |
+| Output directory is not writable | Fix ownership in step 3 |
+| Immich connection failed | Check URL/key; do not use container `localhost` |
+| Home coordinates are not configured | Set both coordinates; films work, trips stay off |
 
-A run with `--no-render` skips the output check; a dry run skips all of them.
+## Reaching the UI from another machine
+
+The shipped mapping is `127.0.0.1:8080:8080`: only the host can reach it.
+From your desktop, a tunnel needs no port change:
+
+```bash
+ssh -L 8080:localhost:8080 you@your-server
+```
+
+Open `http://localhost:8080` on the desktop.
+
+For LAN access, set both of these in `.env`:
+
+```ini
+IMMICH_MEMORIES_AUTH_USERNAME=admin
+IMMICH_MEMORIES_AUTH_PASSWORD=choose-a-long-password
+```
+
+Change the Compose port mapping to `"8080:8080"`, then run `docker compose up -d`.
+Open `http://your-server:8080`. If 8080 is taken, change the left side, for example `"8081:8080"`.
+
+:::caution This app can access your library
+Authentication is disabled by default. Enable it before exposing the port.
+Keep one UI replica.
+:::
+
+For OIDC or a proxy with HTTPS, see [Authentication](./authentication.mdx).
 
 ## The API key
 
-In Immich: **Account Settings > API Keys > New API Key**. **All** works. The minimal key:
-
-| Permission | Why |
+| Permission | Used for |
 |---|---|
-| Read on assets, people, albums, timeline and search | Finding and reading the pictures |
-| Read on tags, create tags, tag assets | Marking each uploaded film as this app's own, so a later run never films its own render |
-| Upload assets, create and update albums | Upload-back to Immich, if you turn it on |
-| Delete assets (optional) | Lets upload-back trash the previous render of the same recipe; without it, old copies pile up |
+| Read assets, people, albums, timeline and search | Finding and reading your pictures |
+| Read/create tags and tag assets | Marking uploaded films so they are never selected as originals |
+| Upload assets; create/update albums | Upload-back, when enabled |
+| Delete assets, optional | Moving the previous render of the same recipe to trash |
 
-The app never touches your originals. Without the tag permissions the upload still works, the film is
-not tagged, and on Immich v3 a later run cannot recognise its own render.
+Originals are never changed. Without tag permissions, upload works but v3 cannot recognise the
+film as this app's own. Without delete permission, old generated copies remain.
 
 ## Using the CLI
 
-The container has the CLI; the host doesn't. Every `immich-memories ...` command in these docs
-runs as `docker compose exec immich-memories immich-memories ...`. An alias saves typing:
+The CLI is inside the container. Commands elsewhere in these docs use this prefix:
+
+```bash
+docker compose exec immich-memories immich-memories generate --year 2025 --month 6
+```
+
+An optional alias saves typing:
 
 ```bash
 alias im='docker compose exec immich-memories immich-memories'
-im generate --memory-type monthly_highlights --year 2025 --month 6
+im preflight
 ```
 
 ## Films into Immich
 
-Every film lands in `./output`. To have each `generate` and daily film uploaded to Immich as well,
-into an album (a render from the web UI has its own upload box), add
-these to the compose file's `environment:` block (a line in `.env` alone does not reach the
-container) and run `docker compose up -d`:
+Local films appear in `./output`. The web Render panel has an upload checkbox.
+To upload CLI and daily films by default, add this to the service's `environment:` block:
 
 ```yaml
       IMMICH_MEMORIES_UPLOAD__ENABLED: "true"
       IMMICH_MEMORIES_UPLOAD__ALBUM_NAME: "Memories"
 ```
 
-The key needs the upload permissions in the table above. What it writes to Immich:
-[Upload back to Immich](./config-file.md#upload-back-to-immich).
-
-## Reaching the UI from another machine
-
-The compose file publishes `127.0.0.1:8080:8080`, so nothing else on your network reaches it.
-
-:::caution Turn on authentication first
-Authentication is disabled by default and the app holds an API key to your whole library. The port
-mapping is the only thing keeping it off your network. The UI is single-user, single-replica: keep
-it at one instance.
-:::
-
-Either tunnel (`ssh -L 8080:localhost:8080 your-server`, then `http://localhost:8080` on your
-desktop), or do both of these: set `IMMICH_MEMORIES_AUTH_USERNAME` and
-`IMMICH_MEMORIES_AUTH_PASSWORD` in `.env` (or OIDC, see [Authentication](./authentication.mdx)),
-then change the mapping to `"8080:8080"`. Port 8080 taken already? Change the left side only:
-`127.0.0.1:8081:8080`.
+Run `docker compose up -d`. A line in `.env` alone does not pass an arbitrary variable to the
+container. [Environment variables](./environment-variables.md) explains the rule.
+After confirmed upload, the local film and its run directory are removed.
+[What Immich sees](./privacy.md#what-immich-sees) lists the writes.
 
 ## Next to your Immich stack
 
-Paste the `immich-memories` service into Immich's own compose file, add
-`immich-memories-config:` to that file's top-level `volumes:`, set
-`IMMICH_URL=http://immich-server:2283`, and add `depends_on: [immich-server]`. It then reaches
-Immich over the internal network. `immich-server` listens on 2283 in every Immich v2 and v3
-release. An unknown major version stops the run:
-[Immich API compatibility](./config-file.md#immich-api-compatibility).
-
-## The product tier in compose {#the-preparation-tier-in-compose}
-
-The compose file sets `IMMICH_MEMORIES_TIER: "auto"`, so the app picks its tier from what it
-finds: a plain NAS until it finds GPU inference. How it decides, and what the `gpu` tier then needs:
-[The three tiers](./requirements.md#the-preparation-tier).
-
-`IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` puts the document classifier on the
-config volume. Keep that line if you write your own service block: without it the classifier lands
-in the container's writable layer and the next `pull` throws it away.
+You can put the `immich-memories` service in Immich's Compose file. Add
+`immich-memories-config:` to its top-level `volumes:`, set
+`IMMICH_URL=http://immich-server:2283`, and add `depends_on: [immich-server]`.
+The service then reaches Immich over that stack's internal network.
 
 ## Add-ons, as profiles
 
-Everything optional sits in the same file, off until you ask for it:
+Get the first film working before adding services.
 
-| Add-on | Start it with | Page |
-|---|---|---|
-| Inference service (heads and detectors on another process or a GPU) | `docker compose --profile inference up -d` | [Inference on a GPU box](../better/inference.md) |
-| Caption server (for the `gpu` and `full` tiers) | `docker compose --profile captioner up -d` | [Add captions](../better/captions.md) |
-| A reader | two env vars pointing at a model server | [Add a reader](../better/reader.md) |
-| Hardware encoding (Intel Quick Sync, VA-API) | the commented `devices:` block | [Hardware encoding](./hardware.md#intel-quick-sync-and-amd-vaapi) |
-| Hardware encoding (NVIDIA NVENC) | a device reservation and one env var | [Hardware encoding](./hardware.md#nvidia) |
-| Render worker (the encode on a GPU box) | a second compose file, on that box | [Render on a GPU box](../better/gpu-render.md) |
-| Generated music (ACE-Step, MusicGen) | a music server of your own, then its URL | [Generated music](../better/music.md) |
-
-Banked facts are the same rows whichever process wrote them, so adding or removing an add-on
-re-derives nothing.
+| Want | Setup |
+|---|---|
+| GPU picture preparation | [Inference service](../better/inference.md), Compose profile `inference` |
+| Image captions | [Caption server](../better/captions.md), profile `captioner` |
+| A text model | [Reader](../better/reader.md) |
+| Faster video encoding | [Hardware encoding](./hardware.md) |
+| Rendering on another box | [Render worker](../better/gpu-render.md) |
+| Generated music | [Music](../better/music.md) |
 
 ### Reaching a model server
 
-Model endpoints must be reachable from inside the container, and `localhost` there is the
-container. For a server on the Docker host itself, the name is `host.docker.internal`:
+A server on the Docker host is `host.docker.internal`, not `localhost`:
 
 ```yaml
       IMMICH_MEMORIES_LLM__BASE_URL: "http://host.docker.internal:8000/v1"
       IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL: "http://host.docker.internal:8092/v1"
 ```
 
-Docker Desktop resolves it with no setup. On Linux, add this to the service, and have the server
-listen on `0.0.0.0` rather than `127.0.0.1` (the container arrives over the bridge):
+Docker Desktop resolves that name. On Linux, add this to the service and have the model server
+listen on an address reachable from the bridge, such as `0.0.0.0`:
 
 ```yaml
     extra_hosts:
       - "host.docker.internal:host-gateway"
 ```
 
+## The product tier in compose {#the-preparation-tier-in-compose}
+
+The Compose file sets `IMMICH_MEMORIES_TIER: "auto"`. See [how it chooses the tier](./requirements.md#the-preparation-tier).
+Keep `IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR` on the persistent volume when
+writing your own service block, so detector downloads survive a recreate.
+
 ## Resources
 
-Idle, the container is about 100 MB. Preparation (previews, heads, detectors) wants 2 to 4 GB and
-two cores; the render (titles and the FFmpeg encode) wants 4 to 8 GB and four. The compose limit
-is `memory: 4G`: fine for 1080p, give it 8 GB for 4K.
+The default 4 GB limit suits 1080p. Use 8 GB for 4K on GPU/Full; NAS stays capped at 1080p.
+The file sets no CPU quota because Synology kernels can refuse `cpus:`. Use
+[`cpuset` if needed](./nas.md#do-not-use-cpus-on-a-synology).
 
-There is no CPU limit, on purpose: `cpus:` is a CFS quota, and a Synology kernel refuses the whole
-`up` over it. Use `cpuset: "0-3"` to pin cores instead: [On a NAS](./nas.md#do-not-use-cpus-on-a-synology).
+## Daily automation
+
+Uncomment these in the service's `environment:` block, set `TZ` in `.env`, and recreate:
+
+```yaml
+      IMMICH_MEMORIES_AUTOMATION__ENABLED: "true"
+      IMMICH_MEMORIES_AUTOMATION__DAILY_AT: "09:00"
+```
+
+The running UI makes one eligible memory a day. No cron required.
+[Automate it](../make/automate.md) covers selection, uploads, retries and external triggers.
+
+## Health check and logs
+
+```bash
+docker inspect --format='{{.State.Health.Status}}' immich-memories
+docker compose logs -f immich-memories
+```
+
+The image probes `/health/live`; monitoring should use `/health/ready`.
+[Diagnostics](./maintenance/health-logs-cache.md) covers per-run logs and preflight.
+
+## What to keep
+
+Keep the named config volume and `./output`. The expensive data is `store.db`: prepared facts,
+people, settings, review decisions and run history. [Back up the store](./database.md#managing-the-store)
+and keep any `IMMICH_MEMORIES_SECRET_KEY` you use for saved credentials.
+
+## The store: SQLite or PostgreSQL
+
+SQLite on the config volume is the default. You do not need PostgreSQL to make films.
+[Database and backups](./database.md) covers both backends and moving an install.
+
+## Updating
+
+Follow [Upgrading](./maintenance/upgrading.md#docker): back up, pull the image, recreate,
+fetch the current model pins and run preflight.
 
 ## Disk
 
-A film that uploads to Immich does not stay on the output volume: once the upload is confirmed,
-the container removes the local file and its run directory, keeping only the run record. On a
-node where this container shares a disk with other workloads, that is what keeps a daily cron job
-from filling it. If `upload_enabled: false`, or delivery keeps failing, films pile up on
-`output.directory` the same way they always did: `immich-memories runs storage` shows what is
-using space, and `runs delete` clears a run's output.
-
-Both the output and cache volumes get a preflight before a run starts and again right before the
-film is written: below `output.min_free_space_gb` (5 GB by default) a run logs a warning naming
-the volume, and if the estimated film would not fit at all, it stops before rendering instead of
-filling the volume mid-encode. See
-[health, logs and caches](./maintenance/health-logs-cache.md#caches).
+The preview/video caches default to 10 GB each. Uploaded films are removed locally after confirmed
+delivery; local-only or failed deliveries keep their files. [Storage and caches](./maintenance/health-logs-cache.md#caches)
+covers sizing and cleanup.
 
 ## Hardening
 
-The compose file carries this block commented out; uncomment it:
+<details>
+<summary>Run with a read-only root filesystem</summary>
+
+Uncomment the shipped block:
 
 ```yaml
     security_opt:
@@ -227,103 +258,19 @@ The compose file carries this block commented out; uncomment it:
       - /home/immich/.cache:size=1G
 ```
 
-A session is a signed cookie; the key that signs it is `/home/immich/.immich-memories/.storage_secret`
-on the config volume (or `IMMICH_MEMORIES_STORAGE_SECRET`), so logins survive a read-only root and a
-restart. For 4K, raise `/tmp` to 8 GB or drop the entry: FFmpeg's intermediates pass 2 GB.
+The persistent config volume keeps the session signing key. For 4K, allow more temporary space
+(e.g. 8 GB); intermediates can exceed 2 GB. Tmpfs uses memory, so size it with the container limit
+in mind.
 
-## Daily automation
-
-The container's only process is the web UI, so there is no cron to install. Uncomment these two in
-the compose file's `environment:` block (with `TZ` set in `.env`):
-
-```yaml
-      IMMICH_MEMORIES_AUTOMATION__ENABLED: "true"
-      IMMICH_MEMORIES_AUTOMATION__DAILY_AT: "09:00"   # read in the TZ zone
-```
-
-Every day at that time the UI process runs what `auto run` does on the CLI: retry one pending
-upload, or make one eligible memory, then notify. A container that was down catches up on start.
-[Automate it](../make/automate.md).
-
-The daily film stays in `./output` unless upload is on: set `IMMICH_MEMORIES_UPLOAD__ENABLED` as in
-[Films into Immich](#films-into-immich) (every `generate`), or
-`IMMICH_MEMORIES_AUTOMATION__UPLOAD_TO_IMMICH: "true"` (the daily runs only). To fire the same
-decision from outside instead (Home Assistant, an Immich workflow, a cron on another box):
-[Trigger it over HTTP](../make/automate.md#trigger-it-over-http).
-
-## Health check and logs
-
-The image's health check hits `/health/live`. For readiness, use `/health/ready`: `200` when the
-configuration and Immich are usable, `503` otherwise, and it reports the daily automation under
-`in_process_scheduler` (with login on, only to a signed-in session). `/health` always answers
-`200` and is not a probe.
-
-```bash
-docker inspect --format='{{.State.Health.Status}}' immich-memories
-docker compose logs -f immich-memories      # the UI and the daily timer
-```
-
-A cut's own output is kept per job under `cache/web-jobs/`, a daily run's under
-`cache/automation-output/`, both on the config volume.
-
-Log level, JSON lines and a log file: [Health, logs and caches](./maintenance/health-logs-cache.md#logging).
-
-## What to keep
-
-`/home/immich/.immich-memories/store.db` is the expensive file: every fact, caption and reading
-the editor banked, every picture you cleared or ruled out, your people, run history, automation
-state and the special-days catalogue. Lose it and the next cut reads the library again. A `cache.db`
-beside it is a leftover from before the store: nothing writes it, and once imported it can go. The
-store sits on the config volume, so moving host means copying that volume ([moving an install](./maintenance/health-logs-cache.md#moving-an-install)).
-
-Back the store up without stopping anything:
-
-```bash
-docker compose exec immich-memories immich-memories store backup
-```
-
-It lands in `/home/immich/.immich-memories/backups/` with a manifest beside it. The image ships the
-PostgreSQL client tools, so the same command works when the store is on PostgreSQL
-([backup and restore](./database.md#managing-the-store)). To copy the backups off the volume:
-`docker compose cp immich-memories:/home/immich/.immich-memories/backups ./backups`. A restore
-needs the app stopped: [Restore in a container](./database.md#restore-in-a-container).
-
-The previews and clips a cut downloads sit on the same volume, under `cache/`: up to 10 GB of each
-by default, and safe to delete. Sizes and caps: [Caches](./maintenance/health-logs-cache.md#caches).
-
-## The store: SQLite or PostgreSQL
-
-The compose file defaults to a SQLite file on the config volume, one host, one writer, which is
-right for the single container this file runs. The commented `postgres` service and
-`IMMICH_MEMORIES_DATABASE_URL` line switch the store to PostgreSQL instead: a separate service, a
-separate database on your own PostgreSQL instance, or a dedicated schema inside an instance you
-already run (Immich's, for example). See [Database and the store](./database.md) for the four
-modes and the SQL for the dedicated-schema one.
-
-## Updating
-
-```bash
-docker compose pull
-docker compose up -d
-docker compose exec immich-memories immich-memories models fetch
-```
-
-`up` does not re-pull a `latest` the machine already has, so `pull` comes first. `models fetch` is a
-no-op when the files are right, and downloads again when a release moves a pin. Config, banks and
-films live on the volume and the bind mount, so a recreate loses nothing. Take a `store backup`
-first if you might go back: [Rollback](./maintenance/upgrading.md#rollback).
+</details>
 
 ## Custom music
 
-**Upload a track** in a cut's Render panel takes a track from the browser. For CLI runs,
-bind-mount a directory and pass `--music /app/music/track.mp3`.
+Upload a track in the web Render panel. For CLI runs, bind-mount a music directory and use
+`--music /app/music/track.mp3`.
 
 ## Building the image
 
-```bash
-docker build --build-arg APP_VERSION=0.0.0 --build-arg INSTALL_EXTRAS=all -f docker/Dockerfile .
-```
-
-Needs BuildKit (the default since Docker 23). From a checkout, `make docker` fills in the version
-and git metadata; `INSTALL_EXTRAS=none make docker` builds the slim image, which cannot run the
-heads.
+For a source checkout, `make docker` fills in the version and git metadata. The normal install
+uses the published image. `INSTALL_EXTRAS=none make docker` builds a slim image without the
+classifiers needed for films.

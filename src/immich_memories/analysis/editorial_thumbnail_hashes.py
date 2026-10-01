@@ -54,7 +54,9 @@ class CachedThumbnailHasher:
                 self._counts["unavailable"] += 1
                 return None
             self._counts["preview_bytes"] += len(payload)
-            key = hashlib.sha256(f"{METHOD}\0{self._hash_size}\0".encode() + payload).hexdigest()
+            digest = hashlib.sha256(f"{METHOD}\0{self._hash_size}\0".encode())
+            digest.update(payload)
+            key = digest.hexdigest()
             with self._connections.connection() as connection:
                 row = connection.execute(
                     "SELECT thumbnail_hash FROM thumbnail_hashes WHERE source_key=?", (key,)

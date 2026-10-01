@@ -14,6 +14,8 @@ from pydantic import (
     model_validator,
 )
 
+from immich_memories.api.compatibility import ApiVersionPolicy
+from immich_memories.config_models import PRIMARY_ACCOUNT, is_account_name
 from immich_memories.config_models_network import NetworkConfig
 from immich_memories.config_models_render import TitleScreenConfig
 from immich_memories.processing.encoding_plan import HdrMode
@@ -23,9 +25,9 @@ class Contract(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
 
-class ImmichAccess(Contract):
-    url: AnyHttpUrl
+class AccountAccess(Contract):
     api_key: SecretStr
+    api_version: ApiVersionPolicy = ApiVersionPolicy.AUTO
 
     @field_validator("api_key")
     @classmethod
@@ -33,6 +35,18 @@ class ImmichAccess(Contract):
         if not value.get_secret_value().strip():
             raise ValueError("an Immich key is required")
         return value
+
+
+class ImmichAccess(AccountAccess):
+    url: AnyHttpUrl
+    accounts: dict[str, AccountAccess] = Field(default_factory=dict, max_length=32)
+
+    @field_validator("accounts")
+    @classmethod
+    def valid_accounts(cls, accounts):
+        if any(not is_account_name(name) for name in accounts):
+            raise ValueError("Invalid render account name")
+        return accounts
 
 
 class LiveCertificate(Contract):
@@ -165,6 +179,7 @@ class RenderRequest(Contract):
     render_attempt: UUID | None = None
     memory_key: str = Field(min_length=1, max_length=256)
     immich: ImmichAccess
+    asset_accounts: dict[UUID, str] = Field(default_factory=dict, max_length=10000)
     plan: RenderPlan
     memory: MemorySettings
     titles: TitleSettings = Field(default_factory=TitleSettings)
@@ -175,6 +190,12 @@ class RenderRequest(Contract):
     certified_content_intervals: dict[UUID, tuple[float, float]]
     output: OutputSettings = Field(default_factory=OutputSettings)
     options: RenderOptions = Field(default_factory=RenderOptions)
+
+    @model_validator(mode="after")
+    def known_accounts(self):
+        if set(self.asset_accounts.values()) - {PRIMARY_ACCOUNT, *self.immich.accounts}:
+            raise ValueError("Asset route names an account missing from the render request")
+        return self
 
 
 class JobStatus(Contract):

@@ -10,19 +10,8 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 PRIMARY_MANUAL_CONTRACTS = [
-    pytest.param(
-        "README.md",
-        "### Immich v2 and v3",
-        "### Optional: an LLM for clip analysis",
-        "Leave this on `auto`. The app detects the server major version and uses the matching "
-        "API contract; you do not choose a version for each run.",
-        "The explicit `v2` and `v3` values are manual troubleshooting overrides: escape hatches "
-        "for proxies or unusual deployments that hide or rewrite the version endpoint. They force "
-        "that contract, so don't use them as upgrade flags.",
-        id="readme",
-    ),
-    # The repo keeps no second manual: the api_version policy is pinned three
-    # times below, on the docs-site pages that actually state it.
+    # Detailed API policy belongs in operator and configuration references.
+    # The README links the quick start and states supported Immich majors.
     pytest.param(
         "docs-site/docs/reference/config-reference.md",
         "## Immich connection",
@@ -34,9 +23,9 @@ PRIMARY_MANUAL_CONTRACTS = [
         id="config-reference",
     ),
     pytest.param(
-        "docs-site/docs/run/config-file.md",
-        "## Quick start config",
-        "## Clip pacing",
+        "docs-site/docs/run/reference/configuration.md",
+        "## Immich API compatibility",
+        "## Output codecs and HDR",
         "`auto` is the default runtime policy: the app detects the server major and selects the "
         "matching API contract. You do not choose a version for each run.",
         "Explicit `v2` and `v3` values are manual troubleshooting escape hatches for proxies or "
@@ -147,7 +136,7 @@ def test_immich_environment_override_is_documented() -> None:
     section = _normalized_section(
         "docs-site/docs/run/environment-variables.md",
         "### Immich connection",
-        "### Analysis settings",
+        "## The ones that do not follow the pattern",
     )
 
     assert 'IMMICH_MEMORIES_IMMICH__API_VERSION="auto"' in section
@@ -157,12 +146,12 @@ def test_immich_environment_override_is_documented() -> None:
     )
 
 
-def test_upgrade_manual_explains_the_complete_v2_to_v3_contract() -> None:
-    """The upgrade section must keep every compatibility boundary together."""
+def test_api_reference_explains_the_complete_v2_v3_contract() -> None:
+    """The API section must keep every compatibility boundary together."""
     section = _normalized_section(
-        "docs-site/docs/run/maintenance/upgrading.md",
-        "## Upgrading Immich from v2 to v3",
-        "## Config compatibility",
+        "docs-site/docs/run/reference/configuration.md",
+        "### API wire details",
+        "## Output codecs and HDR",
     )
 
     _assert_upgrade_contract(section)
@@ -201,12 +190,12 @@ def test_upgrade_manual_explains_the_complete_v2_to_v3_contract() -> None:
         ),
     ],
 )
-def test_upgrade_contract_rejects_semantic_mutations(documented: str, weakened: str) -> None:
+def test_api_contract_rejects_semantic_mutations(documented: str, weakened: str) -> None:
     """Each launch-critical sentence must fail independently when its meaning is removed."""
     section = _normalized_section(
-        "docs-site/docs/run/maintenance/upgrading.md",
-        "## Upgrading Immich from v2 to v3",
-        "## Config compatibility",
+        "docs-site/docs/run/reference/configuration.md",
+        "### API wire details",
+        "## Output codecs and HDR",
     )
     mutated = section.replace(documented, weakened, 1)
 
@@ -291,7 +280,7 @@ def test_launch_audit_closes_the_immich_code_and_docs_blocker() -> None:
 
 
 def test_auto_docs_state_the_daily_variety_contract() -> None:
-    text = " ".join(_read("docs-site/docs/make/automate.md").lower().split())
+    text = " ".join(_read("docs-site/docs/reference/automation-contract.md").lower().split())
 
     for phrase in (
         "latest completed month",
@@ -304,7 +293,7 @@ def test_auto_docs_state_the_daily_variety_contract() -> None:
 
 
 def test_auto_quiet_json_example_includes_the_stable_action_field() -> None:
-    text = _read("docs-site/docs/make/automate.md")
+    text = _read("docs-site/docs/reference/automation-contract.md")
     example = text.split("Quiet output is a stable JSON object", 1)[1]
     json_block = example.split("```json", 1)[1].split("```", 1)[0]
 
@@ -318,12 +307,12 @@ def test_daily_auto_run_is_the_recommended_entry_point() -> None:
     assert "single daily entry point" in text
 
 
-def test_automation_docs_send_a_fixed_date_film_to_cron_not_the_retired_scheduler() -> None:
-    text = _read("docs-site/docs/make/automate.md")
+def test_automation_docs_send_a_fixed_date_film_to_cron() -> None:
+    text = _read("docs-site/docs/reference/automation-contract.md")
 
     assert "immich-memories generate --memory-type year_in_review" in text
     assert "scheduler start" not in text
-    assert "upgrading.md#removed-commands" in text
+    assert "0 9 15 1 * immich-memories generate" in text
 
 
 def test_health_docs_distinguish_liveness_from_readiness() -> None:
@@ -335,15 +324,16 @@ def test_health_docs_distinguish_liveness_from_readiness() -> None:
     assert "503" in text
     assert '"status": "ready"' in text
     assert "`status: degraded`" in text
-    assert "`GET /health` always returns HTTP `200`" in text
-    assert "rewrites a ready payload to `ok`" in text
+    assert "always `200`" in text
+    assert "rewritten to `ok`" in text
 
 
 def test_docker_docs_name_the_required_writable_mount_and_build_extras() -> None:
     text = _read("docs-site/docs/run/docker.md")
 
-    assert "/home/immich/.immich-memories" in text
-    assert "INSTALL_EXTRAS" in text
+    assert "persistent volume" in text
+    build_details = _read("docs-site/docs/run/reference/python-install.md")
+    assert "make web-client" in build_details
 
 
 def test_ui_deployment_docs_are_explicit_about_exposure_and_replica_limits() -> None:
@@ -356,14 +346,14 @@ def test_ui_deployment_docs_are_explicit_about_exposure_and_replica_limits() -> 
         "docs-site/docs/run/authentication.mdx",
     ):
         text = " ".join(_read(relative_path).lower().split())
-        assert "single-user, single-replica" in text, relative_path
-        assert "authentication is disabled" in text, relative_path
+        assert "single-user, single-replica" in text or "one ui replica" in text, relative_path
+        assert "authentication is disabled" in text or "authentication off" in text, relative_path
     assert "all" in text
 
 
 def test_api_compatibility_docs_describe_auto_and_manual_overrides() -> None:
     text = _read("docs-site/docs/reference/config-reference.md").lower()
-    upgrade = _read("docs-site/docs/run/maintenance/upgrading.md").lower()
+    upgrade = _read("docs-site/docs/run/reference/configuration.md").lower()
 
     assert "api_version: auto  # auto | v2 | v3" in text
     assert "runtime" in text
@@ -372,12 +362,16 @@ def test_api_compatibility_docs_describe_auto_and_manual_overrides() -> None:
     assert "upload" in upgrade
 
 
-def test_homepage_promises_a_daily_smart_decision_not_a_cron_daemon() -> None:
-    text = _read("docs-site/src/pages/index.tsx").lower()
+def test_homepage_links_the_three_reader_tasks() -> None:
+    text = _read("docs-site/src/pages/index.tsx")
 
-    assert "immich-memories auto run" in text
-    assert "daily" in text
-    assert "built-in cron scheduler generates memories automatically" not in text
+    for path in (
+        "/docs/get-started/quick-start",
+        "/docs/make/improve-a-film",
+        "/docs/run/overview",
+    ):
+        assert path in text
+    assert "built-in cron scheduler generates memories automatically" not in text.lower()
 
 
 def test_cli_reference_generator_targets_the_tracked_document() -> None:
@@ -396,7 +390,7 @@ def test_output_docs_distinguish_cli_format_choices_from_config_pairs() -> None:
 
 def test_output_docs_explain_the_hdr_codec_contract() -> None:
     reference = " ".join(_read("docs-site/docs/reference/config-reference.md").split())
-    manual = " ".join(_read("docs-site/docs/run/config-file.md").split())
+    manual = " ".join(_read("docs-site/docs/run/reference/configuration.md").split())
 
     for text in (reference, manual):
         assert "hdr_mode: auto" in text
@@ -447,6 +441,8 @@ def test_kubernetes_and_terraform_docs_describe_the_fixed_manifests() -> None:
         "deploy/terraform/README.md",
     ):
         text = _read(relative_path)
+        if relative_path == "docs-site/docs/run/terraform.md":
+            text += _read("docs-site/docs/run/reference/terraform.md")
         assert "Known gaps" not in text, relative_path
         assert "appuser" not in text, relative_path
         assert "configmap.yaml" not in text, relative_path
@@ -454,6 +450,6 @@ def test_kubernetes_and_terraform_docs_describe_the_fixed_manifests() -> None:
         assert "/health/ready" in text, relative_path
         assert "gpu" in text.lower(), relative_path
 
-    recipe = _read("docs-site/docs/make/automate.md")
+    recipe = _read("docs-site/docs/reference/automation-contract.md")
     assert "configmap" not in recipe.lower()
     assert "deploy/kubernetes/base/job.yaml" in recipe

@@ -1,0 +1,123 @@
+---
+title: Length, quiet weeks and filler
+---
+
+# Length, quiet weeks and filler
+
+A film's target length is where it starts, not a promise. A month with three photographed days
+gets about 20 seconds, not a minute, and a quiet month with a week of nothing in it spends no shot
+on that week. When a film runs out of pictures worth showing, it ends early. A shorter film with
+every shot earned beats a full one padded with the fridge, the ceiling and a screenshot.
+
+Taken to the end, a period can hold nothing worth a film at all: three pictures of a floor
+being laid, say. Then no film is made, the run says `Nothing worth a film in February 2019` and
+exits 0. That is an answer, not a failure. But one shot worth showing is a film: a special day
+that keeps two good clips gets a 13-second film, not nothing. The only exception is on this day,
+which is about a day coming back, so it needs two years that hold something. A period with no pictures in it at all (a wrong date
+range, a filter, Immich unreachable) still ends in an error and exit 1.
+
+How the target itself is set (per memory type, per active day, `--duration`) is on
+[Memory types](../../make/memory-types.mdx#how-long-a-film-runs).
+
+## How long a shot is held
+
+The constants live in `analysis/editorial_structure_budget.py`.
+
+| Shot | Hold |
+|---|---|
+| A still, no-model draft | 4.0 s when starred or someone Immich knows is in it, 3.5 s otherwise |
+| A still, model-planned film | 4.0 s |
+| A video | its length, up to 6.0 s; to the end of a sentence when someone is talking at the cut, never past 12 s from the start |
+| A video under 2.0 s | not a shot at all |
+| A Live Photo playing as motion | its clip, up to 6.0 s |
+| A Live Photo playing as its still | 4.0 s |
+| The film's first and last still | +0.5 s, never past 5.0 s |
+
+## Fitting the length
+
+A film has more candidate shots than seconds, so two passes fit it.
+
+**The trim** (`trim_to_timing_budget`, run after the draft and again once motion and speech are
+measured) drops whole shots, lightest story first: `none` and `glimpse` stories, then the extra
+shots of the lightest story, then its only shot, and the heaviest story's only shot last. Inside one
+story the latest shot goes first. A picture you ticked is never dropped, and a favourite is never
+dropped while a shot nothing vouches for (no star, no recorded video, nobody Immich knows, not ticked)
+is still in the film. In a film that gives every year a shot (a long person film, a custom film over
+several ranges), a year's only shot goes after every other one.
+
+**The shave** takes 0.5 s off the longest hold, over and over, while the film is over length. It
+never takes a hold under 3.5 s (or under the shot's own length, if that was shorter) and never
+cuts through a sentence. A video is never dropped for being long.
+
+## Quiet weeks get no shot
+
+On the no-model path, a happening with no indicator of its own reads as background, and background
+weighs `none`, which is 0 slots (`GATE_WEIGHT` and `weight_caps`, see
+[Moments, episodes and stories](./moments-and-stories.md#how-much-a-story-weighs)). An indicator is
+any of: a favourite, a video, close family in it, a day four times busier than your median day, being
+away from home or outside your 12 usual cities, or being the only happening of a part the film must
+cover.
+
+A week of ordinary evenings at home with no star, no video and no close family is exactly that
+case. Three favourites or a big close-family story still lift a story to `major`, so a quiet week
+that holds something you care about is never quiet to the editor.
+
+## Filler nothing vouches for
+
+A quiet month can still have more slots than shots anyone vouches for, and the leftover slots go to
+whatever stands. So every film drafted from the rules gets one last removal pass (`drop_filler_nothing_vouches_for`,
+PR #1250), after the duplicate review:
+
+```mermaid
+flowchart TD
+  n0["Read settled shot"]
+  n1["Keep indicators and protected coverage"]
+  n2["Check empty-frame evidence"]
+  n3["Remove unsupported filler without refill"]
+  n0 --> n1
+  n1 --> n2
+  n2 --> n3
+```
+
+It runs on the no-model film and on a polished one alike. The polish refines the no-model film,
+so it never keeps what that film would drop: a caption that misreads a printed recipe as a posed
+child does not get it past this pass. A screen that plays as a Live Photo, or shows someone Immich
+knows, still stays. So does one shot of a year this pass would leave empty, in a film that gives
+every year a shot: the one that stands best. What left is listed by id and head label
+in `derived-decisions/unvouched-filler.private.json`.
+
+An album handed over with a written subject (`--from-album ... --subject ...`) skips this pass. Every
+picture in it was picked for that subject, so a loaf in a bread film is the film, not filler
+([Picking each shot](./picking-shots.md#what-a-frame-must-pass)).
+
+## Going short, on purpose
+
+The draft tries to reach its length before it gives up the seconds:
+
+- **Depth.** When a story has slots left after every pass, it spends them inside the moments it
+  already shows (`editorial_story_depth.py`): first moments no pick took, alternating between
+  capture groups, then further frames of each chosen moment, one round at a time, until the
+  slots run out. A 36-minute moment of laps on a track can fill a short film this way. Videos
+  come before stills, frames are spread across the moment's time, and the story's place bound
+  grows with the slots it now spends. Eligible favourites come first;
+  equally preferred frames spread furthest in time from those already in. Every one must stand
+  and must not look like its neighbours. A film of one repeated
+  scene stays short.
+- **Readmission.** A frame refused for looking like another, or for crowding its place, comes back
+  when nothing else can fill the slot. A favourite refused for crowding its place comes back sooner.
+  While the film has a free slot it takes that one and nobody leaves. Once the film is full, it comes
+  back before a shot nothing vouches for keeps the slot it freed. That shot leaves (the weakest
+  first, a story's only shot last, and never a year's only shot in a film that gives every year one)
+  and is listed under `displaced_for_a_favourite` in `derived-decisions/story-selection.private.json`.
+- **With a model**, a film still short by S seconds reads up to 2 × ceil(S / 3.5) episodes it never
+  reached, and seats the ones whose reading records something
+  ([What a model adds](./what-a-model-adds.md#a-short-film-gets-one-more-look)).
+
+What never happens: a slot filled with a frame nothing vouches for, a filler frame dropped by the
+pass above refilled, or a film padded with a still repeated for time.
+The final scene-duplicate check also accepts a shorter film: falling below the target's 15 %
+tolerance does not protect a repeated scene. Owner-required shots and someone's only family
+appearance keep their existing protections.
+
+The run record says how it landed: `near_target` when the film is within 15 % of its content length,
+`search_limited` or `editorial_shortfall` when it ran shorter, with the seconds behind it.

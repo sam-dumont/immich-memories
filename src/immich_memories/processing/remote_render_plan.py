@@ -24,6 +24,7 @@ def build_render_request(params: GenerationParams) -> dict:
     from immich_memories.generate import build_memory_key
     from immich_memories.generate_clips import _validated_render_directives
     from immich_memories.processing.encoding_plan import resolve_output_selection
+    from immich_memories.processing.remote_render_access import render_access
 
     output = resolve_output_selection(
         config_codec=params.config.output.codec,
@@ -42,7 +43,7 @@ def build_render_request(params: GenerationParams) -> dict:
         "version": 1,
         "render_attempt": str(uuid4()),
         "memory_key": build_memory_key(params) or binding["sha256"],
-        "immich": {"url": params.config.immich.url, "api_key": params.config.immich.api_key},
+        **render_access(params, clips),
         "plan": {
             "clips": clips,
             "transition": params.transition,

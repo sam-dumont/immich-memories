@@ -7,18 +7,18 @@ title: Render on a GPU box
 On a plain NAS the render is the long part of every run: what the editor read is banked, the
 encode is not, so a second cut of the same month still encodes the whole film on the NAS's cores.
 The render worker takes that one stage to a machine with an NVIDIA card. Selection stays on the
-NAS, and so do music and the upload back to Immich.
+NAS, and so does the upload back to Immich. Music generation stays with its configured backend;
+Demucs stem separation can share the inference worker.
 
 The [combined CUDA worker](../run/reference-setup.md#one-gpu-service) puts this render service,
 picture inference, captions and Demucs in one container on port 8092. Its render URL ends in
 `/render`; the standalone setup below keeps port 8093.
 
 ```mermaid
-flowchart LR
-    nas["The app, on the NAS<br/><small>selection, timing</small>"] -->|"the cut + the Immich key"| worker["Render worker<br/><small>NVENC, CUDA titles</small>"]
-    immich[("Immich")] -->|"originals"| worker
-    worker -->|"the base film + its SHA-256"| check["The app checks it<br/><small>bytes, canvas, duration, audio</small>"]
-    check --> music["Music, upload<br/><small>on the NAS</small>"]
+flowchart TD
+    app["App: selection and timing"] -->|"Cut and Immich key"| worker["Trusted NVIDIA worker"]
+    immich["Immich originals"] --> worker
+    worker -->|"Rendered film"| finish["App: verify, music, upload"]
 ```
 
 ## What it holds
@@ -36,7 +36,7 @@ sends any footage. On the GPU box, with the NVIDIA container toolkit installed, 
 [`services/render-worker/compose.yaml`](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/services/render-worker/compose.yaml)
 into an empty directory with this `.env`:
 
-```dotenv
+```bash
 IMMICH_MEMORIES_IMAGE=ghcr.io/sam-dumont/immich-video-memory-generator:YOUR_APP_TAG
 IMMICH_URL=https://photos.example.com
 RENDER_WORKER_TOKEN=replace-with-openssl-rand-hex-32
@@ -66,6 +66,30 @@ reaches it at `http://127.0.0.1:8093`, loopback, with neither HTTPS nor
 `render.allow_insecure_http` needed. See
 [the Kubernetes page](../run/kubernetes.md#render-worker-as-a-sidecar).
 
+## Give long jobs both deadlines
+
+The app's `render.timeout_seconds` and the worker's
+`IMMICH_MEMORIES_RENDER_WORKER_JOB_TIMEOUT_SECONDS` both default to 3,600 seconds. They are separate
+budgets. The app waits for the queue, rendering and result download; the worker bounds its own job.
+Increasing only the app timeout still leaves the worker with a one-hour deadline.
+
+For a long film, this example gives the worker six hours and the app a little more time:
+
+```yaml
+render:
+  timeout_seconds: 21660
+```
+
+Set `IMMICH_MEMORIES_RENDER_WORKER_JOB_TIMEOUT_SECONDS=21600` on the worker as well. Choose deadlines
+for your queue and film size; this example adds 60 seconds for the handoff after the worker budget.
+An app timeout does not cancel an active worker job.
+
+Active rendering keeps ownership of its scratch workspace after a deadline. A stuck native
+renderer can still require a worker restart. Increasing the deadline does not stop that job.
+
+The worker receives the app’s map-tile and geocoding settings with the cut. Enable them in the
+app’s [network settings](../run/privacy.md) when the film needs maps or place names.
+
 ## Check it
 
 ```bash
@@ -87,4 +111,4 @@ a box with a card usually means `NVIDIA_DRIVER_CAPABILITIES` lacks `video`
 - When the film the NAS downloads matches the worker's digest, the NAS keeps the worker's decode
   check instead of decoding the film again, unless music was mixed in.
 
-How long a handoff takes against a NAS render is on [Measured](./measured.md).
+Use [Measure your setup](./measured.md) to compare a local render and a worker using the same cut.

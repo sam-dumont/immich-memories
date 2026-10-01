@@ -76,9 +76,10 @@ from immich_memories.timeperiod import DateRange
 from immich_memories.tracking.run_observations import observed_command
 
 
-def _apply_sharing(config, sharing: str | None) -> None:
-    """The run's sharing level over the config default; a shareable film this install can't
-    cut stops here, before anything is fetched."""
+def _apply_run_overrides(config, sharing: str | None, fade_color: str | None) -> None:
+    """Apply film-specific choices and refuse unsupported sharing before fetching media."""
+    if fade_color is not None:
+        config.title_screens.fade_color = fade_color
     if sharing:
         config.defaults.sharing = sharing
     refusal = sharing_refusal(config)
@@ -126,6 +127,7 @@ def register_generate_commands(main: click.Group) -> None:
         orientation: str,
         scale_mode: str | None,
         transition: str,
+        fade_color: str | None,
         resolution: str,
         music_volume: float,
         output_format: str | None,
@@ -191,7 +193,8 @@ def register_generate_commands(main: click.Group) -> None:
 
         from immich_memories.cli._live_display import LiveDisplay, ProgressDisplay, QuietDisplay
 
-        config = ctx.obj["config"]
+        # WHY: choices for one film must not change subsequent runs in this process.
+        config = ctx.obj["config"].model_copy(deep=True)
         from immich_memories.generate_captions import resolve_caption_overlays
 
         # One rule for every surface: a flag decides for this film, else defaults.add_*.
@@ -204,7 +207,7 @@ def register_generate_commands(main: click.Group) -> None:
             format_override=output_format,
         )
 
-        _apply_sharing(config, sharing)
+        _apply_run_overrides(config, sharing, fade_color)
 
         # CLI quality flag overrides config
         if quality:

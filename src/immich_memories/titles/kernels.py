@@ -139,6 +139,7 @@ _generate_linear_gradient = None
 _generate_radial_gradient = None
 _gaussian_blur_h = None
 _catmull_rom_blend = None
+_upload_source = None
 _gaussian_blur_v = None
 _apply_vignette = None
 _render_bokeh_particles = None
@@ -150,10 +151,8 @@ _apply_color_pulse = None
 _render_sdf_text = None
 # GPU-resident buffer kernels (issue #164)
 _copy_field_3 = None
-_zero_field_4 = None
 _blend_fields = None
-_finalize_to_output_u8 = None
-_finalize_to_output_u16 = None
+_finalize_output = None
 _apply_vignette_and_noise = None
 
 
@@ -167,7 +166,7 @@ def _compile_catmull_rom():
 
     @ti.kernel
     def catmull_rom_blend(
-        sources: ti.types.ndarray(dtype=ti.u8, ndim=4),
+        sources: ti.types.ndarray(ndim=4),
         output: ti.types.ndarray(dtype=ti.f32, ndim=3),
         i0: ti.i32,
         i1: ti.i32,
@@ -182,8 +181,8 @@ def _compile_catmull_rom():
         and over — 15 of them served 105 output frames — and did this blend in
         numpy, ten passes over 25 MB arrays, then uploaded the f32 result every
         frame. Measured at 5.0ms of a 14.9ms frame, before the transfer. The
-        sources do not change, so they live on the device and only the four
-        indices and the weight cross per frame.
+        sources do not change, so a four-frame window lives on the device.
+        Only newly needed sources, the indices and the weight cross over.
         """
         height = output.shape[0]
         width = output.shape[1]
@@ -206,9 +205,22 @@ def _compile_catmull_rom():
     return catmull_rom_blend
 
 
+def _compile_source_upload():
+    @ti.kernel
+    def upload_source(
+        source: ti.types.ndarray(ndim=3),
+        sources: ti.types.ndarray(ndim=4),
+        slot: ti.i32,
+    ):
+        for y, x, c in ti.ndrange(source.shape[0], source.shape[1], 3):
+            sources[slot, y, x, c] = source[y, x, c]
+
+    return upload_source
+
+
 def _compile_kernels():
     """Compile every title kernel. Must be called AFTER ti.init()."""
-    global _kernels_compiled, _catmull_rom_blend, _generate_linear_gradient, _generate_radial_gradient, _gaussian_blur_h, _gaussian_blur_v, _apply_vignette, _render_bokeh_particles, _apply_noise_grain, _generate_aurora_gradient, _composite_rgba_over, _composite_text_with_offset, _apply_color_pulse, _render_sdf_text, _copy_field_3, _zero_field_4, _blend_fields, _finalize_to_output_u8, _finalize_to_output_u16, _apply_vignette_and_noise  # noqa: PLW0603, E501
+    global _kernels_compiled, _upload_source, _catmull_rom_blend, _generate_linear_gradient, _generate_radial_gradient, _gaussian_blur_h, _gaussian_blur_v, _apply_vignette, _render_bokeh_particles, _apply_noise_grain, _generate_aurora_gradient, _composite_rgba_over, _composite_text_with_offset, _apply_color_pulse, _render_sdf_text, _copy_field_3, _blend_fields, _finalize_output, _apply_vignette_and_noise  # noqa: PLW0603, E501
 
     if _kernels_compiled or not KERNELS_AVAILABLE:
         return
@@ -551,14 +563,6 @@ def _compile_kernels():
                 dst[y, x, c] = src[y, x, c]
 
     @ti.kernel
-    def zero_field_4(
-        arr: ti.types.ndarray(dtype=ti.f32, ndim=3),
-    ):
-        for y, x in ti.ndrange(arr.shape[0], arr.shape[1]):
-            for c in ti.static(range(4)):
-                arr[y, x, c] = 0.0
-
-    @ti.kernel
     def blend_fields(
         dst: ti.types.ndarray(dtype=ti.f32, ndim=3),
         src: ti.types.ndarray(dtype=ti.f32, ndim=3),
@@ -570,26 +574,22 @@ def _compile_kernels():
                 dst[y, x, c] = dst[y, x, c] * (1.0 - mix) + src[y, x, c] * mix
 
     @ti.kernel
-    def finalize_to_output_u8(
+    def finalize_output(
         frame: ti.types.ndarray(dtype=ti.f32, ndim=3),
-        output: ti.types.ndarray(dtype=ti.u8, ndim=3),
+        output: ti.types.ndarray(ndim=3),
         max_val: ti.f32,
+        fade_in_weight: ti.f32,
+        fade_in_white: ti.i32,
+        fade_out_weight: ti.f32,
+        fade_out_white: ti.i32,
     ):
         for y, x in ti.ndrange(frame.shape[0], frame.shape[1]):
             for c in ti.static(range(3)):
                 v = ti.max(0.0, ti.min(1.0, frame[y, x, c]))
-                output[y, x, c] = ti.cast(v * max_val + 0.5, ti.u8)
-
-    @ti.kernel
-    def finalize_to_output_u16(
-        frame: ti.types.ndarray(dtype=ti.f32, ndim=3),
-        output: ti.types.ndarray(dtype=ti.u16, ndim=3),
-        max_val: ti.f32,
-    ):
-        for y, x in ti.ndrange(frame.shape[0], frame.shape[1]):
-            for c in ti.static(range(3)):
-                v = ti.max(0.0, ti.min(1.0, frame[y, x, c]))
-                output[y, x, c] = ti.cast(v * max_val + 0.5, ti.u16)
+                # Match the old integer readback followed by two truncated blends.
+                value = ti.cast(v * max_val + 0.5, ti.u32)
+                value = ti.cast(fade_in_white + value * fade_in_weight, ti.u32)
+                output[y, x, c] = ti.cast(fade_out_white + value * fade_out_weight, ti.u32)
 
     @ti.kernel
     def apply_vignette_and_noise(
@@ -625,6 +625,7 @@ def _compile_kernels():
     _generate_linear_gradient = generate_linear_gradient
     _generate_radial_gradient = generate_radial_gradient
     _catmull_rom_blend = _compile_catmull_rom()
+    _upload_source = _compile_source_upload()
     _gaussian_blur_h = gaussian_blur_h
     _gaussian_blur_v = gaussian_blur_v
     _apply_vignette = apply_vignette
@@ -636,10 +637,8 @@ def _compile_kernels():
     _apply_color_pulse = apply_color_pulse
     _render_sdf_text = render_sdf_text
     _copy_field_3 = copy_field_3
-    _zero_field_4 = zero_field_4
     _blend_fields = blend_fields
-    _finalize_to_output_u8 = finalize_to_output_u8
-    _finalize_to_output_u16 = finalize_to_output_u16
+    _finalize_output = finalize_output
     _apply_vignette_and_noise = apply_vignette_and_noise
 
     _kernels_compiled = True
@@ -664,17 +663,30 @@ def _hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
     return (int(h[0:2], 16) / 255.0, int(h[2:4], 16) / 255.0, int(h[4:6], 16) / 255.0)
 
 
-def _finalize_to_output(frame, output, max_val: float, *, hdr: bool | None = None) -> None:
-    """Dispatch to u8 or u16 finalize kernel.
+def _finalize_to_output(
+    frame,
+    output,
+    max_val: float,
+    *,
+    fade_in: float = 1.0,
+    fade_out: float = 0.0,
+    fade_color: str = "white",
+) -> None:
+    """Quantize and fade on device before the single u8/u16 readback.
 
-    For ti.ndarray pass hdr= explicitly; for np.ndarray auto-detects from dtype.
+    Compute the edge-color offsets on the host: the previous NumPy path truncated
+    them separately before blending the already-quantized frame.
     """
-    if hdr is None:
-        hdr = hasattr(output, "dtype") and output.dtype == np.uint16
-    if hdr:
-        _finalize_to_output_u16(frame, output, max_val)
-    else:
-        _finalize_to_output_u8(frame, output, max_val)
+    edge_val = 0.0 if fade_color == "black" else max_val
+    _finalize_output(
+        frame,
+        output,
+        max_val,
+        fade_in,
+        int(edge_val * (1.0 - fade_in)),
+        1.0 - fade_out,
+        int(edge_val * fade_out),
+    )
 
 
 class GPUBuffers:
@@ -696,6 +708,9 @@ class GPUBuffers:
         self.output = ti.ndarray(dtype=out_dtype, shape=(h, w, 3))
         self.sharp: ti.ndarray | None = None
         self.sources: ti.ndarray | None = None
+        self._source_frames: list[np.ndarray] = []
+        self._source_slots: dict[int, int] = {}
+        self._source_scale = 1.0 / 255.0
 
     def load_background(self, bg: np.ndarray) -> None:
         """CPU to GPU: load background frame (one transfer per frame)."""
@@ -706,25 +721,36 @@ class GPUBuffers:
         return self.output.to_numpy()
 
     def load_sources(self, frames: list[np.ndarray]) -> bool:
-        """Put the slow-mo source frames on the device, once.
+        """Keep a four-frame device window in the sources' native bit depth.
 
-        Stored as u8 rather than f32: a quarter of the memory, and the
-        conversion is free inside the kernel. At 1080p fifteen frames is
-        about 93 MB.
+        At portrait 4K this caps HDR residency at 199 MB, even for 60 fps
+        sources. Upload only newly needed frames, without stacking the entire
+        decoded clip into another full-size host allocation.
         """
         if not frames:
             return False
         first = frames[0]
-        if first.dtype != np.uint8 or first.shape[:2] != (self.h, self.w):
+        if first.dtype not in (np.uint8, np.uint16):
             return False
-        self.sources = ti.ndarray(dtype=ti.u8, shape=(len(frames), self.h, self.w, 3))
-        self.sources.from_numpy(np.ascontiguousarray(np.stack(frames)))
+        if any(f.shape != (self.h, self.w, 3) or f.dtype != first.dtype for f in frames):
+            return False
+        self._source_frames = frames.copy()
+        self._source_slots.clear()
+        self._source_scale = 1.0 / np.iinfo(first.dtype).max
+        dtype = ti.u16 if first.dtype == np.uint16 else ti.u8
+        self.sources = ti.ndarray(dtype=dtype, shape=(min(4, len(frames)), self.h, self.w, 3))
         return True
 
     def blend_sources(self, indices: tuple[int, int, int, int], t: float) -> None:
-        """Catmull-Rom the resident sources straight into the frame buffer."""
-        i0, i1, i2, i3 = indices
-        _catmull_rom_blend(self.sources, self.frame, i0, i1, i2, i3, t, 1.0 / 255.0)
+        """Interpolate on device, uploading only frames entering the window."""
+        self._source_slots = {i: slot for i, slot in self._source_slots.items() if i in indices}
+        for index in indices:
+            if index not in self._source_slots:
+                slot = next(s for s in range(4) if s not in self._source_slots.values())
+                _upload_source(self._source_frames[index], self.sources, slot)
+                self._source_slots[index] = slot
+        i0, i1, i2, i3 = (self._source_slots[i] for i in indices)
+        _catmull_rom_blend(self.sources, self.frame, i0, i1, i2, i3, t, self._source_scale)
 
     def ensure_sharp(self) -> None:
         """Lazily allocate sharp buffer for animated deblur."""

@@ -1,6 +1,6 @@
 """Ending screen generation service.
 
-Creates fade-to-white ending videos by streaming frames to FFmpeg.
+Creates solid-color ending fades by streaming frames to FFmpeg.
 """
 
 from __future__ import annotations

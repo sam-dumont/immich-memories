@@ -1,351 +1,190 @@
 ---
-title: Config File
+title: Configuration
 ---
 
-# Config file
+# Configuration
 
-`~/.immich-memories/config.yaml` is yours: the app reads it and never writes it, except when you
-run `immich-memories config move-to-db`. Keep it at permissions `600` if it holds API keys. What
-you save from the web UI or `immich-memories config` goes to the database instead (see
-[where a setting comes from](#where-a-setting-comes-from)). The annotated example is
-[`examples/config.example.yaml`](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/examples/config.example.yaml),
-and every key with its default is in the [config reference](../reference/config-reference.md). In
-Docker you can skip the file entirely and use [environment variables](./environment-variables.md).
+Change a setting in **Settings** for the easy route. Use a file or environment variables when you
+want the deployment to control it. Settings saves to the database; the app normally only reads
+`~/.immich-memories/config.yaml`.
 
 ## Quick start config
-
-A full plain-NAS setup. Everything not listed keeps its default: Immich, where home is (which makes
-trips work and picks your country's public holidays), and where the films go.
 
 ```yaml
 immich:
   url: "https://photos.example.com"
   api_key: "${IMMICH_API_KEY}"
-  api_version: auto  # auto | v2 | v3
 
 trips:
-  homebase_latitude: 50.85      # without these, no trip is ever a trip
+  homebase_latitude: 50.85
   homebase_longitude: 4.35
 
 output:
   directory: "~/Videos/Memories"
-  resolution: "1080p"            # 720p, 1080p, 4k
-  codec: h264                     # the default; h265 keeps HDR
-  hdr_mode: auto                  # keep HLG/PQ when present, otherwise SDR
 ```
 
-Everything else has a default. With `codec: h265` and `hdr_mode: auto`, HLG or PQ footage gives a
-10-bit HDR film and SDR clips, photos and titles are converted to the same transfer. H.264 is
-always SDR and tone-maps HDR sources.
-
-Trip detection needs both home coordinates. Preflight warns when either is missing or left at
-`(0, 0)`, and trips stay off until you set them.
-
-### Make it better (optional)
-
-A text model is one block. Leave it out and the app edits on a plain NAS; add it and it writes the
-titles and picks the music, and with the GPU tier it polishes the cut:
-[What a GPU or a model adds](../get-started/what-a-gpu-or-a-model-adds.md).
-
-```yaml
-llm:
-  enabled: true
-  provider: "openai-compatible"
-  base_url: "http://localhost:8000/v1"
-  model: "gemma-4-e4b-it-6bit"
-```
-
-Set `enabled: false` to turn LLM calls off while keeping the connection settings. With it on,
-an empty `base_url` starts the [app-owned local Gemma reader](../better/reader.md#let-the-app-run-the-local-model)
-on Linux or macOS; a URL forwards requests to that server. Local ownership lets the app release
-the reader's memory before loading local music models.
-
-## What each top-level section is for
-
-Every key and its default is in the [config reference](../reference/config-reference.md). This is
-the map: what a section decides, and where it is explained.
-
-| Section | What it decides | Explained on |
-|---|---|---|
-| `tier` | `auto` (the default), `nas`, `gpu` or `full`: how much preparation runs | [Compute tier](#compute-tier) |
-| `preset` | `fast` fills several output knobs at once (1080p H.264, fast encoder, static titles); your own keys win | [Environment variables](./environment-variables.md#preparation-and-output) |
-| `immich` | the server, the API key, the API version, and extra accounts | [Immich API compatibility](#immich-api-compatibility), [A second Immich account](#a-second-immich-account) |
-| `trips` | where home is (`homebase_latitude`, `homebase_longitude`), and how far (50 km), how long (2 days) and how broken (2-day gap) a trip may be | [Trip](../make/memory-types.mdx#trip) |
-| `defaults` | what every film gets unless you say otherwise: blurred backdrop or bars (`scale_mode`), transitions, the sharing level (`family`), date and place captions (both on) | [Sharing levels](../how-it-chooses/family-audience-duplicates.md#sharing-levels), [Date and place captions](../make/titles-maps-music.md#date-and-place-captions) |
-| `output` | where films land, resolution, container, codec, HDR, quality | [Photos, Live Photos and HDR](../make/photos-and-live-photos.md#hdr-end-to-end) |
-| `photos` | whether photos play (on), for how long (4 s), and when shots are one burst | [Photos, Live Photos and HDR](../make/photos-and-live-photos.md) |
-| `title_screens` | title, month and ending cards, their style, language (`locale`), and map move lengths | [Titles, maps and music](../make/titles-maps-music.md) |
-| `audio` | your own music folder and how generated music is built | [Music](../make/titles-maps-music.md#music) |
-| `upload` | whether a finished film goes back to Immich, into which album | [Upload back to Immich](#upload-back-to-immich) |
-| `network` | the two outside calls, both off: place names from Nominatim and map tiles | [Outside calls](#outside-calls) |
-| `cache` | where previews and downloaded clips live, and how big they may grow | [Caches](./maintenance/health-logs-cache.md#caches) |
-| `database` | the store: a SQLite file (default) or PostgreSQL | [Database and the store](./database.md) |
-| `render` | a GPU box that renders for you | [Render on a GPU box](../better/gpu-render.md) |
-
-Under `advanced:` the ones you are likely to touch are `llm` (the model reader), `auth` (sign-in),
-`automation` (the daily film, [Automate it](../make/automate.md)), `notifications` and `server`
-(port, demo mode, the trigger token).
+Both home coordinates are needed for trips. Everything else keeps its default.
+Keep the file at permissions `600` if it contains credentials.
+Docker can use [environment variables](./environment-variables.md) without a file.
 
 ## Where a setting comes from
 
-Four sources, strongest first:
+For each key, the first source that sets it wins:
 
-```mermaid
-flowchart LR
-    E["Environment<br/>IMMICH_MEMORIES_LLM__MODEL"] --> F["config.yaml<br/>advanced.llm.model"]
-    F --> D["Database<br/>saved from the UI or CLI"]
-    D --> X["Default"]
-```
+| Priority | Source |
+|---|---|
+| 1 | Environment variables |
+| 2 | `config.yaml` |
+| 3 | Values saved from Settings or the config CLI |
+| 4 | Built-in defaults |
 
-1. **Environment**: `IMMICH_MEMORIES_<SECTION>__<FIELD>` and the shortcuts in
-   [environment variables](./environment-variables.md) (`IMMICH_URL`, `IMMICH_API_KEY`, ...).
-2. **`config.yaml`**: this file, which only you write.
-3. **Database**: what the settings page, **Save Config** on the Settings page, and
-   `immich-memories config --url/--api-key` saved. One row per key; a key you never saved has no
-   row, so a new default still reaches you after an upgrade.
-4. **Default**: the value in the [config reference](../reference/config-reference.md).
+Command-specific flags can override these for that command. LLM key shorthands have a
+[special rule](./environment-variables.md#shorthands).
+The UI greys out settings controlled by the file or environment and shows their source.
 
-If a store is configured (a PostgreSQL URL, or a SQLite file that exists) and its settings cannot
-be read, the app does not start: the CLI exits with the error and the web UI refuses to start.
-The message names the store (password masked) and the cause, such as a refused connection or a
-corrupt file. Starting anyway on half the settings could send an automated run somewhere you did
-not mean. Fix the database or its URL, or set `IMMICH_MEMORIES_SKIP_STORED_SETTINGS=1` to start on
-env, `config.yaml` and defaults only. A SQLite store that does not exist yet is a fresh install and
-starts silently.
-
-The first source that sets a key wins, key by key: `advanced.llm.model` in the file and `llm.base_url`
-in the database work together. The web UI greys out every setting the environment or the file sets
-and names the variable or the file key; saving under it would do nothing.
-
-`immich-memories config show` prints the same report: every key, its value, its source, and the
-exact variable or file key that sets it. Secrets print as `***`. Give prefixes to narrow it:
+Inspect the same result from the CLI:
 
 ```bash
 immich-memories config show llm immich.url
 ```
 
+Secrets print as `***`. `--config PATH` selects one file for the CLI, UI, authentication and reloads.
+If a configured store is unreadable, startup stops rather than silently using different settings.
+Fix the database, or use `IMMICH_MEMORIES_SKIP_STORED_SETTINGS=1` for a deliberate recovery start
+without its saved settings.
+
 ### Moving a key out of the file
 
-Nothing moves from `config.yaml` into the database on its own; an upgrade leaves your file in charge.
-To hand a key to the UI:
+To let Settings control a key currently in YAML:
 
 ```bash
 immich-memories config move-to-db llm.model automation.cooldown_hours
 ```
 
-Keys are runtime paths, without `advanced.`. Each value is saved to the database, then its line is
-removed from the file, wherever it was written (top level or under `advanced:`). The rest of the file
-keeps its values and its `${VAR}` references, but not its comments, so the previous file is kept
-as `config.yaml.bak`. A key whose value is a `${VAR}` reference is refused: it already comes from
-the environment. `database.url` and `database.schema` never move, because the app reads them before
-the database opens.
+Use runtime paths without `advanced.`. The command saves each value, removes its YAML entry and
+keeps a `config.yaml.bak` (the rewrite loses comments). `${VAR}` values and database URL/schema
+cannot move. An upgrade does not move keys automatically.
 
 ### Secrets in the database
 
-Keys named `api_key`, `caption_api_key`, `password`, `client_secret`, `trigger_token`,
-`worker_token`, `token`, `secret`, `api_keys` or `urls` (notification URLs carry credentials) are
-secrets. In the database they are encrypted with Fernet, under a key derived (HKDF-SHA256) from
-`IMMICH_MEMORIES_SECRET_KEY`. Any string of at least 32 characters works; generate one with
+Saving credentials from Settings or the CLI needs `IMMICH_MEMORIES_SECRET_KEY`:
 
 ```bash
 openssl rand -base64 32
 ```
 
-and keep it with your other secrets. Without it the UI and the CLI refuse to store a secret and say
-so (Settings: "Secrets cannot be saved here until IMMICH_MEMORIES_SECRET_KEY is set"); put the
-secret in the environment or `config.yaml` instead. It is read from the environment only. On
-Docker the shipped compose file already passes it through, so set it in `.env`:
+Keep the output with your other secrets. On Docker, put it in `.env` and recreate:
 
-```bash
-# .env
-IMMICH_MEMORIES_SECRET_KEY=paste-the-openssl-output-here
+```ini
+IMMICH_MEMORIES_SECRET_KEY=paste-the-generated-value-here
 ```
 
-Then `docker compose up -d` to recreate the container. A key shorter than 32 characters is refused
-when you save. Change or lose the key and the
-stored secrets stop opening: the app logs which ones and falls back to their defaults, `config show`
-and the settings page mark each one, and you save them again. Logs never print a secret, whichever source it came from.
+```bash
+docker compose up -d
+```
 
-## Compute tier
+The key must be at least 32 characters. Without it, keep credentials in environment variables or
+YAML; secret saves are refused. Losing it means re-entering saved credentials.
+This is separate from the UI's [session signing key](./authentication.mdx#sessions).
 
-Leave `tier` unset, or set `tier: auto`: the app picks `nas`, `gpu` or `full` from what it finds.
-How it decides: [The three tiers](./requirements.md#the-preparation-tier). Captions from a
-vision-capable LLM instead of the caption server are a separate, explicit switch:
-[LLM captions](../better/captions.md#explicit-llm-captions).
+## What each top-level section is for
+
+| Want to change | Section | Guide |
+|---|---|---|
+| Immich connection or extra accounts | `immich` | [Accounts](./multi-account.mdx) |
+| Home base and trip detection | `trips` | [Memory types](../make/memory-types.mdx#trip) |
+| Sharing, transitions and captions | `defaults` | [Sharing](../reference/selection-internals/family-audience-duplicates.md#sharing-levels) |
+| Resolution, codec and HDR | `output` | [Photos and HDR](../make/photos-and-live-photos.md) |
+| Photo timing | `photos` | [Photos](../make/photos-and-live-photos.md) |
+| Titles, maps and music | `title_screens`, `audio` | [Titles, maps and music](../make/titles-maps-music.md) |
+| Upload destination | `upload` | [What Immich sees](./privacy.md#what-immich-sees) |
+| Place names and map tiles | `network` | [Outside calls](./privacy.md#geocoding-and-maps) |
+| Disk usage and persistence | `cache`, `database` | [Caches](./maintenance/health-logs-cache.md#caches), [database](./database.md) |
+| A model or service | `advanced.llm`, `advanced.inference`, `render` | [Add-ons](../get-started/what-a-gpu-or-a-model-adds.md) |
+| Login or daily schedule | `advanced.auth`, `advanced.automation` | [Authentication](./authentication.mdx), [automation](../make/automate.md) |
+
+Every key/default is in the [config reference](../reference/config-reference.md).
+The [annotated example](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/examples/config.example.yaml)
+is there when you need a larger file.
 
 ## Everyday keys and advanced keys
 
-Everyday sections sit at the top level: `immich`, `defaults`, `output`, `audio`, `title_screens`,
-`cache`, `database`, `upload`, `trips`, `network`, `photos`, `render`, `title_llm`. Tuning sections
-go under `advanced:`: `analysis`, `speech`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`, `automation`,
-`notifications`, `triage`, `editorial`, `inference`, `free_text`. Both placements work and merge key by key at
-every depth, and the top-level value wins a tie, so a hand-written
-`editorial: {preparation: {caption_concurrency: 4}}` changes concurrency and keeps the rest of an
-`advanced.editorial` block. The database, `config show` and `config move-to-db` use the runtime
-path without `advanced.` (`llm.model`); the UI and `config show` name a file key the way you wrote
-it (`advanced.llm.model`). Preparation's former tier override no longer takes precedence
-over the product tier.
-
-Unknown keys inside a section are ignored. The keys of the retired per-clip scorer
-(`content_analysis`, `audio_content`, `transcription`, `description_llm`,
-`analysis.max_refinement_passes`, `photos.max_ratio` and their family), the retired `scheduler:`
-section and a few dials nothing read (`cache.max_age_days`, `title_screens.show_decorative_lines`,
-`triage.enabled`, `triage.bundle`) are dropped by name with a warning, so an old file loads and
-tells you what it ignored. Unknown top-level keys and invalid
-values (`codec: av1`) fail with a validation error.
-
-## Paths in the config are host paths
-
-Everything else in this file travels to another machine. These keys don't: they name paths on the
-machine that wrote them. `immich-memories preflight` prints one `Config paths` warning naming every
-path that is missing here, so a copied config fails up front instead of hours into a run.
-
-| Key | What it points at |
-|---|---|
-| `output.directory` | where finished films are written |
-| `cache.directory` | previews, thumbnails, downloaded clips |
-| `cache.database` | a pre-store `cache.db` the store imports once; its directory holds the run lock files |
-| `database.url` | the store (banked facts and readings, your picture decisions and review edits, people, settings, run history, automation state, special days), when it is a SQLite file (`sqlite:///~/.immich-memories/store.db`) |
-| `advanced.editorial.annotation_database` | deprecated: a legacy `annotations.sqlite` the store imports once; its directory still holds `structure-banks/` (the thumbnail-hash and scene-print caches, and any legacy JSON banks the store imports) |
-| `advanced.triage.encoder` | the pinned DINOv2 ONNX export |
-| `advanced.editorial.preparation.head_bundle` | a head bundle of your own, for the eight context heads |
-| `advanced.editorial.preparation.marqo_onnx` | the pinned sensitive-content export |
-| `advanced.editorial.preparation.detector_cache_dir` | the Hugging Face cache the detectors read |
-| `advanced.editorial.preparation.detector_python` | an interpreter for the detector worker |
-| `audio.local_music_dir` | your own music, read by `immich-memories music` |
-
-Blank is the default for `head_bundle`, `detector_python` and `detector_cache_dir`, and the portable
-value: it means "work it out here". A `detector_python` that is not on this host (a Mac venv
-path carried into a NAS container, or a venv deleted since) stops a cut before it reads a picture,
-naming the key; `immich-memories preflight` shows the same row. Remove the key and the detectors run on the app's own
-Python. Containers already pin most of these: the image sets
-`output.directory` to `/app/output`, and the [Kubernetes manifests](./kubernetes.md) put the model
-paths on the `/models` claim.
-
-## Footage the camera roll did not shoot
-
-Doorbells, screen recorders and messaging apps upload into the same timeline as your phone. Files
-matching these patterns never reach selection:
+Everyday settings live at the top level. Tuning sections live under `advanced:`:
 
 ```yaml
 advanced:
-  analysis:
-    exclude_filename_patterns:
-      - "RingVideo_*"
-      - "RPReplay_Final*"
-      - "Screen Recording *"
-      - "Screenshot*"
-      - "img-*-wa[0-9][0-9][0-9][0-9]*"
-      - "vid-*-wa[0-9][0-9][0-9][0-9]*"
+  llm:
+    provider: openai-compatible
+    base_url: "http://localhost:8000/v1"
+    model: "your-model-name"
 ```
 
-Case-insensitive globs on the original filename. Setting the key replaces the list, so copy the
-defaults you want to keep.
+Both placements are accepted and merge key by key; a top-level key wins a tie.
+Environment variables and CLI paths always omit `advanced.` (`llm.model`). Unknown fields inside
+a section are ignored; unknown top-level sections or invalid values fail validation.
+Use `config show` to check effective values after editing.
 
-A still whose EXIF names no camera is dropped too (`exclude_stills_without_camera_exif: true`, the
-default): on iOS a photo saved from a messaging app keeps its `IMG_` name and loses only the camera
-make. Turn it off if your library is mostly exported or edited originals, which lose the make the
-same way. Videos are exempt.
+## Paths in the config are host paths
+
+Paths refer to the machine **running the app**. Inside Docker, `output.directory` must be a
+container path, not a desktop folder. The image already sets `/app/output`; mount your host folder
+there. Environment variables override file paths.
+
+`preflight` flags missing paths. Remove an old `advanced.editorial.preparation.detector_python`
+when moving a config between machines: blank uses the app's Python.
+[The reference](../reference/config-reference.md) lists model/cache path overrides.
+
+## Environment variable substitution
+
+Use `${VAR_NAME}`, not `$VAR`. Substitution is supported for credentials and selected service/path
+fields; it is not applied to every string. For any config key, the reliable alternative is its
+[`IMMICH_MEMORIES_SECTION__FIELD` variable](./environment-variables.md#the-pattern).
+
+## Compute tier
+
+Leave `tier: auto`. [Requirements and tiers](./requirements.md#the-preparation-tier) explains the
+choice and required services.
 
 ## Immich API compatibility
 
-Immich v2 and v3 both work. `auto` is the default runtime policy: the app detects the server
-major and selects the matching API contract. You do not choose a version for each run. Explicit
-`v2` and `v3` values are manual troubleshooting escape hatches for proxies or unusual deployments
-that break version detection. An override forces that contract; it is not a normal upgrade step.
-Durations, upload fields and search dates are converted for each version, and an unknown major
-stops the run with `UnsupportedImmichVersion` rather than sending requests of the wrong shape.
+Leave `immich.api_version: auto`; v2 and v3 are detected. `v2`/`v3` overrides are for diagnosing
+unusual proxies, not a normal upgrade step. An unknown major stops the run.
 
 ```bash
 immich-memories config test
 ```
 
-Read-only: it reports the connection and the resolved contract, and does nothing else.
+This only checks authentication/API compatibility. It does not generate or upload.
 
 ## A second Immich account
 
-Two people on one Immich server each upload to their own account. The second one goes under
-`immich.accounts`, by name, next to the primary account (which stays the only upload target):
+Follow [A second account](./multi-account.mdx) to connect a partner's library, bind matching people
+and select both accounts. The primary remains the only upload target.
 
-```yaml
-immich:
-  url: "https://photos.example.com"
-  api_key: "${IMMICH_API_KEY}"
-  accounts:
-    partner:
-      url: "https://photos.example.com"
-      api_key: "${PARTNER_IMMICH_API_KEY}"
-```
+## Footage the camera roll did not shoot
 
-Configuring it changes no film on its own. To make one film from both libraries:
-
-1. `immich-memories config test` (or `preflight`): one line per account, each proving who its key
-   belongs to.
-2. Tell the people registry which face in the partner's account is which person, so `--person`
-   finds them on both sides: `immich-memories people bind "Alex" --account partner --id <person-id>`
-   ([people](../make/cli/prepare.md)).
-3. `immich-memories generate --accounts primary,partner ...` reads both into one film. The same
-   file in both libraries counts once ([Duplicates](../how-it-chooses/family-audience-duplicates.md#duplicates)),
-   and each picture is downloaded through the account that owns it. If that account cannot read
-   it, the run stops and names the account rather than make a film with half a household missing.
-
-`generate --accounts` on the CLI, **Immich accounts to read** in the web UI and
-`automation.accounts` in config all read the household through; albums and trips still read the
-primary account only, and every film is uploaded to the primary only. [A second account, start to finish](multi-account.mdx) walks the whole setup,
-including binding a person and saving a group.
-Name rules, secrets and env variables: [extra accounts](../reference/config-reference.md#extra-accounts).
-
-## Environment variable substitution
-
-These fields expand `${VAR_NAME}` at load time:
-
-| Section | Fields |
-|---|---|
-| `immich` | `url`, `api_key` |
-| `llm` / `title_llm` | `api_key` |
-| `musicgen` | `base_url`, `api_key` |
-| `ace_step` | `api_url`, `api_key` |
-| `auth` | `password`, `client_secret`, `issuer_url`, `client_id` |
-| `render` | `worker_base_url`, `worker_token` |
-| `editorial` | `annotation_database` |
-| `editorial.preparation` | `head_bundle`, `detector_python`, `detector_cache_dir`, `marqo_onnx`, `caption_api_key` |
-
-Only the braced form expands. A bare `$VAR` stays as written, because a `$` in a password is
-ordinary (a warning says so if it matches a variable you have set). For any other field, use
-`IMMICH_MEMORIES_<SECTION>__<FIELD>` ([environment variables](./environment-variables.md)).
+Filename patterns and the camera-EXIF filter exclude doorbell recordings, screenshots and saved
+messaging-app images. [Selection boundaries](../how-it-chooses/family-audience-duplicates.md)
+and the [analysis config reference](../reference/config-reference.md) explain how to adjust them.
 
 ## Upload back to Immich
 
 ```yaml
 upload:
   enabled: true
-  album_name: "2024 Memories"
+  album_name: "Memories"
 ```
 
-Off by default. [What Immich sees](./privacy.md#what-immich-sees) lists every write it makes.
+Off by default. The web Render panel has its own upload choice.
+[Privacy](./privacy.md#what-immich-sees) lists every write.
 
 ## Outside calls
 
-```yaml
-network:
-  geocoding: false        # nominatim.openstreetmap.org
-  geocoding_url: ""       # your own Nominatim instead, e.g. http://nominatim.lan:8080
-  map_tiles: false        # server.arcgisonline.com
-```
-
-Both off, so a default run reaches your Immich server, the endpoints named elsewhere in this file,
-and nothing else. `geocoding` buys the right district's name where Immich names the neighbouring
-town (Wilrijk, not Hoboken) on every name you read, trip names from the map, and place names in the
-film's language. It sends rounded coordinates, about a kilometre, once per place; answers are kept
-in the store.
-`geocoding_url` points it at a self-hosted Nominatim. `map_tiles` buys the trip fly-over and the
-map behind location cards. Fonts are never fetched at run time (see
-[fonts](./privacy.md#fonts)). [Privacy](./privacy.md) says exactly what each host receives.
+Geocoding and map tiles are off by default. Enable them under `network` only after reading
+[what leaves your network](./privacy.md).
 
 ## Reader concurrency
 
-Only matters with a reader. `advanced.llm.reader_concurrency` is unset by default and then read
-from `llm.base_url`: 1 for a loopback or private address or a bare service name, 4 for a public
-host. A model on your own machine is one process in front of one accelerator, so four requests
-queue there instead of overlapping; a hosted endpoint is a fleet. Set it yourself (1 to 16) for a
-local server that does take concurrent requests, or a provider that wants a lower rate.
+Use `advanced.llm.reader_concurrency` only when tuning model throughput. The default is one
+request for a local/private host and four for a public host. Accepted overrides: 1–16.
+See [Reader setup](../better/reader.md).

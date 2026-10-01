@@ -120,3 +120,27 @@ def test_invalid_rate_retains_probed_geometry(monkeypatch, tmp_path):
     )
     monkeypatch.setattr("immich_memories.processing.probe_cache.ProbeCache.get", lambda *_a: probe)
     assert _source_properties(tmp_path / "source.mov") == ((1080, 1920), None)
+
+
+@pytest.mark.parametrize(
+    ("rate", "privacy", "early"),
+    [
+        (Fraction(120), False, True),
+        (Fraction(120), True, False),
+        (Fraction(60), False, False),
+        (None, False, False),
+    ],
+)
+def test_only_known_high_rates_skip_discarded_spatial_work(tmp_path, rate, privacy, early):
+    decoder = FrameDecoder(
+        tmp_path / "source.mov",
+        2160,
+        3840,
+        60,
+        source_frame_rate=rate,
+        privacy_blur=privacy,
+        scale_mode="blur",
+    )
+    filters = decoder._build_vf()
+    assert filters.count("fps=60") == 1
+    assert (filters.index("fps=60") < filters.index("scale=")) == early

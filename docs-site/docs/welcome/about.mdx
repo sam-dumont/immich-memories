@@ -1,65 +1,30 @@
 ---
-sidebar_label: "Why this exists"
-sidebar_position: 2
 title: Why this exists
+sidebar_label: Why this exists
 ---
 
 # Why this exists
 
-## A birthday recap I never finished
+My son's birthday was coming up. I had 400 clips in Immich and wanted a recap of his year.
 
-End of December 2025. My son's birthday was coming up and I wanted a recap of his year. I had
-hundreds of clips, all safely in Immich.
+I opened Premiere, imported 40 clips, dragged them onto a timeline and added crossfades. Two hours later I had 90 seconds of mediocre output and 360 clips I hadn't looked at. Never finished it.
 
-I opened Premiere, imported 40 clips, dragged them onto a timeline, added a few crossfades,
-realised I needed music. Two hours later I had 90 seconds of mediocre output and 360 clips I
-hadn't looked at. Never finished it.
+Immich already handled storage and search. I wanted help with the hours between having the clips and having a film I'd show my family.
 
-Storage wasn't the problem (Immich handles that), and neither was finding clips (search works).
-The problem is the 4 to 8 hours between "I have 400 clips" and "here's a 3-minute film I'd show
-my family".
+Immich Memories does that first edit: find the stories, choose their pictures, keep them in order, add titles and music. I review the cut and change the shots I disagree with. There is no editing timeline; there is a contact sheet and a finished film.
 
-## What it does instead
+It works beside Immich on a plain NAS. Extra models are optional. [Make your first film](../get-started/first-film.mdx).
 
-It does the boring part. It connects to Immich read-only, looks at the period I pick and builds
-the film the way I would: find the stories in the period (a birthday, a weekend away, the
-ordinary weeks at home), give the big ones more room, keep the favourites, prefer a video when a
-video carries the moment, and keep everything in the order it happened. Then it renders it with
-titles, a map for a trip, and music.
+## Whose memories?
 
-All of that works on a plain NAS. A GPU describes every picture in the cut and double-checks what
-the family gets to see, and a model on top of it makes the cut better: it reads the draft and swaps
-out the shots that add nothing. [What each one adds](../get-started/what-a-gpu-or-a-model-adds.md).
+I'm a white, middle-aged Belgian man and a father in a heterosexual relationship. I built and tested this through my own view of life. That shapes the assumptions, even when I try to spot them.
 
-I still review what it picked. But I'm reviewing 30 pictures in a storyboard instead of scrolling
-through 400, and when it leaves one out, `runs why` says which rule did it. Every feature traces
-back to one manual step I didn't want to do again: that's why Live Photos get stitched, why a trip
-opens on a map, and why the music ducks under the clips' own sound.
+The goal is to support all families and households. I try to keep the wording inclusive; the behavior needs examples too. The holiday defaults currently reflect Western Europe. They are a starting point, not a rule about what deserves a memory.
 
-If you run Immich, you already decided to own your pictures. This gives you something to do with
-them.
+If your household, relationships or celebrations don't fit, [tell me what should happen](../contribute/development-setup.md#households-and-cultures). Code changes are welcome and appreciated. I'll need examples and help from the people requesting them to check that the result works as intended. You don't need to share private family photos.
 
-## Built with AI, on purpose
+## Built with AI
 
-Claude and Codex write the code; I make the decisions, test the films and debug what breaks. The
-experiment is how far AI can go on a codebase this size while the code stays clean.
+Claude and Codex write most of the code. I decide what a good film is, test the output and debug what breaks. The [disclaimer](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/DISCLAIMER.md) explains the checks and the limits.
 
-So far, guardrails are what make it work. Every PR goes through the gates in the `Makefile` (lint, types,
-complexity, a file length cap (800 lines warns, 1,000 fails), dead code, duplication, architecture boundaries, security scans,
-docs drift) and the build stays red until they pass. They catch real bugs that both models introduce
-with a straight face. The file cap forced a composition-based design with zero mixins, which
-turned out to be the right call anyway.
-
-The judgement calls stay human: what a good film is, which rule is right, when a cut is good
-enough to ship. [DISCLAIMER.md](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/DISCLAIMER.md)
-lists the gates one by one and where the approach fell short. How the product got its shape, and what broke on the way:
-[How this was built](./how-this-was-built.md).
-
-## What it isn't
-
-- **Not a video editor.** You tick and untick pictures and cut again. There is no timeline.
-- **Not a photo manager.** It needs Immich and only reads from it, unless you ask it to upload
-  the film back.
-- **Not instant.** The first cut over a period reads the pictures it can use; that work is
-  banked, so the next cut over the same period is mostly the render.
-- **No mobile app.** A web UI that works in a phone browser, and a CLI.
+[Codebase architecture](../contribute/architecture.md) explains the current parts and how they fit together.

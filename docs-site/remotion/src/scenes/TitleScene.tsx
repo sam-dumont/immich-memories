@@ -70,7 +70,7 @@ export const TitleScene: React.FC = () => {
             style={{
               fontSize: 88,
               fontWeight: 700,
-              color: "white",
+              color: "var(--immich-ui-light)",
               fontFamily,
               opacity: titleOpacity,
               transform: `translateY(${titleY}px)`,
@@ -89,7 +89,7 @@ export const TitleScene: React.FC = () => {
               transform: `translateY(${subY}px)`,
             }}
           >
-            Turn your photo library into cinematic recap videos
+            Turn your Immich photos and videos into memory films.
           </div>
         </div>
       </AbsoluteFill>

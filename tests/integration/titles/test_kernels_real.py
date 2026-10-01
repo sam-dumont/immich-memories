@@ -141,7 +141,7 @@ class TestFinalizeToU8:
         frame[0, 2, :] = 1.0
 
         output = np.zeros((H, W, 3), dtype=np.uint8)
-        kernels._finalize_to_output_u8(frame, output, 255.0)
+        kernels._finalize_to_output(frame, output, 255.0)
 
         assert output[0, 0, 0] == 0, "Black should map to 0"
         assert 126 <= output[0, 1, 0] <= 128, f"Mid-gray mapped to {output[0, 1, 0]}"
@@ -154,7 +154,7 @@ class TestFinalizeToU8:
         frame[0, 1, :] = 1.5
 
         output = np.zeros((H, W, 3), dtype=np.uint8)
-        kernels._finalize_to_output_u8(frame, output, 255.0)
+        kernels._finalize_to_output(frame, output, 255.0)
 
         assert output[0, 0, 0] == 0, "Negative should clamp to 0"
         assert output[0, 1, 0] == 255, "Over-1.0 should clamp to 255"
@@ -175,7 +175,7 @@ class TestGPUBuffers:
         bg = np.full((H, W, 3), 0.6, dtype=np.float32)
         gpu.load_background(bg)
 
-        kernels._finalize_to_output_u8(gpu.frame, gpu.output, 255.0)
+        kernels._finalize_to_output(gpu.frame, gpu.output, 255.0)
         result = gpu.read_output()
 
         assert result.shape == (H, W, 3)

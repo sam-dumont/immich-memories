@@ -203,6 +203,7 @@ def build_title_settings(
         end_date=params.date_end,
         locale=config.title_screens.locale,
         style_mode=config.title_screens.style_mode,
+        fade_color=config.title_screens.fade_color,
         title_duration=config.title_screens.title_duration,
         month_divider_duration=config.title_screens.month_divider_duration,
         ending_duration=config.title_screens.ending_duration,

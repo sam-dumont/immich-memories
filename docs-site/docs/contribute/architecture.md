@@ -3,9 +3,23 @@ title: Architecture
 sidebar_label: Architecture
 ---
 
+import DeploymentDiagram from '@site/src/components/DeploymentDiagram';
+
 # Codebase architecture
 
 How the code is organized and where to make changes.
+
+## Runtime boundaries
+
+The web UI and terminal use the same CLI workflow: **choose a cut → render it → optionally upload it**. A render consumes the chosen cut; it does not choose footage again. The store keeps reusable facts, settings and history; per-attempt records explain the decisions in one cut.
+
+## Data and service boundaries
+
+Explore the deployment and processing phase below. Select a service for its data and runtime responsibilities. These are service boundaries, not a promise about GPU placement.
+
+<DeploymentDiagram chooseTopology />
+
+The text reader can be an app-owned local process or an API server. Captioning is a separate role; explicitly enabling LLM captions sends pictures to that configured model. A render worker additionally receives the chosen cut and Immich key, then fetches originals. Keep these services inside the network boundaries described in [Privacy](../run/privacy.md).
 
 ## Composition over inheritance
 
@@ -35,65 +49,9 @@ answers live in the store (the `db/` package, tables in `db/tables/annotations.p
 [ARCHITECTURE.md](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/ARCHITECTURE.md)
 names every port and the file it lives in, with the full module map.
 
-## CI pipeline
+## Verification
 
-CI runs in tiers, cheap to expensive, and a pull request only runs the jobs its changes can break.
-
-- **Tier 0: change scope and cache setup.** `make ci-scope` (`scripts/ci_scope.py`) sorts the diff
-  into areas and every later job reads the answer in its `if:`. Every job that installs the project
-  waits on the cache setup.
-- **Tier 1: quality gates** (the table below), one job, steps in order, each carrying
-  `if: !cancelled()` so the first failure doesn't hide the rest. Commitlint runs on pull requests
-  only. A second job runs the security scans in parallel.
-- **Tier 2: tests**, after both tier 1 jobs pass. The unit suite (Ubuntu on 3.11/3.12/3.13; macOS on
-  3.13 for a pull request, all three on `main`), plus `make test-extras`. Neither extras job pulls
-  torch, so what runs there is the subset that survives without it; the rest is a local target.
-- **Tier 3: build**, after tests. Package build, and the Docker image on pull requests.
-
-The docs build starts immediately. The hermetic launch check runs on pull requests off the cache
-setup alone, Playwright e2e against a fake Immich: `make launch-check-ci` on SQLite, and
-`make launch-check-ci-postgres` too when the store changed. After the tests, the container e2e job
-builds the image and runs `make test-container` on each backend.
-
-What a pull request runs:
-
-| The diff touches | Runs |
-|---|---|
-| Only docs (`docs-site/`, `docs/`, `*.md`) | Quality, security, the unit suite on one cell, the docs build if `docs-site/` changed |
-| Code (`src/`, `tests/`, `scripts/`) | The above plus the full test matrix, extras, package build, launch check and Immich gate on SQLite |
-| The store (`store/`, `db/`, `tests/store/`, `alembic.ini`) | Plus `make test-store` and the PostgreSQL legs of the launch check, container e2e and Immich gate |
-| The image or its deployment (`docker/`, `docker-compose.yml`, `deploy/`, `services/`, `packages/`) | Plus the Docker builds and container e2e |
-| `pyproject.toml`, `uv.lock`, `Makefile`, a workflow, `tests/conftest.py`, or a path no rule knows | Everything |
-
-The release calls CI through `workflow_call` and always runs everything. `make ci-scope` prints
-what the current branch would run. Branch protection requires `CI Success` and `Immich Gate`, the
-two rollups, so skipping a job or adding a matrix leg never leaves a required check unreported.
-
-`make ci` runs the same gates locally plus the unit tests; the Makefile is the list. CI adds what
-needs a remote or a diff: commitlint, pip-audit, gitleaks, hadolint.
-
-## Quality gates
-
-| Gate | Tool | What it catches |
-|---|---|---|
-| Lint + format | Ruff | Style, import ordering, unused imports |
-| Type check | mypy | Type mismatches, missing annotations |
-| Complexity | Xenon + complexipy | Xenon grade C max, cognitive complexity ≤15 |
-| File length | Makefile script | Over 800 lines warns, over 1000 fails |
-| Dead code | Vulture | Unused functions, variables, imports |
-| Duplication | jscpd | Copy-pasted blocks (≤5%) |
-| Modernization | refurb | Idioms a newer Python replaced |
-| AI smells | `make critique` | Over-structured code, docstrings that restate the signature |
-| Security | Bandit + Semgrep | Common vulnerability patterns |
-| Secrets | Gitleaks | Committed API keys |
-| Dependencies | pip-audit + deptry | Known CVEs; unused, missing or transitive imports |
-| Architecture | import-linter | The core packages (`analysis`, `processing`, `titles`, `people`, `store`, `triage`, `operations`, `free_text`) must not import `cli`, and neither may `audio`. They plus `cache` and `tracking` must not import the web server (`web`). `web` runs the CLI as a child process and never imports it. The inference service in `services/inference` imports neither, and the app never imports it |
-| Compose | `make compose-check` | A `docker-compose.yml` that only parses with the repo beside it |
-| Commits | commitizen | Non-conventional commit messages |
-| Docs | docs-voice, docs-cli-check, docs-config-check, notices-check | Chatbot prose and em dashes; drift between the generated references and the code |
-| Tests | pytest | The unit suite in CI; integration and e2e locally and on the GPU runner |
-
-`docs-voice` and `notices-check` run in `make ci` and the pre-commit hooks, not in the CI job.
+[CI and quality gates](./ci.md) explain which checks run for each kind of diff. [Testing](./testing.md) covers local suites.
 
 ## How to add a feature
 
@@ -126,9 +84,12 @@ needs a remote or a diff: commitlint, pip-audit, gitleaks, hadolint.
 
 ## File naming conventions
 
-- `_prefixed.py`: private helpers for their own package. Nothing enforces that, and one cross-package import has leaked in (`generate_privacy.py` reaching into `titles._trip_titles`)
+- `_prefixed.py`: private helpers for their own package. Keep imports inside the owning package; public package entry points expose shared behavior
 - `*_service.py`: composed service classes
 - `*_models.py`: data models (Pydantic or dataclass)
 - `*_helpers.py`: standalone helper functions
 - `*.py` (no prefix): public modules and standalone classes. Re-export shims belong in
   `__init__.py` and nowhere else
+
+<span id="ci-pipeline"></span>
+<span id="quality-gates"></span>

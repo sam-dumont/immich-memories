@@ -263,19 +263,23 @@ def run_nsfw_marqo(stage: Stage, previews: Sequence[Preview], options: argparse.
         from immich_memories.analysis.editorial_preparation_detectors import Marqo
     except ImportError as exc:
         raise Unavailable(f"detector dependencies missing: {exc}")
+    if not options.marqo_onnx:
+        raise Unavailable(
+            "no --marqo-onnx pinned export given; use the configured production model"
+        )
     try:
         started = time.perf_counter()
-        detector = Marqo(allow_downloads=options.allow_downloads, cache_dir=options.detector_cache)
+        detector = Marqo(
+            model_path=Path(options.marqo_onnx).expanduser(), provider=options.provider
+        )
     except Exception as exc:
         raise Unavailable(f"{type(exc).__name__}: {exc}")
     stage.load_seconds = time.perf_counter() - started
-    # The producer hardcodes six threads; this is the only lever a benchmark has.
-    detector.torch.set_num_threads(options.torch_threads)
     images = pil_images(previews)
     for chunk in batches(images, options.batch_size):
         with timed(stage.samples, len(chunk)):
             detector.batch(list(chunk))
-    stage.note = f"timm torch, {options.torch_threads} threads, batch {options.batch_size}"
+    stage.note = f"production ONNX, {options.provider}, batch {options.batch_size}"
 
 
 def run_nsfw_marqo_onnx(

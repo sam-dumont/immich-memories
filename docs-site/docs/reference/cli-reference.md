@@ -223,20 +223,17 @@ catalogue is a memory nobody asked for (five years to the day since
 the wedding), and that needs the days found in advance.
 
 Days inside a trip are skipped, since a trip memory already tells that
-story, and so are holidays, which have their own. With no model
-configured, a day counts when one recorded fact stands out (away from
+story, and so are holidays, which have their own. On NAS and GPU tiers, a day counts when one recorded fact stands out (away from
 home, three favourites, mostly video, or a long day with close family)
-and each year keeps its strongest few. With a model, every other day
+and each year keeps its strongest few. On Full tier, every other day
 is read a month at a time and the model says which were occasions.
 
 Resumes by default: years already in the catalogue are not scanned
 again, which matters for a command that runs for hours. --rescan
 starts over.
 
-A catalogue that accumulated over several releases holds rows judged by
-questions this build no longer asks. --replace re-scans the years
-between --since and --until and replaces what they hold, so a period
-can be cleaned without editing JSON by hand. It says how many rows it
+--replace re-scans the years between --since and --until and replaces
+their catalogue rows with the newly qualifying days. It says how many rows it
 will replace before it starts, and it never touches a year outside the
 period.
 
@@ -306,11 +303,12 @@ immich-memories generate [OPTIONS]
 | `--short-form` | choice: `15` \| `30` \| `60` \| `90` | - | Short-form preset: sets the duration and makes the video vertical |
 | `--orientation` | choice: `landscape` \| `portrait` \| `square` \| `auto` | auto | Output orientation (auto follows the final selected cut) |
 | `--scale-mode`, `-s` | choice: `fit` \| `blur` | - | How to fill an aspect mismatch: blurred background or black bars (default: from config, else blur) |
+| `--fade-color` | choice: `white` \| `black` | - | Opening and closing title fade (default: title_screens.fade_color) |
 | `--transition`, `-t` | choice: `smart` \| `cut` \| `crossfade` \| `none` | smart | Transition style (default: smart, a mix of fades and cuts) |
 | `--resolution`, `-r` | choice: `auto` \| `4k` \| `1080p` \| `720p` | - | Output resolution (default: config value, 'auto' to match source clips) |
 | `--music-volume` | float | 0.5 | Music volume 0.0-1.0 (default: 0.5) |
 | `--format` | choice: `mp4` \| `h265` \| `prores` | - | Output format override (default: config value) |
-| `--quality`, `-q` | choice: `high` \| `medium` \| `low` | - | Output quality (default: from config, typically high) |
+| `--quality`, `-q` | choice: `high` \| `medium` \| `low` | - | Output quality (default: from config, typically balanced; medium selects balanced) |
 | `--output`, `-o`, `-O` | path | - | Output file path. The run writes it inside its own directory and adds a recipe hash to the name, so an identical rerun replaces itself |
 | `--music`, `-m` | text | - | Music: path to audio file, 'auto' to generate from config, or omit for default behavior |
 | `--no-music` | boolean | false | Disable all music (skip both provided files and AI generation) |
@@ -493,6 +491,41 @@ Saved people expressions `generate --group` can reuse.
 immich-memories people group [OPTIONS]
 ```
 
+#### `people group add`
+
+Save EXPRESSION under LABEL, in the --people-expression grammar.
+
+EXPRESSION's leaves are canonical person ids : the ids `people show`
+lists : not names, e.g. ("id-alex" OR "id-sam") AND "id-kit". LABEL
+must not already be in use.
+
+```bash
+immich-memories people group add [OPTIONS]
+```
+
+**Arguments:**
+- `label` (text)
+- `expression` (text)
+
+#### `people group list`
+
+List every saved group and its expression.
+
+```bash
+immich-memories people group list [OPTIONS]
+```
+
+#### `people group rm`
+
+Remove a saved group. Never touches the people it names.
+
+```bash
+immich-memories people group rm [OPTIONS]
+```
+
+**Arguments:**
+- `label` (text)
+
 ### `people import`
 
 Replace the people registry with a YAML file, keeping every id as written.
@@ -637,14 +670,14 @@ immich-memories preflight [OPTIONS]
 
 Prepare a scope's annotations, print what each producer cost, and stop.
 
-```text
-No selection and no render happen. Preparation is banked per picture, so
-a scope prepared today is free for every later cut:
+```bash
+# No selection and no render happen. Preparation is banked per picture, so
+# a scope prepared today is free for every later cut:
   immich-memories prepare --year 2024 --month 6
   immich-memories prepare --start 2024-01-01 --period 1y
-
---overviews goes one step further and banks what each month was about,
-which a cut of that month then reads instead of working it out again:
+#
+# --overviews goes one step further and banks what each month was about,
+# which a cut of that month then reads instead of working it out again:
   immich-memories prepare --year 2024 --month 6 --overviews
 ```
 
@@ -697,12 +730,12 @@ Delete a run and optionally its output files.
 
 Examples:
 
-```text
+```bash
 # Delete run and its output
 immich-memories runs delete 20260105_143052_a7b3
 ```
 
-```text
+```bash
 # Delete run but keep the video
 immich-memories runs delete 20260105_143052_a7b3 --keep-output
 ```
@@ -725,17 +758,17 @@ List recent pipeline runs.
 
 Examples:
 
-```text
+```bash
 # List recent runs
 immich-memories runs list
 ```
 
-```text
+```bash
 # Filter by person
 immich-memories runs list --person "John"
 ```
 
-```text
+```bash
 # Show only failed runs
 immich-memories runs list --status failed
 ```
@@ -768,6 +801,7 @@ immich-memories runs render [OPTIONS]
 | `--subtitle` | text | - | Title card subtitle |
 | `--llm-title` | boolean | - | Let the model name the film |
 | `--transition` | choice: `smart` \| `crossfade` \| `cut` \| `none` | - |  |
+| `--fade-color` | choice: `white` \| `black` | - | Opening and closing title fade (default: title_screens.fade_color) |
 | `--resolution` | text | - | Output resolution, as generate takes it |
 | `--orientation` | text | - | landscape, portrait, square or auto |
 | `--scale-mode` | text | - | How sources fit the canvas |
@@ -900,6 +934,49 @@ Inspect detector compatibility and plan selective refreshes.
 immich-memories store facts [OPTIONS]
 ```
 
+#### `store facts migrate`
+
+Carry compatible Marqo still facts forward without inference; keep old versions.
+
+```bash
+immich-memories store facts migrate [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--apply` | boolean | false | Apply the compatible migration; default only reports it |
+| `--json` | boolean | false | Print the migration report as JSON |
+
+#### `store facts refresh`
+
+Plan a selective detector refresh; --apply removes only those facts, all versions.
+
+Stop preparation workers first. Run prepare for the affected scope afterwards.
+Captions, pixel measurements, other detectors and owner decisions stay banked.
+
+```bash
+immich-memories store facts refresh [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--head` | text | - | Detector to refresh; repeat for multiple heads |
+| `--asset` | text | - | Asset ID to refresh; repeat for multiple assets |
+| `--apply` | boolean | false | Forget the selected facts; default only reports them |
+| `--json` | boolean | false | Print the selected refresh as JSON |
+
+#### `store facts status`
+
+Show banked producer versions; an app upgrade alone does not invalidate them.
+
+```bash
+immich-memories store facts status [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--json` | boolean | false | Print machine-readable compatibility counts |
+
 ### `store import`
 
 Bring the files the app used before the store into it.
@@ -975,27 +1052,27 @@ Generate a test title screen to preview styles.
 
 Examples:
 
-```text
+```bash
 # Simple year title
 immich-memories titles test --year 2024
 ```
 
-```text
+```bash
 # Birthday title with person name
 immich-memories titles test --birthday-age 1 --person "Emma"
 ```
 
-```text
+```bash
 # Month divider
 immich-memories titles test --month 6 --year 2024 --type month
 ```
 
-```text
+```bash
 # Portrait orientation (for social media)
 immich-memories titles test --year 2024 --orientation portrait
 ```
 
-```text
+```bash
 # French locale with specific style
 immich-memories titles test --year 2024 --locale fr --style vintage_charm
 ```
