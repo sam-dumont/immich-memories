@@ -204,3 +204,21 @@ def test_only_scripts_that_join_reorder_or_cluster_need_shaping(text, needs):
     from immich_memories.titles.font_chain import needs_shaping
 
     assert needs_shaping(text) is needs
+
+
+def test_a_grouped_map_stop_draws_its_route_arrow_without_installed_fonts() -> None:
+    from immich_memories.titles.font_chain import face_covers
+    from immich_memories.titles.map_renderer import _get_font
+    from immich_memories.titles.trip_stops import group_trip_stops
+
+    stops = group_trip_stops(
+        [(48.86, 2.35), (48.87, 2.36), (48.88, 2.37)],
+        ["Oldtown", "Midtown", "Newtown"],
+    )
+    label = stops[0].name
+    assert label == "Oldtown → Newtown"
+    font = cast(ImageFont.FreeTypeFont, _get_font(48, bold=True))
+    runs = text_runs(label, font.path, bold=True)
+
+    assert all(face_covers(run.face, run.text) for run in runs)
+    assert not np.array_equal(_mask(font, "→"), _mask(font, ""))

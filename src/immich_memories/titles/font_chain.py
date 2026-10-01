@@ -35,6 +35,7 @@ _NOTO_CORE = {
     False: BUNDLED_FONTS_DIR / "noto-sans" / "core-400-normal.ttf",
     True: BUNDLED_FONTS_DIR / "noto-sans" / "core-700-normal.ttf",
 }
+_NOTO_ROUTE_ARROW = BUNDLED_FONTS_DIR / "noto-sans-symbols" / "route-arrow.ttf"
 # Fontsource cuts a family into subsets; the extra ones sit next to latin-<w>.
 _SIBLING_SUBSETS = ("latin-ext", "vietnamese")
 _RTL_CLASSES = frozenset({"R", "AL"})
@@ -130,7 +131,12 @@ def _cjk_index(text: str) -> int:
 
 
 def _chain(primary: str, bold: bool, text: str) -> tuple[_Face, ...]:
-    faces = [_Face(primary), *_sibling_subsets(Path(primary)), _Face(str(_NOTO_CORE[bold]))]
+    faces = [
+        _Face(primary),
+        *_sibling_subsets(Path(primary)),
+        _Face(str(_NOTO_CORE[bold])),
+        _Face(str(_NOTO_ROUTE_ARROW)),
+    ]
     for path in installed_script_fonts(bold=bold):
         index = _cjk_index(text) if path.suffix == ".ttc" else 0
         faces.append(_Face(str(path), index))

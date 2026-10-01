@@ -148,3 +148,106 @@ def test_the_held_stops_sit_clear_of_the_trip_title_in_portrait(tmp_path) -> Non
     # A portrait title sits in the middle, its band from about 37 % down.
     assert rows[-1] < 0.37 * 320
     assert rows[0] >= 27
+
+
+class _DiscardPipe:
+    def __init__(self) -> None:
+        self.stdin = self
+        self.stderr = None
+        self.returncode = 0
+
+    def write(self, data: bytes) -> int:
+        return len(data)
+
+    def close(self) -> None:
+        pass
+
+    def wait(self) -> int:
+        return 0
+
+
+def _camera_path(tmp_path: Path, origin, destination, width: int, height: int, stops=None):
+    from immich_memories.titles.map_animation import create_map_fly_video, create_map_move_video
+
+    cameras = []
+
+    def tiles(lat, lon, zoom, w, h):
+        cameras.append((lat, lon, width / 2**zoom))
+        return Image.new("RGB", (w, h), (40, 50, 60))
+
+    with (
+        # WHY: capture geographic framing at the external tile fetch boundary.
+        patch("immich_memories.titles.map_animation._render_satellite", tiles),
+        # WHY: geometric tests inspect every frame request without encoding a large movie.
+        patch("immich_memories.titles.map_animation.subprocess.Popen", return_value=_DiscardPipe()),
+        # WHY: the stderr reader requires a real encoder pipe.
+        patch("immich_memories.titles.map_animation.StderrDrain"),
+    ):
+        if stops is None:
+            create_map_move_video(
+                origin, destination, "Newtown", tmp_path / "camera.mp4", 6.0, width, height, 1.0
+            )
+        else:
+            create_map_fly_video(
+                origin,
+                stops,
+                "A WEEK AWAY",
+                tmp_path / "camera.mp4",
+                width,
+                height,
+                duration=6.0,
+                fps=1.0,
+                destination_names=["Firsttown", "Lasttown"],
+            )
+    return cameras
+
+
+def test_a_city_flight_is_close_at_both_ends_and_keeps_its_geography_at_4k(tmp_path):
+    import pytest
+
+    origin, destination = (50.85, 4.35), (48.86, 2.35)
+    hd = _camera_path(tmp_path, origin, destination, 1920, 1080)
+    uhd = _camera_path(tmp_path, origin, destination, 3840, 2160)
+
+    assert hd[0][:2] == pytest.approx(origin)
+    assert hd[-1][:2] == pytest.approx(destination)
+    assert hd[0][2] == pytest.approx(1920 / 2**14)
+    assert hd[-1][2] == pytest.approx(1920 / 2**14)
+    assert max(view[2] for view in hd) > hd[0][2] * 2
+    assert len(hd) == len(uhd)
+    for lower, higher in zip(hd, uhd, strict=True):
+        assert higher == pytest.approx(lower)
+
+
+def test_the_intro_lands_close_to_its_first_stop_not_future_stops(tmp_path):
+    import pytest
+
+    from immich_memories.titles.map_animation import _geo_to_screen
+
+    origin, paris, brest = (50.85, 4.35), (48.86, 2.35), (48.39, -4.49)
+    cameras = _camera_path(tmp_path, origin, paris, 1920, 1080, [paris, brest])
+
+    assert cameras[0][:2] == pytest.approx(origin)
+    lat, lon, span = cameras[-1]
+    assert span == pytest.approx(1920 / 2**14)
+    sx, sy = _geo_to_screen(*paris, lat, lon, 14, 1920, 1080)
+    assert 0.3 * 1920 < sx < 0.7 * 1920
+    assert 0.12 * 1080 < sy < 0.6 * 1080
+
+
+def test_stationary_and_nearby_towns_stay_finite_and_portrait_stays_close(tmp_path):
+    import math
+
+    import pytest
+
+    origin = (50.85, 4.35)
+    for destination in [origin, (50.851, 4.352)]:
+        landscape = _camera_path(tmp_path, origin, destination, 1920, 1080)
+        portrait = _camera_path(tmp_path, origin, destination, 1080, 1920)
+        assert portrait[0][:2] == pytest.approx(origin)
+        assert portrait[-1][:2] == pytest.approx(destination)
+        for view in portrait:
+            assert all(math.isfinite(value) for value in view)
+            assert view[2] == pytest.approx(1080 / 2**14)
+        for view in landscape:
+            assert view[2] == pytest.approx(1920 / 2**14)

@@ -189,6 +189,10 @@ Noto Sans         The Noto Project Authors    https://github.com/notofonts/latin
 Originally obtained through Fontsource (https://fontsource.org/, MIT). Nothing
 is downloaded while a film renders.
 
+Noto Sans Symbols The Noto Project Authors    https://github.com/notofonts/symbols
+                  (U+2192 only, cut with fontTools from the same notofonts.github.io
+                  commit e0ad9f16; the bundled route-arrow fallback)
+
 Noto script fonts (downloaded by `immich-memories titles fonts --install`, and
 at build time into the Docker image, every file SHA-256-pinned)
   Role: the letters of every script the bundled fonts lack: Arabic, Hebrew,

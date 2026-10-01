@@ -709,7 +709,7 @@ src/immich_memories/
 │   ├── kernel_video.py         # GPU title video creation
 │   ├── ffmpeg_pipe.py          # Feed raw frames to FFmpeg without deadlocking on an unread stderr
 │   ├── safe_zones.py           # Keep vertical titles clear of the Reels/Shorts/TikTok button rail
-│   ├── map_animation.py        # Satellite map fly-over and location-card flights (van Wijk zoom)
+│   ├── map_animation.py        # Home-to-first-stop and previous-to-next flights (van Wijk zoom, resolution-independent city framing)
 │   ├── trip_stops.py           # group_trip_stops(): intro pins grouped within 25 km, every pin named
 │   ├── map_renderer.py         # Map tile rendering (staticmap + PIL overlay)
 │   ├── backgrounds.py          # Background generation
