@@ -14,9 +14,13 @@ make demo-output-trip
 make demo-cli
 make demo-ui
 make demo-hero
+make demo-ui DEMO_THEME=dark
+make demo-hero DEMO_THEME=dark
 ```
 
-The trip preview needs the network for map tiles and place naming. The other demo media use the public fixture. The README’s hosted hero updates when the docs site deploys.
+The trip preview needs the network for map tiles and place naming. The other demo media use the public fixture. The README’s hosted hero updates when the docs site deploys. The homepage selects matching light/dark screenshots, hero animation and walkthrough video. Finished films have no UI theme and use one shared preview.
+
+The docs use the app’s pinned `@immich/ui` theme tokens. After updating that package in both projects, run `npm --prefix docs-site run ui-theme`; the docs build checks for token drift.
 
 ## Fixture and asset contracts
 

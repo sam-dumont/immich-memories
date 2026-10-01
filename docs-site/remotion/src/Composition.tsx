@@ -47,7 +47,7 @@ const D = {
   output: 165, // 5.5s — the film it made, ending on its last picture, full bleed
 };
 
-export const DemoVideo: React.FC = () => {
+export const DemoVideo: React.FC<{theme: "light" | "dark"}> = ({theme}) => {
   const frame = useCurrentFrame();
   const bass = useBassIntensity(frame);
 
@@ -59,7 +59,7 @@ export const DemoVideo: React.FC = () => {
     });
 
   return (
-    <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
+    <AbsoluteFill data-theme={theme} style={{ backgroundColor: COLORS.bg }}>
       <Audio src={staticFile("demo-music.wav")} volume={musicVolume} />
 
       <TransitionSeries>

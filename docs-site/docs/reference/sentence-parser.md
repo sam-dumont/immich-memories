@@ -54,7 +54,7 @@ flowchart TD
 2. **Who.** Grammar and your people registry, no model:
    - "I", "me" and "my" are you, used for your age and your homes, never as a face in the photo
      (you are usually the one holding the phone: "the cars I drove" has no face in it).
-   - "We" and "our" are you and your partner.
+   - The parser currently interprets "we" and "our" as you and the people whose registered role resolves to partner. It does not treat those words as the whole household; name the people explicitly when you mean a different group.
    - A name or a role from your people registry ("my son", a first name) means that face, as Immich
      recognised it.
    - A plural word for people ("friends", "kids") asks for company: a caption naming people, or

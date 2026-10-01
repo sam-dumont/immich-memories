@@ -16,9 +16,9 @@ active months is four events; the same 160 over forty months is part of your lif
 | `episodic` | everything that is not one of the other three |
 | `event` | four active months or fewer at twenty-plus pictures each: a burst |
 
-The scan also flags tight pairs (two people who are each a quarter or more of each other's pictures), twins
+The scan also flags tight pairs (two people who are each a quarter or more of each other's pictures), possible twins
 (same family name and birth date, marked `counts_reliable: false` because face recognition merges them) and one
-name on two person records. You are behind the camera, so pairs with you are read from month curves, not shared
+name on two person records. These are metadata-based suggestions, not confirmed relationships; different surnames or missing dates can leave relationships undiscovered. You are behind the camera, so pairs with you are read from month curves, not shared
 frames. The owner comes from `--owner` or `IMMICH_MEMORIES_OWNER` (`identified: told`), else your Immich account
 name (`account`), else the longest-running person (`inferred`: check it).
 
@@ -102,5 +102,5 @@ nothing reads it back.
 
 It is the same registry as the **People** page in the web UI. The roles you confirm there decide who counts as close
 family, and selection reads that on every tier: the family seat, the big-story rule, and the relations a model
-sees. Setting it up is on [Teach it your family](../get-started/who-is-who.md); how selection uses it is on
+sees. Setting it up is on [Home and people](../get-started/who-is-who.md); how selection uses it is on
 [Family, audience and duplicates](../how-it-chooses/family-audience-duplicates.md).

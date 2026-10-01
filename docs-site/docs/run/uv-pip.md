@@ -53,7 +53,7 @@ immich-memories ui
 
 Open [http://localhost:8080](http://localhost:8080) and make [your first film](../get-started/first-film.mdx).
 Films default to `~/Videos/Memories`. Set home coordinates for trips and public holidays:
-[Teach it your family](../get-started/who-is-who.md).
+[Home and people](../get-started/who-is-who.md).
 
 ## Reaching the UI from another machine
 

@@ -39,7 +39,7 @@ flowchart TD
 
 "Away" is more than 10 km from `trips.homebase_latitude` / `homebase_longitude`. Without a home base
 nothing is away, so a three-week holiday arrives as three weekly stories. Setting it is step one of
-[Teach it your family](../../get-started/who-is-who.md).
+[Home and people](../../get-started/who-is-who.md).
 
 **A trip that changes where it stays is two stories.** A week hiking village to village and then four
 days in a city are two chapters. As one story, the hike's favourites took every slot and the city got
@@ -103,9 +103,9 @@ remarkable seeds `minor`, maybe seeds `glimpse`, background gets `none`. Then th
   `advanced.editorial.people.big_story_density`, 2.0 by default, times the period's median
   photographed day, in pictures per day) **and** mostly close family (at least
   `big_story_family_share`, 0.3, of its pictures show a partner, child or parent). Density alone
-  never does it: a race day full of strangers has the pictures and not the people.
+  never does it: a race day with no confirmed close-family members does not meet the people condition.
 - **Present** stories (remarkable, or holding a favourite, or close family) are floored at `minor`.
-- **Strangers only**: when the film knows people at all, a story with nobody known in it, no
+- **No recognised people**: when the film knows people at all, a story with no recognised person in it, no
   favourite and nothing remarkable is capped at `glimpse`.
 - **One moment** and nothing that makes it present: capped at `minor`.
 

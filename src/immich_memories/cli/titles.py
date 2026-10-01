@@ -229,6 +229,7 @@ def register_titles_commands(main: click.Group) -> None:
         # Create config
         config = TitleScreenConfig(
             locale=locale,
+            fade_color=ctx.obj["config"].title_screens.fade_color,
             orientation=orientation,
             resolution=resolution,
             style_mode=style if style != "random" else "random",

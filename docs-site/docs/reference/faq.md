@@ -32,7 +32,7 @@ and a text model can refine the draft
 **Do I need face recognition?**
 
 No. Without a person, a period covers everyone. Named faces make people films possible and let it keep close
-family in the film ([Teach it your family](../get-started/who-is-who.md)).
+family in the film ([Home and people](../get-started/who-is-who.md)).
 
 **iPhone only?**
 
@@ -67,7 +67,7 @@ Yes, one a day at most: [Automate it](../make/automate.md).
 **Several people on one Immich server?**
 
 The web UI is single-user, single-replica: one Immich API key, one library. Run one instance per library.
-A couple whose phones upload to two accounts can still get one film from both: add the second account under
+People whose pictures use separate accounts can still get one people film from both: add the second account under
 `immich.accounts` and run `generate --accounts primary,partner` on the CLI
 ([A second Immich account](../run/multi-account.mdx)); `automation.accounts` does the same for the daily
 run, and **Immich accounts to read** on the web UI's New memory page for a film made there.

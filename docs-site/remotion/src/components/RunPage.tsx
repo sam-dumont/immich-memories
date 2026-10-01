@@ -990,7 +990,7 @@ export const EditBar: React.FC<{
       border: `1px solid ${UI.gray200}`,
       borderRadius: 16,
       padding: 12,
-      background: "rgba(255,255,255,0.95)",
+      background: `color-mix(in srgb, ${UI.light} 95%, transparent)`,
       boxShadow:
         "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
     }}

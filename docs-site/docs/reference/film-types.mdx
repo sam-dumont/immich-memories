@@ -24,7 +24,7 @@ install uses Immich metadata and the locally prepared picture facts (dates, plac
 | `special_day` | one day the library says something happened on | 30 s + 6 s an active hour | nothing, or the `discover-days` catalogue |
 
 Two setup steps make every type better, not only trips: a home base, so the editor can tell a week
-away from a week at home, and who's who, so it knows your family from the neighbours. Set them in [Teach it your family](../get-started/who-is-who.md).
+away from a week at home, and who's who, so it knows which people to prioritise. Set them in [Home and people](../get-started/who-is-who.md).
 
 ## How long a film runs
 
@@ -194,9 +194,9 @@ The holidays follow the country your home base is in (`trips.homebase_latitude` 
 `trips.homebase_longitude`); Immich's own geodata says which country that is, so nothing leaves your
 server. Each country's public holidays come from the [`holidays`](https://github.com/vacanza/holidays)
 library, and `--holiday` accepts their names too (`--holiday "ascension day"` in Belgium). Without a
-home base the US holidays apply, as they always did.
+home base the US calendar applies. These defaults do not describe what every household celebrates.
 
-A few family days no public calendar lists are added on top: Valentine's Day, Halloween, Christmas
+Additional observances are added on top: Valentine's Day, Halloween, Christmas
 Eve, New Year's Eve, and Mother's and Father's Day, which move by country:
 
 | Country | Mother's Day | Father's Day |
@@ -211,9 +211,7 @@ Eve, New Year's Eve, and Mother's and Father's Day, which move by country:
 | `AU`, `NZ` | second Sunday of May | first Sunday of September |
 | `MX` | 10 May | third Sunday of June |
 
-Only national holidays are read: a holiday kept in one region (a German state, a Canadian province)
-is not. A holiday only some families keep, like Eid, is not a public holiday in most countries and
-is not in their calendar; give its date as `MM-DD`.
+Only national holidays are read; regional calendars are not included. For an observance missing from the calendar, use its date as `MM-DD` with `--year` for a single year. A recurring `MM-DD` repeats the Gregorian date; it does not calculate lunar or other moving observances.
 
 **Something missing?** A public holiday belongs in the `holidays` library upstream. A family day, or a
 country whose Mother's or Father's Day differs: open a pull request against

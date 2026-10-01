@@ -160,7 +160,7 @@ Three more flags carry the serving contract:
 | Flag | Leave it out and |
 |---|---|
 | `--alias smolvlm2-500m-base-public` | the server advertises the GGUF path instead, and preflight says the endpoint serves another model |
-| `--mmproj …` | the model loads and answers, but it is blind: the control tiles fail and no library picture is sent |
+| `--mmproj …` | the model loads and answers, but cannot interpret images: the control tiles fail and no library picture is sent |
 | `--port 8092` | nothing answers where the app looks, and the row reads unreachable |
 
 Use local model and projector files with the pinned runtime. Validate `/models` and the synthetic

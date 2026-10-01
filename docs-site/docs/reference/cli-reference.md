@@ -303,6 +303,7 @@ immich-memories generate [OPTIONS]
 | `--short-form` | choice: `15` \| `30` \| `60` \| `90` | - | Short-form preset: sets the duration and makes the video vertical |
 | `--orientation` | choice: `landscape` \| `portrait` \| `square` \| `auto` | auto | Output orientation (auto follows the final selected cut) |
 | `--scale-mode`, `-s` | choice: `fit` \| `blur` | - | How to fill an aspect mismatch: blurred background or black bars (default: from config, else blur) |
+| `--fade-color` | choice: `white` \| `black` | - | Opening and closing title fade (default: title_screens.fade_color) |
 | `--transition`, `-t` | choice: `smart` \| `cut` \| `crossfade` \| `none` | smart | Transition style (default: smart, a mix of fades and cuts) |
 | `--resolution`, `-r` | choice: `auto` \| `4k` \| `1080p` \| `720p` | - | Output resolution (default: config value, 'auto' to match source clips) |
 | `--music-volume` | float | 0.5 | Music volume 0.0-1.0 (default: 0.5) |
@@ -800,6 +801,7 @@ immich-memories runs render [OPTIONS]
 | `--subtitle` | text | - | Title card subtitle |
 | `--llm-title` | boolean | - | Let the model name the film |
 | `--transition` | choice: `smart` \| `crossfade` \| `cut` \| `none` | - |  |
+| `--fade-color` | choice: `white` \| `black` | - | Opening and closing title fade (default: title_screens.fade_color) |
 | `--resolution` | text | - | Output resolution, as generate takes it |
 | `--orientation` | text | - | landscape, portrait, square or auto |
 | `--scale-mode` | text | - | How sources fit the canvas |

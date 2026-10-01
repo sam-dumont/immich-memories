@@ -57,6 +57,7 @@ levels, with **no `ADVANCED` prefix**, even for YAML sections under `advanced:`.
 
 ```ini
 IMMICH_MEMORIES_OUTPUT__RESOLUTION=1080p
+IMMICH_MEMORIES_TITLE_SCREENS__FADE_COLOR=black
 IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL=http://captioner:8092/v1
 ```
 

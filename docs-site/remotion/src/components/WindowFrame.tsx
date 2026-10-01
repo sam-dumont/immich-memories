@@ -119,8 +119,8 @@ export const WindowFrame: React.FC<Props> = ({
       <div
         style={{
           height: TITLE_H,
-          backgroundColor: "#e7e7ea",
-          borderBottom: "1px solid #d4d4d8",
+          backgroundColor: UI.gray200,
+          borderBottom: `1px solid ${UI.gray300}`,
           display: "flex",
           alignItems: "center",
           paddingLeft: 14,
@@ -143,12 +143,12 @@ export const WindowFrame: React.FC<Props> = ({
               width: 520,
               height: 24,
               borderRadius: 7,
-              background: "#f6f6f7",
+              background: UI.gray100,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontSize: 12,
-              color: "#52525b",
+              color: UI.gray600,
             }}
           >
             localhost:8099{path}

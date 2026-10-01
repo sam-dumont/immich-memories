@@ -60,6 +60,7 @@ class TitleScreenConfig:
 
     # Visual style
     style_mode: str = "auto"  # "auto", "random", or specific style name
+    fade_color: str = "white"
     animated_background: bool = True  # Enable animated backgrounds by default
 
     # Performance
@@ -123,7 +124,7 @@ class TitleScreenGenerator:
 
     Composes 3 services via constructor injection:
     - RenderingService: GPU/CPU renderer selection and video creation
-    - EndingService: fade-to-white ending video generation
+    - EndingService: solid-color ending video generation
     - TripService: trip map screens and location cards
 
     Attributes:
@@ -415,12 +416,12 @@ class TitleScreenGenerator:
         content_clip_path: Path | None = None,
         frame_progress: Callable[[int, int], None] | None = None,
     ) -> GeneratedScreen:
-        """Generate the ending screen — reverse slow-mo blur + fade to white."""
+        """Generate the ending screen — reverse slow-mo blur and the configured edge fade."""
         output_path = self.output_dir / f"ending_screen{self.config.output_suffix}"
         width, height = self.config.output_resolution
 
         if content_clip_path and self.style.background_type == "content_backed":
-            # Reverse slow-mo: sharp→blur, then fade to white
+            # Reverse slow-mo: sharp→blur, then fade to the configured edge color
             logger.info(f"Using reverse slow-mo ending from {content_clip_path.name}")
             self._rendering.create_title_video(
                 title="",
@@ -440,7 +441,7 @@ class TitleScreenGenerator:
         else:
             self._ending.create_ending_video(
                 output_path=output_path,
-                fade_to_color=(255, 255, 255),
+                fade_to_color=(0, 0, 0) if self.config.fade_color == "black" else (255, 255, 255),
                 width=width,
                 height=height,
                 duration=self.config.ending_duration,

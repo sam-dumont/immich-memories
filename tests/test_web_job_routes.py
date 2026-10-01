@@ -281,3 +281,15 @@ def test_invalid_job_ids_are_missing_jobs_in_every_endpoint(client):
         assert client.get(f"/api/v1/jobs/invalid{suffix}").status_code == 404
     assert client.post("/api/v1/jobs/invalid/cancel").status_code == 404
     assert client.get("/api/v1/ask/preview/invalid").status_code == 404
+
+
+def test_render_fade_override_is_validated_and_becomes_a_cli_flag():
+    import pytest
+    from pydantic import ValidationError
+
+    from immich_memories.web.job_routes import RenderOptions
+
+    assert "--fade-color=black" in RenderOptions(fade_color="black").flags()
+    assert not any("fade-color" in flag for flag in RenderOptions().flags())
+    with pytest.raises(ValidationError):
+        RenderOptions(fade_color="blue")

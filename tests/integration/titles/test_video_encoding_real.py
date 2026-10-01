@@ -133,3 +133,24 @@ class TestOutputResolution:
         stream = ffprobe_stream(out)
         assert int(stream["width"]) == w
         assert int(stream["height"]) == h
+
+
+def test_pil_video_uses_black_at_both_film_edges(tmp_path: Path):
+    output = tmp_path / "black-pil.mp4"
+    create_title_video(
+        "Memory",
+        None,
+        _STYLE,
+        output,
+        width=320,
+        height=180,
+        duration=3.0,
+        fps=10,
+        animated_background=False,
+        fade_from_white=True,
+        fade_to_white=True,
+        fade_color="black",
+    )
+    assert extract_frame_rgb(output, 0, 320, 180).mean() < 5
+    assert extract_frame_rgb(output, 12, 320, 180).max() > 100
+    assert extract_frame_rgb(output, 29, 320, 180).mean() < 15

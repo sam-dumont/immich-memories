@@ -134,3 +134,65 @@ def test_cpu_title_keeps_hdr_transfer_and_ten_bit_pixels(tmp_path: Path, transfe
     assert stream["color_primaries"] == "bt2020"
     assert stream["color_transfer"] == ("arib-std-b67" if transfer == "hlg" else "smpte2084")
     assert extract_frame_rgb(output, 10, 320, 180).std() > 5
+
+
+def test_cpu_black_fades_preserve_content_between_film_edges(tmp_path: Path):
+    service = RenderingService(TitleScreenConfig(use_gpu_rendering=False, fade_color="black"))
+    output = tmp_path / "black-edges.mp4"
+    service.create_title_video(
+        "Summer",
+        None,
+        TitleStyle(name="cpu"),
+        output,
+        width=320,
+        height=180,
+        duration=3.0,
+        fps=10,
+        animated_background=False,
+        fade_from_white=True,
+        fade_to_white=True,
+        background_image=np.full((180, 320, 3), 0.6, dtype=np.float32),
+    )
+    first = extract_frame_rgb(output, 0, 320, 180)
+    middle = extract_frame_rgb(output, 12, 320, 180)
+    last = extract_frame_rgb(output, 29, 320, 180)
+    assert first.mean() < 5
+    assert middle.mean() > 100
+    assert last.mean() < 15
+    assert has_audio_stream(output)
+
+
+def test_generator_black_ending_uses_selected_global_color(tmp_path: Path):
+    from immich_memories.titles.generator import TitleScreenGenerator
+
+    generator = TitleScreenGenerator(
+        config=TitleScreenConfig(
+            use_gpu_rendering=False,
+            fade_color="black",
+            resolution_width=320,
+            resolution_height=180,
+            ending_duration=3.0,
+            fps=10,
+        ),
+        style=TitleStyle(name="ending"),
+        output_dir=tmp_path,
+    )
+    ending = generator.generate_ending_screen()
+    assert extract_frame_rgb(ending.path, 29, 320, 180).mean() < 15
+
+
+def test_cpu_map_opening_uses_configured_black_fade(tmp_path: Path):
+    service = RenderingService(TitleScreenConfig(use_gpu_rendering=False, fade_color="black"))
+    output = tmp_path / "black-map-opening.mp4"
+    service.create_map_video(
+        "Summer trip",
+        None,
+        np.full((180, 320, 3), 0.6, dtype=np.float32),
+        output,
+        width=320,
+        height=180,
+        duration=3.0,
+        fps=10,
+    )
+    assert extract_frame_rgb(output, 0, 320, 180).mean() < 5
+    assert extract_frame_rgb(output, 12, 320, 180).max() > 100

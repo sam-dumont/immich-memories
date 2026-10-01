@@ -1698,6 +1698,21 @@
             ],
             "title": "Album"
           },
+          "fade_color": {
+            "anyOf": [
+              {
+                "enum": [
+                  "white",
+                  "black"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fade Color"
+          },
           "format": {
             "anyOf": [
               {

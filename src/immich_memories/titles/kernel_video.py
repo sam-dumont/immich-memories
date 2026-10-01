@@ -87,7 +87,7 @@ def _apply_fade_from_white(
     white_val: int,
     blend_buffer: np.ndarray | None,
 ) -> np.ndarray:
-    """Apply fade-from-white effect to a frame."""
+    """Blend from the configured solid edge color."""
     if blend_buffer is not None and frame_num < fade_in_frames:
         alpha = 1.0 - (1.0 - frame_num / fade_in_frames) ** 2
         np.multiply(white_val * (1 - alpha), 1.0, out=blend_buffer, casting="unsafe")
@@ -104,7 +104,7 @@ def _apply_fade_to_white(
     white_val: int,
     blend_buffer: np.ndarray | None,
 ) -> np.ndarray:
-    """Apply fade-to-white effect at the end of a video."""
+    """Blend to the configured solid edge color at the end."""
     if blend_buffer is not None and fade_out_frames > 0 and frame_num >= fade_out_start:
         t = (frame_num - fade_out_start) / max(1, fade_out_frames)
         alpha = t * t  # quadratic ease-in
@@ -182,6 +182,7 @@ def create_title_video_gpu(
     encoding_plan: EncodingPlan | None = None,
     frame_progress: Callable[[int, int], None] | None = None,
     frame_transfer: HdrTransfer = HdrTransfer.NONE,
+    fade_color: str = "white",
 ) -> Path:
     """Create title video using GPU rendering."""
     cfg = config or KernelTitleConfig()
@@ -265,11 +266,11 @@ def create_title_video_gpu(
     stderr_reader.start()
 
     fade_in_frames = int(0.8 * cfg.fps) if fade_from_white else 0
-    # Fade TO white in last 1.5 seconds (for ending screens)
+    # Ending screens fade to the configured edge color over 1.5 seconds.
     fade_out_frames = int(1.5 * cfg.fps) if fade_to_white else 0
     fade_out_start = renderer.total_frames - fade_out_frames
 
-    white_val = 65535 if plan.hdr else 255
+    white_val = 0 if fade_color == "black" else (65535 if plan.hdr else 255)
     blend_dtype = np.uint16 if plan.hdr else np.uint8
     blend_buffer = (
         np.zeros((cfg.height, cfg.width, 3), dtype=blend_dtype)

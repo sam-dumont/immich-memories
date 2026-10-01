@@ -102,8 +102,7 @@ contract without generating or uploading a memory.
 
 ### Extra accounts
 
-A second person on the same Immich server (the classic couple where each phone uploads to its own
-account) goes under `accounts`, by name. The top-level `url` and `api_key` stay the primary account,
+People can upload to separate Immich accounts. Put additional accounts under `accounts`, by name. The top-level `url` and `api_key` stay the primary account,
 and the primary is the only account a film is ever uploaded to.
 
 ```yaml
@@ -678,8 +677,7 @@ captions and checks only selected shots and actual
 replacement candidates. `prepare` remains the explicit job for a larger scope. Changing tier
 does not erase banked captions or other producer facts.
 
-The sharing level decides what a caption reading refuses. Ordinary family material, including a
-shirtless baby or a parent holding a newborn in hospital, plays at every level. Bath time,
+The sharing level decides what a caption reading refuses. A caption describing a shirtless baby or a parent holding a newborn in hospital does not, by itself, cause an activity-based hold. Other detector and selection rules still apply. Bath time,
 breastfeeding, a nappy change and intimate hygiene play only in a just-us film. Graphic medical
 procedures, sexual content, exposed adult changing and identifying records never play.
 
@@ -751,14 +749,14 @@ title_screens:
   map_move_max_seconds: 8.0      # trip map to a far place, 2 s still hold included (3-15)
   locale: "auto"                 # en fr nl de es it pt-BR pt-PT pl sv ru ja zh-Hans ko, or auto
   style_mode: "auto"             # auto (mood-based) or random
+  fade_color: "white"            # white or black at the opening and closing
   animated_background: true      # Gradient shift and colour pulse behind the text
   show_month_dividers: true      # When the video spans several months (all-or-none)
   month_divider_threshold: 2     # Min clips in a month to show its divider (1-10)
   use_first_name_only: true      # "Riley" instead of "Riley Smith" in titles
 ```
 
-`animated_background` is all the look-and-feel the config file
-exposes; the colour palette and custom fonts are not configurable today.
+`fade_color` chooses the opening and closing fade. `animated_background` controls movement; the colour palette and custom fonts are not configurable today.
 `animated_background: false` keeps the gradient still
  (no rotation, colour pulse or vignette pulse), which is what `preset: fast` selects. The
 `immich-memories titles` command exposes more of the look as flags for previewing.

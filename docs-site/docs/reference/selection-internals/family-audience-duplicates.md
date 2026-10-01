@@ -47,8 +47,8 @@ end up in no shot. The seat fixes that on every tier (`editorial_family_seat.py`
   The two numbers are `advanced.editorial.people.seat_min_pictures` and `seat_min_share`. Only
   pictures the film could show count: someone whose every picture is refused as a shot is owed
   nothing, and the record says so.
-- **In a film about a person**, close family is relative to that person as well as to you: in a film
-  of your partner, their parents count, though to you they're in-laws. The same set drives big
+- **In a film about a person**, close family is relative to that person as well as to you: for example, in a film
+  about a partner, their parents count too. The same set drives big
   stories, the duplicate review and the model polish.
 - **Which frame.** Their best frame by standing, in the story that holds most of their pictures,
   that clears the story's standing bar and that no hold refuses. Equal standing favours your
@@ -64,16 +64,18 @@ again, through the same rules plus the gate's verdict on the new frame. Records:
 `family-seat.private.json` and `family-seat-after-review.private.json`, which name people by
 relation only.
 
-Setting roles takes five minutes: [Teach it your family](../../get-started/who-is-who.md).
+Setting roles takes five minutes: [Home and people](../../get-started/who-is-who.md).
 
 ## The family-viewing gate
+
+These are conservative automatic sharing defaults. They do not judge bodies, caregiving or what your household considers private. Review the cut and use per-picture decisions to set what may be shown.
 
 Every shot gets one of four verdicts, and the strictest reading wins:
 
 | Verdict | Meaning |
 |---|---|
-| `share` | fine for anyone |
-| `family_only` | fine for the family, held back from a shareable film |
+| `share` | eligible for Shareable under the automatic checks |
+| `family_only` | eligible for Family under the automatic checks; held back from Shareable |
 | `just_us` | a private moment of the household: only a just-us film plays it |
 | `do_not_show` | leaves every film |
 
@@ -230,7 +232,7 @@ No tier asks a model to compare two pictures.
    - a preview hash within 6 bits, inside the same story or the same day;
    - a scene print (the pooled DINOv2 vector of the preview, banked in `scene-prints.sqlite`) at a
      cosine of 0.65 or more, within 14 days, across stories. That catches the same trail at dusk
-     shot twice from different spots, which hashes as strangers. On one day it only counts inside
+     shot twice from different spots, which produces different hashes. On one day it only counts inside
      one moment (10 minutes): a scene print says what kind of scene a picture is, and a concert or
      a wedding is one kind all day, so two sets hours apart are two moments of the event, not a
      repeat. Two favourites are the same scene only within 2 days of each other: the same pose in

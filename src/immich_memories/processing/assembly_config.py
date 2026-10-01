@@ -73,6 +73,7 @@ class TitleScreenSettings:
     # Visual settings
     locale: str = "en"
     style_mode: str = "auto"  # "auto", "random", or specific style name
+    fade_color: str = "white"
     mood: str | None = None  # Video mood for style selection
 
     # Timing

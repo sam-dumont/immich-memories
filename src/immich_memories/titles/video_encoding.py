@@ -105,12 +105,17 @@ def _render_frame_with_animation(
     fade_from_white: bool,
     fade_in_frames: int,
     white_frame,
+    fade_to_white: bool = False,
 ):
     """Render a single frame applying fade-in/fade-out animation logic."""
     if frame_idx >= fade_out_start_frame:
         fade_out_progress = (frame_idx - fade_out_start_frame) / fade_out_frames
         fade_out_frame = int(fade_out_progress * animation_frames)
-        return renderer.render_frame(title, subtitle, fade_out_frame, reversed_preset)
+        frame = renderer.render_frame(title, subtitle, fade_out_frame, reversed_preset)
+        if fade_to_white:
+            alpha = (frame_idx - fade_out_start_frame) / max(1, fade_out_frames - 1)
+            return Image.blend(frame, white_frame, alpha)
+        return frame
 
     if fade_from_white and frame_idx < fade_in_frames:
         frame = renderer.render_frame(title, subtitle, frame_idx, preset)
@@ -158,6 +163,8 @@ def create_title_video(
     fade_from_white: bool = False,
     background_image: np.ndarray | None = None,
     encoding_plan: EncodingPlan | None = None,
+    fade_to_white: bool = False,
+    fade_color: str = "white",
 ) -> Path:
     """Create a complete title video with full animation support.
 
@@ -174,7 +181,9 @@ def create_title_video(
         duration: Video duration in seconds.
         fps: Frames per second.
         animated_background: Enable animated background effects.
-        fade_from_white: If True, fade from white at the start (for intro title only).
+        fade_from_white: Enable the opening fade using fade_color.
+        fade_to_white: Enable the closing fade using fade_color.
+        fade_color: Solid edge color, white by default or black.
 
     Returns:
         Path to created video file.
@@ -228,7 +237,10 @@ def create_title_video(
     fade_out_start_frame = total_frames - fade_out_frames
     animation_frames = int(preset.duration_ms / 1000 * fps)
     fade_in_frames = int(0.8 * fps) if fade_from_white else 0
-    white_frame = Image.new("RGB", (width, height), (255, 255, 255)) if fade_from_white else None
+    edge_rgb = (0, 0, 0) if fade_color == "black" else (255, 255, 255)
+    white_frame = (
+        Image.new("RGB", (width, height), edge_rgb) if fade_from_white or fade_to_white else None
+    )
 
     def render(i: int) -> Image.Image:
         return _render_frame_with_animation(
@@ -244,6 +256,7 @@ def create_title_video(
             fade_from_white=fade_from_white,
             fade_in_frames=fade_in_frames,
             white_frame=white_frame,
+            fade_to_white=fade_to_white,
         )
 
     _pump_frames(total_frames, render, frame_queue, writer_thread)

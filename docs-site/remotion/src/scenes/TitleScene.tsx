@@ -70,7 +70,7 @@ export const TitleScene: React.FC = () => {
             style={{
               fontSize: 88,
               fontWeight: 700,
-              color: "white",
+              color: "var(--immich-ui-light)",
               fontFamily,
               opacity: titleOpacity,
               transform: `translateY(${titleY}px)`,

@@ -80,3 +80,20 @@ def test_only_the_caches_a_run_still_fills_are_listed_and_cleared(tmp_path):
     assert listed == ["video", "thumbnail"]
     for retired in ("analysis", "preview"):
         assert client.post(f"/api/v1/caches/{retired}/clear").status_code == 422
+
+
+def test_global_fade_default_can_be_saved_and_invalid_colours_are_refused(tmp_path, monkeypatch):
+    client, _ = _settings_client(tmp_path, monkeypatch)
+    assert (
+        _rows(client.get("/api/v1/settings").json())["title_screens.fade_color"]["value"] == "white"
+    )
+
+    saved = client.post("/api/v1/settings", json={"values": {"title_screens.fade_color": "black"}})
+    assert saved.status_code == 200
+    assert _rows(saved.json())["title_screens.fade_color"]["value"] == "black"
+    refused = client.post("/api/v1/settings", json={"values": {"title_screens.fade_color": "blue"}})
+    assert refused.status_code == 422
+    assert (
+        _rows(client.get("/api/v1/settings").json())["title_screens.fade_color"]["value"] == "black"
+    )
+    set_config(None)

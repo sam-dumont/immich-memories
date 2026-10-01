@@ -8,7 +8,7 @@ A **moment** is a short stretch of pictures of the same thing: thirty frames of 
 
 The editor spreads its shots between stories. More photos do not automatically buy more screen time. Favourites, close family, videos and time away from home all help it distinguish an occasion from another Tuesday.
 
-Set your home location and confirm your family in [Teach it your family](../get-started/who-is-who.md). Otherwise it has less evidence about who matters and what counts as away.
+Set your home location and confirm your family in [Home and people](../get-started/who-is-who.md). Otherwise it has less evidence about who matters and what counts as away.
 
 A trip that changes where it stays can become separate chapters. A long film about a person spreads its shots across the years it covers. A period with little worth showing stays short.
 

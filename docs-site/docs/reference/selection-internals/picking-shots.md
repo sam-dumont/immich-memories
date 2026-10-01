@@ -53,10 +53,9 @@ On a story with more moments than `max(6, 3 × its shots)`, the moments offered 
 first: starred ones, then moving ones, then lively ones, and it reaches for a few more moving
 moments if the list filled up with stills. Below that size every moment is offered.
 
-**Strangers come last.** A moment whose people are all strangers to your library (faces nobody
-named, hidden people, or people only the `people` head saw) is not "lively" for that sort, and when
+**Unrecognised people come later.** A moment with no named, visible person in Immich (unnamed faces, hidden people, or people only the `people` head saw) is not "lively" for that sort, and when
 the draft picks a story's moments without a model it takes them after every other moment of the
-story: stars, then the rest spread over the story's span, then the strangers. So a frame of the crowd
+story: stars, then the rest spread over the story's span, then moments with unrecognised people. So a frame of the crowd
 at a race loses its one slot to a frame of the same day with someone you named in it. A moment with
 no people at all (a view, a place) is not demoted, and a library that names nobody keeps its order.
 
@@ -89,7 +88,7 @@ facts, and `StandingGate` refuses a score under 1.
   body-part close-up, or the caption names a body part or footwear and no animal, and Immich found
   no face on it. A face makes it a person, and a paw is never a body part. This is a fixed rule on
   top of the points table, not fitted to it: the public set's teacher keeps many of these shots, so
-  it costs agreement there, and it stays because it is how you want your film made.
+  it costs agreement there, and it remains part of the app’s default selection policy.
 - 0 when its video frames mostly miss the subject (`frames=subject_often_missing`: fewer than 6 of
   8 sampled frames show a moment), or when the points table below says it carries nothing.
 - Otherwise the heads decide: people, an activity, or an outdoor or public place scores 2; nobody,

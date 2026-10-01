@@ -9,7 +9,7 @@ Choose **Who may see it** in the brief. The default is **Family**.
 | Level | Intended viewers | What changes |
 |---|---|---|
 | **Just us** | Your household | Captioned private household moments, such as bath time, may stay in. |
-| **Family** | Grandparents, siblings, the family chat | Those private activities stay out when the app recognises them. |
+| **Family** | The wider circle you share personal films with | Those private activities stay out when the app recognises them. |
 | **Shareable** | Anyone | Only pictures that pass the stricter sharing checks stay in. |
 
 ```bash
@@ -30,7 +30,7 @@ These decisions are different from editing one finished cut. Ticking or untickin
 
 ## Family and repeats
 
-Confirm your partner, children and parents in [Teach it your family](../get-started/who-is-who.md). The editor can give a close relative an appearance when they are present in the period but missing from the cut.
+Confirm the relationships that apply to your household in [Home and people](../get-started/who-is-who.md). The editor can give a close relative an appearance when they are present in the period but missing from the cut.
 
 Copies and bursts normally become one shot. Later checks remove repeated scenes, favouring your stars and useful motion. A shorter film is preferable to the same sunset twice.
 

@@ -14,7 +14,10 @@ Pick a month, a year, a trip or a person, review the cut, then render with title
 
 <p align="center">
   <a href="https://sam-dumont.github.io/immich-video-memory-generator/demo/demo.mp4">
-    <img src="https://sam-dumont.github.io/immich-video-memory-generator/img/demo-hero.gif" alt="Choose a memory, review and change its cut, and watch the finished film" width="720" height="405">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://sam-dumont.github.io/immich-video-memory-generator/img/dark-demo-hero.gif">
+      <img src="https://sam-dumont.github.io/immich-video-memory-generator/img/demo-hero.gif" alt="Choose a memory, review and change its cut, and watch the finished film" width="720" height="405">
+    </picture>
   </a>
   <br/>
   <sub><a href="https://sam-dumont.github.io/immich-video-memory-generator/demo/demo.mp4">▶ Play the demo with music</a> · <a href="https://sam-dumont.github.io/immich-video-memory-generator/demo/trip-preview.mp4">Watch a finished trip film</a> · CC0 stock pictures, <a href="tests/e2e/fixtures/library/CREDITS.md">credited here</a> · <a href="https://sam-dumont.github.io/immich-video-memory-generator/docs/">Documentation</a></sub>
@@ -41,7 +44,7 @@ A default film talks to your Immich server. Originals are never modified, and up
 
 ## Families and cultures
 
-I built this from my life as a white, middle-aged Belgian man in a heteronormative family. The goal is to support all households; the holiday defaults currently reflect Western Europe. Different family setups and cultural calendars are welcome. [Share an example and help check the result](https://sam-dumont.github.io/immich-video-memory-generator/docs/contribute/development-setup#households-and-cultures).
+I built this from my life as a white, middle-aged Belgian man and a father in a heterosexual relationship. The goal is to support all households; the holiday defaults currently reflect Western Europe. Different family setups and cultural calendars are welcome. [Share an example and help check the result](https://sam-dumont.github.io/immich-video-memory-generator/docs/contribute/development-setup#households-and-cultures).
 
 ## Development
 

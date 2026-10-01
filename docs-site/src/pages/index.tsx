@@ -6,6 +6,8 @@ import Heading from '@theme/Heading';
 import CodeBlock from '@theme/CodeBlock';
 import {productDescription, productTagline} from '../product';
 import styles from './index.module.css';
+import DemoPreview, {DemoLink} from '../components/DemoPreview';
+import ThemedScreenshot from '../components/ThemedScreenshot';
 
 const journeys = [
   {label: 'Start here', title: 'Make your first film', body: 'Install, connect Immich, and try one month. Review the cut before rendering.', to: '/docs/get-started/quick-start', action: 'Quick start'},
@@ -14,11 +16,7 @@ const journeys = [
 ];
 
 export default function Home(): ReactNode {
-  const demo = useBaseUrl('/demo/demo.mp4');
   const trip = useBaseUrl('/demo/trip-preview.mp4');
-  const hero = useBaseUrl('/img/demo-hero.gif');
-  const still = useBaseUrl('/img/screenshots/memory-story.png');
-  const review = useBaseUrl('/img/screenshots/memory-review-edit.png');
   return (
     <Layout title="Immich Memories" description={productDescription}>
       <header className={styles.hero}>
@@ -38,16 +36,9 @@ export default function Home(): ReactNode {
               <p className={styles.heroNote}>One container is enough to start. A GPU and a text model are optional.</p>
             </div>
             <div className={styles.heroVisual}>
-              <a href={demo} aria-label="Play the Immich Memories demo with music">
-                <picture>
-                  <source media="(prefers-reduced-motion: reduce)" srcSet={still} />
-                  <img className={styles.heroScreenshot} src={hero}
-                    alt="Choose a month, review its cut, and watch the finished film"
-                    width="720" height="405" fetchPriority="high" />
-                </picture>
-              </a>
+              <DemoPreview />
               <p className={styles.heroCredit}>
-                <a href={demo}>Play the demo with music</a> · <a href={trip}>Watch a trip film</a><br />
+                <DemoLink>Play the demo with music</DemoLink> · <a href={trip}>Watch a trip film</a><br />
                 CC0 stock pictures. <a href="https://github.com/sam-dumont/immich-video-memory-generator/blob/main/tests/e2e/fixtures/library/CREDITS.md">Credits</a>
               </p>
             </div>
@@ -74,8 +65,7 @@ export default function Home(): ReactNode {
       <section className={styles.reviewSection}>
         <div className="container">
           <div className={styles.reviewGrid}>
-            <img src={review} alt="Review a cut: swap a picture and remove a shot before rendering"
-              className={styles.heroScreenshot} width="1440" height="900" loading="lazy" />
+            <ThemedScreenshot name="memory-review-edit" alt="Review a cut: swap a picture and remove a shot before rendering" />
             <div>
               <p className={styles.eyebrow}>You get the final say</p>
               <Heading as="h2">Keep the moments. Change the rest.</Heading>

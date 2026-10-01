@@ -37,8 +37,10 @@ trips:
 Name the faces that matter in Immich first. In this app, open **Settings > People**:
 
 1. Press **Rescan the library**.
-2. Set **Role** for your partner, children and parents.
+2. Set **Role** for the people in your library. Choose the role that fits each person; partner, child and parent are examples.
 3. Confirm or reject the suggested **Relationships**, and add any missing ones.
+
+The automatic close-family rules currently recognise partner, child and parent roles. Other roles and saved groups can be recorded, but do not receive the same automatic selection protections. You decide who belongs in your films.
 
 The scan reads metadata, not pictures. Your confirmations survive a rescan. Its guesses alone never make someone close family.
 

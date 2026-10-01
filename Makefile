@@ -1108,10 +1108,13 @@ demo-ui-install:  ## Install Remotion demo dependencies
 demo-ui-check:  ## Check the Remotion scene types and code
 	cd docs-site/remotion && npm run lint
 
+DEMO_THEME ?= light
+DEMO_VIDEO := $(if $(filter dark,$(DEMO_THEME)),dark-demo,demo)
+DEMO_HERO := $(if $(filter dark,$(DEMO_THEME)),dark-demo-hero,demo-hero)
 DEMO_FRAME ?= 500
 DEMO_STILL ?= /tmp/immich-memories-demo.png
 demo-ui-still:  ## Render one demo frame for visual review
-	cd docs-site/remotion && npx remotion still src/index.ts DemoVideo $(DEMO_STILL) --frame=$(DEMO_FRAME)
+	cd docs-site/remotion && npx remotion still src/index.ts DemoVideo $(DEMO_STILL) --frame=$(DEMO_FRAME) --props='{"theme":"$(DEMO_THEME)"}'
 
 demo-ui-dev: demo-ui-install  ## Start Remotion Studio for live demo preview
 	cd docs-site/remotion && npm run dev
@@ -1132,7 +1135,7 @@ demo-soundtrack:  ## Rebuild the demo's music from a bundled MIT-licensed acoust
 DEMO_RENDER_ARGS ?=
 demo-ui: demo-ui-install demo-fixture demo-soundtrack  ## Render Remotion demo â†’ docs-site/static/demo/demo.mp4
 	@mkdir -p docs-site/static/demo
-	cd docs-site/remotion && npx remotion render src/index.ts DemoVideo ../static/demo/demo.mp4 --codec h264 --crf 18 $(DEMO_RENDER_ARGS)
+	cd docs-site/remotion && npx remotion render src/index.ts DemoVideo ../static/demo/$(DEMO_VIDEO).mp4 --props='{"theme":"$(DEMO_THEME)"}' --codec h264 --crf 18 $(DEMO_RENDER_ARGS)
 
 # The homepage and README hero tells the product's loop without a jump: the brief, the cut
 # and the review (demo 4.0 to 13.6 s), then Render pressed, the film arriving on the page and
@@ -1146,9 +1149,9 @@ demo-ui: demo-ui-install demo-fixture demo-soundtrack  ## Render Remotion demo â
 # hqdn3d. Re-run after `make demo-ui` and re-check the size.
 HERO_FILTER := fps=10,scale=720:405:flags=lanczos,format=yuv420p
 demo-hero:  ## Cut the README hero GIF: brief, cut, review, render, and the film it made
-	ffmpeg -y -loglevel error -i docs-site/static/demo/demo.mp4 -i docs-site/remotion/public/output-preview.mp4 \
+	ffmpeg -y -loglevel error -i docs-site/static/demo/$(DEMO_VIDEO).mp4 -i docs-site/remotion/public/output-preview.mp4 \
 	  -filter_complex "[0:v]trim=4.0:13.6,setpts=PTS-STARTPTS,$(HERO_FILTER)[a];[0:v]trim=29.0:34.43,setpts=PTS-STARTPTS,$(HERO_FILTER)[b];[1:v]trim=20.63:24.13,setpts=PTS-STARTPTS,$(HERO_FILTER)[c];[a][b]xfade=transition=fade:duration=0.3:offset=9.3[ab];[ab][c]xfade=transition=fade:duration=0.5:offset=14.23,hqdn3d,split[x][y];[y]palettegen=max_colors=255:stats_mode=diff[p];[x][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" \
-	  docs-site/static/img/demo-hero.gif
+	  docs-site/static/img/$(DEMO_HERO).gif
 
 .PHONY: llm-conformance
 llm-conformance:  ## Exercise production LLM features on synthetic evidence: CONFIG=provider.yaml

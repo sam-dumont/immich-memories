@@ -60,7 +60,7 @@ immich-memories titles test --month 6 --year 2025 --type month
 immich-memories titles test --year 2025 --locale fr --orientation portrait
 ```
 
-## Every alphabet
+## Script and font coverage {#every-alphabet}
 
 Montserrat draws Latin, Polish, Czech, Turkish and Vietnamese included. A letter it lacks comes from Noto
 Sans, word by word, so `DEUX SEMAINES EN CRÈTE · Κρήτη` keeps its French in Montserrat and its Greek in Noto.
@@ -73,7 +73,7 @@ A word never switches typeface halfway through.
 | Chinese, Japanese, Korean | `titles fonts --install` (Noto Sans CJK, 39.5 MB) |
 
 The Docker image runs that install at build time, each file checked against a pinned SHA-256, so a Docker
-user has every alphabet out of the box. On pip or uv, run it once:
+user has the listed script fonts out of the box. On pip or uv, run it once:
 
 ```bash
 immich-memories titles fonts --install
@@ -123,7 +123,7 @@ in the web UI opens on "DEUX SEMAINES EN CRÈTE, GRÈCE, ÉTÉ 2025", exactly as
 | Korean | `ko` | fallback design |
 
 :::caution[Twelve of these catalogues were drafted by an AI]
-Months and weekdays come from CLDR, so they are right everywhere. The rest of the wording lives in one
+Month and weekday names come from CLDR for the selected locale. The rest of the wording lives in one
 catalogue per language under `src/immich_memories/locales/`. English and French are written by hand. The
 other twelve catalogues, and the preposition rules for Dutch, German, Spanish, Italian, Portuguese, Polish
 and Swedish, were drafted by an AI and checked by tests, not yet by native speakers. Each file says so at the
@@ -133,10 +133,7 @@ top. A fix is a one-line pull request.
 "Fallback design" means the trip card never guesses a preposition: the place is the big line, the duration and
 date sit under it. A wrong preposition never reaches the screen.
 
-Why these fourteen: Immich publishes no usage numbers per language, and 44 of its languages on
-[Hosted Weblate](https://hosted.weblate.org/projects/immich/) are 95 % translated or more. The first ten are
-the Western European and American languages with the most speakers, plus Dutch; the last four are the largest
-non-Latin ones.
+These are the languages currently shipped, not a complete set. Corrections and additional language catalogues are welcome; native-speaker review is still needed for the AI-drafted text.
 
 ## Trip titles: the place at the right scale
 

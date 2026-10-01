@@ -44,8 +44,8 @@
   text-decoration: none;
   transition: background 0.15s ease;
 }
-.ctaPrimary { background: var(--ifm-color-primary); color: #fff; }
-.ctaPrimary:hover { background: var(--ifm-color-primary-dark); color: #fff; text-decoration: none; }
+.ctaPrimary { background: var(--ifm-color-primary); color: var(--im-button-text); }
+.ctaPrimary:hover { background: var(--ifm-color-primary-dark); color: var(--im-button-text); text-decoration: none; }
 .ctaSecondary:hover { background: var(--ifm-background-color); text-decoration: none; }
 .heroScreenshot { width: 100%; height: auto; display: block; border-radius: 10px; border: 1px solid var(--im-border); }
 .journeys, .quickstart, .reviewSection { padding: 3.5rem 0; }

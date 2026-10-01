@@ -207,6 +207,12 @@ def output_options(command: FC) -> FC:
             "(default: from config, else blur)",
         ),
         click.option(
+            "--fade-color",
+            type=click.Choice(["white", "black"]),
+            default=None,
+            help="Opening and closing title fade (default: title_screens.fade_color)",
+        ),
+        click.option(
             "--transition",
             "-t",
             type=click.Choice(["smart", "cut", "crossfade", "none"]),

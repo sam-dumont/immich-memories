@@ -61,11 +61,11 @@ over 6 hours of the clock, and the day's recorded facts below that.
 
 ## Fonts
 
-A render never downloads a font. Titles need a face for every alphabet, and where it comes from
+A render never downloads a font. Titles use fonts for the supported scripts, and where it comes from
 depends on how you installed:
 
 - **Docker:** the image fetches all 42 Noto script files at build time, each checked against a
-  SHA-256 pinned in the code. A running container has every script and asks nobody.
+  SHA-256 pinned in the code. A running container includes the shipped script-font collection and makes no font download.
 - **pip / uv:** the wheel carries the title families and Noto Sans (Latin, Greek, Cyrillic,
   Vietnamese). Arabic, Hebrew, the Indic scripts, Thai, Chinese, Japanese, Korean and the rest are
   43 MB, so they come from one explicit step:

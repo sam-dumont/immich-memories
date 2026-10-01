@@ -287,6 +287,10 @@ class TitleScreenConfig(BaseModel):
     )
 
     # Visual style
+    fade_color: Literal["white", "black"] = Field(
+        default="white",
+        description="Opening and closing fade color for the film",
+    )
     style_mode: Literal["auto", "random"] = Field(
         default="auto",
         description="Style selection mode (auto = mood-based, random = random selection)",

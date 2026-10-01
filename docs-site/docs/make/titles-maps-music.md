@@ -18,6 +18,19 @@ title_screens:
   locale: fr
 ```
 
+## Opening and closing fades
+
+Choose **Opening and closing fade** under **Render**: white, black, or **As configured**. This changes the fade at both ends of the title sequence for this film. Title screens must be enabled.
+
+Set the default in **Settings → title screens → fade_color**, or in your configuration:
+
+```yaml
+title_screens:
+  fade_color: black  # white is the default
+```
+
+For one CLI render, add `--fade-color black` to `generate` or `runs render`. The override leaves your saved default alone.
+
 ## Styles
 
 Choose a title style in your configuration, then try a preview before rendering the whole film:

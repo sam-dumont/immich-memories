@@ -27,10 +27,9 @@ long day (20 pictures over six active hours) with your close family on it. Each 
 video share, then family presence. The title is "A day in" the place. Without roles in the people registry, a long
 day at home is not found.
 
-**With a reader** (optional), every run of activity is read a month at a time as one line of recorded facts
+**On Full tier** (optional), every run of activity is read a month at a time as one line of recorded facts
 (time, place, counts, who Immich recognised, close family by role, up to three captions), and the model names
-the occasions: the kind of day people tell others about afterwards. A good afternoon at home is not one. No
-yearly cap. Titles are checked against what the day recorded: a place it never went or a claim nothing supports
+distinct occasions rather than recurring everyday activity. This is a discovery heuristic; it can miss a day that matters to you. Choose a Special day date explicitly or edit the catalogue when that happens. No yearly cap. Titles are checked against what the day recorded: a place it never went or a claim nothing supports
 gets the title asked for once more, then the day is dropped.
 
 Each proposed occasion is checked against that day's own evidence. An ordinary-day verdict drops it. An

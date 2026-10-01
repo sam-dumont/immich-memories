@@ -90,7 +90,7 @@ another video out:
 
 Timing: birthdays fire 2 days after the date and trips 7 days after coming home, so the phone has uploaded.
 Trips need `trips.homebase_latitude` and `trips.homebase_longitude` (see
-[Teach it your family](../get-started/who-is-who.md)). Special days come from the catalogue `discover-days`
+[Home and people](../get-started/who-is-who.md)). Special days come from the catalogue `discover-days`
 writes. A birth date you gave the people store wins over the one Immich holds.
 
 `auto suggest` prints the ranked list, each candidate's reason, the rule that rejected the others and anything

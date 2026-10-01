@@ -14,7 +14,7 @@ Said plainly: not every PR diff is read by a human. What stands between a change
 
 ### The quality bar
 
-Every change goes through:
+The repository defines these checks; CI selects jobs by change scope:
 
 - A unit suite and an integration suite; `uv run pytest tests/ --collect-only -q` prints the current split. No count is written down here, because it moves every week and a written one is wrong within days
 - Ruff linting and formatting on every PR
@@ -31,8 +31,7 @@ Every change goes through:
 - Architecture layer enforcement
 - Conventional commit enforcement
 - OpenSSF Scorecard monitoring
-- 21 gates on every PR: 16 static checks in the quality job, 5 security scans in the security job. They are tiered, so the cheap ones fail first and the tests, Docker builds and launch check only run after
-- Pre-commit hooks running all of the above locally
+- Pre-commit hooks run the configured local checks; CI also has jobs for builds and runtime verification
 
 That list is the claim, and you can check it yourself: the gates live in the `Makefile`, the pipeline in `.github/workflows/ci.yml`. The build stays red until they pass.
 
@@ -44,7 +43,7 @@ Like any software, this project may have undiscovered bugs, may behave unexpecte
 
 - Keep backups of anything this software accesses (your Immich library, generated videos)
 - Keep your Immich API key secure
-- Report bugs and security issues through GitHub Issues
+- Report bugs through GitHub Issues; report vulnerabilities privately using [SECURITY.md](SECURITY.md)
 - If you find something broken, PRs are welcome
 
 ### No warranty
@@ -58,7 +57,7 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMA
 - Accesses your Immich server via API: keep your API key secure
 - Downloads videos temporarily: make sure you have disk space
 - Uses significant CPU/GPU resources during processing
-- Cuts with no model at all on `reader: rules` and `tier: metadata_only`. Two optional endpoints, a vision reader and a caption server, make it a better cut; both speak the OpenAI-compatible API, both are meant to be yours, and pointing either at a third party sends your pictures there
+- The NAS tier cuts with rules and local picture classifiers. GPU and Full add optional services. A hosted text reader receives text that can include names, places and captions; a hosted caption server receives image previews. An enabled reader with no endpoint runs locally through the app-owned server. See the [privacy guide](docs-site/docs/run/privacy.md) before configuring external services.
 - Music generation/fetching may involve external sources: check licensing for your use case
 
 ### Questions?
@@ -67,4 +66,4 @@ Open a GitHub Discussion.
 
 ---
 
-*Last updated: 2026-09-24*
+*Last updated: 2026-10-01*
