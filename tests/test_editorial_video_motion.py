@@ -171,7 +171,9 @@ def video_unit(video, residuals):
         clip_frames={},
     )
     wall = SimpleNamespace(event_assets={"F01": [video.id]}, moment_of_asset={video.id: "M01"})
-    ports = SimpleNamespace(resolve_motion=None, thumbnail_hash=lambda _a: None, rules=None)
+    ports = SimpleNamespace(
+        resolve_motion=None, live_source_integrity=None, thumbnail_hash=lambda _a: None, rules=None
+    )
     builder = UnitBuilder(source, ports, wall, renderings={}, never_auto=set(), document_sources={})
     (unit,) = builder.units_of("F01")
     return unit
