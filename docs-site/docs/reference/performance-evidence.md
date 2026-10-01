@@ -22,7 +22,7 @@ immich-memories runs show RUN_ID
 immich-memories report RUN_ID
 ```
 
-For matched film requests, use the [release-film matrix](../contribute/setup-matrix.md). Record failures and fallback routes rather than counting them as successful accelerated runs.
+For matched film requests, use the [release-film matrix](../contribute/setup-matrix.md). Record failures and fallback routes rather than counting them as successful accelerated runs. The [measured controls](../better/measured.md#whole-film-controls) record whole-run timings, stage costs and memory scopes for specific revisions.
 
 ## Memory
 

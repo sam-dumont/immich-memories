@@ -66,6 +66,31 @@ reaches it at `http://127.0.0.1:8093`, loopback, with neither HTTPS nor
 `render.allow_insecure_http` needed. See
 [the Kubernetes page](../run/kubernetes.md#render-worker-as-a-sidecar).
 
+## Give long jobs both deadlines
+
+The app's `render.timeout_seconds` and the worker's
+`IMMICH_MEMORIES_RENDER_WORKER_JOB_TIMEOUT_SECONDS` both default to 3,600 seconds. They are separate
+budgets. The app waits for the queue, rendering and result download; the worker bounds its own job.
+Increasing only the app timeout still leaves the worker with a one-hour deadline.
+
+For a long person film, one measured retry uses a six-hour worker budget and a little more time on the app:
+
+```yaml
+render:
+  timeout_seconds: 21660
+```
+
+Set `IMMICH_MEMORIES_RENDER_WORKER_JOB_TIMEOUT_SECONDS=21600` on the worker as well. Choose deadlines
+for your queue and film size; this example adds 60 seconds for the handoff after the worker budget.
+An app timeout does not cancel an active worker job.
+
+A prerelease failure exposed cleanup deleting a timed-out renderer's source workspace while it was
+still running. The ownership fix in
+[#1711](https://github.com/sam-dumont/immich-video-memory-generator/pull/1711) is pending validation and
+deployment: active scratch must stay owned until the renderer releases it, and a retry for the same
+cut must not reuse that workspace. A stuck native renderer can
+still require a worker restart. Increasing the deadline does not fix workspace ownership.
+
 ## Check it
 
 ```bash

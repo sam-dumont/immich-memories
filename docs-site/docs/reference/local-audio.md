@@ -30,7 +30,7 @@ The 0.6B name refers to the planner; the audio generator is still 2B. A reader t
 in oMLX still uses unified memory while idle. Unloading it can make a smaller music profile fit;
 the command reports a refusal separately from a generation failure.
 
-The [app-owned reader](../better/reader.md) releases its model process before local music or stem separation, so those stages can use the same memory at different times. An external reader needs its own unload policy. On Apple Silicon's turbo path, inactive Torch weights are parked before native diffusion; the native decoder is released before VAE decoding.
+The [app-owned reader](../better/reader.md) releases its model process after selection, before titles and rendering, and before local music or stem separation. The app also closes its selection-owned Laya model and clears unused local model buffers. Later text work can reopen the owned reader, so the stages can use the same memory at different times. An external reader needs its own unload policy. On Apple Silicon's turbo path, inactive Torch weights are parked before native diffusion; the native decoder is released before VAE decoding.
 
 ```bash
 immich-memories capabilities --verify-local
