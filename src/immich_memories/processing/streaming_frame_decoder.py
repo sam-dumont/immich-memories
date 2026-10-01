@@ -59,6 +59,7 @@ class FrameDecoder:
         source_size: tuple[int, int] | None = None,
         threads: int | None = None,
         source_frame_rate: Fraction | None = None,
+        frame_limit: int | None = None,
     ) -> None:
         self._clip_path = clip_path
         self._source_size = source_size
@@ -66,6 +67,7 @@ class FrameDecoder:
         self._source_frame_rate = source_frame_rate
         self._input_seek = input_seek
         self._audio_output = audio_output
+        self._frame_limit = frame_limit
         self._width = width
         self._height = height
         self._fps = fps
@@ -220,20 +222,10 @@ class FrameDecoder:
         # WHY: Extract audio alongside video in the same FFmpeg pass.
         # Audio timing matches the decoded video frames exactly, preventing
         # the cumulative drift from independent video/audio assembly.
-        audio_args: list[str] = []
         audio_inputs, audio_map = self._audio_input()
-        if self._audio_output:
-            audio_args = [
-                "-map",
-                audio_map,
-                "-c:a",
-                "pcm_s16le",
-                "-ar",
-                "48000",
-                "-ac",
-                "2",
-                str(self._audio_output),
-            ]
+        audio_args = self._audio_output_args(audio_map)
+
+        video_limit = ["-frames:v", str(self._frame_limit)] if self._frame_limit is not None else []
 
         threads = self._threads if self._threads is not None else assembly_decoder_threads()
         cmd = [
@@ -253,6 +245,7 @@ class FrameDecoder:
             f"{self._width}x{self._height}",
             "-r",
             str(self._fps),
+            *video_limit,
             "pipe:1",
             *audio_args,
         ]
@@ -266,6 +259,7 @@ class FrameDecoder:
         assert proc.stdout is not None  # noqa: S101
 
         try:
+            decoded = 0
             while True:
                 raw = proc.stdout.read(self._frame_size)
                 if len(raw) < self._frame_size:
@@ -280,10 +274,42 @@ class FrameDecoder:
                     frame = np.frombuffer(raw, dtype=np.uint16)
                 else:
                     frame = np.frombuffer(raw, dtype=np.uint8).reshape(self._height, self._width, 3)
+                decoded += 1
+                self._finish_bounded_output(proc, decoded)
                 yield frame
         finally:
             proc.stdout.close()
             stop_owned_process(proc)
+
+    def _finish_bounded_output(self, proc: subprocess.Popen[bytes], decoded: int) -> None:
+        # The assembler closes this generator after its last picture.
+        # Both outputs are bounded, so let the WAV finish before that
+        # close can SIGTERM a still-writing audio producer.
+        if (
+            self._frame_limit is not None
+            and decoded == self._frame_limit
+            and proc.wait(timeout=10) != 0
+        ):
+            raise RuntimeError("Frame decoder failed before completing clip audio")
+
+    def _audio_output_args(self, audio_map: str) -> list[str]:
+        if not self._audio_output:
+            return []
+        duration = (
+            ["-t", str(self._frame_limit / self._fps)] if self._frame_limit is not None else []
+        )
+        return [
+            "-map",
+            audio_map,
+            "-c:a",
+            "pcm_s16le",
+            "-ar",
+            "48000",
+            "-ac",
+            "2",
+            *duration,
+            str(self._audio_output),
+        ]
 
     def _audio_input(self) -> tuple[list[str], str]:
         if self._audio_output is None:
@@ -372,6 +398,7 @@ def make_decoder(
         caption_window=caption_window,
         source_size=source_size,
         source_frame_rate=source_frame_rate,
+        frame_limit=int(clip.duration * fps) if audio_work_dir is not None else None,
     )
 
 

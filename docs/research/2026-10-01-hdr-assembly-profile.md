@@ -118,7 +118,8 @@ process tree every 150 ms and recorded Python/child RSS high-water marks:
 
 The combined patch reduced Python memory but increased sampled aggregate peak by
 77.38 MB, about 3.3%. Sampling may miss a brief peak. There is no demonstrated
-aggregate-memory reduction, and a small-container control is still required.
+aggregate-memory reduction. These Mac RSS measurements do not establish container
+safety; the separate cgroup controls below address that question.
 
 ## Remove the redundant HDR copy
 
@@ -141,5 +142,54 @@ Read-only ownership and crossfade regression coverage checks that held source
 samples survive decoder advances and reuse of the blend destination.
 
 These bounded results do not establish a speedup for the accepted long film or
-resolve #1704. A mixed-source complete assembly comparison and a low-memory
-control remain necessary before rollout.
+resolve #1704. The mixed-source and container checks below complete the bounded
+correctness/resource review; a matched whole-film performance checkpoint remains
+separate.
+
+## Mixed sources and actual container limits
+
+A retained four-source fixture exercises HLG and SDR, canvas and blur fills,
+known lower cadence, unknown cadence, and downsampling. Each clip uses a real
+0.5-second seek and contributes two seconds, with three 0.5-second crossfades and
+date captions: a 6.5-second 2160×3840, 60 fps, 10-bit PQ/BT.2020 film.
+
+The Linux software check used an existing ARM64 runtime, read-only sources,
+network disabled, zero swap, true two-core affinity, and libx265 medium/CRF 20
+with fixed two-thread pools. The only missing dependency, Babel 2.18.0, was
+installed from its lockfile-verified wheel inside disposable containers.
+
+Both the unchanged baseline and candidate hit the real 4 GiB limit during the
+first crossfade. The original quota-only attempt also failed; fixing CPU affinity
+did not make this worst-case software profile fit. These are failures, not a
+4 GiB admission pass. The NAS uses 1080p SDR/VAAPI, outside the HDR deferral path;
+its original HDR-to-SDR conversion order remains covered by a regression.
+
+At an 8 GiB limit, the first pair completed and all 390 decoded video frames,
+their timestamps, and HDR metadata matched exactly. Audio exposed an existing
+shutdown race: the baseline became silent over the final 0.4 seconds while the
+candidate retained signal. Decoded audio was identical until 5.833333 seconds;
+the difference was missing sound, not lossy AAC variation.
+
+The assembler consumed its required video frames and closed the decoder generator
+while that same FFmpeg process could still be writing the clip WAV. The fix gives
+FFmpeg the exact video-frame and audio-duration bounds already used by assembly,
+then waits for those bounded outputs before yielding the final requested frame.
+An earlier cancellation still terminates and reaps the owned child. The fix does
+not drain the rest of an original or add another audio pass.
+
+A real delayed-child regression failed before this fix and passes after it.
+Real FFmpeg tests compare seeked PCM against an independent reference at fast and
+slow consumer rates: exactly 24,000 stereo sample frames in both cases.
+
+The final pair applies the same completion fix to the old baseline and candidate,
+retaining the baseline's original FPS order and HDR copies. Both finish under
+the real 8 GiB cgroup limit with zero swap and zero OOM events:
+
+| Cgroup peak, complete process group | Corrected baseline | Candidate |
+|---|---:|---:|
+| Peak memory | 5,280,546,816 bytes | 5,177,516,032 bytes |
+
+All 390 decoded video frames and 305 decoded audio blocks match exactly, including
+timestamps, sample sizes, duration, dimensions, and PQ/BT.2020 metadata. This is
+Linux software parity/resource evidence, not a VideoToolbox or NAS speed claim.
+Concurrent correctness work makes these runs unsuitable for latency claims.
