@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from functools import cached_property
 from hashlib import sha256
 from typing import TYPE_CHECKING
 
@@ -36,10 +37,36 @@ class EditorialGroup:
     group_id: str
     candidates: tuple[EditorialCandidate, ...]
 
-    @property
+    @cached_property
     def candidate_ids(self) -> tuple[str, ...]:
         """Return the ordered IDs represented by this visual group."""
         return tuple(candidate.asset_id for candidate in self.candidates)
+
+
+class EpisodeMembershipIndex:
+    """Find every carrying episode without rescanning the corpus for each moment.
+
+    Positions retain duplicate/overlapping episodes: callers still require exactly
+    one carrier, including when handed malformed groups outside preparation.
+    """
+
+    def __init__(self, groups: Sequence[EditorialGroup]) -> None:
+        self._positions = tuple(range(len(groups)))
+        self._by_asset: dict[str, set[int]] = {}
+        for position, group in enumerate(groups):
+            for asset_id in group.candidate_ids:
+                self._by_asset.setdefault(asset_id, set()).add(position)
+
+    def carrying_positions(self, asset_ids: Sequence[str]) -> tuple[int, ...]:
+        """Return ordered episodes containing all members, as a subset scan did."""
+        if not asset_ids:
+            return self._positions
+        carrying = self._by_asset.get(asset_ids[0], set()).copy()
+        for asset_id in asset_ids[1:]:
+            carrying.intersection_update(self._by_asset.get(asset_id, ()))
+            if not carrying:
+                break
+        return tuple(sorted(carrying))
 
 
 @dataclass(frozen=True)
