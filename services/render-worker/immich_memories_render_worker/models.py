@@ -14,6 +14,7 @@ from pydantic import (
     model_validator,
 )
 
+from immich_memories.config_models_network import NetworkConfig
 from immich_memories.config_models_render import TitleScreenConfig
 from immich_memories.processing.encoding_plan import HdrMode
 
@@ -155,6 +156,10 @@ class RenderOptions(Contract):
     homebase_longitude: float = Field(default=0.0, ge=-180, le=180)
 
 
+class NetworkSettings(NetworkConfig, Contract):
+    """The caller's explicit permissions for map tiles and place names."""
+
+
 class RenderRequest(Contract):
     version: Literal[1] = 1
     render_attempt: UUID | None = None
@@ -163,6 +168,7 @@ class RenderRequest(Contract):
     plan: RenderPlan
     memory: MemorySettings
     titles: TitleSettings = Field(default_factory=TitleSettings)
+    network: NetworkSettings = Field(default_factory=NetworkSettings)
     timing: TimingBinding
     # No default: an envelope that forgets the audience gate's trims is silently
     # wrong, so its absence has to be a refusal rather than an empty map.

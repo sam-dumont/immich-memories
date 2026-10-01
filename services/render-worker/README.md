@@ -89,6 +89,10 @@ variables differ by one underscore while meaning opposite things.
 
 ### What the worker holds
 
+Each job carries the app's explicit `network.geocoding`, `geocoding_url` and
+`map_tiles` policy. These shape place names, trip maps and their timing, so the
+worker must use the same policy as the app. All remain disabled by default.
+
 Every job carries the app's full Immich API key: the same key the app uses, with the
 same permissions. There is no separate, narrower key yet. The worker uses it only to
 download the selected originals from the one Immich URL it was started with, keeps it

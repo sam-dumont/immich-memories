@@ -112,6 +112,52 @@ def test_worker_rejects_invalid_trip_calendar_bounds():
             MemorySettings(target_duration_seconds=30, preset_params={"trip_start": value})
 
 
+def test_trip_map_timeline_survives_the_http_worker_handoff(tmp_path):
+    from datetime import date
+
+    from immich_memories.api.models import ExifInfo, VideoClipInfo
+    from immich_memories.processing.assembly_config import AssemblyClip
+    from immich_memories.processing.remote_render import _expected_duration, _map_extra
+
+    params = manual_params(tmp_path)
+    params.memory_type = "trip"
+    params.config.title_screens.enabled = True
+    params.config.network.map_tiles = True
+    params.memory_preset_params = {
+        "location_name": "Example Trip",
+        "trip_start": date(2024, 2, 1),
+        "trip_end": date(2024, 2, 2),
+        "home_lat": 40.0,
+        "home_lon": -70.0,
+    }
+    params.clips[0].asset.exif_info = ExifInfo(latitude=48.0, longitude=2.0, city="First Town")
+    second = params.clips[0].asset.model_copy(
+        update={
+            "id": str(uuid4()),
+            "file_created_at": params.clips[0].asset.file_created_at.replace(day=2),
+            "exif_info": ExifInfo(latitude=49.0, longitude=3.0, city="Second Town"),
+        }
+    )
+    params.clips.append(VideoClipInfo(asset=second, duration_seconds=10, width=1920, height=1080))
+    params.clip_segments[second.id] = (2.5, 5.75)
+    received, body = round_trip(params, tmp_path)
+    content = [
+        AssemblyClip(
+            path=tmp_path / f"source-{index}.mp4",
+            asset_id=clip.asset.id,
+            duration=3.25,
+            date=clip.asset.file_created_at.isoformat(),
+            latitude=clip.asset.exif_info.latitude,
+            longitude=clip.asset.exif_info.longitude,
+            location_name=clip.asset.exif_info.city,
+        )
+        for index, clip in enumerate(params.clips)
+    ]
+    assert _map_extra(params, body, content) > 0
+    assert _expected_duration(received, body, content) == _expected_duration(params, body, content)
+    assert _map_extra(received, body, content) == _map_extra(params, body, content)
+
+
 def test_an_editorial_directive_keeps_its_cut_without_a_manual_segment_map(tmp_path):
     from immich_memories.analysis.editorial_planner import EditorialSelection
 
@@ -141,6 +187,9 @@ def test_remote_render_retains_film_settings_and_source_audio_markers(tmp_path):
     params.config.title_screens.enabled = True
     params.config.title_screens.animated_background = False
     params.config.title_screens.use_first_name_only = False
+    params.config.network.geocoding = True
+    params.config.network.geocoding_url = "http://geocoder.invalid:8080"
+    params.config.network.map_tiles = True
     params.config.output.hdr_mode = HdrMode.AUTO
     params.config.output.quality = "fast"
     params.config.photos.duration = 2.5
@@ -157,6 +206,7 @@ def test_remote_render_retains_film_settings_and_source_audio_markers(tmp_path):
 
     received, _ = round_trip(params, tmp_path)
     assert received.config.title_screens == params.config.title_screens
+    assert received.config.network == params.config.network
     assert received.config.photos.duration == 2.5
     assert received.config.output.hdr_mode == HdrMode.AUTO
     assert received.config.output.quality == "fast"
