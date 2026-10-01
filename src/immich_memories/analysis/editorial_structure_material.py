@@ -23,7 +23,7 @@ from immich_memories.analysis.editorial_episode_documents import (
 )
 from immich_memories.analysis.editorial_event_families import merge_event_families
 from immich_memories.analysis.editorial_person_period_facts import (
-    person_period_facts,
+    PersonPeriodProjection,
     render_person_period_facts,
 )
 from immich_memories.analysis.editorial_speech import banked_unit_regions, speech_buffer
@@ -127,7 +127,8 @@ def read_wall(source: StructurePlanningInput) -> Wall:
     for m in aliases:
         families.setdefault(family_of_moment[m], []).append(m)
     fam_ids = list(families)  # chronological by construction
-    period_people = {f: person_period_facts(tables, families[f]) for f in fam_ids}
+    people_projection = PersonPeriodProjection(tables)
+    period_people = {f: people_projection.facts(families[f]) for f in fam_ids}
     event_assets: dict[str, list[str]] = {}
     moment_of_asset: dict[str, str] = {}
     for moment_alias, asset_ids in source.moment_asset_ids.items():

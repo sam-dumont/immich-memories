@@ -67,6 +67,11 @@ class LayaReader:
         backend = f"{type(scorer).__module__}.{type(scorer).__qualname__}"
         self.cache_identity = f"laya|{backend}|{checkpoint_id}|threshold={threshold.hex()}"
 
+    def close(self) -> None:
+        """Release loaded weights; a later audience check loads the same scorer again."""
+        if close := getattr(self._scorer, "close", None):
+            close()
+
     def activity_answers(self, pending: Mapping[str, tuple[Sequence[str], bool]]) -> dict[str, str]:
         """Each carrier's activity answer, in the JSON form the audience check reads.
 
@@ -102,6 +107,10 @@ class MlxLayaScorer:
         self._checkpoint = checkpoint
         self._batch_size = batch_size
         self._agent: Any = None
+
+    def close(self) -> None:
+        """Drop the agent's live MLX tensors before the runtime cache is emptied."""
+        self._agent = None
 
     def probabilities(
         self, states: Sequence[str], question: Mapping[str, Any]

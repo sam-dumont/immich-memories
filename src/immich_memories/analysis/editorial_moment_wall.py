@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 from immich_memories.analysis.editorial_people import EditorialPeople
 from immich_memories.analysis.place_names import shown_city
+from immich_memories.analysis.selection_source_groups import EpisodeMembershipIndex
 
 if TYPE_CHECKING:
     from immich_memories.analysis.editorial_moment_contract import MomentCard as EditorCard
@@ -113,10 +114,14 @@ def _canonical_groups(prepared: Any) -> tuple[dict[str, Any], tuple[Any, ...]]:
     return groups_by_id, episode_groups
 
 
-def _check_card_episode(card: Any, group: Any, episode_groups: tuple[Any, ...]) -> None:
-    moment_members = set(group.candidate_ids)
+def _check_card_episode(
+    card: Any,
+    group: Any,
+    episode_groups: tuple[Any, ...],
+    membership: EpisodeMembershipIndex,
+) -> None:
     carrying = tuple(
-        episode for episode in episode_groups if moment_members.issubset(episode.candidate_ids)
+        episode_groups[position] for position in membership.carrying_positions(group.candidate_ids)
     )
     if not card.episode_id.strip() or len(carrying) != 1 or card.episode_id != carrying[0].group_id:
         raise ValueError("production moment wall card differs from its canonical episode")
@@ -128,6 +133,7 @@ def _conserved_sources(
     episode_groups: tuple[Any, ...],
 ) -> tuple[_SourceMoment, ...]:
     sources: list[_SourceMoment] = []
+    membership = EpisodeMembershipIndex(episode_groups)
     previous_taken_at: datetime | None = None
     for index, card in enumerate(cards, start=1):
         group = groups_by_id.get(card.moment_id)
@@ -136,7 +142,7 @@ def _conserved_sources(
             raise ValueError("production moment wall card differs from its canonical group")
         if evidence is None:
             raise ValueError("normalized production moment wall needs structured card evidence")
-        _check_card_episode(card, group, episode_groups)
+        _check_card_episode(card, group, episode_groups, membership)
         taken_at = group.candidates[0].taken_at
         if previous_taken_at is not None and taken_at < previous_taken_at:
             raise ValueError("production moment wall cards must remain chronological")

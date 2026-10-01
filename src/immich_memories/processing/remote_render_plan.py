@@ -54,9 +54,10 @@ def build_render_request(params: GenerationParams) -> dict:
             "date_start": _calendar_date(params.date_start),
             "date_end": _calendar_date(params.date_end),
             "person_name": params.person_name,
-            "preset_params": params.memory_preset_params,
+            "preset_params": _preset_request(params.memory_preset_params),
         },
         "titles": titles | {"title": params.title or "", "subtitle": params.subtitle or ""},
+        "network": params.config.network.model_dump(),
         "timing": binding,
         "certified_content_intervals": {
             clip["asset_id"]: clip["live"]["selected_interval"]
@@ -93,6 +94,15 @@ def _calendar_date(value: date | None) -> str | None:
     if value is None:
         return None
     return (value.date() if isinstance(value, datetime) else value).isoformat()
+
+
+def _preset_request(preset_params: dict) -> dict:
+    """Trip bounds are calendar days on the wire, as the top-level bounds are."""
+    result = preset_params.copy()
+    for key in ("trip_start", "trip_end"):
+        if isinstance(result.get(key), date):
+            result[key] = _calendar_date(result[key])
+    return result
 
 
 def _live_certificate(clip, mode: str, start: float, end: float) -> dict | None:

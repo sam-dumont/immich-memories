@@ -190,9 +190,11 @@ network:
 
 Off, a trip film opens on the ordinary title card, location cards show the town name on the style's own
 background, and nothing about where you went leaves the machine. On, the camera starts over home at city zoom
-and flies out to the trip's stops. Long distances use a Van Wijk zoom (the d3 `interpolateZoom` path, which
-pulls out further the further apart the points are); short hops pan. Tiles come from ArcGIS World Imagery at
-`server.arcgisonline.com`, no key, a few hundred per map. A box that cannot reach it renders grey frames and the
+and flies to the first trip stop. Later cards travel from the previous stop to the next one. Long distances use a Van Wijk zoom (the d3 `interpolateZoom` path, which
+pulls out further the further apart the points are); hops that already fit the close view pan.
+The camera arrives close to the destination, with the same geographic framing at 1080p and 4K. Tiles come from ArcGIS World Imagery at
+`server.arcgisonline.com`, no key. Tile count varies with the route and resolution and can exceed 1000 per
+map. A box that cannot reach it renders grey frames and the
 run carries on.
 
 ### Map moves
@@ -211,20 +213,29 @@ title_screens:
   map_move_max_seconds: 8.0   # far place, hold included
 ```
 
-A card renders every flight frame once and the hold once, so a 7 s card at 30 fps is about 150 map renders.
+With animated backgrounds enabled, a card renders every flight frame once and the hold once, so a 7 s card at 30 fps is about 150 map renders.
 Tiles are cached for the whole card. The log line per card gives frames, renders and tiles.
+
+`preset: fast` sets `title_screens.animated_background: false`. Maps then use three views: close to the
+previous stop, the route's wider midpoint, and close to the next stop. Short fades join these views;
+this replaces the smooth flight. Satellite detail is rendered at a 360-pixel short side and enlarged,
+while names and pins are drawn at the film's full resolution. Each leg needs only three map renders.
+Static spans reuse those plates in one frame stream; only the two brief fades blend new frames.
+The output resolution, frame rate, encoding plan, move duration and destination hold stay the same.
+Set `animated_background: true` explicitly to keep the smooth map flight, even with the fast preset.
 
 ### Stops on the intro
 
-Every pin on the intro has a name. A point nobody can name gets no pin, since an unlabelled dot tells you
-nothing.
+The intro lands on the first trip stop. Later stops appear as the film reaches them. Only named stops
+get pins, since an unlabelled dot tells you nothing.
 
 Close stops are grouped with the trip-leg rule: points that stay within 25 km of each other are one area of stay.
 
 - A group of 1 or 2 stops keeps each town's own name.
 - A group of 3 or more is one pin in its middle, named by the place its members share: the municipality,
   county, district, island, province or region, from the geocoder, in the film's language. With
-  [geocoding](../run/privacy.md) off, or no level in common, it is named "first → last" (`Village A → Village G`).
+  [geocoding](../run/privacy.md) off, or no level in common, it is named "first → last" (`Village A → Village G`). The arrow is bundled with the fonts and needs no
+  extra font installation.
 
 So a hike through seven villages in one valley is one stop with the valley's county on it, and the intro flies
 there as one hop. The intro never hops stop by stop: each location card already flies that leg at a

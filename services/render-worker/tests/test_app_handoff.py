@@ -34,6 +34,7 @@ def manual_params(tmp_path):
 
 
 def round_trip(params, tmp_path):
+    import httpx
     from immich_memories_render_worker.admission import certify_envelope
     from immich_memories_render_worker.models import RenderRequest
     from immich_memories_render_worker.native_plan import generation_params
@@ -41,7 +42,9 @@ def round_trip(params, tmp_path):
     from immich_memories.processing.remote_render_plan import build_render_request
 
     body = build_render_request(params)
-    request = RenderRequest.model_validate(body)
+    # Exercise the same JSON encoder as RemoteRenderClient's POST /jobs.
+    wire = httpx.Request("POST", "http://render.invalid/jobs", json=body)
+    request = RenderRequest.model_validate_json(wire.content)
     certify_envelope(request)
 
     class Client:
@@ -64,6 +67,95 @@ def test_app_envelope_preserves_manual_cut_and_square_canvas(tmp_path):
     assert received.editorial_render_timing == body["timing"]
     assert body["memory"]["date_start"] is None
     assert body["memory"]["date_end"] is None
+
+
+def test_trip_calendar_bounds_survive_http_json_and_worker_title_generation(tmp_path):
+    from datetime import date
+
+    from immich_memories.generate_privacy import generate_trip_title_text
+
+    params = manual_params(tmp_path)
+    params.memory_type = "trip"
+    params.date_start = date(2024, 2, 29)
+    params.date_end = date(2024, 3, 3)
+    params.memory_preset_params = {
+        "location_name": "Example City",
+        "location_kind": "city",
+        "trip_start": params.date_start,
+        "trip_end": params.date_end,
+        "home_lat": 40.0,
+        "home_lon": -70.0,
+    }
+    original = params.memory_preset_params.copy()
+    received, body = round_trip(params, tmp_path)
+    assert body["memory"]["preset_params"] == original | {
+        "trip_start": "2024-02-29",
+        "trip_end": "2024-03-03",
+    }
+    assert params.memory_preset_params == original
+    assert received.memory_preset_params == original
+    assert received.date_start == params.date_start
+    assert received.date_end == params.date_end
+    assert received.editorial_render_timing == body["timing"]
+    assert generate_trip_title_text(received.memory_preset_params) == generate_trip_title_text(
+        original
+    )
+
+
+def test_worker_rejects_invalid_trip_calendar_bounds():
+    import pytest
+    from immich_memories_render_worker.models import MemorySettings
+    from pydantic import ValidationError
+
+    for value in ("2024-02-30", 20240229, ["2024-02-29"]):
+        with pytest.raises(ValidationError, match="trip_start"):
+            MemorySettings(target_duration_seconds=30, preset_params={"trip_start": value})
+
+
+def test_trip_map_timeline_survives_the_http_worker_handoff(tmp_path):
+    from datetime import date
+
+    from immich_memories.api.models import ExifInfo, VideoClipInfo
+    from immich_memories.processing.assembly_config import AssemblyClip
+    from immich_memories.processing.remote_render import _expected_duration, _map_extra
+
+    params = manual_params(tmp_path)
+    params.memory_type = "trip"
+    params.config.title_screens.enabled = True
+    params.config.network.map_tiles = True
+    params.memory_preset_params = {
+        "location_name": "Example Trip",
+        "trip_start": date(2024, 2, 1),
+        "trip_end": date(2024, 2, 2),
+        "home_lat": 40.0,
+        "home_lon": -70.0,
+    }
+    params.clips[0].asset.exif_info = ExifInfo(latitude=48.0, longitude=2.0, city="First Town")
+    second = params.clips[0].asset.model_copy(
+        update={
+            "id": str(uuid4()),
+            "file_created_at": params.clips[0].asset.file_created_at.replace(day=2),
+            "exif_info": ExifInfo(latitude=49.0, longitude=3.0, city="Second Town"),
+        }
+    )
+    params.clips.append(VideoClipInfo(asset=second, duration_seconds=10, width=1920, height=1080))
+    params.clip_segments[second.id] = (2.5, 5.75)
+    received, body = round_trip(params, tmp_path)
+    content = [
+        AssemblyClip(
+            path=tmp_path / f"source-{index}.mp4",
+            asset_id=clip.asset.id,
+            duration=3.25,
+            date=clip.asset.file_created_at.isoformat(),
+            latitude=clip.asset.exif_info.latitude,
+            longitude=clip.asset.exif_info.longitude,
+            location_name=clip.asset.exif_info.city,
+        )
+        for index, clip in enumerate(params.clips)
+    ]
+    assert _map_extra(params, body, content) > 0
+    assert _expected_duration(received, body, content) == _expected_duration(params, body, content)
+    assert _map_extra(received, body, content) == _map_extra(params, body, content)
 
 
 def test_an_editorial_directive_keeps_its_cut_without_a_manual_segment_map(tmp_path):
@@ -95,6 +187,9 @@ def test_remote_render_retains_film_settings_and_source_audio_markers(tmp_path):
     params.config.title_screens.enabled = True
     params.config.title_screens.animated_background = False
     params.config.title_screens.use_first_name_only = False
+    params.config.network.geocoding = True
+    params.config.network.geocoding_url = "http://geocoder.invalid:8080"
+    params.config.network.map_tiles = True
     params.config.output.hdr_mode = HdrMode.AUTO
     params.config.output.quality = "fast"
     params.config.photos.duration = 2.5
@@ -111,6 +206,7 @@ def test_remote_render_retains_film_settings_and_source_audio_markers(tmp_path):
 
     received, _ = round_trip(params, tmp_path)
     assert received.config.title_screens == params.config.title_screens
+    assert received.config.network == params.config.network
     assert received.config.photos.duration == 2.5
     assert received.config.output.hdr_mode == HdrMode.AUTO
     assert received.config.output.quality == "fast"

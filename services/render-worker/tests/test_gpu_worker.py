@@ -59,6 +59,111 @@ def test_one_address_preserves_health_authentication_and_facts(tmp_path):
     assert runtime.loaded("heads") is None
 
 
+async def test_same_phase_facts_wait_for_cleanup_then_both_enter_the_existing_queue(tmp_path):
+    import asyncio
+
+    import httpx
+
+    from immich_memories_inference.caption_runtime import CaptionRuntime
+
+    preparing = threading.Event()
+    finish_cleanup = threading.Event()
+
+    # WHY: replace external caption process cleanup, keeping phase admission,
+    # both HTTP applications and the inference queue real.
+    class BlockingCaptions(CaptionRuntime):
+        armed = False
+        cleanups = 0
+
+        def stop(self):
+            if self.armed:
+                self.cleanups += 1
+                preparing.set()
+                assert finish_cleanup.wait(3)
+
+    captions = BlockingCaptions()
+    app = create_app(
+        InferenceSettings(cache_dir=tmp_path),
+        WorkerSettings(token=WORKER_TOKEN, immich_url="http://immich.invalid", directory=tmp_path),
+        runtime=ProducerRuntime({"heads": SyntheticProducer}),
+        renderer=IdleRenderer(),
+        captions=captions,
+    )
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://worker"
+        ) as client,
+    ):
+        captions.armed = True
+        first = asyncio.create_task(client.post("/facts", json={"image": "cGl4ZWxz"}))
+        second = None
+        try:
+            assert await asyncio.to_thread(preparing.wait, 2)
+            second = asyncio.create_task(client.post("/facts", json={"image": "cGl4ZWxz"}))
+            done, _pending = await asyncio.wait({second}, timeout=0.05)
+            assert not done, "same-phase facts must wait for cleanup rather than fail admission"
+        finally:
+            finish_cleanup.set()
+        assert (await first).status_code == 200
+        assert second is not None and (await second).status_code == 200
+        assert captions.cleanups == 1
+        queue = (await client.get("/queue")).json()["producers"]["heads"]
+        assert queue["completed"] == 2 and queue["rejected"] == 0
+        captions.armed = False
+
+
+async def test_same_phase_facts_retain_the_existing_queue_capacity(tmp_path):
+    import asyncio
+
+    import httpx
+
+    deciding = threading.Event()
+    finish = threading.Event()
+
+    # WHY: replace native classifier execution with a bounded wait; HTTP
+    # admission and the actual inference queue still enforce capacity.
+    class SlowProducer(SyntheticProducer):
+        def decide(self, image):
+            deciding.set()
+            assert finish.wait(3)
+            return super().decide(image)
+
+    app = create_app(
+        InferenceSettings(cache_dir=tmp_path, request_threads=1, max_queued_requests=1),
+        WorkerSettings(token=WORKER_TOKEN, immich_url="http://immich.invalid", directory=tmp_path),
+        runtime=ProducerRuntime({"heads": SlowProducer}),
+        renderer=IdleRenderer(),
+    )
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://worker"
+        ) as client,
+    ):
+        first = asyncio.create_task(client.post("/facts", json={"image": "cGl4ZWxz"}))
+        second = None
+        try:
+            assert await asyncio.to_thread(deciding.wait, 2)
+            second = asyncio.create_task(client.post("/facts", json={"image": "cGl4ZWxz"}))
+            for _attempt in range(100):
+                queue = (await client.get("/queue")).json()
+                if queue["producers"]["heads"]["queued"] == 1:
+                    break
+                await asyncio.sleep(0.01)
+            assert queue["capacity"] == 1 and queue["producers"]["heads"]["queued"] == 1
+            overflow = await client.post("/facts", json={"image": "cGl4ZWxz"})
+            assert overflow.status_code == 429
+            assert overflow.headers["Retry-After"] == "1"
+        finally:
+            finish.set()
+        assert (await first).status_code == 200
+        assert second is not None and (await second).status_code == 200
+        lane = (await client.get("/queue")).json()["producers"]["heads"]
+        assert lane["completed"] == 2 and lane["rejected"] == 1
+        assert lane["queued"] == lane["active"] == 0
+
+
 def test_render_releases_models_then_refuses_model_work_until_it_finishes(tmp_path):
     started = threading.Event()
     release = threading.Event()
@@ -174,6 +279,138 @@ async def test_a_failed_phase_cleanup_is_retried_before_admitting_work():
             raise AssertionError("failed cleanup admitted native work")
     async with phases.models("facts"):
         assert attempts == ["facts", "facts"]
+
+
+async def test_same_phase_cleanup_failure_never_admits_waiters_and_can_retry():
+    import asyncio
+
+    import pytest
+
+    preparing = threading.Event()
+    finish = threading.Event()
+    attempts = []
+    entered = []
+
+    def release(phase):
+        attempts.append(phase)
+        if len(attempts) == 1:
+            preparing.set()
+            assert finish.wait(3)
+            raise RuntimeError("synthetic cleanup failed")
+
+    phases = GpuPhases(release)
+
+    async def request():
+        async with phases.models("facts"):
+            entered.append("native work")
+
+    first = asyncio.create_task(request())
+    second = None
+    try:
+        assert await asyncio.to_thread(preparing.wait, 2)
+        second = asyncio.create_task(request())
+        await asyncio.sleep(0.01)
+    finally:
+        finish.set()
+    with pytest.raises(RuntimeError, match="synthetic cleanup failed"):
+        await first
+    assert second is not None
+    with pytest.raises(PhaseBusy, match="cleanup failed"):
+        await second
+    assert entered == []
+    await request()
+    assert attempts == ["facts", "facts"] and entered == ["native work"]
+
+
+async def test_same_phase_preparation_deadline_keeps_cleanup_owned():
+    import asyncio
+
+    import pytest
+
+    preparing = threading.Event()
+    finish = threading.Event()
+    released = []
+    entered = []
+
+    def release(phase):
+        released.append(phase)
+        preparing.set()
+        assert finish.wait(3)
+
+    phases = GpuPhases(release, timeout=0.01)
+
+    async def request():
+        async with phases.models("facts"):
+            entered.append("facts")
+
+    first = asyncio.create_task(request())
+    try:
+        assert await asyncio.to_thread(preparing.wait, 2)
+        with pytest.raises(PhaseBusy, match="admission deadline"):
+            await request()
+        assert entered == [] and not first.done()
+
+        def render():
+            with phases.rendering():
+                entered.append("render")
+
+        with pytest.raises(PhaseBusy, match="render deadline"):
+            await asyncio.to_thread(render)
+        with pytest.raises(PhaseBusy, match="another phase"):
+            async with phases.models("caption"):
+                entered.append("caption")
+        assert released == ["facts"] and entered == []
+    finally:
+        finish.set()
+        await first
+    assert entered == ["facts"]
+    with phases.rendering():
+        assert released == ["facts", "render"]
+
+
+async def test_cancelling_a_same_phase_waiter_never_releases_the_preparing_owner():
+    import asyncio
+
+    import pytest
+
+    preparing = threading.Event()
+    finish = threading.Event()
+    entered = []
+
+    def release(phase):
+        preparing.set()
+        assert finish.wait(3)
+
+    phases = GpuPhases(release, timeout=0.05)
+
+    async def request(name):
+        async with phases.models("facts"):
+            entered.append(name)
+
+    first = asyncio.create_task(request("owner"))
+    second = None
+    try:
+        assert await asyncio.to_thread(preparing.wait, 2)
+        second = asyncio.create_task(request("cancelled waiter"))
+        await asyncio.sleep(0.01)
+        second.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await second
+        assert entered == []
+
+        def render():
+            with phases.rendering():
+                entered.append("render")
+
+        with pytest.raises(PhaseBusy, match="render deadline"):
+            await asyncio.to_thread(render)
+        assert not first.done()
+    finally:
+        finish.set()
+        await first
+    assert entered == ["owner"]
+    with phases.rendering():
+        pass
 
 
 async def test_repeated_client_cancellation_keeps_native_work_reserved(tmp_path):

@@ -37,52 +37,164 @@ The [hardware guide](../run/hardware.md) covers encoding and title effects. The 
 
 ## Whole-film controls, 1 October 2026 {#whole-film-controls}
 
-Thirteen of the fifteen release controls have passed film, audio and cache checks at this snapshot; all thirteen have verified uploads. The two remaining controls use the Linux CUDA worker. These are warm picture banks with fresh editorial decisions: compatible facts were reused, while original-media acquisition, titles, rendering and music still ran. They are measurements of the listed revisions and profiles, not timings for every later commit or equal-quality comparisons between tiers.
+Fourteen of the fifteen release controls have passed film, audio, source-scope and cache checks;
+all fourteen have verified latest uploads to Immich. The Linux CUDA worker person control remains
+pending. The trip passed after a separate native-audio recovery. Failed attempts do not count as
+completed films.
 
-| Hardware and profile | Request | Whole run | Source revision |
-|---|---|---:|---|
-| NAS / rules / 1080p | Month | 7m 23s | `c4c7356304c5` |
-| NAS / rules / 1080p | Person | 78m 51s | `dec8f20e609c` |
-| NAS / rules / 1080p | Trip | 17m 33s | `dec8f20e609c` |
-| Linux CUDA worker / rules / 4K HDR | Month | 24m 01s | `2a2cadccf7e4` |
-| M2 16 GiB / Full / 4K | Month | 15m 29s | `f74936b657d7` |
-| M2 16 GiB / Full / 4K | Person | 87m 23s | `4db52f365a5e` |
-| M2 16 GiB / Full / 4K | Trip | 35m 05s | `03cc7f56c122` |
-| M2 16 GiB / GPU rules / 4K | Month | 7m 18s | `f74936b657d7` |
-| M2 16 GiB / GPU rules / 4K | Person | 59m 47s | `4db52f365a5e` |
-| M2 16 GiB / GPU rules / 4K | Trip | 26m 00s | `f82de21b5bf5` |
-| M5 / Full / 4K | Month | 5m 43s | `cb06e4ba0e0d` |
-| M5 / Full / 4K | Person | 39m 40s | `f82de21b5bf5` |
-| M5 / Full / 4K | Trip | 18m 42s | `f82de21b5bf5` |
+These runs reused compatible picture facts and made fresh editorial decisions. Original-media
+acquisition, titles, rendering and music still ran. Different tiers, source revisions and realised
+cuts make this a completion matrix, not a controlled speed comparison. A later patch does not
+change the timings of an accepted run.
 
-Pending: the Linux CUDA worker person and trip retries. Earlier failed worker attempts do not count as completed films. The latest trip attempt on `e42aab375b9e` produced a 128.87 s film, then failed the client duration check after 26m 28s. The worker request omitted the enabled map and geocoding settings; [#1713](https://github.com/sam-dumont/immich-video-memory-generator/pull/1713) carries those settings explicitly. The person retry needs matching worker and client deadlines and the workspace ownership fix in [#1711](https://github.com/sam-dumont/immich-video-memory-generator/pull/1711). Both controls still require finished-film validation on the corrected worker image.
+| Hardware and tier | Film | Whole run | Film seconds | Output | Runtime source |
+|---|---|---:|---:|---|---|
+| NAS / NAS | Month | 7m 23s | 60.817 | 1080×1920, 60 fps, SDR | `c4c7356304c5` |
+| NAS / NAS | Person | 78m 51s | 605.350 | 1080×1920, 60 fps, SDR | `dec8f20e609c` |
+| NAS / NAS | Trip | 17m 33s | 164.967 | 1920×1080, 30 fps, SDR | `dec8f20e609c` |
+| Linux CUDA worker / GPU | Month | 24m 01s | 60.900 | 2160×3840, 60 fps, HDR10 | `2a2cadccf7e4` |
+| Linux CUDA worker / GPU | Trip | 67m 53s original; 8m 01s audio recovery | 164.967 | 3840×2160, 30 fps, HDR10 | `4913c3892695` |
+| M2 16 GiB / Full | Month | 15m 29s | 60.400 | 2160×3840, 60 fps, HDR10 | `f74936b657d7` |
+| M2 16 GiB / Full | Person | 87m 23s | 605.350 | 2160×3840, 60 fps, HDR10 | `4db52f365a5e` |
+| M2 16 GiB / Full | Trip | 35m 05s | 165.433 | 3840×2160, 30 fps, HDR10 | `03cc7f56c122` |
+| M2 16 GiB / GPU | Month | 7m 18s | 60.900 | 2160×3840, 60 fps, HDR10 | `f74936b657d7` |
+| M2 16 GiB / GPU | Person | 59m 47s | 604.850 | 2160×3840, 60 fps, HDR10 | `4db52f365a5e` |
+| M2 16 GiB / GPU | Trip | 26m 00s | 165.033 | 3840×2160, 30 fps, HDR10 | `f82de21b5bf5` |
+| M5 / Full | Month | 5m 43s | 60.400 | 2160×3840, 60 fps, HDR10 | `cb06e4ba0e0d` |
+| M5 / Full | Person | 39m 40s | 605.350 | 2160×3840, 60 fps, HDR10 | `f82de21b5bf5` |
+| M5 / Full | Trip | 18m 42s | 165.433 | 3840×2160, 30 fps, HDR10 | `f82de21b5bf5` |
+
+Whole run is the measured end-to-end control time. Film seconds are the actual output duration;
+month and person cuts differ slightly between tiers. HDR outputs use PQ. Runtime source identifies
+the accepted run, including equivalent source trees recorded in the evidence.
+
+The CUDA trip's original 4073.2 s includes failed music attempts. Its worker rendered the video in
+3131.9 s. After the external ACE service was corrected, the production music phase took another
+480.8 s without rerendering the video; the compressed video packets were unchanged. The finished
+film passed complete video and audio decoding. These are separate measured intervals, not a
+clean uninterrupted whole-film benchmark.
 
 ### Where the time went
 
-| Measured control | Selected stage costs |
-|---|---|
-| M2 Full trip, `03cc7f56c122` | Nine maps: 911 s of 2,105 s total, about 43% |
-| NAS trip, `dec8f20e609ce` | Nine maps: 39 s; clip preparation: 517 s; assembly: 286 s; music: 43 s |
-| M2 Full person, `4db52f365a5e` | Clip preparation: 449 s; assembly: 2,353 s, about 45% of the run; music: 238 s |
-| M2 GPU person, `4db52f365a5e` | Clip preparation: 481 s; assembly: 2,371 s, about 66% of the run; music: 278 s |
-| M5 Full person, `f82de21b5bf5` | Selection: 670 s; clip preparation: 302 s; assembly: 1,069 s; music: 103 s |
-| M5 Full trip, `f82de21b5bf5` | Selection: 156 s; clip preparation: 46 s; assembly: 835 s; music: 42 s |
+| Hardware and tier | Film | Source preparation, s | Assembly, s | Music, s |
+|---|---|---:|---:|---:|
+| NAS / NAS | Month | 187.7 | 180.6 | 15.7 |
+| NAS / NAS | Person | 1857.1 | 2135.0 | 163.2 |
+| NAS / NAS | Trip | 516.6 | 286.3 | 42.9 |
+| Linux CUDA worker / GPU | Month | Unknown | Unknown | Unknown |
+| Linux CUDA worker / GPU | Trip | Unknown | Unknown | 480.8, separate recovery |
+| M2 / Full | Month | Unknown | Unknown | 76.4 |
+| M2 / Full | Person | 449.3 | 2353.2 | 237.5 |
+| M2 / Full | Trip | 76.6 | 1254.6 | 136.4 |
+| M2 / GPU | Month | Unknown | Unknown | 58.6 |
+| M2 / GPU | Person | 481.4 | 2370.9 | 278.5 |
+| M2 / GPU | Trip | 75.1 | 1265.7 | 131.2 |
+| M5 / Full | Month | 32.0 | 116.0 | 23.7 |
+| M5 / Full | Person | 301.5 | 1069.2 | 103.2 |
+| M5 / Full | Trip | 45.6 | 834.7 | 42.4 |
 
-Stage records can overlap; do not add them into a new wall time. The NAS map profile uses lower resolution and reduced motion. Full and GPU retain smooth animation. The route zoom and arrow correction in [#1700](https://github.com/sam-dumont/immich-video-memory-generator/pull/1700) applies to ordinary maps too; the three-view shortcut in [#1703](https://github.com/sam-dumont/immich-video-memory-generator/pull/1703) applies only when `animated_background` is false. The 39 s and 911 s map costs describe different profiles.
+Stage records can overlap; do not add them into a new wall time. Assembly includes titles,
+composition and encoding. These are not encoder-only timings. The CUDA month receipt records a
+967.9 s worker-job lifetime but no complete three-stage breakdown. The trip's worker-job time is
+also separate from assembly-only timing. Missing records stay unknown.
 
-Assembly is still expensive after selection. [#1706](https://github.com/sam-dumont/immich-video-memory-generator/pull/1706) merged reuse of selection indexes after these controls. [#1709](https://github.com/sam-dumont/immich-video-memory-generator/pull/1709), which converts lower-cadence HDR frames before duplication and waits for each clip's audio to finish, merged as `b96d7d6a297c` after all CI checks passed. Neither changes the measured times above.
+Assembly remains a large cost. The M5 Full person film spent another 670.3 s in selection and
+analysis. The M2 Full trip spent 911 s rendering nine maps, about 43% of its whole run. The NAS
+trip's nine maps took 39 s with lower resolution and reduced motion. Full and GPU retain smooth
+animation; these are different profiles.
 
-### Audio and memory scopes
+The route zoom and arrow correction in [#1700](https://github.com/sam-dumont/immich-video-memory-generator/pull/1700)
+applies to ordinary maps too. The three-view shortcut in
+[#1703](https://github.com/sam-dumont/immich-video-memory-generator/pull/1703) applies only when
+`animated_background` is false. Selection-index reuse in
+[#1706](https://github.com/sam-dumont/immich-video-memory-generator/pull/1706) and the lower-cadence HDR
+conversion/audio-completion fix in
+[#1709](https://github.com/sam-dumont/immich-video-memory-generator/pull/1709) landed after the listed
+Mac and NAS controls. The CUDA worker is frozen at `4913c3892695`, before #1709. No whole-film
+speedup is claimed for those patches.
 
-The NAS controls use bundled music and hardware H.264 at 1080p; the NAS trip opened VAAPI for 54 compressed encodes. NAS preparation leaves Marqo and Docling off. The Mac and CUDA controls run native ACE-Step with four Demucs stems. The Mac person and trip controls include 120 s takes; a synthetic audio probe does not prove that full workload fits.
+### Native audio and encoding
 
-The NAS month reached 1.71 GiB of container RAM; the NAS trip reached 2.22 GiB, within a 4 GiB limit. Sampled swap was about 11 MiB and 14 MiB respectively, with no memory-limit failures. The accepted CUDA month reached 5.14 GiB in the worker container. Its external audio service was a separate scope, reaching 9.42 GiB in current samples; its older 14.78 GiB historical peak was unchanged during this control. Do not sum peaks from different containers or times.
+NAS uses bundled music and hardware H.264 at 1080p, with Marqo and Docling off. Its trip opened
+VAAPI for 54 compressed encodes. Mac and CUDA controls use native ACE-Step audio and Demucs
+separation. A synthetic audio probe alone does not prove that a person film's full workload fits.
 
-On the 16 GiB M2, accepted month and trip controls added about 0.97–1.41 GiB of whole-host swap above their starting values. Their owned process trees peaked around 11.0–12.2 GiB RSS. Whole-host swap, process RSS and physical footprint measure different things; swap may include other apps, and summed RSS can count shared pages more than once. These measurements do not establish a smaller physical-memory requirement.
+The Mac month controls generated one 88 s take each; the CUDA month generated three 88 s takes.
+Accepted Mac trip controls generated two 120 s takes each. The recovered CUDA trip also used
+two finite 120 s native takes and four finite winning Demucs stems, with no bundled substitution.
+M2 GPU and M5 Full person generated
+all three requested 120 s takes. These controls produced four finite Demucs stems.
 
-The app now closes the selection-owned Laya model, clears unused local model buffers and releases its owned reader before titles and rendering. An actual M2 Full control observed MLX active memory fall from 842.6 MB to 22 bytes on close; immediately before rendering its cache was zero and its owned reader had exited. Its temporary selection swap surge ended at that boundary. That control completed in 87m 23s, with final host swap 145 MiB above its starting value. Its first of three requested music blocks was refused before generation by the resident-weight admission check; the other two generated 120 s native tracks and four local Demucs stems. The soundtrack repeats those two tracks, with no bundled substitution. The finished 605.35 s portrait film passed all 36,321 frames of video decoding, audio decoding to EOF, twelve visual samples and continuous-awake checks. Its parent physical footprint peaked at 10.92 GiB; that is separate from the owned process tree's 11.70 GiB RSS peak. Producer facts and derived banks were preserved; observed changes were metadata refreshes. This control is accepted with the missing third music block recorded. External model servers retain their own unload policy. Later music work can reopen an app-owned reader.
+M2 Full person generated two of three requested 120 s takes. The resident-weight admission guard
+refused the first before generation. Its soundtrack repeats the two successful native tracks,
+with four finite local Demucs stems and no bundled substitution. This qualification is part of
+its accepted result.
 
-The M2 GPU person control completed a 604.85 s portrait film with all three requested 120 s native tracks and four local Demucs stems. All 36,291 video frames and the complete audio stream decoded; twelve visual samples, acquisition scope, all fifteen factual banks and continuous-awake checks passed. Its 154 compressed encodes requested VideoToolbox. Before rendering, MLX cache was zero and no owned reader remained. Whole-host swap peaked 1,667 MiB above its starting value during native music and ended 367 MiB above it. The parent physical-footprint high-water mark was 7.91 GiB; owned-tree RSS peaked at 11.05 GiB. These are separate memory scopes, not a combined RAM requirement.
+An app-owned local reader releases its model before titles and rendering. In the M2 Full person
+control, closing selection reduced MLX active memory from 842.6 MB to 22 bytes; its cache was zero
+and its owned reader had exited before rendering. M2 GPU person also reached that boundary with
+zero MLX cache and no owned reader. External model services retain their own unload policy;
+later music work can reopen an app-owned reader.
+
+M2 GPU person's 154 compressed encodes requested VideoToolbox. A hardware encoder does not
+accelerate every step before it. CPU frame construction, map drawing, HDR conversion and copies
+can still dominate a GPU worker. See [hardware encoding](../run/hardware.md).
+
+The CUDA trip initially failed in the external ACE service's native FP16 input convolution: a
+cuDNN path produced non-finite values on the 120 s workload. The deployed scoped correction at
+ACE source `84bd5a2f3133` produced the real trip tracks. This external-service fix is separate
+from the app-owned Linux and Mac model-lifetime validation.
+
+### Memory scopes
+
+Linux figures below are whole-container cgroup counters. RAM/combined means RAM and RAM plus
+swap, respectively. Mac process-tree RSS can count shared mappings more than once. Parent physical
+footprint excludes children. Whole-host swap can include other applications. GB is decimal here;
+GiB is used explicitly for binary limits. These scopes do not form one interchangeable RAM requirement.
+
+| Hardware and tier | Film | Recorded peak memory |
+|---|---|---|
+| NAS / NAS | Month | 1.833 / 1.844 GB cgroup RAM/combined |
+| NAS / NAS | Person | 3.722 / 3.756 GB cgroup RAM/combined |
+| NAS / NAS | Trip | 2.385 / 2.397 GB cgroup RAM/combined |
+| Linux CUDA worker / GPU | Month | 5.517 GB worker cgroup; ACE service separate |
+| Linux CUDA worker / GPU | Trip | 6.085 GB cumulative worker cgroup high-water; ACE recovery peak unknown |
+| M2 / Full | Month | 12.38 GB process-tree RSS |
+| M2 / Full | Person | 12.56 GB process-tree RSS; 11.72 GB parent footprint |
+| M2 / Full | Trip | 13.04 GB process-tree RSS |
+| M2 / GPU | Month | 11.81 GB process-tree RSS |
+| M2 / GPU | Person | 11.86 GB process-tree RSS; 8.49 GB parent footprint |
+| M2 / GPU | Trip | 12.63 GB process-tree RSS; 6.17 GB parent footprint |
+| M5 / Full | Month | 15.78 GB process-tree RSS |
+| M5 / Full | Person | 17.02 GB process-tree RSS; 16.62 GB parent footprint |
+| M5 / Full | Trip | 15.47 GB process-tree RSS; 9.27 GB parent footprint |
+
+All three NAS controls completed under the configured 4 GiB limit without OOM or allocation
+failures. The CUDA month's external ACE service reached 10.110 GB in current samples. Its older
+15.832 GB kernel high-water mark predates the run and is not a new peak for that control.
+The trip worker's 6,084,993,024-byte high-water counter was cumulative, not reset for that run;
+all memory-event counters remained zero. Separate ACE recovery memory was not recorded. Peaks
+from separate services or different times are not summed.
+
+M2 Full person had a transient 6628.94 MiB whole-host swap increase during selection and ended
+145.37 MiB above baseline. M2 GPU person peaked 1667.13 MiB above baseline during native music
+and ended 366.88 MiB above it. Swap was an accepted tradeoff. The three M5 controls recorded zero
+increase over their existing host-swap baselines.
+
+### Recorded model usage
+
+| Full control | Calls | Prompt tokens | Cached prompt tokens | Completion tokens |
+|---|---:|---:|---:|---:|
+| M2 / Full month | 23 | 99515 | 9582 | 10319 |
+| M2 / Full person | 109 | 635764 | 8129 | 24757 |
+| M5 / Full month | 23 | 99515 | 9582 | 10320 |
+| M5 / Full person | 109 | 635764 | 8130 | 24752 |
+| M5 / Full trip | 50 | 188187 | 2979 | 4101 |
+
+These counters belong to the current accepted attempts. Failed retries are excluded. Cached
+prompt tokens remain a separate reported counter; no billing total is derived. Missing counters
+stay unknown. Hardware, energy and hosted-price attribution were not measured, so there is no
+trustworthy dollar total. Unknown cost does not mean free.
 
 ### Separate NAS 30-minute stress film
 
@@ -97,14 +209,17 @@ memory-limit failures. Actual sampled swap peaked at 1,827,979,264 bytes and end
 This result used swap. The memory hold was resolved against the confirmed configured 4 GiB limit;
 the measured figures and the earlier hold against 4,000,000,000 bytes were preserved unchanged.
 
-## Before the 56-film batch
+## Remaining performance work
 
-The larger batch is held until the known performance fixes are finished and a representative cached
-whole film has been measured before and after on the selected candidate. Keep the request, prepared
-banks, hardware and output profile matched; record both revisions and any audio or fallback differences.
-Review the actual whole-run and per-stage gains, including the maps and assembly that remain expensive,
-and present those results before starting any of the 56 films.
+Existing traces and source review found repeated full-frame work in smooth 4K maps and HDR titles.
+[#1702](https://github.com/sam-dumont/immich-video-memory-generator/issues/1702#issuecomment-5937777886)
+records a blank map feature layer of 126.6–506.3 MiB per moving frame, repeated tile decoding and
+CPU frame construction before NVENC. Those are buffer sizes and observed stages, not a measured
+speedup. [#1704](https://github.com/sam-dumont/immich-video-memory-generator/issues/1704#issuecomment-5938126498)
+records the HDR title path falling back to CPU interpolation, blank-text compositing on textless
+endings and white-fade arithmetic after GPU readback. Their implementation and timing validation
+remain follow-up work.
 
-The thirteen accepted controls above remain evidence for their original revisions. A newer commit does
-not require repeating all fifteen controls just to replace their timings. Two controls still need their
-finished-film checks. Provider benchmarks stay after completion of the fifteen-control matrix.
+The accepted controls stay evidence for their original revisions. Hosted-model comparisons and
+the larger 28-by-2 film batch need their own matched scope and validation. Neither was run for
+this report.

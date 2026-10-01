@@ -167,6 +167,9 @@ class PreparedEditorialSource:
     owner_required_asset_ids: tuple[str, ...] = ()
     # The exact copies folded into one kept picture (`exact_copies.py`).
     copy_groups: tuple[CopyGroup, ...] = ()
+    # Producers bind their facts to captured DTOs, before copy grouping promotes a star.
+    # The candidate still carries that promotion for selection and rendering.
+    preparation_sources: Mapping[str, Asset] = field(default_factory=dict)
 
     def kept_ids(self, asset_ids: Sequence[str]) -> tuple[str, ...]:
         """Each id as the copy kept for its picture: a household run asks for every copy."""
@@ -219,6 +222,7 @@ def prepare_editorial_source(
             )
         )
     )
+    preparation_sources = _captured_assets(sources)
     folded = fold_exact_copies(sources, primary_owner_id=request.primary_owner_id)
     dependencies.record_copies(folded)
     sources = folded.pool
@@ -311,9 +315,20 @@ def prepare_editorial_source(
         moment_groups=grouped.moment_groups,
         owner_required_asset_ids=_required_in_pool(request, grouped.candidates, trace),
         copy_groups=folded.groups,
+        preparation_sources=_candidate_assets(grouped.candidates, preparation_sources),
     )
     _validate_prepared_source(prepared)
     return prepared
+
+
+def _captured_assets(sources: Sequence[Asset | VideoClipInfo]) -> dict[str, Asset]:
+    return {asset_id_of(source): asset_of(source) for source in sources}
+
+
+def _candidate_assets(
+    candidates: Sequence[EditorialCandidate], captured: Mapping[str, Asset]
+) -> dict[str, Asset]:
+    return {candidate.asset_id: captured[candidate.asset_id] for candidate in candidates}
 
 
 def _grouped_corpus(

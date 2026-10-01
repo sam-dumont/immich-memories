@@ -14,6 +14,7 @@ from pydantic import (
     model_validator,
 )
 
+from immich_memories.config_models_network import NetworkConfig
 from immich_memories.config_models_render import TitleScreenConfig
 from immich_memories.processing.encoding_plan import HdrMode
 
@@ -104,6 +105,27 @@ class MemorySettings(Contract):
     person_name: str | None = Field(default=None, max_length=300)
     preset_params: dict = Field(default_factory=dict)
 
+    @field_validator("preset_params")
+    @classmethod
+    def trip_calendar_dates(cls, value: dict) -> dict:
+        """Restore trip days for title arithmetic without coercing other preset values."""
+        result = value.copy()
+        for key in ("trip_start", "trip_end"):
+            day = result.get(key)
+            if day is None:
+                continue
+            if isinstance(day, datetime):
+                day = day.date()
+            elif isinstance(day, str):
+                try:
+                    day = date.fromisoformat(day)
+                except ValueError as exc:
+                    raise ValueError(f"{key} must be an ISO calendar date") from exc
+            if not isinstance(day, date):
+                raise ValueError(f"{key} must be an ISO calendar date")
+            result[key] = day
+        return result
+
 
 class TimingBinding(Contract):
     """`bind_editorial_timeline` output, verbatim. Its digest is the job's identity."""
@@ -134,6 +156,10 @@ class RenderOptions(Contract):
     homebase_longitude: float = Field(default=0.0, ge=-180, le=180)
 
 
+class NetworkSettings(NetworkConfig, Contract):
+    """The caller's explicit permissions for map tiles and place names."""
+
+
 class RenderRequest(Contract):
     version: Literal[1] = 1
     render_attempt: UUID | None = None
@@ -142,6 +168,7 @@ class RenderRequest(Contract):
     plan: RenderPlan
     memory: MemorySettings
     titles: TitleSettings = Field(default_factory=TitleSettings)
+    network: NetworkSettings = Field(default_factory=NetworkSettings)
     timing: TimingBinding
     # No default: an envelope that forgets the audience gate's trims is silently
     # wrong, so its absence has to be a refusal rather than an empty map.

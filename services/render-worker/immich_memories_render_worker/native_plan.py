@@ -3,6 +3,7 @@
 from immich_memories.analysis.editorial_planner import EditorialSelection
 from immich_memories.api.models import AssetType, VideoClipInfo
 from immich_memories.config import Config
+from immich_memories.config_models_network import NetworkConfig
 from immich_memories.config_models_render import RenderWorkerConfig, TitleScreenConfig
 from immich_memories.generate import GenerationParams
 
@@ -25,6 +26,7 @@ def worker_config(request) -> Config:
     config.title_screens = TitleScreenConfig.model_validate(
         request.titles.model_dump(exclude={"title", "subtitle"})
     )
+    config.network = NetworkConfig.model_validate(request.network.model_dump())
     config.photos.duration = request.options.photo_duration
     config.trips.homebase_latitude = request.options.homebase_latitude
     config.trips.homebase_longitude = request.options.homebase_longitude

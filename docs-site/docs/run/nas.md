@@ -61,17 +61,23 @@ pin this app to three cores on a four-core NAS:
 
 ## What to expect
 
-NAS films are capped at 1080p. The default 4 GB memory limit suits that output.
+NAS films are capped at 1080p. The default 4 GiB memory limit suits that output.
 The first film reads the pictures in its period and saves the results; later films reuse matching
 results. Rendering still happens every time.
 
-The CPU classifiers provide less detector coverage than GPU/Full. Those tiers add captions,
-document/sensitive-content detectors and the Laya pre-screen. See
+NAS preparation leaves Marqo and Docling off; GPU/Full add those detectors, captions and the
+Laya pre-screen. Compatible facts already in the store stay banked when you change tiers. See
 [what the upgrades add](../get-started/what-a-gpu-or-a-model-adds.md).
 
-Preparation timings are on [Performance](../better/measured.md); they exclude
-downloads, music and rendering. A long film also gets a full playback check after rendering,
-which can take time. The log reports progress once a minute.
+CPU titles draw their background and text once, then fade the text with FFmpeg. For cheaper trip
+maps, use `preset: fast`: three geographic views replace the smooth flight, with short fades and
+full-resolution labels. Hardware video encoding still works. [Titles and maps](../make/titles-maps-music.md)
+explains these choices.
+
+[Measured results](../better/measured.md) records whole-film wall times and separate stage costs.
+Preparation-only figures exclude downloads, music and rendering where explicitly labelled. A long
+film also gets a full playback check after rendering, which can take time. The log reports progress
+once a minute.
 
 ## Encoding
 

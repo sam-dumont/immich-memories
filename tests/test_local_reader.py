@@ -418,3 +418,35 @@ def test_supervisor_releases_native_model_when_owner_pipe_closes(tmp_path, monke
             closer.join(timeout=2)
             for kind, handler in handlers.items():
                 signal.signal(kind, handler)
+
+
+async def test_render_handoff_reaps_reader_then_music_prompt_reloads(local_reader, monkeypatch):
+    from types import SimpleNamespace
+
+    from immich_memories.local_inference import local_models
+
+    cleared = []
+    # WHY: only the allocator boundary is replaced; the reader is a real owned process.
+    monkeypatch.setitem(sys.modules, "torch", None)
+    monkeypatch.setitem(
+        sys.modules,
+        "mlx.core",
+        SimpleNamespace(
+            clear_cache=lambda: cleared.append("clear"),
+            synchronize=lambda: cleared.append("sync"),
+        ),
+    )
+    try:
+        assert await query_llm("Select a story", local_reader) == "yellow"
+        process = local_models._process
+        assert process is not None and process.poll() is None
+        await local_models.release(unused_buffers=True)
+        assert process.poll() is not None
+        assert local_models._process is None
+        assert cleared == ["clear", "sync"]
+        assert await query_llm("Describe the music", local_reader) == "yellow"
+        assert local_models._process is not None
+        assert local_models._process is not process
+        assert local_models._process.poll() is None
+    finally:
+        await local_models.release()

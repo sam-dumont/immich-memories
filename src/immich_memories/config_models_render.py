@@ -297,7 +297,8 @@ class TitleScreenConfig(BaseModel):
     )
     animated_background: bool = Field(
         default=True,
-        description="Enable subtle background animations (gradient shift, color pulse)",
+        description="Enable animated title backgrounds and smooth map flights; false uses "
+        "still title backgrounds and three-view map journeys",
     )
 
     # Month dividers

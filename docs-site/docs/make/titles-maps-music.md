@@ -56,7 +56,7 @@ network:
   map_tiles: true
 ```
 
-With maps off, a trip uses ordinary title and location cards. Maps add time to the finished film beyond the picture budget. [Map rendering](../reference/output-rendering.md#the-map-fly-over) covers providers, route grouping and timing.
+With maps off, a trip uses ordinary title and location cards. Smooth maps fly between stops; the fast preset uses three views joined by short fades. Maps add time to the finished film beyond the picture budget. [Map rendering](../reference/output-rendering.md#the-map-fly-over) covers providers, route grouping and timing.
 
 ## Music
 

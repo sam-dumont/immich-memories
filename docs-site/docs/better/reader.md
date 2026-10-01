@@ -33,7 +33,7 @@ immich-memories models fetch
 immich-memories preflight
 ```
 
-The app starts the model when needed. It can stop its own reader to free memory before local music generation or stem separation. A custom GGUF can replace the default; [local reader settings](../reference/llm-providers.md) cover paths and context size.
+The app starts the model when needed and stops its owned reader before local music, stem separation and rendering. Selection also releases its Laya scorer before rendering. Later requests load the models again. With `enabled: false`, the reader sends no requests and starts no model. A custom GGUF can replace the default; [local reader settings](../reference/llm-providers.md) cover paths and context size.
 
 ## Use an existing server
 

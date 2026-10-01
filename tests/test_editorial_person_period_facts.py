@@ -5,6 +5,7 @@ import json
 import pytest
 
 from immich_memories.analysis.editorial_person_period_facts import (
+    PersonPeriodProjection,
     person_period_facts,
     render_person_period_facts,
 )
@@ -117,3 +118,46 @@ def test_unknown_moment_cannot_ground_a_claim():
     tables["moment_people"][1].append(["M99", "P02", "17y"])
     with pytest.raises(ValueError, match="unknown moment"):
         person_period_facts(tables, ["M02"])
+
+
+def test_request_projection_reuses_rows_and_keeps_fact_bytes(monkeypatch):
+    from immich_memories.analysis import editorial_wall_rows as wall
+
+    tables = _tables(first="2007-08", onset="2008-02")
+    requests = [("M02",), ("M01", "M02", "M02"), ("M07",), ()]
+    expected = [render_person_period_facts(person_period_facts(tables, ids)) for ids in requests]
+    calls = []
+    original = wall._records
+
+    def records(tables, name):
+        calls.append(name)
+        return original(tables, name)
+
+    monkeypatch.setattr(wall, "_records", records)
+    projection = PersonPeriodProjection(tables)
+    assert calls == []
+    assert [render_person_period_facts(projection.facts(ids)) for ids in requests] == expected
+    assert calls == ["people", "moments", "moment_people"]
+    other = PersonPeriodProjection(_tables(first="2008-02", onset="2008-02"))
+    assert other.facts(["M02"]) == ()
+    assert projection.facts(["M02"])
+
+
+def test_reused_projection_keeps_unknown_moment_error_priority():
+    tables = _tables()
+    tables["moment_people"][0].append("incomplete")
+    projection = PersonPeriodProjection(tables)
+    with pytest.raises(ValueError, match="facts reference an unknown moment"):
+        projection.facts(["M99"])
+    with pytest.raises(ValueError, match="row is incomplete"):
+        projection.facts(["M02"])
+
+
+def test_reused_projection_checks_unknown_known_people_only_in_selected_moments():
+    tables = _tables()
+    tables["moment_people"][1].append(["M01", "P99", "?"])
+    projection = PersonPeriodProjection(tables)
+    assert projection.facts(["M02"])
+    with pytest.raises(ValueError, match="ungrounded"):
+        projection.facts(["M01"])
+    assert projection.facts(["M02"])

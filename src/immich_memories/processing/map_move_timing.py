@@ -45,12 +45,8 @@ class MapMoveTiming:
         return self.seconds_for(haversine_km(*came_from, *to))
 
     def intro_seconds(self, home: tuple[float, float], stops: list[tuple[float, float]]) -> float:
-        """Total seconds for the trip intro: the move from home to the middle of its stops."""
-        middle = (
-            sum(lat for lat, _ in stops) / len(stops),
-            sum(lon for _, lon in stops) / len(stops),
-        )
-        return self.seconds_between(home, middle)
+        """Total seconds for the intro's move from home to its first stop."""
+        return self.seconds_between(home, stops[0])
 
     def _frames(self, total_seconds: float, fps: float) -> tuple[int, int]:
         total = max(1, round(total_seconds * fps))

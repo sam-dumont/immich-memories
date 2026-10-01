@@ -30,12 +30,13 @@ class GpuPhases:
     @asynccontextmanager
     async def models(self, phase: str):
         with self._condition:
-            if self._render_waiting or self._preparing or (self._active and self._phase != phase):
+            if self._render_waiting or (self._active and self._phase != phase):
                 raise PhaseBusy("GPU is busy with another phase")
             transition = self._phase != phase
+            waiting = self._preparing
             self._phase = phase
             self._active += 1
-            self._preparing = transition
+            self._preparing = self._preparing or transition
         try:
             if transition:
                 work = asyncio.create_task(asyncio.to_thread(self._release, phase))
@@ -51,9 +52,19 @@ class GpuPhases:
                 finally:
                     with self._condition:
                         self._preparing = False
+                        self._condition.notify_all()
+            elif waiting:
+                await asyncio.to_thread(self._wait_for_preparation, phase)
             yield
         finally:
             self._leave()
+
+    def _wait_for_preparation(self, phase: str):
+        with self._condition:
+            if not self._condition.wait_for(lambda: not self._preparing, timeout=self._timeout):
+                raise PhaseBusy("GPU phase cleanup did not finish before the admission deadline")
+            if self._phase != phase:
+                raise PhaseBusy("GPU phase cleanup failed")
 
     @contextmanager
     def rendering(self):

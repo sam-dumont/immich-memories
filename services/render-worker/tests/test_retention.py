@@ -1,5 +1,6 @@
 """Job lifecycle: expiry, retry after failure, the deadline, and surviving a restart."""
 
+import threading
 import time
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
@@ -129,6 +130,111 @@ def test_a_render_past_its_deadline_is_abandoned_so_admission_recovers(tmp_path)
         assert "abandoned" in abandoned.error
         assert service.store.admit(_job(uuid4(), memory_key="next-cut"), "other")[1]
     finally:
+        service.close()
+
+
+@pytest.mark.parametrize("late_result", ["failure", "completed"])
+def test_timeout_keeps_sources_until_the_running_renderer_releases_them(tmp_path, late_result):
+    from immich_memories_render_worker.models import RenderRequest
+    from immich_memories_render_worker.store import JobConflict
+
+    started, release = threading.Event(), threading.Event()
+
+    class Renderer(_Renderer):
+        def render(self, request, directory, progress):
+            source = directory / "prepared-photo.mp4"
+            source.write_bytes(b"prepared source still needed by the encoder")
+            started.set()
+            assert release.wait(5)
+            assert source.read_bytes() == b"prepared source still needed by the encoder"
+            progress("encoding", 0.99, "late progress after the timeout")
+            if late_result == "completed":
+                return stub_artifact(directory)
+            raise RuntimeError("native render finished after its deadline")
+
+    service = _service(tmp_path, Renderer(), job_timeout_seconds=30)
+    try:
+        request = RenderRequest.model_validate(render_request_body())
+        status = service.submit(request)
+        assert started.wait(2)
+        service.store.update(status.job_id, started_at=datetime.now(UTC) - timedelta(seconds=120))
+        service.cleanup()
+        assert service.store.get(status.job_id).state == "failed"
+        timeout_error = service.store.get(status.job_id).error
+        timeout_phase = service.store.get(status.job_id).phase
+        assert (service.directory(status.job_id) / "prepared-photo.mp4").is_file()
+        with pytest.raises(JobConflict, match="still finishing"):
+            service.submit(request)
+        release.set()
+        service.health()  # The single lane answers only after this renderer returns.
+        assert service.store.get(status.job_id).error == timeout_error
+        assert service.store.get(status.job_id).phase == timeout_phase
+        assert not service.directory(status.job_id).exists()
+    finally:
+        release.set()
+        service.health()
+        service.close()
+
+
+def test_shutdown_does_not_remove_a_running_renderers_sources(tmp_path):
+    from immich_memories_render_worker.models import RenderRequest
+
+    started, release = threading.Event(), threading.Event()
+
+    class Renderer(_Renderer):
+        def render(self, request, directory, progress):
+            source = directory / "prepared-photo.mp4"
+            source.write_bytes(b"still encoding")
+            started.set()
+            assert release.wait(5)
+            assert source.read_bytes() == b"still encoding"
+            raise RuntimeError("renderer has stopped")
+
+    service = _service(tmp_path, Renderer())
+    try:
+        status = service.submit(RenderRequest.model_validate(render_request_body()))
+        assert started.wait(2)
+        service.close()
+        assert (service.directory(status.job_id) / "prepared-photo.mp4").is_file()
+    finally:
+        release.set()
+        for _ in range(100):
+            if not service.root.exists():
+                break
+            time.sleep(0.02)
+        assert not service.root.exists()
+
+
+def test_a_queued_job_past_its_deadline_never_starts_rendering(tmp_path):
+    from immich_memories_render_worker.models import RenderRequest
+
+    started, release = threading.Event(), threading.Event()
+    calls = []
+
+    class Renderer(_Renderer):
+        def render(self, request, directory, progress):
+            calls.append(request.memory_key)
+            started.set()
+            assert release.wait(5)
+            raise RuntimeError("renderer released its lane")
+
+    service = _service(tmp_path, Renderer(), job_timeout_seconds=30)
+    try:
+        service.submit(RenderRequest.model_validate(render_request_body(memory_key="first")))
+        assert started.wait(2)
+        queued = service.submit(
+            RenderRequest.model_validate(render_request_body(memory_key="expired-queued"))
+        )
+        service.store.update(queued.job_id, submitted_at=datetime.now(UTC) - timedelta(seconds=120))
+        service.cleanup()
+        assert service.store.get(queued.job_id).state == "failed"
+        release.set()
+        service.health()
+        assert calls == ["first"]
+        assert not service.directory(queued.job_id).exists()
+    finally:
+        release.set()
+        service.health()
         service.close()
 
 

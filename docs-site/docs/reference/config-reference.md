@@ -73,7 +73,7 @@ preset: null                       # null | fast
 
 `fast` sets, unless you set them yourself: `output.resolution: 1080p`, `output.codec: h264`,
 `output.quality: fast`, `hardware.encoder_preset: fast` and
-`title_screens.animated_background: false` (static title backgrounds). Music generation is already
+`title_screens.animated_background: false` (static title backgrounds and three-view maps). Music generation is already
 off by default and stays wherever you put it.
 
 Env: `IMMICH_MEMORIES_PRESET=fast`. One-off on the CLI: `immich-memories --preset fast generate …`
@@ -750,15 +750,16 @@ title_screens:
   locale: "auto"                 # en fr nl de es it pt-BR pt-PT pl sv ru ja zh-Hans ko, or auto
   style_mode: "auto"             # auto (mood-based) or random
   fade_color: "white"            # white or black at the opening and closing
-  animated_background: true      # Gradient shift and colour pulse behind the text
+  animated_background: true      # Animated titles and smooth map flights
   show_month_dividers: true      # When the video spans several months (all-or-none)
   month_divider_threshold: 2     # Min clips in a month to show its divider (1-10)
   use_first_name_only: true      # "Riley" instead of "Riley Smith" in titles
 ```
 
-`fade_color` chooses the opening and closing fade. `animated_background` controls movement; the colour palette and custom fonts are not configurable today.
-`animated_background: false` keeps the gradient still
- (no rotation, colour pulse or vignette pulse), which is what `preset: fast` selects. The
+`fade_color` chooses the opening and closing fade. `animated_background` controls movement;
+the colour palette and custom fonts are not configurable today.
+`animated_background: false` keeps the gradient still (no rotation, colour pulse or vignette pulse)
+and uses three-view map journeys, which is what `preset: fast` selects. The
 `immich-memories titles` command exposes more of the look as flags for previewing.
 
 ## Trip detection

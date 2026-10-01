@@ -17,8 +17,8 @@ from typing import Any
 
 from immich_memories.analysis.editorial_carrier import carrier_row
 from immich_memories.analysis.editorial_person_period_facts import (
+    PersonPeriodProjection,
     arrival_notes,
-    person_period_facts,
 )
 from immich_memories.analysis.editorial_rule_banked_facts import (
     NO_BANKED_FACTS,
@@ -175,7 +175,8 @@ def _arrivals_from(tables: Mapping[str, Any]) -> Callable[[Sequence[str]], list[
     """
     if "people" not in tables:
         return lambda _moments: []
-    return lambda moments: arrival_notes(person_period_facts(tables, moments))
+    projection = PersonPeriodProjection(tables)
+    return lambda moments: arrival_notes(projection.facts(moments))
 
 
 def _relation_counts(rows, lines: Mapping[str, str]) -> dict[str, int]:

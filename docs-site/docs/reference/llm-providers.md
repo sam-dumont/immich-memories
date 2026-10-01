@@ -22,7 +22,7 @@ advanced:
 
 Owned inference supports Linux and macOS. `models fetch` downloads the pinned default GGUF and projector when this local reader is configured. A custom `model` names a GGUF path; `local_mmproj` supplies its projector. Preflight checks the executable and files without loading the model.
 
-The app loads the owned reader on demand and waits for active requests before stopping it to release memory for local ACE-Step or Demucs. The next reader call loads it again. Cancellation waits for native audio work to finish or time out before releasing its memory lease. An external server owns its own model lifetime: the app cannot assume it is safe to unload it for other clients.
+The app loads the owned reader on demand and waits for active requests before stopping it to release memory for local ACE-Step or Demucs. At the render boundary, selection also closes its Laya scorer, stops the owned reader and clears unused local-runtime buffers. The next reader call loads it again. Cancellation waits for native audio work to finish or time out before releasing its memory lease. An external server owns its own model lifetime: the app cannot assume it is safe to unload it for other clients.
 
 ```bash
 immich-memories capabilities

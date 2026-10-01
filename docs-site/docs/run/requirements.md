@@ -13,7 +13,7 @@ Allow this **in addition to what Immich uses**:
 
 | Resource | Start here |
 |---|---|
-| RAM | 4 GB free for the app; the Compose file limits it to 4 GB |
+| RAM | 4 GiB free for the app; the Compose file limits it to 4 GiB |
 | CPU | 2 cores, x86-64 or ARM64; 4 cores make rendering less painful |
 | Disk | 25 GB for the persistent data volume, plus the image and finished films |
 | Immich | v2 or v3, reachable from the app, with an API key |

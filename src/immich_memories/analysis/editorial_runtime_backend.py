@@ -182,11 +182,15 @@ class ProductionPostCardBackend:
         return self._adopt(result, source.artifact_dir, allowed_ids)
 
     def _effects(self, source, resources):
-        return (
+        effects = (
             self._ports.structure_ports_factory(source)
             if self._ports.structure_ports_factory
             else self._production_effects(source, resources=resources)
         )
+        # Refinement builds its own effects too; each loaded scorer belongs to this edit.
+        if laya := getattr(effects, "laya", None):
+            resources.callback(laya.close)
+        return effects
 
     def _refine(self, source, draft, resources):
         assert self._prepare_refinement is not None

@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
 from PIL import Image
 
 _W, _H, _FPS = 64, 36, 10.0
@@ -148,3 +149,188 @@ def test_the_held_stops_sit_clear_of_the_trip_title_in_portrait(tmp_path) -> Non
     # A portrait title sits in the middle, its band from about 37 % down.
     assert rows[-1] < 0.37 * 320
     assert rows[0] >= 27
+
+
+class _DiscardPipe:
+    def __init__(self) -> None:
+        self.stdin = self
+        self.stderr = None
+        self.returncode = 0
+
+    def write(self, data: bytes) -> int:
+        return len(data)
+
+    def close(self) -> None:
+        pass
+
+    def wait(self) -> int:
+        return 0
+
+
+def _camera_path(tmp_path: Path, origin, destination, width: int, height: int, stops=None):
+    from immich_memories.titles.map_animation import create_map_fly_video, create_map_move_video
+
+    cameras = []
+
+    def tiles(lat, lon, zoom, w, h):
+        cameras.append((lat, lon, width / 2**zoom))
+        return Image.new("RGB", (w, h), (40, 50, 60))
+
+    with (
+        # WHY: capture geographic framing at the external tile fetch boundary.
+        patch("immich_memories.titles.map_animation._render_satellite", tiles),
+        # WHY: geometric tests inspect every frame request without encoding a large movie.
+        patch("immich_memories.titles.map_animation.subprocess.Popen", return_value=_DiscardPipe()),
+        # WHY: the stderr reader requires a real encoder pipe.
+        patch("immich_memories.titles.map_animation.StderrDrain"),
+    ):
+        if stops is None:
+            create_map_move_video(
+                origin, destination, "Newtown", tmp_path / "camera.mp4", 6.0, width, height, 1.0
+            )
+        else:
+            create_map_fly_video(
+                origin,
+                stops,
+                "A WEEK AWAY",
+                tmp_path / "camera.mp4",
+                width,
+                height,
+                duration=6.0,
+                fps=1.0,
+                destination_names=["Firsttown", "Lasttown"],
+            )
+    return cameras
+
+
+def test_a_city_flight_is_close_at_both_ends_and_keeps_its_geography_at_4k(tmp_path):
+    import pytest
+
+    origin, destination = (50.85, 4.35), (48.86, 2.35)
+    hd = _camera_path(tmp_path, origin, destination, 1920, 1080)
+    uhd = _camera_path(tmp_path, origin, destination, 3840, 2160)
+
+    assert hd[0][:2] == pytest.approx(origin)
+    assert hd[-1][:2] == pytest.approx(destination)
+    assert hd[0][2] == pytest.approx(1920 / 2**14)
+    assert hd[-1][2] == pytest.approx(1920 / 2**14)
+    assert max(view[2] for view in hd) > hd[0][2] * 2
+    assert len(hd) == len(uhd)
+    for lower, higher in zip(hd, uhd, strict=True):
+        assert higher == pytest.approx(lower)
+
+
+def test_the_intro_lands_close_to_its_first_stop_not_future_stops(tmp_path):
+    import pytest
+
+    from immich_memories.titles.map_animation import _geo_to_screen
+
+    origin, paris, brest = (50.85, 4.35), (48.86, 2.35), (48.39, -4.49)
+    cameras = _camera_path(tmp_path, origin, paris, 1920, 1080, [paris, brest])
+
+    assert cameras[0][:2] == pytest.approx(origin)
+    lat, lon, span = cameras[-1]
+    assert span == pytest.approx(1920 / 2**14)
+    sx, sy = _geo_to_screen(*paris, lat, lon, 14, 1920, 1080)
+    assert 0.3 * 1920 < sx < 0.7 * 1920
+    assert 0.12 * 1080 < sy < 0.6 * 1080
+
+
+def test_stationary_and_nearby_towns_stay_finite_and_portrait_stays_close(tmp_path):
+    import math
+
+    import pytest
+
+    origin = (50.85, 4.35)
+    for destination in [origin, (50.851, 4.352)]:
+        landscape = _camera_path(tmp_path, origin, destination, 1920, 1080)
+        portrait = _camera_path(tmp_path, origin, destination, 1080, 1920)
+        assert portrait[0][:2] == pytest.approx(origin)
+        assert portrait[-1][:2] == pytest.approx(destination)
+        for view in portrait:
+            assert all(math.isfinite(value) for value in view)
+            assert view[2] == pytest.approx(1080 / 2**14)
+        for view in landscape:
+            assert view[2] == pytest.approx(1920 / 2**14)
+
+
+@pytest.mark.parametrize("dimensions", [(1920, 1080), (3840, 2160), (1080, 1920)])
+def test_fast_background_policy_bounds_each_leg_to_three_small_map_views(tmp_path, dimensions):
+    from immich_memories.config import Config
+    from immich_memories.titles.generator import TitleScreenConfig
+    from immich_memories.titles.trip_service import TripService
+
+    resolved = Config(preset="fast")
+    cfg = TitleScreenConfig(
+        animated_background=resolved.title_screens.animated_background,
+        resolution_width=dimensions[0],
+        resolution_height=dimensions[1],
+        fps=60,
+    )
+    cameras = []
+
+    def tiles(lat, lon, zoom, w, h):
+        cameras.append((lat, lon, w / 2**zoom, w, h))
+        return Image.new("RGB", (w, h), (40, 50, 60))
+
+    with (
+        # WHY: count actual raster requests at the third-party satellite boundary.
+        patch("immich_memories.titles.map_animation._render_satellite", tiles),
+        # WHY: count map synthesis without encoding full-size frames in a geometry test.
+        patch(
+            "immich_memories.processing.ffmpeg_runner.write_frames_to_ffmpeg",
+            return_value=(0, ""),
+        ),
+    ):
+        service = TripService(cfg, MagicMock(), tmp_path)
+        screen = service.generate_location_move("Paris", (50.85, 4.35), (48.86, 2.35), 7)
+
+    assert screen.duration == 7
+    assert len(cameras) == 3
+    assert all(min(c[3], c[4]) <= 360 for c in cameras)
+    assert cameras[0][:2] == pytest.approx((50.85, 4.35))
+    assert cameras[-1][:2] == pytest.approx((48.86, 2.35))
+    assert cameras[0][2] == pytest.approx(1080 / 2**14 * dimensions[0] / min(dimensions))
+    assert cameras[-1][2] == pytest.approx(cameras[0][2])
+    assert cameras[1][2] > cameras[0][2] * 2
+
+
+def test_fast_map_feeds_one_bounded_stream_and_reuses_static_plate_bytes(tmp_path):
+    from immich_memories.titles.map_animation import create_map_move_video
+
+    captured = []
+
+    def encode(cmd, frames, **bounds):
+        captured.extend(frames)
+        assert bounds["total_timeout"] == 210
+        assert bounds["wait_timeout"] <= bounds["total_timeout"]
+        return 0, ""
+
+    with (
+        # WHY: replace the external tile server with deterministic geographic colours.
+        patch("immich_memories.titles.map_animation._render_satellite", _camera_colour),
+        # WHY: capture only the encoder boundary; consume the real bounded frame iterator.
+        patch("immich_memories.processing.ffmpeg_runner.write_frames_to_ffmpeg", encode),
+        # WHY: the old multi-input implementation must not launch a real external process in RED.
+        patch(
+            "immich_memories.titles.map_animation.subprocess.run",
+            return_value=MagicMock(returncode=0),
+        ),
+    ):
+        create_map_move_video(
+            (50.85, 4.35),
+            (48.86, 2.35),
+            "Paris",
+            tmp_path / "bounded.mp4",
+            7,
+            _W,
+            _H,
+            _FPS,
+            animated_background=False,
+        )
+
+    assert len(captured) == 70
+    assert captured[0] is captured[1]
+    assert all(frame is captured[-1] for frame in captured[-20:])
+    assert captured[0] != captured[-1]
+    assert len(set(captured)) <= 3 + 2 * 5  # Only two half-second fades synthesize new frames.

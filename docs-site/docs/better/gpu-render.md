@@ -85,11 +85,15 @@ for your queue and film size; this example adds 60 seconds for the handoff after
 An app timeout does not cancel an active worker job.
 
 A prerelease failure exposed cleanup deleting a timed-out renderer's source workspace while it was
-still running. The ownership fix in
-[#1711](https://github.com/sam-dumont/immich-video-memory-generator/pull/1711) is pending validation and
-deployment: active scratch must stay owned until the renderer releases it, and a retry for the same
-cut must not reuse that workspace. A stuck native renderer can
-still require a worker restart. Increasing the deadline does not fix workspace ownership.
+still running. The merged and deployed ownership fix in
+[#1711](https://github.com/sam-dumont/immich-video-memory-generator/pull/1711) keeps active scratch owned
+until the renderer releases it and gives a same-cut retry a separate workspace. A stuck native
+renderer can still require a worker restart. Increasing the deadline does not fix workspace ownership.
+
+The worker request also carries enabled map tiles and geocoding settings explicitly, fixed in
+[#1713](https://github.com/sam-dumont/immich-video-memory-generator/pull/1713). These preserve the trip's
+map cards and duration through the handoff. The [measured controls](./measured.md#whole-film-controls)
+record finished-film and native-audio acceptance separately from deployment.
 
 ## Check it
 

@@ -64,6 +64,14 @@ immich-memories preflight -v
 The Compose health check verifies the inference listener and authenticated render health. It
 does not certify caption responses or every model's provider; preflight supplies those checks.
 
+## Optional generated music
+
+The CUDA worker separates Demucs stems but does not generate ACE-Step music. Connect your own
+[ACE-Step API server](../better/music.md#api-server), or use local library mode on a native Linux
+or Mac checkout. The external music server owns its model lifetime. Configure its model and
+planner on that server; the app's local `model_variant`, `use_lm` and `cpu_offload` settings do not
+change the remote service. Sharing one card still requires room for every resident service.
+
 ## Memory and scheduling
 
 Work changes phase between classifiers, captions, audio and rendering. The worker unloads
@@ -72,8 +80,9 @@ Demucs releases after separation. Captions restart on demand.
 
 Rendering waits up to 60 seconds for active model work to finish. Conflicting requests return
 `503` with `Retry-After: 1`; classifier queue overflow separately returns `429`. Native work keeps
-its GPU ownership even when its client cancels. `/queue` reports classifiers, not a combined
-queue for all phases.
+its GPU ownership even when its client cancels. Requests for the same model phase wait up to
+60 seconds for cleanup, then enter that service's existing queue. `/queue` reports classifiers,
+not a combined queue for all phases.
 
 One container saves duplicate services and image layers. It still needs enough host RAM and
 VRAM for the largest active phase, scratch space for originals and output, and headroom for other
