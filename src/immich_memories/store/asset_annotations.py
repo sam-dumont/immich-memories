@@ -306,16 +306,19 @@ class AssetAnnotationFactRepository:
         records: dict[str, _MutableAssetFacts],
     ) -> None:
         h = head_facts
-        rows = _rows(
-            connection,
-            sa.select(h.c.asset_id, h.c.head, h.c.version, h.c.label),
-            h.c.asset_id,
-            asset_ids,
-        )
-        for asset_id, head, version, label in rows:
-            head_name = str(head)
-            if self._head_versions.get(head_name) == str(version):
-                records[str(asset_id)].heads[head_name] = _clean(label)
+        # Split the bind budget between requested IDs and exact head/version pairs.
+        for versions in in_chunks(connection, tuple(self._head_versions.items()), per_row=4):
+            rows = _rows(
+                connection,
+                sa.select(h.c.asset_id, h.c.head, h.c.label).where(
+                    sa.tuple_(h.c.head, h.c.version).in_(versions)
+                ),
+                h.c.asset_id,
+                asset_ids,
+                per_row=2,
+            )
+            for asset_id, head, label in rows:
+                records[str(asset_id)].heads[str(head)] = _clean(label)
 
     def _read_pixels(
         self,
@@ -382,11 +385,18 @@ class AssetAnnotationFactRepository:
 
 
 def _rows(
-    connection: Connection, query: sa.Select, key: sa.ColumnElement, asset_ids: Sequence[str]
+    connection: Connection,
+    query: sa.Select,
+    key: sa.ColumnElement,
+    asset_ids: Sequence[str],
+    *,
+    per_row: int = 1,
 ) -> list[Any]:
     rows: list[Any] = []
-    for chunk in in_chunks(connection, asset_ids):
-        rows.extend(connection.execute(query.where(id_in(connection, key, chunk))))
+    for chunk in in_chunks(connection, asset_ids, per_row=per_row):
+        result = connection.execute(query.where(id_in(connection, key, chunk)))
+        for batch in result.partitions(256):
+            rows.extend(batch)
     return rows
 
 
