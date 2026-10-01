@@ -70,7 +70,7 @@ Pending: the Linux CUDA worker person and trip retries. Earlier failed worker at
 
 Stage records can overlap; do not add them into a new wall time. The NAS map profile uses lower resolution and reduced motion. Full and GPU retain smooth animation. The route zoom and arrow correction in [#1700](https://github.com/sam-dumont/immich-video-memory-generator/pull/1700) applies to ordinary maps too; the three-view shortcut in [#1703](https://github.com/sam-dumont/immich-video-memory-generator/pull/1703) applies only when `animated_background` is false. The 39 s and 911 s map costs describe different profiles.
 
-Assembly is still expensive after selection. [#1706](https://github.com/sam-dumont/immich-video-memory-generator/pull/1706) merged reuse of selection indexes after these controls. [#1709](https://github.com/sam-dumont/immich-video-memory-generator/pull/1709), which converts lower-cadence HDR frames before duplication and waits for each clip's audio to finish, passed its local checks and is ready for CI-gated merge. Neither changes the measured times above.
+Assembly is still expensive after selection. [#1706](https://github.com/sam-dumont/immich-video-memory-generator/pull/1706) merged reuse of selection indexes after these controls. [#1709](https://github.com/sam-dumont/immich-video-memory-generator/pull/1709), which converts lower-cadence HDR frames before duplication and waits for each clip's audio to finish, merged as `b96d7d6a297c` after all CI checks passed. Neither changes the measured times above.
 
 ### Audio and memory scopes
 
