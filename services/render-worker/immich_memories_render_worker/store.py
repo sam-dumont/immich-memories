@@ -108,17 +108,16 @@ class MemoryJobRepository:
                         "with different job content"
                     )
                 return record.status, False
-            if record is None:
-                self._reserve_capacity()
+            self._reserve_capacity(new_record=record is None)
             self._records[status.job_id] = _Record(
                 status, fingerprint, time.time() + self._retention
             )
             self._write(status)
             return status, True
 
-    def _reserve_capacity(self) -> None:
+    def _reserve_capacity(self, *, new_record: bool) -> None:
         active = sum(r.status.state in _LIVE for r in self._records.values())
-        if active >= self._max_jobs or len(self._records) >= 128:
+        if active >= self._max_jobs or (new_record and len(self._records) >= 128):
             raise QueueFull("Worker job capacity reached; retrieve outputs or retry later")
 
     def get(self, job_id: UUID) -> JobStatus:

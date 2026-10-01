@@ -110,7 +110,7 @@ upload back to Immich, give it an Immich key with read and download permissions 
 that is then all the worker holds too.
 
 Use a trusted network or a TLS reverse proxy. Every operation below requires
-`Authorization: Bearer <worker token>`. The per-job Immich key belongs in the
+`Authorization: Bearer <worker token>`. Per-job Immich keys belong in the
 request body, never a URL. Access logs are disabled by the entry point.
 
 ## Job API, version 1
@@ -156,6 +156,16 @@ in the clip's `live` field: version, canonical source material and selected inte
 That interval must match both the clip's start/end and its entry in
 `certified_content_intervals`. Missing or changed trims return 409 before rendering.
 
+Household cuts include `asset_accounts`, a source-id-to-account-name table, and
+`immich.accounts`, containing only the extra accounts needed by those sources.
+Each account carries its scoped `api_key` and `api_version`; all use the worker's
+configured Immich URL. The primary connection also accepts `api_version`.
+Routes include the still and motion sources of stitched Live Photos and survive
+parallel downloads. Unknown account routes are rejected before acquisition.
+Keys remain ephemeral inputs: status records contain no credentials, errors and
+progress redact every submitted key, and idempotency compares key fingerprints.
+Single-account requests can omit both new fields.
+
 The cut is ordered, with at most 500 distinct assets and one hour of source
 intervals. `still` renders a photo, or a video's `render_frame_seconds`.
 Moving Live Photos can use a video asset directly or a certified Live carrier.
@@ -177,7 +187,7 @@ a fresh `render_attempt` UUID for each deliberate render, so changing output
 settings or rendering again after a download works. Repeating the same request
 keeps its job id and does not render twice. Without `render_attempt`, identity
 uses the memory key and timing digest alone. Re-submitting a cut whose job failed
-starts a fresh render. Changed content, including a changed Immich key, while
+starts a fresh render once an active slot is available. Changed content, including a changed Immich key, while
 that job is live returns 409. Full capacity returns 429. A mismatched Immich URL
 returns 422.
 

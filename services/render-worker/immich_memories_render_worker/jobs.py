@@ -14,6 +14,7 @@ from uuid import UUID, uuid4
 
 from immich_memories.processing.output_contract import validate_output
 from immich_memories.security import credential_fingerprint, sanitize_error_message
+from immich_memories_render_worker.access import request_secrets
 from immich_memories_render_worker.admission import job_identity
 from immich_memories_render_worker.models import JobStatus, RenderRequest
 from immich_memories_render_worker.renderer import RenderArtifact, Renderer
@@ -109,6 +110,10 @@ class RenderJobs:
         material["immich"]["api_key"] = credential_fingerprint(
             request.immich.api_key.get_secret_value()
         )
+        for name, account in request.immich.accounts.items():
+            material["immich"]["accounts"][name]["api_key"] = credential_fingerprint(
+                account.api_key.get_secret_value()
+            )
         fingerprint = hashlib.sha256(json.dumps(material, sort_keys=True).encode()).hexdigest()
         with self._lock:
             if job_id in self._discarding:
@@ -143,10 +148,12 @@ class RenderJobs:
 
     def _render(self, request: RenderRequest, job_id: UUID) -> None:
         directory = self.directory(job_id)
-        secret = request.immich.api_key.get_secret_value()
+        secrets = sorted(request_secrets(request), key=len, reverse=True)
 
         def clean(text: str) -> str:
-            return sanitize_error_message(text.replace(secret, "[redacted]"))[:500]
+            for secret in secrets:
+                text = text.replace(secret, "[redacted]")
+            return sanitize_error_message(text)[:500]
 
         def progress(phase: str, fraction: float, message: str) -> None:
             with self._lock:

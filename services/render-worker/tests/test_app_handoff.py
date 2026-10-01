@@ -332,3 +332,54 @@ def test_worker_still_refuses_timestamp_in_calendar_date_field(tmp_path):
         RenderRequest.model_validate(body)
     assert error.value.errors()[0]["loc"] == ("memory", "date_end")
     assert error.value.errors()[0]["type"] == "date_from_datetime_inexact"
+
+
+def test_privacy_trip_validation_uses_the_same_relocated_home_as_the_renderer(tmp_path):
+    from dataclasses import replace
+    from types import SimpleNamespace
+
+    import pytest
+
+    from immich_memories.generate import GenerationError
+    from immich_memories.generate_privacy import anonymize_clips_for_privacy
+    from immich_memories.generate_render import _anonymized_params
+    from immich_memories.generate_settings import build_title_settings
+    from immich_memories.processing.assembly_config import AssemblyClip
+    from immich_memories.processing.editorial_timing import read_editorial_timeline
+    from immich_memories.processing.encoding_plan import OutputCodec
+    from immich_memories.processing.remote_render import _map_extra, _validate_result
+    from immich_memories.processing.timeline_preview import preview_map_extra, preview_timeline
+
+    params = manual_params(tmp_path)
+    params.memory_type = "trip"
+    params.privacy_mode = True
+    params.config.title_screens.enabled = True
+    params.config.network.map_tiles = True
+    params.config.network.geocoding = False
+    params.memory_preset_params = {"home_lat": 40.0, "home_lon": -70.0}
+    received, body = round_trip(params, tmp_path)
+    content = anonymize_clips_for_privacy(
+        [
+            AssemblyClip(
+                path=tmp_path / "source.mp4",
+                asset_id=params.clips[0].asset.id,
+                duration=3.25,
+                latitude=48.0,
+                longitude=2.0,
+            )
+        ]
+    )
+    timeline = read_editorial_timeline(body["timing"])
+    worker_params = _anonymized_params(replace(received, timeline_plan=timeline))
+    titles = build_title_settings(worker_params, worker_params.config, content)
+    _, duration = preview_timeline(
+        content, timeline, titles, params.transition, params.transition_duration
+    )
+    probe = SimpleNamespace(width=720, height=720, duration_seconds=duration)
+    plan = SimpleNamespace(container="mp4", codec=OutputCodec.H264, hdr=False)
+    _validate_result(params, body, {}, content, probe, plan)
+    assert _map_extra(params, body, content) == preview_map_extra(content, timeline, titles)
+    assert params.memory_preset_params == {"home_lat": 40.0, "home_lon": -70.0}
+    probe.duration_seconds += 1
+    with pytest.raises(GenerationError, match="film duration"):
+        _validate_result(params, body, {}, content, probe, plan)

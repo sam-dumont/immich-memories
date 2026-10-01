@@ -48,11 +48,11 @@ class NativeRenderer:
 
     def render(self, request, directory, progress):
         """Fetch the selected sources directly and render without selecting or uploading."""
-        from immich_memories.api.sync_client import SyncImmichClient
         from immich_memories.db import open_store
         from immich_memories.generate import generate_memory
         from immich_memories.processing.output_contract import DecodeCheck
         from immich_memories.tracking import RunTracker
+        from immich_memories_render_worker.access import render_client
         from immich_memories_render_worker.admission import job_identity
         from immich_memories_render_worker.native_plan import generation_params
         from immich_memories_render_worker.renderer import RenderArtifact
@@ -60,9 +60,7 @@ class NativeRenderer:
         wanted = _wanted_encoder(request)
         capabilities = self.health()
         degradations = _capability_degradations(capabilities, wanted)
-        with SyncImmichClient(
-            str(request.immich.url), request.immich.api_key.get_secret_value()
-        ) as client:
+        with render_client(request) as client:
             params = generation_params(request, directory, client, progress)
             tracker = RunTracker(
                 str(job_identity(request)),
