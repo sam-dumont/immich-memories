@@ -285,9 +285,7 @@ class TestMapTilesAreOptIn:
     ) -> None:
         # WHY: server.arcgisonline.com is the outside host; this stands in for a
         # box that cannot reach it, which used to take the whole render down.
-        monkeypatch.setattr(
-            "immich_memories.titles.map_animation._CachedStaticMap.render", _offline
-        )
+        monkeypatch.setattr("immich_memories.titles.map_animation.CachedStaticMap.render", _offline)
         from immich_memories.titles.map_animation import _render_satellite
 
         frame = _render_satellite(41.89, 12.49, 9.0, 64, 48)

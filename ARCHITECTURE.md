@@ -1159,6 +1159,9 @@ generate / Memory page Cut
               └── PipelineResult with editorial_selections  (editorial_projection.py)
 ```
 
+`titles/map_tiles.py` owns satellite tile fetching and the bounded decoded-pixel cache.
+Map animations reuse tiles across frames and release both caches when a card finishes or fails.
+
 ### Assembly Flow
 
 ```

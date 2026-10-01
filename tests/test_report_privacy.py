@@ -76,7 +76,7 @@ def test_geocoder_and_tile_failures_log_no_coordinates(monkeypatch, caplog):
         raise ValueError("service declined")
 
     # WHY: the geocoder and the tile server are the external boundaries that fail here.
-    monkeypatch.setattr(map_animation._CachedStaticMap, "render", refuse)
+    monkeypatch.setattr(map_animation.CachedStaticMap, "render", refuse)
     with caplog.at_level("DEBUG"):
         assert PlaceGeocoder(open_store(), "en", refuse).address(50.850346, 4.351721) == {}
         map_animation._render_satellite(50.850346, 4.351721, 9.0, 16, 12)
