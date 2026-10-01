@@ -135,9 +135,11 @@ def test_certified_held_segment_keeps_its_picture_and_audio_boundary(tmp_path, a
     subprocess.run([
         "ffmpeg", "-v", "error", "-i", str(primary), "-map", "0:v:0",
         "-vf", "tpad=stop_mode=clone:stop_duration=0.03333333333333333",
-        "-r", "30", "-frames:v", "61", "-c:v", "libx264",
+        "-r", "30", "-frames:v", "61", "-c:v", "libx264", "-bf", "0",
         "-video_track_timescale", "600", str(auxiliary),
     ], check=True)  # fmt: skip
+    # Stream-copy remuxing B-frames gives this auxiliary track a shorter edit
+    # endpoint on FFmpeg 7. The fixture needs an exact 61-frame display bound.
     subprocess.run([
         "ffmpeg", "-v", "error", "-i", str(primary), "-map", "0:a:0",
         "-af", f"atrim=end={audio_end}", "-c:a", "pcm_s16le", str(audio),
