@@ -104,6 +104,27 @@ class MemorySettings(Contract):
     person_name: str | None = Field(default=None, max_length=300)
     preset_params: dict = Field(default_factory=dict)
 
+    @field_validator("preset_params")
+    @classmethod
+    def trip_calendar_dates(cls, value: dict) -> dict:
+        """Restore trip days for title arithmetic without coercing other preset values."""
+        result = value.copy()
+        for key in ("trip_start", "trip_end"):
+            day = result.get(key)
+            if day is None:
+                continue
+            if isinstance(day, datetime):
+                day = day.date()
+            elif isinstance(day, str):
+                try:
+                    day = date.fromisoformat(day)
+                except ValueError as exc:
+                    raise ValueError(f"{key} must be an ISO calendar date") from exc
+            if not isinstance(day, date):
+                raise ValueError(f"{key} must be an ISO calendar date")
+            result[key] = day
+        return result
+
 
 class TimingBinding(Contract):
     """`bind_editorial_timeline` output, verbatim. Its digest is the job's identity."""

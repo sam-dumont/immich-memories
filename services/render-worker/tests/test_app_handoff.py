@@ -34,6 +34,7 @@ def manual_params(tmp_path):
 
 
 def round_trip(params, tmp_path):
+    import httpx
     from immich_memories_render_worker.admission import certify_envelope
     from immich_memories_render_worker.models import RenderRequest
     from immich_memories_render_worker.native_plan import generation_params
@@ -41,7 +42,9 @@ def round_trip(params, tmp_path):
     from immich_memories.processing.remote_render_plan import build_render_request
 
     body = build_render_request(params)
-    request = RenderRequest.model_validate(body)
+    # Exercise the same JSON encoder as RemoteRenderClient's POST /jobs.
+    wire = httpx.Request("POST", "http://render.invalid/jobs", json=body)
+    request = RenderRequest.model_validate_json(wire.content)
     certify_envelope(request)
 
     class Client:
@@ -64,6 +67,49 @@ def test_app_envelope_preserves_manual_cut_and_square_canvas(tmp_path):
     assert received.editorial_render_timing == body["timing"]
     assert body["memory"]["date_start"] is None
     assert body["memory"]["date_end"] is None
+
+
+def test_trip_calendar_bounds_survive_http_json_and_worker_title_generation(tmp_path):
+    from datetime import date
+
+    from immich_memories.generate_privacy import generate_trip_title_text
+
+    params = manual_params(tmp_path)
+    params.memory_type = "trip"
+    params.date_start = date(2024, 2, 29)
+    params.date_end = date(2024, 3, 3)
+    params.memory_preset_params = {
+        "location_name": "Example City",
+        "location_kind": "city",
+        "trip_start": params.date_start,
+        "trip_end": params.date_end,
+        "home_lat": 40.0,
+        "home_lon": -70.0,
+    }
+    original = params.memory_preset_params.copy()
+    received, body = round_trip(params, tmp_path)
+    assert body["memory"]["preset_params"] == original | {
+        "trip_start": "2024-02-29",
+        "trip_end": "2024-03-03",
+    }
+    assert params.memory_preset_params == original
+    assert received.memory_preset_params == original
+    assert received.date_start == params.date_start
+    assert received.date_end == params.date_end
+    assert received.editorial_render_timing == body["timing"]
+    assert generate_trip_title_text(received.memory_preset_params) == generate_trip_title_text(
+        original
+    )
+
+
+def test_worker_rejects_invalid_trip_calendar_bounds():
+    import pytest
+    from immich_memories_render_worker.models import MemorySettings
+    from pydantic import ValidationError
+
+    for value in ("2024-02-30", 20240229, ["2024-02-29"]):
+        with pytest.raises(ValidationError, match="trip_start"):
+            MemorySettings(target_duration_seconds=30, preset_params={"trip_start": value})
 
 
 def test_an_editorial_directive_keeps_its_cut_without_a_manual_segment_map(tmp_path):
