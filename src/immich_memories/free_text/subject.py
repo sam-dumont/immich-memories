@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from itertools import pairwise
 
 from immich_memories.free_text.facts import PICTURE_WORDS
@@ -38,8 +38,10 @@ _PEOPLE_RULE = (
 )
 _CAPTIONS_PER_USE = 8000
 _QUALITY = """The owner's request puts a quality word before its subject. Does that quality narrow
-which ones belong in the film, or would every one the request means have it anyway? Pick one.
-Reason first. Return JSON."""
+which ones belong in the film, or is it inherent to the entire subject category? Compare
+against the subject WITHOUT the quality: could an instance lack it? If yes, it narrows. Do not
+assume the quality just because the owner requested it. Judge only the supplied subject, not
+other coordinated subjects. Pick one. Give a brief reason. Return JSON."""
 _NARROWS = "it narrows which ones belong"
 _QUALITIES = (_NARROWS, "every one the request means has it anyway")
 # A quality filters captions only when enough of them say it: "black cat" is written hundreds of
@@ -66,7 +68,10 @@ def subject_words(reading: Reading, household: Household, lexicon: Lexicon) -> S
     reasons: list[Reason] = []
     for span in reading.what:
         for part in _parts(time_cut(span, lexicon)):
-            head, activity = _head_of([word for word in part if word not in skipped], lexicon)
+            subject_tokens = [word for word in part if word not in skipped]
+            if part[-1] in PICTURE_WORDS:
+                subject_tokens = [word for word in subject_tokens if not lexicon.is_adjective(word)]
+            head, activity = _head_of(subject_tokens, lexicon)
             if modifier := _container_modifier(part, head, lexicon):
                 container = head[0] if head else "picture words"
                 head, activity = [modifier], sorted(lexicon.derived_nouns(modifier))
@@ -92,6 +97,17 @@ def subject_words(reading: Reading, household: Household, lexicon: Lexicon) -> S
         words=tuple(found),
         reasons=(Reason(said, rule, outcome), *reasons),
     )
+
+
+def recover_undated_subject(reading: Reading, lexicon: Lexicon) -> Reading:
+    """Keep a visible modifier when a time-labelled container supplied no calendar bound."""
+    recovered = []
+    for span in reading.when:
+        for part in _parts(span):
+            head, _ = _head_of([word for word in part if word not in GLUE | PICTURE_WORDS], lexicon)
+            if _container_modifier(part, head, lexicon):
+                recovered.append(" ".join(part))
+    return replace(reading, what=tuple(dict.fromkeys((*reading.what, *recovered))))
 
 
 def _container_modifier(words: Sequence[str], head: list[str], lexicon: Lexicon) -> str | None:
@@ -125,7 +141,11 @@ def _head_of(words: Sequence[str], lexicon: Lexicon) -> tuple[list[str], list[st
     ]
     # With no noun, the last verb names the subject: "partying" is asked for as it is written.
     doing = [word for word in words if lexicon.verb_base(word)]
-    return (nouns[-1:] or doing[-1:]), activity
+    head = nouns[-1:] or doing[-1:]
+    if not head:
+        head = [word for word in words if lexicon.is_adjective(word)][-1:]
+        activity += sorted(lexicon.derived_nouns(head[0])) if head else []
+    return head, activity
 
 
 def _is_doing(word: str, lexicon: Lexicon) -> bool:
@@ -246,6 +266,11 @@ def build_subject(
         )
     main = _qualities(reading.request, main, index, lexicon, asker, reasons)
     extent, kind = _extent(reading.request, main, relatives, candidates, lexicon, asker, reasons)
+    for head in found.heads:
+        if lexicon.is_adjective(head) and not lexicon.noun_base(head):
+            forms = {head} | lexicon.derived_nouns(head)
+            if forms.intersection(main):
+                extent.extend(sorted(forms - set(main) - set(extent)))
     return Subject(
         heads=found.heads,
         words=found.words,

@@ -17,7 +17,7 @@ from immich_memories.free_text.library import LibraryView
 from immich_memories.free_text.linking import Household, link_when, link_where, link_who
 from immich_memories.free_text.pool import Pool, PrintedText, Translation, build_pool
 from immich_memories.free_text.reading import Asker, read_request
-from immich_memories.free_text.subject import build_subject
+from immich_memories.free_text.subject import build_subject, recover_undated_subject
 
 
 @dataclass(frozen=True)
@@ -53,6 +53,8 @@ def translate(
     reading = read_request(request, asker)
     who = link_who(request, reading.who, household, lexicon, asker)
     when = link_when(request, reading.when, who, household, asker, today=today)
+    if when.start is when.end is None:
+        reading = recover_undated_subject(reading, lexicon)
     captions = [picture.caption for picture in view.pictures]
     subject = build_subject(reading, household, captions, lexicon, asker)
     where = link_where(request, reading.where, subject.heads, household, asker)

@@ -6,6 +6,8 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from immich_memories.db import open_store
 from immich_memories.free_text.lexicon import Lexicon
 from immich_memories.free_text.library import LibraryPicture, LibraryView
@@ -113,3 +115,67 @@ def test_the_trace_is_saved_with_the_run_where_the_report_finds_it(
     assert saved["trace"] == trace
     assert saved["funnel"]["pool"] == 14
     assert (tmp_path / "free-text-trace.private.txt").read_text() == trace
+
+
+@pytest.mark.parametrize("weather", ["rainy", "foggy", "sunny", "snowy"])
+@pytest.mark.parametrize("part", ["when", "what"])
+def test_weather_labelled_as_time_still_restricts_the_pool(lexicon, weather, part):
+    # WHY: the reader classified visible weather under when; the date reader cannot date it.
+    answers = {
+        **ANSWERS,
+        "Split the owner's request": _read(
+            [f"{weather} days"] if part == "what" else [],
+            [f"{weather} days"] if part == "when" else [],
+        ),
+        "mainly show": {"reason": "weather", "choices": [weather]},
+        "main subject (subject)": {"reason": "weather", "choice": "an activity or event"},
+    }
+    view = LibraryView(
+        (
+            _picture("wet", TODAY, f"A {weather} afternoon in the park."),
+            _picture("dry", TODAY, "A dog sleeps on a sofa."),
+        ),
+        {},
+        None,
+    )
+    asked = translate(f"{weather} days", view, NOBODY, lexicon, QuestionAsker(answers), today=TODAY)
+    assert {p.asset_id for p in asked.pool.pictures} == {"wet"}
+    assert weather in asked.translation.subject.words
+
+
+def test_weather_split_between_time_and_subject_keeps_the_adjective(lexicon):
+    # WHY: a real provider called only "days" time and only "foggy" the subject.
+    answers = {
+        **ANSWERS,
+        "Split the owner's request": _read(["foggy"], ["days"]),
+        "mainly show": {"reason": "weather", "choices": ["fog"]},
+    }
+    view = LibraryView(
+        (
+            _picture("fog", TODAY, "Fog fills the park."),
+            _picture("dry", TODAY, "A dog sleeps indoors."),
+        ),
+        {},
+        None,
+    )
+    asked = translate("foggy days", view, NOBODY, lexicon, QuestionAsker(answers), today=TODAY)
+    assert {p.asset_id for p in asked.pool.pictures} == {"fog"}
+
+
+def test_a_weather_noun_vote_keeps_the_requests_adjective_form(lexicon):
+    # WHY: a real provider preferred the abstract noun "sunniness" to "sunny".
+    answers = {
+        **ANSWERS,
+        "Split the owner's request": _read([], ["sunny days"]),
+        "mainly show": {"reason": "weather", "choices": ["sunniness"]},
+    }
+    view = LibraryView(
+        (
+            _picture("sun", TODAY, "A sunny afternoon in the park."),
+            _picture("dark", TODAY, "A dog sleeps indoors."),
+        ),
+        {},
+        None,
+    )
+    asked = translate("sunny days", view, NOBODY, lexicon, QuestionAsker(answers), today=TODAY)
+    assert {p.asset_id for p in asked.pool.pictures} == {"sun"}

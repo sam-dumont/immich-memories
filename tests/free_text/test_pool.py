@@ -93,7 +93,7 @@ def test_a_few_pictures_are_thin_and_none_is_not_possible_with_the_step_that_emp
     few = build_pool(_asked("our cat", main=("cat",)), _view(*_cats(3)), NOBODY, lexicon, one_cat)
     # WHY: stands in for the model server, asked whether brunches are one occasion (no answer:
     # many) and whether "cat" (the captions' subject) is a brunch.
-    no_other_name = BankedAsker(*[{"reason": "banked", "choices": []}] * 6)
+    no_other_name = BankedAsker(*[None] * 6, *[{"reason": "banked", "choices": []}] * 3)
     none = build_pool(
         _asked("brunches", main=("brunches",)), _view(*_cats(3)), NOBODY, lexicon, no_other_name
     )
