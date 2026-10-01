@@ -238,6 +238,14 @@ benchmark-json-full: benchmark-assembly benchmark-titles-json benchmark-pipeline
 	@echo "Benchmark JSON files:"
 	@ls -la tests/benchmark-*.json 2>/dev/null || echo "  (none found — benchmarks may have been skipped)"
 
+.PHONY: benchmark-preview-reuse
+benchmark-preview-reuse:  ## Measure stage-wise still decode reuse (public JPEG fixtures only)
+	uv run python scripts/benchmark_preview_reuse.py $(BENCHMARK_ARGS)
+
+.PHONY: benchmark-preview-contracts
+benchmark-preview-contracts:  ## Compare existing still decoder contracts on generated images
+	uv run python scripts/benchmark_preview_contracts.py
+
 benchmark-submit:  ## Submit local benchmark results to GitHub (for non-CI runners)
 	@RUNNER_NAME=$${BENCHMARK_RUNNER:-$$(hostname)}; \
 	BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
@@ -1162,3 +1170,4 @@ demucs-locks:  ## Refresh the Linux inference audio locks without changing Mac d
 	uv pip compile docker/demucs-requirements.in --constraint "$$constraints" --python-version 3.12 \
 	  --python-platform linux --torch-backend cu126 --generate-hashes --no-annotate --no-header \
 	  -o docker/demucs-cuda-requirements.txt
+
