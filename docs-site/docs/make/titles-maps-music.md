@@ -226,6 +226,7 @@ Tiles are cached for the whole card. The log line per card gives frames, renders
 previous stop, the route's wider midpoint, and close to the next stop. Short fades join these views;
 this replaces the smooth flight. Satellite detail is rendered at a 360-pixel short side and enlarged,
 while names and pins are drawn at the film's full resolution. Each leg needs only three map renders.
+Static spans reuse those plates in one frame stream; only the two brief fades blend new frames.
 The output resolution, frame rate, encoding plan, move duration and destination hold stay the same.
 Set `animated_background: true` explicitly to keep the smooth map flight, even with the fast preset.
 

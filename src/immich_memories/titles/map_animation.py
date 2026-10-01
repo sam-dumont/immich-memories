@@ -6,9 +6,8 @@ import contextlib
 import logging
 import math
 import subprocess
-import tempfile
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field, replace
 from itertools import starmap
 from pathlib import Path
@@ -605,6 +604,25 @@ def _map_plate(progress: float, cfg: _FlyConfig, show_title: bool) -> Image.Imag
     return frame
 
 
+def _plate_frames(
+    plates: list[Image.Image], total: int, fps: float, arrival: float, fade: float
+) -> Iterator[bytes]:
+    # Static spans reuse the same bytes; only the two brief fades create transient frames.
+    raw = [plate.tobytes() for plate in plates]
+    for i in range(total):
+        t = i / fps
+        if t < arrival / 3:
+            yield raw[0]
+        elif t < arrival / 3 + fade:
+            yield Image.blend(plates[0], plates[1], (t - arrival / 3) / fade).tobytes()
+        elif t < arrival - fade:
+            yield raw[1]
+        elif t < arrival:
+            yield Image.blend(plates[1], plates[2], (t - arrival + fade) / fade).tobytes()
+        else:
+            yield raw[2]
+
+
 def _pipe_map_plates(
     cfg: _FlyConfig,
     output_path: Path,
@@ -613,7 +631,8 @@ def _pipe_map_plates(
     fps: float,
     encoding_plan: EncodingPlan | None,
 ) -> int:
-    # Three views tell the same journey without rasterizing every intermediate camera position.
+    from immich_memories.processing.ffmpeg_runner import write_frames_to_ffmpeg
+
     started = time.perf_counter()
     plan = encoding_plan or standalone_title_encoding_plan()
     total = len(progress)
@@ -621,58 +640,30 @@ def _pipe_map_plates(
     moving = next((i for i, t in enumerate(progress) if t == 1.0), total - 1)
     arrival = max(1 / fps, moving / fps)
     fade = min(0.5, arrival / 4)
-    with tempfile.TemporaryDirectory(prefix="map-plates-", dir=output_path.parent) as scratch:
-        paths = [Path(scratch) / f"view-{i}.png" for i in range(3)]
-        for i, (t, path) in enumerate(zip((0.0, 0.5, 1.0), paths, strict=True)):
-            show_title = i == 2 or overlay_alphas[min(1, total - 1)] > 0
-            _map_plate(t, cfg, show_title).save(path)
-        synthesized = time.perf_counter()
-        blend_format = "yuv444p16le" if plan.hdr else "yuv444p"
-        graph = ";".join(
-            f"[{i}:v]fps={fps},format={blend_format},settb=AVTB[v{i}]" for i in range(3)
-        )
-        graph += (
-            f";[v0][v1]xfade=transition=fade:duration={fade}:offset={arrival / 3}[route]"
-            f";[route][v2]xfade=transition=fade:duration={fade}:offset={arrival - fade}"
-            f",{title_color_filter(plan)}[video]"
-        )
-        cmd = ["ffmpeg", "-y", "-filter_complex_threads", "1"]
-        for path in paths:
-            cmd.extend(["-loop", "1", "-framerate", "1", "-i", str(path)])
-        cmd.extend(
-            [
-                "-f",
-                "lavfi",
-                "-i",
-                "anullsrc=r=48000:cl=stereo",
-                "-filter_complex",
-                graph,
-                "-map",
-                "[video]",
-                "-map",
-                "3:a",
-                *title_encoder_args(plan),
-                "-c:a",
-                "aac",
-                "-b:a",
-                "128k",
-                "-t",
-                str(duration),
-                "-r",
-                str(fps),
-                "-movflags",
-                "+faststart",
-                str(output_path),
-            ]
-        )
-        cmd = apply_hardware_encode(cmd, pixel_format=plan.pixel_format, video_label="video")
-        result = subprocess.run(cmd, capture_output=True, timeout=max(60, duration * 30))
-        if result.returncode:
-            raise RuntimeError(
-                f"Map plates FFmpeg failed: {result.stderr.decode(errors='replace')[-2000:]}"
-            )
+    plates = [
+        _map_plate(t, cfg, i == 2 or overlay_alphas[min(1, total - 1)] > 0)
+        for i, t in enumerate((0.0, 0.5, 1.0))
+    ]
+    synthesized = time.perf_counter()
+    cmd = [
+        "ffmpeg", "-y", "-f", "rawvideo", "-vcodec", "rawvideo",
+        "-s", f"{cfg.width}x{cfg.height}", "-pix_fmt", "rgb24", "-r", str(fps), "-i", "-",
+        "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
+        "-vf", title_color_filter(plan), *title_encoder_args(plan),
+        "-c:a", "aac", "-b:a", "128k", "-t", str(duration),
+        "-movflags", "+faststart", str(output_path),
+    ]  # fmt: skip
+    cmd = apply_hardware_encode(cmd, pixel_format=plan.pixel_format)
+    code, tail = write_frames_to_ffmpeg(
+        cmd,
+        _plate_frames(plates, total, fps, arrival, fade),
+        wait_timeout=60,
+        total_timeout=max(60, duration * 30),
+    )
+    if code:
+        raise RuntimeError(f"Map plates FFmpeg failed: {tail[-2000:]}")
     logger.info(
-        "Map plates: synthesis %.2fs; encode %.2fs; 3 views, %d frames, %dx%d",
+        "Map plates: synthesis %.2fs; stream blends/encode %.2fs; 3 views, %d frames, %dx%d",
         synthesized - started,
         time.perf_counter() - synthesized,
         total,
