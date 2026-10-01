@@ -214,6 +214,7 @@ def _live_unit(*, rules, favourite, clip_frames, residual=9.0):
     wall = SimpleNamespace(event_assets={"F01": ["still"]}, moment_of_asset={"still": "M01"})
     ports = SimpleNamespace(
         resolve_motion=None,
+        live_source_integrity=None,
         thumbnail_hash=lambda _asset_id: None,
         rules=object() if rules else None,
     )

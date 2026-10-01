@@ -63,6 +63,7 @@ from immich_memories.analysis.editorial_structure_contract import (
 )
 from immich_memories.analysis.editorial_structure_finishing import (
     PlanRun,
+    admit_retained_originals,
     announce_count,
     apply_audience_gate,
     drop_filler_nothing_vouches_for,
@@ -263,6 +264,7 @@ def plan_structure(
             refine=None,
             prepare_candidates=None,
             draft=None,
+            live_source_integrity=None,
         )
         drafted = _plan_structure(nas, rules)
         drafted.write(nas.artifact_dir)
@@ -563,6 +565,7 @@ def _select(
         ),
     )
     record_story("picture-admission", {"checks": gates.decisions})
+    admit_retained_originals(run, source, material.builder)
     check_finished_cut(source, selection, material, run, gate, banked, share_log, record_story)
     return PlanOutcome(
         contract=contract,

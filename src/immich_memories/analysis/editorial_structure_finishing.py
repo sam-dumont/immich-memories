@@ -32,7 +32,7 @@ from immich_memories.analysis.editorial_structure_contract import (
     StructurePlannerPorts,
     StructurePlanningInput,
 )
-from immich_memories.analysis.editorial_structure_material import Material, Wall
+from immich_memories.analysis.editorial_structure_material import Material, UnitBuilder, Wall
 from immich_memories.analysis.editorial_structure_record import shave_content_duration
 from immich_memories.analysis.editorial_unvouched_filler import (
     FillerEvidence,
@@ -108,6 +108,31 @@ def resolve_motion_and_timing(
     run.shaved += shave_content_duration(run.carriers, run.final_content_cap)
     if sum(c["seconds"] for c in run.carriers) > run.final_content_cap:
         raise ValueError("Editorial minimum content cannot fit the production title budget")
+
+
+def admit_retained_originals(
+    run: PlanRun, source: StructurePlanningInput, builder: UnitBuilder
+) -> None:
+    """Original-byte admission cannot acquire rejected candidates or replace pictures."""
+    admitted = [builder.admit_original_motion(carrier) for carrier in run.carriers]
+    changed = any(
+        before["kind"] != after["kind"]
+        for before, after in zip(run.carriers, admitted, strict=True)
+    )
+    run.carriers = admitted
+    if not changed:
+        return
+    run.shaved += shave_content_duration(run.carriers, run.final_content_cap)
+    if source.render_timing is not None:
+        resolved = source.render_timing.resolve(run.carriers, source.assets)
+        run.final_content_cap = min(run.final_content_cap, resolved.content_budget)
+        run.shaved += shave_content_duration(run.carriers, run.final_content_cap)
+        run.render_timeline = source.render_timing.resolve(run.carriers, source.assets)
+        run.final_content_cap = min(run.final_content_cap, run.render_timeline.content_budget)
+    if sum(carrier["seconds"] for carrier in run.carriers) > run.final_content_cap:
+        raise ValueError(
+            "Original Live still disposition cannot fit without removing selected pictures"
+        )
 
 
 def replacement_offers(pool_for: Callable[[Mapping[str, Any]], Sequence[Mapping[str, Any]]]):

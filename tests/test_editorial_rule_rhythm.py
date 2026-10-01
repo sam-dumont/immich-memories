@@ -101,6 +101,7 @@ def _holds(*, rules):
     )
     ports = SimpleNamespace(
         resolve_motion=None,
+        live_source_integrity=None,
         thumbnail_hash=lambda _asset_id: None,
         rules=object() if rules else None,
     )
