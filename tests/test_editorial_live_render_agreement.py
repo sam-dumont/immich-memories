@@ -66,12 +66,15 @@ def probes(monkeypatch):
     state = SimpleNamespace(calls=[], source_duration=2.0, output_duration=2.0, fps=25.0)
 
     class FakeProbeCache:
+        def last_video_frame(self, _path):
+            return {"pts": round(state.source_duration * state.fps) - 1}
+
         def render_frame_rate(self, _path):
             return {"basis": "matching-stream-rates", "rate": str(int(state.fps)), "fps": state.fps}
 
         def quantized_segment(self, _path, start, end, rate):
             frames = round((end - start) * rate)
-            return {"frames": frames, "seconds": float(frames / rate)}
+            return {"frames": frames, "seconds": float(frames / rate), "time_base": "1/600"}
 
         def get(self, path):
             state.calls.append(path)
@@ -107,10 +110,12 @@ def test_positive_segments_keep_alias_lineage_and_exact_warm_skips_probe_and_mer
     calls = []
     merge = merging(calls)
     first = certified.render_certified_live(clip, paths, tmp_path, merge=merge)
-    assert len(probes.calls) == 3  # Two actual sources and the resulting merge.
+    assert (
+        len(probes.calls) == 5
+    )  # Two sources, their cached audio metadata reads, and the resulting merge.
     second = certified.render_certified_live(clip, paths, tmp_path, merge=merge)
     assert first == second
-    assert len(probes.calls) == 3
+    assert len(probes.calls) == 5
     assert len(calls) == 1
     assert calls[0][0:2] == (paths, [(0.0, 1.0), (0.5, 1.5)])
     assert calls[0][3] == {
@@ -119,6 +124,7 @@ def test_positive_segments_keep_alias_lineage_and_exact_warm_skips_probe_and_mer
         "strict_material": True,
         "render_frame_rate": "25",
         "config": None,
+        "segment_frame_holds": [25, 25],
     }
     assert material.still_ids == ("still-a", "still-b", "still-c")
     record = json.loads(first.with_suffix(".json").read_text())
@@ -152,7 +158,7 @@ def test_changed_render_identity_cannot_reuse_an_old_merge(source, probes, tmp_p
     assert second != first
     assert first.is_file() and second.is_file()
     assert len(calls) == 2
-    assert len(probes.calls) == 6
+    assert len(probes.calls) == 10
 
 
 def test_tampered_cached_merge_fails_without_reencoding(source, probes, tmp_path):
@@ -163,7 +169,7 @@ def test_tampered_cached_merge_fails_without_reencoding(source, probes, tmp_path
     output.write_bytes(b"unrelated-cached-video")
     with pytest.raises(ValueError, match="Cached editorial Live merge changed"):
         certified.render_certified_live(clip, paths, tmp_path, merge=merge)
-    assert len(calls) == 1 and len(probes.calls) == 3
+    assert len(calls) == 1 and len(probes.calls) == 5
 
 
 def test_strict_download_ignores_unchecked_local_path_but_legacy_keeps_it(
@@ -189,7 +195,7 @@ def test_strict_download_ignores_unchecked_local_path_but_legacy_keeps_it(
     assert len(calls) == 1
     legacy = clip.model_copy(update={"editorial_live_manifest": None})
     assert downloads.download_clip(None, None, legacy, tmp_path) == stale
-    assert len(calls) == 1 and len(probes.calls) == 3
+    assert len(calls) == 1 and len(probes.calls) == 5
 
 
 @pytest.mark.parametrize("missing", ["absent", "none", "wrong_id"])

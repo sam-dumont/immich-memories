@@ -12,11 +12,13 @@ from typing import Any
 
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 from immich_memories.processing.live_material import LiveRenderMaterial
-from immich_memories.processing.probe_cache import ProbeCache, trim_ticks
+from immich_memories.processing.probe_cache import ProbeCache, ProbeError, trim_ticks
 from immich_memories.security import write_secret_file
 
 RENDER_VERSION = "editorial-live-render-v1"
-FRAME_QUANTIZATION = "source-packet-segment-quantization-and-presentation-frame-hold-v5"
+FRAME_QUANTIZATION = (
+    "source-packet-segment-quantization-and-shared-video-audio-sample-boundaries-v10"
+)
 
 
 def validate_editorial_live_clip(clip: Any) -> LiveRenderMaterial:
@@ -140,7 +142,10 @@ def _bind_trailing_frame(probes, path, entry, probe, origin: float, evidence: di
     # rounded depending on its formatter; either reading can extend just beyond
     # the final video packet.
     if not -0.001 < entry.end - probe.duration_seconds <= 0.0005:
-        raise _reject(evidence)
+        if _bind_container_frame(probes, path, entry, probe, origin, evidence):
+            return
+        _bind_audio_tail(probes, path, entry, probe, evidence)
+        return
     tail = probes.last_video_frame(path)
     tail_start, tail_end = tail["start_seconds"] - origin, tail["end_seconds"] - origin
     # Some MOV probes report a sample duration shorter than the observed PTS
@@ -150,12 +155,61 @@ def _bind_trailing_frame(probes, path, entry, probe, origin: float, evidence: di
     overrun = _declared_ticks(tail, entry.end, origin) - (tail["pts"] + tail["duration_ticks"])
     gap = entry.end - tail_end
     if entry.start >= tail_end or entry.end < tail_start or overrun > hold_ticks:
-        raise _reject(evidence | {"final_packet": tail, "source_tail_seconds": gap})
+        _bind_audio_tail(probes, path, entry, probe, evidence)
+        return
     evidence.update(
         final_packet=tail,
         source_tail_seconds=gap,
         boundary="millisecond-container-end-within-final-source-frame",
     )
+
+
+def _bind_container_frame(probes, path, entry, probe, origin, evidence) -> bool:
+    """A shorter cut retains an independently qualified complete container boundary."""
+    if entry.end >= probe.duration_seconds:
+        return False
+    tail = probes.last_video_frame(path)
+    endpoint = tail["pts"] + tail["duration_ticks"]
+    container = _declared_ticks(tail, probe.duration_seconds, origin)
+    selected = _declared_ticks(tail, entry.end, origin)
+    observed = max(tail["duration_ticks"], tail.get("presentation_spacing_ticks", 0))
+    if (
+        not 0 <= container - endpoint <= observed
+        or selected > container
+        or _declared_ticks(tail, entry.start, origin) >= endpoint
+    ):
+        return False
+    try:
+        proof = probes.complete_video_presentation(path)
+    except ProbeError as exc:
+        raise _reject(evidence | {"container_frame_rejection": str(exc)}) from exc
+    evidence.update(
+        final_packet=tail,
+        container_frame_hold=proof
+        | {
+            "container_end_ticks": container,
+            "observed_interval_ticks": observed,
+            "selected_end_seconds": entry.end,
+            "hold_seconds": entry.end - (tail["end_seconds"] - origin),
+        },
+        boundary="complete-container-end-within-final-source-frame",
+    )
+    return True
+
+
+def _bind_audio_tail(probes, path, entry, probe, evidence) -> None:
+    from immich_memories.processing.live_audio_tail import certify_audio_tail
+
+    if not getattr(probe, "has_audio", False):
+        raise _reject(evidence)
+    tail = probes.last_video_frame(path)
+    try:
+        proof = certify_audio_tail(
+            path, entry, probe, tail, video_proof=probes.complete_video_presentation(path)
+        )
+    except ProbeError as exc:
+        raise _reject(evidence | {"audio_tail_rejection": str(exc)}) from exc
+    evidence.update(final_packet=tail, audio_tail_hold=proof, boundary=proof["boundary"])
 
 
 def _hold_last_frame(
@@ -252,6 +306,15 @@ def _source_timings(probes, paths, material) -> list[dict]:
     for path, entry in zip(paths, material.segments, strict=True):
         evidence = _source_timing(probes, path, entry)
         evidence["render_cadence"] = probes.render_frame_rate(path)
+        tail = probes.last_video_frame(path)
+        if "presentation_proof" in tail:
+            origin = probes.get(path).container_start_seconds
+            if (
+                _declared_ticks(tail, entry.start, origin)
+                <= tail["pts"]
+                < _declared_ticks(tail, entry.end, origin)
+            ):
+                evidence["presentation_interval"] = dict(tail["presentation_proof"])
         source_timing.append(evidence)
     return source_timing
 
@@ -259,15 +322,51 @@ def _source_timings(probes, paths, material) -> list[dict]:
 def _predicted_encode(probes, paths, material, render_rate: Fraction, source_timing) -> float:
     """The length the concatenation of grid-quantized segments must encode to.
 
-    Each segment is quantized on its own before ``concat`` joins them, so the
-    merge carries every cut's rounding, not one output frame in total.
+    Each segment retains its proven packet grid and every selected audio sample.
+    Its shared picture/audio endpoint rounds up on the source clock before concat.
     """
     frames = 0
     for path, entry, evidence in zip(paths, material.segments, source_timing, strict=True):
         segment = probes.quantized_segment(path, entry.start, entry.end, render_rate)
+        clock = Fraction(segment["time_base"])
+        span = trim_ticks(entry.end, clock) - trim_ticks(entry.start, clock)
+        packet_frames = segment["frames"]
+        selected_frames = math.ceil(span * clock * render_rate)
+        audio = _selected_audio_boundary(probes.get(path), entry, render_rate)
+        segment["frames"] = max(packet_frames, selected_frames, audio["audio_selected_frames"])
+        segment["seconds"] = float(Fraction(segment["frames"]) / render_rate)
+        boundary = {
+            "packet_grid_frames": packet_frames,
+            "selected_interval_ticks": span,
+            "selected_interval_frames": selected_frames,
+            "target_frames": segment["frames"],
+            "render_frame_rate": str(render_rate),
+            "audio_silence_pad_to_seconds": segment["seconds"],
+        }
+        boundary.update(audio)
+        evidence["certified_segment_boundary"] = boundary
+        for key in ("audio_tail_hold", "container_frame_hold", "presentation_interval"):
+            if key in evidence:
+                evidence[key].update(before_frames=packet_frames, **boundary)
         evidence["quantized_segment"] = segment
         frames += segment["frames"]
     return float(Fraction(frames) / render_rate)
+
+
+def _selected_audio_boundary(probe, entry, render_rate: Fraction) -> dict:
+    """atrim rescales parsed microseconds on 1/sample_rate, independently of video."""
+    if not getattr(probe, "has_audio", False):
+        return {"audio_selected_frames": 0}
+    rate = getattr(probe, "audio_sample_rate", 0)
+    if type(rate) is not int or rate <= 0:
+        raise ProbeError("Certified audio segment has no verified sample rate")
+    clock = Fraction(1, rate)
+    samples = trim_ticks(entry.end, clock) - trim_ticks(entry.start, clock)
+    return {
+        "audio_sample_rate": rate,
+        "audio_selected_samples": samples,
+        "audio_selected_frames": math.ceil(Fraction(samples, rate) * render_rate),
+    }
 
 
 def _quantized_encode(
@@ -341,6 +440,7 @@ def render_certified_live(
     source_timing = _source_timings(probes, paths, material)
     render_rate = max(Fraction(row["render_cadence"]["rate"]) for row in source_timing)
     predicted = _predicted_encode(probes, paths, material, render_rate, source_timing)
+    holds = [row["quantized_segment"]["frames"] for row in source_timing]
     result = merge(
         list(paths),
         list(material.trim_points),
@@ -350,6 +450,7 @@ def render_certified_live(
         strict_material=True,
         render_frame_rate=str(render_rate),
         config=config,
+        segment_frame_holds=holds,
     )
     if result != target or not target.is_file():
         raise ValueError("Editorial Live merge failed; material fallback is forbidden")

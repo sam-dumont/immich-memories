@@ -41,8 +41,23 @@ before assembly. This applies to software and hardware encoders.
 
 Some MOV probes report a 4-tick sample duration even when successive pictures arrive every
 20 ticks. The renderer checks those actual presentation timestamps before allowing one final
-frame hold. A rounded container endpoint can use that measured interval; a larger missing tail
-still stops the render.
+frame hold. A rounded container endpoint can use that measured interval.
+
+Older FFmpeg versions can also guess the last sample's duration in a reordered MOV.
+For those files, the renderer verifies every compressed sample and visible decoded picture,
+then uses the video track's sample-table and edit boundary. Decoder reference samples count
+toward source completeness but never become displayed pictures. Each segment keeps that verified
+final interval before joining the next segment. The proof records the original hash, decoder
+version, frame timestamps and source clock; unchanged sources reuse it within the run.
+
+Some companions have a complete video track that ends before their audio. For those files,
+the renderer verifies every visible video sample and its bounded video endpoint.
+It also decodes the audio and checks its continuous sample coverage against the
+audio track's visible endpoint. Only that verified audio tail can hold the final picture longer.
+The hold happens within each burst segment, so the next picture and its audio keep their selected
+start. The merge record includes both audio endpoints, the measured hold, source hashes and frame
+counts. Missing video samples, absent or short audio, and intervals beyond the visible audio still
+stop the render.
 
 An iPhone records about 3 seconds of video with every photo. Most libraries hold thousands of them,
 and a rapid burst of them is several seconds of continuous footage nobody meant to shoot.

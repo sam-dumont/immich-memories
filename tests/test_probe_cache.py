@@ -76,6 +76,7 @@ def test_one_probe_supplies_all_source_metadata(
     assert probe.audio_duration_seconds == 5.08
     assert probe.video_duration_seconds == 5.10
     assert probe.audio_bitrate == 192000
+    assert probe.audio_sample_rate == 48000
     assert len(commands) == 1
     assert "json" in commands[0]
 

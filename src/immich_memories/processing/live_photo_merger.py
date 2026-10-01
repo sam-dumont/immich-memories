@@ -14,6 +14,7 @@ import logging
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass
+from fractions import Fraction
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -572,6 +573,7 @@ def build_merge_command(
     hardware_enabled: bool = True,
     quantize_material: bool = False,
     render_frame_rate: str | None = None,
+    segment_frame_holds: list[int] | None = None,
     config: Config | None = None,
 ) -> list[str]:
     """Build an FFmpeg command that trims and merges Live Photo clips.
@@ -588,8 +590,6 @@ def build_merge_command(
     quality, comes from ``burst_encoding_plan`` rather than being hardcoded.
     """
     if quantize_material and render_frame_rate is None:
-        from fractions import Fraction
-
         from immich_memories.processing.probe_cache import ProbeCache
 
         probes = ProbeCache()
@@ -628,6 +628,7 @@ def build_merge_command(
         has_audio,
         render_frame_rate or (burst_fps(clip_paths) if n > 1 or quantize_material else 0.0),
         quantize_material=quantize_material,
+        segment_frame_holds=segment_frame_holds,
         geometry_filter=burst_geometry_filter(
             clip_paths, nas=config is not None and config.tier == "nas"
         ),
@@ -654,6 +655,7 @@ def _build_trim_filters(
     color_filters: list[str],
     quantize_material: bool = False,
     geometry_filter: str = "",
+    segment_frame_holds: list[int] | None = None,
 ) -> tuple[list[str], list[str], list[str]]:
     """Build per-clip trim + normalize filter strings."""
     parts: list[str] = []
@@ -672,6 +674,7 @@ def _build_trim_filters(
             # EOF must carry the last source frame through resampling. The
             # certified caller then verifies/pads a subframe duration shortfall.
             fps_filter = f",fps={rate}:eof_action=pass"
+        fps_filter += _segment_frame_hold(segment_frame_holds, i, quantize_material)
         parts.append(
             f"[{i}:v]trim=start={v_start}:end={v_end},setpts=PTS-STARTPTS"
             f"{normalize}{geometry_filter}{color}{fps_filter}[v{i}]"
@@ -681,16 +684,33 @@ def _build_trim_filters(
         if has_audio:
             a_start, a_end = a_trims[i]
             seg_dur = a_end - a_start
+            audio_pad = _segment_audio_pad(segment_frame_holds, i, rate)
             fade_in = f",afade=t=in:st=0:d={fade_dur}" if i > 0 else ""
             fade_out = (
                 f",afade=t=out:st={max(0.01, seg_dur - fade_dur)}:d={fade_dur}" if i < n - 1 else ""
             )
             parts.append(
-                f"[{i}:a]atrim=start={a_start}:end={a_end},asetpts=PTS-STARTPTS{fade_in}{fade_out}[a{i}]"
+                f"[{i}:a]atrim=start={a_start}:end={a_end},asetpts=PTS-STARTPTS"
+                f"{audio_pad}{fade_in}{fade_out}[a{i}]"
             )
             a_labels.append(f"[a{i}]")
 
     return parts, v_labels, a_labels
+
+
+def _segment_frame_hold(holds: list[int] | None, index: int, certified: bool) -> str:
+    if not holds or not holds[index]:
+        return ""
+    frames = holds[index]
+    if not certified or type(frames) is not int or frames <= 0:
+        raise ValueError("Segment frame holds require certified positive frame counts")
+    return f",tpad=stop_mode=clone:stop={frames},trim=end_frame={frames}"
+
+
+def _segment_audio_pad(holds: list[int] | None, index: int, rate: str) -> str:
+    if not holds or not holds[index]:
+        return ""
+    return f",apad=whole_dur={holds[index] / float(Fraction(rate)):.17g}"
 
 
 def _build_concat_and_map(

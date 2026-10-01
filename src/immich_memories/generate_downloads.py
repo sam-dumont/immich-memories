@@ -315,6 +315,7 @@ def _try_merge_burst(
     hardware_enabled: bool = True,
     strict_material: bool = False,
     render_frame_rate: str | None = None,
+    segment_frame_holds: list[int] | None = None,
     config: Config | None = None,
 ) -> Path | None:
     """Try to merge burst clips with spectrogram-aligned audio/video.
@@ -384,6 +385,7 @@ def _try_merge_burst(
         quantize_material=strict_material,
         render_frame_rate=render_frame_rate,
         config=config,
+        **({"segment_frame_holds": segment_frame_holds} if segment_frame_holds else {}),
     )
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)  # noqa: S603

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import subprocess
@@ -9,6 +10,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 from operator import itemgetter
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 
 from immich_memories.security import validate_video_path
@@ -16,6 +18,18 @@ from immich_memories.security import validate_video_path
 
 class ProbeError(RuntimeError):
     """A source file could not be inspected by ffprobe."""
+
+
+PRESENTATION_POLICY = "complete-visible-video-presentation-v1"
+
+
+class PresentationIntegrityError(ProbeError):
+    """Positive media evidence, distinct from unavailable tools/files or timeouts."""
+
+    def __init__(self, reason: str, evidence: dict) -> None:
+        super().__init__(f"Source video integrity failed: {reason}")
+        self.reason = reason
+        self.evidence = MappingProxyType(evidence | {"reason": reason})
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,6 +69,8 @@ class VideoProbe:
     nominal_frame_rate: str | None = None
     video_time_base: str | None = None
     container_start_seconds: float = 0.0
+    container_format: str | None = None
+    audio_sample_rate: int = 0
 
     @property
     def resolution(self) -> tuple[int, int] | None:
@@ -149,11 +165,13 @@ def _parse_video_probe(data: dict[str, Any]) -> VideoProbe:
         has_audio=bool(audio_streams),
         audio_codec=str(audio.get("codec_name")) if audio.get("codec_name") else None,
         audio_bitrate=_integer(audio.get("bit_rate")),
+        audio_sample_rate=_integer(audio.get("sample_rate")),
         video_start_seconds=_number(video.get("start_time")),
         average_frame_rate=video.get("avg_frame_rate"),
         nominal_frame_rate=video.get("r_frame_rate"),
         video_time_base=video.get("time_base"),
         container_start_seconds=_number(format_data.get("start_time")),
+        container_format=format_data.get("format_name"),
     )
 
 
@@ -175,6 +193,41 @@ class ProbeCache:
     def __init__(self) -> None:
         self._entries: dict[Path, tuple[ProbeKey, VideoProbe]] = {}
         self._packet_entries: dict[Path, tuple[ProbeKey, dict]] = {}
+        self._decoder_identity: str | None = None
+
+    def decoder_identity(self) -> str:
+        """Exact decoder version for a persisted byte-bound presentation verdict."""
+        if self._decoder_identity is None:
+            result = subprocess.run(
+                ["ffprobe", "-version"], capture_output=True, text=True, timeout=10, check=False
+            )
+            if result.returncode or not result.stdout.strip():
+                raise ProbeError("FFprobe decoder identity is unavailable")
+            self._decoder_identity = result.stdout.splitlines()[0].strip()
+        return self._decoder_identity
+
+    def _presentation_identity(
+        self, source: Path | str, probe: VideoProbe, proof: dict, key: ProbeKey
+    ) -> dict:
+        path = Path(source)
+        self._assert_source_key(path, key)
+        with path.open("rb") as stream:
+            digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        decoder = self.decoder_identity()
+        self._assert_source_key(path, key)
+        return proof | {
+            "source_sha256": digest,
+            "video_stream_index": probe.video_stream_index,
+            "decoder_identity": decoder,
+            "presentation_policy": PRESENTATION_POLICY,
+            "video_time_base": probe.video_time_base,
+        }
+
+    @staticmethod
+    def _assert_source_key(path: Path | str, key: ProbeKey) -> None:
+        stat = Path(path).stat()
+        if (stat.st_size, stat.st_mtime_ns) != (key.size, key.mtime_ns):
+            raise ProbeError("Source changed during presentation certification")
 
     def get(self, path: Path | str) -> VideoProbe:
         validated = validate_video_path(path, must_exist=True)
@@ -216,7 +269,7 @@ class ProbeCache:
                     str(probe.video_stream_index),
                     "-show_packets",
                     "-show_entries",
-                    "stream=time_base:packet=pts,duration,flags",
+                    "stream=time_base,start_pts,duration_ts,nb_frames:packet=pts,duration,flags",
                     "-of",
                     "json",
                     str(source),
@@ -237,8 +290,28 @@ class ProbeCache:
                 raise ValueError("missing presentation timestamps")
             packets.sort(key=itemgetter("pts"))
             if len({p["pts"] for p in packets}) != len(packets):
-                raise ValueError("ambiguous duplicate presentation timestamps")
-            value = {"clock": clock, "packets": packets}
+                raise PresentationIntegrityError(
+                    "duplicate-visible-presentation-timestamps",
+                    self._presentation_identity(
+                        source,
+                        probe,
+                        {
+                            "video_visible_packets": len(packets),
+                            "video_compressed_packets": len(data["packets"]),
+                            "video_packet_pts": [p["pts"] for p in packets],
+                        },
+                        key,
+                    ),
+                )
+            value = {
+                "clock": clock,
+                "packets": packets,
+                "all_packets": data["packets"],
+                "stream": data["streams"][0],
+                "key": key,
+            }
+            self._reconcile_video_end(source, probe, value)
+            self._assert_source_key(source, key)
             self._packet_entries[source] = key, value
             return value
         except (
@@ -251,6 +324,47 @@ class ProbeCache:
             ZeroDivisionError,
         ) as exc:
             raise ProbeError("Source has no verified presentation packet clock") from exc
+
+    def _reconcile_video_end(self, source: Path, probe: VideoProbe, data: dict) -> None:
+        """MOV's STTS/edit-bounded endpoint can reconcile guessed CTTS packet durations."""
+        if "mov" not in (probe.container_format or "").split(","):
+            return
+        stream, tail = data["stream"], data["packets"][-1]
+        endpoint = int(stream.get("start_pts", 0)) + int(stream["duration_ts"])
+        if tail.get("duration") == endpoint - tail["pts"]:
+            return
+        proof = self._certify_presentation(source, probe, data)
+        # Keep discarded references out of the displayed samples and cadence.
+        data["packets"] = [*data["packets"][:-1], tail | {"duration": endpoint - tail["pts"]}]
+        data["complete_presentation"] = proof
+
+    def _certify_presentation(self, source, probe, data) -> dict:
+        from immich_memories.processing.live_audio_tail import _complete_video
+
+        tail = data["packets"][-1]
+        self._assert_source_key(source, data["key"])
+        try:
+            proof = _complete_video(
+                source, probe,
+                {"pts": tail["pts"], "duration_ticks": tail.get("duration", 0),
+                 "time_base": str(data["clock"])}, packets=data,
+            )  # fmt: skip
+        except PresentationIntegrityError as exc:
+            raise PresentationIntegrityError(
+                exc.reason,
+                self._presentation_identity(source, probe, dict(exc.evidence), data["key"]),
+            ) from exc
+        except (
+            OSError,
+            subprocess.SubprocessError,
+            KeyError,
+            ValueError,
+            TypeError,
+            IndexError,
+            ZeroDivisionError,
+        ) as exc:
+            raise ProbeError("Source has no verified complete presentation metadata") from exc
+        return self._presentation_identity(source, probe, proof, data["key"])
 
     def render_frame_rate(self, path: Path | str) -> dict:
         """Preserve the densest selected cadence, independently of average metadata fps.
@@ -306,7 +420,16 @@ class ProbeCache:
         }
         if index == -1 and len(data["packets"]) > 1:
             evidence["presentation_spacing_ticks"] = packet["pts"] - data["packets"][-2]["pts"]
+        if index == -1 and "complete_presentation" in data:
+            evidence["presentation_proof"] = data["complete_presentation"]
         return evidence
+
+    def complete_video_presentation(self, path: Path | str) -> dict:
+        """Decode complete visible samples once, bound to this cache's file identity."""
+        data = self._video_packets(path)
+        if "complete_presentation" not in data:
+            data["complete_presentation"] = self._certify_presentation(path, self.get(path), data)
+        return data["complete_presentation"]
 
     def quantized_segment(
         self, path: Path | str, start: float, end: float, rate: Fraction
@@ -356,7 +479,7 @@ class ProbeCache:
                 "stream=index,codec_type,codec_name,width,height,r_frame_rate,avg_frame_rate,"
                 "bit_rate,duration,start_time,time_base,color_space,color_transfer,color_primaries,"
                 "bits_per_raw_sample,sample_rate,channels:stream_side_data=rotation:"
-                "format=duration,size,bit_rate,start_time"
+                "format=format_name,duration,size,bit_rate,start_time"
             ),
             "-of",
             "json",

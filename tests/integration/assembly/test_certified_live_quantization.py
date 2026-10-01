@@ -144,10 +144,9 @@ def test_container_over_declaring_its_video_renders_to_its_final_packet(tmp_path
     source_timing = record["frame_quantization"]["sources"][0]
     assert source_timing["boundary"] == "millisecond-container-end-within-final-source-frame"
     assert source_timing["final_packet"]["pts"] == 58
-    assert record["predicted_duration_seconds"] == pytest.approx(59 / 30, abs=1e-9)
+    assert record["predicted_duration_seconds"] == 2.0
     assert record["encoded_duration_seconds"] >= 2.0
-    hold = record["frame_quantization"]["final_frame_hold"]
-    assert hold is None or hold["nominal_seconds"] == 2.0
+    assert record["frame_quantization"]["final_frame_hold"] is None
     assert ProbeCache().get(merged).has_audio
 
 
