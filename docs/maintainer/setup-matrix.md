@@ -1,6 +1,4 @@
----
-title: Benchmarking and release films
----
+<!-- Repository-only maintainer instructions. Not published by the documentation site. -->
 
 # Benchmarking and release films
 

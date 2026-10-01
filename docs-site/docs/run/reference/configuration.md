@@ -8,14 +8,6 @@ title: "Configuration sources and secrets"
 
 Four sources, strongest first:
 
-```mermaid
-flowchart TB
-    E["1. Environment"]
-    F["2. Config file"]
-    D["3. Saved settings"]
-    X["4. Defaults"]
-```
-
 1. **Environment**: `IMMICH_MEMORIES_<SECTION>__<FIELD>` and the shortcuts in
    [environment variables](.././environment-variables.md) (`IMMICH_URL`, `IMMICH_API_KEY`, ...).
 2. **`config.yaml`**: this file, which only you write.

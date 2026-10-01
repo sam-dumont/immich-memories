@@ -68,15 +68,11 @@ that range. Install Gitleaks 8.24.3 to run the same scan locally; pre-commit use
 
 ## Household validation before release
 
-Before publishing the first RC, recheck all eight households in the maintainer's private testlab. Update its pinned product dependency to the exact candidate revision and refresh the environment before running the household scenarios. An older report does not validate the candidate.
+Before the first RC, validate the exact candidate revision against all eight private test households. Check people/groups, selection, titles, wording and relevant celebrations, including expected no-film outcomes. Report the tiers actually checked; an older report does not validate the candidate.
 
-Record the revision, tier, scenarios checked and failures. Check people and saved groups, selection, titles and wording, and the holidays or celebrations relevant to each household. Verify expected no-film outcomes as well as successful films. NAS results establish NAS coverage; check other tiers separately before claiming they passed. Fix failures or state the remaining limits before publishing.
+Private validation media and detailed reports stay on the maintainer's laptop. Publish only anonymous aggregate results. Public screenshots and demos use the separate [CC0 demo fixture](./demo-assets.md#fixture-and-asset-contracts).
 
-The testlab uses real people's photos from a controversial dataset. Its household material and detailed reports stay on the maintainer's laptop. Do not upload them to CI, hosted previews or the public website. This includes photos, thumbnails, screenshots and rendered films.
-
-Only anonymous aggregate results may be published, after the testlab's public-report check: counts, pass rates and timings, without names, identifiers, source links, locations or picture-level details. Public screenshots and demos use the separate [CC0 demo fixture](./demo-assets.md#fixture-and-asset-contracts).
-
-This is a release validation requirement, not a claim that eight households cover every family or culture. New examples from contributors should extend that coverage. See [Households and cultures](./development-setup.md#households-and-cultures).
+Eight households do not cover every family or culture. Contributor examples help extend that coverage; see [Households and cultures](./development-setup.md#households-and-cultures).
 
 ## Private terms gate
 

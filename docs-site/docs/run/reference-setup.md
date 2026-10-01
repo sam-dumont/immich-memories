@@ -2,6 +2,8 @@
 title: One GPU service
 ---
 
+import DeploymentDiagram from '@site/src/components/DeploymentDiagram';
+
 # One GPU service
 
 Keep the app on the NAS and move classifiers, captions, Demucs stems and rendering to one NVIDIA
@@ -46,14 +48,7 @@ Immich API key. Use HTTPS through a proxy otherwise, and omit that opt-in. Only 
 the bearer token; `/facts`, `/audio/stems` and `/v1` have no built-in authentication. Do not expose
 this listener to the internet.
 
-```mermaid
-flowchart TB
-  app["NAS · app and store"] --> gpu["NVIDIA worker · port 8092"]
-  gpu --> facts["Classifiers and stems"]
-  gpu --> captions["Captions · /v1"]
-  gpu --> render["Rendering · /render + token"]
-  render --> immich["Immich originals"]
-```
+<DeploymentDiagram topology="worker" />
 
 Check from the app's environment:
 

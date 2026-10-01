@@ -23,10 +23,9 @@ Allow this **in addition to what Immich uses**:
 The 25 GB allows for the default preview and video caches: 10 GB each, plus the store and model
 files. An SSD helps. Finished films need their own space unless you upload them to Immich.
 
-The accepted physical NAS controls and a 30-minute stress film ran at 1080p with a configured
-4 GiB container limit. The stress film peaked at 3,078,545,408 bytes of RAM and
-4,020,584,448 bytes of RAM plus swap, below that limit. It used swap. See the
-[measured controls and stress results](../better/measured.md#whole-film-controls).
+A tested 30-minute NAS film completed at 1080p under a 4 GiB container limit, using swap.
+Your library and output settings still affect memory use. See the
+[measured examples](../better/measured.md#whole-film-controls).
 
 A few limits worth knowing before you install:
 

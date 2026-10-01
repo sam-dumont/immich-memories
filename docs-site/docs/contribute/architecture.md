@@ -3,33 +3,21 @@ title: Architecture
 sidebar_label: Architecture
 ---
 
+import DeploymentDiagram from '@site/src/components/DeploymentDiagram';
+
 # Codebase architecture
 
 How the code is organized and where to make changes.
 
 ## Runtime boundaries
 
-The web server launches the same CLI used in a terminal. Selection builds a cut first; rendering consumes that cut. The store keeps reusable facts, settings and history. Per-attempt records keep the decisions that explain one cut.
-
-```mermaid
-flowchart TD
-    ui["Web UI"] --> server["App web server"]
-    server --> cli["CLI process"]
-    terminal["Terminal"] --> cli
-    cli --> select["Selection"]
-    select --> render["Rendering and audio"]
-    render --> delivery["Output and optional upload"]
-```
+The web UI and terminal use the same CLI workflow: **choose a cut → render it → optionally upload it**. A render consumes the chosen cut; it does not choose footage again. The store keeps reusable facts, settings and history; per-attempt records explain the decisions in one cut.
 
 ## Data and service boundaries
 
-```mermaid
-flowchart TD
-    app["App"] -->|"Metadata and media"| immich["Immich API"]
-    app -->|"Facts, settings, history"| store["SQLite or PostgreSQL"]
-    app -->|"Previews"| facts["Optional inference and captions"]
-    app -->|"Annotation text"| reader["Optional text reader"]
-```
+Explore the deployment and processing phase below. Select a service for its data and runtime responsibilities. These are service boundaries, not a promise about GPU placement.
+
+<DeploymentDiagram chooseTopology />
 
 The text reader can be an app-owned local process or an API server. Captioning is a separate role; explicitly enabling LLM captions sends pictures to that configured model. A render worker additionally receives the chosen cut and Immich key, then fetches originals. Keep these services inside the network boundaries described in [Privacy](../run/privacy.md).
 

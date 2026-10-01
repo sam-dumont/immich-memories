@@ -5,19 +5,42 @@ import {useColorMode} from '@docusaurus/theme-common';
 
 export default function ReadableMermaid(props: Props): ReactNode {
   const {colorMode} = useColorMode();
+  const figure = useRef<HTMLElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
   const [overflows, setOverflows] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    if (!expanded) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setExpanded(false);
+      if (event.key !== 'Tab') return;
+      const items = figure.current?.querySelectorAll<HTMLElement>('button:not(:disabled), [tabindex="0"]');
+      if (!items?.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {event.preventDefault(); last.focus();}
+      else if (!event.shiftKey && document.activeElement === last) {event.preventDefault(); first.focus();}
+    };
+    document.addEventListener('keydown', keydown);
+    return () => {document.body.style.overflow = previousOverflow; document.removeEventListener('keydown', keydown);};
+  }, [expanded]);
   useEffect(() => {
     const element = viewport.current;
     if (!element) return;
-    const measure = () => setOverflows(element.scrollWidth > element.clientWidth + 1);
+    const measure = () => {
+      const svg = element.querySelector('svg');
+      if (svg?.viewBox.baseVal.width) svg.style.width = `${svg.viewBox.baseVal.width * zoom}px`;
+      setOverflows(element.scrollWidth > element.clientWidth + 1);
+    };
     const resize = new ResizeObserver(measure);
     const mutation = new MutationObserver(measure);
     resize.observe(element);
     mutation.observe(element, {childList: true, subtree: true});
     measure();
     return () => { resize.disconnect(); mutation.disconnect(); };
-  }, [props.value, colorMode]);
+  }, [props.value, colorMode, zoom]);
   const dark = colorMode === 'dark';
   const themeVariables = {
     fontFamily: 'Inter, sans-serif',
@@ -35,7 +58,17 @@ export default function ReadableMermaid(props: Props): ReactNode {
   };
   const value = `%%{init: ${JSON.stringify({theme: 'base', themeVariables})}}%%\n${props.value}`;
   return (
-    <figure className="docs-diagram">
+    <figure ref={figure} className={`docs-diagram${expanded ? ' docs-diagram-expanded' : ''}`}
+      role={expanded ? 'dialog' : undefined} aria-modal={expanded ? true : undefined}
+      aria-label={expanded ? 'Expanded diagram' : undefined}>
+      <div className="docs-diagram-tools" role="group" aria-label="Diagram size">
+        <button type="button" aria-label="Zoom diagram out" disabled={zoom <= .75} onClick={() => setZoom(value => Math.max(.75, value - .25))}>−</button>
+        <span aria-live="polite">{Math.round(zoom * 100)}%</span>
+        <button type="button" aria-label="Zoom diagram in" disabled={zoom >= 2} onClick={() => setZoom(value => Math.min(2, value + .25))}>+</button>
+        <button type="button" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>
+          {expanded ? 'Close expanded view' : 'Expand diagram'}
+        </button>
+      </div>
       {overflows && <figcaption className="docs-diagram-hint">
         Wide diagram: scroll sideways, or focus it and use the arrow keys.
       </figcaption>}

@@ -73,7 +73,7 @@ The app's `render.timeout_seconds` and the worker's
 budgets. The app waits for the queue, rendering and result download; the worker bounds its own job.
 Increasing only the app timeout still leaves the worker with a one-hour deadline.
 
-For a long person film, one measured retry uses a six-hour worker budget and a little more time on the app:
+For a long film, this example gives the worker six hours and the app a little more time:
 
 ```yaml
 render:
@@ -84,16 +84,11 @@ Set `IMMICH_MEMORIES_RENDER_WORKER_JOB_TIMEOUT_SECONDS=21600` on the worker as w
 for your queue and film size; this example adds 60 seconds for the handoff after the worker budget.
 An app timeout does not cancel an active worker job.
 
-A prerelease failure exposed cleanup deleting a timed-out renderer's source workspace while it was
-still running. The merged and deployed ownership fix in
-[#1711](https://github.com/sam-dumont/immich-video-memory-generator/pull/1711) keeps active scratch owned
-until the renderer releases it and gives a same-cut retry a separate workspace. A stuck native
-renderer can still require a worker restart. Increasing the deadline does not fix workspace ownership.
+Active rendering keeps ownership of its scratch workspace after a deadline. A stuck native
+renderer can still require a worker restart. Increasing the deadline does not stop that job.
 
-The worker request also carries enabled map tiles and geocoding settings explicitly, fixed in
-[#1713](https://github.com/sam-dumont/immich-video-memory-generator/pull/1713). These preserve the trip's
-map cards and duration through the handoff. The [measured controls](./measured.md#whole-film-controls)
-record finished-film and native-audio acceptance separately from deployment.
+The worker receives the app’s map-tile and geocoding settings with the cut. Enable them in the
+app’s [network settings](../run/privacy.md) when the film needs maps or place names.
 
 ## Check it
 
@@ -116,4 +111,4 @@ a box with a card usually means `NVIDIA_DRIVER_CAPABILITIES` lacks `video`
 - When the film the NAS downloads matches the worker's digest, the NAS keeps the worker's decode
   check instead of decoding the film again, unless music was mixed in.
 
-How long a handoff takes against a NAS render is on [Measured](./measured.md).
+Use [Measure your setup](./measured.md) to compare a local render and a worker using the same cut.

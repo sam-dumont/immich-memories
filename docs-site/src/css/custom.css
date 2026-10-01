@@ -200,6 +200,28 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--ifm-background-color);
 }
 
+.docs-diagram-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .5rem;
+  padding: .6rem 1rem;
+  border-bottom: 1px solid var(--im-border);
+  font-size: .8rem;
+}
+.docs-diagram-tools button {
+  font: inherit;
+  padding: .25rem .6rem;
+  border: 1px solid var(--im-border);
+  border-radius: 6px;
+  background: var(--im-bg-surface);
+  color: var(--ifm-font-color-base);
+  cursor: pointer;
+}
+.docs-diagram-tools button:disabled {opacity: .4; cursor: default;}
+.docs-diagram-expanded {position: fixed; inset: 0; z-index: 1200; display: flex; flex-direction: column; padding: 1rem; margin: 0; border: 0; border-radius: 0;}
+.docs-diagram-expanded .docs-diagram-viewport {flex: 1; overflow: auto; display: grid; align-items: center;}
+
 .docs-diagram-hint {
   padding: 0.65rem 1rem;
   border-bottom: 1px solid var(--im-border);

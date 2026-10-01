@@ -1,0 +1,59 @@
+.figure {
+  container-type: inline-size;
+  --diagram-accent: var(--ifm-color-primary);
+  margin: 1.75rem 0 2rem;
+  border: 1px solid var(--im-border);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+}
+.header {display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 22px 24px 16px;}
+.header strong {display: block; font-size: 1.1rem; line-height: 1.35; letter-spacing: -.025em;}
+.eyebrow {display: block; font-size: .68rem; text-transform: uppercase; letter-spacing: .12em; color: var(--im-text-secondary); margin-bottom: 7px;}
+.selectLabel {font-size: .75rem; color: var(--im-text-secondary);}
+.selectLabel select {display: block; max-width: 230px; font: inherit; font-size: .8rem; padding: 7px; background: var(--ifm-background-color); color: var(--ifm-font-color-base); border: 1px solid var(--im-border); border-radius: 6px;}
+.controls {display: flex; flex-wrap: wrap; gap: 4px; margin: 0 24px 20px; padding: 4px; border-radius: 9px; background: var(--im-bg-surface); width: fit-content;}
+.controls button {font: inherit; font-size: .8rem; font-weight: 500; border: 0; background: transparent; color: var(--im-text-secondary); padding: 8px 12px; border-radius: 6px; cursor: pointer;}
+.controls button[aria-pressed='true'] {color: var(--im-button-text); background: var(--diagram-accent);}
+.controls button:focus-visible, .node:focus-visible, .selectLabel select:focus-visible {outline: 2px solid var(--diagram-accent); outline-offset: 3px;}
+.canvas {position: relative; display: grid; grid-template-columns: 1fr 1.18fr 1fr; gap: 34px; padding: 24px 24px 44px; isolation: isolate; background: radial-gradient(circle, color-mix(in srgb, var(--diagram-accent) 17%, transparent) .7px, transparent .8px) 0 0 / 16px 16px;}
+.wires {position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: -1;}
+.wires > g > path {stroke: var(--diagram-accent); stroke-width: 1.8; fill: none;}
+.wires circle {fill: var(--ifm-background-color); stroke: var(--diagram-accent); stroke-width: 1;}
+.wires text {fill: var(--diagram-accent); text-anchor: middle; font: 600 10px var(--ifm-font-family-base);}
+.wires marker path {fill: var(--diagram-accent);}
+.wires .bypass {stroke-dasharray: 5 4;}
+.machine {min-width: 0; display: flex; flex-direction: column; border: 1px solid color-mix(in srgb, var(--diagram-accent) 24%, var(--im-border)); border-radius: 10px; background: var(--ifm-background-color); box-shadow: var(--im-shadow);}
+.machineHeading {padding: 14px 14px 10px; border-bottom: 1px solid var(--im-border); background: color-mix(in srgb, var(--diagram-accent) 4%, var(--ifm-background-color)); border-radius: 10px 10px 0 0;}
+.machineHeading > span {display: block; font-size: .68rem; color: var(--im-text-secondary); line-height: 1.5; margin-bottom: 4px;}
+.machineHeading h3 {font-size: .9rem; line-height: 1.4; margin: 0;}
+.nodes {padding: 12px 9px; display: grid; gap: 8px; flex: 1; align-content: start;}
+.node {display: flex; gap: 8px; align-items: flex-start; text-align: left; width: 100%; font: inherit; border: 1px solid transparent; border-radius: 7px; background: transparent; color: inherit; padding: 8px 4px; cursor: pointer;}
+.node:hover, .node[aria-pressed='true'] {background: color-mix(in srgb, var(--diagram-accent) 7%, transparent); border-color: color-mix(in srgb, var(--diagram-accent) 25%, transparent);}
+.node svg {width: 23px; height: 23px; flex-shrink: 0; color: var(--diagram-accent);}
+.node strong {display: block; font-size: .875rem; line-height: 1.45;}
+.node small {display: block; font-size: .8125rem; line-height: 1.6; margin-top: 4px; color: var(--im-text-secondary); overflow-wrap: anywhere;}
+.storage {display: flex; align-items: center; gap: 8px; padding: 12px 14px; font-size: .72rem; line-height: 1.5; color: var(--im-text-secondary); border-top: 1px dashed var(--im-border);}
+.storage svg {width: 18px; height: 18px; flex-shrink: 0;}
+.flows {display: grid; gap: 14px; padding: 20px 24px; border-top: 1px solid var(--im-border);}
+.flows > div {display: flex; align-items: flex-start; gap: 12px;}
+.number {display: grid; place-items: center; flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; color: var(--diagram-accent); background: color-mix(in srgb, var(--diagram-accent) 10%, transparent); font-size: .7rem; font-weight: 600;}
+.flows p {margin: 0; font-size: .875rem; line-height: 1.6;}
+.flows strong {display: block; font-weight: 600;}
+.flows p > span {color: var(--im-text-secondary);}
+.detail {padding: 16px 24px; border-top: 1px solid var(--im-border); background: var(--im-bg-surface); font-size: .875rem; line-height: 1.65; min-height: 88px;}
+.detail p {margin: 0;}
+.detail > strong {display: block; margin-bottom: 5px;}
+.hint {color: var(--im-text-secondary);}
+@container (max-width: 650px) {
+  .header {align-items: flex-start; flex-direction: column;}
+  .canvas {grid-template-columns: 1fr; gap: 34px; padding: 18px 24px 24px;}
+  .machineHeading {padding: 12px 16px;}
+  .nodes {padding: 8px 12px;}
+  .node strong {font-size: .9rem;}
+  .node small, .storage {font-size: .8rem;}
+  .controls {margin-inline: 16px;}
+  .controls button {font-size: .76rem; padding: 8px;}
+  .flows, .detail {padding: 18px;}
+}

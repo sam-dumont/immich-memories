@@ -1,87 +1,102 @@
 ---
-title: "All-features Mac example"
+title: Apple Silicon with local services
+description: Run the app, a local reader and captions natively on a Mac, with optional generated music.
 ---
 
-# All-features Mac example
+import DeploymentDiagram from '@site/src/components/DeploymentDiagram';
 
-This profile uses a source checkout for local ACE-Step, plus an external local caption server
-and reader endpoint. An owned reader with blank `base_url` is another option; see
-[reader setup](../../better/reader.md). If you only want the app, use the [Python install](../uv-pip.md).
+# Apple Silicon with local services
 
-```mermaid
-flowchart TB
-  subgraph mac["Apple Silicon Mac"]
-    app["Immich Memories"] --> captions["Caption server · 8092"]
-    app --> reader["Text reader · 9999"]
-    app --> music["ACE-Step library"]
-  end
-  app <--> photos["Immich server"]
-```
+Run natively to use the Mac's Metal GPU. This setup keeps the app, captions and text reader on one
+Mac; Immich can live elsewhere on your network. For a packaged install without local music
+generation, use the [Python install](../uv-pip.md).
 
-## The laptop / workstation (the Mac)
+<DeploymentDiagram topology="mac" />
 
-Nothing above needs a second machine or a cluster; this profile runs the same app, the same
-config keys, entirely on one Mac, with two local servers instead of a cluster. `lib` mode is not in
-`uv tool install` or the `all-mac` extra: ACE-Step runs from a `.venv-acestep` beside a checkout
-([Install locally on a Mac](../../reference/local-audio.md#local-runtime-and-repairs)). OIDC needs `authlib`,
-which `all-mac` and `make dev-mac` leave out; `make dev` installs every extra and builds the web
-client (it needs Node 22):
+## Install the app
+
+For a source checkout, install uv, FFmpeg and Node 22 first. Use Python 3.12 if you plan to add
+local ACE-Step. From your release checkout:
 
 ```bash
 git clone https://github.com/sam-dumont/immich-video-memory-generator.git
 cd immich-video-memory-generator
+git checkout YOUR_RELEASE_TAG
 make dev
-uv sync --extra all-mac --extra auth
-make install-acestep
+make dev-mac
+brew install llama.cpp
+```
+
+Replace `YOUR_RELEASE_TAG` with the release tag you intend to run. The Mac extras install the
+Metal bindings. [Development setup](../../contribute/development-setup.md) covers source tools;
+the [requirements page](../requirements.md) covers memory and supported platforms.
+
+Set your Immich connection in Settings or a [small config file](../config-file.md#quick-start-config).
+Keep the normal `tier: auto` setting. Start the
+[local caption server](../../reference/caption-service.md#apple-silicon-with-mlxcel) in another
+terminal, using its pinned model and `smolvlm2-500m-base-public` alias. For an app on this same Mac,
+bind that server to `127.0.0.1` rather than the recipe's LAN bind.
+
+## Connect captions and the reader
+
+```yaml
+advanced:
+  editorial:
+    preparation:
+      caption_base_url: http://localhost:8092/v1
+  llm:
+    enabled: true
+    base_url: ""
+```
+
+The blank reader URL uses the app-owned local llama.cpp model. It starts when needed and releases
+its model before local music, stems and rendering. You do not need a second reader server.
+If you already use one, configure its URL and served model name using
+[the reader guide](../../better/reader.md#use-an-existing-server).
+
+Fetch the model files required by this configuration, then check it:
+
+```bash
+uv run immich-memories models fetch
+uv run immich-memories preflight -v
+uv run immich-memories config show tier
 uv run immich-memories ui --host 127.0.0.1
 ```
 
-### The Mac's config.yaml, annotated
+Open `http://localhost:8080` and make [your first film](../../get-started/first-film.mdx).
+Automatic selection can use the native Metal preparation runtime; Full also needs the enabled
+reader, captions and Laya ready. Preflight names any missing requirement. A Docker container on
+a Mac cannot use Metal directly; this recipe runs outside Docker.
 
-Every key below is valid on current `main`; nothing here is exotic or Tier-2-only by accident.
+## Optional local music
 
-```yaml
-tier: full
+Bundled or chosen music works without another model. To generate tracks locally, stop the app
+and install the separate audio environment in this checkout:
 
-network:
-  geocoding: true
-  map_tiles: true
-
-cache:
-  video_cache_max_size_gb: 10
-  thumbnail_cache_max_size_mb: 10000
-
-advanced:
-  auth:
-    enabled: true
-    provider: oidc          # the same IdP as the cluster profile
-    issuer_url: "${OIDC_ISSUER_URL}"
-    client_id: "${OIDC_CLIENT_ID}"
-    client_secret: "${OIDC_CLIENT_SECRET}"
-    public_url: "http://localhost:8080"
-    allowed_emails: [me@example.com]
-
-  editorial:
-    preparation:
-      # mlxcel, serving the same SmolVLM2 alias as the llama.cpp recipe
-      caption_base_url: "http://localhost:8092/v1"
-
-  llm:
-    provider: "openai-compatible"
-    base_url: "http://localhost:9999/v1"   # oMLX, also the cluster's reader over the LAN
-    model: "gemma-4-e4b-it-6bit"
-
-  ace_step:
-    enabled: true
-    mode: lib                        # a local library, not an API server
-    model_variant: "acestep-v15-xl-turbo"   # the XL variant
-    lm_model_size: "4B"
-    use_lm: true
+```bash
+make install-acestep
+make check-local-audio
 ```
 
-`mode: lib` needs Python 3.12 specifically ([ACE-Step config reference](../../reference/config-reference.md));
-`mode: api` (the cluster profile's choice) has no such constraint, which is why the two profiles
-differ here. Use the explicit localhost bind above. Enabling OIDC otherwise broadens the bind address.
-Register `http://localhost:8080/auth/callback` and `http://localhost:8080/logout` with your provider,
-and allow only the intended verified email. For remote access, use
-[the HTTPS proxy recipe](../network-security.md).
+Then add:
+
+```yaml
+advanced:
+  ace_step:
+    enabled: true
+    mode: lib
+    model_variant: turbo
+    use_lm: false
+```
+
+Restart the app. This smaller profile needs about 7 GB free for resident weights and 6 GB on disk;
+generation needs working memory too. [Generated music](../../better/music.md#local-on-a-mac)
+and the [audio runtime](../../reference/local-audio.md#memory-and-disk) cover larger profiles,
+checks and fallback reporting. Each checkout or worktree needs its own audio installation.
+
+## Access from another machine
+
+Keep the explicit localhost app bind for a private desktop setup. To reach it from another
+machine, choose [authentication](../authentication.mdx) and a
+[network/proxy configuration](../network-security.md) first. Local caption routes have no
+built-in authentication; only broaden their bind address when another trusted app needs access.

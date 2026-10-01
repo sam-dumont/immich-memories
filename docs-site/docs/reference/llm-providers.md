@@ -217,8 +217,9 @@ logs why, and reads in real time for the rest of the run.
   again gets the full 4,000-token ceiling rather than its own estimate.
 - **Text only.** No request to the reader carries a picture; a test fails the build if one does.
 
-The prompt shapes the setup matrix probes readers with are in `scripts/reader_probe_prompts/`.
-Time, tokens and euros per reader go on [Measured](../better/measured.md).
+For endpoint validation, use the provider conformance checks below. Record usage and timings
+separately from the quality of a finished film; [measurement guidance](performance-evidence.md)
+explains the comparison.
 
 ## Provider conformance
 

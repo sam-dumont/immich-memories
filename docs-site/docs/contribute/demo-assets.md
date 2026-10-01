@@ -44,9 +44,8 @@ picture of the same moment, removes the garden table and saves that as revision 
 renders. The generated fixture carries the cut's timeline positions, its weighed stories and the
 seconds the titles leave the pictures.
 
-136 files on disk; the setup matrix reports 133 pictures for the same month, because the
-visibility and metadata rules drop a few before selection ever sees them. Both numbers are right
-about different things, so do not reconcile them by editing one.
+The fixture has 136 files on disk. Visibility and metadata rules can reduce the pool before
+selection, so the pool count can differ from the file count.
 
 | Command (repo root) | Produces |
 |---|---|

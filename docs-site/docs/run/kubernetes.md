@@ -2,6 +2,8 @@
 title: Kubernetes
 ---
 
+import DeploymentDiagram from '@site/src/components/DeploymentDiagram';
+
 # Kubernetes
 
 For an existing cluster with persistent storage. [Docker Compose](./docker.md) is the simpler
@@ -17,13 +19,7 @@ them to a live cluster. [Requirements](./requirements.md) explains platform and 
 The default is one CPU-only app, with SQLite on the data PVC. Use local/block storage for SQLite,
 not NFS/SMB. Keep `replicas: 1` even with PostgreSQL: the UI has in-process state.
 
-```mermaid
-flowchart TB
-    browser[Browser] -->|Port-forward or authenticated HTTPS| app[One app pod]
-    app --> immich[Your Immich]
-    app --- data[(Settings and store)]
-    app --- files[(Models / cache / films)]
-```
+<DeploymentDiagram topology="basic" />
 
 ## Quick start
 
@@ -252,14 +248,15 @@ cross-namespace URLs too. Applying raw YAML bypasses the namespace transformatio
 ## Check it from outside the pod
 
 Use the quick-start `kubectl exec ... preflight` command after service changes. The
-[reference setup](./reference-setup.md) shows a complete multi-service topology.
+[distributed-services guide](./reference/cluster-example.md) shows how to compose separate services.
 
 ## The models the first cut needs
 
 Model requirements follow the selected tier. [Model files](./maintenance/health-logs-cache.md#model-files)
 lists the fetch options. Run fetch from the app's configuration after adding GPU/Full services.
 
-## Everything at once
+## Distribute work across services
 
-[The advanced reference setup](./reference-setup.md) combines inference, captions, a render
-sidecar, reader, music and OIDC. Build the basic install first.
+[Distributed services on Kubernetes](./reference/cluster-example.md) explains GPU allocations,
+service boundaries and the shipped composition example. Use it when you need separate placement;
+start with the basic install first.

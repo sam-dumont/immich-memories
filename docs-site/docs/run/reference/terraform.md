@@ -64,10 +64,13 @@ modes, and the SQL for a dedicated schema in Immich's own database, are on
 | `storage_class_name` | Storage class for all three PVCs | `null` (cluster default) |
 | `ingress_enabled`, `ingress_class_name`, `ingress_host` | Ingress, off by default | `false`, `"nginx"`, `"memories.example.com"` |
 | `ingress_tls_enabled`, `ingress_tls_secret_name`, `ingress_annotations` | TLS and extras for it | `false`, `"immich-memories-tls"`, `{}` |
-| `llm_base_url`, `llm_model`, `llm_api_key` | The reader (Ollama: append `/v1`). Empty leaves the editor without a model | `""` |
+| `llm_base_url`, `llm_model`, `llm_api_key` | The reader (Ollama: append `/v1`). Blank leaves the reader off by default; explicitly enable it to use a local llama.cpp model | `""` |
 | `musicgen_enabled`, `musicgen_base_url`, `musicgen_api_key` | AI music through a MusicGen server | `false`, the in-cluster service, `""` |
 | `database_url`, `database_schema` | The store on PostgreSQL instead of the default SQLite file. Empty stays SQLite | `""`, `"immich_memories"` |
 | `output_resolution` | `720p`, `1080p` or `4k` | `"1080p"` |
+
+For a local reader, set `IMMICH_MEMORIES_LLM__ENABLED = "true"` in `env` and install
+llama-server and its model files. Follow [reader setup](../../better/reader.md#let-the-app-run-the-local-model).
 
 `terraform output` gives the namespace, service name and endpoint, the ingress host, the deployment
 and PVC names, whether GPU is on, and a ready-to-run `port_forward_command`.
