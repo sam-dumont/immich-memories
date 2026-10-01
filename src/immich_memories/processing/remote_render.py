@@ -275,6 +275,11 @@ def _preview_inputs(params, request, clips):
 
     timeline = read_editorial_timeline(request["timing"])
     frozen = replace(params, timeline_plan=timeline)
+    if frozen.privacy_mode:
+        from immich_memories.generate_render import _anonymized_params
+
+        # Returned clips already carry relocated coordinates; transform only the title inputs.
+        frozen = _anonymized_params(frozen)
     titles = build_title_settings(frozen, frozen.config, list(clips)) or TitleScreenSettings(
         enabled=False,
         divider_mode="none",

@@ -35,9 +35,10 @@ def worker_config(request) -> Config:
 
 def generation_params(request, directory, client, progress) -> GenerationParams:
     """Preserve cut order and intervals; keep all generated state in the job workspace."""
+    from immich_memories_render_worker.access import immich_config
+
     config = worker_config(request)
-    config.immich.url = str(request.immich.url)
-    config.immich.api_key = request.immich.api_key.get_secret_value()
+    config.immich = immich_config(request)
     config.cache.directory = str(directory / "cache")
     config.cache.database = str(directory / "run.sqlite")
     config.cache.video_cache_enabled = False
@@ -45,6 +46,9 @@ def generation_params(request, directory, client, progress) -> GenerationParams:
     clips = []
     for chosen in request.plan.clips:
         asset = client.get_asset(str(chosen.asset_id))
+        account = request.asset_accounts.get(chosen.asset_id)
+        if account is not None:
+            asset = asset.model_copy(update={"access_accounts": (account,)})
         clip = VideoClipInfo(
             asset=asset,
             duration_seconds=asset.duration_seconds or chosen.end,
