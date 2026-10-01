@@ -80,6 +80,19 @@ On the 16 GiB M2, accepted month and trip controls added about 0.97–1.41 GiB o
 
 The app now closes the selection-owned Laya model, clears unused local model buffers and releases its owned reader before titles and rendering. An actual M2 Full control observed MLX active memory fall from 842.6 MB to 22 bytes on close; immediately before rendering its cache was zero and its owned reader had exited. Its temporary selection swap surge ended at that boundary. That control completed in 87m 23s, with final host swap 145 MiB above its starting value. Its first of three requested music blocks was refused before generation by the resident-weight admission check; the other two generated 120 s native tracks and four local Demucs stems. The soundtrack repeats those two tracks, with no bundled substitution. The finished 605.35 s portrait film passed all 36,321 frames of video decoding, audio decoding to EOF, twelve visual samples and continuous-awake checks. Its parent physical footprint peaked at 10.92 GiB; that is separate from the owned process tree's 11.70 GiB RSS peak. Producer facts and derived banks were preserved; observed changes were metadata refreshes. This control is accepted with the missing third music block recorded. External model servers retain their own unload policy. Later music work can reopen an app-owned reader.
 
+### Separate NAS 30-minute stress film
+
+A 30-minute stress film on `f74936b657d7` completed in **4h 20m 45s** (15,645.4147 s), at
+1080p portrait, 60 fps, SDR. All 423 compressed video encodes used VAAPI. Complete video/audio
+decoding, visual review, cached facts and original-acquisition scope passed. This is separate stress
+evidence and adds no credit to the fifteen-control matrix.
+
+Container RAM peaked at 3,078,545,408 bytes. The observed combined RAM-and-swap high-water mark was
+4,020,584,448 bytes (3.744 GiB), below the configured **4 GiB** limit of 4,294,967,296 bytes, with no
+memory-limit failures. Actual sampled swap peaked at 1,827,979,264 bytes and ended at 7,974,912 bytes.
+This result used swap. The memory hold was resolved against the confirmed configured 4 GiB limit;
+the measured figures and the earlier hold against 4,000,000,000 bytes were preserved unchanged.
+
 ## Before the 56-film batch
 
 The larger batch is held until the known performance fixes are finished and a representative cached
