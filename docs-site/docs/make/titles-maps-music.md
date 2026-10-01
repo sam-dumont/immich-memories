@@ -219,8 +219,15 @@ title_screens:
   map_move_max_seconds: 8.0   # far place, hold included
 ```
 
-A card renders every flight frame once and the hold once, so a 7 s card at 30 fps is about 150 map renders.
+With animated backgrounds enabled, a card renders every flight frame once and the hold once, so a 7 s card at 30 fps is about 150 map renders.
 Tiles are cached for the whole card. The log line per card gives frames, renders and tiles.
+
+`preset: fast` sets `title_screens.animated_background: false`. Maps then use three views: close to the
+previous stop, the route's wider midpoint, and close to the next stop. Short fades join these views;
+this replaces the smooth flight. Satellite detail is rendered at a 360-pixel short side and enlarged,
+while names and pins are drawn at the film's full resolution. Each leg needs only three map renders.
+The output resolution, frame rate, encoding plan, move duration and destination hold stay the same.
+Set `animated_background: true` explicitly to keep the smooth map flight, even with the fast preset.
 
 ### Stops on the intro
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
 from PIL import Image
 
 _W, _H, _FPS = 64, 36, 10.0
@@ -251,3 +252,48 @@ def test_stationary_and_nearby_towns_stay_finite_and_portrait_stays_close(tmp_pa
             assert view[2] == pytest.approx(1080 / 2**14)
         for view in landscape:
             assert view[2] == pytest.approx(1920 / 2**14)
+
+
+@pytest.mark.parametrize("dimensions", [(1920, 1080), (3840, 2160), (1080, 1920)])
+def test_fast_background_policy_bounds_each_leg_to_three_small_map_views(tmp_path, dimensions):
+    from immich_memories.config import Config
+    from immich_memories.titles.generator import TitleScreenConfig
+    from immich_memories.titles.trip_service import TripService
+
+    resolved = Config(preset="fast")
+    cfg = TitleScreenConfig(
+        animated_background=resolved.title_screens.animated_background,
+        resolution_width=dimensions[0],
+        resolution_height=dimensions[1],
+        fps=60,
+    )
+    cameras = []
+
+    def tiles(lat, lon, zoom, w, h):
+        cameras.append((lat, lon, w / 2**zoom, w, h))
+        return Image.new("RGB", (w, h), (40, 50, 60))
+
+    with (
+        # WHY: count actual raster requests at the third-party satellite boundary.
+        patch("immich_memories.titles.map_animation._render_satellite", tiles),
+        # WHY: this test verifies synthesis cost and routing without an external encoder.
+        patch("immich_memories.titles.map_animation.subprocess.Popen", return_value=_DiscardPipe()),
+        # WHY: replaces the still-plate FFmpeg encode at the same process boundary.
+        patch(
+            "immich_memories.titles.map_animation.subprocess.run",
+            return_value=MagicMock(returncode=0),
+        ),
+        # WHY: the stderr reader needs an actual encoding process.
+        patch("immich_memories.titles.map_animation.StderrDrain"),
+    ):
+        service = TripService(cfg, MagicMock(), tmp_path)
+        screen = service.generate_location_move("Paris", (50.85, 4.35), (48.86, 2.35), 7)
+
+    assert screen.duration == 7
+    assert len(cameras) == 3
+    assert all(min(c[3], c[4]) <= 360 for c in cameras)
+    assert cameras[0][:2] == pytest.approx((50.85, 4.35))
+    assert cameras[-1][:2] == pytest.approx((48.86, 2.35))
+    assert cameras[0][2] == pytest.approx(1080 / 2**14 * dimensions[0] / min(dimensions))
+    assert cameras[-1][2] == pytest.approx(cameras[0][2])
+    assert cameras[1][2] > cameras[0][2] * 2
