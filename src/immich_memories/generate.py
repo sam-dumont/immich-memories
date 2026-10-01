@@ -498,8 +498,13 @@ def _generate_memory_inner(
         pp = _PipelineProgress(params, len(params.clips))
         params = replace(params, progress_callback=pp.report)
 
+        from immich_memories.analysis.editorial_async_bridge import _run_sync
         from immich_memories.generate_render import render_base
+        from immich_memories.local_inference import local_models
 
+        # Selection has closed its scorers. Reap the warm reader and idle native buffers
+        # before source preparation and titles compete for the same device memory.
+        _run_sync(local_models.release(unused_buffers=True))
         prepared = render_base(
             params,
             requested_output_path,

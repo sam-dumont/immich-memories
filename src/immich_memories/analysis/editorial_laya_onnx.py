@@ -84,6 +84,10 @@ class OnnxLayaScorer:
         self._session: Any = None
         self._tokens: LayaTokens | None = None
 
+    def close(self) -> None:
+        """Drop the owned session and tokenizer; keep configuration for later reuse."""
+        self._session = self._tokens = None
+
     def _load(self) -> tuple[Any, LayaTokens]:
         if self._session is None or self._tokens is None:
             import onnxruntime as ort
