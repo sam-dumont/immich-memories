@@ -97,6 +97,7 @@ class UnitLines:
         face: Callable[[str], bool | None] = lambda _asset_id: None,
     ) -> None:
         self._lines = lines
+        self._descriptions: dict[str, tuple[str, str]] = {}
         self._life_without_prose = life_without_prose or (lambda _asset_id: False)
         self._face = face
 
@@ -115,9 +116,15 @@ class UnitLines:
 
     def description(self, u) -> str:
         """The scene prose alone: no tag the pipeline wrote, and no setting or exposure field."""
-        parts = content_of(self.line(u)).split(" | ")
+        asset_id, text = u["asset_id"], self.line(u)
+        cached = self._descriptions.get(asset_id)
+        if cached is not None and cached[0] == text:
+            return cached[1]
+        parts = content_of(text).split(" | ")
         described = [q for q in parts if q and not q.startswith(("setting:", "exposure:"))]
-        return described[0] if described else ""
+        result = described[0] if described else ""
+        self._descriptions[asset_id] = (text, result)
+        return result
 
     def shows_life(self, u) -> bool:
         prose = self.description(u)
