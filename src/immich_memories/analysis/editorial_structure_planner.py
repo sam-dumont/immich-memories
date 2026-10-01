@@ -399,7 +399,7 @@ def _select(
     def record_story(name: str, payload) -> None:
         write_secret_file(
             audit_dir / f"{name}.private.json",
-            json.dumps(payload, ensure_ascii=False, indent=1, default=str),
+            json.dumps(payload, ensure_ascii=False, separators=(",", ":"), default=str),
         )
 
     audience_tier = source.config.editorial.preparation.tier

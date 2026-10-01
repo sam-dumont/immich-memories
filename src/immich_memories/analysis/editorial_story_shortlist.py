@@ -317,6 +317,11 @@ def nearby_picture_alternatives(
 ) -> list[DepictedChoice]:
     """One competing nearby picture per nonstarred representative, without deleting breadth."""
     used = {c.key for c in primary_choices}
+    by_moment: dict[str, list[DepictedChoice]] = {}
+    for choice in choices:
+        moment = unit_by_asset[choice.primary][1].get("moment")
+        if moment is not None:
+            by_moment.setdefault(moment, []).append(choice)
     extras = []
     for primary in primary_choices:
         if starred(primary):
@@ -324,8 +329,9 @@ def nearby_picture_alternatives(
         occupied = [unit_by_asset[primary.primary][1]]
         candidates = [
             c
-            for c in choices
-            if c.key not in used and not _spaced([c], unit_by_asset, already=occupied)
+            for c in by_moment.get(occupied[0].get("moment"), ())
+            if c.key not in used
+            and not capture_space_available(unit_by_asset[c.primary][1], occupied)
         ]
         if candidates:
             alternative = min(candidates, key=lambda c: (not starred(c), c.taken))
