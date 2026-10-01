@@ -26,7 +26,7 @@ from immich_memories.processing.hdr_utilities import (
     _resolve_clip_hdr,
     get_colorspace_filter,
 )
-from immich_memories.processing.memory_budget import assembly_decoder_threads
+from immich_memories.processing.memory_budget import assembly_decoder_threads, available_cpus
 
 logger = logging.getLogger(__name__)
 
@@ -228,8 +228,13 @@ class FrameDecoder:
         video_limit = ["-frames:v", str(self._frame_limit)] if self._frame_limit is not None else []
 
         threads = self._threads if self._threads is not None else assembly_decoder_threads()
+        filter_threads = str(available_cpus())
         cmd = [
             "ffmpeg",
+            "-filter_threads",
+            filter_threads,
+            "-filter_complex_threads",
+            filter_threads,
             "-threads",
             str(threads),
             *seek_args,

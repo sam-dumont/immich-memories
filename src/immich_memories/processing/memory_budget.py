@@ -10,7 +10,7 @@ import functools
 import logging
 import os
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
@@ -65,10 +65,38 @@ def _physical_ram() -> int | None:
         return None
 
 
-def _cpus() -> int:
+def _cpu_quota(root: Path) -> int | None:
+    try:
+        values = (root / "cpu.max").read_text().split()
+    except OSError:
+        values = _legacy_cpu_quota(root)
+    try:
+        limit, interval = map(int, values)
+    except ValueError:
+        return None
+    return (limit + interval - 1) // interval if limit > 0 and interval > 0 else None
+
+
+def _legacy_cpu_quota(root: Path) -> list[str]:
+    for directory in (root / "cpu", root / "cpu,cpuacct", root):
+        try:
+            return [
+                (directory / "cpu.cfs_quota_us").read_text(),
+                (directory / "cpu.cfs_period_us").read_text(),
+            ]
+        except OSError:
+            continue
+    return []
+
+
+def available_cpus(cgroup_root: Path | None = None) -> int:
+    """CPU capacity under affinity and cgroup bandwidth limits."""
+    available = os.cpu_count() or 1
     if hasattr(os, "sched_getaffinity"):
-        return len(os.sched_getaffinity(0))
-    return os.cpu_count() or 1
+        with suppress(OSError):
+            available = len(os.sched_getaffinity(0))
+    quota = _cpu_quota(cgroup_root or _CGROUP)
+    return max(1, min(available or 1, quota)) if quota is not None else max(1, available or 1)
 
 
 def memory_budget(
@@ -114,7 +142,7 @@ def decoder_threads(memory: int | None, *, cpus: int) -> int:
 def assembly_decoder_threads() -> int:
     """`decoder_threads` for this process's memory budget, read once."""
     budget = memory_budget()
-    threads = decoder_threads(budget.size if budget else None, cpus=_cpus())
+    threads = decoder_threads(budget.size if budget else None, cpus=available_cpus())
     logger.info("Assembly decodes: %d thread(s) each", threads)
     return threads
 
@@ -129,7 +157,9 @@ def source_prepare_workers(
     if configured != "auto":
         return configured, f"{configured} at a time (set in the config)"
     budget = memory_budget(cgroup_root)
-    workers = prepare_workers(budget.size if budget else None, cpus=cpus or _cpus())
+    workers = prepare_workers(
+        budget.size if budget else None, cpus=cpus or available_cpus(cgroup_root)
+    )
     if budget is None:
         return workers, f"{workers} at a time (memory unknown)"
     return workers, f"{workers} at a time ({budget.size / _GIB:.1f} GB available, {budget.source})"
