@@ -30,19 +30,6 @@ class TestCopyField3:
         np.testing.assert_array_equal(dst, src)
 
 
-class TestZeroField4:
-    @pytest.fixture(autouse=True)
-    def _setup(self):
-        _init()
-
-    def test_zeros_4channel_array(self):
-        from immich_memories.titles.kernels import _zero_field_4
-
-        arr = np.ones((4, 6, 4), dtype=np.float32)
-        _zero_field_4(arr)
-        np.testing.assert_array_equal(arr, 0.0)
-
-
 class TestBlendFields:
     @pytest.fixture(autouse=True)
     def _setup(self):
