@@ -37,7 +37,7 @@ The [hardware guide](../run/hardware.md) covers encoding and title effects. The 
 
 ## Whole-film controls, 1 October 2026 {#whole-film-controls}
 
-Twelve of the fifteen release controls have passed film, audio and cache checks at this snapshot; eleven have verified uploads. The completed M2 Full person film is awaiting upload. The other three controls remain pending. These are warm picture banks with fresh editorial decisions: compatible facts were reused, while original-media acquisition, titles, rendering and music still ran. They are measurements of the listed revisions and profiles, not timings for every later commit or equal-quality comparisons between tiers.
+Thirteen of the fifteen release controls have passed film, audio and cache checks at this snapshot; all thirteen have verified uploads. The two remaining controls use the Linux CUDA worker. These are warm picture banks with fresh editorial decisions: compatible facts were reused, while original-media acquisition, titles, rendering and music still ran. They are measurements of the listed revisions and profiles, not timings for every later commit or equal-quality comparisons between tiers.
 
 | Hardware and profile | Request | Whole run | Source revision |
 |---|---|---:|---|
@@ -49,12 +49,13 @@ Twelve of the fifteen release controls have passed film, audio and cache checks 
 | M2 16 GiB / Full / 4K | Person | 87m 23s | `4db52f365a5e` |
 | M2 16 GiB / Full / 4K | Trip | 35m 05s | `03cc7f56c122` |
 | M2 16 GiB / GPU rules / 4K | Month | 7m 18s | `f74936b657d7` |
+| M2 16 GiB / GPU rules / 4K | Person | 59m 47s | `4db52f365a5e` |
 | M2 16 GiB / GPU rules / 4K | Trip | 26m 00s | `f82de21b5bf5` |
 | M5 / Full / 4K | Month | 5m 43s | `cb06e4ba0e0d` |
 | M5 / Full / 4K | Person | 39m 40s | `f82de21b5bf5` |
 | M5 / Full / 4K | Trip | 18m 42s | `f82de21b5bf5` |
 
-Pending: the M2 GPU person control and the Linux CUDA worker person and trip retries. Earlier failed worker attempts do not count as completed films. The trip retry carries the date-transport fix; the person retry needs matching worker and client deadlines. Final film checks remain required. The latest Linux worker trip attempt on `e42aab375b9e` produced a 128.87 s film, then failed the client duration check after 26m 28s. It remains pending while that mismatch is investigated.
+Pending: the Linux CUDA worker person and trip retries. Earlier failed worker attempts do not count as completed films. The latest trip attempt on `e42aab375b9e` produced a 128.87 s film, then failed the client duration check after 26m 28s. The worker request omitted the enabled map and geocoding settings; [#1713](https://github.com/sam-dumont/immich-video-memory-generator/pull/1713) carries those settings explicitly. The person retry needs matching worker and client deadlines and the workspace ownership fix in [#1711](https://github.com/sam-dumont/immich-video-memory-generator/pull/1711). Both controls still require finished-film validation on the corrected worker image.
 
 ### Where the time went
 
@@ -63,12 +64,13 @@ Pending: the M2 GPU person control and the Linux CUDA worker person and trip ret
 | M2 Full trip, `03cc7f56c122` | Nine maps: 911 s of 2,105 s total, about 43% |
 | NAS trip, `dec8f20e609ce` | Nine maps: 39 s; clip preparation: 517 s; assembly: 286 s; music: 43 s |
 | M2 Full person, `4db52f365a5e` | Clip preparation: 449 s; assembly: 2,353 s, about 45% of the run; music: 238 s |
+| M2 GPU person, `4db52f365a5e` | Clip preparation: 481 s; assembly: 2,371 s, about 66% of the run; music: 278 s |
 | M5 Full person, `f82de21b5bf5` | Selection: 670 s; clip preparation: 302 s; assembly: 1,069 s; music: 103 s |
 | M5 Full trip, `f82de21b5bf5` | Selection: 156 s; clip preparation: 46 s; assembly: 835 s; music: 42 s |
 
 Stage records can overlap; do not add them into a new wall time. The NAS map profile uses lower resolution and reduced motion. Full and GPU retain smooth animation. The route zoom and arrow correction in [#1700](https://github.com/sam-dumont/immich-video-memory-generator/pull/1700) applies to ordinary maps too; the three-view shortcut in [#1703](https://github.com/sam-dumont/immich-video-memory-generator/pull/1703) applies only when `animated_background` is false. The 39 s and 911 s map costs describe different profiles.
 
-Assembly is still expensive after selection. [#1706](https://github.com/sam-dumont/immich-video-memory-generator/pull/1706) merged reuse of selection indexes after these controls. [#1709](https://github.com/sam-dumont/immich-video-memory-generator/pull/1709), which converts lower-cadence HDR frames before duplication, is awaiting validation. Neither changes the measured times above.
+Assembly is still expensive after selection. [#1706](https://github.com/sam-dumont/immich-video-memory-generator/pull/1706) merged reuse of selection indexes after these controls. [#1709](https://github.com/sam-dumont/immich-video-memory-generator/pull/1709), which converts lower-cadence HDR frames before duplication and waits for each clip's audio to finish, passed its local checks and is ready for CI-gated merge. Neither changes the measured times above.
 
 ### Audio and memory scopes
 
@@ -79,6 +81,8 @@ The NAS month reached 1.71 GiB of container RAM; the NAS trip reached 2.22 GiB, 
 On the 16 GiB M2, accepted month and trip controls added about 0.97–1.41 GiB of whole-host swap above their starting values. Their owned process trees peaked around 11.0–12.2 GiB RSS. Whole-host swap, process RSS and physical footprint measure different things; swap may include other apps, and summed RSS can count shared pages more than once. These measurements do not establish a smaller physical-memory requirement.
 
 The app now closes the selection-owned Laya model, clears unused local model buffers and releases its owned reader before titles and rendering. An actual M2 Full control observed MLX active memory fall from 842.6 MB to 22 bytes on close; immediately before rendering its cache was zero and its owned reader had exited. Its temporary selection swap surge ended at that boundary. That control completed in 87m 23s, with final host swap 145 MiB above its starting value. Its first of three requested music blocks was refused before generation by the resident-weight admission check; the other two generated 120 s native tracks and four local Demucs stems. The soundtrack repeats those two tracks, with no bundled substitution. The finished 605.35 s portrait film passed all 36,321 frames of video decoding, audio decoding to EOF, twelve visual samples and continuous-awake checks. Its parent physical footprint peaked at 10.92 GiB; that is separate from the owned process tree's 11.70 GiB RSS peak. Producer facts and derived banks were preserved; observed changes were metadata refreshes. This control is accepted with the missing third music block recorded. External model servers retain their own unload policy. Later music work can reopen an app-owned reader.
+
+The M2 GPU person control completed a 604.85 s portrait film with all three requested 120 s native tracks and four local Demucs stems. All 36,291 video frames and the complete audio stream decoded; twelve visual samples, acquisition scope, all fifteen factual banks and continuous-awake checks passed. Its 154 compressed encodes requested VideoToolbox. Before rendering, MLX cache was zero and no owned reader remained. Whole-host swap peaked 1,667 MiB above its starting value during native music and ended 367 MiB above it. The parent physical-footprint high-water mark was 7.91 GiB; owned-tree RSS peaked at 11.05 GiB. These are separate memory scopes, not a combined RAM requirement.
 
 ### Separate NAS 30-minute stress film
 
@@ -101,6 +105,6 @@ banks, hardware and output profile matched; record both revisions and any audio 
 Review the actual whole-run and per-stage gains, including the maps and assembly that remain expensive,
 and present those results before starting any of the 56 films.
 
-The twelve accepted controls above remain evidence for their original revisions. A newer commit does
-not require repeating all fifteen controls just to replace their timings. Three controls still need their
+The thirteen accepted controls above remain evidence for their original revisions. A newer commit does
+not require repeating all fifteen controls just to replace their timings. Two controls still need their
 finished-film checks. Provider benchmarks stay after completion of the fifteen-control matrix.
