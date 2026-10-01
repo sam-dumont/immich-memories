@@ -4,7 +4,8 @@ import hashlib
 import json
 import os
 import shutil
-from concurrent.futures import ThreadPoolExecutor
+import threading
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
@@ -17,7 +18,12 @@ from immich_memories_render_worker.admission import job_identity
 from immich_memories_render_worker.models import JobStatus, RenderRequest
 from immich_memories_render_worker.renderer import RenderArtifact, Renderer
 from immich_memories_render_worker.settings import WorkerSettings
-from immich_memories_render_worker.store import JobJournal, JobRepository, MemoryJobRepository
+from immich_memories_render_worker.store import (
+    JobConflict,
+    JobJournal,
+    JobRepository,
+    MemoryJobRepository,
+)
 
 
 def _now() -> datetime:
@@ -73,6 +79,10 @@ class RenderJobs:
             JobJournal(scratch / "records"),
         )
         self._pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="render")
+        self._lock = threading.RLock()
+        self._renders: dict[UUID, Future[None]] = {}
+        self._discarding: set[UUID] = set()
+        self._closing = False
         # WHY: a hard kill cannot run cleanup, so the boot sweep above is the
         # only thing that ever removes a stranded session's downloaded originals.
         self._session = TemporaryDirectory(
@@ -100,18 +110,25 @@ class RenderJobs:
             request.immich.api_key.get_secret_value()
         )
         fingerprint = hashlib.sha256(json.dumps(material, sort_keys=True).encode()).hexdigest()
-        status, fresh = self.store.admit(
-            JobStatus(
-                job_id=job_id,
-                memory_key=request.memory_key,
-                plan_digest=request.timing.sha256,
-                worker_id=self.worker_id,
-                submitted_at=_now(),
-            ),
-            fingerprint,
-        )
-        if fresh:
-            self._pool.submit(self._render, request, job_id)
+        with self._lock:
+            if job_id in self._discarding:
+                raise JobConflict(
+                    "The previous render is still finishing; retry after it releases its workspace"
+                )
+            status, fresh = self.store.admit(
+                JobStatus(
+                    job_id=job_id,
+                    memory_key=request.memory_key,
+                    plan_digest=request.timing.sha256,
+                    worker_id=self.worker_id,
+                    submitted_at=_now(),
+                ),
+                fingerprint,
+            )
+            if fresh:
+                rendered = self._pool.submit(self._render, request, job_id)
+                self._renders[job_id] = rendered
+                rendered.add_done_callback(lambda _done: self._finished(job_id))
         return status
 
     def directory(self, job_id: UUID) -> Path:
@@ -132,24 +149,35 @@ class RenderJobs:
             return sanitize_error_message(text.replace(secret, "[redacted]"))[:500]
 
         def progress(phase: str, fraction: float, message: str) -> None:
-            self.store.update(
-                job_id,
-                phase=clean(phase),
-                progress=max(0, min(1, fraction)),
-                message=clean(message),
-            )
+            with self._lock:
+                if job_id not in self._discarding:
+                    self.store.update(
+                        job_id,
+                        phase=clean(phase),
+                        progress=max(0, min(1, fraction)),
+                        message=clean(message),
+                    )
 
         try:
-            directory.mkdir(mode=0o700)
-            self.store.update(job_id, state="running", started_at=_now())
+            with self._lock:
+                if job_id in self._discarding:
+                    return
+                directory.mkdir(mode=0o700)
+                self.store.update(job_id, state="running", started_at=_now())
             self._publish(job_id, directory, self.renderer.render(request, directory, progress))
         except (
             Exception
         ) as exc:  # WHY: one failed job must not kill the worker or expose its Immich key.
-            self.store.update(
-                job_id, state="failed", phase="failed", error=clean(str(exc)), finished_at=_now()
-            )
-            shutil.rmtree(directory, ignore_errors=True)
+            with self._lock:
+                if job_id not in self._discarding:
+                    self.store.update(
+                        job_id,
+                        state="failed",
+                        phase="failed",
+                        error=clean(str(exc)),
+                        finished_at=_now(),
+                    )
+                    self.discard(job_id)
 
     def _publish(self, job_id: UUID, directory: Path, artifact: RenderArtifact) -> None:
         if not artifact.path.resolve().is_relative_to(directory.resolve()):
@@ -157,19 +185,22 @@ class RenderJobs:
         # One decode per film on this side: a renderer that already decoded
         # these bytes vouches for them, and only a changed file is decoded again.
         probe = validate_output(artifact.path, artifact.encoding_plan, verified=artifact.probe)
-        if self.store.get(job_id).state != "running":
-            raise RuntimeError("Job was already closed before its output arrived")
-        os.link(artifact.path, directory / "film.mp4")
-        self.store.update(
-            job_id,
-            state="ready",
-            phase="complete",
-            progress=1,
-            message="Ready to retrieve",
-            finished_at=_now(),
-            output_sha256=file_sha256(artifact.path),
-            **_plan_record(artifact, probe),
-        )
+        with self._lock:
+            if job_id in self._discarding:
+                return
+            if self.store.get(job_id).state != "running":
+                raise RuntimeError("Job was already closed before its output arrived")
+            os.link(artifact.path, directory / "film.mp4")
+            self.store.update(
+                job_id,
+                state="ready",
+                phase="complete",
+                progress=1,
+                message="Ready to retrieve",
+                finished_at=_now(),
+                output_sha256=file_sha256(artifact.path),
+                **_plan_record(artifact, probe),
+            )
 
     def output(self, job_id: UUID) -> tuple[Path, str | None]:
         """Claim the film once; return it with the SHA-256 recorded when it was published."""
@@ -177,29 +208,49 @@ class RenderJobs:
         return self.directory(job_id) / "film.mp4", claimed.output_sha256
 
     def discard(self, job_id: UUID) -> None:
-        shutil.rmtree(self.directory(job_id), ignore_errors=True)
+        with self._lock:
+            rendered = self._renders.get(job_id)
+            if rendered is not None:
+                # A deadline closes the job, not the native renderer using these files.
+                self._discarding.add(job_id)
+                rendered.cancel()
+                return
+            shutil.rmtree(self.directory(job_id), ignore_errors=True)
+
+    def _finished(self, job_id: UUID) -> None:
+        with self._lock:
+            self._renders.pop(job_id, None)
+            if job_id in self._discarding:
+                self._discarding.remove(job_id)
+                self.discard(job_id)
+            if self._closing and not self._renders:
+                self._session.cleanup()
 
     def cleanup(self) -> None:
-        for job_id in self.store.overdue(self.settings.job_timeout_seconds):
-            self.store.update(
-                job_id,
-                state="failed",
-                phase="failed",
-                finished_at=_now(),
-                error=(
-                    f"Render exceeded {self.settings.job_timeout_seconds}s and was abandoned; "
-                    "restart the worker if its lane stays busy"
-                ),
-            )
-            self.discard(job_id)
-        for job_id in self.store.expire():
-            self.discard(job_id)
+        with self._lock:
+            for job_id in self.store.overdue(self.settings.job_timeout_seconds):
+                self.store.update(
+                    job_id,
+                    state="failed",
+                    phase="failed",
+                    finished_at=_now(),
+                    error=(
+                        f"Render exceeded {self.settings.job_timeout_seconds}s and was abandoned; "
+                        "restart the worker if its lane stays busy"
+                    ),
+                )
+                self.discard(job_id)
+            for job_id in self.store.expire():
+                self.discard(job_id)
 
     def close(self) -> None:
         # WHY: shutdown(wait=True) hangs forever behind a wedged ffmpeg, which is
         # exactly the job the timeout above already gave up on.
-        self._pool.shutdown(wait=False, cancel_futures=True)
-        self._session.cleanup()
+        with self._lock:
+            self._closing = True
+            self._pool.shutdown(wait=False, cancel_futures=True)
+            if not self._renders:
+                self._session.cleanup()
 
 
 def _sweep(scratch: Path, retention_seconds: int) -> None:

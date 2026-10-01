@@ -85,7 +85,15 @@ variables differ by one underscore while meaning opposite things.
 | `PORT` | `8093` | HTTP port |
 | `MAX_JOBS` | `4` | Queued, running and unretrieved jobs combined; maximum 32 |
 | `RETENTION_SECONDS` | `3600` | Terminal job lifetime; 60 to 86400 seconds |
-| `JOB_TIMEOUT_SECONDS` | `3600` | A render past this is abandoned and its scratch released |
+| `JOB_TIMEOUT_SECONDS` | `3600` | Deadline for queued/running jobs; 30 to 86400 seconds |
+
+The app's `render.timeout_seconds` and the worker's `JOB_TIMEOUT_SECONDS` are
+separate deadlines. Both default to one hour. The app's limit includes queue
+time and downloading the result; the worker's running limit includes source
+preparation, titles, encoding and validation. Increase both for a long render,
+with room in the app's limit for queueing and retrieval. Increasing only the
+app's limit does not extend the worker's job deadline. `RETENTION_SECONDS` is
+the lifetime of a terminal result, not a render deadline.
 
 ### What the worker holds
 
@@ -201,10 +209,13 @@ wire contract. No database tables are introduced by this slice.
 
 Each process owns a private scratch session, and every session a previous
 process could not clean up is swept at boot, because a hard kill never runs
-cleanup. A ten-second sweep removes expired terminal jobs, their films, and any
-render past `JOB_TIMEOUT_SECONDS`. A wedged FFmpeg still holds the single lane
-until the process restarts; the deadline frees admission and tells the caller,
-it does not kill the subprocess. The process retains at most 128 status records,
+cleanup. A ten-second sweep expires terminal jobs and fails any render past
+`JOB_TIMEOUT_SECONDS`. A queued expired render is cancelled. A running renderer
+keeps its scratch until it exits, including during shutdown; the timeout error
+is preserved even if it later reports progress or fails. The same cut cannot
+be retried while that renderer still owns its workspace. A wedged FFmpeg still
+holds the single lane until the process restarts: the deadline tells the caller,
+but does not kill the subprocess or delete its inputs. The process retains at most 128 status records,
 including consumed and failed jobs, until their expiry.
 
 From the repository root:
