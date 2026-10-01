@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
-from staticmap import CircleMarker, StaticMap
+from staticmap import StaticMap
 
 from immich_memories.processing.encoding_plan import EncodingPlan
 from immich_memories.processing.hardware_encode import apply_hardware_encode
@@ -70,6 +70,12 @@ _tile_cache: dict[str, bytes] = {}
 
 class _CachedStaticMap(StaticMap):
     """StaticMap with shared cross-instance tile cache."""
+
+    def _draw_features(self, image):
+        # Pins and labels are drawn by our renderer, after fractional-zoom resizing.
+        # StaticMap otherwise allocates a 2x RGBA surface even with no features.
+        if self.markers or self.lines or self.polygons:
+            super()._draw_features(image)
 
     def get(self, url: str, **kwargs):
         """Return cached tile bytes or fetch + cache."""
@@ -193,7 +199,6 @@ def _render_satellite(lat: float, lon: float, zoom: float, w: int, h: int) -> Im
     rh = int(math.ceil(h * oversample))
 
     sm = _CachedStaticMap(rw, rh, url_template=_SAT_URL)
-    sm.add_marker(CircleMarker((lon, lat), "#00000000", 1))  # required by staticmap
 
     try:
         img = sm.render(zoom=z_int, center=[lon, lat])
