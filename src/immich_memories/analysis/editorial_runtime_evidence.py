@@ -179,8 +179,13 @@ class EvidencePreparation:
                 on_stage(live.publish(stage, done, total))
 
         prepare = self.ports.prepare_annotations or prepare_editorial_annotations
+        captured = getattr(prepared, "preparation_sources", {})
         return prepare(
-            assets=tuple(c.source for c in prepared.candidates if c.asset_id in reach),
+            assets=tuple(
+                captured.get(c.asset_id, c.source)
+                for c in prepared.candidates
+                if c.asset_id in reach
+            ),
             store=self.readings.store,
             thumbnail_cache=self.thumbnail_cache,
             preparation_config=config.editorial.preparation,
