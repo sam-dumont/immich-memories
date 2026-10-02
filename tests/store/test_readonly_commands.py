@@ -43,7 +43,9 @@ def test_other_readonly_commands_keep_the_old_revision(tmp_path, monkeypatch, co
     close_stores()
     if command[0] == "preflight":
         monkeypatch.setenv("IMMICH_MEMORIES_NOTIFICATIONS__ENABLED", "true")
-        monkeypatch.setenv("IMMICH_MEMORIES_NOTIFICATIONS__URLS", '["mailto:test@example.com"]')
+        monkeypatch.setenv(
+            "IMMICH_MEMORIES_NOTIFICATIONS__URLS", '["mailto://user:password@example.com"]'
+        )
     result = CliRunner().invoke(main, ["--config", str(tmp_path / "config.yaml"), *command])
     assert "app expects" in result.output
     if command[0] == "config":
