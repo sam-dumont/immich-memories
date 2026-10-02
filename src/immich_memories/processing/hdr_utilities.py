@@ -217,8 +217,8 @@ def _get_sdr_to_hdr_filter(
 ) -> str:
     """Return the required zscale filter string for SDR-to-HDR conversion.
 
-    Uses npl=203 (SDR reference white per BT.2408), explicit TV range,
-    and agamma=false for accurate gamma — prevents red/warm color cast.
+    Keep reference white and TV range explicit. HLG needs display-referred
+    gamma: zimg changes that operation when approximate gamma is enabled.
     """
     if not has_zscale:
         raise RuntimeError("zscale is required for SDR-to-HDR transfer conversion")
@@ -233,10 +233,13 @@ def _get_sdr_to_hdr_filter(
         )
     if target_type == "pq":
         logger.debug(f"Converting SDR ({src_pri}) -> PQ/HDR10")
+        # Only the measured BT.709 SDR→PQ path may use the fast approximation.
+        # Unknown primaries retain the reference path, even when defaulting to 709.
+        approximate_gamma = "true" if source_primaries == "bt709" else "false"
         return (
             f",zscale=tin=bt709:t=smpte2084"
             f":pin={src_pri}:p=bt2020:min={src_matrix}:m=bt2020nc"
-            f":rin=tv:r=tv:npl=203:agamma=false"
+            f":rin=tv:r=tv:npl=203:agamma={approximate_gamma}"
         )
     return ""
 

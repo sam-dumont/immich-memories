@@ -472,6 +472,24 @@ class TestGetFfmpegHwaccelArgs:
 
 
 class TestGetFfmpegEncoder:
+    @pytest.mark.parametrize("codec", ["h264", "h265"])
+    @pytest.mark.parametrize(
+        ("preset", "compression_level"), [("fast", "7"), ("balanced", "4"), ("quality", "1")]
+    )
+    def test_vaapi_preset_follows_driver_speed_quality_order(
+        self, codec: str, preset: str, compression_level: str
+    ) -> None:
+        caps = HWAccelCapabilities(
+            backend=HWAccelBackend.VAAPI,
+            supports_h264_encode=True,
+            supports_h265_encode=True,
+        )
+
+        encoder, args = get_ffmpeg_encoder(caps, codec=codec, preset=preset)
+
+        assert encoder == ("h264_vaapi" if codec == "h264" else "hevc_vaapi")
+        assert args == ["-compression_level", compression_level]
+
     def test_nvidia_h264_encoder(self):
         caps = HWAccelCapabilities(
             backend=HWAccelBackend.NVIDIA,

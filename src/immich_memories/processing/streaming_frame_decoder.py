@@ -12,9 +12,10 @@ import logging
 import subprocess
 from collections.abc import Iterator
 from fractions import Fraction
+from io import BufferedReader
 from pathlib import Path
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
@@ -27,6 +28,7 @@ from immich_memories.processing.hdr_utilities import (
     get_colorspace_filter,
 )
 from immich_memories.processing.memory_budget import assembly_decoder_threads, available_cpus
+from immich_memories.processing.probe_cache import ProbeCache
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +62,10 @@ class FrameDecoder:
         threads: int | None = None,
         source_frame_rate: Fraction | None = None,
         frame_limit: int | None = None,
+        probe_cache: ProbeCache | None = None,
     ) -> None:
         self._clip_path = clip_path
+        self._probe_cache = probe_cache or ProbeCache()
         self._source_size = source_size
         self._threads = threads
         self._source_frame_rate = source_frame_rate
@@ -95,6 +99,29 @@ class FrameDecoder:
             width, height = height, width
         return width * self._height == height * self._width
 
+    def _blur_background(self) -> str:
+        # Only the soft background is reduced. Even chroma dimensions and exact
+        # cropping keep its center aligned with the full-resolution foreground.
+        factor = 4 if min(self._width, self._height) >= 2160 else 2
+        if (
+            self._privacy_blur
+            or min(self._width, self._height) < 1080
+            or self._width % (2 * factor)
+            or self._height % (2 * factor)
+        ):
+            factor = 1
+        width, height = self._width // factor, self._height // factor
+        crop = ":exact=1" if factor > 1 else ""
+        chain = (
+            f"[_bg]scale={width}:{height}:force_original_aspect_ratio=increase:flags=lanczos,"
+            f"crop={width}:{height}{crop}"
+        )
+        if not self._privacy_blur:
+            chain += f",gblur=sigma={30 / factor:g}"
+        if factor > 1:
+            chain += f",scale={self._width}:{self._height}:flags=bilinear"
+        return chain + "[_blurred]"
+
     def _fill_filters(self) -> list[str]:
         """Scale to the canvas and fill what the source leaves uncovered."""
         if self._covers_canvas():
@@ -109,15 +136,13 @@ class FrameDecoder:
             # Uses split to avoid re-reading the source.
             # When privacy blur is active, skip the extra sigma=30 on the background
             # because the frame is already blurred — adding more makes it unrecognizable.
-            bg_blur = "" if self._privacy_blur else ",gblur=sigma=30"
             # WHY (#1527): overlay composites in 8-bit yuv420 unless told otherwise,
             # which rounded every HDR frame with a blur fill to multiples of 4.
             overlay_format = ":format=yuv420p10" if self._pix_fmt != "rgb24" else ""
             self._use_filter_complex = True
             return [
                 "split[_bg][_fg]",
-                f"[_bg]scale={self._width}:{self._height}:force_original_aspect_ratio=increase:flags=lanczos,"
-                f"crop={self._width}:{self._height}{bg_blur}[_blurred]",
+                self._blur_background(),
                 f"[_fg]scale={self._width}:{self._height}:force_original_aspect_ratio=decrease:flags=lanczos[_sharp]",
                 f"[_blurred][_sharp]overlay=(W-w)/2:(H-h)/2{overlay_format}",
             ]
@@ -217,7 +242,18 @@ class FrameDecoder:
         return ",".join(parts)
 
     def __iter__(self) -> Iterator[np.ndarray]:
-        """Yield decoded frames one at a time."""
+        """Yield independent, read-only frames that callers may retain."""
+        return self._iter_frames(reuse_buffer=False)
+
+    def iter_borrowed_frames(self) -> Iterator[np.ndarray]:
+        """Yield read-only views valid until the next complete frame arrives.
+
+        Exhaustion preserves the last frame for crossfade holds. Copy frames
+        before advancing if they must remain available beyond the next yield.
+        """
+        return self._iter_frames(reuse_buffer=True)
+
+    def _iter_frames(self, reuse_buffer: bool) -> Iterator[np.ndarray]:
         vf = self._build_vf()
         use_fc = getattr(self, "_use_filter_complex", False)
 
@@ -272,13 +308,11 @@ class FrameDecoder:
             bufsize=self._frame_size,
         )
         assert proc.stdout is not None  # noqa: S101
+        # Popen's positive bufsize gives this binary pipe a BufferedReader.
+        pipe = cast(BufferedReader, proc.stdout)
 
         try:
-            decoded = 0
-            while True:
-                raw = proc.stdout.read(self._frame_size)
-                if len(raw) < self._frame_size:
-                    break
+            for decoded, raw in enumerate(self._raw_frames(pipe, reuse_buffer), start=1):
                 frame: np.ndarray
                 if self._pix_fmt == "yuv420p10le":
                     # WHY: Keep as flat uint16 — YUV planar can't reshape to (H,W,3).
@@ -289,12 +323,29 @@ class FrameDecoder:
                     frame = np.frombuffer(raw, dtype=np.uint16)
                 else:
                     frame = np.frombuffer(raw, dtype=np.uint8).reshape(self._height, self._width, 3)
-                decoded += 1
+                frame.setflags(write=False)
                 self._finish_bounded_output(proc, decoded)
                 yield frame
         finally:
             proc.stdout.close()
             stop_owned_process(proc)
+
+    def _raw_frames(self, pipe: BufferedReader, reuse_buffer: bool) -> Iterator[bytes | bytearray]:
+        # Read into the other slot: an incomplete write must not overwrite
+        # the last complete frame, which a crossfade may need to hold.
+        storage = [bytearray(self._frame_size) for _ in range(2)] if reuse_buffer else None
+        index = 0
+        while True:
+            if storage is None:
+                raw = pipe.read(self._frame_size)
+                size = len(raw)
+            else:
+                raw = storage[index % 2]
+                size = pipe.readinto(raw)
+            if size != self._frame_size:
+                return
+            yield raw
+            index += 1
 
     def _finish_bounded_output(self, proc: subprocess.Popen[bytes], decoded: int) -> None:
         # The assembler closes this generator after its last picture.
@@ -329,9 +380,7 @@ class FrameDecoder:
     def _audio_input(self) -> tuple[list[str], str]:
         if self._audio_output is None:
             return [], "0:a?"
-        from immich_memories.processing.probe_cache import ProbeCache
-
-        probe = ProbeCache().get(self._clip_path)
+        probe = self._probe_cache.get(self._clip_path)
         if probe.has_audio:
             return [], "0:a?"
         # Optional mapping still fails when the WAV has no stream. Supply silence
@@ -354,8 +403,10 @@ def make_decoder(
     hdr_type: str | None = None,
     audio_work_dir: Path | None = None,
     caption_window: tuple[int, int] | None = None,
+    probe_cache: ProbeCache | None = None,
 ) -> FrameDecoder:
     """Create a FrameDecoder with per-clip normalization filters."""
+    probe_cache = probe_cache or ProbeCache()
     rotation = 0
     is_title = getattr(clip, "is_title_screen", False)
 
@@ -367,8 +418,8 @@ def make_decoder(
         target_type = hdr_type or "sdr"
         source_types: list[str | None] = [None] * (clip_idx + 1)
         source_primaries: list[str | None] = [None] * (clip_idx + 1)
-        source_types[clip_idx] = _detect_hdr_type(clip.path)
-        source_primaries[clip_idx] = _detect_color_primaries(clip.path)
+        source_types[clip_idx] = _detect_hdr_type(clip.path, probe_cache=probe_cache)
+        source_primaries[clip_idx] = _detect_color_primaries(clip.path, probe_cache=probe_cache)
         ctx = SimpleNamespace(
             hdr_type=target_type,
             pix_fmt="yuv420p10le" if hdr_type else "yuv420p",
@@ -392,9 +443,10 @@ def make_decoder(
     if audio_work_dir:
         audio_output = audio_work_dir / f"clip_{clip_idx}_audio.wav"
 
-    source_size, source_frame_rate = _source_properties(clip.path)
+    source_size, source_frame_rate = _source_properties(clip.path, probe_cache)
     return FrameDecoder(
         clip_path=clip.path,
+        probe_cache=probe_cache,
         width=width,
         height=height,
         fps=fps,
@@ -417,12 +469,14 @@ def make_decoder(
     )
 
 
-def _source_properties(path: Path) -> tuple[tuple[int, int] | None, Fraction | None]:
+def _source_properties(
+    path: Path, probe_cache: ProbeCache | None = None
+) -> tuple[tuple[int, int] | None, Fraction | None]:
     """Read geometry and cadence from one probe, retaining the unprobed fallback."""
-    from immich_memories.processing.probe_cache import ProbeCache, ProbeError
+    from immich_memories.processing.probe_cache import ProbeError
 
     try:
-        probe = ProbeCache().get(path)
+        probe = (probe_cache or ProbeCache()).get(path)
     except (ProbeError, OSError, ValueError):
         return None, None
     return probe.resolution, _matching_stream_rate(probe)

@@ -96,7 +96,36 @@ def test_streaming_hardware_encoder_failure_retries_same_codec_in_software(tmp_p
     assert [plan.encoder for plan in effective_plans] == ["libx265"]
 
 
-def test_streaming_broken_pipe_retries_same_codec_in_software(tmp_path: Path) -> None:
+@pytest.fixture
+def single_frame_video(tmp_path: Path) -> Path:
+    if not _has_ffmpeg():
+        pytest.skip("FFmpeg not available")
+    path = tmp_path / "single-frame.mkv"
+    subprocess.run(  # noqa: S603, S607
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=black:size=16x16:rate=25",
+            "-frames:v",
+            "1",
+            "-c:v",
+            "ffv1",
+            str(path),
+        ],
+        check=True,
+        capture_output=True,
+        timeout=10,
+    )
+    return path
+
+
+def test_streaming_broken_pipe_retries_same_codec_in_software(
+    tmp_path: Path, single_frame_video: Path
+) -> None:
     """Early hardware FFmpeg death during frame writing retries once in software."""
     from immich_memories.processing.streaming_assembler import (
         StreamingEncoderWriteError,
@@ -120,16 +149,12 @@ def test_streaming_broken_pipe_retries_same_codec_in_software(tmp_path: Path) ->
         def finish(self) -> None:
             pass
 
-    clip = SimpleNamespace(duration=1.0, path=tmp_path / "input.mp4")
-    frame = np.zeros((16, 16, 3), dtype=np.uint8)
+    clip = SimpleNamespace(duration=1 / 25, path=single_frame_video)
+    # WHY: Inject only encoder WRITES; decoding uses a real single-frame source.
     with (
         patch(
             "immich_memories.processing.streaming_assembler.StreamingEncoder",
             EarlyFailingHardwareEncoder,
-        ),
-        patch(
-            "immich_memories.processing.streaming_assembler.make_decoder",
-            side_effect=lambda *_args, **_kwargs: iter([frame]),
         ),
     ):
         assemble_streaming(
@@ -138,7 +163,7 @@ def test_streaming_broken_pipe_retries_same_codec_in_software(tmp_path: Path) ->
             output_path=tmp_path / "output.mp4",
             width=16,
             height=16,
-            fps=1,
+            fps=25,
             encoding_plan=_hardware_h265_plan(),
         )
 
@@ -166,7 +191,9 @@ def test_streaming_encoder_write_translates_broken_pipe_to_encoder_failure(tmp_p
     assert isinstance(raised.value.__cause__, BrokenPipeError)
 
 
-def test_streaming_callback_broken_pipe_does_not_retry_software(tmp_path: Path) -> None:
+def test_streaming_callback_broken_pipe_does_not_retry_software(
+    tmp_path: Path, single_frame_video: Path
+) -> None:
     """A preview-consumer pipe error must escape without an encoder fallback."""
     from immich_memories.processing.streaming_assembler import assemble_streaming
 
@@ -188,14 +215,10 @@ def test_streaming_callback_broken_pipe_does_not_retry_software(tmp_path: Path) 
     def disconnected_preview(_jpeg: bytes) -> None:
         raise BrokenPipeError("preview consumer disconnected")
 
-    clip = SimpleNamespace(duration=1.0, path=tmp_path / "input.mp4")
-    frame = np.zeros((16, 16, 3), dtype=np.uint8)
+    clip = SimpleNamespace(duration=1 / 25, path=single_frame_video)
+    # WHY: Inject only encoder WRITES; decoding uses a real single-frame source.
     with (
         patch("immich_memories.processing.streaming_assembler.StreamingEncoder", WorkingEncoder),
-        patch(
-            "immich_memories.processing.streaming_assembler.make_decoder",
-            side_effect=lambda *_args, **_kwargs: iter([frame]),
-        ),
         pytest.raises(BrokenPipeError, match="preview consumer"),
     ):
         assemble_streaming(
@@ -204,7 +227,7 @@ def test_streaming_callback_broken_pipe_does_not_retry_software(tmp_path: Path) 
             output_path=tmp_path / "output.mp4",
             width=16,
             height=16,
-            fps=1,
+            fps=25,
             encoding_plan=_hardware_h265_plan(),
             frame_preview_callback=disconnected_preview,
         )
@@ -462,7 +485,7 @@ def test_the_configurable_scale_modes_render_differently() -> None:
 def test_blur_scale_mode_renders_a_blurred_background() -> None:
     vf = _vf_for_scale_mode("blur")
 
-    assert "gblur=sigma=30" in vf
+    assert "gblur=sigma=" in vf
     assert "overlay=(W-w)/2:(H-h)/2" in vf
 
 
