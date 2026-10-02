@@ -8,11 +8,13 @@ from immich_memories.config_models_render import RenderWorkerConfig, TitleScreen
 from immich_memories.generate import GenerationParams
 
 
-def worker_config(request) -> Config:
+def worker_config(request, *, geocoding_url: str | None = None) -> Config:
     """Rebuild the film-shaping half of the app's config from the envelope alone.
 
     The timing policy the app froze into its binding is derived from these
-    fields, so anything omitted here turns every job into a spurious 409.
+    fields, so anything omitted here turns every job into a spurious 409. The one
+    exception is the geocoding server: the envelope's is ignored, and geocoding runs
+    only through the worker's own `geocoding_url`, off when the worker has none.
     """
     config = Config()
     config.render = RenderWorkerConfig()
@@ -26,18 +28,26 @@ def worker_config(request) -> Config:
     config.title_screens = TitleScreenConfig.model_validate(
         request.titles.model_dump(exclude={"title", "subtitle"})
     )
-    config.network = NetworkConfig.model_validate(request.network.model_dump())
+    config.network = NetworkConfig.model_validate(
+        request.network.model_dump()
+        | {
+            "geocoding": request.network.geocoding and bool(geocoding_url),
+            "geocoding_url": geocoding_url or "",
+        }
+    )
     config.photos.duration = request.options.photo_duration
     config.trips.homebase_latitude = request.options.homebase_latitude
     config.trips.homebase_longitude = request.options.homebase_longitude
     return config
 
 
-def generation_params(request, directory, client, progress) -> GenerationParams:
+def generation_params(
+    request, directory, client, progress, *, geocoding_url: str | None = None
+) -> GenerationParams:
     """Preserve cut order and intervals; keep all generated state in the job workspace."""
     from immich_memories_render_worker.access import immich_config
 
-    config = worker_config(request)
+    config = worker_config(request, geocoding_url=geocoding_url)
     config.immich = immich_config(request)
     config.cache.directory = str(directory / "cache")
     config.cache.database = str(directory / "run.sqlite")

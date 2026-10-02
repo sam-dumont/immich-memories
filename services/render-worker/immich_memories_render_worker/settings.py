@@ -22,6 +22,9 @@ class WorkerSettings(BaseSettings):
     max_jobs: int = Field(default=4, ge=1, le=32)
     retention_seconds: int = Field(default=3600, ge=60, le=86400)
     job_timeout_seconds: int = Field(default=3600, ge=30, le=86400)
+    # The worker's own Nominatim. A job's envelope names one too, but the worker never
+    # sends coordinates to a server its operator did not choose; unset means no geocoding.
+    geocoding_url: str | None = None
 
     @field_validator("token")
     @classmethod
@@ -35,3 +38,10 @@ class WorkerSettings(BaseSettings):
                 "characters; generate one with `openssl rand -hex 32`"
             )
         return value
+
+    @field_validator("geocoding_url")
+    @classmethod
+    def http_geocoder(cls, value: str | None) -> str | None:
+        if value and not value.startswith(("http://", "https://")):
+            raise ValueError("geocoding_url must be an http:// or https:// URL")
+        return value or None

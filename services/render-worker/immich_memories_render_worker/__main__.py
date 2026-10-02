@@ -11,7 +11,7 @@ def main() -> None:
     """Start the authenticated worker using its environment settings."""
     settings = WorkerSettings()
     uvicorn.run(
-        create_app(settings, renderer=NativeRenderer()),
+        create_app(settings, renderer=NativeRenderer(geocoding_url=settings.geocoding_url)),
         host=settings.host,
         port=settings.port,
         workers=1,
