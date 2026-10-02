@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import os
+import wave
 from pathlib import Path
 
 import pytest
@@ -263,11 +265,17 @@ def test_an_upload_streamed_past_the_limit_is_cut_off(monkeypatch, tmp_path):
 def test_uploads_past_the_quota_push_out_the_oldest(monkeypatch, tmp_path):
     config = _open_config(tmp_path, music_upload_quota_mb=1)
     client = _local_client(monkeypatch, config)
-    track = b"ID3" + b"\0" * (400 * 1024)
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as audio:
+        audio.setnchannels(1)
+        audio.setsampwidth(2)
+        audio.setframerate(16000)
+        audio.writeframes(b"\0" * (400 * 1024))
+    track = buffer.getvalue()
 
     ids = []
     for minute in range(3):
-        uploaded = client.post("/api/v1/music", files={"file": ("a.mp3", track, "audio/mpeg")})
+        uploaded = client.post("/api/v1/music", files={"file": ("a.wav", track, "audio/wav")})
         assert uploaded.status_code == 201
         ids.append(uploaded.json()["id"])
         # Upload times one minute apart, so "oldest" does not hang on the clock's resolution.

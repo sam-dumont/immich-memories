@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import ipaddress
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NoReturn
 from urllib.parse import unquote, urlsplit
+
+from pydantic import ValidationError
+
+from immich_memories.config_models import has_unresolved_env_reference
 
 if TYPE_CHECKING:
     from immich_memories.config_loader import Config
@@ -22,17 +26,15 @@ def validate_service_endpoints(config: Config) -> None:
         "render.worker_base_url": config.render.worker_base_url,
         "inference.facts_base_url": config.inference.facts_base_url,
     }
-    if config.title_llm is not None:
-        endpoints["title_llm.base_url"] = config.title_llm.base_url
     for key, value in endpoints.items():
-        if value:
+        if value and not has_unresolved_env_reference(value):
             _check_url(key, value)
     if config.notifications.urls:
         from apprise import Apprise
 
         for value in config.notifications.urls:
             if Apprise.instantiate(value, suppress_exceptions=True) is None:
-                raise ValueError("notifications.urls needs supported Apprise URLs")
+                _refuse("notifications.urls", "Use supported Apprise URLs")
             _check_url("notifications.urls", value, notification=True)
 
 
@@ -46,7 +48,7 @@ def _check_url(key: str, value: str, *, notification: bool = False) -> None:
     except ValueError:
         valid, host = False, None
     if not valid:
-        raise ValueError(f"{key} needs an absolute HTTP(S) URL")
+        _refuse(key, "Use an absolute HTTP(S) URL")
     if os.environ.get("IMMICH_MEMORIES_ALLOW_LINK_LOCAL_URLS", "").lower() in {"1", "true", "yes"}:
         return
     try:
@@ -56,7 +58,23 @@ def _check_url(key: str, value: str, *, notification: bool = False) -> None:
     if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
         address = address.ipv4_mapped
     if address.is_link_local:
-        raise ValueError(
-            f"{key} uses a link-local address; only the operator can allow it with "
-            "IMMICH_MEMORIES_ALLOW_LINK_LOCAL_URLS=true"
+        _refuse(
+            key,
+            "This link-local address requires the operator to set "
+            "IMMICH_MEMORIES_ALLOW_LINK_LOCAL_URLS=true",
         )
+
+
+def _refuse(key: str, reason: str) -> NoReturn:
+    # A model-level ValueError would attach the entire config, including other credentials.
+    raise ValidationError.from_exception_data(
+        "Config",
+        [
+            {
+                "type": "value_error",
+                "loc": tuple(key.split(".")),
+                "input": None,
+                "ctx": {"error": ValueError(reason)},
+            }
+        ],
+    )

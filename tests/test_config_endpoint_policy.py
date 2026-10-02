@@ -11,7 +11,6 @@ from immich_memories.settings_store import nest_dotted
     "key",
     [
         "llm.base_url",
-        "title_llm.base_url",
         "editorial.preparation.caption_base_url",
         "network.geocoding_url",
         "musicgen.base_url",
@@ -75,3 +74,14 @@ def test_apprise_token_urls_do_not_use_http_port_rules():
     assert Config(
         notifications={"urls": ["tgram://123456:abcdefghijklmnop/12345"]}
     ).notifications.urls
+
+
+def test_endpoint_errors_do_not_echo_unrelated_credentials():
+    from immich_memories.cli._config_errors import format_validation_error
+
+    with pytest.raises(ValidationError) as refused:
+        Config(
+            immich={"api_key": "private-connection-credential"},
+            llm={"base_url": "http://169.254.1.1"},
+        )
+    assert "private-connection-credential" not in format_validation_error(refused.value)
