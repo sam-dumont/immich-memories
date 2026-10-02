@@ -25,6 +25,16 @@ Create a folder for the project in File Station. In Container Manager, open **Pr
 
 <StackStorage />
 
+The saved Compose file contains your Immich API key and Settings encryption key. Restrict the project folder and file to your DSM user in **File Station → Properties → Permission**, including inherited entries. For an SSH-created project, set and check the file modes after saving:
+
+```bash
+chmod 700 /volume1/homes/your-user/immich-memories
+chmod 600 /volume1/homes/your-user/immich-memories/docker-compose.yml
+stat -c '%a %n' /volume1/homes/your-user/immich-memories /volume1/homes/your-user/immich-memories/docker-compose.yml
+```
+
+Use your actual project path. Our DSM test created a file with mode `777` despite `umask 077`; explicit `chmod` produced `700` for the folder and `600` for the file. Check the DSM permissions too: these mode numbers alone do not prove that an additional ACL grants nobody access.
+
 ## 2. Start the project
 
 Finish the project wizard and start it. No Web Station portal is needed for the SSH tunnel below. The file deliberately has no `cpus:` quota: some DSM kernels reject it before the container starts. See [Synology CPU limits](../nas.md#do-not-use-cpus-on-a-synology) if you want to reserve cores for other apps.
