@@ -42,7 +42,7 @@ jobs:
       docs_only: ${{ steps.scope.outputs.docs_only }}
       store: ${{ steps.scope.outputs.store }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # the diff needs the base branch
       - id: scope
@@ -63,7 +63,7 @@ jobs:
         immich: [v2, v3]
         database: ${{ fromJSON(needs.changes.outputs.store == 'true' && '["sqlite","postgresql"]' || '["sqlite"]') }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # docker load into the classic image store drops the registry digest, so
       # a loaded `name:tag@sha256:...` ref would not resolve and compose would

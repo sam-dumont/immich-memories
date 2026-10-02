@@ -26,7 +26,7 @@ jobs:
     if: github.repository == 'sam-dumont/immich-video-memory-generator'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Same LFS cache as ci.yml's Test job; fixtures are metered bandwidth.
       - name: Create LFS cache key
