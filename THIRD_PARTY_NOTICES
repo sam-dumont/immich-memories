@@ -485,7 +485,7 @@ geographiclib 2.1
   License: MIT
   URL: https://github.com/geographiclib/geographiclib-python
 
-geopy 2.4.1
+geopy 2.5.0
   License: MIT
   URL: https://github.com/geopy/geopy
 
