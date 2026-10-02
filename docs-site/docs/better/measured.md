@@ -48,6 +48,41 @@ Maps can dominate a trip render. In one M2 Full trip, nine smooth 4K maps took 9
 about 43% of the whole run. The NAS version used lower resolution and reduced motion. For
 cheaper maps, choose `preset: fast`; [titles and maps](../make/titles-maps-music.md) explains it.
 
+## Rendering improvements, 2 October 2026 {#rendering-performance}
+
+The completed [#1704](https://github.com/sam-dumont/immich-video-memory-generator/issues/1704)
+and [#1702](https://github.com/sam-dumont/immich-video-memory-generator/issues/1702)
+work reduced title, map and assembly costs. Final combined checks used synthetic
+portrait 4K HDR10 video at 60 fps, with titles, maps, captions, transitions and audio.
+
+| Host | Film length | Before | After | Less time |
+|---|---:|---:|---:|---:|
+| M2 | 14.5 s | 154.6 s | 75.2 s | 51% |
+| M2 | 68.5 s | 592.9 s | 166.4 s | 72% |
+| M5 | 14.5 s | 81.9 s | 49.0 s | 40% |
+| M5 | 68.5 s | 263.2 s | 99.0 s | 62% |
+| GTX 1070 | 14.5 s | 433.4 s | 197.6 s | 54% |
+| T1000 | 14.5 s | 441.7 s | 217.1 s | 51% |
+
+Each final Mac candidate ran once against unchanged earlier controls: two short
+baseline runs and one long run. Linux used one matched short pair per GPU under
+shared-cluster load. These are rendering times, excluding media acquisition,
+selection and generated music. They do not replace the whole-film controls above,
+and the baseline already includes earlier title/cadence improvements.
+
+Both Linux GPUs also completed the 68.5-second, 42-clip film: 467.7 seconds on
+GTX 1070 and 574.7 seconds on T1000. The long Linux baseline checks timed out during
+redundant output verification, so no long-film Linux speedup is claimed. All final
+outputs passed full video/audio decoding, timing and HDR metadata checks. The merged
+assembly files match the isolated source used for these tests.
+
+Mac read-ahead stays enabled only for the measured HEVC VideoToolbox path with enough
+CPU and memory. It slowed the T1000 down, so Linux and software encoders stay synchronous.
+The [full report](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/docs/research/2026-10-02-render-performance-closeout.md)
+records source revisions, memory, component gains and measurement limits. Separate
+[NAS software-HLG memory work](https://github.com/sam-dumont/immich-video-memory-generator/issues/1767)
+remains open.
+
 ## LLM contract fixes, 1 October 2026 {#llm-contract-fixes}
 
 The follow-up for [#1645–#1660](https://github.com/sam-dumont/immich-video-memory-generator/issues/1645)
