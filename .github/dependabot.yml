@@ -9,6 +9,10 @@ updates:
     directories:
       - /web
       - /docs-site
+    groups:
+      docusaurus:
+        patterns:
+          - "@docusaurus/*"
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
