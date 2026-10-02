@@ -7,9 +7,18 @@ title: "Fetch once, then keep traffic local"
 This recipe runs NAS with the rules reader and bundled music. After preparation, the app
 contacts Immich; it does not need a hosted reader, a caption service or a music generator.
 The network boundary enforces that choice. Turning off features alone is not a firewall.
-These examples have local configuration checks, not a production NAS or Kubernetes deployment test.
-Tried this on your setup? Report your platform/version, a denied outbound destination and
-your first film result in [#1804](https://github.com/sam-dumont/immich-video-memory-generator/issues/1804).
+Both recipes passed real isolated runs with fresh models and a synthetic CC0 Immich library:
+Docker Desktop on Apple Silicon, and RKE2 1.33.4 with Cilium 1.18.0. Each kept Immich reachable,
+blocked unrelated outbound HTTPS, passed preflight and produced a 19-second 1080p H.264/AAC
+film with a complete audio/video decode.
+
+The Docker run used app source `5466706b` and Compose recipe `00cd41df`; the Kubernetes run
+used candidate source tree `75077f27` and the documented fixed-IP/no-DNS policy variant.
+These were local candidate images, not release-download tests. The DNS-service variant
+needs a check on your cluster: in this run the allowed CoreDNS pod answered directly, but
+its Service IP did not. Community validation is welcome; report your platform/version,
+a denied outbound destination and your first film result in
+[#1804](https://github.com/sam-dumont/immich-video-memory-generator/issues/1804).
 
 ## Fetch before closing the network
 
