@@ -33,7 +33,7 @@
     "@docusaurus/tsconfig": "3.10.2",
     "@docusaurus/types": "3.10.2",
     "@playwright/test": "^1.50.0",
-    "sharp": "^0.35.0",
+    "sharp": "^0.35.5",
     "tsx": "^4.0.0",
     "typescript": "~5.6.2"
   },
