@@ -56,3 +56,23 @@ def test_missing_or_mismatched_inventory_metadata_requires_review(tmp_path, repl
     )
     assert result.returncode != 0
     assert re.search(r"^fsspec [^\n]+\n  License: UNKNOWN$", inventory.read_text(), re.MULTILINE)
+
+
+def test_no_python_runtime_dependency_carries_a_gpl_licence():
+    """The project is MIT: a GPL library imported in-process would bind every image we ship.
+
+    LGPL is fine (imported, replaceable); GPL programs we only run as subprocesses
+    (FFmpeg, ExifTool) sit above the Python section and are not checked here.
+    """
+    notices = (ROOT / "THIRD_PARTY_NOTICES").read_text(encoding="utf-8")
+    python_section = notices.split("\nPython dependencies\n", 1)[1]
+    entries = re.findall(r"^(\S+ \S+)\n  License: (.+)$", python_section, flags=re.MULTILINE)
+    gpl = [
+        name
+        for name, licence in entries
+        if ("GPL" in licence or "General Public License" in licence)
+        and "LGPL" not in licence
+        and "Lesser" not in licence
+    ]
+
+    assert gpl == []

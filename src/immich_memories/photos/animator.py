@@ -1,6 +1,6 @@
 """Photo source preparation — decodes stills into something FFmpeg can read.
 
-Handles HEIC/HEIF decode via pillow-heif, downscaling to the render cap, and
+Handles HEIC/HEIF decode via pi-heif, downscaling to the render cap, and
 HDR detection: Apple gain maps (headroom from both Apple MakerNote tags),
 Android Ultra HDR, and tagged HLG/PQ transfer characteristics.
 
@@ -189,7 +189,7 @@ class PreparedPhoto:
     has_gain_map: bool = False
     peak_nits: int = 203  # SDR default; gain-mapped HDR sets actual peak
     # WHY: the video path reads the source's own primaries and passes them to
-    # zscale; photos hardcoded bt709. pillow-heif hands back RAW Display P3 for
+    # zscale; photos hardcoded bt709. libheif hands back RAW Display P3 for
     # an iPhone HEIC, so that hardcoding described P3 values as the narrower
     # gamut and desaturated every saturated colour. "smpte432" is P3-D65.
     primaries: str = "bt709"
@@ -208,7 +208,7 @@ def prepare_photo_source(
     no EXIF pixel transform are returned untouched rather than re-encoded.
 
     Extracts HDR gain maps when present:
-    - Apple HEIC: gain map via pillow-heif auxiliary image
+    - Apple HEIC: gain map via pi-heif auxiliary image
     - UltraHDR JPEG (Android/Pixel/Samsung): gain map via MPF container
     Both produce 16-bit linear HDR PNG for the streaming renderer.
 
@@ -220,11 +220,11 @@ def prepare_photo_source(
     # Library filenames can retain an old suffix after the image was converted.
     # Identify the container before invoking a format-specific decoder.
     try:
-        import pillow_heif  # type: ignore[import-untyped]
+        import pi_heif  # type: ignore[import-untyped]
     except ImportError:
         pass
     else:
-        if pillow_heif.is_supported(source_path):
+        if pi_heif.is_supported(source_path):
             return _convert_heif(source_path, work_dir, max_size=max_size)
 
     with Image.open(source_path) as image:
@@ -357,25 +357,25 @@ def _try_ultrahdr_extraction(
 def _convert_heif(
     source_path: Path, work_dir: Path, *, max_size: tuple[int, int] | None = None
 ) -> PreparedPhoto:
-    """Convert HEIC/HEIF/AVIF via pillow-heif.
+    """Convert HEIC/HEIF/AVIF: pi-heif reads the container and its gain map.
 
+    pi-heif bundles no AV1 decoder, so AVIF pixels come from Pillow's own
+    decoder through ``Image.open``; HEIC pixels come from pi-heif's opener.
     If an Apple HDR gain map is present, applies it to produce a 16-bit
     PNG with full HDR data (for PQ encoding via FFmpeg zscale). Otherwise
     saves as high-quality JPEG.
     """
     try:
-        import pillow_heif
+        import pi_heif
 
-        pillow_heif.register_heif_opener()
+        pi_heif.register_heif_opener()
     except ImportError:
-        logger.warning(
-            "pillow-heif not installed — HEIC support unavailable. pip install pillow-heif"
-        )
+        logger.warning("pi-heif not installed — HEIC support unavailable. pip install pi-heif")
         raise
 
     from PIL import Image
 
-    heif_file = pillow_heif.open_heif(str(source_path))
+    heif_file = pi_heif.open_heif(str(source_path))
     img = Image.open(source_path)
     # WHY: capped here, before the gain-map maths and the float32 copies below.
     # The gain map is resampled to the primary's size, and the maths is

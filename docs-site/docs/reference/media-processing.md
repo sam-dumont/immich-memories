@@ -182,7 +182,7 @@ installed; a photograph whose headroom cannot be read renders at the brightness 
 **Android Ultra HDR.** A JPEG with an MPF gain map and `hdrgm` XMP metadata, rebuilt with its
 per-channel gamma and offsets.
 
-`pillow-heif` decodes HEIC, because FFmpeg only reads a HEIC's thumbnail tiles. Title text
+`pi-heif` (libheif, decode only) reads HEIC, because FFmpeg only reads a HEIC's thumbnail tiles. Title text
 over HDR is drawn at HLG graphics white, so a caption does not glare above the picture.
 
 `output.hdr_mode` is `auto` (HDR when H.265 is selected and any selected source is HDR), `hdr` or `sdr`.
