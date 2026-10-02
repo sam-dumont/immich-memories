@@ -22,29 +22,13 @@ except ImportError:
     HAS_PIL = False
 
 
-# Cache for coordinate meshgrids to avoid recreating ~66MB arrays per frame at 4K
-_COORD_CACHE: dict[tuple[int, int], tuple[np.ndarray, np.ndarray]] = {}
-
-
 def _get_coord_grids(width: int, height: int) -> tuple[np.ndarray, np.ndarray]:
-    """Get cached coordinate grids for the given dimensions.
-
-    Memory optimization: reuses meshgrid arrays instead of creating new ones
-    for each frame. For 4K (3840x2160), this saves ~66MB per frame.
-
-    Args:
-        width: Image width.
-        height: Image height.
-
-    Returns:
-        Tuple of (y_coords, x_coords) numpy arrays.
-    """
-    key = (width, height)
-    if key not in _COORD_CACHE:
-        _COORD_CACHE[key] = np.meshgrid(
-            np.arange(height, dtype=np.float32), np.arange(width, dtype=np.float32), indexing="ij"
-        )
-    return _COORD_CACHE[key]
+    # Broadcasting preserves the float32 arithmetic without retaining two full
+    # coordinate planes for every resolution (63.3 MiB per 4K orientation).
+    return (
+        np.arange(height, dtype=np.float32)[:, np.newaxis],
+        np.arange(width, dtype=np.float32)[np.newaxis, :],
+    )
 
 
 class BackgroundType(Enum):
@@ -115,7 +99,6 @@ def create_gradient_background(
     sin_a = math.sin(angle_rad)
     diagonal = math.sqrt(width**2 + height**2)
 
-    # Get cached coordinate grids (memory optimization for 4K)
     y_coords, x_coords = _get_coord_grids(width, height)
 
     # Center the coordinates
@@ -179,7 +162,6 @@ def create_radial_gradient(
     center_y = height / 2
     max_radius = math.sqrt(center_x**2 + center_y**2) * radius_ratio
 
-    # Get cached coordinate grids (memory optimization for 4K)
     y_coords, x_coords = _get_coord_grids(width, height)
 
     # Calculate distance from center (vectorized)
@@ -230,7 +212,6 @@ def create_vignette_background(
     max_dist_x = center_x
     max_dist_y = center_y
 
-    # Get cached coordinate grids (memory optimization for 4K)
     y_coords, x_coords = _get_coord_grids(width, height)
 
     # Elliptical distance (normalized)

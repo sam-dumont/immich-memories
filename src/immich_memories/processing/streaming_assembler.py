@@ -29,6 +29,7 @@ from immich_memories.processing.encoding_plan import (
 from immich_memories.processing.ffmpeg_runner import drain_stderr_tail
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 from immich_memories.processing.hdr_utilities import get_colorspace_filter
+from immich_memories.processing.probe_cache import ProbeCache
 from immich_memories.processing.streaming_audio import (
     _probe_duration,
     extract_and_mix_audio,
@@ -39,8 +40,6 @@ from immich_memories.processing.streaming_frame_decoder import make_decoder
 
 if TYPE_CHECKING:
     from datetime import datetime
-
-    from immich_memories.processing.probe_cache import ProbeCache
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +69,13 @@ def _notify_effective_plan(
     """Report the plan that actually encoded the artifact when requested."""
     if callback is not None:
         callback(plan)
+
+
+def _notify_assembly_stage(
+    callback: Callable[[float, str], None] | None, fraction: float, message: str
+) -> None:
+    if callback:
+        callback(fraction, message)
 
 
 class StreamingEncoder:
@@ -205,7 +211,10 @@ class StreamingEncoder:
 def _estimate_total_frames(
     clips: list, transitions: list[str], fps: int, fade_duration: float
 ) -> int:
-    """Estimate total output frames accounting for crossfade overlap."""
+    """Validate the transition count and estimate frames after crossfade overlap."""
+    if len(transitions) != len(clips) - 1:
+        raise ValueError(f"Expected {len(clips) - 1} transitions, got {len(transitions)}")
+
     fade_frames = int(fade_duration * fps)
     total = sum(int(c.duration * fps) for c in clips)
     fade_count = sum(1 for t in transitions if t == "fade")
@@ -232,16 +241,15 @@ def assemble_streaming(
     audio_work_dir: Path | None = None,
     effective_plan_callback: Callable[[EncodingPlan], None] | None = None,
     _allow_runtime_fallback: bool = True,
+    probe_cache: ProbeCache | None = None,
 ) -> list[Path]:
     """Assemble clips via streaming frame blending (constant memory).
 
     Returns list of per-clip audio WAV paths extracted during decoding.
     """
-    if len(transitions) != len(clips) - 1:
-        raise ValueError(f"Expected {len(clips) - 1} transitions, got {len(transitions)}")
-
-    fade_frames = int(fade_duration * fps)
     total_frames = _estimate_total_frames(clips, transitions, fps, fade_duration)
+    probe_cache = probe_cache or ProbeCache()
+    fade_frames = int(fade_duration * fps)
 
     captions, caption_font = timeline_captions(clips, date_overlay, place_overlay, caption_locale)
     plan = encoding_plan or _default_streaming_plan()
@@ -288,6 +296,7 @@ def assemble_streaming(
             audio_work_dir,
             effective_plan_callback,
             _allow_runtime_fallback=False,
+            probe_cache=probe_cache,
         )
 
     try:
@@ -314,6 +323,7 @@ def assemble_streaming(
             scale_mode,
             hdr_type,
             audio_work_dir=audio_work_dir,
+            probe_cache=probe_cache,
         )
     except StreamingEncoderWriteError:
         with contextlib.suppress(OSError, subprocess.TimeoutExpired, RuntimeError):
@@ -367,6 +377,7 @@ def _encode_clip_sequence(
     scale_mode: str,
     hdr_type: str | None,
     audio_work_dir: Path | None = None,
+    probe_cache: ProbeCache | None = None,
 ) -> int:
     """Encode all clips with transitions, tracking frame count for progress."""
     active_iter: Iterator[np.ndarray] | None = None
@@ -392,6 +403,7 @@ def _encode_clip_sequence(
             hdr_type,
             audio_work_dir=audio_work_dir,
             caption_window=caption_windows[clip_idx],
+            probe_cache=probe_cache,
         ).iter_borrowed_frames()
 
     for clip_idx, clip in enumerate(clips):
@@ -446,6 +458,7 @@ def streaming_assemble_full(
     captured_at: datetime | None = None,
 ) -> Path:
     """Full streaming assembly: plan-bound video encode + audio mix + mux."""
+    probe_cache = probe_cache or ProbeCache()
     plan = encoding_plan or _default_streaming_plan()
     work_dir = output_path.parent / ".streaming_work"
     work_dir.mkdir(parents=True, exist_ok=True)
@@ -456,8 +469,7 @@ def streaming_assemble_full(
     audio_work_dir.mkdir(exist_ok=True)
 
     try:
-        if progress_callback:
-            progress_callback(0.07, "Streaming video assembly...")
+        _notify_assembly_stage(progress_callback, 0.07, "Streaming video assembly...")
 
         # WHY: Scale frame-level progress into [0.07, 0.85) range so the caller
         # sees continuous updates during the heavy encode phase.
@@ -496,10 +508,10 @@ def streaming_assemble_full(
             frame_preview_callback=frame_preview_callback,
             audio_work_dir=audio_work_dir,
             effective_plan_callback=effective_plan_callback,
+            probe_cache=probe_cache,
         )
 
-        if progress_callback:
-            progress_callback(0.85, "Mixing audio...")
+        _notify_assembly_stage(progress_callback, 0.85, "Mixing audio...")
 
         # WHY: Probe actual video duration so the audio filter graph can
         # clamp its output to match. This avoids re-encoding audio in the
@@ -519,8 +531,7 @@ def streaming_assemble_full(
             probe_cache=probe_cache,
         )
 
-        if progress_callback:
-            progress_callback(0.95, "Muxing final output...")
+        _notify_assembly_stage(progress_callback, 0.95, "Muxing final output...")
 
         mux_video_audio(video_only, audio_only, output_path, captured_at)
 

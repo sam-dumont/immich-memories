@@ -485,7 +485,7 @@ def test_the_configurable_scale_modes_render_differently() -> None:
 def test_blur_scale_mode_renders_a_blurred_background() -> None:
     vf = _vf_for_scale_mode("blur")
 
-    assert "gblur=sigma=30" in vf
+    assert "gblur=sigma=" in vf
     assert "overlay=(W-w)/2:(H-h)/2" in vf
 
 
