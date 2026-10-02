@@ -158,7 +158,6 @@ def create_animated_gradient(
     sin_a = math.sin(angle_rad)
     diagonal = math.sqrt(width**2 + height**2)
 
-    # Get cached coordinate grids (memory optimization for 4K)
     y_coords, x_coords = _get_coord_grids(width, height)
 
     # Center and project (vectorized)
@@ -226,7 +225,6 @@ def create_animated_radial(
     center_y = height / 2
     max_radius = math.sqrt(center_x**2 + center_y**2) * radius_factor
 
-    # Get cached coordinate grids (memory optimization for 4K)
     y_coords, x_coords = _get_coord_grids(width, height)
 
     # Calculate distance (vectorized)
@@ -285,7 +283,6 @@ def create_animated_vignette(
     max_dist_x = center_x
     max_dist_y = center_y
 
-    # Get cached coordinate grids (memory optimization for 4K)
     y_coords, x_coords = _get_coord_grids(width, height)
 
     # Elliptical distance (vectorized)
