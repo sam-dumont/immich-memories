@@ -338,7 +338,9 @@ def get_ffmpeg_encoder(
         # and quality therefore both keep speed priority disabled; output
         # quality is supplied separately from the requested CRF.
         "apple": {"fast": "1", "balanced": "0", "quality": "0"},
-        "vaapi": {"fast": "1", "balanced": "4", "quality": "7"},
+        # VAAPI quality levels run in the opposite direction to NVENC presets:
+        # 1 is highest quality; higher levels trade quality for speed.
+        "vaapi": {"fast": "7", "balanced": "4", "quality": "1"},
         "qsv": {"fast": "veryfast", "balanced": "medium", "quality": "veryslow"},
         "software": {"fast": "veryfast", "balanced": "medium", "quality": "slow"},
     }
