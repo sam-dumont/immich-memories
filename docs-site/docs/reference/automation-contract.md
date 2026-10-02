@@ -245,7 +245,7 @@ kubectl apply -f deploy/kubernetes/base/job.yaml
 
 ## A named memory on a named date
 
-The one thing `auto` cannot say is "a year in review every 15 January". A cron line (or a Kubernetes CronJob like the monthly one above) that runs `generate` says it. Replace `/absolute/path/to/immich-memories` with the installed executable and set cron’s `PATH` to include FFmpeg and other required tools:
+The one thing `auto` cannot say is "a year in review every 15 January". A cron line that runs `generate` says it. The shipped Kubernetes monthly trigger uses the normal `auto run` decision and does not force a monthly film. Replace `/absolute/path/to/immich-memories` with the installed executable and set cron’s `PATH` to include FFmpeg and other required tools:
 
 ```bash
 # 15 January, 09:00: last year's review, uploaded to an album
