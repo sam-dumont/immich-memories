@@ -2,6 +2,7 @@
 
 import io
 import math
+import random
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -23,6 +24,8 @@ def tile_server(monkeypatch, request, tile_requests):
     ImageDraw.Draw(image).rectangle((0, 0, 127, 127), fill=(180, 40, 90))
     encoded = io.BytesIO()
     tile_format = getattr(request, "param", "PNG")
+    if tile_format == "noise":
+        image = Image.frombytes("RGB", (256, 256), random.Random(1756).randbytes(256 * 256 * 3))
     if tile_format == "transparent":
         image = image.convert("RGBA")
         image.putalpha(128)
@@ -239,3 +242,179 @@ def test_card_releases_decoded_pixels_even_when_encoding_fails(
         map_animation.create_map_move_video((0, 0), (1, 1), "", tmp_path / "card.mp4", 1, **kwargs)
     assert len(map_animation.tile_cache) == 0
     assert map_animation.tile_cache.decode("tile", content) is not borrowed[0]
+
+
+@pytest.mark.parametrize(
+    "tile_server,width,height,zoom,cpus,expected_workers",
+    [
+        ("JPEG", 1921, 1082, 12.5, 2, 2),
+        ("transparent", 1081, 1922, 12.99, 2, 2),
+        ("PNG", 1921, 1082, 12.01, 2, 2),
+        ("noise", 1921, 1081, 12.37, 3, 1),
+        ("noise", 1920, 1080, 12.37, 3, 2),
+    ],
+    indirect=["tile_server"],
+)
+def test_large_map_resize_uses_available_workers_without_changing_pixels(
+    tile_server, tmp_path, monkeypatch, width, height, zoom, cpus, expected_workers
+):
+    from immich_memories.processing import memory_budget as budgets
+
+    (tmp_path / "cpu.max").write_text(f"{cpus * 100000} 100000")
+    (tmp_path / "memory.max").write_text(str(4 * 2**30))
+    # WHY: read real cgroup files with a controlled CPU and memory limit.
+    monkeypatch.setattr(budgets, "_CGROUP", tmp_path)
+    budget = budgets.memory_budget()
+    if budgets.available_cpus() < 2 or budget is None or budget.size < 4 * 2**30:
+        pytest.skip("Parallel resizing requires two CPUs and 4 GiB of physical RAM")
+    scale = 2 ** (math.ceil(zoom) - zoom)
+    renderer = StaticMap(
+        math.ceil(width * scale), math.ceil(height * scale), url_template=tile_server
+    )
+    expected = renderer.render(zoom=13, center=[2.35, 48.86]).resize(
+        (width, height), Image.Resampling.LANCZOS
+    )
+    workers = set()
+    resize = Image.Image.resize
+
+    def observe(image, *args, **kwargs):
+        workers.add(threading.get_ident())
+        return resize(image, *args, **kwargs)
+
+    # WHY: observe real resampling; equal pixels alone cannot reveal parallel work.
+    monkeypatch.setattr(Image.Image, "resize", observe)
+    actual = map_animation._render_satellite(48.86, 2.35, zoom, width, height)
+
+    assert actual.tobytes() == expected.tobytes()
+    assert len(workers) == expected_workers
+
+
+@pytest.mark.parametrize(
+    "limit,width,height,cpus",
+    [(3 * 2**30, 1921, 1081, 2), (4 * 2**30, 320, 180, 2), (4 * 2**30, 1921, 1081, 1)],
+    ids=["low-memory", "small-frame", "one-cpu"],
+)
+def test_bounded_map_keeps_a_single_full_frame_resize(
+    tile_server, tmp_path, monkeypatch, limit, width, height, cpus
+):
+    from immich_memories.processing import memory_budget as budgets
+
+    (tmp_path / "cpu.max").write_text(f"{cpus * 100000} 100000")
+    (tmp_path / "memory.max").write_text(str(limit))
+    # WHY: read an actual cgroup fixture without replacing memory/CPU detection.
+    monkeypatch.setattr(budgets, "_CGROUP", tmp_path)
+    if cpus > 1 and budgets.available_cpus() < 2:
+        pytest.skip("The regression requires at least two available CPUs")
+    calls = []
+    resize = Image.Image.resize
+
+    def observe(image, size, *args, **kwargs):
+        calls.append((threading.get_ident(), size, kwargs.get("box")))
+        return resize(image, size, *args, **kwargs)
+
+    # WHY: count actual resampling allocations, which pixel equality cannot reveal.
+    monkeypatch.setattr(Image.Image, "resize", observe)
+    frame = map_animation._render_satellite(48.86, 2.35, 12.5, width, height)
+
+    assert frame.size == (width, height)
+    assert calls == [(threading.get_ident(), (width, height), None)]
+
+
+@pytest.mark.integration
+def test_parallel_map_card_preserves_every_encoded_frame_and_audio(
+    tile_server, tmp_path, monkeypatch
+):
+    import json
+    import shutil
+    import subprocess
+
+    from immich_memories.processing import memory_budget as budgets
+    from immich_memories.processing.encoding_plan import EncodingPlan, HdrTransfer, OutputCodec
+
+    if shutil.which("ffmpeg") is None:
+        pytest.skip("FFmpeg is unavailable")
+    (tmp_path / "memory.max").write_text(str(4 * 2**30))
+    (tmp_path / "cpu.max").write_text("200000 100000")
+    # WHY: exercise real resource-file reads at controlled container limits.
+    monkeypatch.setattr(budgets, "_CGROUP", tmp_path)
+    budget = budgets.memory_budget()
+    if budgets.available_cpus() < 2 or budget is None or budget.size < 4 * 2**30:
+        pytest.skip("Parallel resizing requires two CPUs and 4 GiB of physical RAM")
+    plan = EncodingPlan(
+        OutputCodec.H264,
+        "libx264",
+        ("-preset", "ultrafast", "-crf", "18", "-threads", "1"),
+        HdrTransfer.NONE,
+        False,
+        "yuv420p",
+        "mp4",
+    )
+    strips = []
+    resize = Image.Image.resize
+
+    def observe(image, *args, **kwargs):
+        if kwargs.get("box") is not None:
+            strips.append(kwargs["box"])
+        return resize(image, *args, **kwargs)
+
+    # WHY: confirm the real encoded card actually exercised the parallel path.
+    monkeypatch.setattr(Image.Image, "resize", observe)
+    hashes = []
+    for cpus in [1, 2]:
+        (tmp_path / "cpu.max").write_text(f"{cpus * 100000} 100000")
+        output = map_animation.create_map_move_video(
+            (48.86, 2.35),
+            (38.72, -9.14),
+            "A journey",
+            tmp_path / f"{cpus}.mp4",
+            3.0,
+            1920,
+            1080,
+            4.0,
+            encoding_plan=plan,
+        )
+        streams = json.loads(
+            subprocess.check_output(
+                [
+                    "ffprobe",
+                    "-v",
+                    "error",
+                    "-count_frames",
+                    "-show_streams",
+                    "-of",
+                    "json",
+                    str(output),
+                ],
+                timeout=30,
+            )
+        )["streams"]
+        video = next(s for s in streams if s["codec_type"] == "video")
+        audio = next(s for s in streams if s["codec_type"] == "audio")
+        assert (video["width"], video["height"], video["nb_read_frames"]) == (1920, 1080, "12")
+        assert float(video["duration"]) == pytest.approx(3.0)
+        assert (audio["sample_rate"], audio["channels"]) == ("48000", 2)
+        hashes.append(
+            [
+                subprocess.check_output(
+                    [
+                        "ffmpeg",
+                        "-v",
+                        "error",
+                        "-xerror",
+                        "-i",
+                        str(output),
+                        "-map",
+                        stream,
+                        "-f",
+                        "hash",
+                        "-hash",
+                        "sha256",
+                        "-",
+                    ],
+                    timeout=30,
+                )
+                for stream in ["0:v:0", "0:a:0"]
+            ]
+        )
+    assert strips
+    assert hashes[0] == hashes[1]

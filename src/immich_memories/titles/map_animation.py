@@ -8,6 +8,7 @@ import math
 import subprocess
 import time
 from collections.abc import Callable, Iterator
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from itertools import starmap
 from pathlib import Path
@@ -18,6 +19,7 @@ from PIL import Image, ImageDraw
 from immich_memories.processing.encoding_plan import EncodingPlan
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 from immich_memories.processing.map_move_timing import MapMoveTiming
+from immich_memories.processing.memory_budget import available_cpus, memory_budget
 from immich_memories.titles.ffmpeg_pipe import StderrDrain
 
 from .colors import ceil_rgb_for_hdr
@@ -189,8 +191,39 @@ def _render_satellite(lat: float, lon: float, zoom: float, w: int, h: int) -> Im
         img = Image.new("RGB", (rw, rh), (40, 50, 60))
 
     if img.size != (w, h):
-        img = img.resize((w, h), Image.Resampling.LANCZOS)
+        img = _resize_satellite_frame(img, w, h)
     return img
+
+
+def _resize_satellite_frame(image: Image.Image, width: int, height: int) -> Image.Image:
+    budget = memory_budget()
+    cpus = available_cpus()
+    # Fractional source boxes can change Lanczos weights. Equal power-of-two
+    # strips keep each source boundary exactly representable.
+    workers = 4 if cpus >= 4 and height % 4 == 0 else 2
+    # Parallel strips keep an extra output frame and concurrent intermediates.
+    if (
+        cpus < 2
+        or height % 2
+        or width * height < 1920 * 1080
+        or budget is None
+        or budget.size < 4 * 2**30
+    ):
+        return image.resize((width, height), Image.Resampling.LANCZOS)
+
+    def resize_strip(index: int) -> tuple[int, Image.Image]:
+        top = index * height // workers
+        bottom = (index + 1) * height // workers
+        # Keep global source coordinates so each strip has the same filter
+        # support and sampling positions as the full-frame Lanczos operation.
+        box = (0, top * image.height / height, image.width, bottom * image.height / height)
+        return top, image.resize((width, bottom - top), Image.Resampling.LANCZOS, box=box)
+
+    result = Image.new("RGB", (width, height))
+    with ThreadPoolExecutor(workers) as pool:
+        for top, strip in pool.map(resize_strip, range(workers)):
+            result.paste(strip, (0, top))
+    return result
 
 
 def _draw_pins(
