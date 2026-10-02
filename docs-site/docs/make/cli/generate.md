@@ -5,9 +5,12 @@ description: CLI recipes for a month, a person, a trip and a saved cut.
 
 # Generate a film
 
-`generate` prepares pictures, selects a cut and renders it. Start with one month:
+`generate` prepares pictures, selects a cut and renders it. Fetch the pinned models once before
+the first run, then start with one month:
 
 ```bash
+immich-memories models fetch
+immich-memories preflight
 immich-memories generate --memory-type monthly_highlights --year 2025 --month 6
 ```
 
