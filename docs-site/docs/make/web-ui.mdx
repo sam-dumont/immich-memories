@@ -54,3 +54,8 @@ Concurrent saves keep separate numbered cut revisions. Invalid JSON text, NUL ch
 unpaired Unicode surrogates and nesting beyond 64 levels return a client error before a job
 starts. Music uploads must contain an audio stream with a positive duration; truncated files
 are refused, and an unavailable audio probe asks you to install FFmpeg.
+
+If the cache or output disk fills up, the API returns a storage-full message (HTTP 507).
+Free space before retrying. A failed revision save keeps earlier revisions and removes its
+temporary file. A job whose initial record cannot be saved is stopped before returning the
+error, so it cannot keep working without a job the page can follow or cancel.

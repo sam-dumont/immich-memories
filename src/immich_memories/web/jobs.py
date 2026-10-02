@@ -149,7 +149,20 @@ class JobRunner:
                 meta=meta or {},
             )
             self._processes[job_id] = process
-            self._save(job)
+            try:
+                self._save(job)
+            except OSError:
+                # Without a durable record the page cannot follow or cancel this child.
+                self._processes.pop(job_id, None)
+                with suppress(ProcessLookupError):
+                    os.killpg(process.pid, signal.SIGTERM)
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    with suppress(ProcessLookupError):
+                        os.killpg(process.pid, signal.SIGKILL)
+                    process.wait()
+                raise
         threading.Thread(
             target=self._follow, args=(job_id, process, on_finish), daemon=True
         ).start()

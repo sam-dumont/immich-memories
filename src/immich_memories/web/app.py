@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -43,6 +44,15 @@ async def _immich_refused(_request: Request, error: Exception) -> JSONResponse:
     return JSONResponse({"detail": sanitize_error_message(str(error))}, status_code=502)
 
 
+async def _storage_refused(_request: Request, error: Exception) -> JSONResponse:
+    if not isinstance(error, OSError) or error.errno not in (errno.ENOSPC, errno.EDQUOT):
+        raise error
+    return JSONResponse(
+        {"detail": "Storage is full. Free space in the cache or output folder, then retry."},
+        status_code=507,
+    )
+
+
 def mount_web(app: FastAPI, *, client_dir: Path = BUILT_CLIENT) -> None:
     """Add the /api/v1 routes and serve the client under /app."""
     app.middleware("http")(validate_json_request)
@@ -61,6 +71,7 @@ def mount_web(app: FastAPI, *, client_dir: Path = BUILT_CLIENT) -> None:
     app.include_router(media.router)
     app.include_router(i18n.router)
     app.add_exception_handler(ImmichAPIError, _immich_refused)
+    app.add_exception_handler(OSError, _storage_refused)
     root = client_dir.resolve()
 
     async def client(path: str = "") -> Response:

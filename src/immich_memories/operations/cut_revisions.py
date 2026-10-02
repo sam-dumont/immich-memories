@@ -152,9 +152,12 @@ def _write(folder: Path, revision: CutRevision) -> None:
     if target.exists():
         raise RevisionRefused(f"Revision {revision.number} already exists")
     handle, temporary = tempfile.mkstemp(dir=folder, suffix=".tmp")
-    with os.fdopen(handle, "w") as stream:
-        json.dump(_as_dict(revision), stream, indent=2)
-    os.replace(temporary, target)
+    try:
+        with os.fdopen(handle, "w") as stream:
+            json.dump(_as_dict(revision), stream, indent=2)
+        os.replace(temporary, target)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
 
 
 def _checked_additions(board: Storyboard, edits: CutEdits, pool: Mapping[str, Asset]) -> None:

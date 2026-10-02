@@ -172,6 +172,7 @@ dev = [
     "pytest-playwright>=0.5",
     # Privacy audio tests (lightweight, no torch needed)
     "soundfile>=0.12",
+    "hypothesis>=6.168.3",
 ]
 
 [project.scripts]
