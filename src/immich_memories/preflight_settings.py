@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from immich_memories.config_loader import Config
 from immich_memories.preflight import CheckResult, CheckStatus
-from immich_memories.settings_store import settings_store
+from immich_memories.settings_store import read_settings
 
 _NAME = "Saved settings"
 
@@ -17,8 +17,8 @@ _NAME = "Saved settings"
 def check_stored_settings(config: Config) -> CheckResult:
     """An error naming every ignored stored key; OK when the store has none."""
     try:
-        store = settings_store(config, create=False)
-        ignored = store.ignored() if store is not None else {}
+        with read_settings(config) as store:
+            ignored = store.ignored() if store is not None else {}
     except Exception as error:  # noqa: BLE001 -- an unreachable store is its own check's finding
         return CheckResult(
             _NAME, CheckStatus.WARNING, "Saved settings could not be read", type(error).__name__
