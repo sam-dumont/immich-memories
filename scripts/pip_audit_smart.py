@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Smart pip-audit: warns on unfixable vulns, fails on fixable ones, fails closed.
+"""Fail closed on advisories except the exact reviewed, unpatched NLTK finding.
 
 Parses pip-audit's default text output format:
     Name     Version ID            Fix Versions
@@ -13,7 +13,7 @@ turned a crashed audit into a green check.
 
 --audit-exit carries pip-audit's own exit code, which a shell pipeline discards.
 `pipefail` cannot be used instead: --strict exits non-zero for *any* finding,
-which would override the policy of passing when nothing has an upstream fix.
+which would override the narrowly reviewed exception in SECURITY.md.
 
 Usage: uvx pip-audit -r reqs.txt --strict > out 2>&1; code=$?
        python3 scripts/pip_audit_smart.py --audit-exit "$code" < out
@@ -29,6 +29,12 @@ EXIT_INCONCLUSIVE = 2
 
 CLEAN_MARKER = "No known vulnerabilities found"
 VULN_PATTERN = re.compile(r"^(\S+)[ \t]+(\S+)[ \t]+((?:CVE|GHSA|PYSEC)-\S+)[ \t]*(.*?)$", re.MULTILINE)
+# SECURITY.md records the reachability review. A new version/advisory needs a new review;
+# an available fix always fails, even for this previously accepted advisory.
+REVIEWED = {
+    ("nltk", "3.10.3", advisory)
+    for advisory in ("PYSEC-2026-3740", "GHSA-8mgp-746c-j5xp", "CVE-2026-81726")
+}
 
 
 def _inconclusive(reason: str, output: str) -> None:
@@ -58,7 +64,7 @@ def main() -> None:
             f"pip-audit exited {args.audit_exit} - it crashed rather than finishing.", text
         )
 
-    if CLEAN_MARKER in text:
+    if CLEAN_MARKER in text and not VULN_PATTERN.search(text) and args.audit_exit in (None, 0):
         print("No known vulnerabilities found.")
         sys.exit(EXIT_OK)
 
@@ -76,20 +82,19 @@ def main() -> None:
             unfixable.append((name, version, vuln_id))
 
     for name, version, vuln_id in unfixable:
-        print(f"WARN  {name} {version} ({vuln_id}) - no fix available yet")
+        level = "WARN" if (name, version, vuln_id) in REVIEWED else "FAIL"
+        print(f"{level}  {name} {version} ({vuln_id}) - no fix available yet")
     for name, version, vuln_id, fix in fixable:
         print(f"FAIL  {name} {version} ({vuln_id}) - fix available: {fix}")
 
     total = len(fixable) + len(unfixable)
     print(f"\n{total} vulnerabilities: {len(fixable)} fixable, {len(unfixable)} unfixable")
 
-    if fixable:
-        print("\nFailing - fixable vulnerabilities exist. Update the affected packages.")
+    if fixable or any(finding not in REVIEWED for finding in unfixable):
+        print("\nFailing - update affected packages or explicitly review the new advisory.")
         sys.exit(EXIT_VULNERABLE)
 
-    # Deliberate: there is nothing to update to, and failing here would only
-    # teach people to ignore the gate.
-    print("\nPassing - every vulnerability found is unfixable upstream.")
+    print("\nPassing - only the exact reviewed advisory remains, without an upstream fix.")
     sys.exit(EXIT_OK)
 
 

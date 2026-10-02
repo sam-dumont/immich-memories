@@ -1341,4 +1341,5 @@ the payload keys, model pins, bundle, labels and sampling; app versions do not r
 
 The web JSON boundary (`web/request_validation.py`) rejects malformed text and excessive nesting
 before route validation. Revision allocation and publication share the existing cross-process
-file lock.
+file lock. Configuration's endpoint policy (`config_endpoint_policy.py`) applies on load and
+Settings save, with a process-environment-only link-local override.

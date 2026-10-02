@@ -107,6 +107,12 @@ IMMICH_MEMORIES_IMMICH__API_VERSION="auto"
 `auto` detects v2 or v3 at runtime; set `v2`/`v3` only to diagnose a proxy that breaks detection.
 [Check the connection](./config-file.md#immich-api-compatibility) with `config test`.
 
+## Link-local services
+
+`IMMICH_MEMORIES_ALLOW_LINK_LOCAL_URLS=true` permits literal link-local addresses for configured
+service URLs. It is off by default and only read from the process environment, never Settings.
+See [configured service addresses](./network-security.md#configured-service-addresses).
+
 ## The ones that do not follow the pattern
 
 Session/encryption keys, logging and local ACE-Step process settings have their own names.

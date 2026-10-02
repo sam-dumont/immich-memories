@@ -58,7 +58,7 @@ def test_configured_secret_values_include_only_current_secret_fields() -> None:
         "ace-step-credential",
         "basic-auth-password",
         "oidc-client-secret",
-        "https://notify.test/embedded-credential",
+        "jsons://notify.test/embedded-credential",
     }
     config = Config(
         immich={"url": "http://immich.test", "api_key": "immich-credential"},
@@ -77,7 +77,7 @@ def test_configured_secret_values_include_only_current_secret_fields() -> None:
             "client_id": "ordinary-client-id",
             "client_secret": "oidc-client-secret",
         },
-        notifications={"urls": ["https://notify.test/embedded-credential"]},
+        notifications={"urls": ["jsons://notify.test/embedded-credential"]},
     )
 
     actual = security.configured_secret_values(config)
