@@ -12,13 +12,14 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import Mapping
+from contextlib import suppress
 from dataclasses import dataclass
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 # Room for the multipart or JSON envelope around the payload a route caps itself.
 ENVELOPE_BYTES = 1024 * 1024
-RETRY_AFTER_SECONDS = 5
+RETRY_AFTER_SECONDS = 1
 
 
 @dataclass(frozen=True)
@@ -82,10 +83,8 @@ async def _capped(app: ASGIApp, ceiling: int, scope: Scope, receive: Receive, se
         started = True
         await send(message)
 
-    try:
+    with suppress(BodyTooLarge):
         await app(scope, counted, guarded)
-    except BodyTooLarge:
-        pass
     if exceeded and not started:
         await _refuse(send, 413, f"request body is larger than {ceiling} bytes")
 
