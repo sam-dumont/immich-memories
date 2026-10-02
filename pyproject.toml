@@ -166,7 +166,7 @@ dev = [
     "import-linter>=2.0",
     "grimp>=3.0",
     "deptry>=0.20",
-    "diff-cover>=9.0",
+    "diff-cover>=10.6.0",
     "oidc-provider-mock>=0.3",
     # E2E browser tests
     "pytest-playwright>=0.5",
