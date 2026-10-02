@@ -195,7 +195,10 @@ def test_dependency_audit_uses_the_frozen_ci_resolution() -> None:
     """Security results must not depend on the caller's ambient virtualenv."""
     commands = _make_dry_run("pip-audit")
 
-    assert "uv export --frozen --extra dev --no-emit-project --no-hashes" in commands
+    assert (
+        "uv export --frozen --extra dev --extra all --no-emit-project --no-emit-package immich-memories-music --no-hashes"
+        in commands
+    )
     assert "uv pip freeze" not in commands
     # The export is pinned: re-resolving it from PyPI's index only adds a way to fail.
     assert "--no-deps --disable-pip" in commands

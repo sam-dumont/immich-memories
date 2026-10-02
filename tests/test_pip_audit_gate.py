@@ -45,10 +45,8 @@ def test_a_fixable_vulnerability_fails() -> None:
     assert run(FIXABLE) == 1
 
 
-def test_vulnerabilities_with_no_upstream_fix_still_pass() -> None:
-    """Deliberate policy: nothing to update to, so failing would only teach
-    people to ignore the gate."""
-    assert run(UNFIXABLE) == 0
+def test_unreviewed_vulnerabilities_fail_even_without_an_upstream_fix() -> None:
+    assert run(UNFIXABLE) == 1
 
 
 def test_unresolvable_dependencies_fail_instead_of_skipping() -> None:
@@ -72,10 +70,8 @@ def test_a_crashed_audit_fails_even_if_its_output_looks_clean() -> None:
     assert run(CLEAN, audit_exit=2) != 0
 
 
-def test_a_nonzero_exit_with_only_unfixable_vulns_still_passes() -> None:
-    """pip-audit --strict exits 1 on any vulnerability, including ones with no
-    fix. The unfixable policy has to survive that."""
-    assert run(UNFIXABLE, audit_exit=1) == 0
+def test_a_nonzero_exit_with_unreviewed_findings_fails() -> None:
+    assert run(UNFIXABLE, audit_exit=1) == 1
 
 
 def test_a_clean_exit_code_passes() -> None:
@@ -93,3 +89,15 @@ def test_adjacent_unfixable_and_fixable_rows_keep_their_own_advisories() -> None
     assert "WARN  nltk 3.10.3 (PYSEC-2026-3740) - no fix available yet" in result.stdout
     assert "FAIL  oauthlib 3.3.1 (CVE-2026-49265) - fix available: 4.0.0" in result.stdout
     assert "2 vulnerabilities: 1 fixable, 1 unfixable" in result.stdout
+
+
+def test_only_the_reviewed_nltk_version_and_advisory_pass():
+    assert run("nltk 3.10.3 PYSEC-2026-3740\n", audit_exit=1) == 0
+    assert run("nltk 3.10.4 PYSEC-2026-3740\n", audit_exit=1) == 1
+    assert run("nltk 3.10.3 CVE-2026-99999\n", audit_exit=1) == 1
+    assert run("nltk 3.10.3 PYSEC-2026-3740 3.10.4\n", audit_exit=1) == 1
+
+
+def test_a_clean_marker_cannot_hide_findings_or_a_failing_exit():
+    assert run(CLEAN + UNFIXABLE, audit_exit=1) == 1
+    assert run(CLEAN, audit_exit=1) != 0

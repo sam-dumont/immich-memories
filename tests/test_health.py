@@ -29,7 +29,7 @@ def _config_with_every_secret_class() -> Config:
             "password": "basic-password-log-secret",
             "client_secret": "oidc-client-log-secret",
         },
-        notifications={"urls": ["https://notify.test/notification-log-secret"]},
+        notifications={"urls": ["jsons://notify.test/notification-log-secret"]},
     )
 
 

@@ -374,6 +374,13 @@ class Config(BaseSettings):
         return data
 
     @model_validator(mode="after")
+    def _check_service_endpoints(self) -> Config:
+        from immich_memories.config_endpoint_policy import validate_service_endpoints
+
+        validate_service_endpoints(self)
+        return self
+
+    @model_validator(mode="after")
     def _apply_preset(self) -> Config:
         apply_preset(self)
         return self

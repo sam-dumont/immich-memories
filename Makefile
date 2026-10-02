@@ -668,12 +668,12 @@ diff-cover:
 # The export is fully pinned, so pip-audit audits it as-is (--no-deps --disable-pip).
 # Without those flags it builds a virtualenv and re-resolves all ~165 packages from
 # PyPI's index on every run, and a slow index then fails the audit with nothing audited.
-pip-audit:  ## Check dependencies for known vulnerabilities (warns on unfixable, fails on fixable)
+pip-audit:  ## Audit dev and the all extra shipped in the application image
 	@set -eu; \
 	REQS=$$(mktemp "$${TMPDIR:-/tmp}/pip-audit-reqs.XXXXXX"); \
 	OUT=$$(mktemp "$${TMPDIR:-/tmp}/pip-audit-out.XXXXXX"); \
 	trap 'rm -f "$$REQS" "$$OUT"' EXIT; \
-	uv export --frozen --extra dev --no-emit-project --no-hashes > "$$REQS"; \
+	uv export --frozen --extra dev --extra all --no-emit-project --no-emit-package immich-memories-music --no-hashes > "$$REQS"; \
 	COUNT=$$(grep -c '==' "$$REQS" || true); \
 	if [ "$$COUNT" -lt 50 ]; then \
 		echo "uv export produced $$COUNT pinned packages - too few to be the real dependency set, refusing to report a clean audit"; \
@@ -682,6 +682,11 @@ pip-audit:  ## Check dependencies for known vulnerabilities (warns on unfixable,
 	echo "auditing $$COUNT pinned packages"; \
 	set +e; uvx pip-audit -r "$$REQS" --no-deps --disable-pip --timeout 60 --strict > "$$OUT" 2>&1; AUDIT_EXIT=$$?; set -e; \
 	python3 scripts/pip_audit_smart.py --audit-exit "$$AUDIT_EXIT" < "$$OUT"
+
+.PHONY: npm-audit
+npm-audit:  ## Audit the client toolchain and documentation runtime dependencies
+	cd web && npm audit --audit-level=high
+	cd docs-site && npm audit --omit=dev --audit-level=high
 
 diff-cover-local:  ## Check diff-cover locally before pushing (runs tests + merges integration coverage)
 	@echo "Running unit tests with coverage..."

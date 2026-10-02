@@ -154,3 +154,18 @@ Terraform does not create a NetworkPolicy.
 
 Prefer HTTPS for services beyond loopback. Review access to deployment Secrets, Terraform state,
 backup files and worker hosts as access to your library.
+
+
+## Configured service addresses
+
+Reader, caption, inference, geocoding, music and render-worker endpoints must use HTTP or HTTPS.
+Notification URLs use Apprise's supported schemes. Loading configuration or saving Settings
+rejects literal link-local addresses (`169.254.0.0/16`, `fe80::/10`, including mapped IPv4).
+Ordinary private LAN addresses remain supported.
+
+An operator who needs a link-local service can set `IMMICH_MEMORIES_ALLOW_LINK_LOCAL_URLS=true`
+in the app's process environment and restart it. Settings cannot change this override. This is
+a guard against accidental configuration: it does not resolve DNS names or inspect redirects.
+
+The [project threat model](https://github.com/sam-dumont/immich-video-memory-generator/blob/main/docs/security/threat-model.md)
+lists the trust boundaries and accepted deployment limits.
