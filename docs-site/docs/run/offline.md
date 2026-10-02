@@ -8,6 +8,8 @@ This recipe runs NAS with the rules reader and bundled music. After preparation,
 contacts Immich; it does not need a hosted reader, a caption service or a music generator.
 The network boundary enforces that choice. Turning off features alone is not a firewall.
 These examples have local configuration checks, not a production NAS or Kubernetes deployment test.
+Tried this on your setup? Report your platform/version, a denied outbound destination and
+your first film result in [#1804](https://github.com/sam-dumont/immich-video-memory-generator/issues/1804).
 
 ## Fetch before closing the network
 
