@@ -46,3 +46,16 @@ API keys stay masked. To save secrets from the UI, configure `IMMICH_MEMORIES_SE
 Start with [People and home](../get-started/who-is-who.md), then [titles, maps and music](./titles-maps-music.md). Precedence, encryption, caches and job details: [Web UI reference](../reference/web-ui-details.md).
 
 The **Render** panel lets you choose a white or black **Opening and closing fade** for this film. **As configured** uses the saved `title_screens.fade_color` setting. [Titles, maps and music](./titles-maps-music.md) covers the lasting default.
+
+
+### Input and saved edits
+
+Concurrent saves keep separate numbered cut revisions. Invalid JSON text, NUL characters,
+unpaired Unicode surrogates and nesting beyond 64 levels return a client error before a job
+starts. Music uploads must contain an audio stream with a positive duration; truncated files
+are refused, and an unavailable audio probe asks you to install FFmpeg.
+
+If the cache or output disk fills up, the API returns a storage-full message (HTTP 507).
+Free space before retrying. A failed revision save keeps earlier revisions and removes its
+temporary file. A job whose initial record cannot be saved is stopped before returning the
+error, so it cannot keep working without a job the page can follow or cancel.

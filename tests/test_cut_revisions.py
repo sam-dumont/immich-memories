@@ -140,3 +140,39 @@ def test_an_added_picture_has_to_come_from_the_pool_and_be_new_to_the_cut(attemp
 
     with pytest.raises(RevisionRefused, match=reason):
         save_revision(attempt, CutEdits(added=added))
+
+
+def test_concurrent_saves_keep_every_successful_edit(attempt):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    start = Barrier(16)
+
+    def save(index):
+        start.wait(timeout=10)
+        return save_revision(attempt, CutEdits(segments={"lake-1": (0.0, index + 1.0)}))
+
+    with ThreadPoolExecutor(max_workers=16) as writers:
+        saved = list(writers.map(save, range(16)))
+
+    history = read_revisions(attempt)
+    assert len(history) == len(saved) == 16
+    assert {revision.number for revision in saved} == set(range(1, 17))
+    assert {revision.edits.segments["lake-1"] for revision in history} == {
+        (0.0, index + 1.0) for index in range(16)
+    }
+
+
+def test_separate_processes_share_the_revision_number_sequence(attempt):
+    from concurrent.futures import ProcessPoolExecutor
+    from itertools import repeat
+    from multiprocessing import get_context
+
+    edits = [CutEdits(segments={"lake-1": (0.0, index + 1.0)}) for index in range(16)]
+    with ProcessPoolExecutor(max_workers=4, mp_context=get_context("spawn")) as writers:
+        saved = list(writers.map(save_revision, repeat(attempt), edits))
+
+    assert {revision.number for revision in saved} == set(range(1, 17))
+    assert {revision.edits.segments["lake-1"] for revision in read_revisions(attempt)} == {
+        (0.0, index + 1.0) for index in range(16)
+    }

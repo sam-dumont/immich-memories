@@ -49,7 +49,11 @@ class TestS10MusicUploadIsChecked:
         return client.post("/api/v1/music", files={"file": (name, payload)}).status_code
 
     def test_an_audio_file_is_kept(self, tmp_path):
-        assert self._upload(tmp_path, "track.mp3", b"ID3\x04\x00\x00\x00") == 201
+        from tests.generated_audio_fixtures import write_audio
+
+        track = tmp_path / "track.wav"
+        write_audio(track, 0.1)
+        assert self._upload(tmp_path, "track.wav", track.read_bytes()) == 201
 
     def test_a_non_audio_name_is_rejected(self, tmp_path):
         assert self._upload(tmp_path, "evil.exe", b"ID3\x04\x00\x00\x00") == 422

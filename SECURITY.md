@@ -29,6 +29,8 @@ of the queue, but "the front of the queue" realistically means a few days, somet
 week passes with no reply, open a public issue asking me to check my inbox, without describing
 the vulnerability.
 
+The [threat model](docs/security/threat-model.md) describes assets, trust boundaries and accepted limits.
+
 ## Deployment posture (short version)
 
 - Authentication is **off by default**. Outside Docker the UI then binds `127.0.0.1` unless you
@@ -77,17 +79,22 @@ that carries it has a `.sigstore.json` asset alongside the wheel.
 Wheels and sdists carry the attestation as a release asset:
 
 ```bash
-VERSION=0.59.2  # whichever release you are checking
+VERSION=0.103.0  # choose a release that includes the .sigstore.json bundle
 gh release download "v$VERSION" --repo sam-dumont/immich-video-memory-generator
 gh attestation verify "immich_memories-$VERSION-py3-none-any.whl" \
   --repo sam-dumont/immich-video-memory-generator \
   --bundle "immich_memories-$VERSION.sigstore.json"
 ```
 
-Docker images carry it in the registry, so no download is needed:
+The application image carries provenance for each platform digest. Verify the digest for your
+platform rather than the multi-platform tag. Inference images do not yet have the same explicit
+GitHub attestation step. For the Linux amd64 application image:
 
 ```bash
-gh attestation verify oci://ghcr.io/sam-dumont/immich-video-memory-generator:latest \
+IMAGE=ghcr.io/sam-dumont/immich-video-memory-generator:0.103.0
+DIGEST=$(docker buildx imagetools inspect "$IMAGE" --raw | jq -r \
+  '.manifests[] | select(.platform.os == "linux" and .platform.architecture == "amd64") | .digest')
+gh attestation verify "oci://${IMAGE%:*}@$DIGEST" \
   --repo sam-dumont/immich-video-memory-generator
 ```
 
@@ -96,8 +103,17 @@ tools that expect the SLSA layout rather than a Sigstore bundle.
 
 ## Dependencies
 
-The pip-audit gate blocks any PR that introduces a dependency with a known CVE. To pick up the
-patches, upgrade:
+`make pip-audit` checks the locked development dependencies and the `all` extra used by the
+application image. It excludes the local music package itself from PyPI resolution, while
+including its exported dependencies. Findings fail unless they match the exact reviewed NLTK
+package, version and advisory below with no fix available. `make npm-audit` checks the full web
+client dependency tree (its build dependencies become shipped assets) and the docs runtime tree.
+GitHub dependency review checks newly introduced high/critical advisories on PRs. Dependabot's
+weekly configuration proposes dependency updates; alerts and security updates also require the
+repository settings to be enabled. These checks do not inventory OS packages or every separately
+installed inference-service variant.
+
+To pick up patches, upgrade:
 
 ```bash
 uv tool upgrade immich-memories        # or: pip install --upgrade immich-memories

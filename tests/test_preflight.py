@@ -259,7 +259,7 @@ def test_notification_preflight_warns_on_sanitized_failure_cooldown(tmp_path) ->
         NotificationStateStore,
     )
 
-    credential_url = "https://notify.test/provider-secret"
+    credential_url = "jsons://notify.test/provider-secret"
     config = Config(
         cache={"database": str(tmp_path / "preflight.db")},
         notifications={"enabled": True, "urls": [credential_url], "cooldown_hours": 24},

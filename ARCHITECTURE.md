@@ -1345,3 +1345,9 @@ Marqo still equivalents without overwriting current answers, and explicitly refr
 head/asset pairs. `cli/store_facts.py` exposes status and preview/apply maintenance under
 `store facts`. No model runs in these commands. `tests/fixtures/detector-cache-v1.json` freezes
 the payload keys, model pins, bundle, labels and sampling; app versions do not re-key facts.
+
+
+The web JSON boundary (`web/request_validation.py`) rejects malformed text and excessive nesting
+before route validation. Revision allocation and publication share the existing cross-process
+file lock. Configuration's endpoint policy (`config_endpoint_policy.py`) applies on load and
+Settings save, with a process-environment-only link-local override.

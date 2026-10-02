@@ -188,6 +188,19 @@ jobs:
       - name: pip-audit (dependency CVEs)
         run: make pip-audit
 
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+      - name: npm audit (client and documentation)
+        run: make npm-audit
+
+      - name: Dependency review
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@05fe4576374b728f0c523d6a13d64c25081e0803 # v4.8.3
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: never
+
       - name: Install Gitleaks (same version as pre-commit)
         run: |
           archive="$RUNNER_TEMP/gitleaks.tar.gz"

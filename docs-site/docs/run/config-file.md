@@ -258,3 +258,11 @@ request for loopback, a private IP or a bare service name, and four for a dotted
 public IP. A dotted LAN name still counts as hosted. Accepted overrides for external servers:
 1–16; the owned reader always runs one request at a time.
 See [Reader setup](../better/reader.md).
+
+
+## Invalid configuration
+
+A YAML configuration must be a mapping of setting names to values. An empty file or `null`
+means no file overrides; scalar values and lists are rejected. Unknown authentication keys
+are errors, so a misspelled `enabled` cannot silently leave authentication off.
+Configured service URLs also follow the [address policy](./network-security.md#configured-service-addresses).
