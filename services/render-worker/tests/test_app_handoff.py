@@ -249,12 +249,20 @@ def test_the_worker_reads_its_geocoding_server_from_its_own_environment(monkeypa
     from immich_memories_render_worker.settings import WorkerSettings
 
     monkeypatch.setenv("IMMICH_MEMORIES_RENDER_WORKER_GEOCODING_URL", "http://nominatim.lan:8080")
-    settings = WorkerSettings(token="t" * 32, immich_url="http://immich.invalid", directory=tmp_path)
+    settings = WorkerSettings(
+        token="t" * 32, immich_url="http://immich.invalid", directory=tmp_path
+    )
 
     assert settings.geocoding_url == "http://nominatim.lan:8080"
-    assert WorkerSettings(
-        token="t" * 32, immich_url="http://immich.invalid", directory=tmp_path, geocoding_url=None
-    ).geocoding_url is None
+    assert (
+        WorkerSettings(
+            token="t" * 32,
+            immich_url="http://immich.invalid",
+            directory=tmp_path,
+            geocoding_url=None,
+        ).geocoding_url
+        is None
+    )
 
 
 def test_an_explicit_hevc_output_is_still_hevc_on_the_worker(tmp_path):
