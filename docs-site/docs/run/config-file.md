@@ -44,6 +44,24 @@ Command-specific flags can override these for that command. LLM key shorthands h
 [special rule](./environment-variables.md#shorthands).
 The UI greys out settings controlled by the file or environment and shows their source.
 
+### Keys pinned by Docker
+
+The shipped Compose file and image always set these, so YAML and Settings cannot override them:
+
+| Runtime key | Docker value |
+|---|---|
+| `immich.url` | `IMMICH_URL`, default `http://immich-server:2283` |
+| `tier` | `auto` |
+| `trips.homebase_latitude`, `trips.homebase_longitude` | The corresponding `.env` variables, default `0` (home unset) |
+| `editorial.preparation.detector_cache_dir` | `/home/immich/.immich-memories/models/huggingface` |
+| `output.directory` | `/app/output` (image default) |
+
+`IMMICH_API_KEY` also pins `immich.api_key` when nonempty. The auth pair takes effect when both
+values are nonempty. Uncommented optional environment lines pin their keys too.
+Change values in Compose or `.env`, then run `docker compose up -d`.
+To let Settings control a Compose-pinned key, remove its environment line and any YAML value.
+Keep the model cache and output paths on mounted volumes.
+
 Inspect the same result from the CLI:
 
 ```bash
