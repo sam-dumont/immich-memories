@@ -93,19 +93,53 @@ WHEEL=$1
 set -- ./*.sigstore.json
 [ "$#" -eq 1 ] && [ -f "$1" ] || exit 1
 gh attestation verify "$WHEEL" \
-  --repo sam-dumont/immich-video-memory-generator --bundle "$1"
+  --repo sam-dumont/immich-video-memory-generator --bundle "$1" \
+  --signer-workflow sam-dumont/immich-video-memory-generator/.github/workflows/release.yml
 ```
 
-The application image carries provenance for each platform digest. Verify the digest for your
-platform rather than the multi-platform tag. Inference images do not yet have the same explicit
-GitHub attestation step. For the Linux amd64 application image:
+The current Release workflow attests both application and inference platform images, then
+attests the final application, inference CPU and inference CUDA manifests. This applies to
+images published by that workflow; it does not add attestations to older releases.
+
+For a release built with that workflow, select the image and tag from this table. Replace
+`X.Y.Z` with its published version, without the leading `v`:
+
+| Image | Repository | Tag |
+|---|---|---|
+| Application | `ghcr.io/sam-dumont/immich-video-memory-generator` | `X.Y.Z` |
+| Inference CPU | `ghcr.io/sam-dumont/immich-video-memory-generator/inference` | `X.Y.Z` |
+| Inference CUDA | `ghcr.io/sam-dumont/immich-video-memory-generator/inference` | `X.Y.Z-cuda` |
+
+Use Bash, Docker Buildx, jq and GitHub CLI. The tag locates the manifest; verification uses its
+immutable digest and requires this repository's release workflow as signer:
 
 ```bash
+set -euo pipefail
+REPO=sam-dumont/immich-video-memory-generator
+IMAGE=ghcr.io/$REPO
+TAG=X.Y.Z
+DIGEST=$(docker buildx imagetools inspect "$IMAGE:$TAG" --format '{{json .Manifest}}' | \
+  jq -er '.digest | select(test("^sha256:[0-9a-f]{64}$"))')
+gh attestation verify "oci://$IMAGE@$DIGEST" --repo "$REPO" \
+  --signer-workflow "$REPO/.github/workflows/release.yml"
+```
+
+GitHub CLI needs access to GitHub and GHCR; use your existing registry credentials when
+authentication is requested. A missing attestation is a verification failure, not proof of a
+trusted build. Do not substitute another release's digest or bundle to make it pass.
+
+Older releases such as `0.103.0` attest only the application's platform images. For that
+release's Linux amd64 image, select exactly one platform digest:
+
+```bash
+set -euo pipefail
 IMAGE=ghcr.io/sam-dumont/immich-video-memory-generator:0.103.0
-DIGEST=$(docker buildx imagetools inspect "$IMAGE" --raw | jq -r \
-  '.manifests[] | select(.platform.os == "linux" and .platform.architecture == "amd64") | .digest')
+DIGEST=$(docker buildx imagetools inspect "$IMAGE" --raw | jq -er \
+  '[.manifests[] | select(.platform.os == "linux" and .platform.architecture == "amd64")] |
+   select(length == 1) | .[0].digest | select(test("^sha256:[0-9a-f]{64}$"))')
 gh attestation verify "oci://${IMAGE%:*}@$DIGEST" \
-  --repo sam-dumont/immich-video-memory-generator
+  --repo sam-dumont/immich-video-memory-generator \
+  --signer-workflow sam-dumont/immich-video-memory-generator/.github/workflows/release.yml
 ```
 
 The `.intoto.jsonl` asset is the same statement as a bare in-toto envelope, for
@@ -120,8 +154,19 @@ package, version and advisory below with no fix available. `make npm-audit` chec
 client dependency tree (its build dependencies become shipped assets) and the docs runtime tree.
 GitHub dependency review checks newly introduced high/critical advisories on PRs. Dependabot's
 weekly configuration proposes dependency updates; alerts and security updates also require the
-repository settings to be enabled. These checks do not inventory OS packages or every separately
-installed inference-service variant.
+repository settings to be enabled.
+
+The separate [Image Maintenance workflow](.github/workflows/image-maintenance.yml) rebuilds and
+audits what the images actually install: application amd64/arm64, inference CPU amd64/arm64 and
+inference CUDA amd64. It runs weekly, manually and on relevant PRs. Run the same checks locally
+with `make image-audit-build image-audit`; the [image maintenance guide](docs/security/image-maintenance.md)
+lists variant selection and output files. Artifacts retain exact installed Python versions,
+the advisory lookup input and results, image identity, and an OS package inventory. Only official
+Torch CPU/CUDA version suffixes are mapped to their public release for advisory lookup.
+
+OS package inventory is not an OS vulnerability scan, and Python advisory lookup does not cover
+variant-specific native binary vulnerabilities. Scheduled builds do not publish or move release
+tags. Review their results, then publish updated images through the Release workflow.
 
 To pick up patches, upgrade:
 
