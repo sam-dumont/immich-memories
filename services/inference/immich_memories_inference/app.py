@@ -17,14 +17,17 @@ from collections.abc import AsyncIterator, Callable
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager, suppress
 from dataclasses import asdict
+from io import BytesIO
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Response
+from PIL import Image
 from pydantic import BaseModel, Field
 
 from immich_memories.audio.generators.base import StemSeparator
 from immich_memories.triage.encoder import provider_chain
-from immich_memories_inference.audio import register_audio
+from immich_memories_inference.audio import STEMS_PATH, register_audio, stems_limit
+from immich_memories_inference.limits import ENVELOPE_BYTES, BoundedBodies, RouteLimit
 from immich_memories_inference.producers import (
     DOC_DOCLING,
     HEADS,
@@ -52,6 +55,11 @@ SERVICE_SECONDS_HEADER = "X-Facts-Seconds"
 # process that is meant to stay up for months; forgetting the lot and saying
 # them again costs one repeated line.
 WARNED_CEILING = 64
+
+# A picture decodes to width x height x channels bytes whatever its file size; a few
+# kilobytes of PNG can ask for gigabytes. 50 MP holds every phone and most cameras.
+MAX_IMAGE_PIXELS = 50_000_000
+FACTS_PATH = "/facts"
 
 
 class FactsRequest(BaseModel):
@@ -117,9 +125,25 @@ def create_app(
     # Every 503 detail already said. A wedged producer in a 4000-picture run is
     # one line worth reading and 3999 worth nothing.
     app.state.warned = set()
+    # Process-wide: the heads producer decodes through the app's own triage code.
+    Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
     _routes(app, settings, runtime)
     register_audio(app, settings.cache_dir, audio_separator)
+    app.add_middleware(
+        BoundedBodies,
+        limits={FACTS_PATH: facts_limit(settings), STEMS_PATH: stems_limit()},
+    )
     return app
+
+
+def facts_limit(settings: InferenceSettings) -> RouteLimit:
+    """A body big enough for the largest picture the service decodes, base64 and all,
+    with one seat for each request the queue could run or hold."""
+    encoded = 4 * -(-settings.max_image_bytes // 3)
+    return RouteLimit(
+        max_body_bytes=encoded + ENVELOPE_BYTES,
+        seats=settings.request_threads + settings.max_queued_requests,
+    )
 
 
 def _lifespan(settings: InferenceSettings, runtime: ProducerRuntime) -> Callable[[FastAPI], Any]:
@@ -184,9 +208,10 @@ def _routes(app: FastAPI, settings: InferenceSettings, runtime: ProducerRuntime)
     async def queue() -> dict[str, object]:
         return app.state.queue.snapshot()
 
-    @app.post("/facts")
+    @app.post(FACTS_PATH)
     async def facts(request: FactsRequest, response: Response) -> dict[str, Any]:
         image = _decode(request.image, settings.max_image_bytes)
+        _refuse_too_many_pixels(image)
         started = time.perf_counter()
         # One producer at a time: three CPU-bound seats over one picture contend
         # rather than overlap. The pool is what keeps the loop answering.
@@ -269,6 +294,27 @@ def _decode(image: str, ceiling: int) -> bytes:
     if len(payload) > ceiling:
         raise HTTPException(status_code=413, detail=f"image is larger than {ceiling} bytes")
     return payload
+
+
+def _refuse_too_many_pixels(image: bytes) -> None:
+    """413 for a picture whose header asks for more pixels than the service decodes.
+
+    Only the header is read. Bytes PIL cannot identify are left for the producer to
+    refuse in its own words.
+    """
+    try:
+        with Image.open(BytesIO(image)) as handle:
+            width, height = handle.size
+    except Image.DecompressionBombError:
+        width, height = MAX_IMAGE_PIXELS + 1, 1
+    except OSError:
+        return
+    if width * height > MAX_IMAGE_PIXELS:
+        raise HTTPException(
+            status_code=413,
+            detail=f"picture has {width * height} pixels; this service decodes at most "
+            f"{MAX_IMAGE_PIXELS}",
+        )
 
 
 def _requested(asked: list[str] | None, served: tuple[str, ...]) -> tuple[str, ...]:

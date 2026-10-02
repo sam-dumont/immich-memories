@@ -28,8 +28,14 @@ def _wanted_encoder(request) -> str:
 class NativeRenderer:
     """GPU policy is fixed by the worker, never selected in a job request."""
 
-    def __init__(self, *, capabilities: Callable[[], dict] = gpu_capabilities):
+    def __init__(
+        self,
+        *,
+        capabilities: Callable[[], dict] = gpu_capabilities,
+        geocoding_url: str | None = None,
+    ):
         self._capabilities = capabilities
+        self._geocoding_url = geocoding_url
 
     def health(self) -> dict:
         """Report whether the card is doing the work, separately from being able to render.
@@ -61,7 +67,9 @@ class NativeRenderer:
         capabilities = self.health()
         degradations = _capability_degradations(capabilities, wanted)
         with render_client(request) as client:
-            params = generation_params(request, directory, client, progress)
+            params = generation_params(
+                request, directory, client, progress, geocoding_url=self._geocoding_url
+            )
             tracker = RunTracker(
                 str(job_identity(request)),
                 store=open_store(params.config),

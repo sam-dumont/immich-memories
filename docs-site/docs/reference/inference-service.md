@@ -74,8 +74,10 @@ From a checkout, `docker/Dockerfile.inference` builds either one: `--build-arg D
 
 With `advanced.inference.facts_base_url` set, the app sends generated music to `POST /audio/stems`
 and receives a ZIP containing `drums.wav`, `bass.wav`, `other.wav` and `vocals.wav`. The endpoint
-accepts one multipart `file`, up to 256 MiB. Jobs run serially off the HTTP event loop; temporary
-audio is deleted after the response. Both inference images include Demucs. The CUDA image bundles
+accepts one multipart `file`, up to 256 MiB. One separation runs at a time, off the HTTP event
+loop: an upload that arrives while another separates gets HTTP 429 with `Retry-After` before its
+body is read, and the app falls back as for any failed stem request. Temporary audio is deleted
+after the response. Both inference images include Demucs. The CUDA image bundles
 its weights; the CPU image downloads them on first use into `/cache/torch`.
 
 `advanced.inference.fallback_to_local` also controls recovery from a failed stem request. Its
@@ -282,6 +284,23 @@ scheduling. Unified mode adds phase admission across facts, captions, audio and 
 `/queue` does not report those other phases. Separate caption servers based on llama.cpp can
 expose slots and metrics when their server settings enable them.
 
+## Request limits
+
+The service checks each request's size before reading its body:
+
+| Route | Largest body | Over the limit |
+|---|---|---|
+| `POST /facts` | the base64 of `MAX_IMAGE_BYTES` (about 21 MiB by default), plus 1 MiB of JSON | HTTP 413 |
+| `POST /audio/stems` | 256 MiB of audio, plus 1 MiB of multipart envelope | HTTP 413 |
+
+A declared `Content-Length` over the limit is refused unread. A body that runs past it, declared
+or not, is cut off with the same 413. `/facts` holds at most `REQUEST_THREADS` plus
+`MAX_QUEUED_REQUESTS` bodies at once; one more gets HTTP 429 with `Retry-After`.
+
+A picture whose header asks for more than 50 million pixels gets HTTP 413 naming its pixel count,
+before it is decoded. The file size says little here: a few kilobytes of PNG can decode to
+gigabytes.
+
 ## Settings
 
 Every setting is an environment variable prefixed `IMMICH_MEMORIES_INFERENCE_`:
@@ -300,7 +319,7 @@ Every setting is an environment variable prefixed `IMMICH_MEMORIES_INFERENCE_`:
 | `PRELOAD` | `false` | load every producer at boot instead of on first use |
 | `DETECTOR_CACHE_DIR` | unset in the runtime; `/opt/immich-models/huggingface` in the CUDA image | where the detector snapshots live; unset uses the Hugging Face cache, with `HF_HOME=/cache/huggingface` in the CPU image |
 | `ALLOW_MODEL_DOWNLOADS` | `false` | let a cold cache fetch the pinned exports and the Docling snapshot itself |
-| `MAX_IMAGE_BYTES` | `16777216` | refuse anything larger |
+| `MAX_IMAGE_BYTES` | `16777216` | refuse a decoded picture larger than this, and size the `/facts` body limit from it |
 
 The CUDA image sets `OPENBLAS_NUM_THREADS=1` for NumPy's small per-picture head projection.
 This limits NumPy's BLAS worker pool, which otherwise can compete for a container's CPU quota.

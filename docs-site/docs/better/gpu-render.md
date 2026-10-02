@@ -89,8 +89,14 @@ An app timeout does not cancel an active worker job.
 Active rendering keeps ownership of its scratch workspace after a deadline. A stuck native
 renderer can still require a worker restart. Increasing the deadline does not stop that job.
 
-The worker receives the app’s map-tile and geocoding settings with the cut. Enable them in the
+The worker receives the app’s map-tile and geocoding switches with the cut. Enable them in the
 app’s [network settings](../run/privacy.md) when the film needs maps or place names.
+
+The geocoding server is the worker's own choice, never the job's. The worker ignores the app's
+`network.geocoding_url` and geocodes only through
+`IMMICH_MEMORIES_RENDER_WORKER_GEOCODING_URL`, a self-hosted Nominatim such as
+`http://nominatim.lan:8080`. Unset, the default, the worker does not geocode at all, even when
+the app has `network.geocoding: true`; the film keeps the place names Immich gave.
 
 ## Check it
 

@@ -33,7 +33,7 @@ def manual_params(tmp_path):
     )
 
 
-def round_trip(params, tmp_path):
+def round_trip(params, tmp_path, *, geocoding_url=None):
     import httpx
     from immich_memories_render_worker.admission import certify_envelope
     from immich_memories_render_worker.models import RenderRequest
@@ -52,7 +52,10 @@ def round_trip(params, tmp_path):
             return next(clip.asset for clip in params.clips if clip.asset.id == asset_id)
 
     # WHY: this contract round trip needs the source metadata, not a running Immich server.
-    return generation_params(request, tmp_path / "worker", Client(), lambda *_: None), body
+    received = generation_params(
+        request, tmp_path / "worker", Client(), lambda *_: None, geocoding_url=geocoding_url
+    )
+    return received, body
 
 
 def test_app_envelope_preserves_manual_cut_and_square_canvas(tmp_path):
@@ -204,7 +207,7 @@ def test_remote_render_retains_film_settings_and_source_audio_markers(tmp_path):
     clip.llm_emotion = "happy"
     params.clip_rotations = {clip.asset.id: 90}
 
-    received, _ = round_trip(params, tmp_path)
+    received, _ = round_trip(params, tmp_path, geocoding_url="http://geocoder.invalid:8080")
     assert received.config.title_screens == params.config.title_screens
     assert received.config.network == params.config.network
     assert received.config.photos.duration == 2.5
@@ -217,6 +220,49 @@ def test_remote_render_retains_film_settings_and_source_audio_markers(tmp_path):
     assert received.clip_rotations == params.clip_rotations
     assert received.clips[0].audio_categories == ["speech", "music"]
     assert received.clips[0].llm_emotion == "happy"
+
+
+def test_the_worker_geocodes_only_through_its_own_configured_server(tmp_path):
+    params = manual_params(tmp_path)
+    params.config.network.geocoding = True
+    params.config.network.geocoding_url = "http://evil.invalid"
+
+    received, body = round_trip(params, tmp_path, geocoding_url="http://nominatim.worker:8080")
+
+    assert body["network"]["geocoding_url"] == "http://evil.invalid"
+    assert received.config.network.geocoding
+    assert received.config.network.geocoding_url == "http://nominatim.worker:8080"
+
+
+def test_a_worker_without_a_geocoding_server_never_geocodes(tmp_path):
+    params = manual_params(tmp_path)
+    params.config.network.geocoding = True
+    params.config.network.geocoding_url = "http://evil.invalid"
+
+    received, _ = round_trip(params, tmp_path)
+
+    assert not received.config.network.geocoding
+    assert received.config.network.geocoding_url == ""
+
+
+def test_the_worker_reads_its_geocoding_server_from_its_own_environment(monkeypatch, tmp_path):
+    from immich_memories_render_worker.settings import WorkerSettings
+
+    monkeypatch.setenv("IMMICH_MEMORIES_RENDER_WORKER_GEOCODING_URL", "http://nominatim.lan:8080")
+    settings = WorkerSettings(
+        token="t" * 32, immich_url="http://immich.invalid", directory=tmp_path
+    )
+
+    assert settings.geocoding_url == "http://nominatim.lan:8080"
+    assert (
+        WorkerSettings(
+            token="t" * 32,
+            immich_url="http://immich.invalid",
+            directory=tmp_path,
+            geocoding_url=None,
+        ).geocoding_url
+        is None
+    )
 
 
 def test_an_explicit_hevc_output_is_still_hevc_on_the_worker(tmp_path):

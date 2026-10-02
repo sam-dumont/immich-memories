@@ -152,7 +152,16 @@ async def test_same_phase_facts_retain_the_existing_queue_capacity(tmp_path):
                     break
                 await asyncio.sleep(0.01)
             assert queue["capacity"] == 1 and queue["producers"]["heads"]["queued"] == 1
-            overflow = await client.post("/facts", json={"image": "cGl4ZWxz"})
+            body_reads = []
+
+            async def overflow_body():
+                body_reads.append(True)
+                yield b'{"image": "cGl4ZWxz"}'
+
+            overflow = await client.post(
+                "/facts", content=overflow_body(), headers={"Content-Type": "application/json"}
+            )
+            assert body_reads == []
             assert overflow.status_code == 429
             assert overflow.headers["Retry-After"] == "1"
         finally:
@@ -160,7 +169,8 @@ async def test_same_phase_facts_retain_the_existing_queue_capacity(tmp_path):
         assert (await first).status_code == 200
         assert second is not None and (await second).status_code == 200
         lane = (await client.get("/queue")).json()["producers"]["heads"]
-        assert lane["completed"] == 2 and lane["rejected"] == 1
+        # Body admission rejects overflow before it can enter a producer lane.
+        assert lane["completed"] == 2 and lane["rejected"] == 0
         assert lane["queued"] == lane["active"] == 0
 
 
