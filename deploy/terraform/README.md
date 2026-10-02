@@ -159,7 +159,7 @@ module "immich_memories" {
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
 | `output_storage_size` | Output PVC | `string` | `"50Gi"` |
-| `cache_storage_size` | Cache/state PVC | `string` | `"20Gi"` |
+| `cache_storage_size` | Cache/state PVC | `string` | `"30Gi"` |
 | `storage_class_name` | Storage class (`null` = cluster default) | `string` | `null` |
 
 ### Ingress

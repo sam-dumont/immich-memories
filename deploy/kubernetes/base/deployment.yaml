@@ -18,6 +18,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: immich-memories
+        app.kubernetes.io/component: web-ui
     spec:
       # Kubernetes injects one env var per Service in the namespace by default
       # (SERVICE_HOST, SERVICE_PORT...); a Service named `immich-memories`
@@ -35,12 +36,8 @@ spec:
         seccompProfile:
           type: RuntimeDefault
 
-      # A fresh models claim is empty, and prepare is where that shows up: the
-      # first cut stopped naming three files nobody had been told to fetch. This
-      # is the same image running the same `models fetch` a Docker user runs after
-      # `up`, writing the pinned encoder, the pinned sensitive-content export and
-      # the detector snapshot onto the claim. The guard is what makes a restart
-      # free: a claim that already carries all three never goes back out.
+      # Fetch missing configured models. The presence guard includes GPU detector files,
+      # so NAS re-runs fetch at each start; fetch checks existing artifact digests.
       initContainers:
         - name: fetch-models
           image: ghcr.io/sam-dumont/immich-video-memory-generator:latest
@@ -81,6 +78,9 @@ spec:
             # wants HOME writable; the root filesystem here is not.
             - name: data
               mountPath: /home/immich/.immich-memories
+            # The same claim keeps Torch/HF caches writable and persistent.
+            - name: data
+              mountPath: /home/immich/.cache
             - name: models
               mountPath: /models
             - name: tmp
@@ -93,8 +93,6 @@ spec:
 
           securityContext:
             allowPrivilegeEscalation: false
-            # Sessions now live on the `data` volume, but ~/.cache still
-            # needs a writable mount before this can flip to true (#445).
             readOnlyRootFilesystem: true
             capabilities:
               drop:
@@ -123,12 +121,18 @@ spec:
               value: /models/huggingface
             - name: IMMICH_MEMORIES_FREE_TEXT__WORDNET
               value: /models/wordnet/wordnet.zip
-            # Optional: LLM clip content analysis (any OpenAI-compatible API)
-            # - name: IMMICH_MEMORIES_LLM__BASE_URL
-            #   value: "http://your-llm.llm.svc.cluster.local:8080/v1"
-            # - name: IMMICH_MEMORIES_LLM__MODEL
-            #   value: "qwen2.5-vl"
+            # Optional: text reader on an external Ollama server (32k context).
+            # The app image has no owned llama-server. Replace the model/server names.
+            # - name: IMMICH_MEMORIES_LLM__ENABLED
             #   value: "true"
+            # - name: IMMICH_MEMORIES_LLM__PROVIDER
+            #   value: "ollama"
+            # - name: IMMICH_MEMORIES_LLM__BASE_URL
+            #   value: "http://ollama:11434"
+            # - name: IMMICH_MEMORIES_LLM__MODEL
+            #   value: "your-32k-model"
+            # - name: IMMICH_MEMORIES_LLM__EXTRA_PARAMS
+            #   value: '{"options": {"num_ctx": 32768}}'
             # Optional: daily automation inside the pod (no CronJob needed)
             # - name: IMMICH_MEMORIES_AUTOMATION__ENABLED
             #   value: "true"
@@ -150,6 +154,9 @@ spec:
             # config.yaml, cache.db, video cache, projects, automation history
             - name: data
               mountPath: /home/immich/.immich-memories
+            # The same claim keeps Torch/HF caches writable and persistent.
+            - name: data
+              mountPath: /home/immich/.cache
             - name: output
               mountPath: /app/output
             - name: models

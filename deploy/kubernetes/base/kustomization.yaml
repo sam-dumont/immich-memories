@@ -14,7 +14,9 @@ resources:
   - deployment.yaml
   - service.yaml
   - networkpolicy.yaml
-  # Optional CLI batch jobs (one-off Job + CronJobs)
+  # Optional schedules: HTTP triggers only, no second SQLite writer.
+  # - cronjobs.yaml
+  # Optional one-off CLI Job: only while the Deployment is scaled to zero.
   # - job.yaml
   # Optional Ingress — only after enabling authentication:
   #   cp ingress.yaml.example ingress.yaml

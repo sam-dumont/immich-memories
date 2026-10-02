@@ -453,4 +453,4 @@ def test_kubernetes_and_terraform_docs_describe_the_fixed_manifests() -> None:
 
     recipe = _read("docs-site/docs/reference/automation-contract.md")
     assert "configmap" not in recipe.lower()
-    assert "deploy/kubernetes/base/job.yaml" in recipe
+    assert "deploy/kubernetes/base/cronjobs.yaml" in recipe

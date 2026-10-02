@@ -13,7 +13,7 @@ them to a live cluster. [Requirements](./requirements.md) explains platform and 
 ## Prerequisites
 
 - Immich reachable from the cluster, normally port 2283.
-- A storage class for three `ReadWriteOnce` PVCs: data/cache 20Gi, output 50Gi, models 5Gi.
+- A storage class for three `ReadWriteOnce` PVCs: data/cache 30Gi, output 50Gi, models 5Gi.
 - For NVIDIA overlays: GPU Operator, `nvidia` RuntimeClass and labelled GPU nodes.
 
 The default is one CPU-only app, with SQLite on the data PVC. Use local/block storage for SQLite,
@@ -43,7 +43,12 @@ For a source checkout, set the image before applying:
 (cd base && kustomize edit set image ghcr.io/sam-dumont/immich-video-memory-generator=:X.Y.Z)
 ```
 
-The init container fetches model files needed by its configuration. Before the first film,
+The `kustomize edit` command requires the standalone Kustomize CLI; `kubectl kustomize` only
+builds. You can also edit `images[].newTag` in `base/kustomization.yaml` by hand.
+
+The init container fetches model files needed by its configuration. Its guard includes GPU
+detector files, so NAS runs fetch again on every start; existing files are digest-checked rather
+than blindly downloaded. Before the first film,
 check the running app's actual tier and requirements:
 
 ```bash
@@ -104,10 +109,17 @@ and a read-only root.
 
 | Path | Storage |
 |---|---|
-| `/home/immich/.immich-memories` | Data/cache PVC: store, settings, session key, previews and clips |
+| `/home/immich/.immich-memories` | Data/cache PVC: store, settings, session key, previews, clips and Laya files |
+| `/home/immich/.cache` | The same data PVC, mounted again: writable persistent Torch/HF runtime caches |
 | `/app/output` | Output PVC: local films |
-| `/models` | Models PVC: encoder, WordNet and tier-dependent model files |
+| `/models` | Models PVC: encoder, WordNet, sensitive-content export and detector cache |
 | `/tmp` | 4Gi emptyDir; allow more for 4K |
+
+The app requests 2Gi RAM and one CPU, with limits of 8Gi and four CPUs. The fetch init
+container requests 512Mi/250m and is capped at 2Gi/two CPUs. Compose's app limit is 4 GB;
+these are different budgets. The 30Gi data claim leaves room beyond the two default 10 GB
+preview/video caches. Existing claims do not automatically grow: your StorageClass must allow
+expansion, or lower the cache caps until you can resize it.
 
 Base settings come from environment variables and the Secret. Settings saves go to the store;
 [environment variables win](./config-file.md#where-a-setting-comes-from).
@@ -119,10 +131,16 @@ so none of them needs a token for it.
 
 ## NetworkPolicy
 
-The base policy allows DNS and TCP ports 80, 443, 2283, 11434 and 8092. These are port rules,
-not destination allow-lists. Add your actual service ports: oMLX commonly uses 8000,
-PostgreSQL 5432, render services 8093, and your services may differ.
-The CNI must enforce NetworkPolicy for these rules to matter.
+The base policy allows DNS and TCP ports 80, 443, 2283, 11434 and 8092 to any destination.
+A separate rule permits 8080 only to app pods with the `web-ui` component in the same namespace: trigger CronJobs
+call Service port 80, which is translated to that backend port.
+
+Ingress allows 8080 without a source selector, so any pod in the cluster can reach the
+unauthenticated app. This is not a trusted-pod allow-list. Keep it private until authentication
+works and add your own source/destination selectors when you need stricter isolation.
+Add the actual ports of your services: 8000 or 9999 for your reader configuration, PostgreSQL
+5432 and a separate render worker's 8093. oMLX's port is configurable; the maximalist example
+uses 9999. The CNI must enforce NetworkPolicy for any of these rules to matter.
 
 ## GPU
 
@@ -146,9 +164,15 @@ kubectl apply -k overlays/captioner-cuda
   value: http://captioner:8092/v1
 ```
 
-CPU service variants are `overlays/inference` and `overlays/captioner`.
+CPU service variants are `overlays/inference` and `overlays/captioner`. The CUDA captioner
+deliberately requests no `nvidia.com/gpu`; it depends on device sharing/time-slicing and has no
+scheduler GPU reservation. Configure that on your cluster or add a GPU request on a separate
+card. Applying the overlay alone does not make a GPU available.
 The default `tier: auto` sees GPU inference separately from encoding.
-Add a [reader](../better/reader.md) for Full. After changing tier/services, run `models fetch` in
+Add an explicitly enabled [external reader](../better/reader.md) for Full. The app image has no
+owned `llama-server`. One `advanced.llm` configuration serves titles, selection, music mood,
+special days and explicitly opted-in LLM captions. The commented Deployment recipe uses native
+Ollama and `options.num_ctx: 32768`; the `/v1` route needs server-side context configuration. After changing tier/services, run `models fetch` in
 the app again for required detectors/Laya, then `preflight`.
 [Requirements](./requirements.md#which-tier-you-get) explains the resolver.
 
@@ -156,12 +180,29 @@ the app again for required detectors/Laya, then `preflight`.
 
 `overlays/render-sidecar` puts a worker in the same pod, on an NVIDIA node.
 It receives the Immich API key over pod loopback `http://127.0.0.1:8093`.
-Copy its `render-worker-secret.yaml.example` to `render-worker-secret.yaml`, generate a token
-(`openssl rand -hex 32`), then apply the overlay.
+Copy its `render-worker-secret.yaml.example` to `render-worker-secret.yaml`, set both `token`
+(`openssl rand -hex 32`) and `immich-url` to the app's configured Immich server, then apply the
+overlay. The request carries selected partner API keys, names, home coordinates and network
+settings too; run the worker where those credentials and facts may be read.
 
 Keep app and worker image tags equal. The worker binds loopback, so its probes must use `exec`,
 not kubelet HTTP/TCP probes to the pod IP. [Render worker](../better/gpu-render.md) covers remote
 workers and transport protection.
+
+### A separate render Deployment
+
+From a source checkout, `services/render-worker/kubernetes.yaml` supplies a separate NVIDIA
+Deployment and ClusterIP Service on 8093. Pin its Deployment image to the app's version and
+create the `immich-memories-render-worker` Secret with `token` and `immich-url` in that namespace
+before applying it. The worker receives per-job Immich credentials from the app; they do not go
+in this Secret. Its scratch, state and compilation caches are disposable emptyDir volumes.
+
+Point the app at `http://immich-memories-render-worker:8093` and use the same bearer token.
+That private cleartext route needs `render.allow_insecure_http: true` and an app egress rule for
+8093; use a TLS endpoint instead when the network is not trusted. Add a worker ingress policy
+for your callers. The standalone worker's labels differ from the app's, so the base app policy
+does not select it. Its TCP probe confirms a listening port; run the authenticated `/health`
+check from the [worker guide](../better/gpu-render.md) to check capabilities.
 
 ## The two model services
 
@@ -229,13 +270,16 @@ wrappers over these components, so existing apply commands still work.
 
 ## Batch jobs
 
-`base/job.yaml` is optional. Its CronJobs call `POST /api/trigger` on the running app; they do not
-mount SQLite from a second pod. Set `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in the Secret.
+`base/cronjobs.yaml` is optional and contains only scheduled HTTP triggers. Add
+`- cronjobs.yaml` to `base/kustomization.yaml`, render, then apply that root. They call
+`POST /api/trigger` on the running app and mount no application PVCs. Set `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in the Secret.
 Both schedules invoke the automatic decision, even the job named monthly: they do not force a
-monthly film.
+monthly film. The Service selects only `web-ui` pods, so a Ready curl Job is never used as an
+HTTP backend.
 
 For a fixed recipe, prefer `kubectl exec ... -- immich-memories generate ...`.
-The one-off generate Job mounts the PVCs directly; use it with the Deployment scaled to zero.
+The separate `base/job.yaml` contains only the one-off generate Job. It mounts the PVCs
+directly; use it with the Deployment scaled to zero. Never include it just to enable schedules.
 If using PostgreSQL, add its Secret to that Job too. Include `job.yaml` in Kustomize so its app
 image follows the selected tag; a raw `apply -f` bypasses image transformations.
 
@@ -267,6 +311,17 @@ For init failures, use `-c fetch-models`. [Diagnostics](./maintenance/health-log
 has per-run paths and logging variables.
 
 ## Upgrading and rollback
+
+Releases attest each platform image digest. Verify the exact platform digest you intend to run
+with GitHub CLI (authenticate to GHCR first):
+
+```bash
+gh attestation verify "oci://ghcr.io/sam-dumont/immich-video-memory-generator@sha256:<digest>" --repo sam-dumont/immich-video-memory-generator
+```
+
+Replace `<digest>` with the platform image's SHA-256 value. Use the inference image's
+repository path for that image. Verification checks its recorded
+provenance; it does not check your cluster configuration or the model's answers.
 
 Back up, change pins in the base **and any add-on overlays**, render the same kustomization you
 installed, then apply it. Run `models fetch` and `preflight` in the updated app.

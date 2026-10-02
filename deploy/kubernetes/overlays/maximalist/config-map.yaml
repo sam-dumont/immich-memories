@@ -2,7 +2,7 @@
 # onto the writable cache PVC by deployment-maximalist.yaml's install-config
 # init container (a ConfigMap volume's files belong to root, readable by the app
 # only through group or world bits, and the app warns on either).
-# docs-site/docs/run/reference-setup.md#the-always-on-server-kubernetes walks through it.
+# docs-site/docs/run/reference/cluster-example.md walks through it.
 # Everything that is a credential stays out of this file and comes from
 # maximalist-secret.yaml instead: ${VAR} below expands against the pod's
 # environment (config_models_auth.py, config_models_llm.py and
@@ -31,7 +31,7 @@ data:
       map_tiles: true    # server.arcgisonline.com: the trip fly-over, location cards
 
     # 10 GB is the default for each cap; both lowered here so they sit well
-    # inside the base's 20Gi cache PVC alongside config.yaml, store.db and
+    # inside the base's 30Gi cache PVC alongside config.yaml, store.db and
     # automation history. Raise them for a bigger library; past about 15 GB
     # together, grow the PVC first (a bound claim grows, it never shrinks).
     cache:
@@ -67,7 +67,7 @@ data:
 
       # The picture encoder, context heads and detectors on a GPU, instead of
       # this pod's CPU: ../inference-cuda's Service. Put it on the newer card
-      # (see reference-setup.md): the older one stays for the caption server.
+      # (see reference/cluster-example.md): the older one stays for the caption server.
       inference:
         facts_base_url: "http://inference:8092"
 
