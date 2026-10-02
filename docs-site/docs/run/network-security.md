@@ -295,8 +295,24 @@ render without arriving in one lump at the end. An unrelated browser origin must
 403 for writes; do not fix that refusal by stripping headers. Check that
 `docker compose port immich-memories 8080` reports no published port.
 
-These are configuration recipes, not evidence of a completed installation on your proxy.
-Certificate issuance, login and SSE must be checked on the actual host before exposing it.
+Local integration checks on Docker Desktop (Linux/ARM64, 2026-10-02) passed with Caddy
+2.11.4, Nginx Proxy Manager 2.13.7 and Traefik 3.6.1 against the real app. Each passed
+TLS certificate/hostname verification, Basic login with a Secure session cookie, authenticated
+Settings reads and saves, foreign-Origin rejection (403), logout and an unpublished app port.
+NPM used an API-created Proxy Host and custom certificate; Traefik used its Docker provider
+and the labels above. Caddy used its internal CA. No public certificate request was made.
+
+The app's real SSE endpoint sent a synthetic job's first event in 21–28 ms, then its completion
+event about two seconds later through each proxy. This checks incremental delivery, not a
+film render. A spoofed forwarded address stayed untrusted on a direct app connection; Caddy
+also discarded a client-supplied forwarded address. OIDC, header authentication, public ACME
+issuance, physical NAS installs and progress during a real render still need host validation.
+
+These recipes use the standard public HTTPS port **443**. NPM's generated `Host` header drops
+a nonstandard public port: a browser Origin such as `https://memories.example.com:8443` can
+then get 403 on writes. Use a public 443 mapping with this recipe; do not strip `Origin` to
+work around it. The local checks retained the public 443 authority while routing connections
+to loopback test ports.
 If you try one, [report your proxy version, host platform and the checks that passed or failed](https://github.com/sam-dumont/immich-video-memory-generator/issues/new).
 
 ## Ports and egress
