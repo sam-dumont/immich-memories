@@ -727,7 +727,7 @@ wheels = [
 
 [[package]]
 name = "diff-cover"
-version = "10.2.0"
+version = "10.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "chardet", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32' or (extra == 'extra-15-immich-memories-all' and extra == 'extra-15-immich-memories-editorial-cuda') or (extra == 'extra-15-immich-memories-all-mac' and extra == 'extra-15-immich-memories-editorial-cuda') or (extra == 'extra-15-immich-memories-editorial' and extra == 'extra-15-immich-memories-editorial-cuda')" },
@@ -735,9 +735,9 @@ dependencies = [
     { name = "pluggy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32' or (extra == 'extra-15-immich-memories-all' and extra == 'extra-15-immich-memories-editorial-cuda') or (extra == 'extra-15-immich-memories-all-mac' and extra == 'extra-15-immich-memories-editorial-cuda') or (extra == 'extra-15-immich-memories-editorial' and extra == 'extra-15-immich-memories-editorial-cuda')" },
     { name = "pygments", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32' or (extra == 'extra-15-immich-memories-all' and extra == 'extra-15-immich-memories-editorial-cuda') or (extra == 'extra-15-immich-memories-all-mac' and extra == 'extra-15-immich-memories-editorial-cuda') or (extra == 'extra-15-immich-memories-editorial' and extra == 'extra-15-immich-memories-editorial-cuda')" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/99/b4/eee71d1e338bc1f9bd3539b46b70e303dac061324b759c9a80fa3c96d90d/diff_cover-10.2.0.tar.gz", hash = "sha256:61bf83025f10510c76ef6a5820680cf61b9b974e8f81de70c57ac926fa63872a", size = 102473, upload-time = "2026-01-09T01:59:07.605Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/63/ef/479d5b18c5cd61c4fbb769c60d4829ea9d70aef1267e302d6de60deed7f3/diff_cover-10.6.0.tar.gz", hash = "sha256:8d1194dfb537f70480ac97c9c45dd40721cf4c326c9903fbe997db67a4db6195", size = 107697, upload-time = "2026-09-22T00:43:00.885Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b3/2c/61eeb887055a37150db824b6bf830e821a736580769ac2fea4eadb0d613f/diff_cover-10.2.0-py3-none-any.whl", hash = "sha256:59c328595e0b8948617cc5269af9e484c86462e2844bfcafa3fb37f8fca0af87", size = 56748, upload-time = "2026-01-09T01:59:06.028Z" },
+    { url = "https://files.pythonhosted.org/packages/47/04/7130707bb385835cca7f168c80d812c9b42af9ae8230a26b3e21c9437c98/diff_cover-10.6.0-py3-none-any.whl", hash = "sha256:a701553060f72d59b81f9cb1645b75ef66204427eb9dd99873c91092220e52ce", size = 63351, upload-time = "2026-09-22T00:42:59.593Z" },
 ]
 
 [[package]]
@@ -1401,7 +1401,7 @@ requires-dist = [
     { name = "demucs", marker = "extra == 'all-mac'", specifier = ">=4.0" },
     { name = "demucs", marker = "extra == 'demucs'", specifier = ">=4.0" },
     { name = "deptry", marker = "extra == 'dev'", specifier = ">=0.20" },
-    { name = "diff-cover", marker = "extra == 'dev'", specifier = ">=9.0" },
+    { name = "diff-cover", marker = "extra == 'dev'", specifier = ">=10.6.0" },
     { name = "fastapi", specifier = ">=0.135" },
     { name = "freetype-py", specifier = ">=2.4" },
     { name = "geopy", specifier = ">=2.4" },
