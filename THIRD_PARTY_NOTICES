@@ -478,7 +478,7 @@ freetype-py 2.5.1
   URL: https://github.com/rougier/freetype-py
 
 fsspec 2026.2.0
-  License: BSD
+  License: BSD-3-Clause
   URL: https://github.com/fsspec/filesystem_spec
 
 geographiclib 2.1

@@ -34,7 +34,7 @@ make dev       # Install all dependencies and build the web client
 make check     # Verify everything works
 ```
 
-The **Makefile** is the single source of truth. Run `make help` to see everything.
+The **Makefile** is the single source of truth. Run `make help` for common targets; read the Makefile for the complete list.
 
 Key commands:
 ```bash
@@ -132,7 +132,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full module map.
 
 PRs are squash-merged. Before merging a large integration branch, push its complete history to
 a `history/` branch and link it in the PR. Merging does not release: the maintainer dispatches the
-Release workflow, which renders a smoke film in the built image before it publishes anything. See [merging and releasing](docs-site/docs/contribute/development-setup.md#merging-and-releasing).
+Release workflow, which renders a smoke film in the built image before it publishes anything. See [releasing](docs-site/docs/contribute/releasing.md).
 
 [Conventional Commits](https://www.conventionalcommits.org/) format, enforced by commitlint:
 

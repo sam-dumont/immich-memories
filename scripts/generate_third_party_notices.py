@@ -6,9 +6,10 @@ in the `.in` file. The Python dependency inventory is computed: every package
 reachable from `immich-memories` in uv.lock through the runtime extras (never
 `dev`), with the licence and project URL read from the installed metadata. A
 package the lock knows but this environment does not have installed (a CUDA
-wheel on a Mac, a Mac framework on Linux) falls back to the table below; one
-that is in neither is written as UNKNOWN so `make notices-check` fails and
-somebody looks it up.
+wheel on a Mac, a Mac framework on Linux) reuses its exact name and version
+from the existing inventory, then falls back to the reviewed table below. This
+is cached provenance, not a fresh licence audit. A new version without metadata
+or a reviewed entry is UNKNOWN, so `make notices-check` fails for review.
 
 Usage:
     python scripts/generate_third_party_notices.py
@@ -154,6 +155,15 @@ def describe(name: str, version: str) -> tuple[str, str]:
     try:
         dist = metadata.distribution(name)
     except metadata.PackageNotFoundError:
+        if OUTPUT.exists():
+            cached = re.search(
+                rf"^{re.escape(name)} {re.escape(version)}\n  License: (.+)\n"
+                r"(?:  URL: (.*)\n)?",
+                OUTPUT.read_text(encoding="utf-8"),
+                re.MULTILINE,
+            )
+            if cached and cached.group(1) != "UNKNOWN":
+                return cached.group(1), cached.group(2) or ""
         if name.startswith(_NVIDIA_PREFIXES):
             return _NVIDIA_LICENCE, _NVIDIA_URL
         licence, url = KNOWN.get(name, ("UNKNOWN", ""))

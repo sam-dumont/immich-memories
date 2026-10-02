@@ -4,22 +4,21 @@ title: Testing Guide
 
 # Testing guide
 
-Start with unit tests, then run the checks for the boundaries your change touches: optional backends, real Immich, the store or the browser. `make help` lists the available suites.
+Start with unit tests, then run the checks for the boundaries your change touches: optional backends, real Immich, the store or the browser. `make help` lists common suites; the Makefile contains all per-suite targets.
 
 | Tier | Command | What it needs |
 |------|---------|---------------|
 | Unit | `make test` | FFmpeg on the `PATH`: a handful of unit tests encode real media |
 | Extras | `make test-extras` | The torch-family extras (demucs/editorial). CI's extras job installs neither, so a green CI run does not prove the torch paths ran |
-| Integration | `make test-integration` | FFmpeg, an Immich server in `~/.immich-memories/config.yaml`, and at least two clips under 30s in that library |
+| Integration | `make test-integration` | FFmpeg, an Immich server in `~/.immich-memories/config.yaml`, and at least two clips of 15 seconds or less in that library |
 | Store | `make test-store-sqlite`, `make test-store` | `tests/store/` on SQLite, then on PostgreSQL too. `make test-store` starts a throwaway `postgres:16` in Docker unless `IMMICH_MEMORIES_TEST_DATABASE_URL` names one; each test gets its own schema. `make test` runs the SQLite half |
 | Real-Immich gate | `make test-immich-gate IMMICH_GATE_VERSION=v2` (or `v3`), plus `IMMICH_GATE_DATABASE=postgresql` for the store on PostgreSQL | Docker and FFmpeg. It starts its own Immich and fixture library, and fails when Immich does not come up |
 | E2E | `make e2e` (`make e2e-full` for the generation flow) | `make playwright-install`; no Immich, it runs against a fake server |
 | Launch check | `make launch-check-ci`, `make launch-check-ci-postgres` | The required E2E set. The PostgreSQL one gives each launch its own schema in `IMMICH_MEMORIES_E2E_DATABASE_URL`, or starts a throwaway `postgres:16` when that is unset |
 | Container | `make test-container` (`CONTAINER_E2E_DATABASE=postgresql` for PostgreSQL) | Docker. Builds the image and runs it; see below |
 
-`make test-fast` skips tests marked slow; the full suite is `make test`.
-Integration suites skip rather than fail when their services aren't there, unless `REQUIRE_IMMICH=1` (the gate below sets it). `make help` lists every
-per-suite target with its runtime. Three suites are outside `make test-integration`: `cli`, which
+`make test-fast` excludes slow, integration, e2e and container tests; the full suite is `make test`.
+Integration suites skip rather than fail when their services aren't there, unless `REQUIRE_IMMICH=1` (the gate below sets it). The Makefile lists the per-suite targets. Three suites are outside `make test-integration`: `cli`, which
 re-runs the pipeline `pipeline` already covers and is the slowest in the tree; `audio`, which wants
 the demucs and ACE-Step packages; and `automation`, which has no dedicated make target. For that suite only, use `uv run pytest tests/integration/automation`.
 
@@ -27,7 +26,7 @@ the demucs and ACE-Step packages; and `automation`, which has no dedicated make 
 
 Unit tests talk to a patched HTTP client and the integration suites skip when no Immich is
 configured, so neither proves the product still speaks to a real server. The `Immich Gate` check
-does, on every PR, for both majors:
+does, for both majors when the change scope calls for it (see [CI](./ci.md)):
 
 1. `make immich-gate-up` starts Immich (v2.7.5 or v3.2.2), Postgres and Valkey from
    `tests/integration/immich_gate/docker-compose.yml`. Every image is pinned by digest, there is no
@@ -36,8 +35,9 @@ does, on every PR, for both majors:
 2. `seed.py` signs up an admin, uploads the June 2024 CC0 fixture month (133 pictures, 13 of them
    videos, with EXIF camera and capture time), places them, tags three made-up people by hand,
    files the story albums, and adds 1,010 tiny pictures in one album so reads have to go past
-   Immich's 1,000-item search page. Then it writes a rules-tier config (no model, no network
-   beyond this Immich) under `.immich-gate/`.
+   Immich's 1,000-item search page. Then it writes a rules-tier config under `.immich-gate/`.
+   There is no hosted reader or music API, but local detector models and WordNet still need
+   download/cache preparation; this is not a guarantee of no model or network use.
 3. The tests in `tests/integration/immich_gate/` run with `REQUIRE_IMMICH=1`, which turns
    `requires_immich` and `make_immich_client()` from a skip into a failure.
 
@@ -52,7 +52,8 @@ does, on every PR, for both majors:
 | generate | `generate --memory-type monthly_highlights --no-render` on the rules tier picks a cut from the fixture month |
 | store | a `people scan` and a `pictures never-use` read back from the store, a second `prepare` of the month changes no banked fact, and a rendered film is in the run history with its phases |
 
-Every test runs twice per major: the app's store on SQLite, and on PostgreSQL.
+Locally you can run each major on either backend. CI runs SQLite for applicable changes,
+and adds PostgreSQL when the store changes.
 `IMMICH_GATE_DATABASE=postgresql` starts a throwaway `postgres:16` for the run, in CI too (a job
 service would not survive the workflow's Docker daemon restart), unless
 `IMMICH_GATE_DATABASE_URL` names a server. The runs get the store through `IMMICH_MEMORIES_DATABASE_URL`, the same variable a
@@ -70,7 +71,7 @@ arrives still fails the gate.
 
 ## The container suite
 
-CI builds the Docker image on every PR; `make test-container` is what runs it. It builds the
+CI builds the Docker image for changes that affect it; `make test-container` is what runs it. It builds the
 image with the `editorial` extra (`CONTAINER_E2E_BUILD=0` reuses one already built), then drives
 the repo's own `docker-compose.yml` from `tests/container/`:
 
@@ -121,7 +122,7 @@ suite locally before pushing, so you catch FFmpeg regressions before the GPU run
 ## Writing integration tests
 
 1. **Mock WRITES, not READS**: real Immich for fetching assets, real FFmpeg for encoding. Only mock upload and mutation.
-2. **Use short clips**: under 30s, 2-3 per test. Full pipeline tests should finish in under 2 minutes.
+2. **Use short clips**: 15 seconds or less, 2-3 per test. Full pipeline tests should finish in under 2 minutes.
 3. **Skip gracefully**: use the `requires_ffmpeg` and `requires_immich` markers.
 4. **Assert the contract**: check valid output and duration, and use exact timing or content assertions when deterministic (for example, a certified frame endpoint).
 5. **Log during tests**: `make test-integration` shows live logs (`--log-cli-level=INFO`).

@@ -15,7 +15,7 @@ CI runs in tiers, cheap to expensive, and a pull request only runs the jobs its 
   `if: !cancelled()` so the first failure doesn't hide the rest. Commitlint runs on pull requests
   only. A second job runs the security scans in parallel.
 - **Tier 2: tests**, after both tier 1 jobs pass. The unit suite (Ubuntu on 3.11/3.12/3.13; macOS on
-  3.13 for a pull request, all three on `main`), plus `make test-extras`. Neither extras job pulls
+  3.13 for a pull request, all three for a release workflow call), plus `make test-extras`. Neither extras job pulls
   torch, so what runs there is the subset that survives without it; the rest is a local target.
 - **Tier 3: build**, after tests. Package build, and the Docker image on pull requests.
 
@@ -34,6 +34,7 @@ What a pull request runs:
 | The image or its deployment (`docker/`, `docker-compose.yml`, `deploy/`, `services/`, `packages/`) | Plus the Docker builds and container e2e |
 | `pyproject.toml`, `uv.lock`, `Makefile`, a workflow, `tests/conftest.py`, or a path no rule knows | Everything |
 
+CI runs on pull requests and `workflow_call`, not pushes to `main`.
 The release calls CI through `workflow_call` and always runs everything. `make ci-scope` prints
 what the current branch would run. Branch protection requires `CI Success` and `Immich Gate`, the
 two rollups, so skipping a job or adding a matrix leg never leaves a required check unreported.
@@ -62,4 +63,7 @@ needs a remote or a diff: commitlint, pip-audit, gitleaks, hadolint.
 | Docs | docs-voice, docs-cli-check, docs-config-check, notices-check | Chatbot prose and em dashes; drift between the generated references and the code |
 | Tests | pytest | The unit suite in CI; integration and e2e locally and on the GPU runner |
 
-`docs-voice` and `notices-check` run in `make ci` and the pre-commit hooks, not in the CI job.
+`docs-voice` and `notices-check` run in `make ci`, the pre-commit hooks and the CI quality job.
+For optional packages absent from that environment, notices reuse the recorded licence and URL
+only for the exact package name and version. A new version without installed metadata or a
+reviewed fallback fails for review. That is cached provenance, not a fresh licence audit.

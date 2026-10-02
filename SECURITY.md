@@ -48,7 +48,7 @@ The [threat model](docs/security/threat-model.md) describes assets, trust bounda
 - What leaves your network (geocoding, map tiles, LLM, music, notifications) is listed on the
   [network & privacy page](https://sam-dumont.github.io/immich-video-memory-generator/docs/run/privacy).
 - CI runs five security scans on every change: Bandit, Semgrep, pip-audit, Gitleaks and Hadolint.
-  OpenSSF Scorecard runs on its own schedule and on pushes to `main`. The Docker image is
+  OpenSSF Scorecard runs on its schedule, branch-protection changes and manual dispatch, not pushes to `main`. The Docker image is
   digest-pinned and runs as a non-root user.
 
 ## Security Considerations
@@ -76,14 +76,24 @@ Releases carry SLSA build provenance, signed through Sigstore by the GitHub
 Actions workflow that produced them: nothing is built on a laptop. A release
 that carries it has a `.sigstore.json` asset alongside the wheel.
 
-Wheels and sdists carry the attestation as a release asset:
+Choose a release that actually has a `.sigstore.json` asset. This verifies the downloaded
+wheel against that bundle; release tags and wheel versions differ for release candidates:
 
 ```bash
-VERSION=0.103.0  # choose a release that includes the .sigstore.json bundle
-gh release download "v$VERSION" --repo sam-dumont/immich-video-memory-generator
-gh attestation verify "immich_memories-$VERSION-py3-none-any.whl" \
-  --repo sam-dumont/immich-video-memory-generator \
-  --bundle "immich_memories-$VERSION.sigstore.json"
+# Set this to an existing release tag whose assets include the bundle.
+TAG=vX.Y.Z
+mkdir release-verification
+cd release-verification
+gh release download "$TAG" --repo sam-dumont/immich-video-memory-generator \
+  --pattern '*.whl' --pattern '*.sigstore.json'
+# Use actual filenames, including Python's normalized RC version.
+set -- ./*.whl
+[ "$#" -eq 1 ] && [ -f "$1" ] || exit 1
+WHEEL=$1
+set -- ./*.sigstore.json
+[ "$#" -eq 1 ] && [ -f "$1" ] || exit 1
+gh attestation verify "$WHEEL" \
+  --repo sam-dumont/immich-video-memory-generator --bundle "$1"
 ```
 
 The application image carries provenance for each platform digest. Verify the digest for your

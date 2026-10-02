@@ -134,3 +134,17 @@ repos:
         pass_filenames: false
         types: [python]
 
+
+      - id: docs-voice
+        name: Documentation voice
+        entry: make docs-voice
+        language: system
+        pass_filenames: false
+        files: ^(README\.md|docs-site/docs/)
+
+      - id: notices-check
+        name: Third-party notices drift
+        entry: make notices-check
+        language: system
+        pass_filenames: false
+        files: ^(uv\.lock|THIRD_PARTY_NOTICES(?:\.in)?)$

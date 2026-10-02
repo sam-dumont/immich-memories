@@ -280,6 +280,12 @@ changelog_incremental = true
 major_version_zero = true
 
 [tool.uv]
+# These distributions share the onnxruntime import namespace.
+conflicts = [
+    [{ extra = "editorial" }, { extra = "editorial-cuda" }],
+    [{ extra = "all" }, { extra = "editorial-cuda" }],
+    [{ extra = "all-mac" }, { extra = "editorial-cuda" }],
+]
 # Only resolve dependencies for the current platform to avoid cross-platform issues
 # with platform-specific packages like pyobjc
 environments = ["sys_platform == 'darwin'", "sys_platform == 'linux'", "sys_platform == 'win32'"]

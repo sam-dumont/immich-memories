@@ -72,7 +72,7 @@ names every port and the file it lives in, with the full module map.
 1. Add the value to the `MemoryType` enum in `memory_types/registry.py`
 2. Write a factory function in `memory_types/factory.py` and decorate it with `@register_preset`: the decorator *is* the registration, there is no second list to edit there
 3. Add date builder logic if the type needs its own, in `memory_types/date_builders.py`
-4. Add it to `OFFERED_MEMORY_TYPES` in `memory_types/registry.py`: `--memory-type` and the Memory page's select both read that tuple, in that order
+4. Add it to `OFFERED_MEMORY_TYPES` in `memory_types/registry.py` for `--memory-type`. Add its fields to `FIELDS` in `web/src/routes/create/+page.svelte` too: the Memory page has its own map and does not discover presets from the Python tuple
 5. Document it in [`docs-site/docs/make/memory-types.mdx`](../make/memory-types.mdx)
 
 ### A new CLI command
