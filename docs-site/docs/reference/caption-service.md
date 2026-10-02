@@ -134,7 +134,8 @@ docker compose --profile captioner up -d
 curl -s localhost:8094/v1/models
 ```
 
-The first `up` pulls 546 MB; re-running it is cheap, the digest check short-circuits.
+The first `up` downloads about 546 MB of model and projector weights, plus the container
+image layers. Later starts reuse the weights after the digest check.
 Compose publishes captions on host port **8094** and inference on **8092**, so both
 profiles can run together. Inside the Compose network both services still use port 8092.
 
@@ -163,8 +164,9 @@ Three more flags carry the serving contract:
 | `--mmproj …` | the model loads and answers, but cannot interpret images: the control tiles fail and no library picture is sent |
 | `--port 8092` | nothing answers where the app looks, and the row reads unreachable |
 
-Use local model and projector files with the pinned runtime. Validate `/models` and the synthetic
-controls with preflight before sending library pictures.
+Use local model and projector files with the pinned runtime. Preflight checks `/models` and the
+advertised alias. Preparation sends synthetic control tiles first; failed controls stop it before
+any library picture is sent. Preflight does not validate image responses.
 
 ### On an NVIDIA host
 
@@ -283,7 +285,8 @@ The standalone overlays pin llama.cpp build b10920: `server-b10920` on CPU and
 | `Caption endpoint refused the request` | 401 or 403, so set `caption_api_key` |
 
 On NAS with the default caption provider the row reads `SKIPPED`. An explicit LLM-caption
-opt-in checks the configured LLM's vision responses instead.
+opt-in prints the image-sharing warning; it does not send a vision request. Preparation validates
+that provider's synthetic control responses before sending library pictures.
 
 ## What a missing captioner costs
 

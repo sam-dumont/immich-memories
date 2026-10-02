@@ -224,7 +224,8 @@ def laya_reader_for(editorial_config) -> LayaReader | None:
     except ImportError:
         logger.warning(
             "Laya is on but laya-mlx is not installed, so the heads and rules decide sharing "
-            "alone: `pip install laya-mlx` (Apple silicon)"
+            "alone. Install laya-mlx in the app environment; for uv tool: "
+            '`uv tool install "immich-memories[all-mac]" --with laya-mlx` (Apple silicon)'
         )
         return None
     return LayaReader(

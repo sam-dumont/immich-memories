@@ -42,13 +42,20 @@ and the prose reader when preparation produces captions. The `gpu` and `full` ti
 the default `nas` tier uses the picture classifiers and rules.
 
 ```bash
-pip install laya-mlx                         # Apple Silicon only
+uv tool install "immich-memories[all-mac]" --with laya-mlx  # Apple Silicon uv-tool install
 immich-memories models fetch --laya          # platform-specific, digest-pinned
 ```
 
+`laya-mlx` is not included in an app extra. In a checkout, use
+`uv pip install --python .venv/bin/python laya-mlx`; with pip, run
+`python -m pip install laya-mlx` using the app's Python. A bare system `pip install` does not
+add it to a `uv tool` environment. Without the runtime, sharing reports that heads and rules
+are being used alone.
+
 `models fetch` chooses the Apple archive on Apple silicon and the portable ONNX archive on
 Linux, Windows and Intel Macs. ONNX needs the `editorial` extra for CPU or `editorial-cuda` for
-NVIDIA. The Apple download is 811 MB. The ONNX download is 877 MB and expands to 1.70 GB;
+NVIDIA. The Apple download is 811 MiB (851 MB). The ONNX download is 836 MiB (877 MB)
+and expands to about 1.70 GB;
 its calibrated default threshold is
 0.185, while MLX keeps 0.186. Both archives are SHA-256 checked. A download mirror must keep the
 archive's filename. When configuring a checkpoint for a different backend manually, set its
@@ -72,8 +79,9 @@ PyTorch nor MLX.
 
 For the audience ONNX export, set `laya_audience_threshold: 0.185`. This threshold was
 chosen on the public calibration split to retain all 15 MLX holds. On 3,143 held-out
-captions it retained all 23 MLX holds and added one. These are classifier checks. The complete NVIDIA image validation is recorded in closed
-[#1385](https://github.com/sam-dumont/immich-video-memory-generator/issues/1385).
+captions it retained all 23 MLX holds and added one. These are classifier checks. The NVIDIA runtime and image work is recorded in the closed
+[#1385](https://github.com/sam-dumont/immich-video-memory-generator/issues/1385); the counts
+here measure classifier holds, not end-to-end film performance.
 
 ## Ollama
 

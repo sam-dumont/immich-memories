@@ -156,7 +156,7 @@ def test_a_missing_laya_runtime_degrades_naming_the_install(monkeypatch, tmp_pat
     assert (
         laya_reader_for(EditorialConfig(laya_audience=True, laya_checkpoint=str(archive))) is None
     )
-    assert "laya-mlx" in caplog.text
+    assert 'uv tool install "immich-memories[all-mac]" --with laya-mlx' in caplog.text
 
 
 def test_the_checkpoint_archive_is_unpacked_once(tmp_path):

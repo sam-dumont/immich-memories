@@ -23,8 +23,10 @@ docker compose -f services/inference/compose.gpu-worker.yaml up -d
 ```
 
 Save the token in your secret manager and use the same value in the app. The recipe defaults to
-loopback binding if you omit `GPU_WORKER_BIND_ADDRESS`. It mounts separate model-cache and
-render-scratch volumes and reserves one NVIDIA GPU. It does not set a RAM limit.
+loopback binding if you omit `GPU_WORKER_BIND_ADDRESS`. The model-cache volume holds reusable
+weights and runtime caches; render-scratch holds the worker's downloaded originals and temporary
+render files. It is separate from the app's finished-output volume. The service reserves one
+NVIDIA GPU and does not set a RAM limit.
 
 Configure the app:
 
@@ -54,10 +56,14 @@ Check from the app's environment:
 
 ```bash
 immich-memories preflight -v
+# When the app runs in Docker Compose:
+docker compose exec immich-memories immich-memories preflight -v
 ```
 
 The Compose health check verifies the inference listener and authenticated render health. It
-does not certify caption responses or every model's provider; preflight supplies those checks.
+does not certify caption responses or every model's provider. Preflight checks reachability,
+model advertisement and reported capabilities; preparation validates synthetic caption controls
+before sending library pictures.
 
 ## Optional generated music
 

@@ -36,7 +36,9 @@ def optional_capabilities(config: Config) -> list[Capability]:
                 name,
                 "missing",
                 "Run immich-memories models fetch; the MLX checkpoint also needs "
-                "pip install laya-mlx. Until then, sharing uses heads and rules alone.",
+                "laya-mlx in the app environment. For uv tool: "
+                'uv tool install "immich-memories[all-mac]" --with laya-mlx. '
+                "Until then, sharing uses heads and rules alone.",
             )
         ]
     return [Capability(name, "untested", "Model found; inference has not been tested")]

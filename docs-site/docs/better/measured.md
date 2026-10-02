@@ -33,6 +33,10 @@ still ran. Preparing a new library takes additional time.
 | M5, Full tier | One-minute month | 5m 43s | 4K portrait, 60 fps, HDR10 | `cb06e4ba0e0d` |
 | M5, Full tier | Ten-minute person film | 39m 40s | 4K portrait, 60 fps, HDR10 | `f82de21b5bf5` |
 
+`f74936b657d7` was an unpublished measurement checkout, absent from the public repository.
+The M2 month and NAS stress run below are historical observations; that source cannot be
+checked out from this repository to reproduce them.
+
 NAS used bundled music. The Mac films used local ACE-Step music and Demucs stem separation.
 The M2 Full month recorded 12.38 GB process-tree RSS; the M5 Full person recorded 17.02 GB.
 RSS can count shared mappings more than once and is not a minimum RAM requirement.

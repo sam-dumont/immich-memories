@@ -437,7 +437,7 @@ on native Linux or macOS. The Docker and Kubernetes app images need an external 
 Set a URL to use your own API server. `openai`, `anthropic` and `zai` fill a blank URL with their vendor endpoint and select its adapter and reasoning dialect; under `zai` the URL also picks the adapter (a
 `.../api/anthropic` base takes the Messages route). Which dialect goes where, what `thinking` does
 on each host, how `thinking_params` and `no_thinking_params` differ, and what batching pays are all
-on [Provider contracts](./llm-providers.md), with links to dated measurements.
+in [Providers and dialects](./llm-providers.md#providers-and-dialects), with links to dated measurements.
 
 `thinking` has five settings. `disabled` never asks for reasoning. `low`, `high` and `max` run the
 model in reasoning mode for title generation. Bulk reader, music mood and special-day calls use the non-thinking settings. `auto` sends no reasoning field and takes the host's default, which is where to

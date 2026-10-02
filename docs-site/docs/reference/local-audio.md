@@ -50,14 +50,20 @@ Weight budgets are not peak-memory guarantees: generation also allocates working
 `make install-acestep` installs ACE-Step v0.1.8 and Demucs into a sibling `.venv-acestep`, because
 ACE-Step's Transformers pin wants an older Hugging Face library than the editor. `make
 check-local-audio` generates 15 seconds, splits all four stems and fails loudly if any of it didn't
-happen locally, so a remote server or a bundled track can't pass it. Every clone and every
+happen locally, so a remote server or a bundled track can't pass it. The default check uses the
+2B model with its 0.6B planner: about 9 GB resident weights and 7 GB disk. It does not test the
+7 GB planner-free profile recommended in the music guide. Every clone and every
 git worktree needs its own run, since the environment sits next to the checkout. Rerun the
 installer after moving the checkout or changing the app version; it also repairs
 `operator torchvision::nms does not exist`. A bare `uv sync` can remove Demucs from the editor's
 environment, and the installer puts it back.
 
 The isolated stack uses patched PyTorch 2.13, TorchAudio 2.11's stable ABI, and TorchVision 0.28;
-Linux uses the CUDA 12.6 wheels, and the Mac wheels require macOS 14 or newer. This tested stack
+Linux uses CUDA 12.6 wheels; NVIDIA driver **560.35.05 or newer** is the recommended
+baseline for that update series ([NVIDIA driver table](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-toolkit-release-notes/index.html#cuda-driver)).
+CUDA 12 minor compatibility allows older drivers from 525.60.13 with feature and PTX/JIT
+limits; it does not guarantee every audio kernel works. The CUDA inference container uses
+12.8.1; follow its newer [recommended driver baseline](./inference-service.md#running-it-with-compose). The Mac wheels require macOS 14 or newer. This tested stack
 overrides ACE-Step v0.1.8's older Linux package pins, so its upstream dependency metadata still
 reports that mismatch. The app disables PyTorch native JIT kernels in its own audio child before
 PyTorch imports, keeping the existing eager path free of a compiler requirement. A custom direct
