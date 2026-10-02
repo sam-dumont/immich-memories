@@ -242,6 +242,11 @@ spec:
                 - -X
                 - POST
                 - http://immich-memories/api/trigger
+                # The app answers a foreign Host only once it is listed in
+                # server.allowed_hosts; localhost is always answered, so the
+                # call works with authentication on or off.
+                - -H
+                - "Host: localhost"
                 - -H
                 - "x-api-key: $(TRIGGER_TOKEN)"
               env:
@@ -314,6 +319,11 @@ spec:
                 - -X
                 - POST
                 - http://immich-memories/api/trigger
+                # The app answers a foreign Host only once it is listed in
+                # server.allowed_hosts; localhost is always answered, so the
+                # call works with authentication on or off.
+                - -H
+                - "Host: localhost"
                 - -H
                 - "x-api-key: $(TRIGGER_TOKEN)"
               env:

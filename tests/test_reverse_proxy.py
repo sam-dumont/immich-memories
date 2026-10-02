@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -20,6 +21,7 @@ from immich_memories.web.reverse_proxy import reverse_proxy_run_kwargs
 
 _BASIC_AUTH = {"enabled": True, "provider": "basic", "username": "op", "password": "pw"}
 _PROXY, _VISITOR, _STRANGER = "10.0.0.2", "203.0.113.5", "192.0.2.9"
+_SESSION_KEY = "test-session-key-0f3a9c2e7b41d856e0"
 
 
 def _session_cookie(run_kwargs: dict) -> str:
@@ -68,6 +70,8 @@ async def _login_status(request: Request, config: Config) -> int:
     from immich_memories.web.server import Credentials, login
 
     request.scope.setdefault("session", {})
+    # The app the server would be: only its session key is read on a sign-in.
+    request.scope["app"] = SimpleNamespace(state=SimpleNamespace(session_secret=_SESSION_KEY))
     # WHY: the server reads its config from disk; the test decides who the proxy is.
     with patch("immich_memories.web.server.get_config", return_value=config):
         response = await login(Credentials(username="op", password="pw"), request)  # noqa: S106
@@ -119,19 +123,26 @@ class TestForwardedAllowIpsPrecedence:
 
 
 class TestHeaderProvider:
-    def test_header_auth_still_sees_the_proxy_when_it_forwards_the_visitor_ip(self):
-        from immich_memories.web.server import _try_header_auth
+    def test_header_auth_still_sees_the_proxy_when_it_forwards_the_visitor_ip(self, monkeypatch):
+        from immich_memories.web import server
 
         config = Config(auth={"enabled": True, "provider": "header", "trusted_proxies": [_PROXY]})
         run_kwargs = reverse_proxy_run_kwargs(config, environ={})
-
-        request = _request_after_proxy(
-            run_kwargs, _PROXY, {"X-Forwarded-For": _VISITOR, "Remote-User": "ada"}
+        # WHY: the app reads its config from disk; the test decides who the proxy is.
+        monkeypatch.setattr(server, "get_config", lambda *_a, **_k: config)
+        monkeypatch.setattr("immich_memories.web.session.get_config", lambda *_a, **_k: config)
+        monkeypatch.setenv("IMMICH_MEMORIES_STORAGE_SECRET", _SESSION_KEY)
+        served = ProxyHeadersMiddleware(
+            server.create_app(), trusted_hosts=run_kwargs["forwarded_allow_ips"]
         )
-        request.scope["session"] = {}
-        _try_header_auth(request, config.auth)
+        client = TestClient(served, client=(_PROXY, 40000), follow_redirects=False)
 
-        assert request.session.get("authenticated") is True
+        response = client.get(
+            "/app/runs", headers={"X-Forwarded-For": _VISITOR, "Remote-User": "ada"}
+        )
+
+        assert response.headers.get("location") != "/app/login"
+        assert client.get("/api/v1/session").json()["username"] == "ada"
 
 
 class _FakeOAuth:
@@ -166,7 +177,7 @@ class TestOidcRedirectUri:
             patch("immich_memories.web.server.get_config", return_value=config),
             # WHY: authlib would fetch the IdP's discovery document over the network.
             patch("immich_memories.web.auth_oidc.create_oidc_client", return_value=oauth),
-            patch.dict("os.environ", {"IMMICH_MEMORIES_STORAGE_SECRET": "test-secret"}),
+            patch.dict("os.environ", {"IMMICH_MEMORIES_STORAGE_SECRET": _SESSION_KEY}),
         ):
             served = ProxyHeadersMiddleware(
                 create_app(), trusted_hosts=run_kwargs["forwarded_allow_ips"]

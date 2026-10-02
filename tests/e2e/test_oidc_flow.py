@@ -79,7 +79,7 @@ def test_oidc_login_flow(oidc_app_url: str, page: Page) -> None:
 
     page.wait_for_url(f"{oidc_app_url}/app/create", timeout=15_000)
     expect(page.get_by_text("testuser", exact=True)).to_be_visible()
-    expect(page.get_by_role("link", name="Sign out")).to_be_visible()
+    expect(page.get_by_role("button", name="Sign out")).to_be_visible()
     session = page.request.get(f"{oidc_app_url}/api/v1/session").json()
     assert session["signed_in"] is True
     assert session["username"] == "testuser"

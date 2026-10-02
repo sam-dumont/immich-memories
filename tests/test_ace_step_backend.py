@@ -18,7 +18,9 @@ from immich_memories.audio.generators.ace_step_backend import (
     _detect_season,
     _mood_to_structured_prompt,
 )
+from immich_memories.audio.generators.ace_step_checkpoints import CHECKPOINT_SET
 from immich_memories.audio.generators.base import GenerationRequest
+from tests.ace_step_downloads import snapshot_module
 
 
 @pytest.fixture(autouse=True)
@@ -179,6 +181,7 @@ class TestACEStepBackendV15Library:
         class FakeHandler:
             def initialize_service(self, **kwargs):
                 captured["dit_init"] = kwargs
+                captured["checkpoint_dir"] = os.environ["ACESTEP_CHECKPOINTS_DIR"]
                 return "DiT ready", True
 
         handler_module.AceStepHandler = FakeHandler
@@ -234,6 +237,7 @@ class TestACEStepBackendV15Library:
         inference_module.generate_music = generate_music
 
         return {
+            "huggingface_hub": snapshot_module(),
             "acestep": package,
             "acestep.handler": handler_module,
             "acestep.llm_inference": llm_module,
@@ -330,12 +334,13 @@ class TestACEStepBackendV15Library:
             "quantization": None,
             "use_mlx_dit": True,
         }
+        assert captured["checkpoint_dir"] == str(checkpoint_root / f"pinned-{CHECKPOINT_SET}")
         assert captured["lm_download"] == {
             "model_name": "acestep-5Hz-lm-1.7B",
-            "checkpoints_dir": checkpoint_root,
+            "checkpoints_dir": checkpoint_root / f"pinned-{CHECKPOINT_SET}",
         }
         assert captured["lm_init"] == {
-            "checkpoint_dir": str(checkpoint_root),
+            "checkpoint_dir": str(checkpoint_root / f"pinned-{CHECKPOINT_SET}"),
             "lm_model_path": "acestep-5Hz-lm-1.7B",
             "backend": "mlx",
             "device": "mps",

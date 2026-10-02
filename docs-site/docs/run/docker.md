@@ -12,14 +12,9 @@ You need Docker Compose v2 and [4 GB free for the app](./requirements.md). On a 
 
 ### 1. Get the two files
 
-In an empty directory:
+import InstallationFiles from '@site/src/components/InstallationFiles';
 
-```bash
-mkdir immich-memories && cd immich-memories
-curl -O https://raw.githubusercontent.com/sam-dumont/immich-video-memory-generator/main/docker-compose.yml
-curl -O https://raw.githubusercontent.com/sam-dumont/immich-video-memory-generator/main/example.env
-cp example.env .env
-```
+<InstallationFiles />
 
 ### 2. Connect Immich
 

@@ -26,7 +26,7 @@ Explicit model or endpoint configuration can enable the reader unless `enabled: 
 | `ace_step.api_url`, `musicgen.base_url` | AI music through a remote API | mood, tempo and genre text; MusicGen is also sent the generated track, for stem separation | off |
 | Apprise or ntfy targets | `notifications.enabled: true` | memory type, outcome, duration, output path, a redacted error tail; a frame if `attach_thumbnail: true` | off |
 | Your OIDC provider | login with `provider: oidc` | the standard OIDC flow with PKCE | authentication off |
-| Hugging Face, `github.com` | only when you run `models fetch` (and ACE-Step or Demucs on first use) | nothing about your library: pinned weights, checked by SHA-256; ACE-Step's own first-use download takes the library's current checkpoint, not a pinned revision | a run never downloads |
+| Hugging Face, `github.com` | only when you run `models fetch` (and ACE-Step or Demucs on first use) | nothing about your library: pinned model files; ACE-Step snapshots use the commit revisions listed below | a run never downloads |
 | `raw.githubusercontent.com` | only `titles fonts --install`, `models fetch`, or while the Docker image builds | nothing about your library: 42 Noto files, 43 MB; the WordNet 3.0 corpus, 11 MB, checked by SHA-256 | a render never downloads |
 
 `preflight` prints one row per outside switch you turned on, naming the host. A default install
@@ -125,3 +125,29 @@ The annotation database and its SQLite sidecars are restricted to the current us
 replaced atomically at mode `0600`; a corrupt preview gets one fresh fetch. Cancellation stops
 before the next caption request and terminates the detector worker's process group; committed
 facts stay for the next run.
+
+## ACE-Step checkpoint revisions
+
+Local `ace_step.mode: lib` downloads these immutable Hugging Face revisions before
+initializing ACE-Step 1.5. The shared snapshot is always needed; only the selected
+extra DiT and planner are downloaded. API mode uses the remote server's checkpoints.
+
+| Repository | Commit |
+| --- | --- |
+| [ACE-Step/Ace-Step1.5](https://huggingface.co/ACE-Step/Ace-Step1.5/tree/19671f406d603126926c1b7e2adc169acbcade22) | `19671f406d603126926c1b7e2adc169acbcade22` |
+| [ACE-Step/acestep-5Hz-lm-0.6B](https://huggingface.co/ACE-Step/acestep-5Hz-lm-0.6B/tree/148d8ea0225bdab342ee1ae3a354275ccd60ca80) | `148d8ea0225bdab342ee1ae3a354275ccd60ca80` |
+| [ACE-Step/acestep-5Hz-lm-4B](https://huggingface.co/ACE-Step/acestep-5Hz-lm-4B/tree/0a3ec94b557aea7d508da38b31cfe7341f6ff737) | `0a3ec94b557aea7d508da38b31cfe7341f6ff737` |
+| [ACE-Step/acestep-v15-turbo-shift3](https://huggingface.co/ACE-Step/acestep-v15-turbo-shift3/tree/625a282f7c8d882c930a5e500be4c82800f84fb4) | `625a282f7c8d882c930a5e500be4c82800f84fb4` |
+| [ACE-Step/acestep-v15-sft](https://huggingface.co/ACE-Step/acestep-v15-sft/tree/c410d249e71ea9385a7b586865e65b1473e1098d) | `c410d249e71ea9385a7b586865e65b1473e1098d` |
+| [ACE-Step/acestep-v15-base](https://huggingface.co/ACE-Step/acestep-v15-base/tree/e432212fec32b8965a14ffa57ae653438d6abd14) | `e432212fec32b8965a14ffa57ae653438d6abd14` |
+| [ACE-Step/acestep-v15-turbo-shift1](https://huggingface.co/ACE-Step/acestep-v15-turbo-shift1/tree/5b86586cc1faecd5214281b05440c8903b6da20f) | `5b86586cc1faecd5214281b05440c8903b6da20f` |
+| [ACE-Step/acestep-v15-turbo-continuous](https://huggingface.co/ACE-Step/acestep-v15-turbo-continuous/tree/f8e893768347fd42f5988e07d1d80675fc3e5718) | `f8e893768347fd42f5988e07d1d80675fc3e5718` |
+| [ACE-Step/acestep-v15-xl-base](https://huggingface.co/ACE-Step/acestep-v15-xl-base/tree/220c1166efbdd9583eafcb12eb160594bbfcb241) | `220c1166efbdd9583eafcb12eb160594bbfcb241` |
+| [ACE-Step/acestep-v15-xl-sft](https://huggingface.co/ACE-Step/acestep-v15-xl-sft/tree/d06de46b4622f781cf07f4a013a67d591ca52819) | `d06de46b4622f781cf07f4a013a67d591ca52819` |
+| [ACE-Step/acestep-v15-xl-turbo](https://huggingface.co/ACE-Step/acestep-v15-xl-turbo/tree/d4a0b288b83ebb7e25a8c0b32c573c22e134e8ee) | `d4a0b288b83ebb7e25a8c0b32c573c22e134e8ee` |
+
+The snapshots live in a `pinned-<checkpoint-set>` subdirectory of
+`ACESTEP_CHECKPOINTS_DIR` (default `~/.cache/ace-step/checkpoints`). Existing
+unpinned files stay untouched and are not used. A failed or incomplete download
+stops initialization instead of falling back to the latest upstream weights.
+Updating a pin selects a new cache directory.

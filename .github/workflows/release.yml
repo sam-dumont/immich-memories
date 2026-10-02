@@ -348,11 +348,10 @@ jobs:
   deploy-docs:
     name: Deploy Docs
     needs: [analyze, release]
-    # The site documents the current final; a candidate's changes wait for it.
+    # Candidates publish at the root before 1.0, then at /next.
     if: >-
       github.repository == 'sam-dumont/immich-video-memory-generator' &&
-      !inputs.dry_run && needs.analyze.outputs.should_release == 'true' &&
-      needs.analyze.outputs.prerelease != 'true'
+      !inputs.dry_run && needs.analyze.outputs.should_release == 'true'
     uses: ./.github/workflows/docs.yml
     with:
       version: v${{ needs.analyze.outputs.next_version }}

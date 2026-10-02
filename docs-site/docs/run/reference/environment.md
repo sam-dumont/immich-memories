@@ -42,7 +42,7 @@ replace a key that is in the file, use `IMMICH_MEMORIES_LLM__API_KEY`.
 
 | Variable | Effect |
 |----------|--------|
-| `IMMICH_MEMORIES_STORAGE_SECRET` | Secret for the web UI session store. Priority: this variable, then `~/.immich-memories/.storage_secret`, then generated on first start |
+| `IMMICH_MEMORIES_STORAGE_SECRET` | Secret for the web UI session store. Priority: this variable, then `~/.immich-memories/.storage_secret`, then generated on first start. 32+ random characters (`openssl rand -hex 32`); a shorter one, or one with a placeholder word like `change-me`, stops the app at startup |
 | `IMMICH_MEMORIES_SKIP_STORED_SETTINGS` | `1` starts without the settings saved in the database (env, `config.yaml` and defaults only). Without it, a store that is configured but unreadable stops the app ([where a setting comes from](../config-file.md#where-a-setting-comes-from)) |
 | `IMMICH_MEMORIES_SECRET_KEY` | Encrypts the secrets saved to the database from the UI or CLI (API keys, passwords). Any string of 32+ characters, e.g. `openssl rand -base64 32`. Unset: secrets cannot be saved there, only in env or `config.yaml`. Read from the environment only, never from the store ([secrets in the database](../config-file.md#secrets-in-the-database)) |
 | `IMMICH_MEMORIES_LOG_FORMAT` | `text` (default) or `json` |
@@ -54,7 +54,7 @@ replace a key that is in the file, use `IMMICH_MEMORIES_LLM__API_KEY`.
 | `ACESTEP_CHECKPOINTS_DIR` | ACE-Step `lib` mode: where checkpoints go (default `~/.cache/ace-step/checkpoints`) |
 | `ACESTEP_MLX_VAE_CHUNK` | ACE-Step `lib` mode on Apple Silicon: VAE decode chunk in latent frames (minimum 192). Lower it if MLX runs out of memory |
 | `IMMICH_MEMORIES_ACESTEP_MLX_DIT_FP32` | ACE-Step `lib` mode on Apple Silicon: `1` keeps the decoder in fp32 (about twice the memory) |
-| `FORWARDED_ALLOW_IPS` | uvicorn: proxies whose `X-Forwarded-*` headers are trusted. Wins over `auth.trusted_proxies`. See [Authentication](../authentication.mdx) |
+| `FORWARDED_ALLOW_IPS` | uvicorn: proxies whose `X-Forwarded-*` headers are trusted. Wins over `auth.trusted_proxies`. With auth on, `*` stops the app at startup (list your proxy's address); with `auth.provider: header` it must be unset. See [Authentication](../authentication.mdx) |
 
 :::caution Scheduled jobs do not inherit your shell
 A launchd or cron job starts from a login-less environment, so nothing you `export` interactively

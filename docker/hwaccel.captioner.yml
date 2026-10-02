@@ -12,10 +12,9 @@
 #     file: docker/hwaccel.captioner.yml
 #     service: cuda          # or cpu, which reserves nothing
 #
-# `cuda` also needs the `-cuda` image: set CAPTIONER_TAG=server-cuda. The cpu
+# `cuda` also needs the `-cuda` image: set CAPTIONER_TAG=server-cuda-b10920. The cpu
 # image has no CUDA in it and will not grow any because a device was reserved.
-# ggml-org publishes the two as a pair per build, so pinning means
-# CAPTIONER_TAG=server-cuda-bNNNNN against server-bNNNNN: both or neither.
+# Keep CAPTIONER_TAG=server-cuda-b10920 paired with the CPU default server-b10920.
 #
 # Why the layer count is an environment variable and not `--n-gpu-layers 99`:
 # the flag would have to go in the service's `command:`, and `extends` replaces

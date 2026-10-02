@@ -6,3 +6,8 @@
 3e12c8470a0f89bf77430f144b79325092d00f12:tests/test_settings_stored_values.py:generic-api-key:96
 3e12c8470a0f89bf77430f144b79325092d00f12:tests/test_settings_stored_values.py:generic-api-key:105
 3e12c8470a0f89bf77430f144b79325092d00f12:tests/test_settings_stored_values.py:generic-api-key:130
+
+# Synthetic login passwords and trigger token used only by in-process auth tests.
+9773858858534e7f7e748aeafb08c931ab3440d6:tests/test_login_limiter.py:generic-api-key:12
+9773858858534e7f7e748aeafb08c931ab3440d6:tests/test_credential_comparison.py:generic-api-key:11
+9773858858534e7f7e748aeafb08c931ab3440d6:tests/test_startup_secrets.py:generic-api-key:33

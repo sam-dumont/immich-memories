@@ -12,10 +12,7 @@
 # Needs the GPU Operator, same as overlays/gpu and overlays/inference-cuda:
 # RuntimeClass `nvidia` and the nvidia.com/gpu.present node label.
 #
-# The tag floats on `server-cuda` because overlays/captioner floats on `server`,
-# and the two have to be one llama.cpp build. ggml-org publishes the pair per
-# build, so pinning means `server-bNNNNN` there and `server-cuda-bNNNNN` here:
-# both or neither.
+# Keep CPU and CUDA on the tested b10920 build.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -45,4 +42,4 @@ patches:
 # would put a second llama.cpp image on the node for no reason.
 images:
   - name: ghcr.io/ggml-org/llama.cpp
-    newTag: server-cuda
+    newTag: server-cuda-b10920

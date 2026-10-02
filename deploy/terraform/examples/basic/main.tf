@@ -22,6 +22,8 @@ provider "kubernetes" {
 module "immich_memories" {
   source = "../../"
 
+  image_tag = var.image_tag
+
   # Required: Immich credentials
   immich_url     = var.immich_url
   immich_api_key = var.immich_api_key

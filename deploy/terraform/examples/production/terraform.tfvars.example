@@ -17,7 +17,7 @@ immich_api_key = "your-immich-api-key"
 
 # UI authentication — the ingress exposes the UI, so this is required
 auth_username = "admin"
-auth_password = "change-me"
+auth_password = "" # generate: openssl rand -hex 16 (12+ characters)
 
 # Optional: LLM clip content analysis (any OpenAI-compatible API)
 llm_base_url = "http://ollama.ollama.svc.cluster.local:11434/v1"

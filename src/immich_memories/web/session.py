@@ -7,6 +7,7 @@ from fastapi import APIRouter, Request
 from immich_memories.config import get_config
 from immich_memories.web.auth import is_auth_enabled
 from immich_memories.web.schemas import CaptionDefaults, SessionView
+from immich_memories.web.session_validity import session_current
 
 router = APIRouter(prefix="/api/v1", tags=["session"])
 
@@ -18,10 +19,12 @@ def session_view(request: Request) -> SessionView:
     auth = config.auth
     enabled = is_auth_enabled(auth)
     session = request.scope.get("session") or {}
+    secret = str(getattr(request.app.state, "session_secret", ""))
+    signed_in = not enabled or (bool(secret) and session_current(session, config, secret))
     return SessionView(
         auth_enabled=enabled,
         provider=auth.provider if enabled else None,
-        signed_in=bool(session.get("authenticated")) or not enabled,
+        signed_in=signed_in,
         username=session.get("username"),
         button_text=auth.button_text if enabled and auth.provider == "oidc" else None,
         auto_launch=enabled and auth.provider == "oidc" and auth.auto_launch,
