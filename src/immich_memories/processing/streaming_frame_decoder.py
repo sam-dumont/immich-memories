@@ -180,14 +180,15 @@ class FrameDecoder:
         # PTS reset — critical for multi-clip concat
         parts.append("setpts=PTS-STARTPTS")
 
-        # Discard surplus frames before paying for output-resolution scale/blur.
-        # Privacy noise is temporal, so preserve its original frame sequence.
-        reduce_fps = (
+        # Normalize equal rates before overlay: FFmpeg 6 can lose the final
+        # frame duration there, so a later fps filter drops that frame. Higher
+        # rates also skip discarded spatial work. Preserve privacy-noise order.
+        early_fps = (
             not self._privacy_blur
             and self._source_frame_rate is not None
-            and self._source_frame_rate > self._fps
+            and self._source_frame_rate >= self._fps
         )
-        if reduce_fps:
+        if early_fps:
             parts.append(f"fps={self._fps},settb=1/{self._fps}")
 
         # Scale + fill to target resolution
@@ -195,8 +196,8 @@ class FrameDecoder:
 
         # A frame-local transfer need only run once per source frame. Duplication
         # before it made a 30 → 60 fps HDR conversion do the same work twice.
-        # Keep the original order for privacy noise, unknown/ambiguous cadence,
-        # and equal rates. Captions still see the final frame grid.
+        # Keep the original order for privacy noise and unknown/ambiguous cadence.
+        # Captions still see the final frame grid.
         defer_fps = (
             self._pix_fmt == "yuv420p10le"
             and not self._privacy_blur
@@ -204,7 +205,7 @@ class FrameDecoder:
             and 0 < self._source_frame_rate < self._fps
             and bool(self._hdr_conversion or self._sdr_to_hdr_filter)
         )
-        if not (defer_fps or reduce_fps):
+        if not (defer_fps or early_fps):
             parts.append(f"fps={self._fps},settb=1/{self._fps}")
 
         # SDR→HDR conversion (only for SDR clips in HDR output)
