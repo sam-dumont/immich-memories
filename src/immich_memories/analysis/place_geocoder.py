@@ -1,8 +1,8 @@
-"""District-level place names from Nominatim, asked once per place and kept in the store.
+"""Administrative place names from Nominatim, asked once per place and kept in the store.
 
 Immich names every picture after the nearest GeoNames town of 500 people or more, so a
 district that is not a municipality of its own (Wilrijk, inside Antwerp) is named after
-whichever neighbour's point is closest (Hoboken, Edegem). OpenStreetMap knows the district.
+whichever neighbour's point is closest (Hoboken, Edegem). OpenStreetMap carries the parent city.
 
 This is opt-in (`network.geocoding`): with it off nothing here is built and no coordinate
 leaves the host. With it on, each coordinate is rounded to two decimals (about a kilometre)
@@ -63,16 +63,13 @@ _ADMINISTRATIVE = frozenset(
         "country_code",
     }
 )
-# The finest name a viewer recognises as a place: a district, then the village or town, then
-# the city. "quarter" is left out on purpose: it names a block ("Le Marais"), not a district.
-_DISTRICT_KEYS = (
-    "suburb",
-    "city_district",
-    "borough",
+# A visit to Berlin stays Berlin across its districts. Rural settlements keep their own
+# names before the wider municipality; suburbs and quarters never replace a known town.
+_LOCALITY_KEYS = (
+    "city",
     "village",
     "town",
     "hamlet",
-    "city",
     "municipality",
 )
 _USER_AGENT = (
@@ -86,9 +83,9 @@ def cell_of(latitude: float, longitude: float) -> tuple[float, float]:
 
 
 @private_place_name
-def district_of(address: Address) -> str | None:
-    """The district, village or town an address is in; None when it names none."""
-    return next((address[key] for key in _DISTRICT_KEYS if address.get(key)), None)
+def locality_of(address: Address) -> str | None:
+    """The city, town or village an address is in; None when only finer labels are known."""
+    return next((address[key] for key in _LOCALITY_KEYS if address.get(key)), None)
 
 
 def place_geocoder_for(config: Config) -> PlaceGeocoder | None:

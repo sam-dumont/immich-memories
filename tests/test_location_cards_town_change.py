@@ -78,14 +78,24 @@ def test_a_town_is_not_carded_twice_in_a_row():
     assert _cards(result) == ["location_Village B, Germany"]
 
 
-def test_a_town_change_near_home_gets_no_card():
+def test_a_long_hop_inside_one_city_does_not_repeat_its_card():
+    # Public points on opposite sides of Berlin, over 30 km apart.
+    west = (52.52, 13.15, "Berlin, Germany")
+    east = (52.52, 13.65, "Berlin, Germany")
+    clips = [_clip(VILLAGE_A, 4), _clip(west, 5), _clip(east, 6)]
+
+    result = _planner().build_clips_with_location_dividers(clips, None)
+
+    assert _cards(result) == ["location_Berlin, Germany"]
+
+
+def test_a_town_change_is_named_even_near_home():
     near_home = (48.05, 11.05, "Next Door, Germany")
     clips = [_clip(VILLAGE_A, 4), _clip(near_home, 5), _clip(HOME, 6)]
 
     result = _planner().build_clips_with_location_dividers(clips, None)
 
-    # The long hop back is the unchanged 30 km rule; the short one into home is no new town.
-    assert _cards(result) == ["location_Next Door, Germany"]
+    assert _cards(result) == ["location_Next Door, Germany", "location_Home Town, Germany"]
 
 
 def test_the_long_hop_rule_still_cards_a_new_city_on_the_same_day():

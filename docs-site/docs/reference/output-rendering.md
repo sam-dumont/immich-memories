@@ -15,9 +15,9 @@ of your camera roll:
   binds the first month changes win, so a thin January can keep its card while a busy November loses one.
 - **Trip map**: a satellite fly-over from home to the destination, in place of the intro. Off by default, see
   [The map fly-over](#the-map-fly-over).
-- **Location cards**: the place name where a trip moves on. A hop of more than 30 km always gets one. A
+- **Location cards**: the place name where a trip moves on. A hop of more than 30 km to a different place gets one. A
   walking or cycling trip moves village to village well under that, so a change of town gets one too: at
-  most one a day, never the same town twice in a row, never a town within 50 km of home. With map tiles on,
+  most one a day, never the same town twice in a row. Home follows the same rule. With map tiles on,
   each card flies from the town the last card named to the new one, then holds on its name. See
   [Map moves](#map-moves).
 - **Ending**: a fade to white, no text. Every film keeps it; a short film squeezes it to 2 s rather than dropping it.
@@ -138,8 +138,9 @@ These are the languages currently shipped, not a complete set. Corrections and a
 ## Trip titles: the place at the right scale
 
 A trip is named after the smallest place that holds 85 % of its located pictures, counted per picture: the
-city, else the island, else a town holding more than half of them, else the region, else two regions, else the
-country, else the countries in the order you crossed them. A day with forty pictures in one town weighs more than a travel day with two.
+city, else the island, else a town holding more than half of a local stay (under 25 km across), else the
+region, else two regions, else the country, else the countries in the order you crossed them.
+A day with forty pictures in one town weighs more than a travel day with two.
 
 The places are Immich's own reverse geocoding (GeoNames, offline) plus a small bundled table of islands,
 because GeoNames files most islands under a region. No outside call.
@@ -157,9 +158,9 @@ The full title adds the length and the season or month: `TWO WEEKS IN CRETE, GRE
 
 Immich stores places in English. Country, island and region names are translated offline (CLDR and the bundled
 tables). City names stay as Immich stored them unless you switch on `network.geocoding`, which asks Nominatim
-for the district each picture is in, in the film's language, one request per distinct place and kept for the
-next film. That also fixes the district Immich names after its neighbour (Wilrijk, not Hoboken) everywhere a
-place is named: story titles, captions, location cards, map pins and the report. What that sends is on [Privacy](../run/privacy.md).
+for the city, town or village each picture is in, in the film's language. Answers are cached for the next film.
+A Berlin visit stays Berlin across Mitte and Kreuzberg. The same name reaches story titles, captions,
+location cards, map pins and the report. What that sends is on [Privacy](../run/privacy.md).
 
 ## Date and place captions
 
@@ -173,11 +174,9 @@ The date says only what is new: the weekday and day inside one month, the day an
 full date across years. Each language writes it its own way (`10. AUGUST`, `10 DE AGOSTO`, `10 SIERPNIA`,
 `8月10日`).
 
-Places you are at all the time stay unlabelled (the name of your own town over every third clip is noise). A
-spot is familiar when it recurs within 250 m of the picture over many weeks in several years; a yearly summer
-holiday never qualifies. `trips.homebase_latitude` and `trips.homebase_longitude` mark home too, and the home
-country drops out of domestic captions. The scan reads metadata only, is cached for seven days under
-`cache.directory/familiar-places/`, and is skipped in privacy mode.
+Place captions show the city, town or village, including at home and at familiar places. A repeated label
+stays quiet until the place changes; returning to a city names it again. No home setup or library-history
+scan is needed. Country names remain visible and are translated into the film's language.
 
 ## The map fly-over
 
@@ -232,7 +231,7 @@ get pins, since an unlabelled dot tells you nothing.
 Close stops are grouped with the trip-leg rule: points that stay within 25 km of each other are one area of stay.
 
 - A group of 1 or 2 stops keeps each town's own name.
-- A group of 3 or more is one pin in its middle, named by the place its members share: the municipality,
+- A group of 3 or more is one pin in its middle, named by the place its members share: the city, town, village, municipality,
   county, district, island, province or region, from the geocoder, in the film's language. With
   [geocoding](../run/privacy.md) off, or no level in common, it is named "first → last" (`Village A → Village G`). The arrow is bundled with the fonts and needs no
   extra font installation.

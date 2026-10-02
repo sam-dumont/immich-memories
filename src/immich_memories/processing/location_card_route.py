@@ -4,9 +4,9 @@ One rule for the divider planner, which inserts the cards, and the timeline budg
 which reserves their regular cost: a card the budget did not count would be cut by
 the divider cap, and one it counted but the planner never inserts would cost content.
 
-A hop of more than 30 km always gets a card. A walking or cycling trip moves from
+A hop of more than 30 km to a different named place gets a card. A walking or cycling trip moves from
 village to village well under that, so a change of geocoded town also gets one: at
-most one a day, never the town the last card named, never a town at home. Each card
+most one a day, never the town the last card named. Each card
 flies from the place the previous card named, the first one from the trip's first
 located picture.
 """
@@ -16,9 +16,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from immich_memories.analysis.trip_detection import AWAY_FROM_HOME_KM, haversine_km
+from immich_memories.analysis.trip_detection import haversine_km
 
-# A hop this long is a new place whatever the geocoder calls it.
+# A hop this long between different places gets a card even on the same day.
 _LONG_HOP_KM = 30.0
 
 Point = tuple[float, float]
@@ -53,8 +53,10 @@ class _RouteSoFar:
         self._last_card: str | None = None
         self._carded_days: set[date] = set()
 
-    def card_reason(self, stop: RouteStop, home: Point | None) -> str | None:
+    def card_reason(self, stop: RouteStop) -> str | None:
         if stop.lat is None or stop.lon is None or self._point is None:
+            return None
+        if stop.name and stop.name == self._town:
             return None
         hop = haversine_km(*self._point, stop.lat, stop.lon)
         if hop > _LONG_HOP_KM:
@@ -65,8 +67,6 @@ class _RouteSoFar:
             or not stop.name
             or stop.name in (self._town, self._last_card)
         ):
-            return None
-        if home and haversine_km(*home, stop.lat, stop.lon) <= AWAY_FROM_HOME_KM:
             return None
         return "new town"
 
@@ -84,15 +84,13 @@ class _RouteSoFar:
             self.last_card_point = self.last_card_point or self._point
 
 
-def location_card_moves(
-    stops: list[RouteStop], limit: int | None, home: Point | None
-) -> list[CardMove | None]:
+def location_card_moves(stops: list[RouteStop], limit: int | None) -> list[CardMove | None]:
     """For each stop, the card that goes before it, or None; at most `limit` cards."""
     route = _RouteSoFar()
     moves: list[CardMove | None] = []
     for stop in stops:
         move = None
-        reason = route.card_reason(stop, home)
+        reason = route.card_reason(stop)
         if reason and stop.name and (limit is None or route.cards < limit):
             assert stop.lat is not None and stop.lon is not None  # noqa: S101
             assert route.last_card_point is not None  # noqa: S101

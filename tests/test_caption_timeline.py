@@ -22,24 +22,58 @@ def _clip(date: str | None, place: str | None = None, duration: float = 4.0) -> 
 
 
 class TestPlaceShowsOnChange:
-    def test_missing_gps_keeps_a_named_place_and_unknown_home_keeps_country(self):
-        from immich_memories.analysis.familiar_places import PlaceHistory
+    def test_home_is_named_without_scanning_the_library(self, tmp_path):
+        from types import SimpleNamespace
+
+        from immich_memories.generate_captions import prepare_location_captions
+
+        class Library:
+            base_url = "https://immich.example.test/api"
+            api_key = "synthetic-test-key"
+
+            def __init__(self):
+                self.calls = 0
+
+            def search_metadata(self, **_kwargs):
+                self.calls += 1
+                raise AssertionError("naming this film must not scan the library")
+
+        # WHY: the library is an external service that captioning should never need.
+        library = Library()
+        params = SimpleNamespace(
+            add_place_overlay=True,
+            privacy_mode=False,
+            client=library,
+            config=SimpleNamespace(
+                cache=SimpleNamespace(cache_path=tmp_path),
+                trips=SimpleNamespace(homebase_latitude=50.843, homebase_longitude=4.362),
+                title_screens=SimpleNamespace(locale="en"),
+            ),
+        )
+        clips = [_clip("2025-08-01", "Brussels, Belgium")] * 2
+        clips[0].latitude, clips[0].longitude = 50.843, 4.362
+
+        prepared = prepare_location_captions(params, clips)
+
+        assert [c.place for c in captions_for_timeline(prepared, place=True)] == [
+            "Brussels, Belgium",
+            "",
+        ]
+        assert library.calls == 0
+
+    def test_missing_gps_keeps_a_named_place_and_country(self):
         from immich_memories.generate_captions import apply_location_captions
 
         clips = [_clip("2025-08-01", "Brussels, Belgium")]
-        prepared = apply_location_captions(clips, PlaceHistory([]))
+        prepared = apply_location_captions(clips)
 
         assert captions_for_timeline(prepared, place=True)[0].place == "Brussels, Belgium"
 
-    def test_hidden_home_resets_place_but_missing_metadata_does_not(self):
-        from datetime import date
-
-        from immich_memories.analysis.familiar_places import PlaceHistory, PlaceObservation
+    def test_returning_to_a_city_shows_it_again_but_missing_metadata_does_not(self):
         from immich_memories.generate_captions import apply_location_captions
 
         # The test home is the Royal Palace in Brussels, a public landmark.
         home = (50.843, 4.362)
-        history = PlaceHistory([PlaceObservation(*home, date(2024, 1, 1), "Belgium")])
         clips = [
             _clip("2025-08-01", "De Haan, Belgium"),
             _clip("2025-08-02", "Brussels, Belgium"),
@@ -49,13 +83,13 @@ class TestPlaceShowsOnChange:
             _clip("2025-08-04", "Nice, France"),
         ]
         clips[1].latitude, clips[1].longitude = home
-        prepared = apply_location_captions(clips, history, home=home)
+        prepared = apply_location_captions(clips)
 
         assert clips[1].location_name == "Brussels, Belgium", "maps keep the original name"
         assert [c.place for c in captions_for_timeline(prepared, place=True)] == [
-            "De Haan",
-            "",
-            "De Haan",
+            "De Haan, Belgium",
+            "Brussels, Belgium",
+            "De Haan, Belgium",
             "",
             "",
             "Nice, France",

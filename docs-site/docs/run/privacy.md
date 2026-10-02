@@ -60,7 +60,7 @@ network:
   map_tiles: false
 ```
 
-Geocoding gets more accurate district/trip names and names in the film's language. It sends
+Geocoding gets city, village and trip names and names in the film's language. It sends
 coordinates rounded to two decimals (about a kilometre) to Nominatim, once per place. That can
 include home. Answers stay in the store. Set `geocoding_url` for your own Nominatim.
 

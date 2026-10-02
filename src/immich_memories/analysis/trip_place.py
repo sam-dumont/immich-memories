@@ -1,7 +1,7 @@
 """Name a trip at the scale its pictures cover.
 
 A trip is named after the smallest place that holds (almost) all of its located
-pictures: the city, else the island, else a town holding most of them, else the
+pictures: the city, else the island, else a town holding most of a local stay, else the
 region, else two regions, else the country. "Almost" is `COVERING_SHARE` of the pictures, counted per picture
 rather than per day: a day with forty pictures in one town weighs more than a
 day in transit with two, and that is what the film will show.
@@ -18,6 +18,7 @@ from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from immich_memories.analysis.place_names import shown_city
 from immich_memories.api.models import Asset
 from immich_memories.place_names import island_at, short_place_name
 
@@ -57,7 +58,7 @@ def _located(assets: Iterable[Asset]) -> list[_Located]:
         if exif.latitude is not None and exif.longitude is not None:
             island = island_at(exif.latitude, exif.longitude, exif.country)
         region = short_place_name(exif.state)
-        located.append(_Located(short_place_name(exif.city), region, exif.country, island))
+        located.append(_Located(short_place_name(shown_city(exif)), region, exif.country, island))
     return located
 
 
@@ -97,9 +98,10 @@ def _countries_in_order(places: list[_Located]) -> list[str]:
     return list(dict.fromkeys(p.country for p in places))
 
 
-def trip_place(assets: Iterable[Asset]) -> TripPlace | None:
+def trip_place(assets: Iterable[Asset], *, local_stay: bool) -> TripPlace | None:
     """The smallest place holding (almost) all of the trip's located pictures.
 
+    A majority town can name a local stay, but not a journey across distant places.
     None when no picture carries a country: Immich has not reverse geocoded
     them, and the caller falls back to whatever else it has.
     """
@@ -116,7 +118,7 @@ def trip_place(assets: Iterable[Asset]) -> TripPlace | None:
     island = _covering([p.island for p in places], total)
     if island is not None:
         return TripPlace(_with_country(island, country), "island")
-    if (town := _dominant_city(places)) is not None:
+    if local_stay and (town := _dominant_city(places)) is not None:
         return TripPlace(_with_country(town, country), "city")
     region = _covering([p.region for p in places], total)
     if region is not None:

@@ -226,7 +226,7 @@ def test_flagged_reasons_and_captions_come_only_with_the_opt_in():
 
 
 def test_geocoded_names_are_private_even_when_read_from_cache():
-    from immich_memories.analysis.place_geocoder import PlaceGeocoder, district_of
+    from immich_memories.analysis.place_geocoder import PlaceGeocoder, locality_of
     from immich_memories.analysis.trip_detection import trip_place_name
     from immich_memories.db import open_store
     from immich_memories.tracking import timing
@@ -238,7 +238,8 @@ def test_geocoded_names_are_private_even_when_read_from_cache():
     with timing.collecting() as collected:
         address = geocoder.address(1, 2)
         assert trip_place_name(address, spread_km=1.0) == "Brookhaven, Testland"
-        assert district_of(address)
+        assert locality_of(address)
+        assert locality_of({"village": "Oldmarket"})
     report = build_report(
         RunMetadata("geo-run", datetime.now(UTC), warnings=["Brookhaven in Testland, Oldmarket"]),
         collected,

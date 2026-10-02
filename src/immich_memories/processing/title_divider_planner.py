@@ -346,7 +346,7 @@ class TitleDividerPlanner:
     ) -> list[AssemblyClip]:
         """Insert a location card where the trip moves on (see `location_card_route`).
 
-        A hop of more than 30 km, or a new town at most once a day, away from home and
+        A hop of more than 30 km to a different place, or a new town at most once a day,
         not the town the last card named. With map tiles allowed each card flies from
         the place the previous card named to its own.
         """
@@ -359,7 +359,6 @@ class TitleDividerPlanner:
         moves = location_card_moves(
             [clip_route_stop(clip) for clip in clips],
             _divider_limit(self._title_settings),
-            self._home(),
         )
         for clip, move in zip(clips, moves, strict=True):
             if move is not None and clip.latitude is not None and clip.longitude is not None:
@@ -376,13 +375,6 @@ class TitleDividerPlanner:
                 logger.info("Location card: %s (%s, %.1fs)", name, move.reason, card.duration)
             result.append(clip)
         return result
-
-    def _home(self) -> tuple[float, float] | None:
-        lat = getattr(self._title_settings, "home_lat", None)
-        lon = getattr(self._title_settings, "home_lon", None)
-        if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
-            return float(lat), float(lon)
-        return None
 
     def select_divider_strategy(
         self,

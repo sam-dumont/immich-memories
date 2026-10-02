@@ -157,7 +157,10 @@ def test_trip_new_jump_does_not_recompute_frozen_divider_cap():
     policy = build_editorial_timing_policy(config=Config(), target_seconds=120, memory_type="trip")
     carriers, assets = rows()
     for index, asset in enumerate(assets.values()):
-        asset.exif_info = SimpleNamespace(latitude=0.0, longitude=index * 0.20, city="Place")
+        asset.exif_info = SimpleNamespace(
+            latitude=0.0, longitude=index * 0.20, city=f"Place {index}"
+        )
+        asset.file_created_at = None  # Only distance can establish a card without a date.
     original = policy.resolve(carriers, assets)
     subset = [carriers[0], carriers[2]]
     assert original.max_dividers == 0

@@ -100,10 +100,9 @@ library is never walked.
 
 What it buys:
 
-- **The right district.** Immich names a picture after the nearest town in GeoNames' list of
-  places over 500 people. A district that is not its own municipality gets its neighbour's name:
-  a picture in Wilrijk says "Hoboken". OpenStreetMap knows the district, so captions, location
-  cards and trip map pins say "Wilrijk".
+- **City and village names.** Immich can label a picture after a nearby town or district.
+  The display uses OpenStreetMap's city, town or village: Berlin across its neighborhoods,
+  rather than a new label for Mitte or Kreuzberg. Captions, location cards and map pins agree.
 - **Trip names from the map**, at the trip's scale: the village rather than the merged
   municipality it belongs to, the town, or the region.
 - **Names in the film's language** ("Nicosie" instead of "Nicosia"). Country names are translated
