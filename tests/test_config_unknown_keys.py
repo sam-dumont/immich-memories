@@ -113,3 +113,20 @@ def test_supported_service_process_controls_are_recognized(tmp_path, monkeypatch
     ):
         monkeypatch.setenv(f"IMMICH_MEMORIES_{suffix}", "1")
     assert Config.from_yaml(tmp_path / "missing.yaml", stored={}).unknown_keys == ()
+
+
+def test_database_test_controls_do_not_hide_real_configuration_typos(tmp_path, monkeypatch, caplog):
+    for suffix in ("TEST_DATABASE_URL", "E2E_DATABASE_URL"):
+        monkeypatch.setenv(
+            f"IMMICH_MEMORIES_{suffix}", "postgresql://test:secret-sentinel@localhost/db"
+        )
+    monkeypatch.setenv("IMMICH_MEMORIES_TRIPS__HOMEBASE_LATTITUDE", "secret-typo-value")
+
+    config = Config.from_yaml(tmp_path / "missing.yaml", stored={})
+
+    assert config.unknown_keys == ("env: IMMICH_MEMORIES_TRIPS__HOMEBASE_LATTITUDE",)
+    assert "HOMEBASE_LATTITUDE" in caplog.text
+    assert "TEST_DATABASE_URL" not in caplog.text
+    assert "E2E_DATABASE_URL" not in caplog.text
+    assert "secret-sentinel" not in caplog.text
+    assert "secret-typo-value" not in caplog.text
