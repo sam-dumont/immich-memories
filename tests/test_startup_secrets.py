@@ -49,7 +49,7 @@ def test_a_forged_cookie_needs_a_secret_the_server_refuses_to_run_with(monkeypat
     cookie = itsdangerous.TimestampSigner("change-me").sign(signed).decode()
 
     with pytest.raises(StartupRefused):
-        _app(monkeypatch, _basic(), IMMICH_MEMORIES_STORAGE_SECRET="change-me")
+        _app(monkeypatch, _basic(), IMMICH_MEMORIES_STORAGE_SECRET="change-me")  # noqa: S106 — synthetic
 
     client = TestClient(_app(monkeypatch, _basic()), follow_redirects=False)
     client.cookies.set("session", cookie)

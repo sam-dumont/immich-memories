@@ -38,7 +38,7 @@ def test_a_non_ascii_wrong_password_is_refused_and_counted(monkeypatch):
 
 
 def test_a_non_ascii_correct_password_signs_in(monkeypatch):
-    client = server_client(monkeypatch, _config(password="pässwörd-çà-1234"))
+    client = server_client(monkeypatch, _config(password="pässwörd-çà-1234"))  # noqa: S106 — synthetic
 
     response = client.post("/auth/login", json={"username": "op", "password": "pässwörd-çà-1234"})
 

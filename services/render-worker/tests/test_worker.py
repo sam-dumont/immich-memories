@@ -310,9 +310,8 @@ def test_worker_settings_use_the_longer_prefix(monkeypatch, tmp_path):
 
 @pytest.mark.parametrize("token", ["0123456789", "change-me-change-me-change-me-change-me"])
 def test_the_worker_refuses_to_start_with_a_weak_token(tmp_path, token):
-    from pydantic import ValidationError
-
     from immich_memories_render_worker.settings import WorkerSettings
+    from pydantic import ValidationError
 
     with pytest.raises(ValidationError, match="openssl rand -hex 32"):
         WorkerSettings(token=token, immich_url="http://immich.invalid", directory=tmp_path)
