@@ -49,7 +49,8 @@ def test_benchmark_results_cannot_end_the_shell_data_boundary(tmp_path):
         {"BRANCH": "../bad"},
     ],
 )
-def test_invalid_gpu_dispatch_is_refused_before_any_outputs(tmp_path, overrides):
+@pytest.mark.parametrize("shell", ["bash", "/bin/bash"])
+def test_invalid_gpu_dispatch_is_refused_before_any_outputs(tmp_path, overrides, shell):
     output = tmp_path / "output"
     script = step_script("integration.yml", "integration", "Resolve params")
     env = {
@@ -61,7 +62,7 @@ def test_invalid_gpu_dispatch_is_refused_before_any_outputs(tmp_path, overrides)
         "GITHUB_OUTPUT": str(output),
         **overrides,
     }
-    result = subprocess.run(["bash", "-e", "-c", script], env=env, capture_output=True, timeout=10)
+    result = subprocess.run([shell, "-e", "-c", script], env=env, capture_output=True, timeout=10)
     assert result.returncode != 0
     assert not output.exists() or not output.read_text()
 

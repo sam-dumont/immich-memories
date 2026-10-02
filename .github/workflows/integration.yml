@@ -58,7 +58,7 @@ jobs:
           PUBLIC_REPO: ${{ github.event.client_payload.public_repo || 'sam-dumont/immich-video-memory-generator' }}
           SUITE: ${{ inputs.suite || 'all' }}
         run: |
-          [[ "$REQUEST_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ ${#REQUEST_SHA} -eq 40 && "$REQUEST_SHA" != *[!0123456789abcdef]* ]] || exit 2
           git check-ref-format --branch "$BRANCH" >/dev/null
           test "$PUBLIC_REPO" = sam-dumont/immich-video-memory-generator
           case "$SUITE" in all|assembly|titles|photos|pipeline|live-photos|cli) ;; *) exit 2 ;; esac
