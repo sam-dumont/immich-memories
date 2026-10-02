@@ -4,7 +4,7 @@
 # service in docker-compose.yml first (it ships commented out, same as the
 # reservations.devices GPU blocks), then:
 #
-#   CAPTIONER_TAG=server-cuda INFERENCE_TAG=latest-cuda \
+#   CAPTIONER_TAG=server-cuda-b10920 INFERENCE_TAG=latest-cuda \
 #     docker compose -f docker-compose.yml -f docker-compose.maximalist.yml \
 #     --profile captioner --profile inference --profile postgres up -d
 #

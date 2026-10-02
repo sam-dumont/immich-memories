@@ -21,6 +21,8 @@ def package_bundle(root: Path, version: str, destination: Path) -> None:
     )
     pins = {
         "deploy/kubernetes/base/kustomization.yaml": version,
+        "deploy/kubernetes/overlays/render-sidecar/kustomization.yaml": version,
+        "deploy/kubernetes/overlays/maximalist/kustomization.yaml": version,
         "deploy/kubernetes/overlays/inference/kustomization.yaml": version,
         "deploy/kubernetes/overlays/inference-cuda/kustomization.yaml": version + "-cuda",
     }
@@ -32,6 +34,12 @@ def package_bundle(root: Path, version: str, destination: Path) -> None:
             data = path.read_bytes()
             if name in pins:
                 data = re.sub(rb'newTag: "[^"]+"', f'newTag: "{pins[name]}"'.encode(), data)
+            if name.endswith("terraform.tfvars.example"):
+                data = re.sub(
+                    rb'(?m)^image_tag\s*=\s*"[^"]+"',
+                    f'image_tag = "{version}"'.encode(),
+                    data,
+                )
             info = tarfile.TarInfo(name)
             info.size, info.mode = len(data), 0o644
             archive.addfile(info, io.BytesIO(data))

@@ -93,7 +93,10 @@ def test_preflight_names_a_stored_setting_it_ignores(config_path):
     assert ENV_SECRET not in str(result)
 
 
-AUTH_ON = "auth:\n  enabled: true\n  provider: basic\n  username: op\n  password: pw-123456789\n"
+AUTH_ON = (
+    "auth:\n  enabled: true\n  provider: basic\n  username: op\n"
+    "  password: pw-123456789\n"  # gitleaks:allow -- synthetic login
+)
 
 
 def _signed_in(config_path: Path) -> TestClient:
@@ -102,7 +105,8 @@ def _signed_in(config_path: Path) -> TestClient:
     config_path.write_text(AUTH_ON)
     load_config(config_path)
     client = TestClient(create_app(), follow_redirects=False)
-    login = client.post("/auth/login", json={"username": "op", "password": "pw-123456789"})
+    credentials = {"username": "op", "password": "pw-123456789"}  # gitleaks:allow
+    login = client.post("/auth/login", json=credentials)
     assert login.status_code == 200
     return client
 
@@ -127,7 +131,7 @@ def test_who_can_reach_the_app_is_never_saved_from_settings(config_path, key, va
 
 
 def test_no_settings_response_carries_an_environment_value(config_path, monkeypatch):
-    monkeypatch.setenv("IMMICH_API_KEY", "immich-key-from-the-environment-0123")
+    monkeypatch.setenv("IMMICH_API_KEY", "immich-key-from-the-environment-0123")  # gitleaks:allow
     client = _signed_in(config_path)
     reference = "${IMMICH_API_KEY}|${IMMICH_MEMORIES_STORAGE_SECRET}"
 

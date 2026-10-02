@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import tarfile
 
@@ -13,7 +14,13 @@ def test_release_bundle_pins_all_images_and_omits_untracked_secrets(tmp_path, mo
         if name.startswith("GIT_"):
             monkeypatch.delenv(name)
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
-    for directory in ("base", "overlays/inference", "overlays/inference-cuda"):
+    for directory in (
+        "base",
+        "overlays/inference",
+        "overlays/inference-cuda",
+        "overlays/render-sidecar",
+        "overlays/maximalist",
+    ):
         path = tmp_path / "deploy/kubernetes" / directory / "kustomization.yaml"
         path.parent.mkdir(parents=True)
         path.write_text('images:\n  - newTag: "0.1.0"\n')
@@ -22,7 +29,7 @@ def test_release_bundle_pins_all_images_and_omits_untracked_secrets(tmp_path, mo
     destination = tmp_path / "bundle.tgz"
     package_bundle(tmp_path, "1.2.3", destination)
     with tarfile.open(destination) as archive:
-        assert len(archive.getnames()) == 3
+        assert len(archive.getnames()) == 5
         for name in archive.getnames():
             value = yaml.safe_load(archive.extractfile(name).read())
             assert value["images"][0]["newTag"] == (
@@ -49,3 +56,52 @@ def test_release_bundle_accepts_a_release_candidate(tmp_path, monkeypatch):
     with tarfile.open(destination) as archive:
         value = yaml.safe_load(archive.extractfile(archive.getnames()[0]).read())
     assert value["images"][0]["newTag"] == "1.0.0-rc.1"
+
+
+def test_release_bundle_stamps_terraform_examples(tmp_path, monkeypatch):
+    for name in tuple(os.environ):
+        if name.startswith("GIT_"):
+            monkeypatch.delenv(name)
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    path = tmp_path / "deploy/terraform/examples/basic/terraform.tfvars.example"
+    path.parent.mkdir(parents=True)
+    path.write_text('image_tag = "replace-with-a-release-tag"\n')
+    subprocess.run(["git", "add", "deploy"], cwd=tmp_path, check=True)
+    destination = tmp_path / "bundle.tgz"
+    package_bundle(tmp_path, "1.0.0-rc.1", destination)
+    with tarfile.open(destination) as archive:
+        assert (
+            archive.extractfile(str(path.relative_to(tmp_path))).read()
+            == b'image_tag = "1.0.0-rc.1"\n'
+        )
+
+
+@pytest.mark.skipif(shutil.which("kubectl") is None, reason="kubectl not installed")
+@pytest.mark.parametrize("overlay", ["render-sidecar", "maximalist"])
+def test_packaged_overlay_keeps_every_app_container_on_the_release(tmp_path, overlay):
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    destination = tmp_path / "bundle.tgz"
+    package_bundle(root, "1.0.0-rc.1", destination)
+    with tarfile.open(destination) as archive:
+        archive.extractall(tmp_path, filter="data")
+    kubernetes = tmp_path / "deploy/kubernetes"
+    for example in kubernetes.rglob("*.yaml.example"):
+        example.with_suffix("").write_bytes(example.read_bytes())
+    rendered = subprocess.check_output(
+        ["kubectl", "kustomize", str(kubernetes / "overlays" / overlay)], text=True
+    )
+    own_repo = "ghcr.io/sam-dumont/immich-video-memory-generator"
+    images = [
+        container["image"]
+        for document in yaml.safe_load_all(rendered)
+        if document["kind"] == "Deployment"
+        for key in ("initContainers", "containers")
+        for container in document["spec"]["template"]["spec"].get(key, [])
+        if container["image"].startswith(own_repo)
+    ]
+    assert len(images) >= 3
+    for image in images:
+        expected = "1.0.0-rc.1-cuda" if "/inference:" in image else "1.0.0-rc.1"
+        assert image == image.split(":")[0] + ":" + expected

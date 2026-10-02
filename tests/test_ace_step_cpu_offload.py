@@ -43,8 +43,9 @@ def test_real_runtime_resolves_offload_for_device(monkeypatch, tmp_path, device,
     from types import ModuleType
 
     from immich_memories.audio.generators import ace_step_runtime as runtime
+    from tests.ace_step_downloads import snapshot_module
 
-    modules = {}
+    modules = {"huggingface_hub": snapshot_module()}
     for name in [
         "acestep",
         "acestep.handler",

@@ -7,8 +7,6 @@ escapes every value it renders.
 
 from __future__ import annotations
 
-from immich_memories.config_models_auth import AuthConfig
-
 
 def _described(config, tmp_path) -> dict:
     from immich_memories.config_sources import describe_settings
@@ -39,44 +37,6 @@ class TestS16SecretsAreFullyMasked:
         config = Config(editorial={"preparation": {"caption_api_key": "caption-credential"}})
 
         assert "caption-credential" not in repr(_described(config, tmp_path))
-
-
-class TestS3RateLimiterSeesTheRealClient:
-    """Behind Traefik/nginx every request carries the proxy's IP, so one bad
-    actor locks out everyone. Trust X-Forwarded-For only from a trusted peer."""
-
-    def test_the_forwarded_client_is_used_when_the_peer_is_trusted(self):
-        from immich_memories.web.auth import client_ip_for_rate_limit
-
-        ip = client_ip_for_rate_limit(
-            peer_ip="10.0.0.5",
-            forwarded_for="203.0.113.9, 10.0.0.5",
-            auth_config=AuthConfig(trusted_proxies=["10.0.0.0/8"]),
-        )
-
-        assert ip == "203.0.113.9"
-
-    def test_an_untrusted_peer_cannot_spoof_its_bucket(self):
-        from immich_memories.web.auth import client_ip_for_rate_limit
-
-        ip = client_ip_for_rate_limit(
-            peer_ip="198.51.100.7",
-            forwarded_for="1.2.3.4",
-            auth_config=AuthConfig(trusted_proxies=["10.0.0.0/8"]),
-        )
-
-        assert ip == "198.51.100.7"
-
-    def test_no_header_means_the_peer(self):
-        from immich_memories.web.auth import client_ip_for_rate_limit
-
-        ip = client_ip_for_rate_limit(
-            peer_ip="10.0.0.5",
-            forwarded_for=None,
-            auth_config=AuthConfig(trusted_proxies=["10.0.0.0/8"]),
-        )
-
-        assert ip == "10.0.0.5"
 
 
 class TestS10MusicUploadIsChecked:

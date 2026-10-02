@@ -29,7 +29,7 @@ def health_client(tmp_path, request, monkeypatch):
         )
     )
     health_api._health_snapshot_cache = None
-    monkeypatch.setenv("IMMICH_MEMORIES_STORAGE_SECRET", "test-secret")
+    monkeypatch.setenv("IMMICH_MEMORIES_STORAGE_SECRET", "test-session-key-0f3a9c2e7b41d856e0")
     client = TestClient(create_app(), raise_server_exceptions=False)
     try:
         yield client, request.param

@@ -37,7 +37,7 @@ os.environ.update(
         "HOME": str(_HOME),
         "USERPROFILE": str(_HOME),
         "IMMICH_MEMORIES_AUTH__ENABLED": "false",
-        "IMMICH_MEMORIES_STORAGE_SECRET": "demo-recording-storage-secret",
+        "IMMICH_MEMORIES_STORAGE_SECRET": "demo-recording-session-key-8b2f6a4c0e9d",
         "IMMICH_MEMORIES_LOG_LEVEL": "error",
     }
 )

@@ -295,9 +295,9 @@ def test_image_tags_match_dispatch_mode(tmp_path, prerelease, app_only, tag, mov
     assert ("ghcr.io/example/app:latest" in args) is moves_latest
 
 
-def test_a_release_candidate_publishes_no_docs():
+def test_a_release_candidate_can_publish_docs():
     condition = release_workflow()["jobs"]["deploy-docs"]["if"]
-    assert "needs.analyze.outputs.prerelease != 'true'" in condition
+    assert "prerelease" not in condition
 
 
 @pytest.mark.parametrize(("inference_only", "succeeds"), [("false", True), ("true", False)])

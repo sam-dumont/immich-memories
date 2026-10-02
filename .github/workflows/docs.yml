@@ -32,13 +32,15 @@ jobs:
     if: >-
       github.repository == 'sam-dumont/immich-video-memory-generator'
       && !(github.event_name == 'release' && startsWith(github.event.release.tag_name, 'models-'))
-      && !(github.event_name == 'release' && github.event.release.prerelease)
     # Building only reads the tree; the Pages artifact upload runs on the
     # Actions runtime token, not GITHUB_TOKEN.
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.version || github.event.release.tag_name || github.ref }}
       - name: Create LFS cache key
         run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
       - name: Cache LFS objects
@@ -88,8 +90,28 @@ jobs:
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
           "
 
+      - name: Choose documentation destination
+        run: |
+          FINAL_TAG=$(git tag --list | python3 scripts/docs_release.py "$DOCS_VERSION")
+          echo "FINAL_TAG=$FINAL_TAG" >> "$GITHUB_ENV"
+          if [[ -n "$FINAL_TAG" ]]; then
+            echo "DOCS_NEXT=true" >> "$GITHUB_ENV"
+          fi
+
       - name: Build site
         run: cd docs-site && npm run build
+
+      - name: Preserve final documentation beside the candidate
+        if: env.DOCS_NEXT == 'true'
+        run: |
+          mv docs-site/build "$RUNNER_TEMP/candidate-docs"
+          git worktree add --detach "$RUNNER_TEMP/final-docs" "$FINAL_TAG"
+          git -C "$RUNNER_TEMP/final-docs" lfs pull
+          cd "$RUNNER_TEMP/final-docs/docs-site"
+          npm ci
+          DOCS_VERSION="$FINAL_TAG" DOCS_NEXT=false npm run build
+          cp -a build "$GITHUB_WORKSPACE/docs-site/build"
+          mv "$RUNNER_TEMP/candidate-docs" "$GITHUB_WORKSPACE/docs-site/build/next"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3

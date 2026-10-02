@@ -169,7 +169,7 @@ controls with preflight before sending library pictures.
 ### On an NVIDIA host
 
 Two halves, neither of which works alone: the tag that carries CUDA
-(`export CAPTIONER_TAG=server-cuda`) and the device. From a checkout the device comes from
+(`export CAPTIONER_TAG=server-cuda-b10920`) and the device. From a checkout the device comes from
 `docker/hwaccel.captioner.yml`. That file holds `extends:` targets, not services, so it cannot go
 on the command line as `-f` itself; a three-line override pulls its `cuda` block into the
 captioner:
@@ -180,7 +180,7 @@ services:
   immich-memories-captioner:
     extends: { file: docker/hwaccel.captioner.yml, service: cuda }
 EOF
-CAPTIONER_TAG=server-cuda docker compose -f docker-compose.yml -f captioner.cuda.yml --profile captioner up -d
+CAPTIONER_TAG=server-cuda-b10920 docker compose -f docker-compose.yml -f captioner.cuda.yml --profile captioner up -d
 ```
 
 A downloaded `docker-compose.yml` reads no file beside itself, so the same two blocks ship in the
@@ -199,7 +199,7 @@ captioner service commented out. Uncomment both:
                 - gpu
 ```
 
-99 is "all of them", and a 500M model has 32. By hand that is `--gpus all`, the `server-cuda` image
+99 is "all of them", and a 500M model has 32. By hand that is `--gpus all`, the `server-cuda-b10920` image
 and `--n-gpu-layers 99`. Optional app concurrency, after measuring the server under load:
 
 ```yaml
@@ -250,7 +250,7 @@ kubectl -n immich-memories set env deployment/immich-memories \
   IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL=http://captioner:8092/v1
 ```
 
-`captioner-cuda` is the same Deployment with the `server-cuda` image, `--n-gpu-layers 99` appended,
+`captioner-cuda` is the same Deployment with the `server-cuda-b10920` image, `--n-gpu-layers 99` appended,
 and the three things the GPU Operator wants: `runtimeClassName: nvidia`, the `nvidia.com/gpu.present`
 node selector and the matching toleration. Nothing else changes, so pointing the app at it is the
 block above plus `caption_concurrency: 4`.
@@ -269,8 +269,8 @@ resources:
     nvidia.com/gpu: "1"
 ```
 
-The standalone overlays use floating `server` and `server-cuda` tags. Pin a matching llama.cpp
-build for unattended operation and validate it against the serving contract.
+The standalone overlays pin llama.cpp build b10920: `server-b10920` on CPU and
+`server-cuda-b10920` on CUDA. Update both together and validate the serving contract.
 
 ## How preflight reports it
 

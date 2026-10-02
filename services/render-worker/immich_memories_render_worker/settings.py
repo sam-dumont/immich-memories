@@ -5,6 +5,10 @@ from pathlib import Path
 from pydantic import AnyHttpUrl, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# The bearer token guards every render and the Immich key that travels with it.
+MIN_TOKEN_LENGTH = 32
+_WEAK_WORDS = ("change-me", "changeme", "secret", "password", "example")
+
 
 class WorkerSettings(BaseSettings):
     # WHY: the app's own `render` section produces IMMICH_MEMORIES_RENDER__WORKER_TOKEN.
@@ -22,6 +26,12 @@ class WorkerSettings(BaseSettings):
     @field_validator("token")
     @classmethod
     def require_token(cls, value: SecretStr) -> SecretStr:
-        if not value.get_secret_value().strip():
+        token = value.get_secret_value().strip()
+        if not token:
             raise ValueError("a worker bearer token is required")
+        if len(token) < MIN_TOKEN_LENGTH or any(word in token.lower() for word in _WEAK_WORDS):
+            raise ValueError(
+                f"the worker bearer token is too weak: it needs {MIN_TOKEN_LENGTH}+ random "
+                "characters; generate one with `openssl rand -hex 32`"
+            )
         return value

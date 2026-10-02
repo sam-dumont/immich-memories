@@ -38,7 +38,7 @@ spec:
       # the path. Re-running this is cheap: the digest check short-circuits.
       initContainers:
         - name: fetch-weights
-          image: ghcr.io/ggml-org/llama.cpp:server
+          image: ghcr.io/ggml-org/llama.cpp:server-b10920
           command: ["/bin/sh", "-euc"]
           args:
             - |
@@ -74,7 +74,7 @@ spec:
 
       containers:
         - name: captioner
-          image: ghcr.io/ggml-org/llama.cpp:server
+          image: ghcr.io/ggml-org/llama.cpp:server-b10920
           args:
             - "--model"
             - "/models/SmolVLM2-500M-Video-Instruct-Q8_0.gguf"

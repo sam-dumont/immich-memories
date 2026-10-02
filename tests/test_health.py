@@ -41,7 +41,9 @@ def _server():
     # WHY: building the app reads the config file and the session secret from the host.
     with (
         patch("immich_memories.web.server.get_config", return_value=Config()),
-        patch.dict("os.environ", {"IMMICH_MEMORIES_STORAGE_SECRET": "test-secret"}),
+        patch.dict(
+            "os.environ", {"IMMICH_MEMORIES_STORAGE_SECRET": "test-session-key-0f3a9c2e7b41d856e0"}
+        ),
     ):
         return create_app()
 

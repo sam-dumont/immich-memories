@@ -18,6 +18,54 @@ keeps it reachable only from the host. For LAN access, follow
 An explicit `--host` or environment host override can expose an unauthenticated app.
 A bare YAML `server.host: 0.0.0.0` alone does not opt into that exposure.
 
+## Allowed hosts
+
+Every request names a host in its `Host` header. With auth off, the app answers only these:
+
+- `localhost`, `127.0.0.1`, `[::1]` and `host.docker.internal`, on any port;
+- `server.host`, when it is a name or a specific address (not `0.0.0.0` or `::`);
+- the host of `auth.public_url`;
+- every entry of `server.allowed_hosts`.
+
+Any other host gets **421 Misdirected Request**. Without this, a web page on another site could
+point its own name at your machine and read the app as if it were that site.
+
+With auth on, any host is answered, so a NAS reached by its IP or hostname keeps working. Set
+`server.allowed_hosts` to restrict it: then only the listed names, the localhost names and the
+host of `auth.public_url` are answered.
+
+`/health/live` and `/health/ready` answer whatever host they name, since Kubernetes probes use the
+pod IP. They tell an anonymous caller nothing beyond up or down.
+
+An unauthenticated LAN install (`allow_unauthenticated_lan: true`) must list the names it is
+reached by:
+
+```yaml
+advanced:
+  server:
+    allow_unauthenticated_lan: true
+    allowed_hosts: [nas.lan, 192.168.1.20]
+```
+
+Ports in `allowed_hosts` are ignored: `nas.lan` covers `nas.lan:8080`. The environment form is
+`IMMICH_MEMORIES_SERVER__ALLOWED_HOSTS='["nas.lan"]'`. The first refusal for each host is logged
+as a warning.
+
+## Writes from other sites
+
+A `POST`, `PUT`, `PATCH` or `DELETE` under `/api` or `/auth` that a browser sends from another
+site is refused with **403**, with auth on or off. The browser's `Sec-Fetch-Site` header decides
+when it is present; otherwise an `Origin` that differs from the request's host is refused.
+Calls without either header (curl, CronJobs, the CLI) pass, so `POST /api/trigger` with its token
+works as before.
+
+Uploaded soundtracks are capped at 64 MiB each, refused before the body is read when the request
+announces more. Together they may use `server.music_upload_quota_mb` (default 1024); past it the
+oldest uploads are removed.
+
+No page may show the app in a frame: every response carries `X-Frame-Options: DENY` and
+`Content-Security-Policy: frame-ancestors 'none'`.
+
 ## HTTPS reverse proxy
 
 This example uses nginx on the same host, proxying the shipped loopback mapping. Enable
@@ -68,7 +116,11 @@ flowchart TB
 
 Register OIDC callback `https://memories.example.com/auth/callback` and logout
 `https://memories.example.com/logout`. Allow only intended verified emails/domains.
-`FORWARDED_ALLOW_IPS`, when set, overrides `auth.trusted_proxies`.
+`FORWARDED_ALLOW_IPS`, when set, overrides `auth.trusted_proxies`. With auth on, the app refuses
+to start when it is `*` (it would let every client choose its own address); list your proxy's
+address instead. With `provider: header` it must stay unset. Only uvicorn reads
+`X-Forwarded-For`, and only from those proxies: the sign-in limiter counts failures on the address
+uvicorn resolved, never on a header the client sent.
 Enable secure cookies only once users reach HTTPS; plain HTTP LAN logins then fail.
 
 ## Ports and egress

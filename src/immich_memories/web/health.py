@@ -24,6 +24,7 @@ from immich_memories.config import get_config
 from immich_memories.db import open_store
 from immich_memories.security import configured_secret_values, sanitize_error_message
 from immich_memories.web.auth import is_auth_enabled
+from immich_memories.web.session_validity import session_current
 
 if TYPE_CHECKING:
     from immich_memories.config_loader import Config
@@ -123,10 +124,14 @@ def _redact_health_value(value: Any, secrets_to_redact: tuple[str, ...]) -> Any:
 
 
 def _health_detail_allowed(config: Config, request: Request) -> bool:
-    """Whether this request may see automation and run detail: signed in, or no auth at all."""
+    """Whether this request may see automation and run detail: no auth at all, or a session
+    that passes the same checks as the sign-in middleware (age, sign-in rules, sign-outs)."""
     if not is_auth_enabled(config.auth):
         return True
-    return bool((request.scope.get("session") or {}).get("authenticated"))
+    app = request.scope.get("app")
+    secret = getattr(getattr(app, "state", None), "session_secret", None)
+    session = request.scope.get("session") or {}
+    return bool(secret) and session_current(session, config, str(secret))
 
 
 # Person names (memory keys) and host paths live here; a probe gets status and version only.

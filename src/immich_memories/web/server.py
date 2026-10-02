@@ -17,7 +17,7 @@ import socket
 import sys
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -25,15 +25,16 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.sessions import SessionMiddleware
 
 from immich_memories.config import get_config, init_config_dir
-from immich_memories.config_models_auth import AuthConfig
+from immich_memories.config_loader import Config
 from immich_memories.security import write_secret_file
+from immich_memories.startup_checks import StartupRefused, check_startup
 from immich_memories.web import mount_web
 from immich_memories.web.auth import (
     clear_session,
-    client_ip_for_rate_limit,
     is_auth_enabled,
     is_bypass_path,
     is_health_probe_path,
@@ -41,12 +42,14 @@ from immich_memories.web.auth import (
     is_trigger_path,
     is_trusted_proxy,
     record_failed_login,
-    set_session,
+    sign_in_paused,
     trigger_token_authorizes,
     verify_credentials,
 )
 from immich_memories.web.health import register_health_routes
+from immich_memories.web.request_checks import RequestChecks
 from immich_memories.web.reverse_proxy import reverse_proxy_run_kwargs
+from immich_memories.web.session_validity import end_sessions, session_current, start_session
 from immich_memories.web.trigger import register_trigger_routes
 
 logger = logging.getLogger(__name__)
@@ -84,30 +87,43 @@ def storage_secret() -> str:
 
 
 def _client_ip(request: Request) -> str:
-    peer = request.client.host if request.client else "unknown"
-    return client_ip_for_rate_limit(
-        peer_ip=peer,
-        forwarded_for=request.headers.get("x-forwarded-for"),
-        auth_config=get_config().auth,
-    )
+    # WHY: exactly as uvicorn resolved it. X-Forwarded-For is only honoured by uvicorn, from
+    # the proxies in auth.trusted_proxies (or FORWARDED_ALLOW_IPS), never by the app itself.
+    return request.client.host if request.client else "unknown"
 
 
-def _try_header_auth(request: Request, auth_config: AuthConfig) -> None:
-    """Start a session from a trusted proxy's user header."""
+def _session_secret(request: Request) -> str:
+    return str(request.app.state.session_secret)
+
+
+def _header_session(request: Request, config: Config, secret: str) -> bool:
+    """Follow the trusted proxy's user header on every request; False when it names nobody.
+
+    The proxy authenticates each request, so the session follows it: a different user in the
+    header replaces the session, and a request without the header is not signed in at all.
+    """
+    auth = config.auth
     client_ip = request.client.host if request.client else ""
-    if not is_trusted_proxy(client_ip, auth_config.trusted_proxies):
-        return
-    user = request.headers.get(auth_config.user_header, "")
-    if user and not request.session.get("authenticated"):
-        email = request.headers.get(auth_config.email_header, "")
-        set_session(request.session, username=user, provider="header", email=email)
-
-
-def _expired(session: dict[str, Any], ttl_hours: int) -> bool:
-    started = session.get("authenticated_at")
-    if not started:
+    user = request.headers.get(auth.user_header, "")
+    if not user or not is_trusted_proxy(client_ip, auth.trusted_proxies):
         return False
-    return datetime.now(UTC) > datetime.fromisoformat(str(started)) + timedelta(hours=ttl_hours)
+    session = request.session
+    same_user = session.get("username") == user and session.get("auth_provider") == "header"
+    if same_user and session_current(session, config, secret):
+        return True
+    clear_session(session)
+    email = request.headers.get(auth.email_header, "")
+    start_session(
+        session, config=config, secret=secret, username=user, provider="header", email=email
+    )
+    return True
+
+
+def _signed_in(request: Request, config: Config) -> bool:
+    secret = _session_secret(request)
+    if config.auth.provider == "header":
+        return _header_session(request, config, secret)
+    return session_current(request.session, config, secret)
 
 
 def unauthenticated_response(path: str) -> Response:
@@ -126,11 +142,8 @@ async def _auth_middleware(request: Request, call_next: Any) -> Response:
         return await call_next(request)
     if trigger_token_authorizes(path, request.headers, config.server.trigger_token):
         return await call_next(request)
-    if config.auth.provider == "header":
-        _try_header_auth(request, config.auth)
-    if not request.session.get("authenticated"):
-        return unauthenticated_response(path)
-    if _expired(request.session, config.auth.session_ttl_hours):
+    # WHY a thread: the check reads the store, and a slow disk must not stall the event loop.
+    if not await run_in_threadpool(_signed_in, request, config):
         clear_session(request.session)
         return unauthenticated_response(path)
     return await call_next(request)
@@ -163,31 +176,48 @@ async def login(credentials: Credentials, request: Request) -> JSONResponse:
     """Basic sign-in: the same limiter and constant-time check as before."""
     config = get_config()
     client_ip = _client_ip(request)
-    if is_rate_limited(client_ip):
+    user = credentials.username.strip()
+    if sign_in_paused() or is_rate_limited(client_ip, user):
         return JSONResponse(
             {"detail": "Too many failed attempts. Try again later."}, status_code=429
         )
-    user = credentials.username.strip()
     if config.auth.provider != "basic" or not verify_credentials(
         user, credentials.password, config.auth
     ):
-        record_failed_login(client_ip)
+        record_failed_login(client_ip, user)
         return JSONResponse({"detail": "Invalid username or password"}, status_code=401)
-    set_session(request.session, username=user, provider="basic")
+    await run_in_threadpool(
+        start_session,
+        request.session,
+        config=config,
+        secret=_session_secret(request),
+        username=user,
+        provider="basic",
+    )
     return JSONResponse({"signed_in": True})
 
 
-async def logout(request: Request) -> RedirectResponse:
-    """Clear the session; an OIDC sign-in also ends at the provider when it offers that."""
+async def logout(request: Request) -> Response:
+    """End this user's sessions everywhere; an OIDC sign-in also ends at the provider.
+
+    Every cookie issued to this user so far stops working, so a copy taken before the
+    sign-out does not keep the app open.
+    """
+    from immich_memories.web.request_origin import cross_site_write
+
     config = get_config()
+    if cross_site_write(request.method, request.url.path, request.headers, config):
+        return JSONResponse({"detail": "A write from another site is refused."}, status_code=403)
     provider = request.session.get("auth_provider")
+    if await run_in_threadpool(session_current, request.session, config, _session_secret(request)):
+        await run_in_threadpool(end_sessions, config, str(request.session["username"]))
     clear_session(request.session)
     if provider == config.auth.provider == "oidc":
         from immich_memories.web.auth_oidc import get_end_session_url
 
         if end_session := get_end_session_url(config.auth):
-            return RedirectResponse(end_session)
-    return RedirectResponse(LOGIN_PAGE, status_code=307)
+            return RedirectResponse(end_session, status_code=303)
+    return RedirectResponse(LOGIN_PAGE, status_code=303)
 
 
 async def oidc_authorize(request: Request) -> RedirectResponse:
@@ -229,7 +259,15 @@ async def oidc_callback(request: Request) -> Response:
         # would send them straight back here and loop.
         logger.warning("OIDC login refused: a verified email on the allow-list is required")
         return HTMLResponse(_NOT_AUTHORISED_PAGE.format(who=html.escape(email or username)), 403)
-    set_session(request.session, username=username, provider="oidc", email=email)
+    await run_in_threadpool(
+        start_session,
+        request.session,
+        config=config,
+        secret=_session_secret(request),
+        username=username,
+        provider="oidc",
+        email=email,
+    )
     return RedirectResponse("/app/create")
 
 
@@ -281,14 +319,18 @@ def _moved(target: str):
 
 
 def create_app() -> FastAPI:
-    """The whole server, ready for uvicorn."""
+    """The whole server, ready for uvicorn; `StartupRefused` when the config is unsafe to serve."""
     config = get_config()
+    session_secret = storage_secret()
+    for warning in check_startup(config, os.environ, session_secret):
+        logger.warning(warning)
     app = FastAPI(title="Immich Memories", lifespan=_lifespan, docs_url=None, redoc_url=None)
+    app.state.session_secret = session_secret
     register_health_routes(app)
     register_trigger_routes(app)
     mount_web(app)
     app.add_api_route("/auth/login", login, methods=["POST"])
-    app.add_api_route("/logout", logout, methods=["GET"])
+    app.add_api_route("/logout", logout, methods=["POST"])
     app.add_api_route("/auth/authorize", oidc_authorize, methods=["GET"])
     app.add_api_route("/auth/callback", oidc_callback, methods=["GET"], name="oidc_callback")
     for path, target in _MOVED.items():
@@ -301,11 +343,14 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(
         SessionMiddleware,
-        secret_key=storage_secret(),
+        secret_key=session_secret,
         max_age=config.auth.session_ttl_hours * 3600,
         same_site="lax",
         **session_kwargs,
     )
+    # Outermost of all: a request for a foreign host or a cross-site write is answered
+    # before a session is decoded or a route runs. The config is read per request.
+    app.add_middleware(RequestChecks, config=get_config)
     return app
 
 
@@ -335,6 +380,11 @@ def main(
         config = get_config()
     except SettingsUnavailable as unavailable:
         logger.error("Not starting the UI: %s", unavailable)
+        sys.exit(1)
+    try:
+        check_startup(config, os.environ, storage_secret())
+    except StartupRefused as refused:
+        logger.error("%s", refused)
         sys.exit(1)
     from immich_memories.db import open_store
     from immich_memories.store.legacy_imports import enable_first_open_import
