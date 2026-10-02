@@ -21,6 +21,7 @@ module "immich_memories" {
 
   # Optional: the in-pod daily run, NVIDIA nodes, bigger claims
   env = {
+    IMMICH_MEMORIES_LLM__ENABLED         = "true"
     IMMICH_MEMORIES_AUTOMATION__ENABLED  = "true"
     IMMICH_MEMORIES_AUTOMATION__DAILY_AT = "09:00"
   }
@@ -64,7 +65,7 @@ modes, and the SQL for a dedicated schema in Immich's own database, are on
 | `storage_class_name` | Storage class for all three PVCs | `null` (cluster default) |
 | `ingress_enabled`, `ingress_class_name`, `ingress_host` | Ingress, off by default | `false`, `"nginx"`, `"memories.example.com"` |
 | `ingress_tls_enabled`, `ingress_tls_secret_name`, `ingress_annotations` | TLS and extras for it | `false`, `"immich-memories-tls"`, `{}` |
-| `llm_base_url`, `llm_model`, `llm_api_key` | The reader (Ollama: append `/v1`). Blank leaves the reader off by default; explicitly enable it to use a local llama.cpp model | `""` |
+| `llm_base_url`, `llm_model`, `llm_api_key` | Optional text reader (Ollama: append `/v1`). URL and model do not enable it; set `IMMICH_MEMORIES_LLM__ENABLED = "true"` in `env` | `""` |
 | `musicgen_enabled`, `musicgen_base_url`, `musicgen_api_key` | AI music through a MusicGen server | `false`, the in-cluster service, `""` |
 | `database_url`, `database_schema` | The store on PostgreSQL instead of the default SQLite file. Empty stays SQLite | `""`, `"immich_memories"` |
 | `output_resolution` | `720p`, `1080p` or `4k` | `"1080p"` |
@@ -102,7 +103,7 @@ meet, or `gpu_enabled = true` without GPU nodes.
 | Input | What it controls |
 |---|---|
 | `config_yaml` | Optional ConfigMap and init container to install a declarative config file |
-| `render_worker_sidecar_enabled`, `render_worker_token` | Worker sidecar and shared token |
+| `render_worker_sidecar_enabled`, `render_worker_token` | Worker sidecar; a token is required when enabled (32+ random characters, no placeholder words). Generate with `openssl rand -hex 32`; empty is accepted only with the sidecar off |
 | `captioner_enabled`, `captioner_cuda`, `captioner_storage_size` | Caption service deployment |
 | `oidc_*`, `secure_cookies` | SSO and HTTPS session settings |
 | `network_geocoding`, `network_map_tiles` | Optional outside map calls |
@@ -117,4 +118,4 @@ available through the explicit inputs above; the app's `gpu_enabled` only schedu
 ## Persistent mount and probes
 
 The data PVC mounts at `/home/immich/.immich-memories`; output at `/app/output`, models at `/models`.
-The module probes `/health/live` and `/health/ready`, just like the Kustomize base.
+The module probes `/health/live` and `/health/ready`, just like the Kustomize base. Terraform waits for rollout completion: an app pod must become Ready before apply succeeds. `/health/ready` requires configuration and a reachable Immich server. Check pod events and logs when apply waits or times out.

@@ -19,10 +19,10 @@ immich_api_key = "your-immich-api-key"
 auth_username = "admin"
 auth_password = "" # generate: openssl rand -hex 16 (12+ characters)
 
-# Optional: LLM clip content analysis (any OpenAI-compatible API)
-llm_base_url = "http://ollama.ollama.svc.cluster.local:11434/v1"
-llm_model    = "qwen2.5-vl"
-llm_api_key  = ""
+# Optional text reader: serve a text model and explicitly enable it in the module env map.
+# llm_base_url = "http://ollama.ollama.svc.cluster.local:11434/v1"
+# llm_model    = "your-served-text-model"
+# llm_api_key  = ""
 
 # GPU (optional)
 gpu_enabled = false

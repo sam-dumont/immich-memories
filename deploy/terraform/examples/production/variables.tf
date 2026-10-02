@@ -60,13 +60,13 @@ variable "auth_password" {
 
 # LLM
 variable "llm_base_url" {
-  description = "LLM endpoint for clip content analysis (empty disables it)"
+  description = "Optional text reader endpoint; enable with IMMICH_MEMORIES_LLM__ENABLED in env"
   type        = string
   default     = ""
 }
 
 variable "llm_model" {
-  description = "Vision model name served at llm_base_url"
+  description = "Text reader model name served at llm_base_url"
   type        = string
   default     = ""
 }

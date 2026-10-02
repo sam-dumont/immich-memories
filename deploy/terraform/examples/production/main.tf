@@ -2,7 +2,7 @@
 # Enable authentication (secret_env below) before enabling the ingress.
 
 terraform {
-  required_version = ">= 1.0"
+  required_version = ">= 1.9"
 
   required_providers {
     kubernetes = {
@@ -39,7 +39,7 @@ module "immich_memories" {
   immich_url     = var.immich_url
   immich_api_key = var.immich_api_key
 
-  # LLM clip content analysis
+  # Optional text reader
   llm_base_url = var.llm_base_url
   llm_model    = var.llm_model
   llm_api_key  = var.llm_api_key
