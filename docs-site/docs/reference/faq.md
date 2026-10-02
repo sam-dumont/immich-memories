@@ -10,16 +10,11 @@ If something is broken, start with [Troubleshooting](./troubleshooting.md).
 
 **Does it change my Immich library?**
 
-It reads. The one write is the finished film, and only when you ask for it (`--upload-to-immich`, or the upload
-switch in the web UI): a new asset, tagged `immich-memories/generated`, optionally in an album. A re-render of
-the same film into the same album moves the copy it replaces to Immich's trash, never a hard delete. It writes
-nothing else.
+Ordinary selection reads your library. When delivery is enabled (`--upload-to-immich`, `upload.enabled`, or the web UI's upload switch), it uploads the finished film, creates the `immich-memories/generated` tag if needed and tags the asset. It can also create the requested album and add the film to it. A re-render into the same album moves the app's superseded copy to Immich's trash; it does not hard-delete it. [What Immich sees](../run/privacy.md#what-immich-sees) lists these writes.
 
 **What leaves my network?**
 
-On a default install, nothing: the app talks to your Immich server and that's it. Readers, caption servers,
-place names in your language and the map fly-over are all opt-in, each one listed on
-[Privacy](../run/privacy.md) with what it sends.
+Library processing talks to your Immich server. Model setup downloads weights from their distribution hosts. Optional readers, caption servers, translated place names and map fly-overs can contact other services; [Privacy](../run/privacy.md) lists the requests and what they send.
 
 **Will it run on my NAS?**
 
@@ -48,7 +43,7 @@ Anything FFmpeg decodes. Live Photos are tested on iPhones; Samsung and Pixel mo
 **Can I pick pictures myself?**
 
 Yes. Tick or untick in the web UI’s pool and select **Preview with these choices**, star it in Immich, or pass `--include` / `--exclude`.
-A tick outranks the editor. See [Overrule it](../how-it-chooses/overrule-it.md).
+A tick outranks the editor. See [Edit the cut](../how-it-chooses/overrule-it.md).
 
 **Why is the first cut slow and the second fast?**
 
@@ -62,11 +57,11 @@ store (`store.db`). Films come on top, sized by length, resolution and codec.
 
 **Can it make films on its own?**
 
-Yes, one a day at most: [Automate it](../make/automate.md).
+Yes, one a day by default (`automation.cooldown_hours` controls the gap): [Automate it](../make/automate.md).
 
 **Several people on one Immich server?**
 
-The web UI is single-user, single-replica: one Immich API key, one library. Run one instance per library.
+The web UI is single-user, single-replica: one primary Immich account (the upload target). Run one instance per library.
 People whose pictures use separate accounts can still get one people film from both: add the second account under
 `immich.accounts` and run `generate --accounts primary,partner` on the CLI
 ([A second Immich account](../run/multi-account.mdx)); `automation.accounts` does the same for the daily

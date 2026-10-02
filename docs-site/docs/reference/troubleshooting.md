@@ -8,7 +8,7 @@ title: Troubleshooting
 [release notes](https://github.com/sam-dumont/immich-video-memory-generator/releases) for your version;
 [search the issues](https://github.com/sam-dumont/immich-video-memory-generator/issues?q=is%3Aissue); then open
 one with the output of `immich-memories report`. It defaults to the latest run, including failed runs.
-Pass a run ID to report an older one. Review the report before pasting it.
+Pass a full run ID to report an older one; `report` does not resolve ID prefixes. Review the report before pasting it.
 
 Start with the connection check and preflight:
 
@@ -27,14 +27,14 @@ In Docker, prefix the command with `docker compose exec immich-memories`. The re
 | `public heads need the pinned DINOv2 ONNX export at …` | Run `immich-memories models fetch` once. It puts the encoder and required tier artifacts on the models volume |
 | `nsfw_marqo has no model: …` or `doc_docling has no model: …` | Run `models fetch` with the same tier/config as the failed run, or explicitly use `models fetch --detectors` |
 | `Output directory is not writable` | In Docker the container runs as uid 1000: `mkdir output` before `up`, or `sudo chown 1000:1000 output` |
-| `Story-first selection needs prepared annotations in the store at …` | The store this run opened has no prepared facts for these pictures: check `IMMICH_MEMORIES_DATABASE_URL` / `database.url` names the store you prepared into, or run `prepare` |
-| `tier: full needs an enabled LLM …` | Enable `advanced.llm.enabled`. Leave `base_url` empty for the owned local model and install its weights/server, or set an external endpoint; `tier: gpu` uses the rules reader |
-| `Waiting for the reader at host:port` | A configured model server stopped answering. See [below](#waiting-for-a-model-server) |
+| `Story-first selection needs prepared annotations in the store at …` | The store this run opened has no prepared facts for these pictures: check the store named by `database.url` or the environment. Both `IMMICH_MEMORIES_DATABASE__URL` and `IMMICH_MEMORIES_DATABASE_URL` work. If the store is correct, run `prepare` |
+| `tier: full needs an enabled LLM …` | Enable `advanced.llm.enabled`. For a native install, leave `base_url` empty for the owned local model and install its weights/server. Docker and Kubernetes need an external reader endpoint; `tier: gpu` uses the rules reader |
+| `Waiting for the reader at host:port` | A configured model server stopped answering. This is a message prefix; retry details follow. See [below](#waiting-for-a-model-server) |
 | `caption endpoint must advertise smolvlm2-500m-base-public` | Right weights, wrong name: alias it. See [Add captions](../better/captions.md) |
 | `caption endpoint failed the compact-v3 schema control` | The server ignores the JSON schema, or it is the wrong model |
 | Settings: `Secrets cannot be saved here until IMMICH_MEMORIES_SECRET_KEY is set` | Nothing is broken: keys in `.env` or `config.yaml` work without it. To save them from the page, set the key ([The secret key](../run/environment-variables.md#the-secret-key)) |
 | `IMMICH_MEMORIES_SECRET_KEY must be at least 32 characters` | Use `openssl rand -base64 32`, which prints 44 |
-| `This server does not answer to the host '…'` (HTTP 421) | Auth is off and the page was reached by a name other than localhost. Add that name to `server.allowed_hosts`, or enable authentication. See [Allowed hosts](../run/network-security.md#allowed-hosts) |
+| `This server does not answer to the host '…'` (HTTP 421) | The requested hostname is not admitted. Add the intended name to `server.allowed_hosts` and check your public URL. See [Allowed hosts](../run/network-security.md#allowed-hosts) |
 | `A write from another site is refused` (HTTP 403) | A browser sent the request from another origin. Open the app at its own address; a script or cron sends no `Origin` and passes |
 | `Immich account 'partner' could not read asset …` | A `generate --accounts` run stops rather than lose that account's pictures. Run `immich-memories config test`: the account's key is wrong, revoked, or lacks the asset read permissions |
 
@@ -86,7 +86,7 @@ immich-memories runs why <asset id> --run <run id>
 says where it passed and where it was dropped, and why. To overrule it, tick it on the web UI's pool and
 **Preview with these choices** to save a revision. Those final edits bypass the automatic sharing and length checks. For a new cut, `--include <asset id>` still passes the sharing gate. Neither can render a picture whose preview Immich answers HTTP 404 for. The run logs those as
 `preview unavailable at Immich (HTTP 404)` and cuts the rest; regenerate that asset's thumbnails in Immich and
-cut again. Every lever is on [Overrule it](../how-it-chooses/overrule-it.md).
+cut again. Every lever is on [Edit the cut](../how-it-chooses/overrule-it.md).
 
 ## The first cut is slow
 
@@ -101,17 +101,17 @@ with a partial batch. Stage changes, counter resets and completion appear immedi
 
 ## Waiting for a model server
 
-Only on the `full` tier, where an LLM reads the film. The run names the endpoint and tries three times, two then
-four seconds apart, then stops with `Gave up on the reader at host:port`. With an explicit
-`advanced.llm.base_url`, start that server or fix its URL. With an empty URL, check the configured
-`local_server`, model/projector files and available memory; the app starts its own server. Then
+When a model reader is in use, normally on the `full` tier. The run names the endpoint and tries three times, two then
+four seconds apart, then stops with a message starting `Gave up on the reader at host:port`, followed by `after 3 dropped connections: fix the server and cut again`. With an explicit
+`advanced.llm.base_url`, start that server or fix its URL. On a native install with an empty URL, check the configured
+`local_server`, model/projector files and available memory; the app starts its own server. Docker and Kubernetes require an external endpoint: [Reader setup](../better/reader.md). Then
 **Cut again** or rerun: everything already read is banked. To cut without it, set
 `tier: gpu` (or `nas`): selection then uses the rules reader.
 
-## A clip fails with "Could not write header (incorrect codec parameters ?)"
+## `QuickTime cannot hold: re-encoding this clip instead of copying it`
 
 The source is VP9 or AV1 inside a QuickTime `.MOV` (Android phones and some editors write those), and a lossless
-stream copy into `.mov` is refused. Nothing to do: the cut re-encodes that clip with the same in and out points.
+stream copy into `.mov` would fail. The app detects that before copying and logs this message. Nothing to do: it re-encodes the clip with the same in and out points.
 If a selected clip cannot be prepared, the certified render refuses the changed or incomplete content. Read the named clip failure and the report; do not treat a shorter output as the same cut.
 
 ## A long render spends a while "Checking the finished film" {#a-long-render-ends-with-ffprobe-failed-to-inspect-output-artifact}
@@ -155,7 +155,7 @@ overlay. A hardware encoder only speeds up the encode. See [Hardware encoding](.
 
 ## Music generation fails
 
-A failed generator falls back to the next one, then to a bundled track, and the finished run says so. ACE-Step
+A failed generator falls back to the next one, then to a bundled track (included in Docker, or installed with the `music` extra), and the finished run says so. ACE-Step
 counts as up only when `/health` returns `{"data": {"status": "ok"}}`; MusicGen needs HTTP 200. For timeouts,
 raise `ace_step.timeout_seconds` (3600) or `musicgen.timeout_seconds` (10800), both capped at 18000. Setup is on
 [Generated music](../better/music.md).
