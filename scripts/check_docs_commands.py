@@ -31,7 +31,7 @@ def check_cli(tokens: list[str], root: click.Group, *, fragment: bool = False) -
     i = 0
     while i < len(tokens):
         word = tokens[i]
-        if word.startswith("[") or word in {"…", "..."}:
+        if word.startswith("[") or word in {"…", "..."} or (scaffold and word == "COMMAND"):
             i += 1
             continue
         if word.startswith("-"):
