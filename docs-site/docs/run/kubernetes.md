@@ -10,6 +10,17 @@ For an existing cluster with persistent storage. [Docker Compose](./docker.md) i
 install. The Kustomize manifests live in `deploy/kubernetes/`; CI renders them but does not deploy
 them to a live cluster. [Requirements](./requirements.md) explains platform and memory constraints.
 
+## Supported deployment paths
+
+Use the shipped Kustomize manifests, or the existing [Terraform module](./terraform.md) if
+you manage Kubernetes resources with Terraform. Kustomize keeps the one-replica app,
+SQLite's persistent volume and the model-fetch init container together in the supplied base.
+Terraform has its own inputs and resources; its differences are documented on that page.
+
+There is no project Helm chart or maintained `app-template` values file.
+If you need a Helm path, [ask for it](https://github.com/sam-dumont/immich-video-memory-generator/issues/new)
+and describe your setup. Helm support will be considered when people request it.
+
 ## Prerequisites
 
 - Immich reachable from the cluster, normally port 2283.
