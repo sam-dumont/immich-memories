@@ -113,3 +113,38 @@ def test_cadence_order_keeps_seek_caption_and_frame_hashes(tmp_path, fill, rate,
         hashes.append(result.stdout)
     assert hashes[0] == hashes[1]
     assert len([line for line in hashes[0].splitlines() if line.startswith(b"0,")]) == 60
+
+
+def test_equal_rate_blur_keeps_the_distinct_final_frame(tmp_path):
+    from types import SimpleNamespace
+
+    import numpy as np
+
+    from immich_memories.processing.streaming_frame_decoder import make_decoder
+
+    source = tmp_path / "last-frame.mkv"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=black:s=64x64:r=4:d=1,"
+            "drawbox=x=16:y=16:w=32:h=32:color=white:t=fill:enable='eq(n,3)'",
+            "-c:v",
+            "ffv1",
+            str(source),
+        ],
+        check=True,
+        capture_output=True,
+        timeout=20,
+    )
+    decoder = make_decoder(
+        SimpleNamespace(path=source, duration=1), 0, 1920, 1080, 4, scale_mode="blur"
+    )
+    frames = list(decoder)
+    assert len(frames) == 4
+    assert all(np.max(frame[540, 960]) < 5 for frame in frames[:3])
+    assert np.min(frames[-1][540, 960]) > 240
