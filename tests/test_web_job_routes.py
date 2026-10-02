@@ -162,25 +162,30 @@ def test_rescanning_people_runs_people_scan(client):
     assert job["command"] == "immich-memories people scan"
 
 
-def test_music_is_previewed_by_music_preview_uploaded_and_played_back(client):
+def test_music_is_previewed_by_music_preview_uploaded_and_played_back(client, tmp_path):
     started = client.post(f"/api/v1/runs/{RUN}/music-preview")
     job = _finished(client, started.json()["id"])
     argv = json.loads(client.recorded.read_text())
     assert job["status"] == "succeeded" and argv[argv.index("music") + 1] == "preview"
     assert "--progress-file" in argv and job["command"] == f"immich-memories music preview {RUN}"
 
-    uploaded = client.post("/api/v1/music", files={"file": ("song.mp3", b"ID3tune", "audio/mpeg")})
+    from tests.generated_audio_fixtures import write_audio
+
+    track = tmp_path / "song.wav"
+    write_audio(track, 0.1)
+    payload = track.read_bytes()
+    uploaded = client.post("/api/v1/music", files={"file": ("song.wav", payload, "audio/wav")})
     refused = client.post("/api/v1/music", files={"file": ("notes.txt", b"hi", "text/plain")})
     played = client.get(f"/api/v1/music/{uploaded.json()['id']}")
 
-    assert uploaded.status_code == 201 and played.content == b"ID3tune"
+    assert uploaded.status_code == 201 and played.content == payload
     assert refused.status_code == 422
     assert client.get("/api/v1/music/..%2F..%2Fsecret").status_code == 404
 
     render = client.post(f"/api/v1/runs/{RUN}/renders", json={"music": uploaded.json()["id"]})
     _finished(client, render.json()["id"])
     argv = json.loads(client.recorded.read_text())
-    assert any(flag.startswith("--music=") and flag.endswith(".mp3") for flag in argv)
+    assert any(flag.startswith("--music=") and flag.endswith(".wav") for flag in argv)
 
 
 def test_a_first_cut_moves_its_bar_by_the_stage_without_a_whole_cut_estimate(client, tmp_path):

@@ -24,6 +24,7 @@ from immich_memories.web import (
     settings,
     suggestions,
 )
+from immich_memories.web.request_validation import validate_json_request
 
 CLIENT_PREFIX = "/app"
 # `make web-build` writes the SvelteKit client here. It is not committed (#1580): the release
@@ -44,6 +45,7 @@ async def _immich_refused(_request: Request, error: Exception) -> JSONResponse:
 
 def mount_web(app: FastAPI, *, client_dir: Path = BUILT_CLIENT) -> None:
     """Add the /api/v1 routes and serve the client under /app."""
+    app.middleware("http")(validate_json_request)
     app.include_router(runs.router)
     # The same builder `immich-memories report` prints from, typed for the client (#1428).
     app.include_router(report_api.router)

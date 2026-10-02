@@ -175,6 +175,8 @@ def unrelate(
     person_id: str, relationship: Relationship, store: Annotated[Store, Depends(people_store)]
 ) -> RosterPerson:
     """Remove a relationship somebody recorded, and its reciprocal."""
+    if not any(p.person_id == person_id for p in load_people(store)):
+        raise HTTPException(404, "Nobody with that id is in the people registry.")
     remove_relationship(store, person_id, relationship.kind, relationship.target_id)
     person = next(p for p in load_people(store) if p.person_id == person_id)
     return RosterPerson.model_validate(asdict(person))

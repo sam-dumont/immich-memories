@@ -188,3 +188,10 @@ Geocoding and map tiles are off by default. Enable them under `network` only aft
 Use `advanced.llm.reader_concurrency` only when tuning model throughput. The default is one
 request for a local/private host and four for a public host. Accepted overrides: 1–16.
 See [Reader setup](../better/reader.md).
+
+
+## Invalid configuration
+
+A YAML configuration must be a mapping of setting names to values. An empty file or `null`
+means no file overrides; scalar values and lists are rejected. Unknown authentication keys
+are errors, so a misspelled `enabled` cannot silently leave authentication off.

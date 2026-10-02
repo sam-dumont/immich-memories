@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from immich_memories.config_models import expand_env_vars
 
@@ -27,6 +27,8 @@ def _normalised_public_url(value: str) -> str:
 
 class AuthConfig(BaseModel):
     """Authentication settings for the web UI."""
+
+    model_config = ConfigDict(extra="forbid")
 
     enabled: bool = False
     provider: Literal["basic", "oidc", "header"] = "basic"
