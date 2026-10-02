@@ -485,7 +485,7 @@ geographiclib 2.1
   License: MIT
   URL: https://github.com/geographiclib/geographiclib-python
 
-geopy 2.4.1
+geopy 2.5.0
   License: MIT
   URL: https://github.com/geopy/geopy
 
@@ -573,9 +573,9 @@ mpmath 1.3.0
   License: BSD
   URL: https://github.com/fredrik-johansson/mpmath
 
-mutagen 1.47.0
+mutagen 1.48.1
   License: GPL-2.0-or-later
-  URL: https://github.com/quodlibet/mutagen
+  URL: https://mutagen.readthedocs.io
 
 networkx 3.6.1
   License: BSD-3-Clause
