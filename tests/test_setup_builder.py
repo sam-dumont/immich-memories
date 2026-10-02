@@ -25,6 +25,8 @@ def _build(_sources=None, _build_version="1.2.3", **changes):
         "version": "1.2.3",
         **changes,
     }
+    if setup["platform"] == "kubernetes":
+        setup.setdefault("secretKey", "a" * 64)
     sources = {
         "base": {"services": {"immich-memories": {"image": "app:${IMMICH_MEMORIES_VERSION}"}}},
         "gpu": {"services": {"inference": {"image": "inference:${IMMICH_MEMORIES_VERSION}"}}},
@@ -156,6 +158,7 @@ def test_kubernetes_builder_preserves_supplied_credentials_and_reader_configurat
     secret = files["deploy/kubernetes/base/secret.yaml"]
     assert secret["stringData"]["IMMICH_URL"] == "http://192.168.1.10:2283"
     assert secret["stringData"]["IMMICH_API_KEY"] == "synthetic-fixture-api-key"
+    assert secret["stringData"]["IMMICH_MEMORIES_SECRET_KEY"] == "a" * 64
     assert files["deploy/kubernetes/overlays/tier-full/reader-config.yaml"]["data"] == {
         "url": "http://reader.example.lan:8000/v1",
         "model": "served-model",
