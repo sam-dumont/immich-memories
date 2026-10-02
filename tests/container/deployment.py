@@ -1,8 +1,8 @@
 """The shipped image, run the way a self-hoster runs it: `docker-compose.yml` and a volume.
 
 `Deployment` drives the repo's own compose file through the docker CLI. The file is used
-as it ships; the only changes are the ones a user makes: an image to run, the commented
-PostgreSQL example switched on, and the environment in `.env`. A small override file
+as it ships; the only changes are the ones a user makes: an image to run, the optional
+PostgreSQL overlay selected, and the environment in `.env`. A small override file
 renames the containers and drops the published port, so a run never collides with a
 real install on the same machine.
 """
@@ -35,30 +35,6 @@ class DeploymentError(AssertionError):
     """A docker command the suite depends on failed."""
 
 
-def switch_on_postgres(compose: str) -> str:
-    """The compose file with its commented PostgreSQL example uncommented, as a user would."""
-    lines = compose.splitlines()
-    url = [
-        i
-        for i, line in enumerate(lines)
-        if line.lstrip().startswith("# IMMICH_MEMORIES_DATABASE_URL:")
-    ]
-    service = [i for i, line in enumerate(lines) if line == "  # postgres:"]
-    dependency = [i for i, line in enumerate(lines) if line == "    # depends_on:"]
-    volume = [i for i, line in enumerate(lines) if line == "  # immich-memories-postgres-data:"]
-    if any(len(block) != 1 for block in (url, service, volume, dependency)):
-        raise DeploymentError("docker-compose.yml no longer carries the PostgreSQL example")
-    lines[url[0]] = lines[url[0]].replace("# ", "", 1)
-    for index in range(dependency[0], dependency[0] + 3):
-        lines[index] = lines[index].replace("# ", "", 1)
-    index = service[0]
-    while index < len(lines) and lines[index].startswith("  #"):
-        lines[index] = "  " + lines[index][4:]
-        index += 1
-    lines[volume[0]] = "  immich-memories-postgres-data:"
-    return "\n".join(lines) + "\n"
-
-
 def parse_counts(status: str) -> dict[str, int]:
     """Per-table row counts from `store status`."""
     return {
@@ -89,9 +65,11 @@ class Deployment:
         """Lay out the compose project a user would have: the file, `.env`, `./output`."""
         self.root.mkdir(parents=True, exist_ok=True)
         compose = COMPOSE_FILE.read_text()
-        (self.root / "docker-compose.yml").write_text(
-            switch_on_postgres(compose) if self.postgres else compose
-        )
+        (self.root / "docker-compose.yml").write_text(compose)
+        if self.postgres:
+            shutil.copyfile(
+                REPO_ROOT / "docker-compose.postgres.yml", self.root / "docker-compose.postgres.yml"
+            )
         (self.root / ".env").write_text(
             # Refused at once: the trigger's run records a failed attempt, not a hang.
             "IMMICH_URL=http://127.0.0.1:9\n"
@@ -136,11 +114,10 @@ class Deployment:
             str(self.root),
             "-f",
             str(self.root / "docker-compose.yml"),
-            "-f",
-            str(self.root / "override.yml"),
         ]
         if self.postgres:
-            command += ["--profile", "postgres"]
+            command += ["-f", str(self.root / "docker-compose.postgres.yml")]
+        command += ["-f", str(self.root / "override.yml")]
         return _run([*command, *args], timeout=timeout, check=check)
 
     def seed_volume(self, legacy_home: Path) -> None:

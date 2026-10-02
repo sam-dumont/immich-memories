@@ -774,4 +774,6 @@ jobs:
         run: |
           bundle="/tmp/immich-memories-deploy-${VERSION}.tar.gz"
           python3 scripts/package_deployment.py "$VERSION" "$bundle"
-          gh release upload "v$VERSION" "$bundle" --clobber
+          compose_assets="/tmp/immich-memories-compose-${VERSION}"
+          python3 scripts/package_compose.py "$VERSION" "$compose_assets"
+          gh release upload "v$VERSION" "$bundle" "$compose_assets"/* --clobber

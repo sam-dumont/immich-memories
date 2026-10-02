@@ -10,21 +10,20 @@ For everyday backups, start with [Database and backups](../database.md).
 
 ## A separate PostgreSQL service {#2-a-separate-postgresql-service}
 
-`docker-compose.yml` ships a commented `postgres` service (`postgres:16`, pinned by digest), a
-commented `IMMICH_MEMORIES_DATABASE_URL` line on the app service, and a commented
-`immich-memories-postgres-data` volume at the bottom. Uncomment these and the app's
-`depends_on` block, which waits for PostgreSQL to accept connections before starting the app.
-Then in `.env`:
+Download `docker-compose.postgres.yml` from the same release as the base file. It adds a
+`postgres:16` service pinned by digest, its persistent volume and the app database URL.
+The app waits for PostgreSQL's health check before starting. For a new installation, set in `.env`:
 
 ```bash
 POSTGRES_PASSWORD=a-long-random-password
-COMPOSE_PROFILES=postgres
+COMPOSE_FILE=docker-compose.yml:docker-compose.postgres.yml
 ```
 
-and `docker compose up -d`. For an existing SQLite installation, follow the
-[copy-first procedure](../database.md#move-to-postgresql) before enabling the app URL. The service sits behind the `postgres` profile, and
-`COMPOSE_PROFILES` turns it on for every later `up` too, so an update with a plain
-`docker compose up -d` does not leave the app without its database. On Kubernetes,
+Then run `docker compose up -d`. The password is used in the database URL: use a URL-safe random
+value, or percent-encode reserved characters when configuring your own URL. Keep both files in
+`COMPOSE_FILE` for later updates. For an existing SQLite installation, follow the
+[copy-first procedure](../database.md#move-to-postgresql) before enabling the overlay's app URL.
+On Kubernetes,
 `deploy/kubernetes/overlays/postgres` does the equivalent: it is not referenced by
 `base/kustomization.yaml`, so applying `base` alone keeps SQLite, and applying the overlay points
 the Deployment at a `database-secret.yaml` you fill in yourself; it does not run PostgreSQL for

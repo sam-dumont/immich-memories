@@ -84,20 +84,22 @@ The old SQLite file remains your way back. Protect URLs containing passwords lik
 
 For an existing Docker Compose SQLite installation:
 
-1. Uncomment only the PostgreSQL service and volume first. Set `POSTGRES_PASSWORD` and
-   `COMPOSE_PROFILES=postgres`; leave the app database URL commented out.
-2. Start PostgreSQL and wait for its health check. Stop the app so copying has one writer:
+1. Download `docker-compose.postgres.yml` from the same release and set `POSTGRES_PASSWORD`
+   in `.env`. Keep `COMPOSE_FILE` on the base file until the copy succeeds.
+2. Start only PostgreSQL with the overlay, then stop the app. Copy using the base file so
+   SQLite remains the source:
 
    ```bash
-   docker compose up -d --wait postgres
-   docker compose stop immich-memories
-   docker compose run --rm immich-memories immich-memories store copy \
+   docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d --wait postgres
+   docker compose -f docker-compose.yml stop immich-memories
+   docker compose -f docker-compose.yml run --rm --no-deps immich-memories immich-memories store copy \
      --to 'postgresql+psycopg://immich_memories:password@postgres:5432/immich_memories'
    ```
 
-3. Only after the copy and digest checks succeed, uncomment the app database URL and
-   `depends_on` block, then run `docker compose up -d immich-memories`. Use the same password
-   in the target URL and app URL. Keep the original SQLite file.
+3. Only after the copy and digest checks succeed, set
+   `COMPOSE_FILE=docker-compose.yml:docker-compose.postgres.yml` in `.env` and run
+   `docker compose up -d immich-memories`. Use the same password in the copy target URL and
+   `POSTGRES_PASSWORD`. Keep the original SQLite file.
 
 Enabling the app URL before copying makes PostgreSQL the source, so the original SQLite rows
 would never be copied.
@@ -105,8 +107,8 @@ would never be copied.
 
 ## 2. A separate PostgreSQL service
 
-Compose ships a commented service, database URL, volume and `depends_on` block. Enable all four and set
-`POSTGRES_PASSWORD`/`COMPOSE_PROFILES=postgres` in `.env`.
+The separate `docker-compose.postgres.yml` adds the service, database URL, persistent volume
+and readiness dependency. Set `POSTGRES_PASSWORD` and select both files with `COMPOSE_FILE`.
 [Complete setup](./reference/database.md#2-a-separate-postgresql-service).
 
 ## 3. A separate database on your existing PostgreSQL instance

@@ -52,6 +52,7 @@ from immich_memories.config_models_soundtrack import ACEStepConfig, AudioConfig,
 from immich_memories.config_models_triage import TriageConfig
 from immich_memories.config_presets import PresetName, apply_preset
 from immich_memories.config_tiers import TierSetting, apply_tier
+from immich_memories.deployment_config import deployment_defaults
 from immich_memories.logging_config import install_secret_redaction
 from immich_memories.security import configured_secret_values
 
@@ -246,7 +247,7 @@ _database_source_data: dict = {}
 
 
 class _MappingSettingsSource(PydanticBaseSettingsSource):
-    """A pydantic-settings source over an already-loaded nested dict (YAML or the database)."""
+    """A pydantic-settings source over an already-loaded nested dict (YAML, database or deployment defaults)."""
 
     def __init__(self, settings_cls: type[BaseSettings], data: dict) -> None:
         super().__init__(settings_cls)
@@ -394,7 +395,7 @@ class Config(BaseSettings):
     def from_yaml(cls, path: Path, *, stored: dict[str, Any] | None = None) -> Config:
         """Load configuration from a YAML file and the settings saved in the database.
 
-        Priority order (highest wins): env vars > YAML file > database > defaults.
+        Priority order (highest wins): env vars > YAML file > database > deployment > defaults.
         This ensures IMMICH_MEMORIES_AUTH__ENABLED=false always overrides
         auth.enabled: true in config.yaml, and a line in config.yaml always beats
         what the UI saved.
@@ -444,6 +445,7 @@ class Config(BaseSettings):
             database_source,
             dotenv_settings,
             file_secret_settings,
+            _MappingSettingsSource(settings_cls, deployment_defaults(os.environ)),
         )
 
     @classmethod

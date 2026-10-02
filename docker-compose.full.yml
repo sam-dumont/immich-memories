@@ -1,0 +1,5 @@
+# Add after the GPU file. Explicitly opt in with READER_ENABLED=true and set its URL/model.
+services:
+  immich-memories:
+    environment:
+      IMMICH_MEMORIES_DEPLOYMENT_TIER: full
