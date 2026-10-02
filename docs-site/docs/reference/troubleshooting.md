@@ -155,7 +155,8 @@ overlay. A hardware encoder only speeds up the encode. See [Hardware encoding](.
 
 ## Music generation fails
 
-A failed generator falls back to the next one, then to a bundled track (included in Docker, or installed with the `music` extra), and the finished run says so. ACE-Step
+A failed generator falls back to the next one, then to a bundled track, and the finished run says so.
+Bundled tracks require Docker or the `music` extra; they are absent from a base pip/uv install. ACE-Step
 counts as up only when `/health` returns `{"data": {"status": "ok"}}`; MusicGen needs HTTP 200. For timeouts,
 raise `ace_step.timeout_seconds` (3600) or `musicgen.timeout_seconds` (10800), both capped at 18000. Setup is on
 [Generated music](../better/music.md).

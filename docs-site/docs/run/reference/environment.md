@@ -19,6 +19,9 @@ needs none.
 |----------|-----------|
 | `IMMICH_URL` | `immich.url` |
 | `IMMICH_API_KEY` | `immich.api_key` |
+| `IMMICH_MEMORIES_DATABASE_URL` | `database.url`, before the store opens |
+| `IMMICH_MEMORIES_DATABASE_SCHEMA` | `database.schema`, before the store opens |
+| `IMMICH_MEMORIES_IMPORT_FROM` | `database.import_from`, for the one-time legacy import |
 | `OPENAI_API_KEY` | `llm.api_key`, only when the config file states no key |
 | `ANTHROPIC_API_KEY` | `llm.api_key` under the same rule, read instead of `OPENAI_API_KEY` when `llm.provider` is `anthropic` or `zai` |
 | `MUSICGEN_ENABLED`, `MUSICGEN_BASE_URL`, `MUSICGEN_API_KEY` | `musicgen.enabled`, `.base_url`, `.api_key` |
