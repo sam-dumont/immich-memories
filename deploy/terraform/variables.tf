@@ -40,15 +40,15 @@ variable "immich_api_key" {
   sensitive   = true
 }
 
-# LLM clip content analysis (any OpenAI-compatible API; optional)
+# Optional text reader (OpenAI-compatible API; explicitly enable it in env)
 variable "llm_base_url" {
-  description = "LLM endpoint, e.g. http://ollama.ollama.svc.cluster.local:11434/v1. Empty disables LLM analysis"
+  description = "Optional text reader endpoint, e.g. http://ollama.ollama.svc.cluster.local:11434/v1. Enable with IMMICH_MEMORIES_LLM__ENABLED in env"
   type        = string
   default     = ""
 }
 
 variable "llm_model" {
-  description = "Vision model name served at llm_base_url"
+  description = "Text reader model name served at llm_base_url"
   type        = string
   default     = ""
 }
@@ -363,10 +363,18 @@ variable "render_worker_sidecar_enabled" {
 }
 
 variable "render_worker_token" {
-  description = "Bearer token both containers share (Secret)"
+  description = "Required when the render worker sidecar is enabled: 32+ random characters shared by both containers (Secret)"
   type        = string
   default     = ""
   sensitive   = true
+
+  validation {
+    condition = !var.render_worker_sidecar_enabled || (
+      length(trimspace(var.render_worker_token)) >= 32 &&
+      !can(regex("change-me|changeme|secret|password|example", lower(var.render_worker_token)))
+    )
+    error_message = "When render_worker_sidecar_enabled is true, render_worker_token must contain 32+ random characters and no placeholder words. Generate one with openssl rand -hex 32."
+  }
 }
 
 # A declarative config.yaml (config_loader.py). A ConfigMap volume mounts

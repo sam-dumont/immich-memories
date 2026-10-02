@@ -82,7 +82,7 @@ variable "lan_llm_base_url" {
 }
 
 variable "lan_llm_model" {
-  description = "Vision model name served at lan_llm_base_url"
+  description = "Text reader model name served at lan_llm_base_url"
   type        = string
 }
 

@@ -1,7 +1,7 @@
 # Basic deployment: CPU only, no ingress, port-forward to reach the UI.
 
 terraform {
-  required_version = ">= 1.0"
+  required_version = ">= 1.9"
 
   required_providers {
     kubernetes = {
@@ -28,7 +28,7 @@ module "immich_memories" {
   immich_url     = var.immich_url
   immich_api_key = var.immich_api_key
 
-  # Optional: LLM clip content analysis (any OpenAI-compatible API)
+  # Optional text reader: explicitly enable through the module env map
   llm_base_url = var.llm_base_url
   llm_model    = var.llm_model
   llm_api_key  = var.llm_api_key

@@ -31,12 +31,12 @@ the product tier; setting `EDITORIAL__PREPARATION__TIER` by hand is overridden w
 No ConfigMap by default. `immich_url` / `immich_api_key` (and `llm_api_key`, `musicgen_api_key`,
 `secret_env`) land in the Secret and reach the pod through `envFrom`; every other setting is an
 `IMMICH_MEMORIES_<SECTION>__<KEY>` env var (`env`). Probes: `/health/live` (liveness) and
-`/health/ready` (readiness, `503` until config is present and Immich answers). Setting
+`/health/ready` (readiness, `503` until config is present and Immich answers). `terraform apply` waits for the deployment rollout, so it can time out if the pod never becomes Ready. Setting
 `config_yaml` is the one exception: see [The maximalist example](#the-maximalist-example) below.
 
 ## Prerequisites
 
-1. **Terraform** >= 1.0, `hashicorp/kubernetes` provider >= 2.20
+1. **Terraform** >= 1.9, `hashicorp/kubernetes` provider >= 2.20
 2. **Kubernetes cluster** with a storage class for PVCs and Immich reachable from it
    (port 2283 by default). GPU only: NVIDIA GPU Operator + RuntimeClass `nvidia`
 3. **kubeconfig** configured
@@ -86,12 +86,13 @@ module "immich_memories" {
   immich_url     = "https://photos.example.com"
   immich_api_key = var.immich_api_key
 
-  # Optional: LLM clip content analysis (any OpenAI-compatible API)
+  # Optional text reader (OpenAI-compatible API)
   llm_base_url = "http://ollama.ollama.svc.cluster.local:11434/v1"
-  llm_model    = "qwen2.5-vl"
+  llm_model    = "your-served-text-model"
 
   # Optional: anything else, e.g. the in-pod daily automation
   env = {
+    IMMICH_MEMORIES_LLM__ENABLED         = "true"
     IMMICH_MEMORIES_AUTOMATION__ENABLED  = "true"
     IMMICH_MEMORIES_AUTOMATION__DAILY_AT = "09:00"
   }
@@ -136,8 +137,8 @@ module "immich_memories" {
 
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
-| `llm_base_url` | OpenAI-compatible endpoint; empty disables LLM analysis | `string` | `""` |
-| `llm_model` | Vision model name | `string` | `""` |
+| `llm_base_url` | Optional text reader endpoint; enable explicitly with `IMMICH_MEMORIES_LLM__ENABLED` in `env` | `string` | `""` |
+| `llm_model` | Text reader model name | `string` | `""` |
 | `llm_api_key` | API key (Secret) | `string` | `""` |
 | `musicgen_enabled` | AI music via a MusicGen server | `bool` | `false` |
 | `musicgen_base_url` | MusicGen server URL | `string` | in-cluster URL |
@@ -213,10 +214,12 @@ origin"}`.
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
 | `render_worker_sidecar_enabled` | Run the render worker as a second container in this Deployment's own pod, on a GPU node | `bool` | `false` |
-| `render_worker_token` | Bearer token both containers share (Secret) | `string` | `""` |
+| `render_worker_token` | Required with the sidecar: 32+ random characters shared by both containers (Secret) | `string` | `""` |
 
 Implies GPU scheduling for the whole pod even when `gpu_enabled` is left `false`: the app container
 itself needs no card, but the worker does.
+
+When enabling `render_worker_sidecar_enabled`, set `render_worker_token` to a generated token (`openssl rand -hex 32`). Empty, short and placeholder tokens fail input validation. The default empty token is accepted while the sidecar stays off.
 
 ### Caption server
 
