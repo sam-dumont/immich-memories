@@ -90,6 +90,17 @@ jobs:
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
           "
 
+      - name: Verify matching setup release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Development previews already disable setup exports. Release docs must
+          # not publish links while deployment uploads are pending or missing.
+          if [[ "$DOCS_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
+            gh release view "v${DOCS_VERSION#v}" --json tagName,assets \
+              | python3 scripts/check_docs_release_assets.py "$DOCS_VERSION"
+          fi
+
       - name: Choose documentation destination
         run: |
           FINAL_TAG=$(git tag --list | python3 scripts/docs_release.py "$DOCS_VERSION")

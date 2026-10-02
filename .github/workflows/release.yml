@@ -362,7 +362,7 @@ jobs:
   # so we call the docs workflow directly instead of relying on release:published)
   deploy-docs:
     name: Deploy Docs
-    needs: [analyze, release]
+    needs: [analyze, release, deployment-bundle]
     # Candidates publish at the root before 1.0, then at /next.
     if: >-
       github.repository == 'sam-dumont/immich-video-memory-generator' &&
@@ -756,7 +756,7 @@ jobs:
 
   deployment-bundle:
     name: Publish matching deployment manifests
-    needs: [analyze, docker-manifest, inference-manifest]
+    needs: [analyze, release, docker-manifest, inference-manifest]
     if: github.repository == 'sam-dumont/immich-video-memory-generator' && (needs.analyze.outputs.should_release == 'true' && !inputs.dry_run)
     runs-on: ubuntu-latest
     permissions:

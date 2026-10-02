@@ -377,3 +377,9 @@ def test_app_only_workflow_runs_image_gates_without_release_publication(
         ]
     else:
         assert not output.exists() or output.read_text() == ""
+
+
+def test_docs_publication_waits_for_matching_deployment_assets():
+    jobs = release_workflow()["jobs"]
+    assert "deployment-bundle" in jobs["deploy-docs"]["needs"]
+    assert "release" in jobs["deployment-bundle"]["needs"]
