@@ -14,7 +14,7 @@ immich-memories runs list --status failed
 immich-memories runs show RUN_ID
 ```
 
-`show` gives status, scope, output/delivery, title source, timing and system details. A partial ID works when unambiguous among the 100 most recent runs; use the full ID for older runs.
+`show` gives status, scope, output, title source, timing and system details. A partial ID works when unambiguous among the 100 most recent runs; use the full ID for older runs.
 
 ## Read the cut
 
@@ -57,6 +57,6 @@ immich-memories runs stats
 immich-memories runs delete RUN_ID
 ```
 
-`storage` reports directories under output and cache; loose files directly in those roots are not counted. `stats` summarizes history. `delete` removes the run record and its output; add `--keep-output` to keep the file.
+`storage` reports directories under output and cache; loose files directly in those roots are not counted. `stats` summarizes history. `delete` removes the run record and its output; add `--keep-output` to keep the file. Deletion asks for confirmation; use `--yes` for an intentional scripted deletion.
 
 To investigate slowness or failures, use [report](./report.md). Every flag: [CLI reference](../../reference/cli-reference.md#runs).

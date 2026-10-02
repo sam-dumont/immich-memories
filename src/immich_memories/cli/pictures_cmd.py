@@ -21,8 +21,7 @@ def register_pictures_commands(main: click.Group) -> None:
     def pictures() -> None:
         """Your own word on a picture: clear its hold, or never use it.
 
-        Every tier reads it, in every later cut. The asset id is the one `runs why`,
-        `runs story` and Immich show.
+        Every tier reads it, in every later cut. Find the asset id at the end of the picture's Immich URL: /photos/ASSET_ID.
         """
 
     @pictures.command("show")

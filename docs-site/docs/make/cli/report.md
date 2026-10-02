@@ -12,7 +12,7 @@ immich-memories report RUN_ID
 immich-memories report RUN_ID --bundle report.zip
 ```
 
-Without an ID it uses the latest run. The ZIP includes the report and full redacted logs. `--json` gives the report as data.
+Without an ID it uses the latest run. A supplied `RUN_ID` must be the full ID; unlike `runs` commands, `report` does not resolve prefixes. The ZIP includes the report and full redacted logs. `--json` gives the report as data.
 
 ## What it includes
 
@@ -20,7 +20,7 @@ Errors, warnings, logs and a table of time and memory by phase. When the film is
 
 The report removes credentials, names, places, coordinates, network addresses and absolute paths. Asset IDs become report-local hashes. Pictures are never included. [Exact redaction rules](../../run/privacy.md#diagnostic-reports).
 
-Sentence requests also include a redacted interpretation trace. Captions stay out unless you explicitly include flagged captions.
+Sentence requests also include a redacted interpretation trace. Captions stay out unless you pass `--include-flagged-captions`. Review those captions before sharing.
 
 ## Mark a wrong result
 

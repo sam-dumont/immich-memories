@@ -57,9 +57,9 @@ def _get_options_table(cmd: click.Command) -> str:
 
     lines = ["| Flag | Type | Default | Description |", "| --- | --- | --- | --- |"]
     for param in params:
-        names = ", ".join(f"`{d}`" for d in param.opts)
+        names = ", ".join(f"`{d}`" for d in (*param.opts, *param.secondary_opts))
         param_type = _format_type(param.type)
-        default = param.default
+        default = param.show_default if isinstance(param.show_default, str) else param.default
         # Click >= 8.3 uses a Sentinel (UNSET) instead of None for "no default"
         if default is None or default is UNSET:
             default = "-"
@@ -70,6 +70,13 @@ def _get_options_table(cmd: click.Command) -> str:
             # drift gate can never agree between a laptop and the CI runner.
             default = Path("~") / default.relative_to(Path.home())
         help_text = inspect.cleandoc(param.help or "").replace("\n", " ").replace("|", "\\|")
+        markers = [
+            label
+            for enabled, label in ((param.required, "required"), (param.multiple, "repeatable"))
+            if enabled
+        ]
+        if markers:
+            help_text = f"{help_text} ({', '.join(markers)})".strip()
         lines.append(f"| {names} | {param_type} | {default} | {help_text} |")
 
     return "\n".join(lines)
@@ -83,7 +90,10 @@ def _get_arguments_list(cmd: click.Command) -> str:
 
     lines = ["**Arguments:**"]
     for arg in args:
-        lines.append(f"- `{arg.name}` ({arg.type.name})")
+        markers = ["required" if arg.required else "optional"]
+        if arg.nargs == -1:
+            markers.append("repeatable")
+        lines.append(f"- `{arg.name}` ({_format_type(arg.type)}; {', '.join(markers)})")
     return "\n".join(lines)
 
 
@@ -96,7 +106,8 @@ def _document_command(cmd: click.Command, name: str, depth: int = 2) -> str:
         lines.append(_format_help(cmd.help))
         lines.append("")
 
-    lines.append(f"```bash\nimmich-memories {name} [OPTIONS]\n```\n")
+    usage = " ".join(cmd.collect_usage_pieces(click.Context(cmd)))
+    lines.append(f"```bash\nimmich-memories {name} {usage}\n```\n")
 
     opts = _get_options_table(cmd)
     if opts:
@@ -125,6 +136,8 @@ def generate_reference(group: click.Group) -> str:
         "Run `make docs-cli` to regenerate.",
         "",
     ]
+
+    lines.extend(["## Global options", "", _get_options_table(group), ""])
 
     def walk(parent: click.Group, prefix: str = "", depth: int = 2) -> None:
         for name, cmd in sorted(parent.commands.items()):

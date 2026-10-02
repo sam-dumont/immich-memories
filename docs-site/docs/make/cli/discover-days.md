@@ -12,7 +12,9 @@ Build a catalogue of occasions from your library. The app can then offer them on
 immich-memories discover-days --since 2015
 ```
 
-Choose the first year you want scanned. It works on a plain NAS from library facts; Full selection can check proposed occasions using its text reader.
+In Docker, prefix commands with `docker compose exec immich-memories` (the export/import recipe below shows the paths separately).
+
+Choose the first year you want scanned. `--until` defaults to the current year. It works on a plain NAS from library facts; Full selection can check proposed occasions using its text reader.
 
 A scan resumes by default, skipping years already catalogued. It can take time across a large library. Set [People and home](../../get-started/who-is-who.md) first so the scan can distinguish family activity and time away.
 

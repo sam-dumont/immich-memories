@@ -36,7 +36,13 @@ def register_special_day_commands(main: click.Group) -> None:
 def _register_discover(main: click.Group) -> None:
     @main.command("discover-days")
     @click.option("--since", type=int, default=2007, help="First year to scan")
-    @click.option("--until", type=int, default=date.today().year, help="Last year to scan")
+    @click.option(
+        "--until",
+        type=int,
+        default=date.today().year,
+        show_default="current year",
+        help="Last year to scan",
+    )
     @click.option(
         "--also-skip",
         multiple=True,

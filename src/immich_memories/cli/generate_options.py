@@ -244,7 +244,7 @@ def output_options(command: FC) -> FC:
             "-q",
             type=click.Choice(["high", "medium", "low"]),
             default=None,
-            help="Output quality (default: from config, typically balanced; medium selects balanced)",
+            help="Output quality: high, medium (balanced), low (fast); default: from config",
         ),
         click.option(
             "--output",
@@ -254,7 +254,7 @@ def output_options(command: FC) -> FC:
             callback=output_path,
             help=(
                 "Output file path. The run writes it inside its own directory and "
-                "adds a recipe hash to the name, so an identical rerun replaces itself"
+                "adds a recipe hash to the name; each rerun gets a new run directory"
             ),
         ),
         click.option(

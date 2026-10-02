@@ -6,7 +6,7 @@ title: pictures
 
 Set a persistent decision on one picture: clear a sharing hold or never use it. These commands write the same decisions as the browser pool's **Clear hold**, **Never use** and **Undo** buttons.
 
-Use the asset ID shown by Immich or `runs why`, replacing `ASSET_ID` below.
+Open the picture in Immich and copy the ID from the end of its URL: `/photos/ASSET_ID`. Replace `ASSET_ID` below with that ID.
 
 ## Inspect a hold
 

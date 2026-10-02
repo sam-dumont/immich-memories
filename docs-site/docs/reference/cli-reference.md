@@ -8,12 +8,22 @@ sidebar_label: Reference
 This page is auto-generated from the Click command definitions.
 Run `make docs-cli` to regenerate.
 
+## Global options
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--version` | boolean | false | Show the version and exit. |
+| `--config`, `-c` | path | - | Path to config file |
+| `--preset` | choice: `fast` | - | Config preset for this run: fast = CPU-only/NAS profile (1080p h264, medium quality, fast encoder preset, static title backgrounds). It changes nothing about what the editor reads. Anything you set explicitly wins |
+| `--verbose`, `-v` | boolean | false | Log at DEBUG level. Shorthand for --log-level DEBUG |
+| `--log-level` | choice: `DEBUG` \| `INFO` \| `WARNING` \| `ERROR` | - | Log level for this run (default: IMMICH_MEMORIES_LOG_LEVEL or INFO) |
+
 ## `auto`
 
 Automation -- detect and generate memory candidates.
 
 ```bash
-immich-memories auto [OPTIONS]
+immich-memories auto [OPTIONS] COMMAND [ARGS]...
 ```
 
 ### `auto history`
@@ -124,7 +134,7 @@ environment variables and config.yaml, which this never writes. The API key
 is a secret: saving it needs IMMICH_MEMORIES_SECRET_KEY.
 
 ```bash
-immich-memories config [OPTIONS]
+immich-memories config [OPTIONS] [COMMAND] [ARGS]...
 ```
 
 | Flag | Type | Default | Description |
@@ -144,11 +154,11 @@ references but loses its comments; the old file is kept as config.yaml.bak.
 Nothing moves without this command.
 
 ```bash
-immich-memories config move-to-db [OPTIONS]
+immich-memories config move-to-db [OPTIONS] KEYS...
 ```
 
 **Arguments:**
-- `keys` (text)
+- `keys` (text; required, repeatable)
 
 ### `config show`
 
@@ -159,11 +169,11 @@ config.yaml key that sets it. Give key prefixes (`llm`, `immich.url`) to
 show only those.
 
 ```bash
-immich-memories config show [OPTIONS]
+immich-memories config show [OPTIONS] [PREFIXES]...
 ```
 
 **Arguments:**
-- `prefixes` (text)
+- `prefixes` (text; optional, repeatable)
 
 ### `config test`
 
@@ -212,7 +222,7 @@ immich-memories days-import [OPTIONS]
 
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--from` | file | - | A JSON catalogue, as days-export writes it |
+| `--from` | file | - | A JSON catalogue, as days-export writes it (required) |
 
 ## `discover-days`
 
@@ -246,8 +256,8 @@ immich-memories discover-days [OPTIONS]
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
 | `--since` | integer | 2007 | First year to scan |
-| `--until` | integer | 2026 | Last year to scan |
-| `--also-skip` | text | - | A holiday name or MM-DD this library keeps that the defaults miss |
+| `--until` | integer | current year | Last year to scan |
+| `--also-skip` | text | - | A holiday name or MM-DD this library keeps that the defaults miss (repeatable) |
 | `--rescan` | boolean | false | Start over, ignoring and replacing the existing catalogue |
 | `--replace` | boolean | false | Re-scan --since..--until and replace every row those years already hold, dropping days that no longer qualify. Rows outside the period are kept. |
 
@@ -289,7 +299,7 @@ immich-memories generate [OPTIONS]
 | `--subject` | text | - | With --from-album: what the album was curated for, in your words. Every picture then stands on that subject, a loaf in a bread album included, and every year the album holds gets a shot. Needs a model reader |
 | `--ask` | text | - | Highly experimental: the film in a sentence, e.g. "our cat along the years". Read by the configured model reader against your prepared library; the translation is printed first. Needs tier: full |
 | `--ask-trace` | file | - | With --ask: keep the translation (the trace, the pool counts, the rule preview, the verdict) in this JSON file, for a watcher such as the web client |
-| `--person`, `-p` | text | - | Person name, or a UUID for exactly one person (repeatable) |
+| `--person`, `-p` | text | - | Person name, or a UUID for exactly one person (repeatable) (repeatable) |
 | `--people-expression` | text | - | Grouped people condition, e.g. ("Person A" OR "Person B") AND "Person C". Use exact library names; read per episode: a person recognised once in an episode counts in all of its pictures. |
 | `--group` | text | - | A label saved with `people group add`, resolved like --people-expression (mutually exclusive with it, --person and --person-match) |
 | `--person-match` | choice: `and` \| `or` | and | With several --person values, require everyone recognised somewhere in the same episode (and) or accept any named person (or) |
@@ -308,27 +318,27 @@ immich-memories generate [OPTIONS]
 | `--resolution`, `-r` | choice: `auto` \| `4k` \| `1080p` \| `720p` | - | Output resolution (default: config value, 'auto' to match source clips) |
 | `--music-volume` | float | 0.5 | Music volume 0.0-1.0 (default: 0.5) |
 | `--format` | choice: `mp4` \| `h265` \| `prores` | - | Output format override (default: config value) |
-| `--quality`, `-q` | choice: `high` \| `medium` \| `low` | - | Output quality (default: from config, typically balanced; medium selects balanced) |
-| `--output`, `-o`, `-O` | path | - | Output file path. The run writes it inside its own directory and adds a recipe hash to the name, so an identical rerun replaces itself |
+| `--quality`, `-q` | choice: `high` \| `medium` \| `low` | - | Output quality: high, medium (balanced), low (fast); default: from config |
+| `--output`, `-o`, `-O` | path | - | Output file path. The run writes it inside its own directory and adds a recipe hash to the name; each rerun gets a new run directory |
 | `--music`, `-m` | text | - | Music: path to audio file, 'auto' to generate from config, or omit for default behavior |
 | `--no-music` | boolean | false | Disable all music (skip both provided files and AI generation) |
 | `--dry-run` | boolean | false | Discover inputs and show preparation needs without selection or generation |
 | `--no-render` | boolean | false | Run story-first selection and its audience and media checks, then stop before encoding. Unlike --dry-run, this picks the clips it would actually ship |
 | `--trace-selection` | file | - | Write a stage-by-stage report of how the clips were chosen |
-| `--include` | text | - | Keep this picture in the cut even if the editor would drop it (repeatable) |
-| `--exclude` | text | - | Leave this picture out of the cut (repeatable) |
+| `--include` | text | - | Keep this picture in the cut even if the editor would drop it (repeatable) (repeatable) |
+| `--exclude` | text | - | Leave this picture out of the cut (repeatable) (repeatable) |
 | `--sharing` | choice: `just-us` \| `family` \| `shareable` | - | Who the film is for: just-us (the household), family (default: defaults.sharing) or shareable (anyone) |
 | `--upload-to-immich` | boolean | false | Upload generated video back to Immich |
 | `--album` | text | - | Immich album name for uploaded video |
-| `--add-date` | boolean | - | Caption each clip with its date (default: defaults.add_date, on) |
-| `--add-place` | boolean | - | Caption each clip with its place (default: defaults.add_place, on) |
+| `--add-date`, `--no-add-date` | boolean | - | Caption each clip with its date (default: defaults.add_date, on) |
+| `--add-place`, `--no-add-place` | boolean | - | Caption each clip with its place (default: defaults.add_place, on) |
 | `--keep-intermediates` | boolean | false | Keep intermediate files for debugging |
 | `--privacy-mode` | boolean | false | Demo mode: blur every clip frame, scramble the audio, fake the person names |
 | `--title` | text | - | Override video title text |
-| `--llm-title` | boolean | - | People and occasion memories are named by the model whenever a reader is configured. --llm-title adds trips, --no-llm-title pins the template everywhere (--title still wins) |
+| `--llm-title`, `--no-llm-title` | boolean | - | People and occasion memories are named by the model whenever a reader is configured. --llm-title adds trips, --no-llm-title pins the template everywhere (--title still wins) |
 | `--subtitle` | text | - | Override video subtitle text |
-| `--include-live-photos` | boolean | - | Include Live Photo video clips (3s iPhone clips, merged when burst-captured) |
-| `--include-photos` | boolean | - | Include photos as animated Ken Burns clips (blur background, face-aware pan) |
+| `--include-live-photos`, `--no-live-photos` | boolean | - | Include Live Photo video clips (3s iPhone clips, merged when burst-captured) |
+| `--include-photos`, `--no-photos` | boolean | - | Include photos as animated Ken Burns clips (blur background, face-aware pan) |
 | `--accept-any-provenance` | boolean | false | Keep forwarded and re-encoded media for this memory; date, person, privacy, and Live Photo boundaries still apply |
 | `--photo-duration` | float | - | Duration per photo clip in seconds (default: 4.0) |
 | `--trip-index` | integer | - | Select a specific trip by index (use with --memory-type trip) |
@@ -352,7 +362,7 @@ immich-memories hardware [OPTIONS]
 Fetch the pinned model artifacts selection needs.
 
 ```bash
-immich-memories models [OPTIONS]
+immich-memories models [OPTIONS] COMMAND [ARGS]...
 ```
 
 ### `models fetch`
@@ -366,7 +376,7 @@ immich-memories models fetch [OPTIONS]
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
 | `--force` | boolean | false | Re-download even when the file is already right |
-| `--detectors` | boolean | - | Fetch detector models (default: gpu/full only); --detectors also fetches on nas |
+| `--detectors`, `--no-detectors` | boolean | - | Fetch detector models (default: gpu/full only); --detectors also fetches on nas |
 | `--laya` | boolean | false | Fetch the Laya audience checkpoint even on the nas tier (gpu and full fetch it anyway) |
 
 ## `music`
@@ -374,7 +384,7 @@ immich-memories models fetch [OPTIONS]
 Music and audio commands.
 
 ```bash
-immich-memories music [OPTIONS]
+immich-memories music [OPTIONS] COMMAND [ARGS]...
 ```
 
 ### `music add`
@@ -386,7 +396,7 @@ absent). No frame of the video is sent to any model.
 Music volume is automatically lowered when speech/sounds are detected.
 
 ```bash
-immich-memories music add [OPTIONS]
+immich-memories music add [OPTIONS] VIDEO_PATH OUTPUT_PATH
 ```
 
 | Flag | Type | Default | Description |
@@ -399,8 +409,8 @@ immich-memories music add [OPTIONS]
 | `--fade-out` | float | 3.0 | Fade out duration in seconds |
 
 **Arguments:**
-- `video_path` (path)
-- `output_path` (path)
+- `video_path` (path; required)
+- `output_path` (path; required)
 
 ### `music preview`
 
@@ -409,7 +419,7 @@ Generate the music this cut would get, from its own timeline and mood, before re
 The track it prints renders with `runs render RUN --music PATH`.
 
 ```bash
-immich-memories music preview [OPTIONS]
+immich-memories music preview [OPTIONS] [RUN_ID]
 ```
 
 | Flag | Type | Default | Description |
@@ -418,7 +428,7 @@ immich-memories music preview [OPTIONS]
 | `--progress-file` | file | - | Keep generation progress in this JSON file, for a watcher such as the web client |
 
 **Arguments:**
-- `run_id` (text)
+- `run_id` (text; optional)
 
 ### `music search`
 
@@ -444,7 +454,7 @@ Called on its own this still lists the people Immich knows, which is
 what `immich-memories people` has always done.
 
 ```bash
-immich-memories people [OPTIONS]
+immich-memories people [OPTIONS] [COMMAND] [ARGS]...
 ```
 
 ### `people bind`
@@ -457,16 +467,16 @@ confirmed stay as they are. An id somebody else holds is refused,
 never merged, and binding the same id again changes nothing.
 
 ```bash
-immich-memories people bind [OPTIONS]
+immich-memories people bind [OPTIONS] PERSON
 ```
 
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--account` | text | - | The account that reads the id: primary, or an extra account's name |
-| `--id` | text | - | The person's id as that account's Immich knows them |
+| `--account` | text | - | The account that reads the id: primary, or an extra account's name (required) |
+| `--id` | text | - | The person's id as that account's Immich knows them (required) |
 
 **Arguments:**
-- `person` (text)
+- `person` (text; required)
 
 ### `people export`
 
@@ -488,7 +498,7 @@ immich-memories people export [OPTIONS]
 Saved people expressions `generate --group` can reuse.
 
 ```bash
-immich-memories people group [OPTIONS]
+immich-memories people group [OPTIONS] COMMAND [ARGS]...
 ```
 
 #### `people group add`
@@ -500,12 +510,12 @@ lists : not names, e.g. ("id-alex" OR "id-sam") AND "id-kit". LABEL
 must not already be in use.
 
 ```bash
-immich-memories people group add [OPTIONS]
+immich-memories people group add [OPTIONS] LABEL EXPRESSION
 ```
 
 **Arguments:**
-- `label` (text)
-- `expression` (text)
+- `label` (text; required)
+- `expression` (text; required)
 
 #### `people group list`
 
@@ -520,11 +530,11 @@ immich-memories people group list [OPTIONS]
 Remove a saved group. Never touches the people it names.
 
 ```bash
-immich-memories people group rm [OPTIONS]
+immich-memories people group rm [OPTIONS] LABEL
 ```
 
 **Arguments:**
-- `label` (text)
+- `label` (text; required)
 
 ### `people import`
 
@@ -540,7 +550,7 @@ immich-memories people import [OPTIONS]
 
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--from` | file | - | A YAML file written by `people export` (or an old people.yaml) |
+| `--from` | file | - | A YAML file written by `people export` (or an old people.yaml) (required) |
 | `--replace` | boolean | false | Overwrite a registry that already holds people |
 
 ### `people scan`
@@ -580,11 +590,10 @@ immich-memories people show [OPTIONS]
 
 Your own word on a picture: clear its hold, or never use it.
 
-Every tier reads it, in every later cut. The asset id is the one `runs why`,
-`runs story` and Immich show.
+Every tier reads it, in every later cut. Find the asset id at the end of the picture's Immich URL: /photos/ASSET_ID.
 
 ```bash
-immich-memories pictures [OPTIONS]
+immich-memories pictures [OPTIONS] COMMAND [ARGS]...
 ```
 
 ### `pictures clear-hold`
@@ -592,7 +601,7 @@ immich-memories pictures [OPTIONS]
 Clear this one picture's hold for a level, after you've looked at it yourself.
 
 ```bash
-immich-memories pictures clear-hold [OPTIONS]
+immich-memories pictures clear-hold [OPTIONS] ASSET_ID
 ```
 
 | Flag | Type | Default | Description |
@@ -601,7 +610,7 @@ immich-memories pictures clear-hold [OPTIONS]
 | `--yes` | boolean | false | Clear it without asking |
 
 **Arguments:**
-- `asset_id` (text)
+- `asset_id` (text; required)
 
 ### `pictures list`
 
@@ -616,33 +625,33 @@ immich-memories pictures list [OPTIONS]
 Keep this picture out of every film from now on.
 
 ```bash
-immich-memories pictures never-use [OPTIONS]
+immich-memories pictures never-use [OPTIONS] ASSET_ID
 ```
 
 **Arguments:**
-- `asset_id` (text)
+- `asset_id` (text; required)
 
 ### `pictures show`
 
 What holds this picture, and what you decided.
 
 ```bash
-immich-memories pictures show [OPTIONS]
+immich-memories pictures show [OPTIONS] ASSET_ID
 ```
 
 **Arguments:**
-- `asset_id` (text)
+- `asset_id` (text; required)
 
 ### `pictures undo`
 
 Forget what you decided about this picture: the app's own holds apply again.
 
 ```bash
-immich-memories pictures undo [OPTIONS]
+immich-memories pictures undo [OPTIONS] ASSET_ID
 ```
 
 **Arguments:**
-- `asset_id` (text)
+- `asset_id` (text; required)
 
 ## `preflight`
 
@@ -702,7 +711,7 @@ Print a privacy-safe GitHub issue report. Defaults to the latest run.
 Logs are included. Review the report before sharing it. Nothing is sent.
 
 ```bash
-immich-memories report [OPTIONS]
+immich-memories report [OPTIONS] [RUN_ID]
 ```
 
 | Flag | Type | Default | Description |
@@ -710,18 +719,18 @@ immich-memories report [OPTIONS]
 | `--json` | boolean | false | Print the redacted report as JSON |
 | `--bundle` | file | - | Write the full redacted report to a ZIP file |
 | `--include-flagged-captions` | boolean | false | Include captions and reasons of flagged free-text photos; review before sharing |
-| `--wrong` | text | - | Mark a photo of a free-text film as wrong (repeatable); kept on the run |
+| `--wrong` | text | - | Mark a photo of a free-text film as wrong (repeatable); kept on the run (repeatable) |
 | `--missing` | text | - | Say what a free-text film is missing; kept on the run and checked against it |
 
 **Arguments:**
-- `run_id` (text)
+- `run_id` (text; optional)
 
 ## `runs`
 
 Browse and manage pipeline run history.
 
 ```bash
-immich-memories runs [OPTIONS]
+immich-memories runs [OPTIONS] COMMAND [ARGS]...
 ```
 
 ### `runs delete`
@@ -741,7 +750,7 @@ immich-memories runs delete 20260105_143052_a7b3 --keep-output
 ```
 
 ```bash
-immich-memories runs delete [OPTIONS]
+immich-memories runs delete [OPTIONS] RUN_ID
 ```
 
 | Flag | Type | Default | Description |
@@ -750,7 +759,7 @@ immich-memories runs delete [OPTIONS]
 | `--yes` | boolean | false | Confirm the action without prompting. |
 
 **Arguments:**
-- `run_id` (text)
+- `run_id` (text; required)
 
 ### `runs list`
 
@@ -791,7 +800,7 @@ With no RUN_ID the most recent completed run is rendered. Revisions are the ones
 client saved (`--revision 2`); without one, the cut renders as it was chosen.
 
 ```bash
-immich-memories runs render [OPTIONS]
+immich-memories runs render [OPTIONS] [RUN_ID]
 ```
 
 | Flag | Type | Default | Description |
@@ -799,26 +808,26 @@ immich-memories runs render [OPTIONS]
 | `--revision` | integer | - | Render this saved revision of the cut |
 | `--title` | text | - | Title card text (default: as generate decides) |
 | `--subtitle` | text | - | Title card subtitle |
-| `--llm-title` | boolean | - | Let the model name the film |
-| `--transition` | choice: `smart` \| `crossfade` \| `cut` \| `none` | - |  |
+| `--llm-title`, `--no-llm-title` | boolean | - | Let the model name the film |
+| `--transition` | choice: `smart` \| `crossfade` \| `cut` \| `none` | - | Transition style (default: saved cut) |
 | `--fade-color` | choice: `white` \| `black` | - | Opening and closing title fade (default: title_screens.fade_color) |
-| `--resolution` | text | - | Output resolution, as generate takes it |
-| `--orientation` | text | - | landscape, portrait, square or auto |
-| `--scale-mode` | text | - | How sources fit the canvas |
+| `--resolution` | choice: `auto` \| `4k` \| `1080p` \| `720p` | - | Output resolution (default: from config) |
+| `--orientation` | choice: `landscape` \| `portrait` \| `square` \| `auto` | - | Output orientation (default: auto, follows the saved cut) |
+| `--scale-mode` | choice: `fit` \| `blur` | - | Fill an aspect mismatch with black bars or a blurred background |
 | `--format` | choice: `mp4` \| `h265` \| `prores` | - | Output format override, as generate takes it (default: config value) |
-| `--quality` | choice: `high` \| `medium` \| `low` | - | Output quality (default: from config) |
+| `--quality` | choice: `high` \| `medium` \| `low` | - | Output quality: high, medium (balanced), low (fast); default: from config |
 | `--music` | text | - | A track to use, or 'auto' to choose as configured |
-| `--no-music` | boolean | false |  |
-| `--music-volume` | float | 0.5 |  |
-| `--add-date` | boolean | - | Caption each clip with its date (default: defaults.add_date, on) |
-| `--add-place` | boolean | - | Caption each clip with its place (default: defaults.add_place, on) |
-| `--privacy-mode` | boolean | false |  |
-| `--upload-to-immich` | boolean | false |  |
+| `--no-music` | boolean | false | Render without a music track |
+| `--music-volume` | float | 0.5 | Music volume from 0.0 to 1.0 |
+| `--add-date`, `--no-add-date` | boolean | - | Caption each clip with its date (default: defaults.add_date, on) |
+| `--add-place`, `--no-add-place` | boolean | - | Caption each clip with its place (default: defaults.add_place, on) |
+| `--privacy-mode` | boolean | false | Demo mode: blur every clip frame, scramble the audio, fake the person names |
+| `--upload-to-immich` | boolean | false | Upload the film to Immich after rendering |
 | `--album` | text | - | Immich album for the upload |
 | `--progress-file` | file | - | Keep the render's progress in this JSON file, for a watcher such as the web client |
 
 **Arguments:**
-- `run_id` (text)
+- `run_id` (text; optional)
 
 ### `runs show`
 
@@ -828,11 +837,11 @@ Example:
     immich-memories runs show 20260105_143052_a7b3
 
 ```bash
-immich-memories runs show [OPTIONS]
+immich-memories runs show [OPTIONS] RUN_ID
 ```
 
 **Arguments:**
-- `run_id` (text)
+- `run_id` (text; required)
 
 ### `runs stats`
 
@@ -862,18 +871,18 @@ With no RUN_ID the most recent completed run is read. A run id prefix
 works, and so does the path of an attempt directory.
 
 ```bash
-immich-memories runs story [OPTIONS]
+immich-memories runs story [OPTIONS] [RUN_ID]
 ```
 
 **Arguments:**
-- `run_id` (text)
+- `run_id` (text; optional)
 
 ### `runs why`
 
 Say what a run decided about one picture: where it passed, where it was dropped, and why.
 
 ```bash
-immich-memories runs why [OPTIONS]
+immich-memories runs why [OPTIONS] ASSET_ID
 ```
 
 | Flag | Type | Default | Description |
@@ -881,7 +890,7 @@ immich-memories runs why [OPTIONS]
 | `--run` | text | - | Run id or prefix (default: latest) |
 
 **Arguments:**
-- `asset_id` (text)
+- `asset_id` (text; required)
 
 ## `store`
 
@@ -891,7 +900,7 @@ SQLite at ~/.immich-memories/store.db unless IMMICH_MEMORIES_DATABASE_URL (or
 `database.url`) names another one. Stop the app before `restore`.
 
 ```bash
-immich-memories store [OPTIONS]
+immich-memories store [OPTIONS] COMMAND [ARGS]...
 ```
 
 ### `store backup`
@@ -922,7 +931,7 @@ immich-memories store copy [OPTIONS]
 
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--to` | text | - | The database URL to copy into |
+| `--to` | text | - | The database URL to copy into (required) |
 | `--schema` | text | - | The PostgreSQL schema to copy into (default: the configured one) |
 | `--force` | boolean | false | Empty a target that already holds rows |
 
@@ -931,7 +940,7 @@ immich-memories store copy [OPTIONS]
 Inspect detector compatibility and plan selective refreshes.
 
 ```bash
-immich-memories store facts [OPTIONS]
+immich-memories store facts [OPTIONS] COMMAND [ARGS]...
 ```
 
 #### `store facts migrate`
@@ -960,8 +969,8 @@ immich-memories store facts refresh [OPTIONS]
 
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--head` | text | - | Detector to refresh; repeat for multiple heads |
-| `--asset` | text | - | Asset ID to refresh; repeat for multiple assets |
+| `--head` | text | - | Detector to refresh; repeat for multiple heads (required, repeatable) |
+| `--asset` | text | - | Asset ID to refresh; repeat for multiple assets (required, repeatable) |
 | `--apply` | boolean | false | Forget the selected facts; default only reports them |
 | `--json` | boolean | false | Print the selected refresh as JSON |
 
@@ -1014,7 +1023,7 @@ immich-memories store restore [OPTIONS]
 
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--from` | file | - | A file `store backup` wrote; its manifest must sit beside it |
+| `--from` | file | - | A file `store backup` wrote; its manifest must sit beside it (required) |
 | `--force` | boolean | false | Replace a store that already holds rows |
 
 ### `store status`
@@ -1030,7 +1039,7 @@ immich-memories store status [OPTIONS]
 Title screen generation and testing commands.
 
 ```bash
-immich-memories titles [OPTIONS]
+immich-memories titles [OPTIONS] COMMAND [ARGS]...
 ```
 
 ### `titles fonts`
@@ -1115,7 +1124,7 @@ immich-memories ui [OPTIONS]
 | --- | --- | --- | --- |
 | `--port`, `-p` | integer | - | Port to run the UI on (default: config or 8080) |
 | `--host`, `-h` | text | - | Host to bind to (default: config or 127.0.0.1) |
-| `--reload` | boolean | false | Enable hot reload (for development only) |
+| `--reload`, `--no-reload` | boolean | false | Enable hot reload (for development only) |
 
 ## `years`
 
