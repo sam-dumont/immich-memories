@@ -34,7 +34,14 @@ For one CLI render, add `--fade-color black` to `generate` or `runs render`. The
 
 ## Styles
 
-Choose a title style in your configuration, then try a preview before rendering the whole film:
+Choose **Title style** under **Render** for one film. **As configured** keeps the saved default. The choices are **Auto (match the mood)**, **Random**, **Modern warm**, **Elegant minimal**, **Vintage charm**, **Playful bright** and **Soft romantic**. For a lasting default:
+
+```yaml
+title_screens:
+  style_mode: elegant_minimal
+```
+
+`auto` and `random` are also valid defaults. For a saved CLI cut, use `runs render RUN_ID --title-style elegant_minimal`. Preview a card before rendering the whole film:
 
 ```bash
 immich-memories titles test --year 2025 --style elegant_minimal
@@ -95,6 +102,6 @@ immich-memories generate --year 2025 --music ~/Music/track.mp3 --music-volume 0.
 
 A text reader can write titles and choose the music mood on the NAS tier too. Those calls use text, not pictures. Your typed title wins; template titles remain the fallback. [Title provenance](../reference/output-rendering.md#where-the-title-came-from) explains the source shown on a run.
 
-## Generated music {#install-locally-on-a-mac}
+## Generated music
 
 [Set up generated music](../better/music.md) when you want it. The [output reference](../reference/output-rendering.md) has language catalogues, typography, map timing and audio mixing details.

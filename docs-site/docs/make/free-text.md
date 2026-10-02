@@ -13,7 +13,7 @@ The translation can get your request wrong. Preview the scope and the pictures b
 
 ## Before you try it
 
-You need the **Full** tier: GPU picture preparation, a caption service and a configured [text reader](../better/reader.md). Prepare the period you want to search, and run `models fetch` to install the pinned WordNet dictionary.
+You need the **Full** tier: GPU picture preparation, a caption service and a configured [text reader](../better/reader.md). Run `immich-memories prepare --year 2025 --month 6` for the period you want to search, and `immich-memories models fetch` to install the pinned WordNet dictionary.
 
 A text reader by itself on the NAS tier is enough for titles, but not for this feature.
 
@@ -41,6 +41,6 @@ The sentence supplies the scope, so do not combine `--ask` with `--year`, `--per
 
 ## When a result is bad
 
-Mark the wrong pictures and describe what is missing on the run. [Create a report](./cli/report.md) and read its preview before sharing it. Reports do not include pictures; flagged captions are opt-in.
+Wrong-picture and missing-subject feedback is CLI-only: `immich-memories report RUN_ID --wrong ASSET_ID --missing "the red bike"`. [Create a report](./cli/report.md) and read its preview before sharing it. Reports do not include pictures; flagged captions are opt-in.
 
 The [sentence parser reference](../reference/sentence-parser.md) has the translation trace, voting, WordNet matching, pool rules and known limits. [Privacy](../run/privacy.md) lists what the caption service and reader receive.

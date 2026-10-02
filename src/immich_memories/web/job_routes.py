@@ -23,6 +23,7 @@ from starlette.concurrency import run_in_threadpool
 
 from immich_memories.config import get_config_path
 from immich_memories.config_loader import Config
+from immich_memories.config_models_render import TitleStyleMode
 from immich_memories.db import open_store
 from immich_memories.operations.cut_progress import (
     live_progress_of,
@@ -73,6 +74,7 @@ class RenderOptions(BaseModel):
     quality: str | None = None
     scale_mode: str | None = None
     fade_color: Literal["white", "black"] | None = None
+    title_style: TitleStyleMode | None = None
     # "none", "auto" (as configured), or the id of a previewed or uploaded track.
     music: str = "auto"
     music_volume: float | None = None
@@ -98,6 +100,7 @@ class RenderOptions(BaseModel):
             "quality",
             "scale_mode",
             "fade_color",
+            "title_style",
             "music_volume",
             "album",
         )

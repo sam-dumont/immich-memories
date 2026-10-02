@@ -24,7 +24,7 @@ Change the time there, then recreate the container:
 docker compose up -d
 ```
 
-The time uses the container's timezone (`TZ`). Upload is a separate choice: configure `upload.enabled` and `upload.album_name` if films should arrive in Immich rather than stay on disk.
+The time uses the container's timezone (`TZ`). Upload is a separate choice: either `automation.upload_to_immich: true` or `upload.enabled: true` enables delivery for automatic films. Set `upload.album_name` for the destination. Confirmed delivery removes the local copy; leave both switches false to keep films on disk.
 
 Or leave those Compose lines commented and save **Settings > Automation > enabled** and
 **daily_at**. Settings also holds the other automation options; file and environment values win.

@@ -811,6 +811,7 @@ immich-memories runs render [OPTIONS] [RUN_ID]
 | `--llm-title`, `--no-llm-title` | boolean | - | Let the model name the film |
 | `--transition` | choice: `smart` \| `crossfade` \| `cut` \| `none` | - | Transition style (default: saved cut) |
 | `--fade-color` | choice: `white` \| `black` | - | Opening and closing title fade (default: title_screens.fade_color) |
+| `--title-style` | choice: `auto` \| `random` \| `modern_warm` \| `elegant_minimal` \| `vintage_charm` \| `playful_bright` \| `soft_romantic` | - | Title style for this render (default: title_screens.style_mode) |
 | `--resolution` | choice: `auto` \| `4k` \| `1080p` \| `720p` | - | Output resolution (default: from config) |
 | `--orientation` | choice: `landscape` \| `portrait` \| `square` \| `auto` | - | Output orientation (default: auto, follows the saved cut) |
 | `--scale-mode` | choice: `fit` \| `blur` | - | Fill an aspect mismatch with black bars or a blurred background |

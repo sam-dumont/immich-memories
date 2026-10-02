@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import get_args
 
 import click
 
 from immich_memories.cli._helpers import print_error, print_success
 from immich_memories.cli._runs_reading import RunNotFound, resolve_attempt
 from immich_memories.cli.progress_file import progress_writer, write_progress
+from immich_memories.config_models_render import TitleStyleMode
 from immich_memories.generate_saved_cut import CutRenderRequest, render_saved_cut
 from immich_memories.operations.cut_revisions import read_revisions
 from immich_memories.operations.revision_render import RenderUnavailable
@@ -42,6 +44,12 @@ def register_render_command(runs: click.Group) -> None:
         type=click.Choice(["white", "black"]),
         default=None,
         help="Opening and closing title fade (default: title_screens.fade_color)",
+    )
+    @click.option(
+        "--title-style",
+        type=click.Choice(get_args(TitleStyleMode)),
+        default=None,
+        help="Title style for this render (default: title_screens.style_mode)",
     )
     @click.option(
         "--resolution",
@@ -149,6 +157,7 @@ def register_render_command(runs: click.Group) -> None:
             llm_title=options["llm_title"],
             transition=options["transition"],
             fade_color=options["fade_color"],
+            title_style=options["title_style"],
             output_resolution=options["resolution"],
             output_orientation=options["orientation"],
             scale_mode=options["scale_mode"],

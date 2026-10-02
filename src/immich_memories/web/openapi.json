@@ -1833,6 +1833,26 @@
             ],
             "title": "Title"
           },
+          "title_style": {
+            "anyOf": [
+              {
+                "enum": [
+                  "auto",
+                  "random",
+                  "modern_warm",
+                  "elegant_minimal",
+                  "vintage_charm",
+                  "playful_bright",
+                  "soft_romantic"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title Style"
+          },
           "transition": {
             "anyOf": [
               {

@@ -1691,3 +1691,43 @@ msgstr "{years} years ago"
 #, python-brace-format
 msgid "~{amount} left in this stage"
 msgstr "~{amount} left in this stage"
+
+#. English fallback for a new render style label.
+#: web/lib/RenderPanel.svelte
+msgid "Title style"
+msgstr "Title style"
+
+#. English fallback for a new render style label.
+#: web/lib/RenderPanel.svelte
+msgid "Auto (match the mood)"
+msgstr "Auto (match the mood)"
+
+#. English fallback for a new render style label.
+#: web/lib/RenderPanel.svelte
+msgid "Random"
+msgstr "Random"
+
+#. English fallback for a new render style label.
+#: web/lib/RenderPanel.svelte
+msgid "Modern warm"
+msgstr "Modern warm"
+
+#. English fallback for a new render style label.
+#: web/lib/RenderPanel.svelte
+msgid "Elegant minimal"
+msgstr "Elegant minimal"
+
+#. English fallback for a new render style label.
+#: web/lib/RenderPanel.svelte
+msgid "Vintage charm"
+msgstr "Vintage charm"
+
+#. English fallback for a new render style label.
+#: web/lib/RenderPanel.svelte
+msgid "Playful bright"
+msgstr "Playful bright"
+
+#. English fallback for a new render style label.
+#: web/lib/RenderPanel.svelte
+msgid "Soft romantic"
+msgstr "Soft romantic"

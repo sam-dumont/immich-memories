@@ -15,7 +15,7 @@ The pan moves toward the largest face Immich recognised, or toward the centre wh
 
 Clips keep their whole frame. For a landscape clip in a portrait film, choose **Blurred background** or **Fit with bars** under **Scaling Mode**. Neither crops your subject.
 
-To make a video-only film, pass `--no-photos` on the CLI, or disable photos in the configuration.
+To make a video-only film, untick **Include photos** under **Length and pictures**, pass `--no-photos` on the CLI, or set `photos.enabled: false` in YAML.
 
 ## Live Photos
 
@@ -38,10 +38,10 @@ flowchart TD
   B -- No --> D[Animate the still]
 ```
 
-Disable `include_live_photos` to use the stills only. A person-filtered film does not add untagged pictures just to extend a burst.
+Untick **Include Live Photos**, pass `--no-live-photos`, or set `advanced.analysis.include_live_photos: false` to use the stills only. A person-filtered film does not add untagged pictures just to extend a burst.
 
 ## HDR, end to end
 
-HDR preservation depends on the source and encoding hardware. On the NAS tier, Live Photo merges are limited to 1080p. A device with hardware H.264 but no hardware HEVC tone-maps HDR photos and companions to SDR during preparation.
+HDR preservation depends on the source and encoding hardware. On the NAS tier, Live Photo merges are limited to 1080p. On that tier, a device with hardware H.264 but no hardware HEVC tone-maps HDR photos and companions to SDR during preparation.
 
 Use [hardware encoding](../run/hardware.md) to check what your machine supports. The [media processing reference](../reference/media-processing.md) covers frame verification, audio alignment, supported devices, HDR formats and gain maps.
