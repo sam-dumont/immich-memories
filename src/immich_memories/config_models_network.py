@@ -8,7 +8,9 @@ taken.
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from immich_memories.config_models import http_url_or_blank
 
 # Named here so the docs, the preflight rows and the code cannot drift apart.
 GEOCODING_HOST = "nominatim.openstreetmap.org"
@@ -21,8 +23,8 @@ class NetworkConfig(BaseModel):
     geocoding: bool = Field(
         default=False,
         description=(
-            f"Reverse geocode through {GEOCODING_HOST}: the right district's name where "
-            "Immich names a neighbouring town, on every name shown, better trip names, and "
+            f"Reverse geocode through {GEOCODING_HOST}: city and village names where "
+            "Immich names a district or neighbouring town, on every name shown, better trip names, and "
             "place names in the film's language. Sends each trip centroid and the coordinates "
             "of the pictures in the film's window, rounded to about a kilometre, once per place"
         ),
@@ -42,3 +44,5 @@ class NetworkConfig(BaseModel):
             "the trip area and the home base"
         ),
     )
+
+    _http_url = field_validator("geocoding_url")(http_url_or_blank)

@@ -106,3 +106,23 @@ def test_job_files_cannot_follow_symlinks_outside_the_cache(tmp_path):
     (directory / "progress").symlink_to(tmp_path, target_is_directory=True)
     with pytest.raises(ValueError, match="Invalid job ID"):
         runner.progress_path(job_id)
+
+
+def test_job_output_hides_every_configured_secret(tmp_path):
+    from immich_memories.config_loader import Config, set_config
+
+    secret = "oidc-client-secret-0f9e8d7c6b5a"  # noqa: S105 — synthetic
+    config = Config()
+    config.auth.client_secret = secret
+    set_config(config)
+    try:
+        runner = JobRunner(tmp_path)
+        job = runner.start("cut", [sys.executable, "-c", f"print('signing in with {secret}')"])
+        _wait(runner, job.id)
+
+        output = runner.output(job.id)
+    finally:
+        set_config(None)
+
+    assert secret not in output
+    assert "signing in with ***" in output

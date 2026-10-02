@@ -423,7 +423,9 @@ and the planner, and `ProgressTracker` (progress.py) is the run clock the stage 
 a three-stage pipe rather than a class: `make_decoder()` (streaming_frame_decoder.py) turns a
 clip into normalized raw frames, `FrameBlender` (streaming_frame_blender.py) writes those
 frames to a `FrameSink` and crossfades across clip boundaries, and `StreamingEncoder` (the
-sink it is constructed with) pipes them into FFmpeg.
+sink it is constructed with) pipes them into FFmpeg. Large-frame decoders may read ahead into
+three borrowed slots when CPU/memory limits permit; the assembler closes every decoder
+on clip completion and failure, including when an exception traceback remains live.
 
 **KernelTitleRenderer** (titles/renderer_kernels.py) owns the background and the per-frame
 GPU pipeline, and composes 3 services (all take Protocol-typed config/buffers):
@@ -606,7 +608,7 @@ src/immich_memories/
 │   ├── trip_detection.py       # GPS-based trip detection (clustering, injected geocoder)
 │   ├── trip_legs.py            # Where a trip changes where it stays: areas of stay become legs (#1563)
 │   ├── trip_place.py           # Names a trip at the scale its pictures cover (city → country)
-│   ├── place_geocoder.py       # Opt-in Nominatim: district names per ~1 km cell, cached in the store
+│   ├── place_geocoder.py       # Opt-in Nominatim: city/village names per ~1 km cell, cached in the store
 │   ├── trip_discovery.py       # Shared UI/CLI all-asset discovery, including year-boundary trips
 │   ├── special_day.py          # Every run of activity, and a found day named from its own lines
 │   ├── special_day_sequence.py # Days read a month at a time in order (close family by role on each line); 30 s film floor

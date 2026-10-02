@@ -147,6 +147,17 @@ def assembly_decoder_threads() -> int:
     return threads
 
 
+def assembly_frame_read_ahead(width: int, height: int, *, encoder: str) -> bool:
+    """Overlap reads on the measured HEVC VideoToolbox path when resources allow."""
+    # M2/M5 improved, but NVENC was neutral on GTX 1070 and slower on T1000.
+    if encoder != "hevc_videotoolbox":
+        return False
+    if width * height < 1920 * 1080 or available_cpus() < 2:
+        return False
+    budget = memory_budget()
+    return budget is not None and budget.size >= 4 * _GIB
+
+
 def source_prepare_workers(
     configured: int | Literal["auto"],
     *,

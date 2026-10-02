@@ -12,7 +12,8 @@ from immich_memories.processing import streaming_frame_decoder as decoder_module
 from tests.integration.conftest import requires_ffmpeg
 
 
-def test_last_required_frame_finishes_the_delayed_audio_child(tmp_path, monkeypatch):
+@pytest.mark.parametrize("read_ahead", [None, False, True])
+def test_last_required_frame_finishes_the_delayed_audio_child(tmp_path, monkeypatch, read_ahead):
     audio = tmp_path / "clip_0_audio.wav"
     child = (
         "import os,time,wave,sys; "
@@ -39,7 +40,9 @@ def test_last_required_frame_finishes_the_delayed_audio_child(tmp_path, monkeypa
     monkeypatch.setattr(decoder_module.FrameDecoder, "_audio_input", lambda _self: ([], "0:a?"))
     clip = SimpleNamespace(path=tmp_path / "source.mp4", duration=2 / 30)
     decoder = decoder_module.make_decoder(clip, 0, 2, 2, 30, audio_work_dir=tmp_path)
-    frames = iter(decoder)
+    frames = (
+        iter(decoder) if read_ahead is None else decoder.iter_borrowed_frames(read_ahead=read_ahead)
+    )
     try:
         next(frames)
         next(frames)
@@ -57,7 +60,8 @@ def test_last_required_frame_finishes_the_delayed_audio_child(tmp_path, monkeypa
     assert float(cmd[cmd.index("-t") + 1]) == 2 / 30
 
 
-def test_early_cancellation_still_stops_the_owned_decoder(tmp_path, monkeypatch):
+@pytest.mark.parametrize("read_ahead", [None, False, True])
+def test_early_cancellation_still_stops_the_owned_decoder(tmp_path, monkeypatch, read_ahead):
     real_popen = subprocess.Popen
     spawned = []
 
@@ -71,7 +75,9 @@ def test_early_cancellation_still_stops_the_owned_decoder(tmp_path, monkeypatch)
     # cannot show whether a live child was left running after generator.close().
     monkeypatch.setattr(decoder_module.subprocess, "Popen", start)
     decoder = decoder_module.FrameDecoder(tmp_path / "source.mp4", 2, 2, 30, frame_limit=2)
-    frames = iter(decoder)
+    frames = (
+        iter(decoder) if read_ahead is None else decoder.iter_borrowed_frames(read_ahead=read_ahead)
+    )
     try:
         next(frames)
     finally:
@@ -81,7 +87,10 @@ def test_early_cancellation_still_stops_the_owned_decoder(tmp_path, monkeypatch)
 
 @requires_ffmpeg
 @pytest.mark.parametrize("consumer_delay", [0, 0.005])
-def test_bounded_real_decoder_finishes_exact_seek_audio_before_last_frame(tmp_path, consumer_delay):
+@pytest.mark.parametrize("read_ahead", [None, False, True])
+def test_bounded_real_decoder_finishes_exact_seek_audio_before_last_frame(
+    tmp_path, consumer_delay, read_ahead
+):
     source = tmp_path / "source.mkv"
     subprocess.run(
         [
@@ -135,7 +144,10 @@ def test_bounded_real_decoder_finishes_exact_seek_audio_before_last_frame(tmp_pa
         timeout=10,
     )
     clip = SimpleNamespace(path=source, duration=0.5, input_seek=0.25)
-    frames = iter(decoder_module.make_decoder(clip, 0, 72, 128, 60, audio_work_dir=tmp_path))
+    decoder = decoder_module.make_decoder(clip, 0, 72, 128, 60, audio_work_dir=tmp_path)
+    frames = (
+        iter(decoder) if read_ahead is None else decoder.iter_borrowed_frames(read_ahead=read_ahead)
+    )
     try:
         for _ in range(30):
             next(frames)

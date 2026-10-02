@@ -7,7 +7,7 @@ import logging
 import shutil
 import subprocess
 import threading
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Generator, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -29,6 +29,7 @@ from immich_memories.processing.encoding_plan import (
 from immich_memories.processing.ffmpeg_runner import drain_stderr_tail
 from immich_memories.processing.hardware_encode import apply_hardware_encode
 from immich_memories.processing.hdr_utilities import get_colorspace_filter
+from immich_memories.processing.memory_budget import assembly_frame_read_ahead
 from immich_memories.processing.probe_cache import ProbeCache
 from immich_memories.processing.streaming_audio import (
     _probe_duration,
@@ -324,6 +325,7 @@ def assemble_streaming(
             hdr_type,
             audio_work_dir=audio_work_dir,
             probe_cache=probe_cache,
+            encoder_name=plan.encoder,
         )
     except StreamingEncoderWriteError:
         with contextlib.suppress(OSError, subprocess.TimeoutExpired, RuntimeError):
@@ -378,18 +380,20 @@ def _encode_clip_sequence(
     hdr_type: str | None,
     audio_work_dir: Path | None = None,
     probe_cache: ProbeCache | None = None,
+    encoder_name: str = "",
 ) -> int:
     """Encode all clips with transitions, tracking frame count for progress."""
-    active_iter: Iterator[np.ndarray] | None = None
+    active_iter: Generator[np.ndarray, None, None] | None = None
     skip_frames = 0
+    read_ahead = assembly_frame_read_ahead(width, height, encoder=encoder_name)
 
     clip_captions: list[ClipCaption | None] = (
         list(captions) if captions is not None else [None] * len(clips)
     )
     caption_windows = caption_frame_windows(clips, transitions, fps, fade_frames)
 
-    def decoder_for(clip_idx: int) -> Iterator[np.ndarray]:
-        return make_decoder(
+    def decoder_for(clip_idx: int) -> Generator[np.ndarray, None, None]:
+        frames = make_decoder(
             clips[clip_idx],
             clip_idx,
             width,
@@ -404,34 +408,33 @@ def _encode_clip_sequence(
             audio_work_dir=audio_work_dir,
             caption_window=caption_windows[clip_idx],
             probe_cache=probe_cache,
-        ).iter_borrowed_frames()
+        ).iter_borrowed_frames(read_ahead=read_ahead)
+        cleanup.callback(frames.close)
+        return frames
 
-    for clip_idx, clip in enumerate(clips):
-        if active_iter is None:
-            active_iter = decoder_for(clip_idx)
+    # A retained failure traceback must not keep a decoder or its pipes alive.
+    with contextlib.ExitStack() as cleanup:
+        for clip_idx, clip in enumerate(clips):
+            if active_iter is None:
+                active_iter = decoder_for(clip_idx)
 
-        clip_frames = int(clip.duration * fps)
-        has_fade_out = clip_idx < len(transitions) and transitions[clip_idx] == "fade"
-        body_frames = clip_frames - skip_frames - (fade_frames if has_fade_out else 0)
+            clip_frames = int(clip.duration * fps)
+            has_fade_out = clip_idx < len(transitions) and transitions[clip_idx] == "fade"
+            body_frames = clip_frames - skip_frames - (fade_frames if has_fade_out else 0)
 
-        blender.emit_body(active_iter, body_frames)
+            blender.emit_body(active_iter, body_frames)
 
-        if has_fade_out and clip_idx + 1 < len(clips):
-            next_iter = decoder_for(clip_idx + 1)
-            blender.emit_crossfade(active_iter, next_iter, fade_frames)
-            active_iter = next_iter
-            skip_frames = fade_frames
-        else:
-            active_iter = None
-            skip_frames = 0
+            if has_fade_out and clip_idx + 1 < len(clips):
+                next_iter = decoder_for(clip_idx + 1)
+                blender.emit_crossfade(active_iter, next_iter, fade_frames)
+                active_iter.close()
+                active_iter = next_iter
+                skip_frames = fade_frames
+            else:
+                active_iter.close()
+                active_iter = None
+                skip_frames = 0
 
-    # WHY: The last FrameDecoder's FFmpeg process inherits the encoder's
-    # stdin pipe FD. If not closed before encoder.finish(), the pipe never
-    # sees EOF and the encoder hangs waiting for input. Force-close the
-    # last iterator to trigger FrameDecoder.__iter__'s finally block
-    # (proc.terminate + wait), ensuring the FD is released.
-    if active_iter is not None and hasattr(active_iter, "close"):
-        active_iter.close()
     return blender.frames_written
 
 

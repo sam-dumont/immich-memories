@@ -52,7 +52,8 @@ resource "kubernetes_deployment_v1" "captioner" {
       }
 
       spec {
-        enable_service_links = false
+        enable_service_links            = false
+        automount_service_account_token = false
 
         security_context {
           run_as_non_root = true

@@ -20,6 +20,7 @@ spec:
       # with this worker's own IMMICH_MEMORIES_RENDER_WORKER_ env prefix and
       # crashes it on start ("port: Input should be a valid integer") (#1608).
       enableServiceLinks: false
+      automountServiceAccountToken: false
       runtimeClassName: nvidia
       securityContext:
         runAsNonRoot: true

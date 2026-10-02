@@ -25,6 +25,7 @@ spec:
       # Off everywhere the app runs: a Service named after this Deployment
       # otherwise injects IMMICH_MEMORIES_INFERENCE_* into the pod (#1608).
       enableServiceLinks: false
+      automountServiceAccountToken: false
       # Same user as the app image: `immich`, UID/GID 1000. The Dockerfile
       # chowns /cache to it.
       securityContext:

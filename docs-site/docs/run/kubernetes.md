@@ -114,6 +114,8 @@ Base settings come from environment variables and the Secret. Settings saves go 
 
 Keep `enableServiceLinks: false` on every custom pod spec. Service names can otherwise inject
 `IMMICH_MEMORIES_*` variables that the app mistakes for configuration and fails to parse.
+Keep `automountServiceAccountToken: false` too: nothing in these pods calls the Kubernetes API,
+so none of them needs a token for it.
 
 ## NetworkPolicy
 

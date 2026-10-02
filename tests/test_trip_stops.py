@@ -1,11 +1,23 @@
 """The trip intro names every stop, and names a cluster of close ones once.
 
-Every place name here is invented and every coordinate is a round public one.
+Public cities and invented villages, with round public coordinates.
 """
 
 from __future__ import annotations
 
 from immich_memories.titles.trip_stops import group_trip_stops
+
+
+def test_a_map_stop_in_one_city_does_not_zoom_out_to_its_region():
+    points = [(48.85, 2.35), (48.86, 2.34), (48.87, 2.36)]
+
+    def address(_lat, _lon):
+        return {"city": "Paris", "state": "Île-de-France", "country": "France"}
+
+    stops = group_trip_stops(points, ["Paris"] * 3, address)
+
+    assert [stop.name for stop in stops] == ["Paris"]
+
 
 # Seven invented villages strung along a valley, all within a few kilometres.
 _VALLEY = [(46.00 + i * 0.01, 7.00 + i * 0.01) for i in range(7)]
@@ -35,7 +47,7 @@ def test_far_apart_towns_each_keep_their_own_name() -> None:
 
 def test_a_cluster_with_no_shared_level_is_named_first_to_last() -> None:
     def no_common_level(lat: float, lon: float) -> dict[str, str]:
-        return {"village": "x", "county": f"County {lat:.2f}"}
+        return {"village": f"Village {lat:.2f}", "county": f"County {lat:.2f}"}
 
     stops = group_trip_stops(_VALLEY, _VILLAGES, no_common_level)
 

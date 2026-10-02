@@ -26,7 +26,7 @@ Explicit model or endpoint configuration can enable the reader unless `enabled: 
 | `ace_step.api_url`, `musicgen.base_url` | AI music through a remote API | mood, tempo and genre text; MusicGen is also sent the generated track, for stem separation | off |
 | Apprise or ntfy targets | `notifications.enabled: true` | memory type, outcome, duration, output path, a redacted error tail; a frame if `attach_thumbnail: true` | off |
 | Your OIDC provider | login with `provider: oidc` | the standard OIDC flow with PKCE | authentication off |
-| Hugging Face, `github.com` | only when you run `models fetch` (and ACE-Step or Demucs on first use) | nothing about your library: pinned weights, checked by SHA-256 | a run never downloads |
+| Hugging Face, `github.com` | only when you run `models fetch` (and ACE-Step or Demucs on first use) | nothing about your library: pinned weights, checked by SHA-256; ACE-Step's own first-use download takes the library's current checkpoint, not a pinned revision | a run never downloads |
 | `raw.githubusercontent.com` | only `titles fonts --install`, `models fetch`, or while the Docker image builds | nothing about your library: 42 Noto files, 43 MB; the WordNet 3.0 corpus, 11 MB, checked by SHA-256 | a render never downloads |
 
 `preflight` prints one row per outside switch you turned on, naming the host. A default install
@@ -100,10 +100,9 @@ library is never walked.
 
 What it buys:
 
-- **The right district.** Immich names a picture after the nearest town in GeoNames' list of
-  places over 500 people. A district that is not its own municipality gets its neighbour's name:
-  a picture in Wilrijk says "Hoboken". OpenStreetMap knows the district, so captions, location
-  cards and trip map pins say "Wilrijk".
+- **City and village names.** Immich can label a picture after a nearby town or district.
+  The display uses OpenStreetMap's city, town or village: Berlin across its neighborhoods,
+  rather than a new label for Mitte or Kreuzberg. Captions, location cards and map pins agree.
 - **Trip names from the map**, at the trip's scale: the village rather than the merged
   municipality it belongs to, the town, or the region.
 - **Names in the film's language** ("Nicosie" instead of "Nicosia"). Country names are translated

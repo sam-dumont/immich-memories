@@ -1,4 +1,4 @@
-"""Every name a viewer reads comes from one resolver: the district, when geocoding found one."""
+"""Every name a viewer reads comes from one resolver: the city or town, when geocoding found one."""
 
 from __future__ import annotations
 
@@ -36,13 +36,39 @@ def _names(answer=NOMINATIM) -> PlaceNames:
     return PlaceNames(PlaceGeocoder(open_store(), "fr", fetch))
 
 
-def test_a_named_picture_shows_the_district_and_keeps_immichs_city_for_matching():
+def test_a_named_picture_shows_the_city_and_keeps_immichs_city_for_matching():
     asset = _asset()
 
     _names().name([asset])
 
-    assert shown_city(asset.exif_info) == "Wilrijk"
+    assert shown_city(asset.exif_info) == "Antwerpen"
     assert asset.exif_info.city == "Hoboken"
+
+
+def test_berlin_districts_share_one_caption_and_do_not_create_town_cards():
+    from immich_memories.generate_privacy import clip_location_name
+    from immich_memories.processing.clip_caption import captions_for_timeline
+    from immich_memories.processing.location_card_route import RouteStop, location_card_moves
+
+    clips, stops = [], []
+    for day, (district, lon) in enumerate(
+        (("Mitte", 13.40), ("Kreuzberg", 13.42), ("Charlottenburg", 13.30)), start=1
+    ):
+        asset = _asset(f"berlin-{day}")
+        asset.exif_info = ExifInfo(
+            latitude=52.52, longitude=lon, city=district, state="Berlin", country="Germany"
+        )
+        _names({"suburb": district, "city": "Berlin", "country": "Germany"}).name([asset])
+        name = clip_location_name(asset.exif_info)
+        clips.append(SimpleNamespace(location_name=name, date=f"2025-07-0{day}"))
+        stops.append(RouteStop(52.52, lon, name, date(2025, 7, day)))
+
+    assert [c.place for c in captions_for_timeline(clips, place=True)] == [
+        "Berlin, Germany",
+        "",
+        "",
+    ]
+    assert location_card_moves(stops, limit=None) == [None, None, None]
 
 
 @pytest.mark.parametrize(
@@ -58,25 +84,54 @@ def test_without_an_answer_the_picture_keeps_immichs_name(names):
     assert shown_city(asset.exif_info) == "Hoboken"
 
 
-def test_the_clip_a_location_card_and_a_caption_read_names_the_district():
+def test_an_old_district_label_is_resolved_again_from_the_cached_address():
+    asset = _asset()
+    asset.exif_info.place_name = "Wilrijk"
+    names = _names()
+    names.locality_at(*POINT)
+
+    names.name([asset])
+
+    assert shown_city(asset.exif_info) == "Antwerpen"
+
+
+@pytest.mark.parametrize(
+    "address,expected",
+    [
+        ({"city": "Berlin", "suburb": "Mitte"}, "Berlin"),
+        ({"village": "Wenduine", "town": "De Haan"}, "Wenduine"),
+        ({"town": "Brookhaven", "municipality": "Wide County"}, "Brookhaven"),
+        ({"city_district": "Mitte", "country": "Germany"}, "Berlin"),
+    ],
+)
+def test_localities_keep_their_scale_without_guessing_from_a_district(address, expected):
+    asset = _asset()
+    asset.exif_info.city = "Berlin"
+
+    _names(address).name([asset])
+
+    assert shown_city(asset.exif_info) == expected
+
+
+def test_the_clip_a_location_card_and_a_caption_read_names_the_city():
     from immich_memories.generate_privacy import clip_location_name
 
     asset = _asset()
     _names().name([asset])
 
-    assert clip_location_name(asset.exif_info) == "Wilrijk, Belgium"
+    assert clip_location_name(asset.exif_info) == "Antwerpen, Belgium"
 
 
-def test_the_report_keeps_the_district_as_private_as_the_city():
+def test_the_report_keeps_the_resolved_city_as_private_as_the_source_city():
     from immich_memories.tracking import report_context
 
     asset = _asset()
     _names().name([asset])
 
-    assert {"Wilrijk", "Hoboken"} <= set(report_context._asset_labels(asset))
+    assert {"Antwerpen", "Hoboken"} <= set(report_context._asset_labels(asset))
 
 
-def test_a_rules_story_is_titled_after_the_district():
+def test_a_rules_story_is_titled_after_the_city():
     from immich_memories.analysis.editorial_rule_reader import RuleStructureReader
     from immich_memories.config_models_editorial import EditorialPeopleConfig
 
@@ -118,7 +173,7 @@ def test_a_rules_story_is_titled_after_the_district():
     )
     titles = " ".join(e.title for e in story.episodes)
 
-    assert "Wilrijk" in titles
+    assert "Antwerpen" in titles
     assert "Hoboken" not in titles
 
 
@@ -151,5 +206,5 @@ def test_a_second_run_asks_only_about_new_places_and_never_twice_about_nothing()
     later.name([_at("d", 51.1682, 4.3931), _at("e", 51.20, 3.22), _at("f", 50.50, 4.00)])
 
     assert len(nominatim.asked) == 3  # only the new cell
-    assert later.district_at(51.1682, 4.3931) == "Wilrijk"  # a second surface, no new question
+    assert later.locality_at(51.1682, 4.3931) == "Antwerpen"  # a second surface, no new question
     assert len(nominatim.asked) == 3

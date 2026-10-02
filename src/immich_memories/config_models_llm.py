@@ -6,6 +6,8 @@ from typing import Any, ClassVar, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from immich_memories.config_models import http_url_or_blank
+
 # The generic reasoning control. "disabled" and "auto" are the two ends: never
 # ask, and never say. The three levels in between are mapped to whatever the
 # host takes: an effort on Claude, a level of its own on z.ai.
@@ -227,3 +229,5 @@ class LLMConfig(BaseModel):
         if isinstance(v, str):
             return _SWITCH_LEVELS.get(v.strip().lower(), v)
         return v
+
+    _http_url = field_validator("base_url")(http_url_or_blank)

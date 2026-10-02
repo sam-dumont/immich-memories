@@ -493,6 +493,8 @@ def start_music_preview(
     executable: Annotated[str, Depends(cli_executable)],
 ) -> JobView | JSONResponse:
     """Generate the music this cut would get with `music preview`, to hear before rendering."""
+    if attempt_dir_for_run(run_id, store=open_store(config)) is None:
+        raise HTTPException(404, "This run left no saved cut.")
     from uuid import uuid4
 
     job_id = uuid4().hex

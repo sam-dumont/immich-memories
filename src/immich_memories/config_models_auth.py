@@ -5,7 +5,9 @@ from __future__ import annotations
 from typing import ClassVar, Literal
 from urllib.parse import urlsplit
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from immich_memories.config_models import http_url_or_blank
 
 
 def _check_email_entries(entries: list[str]) -> None:
@@ -62,6 +64,8 @@ class AuthConfig(BaseModel):
     user_header: str = "Remote-User"
     email_header: str = "Remote-Email"
     trusted_proxies: list[str] = Field(default_factory=list)
+
+    _http_url = field_validator("issuer_url")(http_url_or_blank)
 
     @model_validator(mode="after")
     def validate_provider_requirements(self) -> AuthConfig:

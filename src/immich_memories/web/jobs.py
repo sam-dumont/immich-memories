@@ -20,7 +20,12 @@ from contextlib import suppress
 from pathlib import Path
 from uuid import uuid4
 
-from immich_memories.security import sanitize_error_message, write_secret_file
+from immich_memories.config import get_config
+from immich_memories.security import (
+    configured_secret_values,
+    sanitize_error_message,
+    write_secret_file,
+)
 from immich_memories.web.schemas import Job, JobKind, JobStatus
 
 
@@ -199,6 +204,11 @@ class JobRunner:
         return job
 
     def output(self, job_id: str) -> str:
-        """What the child printed, with anything secret-shaped removed."""
+        """What the child printed, with anything secret-shaped and every configured secret removed."""
         path = self._log(job_id)
-        return sanitize_error_message(path.read_text(errors="replace")) if path.is_file() else ""
+        if not path.is_file():
+            return ""
+        text = sanitize_error_message(path.read_text(errors="replace"))
+        for secret in configured_secret_values(get_config()):
+            text = text.replace(secret, "***")
+        return text

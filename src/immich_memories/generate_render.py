@@ -297,11 +297,11 @@ def render_local(
         validate_certified_content(params, assembly_clips)
 
         from immich_memories.generate_captions import (
-            district_place_names,
+            locality_place_names,
             prepare_location_captions,
         )
 
-        assembly_clips = district_place_names(params, assembly_clips)
+        assembly_clips = locality_place_names(params, assembly_clips)
         assembly_clips = prepare_location_captions(params, assembly_clips)
 
         # Phase 2: Assemble (includes title generation + streaming encode)

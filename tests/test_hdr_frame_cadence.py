@@ -127,11 +127,11 @@ def test_invalid_rate_retains_probed_geometry(monkeypatch, tmp_path):
     [
         (Fraction(120), False, True),
         (Fraction(120), True, False),
-        (Fraction(60), False, False),
+        (Fraction(60), False, True),
         (None, False, False),
     ],
 )
-def test_only_known_high_rates_skip_discarded_spatial_work(tmp_path, rate, privacy, early):
+def test_known_equal_and_high_rates_normalize_before_spatial_work(tmp_path, rate, privacy, early):
     decoder = FrameDecoder(
         tmp_path / "source.mov",
         2160,
