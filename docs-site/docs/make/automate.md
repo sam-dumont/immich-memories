@@ -11,7 +11,7 @@ Make and review a few films manually first. Set [home and people](../get-started
 
 ## Docker: switch on the built-in timer
 
-In `docker-compose.yml`, uncomment these two lines under the app's `environment:` block:
+In `docker-compose.yml`, add these two lines under the app's `environment:` block:
 
 ```yaml
 IMMICH_MEMORIES_AUTOMATION__ENABLED: "true"
@@ -26,7 +26,7 @@ docker compose up -d
 
 The time uses the container's timezone (`TZ`). Upload is a separate choice: either `automation.upload_to_immich: true` or `upload.enabled: true` enables delivery for automatic films. Set `upload.album_name` for the destination. Complete upload, provenance tagging and requested album delivery remove the local copy. If the key lacks any of the five upload permissions (including album rights when no new album is needed), generation still completes: the local film stays, the run names the missing permission, and automatic retries stop for that film. Temporary tagging or album failures stay pending for the existing bounded retry process. Permitted steps still run, so a film may be uploaded while tagging or album delivery remains incomplete. A key without `asset.delete` keeps the previous uploaded version and records why. Leave both upload switches false to keep films on disk.
 
-Or leave those Compose lines commented and save **Settings > Automation > enabled** and
+Or omit those Compose lines and save **Settings > Automation > enabled** and
 **daily_at**. Settings also holds the other automation options; file and environment values win.
 
 ## Bare metal: auto install

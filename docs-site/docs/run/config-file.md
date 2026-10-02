@@ -60,16 +60,18 @@ The shipped Compose file and image always set these, so YAML and Settings cannot
 | Runtime key | Docker value |
 |---|---|
 | `immich.url` | `IMMICH_URL`, default `http://immich-server:2283` |
-| `tier` | `auto` |
-| `trips.homebase_latitude`, `trips.homebase_longitude` | The corresponding `.env` variables, default `0` (home unset) |
 | `editorial.preparation.detector_cache_dir` | `/home/immich/.immich-memories/models/huggingface` |
 | `output.directory` | `/app/output` (image default) |
 
 `IMMICH_API_KEY` also pins `immich.api_key` when nonempty. The auth pair takes effect when both
-values are nonempty. Uncommented optional environment lines pin their keys too.
+values are nonempty. Added runtime environment lines pin their keys too.
 Change values in Compose or `.env`, then run `docker compose up -d`.
 To let Settings control a Compose-pinned key, remove its environment line and any YAML value.
 Keep the model cache and output paths on mounted volumes.
+
+`TIER` supplies an editable deployment default (`basic`, `gpu` or `full`), not a pinned runtime
+setting. YAML and saved Settings can override it; the legacy `nas` value still selects Basic.
+Home coordinates are not forwarded by the base Compose file: save them in Settings or YAML.
 
 Inspect the same result from the CLI:
 
