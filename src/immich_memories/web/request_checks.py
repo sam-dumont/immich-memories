@@ -96,9 +96,7 @@ def _host_header(host: str, origin: str) -> str:
     return host.removesuffix(default) if default else host
 
 
-def cross_site_write(
-    method: str, path: str, headers: Mapping[str, str], config: Config
-) -> bool:
+def cross_site_write(method: str, path: str, headers: Mapping[str, str], config: Config) -> bool:
     """Whether a browser on another site sent this write; a call without browser headers passes.
 
     `Sec-Fetch-Site` is set by the browser and no page can forge it, so `same-origin` and
