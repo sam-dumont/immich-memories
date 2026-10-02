@@ -325,6 +325,7 @@ def assemble_streaming(
             hdr_type,
             audio_work_dir=audio_work_dir,
             probe_cache=probe_cache,
+            encoder_name=plan.encoder,
         )
     except StreamingEncoderWriteError:
         with contextlib.suppress(OSError, subprocess.TimeoutExpired, RuntimeError):
@@ -379,11 +380,12 @@ def _encode_clip_sequence(
     hdr_type: str | None,
     audio_work_dir: Path | None = None,
     probe_cache: ProbeCache | None = None,
+    encoder_name: str = "",
 ) -> int:
     """Encode all clips with transitions, tracking frame count for progress."""
     active_iter: Generator[np.ndarray, None, None] | None = None
     skip_frames = 0
-    read_ahead = assembly_frame_read_ahead(width, height)
+    read_ahead = assembly_frame_read_ahead(width, height, encoder=encoder_name)
 
     clip_captions: list[ClipCaption | None] = (
         list(captions) if captions is not None else [None] * len(clips)

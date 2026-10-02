@@ -193,8 +193,8 @@ def test_encoder_failure_reaps_decoder_even_with_a_retained_traceback(
             process.wait(timeout=5)
 
 
-@pytest.mark.parametrize(("gib", "cpus", "slots"), [(4, 4, 3), (3, 4, 2), (4, 1, 2)])
-def test_large_assembly_admits_read_ahead_only_with_cpu_and_memory_headroom(
+@pytest.mark.parametrize(("gib", "cpus", "slots"), [(4, 4, 2), (3, 4, 2), (4, 1, 2)])
+def test_software_assembly_keeps_synchronous_reads_with_any_resource_budget(
     moving_source, tmp_path, monkeypatch, gib, cpus, slots
 ):
     from immich_memories.processing import memory_budget
