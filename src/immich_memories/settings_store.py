@@ -4,8 +4,12 @@ One row per runtime key path (`llm.model`, `automation.cooldown_hours`). Only sa
 have a row; a default is never written. Secrets are sealed with Fernet under a key derived
 from `IMMICH_MEMORIES_SECRET_KEY`, so the raw column never holds the plaintext.
 
-Bootstrap keys (`database.*`) are never stored or read here: the store's location has to
-be known before the store opens.
+Bootstrap keys are never stored or read here: `database.*` because the store's location
+has to be known before the store opens, `auth.*` and `server.*` because they decide who can
+reach the app, which a signed-in user must not be able to change from a page. A value that
+references an environment variable (`${VAR}`) is never stored or read either: expansion is
+for config.yaml, and a stored reference would let whoever can save a setting read the
+environment back from the settings page.
 """
 
 from __future__ import annotations
@@ -14,7 +18,7 @@ import base64
 import json
 import logging
 import os
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from typing import TYPE_CHECKING, Any
 
 import sqlalchemy as sa
@@ -63,9 +67,33 @@ def is_secret_key(key: str) -> bool:
     return key in _SECRET_MAPS or key.rsplit(".", 1)[-1] in _SECRET_FIELD_NAMES
 
 
+_BOOTSTRAP_SECTIONS = frozenset({"database", "auth", "server"})
+# Every config load reads the store; one warning per ignored key is enough.
+_warned_ignored: set[str] = set()
+
+
 def is_bootstrap_key(key: str) -> bool:
-    """Keys read before the store opens, so they can never come from it."""
-    return key == "database" or key.startswith("database.")
+    """Keys only env or config.yaml set, so they can never come from the store."""
+    return key.split(".", 1)[0] in _BOOTSTRAP_SECTIONS
+
+
+def is_store_location_key(key: str) -> bool:
+    """The bootstrap keys that say where the store is (`database.*`)."""
+    return key.split(".", 1)[0] == "database"
+
+
+def references_env(value: Any) -> bool:
+    """Whether a value, or anything nested in it, holds a `${VAR}` reference."""
+    return "${" in json.dumps(value)
+
+
+def ignored_reason(key: str, value: Any) -> str | None:
+    """Why a stored row is left out at load, or None when it is used."""
+    if is_bootstrap_key(key):
+        return "it is set only in the environment or config.yaml"
+    if references_env(value):
+        return "a saved setting can't reference an environment variable"
+    return None
 
 
 def secret_key_from_env() -> str | None:
@@ -140,19 +168,38 @@ class SettingsStore:
         """Every saved key and its value, secrets decrypted.
 
         A secret that cannot be opened (no key, or a different key) is left out with a
-        warning, so the setting falls back to its default instead of stopping the app.
+        warning, so the setting falls back to its default instead of stopping the app. A row
+        `ignored_reason` refuses is left out too, warned about once per process.
         """
+        values: dict[str, Any] = {}
+        for key, value in self._opened_rows():
+            if (reason := ignored_reason(key, value)) is None:
+                values[key] = value
+            elif not is_store_location_key(key) and key not in _warned_ignored:
+                _warned_ignored.add(key)
+                logger.warning("Ignoring the stored setting %s: %s.", key, reason)
+        return values
+
+    def ignored(self) -> dict[str, str]:
+        """Stored rows the loader leaves out, and why: for preflight to name them."""
+        return {
+            key: reason
+            for key, value in self._opened_rows()
+            if (reason := ignored_reason(key, value)) is not None
+            and not is_store_location_key(key)
+        }
+
+    def _opened_rows(self) -> Iterator[tuple[str, Any]]:
         with self._store.connect() as conn:
             rows = conn.execute(sa.select(settings)).mappings().all()
-        values: dict[str, Any] = {}
         for row in rows:
             if is_bootstrap_key(row["key"]):
-                continue
-            if not row["secret"]:
-                values[row["key"]] = row["value"]
+                # Never decrypted: a bootstrap row is ignored whatever it holds.
+                yield row["key"], None
+            elif not row["secret"]:
+                yield row["key"], row["value"]
             elif (opened := self._open(row["key"], row["ciphertext"])) is not None:
-                values[row["key"]] = opened
-        return values
+                yield row["key"], opened
 
     def unreadable_keys(self) -> set[str]:
         """Stored secrets the current IMMICH_MEMORIES_SECRET_KEY cannot open."""
@@ -168,8 +215,8 @@ class SettingsStore:
         return True
 
     def _row(self, key: str, value: Any, now: Any) -> dict[str, Any]:
-        if is_bootstrap_key(key):
-            raise ValueError(f"{key} is read before the store opens; set it in env or config.yaml")
+        if (reason := ignored_reason(key, value)) is not None:
+            raise ValueError(f"{key} cannot be stored: {reason}")
         if not is_secret_key(key):
             return {
                 "key": key,

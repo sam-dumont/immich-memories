@@ -13,6 +13,9 @@ For personal LAN access, start with Basic auth below. Use OIDC for your existing
 or trusted headers when an authenticated proxy is the only route to the app.
 [Proxy, TLS and bind-address setup](./network-security.md) is a separate operator guide.
 
+Authentication is set in the environment or `config.yaml` only, and changes take effect on restart.
+The Settings page shows `auth.*` and `server.*` read-only.
+
 <ThemedScreenshot name="login" alt="Login page" />
 
 ## Basic auth

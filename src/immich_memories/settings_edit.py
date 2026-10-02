@@ -30,6 +30,8 @@ from immich_memories.settings_store import (
     SecretKeyError,
     is_bootstrap_key,
     is_secret_key,
+    is_store_location_key,
+    references_env,
     secret_key_from_env,
     settings_store,
 )
@@ -80,9 +82,25 @@ def _checked(key: str, value: Any) -> Any:
     return adapter.dump_python(validated, mode="json")
 
 
+ENV_REFERENCE_REFUSED = (
+    "Settings can't reference environment variables; set them in config.yaml or the environment."
+)
+
+
+def _bootstrap_refusal(key: str) -> str | None:
+    if is_store_location_key(key):
+        return f"{key} is read before the database opens; set it in the environment or config.yaml"
+    if is_bootstrap_key(key):
+        return (
+            f"{key} decides who can reach the app, so it is set only in the environment "
+            "or config.yaml, and takes effect on restart"
+        )
+    return None
+
+
 def _refusal(entry: SettingSource) -> str | None:
-    if is_bootstrap_key(entry.key):
-        return f"{entry.key} is read before the database opens; set it in the environment or config.yaml"
+    if bootstrap := _bootstrap_refusal(entry.key):
+        return bootstrap
     if entry.source == "env":
         return f"{entry.key} is set by the environment variable {entry.override}; change it there"
     if entry.source == "file":
@@ -91,6 +109,61 @@ def _refusal(entry: SettingSource) -> str | None:
             f"`immich-memories config move-to-db {entry.key}`"
         )
     return None
+
+
+MOVED_WITHOUT_CREDENTIAL = "The server URL changed: enter the credential for the new server."
+
+# Every URL a saved credential is sent to, and that credential. A stored credential only goes
+# where it was saved for: otherwise whoever reaches the settings page could point it at their
+# own server and read it off the wire (#1212).
+_CREDENTIAL_PAIRS = {
+    "immich.url": "immich.api_key",
+    "render.worker_base_url": "render.worker_token",
+    "llm.base_url": "llm.api_key",
+    "editorial.preparation.caption_base_url": "editorial.preparation.caption_api_key",
+    "musicgen.base_url": "musicgen.api_key",
+    "ace_step.api_url": "ace_step.api_key",
+}
+# The Immich keys travel with every render, so a new worker always takes a token typed for it.
+_ALWAYS_PAIRED = frozenset({"render.worker_base_url"})
+
+
+def same_server(a: str, b: str) -> bool:
+    """Whether two URLs name the same server, ignoring whitespace and a trailing slash."""
+    return a.strip().rstrip("/") == b.strip().rstrip("/")
+
+
+def _current(config: Config, key: str) -> Any:
+    value: Any = config
+    for part in key.split("."):
+        value = getattr(value, part)
+    return value
+
+
+def _moved_url(config: Config, changes: Mapping[str, Any], url_key: str) -> bool:
+    url = changes.get(url_key)
+    # A cleared URL sends the credential nowhere.
+    return bool(url) and not same_server(str(url), str(_current(config, url_key)))
+
+
+def _check_credential_pairs(config: Config, changes: Mapping[str, Any]) -> None:
+    for url_key, secret_key in _CREDENTIAL_PAIRS.items():
+        if not _moved_url(config, changes, url_key) or secret_key in changes:
+            continue
+        if url_key in _ALWAYS_PAIRED or _current(config, secret_key):
+            raise SettingRefused(f"{url_key}: {MOVED_WITHOUT_CREDENTIAL}")
+    if "immich.accounts" in changes:
+        _check_accounts(config, changes["immich.accounts"])
+
+
+def _check_accounts(config: Config, accounts: Mapping[str, Any]) -> None:
+    for name, account in accounts.items():
+        old = config.immich.accounts.get(name)
+        if old is None or not old.api_key:
+            continue
+        url, key = str(account.get("url", "")), account.get("api_key")
+        if url and not same_server(url, old.url) and key == old.api_key:
+            raise SettingRefused(f"immich.accounts.{name}.url: {MOVED_WITHOUT_CREDENTIAL}")
 
 
 def _config_with(path: Path, stored: dict[str, Any]) -> Config:
@@ -119,6 +192,8 @@ def save_settings(changes: Mapping[str, Any], *, path: Path | None = None) -> Co
             raise SettingRefused(f"unknown setting {key}")
         if refusal := _refusal(entry):
             raise SettingRefused(refusal)
+        if references_env(value):
+            raise SettingRefused(f"{key}: {ENV_REFERENCE_REFUSED}")
         if is_secret_key(key) and not secret_key_from_env():
             raise SettingRefused(
                 f"{key} is a secret and {SECRET_KEY_ENV} is not set, so it cannot be stored in "
@@ -127,6 +202,7 @@ def save_settings(changes: Mapping[str, Any], *, path: Path | None = None) -> Co
         checked[key] = _checked(key, value)
     if not checked:
         return config
+    _check_credential_pairs(config, checked)
     _write(config, path, checked)
     return get_config(reload=True)
 
@@ -196,10 +272,8 @@ def move_to_database(keys: list[str], *, path: Path | None = None) -> Path:
     loaded = _load_yaml_data(path)
     values = {}
     for key in keys:
-        if is_bootstrap_key(key):
-            raise SettingRefused(
-                f"{key} is read before the database opens, so it stays in config.yaml"
-            )
+        if refusal := _bootstrap_refusal(key):
+            raise SettingRefused(refusal)
         if is_secret_key(key) and not secret_key_from_env():
             raise SettingRefused(f"{key} is a secret and {SECRET_KEY_ENV} is not set; set it first")
         values[key] = _checked(key, _file_value(key, loaded))

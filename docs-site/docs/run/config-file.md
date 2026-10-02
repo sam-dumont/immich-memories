@@ -42,6 +42,15 @@ Command-specific flags can override these for that command. LLM key shorthands h
 [special rule](./environment-variables.md#shorthands).
 The UI greys out settings controlled by the file or environment and shows their source.
 
+Some keys never come from Settings. Authentication (`auth.*`) and server (`server.*`) settings,
+like the database location, are set in the environment or `config.yaml` and take effect on
+restart. Settings shows them read-only. A value for one of them saved by an older version is
+ignored at startup, and `preflight` names it.
+
+A new URL for a server that receives a credential (Immich, an extra account, the LLM, the caption
+server, MusicGen, ACE-Step) needs that credential typed again in the same save, when one is set.
+A new render worker URL always needs its token, since the worker receives your Immich keys.
+
 Inspect the same result from the CLI:
 
 ```bash
@@ -137,7 +146,9 @@ when moving a config between machines: blank uses the app's Python.
 ## Environment variable substitution
 
 Use `${VAR_NAME}`, not `$VAR`. Substitution is supported for credentials and selected service/path
-fields; it is not applied to every string. For any config key, the reliable alternative is its
+fields in `config.yaml`; it is not applied to every string. It never applies to Settings: a value
+containing `${` is refused there and by the config CLI. A saved value holding one (from an older
+version) is ignored at startup, and `preflight` names its key. For any config key, the reliable alternative is its
 [`IMMICH_MEMORIES_SECTION__FIELD` variable](./environment-variables.md#the-pattern).
 
 ## Compute tier

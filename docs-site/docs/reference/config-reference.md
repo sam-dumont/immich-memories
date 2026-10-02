@@ -79,7 +79,7 @@ off by default and stays wherever you put it.
 Env: `IMMICH_MEMORIES_PRESET=fast`. One-off on the CLI: `immich-memories --preset fast generate …`
 (root option, before the subcommand).
 
-Settings saved in the UI or CLI go to the database. Environment variables and `config.yaml` still win; the app refuses to save a database value that they would override.
+Settings saved in the UI or CLI go to the database. Environment variables and `config.yaml` still win; the app refuses to save a database value that they would override. Bootstrap keys never go to the database: `database.*` (read before the store opens), and `auth.*` and `server.*` (they decide who can reach the app). Set them in the environment or `config.yaml` and restart. A saved value cannot contain a `${VAR}` reference.
 
 ## Immich connection
 

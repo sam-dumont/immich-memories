@@ -24,7 +24,7 @@ def _config_file(ctx: click.Context) -> Path:
 
 
 def _prompt_for_api_key(existing: str) -> str:
-    """Ask for an API key without ever showing the one already configured.
+    """Ask for an API key without ever showing the one already configured; "" keeps it.
 
     `hide_input` hides what is typed, not the default, so Click renders
     `API key [sk-live-...]:` -- and that key has full library access, so the line
@@ -34,8 +34,7 @@ def _prompt_for_api_key(existing: str) -> str:
     """
     if existing:
         console.print("[dim]An API key is already configured — press enter to keep it.[/dim]")
-    entered = click.prompt("API key", default="", hide_input=True, show_default=False)
-    return entered or existing
+    return click.prompt("API key", default="", hide_input=True, show_default=False)
 
 
 def _print_connection_check(result: CheckResult) -> None:
@@ -50,12 +49,15 @@ def _print_connection_check(result: CheckResult) -> None:
         print_error(line)
 
 
-def _save(ctx: click.Context, changes: dict[str, str]) -> bool:
+def _save(ctx: click.Context, changes: dict[str, str], *, typed_key: bool = False) -> bool:
     """Save to the database; print why not when env or config.yaml overrides a key."""
     from immich_memories.settings_edit import SettingRefused, save_settings
 
     cfg = ctx.obj["config"]
     changed = {key: value for key, value in changes.items() if _current(cfg, key) != value}
+    if typed_key and "immich.url" in changed:
+        # A new URL is saved only with a key typed for it, even the same key typed again.
+        changed["immich.api_key"] = changes["immich.api_key"]
     if not changed:
         print_info("Nothing changed.")
         return True
@@ -109,7 +111,8 @@ def _configure(ctx: click.Context, url: str | None, api_key: str | None) -> None
     cfg = ctx.obj["config"]
     if url or api_key:
         changes = {"immich.url": url, "immich.api_key": api_key}
-        if not _save(ctx, {key: value for key, value in changes.items() if value}):
+        typed = {key: value for key, value in changes.items() if value}
+        if not _save(ctx, typed, typed_key=bool(api_key)):
             ctx.exit(1)
         return
 
@@ -119,8 +122,10 @@ def _configure(ctx: click.Context, url: str | None, api_key: str | None) -> None
         "Immich server URL",
         default=cfg.immich.url or "https://photos.example.com",
     )
-    new_api_key = _prompt_for_api_key(cfg.immich.api_key)
-    if not _save(ctx, {"immich.url": new_url, "immich.api_key": new_api_key}):
+    entered_key = _prompt_for_api_key(cfg.immich.api_key)
+    new_api_key = entered_key or cfg.immich.api_key
+    changes = {"immich.url": new_url, "immich.api_key": new_api_key}
+    if not _save(ctx, changes, typed_key=bool(entered_key)):
         ctx.exit(1)
 
     if click.confirm("Test connection now?", default=True):
