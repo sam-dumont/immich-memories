@@ -12,7 +12,10 @@ import pytest
 
 from immich_memories.processing.caption_image import CaptionStyle, render_caption
 
-_FONT = Path(__file__).parents[1] / "src/immich_memories/titles/bundled_fonts/outfit/latin-700-normal.ttf"
+_FONT = (
+    Path(__file__).parents[1]
+    / "src/immich_memories/titles/bundled_fonts/outfit/latin-700-normal.ttf"
+)
 
 
 @pytest.fixture
