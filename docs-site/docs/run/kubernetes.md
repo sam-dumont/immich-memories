@@ -23,9 +23,9 @@ and describe your setup. Helm support will be considered when people request it.
 
 ## Generated tier setup
 
-**Not yet tested as a complete generated Kubernetes installation.** Kustomize renders and
-contract checks pass; they do not establish a live-cluster install. If you try it, [report your
-cluster/version, storage class and preflight result](https://github.com/sam-dumont/immich-video-memory-generator/issues/new).
+The generated GPU path has run on RKE2 with an NVIDIA T1000. Cold model initialization,
+preflight, encrypted Settings save/reload and the matching CUDA inference contract passed.
+These checks used a locally built candidate; they do not verify a published release download.
 
 Use the [setup builder](/setup), select Kubernetes and a published release version, and enter
 Immich's reachable URL and API key. It generates the Secret, namespace-scoped customization,
