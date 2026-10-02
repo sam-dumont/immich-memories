@@ -23,9 +23,11 @@ and describe your setup. Helm support will be considered when people request it.
 
 ## Generated tier setup
 
-The generated GPU path has run on RKE2 with an NVIDIA T1000. Cold model initialization,
-preflight, encrypted Settings save/reload and the matching CUDA inference contract passed.
-These checks used a locally built candidate; they do not verify a published release download.
+The generated GPU path has run on RKE2 with an NVIDIA T1000: cold model initialization,
+preflight, encrypted Settings save/reload and a complete first film passed, including full audio/video
+decode. The [measured run](../better/measured.md#generated-gpu-first-film) records the 1080p output,
+CUDA inference/captions, software encoding and corrected local/block SQLite storage. These checks
+used a locally built candidate; they do not verify a published release download.
 
 Use the [setup builder](/setup), select Kubernetes and a published release version, and enter
 Immich's reachable URL and API key. It generates the Secret, namespace-scoped customization,

@@ -9,11 +9,15 @@ import StackStorage from './_stack-storage.mdx';
 
 Use a **Docker Standalone** environment in Portainer. This recipe runs the app on that Docker host, which may be a different machine from the Portainer server. The interface steps follow [Portainer's stack documentation](https://docs.portainer.io/user/docker/stacks/add).
 
-:::info Not yet tested on Portainer
+:::info Tested Docker Standalone path
 
-We have not tested these installation steps on a real Portainer setup. The generated files and documentation form have local checks, but that does not validate this platform's installation.
+Portainer CE 2.45.1 on Docker 29.2.1 (Apple Silicon) passed the actual Web editor stack deployment,
+app readiness, and browser Console commands below. Model fetch completed; preflight reported
+6 OK, 3 warnings and 9 skipped checks. Version 2.33.3 could not connect to this Docker environment.
 
-We welcome people to try it and [share their results in #1805](https://github.com/sam-dumont/immich-video-memory-generator/issues/1805). Please include your platform version, app version, selected tier, and whether preflight and the first film worked. Successful runs are useful too.
+This used a local frozen app candidate (`f6d2fb71`), a loopback UI port and synthetic CC0 Immich
+media. It did not test a remote NAS tunnel, a published-release download or another film run.
+Test-owned containers and volumes were removed afterward.
 
 :::
 

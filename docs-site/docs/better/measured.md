@@ -30,8 +30,9 @@ separately when repeating the [first-run gate](https://github.com/sam-dumont/imm
 
 ## Generated cold installs, 2 October 2026 {#generated-cold-installs}
 
-A fresh generated NAS setup ran on a physical Synology DS423 with DSM 7.3, 17.8 GiB RAM,
-a 4 GiB container limit, empty configuration/output volumes and no copied model or picture cache.
+A fresh generated NAS setup ran on DSM 7.3 on x86_64 (reported model `DS423`), with
+17,836 MiB RAM reported by `free -m`, a 4 GiB container limit, empty configuration/output
+volumes and no copied model or picture cache.
 It used 133 public CC0 assets from June 2024 and the unmodified first-film command:
 
 ```bash
@@ -61,6 +62,37 @@ forwarding prerequisite and the authenticated reverse-proxy alternative.
 
 This is one real cold run, not a speed comparison: other NAS workloads and candidate-image
 export were active. The older warm controls and paired films above remain separate evidence.
+
+### Generated GPU Kubernetes first film {#generated-gpu-first-film}
+
+The generated GPU path ran in a fresh namespace on RKE2 `v1.33.4+rke2r1`, with an NVIDIA
+T1000 8 GB shared between the CUDA inference and caption services. The app had a **4 CPU,
+8 GiB limit** and no GPU device. Empty model volumes fetched the pinned detectors, Laya and
+caption weights; the app database used local/block storage, with models and output on NFS.
+Preflight finished in **11.68 seconds**, with 9 OK, 4 warnings and 5 skipped checks.
+
+Using the same 133 public CC0 assets, a June 2024 monthly film requested for 60 seconds took
+**11m 22.8s** to generate. It produced **56.5 seconds of 1920×1080 H.264 at 30 fps**, with
+stereo AAC audio, 16,154,477 bytes. FFprobe and a complete FFmpeg audio/video decode passed.
+Rules selection, full picture preparation, detectors, Laya and CUDA captions stayed enabled;
+there were no resolution overrides or feature-disable flags. The run used bundled music.
+Encoding used software, titles used CPU static plates, and HDR input was tone-mapped to SDR. Seven clips lacked motion facts and
+used plain clip facts; that warning remained visible.
+
+This used source tree `75077f27c4eb2f4516a1db5ba5e57d52a314fe18`, app image
+`49cc60a978ce` and matching inference image `d079a0da1633`, with generated resources from
+`5f3de520`. It was a local candidate install, **not a published release download**. The first
+attempt paired that app with an older released inference image; the strict facts validator
+refused the incompatible heads. The failed test database was cleared before the paired run,
+so its picture facts were prepared afresh. SQLite also correctly refused an initial NFS data
+volume; the corrected run used local/block storage.
+
+The generation time excludes image builds and transfers, model initialization and preflight.
+App image transfer took 385.9 seconds; the matching inference image import took 343.8 seconds.
+Cold model initialization completed, but no complete cold-install stopwatch was recorded.
+The generated Settings encryption key passed a secret save/masked reload/encrypted-storage
+check; the temporary setting was removed. The test namespace and its volumes were then removed.
+This is one installation and film check, not a matched hardware speed comparison.
 
 ## Read one run
 
