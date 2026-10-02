@@ -143,6 +143,162 @@ configure `auth.trusted_proxies`. Only uvicorn reads
 uvicorn resolved, never on a header the client sent.
 Enable secure cookies only once users reach HTTPS; plain HTTP LAN logins then fail.
 
+## A proxy in Docker
+
+These recipes use the app's **Basic auth**, with TLS handled by your existing proxy.
+Set `IMMICH_MEMORIES_AUTH_USERNAME` and `IMMICH_MEMORIES_AUTH_PASSWORD` in `.env` first,
+following [authentication](./authentication.mdx). Do not substitute a proxy's login page for
+app authentication. OIDC can use the same network, with its callback registered as above.
+Header authentication needs a verified identity provider and the separate
+[header-auth rules](./authentication.mdx#trusted-header-reverse-proxy); these examples do not configure it.
+
+### Shared network and app settings
+
+Pick an unused subnet; `172.30.80.0/24` is just an example. Create a network used only by
+this app and its proxy:
+
+```bash
+docker network create --subnet 172.30.80.0/24 memories-proxy
+```
+
+In the app's Compose file, **remove the whole `ports:` block**. Add this network to
+`immich-memories`, keeping its existing default network, volumes and environment:
+
+```yaml
+services:
+  immich-memories:
+    networks:
+      default: {}
+      memories-proxy:
+        ipv4_address: 172.30.80.3
+networks:
+  memories-proxy:
+    external: true
+```
+
+Add the same external network to your proxy's Compose file. Replace `proxy` with its existing
+service name and keep its other networks and settings:
+
+```yaml
+services:
+  proxy:
+    networks:
+      default: {}
+      memories-proxy:
+        ipv4_address: 172.30.80.2
+networks:
+  memories-proxy:
+    external: true
+```
+
+The two nonempty username/password environment values above enable Basic auth.
+In the app's `config.yaml`, merge these settings into `advanced`:
+
+```yaml
+advanced:
+  auth:
+    public_url: https://memories.example.com
+    trusted_proxies: [172.30.80.2]
+  server:
+    secure_cookies: true
+    allowed_hosts: [memories.example.com]
+```
+
+Trust the proxy's **single address**, not the entire Docker subnet or `*`. Only the proxy
+publishes HTTP/HTTPS ports; neither the browser nor another LAN client reaches port 8080
+directly. Preserve the public `Host` and browser `Origin` headers. Rewriting either to the
+container name breaks same-origin writes; stripping `Origin` defeats that check.
+
+Before trusting the address, temporarily add `FORWARDED_ALLOW_IPS: ""` to the app's Compose
+`environment` and recreate the app. This disables forwarded-address rewriting for Basic auth.
+Request `https://memories.example.com/health/live`, then inspect:
+
+```bash
+docker compose logs --tail 50 immich-memories
+```
+
+The `uvicorn.access` line for `GET /health/live` must show `172.30.80.2:<port>` as its client.
+If it shows something else, check the proxy's network attachment and trust the observed peer
+only after identifying it. Remove that temporary environment entry, then recreate the app
+again. Once forwarding is trusted, access logs show the browser address instead; that is
+**not** the Docker peer to put in `trusted_proxies`.
+
+### Nginx Proxy Manager
+
+Attach your existing NPM service to `memories-proxy` as above. Create a Proxy Host:
+
+- Domain: `memories.example.com`; scheme: `http`.
+- Forward hostname: `immich-memories`; forward port: `8080`.
+- Request a certificate and enable **Force SSL**.
+- Leave **Websockets Support** off. Progress uses server-sent events (SSE).
+
+In that Proxy Host's **Advanced** field, add:
+
+```nginx
+proxy_buffering off;
+proxy_read_timeout 300s;
+client_max_body_size 100m;
+```
+
+Do not add another `location /` or replace NPM's generated `Host`/forwarded headers.
+Disabling buffering lets progress events reach the browser as they arrive.
+NPM's [Docker-network guidance](https://nginxproxymanager.com/advanced-config/#best-practice-use-a-docker-network)
+explains service-name routing without published upstream ports; nginx documents
+[response buffering](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffering).
+
+### Caddy
+
+Attach your existing Caddy service to `memories-proxy`, then add this site to its Caddyfile:
+
+```caddyfile
+memories.example.com {
+    reverse_proxy immich-memories:8080
+}
+```
+
+Caddy handles HTTPS for the public name. Its default HTTP upstream preserves `Host`, supplies
+forwarded headers and flushes `text/event-stream` responses immediately. No WebSocket or
+buffering workaround is needed. Validate before reload with `caddy validate --config /etc/caddy/Caddyfile`.
+See Caddy's [reverse-proxy defaults and streaming behavior](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy).
+
+### Traefik
+
+Attach your existing Traefik service to `memories-proxy`. These labels go under the app's
+`immich-memories` service, alongside its private network attachment:
+
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.docker.network=memories-proxy"
+  - "traefik.http.routers.memories.rule=Host(`memories.example.com`)"
+  - "traefik.http.routers.memories.entrypoints=websecure"
+  - "traefik.http.routers.memories.tls=true"
+  - "traefik.http.routers.memories.tls.certresolver=letsencrypt"
+  - "traefik.http.routers.memories.service=memories"
+  - "traefik.http.services.memories.loadbalancer.server.port=8080"
+  - "traefik.http.services.memories.loadbalancer.passhostheader=true"
+  - "traefik.http.services.memories.loadbalancer.responseforwarding.flushinterval=-1ms"
+```
+
+Use your existing HTTPS entrypoint and certificate resolver names in place of `websecure`
+and `letsencrypt`. The Docker provider must be enabled. Do not attach a buffering middleware
+or set `forwardedHeaders.insecure=true`. Keep the default public `Host`; the negative flush
+interval sends progress without batching. Traefik documents the
+[Docker labels](https://doc.traefik.io/traefik/reference/routing-configuration/other-providers/docker/)
+and [response forwarding](https://doc.traefik.io/traefik/reference/routing-configuration/http/load-balancing/service/#responseforwarding).
+
+### Check the route before rendering
+
+Run `docker compose config --quiet` in both stacks, then recreate the app and proxy. Visit the
+HTTPS name: sign-in must work, a Settings save must succeed, and progress must update during a
+render without arriving in one lump at the end. An unrelated browser origin must still get
+403 for writes; do not fix that refusal by stripping headers. Check that
+`docker compose port immich-memories 8080` reports no published port.
+
+These are configuration recipes, not evidence of a completed installation on your proxy.
+Certificate issuance, login and SSE must be checked on the actual host before exposing it.
+If you try one, [report your proxy version, host platform and the checks that passed or failed](https://github.com/sam-dumont/immich-video-memory-generator/issues/new).
+
 ## Ports and egress
 
 | Connection | Default port | Needed when |
