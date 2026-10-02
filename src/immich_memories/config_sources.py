@@ -29,7 +29,7 @@ from immich_memories.settings_store import (
     is_bootstrap_key,
     is_secret_key,
     is_store_location_key,
-    settings_store,
+    read_settings,
 )
 
 Source = Literal["env", "file", "database", "default"]
@@ -113,10 +113,10 @@ def _raw_yaml(path: Path) -> dict:
 
 def _stored_keys(config: Config) -> tuple[set[str], set[str]]:
     """Saved keys the loader uses, and the saved secrets the current secret key cannot open."""
-    store = settings_store(config, create=False)
-    if store is None:
-        return set(), set()
-    return store.stored_keys() - store.ignored().keys(), store.unreadable_keys()
+    with read_settings(config) as store:
+        if store is None:
+            return set(), set()
+        return store.stored_keys() - store.ignored().keys(), store.unreadable_keys()
 
 
 def _display(key: str, value: Any, secret: bool) -> Any:

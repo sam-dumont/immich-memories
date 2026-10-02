@@ -21,7 +21,8 @@ POSTGRES_PASSWORD=a-long-random-password
 COMPOSE_PROFILES=postgres
 ```
 
-and `docker compose up -d`. The service sits behind the `postgres` profile, and
+and `docker compose up -d`. For an existing SQLite installation, follow the
+[copy-first procedure](../database.md#move-to-postgresql) before enabling the app URL. The service sits behind the `postgres` profile, and
 `COMPOSE_PROFILES` turns it on for every later `up` too, so an update with a plain
 `docker compose up -d` does not leave the app without its database. On Kubernetes,
 `deploy/kubernetes/overlays/postgres` does the equivalent: it is not referenced by
@@ -51,7 +52,8 @@ IMMICH_MEMORIES_DATABASE_URL=postgresql+psycopg://immich_memories:change-me@data
 runs in that file ([next to your Immich stack](../docker.md#next-to-your-immich-stack)). From
 anywhere else, use the address that reaches your PostgreSQL.
 
-Create the database and a role scoped to it first:
+Create the database and a role scoped to it first. Execute each SQL statement separately;
+`CREATE DATABASE` cannot run inside a transaction:
 
 ```sql
 CREATE ROLE immich_memories WITH LOGIN PASSWORD 'change-me';
@@ -81,9 +83,13 @@ anything Immich owns:
 ```sql
 CREATE ROLE immich_memories WITH LOGIN PASSWORD 'change-me';
 CREATE SCHEMA immich_memories AUTHORIZATION immich_memories;
+GRANT CREATE ON DATABASE immich TO immich_memories;
 ```
 
-That is the whole grant. The role owns its own schema and nothing else: no `GRANT` on `public`, no
+Execute those statements separately. The database `CREATE` privilege lets restore recreate the
+store schema after dropping it; it also permits creating other schemas in this shared database.
+Restore checks this privilege before changing the existing store and refuses if it is missing.
+Use mode 3 if that grant is too broad for your deployment. There is no `GRANT` on `public`, no
 grant on any Immich table, no cross-schema foreign key, no search-path change on Immich's own
 role. Alembic's version table (`alembic_version`) lives inside `immich_memories`, and autogenerate
 is scoped to this app's own `MetaData`, so a migration here never touches Immich's tables and an

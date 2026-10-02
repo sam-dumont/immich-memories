@@ -134,6 +134,10 @@ def main(
         from immich_memories.store.legacy_imports import enable_first_open_import
 
         enable_first_open_import()
+    if ctx.invoked_subcommand in ("ui", "generate", "auto"):
+        from immich_memories.db import open_store
+
+        open_store(ctx.obj["config"])
     process_start.mark("config")
 
 

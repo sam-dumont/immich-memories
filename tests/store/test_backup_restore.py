@@ -166,3 +166,50 @@ def test_the_cli_backs_up_reports_and_restores(tmp_path, monkeypatch):
     assert "automation_attempts" in status.output
     assert refused.exit_code == 1
     assert forced.exit_code == 0, forced.output
+
+
+@requires_postgres
+def test_mode_four_restore_checks_database_create_before_dropping_the_store(tmp_path):
+    from immich_memories.settings_store import SettingsStore
+
+    role = f"restore_{uuid.uuid4().hex[:12]}"
+    schema = role
+    admin = sa.create_engine(pg_url(), isolation_level="AUTOCOMMIT")
+    database = make_url(pg_url()).database
+    password = "synthetic-restore-role-password"  # noqa: S105 — throwaway database only
+    location = StoreLocation(
+        url=make_url(pg_url()).set(username=role, password=password).render_as_string(False),
+        schema=schema,
+    )
+    quote = admin.dialect.identifier_preparer.quote
+    try:
+        with admin.connect() as connection:
+            connection.execute(sa.text(f"CREATE ROLE {quote(role)} LOGIN PASSWORD '{password}'"))
+            connection.execute(
+                sa.text(f"CREATE SCHEMA {quote(schema)} AUTHORIZATION {quote(role)}")
+            )
+        store = open_store(location=location)
+        SettingsStore(store, None).save({"output.resolution": "720p"})
+        before = _digests(store)
+        backup = tmp_path / "restricted.dump"
+        backup_store(store, backup)
+        close_stores()
+
+        with pytest.raises(BackupError, match="CREATE on database"):
+            restore_store(location, backup, force=True)
+        assert _digests(open_store(location=location)) == before
+        close_stores()
+
+        with admin.connect() as connection:
+            connection.execute(
+                sa.text(f"GRANT CREATE ON DATABASE {quote(database)} TO {quote(role)}")
+            )
+        restore_store(location, backup, force=True)
+        assert _digests(open_store(location=location)) == before
+    finally:
+        close_stores()
+        with admin.connect() as connection:
+            connection.execute(sa.schema.DropSchema(schema, cascade=True, if_exists=True))
+            connection.execute(sa.text(f"DROP OWNED BY {quote(role)}"))
+            connection.execute(sa.text(f"DROP ROLE IF EXISTS {quote(role)}"))
+        admin.dispose()

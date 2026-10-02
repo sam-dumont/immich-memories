@@ -994,6 +994,14 @@ immich-memories store import [OPTIONS]
 | `--from` | directory | - | The directory holding the legacy files (default: IMMICH_MEMORIES_IMPORT_FROM, then database.import_from, then ~/.immich-memories). They are only read, never changed |
 | `--verify` | boolean | false | Afterwards, check that every legacy record is in the store with equal values; exit 1 on any difference |
 
+### `store migrate`
+
+Upgrade the store to this app's schema without starting a film.
+
+```bash
+immich-memories store migrate [OPTIONS]
+```
+
 ### `store restore`
 
 Replace the store with a backup, migrate it to head and check its row counts.

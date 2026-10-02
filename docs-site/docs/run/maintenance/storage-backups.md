@@ -72,11 +72,15 @@ docker compose exec immich-memories immich-memories preflight
 
 ### Kubernetes restore job
 
-Scale the Deployment down and wait for its pod to terminate, releasing the PVC:
+Suspend installed CronJobs first and record which were active. Wait for any running scheduled
+Job to finish, then scale the Deployment down and wait for its pod to release the PVC:
 
 ```bash
+kubectl get -n immich-memories cronjob -l app.kubernetes.io/name=immich-memories
+kubectl patch -n immich-memories cronjob immich-memories-auto -p '{"spec":{"suspend":true}}'
+kubectl patch -n immich-memories cronjob immich-memories-monthly -p '{"spec":{"suspend":true}}'
 kubectl scale -n immich-memories deploy/immich-memories --replicas=0
-kubectl wait -n immich-memories --for=delete pod -l app.kubernetes.io/name=immich-memories --timeout=120s
+kubectl wait -n immich-memories --for=delete pod -l 'app.kubernetes.io/name=immich-memories,!job-name,!batch.kubernetes.io/job-name' --timeout=120s
 ```
 
 Save this as `restore-job.yaml`. Replace `X.Y.Z` with the release and `store.db` with the actual
@@ -128,6 +132,11 @@ kubectl delete -n immich-memories job/immich-memories-restore
 kubectl scale -n immich-memories deploy/immich-memories --replicas=1
 kubectl exec -n immich-memories deploy/immich-memories -c immich-memories -- immich-memories preflight
 ```
+
+Resume only CronJobs that were active before maintenance with `spec.suspend=false`.
+The selector excludes both current `batch.kubernetes.io/job-name` and legacy `job-name`
+labels added by the Job controller, so Job and CronJob
+pods do not block the Deployment wait. It also works with the Terraform Deployment.
 
 A SQLite backup restores to SQLite; a PostgreSQL backup to PostgreSQL. To change backend, restore
 first, then use [store copy](../database.md).

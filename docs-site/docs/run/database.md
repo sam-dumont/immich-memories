@@ -62,7 +62,7 @@ docker compose up -d
 The filename above is an example; use your actual backup (`.dump` for PostgreSQL). Keep its manifest beside it.
 `--force` permits replacing a non-empty store.
 
-For Kubernetes, scale the Deployment to zero and run a one-off restore Job on the same volumes
+For Kubernetes, suspend scheduled CronJobs, scale the Deployment to zero and run a one-off restore Job on the same volumes
 (and database Secret, when applicable), then scale back to one. The
 [store command reference](./reference/store-commands.md#restore-in-a-container) gives the Job
 procedure. Do not `exec` a restore into the running app.
@@ -81,6 +81,27 @@ immich-memories store copy --to 'postgresql+psycopg://immich_memories:password@p
 The target must be empty unless you deliberately use `--force`. The command compares row counts
 and content after copying. Point `IMMICH_MEMORIES_DATABASE_URL` at the target and restart.
 The old SQLite file remains your way back. Protect URLs containing passwords like other secrets.
+
+For an existing Docker Compose SQLite installation:
+
+1. Uncomment only the PostgreSQL service and volume first. Set `POSTGRES_PASSWORD` and
+   `COMPOSE_PROFILES=postgres`; leave the app database URL commented out.
+2. Start PostgreSQL and wait for its health check. Stop the app so copying has one writer:
+
+   ```bash
+   docker compose up -d --wait postgres
+   docker compose stop immich-memories
+   docker compose run --rm immich-memories immich-memories store copy \
+     --to 'postgresql+psycopg://immich_memories:password@postgres:5432/immich_memories'
+   ```
+
+3. Only after the copy and digest checks succeed, uncomment the app database URL and
+   `depends_on` block, then run `docker compose up -d immich-memories`. Use the same password
+   in the target URL and app URL. Keep the original SQLite file.
+
+Enabling the app URL before copying makes PostgreSQL the source, so the original SQLite rows
+would never be copied.
+
 
 ## 2. A separate PostgreSQL service
 

@@ -117,3 +117,10 @@ uv tool install --force "immich-memories[all]==X.Y.Z"
 
 Kubernetes/Terraform: restore the old image tag and apply, then restore the old store backup with
 that release. Schema downgrades can drop tables and rows; the backup is the rollback.
+
+## Inspecting the store before an upgrade
+
+`store status`, `store backup`, `config show` and `preflight` read the existing schema without
+upgrading it, including saved settings. A revision mismatch reports the actual and expected
+schema. Back up first; `ui`, `generate`, `auto` and the explicit `store migrate` command upgrade
+the configured store before writing.
