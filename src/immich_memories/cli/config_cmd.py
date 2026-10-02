@@ -110,8 +110,8 @@ def _show(ctx: click.Context, prefixes: tuple[str, ...]) -> None:
 def _configure(ctx: click.Context, url: str | None, api_key: str | None) -> None:
     cfg = ctx.obj["config"]
     if url or api_key:
-        changes = {"immich.url": url, "immich.api_key": api_key}
-        typed = {key: value for key, value in changes.items() if value}
+        supplied = {"immich.url": url, "immich.api_key": api_key}
+        typed = {key: value for key, value in supplied.items() if value}
         if not _save(ctx, typed, typed_key=bool(api_key)):
             ctx.exit(1)
         return

@@ -70,6 +70,8 @@ def _yaml_for(key: str, value: str) -> str:
 def test_a_reference_in_config_yaml_expands(
     key: str, expected: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # WHY: the harness pins model paths in the environment, which wins over YAML.
+    monkeypatch.delenv(f"IMMICH_MEMORIES_{key.upper().replace('.', '__')}", raising=False)
     monkeypatch.setenv("FILE_REFERENCE", expected)
     source = tmp_path / "config.yaml"
     source.write_text(_yaml_for(key, '"${FILE_REFERENCE}"'))

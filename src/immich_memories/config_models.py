@@ -77,7 +77,7 @@ def expand_file_references(model: type[BaseModel], data: dict) -> dict:
     `ENV_REFERENCE_FIELDS`; nested sections and named accounts are walked.
     """
     marked: frozenset[str] = getattr(model, "ENV_REFERENCE_FIELDS", frozenset())
-    expanded = dict(data)
+    expanded = data.copy()
     for name, field in model.model_fields.items():
         key = next((k for k in (field.alias, name) if k and k in data), None)
         if key is None:

@@ -1,3 +1,8 @@
 # gitleaks fingerprints (commit:file:rule:line) that are known false positives.
 # A scoring-mode keyword argument in a test fixture on the retired probe branch, not a key.
 9ef78b04e37c1751b4f879157fae1006777cabc8:tests/test_distill_pipeline.py:generic-api-key:323
+
+# Synthetic credentials in settings tests: local login and environment-redaction sentinel.
+3e12c8470a0f89bf77430f144b79325092d00f12:tests/test_settings_stored_values.py:generic-api-key:96
+3e12c8470a0f89bf77430f144b79325092d00f12:tests/test_settings_stored_values.py:generic-api-key:105
+3e12c8470a0f89bf77430f144b79325092d00f12:tests/test_settings_stored_values.py:generic-api-key:130
