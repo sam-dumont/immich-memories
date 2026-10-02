@@ -1,0 +1,66 @@
+{
+  "before": {
+    "berlin": [
+      {
+        "place": "Mitte, Germany",
+        "date": "Monday 1",
+        "card": false
+      },
+      {
+        "place": "Kreuzberg, Germany",
+        "date": "Tuesday 2",
+        "card": true
+      },
+      {
+        "place": "Charlottenburg, Germany",
+        "date": "Wednesday 3",
+        "card": true
+      }
+    ],
+    "home": "",
+    "road_trip": [
+      {
+        "city_photos": 10,
+        "place": "United States",
+        "title": "6 DAYS IN THE UNITED STATES, JULY 2030"
+      },
+      {
+        "city_photos": 11,
+        "place": "Las Vegas, United States",
+        "title": "6 DAYS IN LAS VEGAS, UNITED STATES, JULY 2030"
+      }
+    ]
+  },
+  "after": {
+    "berlin": [
+      {
+        "place": "Berlin, Germany",
+        "date": "Monday 1",
+        "card": false
+      },
+      {
+        "place": "",
+        "date": "Tuesday 2",
+        "card": false
+      },
+      {
+        "place": "",
+        "date": "Wednesday 3",
+        "card": false
+      }
+    ],
+    "home": "Brussels, Belgium",
+    "road_trip": [
+      {
+        "city_photos": 10,
+        "place": "United States",
+        "title": "6 DAYS IN THE UNITED STATES, JULY 2030"
+      },
+      {
+        "city_photos": 11,
+        "place": "United States",
+        "title": "6 DAYS IN THE UNITED STATES, JULY 2030"
+      }
+    ]
+  }
+}

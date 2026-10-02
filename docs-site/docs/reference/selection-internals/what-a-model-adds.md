@@ -162,7 +162,7 @@ server on your own machine or network and 4 for a public host.
   `runs story` show it on every film the model polished or planned.
 
 The captions under the pictures are dates and places, on every tier: the date from Immich
-metadata, the place from Immich's city, or the district when `network.geocoding` is on and found
+metadata, the place from Immich's city, or the resolved city, town or village when `network.geocoding` is on and found
 one. Story titles and the storyboard read the same place name.
 
 ## The keys

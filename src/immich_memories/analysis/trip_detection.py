@@ -230,17 +230,17 @@ def _derive_location_name(
     city or a region. It knows the film's language, which is what it buys;
     an island, two regions or a country come from the pictures themselves.
     """
-    place = trip_place(assets)
+    spread_km = _compute_spread_km(assets)
+    place = trip_place(assets, local_stay=spread_km < CITY_SPREAD_KM)
     geocodable = place is None or place.scale in _GEOCODER_SCALES
     if (
         geocodable
         and geocoder is not None
         and centroid_lat is not None
         and centroid_lon is not None
+        and (geocoded := geocoder(centroid_lat, centroid_lon, spread_km=spread_km))
     ):
-        spread_km = _compute_spread_km(assets)
-        if geocoded := geocoder(centroid_lat, centroid_lon, spread_km=spread_km):
-            return TripPlace(geocoded, "city" if spread_km < CITY_SPREAD_KM else "region")
+        return TripPlace(geocoded, "city" if spread_km < CITY_SPREAD_KM else "region")
     if place is not None:
         return place
     cities = Counter(a.exif_info.city for a in assets if a.exif_info and a.exif_info.city)

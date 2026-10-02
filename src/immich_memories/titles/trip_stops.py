@@ -19,9 +19,19 @@ from immich_memories.analysis.trip_detection import CITY_SPREAD_KM, haversine_km
 
 AddressOf = Callable[[float, float], Mapping[str, str]]
 
-# A cluster's shared name, finest first: the municipality a set of villages merged into,
+# A cluster's shared name, locality first, then the municipality villages merged into,
 # then the county, district, island and region. Never the country: it names the whole trip.
-_SHARED_KEYS = ("municipality", "county", "state_district", "island", "province", "state")
+_SHARED_KEYS = (
+    "city",
+    "town",
+    "village",
+    "municipality",
+    "county",
+    "state_district",
+    "island",
+    "province",
+    "state",
+)
 # Fewer than this many close stops keep their own names; a map shows two labels fine.
 _AGGREGATE_FROM = 3
 

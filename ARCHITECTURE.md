@@ -606,7 +606,7 @@ src/immich_memories/
 │   ├── trip_detection.py       # GPS-based trip detection (clustering, injected geocoder)
 │   ├── trip_legs.py            # Where a trip changes where it stays: areas of stay become legs (#1563)
 │   ├── trip_place.py           # Names a trip at the scale its pictures cover (city → country)
-│   ├── place_geocoder.py       # Opt-in Nominatim: district names per ~1 km cell, cached in the store
+│   ├── place_geocoder.py       # Opt-in Nominatim: city/village names per ~1 km cell, cached in the store
 │   ├── trip_discovery.py       # Shared UI/CLI all-asset discovery, including year-boundary trips
 │   ├── special_day.py          # Every run of activity, and a found day named from its own lines
 │   ├── special_day_sequence.py # Days read a month at a time in order (close family by role on each line); 30 s film floor

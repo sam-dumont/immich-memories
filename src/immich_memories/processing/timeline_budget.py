@@ -96,7 +96,7 @@ def _year_divider_count(clips: list[Any]) -> int:
     return max(0, len(years) - 1)
 
 
-def _location_divider_count(clips: list[Any], title_settings: Any) -> int:
+def _location_divider_count(clips: list[Any]) -> int:
     """The location cards the divider planner will insert, by the same rule."""
     from immich_memories.processing.location_card_route import RouteStop, location_card_moves
 
@@ -104,19 +104,12 @@ def _location_divider_count(clips: list[Any], title_settings: Any) -> int:
     for clip in clips:
         latitude, longitude, name = _item_location(clip) or (None, None, None)
         stops.append(RouteStop(latitude, longitude, name, _item_date(clip)))
-    home_lat = getattr(title_settings, "home_lat", None)
-    home_lon = getattr(title_settings, "home_lon", None)
-    home = (
-        (float(home_lat), float(home_lon))
-        if isinstance(home_lat, (int, float)) and isinstance(home_lon, (int, float))
-        else None
-    )
-    return sum(move is not None for move in location_card_moves(stops, None, home))
+    return sum(move is not None for move in location_card_moves(stops, None))
 
 
 def _eligible_dividers(clips: list[Any], title_settings: Any, memory_type: str | None) -> int:
     if memory_type == "trip" and getattr(title_settings, "show_location_cards", True):
-        return _location_divider_count(clips, title_settings)
+        return _location_divider_count(clips)
     divider_mode = getattr(title_settings, "divider_mode", "month")
     if divider_mode == "year":
         return _year_divider_count(clips)

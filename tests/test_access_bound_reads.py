@@ -334,7 +334,7 @@ def test_an_owner_s_read_that_fails_mid_run_fails_the_attempt_naming_the_account
 def test_the_attempt_names_its_pictures_once_and_the_snapshot_keeps_the_name(
     tmp_path, immich, run, monkeypatch
 ):
-    """A replay reads the district from the snapshot, not from a second question (#1591)."""
+    """A replay reads the city from the snapshot, not from a second question (#1591)."""
     import tests.test_access_bound_reads as this
 
     held = _asset("own-video", "user-primary")
@@ -344,7 +344,7 @@ def test_the_attempt_names_its_pictures_once_and_the_snapshot_keeps_the_name(
 
     def nominatim(_language, _url=""):
         return lambda latitude, longitude: (
-            asked.append((latitude, longitude)) or {"suburb": "Wilrijk"}
+            asked.append((latitude, longitude)) or {"suburb": "Wilrijk", "city": "Antwerpen"}
         )
 
     # WHY: Nominatim is the outside host the run would ask.
@@ -362,8 +362,8 @@ def test_the_attempt_names_its_pictures_once_and_the_snapshot_keeps_the_name(
 
     pool = source(accounts=())
 
-    assert pool["own-video"].exif_info.place_name == "Wilrijk"
+    assert pool["own-video"].exif_info.place_name == "Antwerpen"
     snapshot = json.loads((tmp_path / "attempt" / SNAPSHOT_NAME).read_text())
     [kept] = [row["value"] for row in snapshot["sources"] if row["value"]["id"] == "own-video"]
-    assert kept["exif_info"]["place_name"] == "Wilrijk"
+    assert kept["exif_info"]["place_name"] == "Antwerpen"
     assert len(asked) == 1

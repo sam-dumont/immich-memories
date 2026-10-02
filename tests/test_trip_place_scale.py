@@ -194,3 +194,32 @@ def test_a_weekend_mostly_in_one_seaside_town_is_named_after_the_town():
     )
 
     assert name == "Wenduine, Belgium"
+
+
+def test_one_more_city_photo_does_not_rename_a_long_road_trip():
+    names = [
+        _trip_name(
+            [
+                (city_photos, 36.17, -115.14, "Las Vegas", "Nevada", "United States"),
+                (4, 37.20, -112.99, "Springdale", "Utah", "United States"),
+                (3, 36.86, -111.46, "Page", "Arizona", "United States"),
+                (3, 34.05, -118.24, "Los Angeles", "California", "United States"),
+            ]
+        )
+        for city_photos in (10, 11)
+    ]
+
+    assert names == ["United States", "United States"]
+
+
+def test_a_trip_uses_the_same_resolved_city_as_its_captions():
+    pictures = [
+        _picture(i, 52.52, 13.40 + i * 0.001, district, "Berlin", "Germany")
+        for i, district in enumerate(["Mitte", "Kreuzberg", "Charlottenburg"] * 4)
+    ]
+    for picture in pictures:
+        picture.exif_info.place_name = "Berlin"
+
+    (trip,) = detect_trips(pictures, *_HOME)
+
+    assert (trip.location_name, trip.location_kind) == ("Berlin, Germany", "city")

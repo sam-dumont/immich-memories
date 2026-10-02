@@ -787,7 +787,7 @@ network:
 
 | Key | What it sends | What you get |
 |---|---|---|
-| `geocoding` | each trip cluster's centroid, and the coordinates of the pictures in the film's window, rounded to about a kilometre, once per place (answers are kept in the store) | the district's name where Immich names a neighbouring town, on every name you read (story titles, captions, location cards, map stops, the report), trip names from the map instead of from EXIF, and place names in the film's language |
+| `geocoding` | each trip cluster's centroid, and the coordinates of the pictures in the film's window, rounded to about a kilometre, once per place (answers are kept in the store) | the city or village where Immich names a district or neighbouring town, on every name you read (story titles, captions, location cards, map stops, the report), trip names from the map instead of from EXIF, and place names in the film's language |
 | `geocoding_url` | the same requests, to this host instead (`http://nominatim.lan:8080`); empty means `nominatim.openstreetmap.org`. Only read with `geocoding: true` | your own Nominatim, nothing sent outside |
 | `map_tiles` | tile coordinates covering the trip area and your home base | the trip fly-over, the static trip map, and a satellite background behind location cards |
 

@@ -83,8 +83,7 @@ class TestTheFilmReadsTheseNames:
 
         assert title == "TWO WEEKS IN ITALY, JULY 2024"
 
-    def test_a_clip_overlay_localises_the_country_and_still_drops_home(self) -> None:
-        from immich_memories.analysis.familiar_places import PlaceHistory, PlaceObservation
+    def test_a_clip_overlay_localises_the_country_at_home_and_abroad(self) -> None:
         from immich_memories.generate_captions import apply_location_captions
         from immich_memories.processing.assembly_config import AssemblyClip
 
@@ -103,14 +102,11 @@ class TestTheFilmReadsTheseNames:
             longitude=2.35,
             location_name="Lyon, France",
         )
-        history = PlaceHistory([PlaceObservation(48.86, 2.35, date(2024, 1, 1), "France")])
 
-        captioned = apply_location_captions(
-            [away, at_home], history, home=(48.86, 2.35), locale="fr"
-        )
+        captioned = apply_location_captions([away, at_home], locale="fr")
 
         assert captioned[0].caption_location_name == "Nicosia, Chypre"
-        assert captioned[1].caption_location_name == ""
+        assert captioned[1].caption_location_name == "Lyon, France"
 
     def test_map_pins_carry_localised_names(self) -> None:
         from immich_memories.generate_privacy import extract_trip_pins
@@ -259,11 +255,11 @@ class TestGeocodingReachesTheCut:
 
     def _named(self, params, clip):
         from immich_memories.generate_captions import (
-            district_place_names,
+            locality_place_names,
             prepare_location_captions,
         )
 
-        return prepare_location_captions(params, district_place_names(params, [clip]))[0]
+        return prepare_location_captions(params, locality_place_names(params, [clip]))[0]
 
     def test_off_asks_nobody_and_keeps_immichs_name(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -280,7 +276,7 @@ class TestGeocodingReachesTheCut:
         assert clip.location_name == "Hoboken, Belgium"
         assert clip.caption_location_name == "Hoboken, Belgique"
 
-    def test_on_names_the_district_in_the_films_language(
+    def test_on_names_the_city_in_the_films_language(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         built: list[tuple[str, str]] = []
@@ -294,8 +290,8 @@ class TestGeocodingReachesTheCut:
 
         clip = self._named(self._params(tmp_path, monkeypatch, True), self._clip())
 
-        assert clip.location_name == "Wilrijk, Belgium"
-        assert clip.caption_location_name == "Wilrijk, Belgique"
+        assert clip.location_name == "Antwerpen, Belgium"
+        assert clip.caption_location_name == "Antwerpen, Belgique"
         assert built == [("fr", "")]
 
 
