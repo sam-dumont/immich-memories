@@ -834,8 +834,7 @@ see [Environment variables](../run/reference/environment.md#not-config-keys).
 
 ```yaml
 server:
-  host: "0.0.0.0"               # Listen address. Without auth and without this set
-                                 # explicitly, the UI binds 127.0.0.1 (secure default)
+  host: "127.0.0.1"             # Explicit local bind; YAML 0.0.0.0 is ignored (see below)
   port: 8080                     # Listen port (1-65535)
   enable_demo_mode: false        # Offer the Demo mode (blur) switch in the web top bar
   secure_cookies: false          # Mark the session cookie Secure (turn on behind an HTTPS reverse proxy)
@@ -854,8 +853,14 @@ server:
 Kubernetes Service, a NAS hostname), is let in. See
 [Allowed hosts](../run/network-security.md#allowed-hosts).
 
-`host` and `port` also have CLI flags: `immich-memories ui --host 127.0.0.1 --port 9090`. The rest
-of the section is config-only.
+`host` and `port` also have CLI flags: `immich-memories ui --host 127.0.0.1 --port 9090`.
+A YAML `server.host: 0.0.0.0` is ignored: older versions saved that value automatically.
+Without auth or an explicit override, native installs bind to `127.0.0.1`; enabling auth
+normally permits all interfaces. For deliberate exposure without auth, use `ui --host 0.0.0.0`,
+`IMMICH_MEMORIES_SERVER__HOST=0.0.0.0`, or `allow_unauthenticated_lan: true` on a restricted network.
+The Docker image already passes `--host 0.0.0.0`; its host port mapping controls reachability.
+Unauthenticated LAN requests also need the hostname in `server.allowed_hosts`.
+See [Network and security](../run/network-security.md) before changing it.
 
 `trigger_token` turns on the HTTP trigger: one POST that runs whatever `auto run` would have
 decided, so an Immich workflow (or a cron, or a phone shortcut) can start a memory. See

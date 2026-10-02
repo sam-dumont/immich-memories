@@ -123,6 +123,61 @@ class TestForwardedAllowIpsPrecedence:
 
 
 class TestHeaderProvider:
+    @pytest.mark.parametrize("forwarded_ips", ["*", _PROXY, ""])
+    def test_header_server_kwargs_refuse_an_explicit_forwarded_allow_ips(self, forwarded_ips):
+        config = Config(auth={"enabled": True, "provider": "header", "trusted_proxies": [_PROXY]})
+
+        with pytest.raises(ValueError, match="FORWARDED_ALLOW_IPS.*auth.trusted_proxies"):
+            reverse_proxy_run_kwargs(config, environ={"FORWARDED_ALLOW_IPS": forwarded_ips})
+
+    @pytest.mark.parametrize("forwarded_ips", ["*", _PROXY, ""])
+    def test_header_auth_refuses_forwarded_allow_ips_at_app_startup(
+        self, monkeypatch, forwarded_ips
+    ):
+        from immich_memories.startup_checks import StartupRefused
+        from immich_memories.web.server import create_app
+
+        config = Config(auth={"enabled": True, "provider": "header", "trusted_proxies": [_PROXY]})
+        monkeypatch.setenv("FORWARDED_ALLOW_IPS", forwarded_ips)
+        monkeypatch.setenv("IMMICH_MEMORIES_STORAGE_SECRET", _SESSION_KEY)
+        # WHY: startup normally loads the operator's config; this test selects header auth.
+        with (
+            patch("immich_memories.web.server.get_config", return_value=config),
+            pytest.raises(StartupRefused, match="FORWARDED_ALLOW_IPS.*auth.trusted_proxies"),
+        ):
+            create_app()
+
+    @pytest.mark.parametrize(
+        ("peer", "forwarded", "expected"), [(_PROXY, _VISITOR, 200), (_STRANGER, _PROXY, 401)]
+    )
+    def test_real_app_trusts_only_the_immediate_header_proxy(
+        self, monkeypatch, peer, forwarded, expected
+    ):
+        from immich_memories.web.server import create_app
+
+        config = Config(auth={"enabled": True, "provider": "header", "trusted_proxies": [_PROXY]})
+        monkeypatch.delenv("FORWARDED_ALLOW_IPS", raising=False)
+        monkeypatch.setenv("IMMICH_MEMORIES_STORAGE_SECRET", _SESSION_KEY)
+        # WHY: the real app reads disk config; this fixture defines its proxy boundary.
+        with patch("immich_memories.web.server.get_config", return_value=config):
+            app = create_app()
+
+            @app.get("/api/proxy-contract")
+            def identity(request: Request):
+                return {"username": request.session["username"]}
+
+            served = ProxyHeadersMiddleware(
+                app,
+                trusted_hosts=reverse_proxy_run_kwargs(config, environ={})["forwarded_allow_ips"],
+            )
+            response = TestClient(served, client=(peer, 40000)).get(
+                "/api/proxy-contract", headers={"X-Forwarded-For": forwarded, "Remote-User": "ada"}
+            )
+
+        assert response.status_code == expected
+        if expected == 200:
+            assert response.json() == {"username": "ada"}
+
     def test_header_auth_still_sees_the_proxy_when_it_forwards_the_visitor_ip(self, monkeypatch):
         from immich_memories.web import server
 
