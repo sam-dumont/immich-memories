@@ -1745,3 +1745,24 @@ msgstr "Soft romantic"
 #: web/routes/runs/[run_id]/+page.svelte:168
 msgid "Download film"
 msgstr "Scarica il film"
+#: web/lib/ModelSetup.svelte:66 web/lib/ModelSetup.svelte:67 web/lib/ModelSetup.svelte:81
+msgid "Download models"
+msgstr "Scarica i modelli"
+
+#: web/lib/ModelSetup.svelte:68
+msgid "Your first film needs these model files. Nothing downloads until you press the button."
+msgstr ""
+"Il tuo primo film richiede questi file dei modelli. Il download inizia solo quando premi il "
+"pulsante."
+
+#: web/lib/ModelSetup.svelte:78
+msgid "Download hosts can redirect to their CDNs."
+msgstr "I server di download possono reindirizzare alle loro CDN."
+
+#: web/lib/ModelSetup.svelte:54 web/lib/ModelSetup.svelte:57
+msgid "Model downloads failed to start."
+msgstr "Impossibile avviare il download dei modelli."
+
+#: web/lib/ModelSetup.svelte:24
+msgid "Model status could not be checked."
+msgstr "Impossibile verificare lo stato dei modelli."

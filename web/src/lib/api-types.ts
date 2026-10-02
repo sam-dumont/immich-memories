@@ -437,6 +437,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Model Status */
+        get: operations["model_status_api_v1_models_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/models/fetch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fetch Models
+         * @description Only this explicit authenticated request authorizes the public CLI download job.
+         */
+        post: operations["fetch_models_api_v1_models_fetch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/music": {
         parameters: {
             query?: never;
@@ -1537,7 +1574,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cut" | "render" | "scan" | "music" | "ask";
+            kind: "cut" | "render" | "scan" | "music" | "ask" | "models";
             /**
              * Meta
              * @default {}
@@ -1586,6 +1623,30 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /** ModelAcquisitionStatus */
+        ModelAcquisitionStatus: {
+            /** Artifacts */
+            artifacts: components["schemas"]["ModelArtifactView"][];
+            /** Plan Id */
+            plan_id: string;
+            /** Ready */
+            ready: boolean;
+        };
+        /** ModelArtifactView */
+        ModelArtifactView: {
+            /** Host */
+            host: string;
+            /** Label */
+            label: string;
+            /** Ready */
+            ready: boolean;
+            /** Revision */
+            revision?: string | null;
+            /** Sha256 */
+            sha256?: string | null;
+            /** Size */
+            size: string;
+        };
         /**
          * ModelDecision
          * @description What the model polish recorded about a shot; absent when no model read the cut.
@@ -1605,6 +1666,11 @@ export interface components {
             replacement_outcome: string;
             /** Seat */
             seat: string;
+        };
+        /** ModelFetchRequest */
+        ModelFetchRequest: {
+            /** Plan Id */
+            plan_id: string;
         };
         /** MusicTrack */
         MusicTrack: {
@@ -2932,6 +2998,66 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    model_status_api_v1_models_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelAcquisitionStatus"];
+                };
+            };
+        };
+    };
+    fetch_models_api_v1_models_fetch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelFetchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobView"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

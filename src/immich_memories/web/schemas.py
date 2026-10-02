@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, Field, field_serializer
 
 
 class RunSummary(BaseModel):
@@ -201,7 +201,7 @@ class Decision(BaseModel):
     level: Literal["anyone", "family", "just-us"] = "anyone"
 
 
-JobKind = Literal["cut", "render", "scan", "music", "ask"]
+JobKind = Literal["cut", "render", "scan", "music", "ask", "models"]
 JobStatus = Literal["running", "succeeded", "failed", "cancelled", "interrupted"]
 
 
@@ -380,3 +380,22 @@ class RenderCapabilities(BaseModel):
     upload_available: bool
     upload_reason: str | None = None
     missing_upload: list[str]
+
+
+class ModelArtifactView(BaseModel):
+    label: str
+    host: str
+    size: str
+    sha256: str | None = None
+    revision: str | None = None
+    ready: bool
+
+
+class ModelAcquisitionStatus(BaseModel):
+    plan_id: str
+    ready: bool
+    artifacts: list[ModelArtifactView]
+
+
+class ModelFetchRequest(BaseModel):
+    plan_id: str = Field(pattern=r"^[0-9a-f]{128}$", min_length=128, max_length=128)

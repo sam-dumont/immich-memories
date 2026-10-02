@@ -4,25 +4,14 @@ from __future__ import annotations
 
 import urllib.error
 from pathlib import Path
+from urllib.parse import parse_qsl, unquote, urlsplit
 
 import click
 
 from immich_memories.analysis.editorial_preparation_detectors import DETECTOR_SNAPSHOTS
-from immich_memories.config_models_llm import DEFAULT_LOCAL_MODEL
-from immich_memories.laya_checkpoints import LAYA_ONNX_NAME
-from immich_memories.local_inference import local_reader_paths
-from immich_memories.pinned_models import (
-    ENCODER,
-    LAYA_AUDIENCE,
-    LAYA_AUDIENCE_ONNX,
-    LAYA_MAX_BYTES,
-    MARQO_ONNX,
-    READER_MAX_BYTES,
-    READER_MODEL,
-    READER_PROJECTOR,
-    WORDNET,
-    fetch_pinned_model,
-)
+from immich_memories.model_acquisition import acquisition_plan
+from immich_memories.pinned_models import fetch_pinned_model
+from immich_memories.security import sanitize_error_message
 
 
 def register_models_commands(cli_group: click.Group) -> None:
@@ -49,73 +38,29 @@ def register_models_commands(cli_group: click.Group) -> None:
         """Download every pinned model artifact a first cut needs, in one command."""
         config = ctx.obj["config"]
         preparation = config.editorial.preparation
-        _fetch_reader(config.llm, force=force)
-        _fetch_pinned(
-            label="encoder",
-            url=config.triage.encoder_url,
-            destination=config.triage.encoder_path,
-            sha256=ENCODER.sha256,
-            force=force,
-        )
-        _fetch_pinned(
-            label="wordnet",
-            url=config.free_text.wordnet_url,
-            destination=config.free_text.wordnet_path,
-            sha256=WORDNET.sha256,
-            force=force,
-        )
-        if laya or config.editorial.laya_audience:
-            pin = (
-                LAYA_AUDIENCE_ONNX
-                if LAYA_ONNX_NAME
-                in (
-                    config.editorial.laya_checkpoint_url.rsplit("/", 1)[-1],
-                    config.editorial.laya_checkpoint_path.name,
-                )
-                else LAYA_AUDIENCE
-            )
-            _fetch_pinned(
-                label="laya audience",
-                url=config.editorial.laya_checkpoint_url,
-                destination=config.editorial.laya_checkpoint_path,
-                sha256=pin.sha256,
-                force=force,
-                max_bytes=LAYA_MAX_BYTES,
-            )
+        plan = acquisition_plan(config, detectors=detectors, laya=laya)
         if detectors is None:
             detectors = config.editorial.detectors_enabled
+        total = len(plan) + int(detectors)
+        for index, item in enumerate(plan, 1):
+            click.echo(f"models: {index}/{total} {item.cli_label or item.artifact.label}")
+            _fetch_pinned(
+                label=item.cli_label or item.artifact.label,
+                url=item.url,
+                destination=item.destination,
+                sha256=item.artifact.sha256,
+                force=force,
+                max_bytes=item.max_bytes,
+            )
         if not detectors:
             return
-        _fetch_pinned(
-            label="detector nsfw_marqo",
-            url=preparation.marqo_onnx_url,
-            destination=preparation.marqo_onnx_path,
-            sha256=MARQO_ONNX.sha256,
-            force=force,
-        )
+        click.echo(f"models: {total}/{total} detector snapshots")
         try:
             for repo in warm_detectors(preparation.detector_cache_dir):
                 click.echo(f"detector: cached {repo}")
         except (ImportError, OSError, ValueError) as exc:
             click.echo(f"detectors: {exc}")
             raise SystemExit(1) from exc
-
-
-def _fetch_reader(config, *, force: bool) -> None:
-    if config.runs_locally and config.model == DEFAULT_LOCAL_MODEL:
-        for artifact, destination in zip(
-            (READER_MODEL, READER_PROJECTOR), local_reader_paths(config), strict=True
-        ):
-            if artifact == READER_PROJECTOR and config.local_mmproj:
-                continue
-            _fetch_pinned(
-                label=artifact.label,
-                url=artifact.url,
-                destination=destination,
-                sha256=artifact.sha256,
-                force=force,
-                max_bytes=READER_MAX_BYTES,
-            )
 
 
 def _fetch_pinned(
@@ -133,7 +78,7 @@ def _fetch_pinned(
             url=url, destination=destination, sha256=sha256, force=force, **limit
         )
     except (OSError, ValueError, urllib.error.URLError) as exc:
-        click.echo(f"{label}: {exc}")
+        click.echo(f"{label}: {_safe_download_error(exc, url)}")
         raise SystemExit(1) from exc
     verb = "already present at" if outcome == "present" else "downloaded to"
     click.echo(f"{label}: {verb} {destination}")
@@ -160,3 +105,17 @@ def warm_detectors(cache_dir: str) -> list[str]:
             hf_hub_download(repo, filename, revision=revision, cache_dir=resolved)
         warmed.append(f"{repo}@{revision[:8]}")
     return warmed
+
+
+def _safe_download_error(error: Exception, url: str) -> str:
+    """A mirror URL may hold credentials outside the ordinary configured secret fields."""
+    message = str(error).replace(url, "model source")
+    try:
+        parsed = urlsplit(url)
+    except ValueError:
+        return sanitize_error_message(message)
+    secrets = {unquote(value) for value in (parsed.username, parsed.password) if value}
+    secrets.update(value for _, value in parse_qsl(parsed.query) if value)
+    for secret in sorted(secrets, key=len, reverse=True):
+        message = message.replace(secret, "***")
+    return sanitize_error_message(message)

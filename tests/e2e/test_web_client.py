@@ -533,3 +533,82 @@ def test_delivered_film_still_offers_download_after_local_cleanup(
     expect(
         page.get_by_text("Delivered to Immich. The local file was removed to save disk space.")
     ).to_be_visible()
+
+
+@pytest.mark.parametrize("route", ["create", "settings"])
+def test_model_acquisition_waits_for_a_click_and_keeps_download_errors_visible(
+    page, launch_app_url, route
+):
+    downloads = []
+    artifact = {
+        "label": "DINOv2 encoder",
+        "host": "github.com",
+        "size": "88 MB",
+        "sha256": "a" * 64,
+        "revision": None,
+        "ready": False,
+    }
+    page.route(
+        "**/api/v1/models",
+        lambda request: request.fulfill(
+            json={"plan_id": "displayed-plan", "ready": False, "artifacts": [artifact]}
+        ),
+    )
+    page.route(
+        "**/api/v1/jobs/active",
+        lambda request: request.fulfill(content_type="application/json", body="null"),
+    )
+    job = {
+        "id": "a" * 32,
+        "kind": "models",
+        "argv": ["immich-memories", "models", "fetch"],
+        "command": "immich-memories models fetch",
+        "status": "running",
+        "started_at": datetime.now(UTC).timestamp(),
+        "progress": {
+            "label": "DINOv2 encoder",
+            "fraction": 0,
+            "done": 0,
+            "total": 2,
+            "recent_asset_ids": [],
+        },
+    }
+
+    def download(request):
+        assert request.request.post_data_json == {"plan_id": "displayed-plan"}
+        downloads.append(request.request.method)
+        request.fulfill(status=202, json=job)
+
+    page.route("**/api/v1/models/fetch", download)
+    failed = {**job, "status": "failed", "exit_code": 1}
+    page.route("**/api/v1/jobs/" + job["id"], lambda request: request.fulfill(json=failed))
+    page.route(
+        "**/api/v1/jobs/" + job["id"] + "/events",
+        lambda request: request.fulfill(
+            content_type="text/event-stream", body="data: " + json.dumps(failed) + "\n\n"
+        ),
+    )
+    page.route(
+        "**/api/v1/jobs/" + job["id"] + "/output",
+        lambda request: request.fulfill(
+            json={"output": "encoder: digest does not match; downloaded bytes discarded"}
+        ),
+    )
+
+    page.goto(f"{launch_app_url}/app/{route}")
+
+    card = page.get_by_role("region", name="Download models", exact=True)
+    expect(card.get_by_text("88 MB · github.com")).to_be_visible()
+    expect(card.get_by_text("SHA-256: " + "a" * 64)).to_be_visible()
+    assert downloads == []
+    card.get_by_role("button", name="Download models", exact=True).click()
+    expect(
+        card.get_by_text("encoder: digest does not match; downloaded bytes discarded")
+    ).to_be_visible()
+    expect(card.get_by_role("button", name="Download models", exact=True)).to_be_enabled()
+    assert downloads == ["POST"]
+    page.reload()
+    expect(
+        card.get_by_text("encoder: digest does not match; downloaded bytes discarded")
+    ).to_be_visible()
+    assert downloads == ["POST"]
