@@ -1,0 +1,45 @@
+# Standalone NAS runtime after models have been seeded. Not a merge override.
+services:
+  immich-memories:
+    image: "${IMMICH_MEMORIES_IMAGE:?Set a release image tag or digest}"
+    user: "1000:1000"
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      IMMICH_URL: "${IMMICH_URL:?Use the Immich container alias on the internal network}"
+      IMMICH_API_KEY: "${IMMICH_API_KEY:?Set your Immich API key}"
+      IMMICH_MEMORIES_TIER: nas
+      IMMICH_MEMORIES_TRIAGE__ENCODER: /models/triage/dinov2-small.onnx
+      IMMICH_MEMORIES_FREE_TEXT__WORDNET: /models/wordnet/wordnet.zip
+      IMMICH_MEMORIES_EDITORIAL__PREPARATION__DETECTOR_CACHE_DIR: /models/huggingface
+      IMMICH_MEMORIES_EDITORIAL__PREPARATION__ALLOW_MODEL_DOWNLOADS: "false"
+      IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_PROVIDER: smolvlm
+      IMMICH_MEMORIES_EDITORIAL__PREPARATION__TIER: no_captions
+      IMMICH_MEMORIES_EDITORIAL__DETECTORS_ENABLED: "false"
+      IMMICH_MEMORIES_EDITORIAL__LAYA_AUDIENCE: "false"
+      IMMICH_MEMORIES_LLM__ENABLED: "false"
+      IMMICH_MEMORIES_RENDER__WORKER_BASE_URL: ""
+      IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL: ""
+      IMMICH_MEMORIES_NETWORK__GEOCODING: "false"
+      IMMICH_MEMORIES_NETWORK__MAP_TILES: "false"
+      IMMICH_MEMORIES_ACE_STEP__ENABLED: "false"
+      IMMICH_MEMORIES_MUSICGEN__ENABLED: "false"
+      IMMICH_MEMORIES_NOTIFICATIONS__URLS: "[]"
+      IMMICH_MEMORIES_OUTPUT__DIRECTORY: /app/output
+      HF_HUB_OFFLINE: "1"
+    volumes:
+      - data:/home/immich/.immich-memories
+      - models:/models:ro
+      - ./output:/app/output
+    networks:
+      - offline
+    restart: unless-stopped
+networks:
+  offline:
+    external: true
+    name: immich-memories-offline
+volumes:
+  data:
+  models:
+    external: true
+    name: immich-memories-offline-models

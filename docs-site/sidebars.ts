@@ -45,7 +45,7 @@ const sidebars: SidebarsConfig = {
         ]},
         {type: 'category', label: 'Access and settings', items: [
           'run/config-file', 'run/environment-variables', 'run/authentication',
-          'run/network-security', 'run/privacy', 'run/multi-account',
+          'run/network-security', 'run/privacy', 'run/offline', 'run/multi-account',
         ]},
         {type: 'category', label: 'Storage and maintenance', items: [
           'run/database', 'run/maintenance/storage-backups',

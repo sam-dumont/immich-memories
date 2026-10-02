@@ -1,0 +1,44 @@
+# REPLACE the base policy with this same-name policy after fetching models.
+# Edit example CIDR and DNS selectors for your cluster before applying.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: immich-memories
+  namespace: immich-memories
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: immich-memories
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - ports:
+        - {port: 8080, protocol: TCP}
+  egress:
+    # Trigger jobs reach the web pod in this namespace, on its target port.
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: immich-memories
+              app.kubernetes.io/component: web-ui
+      ports:
+        - {port: 8080, protocol: TCP}
+    # Use actual DNS pod labels, or your NodeLocal DNS IP/32, not all port 53.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - {port: 53, protocol: UDP}
+        - {port: 53, protocol: TCP}
+    # Documentation-only address: replace with your Immich server's fixed IP.
+    - to:
+        - ipBlock:
+            cidr: 192.0.2.10/32
+      ports:
+        - {port: 2283, protocol: TCP}
+    # Optional LAN/in-cluster model services: leave out for NAS.
+    # Add separate rules for exact namespaceSelector+podSelector and TCP port.
+    # Do not add a ports-only rule: that allows every destination on that port.
