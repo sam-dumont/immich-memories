@@ -34,6 +34,8 @@ multi-platform assembly, each app, inference CPU and inference CUDA manifest rec
 attestation using the digest returned by Buildx's metadata file. Missing or malformed digests
 stop publication checks. This takes effect for releases built with the updated workflow; it does
 not add attestations to older registry objects.
+Use the [release verification instructions](../../SECURITY.md#verifying-a-release) to select
+the appropriate app, CPU or CUDA manifest and verify its digest against the release workflow.
 
 Publication jobs record outbound connections with `harden-runner` in audit mode. Blocking remains
 an operator choice until a complete release has supplied an allowlist covering package downloads,
