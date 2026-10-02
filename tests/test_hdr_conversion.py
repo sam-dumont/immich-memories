@@ -424,3 +424,57 @@ class TestHdrConversionFilter:
             pytest.raises(RequiredColorConversionUnavailable),
         ):
             _resolve_clip_hdr(0, context, context.hdr_type)
+
+
+def test_hlg_to_pq_accelerates_only_the_linear_to_pq_transfer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from immich_memories.processing import memory_budget as budget_module
+
+    (tmp_path / "memory.max").write_text(str(4 * 2**30))
+    monkeypatch.setattr(budget_module, "_CGROUP", tmp_path)
+    budget = budget_module.memory_budget()
+    if budget is not None and budget.size < 4 * 2**30:
+        pytest.skip("The fast path requires at least 4 GiB of physical RAM")
+    from immich_memories.processing.hdr_utilities import (
+        check_zscale_available,
+        get_hdr_conversion_filter,
+    )
+
+    if not check_zscale_available():
+        pytest.skip("FFmpeg zscale is unavailable")
+    graph = get_hdr_conversion_filter("hlg", "pq", required=True)
+    transfers = [stage for stage in graph.split(",") if stage.startswith("zscale=")]
+
+    # Approximate HLG gamma changes its display transform; only PQ may use it.
+    assert len(transfers) == 2
+    assert "tin=arib-std-b67:t=linear" in transfers[0]
+    assert "agamma=false" in transfers[0]
+    assert "tin=linear:t=smpte2084" in transfers[1]
+    assert "agamma=true" in transfers[1]
+    assert all("npl=203" in stage for stage in transfers)
+    assert ",format=gbrpf32le," in graph
+
+
+@pytest.mark.parametrize("limit", [2 * 2**30, 3 * 2**30, 4 * 2**30 - 1])
+def test_hlg_to_pq_keeps_the_lower_memory_graph_at_the_software_4k_floor(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, limit: int
+) -> None:
+    from immich_memories.processing import memory_budget as budget_module
+    from immich_memories.processing.hdr_utilities import (
+        check_zscale_available,
+        get_hdr_conversion_filter,
+    )
+
+    if not check_zscale_available():
+        pytest.skip("FFmpeg zscale is unavailable")
+    (tmp_path / "memory.max").write_text(str(limit))
+    monkeypatch.setattr(budget_module, "_CGROUP", tmp_path)
+
+    graph = get_hdr_conversion_filter("hlg", "pq", required=True)
+
+    assert graph == (
+        ",zscale=tin=arib-std-b67:t=smpte2084"
+        ":pin=bt2020:p=bt2020:min=bt2020nc:m=bt2020nc"
+        ":npl=203:agamma=false"
+    )

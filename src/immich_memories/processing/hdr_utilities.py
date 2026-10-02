@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 from immich_memories.processing.encoding_plan import HdrTransfer
+from immich_memories.processing.memory_budget import memory_budget
 from immich_memories.security import validate_video_path
 
 if TYPE_CHECKING:
@@ -316,10 +317,22 @@ def _get_hdr_to_hdr_filter(source_type: str, target_type: str, has_zscale: bool)
     if not has_zscale:
         raise RuntimeError("zscale is required for HDR transfer conversion")
     if source_type == "hlg" and target_type == "pq":
+        # A 4K float RGB intermediate adds about 110 MB per decoder. Preserve
+        # the existing 3 GiB software-4K budget, which has two active decoders.
+        budget = memory_budget()
+        if budget is not None and budget.size < 4 * 2**30:
+            return (
+                ",zscale=tin=arib-std-b67:t=smpte2084"
+                ":pin=bt2020:p=bt2020:min=bt2020nc:m=bt2020nc"
+                ":npl=203:agamma=false"
+            )
+        # Approximate HLG gamma changes its display transform. Keep that step
+        # accurate and approximate only the final linear-to-PQ transfer.
         return (
-            ",zscale=tin=arib-std-b67:t=smpte2084"
-            ":pin=bt2020:p=bt2020:min=bt2020nc:m=bt2020nc"
-            ":npl=203:agamma=false"
+            ",zscale=tin=arib-std-b67:t=linear"
+            ":pin=bt2020:p=bt2020:min=bt2020nc:m=gbr:npl=203:agamma=false"
+            ",format=gbrpf32le,zscale=tin=linear:t=smpte2084"
+            ":pin=bt2020:p=bt2020:min=gbr:m=bt2020nc:npl=203:agamma=true"
         )
     if source_type == "pq" and target_type == "hlg":
         return (

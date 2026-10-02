@@ -777,7 +777,9 @@ class TestConversionChoices:
         assert "min=bt709" in f
 
     def test_hlg_and_pq_convert_into_each_other(self):
-        assert "tin=arib-std-b67:t=smpte2084" in _conversion("hlg", "pq")
+        hlg_to_pq = _conversion("hlg", "pq")
+        assert "tin=arib-std-b67" in hlg_to_pq
+        assert ":t=smpte2084" in hlg_to_pq
         assert "tin=smpte2084:t=arib-std-b67" in _conversion("pq", "hlg")
 
     def test_an_unknown_target_gets_no_filter(self):
