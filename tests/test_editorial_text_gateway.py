@@ -28,6 +28,7 @@ def _request(tmp_path: Path, *, thinking: bool = False) -> TextRequest:
     return TextRequest(
         prompt="Choose the exact lived sequence.",
         llm_config=LLMConfig(
+            enabled=True,
             provider="openai-compatible",
             base_url="http://editor.test/v1",
             model="editor-model",
@@ -162,6 +163,7 @@ def test_query_text_requester_does_not_retry_unrelated_transport_failures(
 
 def test_semantic_text_model_identity_includes_endpoint_and_dialect_not_credentials() -> None:
     first = LLMConfig(
+        enabled=True,
         provider="openai-compatible",
         base_url="http://first.test/v1/",
         model="same-model",

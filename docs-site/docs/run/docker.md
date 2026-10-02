@@ -52,8 +52,7 @@ sudo chown -R 1000:1000 output
 ```
 
 If your user is not 1000, see the [NAS permissions recipe](./nas.md#the-output-folder).
-`models fetch` downloads the pinned encoder and WordNet data. When an owned local reader is
-enabled, it also fetches the pinned reader and projector; custom GGUF files need manual provisioning. GPU/Full also fetch detector models
+`models fetch` downloads the pinned encoder and WordNet data. The published image has no `llama-server`; use an [external reader server](../better/reader.md#use-an-existing-server) for Docker or Kubernetes. GPU/Full also fetch detector models
 and Laya. Files stay on the persistent volume; a recreate keeps them.
 
 ### 4. Open the app
@@ -263,6 +262,18 @@ in mind.
 
 Upload a track in the web Render panel. For CLI runs, bind-mount a music directory and use
 `--music /app/music/track.mp3`.
+
+Add this alongside the app's existing `volumes:` entries, then run `docker compose up -d`:
+
+```yaml
+      - ./music:/app/music:ro
+```
+
+Put `track.mp3` in `./music` on the host:
+
+```bash
+docker compose exec immich-memories immich-memories generate --year 2025 --music /app/music/track.mp3
+```
 
 ## Building the image
 

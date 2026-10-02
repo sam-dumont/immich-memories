@@ -48,7 +48,7 @@ def build(
         ]
     config = Config(
         tier=product_tier,
-        llm={"model": "offline-editor"},
+        llm={"enabled": True, "model": "offline-editor"},
         cache={"directory": str(tmp_path / "cache")},
         analysis={"min_source_short_side": 0},
         editorial={"preparation": {"tier": tier}},

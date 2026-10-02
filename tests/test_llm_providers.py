@@ -36,6 +36,7 @@ class TestAnthropicProvider:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="anthropic",
             base_url="https://api.z.ai/api/anthropic",
             model="glm-5.3",
@@ -61,6 +62,7 @@ class TestAnthropicProvider:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="anthropic",
             base_url="https://api.z.ai/api/anthropic",
             model="glm-5.3",
@@ -83,6 +85,7 @@ class TestAnthropicProvider:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="anthropic",
             base_url="https://gateway.example.invalid/anthropic",
             model="older-claude",
@@ -104,6 +107,7 @@ class TestAnthropicProvider:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="anthropic",
             base_url="https://api.z.ai/api/anthropic",
             model="glm-5.3-flash",
@@ -124,7 +128,11 @@ class TestAnthropicProvider:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
-            base_url="https://api.anthropic.com", provider="anthropic", model="claude", api_key="k"
+            enabled=True,
+            base_url="https://api.anthropic.com",
+            provider="anthropic",
+            model="claude",
+            api_key="k",
         )
 
         # WHY: inspect the native Anthropic payload without making a hosted request.
@@ -140,6 +148,7 @@ class TestAnthropicProvider:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="anthropic",
             base_url="https://api.z.ai/api/anthropic",
             model="glm-5.3",
@@ -164,6 +173,7 @@ class TestProviderPresets:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             base_url="https://api.z.ai/api/anthropic",
             provider="zai",
             model="glm-5.3",
@@ -185,6 +195,7 @@ class TestProviderPresets:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="zai",
             base_url="https://api.z.ai/api/paas/v4",
             model="glm-5.3",
@@ -205,6 +216,7 @@ class TestProviderPresets:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             base_url="https://api.openai.com/v1",
             provider="openai",
             model="gpt-5.6-terra",
@@ -234,6 +246,7 @@ class TestProviderPresets:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="zai",
             base_url="https://api.z.ai/api/anthropic",
             model="glm-5.3-flash",
@@ -251,6 +264,7 @@ class TestProviderPresets:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="openai-compatible",
             base_url="https://api.z.ai/api/anthropic",
             model="glm-5.3-flash",
@@ -277,6 +291,7 @@ class TestProviderPresets:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="zai",
             base_url="https://api.z.ai/api/paas/v4",
             model="glm-5.3-flash",
@@ -313,6 +328,7 @@ class TestAnthropicIsAGenericProvider:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             base_url="https://api.anthropic.com",
             provider="anthropic",
             model="claude-sonnet-4-5",
@@ -341,6 +357,7 @@ class TestAnthropicIsAGenericProvider:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="anthropic",
             base_url="https://gateway.example.invalid/anthropic/",
             model="some-model",
@@ -360,6 +377,7 @@ class TestAnthropicIsAGenericProvider:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             base_url="https://api.anthropic.com",
             provider="anthropic",
             model="claude-sonnet-4-5",
@@ -388,6 +406,7 @@ class TestThinkingIsALevel:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             base_url="https://api.anthropic.com",
             provider="anthropic",
             model="claude-sonnet-4-5",
@@ -408,6 +427,7 @@ class TestThinkingIsALevel:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             base_url="https://api.anthropic.com",
             provider="anthropic",
             model="claude-sonnet-4-5",
@@ -430,6 +450,7 @@ class TestThinkingIsALevel:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="openai-compatible",
             base_url="http://localhost:8080/v1",
             model="qwen",
@@ -447,6 +468,7 @@ class TestThinkingIsALevel:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             base_url="https://api.anthropic.com",
             provider="anthropic",
             model="claude-sonnet-4-5",
@@ -468,6 +490,7 @@ class TestThinkingIsALevel:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             base_url="https://api.z.ai/api/anthropic",
             provider="zai",
             model="glm-5.3",
@@ -482,10 +505,18 @@ class TestThinkingIsALevel:
         assert mock_post.call_args.kwargs["json"]["thinking"] == {"type": "max"}
 
     def test_the_switch_this_field_used_to_be_is_still_read(self):
-        assert LLMConfig(base_url="http://localhost:8080/v1", thinking=True).thinking == "high"
-        assert LLMConfig(base_url="http://localhost:8080/v1", thinking=False).thinking == "disabled"
-        assert LLMConfig(base_url="http://localhost:8080/v1", thinking="true").reasons
-        assert not LLMConfig(base_url="http://localhost:8080/v1", thinking="false").reasons
+        assert (
+            LLMConfig(enabled=True, base_url="http://localhost:8080/v1", thinking=True).thinking
+            == "high"
+        )
+        assert (
+            LLMConfig(enabled=True, base_url="http://localhost:8080/v1", thinking=False).thinking
+            == "disabled"
+        )
+        assert LLMConfig(enabled=True, base_url="http://localhost:8080/v1", thinking="true").reasons
+        assert not LLMConfig(
+            enabled=True, base_url="http://localhost:8080/v1", thinking="false"
+        ).reasons
 
 
 def _completion(url=None, json=None):  # noqa: A002
@@ -508,6 +539,7 @@ class TestZaiThinkingLevel:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="zai",
             base_url="https://api.z.ai/api/paas/v4",
             model="glm-5.3-flash",
@@ -525,6 +557,7 @@ class TestZaiThinkingLevel:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="zai",
             base_url="https://api.z.ai/api/paas/v4",
             model="glm-4.6",
@@ -542,6 +575,7 @@ class TestZaiThinkingLevel:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="zai",
             base_url="https://api.z.ai/api/paas/v4",
             model="glm-5.3-flash",
@@ -565,6 +599,7 @@ class TestZaiThinkingLevel:
         # A model name of its own too: the dialect a call negotiates is
         # remembered for the rest of the process, per server and model.
         config = LLMConfig(
+            enabled=True,
             provider="zai",
             base_url="https://api.z.ai/api/paas/v4",
             model="glm-6.1-unreleased",
@@ -609,6 +644,7 @@ class TestProviderErrorsAreLegible:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             base_url="https://api.z.ai/api/anthropic",
             provider="zai",
             model="glm-5.3-flash",
@@ -634,6 +670,7 @@ class TestProviderErrorsAreLegible:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="anthropic",
             base_url="https://api.z.ai/api/anthropic",
             model="glm-5.3-flash",
@@ -658,7 +695,9 @@ class TestProviderErrorsAreLegible:
     async def test_ollama_names_its_refusal_too(self):
         from immich_memories.analysis.llm_query import query_llm
 
-        config = LLMConfig(provider="ollama", base_url="http://localhost:11434", model="qwen3")
+        config = LLMConfig(
+            enabled=True, provider="ollama", base_url="http://localhost:11434", model="qwen3"
+        )
         refused = httpx.Response(
             404,
             json={"error": 'model "qwen3" not found, try pulling it first'},
@@ -683,6 +722,7 @@ class TestAnthropicReasoningBlocks:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="zai",
             base_url="https://api.z.ai/api/anthropic",
             model="glm-5.3-flash",
@@ -710,6 +750,7 @@ class TestAnthropicReasoningBlocks:
         from immich_memories.analysis.llm_wire import REASONING_HEADROOM_TOKENS
 
         config = LLMConfig(
+            enabled=True,
             provider="zai",
             base_url="https://api.z.ai/api/anthropic",
             model="glm-5.3-flash",
@@ -728,6 +769,7 @@ class TestAnthropicReasoningBlocks:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="zai",
             base_url="https://api.z.ai/api/anthropic",
             model="glm-5.3-flash",
@@ -749,7 +791,11 @@ class TestAnthropicReasoningBlocks:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
-            base_url="https://api.anthropic.com", provider="anthropic", model="claude", api_key="k"
+            enabled=True,
+            base_url="https://api.anthropic.com",
+            provider="anthropic",
+            model="claude",
+            api_key="k",
         )
 
         # WHY: the LLM server is the external boundary this request reaches.
@@ -763,6 +809,7 @@ class TestAnthropicReasoningBlocks:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="zai",
             base_url="https://api.z.ai/api/anthropic",
             model="glm-5.3-flash",
@@ -787,6 +834,7 @@ class TestAnthropicReasoningBlocks:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="zai",
             base_url="https://api.z.ai/api/anthropic",
             model="glm-5.3-flash",
@@ -826,6 +874,7 @@ class TestAnthropicImageCallsGetReasoningRoom:
     @staticmethod
     def _config():
         return LLMConfig(
+            enabled=True,
             provider="zai",
             base_url="https://api.z.ai/api/anthropic",
             model="glm-5.3-flash",
@@ -866,6 +915,7 @@ class TestAnthropicImageCallsGetReasoningRoom:
         from immich_memories.analysis.llm_wire import _REASONING_HEADROOM
 
         config = LLMConfig(
+            enabled=True,
             base_url="https://api.anthropic.com",
             provider="anthropic",
             model="claude-sonnet-4-5",
@@ -898,6 +948,7 @@ class TestLiveAnthropicCompatibleHost:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="anthropic",
             base_url=os.environ["ZAI_BASE_URL"],
             model="glm-5.3-flash",
@@ -920,6 +971,7 @@ class TestLiveAnthropicCompatibleHost:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="zai",
             base_url=os.environ["ZAI_BASE_URL"],
             model="glm-5.3-flash",

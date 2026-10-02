@@ -5,7 +5,8 @@ title: Hardware encoding
 # Hardware encoding
 
 Hardware encoding makes the final video faster. It does not select pictures or change the
-preparation tier. GPU picture analysis is a separate [inference service](../better/inference.md).
+preparation tier. Picture analysis can use a [separate inference service](../better/inference.md), local CUDA ONNX
+or a Mac's MLX/Metal runtime.
 Software encoding works when no usable encoder is found.
 
 ## Verify it
@@ -80,7 +81,7 @@ uv tool install "immich-memories[all-mac]"
 ```
 
 VideoToolbox handles encoding and Metal handles title effects. The `mac` extra alone lacks the
-classifiers needed for films. [Python installation](./uv-pip.md) also covers the FFmpeg build.
+classifiers needed for films. With `tier: auto`, Metal also selects GPU preparation (Full with an enabled reader). Set up the caption service and Laya, or choose `tier: nas` for CPU preparation. [Python installation](./uv-pip.md) also covers the FFmpeg build.
 
 ### Intel Quick Sync and AMD VAAPI
 

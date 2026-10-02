@@ -61,6 +61,7 @@ def _reply(
 
 def _hosted(**overrides) -> LLMConfig:
     fields = {
+        "enabled": True,
         "provider": "openai-compatible",
         "base_url": "https://api.example.test/v1",
         "model": "reasoner",
@@ -230,7 +231,11 @@ async def test_a_host_that_refuses_the_effort_field_still_gets_the_room(error):
 )
 async def test_luna_disables_reasoning_and_keeps_the_answer_budget_in_live_and_batch(model):
     config = LLMConfig(
-        base_url="https://api.openai.com/v1", provider="openai", model=model, api_key="sk-test"
+        enabled=True,
+        base_url="https://api.openai.com/v1",
+        provider="openai",
+        model=model,
+        api_key="sk-test",
     )
     # WHY: the provider's HTTP endpoint is the one boundary these tests replace.
     with patch("httpx.AsyncClient.post", return_value=_reply()) as post:
@@ -259,6 +264,7 @@ async def test_an_unsupported_effort_value_is_reported_without_disabling_the_par
     code, message
 ):
     config = LLMConfig(
+        enabled=True,
         base_url="https://api.openai.com/v1",
         provider="openai",
         model="gpt-5.6-luna",
@@ -290,7 +296,9 @@ async def test_an_unsupported_effort_value_is_reported_without_disabling_the_par
 @pytest.mark.asyncio
 @pytest.mark.parametrize("model", ["gpt-5", "gpt-5-mini", "gpt-5-nano"])
 async def test_older_openai_models_keep_minimal_effort_and_reasoning_room(model):
-    config = LLMConfig(base_url="https://api.openai.com/v1", provider="openai", model=model)
+    config = LLMConfig(
+        enabled=True, base_url="https://api.openai.com/v1", provider="openai", model=model
+    )
     # WHY: older GPT-5 models still require reasoning; Luna's fix must not disable it for them.
     with patch("httpx.AsyncClient.post", return_value=_reply()) as post:
         await query_llm("pick", config, max_tokens=300)
@@ -305,6 +313,7 @@ async def test_older_openai_models_keep_minimal_effort_and_reasoning_room(model)
 @pytest.mark.parametrize("effort", ["none", "low", "medium", "high"])
 async def test_luna_preserves_explicit_bulk_effort_in_live_and_batch(effort):
     config = LLMConfig(
+        enabled=True,
         base_url="https://api.openai.com/v1",
         provider="openai",
         model="gpt-5.6-luna",
@@ -323,6 +332,7 @@ async def test_luna_preserves_explicit_bulk_effort_in_live_and_batch(effort):
 @pytest.mark.asyncio
 async def test_luna_auto_still_leaves_reasoning_to_the_provider():
     config = LLMConfig(
+        enabled=True,
         base_url="https://api.openai.com/v1",
         provider="openai",
         model="gpt-5.6-luna",
@@ -368,6 +378,7 @@ async def test_luna_budgets_for_the_bulk_effort_that_reaches_the_wire(
     overrides, effort, max_tokens
 ):
     config = LLMConfig(
+        enabled=True,
         base_url="https://api.openai.com/v1",
         provider="openai",
         model="gpt-5.6-luna",
@@ -386,6 +397,7 @@ async def test_luna_budgets_for_the_bulk_effort_that_reaches_the_wire(
 @pytest.mark.asyncio
 async def test_luna_can_still_request_reasoning_with_an_explicit_effort():
     config = LLMConfig(
+        enabled=True,
         base_url="https://api.openai.com/v1",
         provider="openai",
         model="gpt-5.6-luna",
@@ -423,6 +435,7 @@ async def test_an_unfunded_first_call_that_thought_is_asked_again_with_room():
 
 def _ollama(**overrides) -> LLMConfig:
     fields = {
+        "enabled": True,
         "provider": "ollama",
         "base_url": "http://localhost:11434",
         "model": "qwen3",

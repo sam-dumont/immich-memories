@@ -356,6 +356,7 @@ def test_the_production_judge_leaves_the_failure_beside_the_calls(tmp_path, monk
     monkeypatch.setattr(gateway, "query_llm", fake_query)
     config = SimpleNamespace(
         llm=LLMConfig(
+            enabled=True,
             provider="openai-compatible",
             base_url="http://text.test/v1",
             model="test-model",
@@ -402,6 +403,7 @@ def test_a_connection_that_dies_mid_call_is_named_and_recorded(tmp_path, monkeyp
     monkeypatch.setattr(gateway, "query_llm", dead_connection)
     config = SimpleNamespace(
         llm=LLMConfig(
+            enabled=True,
             provider="openai-compatible",
             base_url="http://text.test/v1",
             model="test-model",
@@ -460,6 +462,7 @@ def test_a_refused_text_call_names_the_provider_and_what_had_already_answered(
     monkeypatch.setattr(gateway, "query_llm", refusing)
     config = SimpleNamespace(
         llm=LLMConfig(
+            enabled=True,
             provider="openai-compatible",
             base_url="http://text.test/v1",
             model="test-model",
@@ -529,6 +532,7 @@ def test_a_throttled_text_reader_waits_instead_of_ending_the_run(tmp_path, monke
     monkeypatch.setattr(gateway, "query_llm", shedding_load)
     config = SimpleNamespace(
         llm=LLMConfig(
+            enabled=True,
             provider="openai-compatible",
             base_url="http://text.test/v1",
             model="test-model",
@@ -582,6 +586,7 @@ def test_one_503_does_not_end_a_run_that_has_answered_187_calls(tmp_path, monkey
     monkeypatch.setattr(gateway, "query_llm", hiccup)
     config = SimpleNamespace(
         llm=LLMConfig(
+            enabled=True,
             provider="openai-compatible",
             base_url="http://text.test/v1",
             model="test-model",
@@ -629,6 +634,7 @@ def test_a_provider_that_stays_down_names_itself_on_the_text_leg(tmp_path, monke
     monkeypatch.setattr(gateway, "query_llm", always_down)
     config = SimpleNamespace(
         llm=LLMConfig(
+            enabled=True,
             provider="openai-compatible",
             base_url="http://text.test/v1",
             model="test-model",

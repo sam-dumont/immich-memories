@@ -56,12 +56,14 @@ benefits before you set up extra services.
 ### Which tier you get {#which-tier-you-get}
 
 `auto` detects a local CUDA runtime, a Mac's Metal GPU, or an inference service reporting CUDA.
-With one of those it chooses GPU; a configured reader makes that Full. It does **not** check
+With one of those it chooses GPU; an explicitly enabled reader makes that Full. It does **not** check
 whether the caption server or Laya files are ready: run `preflight` after adding services.
 
 A reader on NAS still writes titles and chooses the music mood. Selection stays on NAS.
 On Apple Silicon, install the `all-mac` extra for GPU discovery. Captions need their own server;
-an enabled reader with blank `base_url` is started locally by the app when `llama-server` is installed.
+an enabled `openai-compatible` or `ollama` reader with blank `base_url` starts locally when
+`llama-server` is installed. Hosted provider presets use their vendor URL instead. The shipped
+Docker and Kubernetes app images need an external reader.
 
 `IMMICH_MEMORIES_TIER` overrides `tier:` in the file. Compose and Kubernetes set it to `auto`.
 You may force `nas`, `gpu` or `full`, but that does not install models or start servers.

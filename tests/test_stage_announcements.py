@@ -43,7 +43,9 @@ def test_an_announcement_survives_the_sync_bridge_thread() -> None:
 
 def test_the_first_dropped_connection_names_the_provider_and_the_retry() -> None:
     seen: list[StageUpdate] = []
-    watch = watch_provider("reader", LLMConfig(base_url="http://omlx.local:9999/v1", model="m"))
+    watch = watch_provider(
+        "reader", LLMConfig(enabled=True, base_url="http://omlx.local:9999/v1", model="m")
+    )
     with announcing_stages(seen.append):
         watch(LLMTransportAttempt(1, "connection_error", None))
         watch(LLMTransportAttempt(2, "connection_error", None))

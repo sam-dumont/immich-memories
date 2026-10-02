@@ -62,7 +62,7 @@ Health names each loaded producer's execution provider; empty lists mean it has 
 Look for `CUDAExecutionProvider` when you expect NVIDIA. A CUDA image can fall back to CPU, so
 an answering port alone does not prove acceleration.
 
-With `tier: auto`, GPU inference enables GPU; an enabled reader with a model makes that Full.
+With `tier: auto`, a GPU inference service, a working local CUDA ONNX runtime, or a Mac's Metal GPU enables GPU; an enabled reader with a model makes that Full.
 Captions and Laya still need to be ready. Hardware video encoding alone does not change selection tier.
 
 Keep caches on volumes. Completed matching facts stay in the app's store when you move the

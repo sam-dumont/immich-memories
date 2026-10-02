@@ -53,6 +53,24 @@ A new URL for a server that receives a credential (Immich, an extra account, the
 server, MusicGen, ACE-Step) needs that credential typed again in the same save, when one is set.
 A new render worker URL always needs its token, since the worker receives your Immich keys.
 
+### Keys pinned by Docker
+
+The shipped Compose file and image always set these, so YAML and Settings cannot override them:
+
+| Runtime key | Docker value |
+|---|---|
+| `immich.url` | `IMMICH_URL`, default `http://immich-server:2283` |
+| `tier` | `auto` |
+| `trips.homebase_latitude`, `trips.homebase_longitude` | The corresponding `.env` variables, default `0` (home unset) |
+| `editorial.preparation.detector_cache_dir` | `/home/immich/.immich-memories/models/huggingface` |
+| `output.directory` | `/app/output` (image default) |
+
+`IMMICH_API_KEY` also pins `immich.api_key` when nonempty. The auth pair takes effect when both
+values are nonempty. Uncommented optional environment lines pin their keys too.
+Change values in Compose or `.env`, then run `docker compose up -d`.
+To let Settings control a Compose-pinned key, remove its environment line and any YAML value.
+Keep the model cache and output paths on mounted volumes.
+
 Inspect the same result from the CLI:
 
 ```bash
@@ -197,8 +215,46 @@ Off by default. The web Render panel has its own upload choice.
 Geocoding and map tiles are off by default. Enable them under `network` only after reading
 [what leaves your network](./privacy.md).
 
+## Reader configuration changes before 1.0
+
+A model name or endpoint no longer enables the reader implicitly. Add
+`advanced.llm.enabled: true` to retain LLM calls. With it off, preflight warns when a reader is
+configured but disabled.
+
+The separate title-model configuration has been removed without a compatibility fallback.
+Remove that old section and move its endpoint, model and credentials to `advanced.llm`.
+This one section now serves titles, the selection reader, music mood, special days and explicit
+LLM captions. Choose which former model should handle all those calls before upgrading.
+
+If startup reports `title_llm is removed`, first remove that block from YAML. If the old
+section was also saved in Settings, run this with the same Python environment and database
+environment variables as the app. It deletes only the old section's saved keys and keeps
+existing `llm` settings. For a custom config, replace `Config.get_default_path()` with
+`Path("/path/to/config.yaml")`.
+
+For Docker, replace the first line below with `docker compose run --rm -T immich-memories python - <<'PYTHON'`; use the same script and closing marker.
+
+```bash
+python - <<'PYTHON'
+from pathlib import Path
+from immich_memories.config import Config
+from immich_memories.settings_store import settings_store
+
+path = Config.get_default_path()
+config = Config.from_yaml(path, stored={})
+store = settings_store(config, create=False)
+if store is not None:
+    store.delete(
+        key for key in store.stored_keys()
+        if key == "title_llm" or key.startswith("title_llm.")
+    )
+PYTHON
+```
+
 ## Reader concurrency
 
 Use `advanced.llm.reader_concurrency` only when tuning model throughput. The default is one
-request for a local/private host and four for a public host. Accepted overrides: 1–16.
+request for loopback, a private IP or a bare service name, and four for a dotted DNS name or
+public IP. A dotted LAN name still counts as hosted. Accepted overrides for external servers:
+1–16; the owned reader always runs one request at a time.
 See [Reader setup](../better/reader.md).

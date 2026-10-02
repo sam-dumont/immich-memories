@@ -53,7 +53,6 @@ def test_configured_secret_values_include_only_current_secret_fields() -> None:
         "immich-credential",
         "caption-credential",
         "primary-llm-credential",
-        "title-llm-credential",
         "musicgen-credential",
         "ace-step-credential",
         "basic-auth-password",
@@ -63,11 +62,11 @@ def test_configured_secret_values_include_only_current_secret_fields() -> None:
     config = Config(
         immich={"url": "http://immich.test", "api_key": "immich-credential"},
         llm={
+            "enabled": True,
             "base_url": "http://llm.test/v1",
             "model": "ordinary-model-name",
             "api_key": "primary-llm-credential",
         },
-        title_llm={"api_key": "title-llm-credential"},
         editorial={"preparation": {"caption_api_key": "caption-credential"}},
         musicgen={"base_url": "http://music.test", "api_key": "musicgen-credential"},
         ace_step={"api_url": "http://ace.test", "api_key": "ace-step-credential"},

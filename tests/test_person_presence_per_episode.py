@@ -68,7 +68,7 @@ def fetched_pool(window, *, people=(), person_match="and", person_expression=Non
 def selectable(tmp_path, monkeypatch, *, window, fetched=None, providers=None, **context):
     """The pictures the editor may choose from, after the fetch and the cut."""
     config = Config(
-        llm={"model": "offline-editor"},
+        llm={"enabled": True, "model": "offline-editor"},
         cache={"directory": str(tmp_path / "cache")},
         analysis={"min_source_short_side": 0},
         editorial={"preparation": {"tier": "full"}},

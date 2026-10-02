@@ -41,7 +41,9 @@ def test_probe_rejects_wrong_meaning(monkeypatch, name, answer, valid, calls):
     )
     # WHY: only the provider reply changes; production questions, votes and parsers stay real.
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    checks = free_text_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = free_text_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == f"free-text {name}"))
     assert result.called and result.calls == calls
     assert result.tokens == 15 * calls
@@ -98,7 +100,9 @@ def test_handoff_probe_selects_the_requested_event(monkeypatch):
     monkeypatch.setattr(
         httpx.AsyncClient, "_transport_for_url", lambda *_: httpx.MockTransport(reply)
     )
-    checks = free_text_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = free_text_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "free-text film handoff"))
     assert result.valid, result.quality
     assert result.calls == 6

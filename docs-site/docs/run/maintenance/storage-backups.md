@@ -35,7 +35,7 @@ Docker:
 
 ```bash
 docker compose exec immich-memories immich-memories store backup
-docker cp immich-memories:/home/immich/.immich-memories/backups ./backups
+docker compose cp immich-memories:/home/immich/.immich-memories/backups ./backups
 ```
 
 Kubernetes:

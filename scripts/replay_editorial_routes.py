@@ -109,12 +109,13 @@ def provider_hosts(config_path: Path) -> set[str]:
     """Hosts that must not be contacted: every configured model endpoint."""
     import yaml
 
+    from immich_memories.analysis.llm_providers import resolved_llm_config
+    from immich_memories.config_models_llm import LLMConfig
+
     document = yaml.safe_load(config_path.read_text()) or {}
     advanced = document.get("advanced") or {}
-    candidates = []
-    for section in ("llm", "title_llm"):
-        block = document.get(section) or advanced.get(section) or {}
-        candidates.append(block.get("base_url"))
+    block = document.get("llm") or advanced.get("llm") or {}
+    candidates = [resolved_llm_config(LLMConfig.model_validate(block)).base_url]
     editorial = document.get("editorial") or advanced.get("editorial") or {}
     candidates.append(
         (editorial.get("preparation") or {}).get("caption_base_url") or "http://localhost:8092/v1"

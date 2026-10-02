@@ -29,7 +29,9 @@ def test_holiday_probe_checks_the_event_not_just_the_date(monkeypatch, the_holid
     )
     # WHY: the external provider response is the only substituted boundary.
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    checks = occasion_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = occasion_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "holiday distinction"))
     assert result.valid is valid
     assert result.calls == 1
@@ -57,7 +59,9 @@ def test_day_probe_requires_a_grounded_race_verdict(monkeypatch, name):
     )
     # WHY: provider HTTP only; evidence and the temporary judgment store are real.
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    checks = occasion_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = occasion_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == name))
     assert result.valid, result.quality
     assert result.calls == 1
@@ -79,7 +83,9 @@ def test_sequence_probe_distinguishes_race_from_ordinary_day(monkeypatch, run, v
     )
     # WHY: only the external LLM response is controlled.
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    checks = occasion_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = occasion_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "occasion sequence"))
     assert result.valid is valid
     assert result.calls == 1

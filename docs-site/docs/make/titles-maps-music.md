@@ -11,7 +11,8 @@ These are render choices. You can change them after reviewing the cut, without a
 
 Under **Render**, type a **Title** and **Subtitle**, or leave them empty for the app's suggestion. Template titles use the dates, people and occasion. An optional [text reader](../better/reader.md) can write a title from the cut's facts.
 
-The film's language is separate from the interface language. Set it in your configuration:
+The film's language is separate from the interface language. Save **Settings > Title screens > locale**
+(including in Docker), or set it in your configuration:
 
 ```yaml
 title_screens:
@@ -39,6 +40,14 @@ Choose a title style in your configuration, then try a preview before rendering 
 immich-memories titles test --year 2025 --style elegant_minimal
 ```
 
+In Docker, write the preview to the mounted output folder:
+
+```bash
+docker compose exec immich-memories immich-memories titles test --year 2025 --style elegant_minimal -o /app/output/title-test.mp4
+```
+
+The host file is `./output/title-test.mp4`.
+
 The [style and font reference](../reference/output-rendering.md#styles) lists the palettes and supported alphabets. Docker includes the fonts; native installs may need `immich-memories titles fonts --install`.
 
 On a CPU or NAS, title cards keep the font, layout and palette, with text fading in and out. Moving gradients, bokeh and animated deblur need a rendering GPU.
@@ -50,6 +59,8 @@ In **Render**, untick **Add date overlay** or **Caption clips with their place**
 ## The map fly-over
 
 Trip maps are off by default. Enable them when you want an animated route and are comfortable requesting satellite tiles from an outside provider:
+
+In Docker, save **Settings > Network > map_tiles**, or use YAML:
 
 ```yaml
 network:

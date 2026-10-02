@@ -26,7 +26,7 @@ class PolishJudge:
 
     def __init__(self, bank=None, *, require_hits=False) -> None:
         self.config = SimpleNamespace(
-            llm=LLMConfig(base_url="http://localhost:8080/v1", model="model-a")
+            llm=LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="model-a")
         )
         self.bank = {} if bank is None else bank
         self.calls: list[str] = []

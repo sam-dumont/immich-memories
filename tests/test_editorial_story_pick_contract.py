@@ -272,6 +272,7 @@ def test_a_refused_pick_is_asked_again_on_the_next_run_instead_of_replayed(tmp_p
     monkeypatch.setattr(gateway, "query_llm", fake_query)
     config = SimpleNamespace(
         llm=LLMConfig(
+            enabled=True,
             provider="openai-compatible",
             base_url="http://text.test/v1",
             model="test-model",

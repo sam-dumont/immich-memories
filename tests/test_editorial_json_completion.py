@@ -59,7 +59,7 @@ def test_failed_field_repair_never_banks_partial_result(tmp_path):
 
     request = TextRequest(
         "schema",
-        LLMConfig(base_url="http://localhost:8080/v1", model="synthetic"),
+        LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="synthetic"),
         annotation_store(),
         400,
         30,
@@ -81,7 +81,7 @@ def test_failed_field_repair_never_banks_partial_result(tmp_path):
 def test_field_identity_changes_with_contract_but_not_field_order(tmp_path):
     request = TextRequest(
         "schema",
-        LLMConfig(base_url="http://localhost:8080/v1", model="synthetic"),
+        LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="synthetic"),
         annotation_store(),
         400,
         30,
@@ -107,7 +107,7 @@ def test_complete_disjoint_field_sequence_preserves_values_without_model_retry(t
 
     request = TextRequest(
         "original evidence",
-        LLMConfig(base_url="http://localhost:8080/v1", model="synthetic"),
+        LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="synthetic"),
         annotation_store(),
         400,
         30,
@@ -157,7 +157,7 @@ def test_field_sequence_encoding_policy_is_part_of_only_field_request_identity(
 
     request = TextRequest(
         "evidence",
-        LLMConfig(base_url="http://localhost:8080/v1", model="synthetic"),
+        LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="synthetic"),
         annotation_store(),
         400,
         30,
@@ -180,7 +180,7 @@ def test_json_contract_retries_only_incomplete_decision_then_warm_is_exact(tmp_p
 
     request = TextRequest(
         "same evidence",
-        LLMConfig(base_url="http://localhost:8080/v1", model="synthetic"),
+        LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="synthetic"),
         annotation_store(),
         400,
         30,
@@ -208,7 +208,7 @@ def test_short_malformed_fields_get_one_format_correction_and_only_valid_result_
 
     request = TextRequest(
         "evidence and schema",
-        LLMConfig(base_url="http://localhost:8080/v1", model="synthetic"),
+        LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="synthetic"),
         annotation_store(),
         400,
         30,
@@ -241,7 +241,7 @@ def test_failed_format_repair_is_preserved_and_never_banked_as_a_decision(tmp_pa
 
     request = TextRequest(
         "evidence",
-        LLMConfig(base_url="http://localhost:8080/v1", model="synthetic"),
+        LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="synthetic"),
         annotation_store(),
         400,
         30,
@@ -265,7 +265,7 @@ def test_json_recovery_policy_splits_only_json_request_identity(tmp_path, monkey
 
     request = TextRequest(
         "evidence",
-        LLMConfig(base_url="http://localhost:8080/v1", model="synthetic"),
+        LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="synthetic"),
         annotation_store(),
         400,
         30,
@@ -287,7 +287,7 @@ def test_the_repair_request_names_the_field_the_reply_left_out(tmp_path):
 
     request = TextRequest(
         "schema",
-        LLMConfig(base_url="http://localhost:8080/v1", model="synthetic"),
+        LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="synthetic"),
         annotation_store(),
         400,
         30,

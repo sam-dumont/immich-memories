@@ -92,7 +92,7 @@ and the settings page mark each one, and you save them again. Logs never print a
 ## Everyday keys and advanced keys
 
 Everyday sections sit at the top level: `immich`, `defaults`, `output`, `audio`, `title_screens`,
-`cache`, `database`, `upload`, `trips`, `network`, `photos`, `render`, `title_llm`. Tuning sections
+`cache`, `database`, `upload`, `trips`, `network`, `photos`, `render`. Tuning sections
 go under `advanced:`: `analysis`, `speech`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`, `automation`,
 `notifications`, `triage`, `editorial`, `inference`, `free_text`. Both placements work and merge key by key at
 every depth, and the top-level value wins a tie, so a hand-written
@@ -141,7 +141,7 @@ These fields expand `${VAR_NAME}` at load time:
 | Section | Fields |
 |---|---|
 | `immich` | `url`, `api_key` |
-| `llm` / `title_llm` | `api_key` |
+| `llm` | `api_key` |
 | `musicgen` | `base_url`, `api_key` |
 | `ace_step` | `api_url`, `api_key` |
 | `auth` | `password`, `client_secret`, `issuer_url`, `client_id` |

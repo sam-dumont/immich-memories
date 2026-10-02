@@ -52,7 +52,9 @@ def test_title_probe_measures_the_real_feature_transport_and_parse(monkeypatch):
     # WHY: only the external provider response is fixed; title prompting and parsing stay real.
     transport = httpx.MockTransport(reply)
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    result = run_case(cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))[0])
+    result = run_case(
+        cases(LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1"))[0]
+    )
     assert result.called and result.valid
     assert result.calls == 1
     assert result.tokens == 25
@@ -82,7 +84,9 @@ def test_every_model_call_site_has_a_conformance_case():
     covered = set().union(
         *(
             case.sites
-            for case in cases(LLMConfig(base_url="http://localhost:8080/v1", model="fixture"))
+            for case in cases(
+                LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="fixture")
+            )
         )
     )
     assert discover_sites(root) == covered, "New LLM call site needs a conformance case"
@@ -116,7 +120,10 @@ def test_probe_preserves_private_wire_evidence_without_headers(tmp_path, monkeyp
     from immich_memories.conformance.runtime import Case, run_case
 
     config = LLMConfig(
-        model="fixture", base_url="http://localhost:43210/v1", api_key="fixture-secret"
+        enabled=True,
+        model="fixture",
+        base_url="http://localhost:43210/v1",
+        api_key="fixture-secret",
     )
     # WHY: provider HTTP is the only substituted boundary.
     monkeypatch.setattr(
@@ -197,7 +204,7 @@ def test_trip_title_probe_requires_route_classification(monkeypatch):
             )
         ),
     )
-    checks = cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = cases(LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1"))
     result = run_case(next(case for case in checks if case.name == "trip title and route"))
     assert result.valid, result.quality
     assert result.calls == 1
@@ -229,7 +236,7 @@ def test_people_title_probe_uses_only_its_synthetic_people_store(monkeypatch):
             )
         ),
     )
-    checks = cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = cases(LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1"))
     result = run_case(next(case for case in checks if case.name == "people title"))
     assert result.valid, result.quality
     assert result.calls == 1
@@ -252,7 +259,7 @@ def test_failed_http_attempt_does_not_claim_zero_billed_tokens(monkeypatch):
             lambda _: httpx.Response(401, json={"error": {"message": "Unauthorized"}})
         ),
     )
-    config = LLMConfig(model="fixture", base_url="http://localhost:43210/v1")
+    config = LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
     result = run_case(
         Case("unauthorized", lambda: asyncio.run(query_llm("synthetic", config)), frozenset())
     )

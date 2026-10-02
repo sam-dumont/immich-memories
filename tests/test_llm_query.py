@@ -18,7 +18,9 @@ class TestQueryLlmOllama:
     async def test_sends_text_prompt_to_ollama(self):
         from immich_memories.analysis.llm_query import query_llm
 
-        config = LLMConfig(provider="ollama", base_url="http://localhost:11434", model="llama3")
+        config = LLMConfig(
+            enabled=True, provider="ollama", base_url="http://localhost:11434", model="llama3"
+        )
         mock_response = AsyncMock()
         mock_response.status_code = 200
         mock_response.json = MagicMock(return_value={"response": '{"title": "Summer 2024"}'})
@@ -40,6 +42,7 @@ class TestQueryLlmOllama:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="ollama",
             base_url="http://localhost:11434",
             model="llava",
@@ -69,6 +72,7 @@ class TestQueryLlmOllama:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="ollama",
             base_url="http://localhost:11434",
             model="llava",
@@ -101,6 +105,7 @@ class TestQueryLlmOpenAI:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="openai-compatible",
             base_url="http://localhost:8080/v1",
             model="omlx",
@@ -147,6 +152,7 @@ class TestQueryLlmOpenAI:
             await query_llm(
                 "Generate a title",
                 LLMConfig(
+                    enabled=True,
                     base_url="http://localhost:8080/v1",
                     provider="openai-compatible",
                     model="hosted",
@@ -171,6 +177,7 @@ def _openai_response(content='{"ok": true}', finish_reason="stop", reasoning_con
 
 def _thinking_config(**overrides) -> LLMConfig:
     fields = {
+        "enabled": True,
         "provider": "openai-compatible",
         "base_url": "http://localhost:8080/v1",
         "model": "qwen-reasoning",
@@ -229,7 +236,11 @@ class TestThinkingMode:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
-            provider="ollama", base_url="http://localhost:11434", model="llama3", thinking=True
+            enabled=True,
+            provider="ollama",
+            base_url="http://localhost:11434",
+            model="llama3",
+            thinking=True,
         )
         mock_response = AsyncMock()
         mock_response.status_code = 200
@@ -533,7 +544,11 @@ class TestTimeoutShape:
         from immich_memories.analysis.llm_query import CONNECT_TIMEOUT_SECONDS, query_llm
 
         config = LLMConfig(
-            base_url="https://api.anthropic.com", provider="anthropic", model="m", api_key="k"
+            enabled=True,
+            base_url="https://api.anthropic.com",
+            provider="anthropic",
+            model="m",
+            api_key="k",
         )
         anthropic_ok = AsyncMock()
         anthropic_ok.status_code = 200
@@ -592,7 +607,9 @@ class TestQueryLlmWithImages:
 
         from immich_memories.analysis.llm_query import query_llm
 
-        config = LLMConfig(provider="ollama", base_url="http://localhost:11434/", model="llava")
+        config = LLMConfig(
+            enabled=True, provider="ollama", base_url="http://localhost:11434/", model="llava"
+        )
         mock_response = AsyncMock()
         mock_response.status_code = 200
         mock_response.json = MagicMock(return_value={"response": '{"special": true}'})
@@ -613,7 +630,10 @@ class TestQueryLlmWithImages:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
-            provider="openai-compatible", base_url="http://localhost:8080/v1/", model="omlx"
+            enabled=True,
+            provider="openai-compatible",
+            base_url="http://localhost:8080/v1/",
+            model="omlx",
         )
         mock_response = AsyncMock()
         mock_response.status_code = 200
@@ -637,6 +657,7 @@ class TestQueryLlmWithImages:
         from immich_memories.analysis.llm_query import query_llm
 
         config = LLMConfig(
+            enabled=True,
             provider="zai",
             base_url="https://api.z.ai/api/paas/v4",
             model="glm-4.6v",
@@ -723,7 +744,9 @@ class TestBulkCallsDoNotThink:
         assert "chat_template_kwargs" not in mock_post.call_args_list[-1][1]["json"]
 
 
-_OPENAI = LLMConfig(provider="openai-compatible", base_url="http://vlm:8080/v1", model="qwen")
+_OPENAI = LLMConfig(
+    enabled=True, provider="openai-compatible", base_url="http://vlm:8080/v1", model="qwen"
+)
 
 
 @pytest.mark.asyncio
@@ -792,7 +815,9 @@ async def test_transport_observer_records_provider_http_failures(provider: str) 
         "503", request=MagicMock(), response=response
     )
     attempts = []
-    config = LLMConfig(provider=provider, base_url="http://localhost/v1", model="vision")
+    config = LLMConfig(
+        enabled=True, provider=provider, base_url="http://localhost/v1", model="vision"
+    )
 
     # WHY: a provider's rejected HTTP response is still one real wire attempt.
     with (
@@ -901,7 +926,9 @@ async def test_each_provider_payload_carries_the_exact_jpeg_bytes(provider: str)
     from immich_memories.analysis.llm_query import query_llm
 
     image = b"exact-contact-sheet"
-    config = LLMConfig(provider=provider, base_url="http://localhost/v1", model="vision")
+    config = LLMConfig(
+        enabled=True, provider=provider, base_url="http://localhost/v1", model="vision"
+    )
     response = _openai_response()
     if provider == "ollama":
         response.json = MagicMock(return_value={"response": "ok"})
@@ -949,7 +976,9 @@ async def test_visual_completion_mode_rejects_known_truncation(provider: str, bo
     with patch("httpx.AsyncClient.post", return_value=response), pytest.raises(ValueError):
         await query_llm(
             "look",
-            LLMConfig(provider=provider, base_url="http://localhost/v1", model="vision"),
+            LLMConfig(
+                enabled=True, provider=provider, base_url="http://localhost/v1", model="vision"
+            ),
             images=(b"jpeg",),
             require_complete=True,
             transport_observer=attempts.append,
@@ -976,7 +1005,9 @@ async def test_transport_observer_records_invalid_json_for_each_provider(provide
     ):
         await query_llm(
             "look",
-            LLMConfig(provider=provider, base_url="http://localhost/v1", model="vision"),
+            LLMConfig(
+                enabled=True, provider=provider, base_url="http://localhost/v1", model="vision"
+            ),
             transport_observer=attempts.append,
         )
 
@@ -1011,7 +1042,9 @@ async def test_transport_observer_records_invalid_shape_for_each_provider(
     ):
         await query_llm(
             "look",
-            LLMConfig(provider=provider, base_url="http://localhost/v1", model="vision"),
+            LLMConfig(
+                enabled=True, provider=provider, base_url="http://localhost/v1", model="vision"
+            ),
             transport_observer=attempts.append,
         )
 
@@ -1056,7 +1089,10 @@ async def test_parseable_malformed_content_keeps_legacy_reply_metrics(
         pytest.raises((KeyError, TypeError, AttributeError, ValueError)),
     ):
         await query_llm(
-            "look", LLMConfig(provider=provider, base_url="http://localhost/v1", model="vision")
+            "look",
+            LLMConfig(
+                enabled=True, provider=provider, base_url="http://localhost/v1", model="vision"
+            ),
         )
 
     recorded = record_reply.call_args.kwargs
@@ -1082,7 +1118,10 @@ async def test_invalid_json_does_not_create_legacy_reply_metrics(provider: str) 
         pytest.raises(ValueError, match="not json"),
     ):
         await query_llm(
-            "look", LLMConfig(provider=provider, base_url="http://localhost/v1", model="vision")
+            "look",
+            LLMConfig(
+                enabled=True, provider=provider, base_url="http://localhost/v1", model="vision"
+            ),
         )
 
     record_reply.assert_not_called()
@@ -1105,7 +1144,9 @@ async def test_a_transient_transport_drop_is_retried_not_fatal():
             raise httpx.RemoteProtocolError("peer closed connection")
         return _openai_response()
 
-    config = LLMConfig(provider="openai-compatible", base_url="http://x/v1", model="m")
+    config = LLMConfig(
+        enabled=True, provider="openai-compatible", base_url="http://x/v1", model="m"
+    )
     # WHY: httpx post is the transport boundary to the provider; retry logic under test is real.
     with patch("httpx.AsyncClient.post", new=_post), patch("asyncio.sleep", new=AsyncMock()):
         answer = await query_llm("q", config)

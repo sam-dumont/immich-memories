@@ -84,11 +84,11 @@ def test_key_the_schema_would_reject_is_reported() -> None:
 
 
 def test_two_sections_of_one_model_are_documented_once() -> None:
-    """`llm` carries the full field list; `title_llm` is the same model, shown short."""
+    """`llm` carries the full field list; `other_reader` is the same model, shown short."""
     llm = SectionSchema("LLMConfig", frozenset({"model", "thinking"}))
-    schema = {"llm": llm, "title_llm": llm}
+    schema = {"llm": llm, "other_reader": llm}
 
-    drift = find_drift(schema, {"llm": {"model", "thinking"}, "title_llm": {"model"}})
+    drift = find_drift(schema, {"llm": {"model", "thinking"}, "other_reader": {"model"}})
 
     assert drift == []
 
@@ -114,7 +114,7 @@ def test_sections_come_from_config_itself_not_a_hand_kept_list() -> None:
     assert sections.keys() == set(Config.model_fields)
     assert sections["photos"].model == "PhotoConfig"
     assert "burst_window_seconds" in sections["photos"].fields
-    assert sections["llm"].model == sections["title_llm"].model
+    assert sections["llm"].model == "LLMConfig"
     assert sections["preset"].fields == frozenset()
 
 

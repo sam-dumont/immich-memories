@@ -16,7 +16,9 @@ from tests.annotation_rows import annotation_store
 
 
 def _config():
-    return LLMConfig(provider="openai-compatible", base_url="http://first.test/v1", model="same")
+    return LLMConfig(
+        enabled=True, provider="openai-compatible", base_url="http://first.test/v1", model="same"
+    )
 
 
 @pytest.mark.asyncio

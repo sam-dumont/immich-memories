@@ -139,7 +139,7 @@ def test_the_runtime_records_evidence_into_the_attempt_that_is_running(
         # Disabling polish still defers episode reads until they are demanded.
         config=Config(
             tier="full",
-            llm={"model": "test-model", "base_url": "http://llm.test/v1"},
+            llm={"enabled": True, "model": "test-model", "base_url": "http://llm.test/v1"},
             cache={"directory": str(tmp_path / "cache")},
             editorial={"thin_model_layer": False},
         ),

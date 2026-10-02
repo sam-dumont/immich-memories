@@ -34,7 +34,9 @@ def test_audience_probe_keeps_the_expected_privacy_hold(monkeypatch, name, calls
     monkeypatch.setattr(
         httpx.AsyncClient, "_transport_for_url", lambda *_: httpx.MockTransport(reply)
     )
-    checks = audience_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = audience_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == name))
     assert result.valid, result.quality
     assert result.calls == calls

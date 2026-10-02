@@ -49,4 +49,14 @@ immich-memories days-import --from days.json
 
 Import replaces the catalogue with the edited list. Use this for a missed day or a wrong title.
 
+For Docker, export onto the host, edit `./output/days.json`, then import its container path:
+
+```bash
+docker compose exec -T immich-memories immich-memories days-export > ./output/days.json
+docker compose exec immich-memories immich-memories days-import --from /app/output/days.json
+```
+
+`--to days.json` would write inside the container. The shipped output mount makes the edited
+host file available at `/app/output/days.json`.
+
 [Special-day discovery rules](../../reference/special-days.md) covers windows, evidence, reader confirmation and repetition checks. [CLI reference](../../reference/cli-reference.md#discover-days) lists the options.

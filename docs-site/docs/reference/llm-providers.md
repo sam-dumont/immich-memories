@@ -8,7 +8,7 @@ For the working local and hosted recipes, start with [Add a text reader](../bett
 
 ## Reader operating modes
 
-`advanced.llm.enabled` defaults to `false`. With it enabled, an empty `base_url` selects the app-owned llama.cpp process; a nonempty URL selects an external server. The default local model is `gemma-4-E4B-it-Q4_0`. For the install recipe, use [Add a reader](../better/reader.md).
+`advanced.llm.enabled` defaults to `false`; a model, URL or key alone never enables it. With it enabled, an empty `base_url` with `openai-compatible` or `ollama` selects the app-owned llama.cpp process; a nonempty URL selects an external server. The default local model is `gemma-4-E4B-it-Q4_0`. For the install recipe, use [Add a reader](../better/reader.md).
 
 ```yaml
 advanced:
@@ -22,7 +22,7 @@ advanced:
 
 Owned inference supports Linux and macOS. `models fetch` downloads the pinned default GGUF and projector when this local reader is configured. A custom `model` names a GGUF path; `local_mmproj` supplies its projector. Preflight checks the executable and files without loading the model.
 
-The app loads the owned reader on demand and waits for active requests before stopping it to release memory for local ACE-Step or Demucs. At the render boundary, selection also closes its Laya scorer, stops the owned reader and clears unused local-runtime buffers. The next reader call loads it again. Cancellation waits for native audio work to finish or time out before releasing its memory lease. An external server owns its own model lifetime: the app cannot assume it is safe to unload it for other clients.
+The app loads the owned reader on demand and waits for active requests before stopping it to release memory for local ACE-Step or Demucs. At the render boundary, selection also closes its Laya scorer, stops the owned reader and clears unused local-runtime buffers. The next reader call loads it again. Cancellation waits for native audio work to finish or time out before releasing its memory lease. The owned reader always serves one request at a time (`reader_concurrency` cannot increase it). Docker and Kubernetes need an external server; the app image has no `llama-server`. An external server owns its own model lifetime: the app cannot assume it is safe to unload it for other clients.
 
 ```bash
 immich-memories capabilities
@@ -72,9 +72,26 @@ PyTorch nor MLX.
 
 For the audience ONNX export, set `laya_audience_threshold: 0.185`. This threshold was
 chosen on the public calibration split to retain all 15 MLX holds. On 3,143 held-out
-captions it retained all 23 MLX holds and added one. These are classifier checks; validation
-of the complete NVIDIA image is tracked in
+captions it retained all 23 MLX holds and added one. These are classifier checks. The complete NVIDIA image validation is recorded in closed
 [#1385](https://github.com/sam-dumont/immich-video-memory-generator/issues/1385).
+
+## Ollama
+
+Native Ollama uses `/api/generate`. Set the context in `options`:
+
+```yaml
+advanced:
+  llm:
+    enabled: true
+    provider: ollama
+    base_url: http://localhost:11434
+    model: gemma4:e4b
+    extra_params:
+      options:
+        num_ctx: 32768
+```
+
+For Ollama's OpenAI route, use `provider: openai-compatible` and `base_url: http://localhost:11434/v1`. That route cannot set the context per request. Start the server with `OLLAMA_CONTEXT_LENGTH=32768 ollama serve`, or create a model with `PARAMETER num_ctx 32768` in its Modelfile. See [Ollama context length](https://docs.ollama.com/context-length) and [OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility#setting-the-local-context-size). From a container, use the host's reachable address instead of `localhost`.
 
 ## Providers and dialects
 
@@ -85,7 +102,8 @@ itself. `zai` is the `anthropic` adapter with z.ai's URL and reasoning level fil
 the one provider that picks its adapter from the `base_url` path, because z.ai serves both dialects
 on one host: `.../api/anthropic` gets `/v1/messages`, `.../api/paas/v4` gets `/chat/completions`.
 
-Set `base_url` explicitly for every external server, including hosted providers. An empty URL selects owned local inference regardless of the provider name. The named providers supply their reasoning dialect where settings retain their defaults; explicit request parameters take precedence.
+`openai`, `anthropic` and `zai` fill a blank `base_url` with `https://api.openai.com/v1`,
+`https://api.anthropic.com` and `https://api.z.ai/api/anthropic`, respectively. Set an explicit URL for other external servers. Blank `openai-compatible` or `ollama` uses an owned local reader. The named providers supply their reasoning dialect where settings retain their defaults; explicit request parameters take precedence.
 
 The Messages API path is `POST {base_url}/v1/messages` with `x-api-key`,
 `anthropic-version: 2023-06-01` and the prompt as one user message. Nothing about it is
@@ -96,18 +114,16 @@ loses nothing.
 ```yaml
 advanced:
   llm:
+    enabled: true
     provider: "anthropic"
-    model: "claude-sonnet-5"        # or claude-haiku-4-5 for the cheap seat
+    model: "claude-haiku-4-5"
     api_key: "${ANTHROPIC_API_KEY}"
-    thinking: "high"                # disabled | low | high | max | auto
+    thinking: "auto"
 ```
 
-That preset handles two things Claude answers HTTP 400 to otherwise: no `temperature` goes out
-(from the 4.7 line on, Claude refuses any sampling parameter), and reasoning is asked for as
-`thinking: {"type": "adaptive"}` with the level as `output_config.effort`. Bulk calls send
-`thinking: {"type": "disabled"}`, because a bulk call at a 140-token cap that reasons comes back with
-no answer in it. A model older than that dialect needs the switch written out:
-`thinking_params: {thinking: {type: "enabled", budget_tokens: 2048}}`.
+Start with `thinking: "auto"`: it omits both reasoning switches and uses the model's default. Haiku 4.5 does not accept adaptive thinking. Sonnet 5.5, Opus 5.5 and Fable models reject `thinking: {type: "disabled"}`. The app's other thinking levels use adaptive thinking for titles and send the disabled switch on bulk calls; use those only with a model that accepts both. See [Anthropic's thinking matrix](https://platform.claude.com/docs/en/build-with-claude/thinking).
+
+The preset drops `temperature`. An explicit `budget_tokens` override alone does not remove the preset's adaptive effort field. Keep `thinking: "auto"` unless you have checked every custom field against your model's contract.
 
 ```yaml
 advanced:
@@ -143,9 +159,8 @@ llm:
 ```
 
 A server that reasons only when asked wants `no_thinking_params: {}` instead. `low`, `high` or
-`max` switch two calls to reasoning (title generation and the special-day question in
-`discover-days`) while everything else stays fast. `thinking_params` carries the fields those calls
-send; OpenAI's reasoning models want `{"reasoning_effort": "medium"}` there, which `provider:
+`max` switch title generation to reasoning while other calls use the non-thinking policy.
+`thinking_params` carries the fields that title call sends; OpenAI's reasoning models want `{"reasoning_effort": "medium"}` there, which `provider:
 openai` fills in. The provider's own switch
 is merged in even when you set your own params, and a `thinking` key you write yourself wins.
 
@@ -157,7 +172,7 @@ from its first thinking block: every later call then gets 16,384 extra tokens in
 
 A level is a request, not a promise. z.ai's `.../api/anthropic` route answers HTTP 200 to every
 setting and then reasons on its own terms, so on that route the reader reads the first `text` block
-and skips the reasoning in front of it, asks for 1,024 tokens on top of the caller's cap, and turns
+and skips the reasoning in front of it, asks for 16,384 tokens on top of the caller's cap, and turns
 a reply with no `text` block into an error naming the `stop_reason`. A provider's own error `code`
 and `message` go into the log line, cut at 300 characters.
 
@@ -215,7 +230,7 @@ logs why, and reads in real time for the rest of the run.
 - **A reply cut off at its token cap keeps what it finished.** The episode readings or period
   accounts it wrote whole are kept, and only the unfinished ones are asked again. An episode asked
   again gets the full 4,000-token ceiling rather than its own estimate.
-- **Text only.** No request to the reader carries a picture; a test fails the build if one does.
+- **The selection reader receives text only.** Image captions use the same settings only with an explicit [LLM-caption opt-in](../better/captions.md#explicit-llm-captions).
 
 For endpoint validation, use the provider conformance checks below. Record usage and timings
 separately from the quality of a finished film; [measurement guidance](performance-evidence.md)

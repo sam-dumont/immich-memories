@@ -123,7 +123,7 @@ def _config(tmp_path) -> Config:
             "api_version": "v2",
             "accounts": {"partner": {"url": URL, "api_key": PARTNER_KEY, "api_version": "v2"}},
         },
-        llm={"model": "no-model-calls"},
+        llm={"enabled": True, "model": "no-model-calls"},
         cache={"directory": str(tmp_path / "cache")},
     )
 

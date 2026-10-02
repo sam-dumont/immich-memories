@@ -21,6 +21,7 @@ def requester(directory: Path):
 
     return gateway.SyncTextPromptRequester(
         LLMConfig(
+            enabled=True,
             provider="openai-compatible",
             base_url="http://text.test/v1",
             model="test-model",
@@ -219,7 +220,7 @@ def test_production_episode_recording_follows_each_active_attempt_even_on_failur
     # The deferred reader must bind its recorder to the active attempt.
     config = Config(
         tier="full",
-        llm={"model": "test-model", "base_url": "http://llm.test/v1"},
+        llm={"enabled": True, "model": "test-model", "base_url": "http://llm.test/v1"},
         cache={"directory": str(tmp_path / "cache")},
         editorial={"thin_model_layer": False},
     )
@@ -271,7 +272,7 @@ def test_the_episode_stage_keeps_its_own_prompt_transcript(tmp_path, monkeypatch
     # Demanding an episode keeps the same transport transcript contract.
     config = Config(
         tier="full",
-        llm={"model": "test-model", "base_url": "http://llm.test/v1"},
+        llm={"enabled": True, "model": "test-model", "base_url": "http://llm.test/v1"},
         cache={"directory": str(tmp_path / "cache")},
         editorial={"thin_model_layer": False},
     )

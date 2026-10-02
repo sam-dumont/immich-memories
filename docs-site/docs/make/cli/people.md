@@ -31,6 +31,16 @@ immich-memories people import --from people.yaml --replace
 
 Import validates the whole file first. `--replace` can replace newer answers, so use a fresh export and keep a backup.
 
+For Docker, export onto the host, edit `./output/people.yaml`, then import its container path:
+
+```bash
+(umask 077; docker compose exec -T immich-memories immich-memories people export > ./output/people.yaml)
+docker compose exec immich-memories immich-memories people import --from /app/output/people.yaml --replace
+```
+
+`--to people.yaml` would write inside the container. The output mount exposes the edited file
+to the app; `umask 077` keeps a new export's names and birth dates private on the host.
+
 ## Bind another account's face
 
 When someone uploads through a second Immich account, their face can have another ID. Declare the connection instead of relying on matching names:

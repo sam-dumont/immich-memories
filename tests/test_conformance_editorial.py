@@ -28,7 +28,9 @@ def test_worthiness_probe_distinguishes_race_from_routine(monkeypatch):
     )
     # WHY: replace only the provider HTTP response; two-order voting and its bank stay real.
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    checks = editorial_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = editorial_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "memory worthiness"))
     assert result.valid, result.quality
     assert result.calls >= 2
@@ -95,7 +97,9 @@ def test_period_probe_exercises_reading_grouping_and_weighing(
     monkeypatch.setattr(
         httpx.AsyncClient, "_transport_for_url", lambda *_: httpx.MockTransport(reply)
     )
-    checks = editorial_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = editorial_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "period story"))
     assert result.valid is valid, result.quality
     assert result.calls == 4
@@ -125,7 +129,9 @@ def test_central_story_probe_requires_supported_candidate_votes(monkeypatch):
     monkeypatch.setattr(
         httpx.AsyncClient, "_transport_for_url", lambda *_: httpx.MockTransport(reply)
     )
-    checks = editorial_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = editorial_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "central story confirmation"))
     assert result.valid, result.quality
     assert result.calls == 4
@@ -145,7 +151,9 @@ def test_moment_probe_selects_participation_over_an_empty_view(monkeypatch):
     )
     # WHY: provider HTTP only; the pick's validation and both order votes run normally.
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    checks = editorial_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = editorial_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "story moment selection"))
     assert result.valid, result.quality
     assert result.calls == 2
@@ -167,7 +175,9 @@ def test_recurring_activity_probe_folds_repeated_swimming_days(monkeypatch):
     )
     # WHY: only the provider HTTP reply is replaced; activity nomination and folding are real.
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    checks = editorial_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = editorial_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "recurring activity"))
     assert result.valid, result.quality
     assert result.calls == 1
@@ -191,7 +201,9 @@ def test_moment_probe_does_not_pass_when_invalid_answers_fall_back_to_the_first_
     )
     # WHY: an invalid provider reply deliberately triggers the production rules fallback.
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    checks = editorial_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = editorial_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "story moment selection"))
     assert not result.valid
     assert "fallback" in result.quality

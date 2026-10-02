@@ -26,7 +26,9 @@ from tests.test_editorial_source_route_surfaces import (
     _source_pipeline,
 )
 
-_READER = LLMConfig(provider="openai-compatible", base_url="https://host/v1", model="glm-5.3-flash")
+_READER = LLMConfig(
+    enabled=True, provider="openai-compatible", base_url="https://host/v1", model="glm-5.3-flash"
+)
 
 
 def _reply(prompt_tokens: int, completion_tokens: int, reasoning_tokens: int = 0):

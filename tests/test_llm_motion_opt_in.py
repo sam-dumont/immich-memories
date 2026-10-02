@@ -22,7 +22,11 @@ def test_opted_in_preparation_routes_motion_to_the_llm_and_reuses_it(monkeypatch
 
     config = Config(
         tier="nas",
-        llm={"base_url": "http://localhost:43210/v1", "model": "fixture-vision-model"},
+        llm={
+            "enabled": True,
+            "base_url": "http://localhost:43210/v1",
+            "model": "fixture-vision-model",
+        },
         editorial={"preparation": {"caption_provider": "llm"}},
     )
     asset = make_asset("clip")

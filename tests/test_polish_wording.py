@@ -37,7 +37,9 @@ def test_the_storyboard_header_counts_pictures_and_says_what_the_seconds_are() -
 
 def test_the_last_dropped_connection_tells_the_person_what_to_do() -> None:
     seen = []
-    observe = watch_provider("reader", LLMConfig(base_url="http://reader.local:9999/v1"))
+    observe = watch_provider(
+        "reader", LLMConfig(enabled=True, base_url="http://reader.local:9999/v1")
+    )
     with announcing_stages(seen.append):
         observe(
             LLMTransportAttempt(

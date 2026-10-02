@@ -11,7 +11,7 @@ import yaml
 
 from immich_memories.config_loader import Config
 
-GEMMA = {"base_url": "http://gpu-box:8080/v1", "model": "gemma-4-e4b"}
+GEMMA = {"enabled": True, "base_url": "http://gpu-box:8080/v1", "model": "gemma-4-e4b"}
 
 
 def _knobs(config: Config) -> tuple[str, str, bool]:

@@ -291,7 +291,12 @@ async def test_a_music_mood_is_asked_once_and_reused(store, tmp_path, monkeypatc
     if store.location.schema:
         monkeypatch.setenv("IMMICH_MEMORIES_DATABASE_SCHEMA", store.location.schema)
     config = Config(
-        llm={"base_url": "http://localhost:11434", "model": "reader", "provider": "ollama"}
+        llm={
+            "enabled": True,
+            "base_url": "http://localhost:11434",
+            "model": "reader",
+            "provider": "ollama",
+        }
     )
     config.cache.directory = str(tmp_path / "cache")
     attempt = tmp_path / "attempt"

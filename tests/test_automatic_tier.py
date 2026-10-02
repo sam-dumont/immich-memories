@@ -23,7 +23,11 @@ def local_runtime_probe(monkeypatch, isolated_inference_compute):
     "llm,tier,reader",
     [
         ({}, "gpu", "rules"),
-        ({"model": "local-reader", "base_url": "http://localhost:9999/v1"}, "full", "model"),
+        (
+            {"enabled": True, "model": "local-reader", "base_url": "http://localhost:9999/v1"},
+            "full",
+            "model",
+        ),
     ],
 )
 def test_a_gpu_service_selects_the_profile_without_a_tier_setting(monkeypatch, llm, tier, reader):
@@ -66,7 +70,7 @@ def test_a_service_without_healthy_gpu_compute_keeps_model_selection_off(
     )
     config = Config(
         inference={"facts_base_url": "http://gpu.test:8092"},
-        llm={"model": "local-reader", "base_url": "http://localhost:9999/v1"},
+        llm={"enabled": True, "model": "local-reader", "base_url": "http://localhost:9999/v1"},
     )
 
     assert config.tier == "nas"
@@ -185,7 +189,9 @@ def test_a_cuda_wheel_without_a_usable_device_does_not_enable_gpu(monkeypatch, l
     )
     monkeypatch.setitem(sys.modules, "Metal", None)
 
-    config = Config(llm={"model": "local-reader", "base_url": "http://localhost:9999/v1"})
+    config = Config(
+        llm={"enabled": True, "model": "local-reader", "base_url": "http://localhost:9999/v1"}
+    )
 
     assert config.tier == "nas"
     assert not config.editorial.preparation.demands_captions
@@ -217,7 +223,9 @@ def test_a_mac_installed_with_its_extra_is_a_gpu_machine(monkeypatch, local_runt
         sys.modules, "Metal", SimpleNamespace(MTLCreateSystemDefaultDevice=lambda: object())
     )
 
-    config = Config(llm={"model": "local-reader", "base_url": "http://localhost:9999/v1"})
+    config = Config(
+        llm={"enabled": True, "model": "local-reader", "base_url": "http://localhost:9999/v1"}
+    )
 
     assert config.tier == "full"
     assert config.editorial.reader == "model"
