@@ -111,8 +111,8 @@ Keep the worker's loopback `exec` probes; kubelet HTTP probes cannot reach its l
 ## Adapt the example
 
 Remove unwanted services from your own composition rather than copying every option. Applying
-sibling app overlays one after another replaces earlier patches; combine the patches into one
-kustomization. Preserve `enableServiceLinks: false` and one app replica.
+sibling app overlays one after another replaces earlier patches; list the app components in one
+kustomization instead. Preserve `enableServiceLinks: false` and one app replica.
 
 For PostgreSQL, add the database Secret and egress port to that composition; the overlay does
 not deploy PostgreSQL. [Database setup](../database.md) and

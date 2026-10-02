@@ -263,8 +263,9 @@ def test_base_manifests_do_not_require_a_gpu() -> None:
 
 def test_gpu_overlay_adds_nvidia_scheduling_to_the_deployment() -> None:
     overlay = yaml.safe_load((K8S_ROOT / "overlays" / "gpu" / "kustomization.yaml").read_text())
-    patch_name = overlay["patches"][0]["path"]
-    patch = yaml.safe_load((K8S_ROOT / "overlays" / "gpu" / patch_name).read_text())
+    component_root = K8S_ROOT / "overlays" / "gpu" / overlay["components"][0]
+    component = yaml.safe_load((component_root / "kustomization.yaml").read_text())
+    patch = yaml.safe_load((component_root / component["patches"][0]["path"]).read_text())
     pod = patch["spec"]["template"]["spec"]
 
     assert overlay["resources"] == ["../../base"]

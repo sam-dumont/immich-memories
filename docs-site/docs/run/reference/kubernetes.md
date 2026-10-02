@@ -68,7 +68,7 @@ port; oMLX serves on 8000) and the caption server on 8092. Edit the ports if you
 
 Intel Quick Sync and AMD VA-API need `/dev/dri` in the pod, which takes a device plugin these
 manifests do not ship; without one the encode runs on the CPU.
-`overlays/gpu/deployment-gpu.yaml` patches the Deployment with `runtimeClassName: nvidia`, one
+`components/gpu/deployment-gpu.yaml` patches the Deployment with `runtimeClassName: nvidia`, one
 `nvidia.com/gpu`, the two `NVIDIA_*` env vars, the `nvidia.com/gpu.present=true` node selector and
 the matching toleration. The app uses that card for NVENC encoding and the title kernels and
 nothing else. These overlays run separate services: classifiers and Demucs share inference; captions and the render sidecar have their own processes. The [unified CUDA worker](../reference-setup.md#one-gpu-service) is a separate Compose recipe, not part of these overlays. See [container boundaries](../../better/inference.md#one-nvidia-container). When the card
@@ -167,10 +167,10 @@ kubectl apply -k overlays/postgres           # instead of base, not after it
 ```
 
 The overlay builds on `base/` and only adds the database Secret to the Deployment; it does not run
-PostgreSQL for you. It and `overlays/gpu` each build on `base/`, so applying one after the other
-drops the first one's patch. For both, make one overlay of your own: copy the two patch files and
-`database-secret.yaml` into it, next to a kustomization whose resources are `../../base` and `database-secret.yaml`, with both
-patches. The one-off `generate` Job in `base/job.yaml` does not get the database Secret either;
+PostgreSQL for you. For GPU plus PostgreSQL, list `components/gpu` and `components/postgres`
+in one root alongside `base` and your database Secret. The
+[composition recipe](../kubernetes.md#database) also shows the optional render sidecar.
+The one-off `generate` Job in `base/job.yaml` does not get the database Secret either;
 add the second `secretRef` there if you run it. The four modes, and the SQL for a dedicated schema
 in Immich's own database, are on [Database and the store](.././database.md).
 

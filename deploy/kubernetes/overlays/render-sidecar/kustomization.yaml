@@ -9,14 +9,5 @@ resources:
   # the token and Immich URL. kustomize refuses to build until the file exists.
   - render-worker-secret.yaml
 
-patches:
-  - path: deployment-sidecar.yaml
-
-# The patch adds a second container the base's own `images:` pin (in
-# ../../base/kustomization.yaml) does not reach, since base has already built
-# by the time this overlay's patch runs. Keep this tag equal to base's own
-# pin: the app refuses a worker on a different app version before it sends
-# any footage.
-images:
-  - name: ghcr.io/sam-dumont/immich-video-memory-generator
-    newTag: "0.100.4"
+components:
+  - ../../components/render-sidecar

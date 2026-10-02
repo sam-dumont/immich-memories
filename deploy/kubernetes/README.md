@@ -110,7 +110,7 @@ stays scaled to 0 between runs.
 
 ## GPU
 
-`overlays/gpu/deployment-gpu.yaml` is a strategic-merge patch on the Deployment: `runtimeClassName:
+`components/gpu/deployment-gpu.yaml` is a strategic-merge patch on the Deployment: `runtimeClassName:
 nvidia`, one `nvidia.com/gpu`, `NVIDIA_*` env, `nodeSelector` on `nvidia.com/gpu.present=true`
 and a toleration for the `nvidia.com/gpu` taint. Edit the label or GPU count there. The app
 auto-detects the GPU (NVENC encoding, CUDA analysis, the title kernels on CUDA). A card that cannot
