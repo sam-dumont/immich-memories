@@ -1180,6 +1180,7 @@ docs-setup: ensure-dev  ## Refresh the builder from the shipped Compose template
 
 docs-setup-check: ensure-dev  ## Refuse drift between setup-builder and release templates
 	uv run python scripts/sync_setup_templates.py --check
+	cd docs-site && node --experimental-strip-types --test src/components/SetupBuilder/recipes.test.mjs
 
 docs-serve:  ## Serve the built site locally for setup-builder browser checks
 	cd docs-site && npm run serve -- --host 127.0.0.1 --port $(or $(DOCS_PORT),3000)

@@ -10,7 +10,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
   const {siteConfig} = useDocusaurusContext();
   const buildVersion = String(siteConfig.customFields?.version || 'development');
   const [setup, setSetup] = useState<Setup>({
-    platform: initialPlatform, inline: initialInline, tier: 'nas', immichUrl: 'http://192.168.1.10:2283', apiKey: '',
+    platform: initialPlatform, inline: initialInline, uiPort: 8080, tier: 'nas', immichUrl: 'http://192.168.1.10:2283', apiKey: '',
     gpuBox: '', readerUrl: '', readerModel: '', readerApiKey: '', cuda: false,
     version: buildVersion,
   });
@@ -58,6 +58,10 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       <label>Immich API key
         <input type="password" autoComplete="off" value={setup.apiKey} onChange={event => update({apiKey: event.target.value})} />
       </label>
+      {compose && <label>UI host port
+        <input type="number" min="1" max="65535" step="1" value={setup.uiPort} onChange={event => update({uiPort: Number(event.target.value)})} />
+        <small>Choose a free port if another app already uses 8080. The UI stays localhost-only.</small>
+      </label>}
     </div>
     <p className={styles.note}>Create a key with the <Link to="/docs/run/docker#the-api-key">ten required read permissions</Link>.
       Add the five upload permissions only to send films back; <code>asset.delete</code> is optional.
@@ -126,6 +130,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       </div>)}
       <p role="status">{notice}</p>
       {result.workerCommands && <CodeBlock language="bash" title="On the NVIDIA GPU host">{result.workerCommands}</CodeBlock>}
+      {result.accessCommands && <CodeBlock language="bash" title="Private UI access">{result.accessCommands}</CodeBlock>}
       {showCommands && <CodeBlock language="bash" title={result.workerCommands ? "On the app host" : "Install and check"}>{result.commands}</CodeBlock>}
     </div>}
   </section>;

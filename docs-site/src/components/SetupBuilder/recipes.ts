@@ -11,6 +11,7 @@ export interface Setup {
   readerApiKey?: string;
   cuda: boolean;
   version: string;
+  uiPort?: number;
   inline?: boolean;
   secretKey?: string;
 }
@@ -32,6 +33,10 @@ export function assetBase(version: string): string {
 }
 
 export function validateSetup(setup: Setup): string | null {
+  if (['linux', 'synology'].includes(setup.platform) &&
+      (!Number.isInteger(setup.uiPort ?? 8080) || (setup.uiPort ?? 8080) < 1 || (setup.uiPort ?? 8080) > 65535)) {
+    return 'UI host port must be a whole number from 1 to 65535.';
+  }
   if (setup.version === 'development') return 'Choose a published release version for these setup files.';
   if (!releaseVersion(setup.version) && setup.version !== 'latest') return 'Use a release version such as 1.0.0 or 1.0.0-rc.1.';
   if (setup.platform === 'kubernetes' && !releaseVersion(setup.version)) return 'Kubernetes needs a published release version to select its bundle.';
@@ -49,7 +54,11 @@ export function validateSetup(setup: Setup): string | null {
   }
   if (setup.gpuBox && ['mac', 'kubernetes'].includes(setup.platform)) return 'Remote GPU box setup is available for Docker Compose.';
   if (!setup.apiKey) return 'Enter your Immich API key.';
-  if (setup.inline && !/^[a-f0-9]{64}$/.test(setup.secretKey || '')) return 'Generate a private settings key before exporting a single-file stack.';
+  if ((setup.inline || setup.platform === 'kubernetes') && !/^[a-f0-9]{64}$/.test(setup.secretKey || '')) {
+    return setup.platform === 'kubernetes'
+      ? 'Generate a private settings key before exporting Kubernetes setup files.'
+      : 'Generate a private settings key before exporting a single-file stack.';
+  }
   if (setup.gpuBox) {
     const raw = setup.gpuBox;
     const host = raw.includes(':') && !raw.includes('[') && raw.split(':').length > 2 ? `[${raw}]` : raw;
@@ -67,7 +76,7 @@ export function validateSetup(setup: Setup): string | null {
 
 type Mapping = {[key: string]: unknown};
 export type Sources = {base: Mapping; gpu: Mapping; full: Mapping; cuda: Mapping; worker?: Mapping};
-export interface Result {files: Recipe[]; commands: string; workerCommands?: string; error: string | null}
+export interface Result {files: Recipe[]; commands: string; workerCommands?: string; accessCommands?: string; error: string | null}
 
 function merge(base: Mapping, patch: Mapping): Mapping {
   const result = {...base};
@@ -145,7 +154,7 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
     const root = setup.tier === 'nas' ? 'base' : `overlays/tier-${setup.tier}`;
     const secret = {apiVersion: 'v1', kind: 'Secret', metadata: {
       name: 'immich-memories-secrets', namespace: 'immich-memories',
-    }, type: 'Opaque', stringData: {IMMICH_URL: setup.immichUrl, IMMICH_API_KEY: setup.apiKey, ...(setup.readerApiKey ? {IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY: setup.readerApiKey} : {})}};
+    }, type: 'Opaque', stringData: {IMMICH_URL: setup.immichUrl, IMMICH_API_KEY: setup.apiKey, IMMICH_MEMORIES_SECRET_KEY: setup.secretKey!, ...(setup.readerApiKey ? {IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY: setup.readerApiKey} : {})}};
     const ports = new Set<number>([Number(new URL(setup.immichUrl).port || (setup.immichUrl.startsWith('https:') ? 443 : 80))]);
     if (setup.tier === 'full') ports.add(Number(new URL(setup.readerUrl).port || (setup.readerUrl.startsWith('https:') ? 443 : 80)));
     const egress = {target: {kind: 'NetworkPolicy', name: 'immich-memories'}, patch: JSON.stringify([{
@@ -179,6 +188,7 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       '# Open http://localhost:8080 in your browser and start your first monthly cut.',
     ].join('\n')};
   }
+  const uiPort = setup.uiPort ?? 8080;
   let compose = sources.base;
   if (setup.tier !== 'nas' && !setup.gpuBox) compose = merge(compose, sources.gpu);
   if (setup.tier === 'full') compose = merge(compose, sources.full);
@@ -188,6 +198,10 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
   compose = {...compose, services: Object.fromEntries(Object.entries(services).map(([key, value]) => {
     const service = {...value as Mapping};
     delete service.profiles;
+    if (key === 'immich-memories' && Array.isArray(service.ports)) {
+      service.ports = service.ports.map(port => typeof port === 'string'
+        ? port.replace(/:8080:8080$/, `:${uiPort}:8080`) : port);
+    }
     return [key, service];
   }))};
   const env = [
@@ -242,7 +256,11 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
     {name: 'docker-compose.yml', language: 'yaml', content: JSON.stringify(compose, null, 2)},
     ...(!setup.inline ? [{name: '.env', language: 'dotenv', content: env.join('\n')}] : []),
     ...workerFiles,
-  ], workerCommands: workerCommands.join('\n'), commands: [
+  ], workerCommands: workerCommands.join('\n'), accessCommands: [
+    '# From your computer, when the app runs on a headless host:',
+    `ssh -L ${uiPort}:localhost:${uiPort} your-ssh-user@your-host`,
+    `# Open http://localhost:${uiPort} in your browser.`,
+  ].join('\n'), commands: [
     '# On the app host:',
     'mkdir -p immich-memories/output && cd immich-memories',
     ...(setup.inline ? ['# Save docker-compose.yml here, or paste it into your stack editor.'] : [
@@ -253,5 +271,6 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
     'docker compose exec immich-memories immich-memories models fetch',
     'docker compose exec immich-memories immich-memories preflight',
     'docker compose exec immich-memories immich-memories capabilities',
+    `# Open http://localhost:${uiPort} in your browser.`,
   ].join('\n')};
 }
