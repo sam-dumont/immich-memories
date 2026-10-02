@@ -115,8 +115,8 @@ cuda-bindings==12.9.4 \
     --hash=sha256:fda147a344e8eaeca0c6ff113d2851ffca8f7dfc0a6c932374ee5c47caa649c8
 cuda-pathfinder==1.8.2 \
     --hash=sha256:4e65059febdb4d19d5cbc4798677e19db2b582f2f702f457b609e571690d357e
-cuda-toolkit==12.6.3 \
-    --hash=sha256:79d8605baeb6c2f695761e0efb54bc62dbc3c9e32eb0742df7669c07befaa8f7
+cuda-toolkit==13.4.2 \
+    --hash=sha256:2e79d99df4f3c5b3102fa4a5a69eb4c37a06ebf06b9aef92c18078c26e8db004
 demucs==4.0.1 \
     --hash=sha256:e45a5a788bae79767c37bbf6e69aae03862ddcca05550fb79b926346a177d713
 dora-search==0.1.12 \
