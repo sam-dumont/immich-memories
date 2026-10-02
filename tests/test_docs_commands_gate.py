@@ -71,3 +71,9 @@ def test_unknown_make_targets_are_rejected(tmp_path, monkeypatch):
     errors, checked = check_page(page, commands(), {"build"})
     assert checked == 2
     assert "unknown Make target imaginary" in errors[0]
+
+
+def test_generated_group_usage_accepts_command_placeholder():
+    assert check_cli(["runs", "[OPTIONS]", "COMMAND", "[ARGS]..."], commands()) == []
+    assert "unknown subcommand" in check_cli(["runs", "COMMAND"], commands())[0]
+    assert "unknown subcommand" in check_cli(["invented", "[OPTIONS]", "COMMAND"], commands())[0]
