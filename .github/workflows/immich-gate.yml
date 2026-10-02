@@ -116,13 +116,13 @@ jobs:
       - run: make dev-test-integration
 
       - name: Cache NAS model artifacts
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .immich-gate/models
           key: immich-gate-nas-models-${{ hashFiles('src/immich_memories/pinned_models.py', 'src/immich_memories/analysis/editorial_preparation_detectors.py') }}
 
       - name: Cache gate media
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .immich-gate/media
           key: immich-gate-media-${{ hashFiles('tests/e2e/fixtures/library/**', 'tests/e2e/fake_library.py', 'tests/integration/immich_gate/media.py') }}

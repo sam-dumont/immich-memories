@@ -21,6 +21,16 @@ spec:
           protocol: TCP
 
   egress:
+    # Trigger CronJobs reach Service port 80, translated to the app pod's 8080.
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: immich-memories
+              app.kubernetes.io/component: web-ui
+      ports:
+        - port: 8080
+          protocol: TCP
+
     # DNS
     - ports:
         - port: 53

@@ -12,7 +12,8 @@ rendered output before you apply it.
 
 ```
 base/                  CPU-only: Namespace, Secret, PVCs, Deployment, Service, NetworkPolicy
-  job.yaml             optional CLI Job + CronJobs (commented out in kustomization.yaml)
+  job.yaml             optional one-off CLI Job; Deployment must be scaled to zero
+  cronjobs.yaml        optional scheduled HTTP triggers; no application PVC mounts
   ingress.yaml.example optional Ingress — only after enabling authentication
 overlays/gpu/          adds runtimeClassName nvidia, nvidia.com/gpu, node selector, tolerations
 overlays/inference/    the inference service alone: Deployment, Service on 8092, cache PVC, policy
@@ -25,7 +26,7 @@ overlays/postgres/     optional: point the store at PostgreSQL instead of the de
 
 ## Prerequisites
 
-1. A storage class for three `ReadWriteOnce` PVCs: `immich-memories-cache` 20Gi,
+1. A storage class for three `ReadWriteOnce` PVCs: `immich-memories-cache` 30Gi,
    `immich-memories-output` 50Gi, `immich-memories-models` 5Gi. A deployment made before the
    models claim existed has to add it, or the pod stays `Pending` on a volume that is not there.
 2. Immich reachable from the cluster (in-cluster or external, port 2283 by default)
@@ -65,55 +66,43 @@ The image runs as user `immich`, UID/GID 1000, `HOME=/home/immich`.
 
 | Mount | Backed by | Holds |
 |-------|-----------|-------|
-| `/home/immich/.immich-memories` | PVC `immich-memories-cache` (writable) | `config.yaml`, `store.db` (banked facts, decisions, run history and automation state), video cache |
+| `/home/immich/.immich-memories` | PVC `immich-memories-cache` (writable) | `config.yaml`, `store.db` (banked facts, decisions, readings, run history and automation state), preview/video caches; legacy databases are imported once |
+| `/home/immich/.cache` | The same data PVC, mounted again | persistent writable Torch/HF runtime caches |
 | `/app/output` | PVC `immich-memories-output` | generated videos (`IMMICH_MEMORIES_OUTPUT__DIRECTORY=/app/output`) |
 | `/models` | PVC `immich-memories-models` | the pinned DINOv2 export, the pinned sensitive-content export and the detector snapshots, written by `immich-memories models fetch` |
 | `/tmp` | emptyDir 4Gi | FFmpeg intermediates (use 8Gi for 4K) |
 
-Every pod in `base/` runs a `fetch-models` init container before the app container: the same
-image, the same `immich-memories models fetch` a Docker user runs after `up`, writing the three
-pinned artifacts onto the `/models` claim. There is nothing to run by hand. It tests for all three
-files first and exits without a download when they are there, so a restart costs nothing.
+The Deployment and one-off Job run the same image's `models fetch` init step. The presence
+guard includes GPU detector files, so a NAS re-runs fetch on each start; existing artifacts are
+digest-checked. Encoder, WordNet and detector files use `/models`; Laya uses the data PVC.
+The app image has no `llama-server`, so a text reader must run externally.
 `kubectl logs -n immich-memories deploy/immich-memories -c fetch-models` shows what it did.
 
 There is no ConfigMap. `IMMICH_URL` / `IMMICH_API_KEY` come from the Secret; anything else is an
-`IMMICH_MEMORIES_<SECTION>__<KEY>` env var on the Deployment (commented examples for LLM analysis
-and daily automation are in `base/deployment.yaml`), and the UI settings page writes
-`config.yaml` on the PVC.
+`IMMICH_MEMORIES_<SECTION>__<KEY>` env var on the Deployment (commented examples for an explicitly enabled text reader
+and daily automation are in `base/deployment.yaml`), and the UI settings page saves to the store on the PVC.
 
 Probes: liveness `/health/live` (process up), readiness `/health/ready` (`200` only when config
 is present and Immich answers, otherwise `503`). `/health` always returns `200` and is not used.
 
 ## Batch Jobs
 
-`base/job.yaml` holds a one-off `generate` Job and two CronJobs (monthly highlights, `auto run`).
-Uncomment `- job.yaml` in the kustomization or apply it directly:
+`base/cronjobs.yaml` contains two scheduled HTTP triggers. Set the trigger token in
+`base/secret.yaml`, uncomment `- cronjobs.yaml` in the kustomization, then run
+`kubectl kustomize base` and `kubectl apply -k base`. Both schedules call the normal
+`auto run` decision, even the one named monthly. They mount no application PVCs.
 
-```bash
-kubectl apply -f base/job.yaml
-kubectl logs -n immich-memories -f job/immich-memories-generate
-kubectl exec -n immich-memories deployment/immich-memories -- ls -la /app/output/
-```
-
-`--duration` is seconds (`600` = 10 minutes). The store defaults to a SQLite file on the `data`
-PVC, opened by one writer at a time; a second pod writing that file from another node over
-`ReadWriteMany` corrupts it (WAL mode needs shared memory a network filesystem does not give two
-hosts). So the two CronJobs never mount the PVCs at all: they `curl` the Deployment's
-`POST /api/trigger` route, which runs whatever decision `auto run` would have made — set
-`IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in `base/secret.yaml` first. If the built-in decision is
-all you want, `IMMICH_MEMORIES_AUTOMATION__ENABLED=true` on the Deployment does the same job
-in-process, with no CronJob needed. The one-off `generate` Job still mounts the PVCs directly (the
-trigger route takes no `--year`/`--person`/... parameters), so run
-`kubectl exec deploy/immich-memories -- immich-memories generate ...` against the running
-Deployment instead when you can; keep the Job itself only for a batch cluster where the Deployment
-stays scaled to 0 between runs.
+`base/job.yaml` contains only a one-off `generate` Job. Include it separately, only while the
+Deployment is scaled to zero: both use the same SQLite PVC. Prefer
+`kubectl exec deploy/immich-memories -- immich-memories generate ...` for a fixed recipe while
+the app is running. A raw `apply -f` bypasses image and namespace transformations.
 
 ## GPU
 
 `components/gpu/deployment-gpu.yaml` is a strategic-merge patch on the Deployment: `runtimeClassName:
 nvidia`, one `nvidia.com/gpu`, `NVIDIA_*` env, `nodeSelector` on `nvidia.com/gpu.present=true`
 and a toleration for the `nvidia.com/gpu` taint. Edit the label or GPU count there. The app
-auto-detects the GPU (NVENC encoding, CUDA analysis, the title kernels on CUDA). A card that cannot
+auto-detects the GPU (NVENC encoding and title kernels on CUDA). A card that cannot
 start the title kernels costs speed, not titles: they render on the CPU and the log says why in one
 warning line. Their compile cache lives on the `data` volume, since the root filesystem is read-only.
 

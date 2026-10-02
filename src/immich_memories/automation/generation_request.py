@@ -30,6 +30,7 @@ class GenerationRequest:
     automation_attempt_id: str | None = None
     config_path: Path | None = None
     event_id: str | None = None
+    birth_date: date | None = None
     person_expression: PersonExpression | None = None
     accounts: tuple[str, ...] = ()
 
@@ -105,6 +106,12 @@ class GenerationRequest:
             automation_attempt_id=automation_attempt_id,
             config_path=config_path,
             event_id=event_id,
+            birth_date=(
+                date.fromisoformat(candidate.extra_params["birth_date"])
+                if candidate.category is CandidateCategory.BIRTHDAY
+                and candidate.extra_params.get("birth_date")
+                else None
+            ),
             person_expression=(
                 PersonExpression.from_dict(expression_record)
                 if expression_record is not None
@@ -154,7 +161,13 @@ class GenerationRequest:
                 # WHY end and not start: --year names the birthday being celebrated, and
                 # a birthday memory is the year *leading up to* it -- so the year the
                 # window ends in is the one to ask for.
-                return ["--year", str(self.end.year), "--birthday", *self._person_args()]
+                return [
+                    "--year",
+                    str(self.end.year),
+                    "--birthday",
+                    (self.birth_date or self.end).strftime("%m-%d"),
+                    *self._person_args(),
+                ]
             case CandidateCategory.MULTI_PERSON:
                 return ["--year", str(self.start.year), *self._person_args()]
             case CandidateCategory.ON_THIS_DAY:

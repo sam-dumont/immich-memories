@@ -35,7 +35,7 @@ Or leave those Compose lines commented and save **Settings > Automation > enable
 immich-memories auto install --hour 9
 ```
 
-This installs a user timer on macOS or Linux. Scheduled jobs do not inherit your interactive shell's credentials: keep them in the configuration. [Scheduler details](../reference/automation-contract.md#bare-metal-auto-install) cover the launcher, environment and missed runs.
+This writes a user timer on macOS or Linux and prints its activation command. Run **Activate:** to start it; installation alone does not activate the schedule. On headless Linux, run `loginctl enable-linger "$USER"` so the timer survives logout. Run **Deactivate:** before `auto install --uninstall`, which only deletes files. Scheduled jobs do not inherit your interactive shell's credentials: keep them in the configuration. [Scheduler details](../reference/automation-contract.md#bare-metal-auto-install) cover the launcher, environment and missed runs.
 
 ## How it picks one memory
 

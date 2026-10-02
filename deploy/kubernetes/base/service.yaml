@@ -14,3 +14,4 @@ spec:
       protocol: TCP
   selector:
     app.kubernetes.io/name: immich-memories
+    app.kubernetes.io/component: web-ui

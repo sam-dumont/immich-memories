@@ -60,7 +60,7 @@ modes, and the SQL for a dedicated schema in Immich's own database, are on
 | `labels` | Extra labels on every resource | `{}` |
 | `gpu_enabled`, `gpu_count` | Schedule on NVIDIA GPU nodes: RuntimeClass, `nvidia.com/gpu`, node selector, toleration, `NVIDIA_*` env | `false`, `1` |
 | `gpu_node_selector`, `runtime_class_name` | how GPU nodes are found | `{"nvidia.com/gpu.present": "true"}`, `"nvidia"` |
-| `output_storage_size`, `cache_storage_size` | PVC sizes | `"50Gi"`, `"20Gi"` |
+| `output_storage_size`, `cache_storage_size` | PVC sizes | `"50Gi"`, `"30Gi"` |
 | `models_storage_size` | Models PVC size (the Kubernetes manifests ship `5Gi`) | `"10Gi"` |
 | `storage_class_name` | Storage class for all three PVCs | `null` (cluster default) |
 | `ingress_enabled`, `ingress_class_name`, `ingress_host` | Ingress, off by default | `false`, `"nginx"`, `"memories.example.com"` |

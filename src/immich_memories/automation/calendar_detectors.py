@@ -331,7 +331,7 @@ class BirthdayDetector:
                     score=round(self.BASE_SCORE, 3),
                     reason=reason,
                     asset_count=asset_count,
-                    extra_params={"birthday": True},
+                    extra_params={"birthday": True, "birth_date": bday.isoformat()},
                 )
             )
 

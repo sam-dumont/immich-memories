@@ -11,30 +11,38 @@ name, set it in each kustomization root you apply, before the first apply:
 
 ```bash
 cd deploy/kubernetes
-for d in base overlays/inference overlays/captioner overlays/inference-lan; do
+for d in base overlays/*; do
   (cd "$d" && kustomize edit set namespace photos-memories)
 done
 ```
 
-That renames the Namespace object `base/` creates too. `overlays/gpu`, `overlays/inference-cuda`
-and `overlays/captioner-cuda` build on those roots and follow them. Three things do not: the
-`-n immich-memories` in every command on these pages, `base/job.yaml` applied with
-`kubectl apply -f` (that skips kustomize), and the cross-namespace addresses, which become
-`captioner.photos-memories.svc.cluster.local` and so on.
+This needs the standalone `kustomize` CLI; `kubectl kustomize` can build but cannot edit.
+The loop changes every root, including `render-sidecar`, `postgres` and `maximalist`, so their
+Secrets move with their Deployments and the maximalist namespace does not override your choice.
+It also renames the Namespace object that `base/` creates. Render each root you use before applying.
+
+Update `-n immich-memories` in commands and cross-namespace addresses such as
+`captioner.photos-memories.svc.cluster.local`. Raw `kubectl apply -f` bypasses all namespace
+transformations; include optional Jobs or CronJobs in a kustomization instead.
 
 
 ## How the pod is wired
 
 The image runs as `immich`, UID/GID 1000, `HOME=/home/immich`. The manifests set `runAsUser` and
 `fsGroup` 1000, drop all capabilities, use the `RuntimeDefault` seccomp profile and mount the root
-read-only. Four writable paths:
+read-only. Five writable paths:
 
 | Mount | Backed by | Holds |
 |---|---|---|
 | `/home/immich/.immich-memories` | PVC `immich-memories-cache` | `config.yaml`, `store.db` (the store when it is SQLite: banked facts, readings, your picture decisions, people, run history, automation state, special days), video cache (a `cache.db` there is a pre-store leftover, imported once) |
+| `/home/immich/.cache` | The same data/cache PVC mounted again | Torch/HF runtime caches; app and init containers can write here |
 | `/app/output` | PVC `immich-memories-output` | generated videos |
 | `/models` | PVC `immich-memories-models` | pinned model files `immich-memories models fetch` writes, at `IMMICH_MEMORIES_TRIAGE__ENCODER`, `..._MARQO_ONNX`, `..._DETECTOR_CACHE_DIR` and `IMMICH_MEMORIES_FREE_TEXT__WORDNET` |
 | `/tmp` | emptyDir 4Gi | FFmpeg intermediates; 8Gi for 4K |
+
+Laya files remain under the data PVC's `models/` directory. On native installs an owned
+reader's GGUF also lives there; these app images have no `llama-server` and use an external reader.
+The data claim defaults to 30Gi; the app is capped at 8Gi/four CPUs and model init at 2Gi/two CPUs.
 
 A deployment that predates the models claim has to add it before the next apply, or the pod stays
 `Pending` waiting for a volume that does not exist.
@@ -60,8 +68,12 @@ Deployment, which carries commented examples for the reader and the daily automa
 saved from the UI go to the store (`store.db` on the PVC by default); env vars override them
 ([where a setting comes from](.././config-file.md#where-a-setting-comes-from)).
 
-The NetworkPolicy allows egress to DNS, 80 and 443, Immich on 2283, a reader on 11434 (Ollama's
-port; oMLX serves on 8000) and the caption server on 8092. Edit the ports if yours differ.
+The NetworkPolicy allows DNS, 80, 443, 2283, 11434 and 8092 without destination selectors.
+It also allows 8080 to app pods with the `web-ui` component in the same namespace for the scheduled trigger calls.
+Ingress on 8080 has no source selector; any cluster pod can reach the app. Add operator-owned
+selectors when you need stricter isolation. Add ports for your external services: readers may
+use 8000 or 9999 (the maximalist oMLX example uses 9999), and a separate render worker uses
+8093. Enforcing these policies depends on your CNI.
 
 
 ## GPU
@@ -133,8 +145,10 @@ Each outside service is a URL on the Deployment; open its port in the NetworkPol
 
 ## Batch jobs
 
-`base/job.yaml` holds a one-off `generate` Job and two CronJobs (an automation trigger on the 1st,
-and another daily). Uncomment `- job.yaml` in the kustomization.
+`base/cronjobs.yaml` contains only the two HTTP-trigger schedules, one monthly and one daily.
+Set the trigger token and uncomment `- cronjobs.yaml` in the kustomization, then render and
+apply that root. The separate `base/job.yaml` contains only the one-off `generate` Job;
+include it only with the Deployment scaled to zero.
 
 The store defaults to a SQLite file on the `immich-memories-cache` PVC, one writer at a time; a second pod on
 another node writing that file over `ReadWriteMany` corrupts it (WAL mode needs shared memory a

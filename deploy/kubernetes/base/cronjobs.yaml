@@ -1,0 +1,157 @@
+# Scheduled HTTP triggers. Both invoke the normal `auto run` decision; neither
+# forces a monthly recipe or mounts the application PVCs. Enable `- cronjobs.yaml`
+# in kustomization.yaml after setting the trigger token in secret.yaml.
+# CronJob: the normal automatic decision on the 1st of each month.
+#
+# `POST /api/trigger` takes no parameters: it runs whatever decision `auto
+# run` would have made (the same rules, cooldown and history the daily timer
+# uses). The route
+# never runs an arbitrary command over HTTP. For a fixed monthly recipe, point your own cron at
+# `kubectl exec deploy/immich-memories -- immich-memories generate --start ... --end ...`
+# instead; the Deployment is already the only writer, so that command needs
+# no second pod. What is below is the common case: a schedule that is happy
+# with whatever `auto run` decides.
+#
+# Needs `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` set in base/secret.yaml (see
+# secret.yaml.example) so the route answers a caller with no browser session.
+# curl is pinned by digest, the same way docker-compose.yml pins the caption
+# model puller.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: immich-memories-monthly
+  namespace: immich-memories
+  labels:
+    app.kubernetes.io/name: immich-memories
+    app.kubernetes.io/component: cronjob
+spec:
+  schedule: "0 2 1 * *"  # 2 AM on the 1st of each month
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 604800  # 7 days
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: immich-memories
+            app.kubernetes.io/component: cronjob
+        spec:
+          restartPolicy: OnFailure
+          enableServiceLinks: false
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 100
+            runAsGroup: 100
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: trigger
+              image: docker.io/curlimages/curl:8.11.1@sha256:c1fe1679c34d9784c1b0d1e5f62ac0a79fca01fb6377cdd33e90473c6f9f9a69
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+              command:
+                - curl
+                - -fsS
+                - -X
+                - POST
+                - http://immich-memories/api/trigger
+                # Preserve the app Host check with authentication on or off.
+                - -H
+                - "Host: localhost"
+                - -H
+                - "x-api-key: $(TRIGGER_TOKEN)"
+              env:
+                - name: TRIGGER_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: immich-memories-secrets
+                      key: IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN
+              resources:
+                requests:
+                  memory: "16Mi"
+                  cpu: "10m"
+                limits:
+                  memory: "32Mi"
+                  cpu: "100m"
+---
+# CronJob: smart automation. `auto run` picks the best candidate (monthly,
+# yearly, trip, person spotlight...), skips duplicates and respects cooldown —
+# exactly what the trigger API runs, so this CronJob is a curl to the running
+# Deployment, never a second pod running the CLI. Prefer the in-process daily
+# timer (`IMMICH_MEMORIES_AUTOMATION__ENABLED=true` on the Deployment) over
+# this CronJob unless you need a clock the Deployment's own process does not
+# have, or want the schedule outside the pod spec.
+#
+# Needs `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` set in base/secret.yaml (see
+# secret.yaml.example).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: immich-memories-auto
+  namespace: immich-memories
+  labels:
+    app.kubernetes.io/name: immich-memories
+    app.kubernetes.io/component: cronjob-auto
+spec:
+  schedule: "0 9 * * *"  # Daily at 9 AM
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 604800  # 7 days
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: immich-memories
+            app.kubernetes.io/component: cronjob-auto
+        spec:
+          restartPolicy: OnFailure
+          enableServiceLinks: false
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 100
+            runAsGroup: 100
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: trigger
+              image: docker.io/curlimages/curl:8.11.1@sha256:c1fe1679c34d9784c1b0d1e5f62ac0a79fca01fb6377cdd33e90473c6f9f9a69
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+              command:
+                - curl
+                - -fsS
+                - -X
+                - POST
+                - http://immich-memories/api/trigger
+                # Preserve the app Host check with authentication on or off.
+                - -H
+                - "Host: localhost"
+                - -H
+                - "x-api-key: $(TRIGGER_TOKEN)"
+              env:
+                - name: TRIGGER_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: immich-memories-secrets
+                      key: IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN
+              resources:
+                requests:
+                  memory: "16Mi"
+                  cpu: "10m"
+                limits:
+                  memory: "32Mi"
+                  cpu: "100m"
