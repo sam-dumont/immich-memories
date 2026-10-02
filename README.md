@@ -38,7 +38,7 @@ The app groups photos and videos into moments, picks shots and keeps them in tim
 
 ## Run it your way
 
-[Operate and configure](https://sam-dumont.github.io/immich-video-memory-generator/docs/run/overview) covers Docker, NAS, Kubernetes, authentication, storage and backups. The default UI listens on localhost with authentication off. Enable authentication before exposing it. Run one UI replica.
+[Operate and configure](https://sam-dumont.github.io/immich-video-memory-generator/docs/run/overview) covers Docker, NAS, Kubernetes, authentication, storage and backups. Authentication is disabled by default. Native installs bind to localhost; the shipped Docker Compose file publishes only on localhost. The image itself listens on all container interfaces, so `docker run -p 8080:8080` or another port mapping can expose it. Enable authentication before LAN access. Run one UI replica.
 
 A default film talks to your Immich server. Originals are never modified, and uploading a finished film back is opt-in. Maps and external model services need separate configuration. [Privacy](https://sam-dumont.github.io/immich-video-memory-generator/docs/run/privacy) lists what leaves your network.
 

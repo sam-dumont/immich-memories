@@ -19,7 +19,7 @@ needs none.
 |----------|-----------|
 | `IMMICH_URL` | `immich.url` |
 | `IMMICH_API_KEY` | `immich.api_key` |
-| `OPENAI_API_KEY` | `llm.api_key`, only when no resolved key is already configured |
+| `OPENAI_API_KEY` | `llm.api_key`, only when the config file states no key |
 | `ANTHROPIC_API_KEY` | `llm.api_key` under the same rule, read instead of `OPENAI_API_KEY` when `llm.provider` is `anthropic` or `zai` |
 | `MUSICGEN_ENABLED`, `MUSICGEN_BASE_URL`, `MUSICGEN_API_KEY` | `musicgen.enabled`, `.base_url`, `.api_key` |
 | `ACE_STEP_ENABLED`, `ACE_STEP_API_URL`, `ACE_STEP_API_KEY` | `ace_step.enabled`, `.api_url`, `.api_key` |
@@ -28,11 +28,11 @@ needs none.
 
 An empty shorthand counts as unset.
 
-:::caution An already configured LLM key beats its shorthand
+:::caution An LLM key written in the file beats its shorthand
 `OPENAI_API_KEY` is the name every OpenAI-SDK client reads, a local mlx or vLLM server included, so
 on a machine that exports it for that server it says nothing about the endpoint the key will be
-sent to. So a key already resolved in `llm.api_key` (from the file, stored settings or its nested environment variable) wins, and the variable fills the field only where the
-resolved config leaves it empty or holds a `${VAR}` nobody set. `ANTHROPIC_API_KEY` works the same way. To
+sent to. So a key in `llm.api_key` wins, and the variable fills the field only where the
+file leaves it empty or holds a `${VAR}` nobody set. `ANTHROPIC_API_KEY` works the same way. To
 replace a key that is in the file, use `IMMICH_MEMORIES_LLM__API_KEY`.
 :::
 
@@ -54,7 +54,7 @@ replace a key that is in the file, use `IMMICH_MEMORIES_LLM__API_KEY`.
 | `ACESTEP_CHECKPOINTS_DIR` | ACE-Step `lib` mode: where checkpoints go (default `~/.cache/ace-step/checkpoints`) |
 | `ACESTEP_MLX_VAE_CHUNK` | ACE-Step `lib` mode on Apple Silicon: VAE decode chunk in latent frames (minimum 192). Lower it if MLX runs out of memory |
 | `IMMICH_MEMORIES_ACESTEP_MLX_DIT_FP32` | ACE-Step `lib` mode on Apple Silicon: `1` keeps the decoder in fp32 (about twice the memory) |
-| `FORWARDED_ALLOW_IPS` | uvicorn: proxies whose `X-Forwarded-*` headers are trusted. Wins over `auth.trusted_proxies`. With auth on, `*` stops the app at startup (list your proxy's address); with `auth.provider: header` it must be unset. See [Authentication](../authentication.mdx) |
+| `FORWARDED_ALLOW_IPS` | uvicorn: proxies whose `X-Forwarded-*` headers are trusted. Wins over `auth.trusted_proxies`. With auth on, `*` stops the app at startup (list your proxy's address); with `auth.provider: header` remove the variable entirely, even if empty, and use `auth.trusted_proxies`. See [Authentication](../authentication.mdx) |
 
 :::caution Scheduled jobs do not inherit your shell
 A launchd or cron job starts from a login-less environment, so nothing you `export` interactively

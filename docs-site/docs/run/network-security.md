@@ -11,12 +11,17 @@ library; a proxy or render worker is part of that trust boundary.
 
 With auth off, Python binds to `127.0.0.1`. Enabling auth normally permits all interfaces.
 Use `ui --host 127.0.0.1` to keep an authenticated app local.
-In Docker, the image binds inside the container; the shipped mapping `127.0.0.1:8080:8080`
-keeps it reachable only from the host. For LAN access, follow
+In Docker, the image starts with `ui --host 0.0.0.0`. Only the shipped Compose mapping
+`127.0.0.1:8080:8080` keeps it reachable from the host alone. `docker run -p 8080:8080`,
+a NAS template or a Portainer stack with an all-interface mapping exposes the unauthenticated
+app unless you enable auth. For LAN access, follow
 [Docker's login and mapping steps](./docker.md#reaching-the-ui-from-another-machine).
 
-An explicit `--host` or environment host override can expose an unauthenticated app.
-A bare YAML `server.host: 0.0.0.0` alone does not opt into that exposure.
+An explicit `ui --host 0.0.0.0` or `IMMICH_MEMORIES_SERVER__HOST=0.0.0.0` can expose an
+unauthenticated app. `advanced.server.allow_unauthenticated_lan: true` also permits a wildcard
+bind without auth. Anyone reaching that port can use the app's Immich access.
+A YAML `server.host: 0.0.0.0` is ignored because older versions wrote it automatically.
+Enable auth for LAN access, or use one of the explicit overrides only on a restricted network.
 
 ## Allowed hosts
 
@@ -84,6 +89,19 @@ The app must trust the **peer address it actually sees**. Docker's bridge may ma
 bridge address instead of `127.0.0.1`; replace it with that exact address. For a proxy container,
 use its fixed address and keep the app off published LAN ports.
 
+On a Linux Docker host, inspect the app's container IP and observe a proxied connection:
+
+```bash
+docker inspect --format '{{json .NetworkSettings.Networks}}' "$(docker compose ps -q immich-memories)"
+sudo tcpdump -nn -i any 'tcp dst port 8080'
+```
+
+Open the UI through the proxy while the capture runs. Find the packet whose destination is
+the app's container IP; its source is the peer the app must trust. Stop the capture with Ctrl-C.
+For example, `172.20.0.1 > 172.20.0.3.8080` means trust `172.20.0.1`, not the browser address
+in `X-Forwarded-For`. With Docker Desktop, a proxy container on the app's private network with
+a fixed IP avoids relying on the host-to-VM bridge address.
+
 ```nginx
 server {
     listen 443 ssl;
@@ -114,11 +132,13 @@ flowchart TB
   app -->|API key| immich["Immich"]
 ```
 
-Register OIDC callback `https://memories.example.com/auth/callback` and logout
-`https://memories.example.com/logout`. Allow only intended verified emails/domains.
+Register OIDC callback `https://memories.example.com/auth/callback`. Allow only intended verified
+emails/domains. App logout redirects to the IdP's end-session endpoint when available, without
+a `post_logout_redirect_uri`.
 `FORWARDED_ALLOW_IPS`, when set, overrides `auth.trusted_proxies`. With auth on, the app refuses
 to start when it is `*` (it would let every client choose its own address); list your proxy's
-address instead. With `provider: header` it must stay unset. Only uvicorn reads
+address instead. With `provider: header` remove the variable entirely, even if empty, and
+configure `auth.trusted_proxies`. Only uvicorn reads
 `X-Forwarded-For`, and only from those proxies: the sign-in limiter counts failures on the address
 uvicorn resolved, never on a header the client sent.
 Enable secure cookies only once users reach HTTPS; plain HTTP LAN logins then fail.

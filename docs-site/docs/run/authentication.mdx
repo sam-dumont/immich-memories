@@ -15,9 +15,6 @@ For personal LAN access, start with Basic auth below. Use OIDC for your existing
 or trusted headers when an authenticated proxy is the only route to the app.
 [Proxy, TLS and bind-address setup](./network-security.md) is a separate operator guide.
 
-Authentication is set in the environment or `config.yaml` only, and changes take effect on restart.
-The Settings page shows `auth.*` and `server.*` read-only.
-
 <ThemedScreenshot name="login" alt="Login page" />
 
 ## Basic auth
@@ -63,7 +60,8 @@ advanced:
 
 `public_url` pins the `redirect_uri` sent to the IdP, so it must match what you registered there,
 and it is what makes callback-origin validation possible. Register the callback URL
-`https://your-host/auth/callback` and the post-logout return URL `https://your-host/app/login`. Auth0: a Regular
+`https://your-host/auth/callback`. The app does not send a `post_logout_redirect_uri`; registering
+`https://your-host/logout` at the IdP does not make logout return there. Auth0: a Regular
 Web Application. Keycloak: a client with client authentication enabled. Authelia: a client with
 `pkce_challenge_method: S256`, scopes `openid`, `email`, `profile`, grant type
 `authorization_code`. The rest of the `auth` keys are in the
@@ -107,8 +105,9 @@ Authelia forwards `Remote-User` and `Remote-Email` by default.
 
 The header is read on every request: a different user in it switches the session to that user,
 and a request without it is not signed in. Header auth uses `trusted_proxies` only. With
-`FORWARDED_ALLOW_IPS` set as well, the app refuses to start, since uvicorn would replace the
-proxy's address with the visitor's before the check runs.
+`FORWARDED_ALLOW_IPS` present, even if empty, the app refuses to start, since uvicorn would
+replace the proxy's address with the visitor's before the check runs. Remove the variable
+entirely and keep direct access restricted to the authenticating proxy.
 
 ## Behind a reverse proxy with TLS
 
@@ -125,7 +124,9 @@ the app refuses to start. Generate one with `openssl rand -hex 32`.
 
 **Sign out** in the top bar sends `POST /logout` and ends every session of that user, in every browser: a
 copy of the cookie taken before the sign-out no longer opens the app. OIDC logout also ends the
-IdP session when the IdP advertises `end_session_endpoint`. Changing the password, the provider
+IdP session when the IdP advertises `end_session_endpoint`; the app sends no return URL.
+For header auth, app logout does not sign out of the proxy, which can authenticate the next
+request again. Changing the password, the provider
 or the OIDC allow-list ends every session of every user.
 
 Auth is set in the environment or `config.yaml` only, and a change needs a restart.

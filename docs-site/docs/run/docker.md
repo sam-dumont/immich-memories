@@ -105,10 +105,15 @@ For OIDC or a proxy with HTTPS, see [Authentication](./authentication.mdx).
 
 | Permission | Used for |
 |---|---|
-| Read assets, people, albums, timeline and search | Finding and reading your pictures |
-| Read/create tags and tag assets | Marking uploaded films so they are never selected as originals |
-| Upload assets; create/update albums | Upload-back, when enabled |
-| Delete assets, optional | Moving the previous render of the same recipe to trash |
+| `user.read` | Checking the API key's account (`/users/me`) |
+| `asset.read`, `asset.view`, `asset.download` | Metadata search, previews/playback and source media |
+| `asset.statistics`, `person.read`, `person.statistics`, `face.read` | People, face boxes and counts used by discovery |
+| `album.read`, `timeline.read`, `tag.read` | Album/timeline selection and excluding generated films |
+| `asset.upload`, `album.create`, `albumAsset.create`, `tag.create`, `tag.asset` | Optional delivery: upload, create/file into an album and mark the film as generated |
+| `asset.delete`, optional | Moving the previous render of the same recipe to trash |
+
+The first four rows are the read-only set. Delivery adds the fifth; deletion is separate.
+These are Immich's API permission names on v2 and v3. Metadata search uses `asset.read`.
 
 Originals are never changed. Without tag permissions, upload works but v3 cannot recognise the
 film as this app's own. Without delete permission, old generated copies remain.
