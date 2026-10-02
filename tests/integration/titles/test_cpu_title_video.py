@@ -196,3 +196,57 @@ def test_cpu_map_opening_uses_configured_black_fade(tmp_path: Path):
     )
     assert extract_frame_rgb(output, 0, 320, 180).mean() < 5
     assert extract_frame_rgb(output, 12, 320, 180).max() > 100
+
+
+def test_cpu_title_silence_ends_without_relying_on_the_output_limit(tmp_path, monkeypatch):
+    from immich_memories.titles.cpu_video import create_title_video
+
+    run = subprocess.run
+    silence_sources = []
+
+    def record_command(command, **kwargs):
+        silence_sources.extend(arg for arg in command if str(arg).startswith("anullsrc="))
+        return run(command, **kwargs)
+
+    duration = 1.25
+    with monkeypatch.context() as patch:
+        # Observe the external FFmpeg boundary while still rendering a real title.
+        patch.setattr(subprocess, "run", record_command)
+        create_title_video(
+            "Memory",
+            None,
+            TitleStyle(name="cpu"),
+            tmp_path / "title.mp4",
+            width=160,
+            height=90,
+            duration=duration,
+            fps=24,
+        )
+
+    assert len(silence_sources) == 1
+    samples = run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            silence_sources[0],
+            # A guard above the requested duration keeps the broken source bounded.
+            "-t",
+            str(duration + 0.1),
+            "-c:a",
+            "pcm_s16le",
+            "-f",
+            "s16le",
+            "pipe:1",
+        ],
+        capture_output=True,
+        check=True,
+        timeout=15,
+    )
+    stereo_samples = len(samples.stdout) // 4
+    expected = round(duration * 48000)
+    # The source may round its final packet up to its 1024-sample frame boundary.
+    assert expected <= stereo_samples < expected + 1024

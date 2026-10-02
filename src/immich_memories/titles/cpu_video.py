@@ -89,11 +89,13 @@ def create_title_video(
             fade = min(1.5, duration)
             graph += f",fade=t=out:st={duration - fade}:d={fade}:color={fade_color}"
         graph += f",{title_color_filter(plan)}[video]"
+        # Bound the source itself: output -t alone can leave infinite silence
+        # buffering while the title graph finishes its final frame (#1751).
         cmd = [
             "ffmpeg", "-y", "-filter_complex_threads", "1",
             "-loop", "1", "-framerate", "1", "-i", str(background_path),
             "-loop", "1", "-framerate", "1", "-i", str(plate_path),
-            "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
+            "-f", "lavfi", "-i", f"anullsrc=r=48000:cl=stereo:d={duration}",
             "-filter_complex", graph, "-map", "[video]", "-map", "2:a",
             *title_encoder_args(plan), "-c:a", "aac", "-b:a", "128k",
             "-t", str(duration), "-r", str(fps), "-movflags", "+faststart", str(output_path),
