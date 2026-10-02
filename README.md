@@ -25,7 +25,7 @@ Pick a month, a year, a trip or a person, review the cut, then render with title
 
 ## Make your first film
 
-Start with [Quick start](https://sam-dumont.github.io/immich-video-memory-generator/docs/get-started/quick-start), then [Your first film](https://sam-dumont.github.io/immich-video-memory-generator/docs/get-started/first-film). You need Immich v2 or v3, its API key, Docker Compose v2 and 4 GB of RAM for this container. One container is enough; a GPU and a text model are optional.
+Start with [Quick start](https://sam-dumont.github.io/immich-video-memory-generator/docs/get-started/quick-start), then [Your first film](https://sam-dumont.github.io/immich-video-memory-generator/docs/get-started/first-film). You need Immich v2 or v3, its API key, Docker Compose v2, two CPU cores, 4 GiB of RAM for the app and 25 GB for its data, plus the image and finished films. One container is enough; a GPU and a text model are optional.
 
 The app groups photos and videos into moments, picks shots and keeps them in time order. You review the cut before rendering: remove a shot, trim a video or swap a picture. [How it chooses](https://sam-dumont.github.io/immich-video-memory-generator/docs/how-it-chooses/overview) explains the idea.
 

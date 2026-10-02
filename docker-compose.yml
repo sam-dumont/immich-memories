@@ -8,12 +8,13 @@
 # Reaching it from another machine is a deliberate two-step change, see the ports block.
 # The stateful UI supports one user flow in one replica.
 #
-# Resource requirements for THIS container:
-#   Idle (UI):    ~100MB RAM
-#   Preparation:  2-4GB RAM, 2+ cores (Immich previews, the ONNX heads, two CPU detectors)
-#   Encoding:     4-8GB RAM, 4+ cores (FFmpeg assembly, depends on resolution)
+# Resource requirements for THIS container, in addition to Immich:
+#   CPU: 2 cores minimum; 4 cores recommended for rendering.
+#   RAM: 4 GiB for the default NAS/1080p output (tested with swap).
+#   Disk: 25 GB for persistent data, plus the image and finished films.
+#   First preparation: allow several hours for a real month on a NAS.
 #
-# For GPU-accelerated title rendering or 4K output, increase limits.
+# For GPU/Full 4K output, allow 8 GiB plus memory for model services; increase limits.
 # For GPU acceleration, see the hardware docs.
 #
 # What this file runs: the no-model editor, the default. No LLM model is set

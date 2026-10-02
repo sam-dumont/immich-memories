@@ -10,16 +10,25 @@ first preparation is a bigger job.
 
 ## Install
 
-Import `docker-compose.yml` as a project in your NAS's container manager. Put `.env` and an
-`output` folder beside it. Fill in the Immich URL/key, home coordinates and timezone as in
-[Docker step 2](./docker.md#2-connect-immich).
+Import `docker-compose.yml` as a project in your NAS's container manager. For a file-based
+project, put `.env` and an `output` folder beside it. Fill in the Immich URL/key, home coordinates
+and timezone as in [Docker step 2](./docker.md#2-connect-immich).
 
-After starting the project, SSH into that folder:
+- **Unraid:** use the [Compose Manager plugin](https://github.com/mstrhakr/compose_plugin/blob/main/docs/getting-started.md) to add a stack, edit its Compose file and start it.
+- **TrueNAS SCALE:** the [Install via YAML editor](https://apps.truenas.com/managing-apps/installing-custom-apps/) has no adjacent `.env` file. Replace the `${...}` values in the service's `environment:` with your values, or use the Custom App wizard's environment fields.
+- **Synology DSM / Portainer:** the container terminal can replace SSH. In [Portainer](https://docs.portainer.io/user/docker/containers/console), select **Containers > immich-memories > Console** and connect with `/bin/sh`.
+
+After starting the project, run these over SSH. The shipped container name works regardless of
+the project name or current folder:
 
 ```bash
-sudo docker compose exec immich-memories immich-memories models fetch
-sudo docker compose exec immich-memories immich-memories preflight
+sudo docker exec immich-memories immich-memories models fetch
+sudo docker exec immich-memories immich-memories preflight
 ```
+
+Inside the container terminal, run just `immich-memories models fetch` and
+`immich-memories preflight`; leave off `sudo docker exec immich-memories`. These NAS interface
+routes are guidance, not separately tested installs.
 
 Then [reach the UI](#reaching-the-ui) and make [your first film](../get-started/first-film.mdx).
 The default NAS tier needs no caption server or text model.
@@ -33,9 +42,18 @@ The image runs as UID/GID 1000. NAS users often have a different UID, so preflig
 sudo chown -R 1000:1000 output
 ```
 
-Or run the service as your NAS user (`id` prints its UID/GID): set `user: "<uid>:<gid>"` in the
-Compose service and chown the config volume to match. If you remove the output bind mount,
-turn on [upload-back](./docker.md#films-into-immich) so films reach Immich.
+Or run the service as your NAS user. Before changing the Compose `user:` setting, run this
+over SSH as that user, from the project folder, while the container is running and idle:
+
+```bash
+id
+sudo docker exec --user 0 immich-memories chown -R "$(id -u):$(id -g)" /home/immich/.immich-memories
+sudo chown -R "$(id -u):$(id -g)" output
+```
+
+Set `user: "<uid>:<gid>"` in the Compose service to the numbers printed by `id`, then recreate
+the container through your NAS manager. If you remove the output bind mount, turn on
+[upload-back](./docker.md#films-into-immich) so films reach Immich.
 
 ### Reaching the UI
 
@@ -62,6 +80,10 @@ pin this app to three cores on a four-core NAS:
 ## What to expect
 
 NAS films are capped at 1080p. The default 4 GiB memory limit suits that output.
+Budget several hours for the first preparation of a real month on a NAS. A Mac or GPU cluster
+can take about an hour for the same kind of first run; these are planning estimates from
+[the first-run measurements](https://github.com/sam-dumont/immich-video-memory-generator/issues/956),
+not a deadline for every library. This is preparation time, before rendering.
 The first film reads the pictures in its period and saves the results; later films reuse matching
 results. Rendering still happens every time.
 
@@ -104,7 +126,8 @@ ARM64 Docker uses software encoding. Non-AVX Celerons use the simpler title rend
 
 ## Memory and disk
 
-Keep the persistent store. Size the preview cache for the pictures your films can reach:
+Allow 25 GB for persistent data, plus the image and finished films. Keep the persistent store.
+Size the preview cache for the pictures your films can reach:
 roughly 0.35 MB per picture. The default preview/video budgets total 20 GB.
 [Storage and caches](./maintenance/health-logs-cache.md#caches) covers caps and cleanup.
 Uploaded films are removed locally after confirmed delivery; local-only films keep growing.

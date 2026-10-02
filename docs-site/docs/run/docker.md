@@ -61,15 +61,17 @@ and Laya. Files stay on the persistent volume; a recreate keeps them.
 On the Docker host: [http://localhost:8080](http://localhost:8080).
 If the host is your NAS or another server, [tunnel or enable LAN access](#reaching-the-ui-from-another-machine).
 
-Then make [your first film](../get-started/first-film.mdx). Start with one month.
+Then make [your first film](../get-started/first-film.mdx). Start with one month. Its first
+preparation can take several hours on a NAS, or about an hour on a Mac or GPU cluster, before
+rendering. See [what to expect](./nas.md#what-to-expect).
 
 ### When a step is missing
 
 | Preflight says | Fix |
 |---|---|
-| Pinned model missing or wrong digest | Run `models fetch` |
+| `Encoder: Pinned DINOv2 export missing` or `Not the pinned DINOv2 export` | Run `models fetch` |
 | Output directory is not writable | Fix ownership in step 3 |
-| Immich connection failed | Check URL/key; do not use container `localhost` |
+| `Immich: Connection failed` | Check URL/key; do not use container `localhost` |
 | Home coordinates are not configured | Set both coordinates; films work, trips stay off |
 
 ## Reaching the UI from another machine

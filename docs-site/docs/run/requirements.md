@@ -65,7 +65,9 @@ an enabled reader with blank `base_url` is started locally by the app when `llam
 
 `IMMICH_MEMORIES_TIER` overrides `tier:` in the file. Compose and Kubernetes set it to `auto`.
 You may force `nas`, `gpu` or `full`, but that does not install models or start servers.
-Changing tier keeps compatible prepared facts and your review decisions.
+Forcing `tier: full` without an enabled reader fails configuration loading, before the UI or
+`preflight` can start. Return to `auto` or configure and enable the reader first; setting the
+tier alone cannot supply it. Changing tier keeps compatible prepared facts and your review decisions.
 
 ## Check this setup
 

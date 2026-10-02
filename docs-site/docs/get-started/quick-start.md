@@ -6,7 +6,7 @@ title: Quick start
 
 Run Immich Memories beside your Immich server, then make a film from one month. No GPU or model server needed.
 
-You need Docker with Compose v2, Immich v2 or v3, and two CPU cores, 4 GB of RAM and 25 GB of disk for this container. [Full requirements](../run/requirements.md).
+You need Docker with Compose v2, Immich v2 or v3, and two CPU cores, 4 GiB of RAM for the app and 25 GB for its data, plus the image and finished films. [Full requirements](../run/requirements.md).
 
 import InstallationFiles from '@site/src/components/InstallationFiles';
 
@@ -52,15 +52,18 @@ Then open the same localhost address on your desktop. The default port is availa
 
 Choose **Monthly Highlights**, a year and a month with photos or videos. Press **Cut**, review the result, then **Render**. The first cut reads the month's pictures; later cuts reuse that work.
 
+Allow several hours for a real month's first preparation on a NAS, or about an hour on a Mac
+or GPU cluster, before rendering. Picture counts and hardware change that estimate.
+[The NAS notes](../run/nas.md#what-to-expect) explain what is cached;
 [Your first film](./first-film.mdx) shows the review and editing steps.
 
 ## If it stops
 
 | Message or symptom | Fix |
 |---|---|
-| Missing pinned model | Run `models fetch` from step 3. |
+| `Encoder: Pinned DINOv2 export missing` | Run `models fetch` from step 3. |
 | Output directory is not writable | Set ownership with `sudo chown -R 1000:1000 output`. |
-| Cannot connect to Immich | Check the URL and key in `.env`, then run `docker compose up -d` again. |
+| `Immich: Connection failed` | Check the URL and key in `.env`, then run `docker compose up -d` again. |
 
 Check the installation at any time:
 
