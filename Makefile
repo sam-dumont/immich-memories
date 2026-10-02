@@ -1178,6 +1178,10 @@ demucs-locks:  ## Refresh the Linux inference audio locks without changing Mac d
 	  --python-platform linux --torch-backend cu126 --generate-hashes --no-annotate --no-header \
 	  -o docker/demucs-cuda-requirements.txt
 
+.PHONY: benchmark-selection
+benchmark-selection:  ## Synthetic cached editorial selection, no media or model requests
+	PYTHONPATH=.:src uv run python scripts/benchmark_selection.py $(SELECTION_BENCH_ARGS)
+
 .PHONY: docs-commands
 docs-commands:  ## Statically check documented CLI commands and Make targets
 	uv run python scripts/check_docs_commands.py
