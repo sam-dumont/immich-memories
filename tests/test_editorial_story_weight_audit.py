@@ -212,3 +212,15 @@ def test_period_reader_persists_incomplete_audit_when_weighing_exhausts_repair()
         "story-weighing-source-repair",
         "story-weighing-source-repair-2",
     ]
+
+
+def test_conflicting_central_and_minor_decisions_are_repaired_before_promotion():
+    # WHY: the model simultaneously nominates a centre and calls that story minor.
+    contradictory = '{"about":["K01","K02"],"weights":{"K01":"major","K02":"minor","K03":"none"}}'
+    corrected = '{"about":["K01"],"weights":{"K02":"minor","K03":"none"}}'
+    judge = ScriptedJudge(lambda stage, _: corrected if "repair" in stage else contradictory)
+    records = []
+    result = weigh(judge, candidates=("K01", "K02"), records=records)
+    assert [s["weight"] for s in result] == ["dominant", "minor", "none"]
+    assert any(row.get("status") == "invalid" for row in records)
+    assert "both" in judge.prompt("story-weighing-source-repair")

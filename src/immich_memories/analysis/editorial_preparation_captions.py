@@ -48,6 +48,7 @@ from immich_memories.analysis.llm_metrics import record_reply, recording_stage
 from immich_memories.analysis.llm_preparation_usage import record_preparation_attempt
 from immich_memories.analysis.llm_providers import resolved_llm_config
 from immich_memories.analysis.llm_query import query_llm
+from immich_memories.analysis.strict_json import final_json_object
 from immich_memories.api.access_clients import AccountReadFailed
 from immich_memories.config_models_llm import LLMConfig
 from immich_memories.db import Store, now_db
@@ -225,6 +226,8 @@ def ask_llm_image(
     stage: str,
 ) -> str:
     """Use the configured provider's vision transport and bill the image producer's stage."""
+    contract = response_format["json_schema"]["schema"]
+    prompt = f"{prompt}\nRequired JSON field contract: {json.dumps(contract)}"
     with recording_stage(stage):
         try:
             return _run_sync(
@@ -275,7 +278,7 @@ def _ask_llm(
                 },
             },
         )
-        envelope = _validate_envelope(json.loads(raw))
+        envelope = _validate_envelope(final_json_object(raw))
     except PermissionError:
         raise
     except AccountReadFailed:
