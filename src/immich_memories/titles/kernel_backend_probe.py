@@ -85,11 +85,17 @@ def kernel_cache_dir() -> Path | None:
         preferred = Path.home() / ".immich-memories" / "cache" / "kernels"
     except RuntimeError:
         preferred = None
-    fallback = Path(tempfile.gettempdir()) / "immich-memories-kernels"
-    return next(
-        (path for path in (preferred, fallback) if path is not None and _writable_dir(path)),
-        None,
-    )
+    if preferred is not None and _writable_dir(preferred):
+        return preferred
+    # Imported here: the probe child reaches this module without loading the app (#1171),
+    # and only a home it cannot write needs the helper.
+    from immich_memories.security import private_temp_dir
+
+    try:
+        fallback = private_temp_dir("kernels")
+    except (OSError, RuntimeError):
+        return None
+    return fallback if _writable_dir(fallback) else None
 
 
 def _init_arguments(arch: object) -> dict[str, object]:

@@ -14,6 +14,11 @@
   const run = $derived(data.run);
   const cut = $derived(data.cut);
   const story = $derived(data.story);
+  // Only a web link becomes one: the URL is built from a setting, and a link is the one place
+  // a `javascript:` value would run.
+  const immichLink = $derived(
+    run.immich_asset_url && /^https?:\/\//i.test(run.immich_asset_url) ? run.immich_asset_url : null,
+  );
 
   type Revision = components['schemas']['Revision'];
 
@@ -145,8 +150,8 @@
     {:else if run.film && run.delivery_status === 'delivered'}
       <Alert color="info" size="small">
         {t('Delivered to Immich. The local file was removed to save disk space.')}
-        {#if run.immich_asset_url}
-          <a href={run.immich_asset_url} target="_blank" rel="noreferrer" class="underline">{t('View in Immich')}</a>
+        {#if immichLink}
+          <a href={immichLink} target="_blank" rel="noreferrer" class="underline">{t('View in Immich')}</a>
         {:else if run.immich_asset_id}
           <span class="tabular-nums">{run.immich_asset_id}</span>
         {/if}

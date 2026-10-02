@@ -12,6 +12,7 @@ import os
 import re
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
@@ -67,6 +68,22 @@ def _warn_about_bare_references(value: str) -> None:
             )
 
 
+def http_url_or_blank(value: str) -> str:
+    """Refuse a server URL that is not http:// or https://; blank means unset.
+
+    Every one of these is called with a credential or shown as a link, so a
+    `javascript:` or `file:` value is never one to keep. A `${VAR}` left unexpanded
+    passes: its variable is unset, so nothing is called with it, and refusing it here
+    would stop the config loading at all (the first-run page included).
+    """
+    if not value or has_unresolved_env_reference(value):
+        return value
+    url = urlsplit(value)
+    if url.scheme not in {"http", "https"} or not url.hostname:
+        raise ValueError("must be an http:// or https:// URL")
+    return value
+
+
 PRIMARY_ACCOUNT = "primary"
 # Lowercase with single underscores: an env override lowercases the name it reads, and a
 # double underscore would split it into two levels (IMMICH_MEMORIES_IMMICH__ACCOUNTS__<NAME>__URL).
@@ -100,6 +117,8 @@ class ImmichConnection(BaseModel):
         if isinstance(v, str):
             return expand_env_vars(v)
         return v
+
+    _http_url = field_validator("url")(http_url_or_blank)
 
 
 class ImmichConfig(ImmichConnection):

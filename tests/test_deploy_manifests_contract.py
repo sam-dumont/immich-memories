@@ -328,6 +328,25 @@ def test_every_shipped_pod_disables_kubernetes_service_links() -> None:
         assert pod.get("enableServiceLinks") is False, label
 
 
+def test_no_shipped_pod_mounts_a_kubernetes_api_token() -> None:
+    """Nothing the app, the worker or a sidecar runs calls the Kubernetes API, so a
+    compromised process should not find a service-account token on disk either."""
+    worker = _pod_spec(REPO_ROOT / "services" / "render-worker" / "kubernetes.yaml")
+    pods = [
+        *_pod_specs(),
+        ("services/render-worker/kubernetes.yaml", worker),
+        *_overlay_deployment_pod_specs(),
+    ]
+
+    for label, pod in pods:
+        assert pod.get("automountServiceAccountToken") is False, label
+    for name in ("main.tf", "captioner.tf"):
+        terraform = (TF_DIR / name).read_text()
+        assert terraform.count("automount_service_account_token = false") == terraform.count(
+            "enable_service_links"
+        ), name
+
+
 def test_trigger_pods_keep_a_minimal_security_context() -> None:
     """The curl pod (#871) never touches the store, but it keeps the same hardening.
 

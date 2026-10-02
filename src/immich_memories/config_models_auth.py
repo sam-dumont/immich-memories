@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from immich_memories.config_models import expand_env_vars
+from immich_memories.config_models import expand_env_vars, http_url_or_blank
 
 
 def _check_email_entries(entries: list[str]) -> None:
@@ -67,6 +67,8 @@ class AuthConfig(BaseModel):
         if isinstance(v, str):
             return expand_env_vars(v)
         return v
+
+    _http_url = field_validator("issuer_url")(http_url_or_blank)
 
     @model_validator(mode="after")
     def validate_provider_requirements(self) -> AuthConfig:

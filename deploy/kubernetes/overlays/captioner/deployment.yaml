@@ -24,6 +24,7 @@ spec:
       # Off everywhere the app runs, for consistency with the pods that would
       # otherwise crash on it (#1608).
       enableServiceLinks: false
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000

@@ -183,6 +183,12 @@ def test_music_is_previewed_by_music_preview_uploaded_and_played_back(client):
     assert any(flag.startswith("--music=") and flag.endswith(".mp3") for flag in argv)
 
 
+def test_a_music_preview_is_only_started_for_a_run_with_a_saved_cut(client):
+    for run_id in ("never", "--help"):
+        assert client.post(f"/api/v1/runs/{run_id}/music-preview").status_code == 404
+    assert not client.recorded.exists()
+
+
 def test_a_first_cut_moves_its_bar_by_the_stage_without_a_whole_cut_estimate(client, tmp_path):
     from immich_memories.operations.cut_progress import StageUpdate
     from immich_memories.operations.editorial_attempt import EditorialAttempt
