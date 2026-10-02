@@ -97,3 +97,27 @@ def test_four_gib_container_leaves_room_for_parent_during_photo_preparation(tmp_
     (tmp_path / "memory.max").write_text(f"{4 * GIB}\n")
     workers, _reason = source_prepare_workers("auto", cgroup_root=tmp_path, cpus=4)
     assert workers == 1
+
+
+@pytest.mark.parametrize(
+    ("encoder", "gib", "cpus", "width", "height", "expected"),
+    [
+        ("hevc_videotoolbox", 4, 4, 1920, 1080, True),
+        ("hevc_videotoolbox", 3, 4, 1920, 1080, False),
+        ("hevc_videotoolbox", 4, 1, 1920, 1080, False),
+        ("hevc_videotoolbox", 4, 4, 640, 480, False),
+        ("hevc_nvenc", 4, 4, 1920, 1080, False),
+        ("libx265", 4, 4, 1920, 1080, False),
+    ],
+)
+def test_read_ahead_requires_a_beneficial_encoder_and_resource_headroom(
+    tmp_path, monkeypatch, encoder, gib, cpus, width, height, expected
+):
+    import importlib
+
+    budgets = importlib.import_module("immich_memories.processing.memory_budget")
+    (tmp_path / "memory.max").write_text(str(gib * GIB))
+    (tmp_path / "cpu.max").write_text(f"{cpus * 100000} 100000")
+    # WHY: Use real cgroup files to exercise resource admission without host limits.
+    monkeypatch.setattr(budgets, "_CGROUP", tmp_path)
+    assert budgets.assembly_frame_read_ahead(width, height, encoder=encoder) is expected
