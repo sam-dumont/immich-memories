@@ -491,3 +491,15 @@ def test_kubernetes_fast_path_exposes_private_ui_after_readiness():
     assert "kubectl port-forward -n immich-memories svc/immich-memories 8080:80" in commands
     assert commands.index("immich-memories capabilities") < commands.index("kubectl port-forward")
     assert "Open http://localhost:8080" in commands
+
+
+def test_setup_template_check_does_not_install_application_extras():
+    # WHY: app dependency installation mutates the runner and is outside a docs-only check.
+    result = subprocess.run(
+        ["make", "docs-setup-check", "ENSURE_DEV_COMMAND=exit 81"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

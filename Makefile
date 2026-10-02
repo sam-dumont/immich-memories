@@ -1175,11 +1175,11 @@ docs-commands:  ## Statically check documented CLI commands and Make targets
 
 include $(dir $(lastword $(MAKEFILE_LIST)))scripts/image-maintenance.mk
 .PHONY: docs-setup docs-setup-check docs-serve
-docs-setup: ensure-dev  ## Refresh the builder from the shipped Compose templates
-	uv run python scripts/sync_setup_templates.py
+docs-setup:  ## Refresh the builder from the shipped Compose templates
+	uv run --no-project --with pyyaml==6.0.3 python scripts/sync_setup_templates.py
 
-docs-setup-check: ensure-dev  ## Refuse drift between setup-builder and release templates
-	uv run python scripts/sync_setup_templates.py --check
+docs-setup-check:  ## Refuse drift between setup-builder and release templates
+	uv run --no-project --with pyyaml==6.0.3 python scripts/sync_setup_templates.py --check
 	cd docs-site && node --experimental-strip-types --test src/components/SetupBuilder/recipes.test.mjs
 
 docs-serve:  ## Serve the built site locally for setup-builder browser checks
