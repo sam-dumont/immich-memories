@@ -128,3 +128,9 @@ LLM only after an explicit image-caption opt-in. See the [inventory](reference/p
 
 [Technical privacy details](reference/privacy-egress.md#files-on-disk-and-cancellation) cover local file
 permissions and cancellation. Keep the [store backed up](./database.md).
+
+## Fetch once, then block outbound
+
+The [offline NAS recipe](./offline.md) seeds a model volume before restricting the app to
+Immich. It includes Docker's same-host internal bridge and a destination-scoped Kubernetes
+policy, with their routing limits.
