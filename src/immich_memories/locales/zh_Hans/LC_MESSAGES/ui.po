@@ -1704,3 +1704,22 @@ msgstr "Soft romantic"
 #: web/routes/runs/[run_id]/+page.svelte:168
 msgid "Download film"
 msgstr "下载影片"
+#: web/lib/ModelSetup.svelte:66 web/lib/ModelSetup.svelte:67 web/lib/ModelSetup.svelte:81
+msgid "Download models"
+msgstr "下载模型"
+
+#: web/lib/ModelSetup.svelte:68
+msgid "Your first film needs these model files. Nothing downloads until you press the button."
+msgstr "制作第一部影片需要这些模型文件。点击按钮前不会开始下载。"
+
+#: web/lib/ModelSetup.svelte:78
+msgid "Download hosts can redirect to their CDNs."
+msgstr "下载服务器可能重定向到其 CDN。"
+
+#: web/lib/ModelSetup.svelte:54 web/lib/ModelSetup.svelte:57
+msgid "Model downloads failed to start."
+msgstr "无法开始下载模型。"
+
+#: web/lib/ModelSetup.svelte:24
+msgid "Model status could not be checked."
+msgstr "无法检查模型状态。"

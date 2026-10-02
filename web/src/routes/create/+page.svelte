@@ -6,6 +6,7 @@
   import { api, post, type AccountChoice, type AlbumChoice, type CutBrief, type JobView, type NamedPerson, type SavedGroup, type SpecialDay, type TripChoice, type Trips } from '$lib/api';
   import { locale, N_, t } from '$lib/i18n.svelte';
   import { followJob } from '$lib/job.svelte';
+  import ModelSetup from '$lib/ModelSetup.svelte';
   import JobPanel from '$lib/JobPanel.svelte';
   import AskPanel from '$lib/AskPanel.svelte';
   import { updatedAgo } from '$lib/ago';
@@ -291,6 +292,8 @@
     <Heading size="large" tag="h1">{t('New memory')}</Heading>
     <Text color="muted">{t('Choose what the film covers. The cut is made the way the command below makes it; you review it before anything renders.')}</Text>
   </div>
+
+  <ModelSetup />
 
   {#if job && job.status === 'running'}
     <JobPanel {job} onCancel={cancel} />

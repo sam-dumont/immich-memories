@@ -21,6 +21,24 @@ The browser gives you a contact sheet to review and edit before rendering. Every
 
 On a phone, the navigation is at the bottom. Theme and interface language are remembered in that browser. The interface language does not change the film's language: [titles and languages](../reference/output-rendering.md#languages).
 
+## Download models on first start
+
+If pinned models are missing or fail their checksum, **Memory** and **Settings** show a
+**Download models** card. It lists the files needed by your configured tier, their approximate
+download sizes, source hosts and SHA-256 pins. The optional Docling snapshot shows its fixed
+revision instead. Hosts can redirect downloads to their CDNs.
+
+Press **Download models** to run the same `immich-memories models fetch` command the terminal
+uses. Nothing downloads from merely opening the page. The job shows the current artifact,
+can be cancelled and survives closing the tab. A failed download keeps its error visible;
+retrying reuses files that already match their pins. Settings changes refresh the list; if another tab changes the download plan, the server
+asks you to review it again before starting. This action does not change
+`allow_model_downloads` or enable the reader.
+
+The job downloads model weights and WordNet, not photos from your library. It still needs a
+writable model cache, enough free space and access to the listed hosts. Optional model
+runtimes must already be installed; downloading their weights does not install Python extras.
+
 ## Make and adjust a film
 
 [Your first film](../get-started/first-film.mdx) walks through the whole process with a month. [Choose a film](./memory-types.mdx) covers trips, people, albums and other types.

@@ -61,6 +61,9 @@ def mount_web(app: FastAPI, *, client_dir: Path = BUILT_CLIENT) -> None:
     # The same builder `immich-memories report` prints from, typed for the client (#1428).
     app.include_router(report_api.router)
     app.include_router(cut.router)
+    from immich_memories.web import model_routes
+
+    app.include_router(model_routes.router)
     app.include_router(job_routes.router)
     app.include_router(render_capabilities.router)
     app.include_router(library.router)

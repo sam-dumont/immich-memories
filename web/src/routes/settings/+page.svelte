@@ -5,6 +5,7 @@
   import { api, post } from '$lib/api';
   import type { components } from '$lib/api-types';
   import { N_, t } from '$lib/i18n.svelte';
+  import ModelSetup from '$lib/ModelSetup.svelte';
   import SettingsEditor from '$lib/SettingsEditor.svelte';
 
   type CacheStats = components['schemas']['CacheStats'];
@@ -12,6 +13,7 @@
 
   // Bumped after the connection saves, so the settings below show where its values now come from.
   let reloads = $state(0);
+  let modelReloads = $state(0);
   let caches = $state<CacheStats[]>([]);
   let note = $state('');
 
@@ -104,7 +106,8 @@
     <span><span class="block font-medium">{t('People')}</span><span class="text-sm text-gray-600 dark:text-gray-400">{t('Who is who, their roles and relationships.')}</span></span>
   </a>
 
-  <SettingsEditor {reloads} />
+  <ModelSetup reloads={reloads + modelReloads} />
+  <SettingsEditor {reloads} onSaved={() => modelReloads++} />
 
   <section class="flex flex-col gap-3" aria-label={t('Caches')}>
     <Heading size="small" tag="h2">{t('Caches')}</Heading>

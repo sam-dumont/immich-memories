@@ -1197,7 +1197,8 @@
               "render",
               "scan",
               "music",
-              "ask"
+              "ask",
+              "models"
             ],
             "title": "Kind",
             "type": "string"
@@ -1354,6 +1355,82 @@
         "title": "Messages",
         "type": "object"
       },
+      "ModelAcquisitionStatus": {
+        "properties": {
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/ModelArtifactView"
+            },
+            "title": "Artifacts",
+            "type": "array"
+          },
+          "plan_id": {
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "plan_id",
+          "ready",
+          "artifacts"
+        ],
+        "title": "ModelAcquisitionStatus",
+        "type": "object"
+      },
+      "ModelArtifactView": {
+        "properties": {
+          "host": {
+            "title": "Host",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
+          },
+          "size": {
+            "title": "Size",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "host",
+          "size",
+          "ready"
+        ],
+        "title": "ModelArtifactView",
+        "type": "object"
+      },
       "ModelDecision": {
         "description": "What the model polish recorded about a shot; absent when no model read the cut.",
         "properties": {
@@ -1396,6 +1473,22 @@
           "seat"
         ],
         "title": "ModelDecision",
+        "type": "object"
+      },
+      "ModelFetchRequest": {
+        "properties": {
+          "plan_id": {
+            "maxLength": 128,
+            "minLength": 128,
+            "pattern": "^[0-9a-f]{128}$",
+            "title": "Plan Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan_id"
+        ],
+        "title": "ModelFetchRequest",
         "type": "object"
       },
       "MusicTrack": {
@@ -4242,6 +4335,72 @@
           }
         },
         "summary": "Job Output",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/models": {
+      "get": {
+        "operationId": "model_status_api_v1_models_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelAcquisitionStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Model Status",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/models/fetch": {
+      "post": {
+        "description": "Only this explicit authenticated request authorizes the public CLI download job.",
+        "operationId": "fetch_models_api_v1_models_fetch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelFetchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Fetch Models",
         "tags": [
           "jobs"
         ]

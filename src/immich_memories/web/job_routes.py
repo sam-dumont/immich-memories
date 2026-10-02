@@ -188,6 +188,20 @@ def _view(config: Config, job: Job) -> JobView:
         progress = _cut_progress(config, job)
     elif job.kind in {"render", "music"}:
         progress = _render_progress(job)
+    elif job.kind == "models":
+        matches = re.findall(
+            r"^models: (\d+)/(\d+) (.+)$",
+            _runner(config.cache.cache_path).output(job.id),
+            re.MULTILINE,
+        )
+        if matches:
+            index, total, label = matches[-1]
+            done = int(index) - 1
+            progress = JobProgress(
+                label=label, done=done, total=int(total), fraction=done / int(total)
+            )
+        else:
+            progress = JobProgress(label="Downloading pinned models")
     elif job.kind == "ask":
         progress = JobProgress(label="Reading your sentence")
     else:

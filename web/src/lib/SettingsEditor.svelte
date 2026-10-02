@@ -9,7 +9,7 @@
   type SettingRow = components['schemas']['SettingRow'];
 
   // Bumped by the page when something else (the connection form) saved a setting.
-  let { reloads = 0 }: { reloads?: number } = $props();
+  let { reloads = 0, onSaved }: { reloads?: number; onSaved?: () => void } = $props();
 
   const SECRET_KEY_ENV = 'IMMICH_MEMORIES_SECRET_KEY';
   const OPEN_SECTIONS = new Set(['immich', 'defaults', 'output']);
@@ -55,6 +55,7 @@
     view = body;
     drafts = Object.fromEntries(Object.entries(drafts).filter(([key]) => !key.startsWith(`${section}.`)));
     answers = { ...answers, [section]: { ok: true, text: t('Saved to the database') } };
+    onSaved?.();
   }
 
   const field = 'w-full rounded-lg border border-gray-300 bg-light px-3 py-1.5 disabled:opacity-60 dark:border-gray-700';

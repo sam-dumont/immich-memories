@@ -1331,6 +1331,12 @@ added pictures are made playable by `processing/added_material.py` (a Live Photo
 through `motion_renderings`) and the film grows to hold them; nothing is selected again.
 Suggestions use `AutoRunner`; nothing owns a separate job store.
 
+`model_acquisition.py` supplies the configured-tier artifact plan to both `models fetch`
+and the first-start web card. `GET /api/v1/models` verifies local pins and inspects the offline
+HF cache without acquiring anything. Only explicit `POST /api/v1/models/fetch` starts the
+existing CLI as a `models` job through the shared runner, preserving auth, origin checks,
+serialization, cancellation and error logs. Acquisition never toggles runtime download policy.
+
 **Web client (`web/` at the repo root, served from `src/immich_memories/web/client`).** SvelteKit
 static SPA with `@immich/ui` (MIT; its logos and store badges are Immich trademarks, stripped at
 build time and gated by `scripts/check_web_brand.py`). It talks only to `/api/v1`; the server
