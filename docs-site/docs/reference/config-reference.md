@@ -12,7 +12,7 @@ which one set each key ([where a setting comes from](../run/config-file.md#where
 
 :::tip Config tiers
 Tier 2 sections (`analysis`, `hardware`, `llm`, `musicgen`, `ace_step`, `server`, `auth`,
-`automation`, `notifications`, `triage`, `editorial`, `inference`, `free_text`) go under an
+`automation`, `notifications`, `triage`, `editorial`, `inference`, `free_text`, `speech`) go under an
 `advanced:` key in the file:
 
 ```yaml
@@ -23,7 +23,8 @@ advanced:
     encoder_preset: "quality"
 ```
 
-Both placements are read; if a section appears in both, the top-level one wins. Everything else
+Both placements are read and merge key by key: a top-level value wins for the same key, while
+other keys under `advanced:` remain set. Everything else
 stays top level. Unknown keys inside a section are ignored; unknown top-level keys and invalid
 values fail validation at startup.
 :::
@@ -59,8 +60,9 @@ and sharing never asks the prose LLM. Captions use their own configured service;
 not an automatic caption fallback. A missing Laya checkpoint or runtime is reported and uses
 the conservative rules fallback; that is a degraded run, not a verified GPU/full comparison.
 
-Env: `IMMICH_MEMORIES_TIER=auto`. `uv run python scripts/tier_settings.py` prints what each tier runs
-with, as the product resolves it.
+Env: `IMMICH_MEMORIES_TIER=auto`. From a source checkout,
+`uv run python scripts/tier_settings.py` prints what each tier runs with. That helper script is
+not part of a pip/uv install; `immich-memories capabilities` reports the resolved setup there.
 
 ## Preset
 
@@ -141,7 +143,7 @@ render:
   worker_base_url: ""
   worker_token: ""             # Or ${RENDER_WORKER_TOKEN}
   allow_insecure_http: false   # Explicitly accept a non-loopback cleartext HTTP worker
-  timeout_seconds: 3600        # Wait for rendering and download; maximum 86400
+  timeout_seconds: 3600        # Wait for rendering and download; maximum 86400; greater than 0, at most 86400 seconds
   fallback_to_local: false     # Explicitly allow local rendering after a worker failure
 ```
 
@@ -163,35 +165,41 @@ for Docker Compose and Kubernetes examples.
 ## Video analysis
 
 ```yaml
-analysis:
-  # Media the camera roll did not shoot (see Configuration → Footage the
-  # camera roll did not shoot). Setting the list replaces it; [] turns it off.
-  exclude_filename_patterns:     # case-insensitive globs on the source filename
-    - "RingVideo_*"
-    - "RPReplay_Final*"
-    - "Screen Recording *"
-    - "Screenshot*"
-    - "img-*-wa[0-9][0-9][0-9][0-9]*"
-    - "vid-*-wa[0-9][0-9][0-9][0-9]*"
-  exclude_stills_without_camera_exif: true   # a photo naming no camera was received, not shot
-  min_source_short_side: 1080    # Drop smaller clips unless they carry camera EXIF
-  max_source_video_seconds: 300  # Exclude longer source videos on Immich metadata, before download (0 disables)
+advanced:
+  analysis:
+    # Media the camera roll did not shoot (see Configuration → Footage the
+    # camera roll did not shoot). Setting the list replaces it; [] turns it off.
+    exclude_filename_patterns:     # case-insensitive globs on the source filename
+      - "RingVideo_*"
+      - "RPReplay_Final*"
+      - "Screen Recording *"
+      - "Screenshot*"
+      - "img-*-wa[0-9][0-9][0-9][0-9]*"
+      - "vid-*-wa[0-9][0-9][0-9][0-9]*"
+    exclude_stills_without_camera_exif: true   # a photo naming no camera was received, not shot
+    min_source_short_side: 1080    # Drop smaller clips unless they carry camera EXIF; 0 or more pixels
+    max_source_video_seconds: 300  # Exclude longer source videos on Immich metadata, before download (0 disables)
 
-  # Album source
-  max_album_assets: 10000        # Most assets read from one album, per media type (min 1)
+    # Album source
+    max_album_assets: 10000        # Most assets read from one album, per media type (min 1)
 
-  # Downloads
-  download_workers: 3            # Parallel download clients for video and thumbnail prefetching (1-8)
-  source_prepare_workers: auto   # Sources prepared at once (1-4); auto: 1 per 2 GB of the container's limit or RAM, at most 2
+    # Downloads
+    download_workers: 3            # Parallel download clients for video and thumbnail prefetching (1-8)
+    source_prepare_workers: auto   # Sources prepared at once (1-4); auto: reserve 1 GiB, then 3 GiB per worker; 1-2, capped by available CPUs
 
-  # Duration sizing
-  optimal_clip_duration: 5.0     # Expected seconds per clip when a trip or album sizes its own duration (2-15s)
+    # Duration sizing
+    optimal_clip_duration: 5.0     # Expected seconds per clip when a trip or album sizes its own duration (2-15s)
 
-  # Live Photos (iPhone 3s video clips)
-  include_live_photos: true      # Include Live Photo clips (ON by default)
-  live_photo_merge_window_seconds: 10.0  # Max gap to group as burst (1-60s)
-  live_photo_min_clip_seconds: 3.5       # Below this a burst plays its kept picture's own clip (0-30s)
+    # Live Photos (iPhone 3s video clips)
+    include_live_photos: true      # Include Live Photo clips (ON by default)
+    live_photo_merge_window_seconds: 10.0  # Max gap to group as burst (1-60s)
+    live_photo_min_clip_seconds: 3.5       # Below this a burst plays its kept picture's own clip (0-30s)
 ```
+
+The filename globs exclude matching source media before preparation. Replacing the list replaces
+all defaults; `[]` disables that filter. `exclude_stills_without_camera_exif` excludes photos
+whose EXIF names no camera; videos are exempt. Set it to `false` for exported originals that lost
+camera metadata. These filters apply before selection, so a model cannot bring excluded media back.
 
 Any Live Photo cluster of two or more within the merge window is treated as a burst; the count is
 not configurable. Where a clip is cut, and how long it runs, is the editor's decision per carrier.
@@ -276,7 +284,7 @@ The presets are points on that curve, measured on 1080p60 film:
 
 There is no tier below `balanced`: around SSIM 0.980 gradients start to band. `fast` keeps the
 balanced picture and buys its speed from the encoder effort preset instead, overriding
-`hardware.encoder_preset`. Choose `balanced`, `high`, `ultra` or `fast` for a new configuration.
+`hardware.encoder_preset`. Choose `balanced`, `high` or `fast` for a new configuration.
 
 `codec_policy` decides what happens when the machine has no hardware encoder for the codec you
 asked for but does have one for the other. `prefer_hardware` (the default) switches codec and says
@@ -323,59 +331,63 @@ photos sharing an identical timestamp still group.
 ## Hardware acceleration
 
 ```yaml
-hardware:
-  enabled: true                  # false = CPU encoding, no GPU probing at all
-  backend: "auto"                # auto, none, nvidia, apple, vaapi, qsv
-  encoder_preset: "balanced"     # fast, balanced, quality
-  gpu_decode: true               # Hardware video decoding
+advanced:
+  hardware:
+    enabled: true                  # false = CPU encoding, no GPU probing at all
+    backend: "auto"                # auto, none, nvidia, apple, vaapi, qsv
+    encoder_preset: "balanced"     # fast, balanced, quality
+    gpu_decode: true               # Hardware video decoding
 ```
 
 `auto` detects the backend (NVIDIA NVENC → Apple VideoToolbox → Intel QSV → VAAPI, first hit wins).
-`hardware.enabled: false` is the only way to force CPU. On multi-GPU Linux hosts pick the card with
+`hardware.enabled: false` or `hardware.backend: none` forces software rendering. On multi-GPU Linux hosts pick the card with
 `CUDA_VISIBLE_DEVICES` / `NVIDIA_VISIBLE_DEVICES`.
 
 Naming a backend probes that one and nothing else, which is for measuring rather than for running.
 A named backend that cannot encode here logs a warning and falls back to software. `backend` covers
-the video render; the burst merge during download still detects for itself.
+the video render and Live Photo burst merge. Clip extraction detects its own backend and does
+not use `hardware.backend`.
 
 `encoder_preset` controls encoder speed and effort; it does not replace `output.crf`. On Apple,
 `fast` enables VideoToolbox's speed-priority mode while `balanced` and `quality` leave it disabled.
 
 ## Audio and music
 
-Background music uses a bundled track by default. Generated music needs `ace_step.enabled` or `musicgen.enabled`. With both on, ACE-Step generates
+Background music uses a bundled track by default. Those tracks ship in Docker and the `music`
+extra; a base pip/uv install needs that extra for the bundled fallback. Generated music needs `ace_step.enabled` or `musicgen.enabled`. With both on, ACE-Step generates
 and MusicGen is the fallback generator and the stem separator used for ducking; with MusicGen off,
 stems come from a local Demucs install if there is one. Per run, `--music PATH` uses your own file
 and `--no-music` skips music. Music volume is per run too (`--music-volume`); the ducking and the
 2 s / 3 s fades are fixed.
 
 ```yaml
-musicgen:
-  enabled: false                 # Use a MusicGen API server
-  base_url: "http://localhost:8000"
-  api_key: ""
-  timeout_seconds: 10800         # 3 hours (60-18000)
-  num_versions: 3                # Versions generated for selection (1-5)
-  hemisphere: "north"            # north or south, for seasonal prompts
-
-ace_step:
-  enabled: false                 # Use ACE-Step (remote server or local library)
-  mode: "api"                    # api (remote REST server) or lib (local, requires Python 3.12)
-  api_url: "http://localhost:8000"
-  api_key: ""                    # Bearer token for a protected ACE-Step server (api mode)
-  model_variant: "turbo"         # Default 2B; use acestep-v15-xl-turbo for the 4B production profile
-  lm_model_size: "1.7B"          # Default planner; use 4B with the XL production profile
-  use_lm: false
-  cpu_offload: true              # Local CUDA: move models back to CPU between phases
-  num_versions: 3                # 1-5
-  hemisphere: "north"
-  timeout_seconds: 3600          # 60-18000
-
 audio:
   local_music_dir: "~/Music/Memories"   # Library scanned by `immich-memories music search`
   max_regenerations: 2                  # Extra auto-mode takes when the first is flagged (0-3)
   music_block_seconds: 120              # Longest single take before auto mode chains distinct takes (30-300)
   max_music_blocks: 3                   # Distinct takes to chain for a longer video (1-6)
+advanced:
+  musicgen:
+    enabled: false                 # Use a MusicGen API server
+    base_url: "http://localhost:8000"
+    api_key: ""
+    timeout_seconds: 10800         # 3 hours (60-18000)
+    num_versions: 3                # Versions generated for selection (1-5)
+    hemisphere: "north"            # north or south, for seasonal prompts
+
+  ace_step:
+    enabled: false                 # Use ACE-Step (remote server or local library)
+    mode: "api"                    # api (remote REST server) or lib (local, requires Python 3.12)
+    api_url: "http://localhost:8000"
+    api_key: ""                    # Bearer token for a protected ACE-Step server (api mode)
+    model_variant: "turbo"         # Default 2B; use acestep-v15-xl-turbo for the 4B production profile
+    lm_model_size: "1.7B"          # Default planner; use 4B with the XL production profile
+    use_lm: false
+    cpu_offload: true              # Local CUDA: move models back to CPU between phases
+    num_versions: 3                # 1-5
+    hemisphere: "north"
+    timeout_seconds: 3600          # 60-18000
+
 ```
 
 `advanced.ace_step.cpu_offload` defaults to `true` for local generation. CUDA moves models back
@@ -403,30 +415,31 @@ One `llm` section serves the selection reader, titles, music mood, special-day s
 works: mlx-vlm, oMLX, Ollama, vLLM, Groq, OpenAI, Claude, z.ai.
 
 ```yaml
-llm:
-  enabled: false                  # false: no LLM calls; true: local or API, chosen by base_url
-  provider: "openai-compatible"   # openai-compatible | openai | zai | anthropic | ollama
-  base_url: ""                     # blank: owned locally or hosted provider preset; URL: use that API
-  model: "gemma-4-E4B-it-Q4_0"     # default local Gemma, another GGUF path, or API model name
-  local_server: "llama-server"     # local executable on PATH or its full path
-  local_mmproj: ""                 # custom GGUF vision projector; default Gemma has a pinned pair
-  local_context: 32768             # bounded local context; affects memory use
-  api_key: ""                      # optional, only for cloud APIs
-  timeout_seconds: 300             # increase for slow local models (10-3600)
-  preflight_timeout_seconds: 10    # reader availability checks only (greater than 0, at most 3600)
-  send_image_detail: true          # off: APIs whose strict schema rejects image_url.detail
-  always_reasons: false            # true: the endpoint thinks on every call, asked or not
-  thinking: "disabled"             # disabled | low | high | max | auto
-  reader_concurrency:              # independent reader jobs; unset reads it from base_url
-  batch: "off"                     # off | auto: provider-supported batching of independent prompts
-  batch_min_requests: 8            # fewest independent prompts in a stage worth queueing
-  batch_max_wait_minutes: 60       # then ask whatever the batch has not answered in real time
-  # thinking_params:               # what the switch looks like on your server
-  #   chat_template_kwargs:        # (default: the Qwen dialect, vLLM/mlx)
-  #     enable_thinking: true
-  # no_thinking_params:            # how to say "don't reason" to that server
-  #   chat_template_kwargs:        # (default: the Qwen dialect, vLLM/mlx)
-  #     enable_thinking: false
+advanced:
+  llm:
+    enabled: false                  # false: no LLM calls; true: local or API, chosen by base_url
+    provider: "openai-compatible"   # openai-compatible | openai | zai | anthropic | ollama
+    base_url: ""                     # blank: owned locally or hosted provider preset; URL: use that API
+    model: "gemma-4-E4B-it-Q4_0"     # default local Gemma, another GGUF path, or API model name
+    local_server: "llama-server"     # local executable on PATH or its full path
+    local_mmproj: ""                 # custom GGUF vision projector; default Gemma has a pinned pair
+    local_context: 32768             # bounded local context; affects memory use; at least 1024 tokens
+    api_key: ""                      # optional, only for cloud APIs
+    timeout_seconds: 300             # increase for slow local models (10-3600)
+    preflight_timeout_seconds: 10    # reader availability checks only (greater than 0, at most 3600)
+    send_image_detail: true          # off: APIs whose strict schema rejects image_url.detail
+    always_reasons: false            # true: the endpoint thinks on every call, asked or not
+    thinking: "disabled"             # disabled | low | high | max | auto
+    reader_concurrency:              # independent reader jobs; unset reads it from base_url
+    batch: "off"                     # off | auto: provider-supported batching of independent prompts
+    batch_min_requests: 8            # fewest independent prompts in a stage worth queueing; 2-10000
+    batch_max_wait_minutes: 60       # then ask whatever the batch has not answered in real time; 1-1440 minutes
+    # thinking_params:               # what the switch looks like on your server
+    #   chat_template_kwargs:        # (default: the Qwen dialect, vLLM/mlx)
+    #     enable_thinking: true
+    # no_thinking_params:            # how to say "don't reason" to that server
+    #   chat_template_kwargs:        # (default: the Qwen dialect, vLLM/mlx)
+    #     enable_thinking: false
 ```
 
 The selection reader receives text: dates, people and place names, and descriptions. A hosted reader sends that text to its provider. Images are sent to the LLM only with explicit `editorial.preparation.caption_provider: llm`; otherwise captions use their separately configured service. See [Privacy](../run/privacy.md).
@@ -481,10 +494,11 @@ vision schemas that reject anything beyond `image_url.url`; the `zai` preset alr
 A provider's dialect can be declared up front instead of negotiated:
 
 ```yaml
-llm:
-  max_tokens_param: max_completion_tokens  # example; the default is max_tokens
-  drop_params: [temperature]               # example; the default is []
-  extra_params: {}                         # fields merged into every call
+advanced:
+  llm:
+    max_tokens_param: max_completion_tokens  # example; the default is max_tokens
+    drop_params: [temperature]               # example; the default is []
+    extra_params: {}                         # fields merged into every call
 ```
 
 `max_tokens_param` and `drop_params` are read only on the OpenAI dialect, where the query layer
@@ -496,9 +510,10 @@ wins over the reasoning room the run would otherwise compute.
 Two settings shape what a prose request asks for:
 
 ```yaml
-llm:
-  structured_output: null   # default: select the mode by request type
-  repetition_penalty: 1.0   # default: sent to a server on your own machine or network, and to Ollama
+advanced:
+  llm:
+    structured_output: null   # default: select the mode by request type
+    repetition_penalty: 1.0   # default: sent to a server on your own machine or network, and to Ollama
 ```
 
 `structured_output` sends the JSON shape the request's parser reads as `response_format`
@@ -524,10 +539,11 @@ One `llm` section supplies all model calls: titles, the selection reader, music 
 ## Triage heads
 
 ```yaml
-triage:
-  encoder: ~/.immich-memories/models/triage/dinov2-small.onnx  # DINOv2-small ONNX export (88 MB)
-  encoder_url: https://github.com/...    # where `models fetch` downloads that export from
-  provider: auto                 # ONNX Runtime provider for the encoder: auto, cpu, cuda, coreml
+advanced:
+  triage:
+    encoder: ~/.immich-memories/models/triage/dinov2-small.onnx  # DINOv2-small ONNX export (88 MB)
+    encoder_url: https://github.com/...    # where `models fetch` downloads that export from
+    provider: auto                 # ONNX Runtime provider for the encoder: auto, cpu, cuda, coreml
 ```
 
 `provider: auto` takes CUDA where that provider is present and CPU everywhere else. CoreML is opt-in. The provider is operational and does not enter the encoder key, so switching providers does not invalidate matching facts.
@@ -539,50 +555,51 @@ stop selection.
 ## Editorial planner
 
 ```yaml
-editorial:
-  reader: rules                 # derived from the product tier; not an independent choice
-  thin_model_layer: true         # the model polishes a rules draft; false makes it plan the film
-  strict_sharing: true           # anything a head or exposure flag marked stays out of shared films
-  annotation_database: ""        # compatibility field; leave blank for the default cache directory
-  laya_audience: false           # derived: off for NAS, on for GPU and Full
-  detectors_enabled: false      # derived: Marqo and Docling off for NAS, on for GPU and Full
-  # Apple silicon defaults below; elsewhere the ONNX archive and threshold 0.185 are used.
-  laya_checkpoint: "~/.immich-memories/models/laya/laya-audience-a79ad9fa.tar"
-  laya_checkpoint_url: "https://github.com/sam-dumont/immich-video-memory-generator/releases/download/models-v2/laya-audience-a79ad9fa.tar"
-  laya_audience_threshold: 0.186 # Laya's hold probability at or above which a carrier is held
-  description_model: "smolvlm2-500m-base-public@envelope-v3-compact"
-  pixel_producer_key: "pixel-facts-v1"  # exact producer of pixel facts and thresholds  # gitleaks:allow
-  head_versions:                 # exact producer version selected for each annotation head
-    activity: public-v1
-    children: public-v1
-    doc_docling: det-v2
-    frame_kind: public-v1
-    location: public-v1
-    nsfw_marqo: det-v3
-    people: public-v1
-    screen: public-v1-strict
-    uncovered_person: public-v1
-    venue: oi-v3
-  preparation:
-    tier: no_captions            # internal producer mode, derived from the product tier
-    caption_provider: smolvlm    # llm explicitly opts into images sent to advanced.llm; higher cost
-    caption_base_url: http://localhost:8092/v1
-    caption_artifact_id: ""   # optional artifact/revision label; existing captions stay banked
-    caption_api_key: ""          # bearer token for a caption server that requires one
-    caption_timeout_seconds: 90
-    caption_concurrency: 1                # raise it for a captioner on a GPU
-    batch_size: 32
-    head_bundle: ""              # packaged public eight-head bundle
-    detector_python: ""          # current Python interpreter
-    detector_cache_dir: ""       # normal Hugging Face Hub cache
-    marqo_onnx: ~/.immich-memories/models/detectors/nsfw-marqo-384.onnx  # digest-pinned sensitive-content export
-    marqo_onnx_url: https://github.com/sam-dumont/immich-video-memory-generator/releases/download/models-v1/nsfw-marqo-384-924658f1.onnx
-    allow_model_downloads: false
-  people:
-    seat_min_pictures: 20        # a close family member on this many pictures with no shot gets one
-    seat_min_share: 0.05         # ...or on this share of the period's pictures
-    big_story_density: 2.0       # a story is big only at this multiple of the median photographed day...
-    big_story_family_share: 0.3  # ...with at least this share of its pictures showing close family
+advanced:
+  editorial:
+    reader: rules                 # derived from the product tier; not an independent choice
+    thin_model_layer: true         # the model polishes a rules draft; false makes it plan the film
+    strict_sharing: true           # anything a head or exposure flag marked stays out of shared films
+    annotation_database: ""        # compatibility field; leave blank for the default cache directory
+    laya_audience: false           # derived: off for NAS, on for GPU and Full
+    detectors_enabled: false      # derived: Marqo and Docling off for NAS, on for GPU and Full
+    # Apple silicon defaults below; elsewhere the ONNX archive and threshold 0.185 are used.
+    laya_checkpoint: "~/.immich-memories/models/laya/laya-audience-a79ad9fa.tar"
+    laya_checkpoint_url: "https://github.com/sam-dumont/immich-video-memory-generator/releases/download/models-v2/laya-audience-a79ad9fa.tar"
+    laya_audience_threshold: 0.186 # Laya's hold probability at or above which a carrier is held; 0-1
+    description_model: "smolvlm2-500m-base-public@envelope-v3-compact"
+    pixel_producer_key: "pixel-facts-v1"  # exact producer of pixel facts and thresholds  # gitleaks:allow
+    head_versions:                 # exact producer version selected for each annotation head
+      activity: public-v1
+      children: public-v1
+      doc_docling: det-v2
+      frame_kind: public-v1
+      location: public-v1
+      nsfw_marqo: det-v3
+      people: public-v1
+      screen: public-v1-strict
+      uncovered_person: public-v1
+      venue: oi-v3
+    preparation:
+      tier: no_captions            # internal producer mode, derived from the product tier
+      caption_provider: smolvlm    # llm explicitly opts into images sent to advanced.llm; higher cost
+      caption_base_url: http://localhost:8092/v1
+      caption_artifact_id: ""   # optional artifact/revision label; existing captions stay banked; at most 512 characters
+      caption_api_key: ""          # bearer token for a caption server that requires one
+      caption_timeout_seconds: 90   # positive seconds
+      caption_concurrency: 1        # 1-16; raise it for a captioner on a GPU
+      batch_size: 32                # 1-256
+      head_bundle: ""              # packaged public eight-head bundle
+      detector_python: ""          # current Python interpreter
+      detector_cache_dir: ""       # normal Hugging Face Hub cache
+      marqo_onnx: ~/.immich-memories/models/detectors/nsfw-marqo-384.onnx  # digest-pinned sensitive-content export
+      marqo_onnx_url: https://github.com/sam-dumont/immich-video-memory-generator/releases/download/models-v1/nsfw-marqo-384-924658f1.onnx
+      allow_model_downloads: false
+    people:
+      seat_min_pictures: 20        # a close family member on this many pictures with no shot gets one; at least 1
+      seat_min_share: 0.05         # ...or on this share of the period's pictures; greater than 0, at most 1
+      big_story_density: 2.0       # a story is big only at this multiple of the median photographed day...; greater than 0
+      big_story_family_share: 0.3  # ...with at least this share of its pictures showing close family; 0-1
 ```
 
 In YAML, place this section under `advanced:`.
@@ -642,7 +659,13 @@ and family films are unchanged. Turning it off does not let a caption clear an e
 
 `laya_audience` answers the sharing question with a local Laya model:
 `tier: gpu` and `tier: full` turn it on, and `immich-memories models fetch` downloads it.
-Apple Silicon uses `laya-mlx`; Linux, Windows and Intel Macs use the portable ONNX checkpoint with the appropriate editorial runtime. A missing checkpoint or runtime
+Apple Silicon uses `laya-mlx`; Linux, Windows and Intel Macs use the portable ONNX checkpoint with the appropriate editorial runtime.
+
+| Platform default | Checkpoint under `~/.immich-memories/models/laya/` | Hold threshold |
+|---|---|---|
+| Apple Silicon | `laya-audience-a79ad9fa.tar` | 0.186 |
+| Other platforms (ONNX) | `laya-audience-onnx-90420ef3.tar.gz` | 0.185 |
+ A missing checkpoint or runtime
 is reported, and the run continues with the conservative rules fallback.
 It reads the compact caption and adds holds; detector and rule holds still apply and
 are never lifted. It works with the rules reader as well as the prose reader. A captioned shot
@@ -679,14 +702,15 @@ providers stop selection with an explicit incomplete result. See
 advanced:
   inference:
     facts_base_url: ""          # blank: the heads and detectors run in the app process
-    timeout_seconds: 60         # one picture, one request; the service answers all producers at once
+    timeout_seconds: 60         # one picture, one request; the service answers all producers at once; greater than 0, at most 300 seconds
     facts_concurrency: 8        # how many of those requests are in flight at once (1-32)
     producers: [heads, nsfw_marqo, doc_docling]   # what the service answers for; the rest stay local
     fallback_to_local: true     # when the service cannot be reached, run the in-process producers
 ```
 
 Point `facts_base_url` at a running [inference service](../better/inference.md)
-(`http://inference:8092` in the compose profile) and `prepare` and `generate` send each picture's
+(`http://immich-memories-inference:8092` in the Compose profile;
+`http://inference:8092` in Kubernetes) and `prepare` and `generate` send each picture's
 preview there once and bank what comes back. The row is the same row the in-process producers
 write: same head, version, label and encoder key, because the service runs the application's own
 producers and the key is computed over the model artifact, never over where it ran. Change the
@@ -706,7 +730,9 @@ nothing. Raise it until the service is the slow half; the ceiling is 32, and the
 When the service does not answer, the failure is recorded against the endpoint in the preparation
 report, and with `fallback_to_local: true` the in-process producers take over for the pictures
 still missing facts (which needs the model files from `models fetch` on the app box). With it off,
-the cut refuses until the service is back.
+configuration loading fails with `Cannot verify the required inference service's compute` when
+the service is unreachable. This can stop any command before it starts, including `preflight`;
+restore the service or turn local fallback on.
 
 ## Free-text requests
 
@@ -755,9 +781,9 @@ and uses three-view map journeys, which is what `preset: fast` selects. The
 trips:
   homebase_latitude: 0.0
   homebase_longitude: 0.0
-  min_distance_km: 50
-  min_duration_days: 2
-  max_gap_days: 2
+  min_distance_km: 50  # at least 1 km
+  min_duration_days: 2  # at least 1 day
+  max_gap_days: 2  # at least 1 day
 ```
 
 ## Outside calls
@@ -820,13 +846,13 @@ the run lock files sit in.
 ```yaml
 database:
   url: "sqlite:///~/.immich-memories/store.db"  # or postgresql://user:${PGPASSWORD}@host/db
-  schema: "immich_memories"                     # PostgreSQL only: the schema holding every table
+  schema: "immich_memories"                     # PostgreSQL only: the schema holding every table; non-empty
   import_from: ""                               # where the one-time import of pre-store files looks;
                                                 # blank = ~/.immich-memories
 ```
 
 `IMMICH_MEMORIES_DATABASE_URL`, `IMMICH_MEMORIES_DATABASE_SCHEMA` and `IMMICH_MEMORIES_IMPORT_FROM`
-beat the file. Both are read
+beat the file. All three are read
 before the store opens, so the UI can never change them. SQLite on local disk is the default and
 fits a single-host install; point `url` at PostgreSQL 14+ (no extensions) to share a server,
 including Immich's own, in a schema of its own. A SQLite file on NFS, SMB or CIFS is refused:
@@ -835,20 +861,21 @@ see [Environment variables](../run/reference/environment.md#not-config-keys).
 ## Server (UI)
 
 ```yaml
-server:
-  host: "127.0.0.1"             # Explicit local bind; YAML 0.0.0.0 is ignored (see below)
-  port: 8080                     # Listen port (1-65535)
-  enable_demo_mode: false        # Offer the Demo mode (blur) switch in the web top bar
-  secure_cookies: false          # Mark the session cookie Secure (turn on behind an HTTPS reverse proxy)
-  trigger_token: ""              # Shared secret for POST /api/trigger. Empty, and with auth
-                                 # off, the trigger API is not served at all
-  allow_unauthenticated_lan: false  # Listen beyond localhost with auth disabled:
-                                 # anyone reaching the port can use the UI and the
-                                 # Immich library behind it
-  allowed_hosts: []              # Hosts answered beyond localhost. Auth off: any other
-                                 # Host gets 421. Auth on: empty answers any host, set
-                                 # answers only these (and localhost, auth.public_url)
-  music_upload_quota_mb: 1024    # Room for uploaded soundtracks; the oldest go past it
+advanced:
+  server:
+    host: "127.0.0.1"             # Explicit local bind; YAML 0.0.0.0 is ignored (see below)
+    port: 8080                     # Listen port (1-65535)
+    enable_demo_mode: false        # Offer the Demo mode (blur) switch in the web top bar
+    secure_cookies: false          # Mark the session cookie Secure (turn on behind an HTTPS reverse proxy)
+    trigger_token: ""              # Shared secret for POST /api/trigger. Empty, and with auth
+                                   # off, the trigger API is not served at all
+    allow_unauthenticated_lan: false  # Listen beyond localhost with auth disabled:
+                                   # anyone reaching the port can use the UI and the
+                                   # Immich library behind it
+    allowed_hosts: []              # Hosts answered beyond localhost. Auth off: any other
+                                   # Host gets 421. Auth on: empty answers any host, set
+                                   # answers only these (and localhost, auth.public_url)
+    music_upload_quota_mb: 1024    # Room for uploaded soundtracks; the oldest go past it
 ```
 
 `allowed_hosts` is how an unauthenticated LAN install, or a caller that uses another name (a
@@ -890,24 +917,25 @@ The render day is what you get when no picture in the cut carries a usable time.
 Controls what `immich-memories auto suggest` and `auto run` detect and generate. See [Automate it](../make/automate.md) for the commands. In YAML, place this section under `advanced:`.
 
 ```yaml
-automation:
-  enabled: false                  # run the daily auto-run decision inside the web UI process (Docker)
-  daily_at: "09:00"               # HH:MM, local time of that process (container TZ)
-  cooldown_hours: 24              # min hours between auto-generated memories (1-168)
-  max_delivery_attempts: 5        # give up on an Immich upload after this many failures (1-50)
-  upload_to_immich: false         # auto-upload results
-  album_name: null                # target album for uploads
-  detect_monthly: true            # monthly highlights candidates
-  detect_yearly: true             # year-in-review candidates
-  detect_trips: true              # GPS trip detection (needs homebase coords)
-  detect_person_spotlight: true   # per-person highlight candidates
-  detect_activity_burst: true     # unusually active months
-  burst_threshold: 2.0            # multiplier above rolling average to trigger burst
-  special_days_per_year: 6        # days a year discover-days keeps without a model, strongest first
-  accounts: []                    # accounts automation reads, as generate --accounts does: list
-                                  # primary too, e.g. ["primary", "partner"] (default: primary alone)
-  detect_groups: true             # propose last year's film for each saved people group
-                                  # (people group add) whose people have pictures
+advanced:
+  automation:
+    enabled: false                  # run the daily auto-run decision inside the web UI process (Docker)
+    daily_at: "09:00"               # HH:MM, local time of that process (container TZ)
+    cooldown_hours: 24              # min hours between auto-generated memories (1-168)
+    max_delivery_attempts: 5        # give up on an Immich upload after this many failures (1-50)
+    upload_to_immich: false         # auto-upload results
+    album_name: null                # target album for uploads
+    detect_monthly: true            # monthly highlights candidates
+    detect_yearly: true             # year-in-review candidates
+    detect_trips: true              # GPS trip detection (needs homebase coords)
+    detect_person_spotlight: true   # per-person highlight candidates
+    detect_activity_burst: true     # unusually active months
+    burst_threshold: 2.0            # multiplier above rolling average to trigger burst; 1-10
+    special_days_per_year: 6        # days a year discover-days keeps without a model, strongest first; 1-100
+    accounts: []                    # accounts automation reads, as generate --accounts does: list
+                                    # primary too, e.g. ["primary", "partner"] (default: primary alone)
+    detect_groups: true             # propose last year's film for each saved people group
+                                    # (people group add) whose people have pictures
 ```
 
 `accounts` and saved groups are the automation side of
@@ -922,34 +950,35 @@ library, and trips, out.
 Protects the web UI. See the [Authentication guide](../run/authentication.mdx) for provider-specific setup (OIDC examples, header proxy config, etc.).
 
 ```yaml
-auth:
-  enabled: false
-  provider: basic                # basic, oidc, or header
-  session_ttl_hours: 24          # 1-720
-  public_url: ""                 # e.g. https://memories.example.com -- the URL users reach you
-                                 # on. Pins the OIDC redirect_uri and enables callback-origin
-                                 # validation; without it no origin check is performed
+advanced:
+  auth:
+    enabled: false
+    provider: basic                # basic, oidc, or header
+    session_ttl_hours: 24          # 1-720
+    public_url: ""                 # e.g. https://memories.example.com -- the URL users use to reach you
+                                   # on. Pins the OIDC redirect_uri and enables callback-origin
+                                   # validation; without it no origin check is performed
 
-  # Basic auth
-  username: ""
-  password: ""                   # Supports ${ENV_VAR} expansion
+    # Basic auth
+    username: ""
+    password: ""                   # Supports ${ENV_VAR} expansion
 
-  # OIDC / SSO
-  issuer_url: ""                 # Auto-discovers via /.well-known/openid-configuration; supports ${ENV_VAR}
-  client_id: ""                  # Supports ${ENV_VAR} expansion
-  client_secret: ""              # Supports ${ENV_VAR} expansion; empty for public clients
-  scope: "openid email profile"
-  allowed_emails: []             # OIDC: addresses that may sign in. Empty = anyone the IdP
-  allowed_domains: []            # authenticates. Domains match exactly: example.com does
-                                 # not admit sub.example.com
-  auto_launch: false             # Skip login page, redirect straight to IdP
-  button_text: "Sign in with SSO"
+    # OIDC / SSO
+    issuer_url: ""                 # Auto-discovers via /.well-known/openid-configuration; supports ${ENV_VAR}
+    client_id: ""                  # Supports ${ENV_VAR} expansion
+    client_secret: ""              # Supports ${ENV_VAR} expansion; empty for public clients
+    scope: "openid email profile"
+    allowed_emails: []             # OIDC: addresses that may sign in. Empty = anyone the IdP
+    allowed_domains: []            # authenticates. Domains match exactly: example.com does
+                                   # not admit sub.example.com
+    auto_launch: false             # Skip login page, redirect straight to IdP
+    button_text: "Sign in with SSO"
 
-  # Trusted header (reverse proxy)
-  user_header: "Remote-User"
-  email_header: "Remote-Email"
-  trusted_proxies: []            # IPs/CIDRs of your proxy. Required for header provider;
-                                 # for basic/oidc their X-Forwarded-* headers are trusted
+    # Trusted header (reverse proxy)
+    user_header: "Remote-User"
+    email_header: "Remote-Email"
+    trusted_proxies: []            # IPs/CIDRs of your proxy. Required for header provider;
+                                   # for basic/oidc their X-Forwarded-* headers are trusted
 ```
 
 Place under `advanced:` in your config file (like all Tier 2 sections).
@@ -959,17 +988,18 @@ Place under `advanced:` in your config file (like all Tier 2 sections).
 Get notified when auto-generation or scheduled jobs complete. Uses [Apprise](https://github.com/caronc/apprise) (130+ services: ntfy, Discord, Telegram, Slack, email, webhooks). Apprise ships with the base package, no extra to install. In YAML, place this section under `advanced:`.
 
 ```yaml
-notifications:
-  enabled: false
-  urls:                           # Apprise notification URLs
-    - "ntfy://ntfy.sh/my-topic"
-    - "discord:///webhook_id/token"
-    - "tgram://bot_token/chat_id"
-  on_success: true                # notify on successful generation
-  on_failure: true                # notify on failed generation
-  attach_thumbnail: false         # opt in; attachments cost bandwidth/provider quota
-  cooldown_hours: 24              # pause normal attempts after a delivery failure (1-168)
+advanced:
+  notifications:
+    enabled: false
+    urls: []                        # No destinations by default; add your own Apprise URLs
+    on_success: true                # notify on successful generation
+    on_failure: true                # notify on failed generation
+    attach_thumbnail: false         # opt in; attachments cost bandwidth/provider quota
+    cooldown_hours: 24              # pause normal attempts after a delivery failure (1-168)
 ```
+
+For example, set `advanced.notifications.urls: ["ntfy://your-ntfy-host/private-topic"]` and
+`advanced.notifications.enabled: true`. Replace the host and topic with your own destination.
 
 Delivery failures are stored as sanitized health state. Normal success and failure
 notifications pause during the cooldown instead of hammering a quota-limited provider.

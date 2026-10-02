@@ -17,7 +17,7 @@ output:
   format: mp4                      # mp4 | mov
   codec: h264                      # h264 | h265 | prores
   resolution: 1080p                # 4k | 1080p | 720p
-  quality: high                    # high | medium | low
+  quality: high                    # high | balanced | fast
 
 cache:
   directory: "~/.immich-memories/cache"   # previews, the annotation store, every cut's attempt tree
@@ -37,14 +37,13 @@ trips:                             # needed for --memory-type trip only
   min_duration_days: 2
   max_gap_days: 2
 
-# Third-party hosts. All off: a default run reaches your Immich server, the
-# endpoints named in this file, and nothing else.
+# Optional maps and geocoding. Model provisioning and configured services have
+# their own network access; see docs-site/docs/run/privacy.md.
 network:
   geocoding: false                 # nominatim.openstreetmap.org: trip names, and
                                    # place names in the film's language
   map_tiles: false                 # server.arcgisonline.com: the trip fly-over,
                                    # the static map, location card backgrounds
-  font_downloads: false            # cdn.jsdelivr.net: a font the wheel does not carry
 
 advanced:
   # The reader: writes the prose (episodes, the period's account, the title,
@@ -58,10 +57,10 @@ advanced:
     model: "mlx-community/gemma-4-e4b-it-6bit"
     timeout_seconds: 120
 
-  # The facts the editor reads: a compact caption, six public context heads,
+  # The facts the editor reads: a compact caption, eight public context heads,
   # two detectors and pixel facts per picture, produced once and kept in the
   # annotation store. Pinned versions, digests and the caption server contract:
-  # docs-site/docs/being-rewritten/editorial-preparation.md
+  # docs-site/docs/reference/config-reference.md#editorial-planner
   editorial:
     annotation_database: ""        # blank = annotations.sqlite inside cache.directory
     preparation:
@@ -70,7 +69,7 @@ advanced:
       caption_timeout_seconds: 90
       caption_concurrency: 4
       batch_size: 32
-      head_bundle: ""              # blank = the packaged public six-head bundle
+      head_bundle: ""              # blank = the packaged public eight-head bundle
       detector_python: ""          # blank = this interpreter; or a separate detector env
       detector_cache_dir: ""       # blank = the Hugging Face cache
       allow_model_downloads: false # the pinned detector files must already be present
