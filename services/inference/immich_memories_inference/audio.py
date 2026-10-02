@@ -14,7 +14,8 @@ from immich_memories.audio.generators.base import StemSeparator
 from immich_memories.audio.generators.demucs_local import DemucsLocalBackend
 
 logger = logging.getLogger(__name__)
-MAX_AUDIO_BYTES = 64 * 1024 * 1024
+# Long stereo PCM soundtracks can exceed 64 MiB before separation.
+MAX_AUDIO_BYTES = 256 * 1024 * 1024
 STEM_NAMES = ("drums", "bass", "other", "vocals")
 
 
@@ -26,7 +27,7 @@ def register_audio(app: FastAPI, cache: Path, separator: StemSeparator | None) -
     async def stems(file: UploadFile) -> FileResponse:
         payload = await file.read(MAX_AUDIO_BYTES + 1)
         if len(payload) > MAX_AUDIO_BYTES:
-            raise HTTPException(413, "audio is larger than 64 MiB")
+            raise HTTPException(413, "audio is larger than 256 MiB")
         if not payload:
             raise HTTPException(400, "audio is empty")
         cache.mkdir(parents=True, exist_ok=True)

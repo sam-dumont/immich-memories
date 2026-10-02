@@ -23,6 +23,85 @@ class SyntheticSeparator:
         return MusicStems(**paths)
 
 
+def test_long_soundtrack_transport_has_bounded_capacity():
+    from immich_memories.audio.generators import inference_demucs
+    from immich_memories_inference import audio
+
+    # WHY: a long stereo PCM soundtrack can exceed the previous upload and stem limits.
+    assert audio.MAX_AUDIO_BYTES == 256 * 1024 * 1024
+    assert inference_demucs.MAX_STEM_BYTES == 256 * 1024 * 1024
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("size", [8, 9])
+async def test_audio_upload_limit_accepts_boundary_and_rejects_before_separation(
+    tmp_path, monkeypatch, size
+):
+    from immich_memories.audio.generators import inference_demucs
+    from immich_memories_inference import audio
+
+    class CountingSeparator(SyntheticSeparator):
+        calls = 0
+
+        async def separate_stems(self, *args, **kwargs):
+            self.calls += 1
+            return await super().separate_stems(*args, **kwargs)
+
+    # WHY: scale byte limits, keeping the actual upload, HTTP and archive boundaries.
+    monkeypatch.setattr(audio, "MAX_AUDIO_BYTES", 8)
+    monkeypatch.setattr(inference_demucs, "MAX_STEM_BYTES", 8)
+    separator = CountingSeparator()
+    cache = tmp_path / "cache"
+    app = create_app(InferenceSettings(cache_dir=cache), audio_separator=separator)
+    client_type = httpx.AsyncClient
+    monkeypatch.setattr(
+        httpx, "AsyncClient", lambda **kw: client_type(**kw, transport=httpx.ASGITransport(app=app))
+    )
+    source = tmp_path / "source.wav"
+    source.write_bytes(b"x" * size)
+    output = tmp_path / "out"
+    client = inference_demucs.InferenceDemucs("http://inference")
+    if size == 8:
+        stems = await client.separate_stems(source, output)
+        assert stems.has_full_stems
+        assert separator.calls == 1
+        assert all(path.read_bytes() == source.read_bytes() for path in output.iterdir())
+    else:
+        with pytest.raises(httpx.HTTPStatusError) as rejected:
+            await client.separate_stems(source, output)
+        assert rejected.value.response.status_code == 413
+        assert separator.calls == 0
+        assert not output.exists()
+    assert not list(cache.glob("demucs-*"))
+
+
+@pytest.mark.asyncio
+async def test_oversized_stem_is_rejected_before_writing_output(tmp_path, monkeypatch):
+    from immich_memories.audio.generators import inference_demucs
+
+    class OversizedSeparator(SyntheticSeparator):
+        async def separate_stems(self, *args, **kwargs):
+            result = await super().separate_stems(*args, **kwargs)
+            result.drums.write_bytes(b"x" * 9)
+            return result
+
+    # WHY: the model boundary emits an oversized entry through the real service ZIP.
+    monkeypatch.setattr(inference_demucs, "MAX_STEM_BYTES", 8)
+    cache = tmp_path / "cache"
+    app = create_app(InferenceSettings(cache_dir=cache), audio_separator=OversizedSeparator())
+    client_type = httpx.AsyncClient
+    monkeypatch.setattr(
+        httpx, "AsyncClient", lambda **kw: client_type(**kw, transport=httpx.ASGITransport(app=app))
+    )
+    source = tmp_path / "source.wav"
+    source.write_bytes(b"x" * 8)
+    output = tmp_path / "out"
+    with pytest.raises(ValueError, match="Inference stem exceeds"):
+        await inference_demucs.InferenceDemucs("http://inference").separate_stems(source, output)
+    assert not list(output.iterdir())
+    assert not list(cache.glob("demucs-*"))
+
+
 def test_inference_returns_four_stems(tmp_path):
     # WHY: replace the expensive model, keeping HTTP, upload and archive handling real.
     app = create_app(InferenceSettings(cache_dir=tmp_path), audio_separator=SyntheticSeparator())
