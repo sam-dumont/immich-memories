@@ -29,8 +29,25 @@ An isolated RKE2 run verified the generated custom Kustomize path with a separat
 nondefault Secret name and matching app reference. The cached `75077f27` candidate started with
 fresh ephemeral storage, downloaded NAS models, reached the synthetic Immich fixture, and saved
 then reloaded an encrypted Settings credential. The synthetic setting and namespace were removed.
-This checks Secret wiring and Settings encryption; it does not test a live SOPS/External Secrets
-provider or a Terraform apply. Terraform managed/existing modes have mocked-provider plan checks.
+
+### Verified Terraform runs
+
+Two isolated RKE2 runs applied module revision `53fc813793` with a nondefault existing Secret
+and fresh local XFS PVCs:
+
+- The exact `75077f27` candidate run applied with `replicas = 0`, then used a recorded test-only
+  `Never` image policy, node pin and scale to one replica. Separate readiness, Immich connectivity,
+  preflight (5 OK, 4 warnings, 9 skipped) and encrypted Settings save/reload passed. The initial
+  zero-replica apply alone did not validate rollout.
+- The published `0.103.0` run applied the unchanged module with one replica from the start,
+  without workload patches. Rollout and Immich connectivity passed. This older app predates the
+  tier bootstrap, so its default caption check failed; selecting `no_captions` through the module's
+  existing environment input and applying again passed preflight (5 OK, 2 warnings, 4 skipped).
+
+Neither external API key nor Settings encryption key appeared in either private Terraform state;
+no Terraform Secret resource was created. Both states were destroyed and their separately created
+namespaces, Secrets and claim-UID-verified PVs were removed. These runs do not test a live SOPS or
+External Secrets provider. Managed/existing modes also have mocked-provider plan checks.
 
 ### SOPS
 
