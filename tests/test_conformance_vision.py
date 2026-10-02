@@ -39,7 +39,9 @@ def test_caption_probe_requires_the_visible_red_rectangle(monkeypatch):
     monkeypatch.setattr(
         httpx.AsyncClient, "_transport_for_url", lambda *_: httpx.MockTransport(reply)
     )
-    checks = vision_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = vision_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "image caption"))
     assert result.valid, result.quality
     assert result.calls == 4
@@ -69,7 +71,9 @@ def test_motion_probe_requires_movement_across_frames(monkeypatch, object_name):
     )
     # WHY: provider HTTP is the only boundary; the real motion seat builds its request.
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    checks = vision_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = vision_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "video motion"))
     assert result.valid, result.quality
     assert result.calls == 1
@@ -140,7 +144,7 @@ def test_held_out_motion_controls_require_the_actual_direction(monkeypatch, dire
         )
     )
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    llm = LLMConfig(model="fixture", base_url="http://localhost:43210/v1")
+    llm = LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
     assert motion(llm, direction=direction)
     if direction != "stationary":
         with pytest.raises(AssertionError, match="movement"):

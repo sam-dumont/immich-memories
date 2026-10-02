@@ -23,7 +23,6 @@ def _config_with_every_secret_class() -> Config:
     return Config(
         immich={"url": "http://immich.secret.test", "api_key": "immich-log-secret"},
         llm={"api_key": "primary-llm-log-secret"},
-        title_llm={"api_key": "title-llm-log-secret"},
         musicgen={"api_key": "musicgen-log-secret"},
         ace_step={"api_key": "ace-step-log-secret"},
         auth={

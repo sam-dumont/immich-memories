@@ -135,7 +135,8 @@ def test_runtime_captures_once_per_attempt_without_refetch_or_mutation(tmp_path,
         thumbnail_cache=object(),
         context=context,
         config=Config(
-            llm={"model": "no-model-calls"}, cache={"directory": str(tmp_path / "cache")}
+            llm={"enabled": True, "model": "no-model-calls"},
+            cache={"directory": str(tmp_path / "cache")},
         ),
         ports=EditorialRuntimePorts(load_people=lambda: {}, fetch_full_source=fetch),
     )

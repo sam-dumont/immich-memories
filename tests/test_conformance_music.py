@@ -34,7 +34,9 @@ def test_mood_probe_uses_the_saved_cut_and_restores_database_environment(monkeyp
     # WHY: only the external provider HTTP response is substituted.
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
     result = run_case(
-        music_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))[0]
+        music_cases(LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1"))[
+            0
+        ]
     )
     assert result.valid is valid
     assert result.calls == 1

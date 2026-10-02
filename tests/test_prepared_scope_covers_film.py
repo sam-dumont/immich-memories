@@ -62,7 +62,7 @@ class _Library:
 def _config(tmp_path) -> Config:
     return Config(
         immich={"url": "http://immich.test", "api_key": "key"},
-        llm={"model": "offline-editor"},
+        llm={"enabled": True, "model": "offline-editor"},
         cache={"directory": str(tmp_path / "cache")},
         analysis={"min_source_short_side": 0},
     )

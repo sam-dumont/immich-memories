@@ -301,3 +301,17 @@ def test_a_bank_needs_the_seeds_to_agree_on_the_decision_not_on_the_plan_bytes(h
     assert "disagreed" in harness.bank_refusal(split)
     assert "cold-needed" in harness.bank_refusal([_outcome(harness, status="cold-needed")])
     assert harness.bank_refusal([_outcome(harness, attempt_dir=None)]) == "no attempt to bank"
+
+
+@pytest.mark.parametrize(
+    ("provider", "host"),
+    [("openai", "api.openai.com"), ("anthropic", "api.anthropic.com"), ("zai", "api.z.ai")],
+)
+def test_replay_blocks_named_provider_hosts_even_when_url_is_blank(
+    harness, tmp_path, provider, host
+):
+    path = tmp_path / "hosted.yaml"
+    path.write_text(
+        f"advanced:\n  llm:\n    enabled: true\n    provider: {provider}\n    model: reader\n"
+    )
+    assert harness.provider_hosts(path) == {host, "localhost:8092"}

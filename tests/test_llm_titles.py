@@ -151,7 +151,10 @@ class TestGenerateTitleWithLlm:
         from immich_memories.titles.llm_titles import TitleSuggestion, generate_title_with_llm
 
         config = LLMConfig(
-            provider="openai-compatible", base_url="http://localhost:8080/v1", model="omlx"
+            enabled=True,
+            provider="openai-compatible",
+            base_url="http://localhost:8080/v1",
+            model="omlx",
         )
         llm_response = '{"title": "Summer in Crete", "subtitle": "Chania to Sitia", "trip_type": "multi_base", "map_mode": "excursions", "map_mode_reason": "Two bases"}'
 
@@ -188,7 +191,10 @@ class TestGenerateTitleWithLlm:
         from immich_memories.titles.llm_titles import generate_title_with_llm
 
         config = LLMConfig(
-            provider="openai-compatible", base_url="http://localhost:8080/v1", model="omlx"
+            enabled=True,
+            provider="openai-compatible",
+            base_url="http://localhost:8080/v1",
+            model="omlx",
         )
 
         with patch(
@@ -233,6 +239,7 @@ class TestTitleGenerationThinks:
         from immich_memories.titles.llm_titles import generate_title_with_llm
 
         config = LLMConfig(
+            enabled=True,
             base_url="http://localhost:8080/v1",
             provider="openai-compatible",
             model="qwen",
@@ -265,7 +272,10 @@ class TestATitleMayOnlyNameWhatTheFactsName:
         from immich_memories.config_models_llm import LLMConfig
 
         return LLMConfig(
-            provider="openai-compatible", base_url="http://localhost:8080/v1", model="omlx"
+            enabled=True,
+            provider="openai-compatible",
+            base_url="http://localhost:8080/v1",
+            model="omlx",
         )
 
     @staticmethod

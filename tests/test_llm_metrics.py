@@ -46,6 +46,7 @@ def _anthropic_response(usage):
 
 def _thinking_config(**overrides) -> LLMConfig:
     fields = {
+        "enabled": True,
         "provider": "openai-compatible",
         "base_url": "http://localhost:8080/v1",
         "model": "qwen-reasoning",
@@ -126,7 +127,11 @@ async def test_anthropic_cache_tokens_are_in_the_total_and_discount_subset() -> 
     from immich_memories.analysis.llm_query import query_llm
 
     config = LLMConfig(
-        base_url="https://api.anthropic.com", provider="anthropic", model="glm", api_key="k"
+        enabled=True,
+        base_url="https://api.anthropic.com",
+        provider="anthropic",
+        model="glm",
+        api_key="k",
     )
     reply = _anthropic_response(
         {

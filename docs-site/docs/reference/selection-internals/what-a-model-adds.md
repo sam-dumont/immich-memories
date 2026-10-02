@@ -150,7 +150,9 @@ the model that wrote it, so a second cut of the same period asks nothing again.
 `immich-memories prepare --overviews` reads a whole window ahead of time instead; it needs a model reader.
 
 `advanced.llm.reader_concurrency` sets how many independent requests overlap. Unset, it is 1 for a
-server on your own machine or network and 4 for a public host.
+loopback, private IP or bare service name and 4 for a dotted DNS name or public IP. Dotted
+LAN names count as hosted; set `reader_concurrency: 1` when needed. The owned reader always
+serializes requests.
 
 ## What else the model writes
 

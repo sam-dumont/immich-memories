@@ -122,7 +122,9 @@ def test_hosted_episodes_overlap_with_exact_usage_and_reusable_ordered_readings(
 
     # WHY: replace only the hosted completion; requests, metrics, artifacts and SQLite are real.
     monkeypatch.setattr(gateway, "query_llm", completion)
-    config = LLMConfig(base_url="https://api.openai.com/v1", provider="openai", model="test-reader")
+    config = LLMConfig(
+        enabled=True, base_url="https://api.openai.com/v1", provider="openai", model="test-reader"
+    )
     reader, projections = _reader(tmp_path / "concurrent", config)
     with llm_metrics.collecting() as counters:
         result = reader.read(projections)
@@ -181,7 +183,12 @@ def test_cancellation_banks_already_paid_sibling_answers_before_stopping(tmp_pat
     monkeypatch.setattr(gateway, "query_llm", completion)
     reader, projections = _reader(
         tmp_path,
-        LLMConfig(base_url="https://api.openai.com/v1", provider="openai", model="test-reader"),
+        LLMConfig(
+            enabled=True,
+            base_url="https://api.openai.com/v1",
+            provider="openai",
+            model="test-reader",
+        ),
     )
     with cancellation_scope(check), pytest.raises(PipelineCancelled):
         reader.read(projections)
@@ -217,7 +224,12 @@ def test_a_failed_pack_does_not_drop_siblings_and_only_unread_answers_are_retrie
     monkeypatch.setattr(gateway, "query_llm", completion)
     reader, projections = _reader(
         tmp_path,
-        LLMConfig(base_url="https://api.openai.com/v1", provider="openai", model="test-reader"),
+        LLMConfig(
+            enabled=True,
+            base_url="https://api.openai.com/v1",
+            provider="openai",
+            model="test-reader",
+        ),
     )
     result = reader.read(projections)
     assert attempts == {0: 1, 1: 1, 2: 2, 3: 1, 4: 1}
@@ -231,7 +243,8 @@ def test_a_failed_pack_does_not_drop_siblings_and_only_unread_answers_are_retrie
 
 
 @pytest.mark.parametrize(
-    "config", [LLMConfig(), LLMConfig(base_url="https://api.openai.com/v1", provider="openai")]
+    "config",
+    [LLMConfig(), LLMConfig(enabled=True, base_url="https://api.openai.com/v1", provider="openai")],
 )
 def test_cancellation_before_dispatch_sends_no_episode_requests(tmp_path, monkeypatch, config):
     from immich_memories.operations.cancellation import PipelineCancelled, cancellation_scope

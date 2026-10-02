@@ -110,6 +110,7 @@ OPERATOR_CONFIG = {
     },
     "audio": {"local_music_dir": "~/Music/Memories"},
     "llm": {
+        "enabled": True,
         "provider": "openai-compatible",
         "base_url": "http://localhost:9999/v1",
         "model": "a-model-this-mac-has-resident",

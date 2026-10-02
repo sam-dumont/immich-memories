@@ -31,8 +31,8 @@ flowchart TB
 | Notifications | Run outcome/details, optionally a thumbnail |
 | OIDC | The usual login flow to your provider |
 
-The reader is disabled by default. Enable it with blank `base_url` for an owned local reader;
-an explicit remote URL sends text to that endpoint. Configuring a reader does
+The reader is disabled by default. Enable it with blank `base_url` and `openai-compatible` or `ollama` for an owned local reader;
+a remote URL or hosted provider preset sends text to that endpoint. Configuring a reader does
 not enable image captions. Check the [full request inventory](reference/privacy-egress.md) for exact
 hosts, switches and defaults. `preflight` also lists outside hosts you have enabled.
 

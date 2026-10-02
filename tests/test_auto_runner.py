@@ -1274,18 +1274,16 @@ class TestRunOneOutcomes:
         candidate: MemoryCandidate,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Separate music and title credentials cannot reach any failure surface."""
+        """Music and reader credentials cannot reach any failure surface."""
         secrets = {
             "immich": "immich-secret-8d2a",
             "llm": "primary-llm-secret-6f13",
-            "title_llm": "title-llm-secret-a497",
             "musicgen": "musicgen-secret-32ce",
             "ace_step": "ace-step-secret-4b81",
             "notification": "https://notify.test/notification-secret-0ea5",
         }
         config.immich.api_key = secrets["immich"]
         config.llm.api_key = secrets["llm"]
-        config.title_llm = config.llm.model_copy(update={"api_key": secrets["title_llm"]})
         config.musicgen.api_key = secrets["musicgen"]
         config.ace_step.api_key = secrets["ace_step"]
         config.notifications.urls = [secrets["notification"]]
@@ -1401,7 +1399,6 @@ class TestRunOneOutcomes:
         [
             "immich.api_key",
             "llm.api_key",
-            "title_llm.api_key",
             "musicgen.api_key",
             "ace_step.api_key",
             "auth.password",
@@ -1417,10 +1414,7 @@ class TestRunOneOutcomes:
         """Every credential-bearing config field must redact before truncation."""
         secret = credential_path.replace(".", "-") + "-" + "q" * 80 + "-SECRET-END-91de"
         section_name, field_name = credential_path.split(".")
-        if section_name == "title_llm":
-            config.title_llm = config.llm.model_copy(update={field_name: secret})
-        else:
-            setattr(getattr(config, section_name), field_name, secret)
+        setattr(getattr(config, section_name), field_name, secret)
         safe_marker = "configured-model-name-must-remain"
         config.llm.model = safe_marker
         stderr = f"process output {secret}{'z' * 1940} {safe_marker}"

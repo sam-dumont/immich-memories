@@ -11,7 +11,10 @@ from immich_memories.free_text.reading import WireAsker, object_schema
 
 def test_local_free_text_keeps_its_required_json_contract():
     config = LLMConfig(
-        provider="openai-compatible", base_url="http://localhost:9999/v1", model="small"
+        enabled=True,
+        provider="openai-compatible",
+        base_url="http://localhost:9999/v1",
+        model="small",
     )
     sent = []
 
@@ -43,7 +46,10 @@ def test_request_specific_policy_cannot_reuse_a_force_all_schemas_producer():
     from immich_memories.analysis.editorial_text_gateway import semantic_text_model_identity
 
     config = LLMConfig(
-        provider="openai-compatible", base_url="http://localhost:9999/v1", model="small"
+        enabled=True,
+        provider="openai-compatible",
+        base_url="http://localhost:9999/v1",
+        model="small",
     )
     automatic = semantic_text_model_identity(config, thinking=False)
     force_all = semantic_text_model_identity(
@@ -61,6 +67,7 @@ async def test_one_endpoint_switches_modes_by_request_kind(provider, override):
     from immich_memories.analysis.prose_shapes import episode_reading_shape, title_shape
 
     config = LLMConfig(
+        enabled=True,
         provider=provider,
         base_url="http://localhost:9999/v1",
         model="small",
@@ -100,7 +107,10 @@ async def test_cached_answers_stay_with_their_request_mode():
     from tests.annotation_rows import annotation_store
 
     config = LLMConfig(
-        provider="openai-compatible", base_url="http://localhost:9999/v1", model="small"
+        enabled=True,
+        provider="openai-compatible",
+        base_url="http://localhost:9999/v1",
+        model="small",
     )
     sent = []
 
@@ -156,7 +166,7 @@ def test_unchanged_modes_keep_their_existing_banked_answers(
     from immich_memories.analysis.editorial_text_gateway import semantic_text_model_identity
 
     config = LLMConfig(
-        provider=provider, base_url=endpoint, model=model, structured_output=override
+        enabled=True, provider=provider, base_url=endpoint, model=model, structured_output=override
     )
     # Persisted producer identities measured on main 9ab1bf52, before request-specific selection.
     assert semantic_text_model_identity(config, thinking=False) == banked_identity

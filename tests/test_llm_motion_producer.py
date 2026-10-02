@@ -67,7 +67,9 @@ def test_explicit_motion_producer_reuses_smolvlm_without_overwriting_its_bank():
 
 @pytest.mark.parametrize("status", [200, 401, 403])
 def test_explicit_motion_transport_uses_the_llm_and_preserves_auth_errors(monkeypatch, status):
-    llm = LLMConfig(base_url="http://localhost:43210/v1", model="fixture-vision-model")
+    llm = LLMConfig(
+        enabled=True, base_url="http://localhost:43210/v1", model="fixture-vision-model"
+    )
     requests = []
 
     def reply(request):

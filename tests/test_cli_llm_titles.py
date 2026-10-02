@@ -22,7 +22,9 @@ _RANGE = DateRange(start=datetime(2025, 7, 1), end=datetime(2025, 7, 14))
 
 
 def _config_with_llm() -> Config:
-    return Config(tier="full", llm={"base_url": "http://llm.test/v1", "model": "some-model"})
+    return Config(
+        tier="full", llm={"enabled": True, "base_url": "http://llm.test/v1", "model": "some-model"}
+    )
 
 
 def _answers(title: str = "Ada and her grandparents", subtitle: str | None = None):
@@ -349,7 +351,9 @@ def test_nas_selection_can_use_a_configured_llm_for_its_title() -> None:
         enabled=True,
         title_override=None,
         clips=[make_clip("clip-1")],
-        config=Config(tier="nas", llm={"base_url": "http://llm.test/v1", "model": "m"}),
+        config=Config(
+            tier="nas", llm={"enabled": True, "base_url": "http://llm.test/v1", "model": "m"}
+        ),
         memory_type="multi_person",
         date_range=_RANGE,
         person_names=["Ada Example"],
@@ -416,3 +420,20 @@ def test_a_plan_that_stops_before_rendering_still_shows_the_title(capsys) -> Non
     printed = capsys.readouterr().out
     assert "Lakeside Half 2022" in printed
     assert "Ten kilometres of rain" in printed
+
+
+def test_titles_use_the_shared_llm_configuration():
+    config = _config_with_llm()
+    ask, seen = _answers()
+    resolve_film_title(
+        enabled=True,
+        title_override=None,
+        clips=[],
+        config=config,
+        memory_type="year",
+        date_range=_RANGE,
+        person_names=[],
+        ask=ask,
+    )
+    assert seen["llm_config"] is config.llm
+    assert "title_llm" not in Config.model_fields

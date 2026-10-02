@@ -36,7 +36,9 @@ def test_episode_probe_uses_full_membership_and_reads_the_subject(monkeypatch, n
     )
     # WHY: the external provider is replaced; episode grouping and persistence run normally.
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    checks = episode_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = episode_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == name))
     assert result.valid, result.quality
     assert result.calls == 1

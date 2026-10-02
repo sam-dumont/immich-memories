@@ -103,7 +103,12 @@ async def test_the_cut_mood_reaches_the_reader_as_text_only(tmp_path, monkeypatc
     sent = refuse_pictures(monkeypatch)
     config = Config(
         tier="full",
-        llm={"base_url": "http://localhost:11434", "model": "reader", "provider": "ollama"},
+        llm={
+            "enabled": True,
+            "base_url": "http://localhost:11434",
+            "model": "reader",
+            "provider": "ollama",
+        },
     )
     config.cache.directory = str(tmp_path / "cache")
     (tmp_path / "plan.private.json").write_text(json.dumps({"story": {"thesis": "A fair"}}))

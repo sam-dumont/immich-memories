@@ -21,7 +21,7 @@ from tests.free_text.banked import QuestionAsker
 
 EDITORIAL = EditorialConfig()
 IMMICH = "immich:\n  url: http://immich.invalid\n  api_key: not-a-real-key\n"
-MODEL_TIER = "tier: full\nadvanced:\n  llm:\n    base_url: http://reader.invalid/v1\n    model: small-reader\n"
+MODEL_TIER = "tier: full\nadvanced:\n  llm:\n    enabled: true\n    base_url: http://reader.invalid/v1\n    model: small-reader\n"
 ANSWERS: dict[str, Any] = {
     "Split the owner's request": {
         "who": [],

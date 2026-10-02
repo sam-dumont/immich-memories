@@ -81,7 +81,10 @@ async def test_completed_request_is_banked_but_cancel_prevents_next_request(tmp_
     # Provider transport is the boundary; real gateway validation/cache are retained.
     monkeypatch.setattr("immich_memories.analysis.llm_query._dispatch", dispatch)
     config = LLMConfig(
-        base_url="http://localhost:8080/v1", provider="openai-compatible", model="test-model"
+        enabled=True,
+        base_url="http://localhost:8080/v1",
+        provider="openai-compatible",
+        model="test-model",
     )
     request = TextRequest(
         prompt="first question",

@@ -7,7 +7,8 @@ for preparation and selection. Only ``full`` uses an LLM for selection:
 * ``gpu``: every light model. The caption server, the heads and detectors, and Laya for the
   sharing question. Selection still uses the rules reader.
 * ``full``: the ``gpu`` tier plus an LLM for prose and polish. It refuses to load without the
-  LLM enabled with a nonblank ``model``; a blank ``base_url`` runs locally.
+  LLM enabled with a nonblank ``model``; named providers fill their hosted URL,
+  otherwise a blank ``base_url`` runs locally.
 
 Configured text features (titles and music mood) work on every tier. The sharing question
 never goes to an LLM on any tier.

@@ -56,7 +56,10 @@ def test_votes_overlap_blocks_but_keep_order_and_reuse_the_same_bank(tmp_path, m
     monkeypatch.setattr(gateway, "query_llm", completion)
     config = Config(
         llm=LLMConfig(
-            base_url="http://localhost:8080/v1", model="test-reader", reader_concurrency=2
+            enabled=True,
+            base_url="http://localhost:8080/v1",
+            model="test-reader",
+            reader_concurrency=2,
         )
     )
     cold_out, warm_out = tmp_path / "cold", tmp_path / "warm"
@@ -103,7 +106,10 @@ def test_cancellation_reaches_workers_before_they_send_a_request(tmp_path, monke
     # WHY: capture paid provider requests; cancellation must prevent all of them.
     monkeypatch.setattr(gateway, "query_llm", completion)
     judge = StructureTextJudge(
-        Config(llm=LLMConfig(base_url="http://localhost:8080/v1", model="test-reader")), tmp_path
+        Config(
+            llm=LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="test-reader")
+        ),
+        tmp_path,
     )
     stopped = False
 
@@ -124,19 +130,26 @@ def test_the_endpoint_decides_how_many_jobs_overlap_when_the_config_names_no_num
     from immich_memories.analysis.llm_providers import reader_concurrency
 
     assert reader_concurrency(LLMConfig()) == 1
-    assert reader_concurrency(LLMConfig(base_url="http://localhost:9999/v1")) == 1
-    assert reader_concurrency(LLMConfig(base_url="http://192.168.1.40:8080/v1")) == 1
-    assert reader_concurrency(LLMConfig(base_url="http://inference:8092/v1")) == 1
-    assert reader_concurrency(LLMConfig(base_url="https://api.melious.ai/v1")) == 4
+    assert reader_concurrency(LLMConfig(enabled=True, base_url="http://localhost:9999/v1")) == 1
+    assert reader_concurrency(LLMConfig(enabled=True, base_url="http://192.168.1.40:8080/v1")) == 1
+    assert reader_concurrency(LLMConfig(enabled=True, base_url="http://inference:8092/v1")) == 1
+    assert reader_concurrency(LLMConfig(enabled=True, base_url="https://api.melious.ai/v1")) == 4
     assert (
-        reader_concurrency(LLMConfig(base_url="https://api.openai.com/v1", provider="openai")) == 4
+        reader_concurrency(
+            LLMConfig(enabled=True, base_url="https://api.openai.com/v1", provider="openai")
+        )
+        == 4
     )
     assert (
-        reader_concurrency(LLMConfig(base_url="https://api.melious.ai/v1", reader_concurrency=1))
+        reader_concurrency(
+            LLMConfig(enabled=True, base_url="https://api.melious.ai/v1", reader_concurrency=1)
+        )
         == 1
     )
     assert (
-        reader_concurrency(LLMConfig(base_url="http://localhost:8080/v1", reader_concurrency=8))
+        reader_concurrency(
+            LLMConfig(enabled=True, base_url="http://localhost:8080/v1", reader_concurrency=8)
+        )
         == 8
     )
 
@@ -159,7 +172,10 @@ def test_one_question_asked_by_two_jobs_at_once_is_paid_for_once(tmp_path, monke
     monkeypatch.setattr(gateway, "query_llm", completion)
     config = Config(
         llm=LLMConfig(
-            base_url="http://localhost:8080/v1", model="test-reader", reader_concurrency=2
+            enabled=True,
+            base_url="http://localhost:8080/v1",
+            model="test-reader",
+            reader_concurrency=2,
         )
     )
     (tmp_path / "out").mkdir()
@@ -187,7 +203,10 @@ def test_a_failed_job_keeps_its_artifact_and_its_number_among_the_others(tmp_pat
     monkeypatch.setattr(gateway, "query_llm", completion)
     config = Config(
         llm=LLMConfig(
-            base_url="http://localhost:8080/v1", model="test-reader", reader_concurrency=4
+            enabled=True,
+            base_url="http://localhost:8080/v1",
+            model="test-reader",
+            reader_concurrency=4,
         )
     )
     (tmp_path / "out").mkdir()
@@ -224,7 +243,10 @@ def test_every_failing_job_names_its_own_cause(tmp_path, caplog):
 
     config = Config(
         llm=LLMConfig(
-            base_url="http://localhost:8080/v1", model="test-reader", reader_concurrency=2
+            enabled=True,
+            base_url="http://localhost:8080/v1",
+            model="test-reader",
+            reader_concurrency=2,
         )
     )
     (tmp_path / "out").mkdir()

@@ -91,7 +91,7 @@ def resolve_film_title(
         source = override_source(title_override, memory_type, memory_preset_params)
         return title_override, subtitle_override, source
 
-    llm_config = config.title_llm if config.title_llm and config.title_llm.model else config.llm
+    llm_config = config.llm
     if not _asks_the_model(
         enabled=enabled,
         memory_type=memory_type,

@@ -113,7 +113,7 @@ def test_generation_tier_bounds_both_photo_and_assembly_canvas(
         config=Config(
             tier=tier,
             output={"resolution": "4k"},
-            llm={"base_url": "http://localhost:11434/v1", "model": "test-model"},
+            llm={"enabled": True, "base_url": "http://localhost:11434/v1", "model": "test-model"},
         ),
         output_resolution=resolution,
         output_orientation=orientation,

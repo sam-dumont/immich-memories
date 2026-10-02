@@ -192,7 +192,9 @@ def batch_route_for(config: LLMConfig) -> str | None:
 def resolved_llm_config(config: LLMConfig) -> LLMConfig:
     """Return the provider configuration that will actually reach the wire."""
     updates = (
-        _preset_updates(config) if config.base_url.strip() else {"provider": "openai-compatible"}
+        _preset_updates(config)
+        if config.base_url.strip() or config.provider in _PROVIDER_PRESETS
+        else {"provider": "openai-compatible"}
     )
     if config.thinking == "auto":
         # Leaving it to the host is a request field that is not there, in
@@ -246,7 +248,7 @@ def _reachable_only_from_here(host: str) -> bool:
 def is_local_endpoint(config: LLMConfig) -> bool:
     """Whether this endpoint is a server on this machine or this private network."""
     return config.runs_locally or _reachable_only_from_here(
-        urlsplit(config.base_url).hostname or ""
+        urlsplit(resolved_llm_config(config).base_url).hostname or ""
     )
 
 

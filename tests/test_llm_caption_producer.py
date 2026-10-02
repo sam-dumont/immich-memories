@@ -23,7 +23,10 @@ def test_explicit_llm_writer_owns_its_caption_identity_and_accounts_for_image_re
 ):
     requests = []
     llm = LLMConfig(
-        base_url="http://localhost:43210/v1", model="fixture-vision-model", structured_output=False
+        enabled=True,
+        base_url="http://localhost:43210/v1",
+        model="fixture-vision-model",
+        structured_output=False,
     )
 
     def reply(request):

@@ -79,6 +79,7 @@ def test_llm_preflight_reports_missing_configured_model() -> None:
     config = Config(
         tier="full",
         llm={
+            "enabled": True,
             "provider": "openai-compatible",
             "base_url": "http://localhost:9999/v1",
             "model": "removed-vlm",
@@ -106,6 +107,7 @@ def test_llm_preflight_reports_missing_chat_route() -> None:
     config = Config(
         tier="full",
         llm={
+            "enabled": True,
             "provider": "openai-compatible",
             "base_url": "http://localhost:9999/v1",
             "model": "vlm",
@@ -148,6 +150,7 @@ def test_llm_preflight_reports_the_model_list_an_anthropic_host_publishes() -> N
     config = Config(
         tier="full",
         llm={
+            "enabled": True,
             "provider": "anthropic",
             "base_url": "https://api.anthropic.com",
             "model": "claude-sonnet-4-5",
@@ -169,6 +172,7 @@ def test_llm_preflight_names_a_model_the_anthropic_host_does_not_serve() -> None
     config = Config(
         tier="full",
         llm={
+            "enabled": True,
             "provider": "anthropic",
             "base_url": "https://api.anthropic.com",
             "model": "claude-retired",
@@ -189,6 +193,7 @@ def test_llm_preflight_falls_back_to_one_token_where_no_catalogue_is_served() ->
     config = Config(
         tier="full",
         llm={
+            "enabled": True,
             "provider": "anthropic",
             "base_url": "https://gateway.example.invalid/anthropic",
             "model": "some-model",
@@ -211,6 +216,7 @@ def test_llm_preflight_reports_a_rejected_key_on_the_messages_route() -> None:
     config = Config(
         tier="full",
         llm={
+            "enabled": True,
             "provider": "anthropic",
             "base_url": "https://api.anthropic.com",
             "model": "claude-sonnet-4-5",
@@ -231,6 +237,7 @@ def test_llm_preflight_checks_the_route_a_named_preset_actually_uses() -> None:
     config = Config(
         tier="full",
         llm={
+            "enabled": True,
             "provider": "zai",
             "base_url": "https://api.z.ai/api/anthropic",
             "model": "glm-5.3-flash",

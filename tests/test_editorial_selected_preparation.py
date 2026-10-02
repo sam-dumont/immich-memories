@@ -102,7 +102,7 @@ def _film(
 
     config = Config(
         tier=tier,
-        llm={"model": "test-prose", "base_url": "http://prose.invalid/v1"}
+        llm={"enabled": True, "model": "test-prose", "base_url": "http://prose.invalid/v1"}
         if tier == "full"
         else {},
         cache={"directory": str(directory / "cache")},

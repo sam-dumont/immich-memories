@@ -191,7 +191,9 @@ async def _trip_title_from_model(reply_title: str, place: str, locale: str = "fr
     from immich_memories.config_models_llm import LLMConfig
     from immich_memories.titles.llm_titles import MemoryTitleFacts, generate_title_with_llm
 
-    config = LLMConfig(provider="openai-compatible", base_url="http://localhost:8080/v1", model="m")
+    config = LLMConfig(
+        enabled=True, provider="openai-compatible", base_url="http://localhost:8080/v1", model="m"
+    )
     reply = f'{{"title": "{reply_title}", "subtitle": null}}'
     # WHY: query_llm is the boundary to the LLM server; the reply is what is under test.
     with patch("immich_memories.titles.llm_titles.query_llm", new_callable=AsyncMock) as ask:

@@ -12,7 +12,7 @@ from immich_memories.config_models_llm import LLMConfig
 
 class VoteJudge:
     def __init__(self, **settings):
-        self.config = SimpleNamespace(llm=LLMConfig(model="model-a", **settings))
+        self.config = SimpleNamespace(llm=LLMConfig(enabled=True, model="model-a", **settings))
         self.calls = []
 
     def ask(self, stage, prompt, **_kwargs):

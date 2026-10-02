@@ -357,6 +357,13 @@ def check_llm(config: Config) -> CheckResult:
         CheckResult with status and details.
     """
     if not config.llm.enabled:
+        if config.llm.configured:
+            return CheckResult(
+                name="LLM",
+                status=CheckStatus.WARNING,
+                message="Reader configured but disabled",
+                details="Set advanced.llm.enabled: true to allow local or remote reader calls",
+            )
         return CheckResult(name="LLM", status=CheckStatus.SKIPPED, message="LLM disabled")
     try:
         reader = config.editorial.resolve_reader(config.llm.model)

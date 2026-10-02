@@ -32,7 +32,9 @@ def test_subject_probe_requires_the_qualified_subject(monkeypatch, lexicon):
     monkeypatch.setattr(
         httpx.AsyncClient, "_transport_for_url", lambda *_: httpx.MockTransport(reply)
     )
-    checks = lexical_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = lexical_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "free-text qualified subject"))
     assert result.valid, result.quality
     assert result.calls == 6
@@ -54,7 +56,9 @@ def test_place_probe_rejects_a_generic_place_answer(monkeypatch, lexicon):
         )
     )
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    checks = lexical_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = lexical_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "free-text particular place"))
     assert result.called and not result.valid
     assert "particular" in result.quality
@@ -82,7 +86,9 @@ def test_occasion_probe_accepts_only_one_occasion(monkeypatch, lexicon):
         )
     )
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    checks = lexical_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = lexical_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "free-text one occasion"))
     assert result.valid, result.quality
     assert result.calls == 3
@@ -108,7 +114,9 @@ def test_names_probe_retains_kitten_as_a_cat(monkeypatch, lexicon):
         )
     )
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    checks = lexical_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = lexical_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "free-text other names"))
     assert result.valid, result.quality
     assert result.calls == 3
@@ -136,7 +144,9 @@ def test_person_probe_resolves_two_people_with_the_same_first_name(monkeypatch, 
         )
     )
     monkeypatch.setattr(httpx.AsyncClient, "_transport_for_url", lambda *_: transport)
-    checks = lexical_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = lexical_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "free-text ambiguous person"))
     assert result.valid, result.quality
     assert result.calls == 3
@@ -170,7 +180,9 @@ def test_pool_probe_keeps_only_requested_black_cats(monkeypatch, lexicon):
     monkeypatch.setattr(
         httpx.AsyncClient, "_transport_for_url", lambda *_: httpx.MockTransport(reply)
     )
-    checks = lexical_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))
+    checks = lexical_cases(
+        LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+    )
     result = run_case(next(case for case in checks if case.name == "free-text matching pool"))
     assert result.valid, result.quality
     assert result.calls >= 3

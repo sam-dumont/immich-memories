@@ -155,7 +155,10 @@ def test_cached_incomplete_reply_is_validated_then_repaired_and_reused_offline(
     weigh(scripted)
     config = Config(
         llm=LLMConfig(
-            provider="openai-compatible", base_url="http://editor.test/v1", model="synthetic-editor"
+            enabled=True,
+            provider="openai-compatible",
+            base_url="http://editor.test/v1",
+            model="synthetic-editor",
         )
     )
     store = annotation_store()

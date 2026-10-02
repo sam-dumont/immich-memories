@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 from immich_memories.config_models import expand_env_vars, http_url_or_blank
 
@@ -47,7 +47,7 @@ class LLMConfig(BaseModel):
     )
     base_url: str = Field(
         default="",
-        description="API base URL; blank runs an app-owned local llama.cpp model",
+        description="API base URL; named hosted providers fill a blank URL; otherwise blank runs local llama.cpp",
     )
     model: str = Field(
         default=DEFAULT_LOCAL_MODEL,
@@ -70,8 +70,8 @@ class LLMConfig(BaseModel):
         default="disabled",
         description=(
             "How hard the server may reason. 'disabled' never asks; 'low', "
-            "'high' and 'max' run load-bearing calls (selection review, "
-            "titles) in reasoning mode while bulk analysis stays fast; 'auto' "
+            "'high' and 'max' run titles in reasoning mode while bulk "
+            "reader, music and special-day calls stay fast; 'auto' "
             "sends no reasoning field at all and takes the host's default. "
             "The level reaches hosts that take one: Claude gets adaptive "
             "thinking and the level as an effort, z.ai gets the level itself. "
@@ -199,19 +199,20 @@ class LLMConfig(BaseModel):
     @property
     def runs_locally(self) -> bool:
         """An enabled reader without an API endpoint is owned by this process."""
-        return self.enabled and not self.base_url.strip()
+        return (
+            self.enabled
+            and not self.base_url.strip()
+            and self.provider in ("openai-compatible", "ollama")
+        )
 
-    @model_validator(mode="before")
-    @classmethod
-    def keep_explicit_connections_enabled(cls, data: Any) -> Any:
-        """Existing configs named a model or endpoint before there was an enable switch."""
-        if (
-            isinstance(data, dict)
-            and "enabled" not in data
-            and (data.get("model") or data.get("base_url"))
-        ):
-            return {**data, "enabled": True}
-        return data
+    @property
+    def configured(self) -> bool:
+        """Whether disabled settings name a reader beyond the built-in defaults."""
+        return any(
+            getattr(self, name)
+            != type(self).model_fields[name].get_default(call_default_factory=True)
+            for name in ("provider", "base_url", "model", "api_key", "local_server", "local_mmproj")
+        )
 
     @property
     def reasons(self) -> bool:

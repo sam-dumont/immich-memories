@@ -86,7 +86,7 @@ def test_hdr_is_preserved_outside_the_nas_h264_policy(
         tier=tier,
         output={"codec": "h265", "codec_policy": codec_policy},
         hardware={"enabled": hardware_enabled},
-        llm={"base_url": "http://localhost:9999/v1", "model": "test-reader"},
+        llm={"enabled": True, "base_url": "http://localhost:9999/v1", "model": "test-reader"},
     )
     # WHY: Exercise hardware capabilities independently of the test host's driver.
     monkeypatch.setattr(
