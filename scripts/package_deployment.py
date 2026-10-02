@@ -9,6 +9,19 @@ import subprocess
 import tarfile
 from pathlib import Path
 
+_APP_IMAGE = rb"ghcr\.io/sam-dumont/immich-video-memory-generator(?:/inference)?"
+_IMAGE_PIN = re.compile(rb"(- name: " + _APP_IMAGE + rb'\s*\n\s*newTag: )"([^"\n]+)"')
+
+
+def pin_images(data: bytes, version: str) -> bytes:
+    """Pin app/inference images in any wrapper or component, keeping CUDA variants."""
+
+    def stamped(match: re.Match[bytes]) -> bytes:
+        suffix = "-cuda" if match[2].endswith(b"-cuda") else ""
+        return match[1] + f'"{version}{suffix}"'.encode()
+
+    return _IMAGE_PIN.sub(stamped, data)
+
 
 def package_bundle(root: Path, version: str, destination: Path) -> None:
     if not re.fullmatch(r"\d+\.\d+\.\d+(-rc\.\d+)?", version):
@@ -19,21 +32,14 @@ def package_bundle(root: Path, version: str, destination: Path) -> None:
         .decode()
         .split("\0")
     )
-    pins = {
-        "deploy/kubernetes/base/kustomization.yaml": version,
-        "deploy/kubernetes/overlays/render-sidecar/kustomization.yaml": version,
-        "deploy/kubernetes/overlays/maximalist/kustomization.yaml": version,
-        "deploy/kubernetes/overlays/inference/kustomization.yaml": version,
-        "deploy/kubernetes/overlays/inference-cuda/kustomization.yaml": version + "-cuda",
-    }
     with tarfile.open(destination, "w:gz") as archive:
         for name in filter(None, paths):
             path = root / name
             if path.is_symlink():
                 raise ValueError(f"Deployment bundle cannot follow symlink: {name}")
             data = path.read_bytes()
-            if name in pins:
-                data = re.sub(rb'newTag: "[^"]+"', f'newTag: "{pins[name]}"'.encode(), data)
+            if name.endswith("kustomization.yaml"):
+                data = pin_images(data, version)
             if name.endswith("terraform.tfvars.example"):
                 data = re.sub(
                     rb'(?m)^image_tag\s*=\s*"[^"]+"',

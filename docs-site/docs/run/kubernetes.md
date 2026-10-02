@@ -192,9 +192,40 @@ inline patch to `patches:`:
             protocol: TCP
 ```
 
-Use your server's port. Overlays based on `base` are alternatives: applying GPU after PostgreSQL
-replaces the PostgreSQL patch. For both, compose one overlay based on PostgreSQL and copy in the
-GPU deployment patch. Do not apply sibling app overlays one after another.
+Use your server's port. The existing app overlays remain alternatives when applied separately.
+To combine GPU, PostgreSQL and a render sidecar, build one root from the components:
+
+```bash
+mkdir -p deploy/kubernetes/custom
+cp deploy/kubernetes/overlays/postgres/database-secret.yaml.example deploy/kubernetes/custom/database-secret.yaml
+cp deploy/kubernetes/overlays/render-sidecar/render-worker-secret.yaml.example deploy/kubernetes/custom/render-worker-secret.yaml
+```
+
+Fill in those two Secrets, then save `deploy/kubernetes/custom/kustomization.yaml`:
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../base
+  - database-secret.yaml
+  - render-worker-secret.yaml
+components:
+  - ../components/gpu
+  - ../components/postgres
+  - ../components/render-sidecar
+```
+
+Remove any component and Secret you do not need. The GPU component reserves a GPU for the app;
+the sidecar also reserves its own GPU. Combining both therefore needs two allocatable GPUs.
+Keep the base Secret configured and add database/reader egress for your actual ports in this root.
+The optional `../components/reader-egress` adds TCP 8000 for an external reader such as oMLX;
+it does not restrict the destination or start a reader. Change the port if yours differs, and
+configure `advanced.llm.enabled: true`, its URL and model explicitly.
+`kubectl kustomize deploy/kubernetes/custom` previews the result;
+`kubectl apply -k deploy/kubernetes/custom` applies one Deployment with all chosen options.
+The existing `overlays/gpu`, `overlays/postgres` and `overlays/render-sidecar` paths are thin
+wrappers over these components, so existing apply commands still work.
 
 ## Batch jobs
 

@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+# Example for an external reader on TCP 8000. This is a port rule, not a host allow-list.
+patches:
+  - target:
+      kind: NetworkPolicy
+      name: immich-memories
+    patch: |-
+      - op: add
+        path: /spec/egress/-
+        value:
+          ports:
+            - port: 8000
+              protocol: TCP

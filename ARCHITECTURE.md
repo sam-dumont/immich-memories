@@ -15,6 +15,11 @@ flowchart TD
     selection -.-> store["Reusable facts and run history"]
 ```
 
+Kubernetes app options live in `deploy/kubernetes/components/`: GPU, PostgreSQL and render
+sidecar patches compose over one base. Existing overlays wrap those components. Auxiliary model
+services remain independent resources. `scripts/package_deployment.py` stamps app/inference image
+tags in every tracked kustomization, including components, while preserving CUDA suffixes.
+
 ## Runtime map
 
 ```mermaid

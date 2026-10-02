@@ -22,7 +22,7 @@
 #   in-process daily timer (`IMMICH_MEMORIES_AUTOMATION__ENABLED=true` on the
 #   Deployment) does the same job with no CronJob at all.
 #
-# CPU by default. For GPU nodes add the fields from ../overlays/gpu/deployment-gpu.yaml
+# CPU by default. For GPU nodes add the fields from ../components/gpu/deployment-gpu.yaml
 # (runtimeClassName, nvidia.com/gpu resources, nodeSelector, tolerations, NVIDIA_* env).
 apiVersion: batch/v1
 kind: Job

@@ -17,5 +17,5 @@ resources:
   # cp database-secret.yaml.example database-secret.yaml and fill in the URL.
   - database-secret.yaml
 
-patches:
-  - path: deployment-database-env.yaml
+components:
+  - ../../components/postgres
