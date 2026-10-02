@@ -15,15 +15,20 @@ PROBE = (
 )
 
 
-def requirements(installed: dict[str, str]) -> str:
-    """Keep local build suffixes and every third-party distribution in the audit input."""
+def requirements(installed: dict[str, str], *, advisory: bool = False) -> str:
+    """Record exact pins; optionally map official Torch variants to upstream advisories."""
     pins = []
     for name, version in sorted(installed.items()):
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name) or not re.fullmatch(
             r"[A-Za-z0-9][A-Za-z0-9.!+_-]*", version
         ):
             raise ValueError("invalid distribution metadata")
-        if re.sub(r"[-_.]+", "-", name).lower() not in LOCAL:
+        canonical = re.sub(r"[-_.]+", "-", name).lower()
+        if advisory and canonical in {"torch", "torchaudio", "torchvision"}:
+            # PyPI cannot index local versions. These official build variants share the
+            # public release's advisories; retain their exact identity in requirements.txt.
+            version = re.sub(r"\+(?:cpu|cu[0-9]+)$", "", version)
+        if canonical not in LOCAL:
             pins.append(f"{name}=={version}\n")
     if not pins:
         raise ValueError("empty third-party dependency inventory")
@@ -59,8 +64,9 @@ def main() -> int:
     args.output.mkdir(parents=True, exist_ok=True)
     installed = json.loads(inspect(args.image, "python", "-c", PROBE))
     (args.output / "python.json").write_text(json.dumps(installed, indent=2) + "\n")
-    pins = args.output / "requirements.txt"
-    pins.write_text(requirements(installed))
+    (args.output / "requirements.txt").write_text(requirements(installed))
+    pins = args.output / "advisory-requirements.txt"
+    pins.write_text(requirements(installed, advisory=True))
     os_packages = inspect(args.image, "dpkg-query", "-W", "-f=${binary:Package}\t${Version}\n")
     if not os_packages.strip():
         raise ValueError("empty OS package inventory")

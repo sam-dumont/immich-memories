@@ -52,19 +52,18 @@ jobs:
     steps:
       - name: Resolve params
         id: params
+        env:
+          REQUEST_SHA: ${{ github.event.client_payload.sha || github.sha }}
+          BRANCH: ${{ github.event.client_payload.branch || github.ref_name }}
+          PUBLIC_REPO: ${{ github.event.client_payload.public_repo || 'sam-dumont/immich-video-memory-generator' }}
+          SUITE: ${{ inputs.suite || 'all' }}
         run: |
-          # repository_dispatch vs workflow_dispatch
-          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            echo "sha=${{ github.event.client_payload.sha }}" >> "$GITHUB_OUTPUT"
-            echo "branch=${{ github.event.client_payload.branch }}" >> "$GITHUB_OUTPUT"
-            echo "public_repo=${{ github.event.client_payload.public_repo }}" >> "$GITHUB_OUTPUT"
-            echo "suite=all" >> "$GITHUB_OUTPUT"
-          else
-            echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
-            echo "branch=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
-            echo "public_repo=sam-dumont/immich-video-memory-generator" >> "$GITHUB_OUTPUT"
-            echo "suite=${{ inputs.suite || 'all' }}" >> "$GITHUB_OUTPUT"
-          fi
+          [[ "$REQUEST_SHA" =~ ^[0-9a-f]{40}$ ]]
+          git check-ref-format --branch "$BRANCH" >/dev/null
+          test "$PUBLIC_REPO" = sam-dumont/immich-video-memory-generator
+          case "$SUITE" in all|assembly|titles|photos|pipeline|live-photos|cli) ;; *) exit 2 ;; esac
+          printf 'sha=%s\nbranch=%s\npublic_repo=%s\nsuite=%s\n' \
+            "$REQUEST_SHA" "$BRANCH" "$PUBLIC_REPO" "$SUITE" >> "$GITHUB_OUTPUT"
 
       - name: Install system dependencies
         run: |
@@ -73,7 +72,7 @@ jobs:
 
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          ref: ${{ steps.params.outputs.branch }}
+          ref: ${{ steps.params.outputs.sha }}
       - name: Create LFS cache key
         run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
       - name: Cache LFS objects
@@ -86,25 +85,23 @@ jobs:
         run: git lfs pull
 
       - name: Post "in_progress" status
-        if: github.event_name == 'repository_dispatch'
+        if: github.event_name == 'repository_dispatch' && steps.params.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+          PUBLIC_REPO: ${{ steps.params.outputs.public_repo }}
+          SHA: ${{ steps.params.outputs.sha }}
         run: |
-          curl -sS -X POST \
-            -H "Authorization: token ${{ secrets.PUBLIC_REPO_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ steps.params.outputs.public_repo }}/statuses/${{ steps.params.outputs.sha }}" \
-            -d '{
-              "state": "pending",
-              "context": "Integration (GPU)",
-              "description": "Running FFmpeg + GPU tests...",
-              "target_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }'
+          gh api "repos/$PUBLIC_REPO/statuses/$SHA" --method POST \
+            -f state=pending -f 'context=Integration (GPU)' \
+            -f 'description=Running FFmpeg + GPU tests...' \
+            -f "target_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
 
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           enable-cache: true
-      - run: uv python install ${{ env.PYTHON_VERSION }}
+      - run: uv python install "$PYTHON_VERSION"
       - name: Pin Python version for uv
-        run: echo "${{ env.PYTHON_VERSION }}" > .python-version
+        run: echo "$PYTHON_VERSION" > .python-version
       - run: make dev-test
 
       - name: Restore config
@@ -137,8 +134,9 @@ jobs:
 
       - name: Run integration tests
         id: tests
+        env:
+          SUITE: ${{ steps.params.outputs.suite }}
         run: |
-          SUITE="${{ steps.params.outputs.suite }}"
           case "$SUITE" in
             all)         make test-integration ;;
             assembly)    make test-integration-assembly ;;
@@ -147,6 +145,7 @@ jobs:
             pipeline)    make test-integration-pipeline ;;
             live-photos) make test-integration-live-photos ;;
             cli)         make test-integration-cli ;;
+            *)           exit 2 ;;
           esac
 
       - name: Run GPU benchmarks
@@ -159,6 +158,8 @@ jobs:
         if: always() && steps.tests.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+          SHA: ${{ steps.params.outputs.sha }}
+          PUBLIC_REPO: ${{ steps.params.outputs.public_repo }}
         run: |
           python3 -c "
           import json, glob, sys
@@ -175,7 +176,6 @@ jobs:
           print(f'Merged {len(merged)} entries into benchmark-results.json')
           " || true
           if [ -f benchmark-results.json ]; then
-            SHA="${{ steps.params.outputs.sha }}"
             # WHY: pipe JSON via stdin (--input) to avoid exceeding shell ARG_MAX
             # when benchmark results are large.
             jq -n \
@@ -185,7 +185,7 @@ jobs:
               --arg sha "$SHA" \
               --rawfile results benchmark-results.json \
               '{ref: $ref, inputs: {runner: $runner, suite: $suite, sha: $sha, results: $results}}' \
-            | gh api repos/${{ steps.params.outputs.public_repo }}/actions/workflows/benchmark.yml/dispatches \
+            | gh api "repos/$PUBLIC_REPO/actions/workflows/benchmark.yml/dispatches" \
               --method POST --input - || echo "WARN: benchmark submit failed"
           fi
 
@@ -222,29 +222,25 @@ jobs:
           fail_ci_if_error: false
 
       - name: Post success status
-        if: success() && github.event_name == 'repository_dispatch'
+        if: success() && github.event_name == 'repository_dispatch' && steps.params.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+          PUBLIC_REPO: ${{ steps.params.outputs.public_repo }}
+          SHA: ${{ steps.params.outputs.sha }}
         run: |
-          curl -sS -X POST \
-            -H "Authorization: token ${{ secrets.PUBLIC_REPO_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ steps.params.outputs.public_repo }}/statuses/${{ steps.params.outputs.sha }}" \
-            -d '{
-              "state": "success",
-              "context": "Integration (GPU)",
-              "description": "All GPU tests passed",
-              "target_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }'
+          gh api "repos/$PUBLIC_REPO/statuses/$SHA" --method POST \
+            -f state=success -f 'context=Integration (GPU)' \
+            -f 'description=All GPU tests passed' \
+            -f "target_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
 
       - name: Post failure status
-        if: failure() && github.event_name == 'repository_dispatch'
+        if: failure() && github.event_name == 'repository_dispatch' && steps.params.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+          PUBLIC_REPO: ${{ steps.params.outputs.public_repo }}
+          SHA: ${{ steps.params.outputs.sha }}
         run: |
-          curl -sS -X POST \
-            -H "Authorization: token ${{ secrets.PUBLIC_REPO_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ steps.params.outputs.public_repo }}/statuses/${{ steps.params.outputs.sha }}" \
-            -d '{
-              "state": "failure",
-              "context": "Integration (GPU)",
-              "description": "GPU tests failed — click for details",
-              "target_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }'
+          gh api "repos/$PUBLIC_REPO/statuses/$SHA" --method POST \
+            -f state=failure -f 'context=Integration (GPU)' \
+            -f 'description=GPU tests failed - click for details' \
+            -f "target_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"

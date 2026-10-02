@@ -194,12 +194,14 @@ jobs:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Validate and project submitted results
+        env:
+          RESULTS_JSON: ${{ inputs.results }}
+          RUNNER_NAME: ${{ inputs.runner }}
+          SUITE: ${{ inputs.suite }}
+          SHA: ${{ inputs.sha }}
         run: |
-          cat <<'RESULTS_EOF' > tests/benchmark-results.json
-          ${{ github.event.inputs.results }}
-          RESULTS_EOF
-          echo "Ingesting ${{ github.event.inputs.suite }} results from ${{ github.event.inputs.runner }}"
-          echo "SHA: ${{ github.event.inputs.sha || 'not specified' }}"
+          printf '%s' "$RESULTS_JSON" > tests/benchmark-results.json
+          printf 'Ingesting %s results from %s\nSHA: %s\n' "$SUITE" "$RUNNER_NAME" "${SHA:-not specified}"
           python3 -c "
           import json, sys
           from scripts.profile_pipeline import benchmark_comparison_projection
