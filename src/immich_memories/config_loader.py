@@ -24,6 +24,7 @@ from immich_memories.config_models import (
     DatabaseConfig,
     HardwareAccelConfig,
     ImmichConfig,
+    expand_file_references,
     has_unresolved_env_reference,
 )
 from immich_memories.config_models_analysis import AnalysisConfig, SpeechConfig
@@ -389,7 +390,9 @@ class Config(BaseSettings):
         # whose first-open import loads another config.yaml, and clearing here would leave this
         # load building from no file at all (#1484).
         outer = _yaml_source_data, _database_source_data
-        _yaml_source_data = _load_yaml_data(path)
+        # `${VAR}` expands here, in the file layer only: the stored layer and the
+        # environment are always taken as written.
+        _yaml_source_data = expand_file_references(cls, _load_yaml_data(path))
         try:
             if stored is None:
                 _database_source_data = _stored_settings(_yaml_source_data)

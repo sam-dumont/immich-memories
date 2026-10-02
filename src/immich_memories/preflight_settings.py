@@ -32,4 +32,3 @@ def check_stored_settings(config: Config) -> CheckResult:
         f"{len(ignored)} saved setting(s) ignored; set them in config.yaml or the environment",
         details,
     )
-

@@ -95,27 +95,27 @@ class TestAuthConfigValidation:
 
 
 class TestAuthConfigEnvExpansion:
-    """AuthConfig expands environment variables in secrets."""
+    """config.yaml can keep sign-in secrets in the environment as `${VAR}`."""
 
-    def test_password_env_expansion(self, monkeypatch):
+    def test_password_env_expansion(self, monkeypatch, tmp_path):
         monkeypatch.setenv("MY_PASSWORD", "hunter2")
-        cfg = AuthConfig(
-            enabled=True,
-            provider="basic",
-            username="admin",
-            password="${MY_PASSWORD}",  # noqa: S106
+        source = tmp_path / "config.yaml"
+        source.write_text(
+            "auth:\n  enabled: true\n  provider: basic\n  username: admin\n"
+            '  password: "${MY_PASSWORD}"\n'
         )
+        cfg = Config.from_yaml(source, stored={}).auth
         assert cfg.password == "hunter2"  # noqa: S105
 
-    def test_client_secret_env_expansion(self, monkeypatch):
+    def test_client_secret_env_expansion(self, monkeypatch, tmp_path):
         monkeypatch.setenv("OIDC_SECRET", "supersecret")
-        cfg = AuthConfig(
-            enabled=True,
-            provider="oidc",
-            issuer_url="https://auth.example.com",
-            client_id="myapp",
-            client_secret="${OIDC_SECRET}",  # noqa: S106
+        source = tmp_path / "config.yaml"
+        source.write_text(
+            "auth:\n  enabled: true\n  provider: oidc\n"
+            "  issuer_url: https://auth.example.com\n  client_id: myapp\n"
+            '  client_secret: "${OIDC_SECRET}"\n'
         )
+        cfg = Config.from_yaml(source, stored={}).auth
         assert cfg.client_secret == "supersecret"  # noqa: S105
 
 

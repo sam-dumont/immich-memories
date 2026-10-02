@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import ClassVar, Literal
 from urllib.parse import urlsplit
 
-from pydantic import BaseModel, Field, field_validator, model_validator
-
-from immich_memories.config_models import expand_env_vars
+from pydantic import BaseModel, Field, model_validator
 
 
 def _check_email_entries(entries: list[str]) -> None:
@@ -27,6 +25,10 @@ def _normalised_public_url(value: str) -> str:
 
 class AuthConfig(BaseModel):
     """Authentication settings for the web UI."""
+
+    ENV_REFERENCE_FIELDS: ClassVar[frozenset[str]] = frozenset(
+        {"password", "client_secret", "issuer_url", "client_id"}
+    )
 
     enabled: bool = False
     provider: Literal["basic", "oidc", "header"] = "basic"
@@ -60,13 +62,6 @@ class AuthConfig(BaseModel):
     user_header: str = "Remote-User"
     email_header: str = "Remote-Email"
     trusted_proxies: list[str] = Field(default_factory=list)
-
-    @field_validator("password", "client_secret", "issuer_url", "client_id", mode="before")
-    @classmethod
-    def expand_env(cls, v: str) -> str:
-        if isinstance(v, str):
-            return expand_env_vars(v)
-        return v
 
     @model_validator(mode="after")
     def validate_provider_requirements(self) -> AuthConfig:

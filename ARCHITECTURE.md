@@ -1079,7 +1079,7 @@ src/immich_memories/
 ├── config_presets.py           # Named presets (`preset: fast`) that fill several knobs at once
 ├── config_tiers.py             # One resolved product tier: reader, preparation producers, Laya
 ├── config_compute.py           # Inference capability discovery, separate from video encoding
-├── config_models.py            # Resources a run uses: Immich server, cache, hardware (+ expand_env_vars)
+├── config_models.py            # Resources a run uses: Immich server, cache, hardware (+ config.yaml `${VAR}` expansion)
 ├── config_models_analysis.py   # Source admission and the expected seconds per clip
 ├── config_models_auth.py       # Authentication config model (basic, OIDC, header)
 ├── config_models_automation.py # Running unattended: trips, automation, notifications, upload

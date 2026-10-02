@@ -72,10 +72,12 @@ class TestExpandEnvVars:
 class TestImmichConfig:
     """Tests for ImmichConfig."""
 
-    def test_env_expansion(self, monkeypatch):
-        """Test environment variable expansion in config."""
+    def test_env_expansion(self, monkeypatch, tmp_path):
+        """A `${VAR}` in config.yaml expands; a plain value is kept as written."""
         monkeypatch.setenv("TEST_IMMICH_URL", "https://test.example.com")
-        config = ImmichConfig(url="${TEST_IMMICH_URL}", api_key="direct_key")
+        source = tmp_path / "config.yaml"
+        source.write_text('immich:\n  url: "${TEST_IMMICH_URL}"\n  api_key: direct_key\n')
+        config = Config.from_yaml(source, stored={}).immich
         assert config.url == "https://test.example.com"
         assert config.api_key == "direct_key"
 

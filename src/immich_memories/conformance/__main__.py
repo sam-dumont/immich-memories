@@ -7,6 +7,7 @@ from pathlib import Path
 
 import yaml
 
+from immich_memories.config_models import expand_file_references
 from immich_memories.config_models_llm import LLMConfig
 from immich_memories.conformance.cases import cases
 from immich_memories.conformance.inventory import discover_sites
@@ -22,7 +23,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     data = yaml.safe_load(args.config.read_text())
-    llm = LLMConfig.model_validate(data.get("advanced", {}).get("llm", data.get("llm", {})))
+    section = data.get("advanced", {}).get("llm", data.get("llm", {}))
+    llm = LLMConfig.model_validate(expand_file_references(LLMConfig, section))
     if not llm.model.strip():
         parser.error("the config must name an LLM model")
     checks = cases(llm)

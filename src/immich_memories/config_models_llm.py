@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
-
-from immich_memories.config_models import expand_env_vars
 
 # The generic reasoning control. "disabled" and "auto" are the two ends: never
 # ask, and never say. The three levels in between are mapped to whatever the
@@ -30,6 +28,8 @@ class LLMConfig(BaseModel):
     "zai" all speak /v1/chat/completions — any server that does will work
     (OpenAI, Groq, mlx-vlm, vLLM).
     """
+
+    ENV_REFERENCE_FIELDS: ClassVar[frozenset[str]] = frozenset({"api_key"})
 
     enabled: bool = Field(
         default=False, description="Allow LLM requests; false disables local and remote calls"
@@ -226,12 +226,4 @@ class LLMConfig(BaseModel):
             return "high" if v else "disabled"
         if isinstance(v, str):
             return _SWITCH_LEVELS.get(v.strip().lower(), v)
-        return v
-
-    @field_validator("api_key", mode="before")
-    @classmethod
-    def expand_env(cls, v: str) -> str:
-        """Expand environment variables in config values."""
-        if isinstance(v, str):
-            return expand_env_vars(v)
         return v

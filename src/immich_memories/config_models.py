@@ -1,8 +1,9 @@
 """Configuration models for the resources a run uses.
 
 The Immich server it reads from, the local cache it writes through, and the
-hardware it encodes on. `expand_env_vars` lives here too: every config module
-that holds a credential needs it.
+hardware it encodes on. `${VAR}` expansion lives here too: each config model names
+the fields that take a reference in `ENV_REFERENCE_FIELDS`, and the loader expands
+those in config.yaml only.
 """
 
 from __future__ import annotations
@@ -11,7 +12,7 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Literal
+from typing import Any, ClassVar, Literal, get_args, get_origin
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
@@ -67,6 +68,42 @@ def _warn_about_bare_references(value: str) -> None:
             )
 
 
+def expand_file_references(model: type[BaseModel], data: dict) -> dict:
+    """Expand `${VAR}` in a config.yaml mapping, in the fields `model` marks for it.
+
+    Only config.yaml goes through this. A value saved from Settings or set in the
+    environment is taken literally: whoever can save a setting must not be able to read
+    any environment variable back through it. Each model lists its fields in
+    `ENV_REFERENCE_FIELDS`; nested sections and named accounts are walked.
+    """
+    marked: frozenset[str] = getattr(model, "ENV_REFERENCE_FIELDS", frozenset())
+    expanded = dict(data)
+    for name, field in model.model_fields.items():
+        key = next((k for k in (field.alias, name) if k and k in data), None)
+        if key is None:
+            continue
+        value = data[key]
+        if name in marked and isinstance(value, str):
+            expanded[key] = expand_env_vars(value)
+        elif isinstance(value, dict):
+            expanded[key] = _expand_section(field.annotation, value)
+    return expanded
+
+
+def _expand_section(annotation: Any, value: dict) -> dict:
+    for candidate in (annotation, *get_args(annotation)):
+        if isinstance(candidate, type) and issubclass(candidate, BaseModel):
+            return expand_file_references(candidate, value)
+        if get_origin(candidate) is dict:
+            item = get_args(candidate)[1]
+            if isinstance(item, type) and issubclass(item, BaseModel):
+                return {
+                    name: expand_file_references(item, entry) if isinstance(entry, dict) else entry
+                    for name, entry in value.items()
+                }
+    return value
+
+
 PRIMARY_ACCOUNT = "primary"
 # Lowercase with single underscores: an env override lowercases the name it reads, and a
 # double underscore would split it into two levels (IMMICH_MEMORIES_IMMICH__ACCOUNTS__<NAME>__URL).
@@ -84,6 +121,8 @@ def is_account_name(name: str) -> bool:
 class ImmichConnection(BaseModel):
     """Where one Immich account is and the key that reads it."""
 
+    ENV_REFERENCE_FIELDS: ClassVar[frozenset[str]] = frozenset({"url", "api_key"})
+
     url: str = Field(default="", description="Immich server URL")
     api_key: str = Field(default="", description="Immich API key")
     api_version: ApiVersionPolicy = ApiVersionPolicy.AUTO
@@ -92,14 +131,6 @@ class ImmichConnection(BaseModel):
     def serialize_api_version(self, value: ApiVersionPolicy) -> str:
         """Serialize the policy as a portable YAML/JSON string."""
         return value.value
-
-    @field_validator("url", "api_key", mode="before")
-    @classmethod
-    def expand_env(cls, v: str) -> str:
-        """Expand environment variables in config values."""
-        if isinstance(v, str):
-            return expand_env_vars(v)
-        return v
 
 
 class ImmichConfig(ImmichConnection):
@@ -126,6 +157,9 @@ class ImmichConfig(ImmichConnection):
 class DatabaseConfig(BaseModel):
     """Where the store lives. Read before the store opens, so never kept in it."""
 
+    # `${VAR}` so a password can stay out of the file.
+    ENV_REFERENCE_FIELDS: ClassVar[frozenset[str]] = frozenset({"url"})
+
     # YAML says `schema`, which BaseModel already owns as a method name.
     model_config = ConfigDict(
         validate_by_name=True, validate_by_alias=True, serialize_by_alias=True
@@ -146,14 +180,6 @@ class DatabaseConfig(BaseModel):
         description="Directory the one-time import of pre-store files reads; blank = "
         "~/.immich-memories",
     )
-
-    @field_validator("url", mode="before")
-    @classmethod
-    def expand_env(cls, v: str) -> str:
-        """Expand `${VAR}` so a password can stay out of the file."""
-        if isinstance(v, str):
-            return expand_env_vars(v)
-        return v
 
 
 class HardwareAccelConfig(BaseModel):

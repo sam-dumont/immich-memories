@@ -7,11 +7,9 @@ for the video instead.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import ClassVar, Literal
 
-from pydantic import BaseModel, Field, field_validator
-
-from immich_memories.config_models import expand_env_vars
+from pydantic import BaseModel, Field
 
 
 class AudioConfig(BaseModel):
@@ -64,6 +62,8 @@ class AudioConfig(BaseModel):
 class MusicGenConfig(BaseModel):
     """Settings for AI music generation via MusicGen API."""
 
+    ENV_REFERENCE_FIELDS: ClassVar[frozenset[str]] = frozenset({"api_key", "base_url"})
+
     enabled: bool = Field(
         default=False,
         description="Enable AI music generation using MusicGen API",
@@ -93,14 +93,6 @@ class MusicGenConfig(BaseModel):
         description="Hemisphere for seasonal music prompts ('north' or 'south')",
     )
 
-    @field_validator("api_key", "base_url", mode="before")
-    @classmethod
-    def expand_env(cls, v: str) -> str:
-        """Expand environment variables in config values."""
-        if isinstance(v, str):
-            return expand_env_vars(v)
-        return v
-
 
 class ACEStepConfig(BaseModel):
     """Settings for ACE-Step music generation.
@@ -108,6 +100,8 @@ class ACEStepConfig(BaseModel):
     ACE-Step 1.5 can run locally as a Python library (preferred for desktop)
     or via a remote Gradio API server.
     """
+
+    ENV_REFERENCE_FIELDS: ClassVar[frozenset[str]] = frozenset({"api_url", "api_key"})
 
     enabled: bool = Field(
         default=False,
@@ -169,11 +163,3 @@ class ACEStepConfig(BaseModel):
         le=18000,
         description="Maximum time per generation job (seconds)",
     )
-
-    @field_validator("api_url", "api_key", mode="before")
-    @classmethod
-    def expand_env(cls, v: str) -> str:
-        """Expand environment variables in config values."""
-        if isinstance(v, str):
-            return expand_env_vars(v)
-        return v

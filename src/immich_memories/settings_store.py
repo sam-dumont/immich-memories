@@ -185,8 +185,7 @@ class SettingsStore:
         return {
             key: reason
             for key, value in self._opened_rows()
-            if (reason := ignored_reason(key, value)) is not None
-            and not is_store_location_key(key)
+            if (reason := ignored_reason(key, value)) is not None and not is_store_location_key(key)
         }
 
     def _opened_rows(self) -> Iterator[tuple[str, Any]]:
