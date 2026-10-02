@@ -7,6 +7,26 @@ title: Measure your setup
 Find the slow stage before adding a service. Downloads, picture preparation, captions, selection,
 rendering and music have different costs. A faster picture model does not guarantee a faster film.
 
+## Tested setups, 2 October 2026 {#tested-setups}
+
+These are separate checks, not four timed clean installs on the current release.
+The [docs-only installation gate](https://github.com/sam-dumont/immich-video-memory-generator/issues/956)
+records the Mac, Docker, Synology and Kubernetes preflight runs; those runs stopped before generation.
+The finished-film controls below came from later, separate runs with prepared picture facts.
+
+| Machine | Setup checked | First preparation time | Finished-film evidence |
+|---|---|---|---|
+| M2 Pro, 16 GB | Native Full | Not recorded in these controls | One-minute month: 15m 29s, 4K HDR10 |
+| M5 Max | Native Full; reader and captions on the Mac | Not recorded in these controls | One-minute month: 5m 43s, 4K HDR10 |
+| Synology DS423+, J4125 | Compose app; NAS controls, plus a preflight run with remote reader/captions | Not recorded in these controls | One-minute NAS month: 7m 23s, 1080p SDR |
+| RKE2 cluster, NVIDIA T1000 | App and CUDA captions; install and preflight verified | Not recorded in the installation run | No finished film in that docs-only run; isolated rendering timings are below |
+
+The Mac controls used generated music and the NAS used bundled music. They are not matched
+NAS-versus-Full quality comparisons. A published comparison of the same CC0 month is tracked in
+[#1719](https://github.com/sam-dumont/immich-video-memory-generator/issues/1719); do not treat
+these different films as that comparison. Record setup, downloads, preparation and generation
+separately when repeating the [first-run gate](https://github.com/sam-dumont/immich-video-memory-generator/issues/956).
+
 ## Read one run
 
 ```bash

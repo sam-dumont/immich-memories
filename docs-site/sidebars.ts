@@ -7,6 +7,7 @@ const sidebars: SidebarsConfig = {
       items: [
         {type: 'doc', id: 'welcome/introduction', label: 'What it does'},
         'get-started/quick-start',
+        'get-started/after-install',
         {type: 'doc', id: 'get-started/first-film', label: 'Your first film'},
         'how-it-chooses/overview',
       ],
@@ -52,8 +53,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category', label: 'Optional upgrades',
       items: [
-        'better/overview',
-        'get-started/what-a-gpu-or-a-model-adds',
+        'get-started/choose-your-setup',
         'better/reader', 'better/captions', 'better/inference',
         'run/hardware', 'better/gpu-render', 'better/music', 'better/measured',
       ],

@@ -56,6 +56,8 @@ Allow several hours for a real month's first preparation on a NAS, or about an h
 or GPU cluster, before rendering. Picture counts and hardware change that estimate.
 [The NAS notes](../run/nas.md#what-to-expect) explain what is cached;
 [Your first film](./first-film.mdx) shows the review and editing steps.
+[After install](./after-install.md) covers home, people and backups. Got your first film?
+[Choose your setup](./choose-your-setup.md) explains what more you can get.
 
 ## If it stops
 
