@@ -22,6 +22,7 @@
   let subtitle = $state('');
   let transition = $state('');
   let fadeColor = $state('');
+  let titleStyle = $state('');
   let orientation = $state('');
   let resolution = $state('');
   let format = $state('');
@@ -74,6 +75,7 @@
       subtitle: orNull(subtitle),
       transition: orNull(transition),
       fade_color: orNull(fadeColor),
+      title_style: orNull(titleStyle),
       orientation: orNull(orientation),
       resolution: orNull(resolution),
       format: orNull(format),
@@ -147,6 +149,15 @@
         <select class={field} bind:value={transition}>
           <option value="">{t('As configured')}</option><option value="smart">{t('Smart (fades and cuts)')}</option>
           <option value="crossfade">{t('Crossfade')}</option><option value="cut">{t('Cut')}</option><option value="none">{t('None')}</option>
+        </select>
+      </label>
+      <label class={label}>{t('Title style')}
+        <select class={field} bind:value={titleStyle}>
+          <option value="">{t('As configured')}</option>
+          <option value="auto">{t('Auto (match the mood)')}</option><option value="random">{t('Random')}</option>
+          <option value="modern_warm">{t('Modern warm')}</option><option value="elegant_minimal">{t('Elegant minimal')}</option>
+          <option value="vintage_charm">{t('Vintage charm')}</option><option value="playful_bright">{t('Playful bright')}</option>
+          <option value="soft_romantic">{t('Soft romantic')}</option>
         </select>
       </label>
       <label class={label}>{t('Opening and closing fade')}

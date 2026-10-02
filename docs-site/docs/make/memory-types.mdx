@@ -25,7 +25,7 @@ Pick the subject in **Memory type**. Start with **Monthly Highlights** if you ar
 
 Leave the length empty and the app fits it to the material. A busy month can make about a minute; a thin month may be much shorter. A year has a larger budget, not twelve glued-together monthly films.
 
-Set a length when you have a destination in mind, such as a 30-second portrait film. It is a target, and the app will not pad a period just to reach it. [Exact length rules](../reference/film-types.mdx#how-long-a-film-runs) are available when you need them.
+For a 30-second portrait film, enter **0.5** in **Length in minutes (fitted to the pictures when empty)**, then choose **Portrait** under **Render > Orientation**. On the CLI, use `--short-form 30 --orientation portrait`. It is a target, and the app will not pad a period just to reach it. [Exact length rules](../reference/film-types.mdx#how-long-a-film-runs) are available when you need them.
 
 ## People and birthdays
 
@@ -43,7 +43,7 @@ Maps are optional and use outside satellite tiles. A trip works with ordinary ti
 
 ## Album
 
-Use an Immich album when you already know what belongs together. Choose **Album** and pick it; the app still makes an edit from the collection. A [reader](../better/reader.md) can also use a declared subject for collections such as cars or baking.
+Use an Immich album when you already know what belongs together. Choose **Album** and pick it; the app still makes an edit from the collection. On the CLI, a [reader](../better/reader.md) can use a declared subject for collections such as cars or baking: `--from-album "Cars" --subject "cars"`. The web album chooser has no subject field.
 
 ## Special day
 

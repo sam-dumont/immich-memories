@@ -161,3 +161,13 @@ def test_runs_render_can_override_the_fade_for_one_film(tmp_path):
     assert result.exit_code == 0, result.output
     assert rendered[0]["request"].fade_color == "black"
     assert config.title_screens.fade_color == "white"
+
+
+def test_runs_render_passes_named_title_style_without_changing_default(tmp_path):
+    config = _config(tmp_path)
+    save_run(config, RUN)
+    rendered: list[dict] = []
+    result = _invoke(config, ["runs", "render", RUN, "--title-style", "elegant_minimal"], rendered)
+    assert result.exit_code == 0, result.output
+    assert rendered[0]["request"].title_style == "elegant_minimal"
+    assert config.title_screens.style_mode == "auto"

@@ -733,7 +733,8 @@ title_screens:
   map_move_min_seconds: 6.0      # trip map to a nearby place, 2 s still hold included (3-15)
   map_move_max_seconds: 8.0      # trip map to a far place, 2 s still hold included (3-15)
   locale: "auto"                 # en fr nl de es it pt-BR pt-PT pl sv ru ja zh-Hans ko, or auto
-  style_mode: "auto"             # auto (mood-based) or random
+  style_mode: "auto"             # auto (mood-based), random, or a named preset
+  # Named presets: modern_warm, elegant_minimal, vintage_charm, playful_bright, soft_romantic
   fade_color: "white"            # white or black at the opening and closing
   animated_background: true      # Animated titles and smooth map flights
   show_month_dividers: true      # When the video spans several months (all-or-none)

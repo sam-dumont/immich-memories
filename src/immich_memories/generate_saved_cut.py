@@ -16,6 +16,7 @@ from uuid import uuid4
 
 from immich_memories.api.access_clients import AccessBoundClient
 from immich_memories.api.models import VideoClipInfo
+from immich_memories.config_models_render import TitleStyleMode
 from immich_memories.filename_builder import build_memory_output_path, name_after_recipe
 from immich_memories.generate import GenerationParams, generate_memory
 from immich_memories.operations.phases import OperationalPhase
@@ -51,6 +52,7 @@ class CutRenderRequest:
     llm_title: bool | None = None
     transition: str | None = None
     fade_color: Literal["white", "black"] | None = None
+    title_style: TitleStyleMode | None = None
     output_resolution: str | None = None
     output_orientation: str | None = None
     scale_mode: str | None = None
@@ -137,6 +139,10 @@ def _apply_request(
     if request.fade_color is not None:
         config.title_screens = config.title_screens.model_validate(
             config.title_screens.model_dump() | {"fade_color": request.fade_color}
+        )
+    if request.title_style is not None:
+        config.title_screens = config.title_screens.model_validate(
+            config.title_screens.model_dump() | {"style_mode": request.title_style}
         )
     params.memory_preset_params = dict(saved.preset_params) if saved is not None else {}
     params.transition = request.transition or params.transition

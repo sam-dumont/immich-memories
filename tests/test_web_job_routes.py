@@ -304,3 +304,15 @@ def test_render_fade_override_is_validated_and_becomes_a_cli_flag():
     assert not any("fade-color" in flag for flag in RenderOptions().flags())
     with pytest.raises(ValidationError):
         RenderOptions(fade_color="blue")
+
+
+def test_render_title_style_is_validated_and_becomes_a_cli_flag():
+    import pytest
+    from pydantic import ValidationError
+
+    from immich_memories.web.job_routes import RenderOptions
+
+    assert "--title-style=modern_warm" in RenderOptions(title_style="modern_warm").flags()
+    assert not any("title-style" in flag for flag in RenderOptions().flags())
+    with pytest.raises(ValidationError):
+        RenderOptions(title_style="made_up")

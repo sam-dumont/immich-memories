@@ -1712,6 +1712,8 @@ export interface components {
             subtitle?: string | null;
             /** Title */
             title?: string | null;
+            /** Title Style */
+            title_style?: ("auto" | "random" | "modern_warm" | "elegant_minimal" | "vintage_charm" | "playful_bright" | "soft_romantic") | null;
             /** Transition */
             transition?: string | null;
             /**

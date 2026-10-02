@@ -15,6 +15,16 @@ from pydantic import BaseModel, Field, field_serializer, field_validator, model_
 
 from immich_memories.processing.encoding_plan import HdrMode
 
+TitleStyleMode = Literal[
+    "auto",
+    "random",
+    "modern_warm",
+    "elegant_minimal",
+    "vintage_charm",
+    "playful_bright",
+    "soft_romantic",
+]
+
 logger = logging.getLogger(__name__)
 
 
@@ -286,9 +296,9 @@ class TitleScreenConfig(BaseModel):
         default="white",
         description="Opening and closing fade color for the film",
     )
-    style_mode: Literal["auto", "random"] = Field(
+    style_mode: TitleStyleMode = Field(
         default="auto",
-        description="Style selection mode (auto = mood-based, random = random selection)",
+        description="Title style: auto follows mood, random chooses a preset, or select a named preset",
     )
     animated_background: bool = Field(
         default=True,

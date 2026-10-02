@@ -116,3 +116,16 @@ def test_fade_override_affects_this_render_without_changing_the_saved_default(
     assert params.config.title_screens.fade_color == default
     next_film = _render(params, attempt, monkeypatch, CutRenderRequest())
     assert next_film.config.title_screens.fade_color == default
+
+
+@pytest.mark.parametrize(
+    "style", ["modern_warm", "elegant_minimal", "vintage_charm", "playful_bright", "soft_romantic"]
+)
+def test_named_title_style_loads_and_overrides_only_this_render(cut, monkeypatch, style):  # noqa: F811
+    from immich_memories.config_models_render import TitleScreenConfig
+
+    assert TitleScreenConfig(style_mode=style).style_mode == style
+    params, attempt = cut
+    handed = _render(params, attempt, monkeypatch, CutRenderRequest(title_style=style))
+    assert handed.config.title_screens.style_mode == style
+    assert params.config.title_screens.style_mode == "auto"
