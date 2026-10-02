@@ -41,7 +41,8 @@ dependencies = [
     "click>=8.3.3",
     "rich>=13.0",
     "pillow>=12.3.0",
-    "pillow-heif>=1.0",
+    # Decode-only build of pillow-heif: no bundled x265 encoder, so no GPL (#1894).
+    "pi-heif>=1.4",
     "numpy>=1.24",
     "watchdog>=3.0",
     "geopy>=2.5.0",
@@ -149,6 +150,7 @@ dev = [
     "pytest-asyncio>=1.4.0",
     "pytest-benchmark>=5.2.3",
     "pytest-xdist>=3.5",
+    "pillow-heif>=1.3",  # Encodes HEIC test inputs; pi-heif decodes only. Never shipped.
     "mypy>=1.0",
     "ruff>=0.1",
     "pre-commit>=3.0",
@@ -551,6 +553,7 @@ DEP002 = [
     "pytest", "pytest-cov", "pytest-asyncio",           # dev tools (CLI usage)
     "pytest-benchmark", "pytest-xdist", "pytest-playwright", # dev tools
     "hypothesis",                                       # property tests (tests/ is excluded)
+    "pillow-heif",                                      # encodes HEIC test inputs (tests/ is excluded)
     "mypy", "ruff",                                      # dev tools
     "pre-commit", "commitizen",                         # dev tools
     "types-pyyaml",                                     # mypy stub

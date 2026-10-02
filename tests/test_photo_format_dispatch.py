@@ -149,3 +149,15 @@ def test_ultrahdr_jpeg_is_turned_upright_with_its_gain_map(tmp_path):
     assert top[0] > top[2], "the stored left (red) half displays on top"
     assert bottom[2] > bottom[0], "the stored right (blue) half displays at the bottom"
     assert top[0] > bottom[2], "the gain map brightened the same half it was stored with"
+
+
+def test_an_avif_photo_is_converted_and_capped(tmp_path):
+    """pi-heif claims AVIF containers but bundles no AV1 decoder; Pillow decodes the pixels."""
+    source = tmp_path / "IMG_0002.avif"
+    Image.new("RGB", (48, 32), "red").save(source, format="AVIF")
+
+    prepared = animator.prepare_photo_source(source, tmp_path, max_size=(24, 24))
+
+    assert (prepared.width, prepared.height) == (24, 16)
+    with Image.open(prepared.path) as image:
+        assert image.format == "JPEG"
