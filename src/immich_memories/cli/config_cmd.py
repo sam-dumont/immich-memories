@@ -105,6 +105,8 @@ def _show(ctx: click.Context, prefixes: tuple[str, ...]) -> None:
         f"{SECRET_KEY_ENV}: {'set' if secret_key_from_env() else 'not set (secrets cannot be saved)'}"
     )
     console.print(table)
+    for key in ctx.obj["config"].unknown_keys:
+        console.print(f"[yellow]Ignored unknown key: {escape(key)}[/yellow]")
 
 
 def _configure(ctx: click.Context, url: str | None, api_key: str | None) -> None:

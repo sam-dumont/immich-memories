@@ -631,6 +631,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
     """
     from immich_memories.preflight_accounts import check_extra_accounts
     from immich_memories.preflight_compute import check_inference_compute
+    from immich_memories.preflight_config_keys import check_unknown_config_keys
     from immich_memories.preflight_homebase import check_homebase
     from immich_memories.preflight_immich import check_immich
     from immich_memories.preflight_music import check_music
@@ -647,6 +648,7 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
     from immich_memories.preflight_sign_in import check_sign_in
 
     return [
+        *check_unknown_config_keys(config),
         check_immich(config),
         check_stored_settings(config),
         *check_extra_accounts(config),
