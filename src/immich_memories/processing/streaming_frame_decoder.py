@@ -27,6 +27,7 @@ from immich_memories.processing.hdr_utilities import (
     get_colorspace_filter,
 )
 from immich_memories.processing.memory_budget import assembly_decoder_threads, available_cpus
+from immich_memories.processing.probe_cache import ProbeCache
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +61,10 @@ class FrameDecoder:
         threads: int | None = None,
         source_frame_rate: Fraction | None = None,
         frame_limit: int | None = None,
+        probe_cache: ProbeCache | None = None,
     ) -> None:
         self._clip_path = clip_path
+        self._probe_cache = probe_cache or ProbeCache()
         self._source_size = source_size
         self._threads = threads
         self._source_frame_rate = source_frame_rate
@@ -350,9 +353,7 @@ class FrameDecoder:
     def _audio_input(self) -> tuple[list[str], str]:
         if self._audio_output is None:
             return [], "0:a?"
-        from immich_memories.processing.probe_cache import ProbeCache
-
-        probe = ProbeCache().get(self._clip_path)
+        probe = self._probe_cache.get(self._clip_path)
         if probe.has_audio:
             return [], "0:a?"
         # Optional mapping still fails when the WAV has no stream. Supply silence
@@ -375,8 +376,10 @@ def make_decoder(
     hdr_type: str | None = None,
     audio_work_dir: Path | None = None,
     caption_window: tuple[int, int] | None = None,
+    probe_cache: ProbeCache | None = None,
 ) -> FrameDecoder:
     """Create a FrameDecoder with per-clip normalization filters."""
+    probe_cache = probe_cache or ProbeCache()
     rotation = 0
     is_title = getattr(clip, "is_title_screen", False)
 
@@ -388,8 +391,8 @@ def make_decoder(
         target_type = hdr_type or "sdr"
         source_types: list[str | None] = [None] * (clip_idx + 1)
         source_primaries: list[str | None] = [None] * (clip_idx + 1)
-        source_types[clip_idx] = _detect_hdr_type(clip.path)
-        source_primaries[clip_idx] = _detect_color_primaries(clip.path)
+        source_types[clip_idx] = _detect_hdr_type(clip.path, probe_cache=probe_cache)
+        source_primaries[clip_idx] = _detect_color_primaries(clip.path, probe_cache=probe_cache)
         ctx = SimpleNamespace(
             hdr_type=target_type,
             pix_fmt="yuv420p10le" if hdr_type else "yuv420p",
@@ -413,9 +416,10 @@ def make_decoder(
     if audio_work_dir:
         audio_output = audio_work_dir / f"clip_{clip_idx}_audio.wav"
 
-    source_size, source_frame_rate = _source_properties(clip.path)
+    source_size, source_frame_rate = _source_properties(clip.path, probe_cache)
     return FrameDecoder(
         clip_path=clip.path,
+        probe_cache=probe_cache,
         width=width,
         height=height,
         fps=fps,
@@ -438,12 +442,14 @@ def make_decoder(
     )
 
 
-def _source_properties(path: Path) -> tuple[tuple[int, int] | None, Fraction | None]:
+def _source_properties(
+    path: Path, probe_cache: ProbeCache | None = None
+) -> tuple[tuple[int, int] | None, Fraction | None]:
     """Read geometry and cadence from one probe, retaining the unprobed fallback."""
-    from immich_memories.processing.probe_cache import ProbeCache, ProbeError
+    from immich_memories.processing.probe_cache import ProbeError
 
     try:
-        probe = ProbeCache().get(path)
+        probe = (probe_cache or ProbeCache()).get(path)
     except (ProbeError, OSError, ValueError):
         return None, None
     return probe.resolution, _matching_stream_rate(probe)

@@ -28,8 +28,7 @@
     "_detect_hdr_type": [17]
   },
   "src/immich_memories/processing/streaming_assembler.py": {
-    "assemble_streaming": [24],
-    "streaming_assemble_full": [16]
+    "assemble_streaming": [24]
   },
   "src/immich_memories/titles/kernels.py": {
     "_compile_kernels": [120]
