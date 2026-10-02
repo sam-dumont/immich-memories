@@ -80,7 +80,7 @@ resource "kubernetes_deployment_v1" "captioner" {
         # at the path. Re-running this is cheap: the digest check short-circuits.
         init_container {
           name    = "fetch-weights"
-          image   = "ghcr.io/ggml-org/llama.cpp:server"
+          image   = "ghcr.io/ggml-org/llama.cpp:server-b10920"
           command = ["/bin/sh", "-euc"]
           args = [
             <<-EOT
@@ -116,7 +116,7 @@ resource "kubernetes_deployment_v1" "captioner" {
 
         container {
           name  = "captioner"
-          image = var.captioner_cuda ? "ghcr.io/ggml-org/llama.cpp:server-cuda" : "ghcr.io/ggml-org/llama.cpp:server"
+          image = var.captioner_cuda ? "ghcr.io/ggml-org/llama.cpp:server-cuda-b10920" : "ghcr.io/ggml-org/llama.cpp:server-b10920"
 
           args = concat(
             [

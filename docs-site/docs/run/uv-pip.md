@@ -31,6 +31,16 @@ uv tool install "immich-memories[all]"
 
 On Apple Silicon, use `"immich-memories[all-mac]"`. It includes the Metal bindings; add
 `[all-mac,auth]` if you want OIDC. For pip, use the same package spec inside a virtual environment.
+For the 1.0 release candidate, pin the package explicitly:
+
+```bash
+uv tool install --prerelease allow "immich-memories[all]==1.0.0rc1"
+# Or, inside a virtual environment:
+pip install "immich-memories[all]==1.0.0rc1"
+```
+
+Use `[all-mac]` on Apple Silicon. PyPI spells `v1.0.0-rc.1` as `1.0.0rc1`.
+
 A bare install lacks the ONNX runtime needed for picture classifiers.
 
 Create `~/.immich-memories/config.yaml`:

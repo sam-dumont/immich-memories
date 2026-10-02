@@ -624,7 +624,7 @@ def test_the_captioner_reaches_a_card_the_way_the_inference_service_does() -> No
     assert device["driver"] == "nvidia" and device["capabilities"] == ["gpu"]
     # The image is the other half, and it cannot come through `extends`: the
     # extending service's own `image:` wins, so the tag has to be a variable.
-    assert captioner["image"].endswith(":${CAPTIONER_TAG:-server}")
+    assert captioner["image"].endswith(":${CAPTIONER_TAG:-server-b10920}")
     # One llama.cpp image on the host, not two: the downloader only curls and
     # hashes, so it has no reason to pull the CPU build beside a CUDA one.
     assert compose["services"]["immich-memories-caption-models"]["image"] == captioner["image"]

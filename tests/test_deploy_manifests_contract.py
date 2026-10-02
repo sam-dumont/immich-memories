@@ -700,7 +700,7 @@ def test_the_cuda_captioner_is_the_cpu_recipe_with_the_layers_offloaded() -> Non
     on_cpu, on_gpu = cpu["containers"][0], cuda["containers"][0]
 
     assert on_gpu["args"] == [*on_cpu["args"], "--n-gpu-layers", "99"]
-    assert on_gpu["image"] == f"{on_cpu['image'].split(':')[0]}:server-cuda"
+    assert on_gpu["image"] == f"{on_cpu['image'].split(':')[0]}:server-cuda-b10920"
     # One image on the node, not two: the init container only curls and hashes,
     # so it has no reason to pull the CPU build beside a CUDA one.
     assert cuda["initContainers"][0]["image"] == on_gpu["image"]
@@ -1007,7 +1007,7 @@ def test_the_maximalist_overlay_reuses_the_cuda_captioner_overlay(tmp_path: Path
         if doc["kind"] == "Deployment" and doc["metadata"]["name"] == "immich-memories-captioner"
     )
     container = captioner["spec"]["template"]["spec"]["containers"][0]
-    assert container["image"] == "ghcr.io/ggml-org/llama.cpp:server-cuda"
+    assert container["image"] == "ghcr.io/ggml-org/llama.cpp:server-cuda-b10920"
     assert container["args"][-2:] == ["--n-gpu-layers", "99"]
 
 
@@ -1030,10 +1030,9 @@ def test_the_maximalist_overlay_pins_or_digests_every_third_party_image(tmp_path
                 # A release tag; the inference service's CUDA build is published as `X.Y.Z-cuda`.
                 assert re.search(r":\d+\.\d+\.\d+(-cuda)?$", image), image
             else:
-                # Third-party: llama.cpp's documented floating server/server-cuda
-                # tag, or a sha256 digest. Never a bare `latest`.
+                # Third-party images use a tested build tag or a digest.
                 assert image != "latest", image
-                assert "@sha256:" in image or re.search(r":server(-cuda)?$", image), image
+                assert "@sha256:" in image or re.search(r":server(-cuda)?-b\d+$", image), image
 
 
 # ── Terraform mirror of the same maximalist reference ──────────────────────
@@ -1107,7 +1106,7 @@ def test_terraform_captioner_module_pins_the_same_weights_as_the_kubernetes_over
     for digest in CAPTION_GGUF_SHA256:
         assert digest in captioner
     assert '"smolvlm2-500m-base-public"' in captioner
-    assert 'var.captioner_cuda ? "ghcr.io/ggml-org/llama.cpp:server-cuda"' in captioner
+    assert 'var.captioner_cuda ? "ghcr.io/ggml-org/llama.cpp:server-cuda-b10920"' in captioner
     assert '"--n-gpu-layers", "99"' in captioner
 
 
