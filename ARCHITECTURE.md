@@ -798,6 +798,7 @@ src/immich_memories/
 ├── web/                        # The web server: the Svelte client, its /api/v1, health, trigger, sign-in (#1395)
 │   ├── server.py               # create_app(): FastAPI + session cookie + auth middleware; `immich-memories ui` runs it
 │   ├── app.py                  # mount_web(): the /api/v1 routers + the built client under /app
+│   ├── request_origin.py       # Shared browser-origin check for unsafe requests, including sign-out
 │   ├── session.py              # GET /api/v1/session: who is signed in, and which sign-in the login page offers
 │   ├── auth.py                 # Who gets in: credential check, rate limiter, bypass paths, session helpers
 │   ├── auth_oidc.py            # OIDC client (authlib starlette integration, singleton)

@@ -20,6 +20,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from immich_memories.config_loader import Config
 from immich_memories.config_models_server import WILDCARD_HOST
 from immich_memories.web.job_routes import MAX_MUSIC_UPLOAD_BYTES
+from immich_memories.web.request_origin import cross_site_write
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +32,6 @@ _MISDIRECTED = (
     "This server does not answer to the host {host!r}. Add it to server.allowed_hosts, "
     "or enable authentication.\n"
 )
-_UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
-_CHECKED_PREFIXES = ("/api/", "/auth/")
 _CROSS_SITE = "A write from another site is refused.\n"
 _FRAMING = [
     (b"x-frame-options", b"DENY"),
@@ -77,48 +76,6 @@ def host_allowed(name: str, config: Config) -> bool:
     if not config.auth.enabled and config.server.host not in _UNBOUND_HOSTS:
         allowed.add(host_name(config.server.host))
     return bool(name) and name in allowed
-
-
-def _origin_host(origin: str) -> str:
-    """An Origin's host[:port], the port left out when it is the scheme's default."""
-    parts = urlsplit(origin.strip().lower())
-    default = {"http": 80, "https": 443}.get(parts.scheme)
-    try:
-        port = parts.port
-    except ValueError:
-        return origin
-    host = f"[{parts.hostname}]" if parts.hostname and ":" in parts.hostname else parts.hostname
-    return f"{host}:{port}" if port and port != default else str(host)
-
-
-def _host_header(host: str, origin: str) -> str:
-    host = host.strip().lower()
-    default = {"http": ":80", "https": ":443"}.get(urlsplit(origin.strip().lower()).scheme, "")
-    return host.removesuffix(default) if default else host
-
-
-def cross_site_write(method: str, path: str, headers: Mapping[str, str], config: Config) -> bool:
-    """Whether a browser on another site sent this write; a call without browser headers passes.
-
-    `Sec-Fetch-Site` is set by the browser and no page can forge it, so `same-origin` and
-    `none` pass outright (that also covers a proxy that rewrites Host). Without it, an
-    `Origin` must name this Host or `auth.public_url`.
-    """
-    if method not in _UNSAFE_METHODS or not path.startswith(_CHECKED_PREFIXES):
-        return False
-    site = headers.get("sec-fetch-site", "").strip().lower()
-    if site in ("cross-site", "same-site"):
-        return True
-    if site in ("same-origin", "none"):
-        return False
-    origin = headers.get("origin")
-    if origin is None:
-        return False
-    named = _origin_host(origin)
-    if named == _host_header(headers.get("host", ""), origin):
-        return False
-    public = config.auth.public_url
-    return not (public and named == _origin_host(public))
 
 
 def _headers(scope: Scope) -> dict[str, str]:
