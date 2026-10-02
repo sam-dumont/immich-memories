@@ -84,7 +84,7 @@ The old SQLite file remains your way back. Protect URLs containing passwords lik
 
 ## 2. A separate PostgreSQL service
 
-Compose ships a commented service, database URL and volume. Enable all three and set
+Compose ships a commented service, database URL, volume and `depends_on` block. Enable all four and set
 `POSTGRES_PASSWORD`/`COMPOSE_PROFILES=postgres` in `.env`.
 [Complete setup](./reference/database.md#2-a-separate-postgresql-service).
 

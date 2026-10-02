@@ -42,6 +42,11 @@ services:
     volumes:
       - immich-memories-config:/home/immich/.immich-memories
       - ./output:/app/output
+    # With the bundled PostgreSQL service below, uncomment this too.
+    # Readiness matters: the app reads saved settings before starting its HTTP server.
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
     environment:
       IMMICH_URL: "${IMMICH_URL:-http://immich-server:2283}"
       IMMICH_API_KEY: "${IMMICH_API_KEY}"
@@ -60,7 +65,7 @@ services:
       IMMICH_MEMORIES_SECRET_KEY: "${IMMICH_MEMORIES_SECRET_KEY:-}"
       # Optional: the store (human decisions, model answers, run history, UI
       # settings) on PostgreSQL instead of the default SQLite file on the
-      # config volume. Uncomment this, the postgres service and its volume
+      # config volume. Uncomment this, depends_on above, the postgres service and its volume
       # below, or point it at a separate database on your own PostgreSQL
       # instance. A schema
       # name only matters if that instance is shared; default: immich_memories.
@@ -329,7 +334,7 @@ services:
   # ── Optional: PostgreSQL for the store ──────────────────────────────────
   # The store defaults to a SQLite file on the config volume, which is the
   # right choice for one host with one writer. To put the store on PostgreSQL
-  # instead, uncomment three things: this service, the
+  # instead, uncomment this service, the app's depends_on block, the
   # IMMICH_MEMORIES_DATABASE_URL line on the app service above, and the
   # immich-memories-postgres-data volume at the bottom. Set POSTGRES_PASSWORD
   # in .env; it has to match the password in IMMICH_MEMORIES_DATABASE_URL.
