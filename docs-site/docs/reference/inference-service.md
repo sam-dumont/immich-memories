@@ -60,7 +60,7 @@ The CUDA image uses ONNX Runtime GPU for the DINOv2 encoder, Marqo and Docling. 
 small heads project the encoder output with NumPy. A graph rejected by CUDA falls back to CPU;
 the image tag alone does not certify GPU execution.
 
-Use the release candidate's published image tag matching your app. The image names are:
+Use the published release image tag matching your app. The image names are:
 
 ```bash
 docker pull ghcr.io/sam-dumont/immich-video-memory-generator/inference:YOUR_APP_TAG
@@ -74,7 +74,7 @@ From a checkout, `docker/Dockerfile.inference` builds either one: `--build-arg D
 
 With `advanced.inference.facts_base_url` set, the app sends generated music to `POST /audio/stems`
 and receives a ZIP containing `drums.wav`, `bass.wav`, `other.wav` and `vocals.wav`. The endpoint
-accepts one multipart `file`, up to 64 MiB. Jobs run serially off the HTTP event loop; temporary
+accepts one multipart `file`, up to 256 MiB. Jobs run serially off the HTTP event loop; temporary
 audio is deleted after the response. Both inference images include Demucs. The CUDA image bundles
 its weights; the CPU image downloads them on first use into `/cache/torch`.
 
@@ -93,11 +93,15 @@ curl -s localhost:8092/health
 
 For a GPU, install the NVIDIA container toolkit from
 [NVIDIA's guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
-and check that a container sees the card:
+and use Linux driver **570.124.06 or newer** as the recommended baseline for the image's
+CUDA 12.8.1 runtime ([NVIDIA driver table](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-toolkit-release-notes/index.html)).
+CUDA 12 minor compatibility can run on drivers from 525.60.13, with feature and PTX/JIT limits;
+that lower floor does not guarantee this image's kernels work. Newer cards may need a newer
+driver. Check that a container sees the card:
 
 ```bash
 sudo nvidia-ctk runtime configure --runtime=docker && sudo systemctl restart docker
-docker run --rm --gpus all nvidia/cuda:12.4.0-base-ubuntu22.04 nvidia-smi
+docker run --rm --gpus all nvidia/cuda:12.8.1-base-ubuntu24.04 nvidia-smi
 ```
 
 Then uncomment the device reservation on that service and change the tag with it:
@@ -121,7 +125,9 @@ curl -s localhost:8092/health
 The published file carries that block inline because it is downloaded on its own; from a checkout,
 `docker/hwaccel.inference.yml` holds both backends as `extends:` targets instead.
 
-`/health` names the provider per producer, in `producers.heads.providers`,
+The app detects remote GPU capability from the top-level `/health` fields `status: "ok"` and
+`provider: "CUDAExecutionProvider"`; that probe loads no models and sends no pictures.
+`/health` also names the provider per producer, in `producers.heads.providers`,
 `producers.nsfw_marqo.providers` and `producers.doc_docling.providers`, each empty until that
 producer has loaded. `CPUExecutionProvider` on a GPU host means the image is the CPU one, the
 device reservation did not reach the container, `PROVIDER` names `cpu`, or the driver and the CUDA
@@ -292,7 +298,7 @@ Every setting is an environment variable prefixed `IMMICH_MEMORIES_INFERENCE_`:
 | `MAX_QUEUED_REQUESTS` | `32` | maximum waiting calls across classifier queues; excess requests get HTTP 429 |
 | `IDLE_UNLOAD_SECONDS` | `300` | drop idle weights; `0` holds them |
 | `PRELOAD` | `false` | load every producer at boot instead of on first use |
-| `DETECTOR_CACHE_DIR` | `/cache/huggingface` in the published image (`$HF_HOME` otherwise) | where the detector snapshots live |
+| `DETECTOR_CACHE_DIR` | unset in the runtime; `/opt/immich-models/huggingface` in the CUDA image | where the detector snapshots live; unset uses the Hugging Face cache, with `HF_HOME=/cache/huggingface` in the CPU image |
 | `ALLOW_MODEL_DOWNLOADS` | `false` | let a cold cache fetch the pinned exports and the Docling snapshot itself |
 | `MAX_IMAGE_BYTES` | `16777216` | refuse anything larger |
 

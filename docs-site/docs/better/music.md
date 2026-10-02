@@ -26,6 +26,8 @@ make check-local-audio
 ```
 
 Every checkout and worktree needs its own `make install-acestep`. The audio stack lives in `.venv-acestep` next to the checkout. The check generates and separates real audio locally; a bundled fallback does not pass it.
+It uses the 2B model with a 0.6B planner, requiring about **9 GB for resident weights** and
+**7 GB on disk**. That test profile is larger than the planner-free configuration below.
 
 Start with the smaller default model:
 
@@ -48,7 +50,12 @@ The setting does not affect Apple Silicon or API servers. See [runtime requireme
 
 ## API server
 
-Configure a server you already run:
+Use the upstream [ACE-Step 1.5 REST server](https://github.com/ace-step/ACE-Step-1.5/blob/v0.1.8/docs/en/API.md),
+installed following its own server instructions. Its `acestep-api` entry point serves
+`GET /health`, `POST /release_task`, `POST /query_result` and the returned audio download URL.
+The app expects that API; a Gradio UI alone is not this server. The upstream default port is
+8001; set `ACESTEP_API_PORT=8000` to use the example below. Bind a private address reachable
+from the app and keep the service off the public internet. Then configure the app:
 
 ```yaml
 advanced:

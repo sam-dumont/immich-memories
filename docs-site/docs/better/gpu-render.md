@@ -53,13 +53,14 @@ Then on the NAS:
 
 ```yaml
 render:
-  worker_base_url: https://render.example.com
+  worker_base_url: http://192.168.1.50:8093
   worker_token: ${RENDER_WORKER_TOKEN}
+  allow_insecure_http: true
   fallback_to_local: false
 ```
 
-The request carries your Immich key, so a non-loopback `http://` worker is refused until you set
-`render.allow_insecure_http: true` to say the network is trusted. HTTPS needs no opt-in.
+The request carries your Immich key. The example explicitly trusts this private LAN with
+`allow_insecure_http: true`. For HTTPS, configure a reverse proxy, use its URL and omit that opt-in.
 
 On Kubernetes, `deploy/kubernetes/overlays/render-sidecar` runs the worker as a second container
 in the app's own pod instead of its own Deployment: the two share a network namespace, so the app
@@ -95,6 +96,7 @@ app’s [network settings](../run/privacy.md) when the film needs maps or place 
 
 ```bash
 immich-memories preflight -v
+curl -H "Authorization: Bearer ${RENDER_WORKER_TOKEN}" http://192.168.1.50:8093/health
 ```
 
 It reports the worker's reachability, version, CUDA titles and encoders. The worker's own
@@ -108,7 +110,8 @@ a box with a card usually means `NVIDIA_DRIVER_CAPABILITIES` lacks `video`
   and says so.
 - A worker that can't open NVENC still renders, in software, and reports it on `/health` and in the
   job record. A dropped clip is a failed job, never a different film.
-- Output is H.264 or H.265 MP4. MOV and ProRes render locally.
+- Worker output is H.264 or H.265 MP4. MOV and ProRes require `fallback_to_local: true`
+  to render on the app host; with the example's `false`, those requests fail.
 - When the film the NAS downloads matches the worker's digest, the NAS keeps the worker's decode
   check instead of decoding the film again, unless music was mixed in.
 
