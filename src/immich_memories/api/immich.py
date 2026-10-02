@@ -31,6 +31,7 @@ from immich_memories.api.models import (
     TimeBucket,
     UserInfo,
 )
+from immich_memories.api.permissions import ApiKeyCapabilities
 from immich_memories.api.person_service import PersonService
 from immich_memories.api.search_service import SearchService
 from immich_memories.security import sanitize_error_message
@@ -147,13 +148,15 @@ class ImmichClient:
             else resolve_api_version(self._api_version_policy, None)
         )
         self._api_version_lock = asyncio.Lock()
+        self._key_capabilities: ApiKeyCapabilities | None = None
+        self._key_capabilities_lock = asyncio.Lock()
 
         # Wire composed services
         self.search = SearchService(self._request)
         self.all_assets = AllAssetsService(self.search)
         self.assets = AssetService(self._request, self.base_url, lambda: self.client)
         self.people = PersonService(self._request)
-        self.albums = AlbumService(self._request, self.get_api_version)
+        self.albums = AlbumService(self._request, self.get_api_version, self.get_key_capabilities)
 
     @property
     def client(self) -> httpx.AsyncClient:
@@ -330,6 +333,23 @@ class ImmichClient:
             return UserInfo(**data)
         except ValidationError as e:
             raise ImmichAPIError(f"Unexpected API response format: {e}") from e
+
+    async def get_key_capabilities(self) -> ApiKeyCapabilities:
+        """Read this key's rights once per client; malformed replies cannot grant access."""
+        async with self._key_capabilities_lock:
+            if self._key_capabilities is None:
+                data = await self._request("GET", "/api-keys/me")
+                permissions = data.get("permissions") if isinstance(data, dict) else None
+                if not isinstance(permissions, list) or not all(
+                    isinstance(permission, str) for permission in permissions
+                ):
+                    raise ImmichAPIError("Malformed API key permissions response")
+                self._key_capabilities = ApiKeyCapabilities(frozenset(permissions))
+        return self._key_capabilities
+
+    async def require_read_permissions(self) -> None:
+        """Stop before source processing when this key cannot read a complete film."""
+        (await self.get_key_capabilities()).require_read()
 
     async def validate_connection(self) -> bool:
         """Validate the connection to Immich.
@@ -586,7 +606,7 @@ class ImmichClient:
         album_name: str | None = None,
         *,
         captured_at: datetime | None = None,
-    ) -> dict[str, str | None]:
+    ) -> dict[str, Any]:
         return await self.albums.upload_memory(video_path, album_name, captured_at=captured_at)
 
 

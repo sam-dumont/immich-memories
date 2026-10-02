@@ -21,12 +21,12 @@ from immich_memories.preflight import (
     CheckStatus,
     check_caption_endpoint,
     check_host_paths,
-    check_immich,
     check_llm,
     check_notifications,
     check_title_rendering,
     run_preflight_checks,
 )
+from immich_memories.preflight_immich import check_immich
 from immich_memories.preflight_run import check_detector_export, check_encoder
 
 

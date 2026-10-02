@@ -735,7 +735,7 @@ class TestAutoRunOutput:
         )
 
         # WHY: check_immich is the real Immich preflight probe; forced to fail before --force runs.
-        with patch("immich_memories.preflight.check_immich", return_value=preflight):
+        with patch("immich_memories.preflight_immich.check_immich", return_value=preflight):
             result = _invoke(["auto", "run", "--force", "--quiet"], config=config)
 
         assert result.exit_code == 1
@@ -762,7 +762,9 @@ class TestAutoRunOutput:
         )
 
         # WHY: check_immich is the real Immich preflight probe; forced to fail before suggest runs.
-        with patch("immich_memories.preflight.check_immich", return_value=preflight) as check:
+        with patch(
+            "immich_memories.preflight_immich.check_immich", return_value=preflight
+        ) as check:
             result = _invoke(["auto", "suggest"], config=config)
 
         assert result.exit_code == 1
@@ -804,7 +806,7 @@ class TestAutoRunOutput:
             patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
             # WHY: external Immich server (preflight check)
             patch(
-                "immich_memories.preflight.check_immich",
+                "immich_memories.preflight_immich.check_immich",
                 return_value=MagicMock(status=CheckStatus.OK),
             ),
         ):

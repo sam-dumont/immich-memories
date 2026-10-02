@@ -173,14 +173,15 @@ def register_config_commands(main: click.Group) -> None:
 
         Every extra account under immich.accounts is checked too, one line each.
         """
-        from immich_memories.preflight import CheckStatus, check_immich
+        from immich_memories.preflight import CheckStatus
         from immich_memories.preflight_accounts import check_extra_accounts
+        from immich_memories.preflight_immich import check_immich
 
         config = ctx.obj["config"]
         results = [check_immich(config), *check_extra_accounts(config)]
         for result in results:
             _print_connection_check(result)
-        if any(result.status is not CheckStatus.OK for result in results):
+        if any(result.status is CheckStatus.ERROR for result in results):
             ctx.exit(1)
 
     @config.command("show")

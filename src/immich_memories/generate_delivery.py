@@ -127,6 +127,15 @@ def deliver_completed_artifact(
             film_capture_instant(clip.asset for clip in params.clips),
         )
         asset_id = result.get("asset_id")
+        if result.get("delivery_complete") is False:
+            warnings = [
+                _safe_delivery_message(w, params.config) for w in result.get("warnings", [])
+            ]
+            reason = "; ".join(warnings) or "Immich delivery incomplete; local film kept"
+            _record_incomplete_delivery(run_tracker, result, reason, warnings)
+            logger.warning("%s; local film kept at %s", reason, result_path)
+            _report(params, "upload", 1.0, f"{reason}; local film kept")
+            return result
         if not isinstance(asset_id, str) or not asset_id.strip():
             raise ValueError("Immich upload returned no asset ID")
     except Exception as exc:
@@ -141,9 +150,39 @@ def deliver_completed_artifact(
         raise delivery_error from None
 
     assert asset_id is not None  # validated in the API-call boundary above
+    _record_delivered_asset(params, run_tracker, result, asset_id)
+    return result
+
+
+def _record_incomplete_delivery(
+    run_tracker: RunTracker, result: dict, reason: str, warnings: list[str]
+) -> None:
+    if result.get("missing_permissions"):
+        run_tracker.mark_delivery_abandoned(
+            reason, asset_id=result.get("asset_id"), warnings=warnings
+        )
+    else:
+        run_tracker.mark_delivery_pending(
+            reason, asset_id=result.get("asset_id"), warnings=warnings
+        )
+
+
+def _record_delivered_asset(
+    params: GenerationParams,
+    run_tracker: RunTracker,
+    result: dict,
+    asset_id: str,
+) -> None:
+    """Persist delivery once and reclaim local output only after durable confirmation."""
+    delivery_error: DeliveryError | None = None
     normalized_asset_id = asset_id.strip()
     try:
-        delivered_run = run_tracker.mark_delivered(asset_id)
+        warnings = [_safe_delivery_message(w, params.config) for w in result.get("warnings", [])]
+        delivered_run = (
+            run_tracker.mark_delivered(asset_id, warnings=warnings)
+            if warnings
+            else run_tracker.mark_delivered(asset_id)
+        )
     except Exception as exc:
         persisted = None
         try:
@@ -156,7 +195,7 @@ def deliver_completed_artifact(
             and persisted.immich_asset_id == normalized_asset_id
         ):
             _cleanup_local_output(persisted)
-            return result
+            return
         safe_message = _safe_delivery_message(exc, params.config)
         logger.error("Could not persist successful Immich delivery: %s", safe_message)
         delivery_error = _delivery_error(f"Immich delivery state update failed: {safe_message}")
@@ -164,7 +203,6 @@ def deliver_completed_artifact(
         _cleanup_local_output(delivered_run)
     if delivery_error is not None:
         raise delivery_error from None
-    return result
 
 
 def _deliver_completed_artifact(
@@ -191,6 +229,11 @@ def _deliver_with_operational_progress(
         1 if params.upload_enabled else 0,
         "Uploading to Immich" if params.upload_enabled else "Delivery not requested",
     )
-    _deliver_completed_artifact(params, result_path, run_tracker, recheck)
+    result = _deliver_completed_artifact(params, result_path, run_tracker, recheck)
     if params.upload_enabled:
-        operational.emit(OperationalPhase.DELIVERY, 1, 1, "Delivered to Immich")
+        message = (
+            "Local film kept; Immich delivery incomplete"
+            if result and result.get("delivery_complete") is False
+            else "Delivered to Immich"
+        )
+        operational.emit(OperationalPhase.DELIVERY, 1, 1, message)

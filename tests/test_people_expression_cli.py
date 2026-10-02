@@ -7,6 +7,7 @@ import pytest
 from click.testing import CliRunner
 
 from immich_memories.api.models import AssetType, Person
+from immich_memories.api.permissions import READ_PERMISSIONS, ApiKeyCapabilities
 from immich_memories.api.person_expression import PersonExpression
 from immich_memories.automation.candidates import (
     CandidateCategory,
@@ -55,6 +56,13 @@ class Client:
                 )
                 rows.append(asset)
             self.media[media] = rows
+
+    def get_key_capabilities(self) -> ApiKeyCapabilities:
+        """The invented API key grants the exact required read set."""
+        return ApiKeyCapabilities(frozenset(READ_PERMISSIONS))
+
+    def require_read_permissions(self) -> None:
+        self.get_key_capabilities().require_read()
 
     def __enter__(self):
         return self

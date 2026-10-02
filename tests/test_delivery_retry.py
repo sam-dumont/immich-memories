@@ -1555,3 +1555,108 @@ def test_hard_stop_during_upload_leaves_requested_delivery_pending(
     assert saved.delivery_album == "In Flight Album"
     assert saved.output_path is not None
     assert Path(saved.output_path).is_file()
+
+
+def test_scoped_delivery_abandonment_preserves_film_asset_and_sidecar(tmp_path: Path):
+    film = tmp_path / "film.mp4"
+    film.write_bytes(b"validated")
+    tracker = RunTracker("scoped-delivery", capture_system=False)
+    tracker.start_run(source="auto")
+    tracker.complete_artifact(film, _authoritative_probe(), warnings=[], delivery_requested=True)
+
+    saved = tracker.mark_delivery_abandoned(
+        "uploaded without provenance: the key lacks tag.asset",
+        asset_id="partial-upload",
+        warnings=["uploaded without provenance: the key lacks tag.asset"],
+    )
+
+    assert saved.status == "completed"
+    assert saved.delivery_status is DeliveryStatus.ABANDONED
+    assert saved.immich_asset_id == "partial-upload"
+    assert film.exists()
+    assert tracker.db.get_oldest_pending_delivery(source="auto") is None
+    sidecar = RunMetadata.from_dict(json.loads((tmp_path / "run_metadata.json").read_text()))
+    assert sidecar.to_dict() == saved.to_dict()
+
+
+def test_missing_scope_delivery_returns_completed_film_without_cleanup(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from immich_memories.generate_delivery import deliver_completed_artifact
+
+    film = tmp_path / "film.mp4"
+    film.write_bytes(b"validated")
+    tracker = RunTracker("missing-upload", capture_system=False)
+    tracker.start_run()
+    tracker.complete_artifact(film, _authoritative_probe(), warnings=[], delivery_requested=True)
+    result = {
+        "asset_id": None,
+        "delivery_complete": False,
+        "missing_permissions": ["asset.upload"],
+        "warnings": ["not uploaded: the key lacks asset.upload"],
+    }
+    monkeypatch.setattr("immich_memories.generate_delivery.upload_to_immich", lambda *_args: result)
+    params = SimpleNamespace(
+        upload_enabled=True,
+        client=object(),
+        upload_album=None,
+        clips=[],
+        config=Config(),
+        progress_callback=None,
+    )
+    assert deliver_completed_artifact(params, film, tracker) == result
+    saved = tracker.db.get_run(tracker.run_id)
+    assert saved.status == "completed"
+    assert saved.delivery_status is DeliveryStatus.ABANDONED
+    assert "asset.upload" in saved.delivery_error
+    assert film.exists()
+
+
+def test_delivered_film_keeps_previous_version_warning_in_history(tmp_path):
+    film = tmp_path / "film.mp4"
+    film.write_bytes(b"validated")
+    tracker = RunTracker("no-delete-scope", capture_system=False)
+    tracker.start_run()
+    tracker.complete_artifact(
+        film, _authoritative_probe(), warnings=["music fallback"], delivery_requested=True
+    )
+    warning = "previous version kept: the key lacks asset.delete"
+    saved = tracker.mark_delivered("new-film", warnings=[warning])
+    assert saved.delivery_status is DeliveryStatus.DELIVERED
+    assert saved.warnings == ["music fallback", warning]
+    assert saved.delivery_error is None
+
+
+def test_transient_tag_failure_keeps_completed_film_retryable(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from immich_memories.generate_delivery import deliver_completed_artifact
+
+    film = tmp_path / "film.mp4"
+    film.write_bytes(b"validated")
+    tracker = RunTracker("temporary-tag-failure", capture_system=False)
+    tracker.start_run()
+    tracker.complete_artifact(film, _authoritative_probe(), warnings=[], delivery_requested=True)
+    result = {
+        "asset_id": "stored-film",
+        "delivery_complete": False,
+        "missing_permissions": [],
+        "warnings": ["provenance service timed out"],
+    }
+    monkeypatch.setattr("immich_memories.generate_delivery.upload_to_immich", lambda *_args: result)
+    params = SimpleNamespace(
+        upload_enabled=True,
+        client=object(),
+        upload_album=None,
+        clips=[],
+        config=Config(),
+        progress_callback=None,
+    )
+    assert deliver_completed_artifact(params, film, tracker) == result
+    saved = tracker.db.get_run(tracker.run_id)
+    assert saved.status == "completed"
+    assert saved.delivery_status is DeliveryStatus.PENDING
+    assert saved.immich_asset_id == "stored-film"
+    assert saved.delivery_attempts == 1
+    assert saved.warnings == ["provenance service timed out"]
+    assert film.exists()

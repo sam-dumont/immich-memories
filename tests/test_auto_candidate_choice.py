@@ -162,7 +162,7 @@ def test_explicit_candidate_leaves_the_queued_delivery_untouched(tmp_path):
     with (
         patch.object(runner, "suggest", return_value=[candidate]),
         patch(
-            "immich_memories.preflight.check_immich",
+            "immich_memories.preflight_immich.check_immich",
             return_value=CheckResult(name="Immich", status=CheckStatus.OK, message="Connected"),
         ),
     ):

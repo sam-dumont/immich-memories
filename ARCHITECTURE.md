@@ -426,6 +426,11 @@ and the planner, and `ProgressTracker` (progress.py) is the run clock the stage 
 - `PersonService` (person_service.py): person/face operations
 - `AlbumService` (album_service.py): album operations
 
+ImmichClient caches `GET /api-keys/me` once per client. The cut client and partner account
+openers require the complete read set before discovery. Preflight and `config test` report
+missing read rights as errors; upload/delete limits and unrestricted keys are warnings.
+`preflight_immich.py` owns those diagnostics independently of provider checks.
+
 **TitleScreenGenerator** (titles/generator.py) composes 3 services:
 - `RenderingService` (rendering_service.py): GPU/CPU renderer selection, video creation
   - `cpu_video.py`: synthesizes two Pillow plates once; FFmpeg fades and encodes them on CPU-only/NAS hosts
@@ -491,6 +496,7 @@ src/immich_memories/
 │   ├── asset_service.py        # AssetService: asset/video download
 │   ├── person_service.py       # PersonService: person/face operations
 │   ├── album_service.py        # AlbumService: album operations
+│   ├── permissions.py          # API-key read/upload capabilities; missing read rights stop a cut
 │   ├── sync_client.py          # Sync wrapper for async client
 │   ├── accounts.py             # open_accounts: one /users/me-verified client per selected account (#1500)
 │   ├── access_clients.py       # AccessBoundClient: the run's client; reads each routed picture (details,
@@ -1135,6 +1141,7 @@ src/immich_memories/
 ├── place_phrases/              # Per-language trip-title place phrases, one module per language; none = no preposition
 ├── locales/                    # Fourteen languages: messages.po for films, ui.po for the interface
 ├── preflight.py                # Dependency checks
+├── preflight_immich.py         # Immich connection and least-privilege diagnostics
 ├── setup_capabilities.py       # ACE-Step profile memory advice and synthetic audio validation
 ├── preflight_network.py        # One row per outside host the config allows; silent when none
 ├── preflight_render.py         # Authenticated worker version and render capability check

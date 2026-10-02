@@ -2,19 +2,24 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
 from typing import Any
 
 GENERATED_MEMORY_TAG = "immich-memories/generated"
+_DETAIL_CONCURRENCY = 8
 
 
-async def generated_asset_ids(request: Callable[..., Any]) -> frozenset[str]:
-    """Every asset the library still holds under the provenance tag.
+async def generated_asset_ids(
+    request: Callable[..., Any], *, can_read_tags: bool = True
+) -> frozenset[str]:
+    """Completed films under the provenance tag, without requiring global tag access.
 
-    Reads only: a library that was never tagged, or a key without tag scope, answers
-    with an empty set rather than creating the tag. `GET /tags` lists what exists;
-    `PUT /tags` would upsert, which a pool builder must never do.
+    Minimum read keys inspect video details through asset.read. Broader keys can
+    use the tag index; neither path writes a tag or treats an unreadable library as empty.
     """
+    if not can_read_tags:
+        return await _generated_films_from_assets(request)
     tags = await request("GET", "/tags")
     matches = (
         [tag for tag in tags if isinstance(tag, dict) and tag.get("value") == GENERATED_MEMORY_TAG]
@@ -37,3 +42,32 @@ async def generated_asset_ids(request: Callable[..., Any]) -> frozenset[str]:
         )
         page = assets.get("nextPage")
     return frozenset(found)
+
+
+async def _generated_films_from_assets(request: Callable[..., Any]) -> frozenset[str]:
+    found = set()
+    page: int | str | None = 1
+    while page:
+        result = await request(
+            "POST", "/search/metadata", json={"type": "VIDEO", "size": 250, "page": page}
+        )
+        assets = (result or {}).get("assets", {})
+        rows = [row for row in assets.get("items", ()) if isinstance(row, dict) and row.get("id")]
+        for start in range(0, len(rows), _DETAIL_CONCURRENCY):
+            batch = rows[start : start + _DETAIL_CONCURRENCY]
+            details = await asyncio.gather(
+                *(_asset_detail(request, row) for row in batch), return_exceptions=True
+            )
+            for row, detail in zip(batch, details, strict=True):
+                if isinstance(detail, BaseException):
+                    raise detail
+                if any(tag.get("value") == GENERATED_MEMORY_TAG for tag in detail.get("tags", ())):
+                    found.add(row["id"])
+        page = assets.get("nextPage")
+    return frozenset(found)
+
+
+async def _asset_detail(request: Callable[..., Any], row: dict) -> dict:
+    if isinstance(row.get("tags"), list):
+        return row
+    return await request("GET", f"/assets/{row['id']}")

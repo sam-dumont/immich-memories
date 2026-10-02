@@ -23,6 +23,10 @@ not NFS/SMB. Keep `replicas: 1` even with PostgreSQL: the UI has in-process stat
 
 ## Quick start
 
+Create the Immich key with the [ten read permissions](./docker.md#the-api-key). Add the upload
+set only when this account receives films; leave **All** unchecked. Put that scoped key in the
+Secret below.
+
 Download/extract the deployment bundle from your chosen
 [release](https://github.com/sam-dumont/immich-video-memory-generator/releases). Its image pins
 match that release. If using a source checkout instead, check `base/kustomization.yaml`: committed

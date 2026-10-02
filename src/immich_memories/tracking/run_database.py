@@ -182,17 +182,33 @@ class RunDatabase:
             raise KeyError(f"Unknown pipeline run: {run_id}")
         return saved
 
-    def mark_delivery_abandoned(self, run_id: str, error: str) -> RunMetadata:
+    def mark_delivery_abandoned(
+        self,
+        run_id: str,
+        error: str,
+        *,
+        asset_id: str | None = None,
+        warnings: list[str] | None = None,
+    ) -> RunMetadata:
         """Stop retrying a delivery that has used up its attempts.
 
         The artifact stays completed and on disk; only its delivery gives up.
         Leaving it pending would consume every nightly wake forever, because the
         runner retries a pending delivery before it considers generating.
         """
+        values: dict[str, Any] = {
+            "delivery_status": DeliveryStatus.ABANDONED.value,
+            "delivery_error": error,
+        }
+        if asset_id is not None:
+            values["immich_asset_id"] = asset_id
+        if warnings is not None:
+            existing = self.get_run(run_id)
+            values["warnings"] = (existing.warnings if existing else []) + warnings
         return self._transition(
             run_id,
             [_RUNS.status == "completed"],
-            {"delivery_status": DeliveryStatus.ABANDONED.value, "delivery_error": error},
+            values,
             raise_invalid_delivery_transition,
         )
 
@@ -202,17 +218,23 @@ class RunDatabase:
         error: str,
         *,
         attempted: bool = True,
+        asset_id: str | None = None,
+        warnings: list[str] | None = None,
     ) -> RunMetadata:
         """Record one failed delivery call without changing artifact completion."""
+        values: dict[str, Any] = {
+            "delivery_status": DeliveryStatus.PENDING.value,
+            "delivery_attempts": _RUNS.delivery_attempts + int(attempted),
+            "delivery_error": error,
+            "immich_asset_id": asset_id,
+        }
+        if warnings:
+            existing = self.get_run(run_id)
+            values["warnings"] = (existing.warnings if existing else []) + warnings
         return self._transition(
             run_id,
             [_RUNS.status == "completed"],
-            {
-                "delivery_status": DeliveryStatus.PENDING.value,
-                "delivery_attempts": _RUNS.delivery_attempts + int(attempted),
-                "delivery_error": error,
-                "immich_asset_id": None,
-            },
+            values,
             raise_invalid_delivery_transition,
         )
 
@@ -259,20 +281,30 @@ class RunDatabase:
             raise_invalid_artifact_transition,
         )
 
-    def mark_delivered(self, run_id: str, asset_id: str) -> RunMetadata:
+    def mark_delivered(
+        self,
+        run_id: str,
+        asset_id: str,
+        *,
+        warnings: list[str] | None = None,
+    ) -> RunMetadata:
         """Record one successful delivery call without changing artifact completion."""
         normalized_asset_id = asset_id.strip()
         if not normalized_asset_id:
             raise ValueError("Immich delivery requires a nonempty asset ID")
+        values: dict[str, Any] = {
+            "delivery_status": DeliveryStatus.DELIVERED.value,
+            "delivery_attempts": _RUNS.delivery_attempts + 1,
+            "delivery_error": None,
+            "immich_asset_id": normalized_asset_id,
+        }
+        if warnings:
+            existing = self.get_run(run_id)
+            values["warnings"] = (existing.warnings if existing else []) + warnings
         return self._transition(
             run_id,
             [_RUNS.status == "completed", _RUNS.delivery_status == DeliveryStatus.PENDING.value],
-            {
-                "delivery_status": DeliveryStatus.DELIVERED.value,
-                "delivery_attempts": _RUNS.delivery_attempts + 1,
-                "delivery_error": None,
-                "immich_asset_id": normalized_asset_id,
-            },
+            values,
             raise_invalid_delivery_transition,
         )
 

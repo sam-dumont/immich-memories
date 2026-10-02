@@ -96,6 +96,8 @@ def immich_server(monkeypatch) -> FakeImmich:
 
     def handler(request: httpx.Request) -> httpx.Response:
         key = request.headers["x-api-key"]
+        if request.url.path.endswith("/api-keys/me"):
+            return httpx.Response(200, json={"permissions": ["all"]})
         if request.url.path.endswith("/users/me"):
             return httpx.Response(200, json={"id": USERS[key], "email": f"{USERS[key]}@x.test"})
         if not request.url.path.endswith("/search/metadata"):

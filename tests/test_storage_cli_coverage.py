@@ -723,7 +723,9 @@ class TestConfigShowCommand:
         )
 
         # WHY: check_immich would probe a real Immich server; stubbed to control the CheckResult
-        with patch("immich_memories.preflight.check_immich", return_value=check_result) as check:
+        with patch(
+            "immich_memories.preflight_immich.check_immich", return_value=check_result
+        ) as check:
             result = _invoke(["config", "test"], config=config)
 
         assert result.exit_code == 0
@@ -743,7 +745,7 @@ class TestConfigShowCommand:
         )
 
         # WHY: check_immich would need a live Immich server; stubbed to return an error result
-        with patch("immich_memories.preflight.check_immich", return_value=check_result):
+        with patch("immich_memories.preflight_immich.check_immich", return_value=check_result):
             result = _invoke(["config", "test"], config=config)
 
         assert result.exit_code == 1

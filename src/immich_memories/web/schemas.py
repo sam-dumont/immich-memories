@@ -142,6 +142,7 @@ class RunDetail(RunSummary):
     completed_at: datetime | None
     output_path: str | None
     delivery_status: str
+    delivery_error: str | None
     immich_asset_id: str | None
     immich_asset_url: str | None
     warnings: list[str]
@@ -373,3 +374,9 @@ class AskPreview(BaseModel):
     verdict: str
     why: str
     film: AskedFilm
+
+
+class RenderCapabilities(BaseModel):
+    upload_available: bool
+    upload_reason: str | None = None
+    missing_upload: list[str]

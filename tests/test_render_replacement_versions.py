@@ -59,6 +59,7 @@ class FakeLibrary:
         is_json = request.headers.get("content-type") == "application/json"
         body = json.loads(request.content) if is_json else None
         handlers = {
+            ("GET", "/api/api-keys/me"): lambda: {"permissions": ["all"]},
             ("POST", "/api/assets"): lambda: self._upload(request.content),
             ("GET", "/api/albums"): self._list_albums,
             ("POST", "/api/albums"): lambda: self._create_album(body),

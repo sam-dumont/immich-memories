@@ -9,6 +9,16 @@ Read the [release notes](https://github.com/sam-dumont/immich-video-memory-gener
 back up the store, then upgrade. Keep the backup for rollback: a newer release can migrate the
 store to a revision older code will refuse.
 
+## API key permissions
+
+Existing keys with **All** permissions continue to work. Preflight now warns about their broad
+access; replace them with the [documented read set](../docker.md#the-api-key), adding upload
+rights only when needed. Run `immich-memories config test` after changing a key.
+
+Missing read permissions stop a cut before it starts. Missing upload or tagging permissions
+keep the completed film locally with a download option and a specific delivery message.
+Without `asset.delete`, previous versions remain in Immich. Partner keys need only read rights.
+
 ## Docker
 
 Back up while the old release is still running:

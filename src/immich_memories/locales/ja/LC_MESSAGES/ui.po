@@ -1708,3 +1708,7 @@ msgstr "Playful bright"
 #: web/lib/RenderPanel.svelte
 msgid "Soft romantic"
 msgstr "Soft romantic"
+
+#: web/routes/runs/[run_id]/+page.svelte:168
+msgid "Download film"
+msgstr "映画をダウンロード"

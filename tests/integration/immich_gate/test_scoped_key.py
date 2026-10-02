@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 import uuid
+from pathlib import Path
 
 import httpx
 import pytest
 
 from immich_memories.api.sync_client import SyncImmichClient
 from immich_memories.config_loader import Config
+from immich_memories.tracking import RunDatabase
+from immich_memories.tracking.models import DeliveryStatus
 from tests.e2e.fake_library import CAST, LIBRARY
 from tests.integration.immich_fixtures import requires_immich
 from tests.integration.immich_gate.conftest import FIXTURE_MONTH
-from tests.integration.immich_gate.gate_cli import gate_store_url
+from tests.integration.immich_gate.gate_cli import gate_store_url, run_cli
 from tests.integration.immich_gate.seed import ADMIN_EMAIL, ADMIN_PASSWORD
 from tests.integration.immich_gate.test_upload import _CAPTURED, _read_by_immich, _render
 
@@ -30,8 +33,7 @@ READ_PERMISSIONS = [
     "person.read",
     "person.statistics",
     "album.read",
-    "timeline.read",
-    "tag.read",
+    "map.search",
 ]
 DELIVERY_PERMISSIONS = [
     "asset.upload",
@@ -79,6 +81,12 @@ def test_documented_minimum_reads_the_library(scoped_key_client, gate_client, tm
     client = scoped_key_client(READ_PERMISSIONS)
     assert client.validate_connection()
     assert client.get_current_user().email == ADMIN_EMAIL
+    with httpx.Client(
+        base_url=f"{client.base_url}/api", headers={"x-api-key": client.api_key}, timeout=30
+    ) as http:
+        assert set(http.get("/api-keys/me").json()["permissions"]) == set(READ_PERMISSIONS)
+        location = http.get("/map/reverse-geocode", params={"lat": 51.5, "lon": -0.1})
+        location.raise_for_status()
     photos = client.get_photos_for_date_range(FIXTURE_MONTH)
     assert len(photos) == sum(not p.is_video for p in LIBRARY)
     picture = next(p for p in LIBRARY if not p.is_video and p.people)
@@ -108,6 +116,8 @@ def test_documented_delivery_permissions_file_and_tag_a_film(
         )
         assert _read_by_immich(client, answer["asset_id"])
         assert answer["asset_id"] in client.generated_asset_ids()
+        reader = scoped_key_client(READ_PERMISSIONS)
+        assert answer["asset_id"] in reader.generated_asset_ids()
         assert client.resolve_album(album_name).id == answer["album_id"]
         assert answer["asset_id"] in {
             row["id"] for row in client.list_album_assets(answer["album_id"])
@@ -123,3 +133,81 @@ def test_documented_delivery_permissions_file_and_tag_a_film(
                     "DELETE", "/assets", json={"ids": [answer["asset_id"]], "force": True}
                 ).raise_for_status()
                 admin.delete(f"/albums/{answer['album_id']}").raise_for_status()
+
+
+def test_missing_read_permission_refuses_a_cut(scoped_key_client, tmp_path):
+    client = scoped_key_client([p for p in READ_PERMISSIONS if p != "asset.download"])
+    trace = tmp_path / "must-not-select.txt"
+    result = run_cli(
+        "generate",
+        "--memory-type",
+        "monthly_highlights",
+        "--year",
+        "2024",
+        "--month",
+        "6",
+        "--no-music",
+        "--no-render",
+        "--trace-selection",
+        str(trace),
+        api_key=client.api_key,
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode != 0, output[-4000:]
+    assert "asset.download" in output, output[-4000:]
+    assert not trace.exists(), "The cut started before checking required read permissions"
+
+
+def test_read_only_key_keeps_a_finished_film_when_upload_is_requested(
+    scoped_key_client, gate_store, gate_config, tmp_path, monkeypatch
+):
+    client = scoped_key_client(READ_PERMISSIONS)
+    result = run_cli(
+        "generate",
+        "--memory-type",
+        "monthly_highlights",
+        "--year",
+        "2024",
+        "--month",
+        "6",
+        "--include-photos",
+        "--no-music",
+        "--duration",
+        "20",
+        "--quiet",
+        "--output",
+        str(tmp_path / "read-only.mp4"),
+        "--upload-to-immich",
+        api_key=client.api_key,
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, output[-4000:]
+    runs = [
+        run
+        for run in RunDatabase(gate_store).list_runs(status="completed")
+        if Path(run.output_path or "/").is_relative_to(tmp_path)
+    ]
+    assert len(runs) == 1, output[-4000:]
+    run = runs[0]
+    assert Path(run.output_path).stat().st_size > 0
+    assert run.delivery_status is DeliveryStatus.ABANDONED
+    assert "asset.upload" in run.delivery_error
+    assert "asset.upload" in output
+    assert run.output_path in output
+
+    from immich_memories.db.bootstrap import URL_ENV
+    from tests.web_server_fixtures import basic_auth_config, server_client, signed_session
+
+    # WHY: the web server's configuration is external; use this gate's synthetic key/store.
+    monkeypatch.setenv(URL_ENV, gate_store_url())
+    config = gate_config.model_copy(deep=True)
+    config.immich.api_key = client.api_key
+    config.auth = basic_auth_config().auth
+    web = server_client(monkeypatch, config)
+    download = f"/api/v1/runs/{run.run_id}/download"
+    assert web.get(download).status_code == 401
+    web.cookies.set("session", signed_session(config))
+    response = web.get(download)
+    assert response.status_code == 200
+    assert response.content == Path(run.output_path).read_bytes()
+    assert response.headers["content-disposition"].startswith("attachment;")

@@ -13,6 +13,8 @@
   let { data } = $props();
   const run = $derived(data.run);
   const cut = $derived(data.cut);
+  const uploadIncomplete = $derived(['pending', 'abandoned'].includes(run.delivery_status) && !!run.delivery_error);
+  const canDownload = $derived(run.film || run.film_available || (run.delivery_status === 'delivered' && !!run.immich_asset_id));
   const story = $derived(data.story);
   // Only a web link becomes one: the URL is built from a setting, and a link is the one place
   // a `javascript:` value would run.
@@ -156,6 +158,16 @@
           <span class="tabular-nums">{run.immich_asset_id}</span>
         {/if}
       </Alert>
+    {/if}
+    {#if canDownload}
+      <div class="flex flex-col items-start gap-2">
+        {#if uploadIncomplete}<Alert color="warning" size="small">{run.delivery_error}</Alert>{/if}
+        <a href={`/api/v1/runs/${encodeURIComponent(run.run_id)}/download`}
+          class={['inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium', uploadIncomplete ? 'bg-primary text-light' : 'border border-gray-300 text-primary dark:border-gray-700']}>
+          <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true"><path d={mdiDownload} /></svg>
+          {t('Download film')}
+        </a>
+      </div>
     {/if}
     {#if cut?.thesis}<p class="max-w-4xl text-lg">{cut.thesis}</p>{/if}
     {#if story?.preparation}<Text size="small" color="muted">{t(story.preparation)}</Text>{/if}

@@ -462,7 +462,7 @@ def test_status_keeps_durable_state_when_live_discovery_fails(tmp_path: Path) ->
 
     before = row_counts()
     with (
-        patch("immich_memories.preflight.check_immich") as preflight,
+        patch("immich_memories.preflight_immich.check_immich") as preflight,
         patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
         patch("immich_memories.automation.runner.AutoRunner", return_value=runner),
         patch(
@@ -512,7 +512,7 @@ def test_direct_suggest_still_raises_post_preflight_discovery_errors(tmp_path: P
 
     with (
         patch(
-            "immich_memories.preflight.check_immich",
+            "immich_memories.preflight_immich.check_immich",
             return_value=MagicMock(status=CheckStatus.OK),
         ),
         patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
@@ -528,7 +528,7 @@ def test_status_does_not_hide_generated_key_database_failures(tmp_path: Path) ->
     runner = AutoRunner(_config(tmp_path))
     with (
         patch(
-            "immich_memories.preflight.check_immich",
+            "immich_memories.preflight_immich.check_immich",
             return_value=MagicMock(status=CheckStatus.OK),
         ),
         patch.object(
@@ -557,7 +557,7 @@ def test_status_does_not_hide_detector_programming_failures(tmp_path: Path) -> N
 
     with (
         patch(
-            "immich_memories.preflight.check_immich",
+            "immich_memories.preflight_immich.check_immich",
             return_value=MagicMock(status=CheckStatus.OK),
         ),
         patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
@@ -656,7 +656,7 @@ def test_status_real_suggest_flow_is_read_only(tmp_path: Path) -> None:
     before = row_counts()
     scheduler = SchedulerStatus("launchd", True, False)
     with (
-        patch("immich_memories.preflight.check_immich") as preflight,
+        patch("immich_memories.preflight_immich.check_immich") as preflight,
         patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
         patch("immich_memories.automation.runner.AutoRunner", return_value=runner),
         patch(

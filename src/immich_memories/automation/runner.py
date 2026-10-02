@@ -370,7 +370,7 @@ class AutoRunner:
 
     def _check_immich_preflight(self) -> Any:
         """Run the one connection check shared by a retry and later discovery."""
-        from immich_memories.preflight import check_immich
+        from immich_memories.preflight_immich import check_immich
 
         return check_immich(self.config)
 
@@ -677,7 +677,7 @@ class AutoRunner:
             return self._finish(
                 attempt,
                 AutoOutcome.COMPLETED,
-                "generation completed",
+                _generation_completion_reason(matching_run),
                 candidate=candidate,
                 run_id=matching_run.run_id,
                 output_path=output_path,
@@ -695,3 +695,9 @@ class AutoRunner:
         finally:
             self._prepared_immich_preflight = None
             self._prepared_pending_delivery = None
+
+
+def _generation_completion_reason(run: RunMetadata) -> str:
+    if run.delivery_error:
+        return "generation completed; " + run.delivery_error
+    return "generation completed"

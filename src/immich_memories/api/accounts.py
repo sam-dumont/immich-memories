@@ -15,6 +15,7 @@ import httpx
 from immich_memories.api.compatibility import ResolvedApiVersion, UnsupportedImmichVersion
 from immich_memories.api.immich import ImmichAPIError, ImmichAuthError
 from immich_memories.api.models import UserInfo
+from immich_memories.api.permissions import MissingReadPermissions
 from immich_memories.api.sync_client import SyncImmichClient
 from immich_memories.config_models import PRIMARY_ACCOUNT, ImmichConfig, ImmichConnection
 from immich_memories.security import sanitize_error_message
@@ -51,8 +52,15 @@ def _open(name: str, connection: ImmichConnection) -> OpenAccount:
     )
     try:
         version = client.get_api_version()
+        client.require_read_permissions()
         user = client.get_current_user()
-    except (ImmichAPIError, UnsupportedImmichVersion, httpx.HTTPError, OSError) as error:
+    except (
+        ImmichAPIError,
+        MissingReadPermissions,
+        UnsupportedImmichVersion,
+        httpx.HTTPError,
+        OSError,
+    ) as error:
         client.close()
         reason = "rejected its API key" if isinstance(error, ImmichAuthError) else "failed"
         detail = sanitize_error_message(str(error)).replace(connection.api_key, "***")
@@ -75,7 +83,7 @@ def open_accounts(immich: ImmichConfig, selected: Iterable[str]) -> dict[str, Op
     """One verified client per selected account name, in selection order.
 
     Every name is resolved before any request, so an unknown name fails without touching
-    the network. Each client is proven with `/users/me`; on the first account that cannot
+    the network. Each key proves its required read rights before `/users/me`; on the first account that cannot
     be opened, the ones already open are closed and `AccountUnavailable` names the account.
     Error text never holds an API key.
     """

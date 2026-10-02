@@ -16,6 +16,7 @@ from immich_memories.operations.storyboard import read_storyboard
 from immich_memories.tracking import RunDatabase
 from immich_memories.tracking.models import RunMetadata
 from immich_memories.web.dependencies import current_config
+from immich_memories.web.film_files import local_film
 from immich_memories.web.schemas import PhaseTiming, RunDetail, RunPage, RunSummary
 
 router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
@@ -38,7 +39,7 @@ def _film_available(record: RunMetadata) -> bool:
     upload; the run page reads `delivery_status` to tell that apart from a
     file that is simply missing.
     """
-    return bool(record.output_path) and Path(record.output_path or "").is_file()
+    return local_film(record) is not None
 
 
 def _summary(config: Config, record: RunMetadata) -> RunSummary:
@@ -109,6 +110,7 @@ def read_run(run_id: str, config: Annotated[Config, Depends(current_config)]) ->
         completed_at=record.completed_at,
         output_path=record.output_path,
         delivery_status=record.delivery_status.value,
+        delivery_error=record.delivery_error,
         immich_asset_id=record.immich_asset_id,
         immich_asset_url=_immich_asset_url(config, record.immich_asset_id),
         warnings=record.warnings.copy(),

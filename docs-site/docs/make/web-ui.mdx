@@ -29,11 +29,30 @@ The cut runs on the server, so you can close the tab and return later. The app f
 
 When the cut is ready, the app opens its run page under **Runs**. Open a shot to read its explanation or edit it. Use **Pool** to see pictures that did not make it. [Review and adjust](../how-it-chooses/overrule-it.md) explains revisions, missing shots and persistent exclusions.
 
+## Upload permissions
+
+The Render panel checks whether your Immich key has the [upload permissions](../run/docker.md#the-api-key).
+If any are missing, **Upload the film to Immich** is unavailable and names them. You can still
+render and download the film. A key that could not be checked also leaves only upload unavailable.
+
+An upload requested through saved settings, the CLI or automation does not fail the film when
+permissions are missing. The completed file stays local, and the run explains what was not
+uploaded. Partial delivery can upload the asset while failing to tag it or put it in an album;
+the run keeps the file and names the missing permission. Fix that permission before relying on
+Immich delivery. Missing `asset.delete` leaves the previous version in Immich and reports it.
+
 ## Find a finished film
 
 **Runs** lists cuts and renders newest first. Open a run to review the cut, render another version or play its film.
 
-Local films play on the page. Once an upload to Immich is confirmed, the local copy is removed and the run shows **Delivered to Immich** with a link.
+Local films play on the page and have **Download film**. That button is highlighted when a
+requested upload could not complete, next to the run's reason. It downloads the finished file,
+not a diagnostic report.
+
+After a confirmed upload reclaims the local copy, the run shows **Delivered to Immich** with a
+link and still offers **Download film**. The app retrieves that run's recorded original from
+Immich using its server-side key; your browser never receives the key. If the film is gone from
+both places, the download reports that it is unavailable.
 
 Every run has **Copy report** and **Download report**, including failed runs. Review the redacted report before sharing it in an issue: [report](./cli/report.md).
 

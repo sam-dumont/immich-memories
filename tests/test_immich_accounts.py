@@ -95,6 +95,8 @@ def immich_server(monkeypatch) -> list[httpx.Request]:
         user = USERS.get(request.headers["x-api-key"])
         if user is None:
             return httpx.Response(401, json={"message": "Invalid API key"})
+        if request.url.path.endswith("/api-keys/me"):
+            return httpx.Response(200, json={"permissions": ["all"]})
         return httpx.Response(200, json={"id": user, "email": f"{user}@example.test"})
 
     # WHY: the HTTP boundary; every Immich request goes to the in-process fake server above.

@@ -1662,6 +1662,38 @@
         "title": "Relationship",
         "type": "object"
       },
+      "RenderCapabilities": {
+        "properties": {
+          "missing_upload": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Upload",
+            "type": "array"
+          },
+          "upload_available": {
+            "title": "Upload Available",
+            "type": "boolean"
+          },
+          "upload_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload Reason"
+          }
+        },
+        "required": [
+          "upload_available",
+          "missing_upload"
+        ],
+        "title": "RenderCapabilities",
+        "type": "object"
+      },
       "RenderOptions": {
         "description": "`runs render`'s flags; None keeps the CLI's own default.",
         "properties": {
@@ -2329,6 +2361,17 @@
             ],
             "title": "Date Range Start"
           },
+          "delivery_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Error"
+          },
           "delivery_status": {
             "title": "Delivery Status",
             "type": "string"
@@ -2437,6 +2480,7 @@
           "completed_at",
           "output_path",
           "delivery_status",
+          "delivery_error",
           "immich_asset_id",
           "immich_asset_url",
           "warnings",
@@ -4396,6 +4440,28 @@
         ]
       }
     },
+    "/api/v1/render/capabilities": {
+      "get": {
+        "description": "Unavailable delivery never disables rendering or local download.",
+        "operationId": "render_capabilities_api_v1_render_capabilities_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderCapabilities"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Render Capabilities",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
     "/api/v1/roster": {
       "get": {
         "description": "Everyone in the people registry, inner circle first, with what needs curating.",
@@ -4994,6 +5060,42 @@
         "summary": "Read Cut",
         "tags": [
           "cut"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/download": {
+      "get": {
+        "description": "Download only this saved run's artifact, locally or from its delivery record.",
+        "operationId": "download_film_api_v1_runs__run_id__download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Film",
+        "tags": [
+          "jobs"
         ]
       }
     },

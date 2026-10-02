@@ -103,20 +103,55 @@ For OIDC or a proxy with HTTPS, see [Authentication](./authentication.mdx).
 
 ## The API key
 
-| Permission | Used for |
+In Immich, open **Account Settings > API Keys > New API Key**. Select these ten read
+permissions to make films. Add the upload set only on the account that receives finished films.
+Partner accounts need the read set only.
+
+| Read permission | Used for |
 |---|---|
-| `user.read` | Checking the API key's account (`/users/me`) |
-| `asset.read`, `asset.view`, `asset.download` | Metadata search, previews/playback and source media |
-| `asset.statistics`, `person.read`, `person.statistics`, `face.read` | People, face boxes and counts used by discovery |
-| `album.read`, `timeline.read`, `tag.read` | Album/timeline selection and excluding generated films |
-| `asset.upload`, `album.create`, `albumAsset.create`, `tag.create`, `tag.asset` | Optional delivery: upload, create/file into an album and mark the film as generated |
-| `asset.delete`, optional | Moving the previous render of the same recipe to trash |
+| `user.read` | Checking the account and connection |
+| `asset.read` | Metadata, asset details and timeline selection |
+| `asset.statistics` | Counting pictures with people |
+| `asset.view` | Thumbnails and video playback |
+| `asset.download` | Downloading original media, including for a render worker |
+| `face.read` | Face boxes |
+| `person.read` | People, their details and thumbnails |
+| `person.statistics` | Picture counts for a person |
+| `album.read` | Finding albums |
+| `map.search` | Finding the home country from Immich's own map data |
 
-The first four rows are the read-only set. Delivery adds the fifth; deletion is separate.
-These are Immich's API permission names on v2 and v3. Metadata search uses `asset.read`.
+| Optional upload permission | Used for |
+|---|---|
+| `asset.upload` | Uploading the film and checking for duplicate uploads |
+| `tag.create` | Creating or finding the app's generated-film tag |
+| `tag.asset` | Attaching that tag to the film |
+| `album.create` | Creating the destination album |
+| `albumAsset.create` | Adding the film to the album |
 
-Originals are never changed. Without tag permissions, upload works but v3 cannot recognise the
-film as this app's own. Without delete permission, old generated copies remain.
+`asset.delete` is separate and optional. It lets the app move a previous render of the same
+recipe to Immich's trash after the replacement succeeds. It never authorizes a hard delete
+through this app. Originals are not changed.
+
+Do not add `timeline.read`, `tag.read`, or album-update permissions to this minimum.
+Timeline routes use `asset.read`. The app reads the key's own permission list through
+`GET /api-keys/me`, which needs API-key authentication but no extra permission.
+
+Run `immich-memories preflight` or `immich-memories config test` after creating the key.
+A missing read permission is an error naming the missing permissions, and a cut will not start.
+
+Missing upload rights leave the film usable. The Render panel explains why its upload option
+is unavailable. If upload was requested through the CLI, saved settings or automation, the film
+is still rendered and kept locally; the run reports what could not be uploaded and offers
+**Download**. The CLI prints the local path.
+
+With partial upload rights, the app performs the permitted steps and reports the missing ones.
+For example, `asset.upload` without tag permissions can upload a film but cannot mark it as
+this app's own. On Immich v3 that untagged film could be selected as source footage later.
+The local film is kept whenever uploading, tagging or album filing is incomplete.
+Without `asset.delete`, the new upload can succeed and the previous version stays in Immich.
+
+**All** is not recommended: that key can change or delete the whole library. Existing All keys
+continue to work, but preflight warns and points back to this smaller permission set.
 
 ## Using the CLI
 

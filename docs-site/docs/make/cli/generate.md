@@ -89,4 +89,6 @@ Each render writes a new folder under `output.directory`; reruns do not overwrit
 
 Use `--upload-to-immich --album "Memories"` to deliver the film to Immich. Setting `upload.enabled: true` also enables delivery without the flag; `upload.album_name` supplies the default album. Once delivery is confirmed, the app removes the local output and keeps the run record and Immich link. Leave upload off to keep the file locally.
 
+The key must have the [read permissions](../../run/docker.md#the-api-key) before a cut starts. Upload permissions are optional. If the key cannot upload, tag or file the film into its album, generation still completes and prints the retained local path with the reason. The run page offers **Download**. Missing `asset.delete` only keeps the previous version in Immich.
+
 The [generated CLI reference](../../reference/cli-reference.md#generate) lists every flag. The [generation contract](../../reference/generation-contract.md) covers person expressions, accounts, title precedence, sharing, recipe hashes and timelines.

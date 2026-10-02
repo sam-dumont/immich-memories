@@ -10,6 +10,8 @@
   import JobPanel from './JobPanel.svelte';
 
   type Revision = components['schemas']['Revision'];
+  type RenderCapabilities = components['schemas']['RenderCapabilities'];
+  let uploadCapability = $state<RenderCapabilities | null>(null);
 
   let { runId, revisions, current = null }: { runId: string; revisions: Revision[]; current?: number | null } = $props();
 
@@ -52,6 +54,14 @@
 
   // A reload mid-render comes back to the job still running for this cut, not to an empty form.
   onMount(() => {
+    void api<RenderCapabilities>('/render/capabilities').then((capability) => {
+      uploadCapability = capability;
+      if (!capability.upload_available) upload = false;
+    }).catch(() => {
+      upload = false;
+      uploadCapability = {upload_available: false, missing_upload: [], upload_reason:
+        'Upload availability could not be checked. The film can still be rendered and downloaded.'};
+    });
     void api<JobView | null>('/jobs/active').then((running) => {
       if (!running || running.meta?.run_id !== runId) return;
       if (running.kind === 'render') follow(running, (update) => (job = update));
@@ -87,7 +97,7 @@
       llm_title: naming === '' ? null : naming === 'model',
       music,
       music_volume: music === 'none' ? null : volume,
-      upload_to_immich: upload,
+      upload_to_immich: upload && !!uploadCapability?.upload_available,
       album: upload ? orNull(album) : null,
     });
     const started = status === 202 ? body : status === 409 ? body.job : null;
@@ -248,7 +258,8 @@
       </fieldset>
 
       <div class="flex flex-col gap-2 sm:col-span-2">
-        <label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={upload} />{t('Upload the film to Immich')}</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={upload} disabled={!uploadCapability?.upload_available} aria-describedby="upload-capability-reason" />{t('Upload the film to Immich')}</label>
+        {#if uploadCapability?.upload_reason}<p id="upload-capability-reason" class="text-sm text-gray-600 dark:text-gray-400">{uploadCapability.upload_reason}</p>{/if}
         {#if upload}<label class={label}>{t('Album name')}<input class={field} bind:value={album} placeholder={t('As configured')} /></label>{/if}
       </div>
       {#if problem}<p class="text-sm text-danger sm:col-span-2" role="alert">{problem}</p>{/if}
