@@ -12,6 +12,7 @@ from immich_memories.audio.generators.base import StemSeparator
 from immich_memories.audio.music_generator_models import MusicStems
 
 logger = logging.getLogger(__name__)
+MAX_STEM_BYTES = 256 * 1024 * 1024
 
 
 class InferenceDemucs:
@@ -54,8 +55,8 @@ class InferenceDemucs:
         with ZipFile(BytesIO(response.content)) as archive:
             for name in ("drums", "bass", "other", "vocals"):
                 entry = archive.getinfo(f"{name}.wav")
-                if entry.file_size > 128 * 1024 * 1024:
-                    raise ValueError("Inference stem exceeds 128 MiB")
+                if entry.file_size > MAX_STEM_BYTES:
+                    raise ValueError("Inference stem exceeds 256 MiB")
                 paths[name] = output_dir / f"{name}.wav"
                 paths[name].write_bytes(archive.read(entry))
         return MusicStems(**paths)
