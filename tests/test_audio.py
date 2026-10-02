@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -126,6 +127,62 @@ class TestLocalMusicSource:
             source = LocalMusicSource(Path(tmpdir))
             result = await source.download(track, Path(tmpdir))
             assert result == test_file
+
+
+def _tagged_track(path: Path, *, seconds: float, title: str | None, artist: str | None) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tags: list[str] = []
+    if title is not None:
+        tags += ["-metadata", f"title={title}"]
+    if artist is not None:
+        tags += ["-metadata", f"artist={artist}"]
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            f"sine=frequency=440:duration={seconds}",
+        ]
+        + tags
+        + [str(path)],
+        check=True,
+    )
+    return path
+
+
+class TestLocalMusicMetadata:
+    """Track metadata comes from the file's own tags, read with ffprobe (#1890)."""
+
+    @pytest.mark.parametrize("suffix", [".mp3", ".m4a", ".flac", ".opus"])
+    def test_title_artist_and_duration_come_from_the_tags(self, tmp_path, suffix):
+        _tagged_track(
+            tmp_path / f"song{suffix}", seconds=2.0, title="Golden Hour", artist="Kacey M"
+        )
+
+        (track,) = LocalMusicSource(tmp_path).tracks
+
+        assert (track.title, track.artist) == ("Golden Hour", "Kacey M")
+        assert track.duration_seconds == pytest.approx(2.0, abs=0.1)
+
+    def test_an_untagged_file_falls_back_to_its_name(self, tmp_path):
+        _tagged_track(tmp_path / "calm" / "morning walk.flac", seconds=1.0, title=None, artist=None)
+
+        (track,) = LocalMusicSource(tmp_path).tracks
+
+        assert (track.title, track.artist) == ("morning walk", "Unknown")
+        assert track.duration_seconds == pytest.approx(1.0, abs=0.1)
+        assert "calm" in track.tags
+
+    def test_an_unreadable_file_is_still_listed_with_no_duration(self, tmp_path):
+        (tmp_path / "broken.mp3").write_bytes(b"not audio")
+
+        (track,) = LocalMusicSource(tmp_path).tracks
+
+        assert (track.title, track.artist, track.duration_seconds) == ("broken", "Unknown", 0.0)
 
 
 class TestMusicTrackEdgeCases:

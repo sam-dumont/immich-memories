@@ -83,10 +83,6 @@ mac = [
     "pyobjc-framework-Quartz>=9.0; sys_platform == 'darwin'",
     "pyobjc-framework-Metal>=9.0; sys_platform == 'darwin'",
 ]
-# Audio metadata for local music library
-audio = [
-    "mutagen>=1.47",
-]
 # OIDC authentication (only needed for SSO login)
 auth = [
     "authlib>=1.6.12",
@@ -135,7 +131,6 @@ editorial-cuda = [
 
 all = [
     "immich-memories[music]",
-    "immich-memories[audio]",
     "immich-memories[auth]",
     "immich-memories[demucs]",
     "immich-memories[editorial]",
@@ -143,7 +138,6 @@ all = [
 # All features for macOS (includes Apple Vision framework)
 all-mac = [
     "immich-memories[music]",
-    "immich-memories[audio]",
     "immich-memories[demucs]",
     "immich-memories[mac]",
     "immich-memories[editorial]",

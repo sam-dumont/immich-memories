@@ -12,11 +12,10 @@ title: "Python installation details"
 | `editorial-cuda` | The same on a CUDA host. **Replaces** `editorial`, never joins it |
 | `mac` | pyobjc bindings (Quartz, Metal, Vision) for hardware probing. Not enough to cut with alone |
 | `music` | The bundled royalty-free track library |
-| `audio` | Local music metadata (mutagen) for `immich-memories music search` |
 | `auth` | OIDC login (authlib) |
 | `demucs` | Local Demucs stem separation for music ducking (Torch, about 80 MB of model) |
 | `all` | All of the above except `mac` and `editorial-cuda` |
-| `all-mac` | `editorial`, `mac`, `music`, `audio` and `demucs`. No `auth`: add `[all-mac,auth]` for OIDC |
+| `all-mac` | `editorial`, `mac`, `music` and `demucs`. No `auth`: add `[all-mac,auth]` for OIDC |
 
 Never install `editorial` and `editorial-cuda` together: `onnxruntime` and `onnxruntime-gpu` own
 the same import name, and the one that answers is whichever pip wrote last.

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import random
+import subprocess
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -119,18 +121,35 @@ class LocalMusicSource(MusicSource):
         self._tracks: list[MusicTrack] | None = None
 
     @staticmethod
-    def _read_mutagen_metadata(path: Path) -> tuple[float, str, str]:
-        """Read duration, title, artist from audio file via mutagen."""
-        from mutagen import File as MutagenFile
+    def _read_tag_metadata(path: Path) -> tuple[float, str, str]:
+        """Read duration, title and artist with ffprobe.
 
-        audio = MutagenFile(path)
-        duration = audio.info.length if audio and audio.info else 0.0
-        title = path.stem
-        artist = "Unknown"
-        if audio and hasattr(audio, "tags") and audio.tags:
-            title = str(audio.tags.get("title", [path.stem])[0])
-            artist = str(audio.tags.get("artist", ["Unknown"])[0])
-        return duration, title, artist
+        Tags live on the container for MP3/M4A/FLAC but on the audio stream for
+        Ogg and Opus, and their keys can be upper case (Vorbis comments), so
+        both blocks are merged and keys are lowered.
+        """
+        result = subprocess.run(  # noqa: S603 - fixed argv, no shell
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration:format_tags:stream_tags",
+                "-of",
+                "json",
+                str(path.absolute()),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=True,
+        )
+        probe = json.loads(result.stdout)
+        tags: dict[str, str] = {}
+        for block in (*probe.get("streams", []), probe.get("format", {})):
+            tags |= {key.lower(): value for key, value in block.get("tags", {}).items()}
+        duration = float(probe.get("format", {}).get("duration") or 0.0)
+        return duration, tags.get("title") or path.stem, tags.get("artist") or "Unknown"
 
     @staticmethod
     def _extract_tags_from_path(path: Path, title: str) -> list[str]:
@@ -148,8 +167,8 @@ class LocalMusicSource(MusicSource):
     def _load_track_metadata(self, path: Path) -> tuple[float, str, str]:
         """Load duration, title, artist — falls back to filename on error."""
         try:
-            return self._read_mutagen_metadata(path)
-        except (ImportError, Exception):
+            return self._read_tag_metadata(path)
+        except (OSError, subprocess.SubprocessError, ValueError):
             return 0.0, path.stem, "Unknown"
 
     def _scan_directory(self) -> list[MusicTrack]:

@@ -358,14 +358,13 @@ ExifTool (optional, HDR headroom fallback)
 Python dependencies
 -------------------
 
-Read the licence lines below as they are: `mutagen` (the optional `audio`
-extra) is GPL-2.0-or-later and is imported as a library; `bidict`, `certifi`,
-`orjson` and `tqdm` carry MPL-2.0 terms on their own files; `docutils` is a mix
+Read the licence lines below as they are: `bidict`, `certifi`, `orjson` and
+`tqdm` carry MPL-2.0 terms on their own files; `docutils` is a mix
 of public domain, BSD and GPL parts. Nothing here changes the project's MIT
 licence for its own code, but a downstream that vendors the environment
 should know.
 
-123 packages, computed from uv.lock: everything reachable from
+122 packages, computed from uv.lock: everything reachable from
 immich-memories through the runtime extras (never the dev tools). Regenerate
 with `make notices`; `make notices-check` fails when this list is stale.
 
@@ -485,7 +484,7 @@ geographiclib 2.1
   License: MIT
   URL: https://github.com/geographiclib/geographiclib-python
 
-geopy 2.4.1
+geopy 2.5.0
   License: MIT
   URL: https://github.com/geopy/geopy
 
@@ -572,10 +571,6 @@ mdurl 0.1.2
 mpmath 1.3.0
   License: BSD
   URL: https://github.com/fredrik-johansson/mpmath
-
-mutagen 1.47.0
-  License: GPL-2.0-or-later
-  URL: https://github.com/quodlibet/mutagen
 
 networkx 3.6.1
   License: BSD-3-Clause

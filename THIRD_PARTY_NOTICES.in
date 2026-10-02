@@ -358,9 +358,8 @@ ExifTool (optional, HDR headroom fallback)
 Python dependencies
 -------------------
 
-Read the licence lines below as they are: `mutagen` (the optional `audio`
-extra) is GPL-2.0-or-later and is imported as a library; `bidict`, `certifi`,
-`orjson` and `tqdm` carry MPL-2.0 terms on their own files; `docutils` is a mix
+Read the licence lines below as they are: `bidict`, `certifi`, `orjson` and
+`tqdm` carry MPL-2.0 terms on their own files; `docutils` is a mix
 of public domain, BSD and GPL parts. Nothing here changes the project's MIT
 licence for its own code, but a downstream that vendors the environment
 should know.

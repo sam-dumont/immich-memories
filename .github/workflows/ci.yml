@@ -389,9 +389,9 @@ jobs:
           # Only the extras with tests marked `extras` (the torch family);
           # everything else runs in the main `test` job.
           - os: ubuntu-latest
-            extras: "dev,audio"
+            extras: "dev"
           - os: macos-latest
-            extras: "dev,mac,audio"
+            extras: "dev,mac"
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
       - name: Create LFS cache key
