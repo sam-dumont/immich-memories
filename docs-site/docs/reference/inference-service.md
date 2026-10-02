@@ -86,15 +86,15 @@ keeps priority for stems. Neither setting changes the ACE-Step generation endpoi
 
 ## Running it with compose
 
-The service ships in `docker-compose.yml` behind a profile, so a plain `up -d` stays one container:
+The base file runs NAS. Add the released GPU tier file to start inference and captions:
 
 ```bash
-docker compose --profile inference up -d
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
 curl -s localhost:8092/health
 ```
 
-For a GPU, install the NVIDIA container toolkit from
-[NVIDIA's guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+For NVIDIA, install the
+[NVIDIA container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
 and use Linux driver **570.124.06 or newer** as the recommended baseline for the image's
 CUDA 12.8.1 runtime ([NVIDIA driver table](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-toolkit-release-notes/index.html)).
 CUDA 12 minor compatibility can run on drivers from 525.60.13, with feature and PTX/JIT limits;
@@ -106,26 +106,17 @@ sudo nvidia-ctk runtime configure --runtime=docker && sudo systemctl restart doc
 docker run --rm --gpus all nvidia/cuda:12.8.1-base-ubuntu24.04 nvidia-smi
 ```
 
-Then uncomment the device reservation on that service and change the tag with it:
-
-```yaml
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities:
-                - gpu
-```
+Add the CUDA file; it selects the CUDA images and reserves the device together:
 
 ```bash
-INFERENCE_TAG=YOUR_APP_TAG-cuda docker compose --profile inference up -d
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml -f docker-compose.cuda.yml up -d
 curl -s localhost:8092/health
 ```
 
-The published file carries that block inline because it is downloaded on its own; from a checkout,
-`docker/hwaccel.inference.yml` holds both backends as `extends:` targets instead.
+Set `IMMICH_MEMORIES_VERSION` once in `.env` for the app and inference image. There is no
+separate inference tag. The GPU preset requests GPU; a CPU image does not satisfy its inference
+compute check. Change the inference URL in Settings for an existing install, or use the
+[setup builder](/setup) for fresh-install defaults that remain editable there.
 
 The app detects remote GPU capability from the top-level `/health` fields `status: "ok"` and
 `provider: "CUDAExecutionProvider"`; that probe loads no models and sends no pictures.

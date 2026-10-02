@@ -155,10 +155,9 @@ def test_every_app_pod_starts_without_a_caption_service() -> None:
     for name, pod in _app_pod_specs():
         for container in pod["containers"]:
             env = {row["name"]: row.get("value") for row in container.get("env", [])}
-            assert env["IMMICH_MEMORIES_TIER"] == "auto", name
-            assert not Config(
-                tier=env["IMMICH_MEMORIES_TIER"]
-            ).editorial.preparation.demands_captions
+            tier = env.get("IMMICH_MEMORIES_DEPLOYMENT_TIER", env.get("IMMICH_MEMORIES_TIER"))
+            assert tier in {"nas", "auto"}, name
+            assert not Config(tier=tier).editorial.preparation.demands_captions
 
 
 def test_compose_profiles_have_distinct_host_ports_and_persistent_detector_storage() -> None:

@@ -1,0 +1,61 @@
+.builder {
+  margin-block: 2rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 0.5rem;
+}
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.5rem;
+}
+.fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+.fields input:not([type='checkbox']), .fields select {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid var(--ifm-color-emphasis-400);
+  border-radius: 0.3rem;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  font: inherit;
+  font-weight: 400;
+}
+.fields input:focus-visible, .fields select:focus-visible, .tiers input:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+}
+.tiers {
+  margin-block: 1.5rem;
+  padding: 0;
+  border: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.tiers legend { margin-bottom: 0.6rem; font-weight: 600; }
+.tiers label { display: flex; align-items: baseline; gap: 0.5rem; cursor: pointer; }
+.tiers input, .check input { accent-color: var(--ifm-color-primary); }
+.tiers small, .fields small { display: block; font-weight: 400; line-height: 1.45; color: var(--ifm-color-emphasis-700); }
+.fields .check { display: block; font-weight: 400; }
+.check small { display: block; margin-top: 0.5rem; font-weight: 400; line-height: 1.45; color: var(--ifm-color-emphasis-700); }
+.note { margin-top: 1.25rem; color: var(--ifm-color-emphasis-700); font-size: 0.9rem; }
+.error { padding: 0.75rem; border-left: 3px solid var(--ifm-color-danger); }
+@media (max-width: 650px) {
+  .fields, .tiers { grid-template-columns: 1fr; }
+}
+
+.file { margin-block: 1rem; }
+.fileHeader { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.fileHeader code { overflow-wrap: anywhere; }
+.fileActions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.preview { margin-top: 0.5rem; }
+.preview pre { max-height: 20rem; }
+.preview summary { cursor: pointer; color: var(--ifm-color-emphasis-700); }
+@media (max-width: 650px) {
+  .fileHeader { align-items: flex-start; flex-direction: column; }
+}

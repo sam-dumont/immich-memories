@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1] / "deploy" / "kubernetes"
 def manifests(tmp_path):
     work = tmp_path / "kubernetes"
     shutil.copytree(ROOT, work)
-    for example in work.rglob("*secret.yaml.example"):
+    for example in work.rglob("*.yaml.example"):
         shutil.copy(example, example.with_suffix(""))
     return work
 

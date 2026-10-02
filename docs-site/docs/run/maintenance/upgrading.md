@@ -28,16 +28,11 @@ docker compose exec immich-memories immich-memories store backup
 docker compose cp immich-memories:/home/immich/.immich-memories/backups ./backups
 ```
 
-Keep that backup and manifest. If `docker-compose.override.yml` exists, change the app's `image:`
-there; otherwise change it in `docker-compose.yml`. Replace `X.Y.Z` with the release tag,
-without a `v` prefix:
-
-```yaml
-image: ghcr.io/sam-dumont/immich-video-memory-generator:X.Y.Z
-```
-
-The source Compose file ships `latest`; the install download may pin the current release in
-an override. Keep app, inference and render worker version tags aligned. Then upgrade:
+Keep that backup and manifest. Download the new release's Compose assets and set
+`IMMICH_MEMORIES_VERSION=X.Y.Z` in `.env`, without the `v` prefix. That one value selects matching
+app, inference and standalone worker images; the CUDA file adds the inference CUDA suffix.
+Keep your chosen `COMPOSE_FILE`, credentials and saved Settings. If you use a single-file export,
+regenerate it with the new version and preserve its private settings key. Then upgrade:
 
 ```bash
 docker compose pull

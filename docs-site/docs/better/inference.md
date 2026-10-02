@@ -30,11 +30,11 @@ receives your Immich API key to download originals.
 
 ## Classifiers and stems only
 
-The ordinary inference profile remains useful for CPU deployments or when you already operate
-separate caption and render services:
+The GPU tier file starts the inference and caption services. Its default CPU images are useful
+for diagnosis, but GPU readiness needs CUDA-capable inference:
 
 ```bash
-docker compose --profile inference up -d
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
 curl -s http://localhost:8092/health
 ```
 

@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-memories
+  namespace: immich-memories
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: fetch-models
+          # Explicit flags provision GPU facts even before compute services exist.
+          # Fetch verifies digests on every start instead of a presence-only guard.
+          command: [immich-memories, models, fetch, --detectors, --laya]
+          envFrom:
+            - secretRef:
+                name: immich-memories-secrets
+          env:
+            - name: IMMICH_MEMORIES_EDITORIAL__LAYA_CHECKPOINT
+              value: /models/laya/laya-audience-onnx-90420ef3.tar.gz
+      containers:
+        - name: immich-memories
+          resources:
+            limits:
+              memory: 8Gi
+          env:
+            - name: IMMICH_MEMORIES_EDITORIAL__LAYA_CHECKPOINT
+              value: /models/laya/laya-audience-onnx-90420ef3.tar.gz
+            - name: IMMICH_MEMORIES_DEPLOYMENT_TIER
+              value: gpu
+            - name: IMMICH_MEMORIES_DEPLOYMENT_INFERENCE_URL
+              value: http://inference:8092
+            - name: IMMICH_MEMORIES_DEPLOYMENT_CAPTION_URL
+              value: http://captioner:8092/v1

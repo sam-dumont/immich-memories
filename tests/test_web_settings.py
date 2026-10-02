@@ -97,3 +97,38 @@ def test_global_fade_default_can_be_saved_and_invalid_colours_are_refused(tmp_pa
         _rows(client.get("/api/v1/settings").json())["title_screens.fade_color"]["value"] == "black"
     )
     set_config(None)
+
+
+def test_deployment_service_defaults_remain_editable_and_saved_settings_win(tmp_path, monkeypatch):
+    monkeypatch.setenv("IMMICH_MEMORIES_DEPLOYMENT_TIER", "nas")
+    defaults = {
+        "IMMICH_MEMORIES_DEPLOYMENT_INFERENCE_URL": "http://inference:8092",
+        "IMMICH_MEMORIES_DEPLOYMENT_CAPTION_URL": "http://captioner:8092/v1",
+        "IMMICH_MEMORIES_DEPLOYMENT_READER_URL": "http://reader.example.lan:8000/v1",
+        "IMMICH_MEMORIES_DEPLOYMENT_READER_MODEL": "default-served-model",
+        "IMMICH_MEMORIES_DEPLOYMENT_READER_ENABLED": "true",
+    }
+    for name, value in defaults.items():
+        monkeypatch.setenv(name, value)
+    client, path = _settings_client(tmp_path, monkeypatch)
+    before = path.read_bytes()
+    rows = _rows(client.get("/api/v1/settings").json())
+    assert rows["inference.facts_base_url"]["value"] == "http://inference:8092"
+    assert rows["llm.model"]["value"] == "default-served-model"
+    changes = {
+        "inference.facts_base_url": "http://192.168.1.50:8092",
+        "editorial.preparation.caption_base_url": "http://192.168.1.50:8092/v1",
+        "llm.base_url": "https://reader.example.net/v1",
+        "llm.model": "another-served-model",
+        "llm.enabled": False,
+    }
+    assert all(rows[key]["editable"] and rows[key]["source"] == "default" for key in changes)
+
+    saved = client.post("/api/v1/settings", json={"values": changes})
+
+    assert saved.status_code == 200
+    reloaded = _rows(client.get("/api/v1/settings").json())
+    assert all(reloaded[key]["source"] == "database" for key in changes)
+    assert {key: reloaded[key]["value"] for key in changes} == changes
+    assert path.read_bytes() == before
+    set_config(None)

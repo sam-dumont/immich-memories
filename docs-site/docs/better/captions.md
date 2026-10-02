@@ -21,22 +21,17 @@ in the app; captions alone do not enable GPU selection.
 
 ## Separate Docker Compose captioner
 
-The repository’s Compose file includes a captioner profile:
+The released GPU file starts inference, the caption weight downloader and the caption server:
 
 ```bash
-docker compose --profile captioner up -d
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
 curl -s localhost:8094/v1/models
 ```
 
-Connect the app to both a [GPU inference service](./inference.md) and the captioner. In the app service’s environment:
-
-```yaml
-IMMICH_MEMORIES_TIER: auto
-IMMICH_MEMORIES_INFERENCE__FACTS_BASE_URL: http://immich-memories-inference:8092
-IMMICH_MEMORIES_EDITORIAL__PREPARATION__CAPTION_BASE_URL: http://immich-memories-captioner:8092/v1
-```
-
-The captioner is published on host port **8094**; inside Compose it listens on **8092**. A caption URL alone does not select the GPU tier. Install Laya’s [runtime and checkpoint](../reference/llm-providers.md#the-laya-audience-pre-screen) too.
+The preset supplies the inference and caption service URLs below saved Settings. On an existing
+install, change those URLs in Settings. The captioner is published on host port **8094**; inside
+Compose it listens on **8092**. GPU is a requested tier: preflight still checks the inference
+provider and Laya runtime. A CPU service does not satisfy GPU readiness.
 
 For NVIDIA, use the CUDA image and device reservation together. The exact [CUDA recipe](../reference/caption-service.md#on-an-nvidia-host) and [Kubernetes overlays](../reference/caption-service.md#kubernetes) are in the service reference.
 

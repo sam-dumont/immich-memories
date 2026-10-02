@@ -21,6 +21,37 @@ There is no project Helm chart or maintained `app-template` values file.
 If you need a Helm path, [ask for it](https://github.com/sam-dumont/immich-video-memory-generator/issues/new)
 and describe your setup. Helm support will be considered when people request it.
 
+## Generated tier setup
+
+**Not yet tested as a complete generated Kubernetes installation.** Kustomize renders and
+contract checks pass; they do not establish a live-cluster install. If you try it, [report your
+cluster/version, storage class and preflight result](https://github.com/sam-dumont/immich-video-memory-generator/issues/new).
+
+Use the [setup builder](/setup), select Kubernetes and a published release version, and enter
+Immich's reachable URL and API key. It generates the Secret, namespace-scoped customization,
+reader settings when Full is selected, and egress rules for the supplied endpoint ports.
+Download each file and save it at its labelled path after extracting that release's bundle.
+The generated commands render the exact manifests before applying them.
+
+NAS uses the CPU base. GPU adds the existing CUDA inference and caption deployments through
+`components/gpu-services`; Full adds an explicitly enabled external reader. These are requested
+tiers. Preflight checks actual compute, captions, Laya and reader availability; a preset name
+does not prove readiness. Service defaults stay below saved Settings. The app init container explicitly fetches the GPU
+detectors and Laya checkpoint into the shared model PVC before startup; it verifies existing
+artifact digests on subsequent starts.
+
+The GPU wrapper requests one GPU for inference and one for captions. The cluster needs two
+schedulable GPU slots. It does not configure device sharing. The external Full reader has its
+own resource requirements. Both model services remain ClusterIP; ingress and egress policies
+are retained. Generated endpoint port rules are port permissions, not host allow-lists.
+
+For manual Full configuration, copy `overlays/tier-full/reader-config.yaml.example` to
+`reader-config.yaml`, set the actual served URL/model, and add its port to your app's egress
+policy if it differs from the example TCP8000. A reader API key can be supplied in the app
+Secret as `IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY`, or saved in Settings.
+
+The rest of this page covers the manifests and manual operator changes.
+
 ## Prerequisites
 
 - Immich reachable from the cluster, normally port 2283.
