@@ -16,7 +16,11 @@ const config: Config = {
   favicon: 'img/favicon.png',
 
   future: {
-    v4: true,
+    // Keep the opted-in 3.9 behavior; future releases can add new v4 defaults.
+    v4: {
+      removeLegacyPostBuildHeadAttribute: true,
+      useCssCascadeLayers: true,
+    },
   },
 
   url: 'https://sam-dumont.github.io',

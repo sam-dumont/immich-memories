@@ -17,10 +17,10 @@
     "prebuild": "npm run ui-theme -- --check"
   },
   "dependencies": {
-    "@docusaurus/core": "3.9.2",
-    "@docusaurus/plugin-client-redirects": "3.9.2",
+    "@docusaurus/core": "3.10.2",
+    "@docusaurus/plugin-client-redirects": "3.10.2",
     "@docusaurus/preset-classic": "3.10.2",
-    "@docusaurus/theme-mermaid": "3.9.2",
+    "@docusaurus/theme-mermaid": "3.10.2",
     "@immich/ui": "0.90.0",
     "@mdx-js/react": "^3.0.0",
     "clsx": "^2.0.0",
@@ -29,8 +29,8 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "3.9.2",
-    "@docusaurus/tsconfig": "3.9.2",
+    "@docusaurus/module-type-aliases": "3.10.2",
+    "@docusaurus/tsconfig": "3.10.2",
     "@docusaurus/types": "3.10.2",
     "@playwright/test": "^1.50.0",
     "sharp": "^0.35.0",
