@@ -1,5 +1,6 @@
 """Release publication requires deliberate dispatch and a passing image smoke test."""
 
+import json
 import os
 import shutil
 import subprocess
@@ -15,6 +16,34 @@ def release_workflow():
     # PyYAML reads the GitHub Actions `on` key as a YAML 1.1 boolean.
     workflow["on"] = workflow.pop(True)
     return workflow
+
+
+@pytest.mark.parametrize(
+    ("job", "variant"),
+    [("docker-manifest", "app"), ("inference-manifest", "cpu"), ("inference-manifest", "cuda")],
+)
+@pytest.mark.parametrize(
+    "digest", ["sha256:" + "a" * 64, "", "sha256:bad", "sha256:" + "a" * 64 + "\nother=value"]
+)
+def test_manifest_attestation_uses_only_a_complete_pushed_digest(tmp_path, job, variant, digest):
+    steps = release_workflow()["jobs"][job]["steps"]
+    step = next(step for step in steps if step.get("id") == f"{variant}-manifest")
+    (tmp_path / f"{variant}-manifest.json").write_text(
+        json.dumps({"containerimage.descriptor": {"digest": digest}})
+    )
+    output = tmp_path / "output"
+    result = subprocess.run(
+        ["bash", "-e", "-c", step["run"]],
+        env={**os.environ, "RUNNER_TEMP": str(tmp_path), "GITHUB_OUTPUT": str(output)},
+        capture_output=True,
+        timeout=10,
+    )
+    if digest == "sha256:" + "a" * 64:
+        assert result.returncode == 0
+        assert output.read_text() == f"digest={digest}\n"
+    else:
+        assert result.returncode != 0
+        assert not output.exists()
 
 
 def test_a_merge_to_main_does_not_publish_a_release():

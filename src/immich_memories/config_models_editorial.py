@@ -107,9 +107,9 @@ class EditorialConfig(BaseModel):
     strict_sharing: bool = Field(
         default=True,
         description=(
-            "Keep any picture a detector head or an exposure flag marked out of a film shared "
-            "outside the family, whatever the reader's text says about it. Family films are "
-            "unchanged. False lets a caption that explains the flag clear it for sharing"
+            "Allow NAS sharing on clean detector evidence without captions. Detector and "
+            "exposure holds remain the floor even when false; only explicit owner clearance "
+            "lifts them. Family films are unchanged"
         ),
     )
 

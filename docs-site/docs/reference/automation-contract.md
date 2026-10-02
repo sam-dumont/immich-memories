@@ -174,12 +174,15 @@ immich-memories auto history --limit 5  # the last five films it made on its own
 Notifications go through [Apprise](https://github.com/caronc/apprise), so one URL per target covers ntfy,
 Discord, Telegram, email and more than a hundred others. They are off by default:
 
+Use `ntfys` for HTTPS. Public ntfy topics can be read by others; personal run details belong in
+a private, authenticated topic.
+
 ```yaml
 advanced:
   notifications:
     enabled: true
     urls:
-      - "ntfy://ntfy.sh/my-topic"
+      - "ntfys://ntfy.sh/my-topic"
     on_success: true
     on_failure: true
 ```

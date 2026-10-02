@@ -1190,3 +1190,5 @@ benchmark-selection:  ## Synthetic cached editorial selection, no media or model
 .PHONY: docs-commands
 docs-commands:  ## Statically check documented CLI commands and Make targets
 	uv run python scripts/check_docs_commands.py
+
+include $(dir $(lastword $(MAKEFILE_LIST)))scripts/image-maintenance.mk

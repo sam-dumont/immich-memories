@@ -214,7 +214,6 @@ class AudienceGate:
         check_audience=_share.check_audience,
         chains: Mapping[str, ChainHold] | None = None,
         companion_heads: Mapping[str, Mapping[str, str]] | None = None,
-        strict_sharing: bool = True,
         activity_reader: Callable[[Mapping[str, tuple[Sequence[str], bool]]], dict[str, str]]
         | None = None,
         prepare_candidates: Callable[[Sequence[Mapping[str, Any]]], None] | None = None,
@@ -223,7 +222,6 @@ class AudienceGate:
         self._judge = judge
         self._activity_reader = activity_reader
         self.audience = audience
-        self._strict_sharing = strict_sharing
         self._check_audience = check_audience
         self._annotations = annotations
         self._flag_rows = flag_rows
@@ -314,9 +312,9 @@ class AudienceGate:
         ):
             record = record | {"verdict": held["verdict"], "banked_hold": held}
         self.keep_hold(u["asset_id"], record)
-        # After the bank, never in it: the owner can turn strict sharing off and have the
-        # reader's own answer back.
-        if self._strict_sharing and self.audience == _share.SHAREABLE:
+        # Keep the detector floor outside the answer bank: only an explicit owner clearance
+        # may lift it, never a caption or a relaxed clean-evidence policy.
+        if self.audience == _share.SHAREABLE:
             record = _share.strict_sharing_hold(evidence, record)
         self.verdicts[u["asset_id"]] = record | {"evidence_key": key}
         return record["verdict"]

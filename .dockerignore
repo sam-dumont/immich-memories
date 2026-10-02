@@ -31,7 +31,8 @@ dist
 .coverage
 coverage.xml
 htmlcov
-node_modules
+**/node_modules
+**/.svelte-kit
 .DS_Store
 
 # A local build of the web client never reaches the image: the web-client stage builds it

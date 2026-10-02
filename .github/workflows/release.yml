@@ -114,6 +114,11 @@ jobs:
       attestations: write
 
     steps:
+      - name: Audit publication egress
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           fetch-depth: 0
@@ -304,6 +309,11 @@ jobs:
       id-token: write  # Required for OIDC trusted publishing
 
     steps:
+      - name: Audit runner egress
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2
+        with:
+          egress-policy: audit
+
       - name: Download release artifacts
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
@@ -329,6 +339,11 @@ jobs:
       id-token: write  # Required for OIDC trusted publishing
 
     steps:
+      - name: Audit runner egress
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Install uv
@@ -387,6 +402,11 @@ jobs:
             slug: arm64
 
     steps:
+      - name: Audit publication egress
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           fetch-depth: 0
@@ -461,6 +481,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -478,6 +500,11 @@ jobs:
             device: cuda
 
     steps:
+      - name: Audit publication egress
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Set up Docker Buildx
@@ -505,6 +532,13 @@ jobs:
           # No gha layer cache: it never hit (0 CACHED steps, #1272).
           outputs: type=image,name=ghcr.io/${{ github.repository }}/inference,push-by-digest=true,name-canonical=true
 
+      - name: Attest inference image provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-name: ghcr.io/${{ github.repository }}/inference
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
       - name: Export digest
         run: |
           mkdir -p /tmp/digests
@@ -528,8 +562,15 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
+      attestations: write
 
     steps:
+      - name: Audit publication egress
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2
+        with:
+          egress-policy: audit
+
       - name: Download digests
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
@@ -570,8 +611,34 @@ jobs:
           fi
           cpu=$(find /tmp/digests -path '*-cpu-*' -type f -exec basename {} \; | sed "s|^|$IMAGE@sha256:|" | tr '\n' ' ')
           cuda=$(find /tmp/digests -path '*-cuda-*' -type f -exec basename {} \; | sed "s|^|$IMAGE@sha256:|" | tr '\n' ' ')
-          docker buildx imagetools create $cpu_tags $cpu
-          docker buildx imagetools create $cuda_tags $cuda
+          docker buildx imagetools create --metadata-file "$RUNNER_TEMP/cpu-manifest.json" $cpu_tags $cpu
+          docker buildx imagetools create --metadata-file "$RUNNER_TEMP/cuda-manifest.json" $cuda_tags $cuda
+
+      - name: Read cpu manifest digest
+        id: cpu-manifest
+        run: |
+          digest="$(jq -er '.["containerimage.descriptor"].digest | select(test("^sha256:[0-9a-f]{64}$"))' "$RUNNER_TEMP/cpu-manifest.json")"
+          printf 'digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Attest cpu manifest provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-name: ghcr.io/${{ github.repository }}/inference
+          subject-digest: ${{ steps.cpu-manifest.outputs.digest }}
+          push-to-registry: true
+
+      - name: Read cuda manifest digest
+        id: cuda-manifest
+        run: |
+          digest="$(jq -er '.["containerimage.descriptor"].digest | select(test("^sha256:[0-9a-f]{64}$"))' "$RUNNER_TEMP/cuda-manifest.json")"
+          printf 'digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Attest cuda manifest provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-name: ghcr.io/${{ github.repository }}/inference
+          subject-digest: ${{ steps.cuda-manifest.outputs.digest }}
+          push-to-registry: true
 
   docker-smoke:
     name: Smoke Test Docker Image
@@ -627,8 +694,15 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
+      attestations: write
 
     steps:
+      - name: Audit publication egress
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2
+        with:
+          egress-policy: audit
+
       - name: Download digests
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
@@ -662,10 +736,23 @@ jobs:
           elif [ "$PRERELEASE" = "true" ]; then
             latest=()
           fi
-          docker buildx imagetools create \
+          docker buildx imagetools create --metadata-file "$RUNNER_TEMP/app-manifest.json" \
             -t "$IMAGE:$VERSION" \
             "${latest[@]}" \
             $(printf "$IMAGE@sha256:%s " *)
+
+      - name: Read app manifest digest
+        id: app-manifest
+        run: |
+          digest="$(jq -er '.["containerimage.descriptor"].digest | select(test("^sha256:[0-9a-f]{64}$"))' "$RUNNER_TEMP/app-manifest.json")"
+          printf 'digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Attest app manifest provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-name: ghcr.io/${{ github.repository }}
+          subject-digest: ${{ steps.app-manifest.outputs.digest }}
+          push-to-registry: true
 
   deployment-bundle:
     name: Publish matching deployment manifests

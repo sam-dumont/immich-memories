@@ -68,14 +68,23 @@ jobs:
       - name: Pull LFS files
         run: git lfs pull
 
+      - name: Resolve checked-out target
+        id: target
+        env:
+          BRANCH: ${{ inputs.branch || github.ref_name }}
+        run: |
+          git check-ref-format --branch "$BRANCH" >/dev/null
+          printf 'sha=%s\nbranch=%s\n' "$(git rev-parse HEAD)" "$BRANCH" >> "$GITHUB_OUTPUT"
+
       - name: Push to private mirror
         env:
           SSH_KEY: ${{ secrets.MIRROR_SSH_KEY }}
+          BRANCH: ${{ steps.target.outputs.branch }}
         run: |
-          BRANCH="${{ inputs.branch || github.ref_name }}"
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/mirror_key
           chmod 600 ~/.ssh/mirror_key
+          trap 'rm -f ~/.ssh/mirror_key' EXIT
           ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
           export GIT_SSH_COMMAND="ssh -i ~/.ssh/mirror_key -o IdentitiesOnly=yes"
           git remote add mirror git@github.com:sam-dumont/immich-memories-ci.git
@@ -92,29 +101,21 @@ jobs:
           rm -f ~/.ssh/mirror_key
 
       - name: Set pending status
+        env:
+          GH_TOKEN: ${{ secrets.CI_MIRROR_TOKEN }}
+          SHA: ${{ steps.target.outputs.sha }}
         run: |
-          curl -sS -X POST \
-            -H "Authorization: token ${{ secrets.CI_MIRROR_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
-            -d '{
-              "state": "pending",
-              "context": "Integration (GPU)",
-              "description": "Waiting for GPU runner...",
-              "target_url": "https://github.com/sam-dumont/immich-memories-ci/actions"
-            }'
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$SHA" --method POST \
+            -f state=pending -f 'context=Integration (GPU)' \
+            -f 'description=Waiting for GPU runner...' \
+            -f target_url=https://github.com/sam-dumont/immich-memories-ci/actions
 
       - name: Trigger integration tests
+        env:
+          GH_TOKEN: ${{ secrets.CI_MIRROR_TOKEN }}
+          SHA: ${{ steps.target.outputs.sha }}
+          BRANCH: ${{ steps.target.outputs.branch }}
         run: |
-          curl -sS -X POST \
-            -H "Authorization: token ${{ secrets.CI_MIRROR_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/sam-dumont/immich-memories-ci/dispatches" \
-            -d '{
-              "event_type": "integration-test",
-              "client_payload": {
-                "sha": "${{ github.sha }}",
-                "branch": "${{ inputs.branch || github.ref_name }}",
-                "public_repo": "${{ github.repository }}"
-              }
-            }'
+          jq -n --arg sha "$SHA" --arg branch "$BRANCH" --arg repo "$GITHUB_REPOSITORY" \
+            '{event_type: "integration-test", client_payload: {sha: $sha, branch: $branch, public_repo: $repo}}' \
+            | gh api repos/sam-dumont/immich-memories-ci/dispatches --method POST --input -

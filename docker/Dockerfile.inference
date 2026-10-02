@@ -105,7 +105,8 @@ RUN pip install --no-cache-dir --require-hashes \
     pip wheel --no-cache-dir --no-deps --wheel-dir=/project-wheel . && \
     pip install --no-cache-dir --no-deps /project-wheel/*.whl && \
     pip check && \
-    python -c "from demucs.pretrained import get_model"
+    python -c "from demucs.pretrained import get_model" && \
+    pip uninstall -y pip wheel
 
 
 FROM builder AS bundled-cuda-models

@@ -420,7 +420,6 @@ def _select(
         ),
         chains=chains,
         companion_heads=source.companion_detectors,
-        strict_sharing=source.config.editorial.strict_sharing,
         activity_reader=ports.laya.activity_answers if ports.laya else None,
         prepare_candidates=partial(_refresh_candidates, source, ports, material, chains)
         if ports.prepare_candidates

@@ -481,7 +481,7 @@ def strict_sharing_hold(evidence: Mapping[str, Any], result: dict[str, Any]) -> 
     return result | {
         "verdict": "family_only",
         "finding": "strict_sharing",
-        "why": "a detector or an exposure flag marked it, and strict sharing keeps it in the family",
+        "why": "a detector or an exposure flag marked it; only owner clearance allows sharing",
         "strict_sharing_members": marked,
     }
 

@@ -35,10 +35,6 @@ services:
   immich-memories:
     image: ghcr.io/sam-dumont/immich-video-memory-generator:latest
     container_name: immich-memories
-    # Enable with the optional PostgreSQL service, after copying any SQLite store.
-    # depends_on:
-    #   postgres:
-    #     condition: service_healthy
     # Localhost only. This container holds an Immich API key to your whole library.
     # To reach it from other machines: turn on auth first, then use "8080:8080".
     # https://sam-dumont.github.io/immich-video-memory-generator/docs/run/authentication

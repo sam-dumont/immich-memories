@@ -4,8 +4,10 @@ title: Privacy
 
 # Privacy
 
-A default NAS film talks only to your Immich server. No telemetry, analytics or update checks.
-Model files are fetched explicitly during setup; rendering does not download them.
+A default NAS film talks only to your Immich server. Hugging Face Hub telemetry is disabled
+before imports in the app and inference service; there are no app analytics or update checks.
+Fetch model files during setup. Explicit download switches and some optional music backends
+can also fetch weights on first use, including during a run.
 
 Optional features can contact other services. You choose which ones, and whether they run on
 your own hardware or outside your network.
@@ -21,20 +23,21 @@ flowchart TB
 
 | Feature | What it receives |
 |---|---|
-| Text reader | Candidate annotations, including people/place names and album names |
+| Text reader | Candidate annotations, dates, places, people/relationship and album names, plus your memory brief |
 | Caption server | Small picture tiles and video-frame strips |
 | LLM captions | Pictures, only with explicit `caption_provider: llm` |
-| Inference service | Previews and sampled frames for classification |
-| Render worker | The chosen cut **and your Immich URL/API key** |
+| Inference service | Previews and sampled frames for classification; generated WAV music for stem separation |
+| Render worker | Cut/timing metadata, primary and selected partner API keys, names, titles, home coordinates and network settings |
 | Geocoding/maps | Rounded coordinates or map tile requests |
 | Generated music | Mood/genre/tempo text; stem separation can send audio |
 | Notifications | Run outcome/details, optionally a thumbnail |
 | OIDC | The usual login flow to your provider |
 
-The reader is disabled by default. Enable it with blank `base_url` and `openai-compatible` or `ollama` for an owned local reader;
+The reader is disabled by default. Enable it with `llm.enabled: true`, blank `base_url` and `openai-compatible` or `ollama` for an owned local reader;
 a remote URL or hosted provider preset sends text to that endpoint. Configuring a reader does
 not enable image captions. Check the [full request inventory](reference/privacy-egress.md) for exact
-hosts, switches and defaults. `preflight` also lists outside hosts you have enabled.
+hosts, switches and defaults. `preflight` names enabled geocoding/map destinations; that list
+does not cover every outside endpoint. Its service checks also send authenticated probes.
 
 ## What Immich sees
 
@@ -77,9 +80,12 @@ explicit download:
 immich-memories titles fonts --install
 ```
 
-Font files are pinned and digest-checked. A render never fetches a font. ACE-Step and local Demucs
-can fetch their own weights on first use; those downloads contain no library data. ACE-Step's
-checkpoint is the one its library picks at that moment, not a revision pinned here.
+Font files are pinned and digest-checked. A render never fetches a font. Detector downloads are
+off unless allowed; the Compose inference profile allows them and the captioner profile fetches
+its weights at startup. ACE-Step and local Demucs can fetch their own weights on first use.
+Those downloads contain no library data. Local ACE-Step uses app-pinned immutable Hugging Face
+snapshots and refuses incomplete downloads; [checkpoint revisions](./reference/privacy-egress.md#ace-step-checkpoint-revisions)
+list the pins. API mode uses the remote music server's checkpoints.
 
 ## Thumbnails in the web UI
 
