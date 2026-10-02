@@ -29,8 +29,9 @@ away from a week at home, and who's who, so it knows which people to prioritise.
 ## How long a film runs
 
 The target is where the length starts, not a promise. A film never runs longer than the varied
-footage its days can fill, counted a day at a time and capped at 30 s a day, so a month with three
-photographed days gets about 20 s, not a minute. It goes short rather than padding. The run record
+footage its days can fill, counted a day at a time and capped at 30 s a day. Three photographed
+days can supply up to 90 s of pictures, plus titles; a thin day can supply much less. The preset
+target and the available material both limit the cut. It goes short rather than padding. The run record
 says what set the length:
 
 | What set it | When |
@@ -80,7 +81,7 @@ Each month is checked afterwards: a month with worthy material that ends up sile
 verdict `coverage_incomplete`. Nothing reserves a slot per month up front. If everything you have is
 one summer trip, a season or trip memory fits the material better.
 
-Month dividers appear only when the range spans four months or more. `--no-photos` takes stills out
+Month dividers appear only when the range stays within one calendar year and spans four months or more. `--no-photos` takes stills out
 of the pool; they are in it by default.
 
 ## Monthly, season, person, multi-person
@@ -151,8 +152,8 @@ is a cold run the first time.
 
 ## On this day
 
-Every earlier year, ±1 day around today, in one 45-second cut. It wants three or more years of
-library, and it is the obvious one to schedule.
+Up to 30 earlier years by default, ±1 day around today, in one 45-second cut. `--years-back` changes
+that reach. It wants three or more years of library, and it is the obvious one to schedule.
 
 ```bash
 immich-memories generate --memory-type on_this_day --years-back 3
@@ -170,7 +171,8 @@ for five windows and never for the years between.
 immich-memories generate --memory-type holiday --holiday christmas --years-back 5
 ```
 
-`--holiday` is required, `--years-back` defaults to 5. Ten names resolve for any year:
+`--holiday` is required, `--years-back` defaults to 5. These names are recognised; availability
+depends on the country where the table says so:
 
 | Name | Falls on |
 |------|----------|
@@ -268,8 +270,14 @@ immich-memories generate --memory-type trip --year 2025 --near-date 2025-07-15
 
 Both surfaces read photos and videos, and look a month either side of the year so a trip across New
 Year stays whole. `--person` narrows **detection** (whose pictures are scanned for GPS, useful when
-one phone carries it); the film still takes everything shot in the trip's window. Some cameras strip
-GPS, so a library shot on one can look full of holidays and find none.
+one phone carries it). Videos enter by date; photos also need GPS at least `min_distance_km`
+(50 km by default) from home. Photos without GPS or nearer home stay out even if their dates fit.
+Some cameras strip GPS, so a library shot on one can look full of holidays and find none.
+
+`--trip-index` counts from 1 in the printed table. `--month 7` selects the trip whose midpoint is
+closest to the 15th of that month; it does not crop a trip to July. Without `--output`, a trip
+starts with the filename `trip_<place>_<start-date>.mp4`, using a safe place slug and the selected
+container extension. The run adds its hash and directory as described under [Output](generation-contract.md#output).
 
 The name is the smallest place holding at least 85 % of the trip's located pictures, walking up from
 city to island, region, two regions, country. One step comes before the region: a town holding more
@@ -300,7 +308,8 @@ immich-memories generate --from-album 59080965-22f0-46a4-be67-135692a9f584
 ```
 
 `--from-album` makes it an album memory, and cannot be combined with `--year`, `--start`/`--end`,
-`--period`, `--birthday`, `--season`, `--month`, `--person` or another `--memory-type`. The film is
+`--period`, `--birthday`, `--season`, `--month`, `--person` or another `--memory-type`.
+Albums and trips also reject `--accounts`; they read the primary account only. The film is
 titled after the album and named `album_<slug>.mp4` unless `--output` names the file. Two albums with one name stop the CLI with the
 candidates and their IDs; the web UI lists albums largest first and stores the choice by ID.
 
@@ -327,6 +336,8 @@ each shot that got in on the subject alone ([Picking each shot](selection-intern
 
 The nine types above cover something you named. A special day is one you did not: a day from your
 own library that a scan flagged, wrote down, and offers back when its anniversary comes round.
+`--day` is required. When the catalogue holds several events on that day, also pass `--event-id`
+with the event's ID from `days-export`. An ID that does not match an event on the chosen day is refused.
 
 ```bash
 immich-memories discover-days     # build the catalogue once; it resumes
@@ -334,10 +345,10 @@ immich-memories days-due          # what falls within three days of today
 immich-memories generate --memory-type special_day --day 2016-06-12
 ```
 
-[`discover-days`](../make/cli/prepare.md) walks the library a month at a time. On a plain NAS, a day is
+[`discover-days`](special-days.md#discover-days) walks the library a month at a time. On a plain NAS, a day is
 kept when one recorded fact stands out: it was spent away from home, it holds three or more
 favourites, it is mostly video, or it ran long (20 pictures over 6 hours or more) with close family
-in it. Each year keeps its strongest `automation.special_days_per_year` (6), away days first. The
+in it. Each year keeps its strongest `advanced.automation.special_days_per_year` (6), away days first. The
 title comes from the day's own place.
 
 The catalogue lives in the [store](../run/database.md); `days-export` writes it to a JSON file you can

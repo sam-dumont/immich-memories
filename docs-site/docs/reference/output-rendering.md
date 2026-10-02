@@ -20,7 +20,7 @@ of your camera roll:
   most one a day, never the same town twice in a row. Home follows the same rule. With map tiles on,
   each card flies from the town the last card named to the new one, then holds on its name. See
   [Map moves](#map-moves).
-- **Ending**: a fade to white, no text. Every film keeps it; a short film squeezes it to 2 s rather than dropping it.
+- **Ending**: a fade to `title_screens.fade_color` (`white` by default, or `black`), no text. Every film keeps it; a short film squeezes it to 2 s rather than dropping it.
 
 All of this works on a plain NAS. Titles come from templates, the special-day catalogue and your album names; a
 reader only rewrites people and occasion titles (see [When a model names the film](#when-a-model-names-the-film)).
@@ -40,7 +40,7 @@ Both ship inside the package (OFL-1.1).
 
 | Style | Palette | Character |
 |-------|---------|-----------|
-| `modern_warm` | Warm charcoal/stone | Bold, semibold. Amber accents |
+| `modern_warm` | Warm charcoal/stone | Semibold. Amber accents |
 | `elegant_minimal` | Deep navy/black | Clean, medium weight. Cyan accents |
 | `vintage_charm` | Warm charcoal | Nostalgic. Amber/gold accents |
 | `playful_bright` | Deep teal | Energetic, semibold. Teal accents |
@@ -48,7 +48,8 @@ Both ship inside the package (OFL-1.1).
 
 `style_mode: auto` (the default) picks the palette from the film's mood: happy, nostalgic and romantic get
 `warm_dark`, calm and peaceful `deep_teal`, energetic and playful `midnight`, exciting `cinematic_dark`.
-`style_mode: random` picks a named style.
+`style_mode: random` picks a named style. Set `title_screens.style_mode: elegant_minimal` to choose one
+explicitly; all five names in the table are accepted. In the web UI, use **Render → Title style**.
 
 The renderer is picked for you: GPU kernels where Metal, CUDA or Vulkan start. On a CPU or NAS, Pillow draws the background and text once, and FFmpeg fades the text in and out at the film’s frame rate. The font, layout and palette stay the same. Bokeh, moving gradients and animated deblur need a rendering GPU; hardware video encoding still works on the NAS. See [Hardware encoding](../run/hardware.md#title-kernels).
 

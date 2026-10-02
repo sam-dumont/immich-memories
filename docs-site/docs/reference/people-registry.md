@@ -11,10 +11,15 @@ active months is four events; the same 160 over forty months is part of your lif
 
 | tier | shape |
 |---|---|
-| `inner` | dozens of active months, years of span, present in at least a third of the months between |
+| `inner` | at least 24 active months across 3 years, present in at least 35% of the months between; or the child rule below |
 | `recurring` | a dozen months or more, failing one of the `inner` conditions |
 | `episodic` | everything that is not one of the other three |
-| `event` | four active months or fewer at twenty-plus pictures each: a burst |
+| `event` | four active months or fewer, averaging at least 20 pictures per active month: a burst |
+
+The burst rule runs first. Otherwise, a person with a known birth date, whose first photographed
+month is no later than a year after birth, counts as `inner` when present in at least half the
+months between their first and last appearance. This lets a child born into the library qualify
+without waiting three years. These are suggestions; confirmed relationships remain yours.
 
 The scan also flags tight pairs (two people who are each a quarter or more of each other's pictures), possible twins
 (same family name and birth date, marked `counts_reliable: false` because face recognition merges them) and one
