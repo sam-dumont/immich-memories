@@ -126,6 +126,13 @@ _UNREACHABLE = "Check the configured LLM base URL and provider availability"
 
 def _transport_failure(exc: Exception, unreachable: str = _UNREACHABLE) -> CheckResult:
     """One answer for every way a provider can fail to answer at all."""
+    if isinstance(exc, httpx.ReadTimeout):
+        return CheckResult(
+            name="LLM",
+            status=CheckStatus.WARNING,
+            message="Reader is slow to answer",
+            details="Increase llm.preflight_timeout_seconds for a busy reader and retry",
+        )
     if isinstance(exc, httpx.ConnectError):
         return CheckResult(
             name="LLM", status=CheckStatus.WARNING, message="Cannot connect", details=unreachable
@@ -138,7 +145,7 @@ def _transport_failure(exc: Exception, unreachable: str = _UNREACHABLE) -> Check
     )
 
 
-def _check_ollama(base_url: str, model: str) -> CheckResult:
+def _check_ollama(base_url: str, model: str, timeout: float) -> CheckResult:
     """Check Ollama server availability via /api/tags.
 
     Args:
@@ -151,7 +158,7 @@ def _check_ollama(base_url: str, model: str) -> CheckResult:
     try:
         normalized = base_url.rstrip("/")
 
-        with httpx.Client(timeout=10.0) as client:
+        with httpx.Client(timeout=timeout) as client:
             response = client.get(f"{normalized}/api/tags")
             response.raise_for_status()
             data = response.json()
@@ -220,7 +227,9 @@ def _llm_health_failure(
     )
 
 
-def _check_openai_compatible(base_url: str, model: str, api_key: str) -> CheckResult:
+def _check_openai_compatible(
+    base_url: str, model: str, api_key: str, timeout: float
+) -> CheckResult:
     """Check OpenAI-compatible server via test completion.
 
     Args:
@@ -236,7 +245,7 @@ def _check_openai_compatible(base_url: str, model: str, api_key: str) -> CheckRe
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        with httpx.Client(timeout=10.0, headers=headers) as client:
+        with httpx.Client(timeout=timeout, headers=headers) as client:
             payload = {
                 "model": model,
                 "messages": [{"role": "user", "content": "hi"}],
@@ -330,11 +339,11 @@ def _one_token_probe(client: httpx.Client, base_url: str, model: str) -> CheckRe
     )
 
 
-def _check_anthropic(base_url: str, model: str, api_key: str) -> CheckResult:
+def _check_anthropic(base_url: str, model: str, api_key: str, timeout: float) -> CheckResult:
     """Check a Messages API host: its model list where it has one, a probe where it does not."""
     normalized = base_url.rstrip("/")
     try:
-        with httpx.Client(timeout=10.0, headers=_anthropic_headers(api_key)) as client:
+        with httpx.Client(timeout=timeout, headers=_anthropic_headers(api_key)) as client:
             listed = _listed_model_ids(client, normalized)
             if listed:
                 return _catalogue_result(listed, model)
@@ -403,10 +412,10 @@ def check_llm(config: Config) -> CheckResult:
         )
 
     if llm.provider == "ollama":
-        return _check_ollama(base_url, model)
+        return _check_ollama(base_url, model, llm.preflight_timeout_seconds)
     if llm.provider == "anthropic":
-        return _check_anthropic(base_url, model, llm.api_key)
-    return _check_openai_compatible(base_url, model, llm.api_key)
+        return _check_anthropic(base_url, model, llm.api_key, llm.preflight_timeout_seconds)
+    return _check_openai_compatible(base_url, model, llm.api_key, llm.preflight_timeout_seconds)
 
 
 def check_hardware() -> CheckResult:

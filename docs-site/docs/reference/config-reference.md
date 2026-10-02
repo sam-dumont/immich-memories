@@ -413,6 +413,7 @@ llm:
   local_context: 32768             # bounded local context; affects memory use
   api_key: ""                      # optional, only for cloud APIs
   timeout_seconds: 300             # increase for slow local models (10-3600)
+  preflight_timeout_seconds: 10    # reader availability checks only (greater than 0, at most 3600)
   send_image_detail: true          # off: APIs whose strict schema rejects image_url.detail
   always_reasons: false            # true: the endpoint thinks on every call, asked or not
   thinking: "disabled"             # disabled | low | high | max | auto

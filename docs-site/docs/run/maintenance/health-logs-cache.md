@@ -28,6 +28,19 @@ without it, for example `Music (ACE-Step)` falling back to a bundled track. Any 
 script or a setup step can stop on it. Run it after an install, an upgrade or a config change.
 
 
+The reader check waits up to `llm.preflight_timeout_seconds` per HTTP operation (10 seconds by
+default). If a connected reader times out while sending its answer, its row says **Reader is slow
+to answer**. Raise that setting for a busy server, then retry. This changes only the preflight
+probe; `llm.timeout_seconds` still controls normal reader requests.
+
+```yaml
+llm:
+  preflight_timeout_seconds: 30
+```
+
+The environment form is `IMMICH_MEMORIES_LLM__PREFLIGHT_TIMEOUT_SECONDS=30`. Other preflight
+checks keep their own timeouts.
+
 For an explicitly requested local model check:
 
 ```bash
