@@ -103,6 +103,8 @@ class Deployment:
     def _override(self) -> str:
         # `!reset` drops the published port rather than adding to it: a run must not
         # take the port a real install on this machine may already hold.
+        # The curl container calls the app by its service name, a host it only answers
+        # (auth off) once the operator lists it.
         override = f"""services:
   {APP}:
     image: {self.image}
@@ -111,6 +113,7 @@ class Deployment:
     environment:
       IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN: {TRIGGER_TOKEN}
       IMMICH_MEMORIES_AUTOMATION__UPLOAD_TO_IMMICH: "false"
+      IMMICH_MEMORIES_SERVER__ALLOWED_HOSTS: '["{APP}"]'
 """
         if self.postgres:
             override += f"""  postgres:

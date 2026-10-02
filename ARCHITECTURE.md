@@ -801,12 +801,14 @@ src/immich_memories/
 ├── web/                        # The web server: the Svelte client, its /api/v1, health, trigger, sign-in (#1395)
 │   ├── server.py               # create_app(): FastAPI + session cookie + auth middleware; `immich-memories ui` runs it
 │   ├── app.py                  # mount_web(): the /api/v1 routers + the built client under /app
+│   ├── request_origin.py       # Shared browser-origin check for unsafe requests, including sign-out
 │   ├── session.py              # GET /api/v1/session: who is signed in, and which sign-in the login page offers
 │   ├── auth.py                 # Who gets in: credential check, rate limiter, bypass paths, session helpers
 │   ├── auth_oidc.py            # OIDC client (authlib starlette integration, singleton)
 │   ├── health.py               # GET /health, /health/live, /health/ready: probe payloads + snapshot cache
 │   ├── trigger.py              # POST /api/trigger: runs what `auto run` decides, 202 + status URL
 │   ├── reverse_proxy.py        # Secure cookie + trusted X-Forwarded-* settings for uvicorn
+│   ├── request_checks.py       # Outermost ASGI layer: Host allow-list, cross-site write refusal, body cap, no framing
 │   ├── runs.py                 # GET /api/v1/runs[/{id}[/child-output]]: RunDatabase, run index, transcripts
 │   ├── cut.py                  # /runs/{id}/cut (storyboard + trace + polish + siblings), /story, /revisions
 │   ├── pool.py                 # /runs/{id}/pool and /pictures/{id}/decision (Never use, Clear hold)

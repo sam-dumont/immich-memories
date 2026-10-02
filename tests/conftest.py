@@ -393,6 +393,20 @@ def isolated_inference_compute(monkeypatch) -> None:
 
 
 @pytest.fixture(autouse=True)
+def test_clients_name_a_local_host(monkeypatch) -> None:
+    """Point every TestClient that names no host at `http://localhost`, as a local browser would.
+
+    Starlette's default, `testserver`, is a foreign Host to the app, and with authentication
+    off the app refuses foreign hosts with 421. A test about the Host check names its own.
+    """
+    from starlette.testclient import TestClient
+
+    # WHY: the default sits in the signature, so it is the one place every client reads it.
+    defaults = TestClient.__init__.__defaults__ or ()
+    monkeypatch.setattr(TestClient.__init__, "__defaults__", ("http://localhost", *defaults[1:]))
+
+
+@pytest.fixture(autouse=True)
 def isolated_store(monkeypatch) -> Iterator[None]:
     """Give every test its own empty default store, so none reads or writes the developer's.
 

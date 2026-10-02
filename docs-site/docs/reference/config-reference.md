@@ -859,7 +859,15 @@ server:
   allow_unauthenticated_lan: false  # Listen beyond localhost with auth disabled:
                                  # anyone reaching the port can use the UI and the
                                  # Immich library behind it
+  allowed_hosts: []              # Hosts answered beyond localhost. Auth off: any other
+                                 # Host gets 421. Auth on: empty answers any host, set
+                                 # answers only these (and localhost, auth.public_url)
+  music_upload_quota_mb: 1024    # Room for uploaded soundtracks; the oldest go past it
 ```
+
+`allowed_hosts` is how an unauthenticated LAN install, or a caller that uses another name (a
+Kubernetes Service, a NAS hostname), is let in. See
+[Allowed hosts](../run/network-security.md#allowed-hosts).
 
 `host` and `port` also have CLI flags: `immich-memories ui --host 127.0.0.1 --port 9090`. The rest
 of the section is config-only.

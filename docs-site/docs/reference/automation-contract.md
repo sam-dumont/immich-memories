@@ -219,6 +219,11 @@ Keep the token in the environment: `server` is not a section that expands `${VAR
 `config.yaml` is those literal characters. It is compared in constant time and redacted from logs, `/health`
 and the config viewer. Send it only over HTTPS, behind the same reverse proxy as the web UI.
 
+A caller that sends no `Origin` header (curl, a CronJob, Home Assistant) needs no change. One that sends an
+`Origin` naming another site gets **403**. With auth off, the app answers only a local host or one in
+`server.allowed_hosts`; the shipped Kubernetes CronJobs send `Host: localhost` for that reason. See
+[Allowed hosts](../run/network-security.md#allowed-hosts).
+
 The answer is `202 Accepted` with an `attempt_id` and a `status_url`; `Authorization: Bearer <token>` works too.
 **409** means a run is already going, and the body names it. GET the `status_url` for the live `phase`, then a
 final `state` (`completed`, `failed`, `skipped`, `dry_run`) with `run_id`, `output_duration_seconds`,

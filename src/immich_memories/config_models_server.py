@@ -38,6 +38,20 @@ class ServerConfig(BaseModel):
         ),
     )
 
+    allowed_hosts: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Host names (or IPs) the server answers to beyond localhost. With authentication "
+            "off, every other Host is refused with 421; with it on and this list set, only "
+            "these and localhost are answered."
+        ),
+    )
+    music_upload_quota_mb: int = Field(
+        default=1024,
+        ge=1,
+        description="Room for uploaded soundtracks; the oldest uploads go when a new one passes it",
+    )
+
     def effective_host(self, *, auth_enabled: bool) -> str:
         """The address to bind, secure by default (#476).
 

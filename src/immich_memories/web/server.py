@@ -46,6 +46,7 @@ from immich_memories.web.auth import (
     verify_credentials,
 )
 from immich_memories.web.health import register_health_routes
+from immich_memories.web.request_checks import RequestChecks
 from immich_memories.web.reverse_proxy import reverse_proxy_run_kwargs
 from immich_memories.web.trigger import register_trigger_routes
 
@@ -306,6 +307,9 @@ def create_app() -> FastAPI:
         same_site="lax",
         **session_kwargs,
     )
+    # Outermost of all: a request for a foreign host or a cross-site write is answered
+    # before a session is decoded or a route runs. The config is read per request.
+    app.add_middleware(RequestChecks, config=get_config)
     return app
 
 
