@@ -1,5 +1,6 @@
 """Generated geometric images, never library media, test caption and motion seats."""
 
+import re
 from functools import partial
 from io import BytesIO
 
@@ -45,11 +46,18 @@ def caption(llm: LLMConfig) -> str:
     return "caption identifies the generated red rectangle"
 
 
-def motion(llm: LLMConfig) -> str:
+def motion(llm: LLMConfig, *, direction: str = "right") -> str:
+    positions = {
+        "right": [(40, 160), (160, 160), (280, 160)],
+        "left": [(280, 160), (160, 160), (40, 160)],
+        "up": [(160, 280), (160, 160), (160, 40)],
+        "down": [(160, 40), (160, 160), (160, 280)],
+        "stationary": [(160, 160)] * 3,
+    }
     frames = []
-    for x in (40, 160, 280):
+    for x, y in positions[direction]:
         image = Image.new("RGB", (400, 400), "white")
-        ImageDraw.Draw(image).ellipse((x, 160, x + 70, 230), fill="blue")
+        ImageDraw.Draw(image).ellipse((x, y, x + 70, y + 70), fill="blue")
         buffer = BytesIO()
         image.save(buffer, "PNG")
         frames.append(buffer.getvalue())
@@ -58,10 +66,19 @@ def motion(llm: LLMConfig) -> str:
     assert any(word in text for word in ("ball", "circle", "disc", "dot")), (
         "motion lost the visible object"
     )
-    assert "right" in text and any(word in text for word in ("mov", "roll", "shift", "travel")), (
-        "motion did not describe left-to-right movement"
-    )
-    return "describes the blue object's left-to-right movement"
+    if direction == "stationary":
+        assert any(
+            word in text for word in ("stationary", "same position", "still", "does not move")
+        ), "motion invented movement in stationary frames"
+    else:
+        orthogonal = ("left", "right") if direction in {"up", "down"} else ("up", "down")
+        assert (
+            not any(re.search(rf"\b{axis}(?:ward)?s?\b", text) for axis in orthogonal)
+            and re.search(rf"\b{direction}(?:ward)?s?\b", text)
+            and any(word in text for word in ("mov", "roll", "shift", "travel"))
+            and "stationary" not in text
+        ), f"motion did not describe {direction} movement"
+    return f"describes the blue object's {direction} movement"
 
 
 def vision_cases(llm: LLMConfig) -> tuple[Case, ...]:

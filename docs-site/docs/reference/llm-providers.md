@@ -252,7 +252,9 @@ errors can include account details. Use the input, cached-input and completion t
 with the provider's rates to calculate cost. A run with missing usage gives only a cost floor.
 
 Use the report to compare passes, failures, call counts and reported-token cost for your endpoint.
-[Measure your setup](performance-evidence.md#cost-and-quality) explains what to record.
+[Measure your setup](performance-evidence.md#cost-and-quality) explains what to record. The
+[contract-fix follow-up](../better/measured.md#llm-contract-fixes) records the tested endpoints
+and the remaining motion and story-ranking limitations.
 
 These checks measure the configured endpoint on small fixtures. They do not replace checking
 the quality of a complete film or testing asynchronous batch delivery.

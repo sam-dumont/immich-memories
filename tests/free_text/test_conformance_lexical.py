@@ -15,9 +15,9 @@ def test_subject_probe_requires_the_qualified_subject(monkeypatch, lexicon):
     def reply(request):
         prompt = json.loads(request.content)["messages"][0]["content"]
         answer = (
-            {"choices": ["cat", "dog"]}
+            {"reason": "fixture", "choices": ["cat", "dog"]}
             if "mainly show" in prompt
-            else {"choice": "it narrows which ones belong"}
+            else {"reason": "fixture", "choice": "it narrows which ones belong"}
         )
         return httpx.Response(
             200,
@@ -43,7 +43,7 @@ def test_place_probe_rejects_a_generic_place_answer(monkeypatch, lexicon):
 
     # WHY: replace only public dictionary data and provider HTTP.
     monkeypatch.setattr(module, "load_wordnet", lambda _: lexicon)
-    answer = {"choice": "any of that kind"}
+    answer = {"reason": "fixture", "choice": "any of that kind"}
     transport = httpx.MockTransport(
         lambda _: httpx.Response(
             200,
@@ -72,7 +72,9 @@ def test_occasion_probe_accepts_only_one_occasion(monkeypatch, lexicon):
                 "choices": [
                     {
                         "finish_reason": "stop",
-                        "message": {"content": '{"choice":"one single occasion"}'},
+                        "message": {
+                            "content": '{"reason": "fixture", "choice":"one single occasion"}'
+                        },
                     }
                 ],
                 "usage": {"prompt_tokens": 10, "completion_tokens": 5},
@@ -96,7 +98,10 @@ def test_names_probe_retains_kitten_as_a_cat(monkeypatch, lexicon):
             200,
             json={
                 "choices": [
-                    {"finish_reason": "stop", "message": {"content": '{"choices":["kitten"]}'}}
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '{"reason": "fixture", "choices":["kitten"]}'},
+                    }
                 ],
                 "usage": {"prompt_tokens": 10, "completion_tokens": 5},
             },
@@ -121,7 +126,9 @@ def test_person_probe_resolves_two_people_with_the_same_first_name(monkeypatch, 
                 "choices": [
                     {
                         "finish_reason": "stop",
-                        "message": {"content": '{"choice":"Avery Example (cousin)"}'},
+                        "message": {
+                            "content": '{"reason": "fixture", "choice":"Avery Example (cousin)"}'
+                        },
                     }
                 ],
                 "usage": {"prompt_tokens": 10, "completion_tokens": 5},
@@ -143,13 +150,13 @@ def test_pool_probe_keeps_only_requested_black_cats(monkeypatch, lexicon):
         if "who" in prompt and "what" in prompt and "when" in prompt:
             answer = {"what": ["black cats"], "who": [], "where": [], "when": []}
         elif "mainly show" in prompt:
-            answer = {"choices": ["cats"]}
+            answer = {"reason": "fixture", "choices": ["cats"]}
         elif "quality word" in prompt:
-            answer = {"choice": "it narrows which ones belong"}
+            answer = {"reason": "fixture", "choice": "it narrows which ones belong"}
         elif "main subject (subject)" in prompt:
-            answer = {"choice": "an animal"}
+            answer = {"reason": "fixture", "choice": "an animal"}
         else:
-            answer = {"choices": []}
+            answer = {"reason": "fixture", "choices": []}
         return httpx.Response(
             200,
             json={

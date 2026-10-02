@@ -20,7 +20,9 @@ from immich_memories.analysis.editorial_async_bridge import _run_sync
 from immich_memories.analysis.llm_metrics import recording_stage
 from immich_memories.analysis.llm_query import query_llm
 from immich_memories.analysis.llm_wire import LLMIncompleteResponse
+from immich_memories.analysis.strict_json import final_json_object
 from immich_memories.config_models_llm import LLMConfig
+from immich_memories.free_text.answer_contract import shape_hint, valid_answer
 
 if TYPE_CHECKING:
     from immich_memories.db import Store
@@ -47,18 +49,6 @@ class Asker(Protocol):
         ...
 
 
-def _shape_hint(schema: Mapping[str, Any]) -> str:
-    """A compact, plain-English restatement of an object schema's keys.
-
-    `response_format` is not asked of every server (a local endpoint may default to none,
-    measured 2026-09-29 to stall a grammar-constrained decoder on some shapes), so the
-    prompt names the exact keys itself. Never the enum values: a phrase enum here can run
-    to hundreds of entries, which the prompt already offers in `owner_request`.
-    """
-    keys = ", ".join(f'"{key}"' for key in schema.get("properties", {}))
-    return f"Return JSON with exactly these keys and no others: {keys}."
-
-
 class WireAsker:
     """Asks the configured reader through the product's LLM transport.
 
@@ -79,7 +69,7 @@ class WireAsker:
             "type": "json_schema",
             "json_schema": {"name": "free_text_answer", "schema": schema, "strict": True},
         }
-        full_prompt = f"{prompt}\n\n{_shape_hint(schema)}"
+        full_prompt = f"{prompt}\n\n{shape_hint(schema)}"
         try:
             with recording_stage("free_text"):
                 # A running loop (the web server) cannot run another: the bridge uses a thread.
@@ -95,10 +85,10 @@ class WireAsker:
                         response_format=shape,
                     )
                 )
-            answer = json.loads(raw)
+            answer = final_json_object(raw, allow_trailing_commentary=True)
         except (LLMIncompleteResponse, json.JSONDecodeError):
             return None
-        return answer if isinstance(answer, dict) else None
+        return answer if valid_answer(answer, schema) else None
 
 
 @dataclass(frozen=True)
@@ -140,7 +130,7 @@ def ask_again_if_cut(
     """Ask; a cut-off answer is asked once more, never read as "says nothing"."""
     for _ in range(2):
         answer = asker.ask(prompt, schema, max_tokens=max_tokens)
-        if answer is not None:
+        if answer is not None and valid_answer(answer, schema):
             return answer
     return None
 
@@ -181,6 +171,8 @@ def read_request(request: str, asker: Asker) -> Reading:
         answers.append(said)
         for part in PARTS:
             votes[part].update(_covered(tokens, said[part]))
+    if sum(answer is not None for answer in answers) < 2:
+        raise ValueError("Could not read the request reliably; please rephrase or try again.")
     _vote_content(votes)
     spans = {part: _runs(tokens, votes[part]) for part in PARTS}
     return Reading(request=request, answers=tuple(answers), **spans)

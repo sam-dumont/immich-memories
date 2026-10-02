@@ -142,8 +142,8 @@ def test_nothing_said_about_time_asks_nothing_and_is_any_time() -> None:
 
 
 def test_years_written_in_the_request_are_found_by_pattern_and_dated() -> None:
-    # WHY: stands in for the model server; an invalid day is read as no bound.
-    asker = BankedAsker({"date_from": "2014-01-01", "date_to": "2024-13-45"})
+    # WHY: stands in for the model server; a valid-shaped but impossible day is read as no bound.
+    asker = BankedAsker({"date_from": "2014-01-01", "date_to": "2024-02-30"})
 
     when = link_when("black cat 2014-2024", (), WhoLink(), HOUSEHOLD, asker, today=TODAY)
 
@@ -251,3 +251,18 @@ def test_nested_places_give_the_widest_and_one_home_is_that_home() -> None:
 
     assert widest.scope == "near_home"
     assert (house.scope, house.home) == ("home", SECOND_HOME)
+
+
+def test_unreadable_dates_cannot_remove_a_requested_time_filter():
+    import pytest
+
+    # WHY: the date reader returned two unreadable replies, not valid null bounds.
+    with pytest.raises(ValueError, match="date"):
+        link_when(
+            "otters in 2030",
+            ("2030",),
+            WhoLink(),
+            Household({}),
+            BankedAsker(None, None),
+            today=TODAY,
+        )

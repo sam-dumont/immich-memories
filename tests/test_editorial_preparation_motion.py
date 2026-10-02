@@ -199,7 +199,7 @@ def test_a_cold_video_is_described_once_and_a_warm_one_asks_nothing(store):
     assert (outcome.described, outcome.bytes_read, outcome.requests) == (1, 300, 4)
     assert len(seat.strips) == 1
     with Image.open(io.BytesIO(seat.strips[0])) as strip:
-        assert strip.width == 3 * strip.height  # three frames side by side, in time order
+        assert strip.width == 3 * (strip.height - 24)  # square frames below numbered headers
     assert still_missing(store, sources) == []
     reader = BankedMotionLines(store=store, assets={"clip": video("clip")}, described=True)
     line = reader.observe({"asset_id": "clip", "kind": "video", "raw_seconds": 8.0})

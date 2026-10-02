@@ -54,7 +54,9 @@ def left_out(request: str, asker: Asker) -> tuple[tuple[str, ...], Reason | None
 
 
 _SAME_AS = """Which of these words name the main subject itself too: a young one of it, another name
-for it, or a kind of it? Only words that do; none when none does. Reason first. Return JSON."""
+for it, or a kind of it? A young one or a more specific kind IS a member of the main subject
+category: select its option, even though its name differs. Do not require an exact synonym.
+Only words that do; none when none does. Give a brief reason, then the choices. Return JSON."""
 # A word the captions put in the subject slot this often is how the library names its subjects.
 _SLOT_USES = 3
 _MOST_SLOT_WORDS = 40

@@ -184,7 +184,7 @@ def is_thing(phrase: str, lexicon: Lexicon) -> bool:
     if not words:
         return True
     found = lexicon.noun_file(words[-1])
-    return found is None or found in _THING_FILES
+    return (found is None and not lexicon.is_adjective(words[-1])) or found in _THING_FILES
 
 
 def free_tier(

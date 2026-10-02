@@ -50,7 +50,8 @@ flowchart TD
 1. **Reading.** The model splits the sentence into who, when, where and what. It can only pick
    phrases your sentence contains, and it does it three times in three orders. A word counts
    where two answers agree. A part you said nothing about sets no filter: say nothing about where
-   and the film is from anywhere.
+   and the film is from anywhere. Replies must match the requested field types before voting.
+   Unreadable replies get one retry; fewer than two valid readings stops the request.
 2. **Who.** Grammar and your people registry, no model:
    - "I", "me" and "my" are you, used for your age and your homes, never as a face in the photo
      (you are usually the one holding the phone: "the cars I drove" has no face in it).
@@ -60,7 +61,8 @@ flowchart TD
    - A plural word for people ("friends", "kids") asks for company: a caption naming people, or
      naming children when the word means young people.
 3. **When.** Years you write are pattern work. An age ("in our 20s") is read by the model as
-   numbers, and the calendar is arithmetic from the birth date in your people registry.
+   numbers, and the calendar is arithmetic from the birth date in your people registry. If a phrase
+   such as "foggy days" supplies no dates, its visible modifier still filters the captions.
 4. **Where.** The model votes one place per phrase among the options code builds: anywhere, a
    home, near home, away on a trip. A phrase that only repeats the subject ("at the park") stays
    the subject, not a place. One particular place at home has to be proven by GPS.
@@ -69,7 +71,8 @@ flowchart TD
    "rainy weekends" offers "rainy" and WordNet's "rain"; "snowy days" offers "snowy" and "snow".
    Generic heads are WordNet time periods plus `day`, `walk`, `trip`, `moment` and `time`. Their plural
    forms follow the same rule. A picture phrase such as "rainy pictures" also keeps its modifier;
-   measured qualities such as "blurry pictures" still use the facts filter. Concrete heads such
+   measured qualities such as "best blurry pictures" still use the facts filter. "Best" does
+   not become a subject just because the dictionary also lists it as a noun. Concrete heads such
    as "cat" in "black cat" keep their meaning. The trace names the modifier and the head it replaced.
    WordNet adds the other everyday names and the thing's own kinds and parts, and the
    model votes which one is the main subject. A thing has to be what the caption is about ("a

@@ -52,7 +52,16 @@ def test_the_prompt_states_the_shape_in_words_for_a_server_told_without_the_sche
     assert '"what"' in calls[0]["prompt"]
 
 
-@pytest.mark.parametrize("reply", [LLMIncompleteResponse('{"what": ["ca'), "not json", "[]"])
+@pytest.mark.parametrize(
+    "reply",
+    [
+        LLMIncompleteResponse('{"what": ["ca'),
+        "not json",
+        "[]",
+        '```json\n{"what": ["otter"]',
+        '{"what": ["otter",]}',
+    ],
+)
 def test_a_cut_off_or_unreadable_answer_is_none(
     monkeypatch: pytest.MonkeyPatch, reply: str | Exception
 ) -> None:
@@ -72,3 +81,42 @@ def test_a_question_asked_from_inside_a_running_event_loop_is_answered(
         return WireAsker(LLMConfig()).ask("which?", SCHEMA, max_tokens=300)
 
     assert asyncio.run(from_a_loop()) == {"what": ["cat"]}
+
+
+@pytest.mark.parametrize(
+    "reply", ['{"what": "otters"}', '{"what": [3]}', "{}", '{"what": [], "extra": 1}']
+)
+def test_wrong_field_shapes_cannot_become_empty_votes(monkeypatch, reply):
+    _transport(monkeypatch, reply)
+    assert (
+        WireAsker(LLMConfig(structured_output=False)).ask("otters", SCHEMA, max_tokens=300) is None
+    )
+
+
+@pytest.mark.parametrize(
+    "reply", ['```json\n{"what": ["otters"]}\n```', 'The answer is {"what": ["otters"]}']
+)
+def test_complete_fenced_or_prefaced_json_keeps_its_subject(monkeypatch, reply):
+    _transport(monkeypatch, reply)
+    assert WireAsker(LLMConfig()).ask("otters", SCHEMA, max_tokens=300) == {"what": ["otters"]}
+
+
+def test_one_complete_object_with_surrounding_prose_is_still_valid(monkeypatch):
+    _transport(monkeypatch, 'Here is the answer: {"what": ["otters"]}. Those are the subjects.')
+    assert WireAsker(LLMConfig()).ask("otters", SCHEMA, max_tokens=300) == {"what": ["otters"]}
+
+
+def test_large_offered_name_lists_are_not_restricted_to_the_owners_words(monkeypatch):
+    calls = _transport(monkeypatch, '{"choices": ["option 55"]}')
+    schema = reading.object_schema(
+        choices={
+            "type": "array",
+            "items": {"type": "string", "enum": [f"option {i}" for i in range(60)]},
+        }
+    )
+    answer = WireAsker(LLMConfig(structured_output=False)).ask(
+        "Choose an alternate name from the offered options.", schema, max_tokens=300
+    )
+    assert answer == {"choices": ["option 55"]}
+    assert "owner_request" not in calls[0]["prompt"]
+    assert '"type": "array"' in calls[0]["prompt"]
