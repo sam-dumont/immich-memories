@@ -8,6 +8,9 @@ The module in `deploy/terraform/` deploys the app to Kubernetes. Use it if you a
 the cluster with Terraform. The shipped module has not been validated/applied to every live setup:
 read the plan before applying it.
 
+The project supports this module and the [Kustomize deployment](./kubernetes.md#supported-deployment-paths).
+There is no project Helm chart; request one if your setup needs it.
+
 ## Prerequisites
 
 Terraform 1.9+, Kubernetes provider 2.20+, a working kubeconfig and storage class.
