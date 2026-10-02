@@ -250,3 +250,64 @@ def test_cpu_title_silence_ends_without_relying_on_the_output_limit(tmp_path, mo
     expected = round(duration * 48000)
     # The source may round its final packet up to its 1024-sample frame boundary.
     assert expected <= stereo_samples < expected + 1024
+
+
+@pytest.mark.parametrize("duration", [0.25, 1.25, 3.5])
+def test_cpu_title_image_inputs_end_at_the_requested_duration(tmp_path, monkeypatch, duration):
+    import math
+
+    from immich_memories.titles.cpu_video import create_title_video
+
+    run = subprocess.run
+    frame_counts = []
+
+    def inspect_inputs(command, **kwargs):
+        start = 1
+        for index, argument in enumerate(command):
+            if argument != "-i":
+                continue
+            end = index + 2
+            if str(command[index + 1]).endswith(".png"):
+                # Consume the real generated input before its temporary plate is removed.
+                result = run(
+                    [
+                        "ffmpeg",
+                        "-v",
+                        "error",
+                        *command[start:end],
+                        "-t",
+                        str(duration + 2),
+                        "-f",
+                        "framehash",
+                        "pipe:1",
+                    ],
+                    capture_output=True,
+                    check=True,
+                    timeout=15,
+                )
+                frame_counts.append(
+                    sum(
+                        bool(line) and not line.startswith(b"#")
+                        for line in result.stdout.splitlines()
+                    )
+                )
+            start = end
+        return run(command, **kwargs)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(subprocess, "run", inspect_inputs)
+        create_title_video(
+            "Memory",
+            None,
+            TitleStyle(name="cpu"),
+            tmp_path / "title.mp4",
+            width=160,
+            height=90,
+            duration=duration,
+            fps=24,
+        )
+
+    stream = ffprobe_stream(tmp_path / "title.mp4")
+    assert float(stream["duration"]) == pytest.approx(duration, abs=1 / 24)
+    assert len(frame_counts) == 2
+    assert all(count == math.ceil(duration) for count in frame_counts), frame_counts

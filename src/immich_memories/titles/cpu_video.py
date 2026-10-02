@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import subprocess
 import tempfile
 import time
@@ -89,12 +90,13 @@ def create_title_video(
             fade = min(1.5, duration)
             graph += f",fade=t=out:st={duration - fade}:d={fade}:color={fade_color}"
         graph += f",{title_color_filter(plan)}[video]"
-        # Bound the source itself: output -t alone can leave infinite silence
-        # buffering while the title graph finishes its final frame (#1751).
+        # Bound every source so the graph can finish without unbounded buffering.
+        # PNG input timestamps are whole seconds; round up to cover partial seconds.
+        image_duration = math.ceil(duration)
         cmd = [
             "ffmpeg", "-y", "-filter_complex_threads", "1",
-            "-loop", "1", "-framerate", "1", "-i", str(background_path),
-            "-loop", "1", "-framerate", "1", "-i", str(plate_path),
+            "-t", str(image_duration), "-loop", "1", "-framerate", "1", "-i", str(background_path),
+            "-t", str(image_duration), "-loop", "1", "-framerate", "1", "-i", str(plate_path),
             "-f", "lavfi", "-i", f"anullsrc=r=48000:cl=stereo:d={duration}",
             "-filter_complex", graph, "-map", "[video]", "-map", "2:a",
             *title_encoder_args(plan), "-c:a", "aac", "-b:a", "128k",
