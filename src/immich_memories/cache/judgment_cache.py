@@ -123,17 +123,18 @@ class _Bank:
             connection.execute(sa.delete(judgments).where(judgments.c.key == key))
 
     def flush(self) -> None:
+        # Readers and later writes must not pass the pending-to-committed handoff.
         with self._lock:
             rows, self._pending = list(self._pending.values()), {}
             if self._timer is not None:
                 self._timer.cancel()
                 self._timer = None
-        if not rows:
-            return
-        try:
-            bank_rows(self._store, judgments, rows, keys=("key",))
-        except SQLAlchemyError as exc:
-            logger.debug("Judgment cache unwritable (%s): %d answers not kept", exc, len(rows))
+            if not rows:
+                return
+            try:
+                bank_rows(self._store, judgments, rows, keys=("key",))
+            except SQLAlchemyError as exc:
+                logger.debug("Judgment cache unwritable (%s): %d answers not kept", exc, len(rows))
 
     def _known_keys(self) -> set[str]:
         """The questions the store holds, read once and then only what is newer."""
