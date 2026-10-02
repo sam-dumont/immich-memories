@@ -54,7 +54,7 @@ For pip, keep the same extras:
 pip install --upgrade "immich-memories[all]"
 ```
 
-Use `all-mac` (and `auth` if added) for the corresponding Mac install.
+On Apple Silicon, use `immich-memories[all-mac]`, or `immich-memories[all-mac,auth]` for OIDC.
 
 ## Kubernetes and Terraform
 

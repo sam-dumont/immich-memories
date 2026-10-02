@@ -65,10 +65,31 @@ Immich. With login on, only a logged-in session sees the automation and run deta
 person names and paths); a probe gets the status and the version. A degraded status never stops
 the app: the UI still serves.
 
-Example for an authenticated session (unauthenticated probes receive reduced detail):
+Example of `/health/ready` with login enabled and no authenticated session. Operational details
+are present as `null`:
 
 ```json
-{"status": "ready", "immich_reachable": true, "last_successful_run": "2025-12-15T10:30:00", "version": "<the running version>"}
+{
+  "status": "ready",
+  "configuration": "configured",
+  "immich_reachable": true,
+  "immich": {
+    "status": "ready",
+    "reachable": true,
+    "api_version_policy": "auto",
+    "resolved_api_version": "v3"
+  },
+  "automation": null,
+  "last_automation_attempt": null,
+  "last_successful_auto_run": null,
+  "pending_delivery_count": null,
+  "oldest_pending_delivery": null,
+  "notification_health": null,
+  "last_successful_run": null,
+  "in_process_scheduler": null,
+  "disk": null,
+  "version": "<the running version>"
+}
 ```
 
 

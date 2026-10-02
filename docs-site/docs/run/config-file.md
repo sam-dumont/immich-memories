@@ -165,8 +165,8 @@ when moving a config between machines: blank uses the app's Python.
 
 ## Environment variable substitution
 
-Use `${VAR_NAME}`, not `$VAR`. Substitution happens only in `config.yaml`, for credentials and
-selected service/path fields; it is not applied to every string. Settings and environment
+Use `${VAR_NAME}`, not `$VAR`. Substitution happens only in `config.yaml`, for [credentials and
+selected service/path fields](./reference/configuration.md#environment-variable-substitution); it is not applied to every string. Settings and environment
 variables are always taken as written: a Settings value containing `${` is refused there and by
 the config CLI, and a saved value holding one (from an older version) is ignored at startup, with
 `preflight` naming its key. For any config key, the reliable alternative is its

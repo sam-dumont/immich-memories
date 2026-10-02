@@ -13,7 +13,7 @@ Only `enabled: true` enables the reader. A model or endpoint alone leaves it dis
 
 | Destination | When | What leaves your network | Default |
 |---|---|---|---|
-| Your Immich server | always | the reads above; the film, its tag and its album with upload on | upload off |
+| Your Immich server | always | metadata, previews and source media; the film, its tag and its album with upload on | upload off |
 | `llm.base_url` (reader) | an enabled model reads a period | text only: your memory brief/owner sentence, candidate annotations, capture dates/times, places, people and their relationships, and Immich album names holding those pictures. Never a picture | `llm.enabled: false`: no call; blank URL with `openai-compatible` or `ollama` runs locally |
 | `llm.base_url` (titles) | a people or occasion film's opening title, with an enabled reader; trips only with `--llm-title` | text only: first names, birth dates and ages, recorded relationships, the date span, places by day (up to 30), and the album/occasion/holiday name. Trip prompts also include country, clip captions (up to 10) and object labels (up to 20), when available | `--no-llm-title` or `--title` |
 | `llm.base_url` (music, special days) | music selection and special-day scans, with a model | text only: the cut's story labels and captions; for a day, capture times, places, coordinates and recognised names | disabled reader: no call |

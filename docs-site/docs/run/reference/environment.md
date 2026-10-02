@@ -42,7 +42,7 @@ replace a key that is in the file, use `IMMICH_MEMORIES_LLM__API_KEY`.
 
 | Variable | Effect |
 |----------|--------|
-| `IMMICH_MEMORIES_STORAGE_SECRET` | Secret for the web UI session store. Priority: this variable, then `~/.immich-memories/.storage_secret`, then generated on first start. 32+ random characters (`openssl rand -hex 32`); a shorter one, or one with a placeholder word like `change-me`, stops the app at startup |
+| `IMMICH_MEMORIES_STORAGE_SECRET` | Secret for the web UI session store. Priority: this variable, then the existing `~/.immich-memories/.storage_secret` file. If neither exists, the web UI generates and saves that file once; later starts reuse it. 32+ random characters (`openssl rand -hex 32`); a shorter one, or one with a placeholder word like `change-me`, stops the app at startup |
 | `IMMICH_MEMORIES_SKIP_STORED_SETTINGS` | `1` starts without the settings saved in the database (env, `config.yaml` and defaults only). Without it, a store that is configured but unreadable stops the app ([where a setting comes from](../config-file.md#where-a-setting-comes-from)) |
 | `IMMICH_MEMORIES_SECRET_KEY` | Encrypts the secrets saved to the database from the UI or CLI (API keys, passwords). Any string of 32+ characters, e.g. `openssl rand -base64 32`. Unset: secrets cannot be saved there, only in env or `config.yaml`. Read from the environment only, never from the store ([secrets in the database](../config-file.md#secrets-in-the-database)) |
 | `IMMICH_MEMORIES_LOG_FORMAT` | `text` (default) or `json` |

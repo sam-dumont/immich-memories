@@ -40,6 +40,6 @@ uv run immich-memories ui
 ```
 
 `uv sync` installs into the clone's `.venv` and puts nothing on your `PATH`: inside the clone it is
-always `uv run immich-memories ...`. `pip install -e .` works too. A checkout is the only install
+always `uv run immich-memories ...`. `pip install -e ".[editorial]"` works too. A checkout is the only install
 that needs Node: the PyPI wheel and the Docker image ship the web client already built. Skip
 `make web-client` and the CLI still works, but `/app` only tells you to build the client.

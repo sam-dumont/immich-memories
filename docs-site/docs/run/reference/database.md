@@ -8,7 +8,7 @@ SQLite on local disk is the default. Use PostgreSQL when your storage topology n
 already operate an instance. The UI still stays at one replica.
 For everyday backups, start with [Database and backups](../database.md).
 
-## 2. A separate PostgreSQL service
+## A separate PostgreSQL service {#2-a-separate-postgresql-service}
 
 `docker-compose.yml` ships a commented `postgres` service (`postgres:16`, pinned by digest), a
 commented `IMMICH_MEMORIES_DATABASE_URL` line on the app service, and a commented
@@ -39,7 +39,7 @@ Plain PostgreSQL 14+. No extensions, no `vchord`, no pgvector: every vector comp
 is exact numpy over a small candidate set (one film, one story, a 14-day window), so there is no
 extension to install and no extension to keep in step with an upstream image.
 
-## 3. A separate database on your existing PostgreSQL instance
+## A separate database on your existing PostgreSQL instance {#3-a-separate-database-on-your-existing-postgresql-instance}
 
 The same URL, pointed at a database on an instance you already run for something else (including
 Immich's own PostgreSQL container, if you want to reuse it without touching Immich's schema):
@@ -64,7 +64,7 @@ Nothing here reads or writes Immich's own database. This mode exists for hosts t
 for one PostgreSQL instance and want a second logical database on it rather than a second
 container.
 
-## 4. A dedicated schema in Immich's own database
+## A dedicated schema in Immich's own database {#4-a-dedicated-schema-in-immichs-own-database}
 
 Point the URL at Immich's database, and set the schema so the store's tables land somewhere that
 is not `public`:
