@@ -36,3 +36,52 @@ def test_preformatted_output_stays_plain_text() -> None:
 
     assert "```text" in rendered
     assert "status  ready" in rendered
+
+
+def test_reference_uses_descriptive_dynamic_defaults() -> None:
+    def reference(year: int) -> str:
+        root = click.Group()
+        root.add_command(
+            click.Command(
+                "scan",
+                params=[click.Option(["--until"], default=year, show_default="current year")],
+            )
+        )
+        return generate_reference(root)
+
+    assert reference(2026) == reference(2027)
+    assert "current year" in reference(2026)
+
+
+def test_reference_includes_global_options_and_real_argument_usage() -> None:
+    root = click.Group(params=[click.Option(["--config"], type=click.Path(), help="Config path")])
+    root.add_command(
+        click.Command(
+            "inspect",
+            params=[
+                click.Argument(["run_id"]),
+                click.Argument(["assets"], nargs=-1),
+                click.Option(["--tag"], multiple=True, required=True),
+            ],
+        )
+    )
+    reference = generate_reference(root)
+
+    assert "## Global options" in reference
+    assert "`--config`" in reference
+    assert "immich-memories inspect [OPTIONS] RUN_ID [ASSETS]..." in reference
+    assert "required" in reference
+    assert "repeatable" in reference
+
+
+def test_saved_cut_render_rejects_unknown_output_choices_before_loading_a_run() -> None:
+    from click.testing import CliRunner
+
+    from immich_memories.cli.runs_render import register_render_command
+
+    runs = click.Group()
+    register_render_command(runs)
+    for option in ("--resolution", "--orientation", "--scale-mode"):
+        result = CliRunner().invoke(runs, ["render", option, "unknown"])
+        assert result.exit_code == 2
+        assert "Invalid value" in result.output

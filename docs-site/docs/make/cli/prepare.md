@@ -32,13 +32,13 @@ The output lists each producer's elapsed time and rate per picture, then project
 
 ## Optional text summaries
 
-With Full selection configured and its caption and reader services ready:
+`--overviews` requires a configured model reader; the rules reader cannot write summaries. With the reader service ready:
 
 ```bash
 immich-memories prepare --year 2025 --overviews
 ```
 
-This banks episode/month summaries too. It is optional; a model cut can produce missing summaries itself. [What a model adds](../../how-it-chooses/what-a-model-adds.md).
+This banks episode/month summaries after all picture facts in the scope are complete. An incomplete preparation exits 1 and skips summaries, even with `--overviews`; fix the missing producer and rerun the same command. It is optional; a model cut can produce missing summaries itself. [What a model adds](../../how-it-chooses/what-a-model-adds.md).
 
 ## Other library tasks
 

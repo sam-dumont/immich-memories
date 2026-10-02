@@ -32,7 +32,10 @@ def register_render_command(runs: click.Group) -> None:
     @click.option("--subtitle", default=None, help="Title card subtitle")
     @click.option("--llm-title/--no-llm-title", default=None, help="Let the model name the film")
     @click.option(
-        "--transition", type=click.Choice(["smart", "crossfade", "cut", "none"]), default=None
+        "--transition",
+        type=click.Choice(["smart", "crossfade", "cut", "none"]),
+        default=None,
+        help="Transition style (default: saved cut)",
     )
     @click.option(
         "--fade-color",
@@ -40,9 +43,24 @@ def register_render_command(runs: click.Group) -> None:
         default=None,
         help="Opening and closing title fade (default: title_screens.fade_color)",
     )
-    @click.option("--resolution", default=None, help="Output resolution, as generate takes it")
-    @click.option("--orientation", default=None, help="landscape, portrait, square or auto")
-    @click.option("--scale-mode", default=None, help="How sources fit the canvas")
+    @click.option(
+        "--resolution",
+        type=click.Choice(["auto", "4k", "1080p", "720p"]),
+        default=None,
+        help="Output resolution (default: from config)",
+    )
+    @click.option(
+        "--orientation",
+        type=click.Choice(["landscape", "portrait", "square", "auto"]),
+        default=None,
+        help="Output orientation (default: auto, follows the saved cut)",
+    )
+    @click.option(
+        "--scale-mode",
+        type=click.Choice(["fit", "blur"]),
+        default=None,
+        help="Fill an aspect mismatch with black bars or a blurred background",
+    )
     @click.option(
         "--format",
         "output_format",
@@ -54,11 +72,17 @@ def register_render_command(runs: click.Group) -> None:
         "--quality",
         type=click.Choice(["high", "medium", "low"]),
         default=None,
-        help="Output quality (default: from config)",
+        help="Output quality: high, medium (balanced), low (fast); default: from config",
     )
     @click.option("--music", default=None, help="A track to use, or 'auto' to choose as configured")
-    @click.option("--no-music", is_flag=True, default=False)
-    @click.option("--music-volume", type=float, default=0.5, show_default=True)
+    @click.option("--no-music", is_flag=True, default=False, help="Render without a music track")
+    @click.option(
+        "--music-volume",
+        type=float,
+        default=0.5,
+        show_default=True,
+        help="Music volume from 0.0 to 1.0",
+    )
     @click.option(
         "--add-date/--no-add-date",
         default=None,
@@ -69,8 +93,18 @@ def register_render_command(runs: click.Group) -> None:
         default=None,
         help="Caption each clip with its place (default: defaults.add_place, on)",
     )
-    @click.option("--privacy-mode", is_flag=True, default=False)
-    @click.option("--upload-to-immich", is_flag=True, default=False)
+    @click.option(
+        "--privacy-mode",
+        is_flag=True,
+        default=False,
+        help="Demo mode: blur every clip frame, scramble the audio, fake the person names",
+    )
+    @click.option(
+        "--upload-to-immich",
+        is_flag=True,
+        default=False,
+        help="Upload the film to Immich after rendering",
+    )
     @click.option("--album", default=None, help="Immich album for the upload")
     @click.option(
         "--progress-file",

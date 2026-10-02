@@ -14,6 +14,8 @@ immich-memories preflight
 immich-memories generate --memory-type monthly_highlights --year 2025 --month 6
 ```
 
+Run `immich-memories models fetch` before the first preparation or generation.
+
 In Docker, prefix every command with `docker compose exec immich-memories`.
 
 ## Review before rendering
@@ -83,8 +85,8 @@ immich-memories generate --ask "our cat through the years" --dry-run
 
 Each render writes a new folder under `output.directory`; reruns do not overwrite earlier films. `--output` changes the base name and location, but the actual file gains the recipe hash and run folder.
 
-`--resolution` takes the config value; `auto` matches source clips. When `--resolution` is omitted, the command uses `output.resolution` (1080p by default). `--quality` selects the encoder's calibrated quality. NAS preparation can still limit source intermediates to 1080p.
+`--resolution` takes the config value; `auto` matches source clips. When `--resolution` is omitted, the command uses `output.resolution` (1080p by default). `--quality` takes `high`, `medium` or `low`: these map to config quality `high`, `balanced` and `fast`. The same names apply to `runs render`. NAS preparation can still limit source intermediates to 1080p.
 
-Use `--upload-to-immich --album "Memories"` to deliver the film to Immich. Once delivery is confirmed, the app removes the local output and keeps the run record and Immich link. Leave upload off to keep the file locally.
+Use `--upload-to-immich --album "Memories"` to deliver the film to Immich. `upload.enabled: true` in config also enables delivery without the flag. Once delivery is confirmed, the app removes the local output and keeps the run record and Immich link. Leave upload off to keep the file locally.
 
 The [generated CLI reference](../../reference/cli-reference.md#generate) lists every flag. The [generation contract](../../reference/generation-contract.md) covers person expressions, accounts, title precedence, sharing, recipe hashes and timelines.
