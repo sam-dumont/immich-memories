@@ -217,7 +217,7 @@ def _build_launch_environment(home: Path | None = None) -> dict[str, str]:
     env.update(
         {
             "IMMICH_MEMORIES_AUTH__ENABLED": "false",
-            "IMMICH_MEMORIES_STORAGE_SECRET": "launch-smoke-storage-secret",
+            "IMMICH_MEMORIES_STORAGE_SECRET": "launch-smoke-session-key-5d8e1f0a7c3b9264",
             "ENABLE_QUADRANTS_HEADER_PRINT": "0",
             "QD_LOG_LEVEL": "error",
         }

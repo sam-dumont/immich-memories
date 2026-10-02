@@ -5,6 +5,7 @@ import threading
 import time
 from uuid import uuid4
 
+import pytest
 from fastapi.testclient import TestClient
 from immich_memories_render_worker.renderer import RenderArtifact
 
@@ -305,3 +306,13 @@ def test_worker_settings_use_the_longer_prefix(monkeypatch, tmp_path):
     monkeypatch.setenv("IMMICH_MEMORIES_RENDER_WORKER_IMMICH_URL", "http://immich.invalid")
     monkeypatch.setenv("IMMICH_MEMORIES_RENDER_WORKER_DIRECTORY", str(tmp_path))
     assert WorkerSettings().token.get_secret_value() == WORKER_TOKEN
+
+
+@pytest.mark.parametrize("token", ["0123456789", "change-me-change-me-change-me-change-me"])
+def test_the_worker_refuses_to_start_with_a_weak_token(tmp_path, token):
+    from pydantic import ValidationError
+
+    from immich_memories_render_worker.settings import WorkerSettings
+
+    with pytest.raises(ValidationError, match="openssl rand -hex 32"):
+        WorkerSettings(token=token, immich_url="http://immich.invalid", directory=tmp_path)

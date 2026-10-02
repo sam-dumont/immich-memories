@@ -699,11 +699,13 @@ def run_preflight_checks(config: Config) -> list[CheckResult]:
         check_memory,
         check_output_directory,
     )
+    from immich_memories.preflight_sign_in import check_sign_in
 
     return [
         check_immich(config),
         *check_extra_accounts(config),
         check_homebase(config),
+        check_sign_in(config),
         check_llm(config),
         check_title_rendering(config),
         check_encoder(config),

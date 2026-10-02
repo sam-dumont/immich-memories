@@ -216,8 +216,9 @@ curl -X POST https://memories.example.com/api/trigger \
 ```
 
 Keep the token in the environment: `server` is not a section that expands `${VAR}`, so `"${SOMETHING}"` in
-`config.yaml` is those literal characters. It is compared in constant time and redacted from logs, `/health`
-and the config viewer. Send it only over HTTPS, behind the same reverse proxy as the web UI.
+`config.yaml` is those literal characters. It must be 32 random characters or more, without placeholder words
+like `change-me`; a shorter token stops the app at startup. It is compared in constant time and redacted from
+logs, `/health` and the config viewer. Send it only over HTTPS, behind the same reverse proxy as the web UI.
 
 The answer is `202 Accepted` with an `attempt_id` and a `status_url`; `Authorization: Bearer <token>` works too.
 **409** means a run is already going, and the body names it. GET the `status_url` for the live `phase`, then a

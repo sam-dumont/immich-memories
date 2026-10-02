@@ -43,7 +43,8 @@ RENDER_WORKER_TOKEN=replace-with-openssl-rand-hex-32
 RENDER_BIND_ADDRESS=192.168.1.50    # the worker's LAN address; 127.0.0.1 behind a reverse proxy
 ```
 
-`docker compose up -d` starts it on port 8093. For Kubernetes the same folder has
+The worker refuses to start with a token under 32 characters or one with a placeholder word like
+`change-me`; `openssl rand -hex 32` gives one that passes. `docker compose up -d` starts it on port 8093. For Kubernetes the same folder has
 `kubernetes.yaml`: it wants a Secret with `token` and `immich-url`, one NVIDIA device and the
 `nvidia` runtime class. Every worker setting is in the
 [worker's README](https://github.com/sam-dumont/immich-video-memory-generator/tree/main/services/render-worker).

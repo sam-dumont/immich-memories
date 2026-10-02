@@ -40,7 +40,8 @@ docker compose up -d
 | `IMMICH_URL`, `IMMICH_API_KEY` | Required Immich connection |
 | `IMMICH_MEMORIES_TRIPS__HOMEBASE_LATITUDE`, `IMMICH_MEMORIES_TRIPS__HOMEBASE_LONGITUDE` | Home coordinates for trips and public holidays |
 | `TZ` | Daily timer and log timezone |
-| `IMMICH_MEMORIES_AUTH_USERNAME`, `IMMICH_MEMORIES_AUTH_PASSWORD` | Set both to enable Basic auth; shipped `.env` support |
+| `IMMICH_MEMORIES_AUTH_USERNAME`, `IMMICH_MEMORIES_AUTH_PASSWORD` | Set both to enable Basic auth (password: 12+ characters, or startup warns); shipped `.env` support |
+| `IMMICH_MEMORIES_STORAGE_SECRET` | Optional session signing key, generated when unset; 32+ random characters (`openssl rand -hex 32`) or the app refuses to start |
 | `IMMICH_MEMORIES_SECRET_KEY` | Encrypt credentials saved in Settings; shipped `.env` support |
 | `IMMICH_MEMORIES_UPLOAD__ENABLED`, `IMMICH_MEMORIES_UPLOAD__ALBUM_NAME` | Upload CLI/daily films; add to `environment:` |
 | `IMMICH_MEMORIES_TIER` | `auto` by default; `nas`, `gpu` or `full` override |

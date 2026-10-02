@@ -11,7 +11,7 @@ oidc_public_url      = "https://memories.example.com"
 oidc_trusted_proxies = ["10.42.0.0/16", "fd42::/48"] # your cluster's pod CIDR
 oidc_allowed_emails  = ["you@example.com"]
 
-render_worker_token = "change-me"
+render_worker_token = "" # generate: openssl rand -hex 32 (32+ characters)
 
 lan_llm_base_url = "http://192.168.1.50:9999/v1" # e.g. oMLX on an Apple Silicon Mac, bound to 0.0.0.0
 lan_llm_model    = "gemma-4-e4b-it-6bit"
