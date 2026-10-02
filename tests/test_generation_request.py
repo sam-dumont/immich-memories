@@ -130,6 +130,7 @@ def _candidate(
                 "--year",
                 "2025",
                 "--birthday",
+                "02-28",
                 "--person=Ada",
                 "--source=auto",
                 "--memory-key=key:birthday",
