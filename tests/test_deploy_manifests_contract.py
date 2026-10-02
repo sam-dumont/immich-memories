@@ -1171,3 +1171,9 @@ def test_the_maximalist_overlay_reads_pictures_on_a_gpu_and_points_the_app_at_it
     config_map = next(doc for doc in rendered if doc["kind"] == "ConfigMap")
     config_yaml = yaml.safe_load(config_map["data"]["config.yaml"])
     assert config_yaml["advanced"]["inference"]["facts_base_url"] == "http://inference:8092"
+
+
+def test_trigger_pods_name_a_host_the_app_answers_with_auth_off() -> None:
+    """The service name is a foreign Host; localhost is answered in every auth mode."""
+    for label, pod in _trigger_pod_specs():
+        assert "Host: localhost" in pod["containers"][0]["command"], label

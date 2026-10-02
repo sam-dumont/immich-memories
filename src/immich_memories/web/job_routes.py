@@ -570,8 +570,21 @@ async def upload_music(
         raise HTTPException(422, "That file is not an MP3, M4A or WAV")
     music_id = f"upload-{uuid4().hex}"
     _music_dir(config).mkdir(parents=True, exist_ok=True)
-    (_music_dir(config) / f"{music_id}{suffix}").write_bytes(payload)
+    kept = _music_dir(config) / f"{music_id}{suffix}"
+    kept.write_bytes(payload)
+    _evict_oldest_uploads(_music_dir(config), config.server.music_upload_quota_mb, keep=kept)
     return MusicTrack(id=music_id, name=file.filename or music_id)
+
+
+def _evict_oldest_uploads(folder: Path, quota_mb: int, *, keep: Path) -> None:
+    uploads = sorted(folder.glob("upload-*"), key=lambda path: path.stat().st_mtime_ns)
+    total = sum(path.stat().st_size for path in uploads)
+    for path in uploads:
+        if total <= quota_mb * 1024 * 1024:
+            return
+        if path != keep:
+            total -= path.stat().st_size
+            path.unlink(missing_ok=True)
 
 
 @router.get("/music/{music_id}", response_class=FileResponse)

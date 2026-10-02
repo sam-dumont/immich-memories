@@ -34,6 +34,8 @@ In Docker, prefix the command with `docker compose exec immich-memories`. The re
 | `caption endpoint failed the compact-v3 schema control` | The server ignores the JSON schema, or it is the wrong model |
 | Settings: `Secrets cannot be saved here until IMMICH_MEMORIES_SECRET_KEY is set` | Nothing is broken: keys in `.env` or `config.yaml` work without it. To save them from the page, set the key ([The secret key](../run/environment-variables.md#the-secret-key)) |
 | `IMMICH_MEMORIES_SECRET_KEY must be at least 32 characters` | Use `openssl rand -base64 32`, which prints 44 |
+| `This server does not answer to the host '…'` (HTTP 421) | Auth is off and the page was reached by a name other than localhost. Add that name to `server.allowed_hosts`, or enable authentication. See [Allowed hosts](../run/network-security.md#allowed-hosts) |
+| `A write from another site is refused` (HTTP 403) | A browser sent the request from another origin. Open the app at its own address; a script or cron sends no `Origin` and passes |
 | `Immich account 'partner' could not read asset …` | A `generate --accounts` run stops rather than lose that account's pictures. Run `immich-memories config test`: the account's key is wrong, revoked, or lacks the asset read permissions |
 
 ## Cannot connect to Immich
