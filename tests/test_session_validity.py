@@ -41,7 +41,7 @@ def test_a_cookie_kept_from_before_sign_out_is_refused_after_it(monkeypatch):
     kept = client.cookies.get("session")
     assert _with_cookie(monkeypatch, config, kept).get("/api/v1/connection").status_code == 200
 
-    client.get("/logout")
+    client.post("/logout")
 
     assert _with_cookie(monkeypatch, config, kept).get("/api/v1/connection").status_code == 401
 
@@ -50,7 +50,7 @@ def test_signing_out_ends_only_that_users_sessions(monkeypatch):
     config = basic_auth_config()
     someone_else = signed_session(config, username="someone-else")
 
-    _signed_in(monkeypatch, config).get("/logout")
+    _signed_in(monkeypatch, config).post("/logout")
 
     replay = _with_cookie(monkeypatch, config, someone_else)
     assert replay.get("/api/v1/connection").status_code == 200
@@ -58,7 +58,7 @@ def test_signing_out_ends_only_that_users_sessions(monkeypatch):
 
 def test_signing_in_again_after_sign_out_works(monkeypatch):
     config = basic_auth_config()
-    _signed_in(monkeypatch, config).get("/logout")
+    _signed_in(monkeypatch, config).post("/logout")
 
     assert _signed_in(monkeypatch, config).get("/api/v1/connection").status_code == 200
 
@@ -159,3 +159,59 @@ def test_health_detail_is_withheld_from_an_expired_session(monkeypatch):
 
     assert body["in_process_scheduler"] is None
     assert body["status"]
+
+
+def test_get_logout_does_not_end_a_session(monkeypatch):
+    client = _signed_in(monkeypatch, basic_auth_config())
+
+    assert client.get("/logout").status_code == 405
+    assert client.get("/api/v1/connection").status_code == 200
+
+
+def test_post_logout_redirects_to_login_with_get(monkeypatch):
+    client = _signed_in(monkeypatch, basic_auth_config())
+
+    response = client.post("/logout", headers={"Origin": "http://testserver"})
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/app/login"
+    assert client.get("/api/v1/connection").status_code == 401
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {"Origin": "https://foreign.example"},
+        {"Origin": "null"},
+        {"Sec-Fetch-Site": "cross-site"},
+        {"Sec-Fetch-Site": "same-site"},
+    ],
+)
+def test_cross_site_logout_does_not_end_a_session(monkeypatch, headers):
+    client = _signed_in(monkeypatch, basic_auth_config())
+
+    assert client.post("/logout", headers=headers).status_code == 403
+    assert client.get("/api/v1/connection").status_code == 200
+
+
+def test_oidc_logout_redirects_to_provider_with_get(monkeypatch):
+    config = Config(
+        auth={
+            "enabled": True,
+            "provider": "oidc",
+            "issuer_url": "https://id.example",
+            "client_id": "client",
+        }
+    )
+    client = _with_cookie(monkeypatch, config, signed_session(config))
+    # WHY: the provider metadata is an external HTTP boundary.
+    monkeypatch.setattr(
+        "immich_memories.web.auth_oidc.get_end_session_url",
+        lambda _auth: "https://id.example/logout",
+    )
+
+    response = client.post("/logout")
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "https://id.example/logout"
+    assert client.get("/api/v1/connection").status_code == 401

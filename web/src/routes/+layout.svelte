@@ -52,7 +52,9 @@
         <ThemeSwitcher />
         {#if data.session?.auth_enabled && data.session?.signed_in}
           {#if data.session.username}<span class="text-sm font-medium max-sm:hidden">{data.session.username}</span>{/if}
-          <a href="/logout" class="rounded-lg px-2 py-1 text-sm text-gray-600 hover:text-primary dark:text-gray-400">{t('Sign out')}</a>
+          <form method="POST" action="/logout">
+            <button type="submit" class="rounded-lg px-2 py-1 text-sm text-gray-600 hover:text-primary dark:text-gray-400">{t('Sign out')}</button>
+          </form>
         {/if}
       </div>
     </header>

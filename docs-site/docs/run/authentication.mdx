@@ -60,7 +60,7 @@ advanced:
 
 `public_url` pins the `redirect_uri` sent to the IdP, so it must match what you registered there,
 and it is what makes callback-origin validation possible. Register the callback URL
-`https://your-host/auth/callback` and the logout URL `https://your-host/logout`. Auth0: a Regular
+`https://your-host/auth/callback` and the post-logout return URL `https://your-host/app/login`. Auth0: a Regular
 Web Application. Keycloak: a client with client authentication enabled. Authelia: a client with
 `pkce_challenge_method: S256`, scopes `openid`, `email`, `profile`, grant type
 `authorization_code`. The rest of the `auth` keys are in the
@@ -120,7 +120,7 @@ first start, so logins survive a restart; change it and every session ends. A ke
 32 random characters or more, without placeholder words like `change-me`; anything shorter and
 the app refuses to start. Generate one with `openssl rand -hex 32`.
 
-**Sign out** in the top bar, or `/logout`, ends every session of that user, in every browser: a
+**Sign out** in the top bar sends `POST /logout` and ends every session of that user, in every browser: a
 copy of the cookie taken before the sign-out no longer opens the app. OIDC logout also ends the
 IdP session when the IdP advertises `end_session_endpoint`. Changing the password, the provider
 or the OIDC allow-list ends every session of every user.
@@ -133,3 +133,6 @@ that keeps failing waits 30 seconds, then twice as long after each further failu
 guesses come from. A hundred failures in ten minutes pause every sign-in for a minute. Scripts authenticate to
 [the trigger endpoint](../make/automate.md#trigger-it-over-http) with
 `server.trigger_token` instead.
+
+Sign-out only accepts POST. `GET /logout` returns 405 and leaves the session active.
+Requests from another browser origin are refused before any session is ended.

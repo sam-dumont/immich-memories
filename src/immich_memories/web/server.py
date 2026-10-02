@@ -196,13 +196,17 @@ async def login(credentials: Credentials, request: Request) -> JSONResponse:
     return JSONResponse({"signed_in": True})
 
 
-async def logout(request: Request) -> RedirectResponse:
+async def logout(request: Request) -> Response:
     """End this user's sessions everywhere; an OIDC sign-in also ends at the provider.
 
     Every cookie issued to this user so far stops working, so a copy taken before the
     sign-out does not keep the app open.
     """
+    from immich_memories.web.request_origin import cross_site_write
+
     config = get_config()
+    if cross_site_write(request.method, request.url.path, request.headers, config):
+        return JSONResponse({"detail": "A write from another site is refused."}, status_code=403)
     provider = request.session.get("auth_provider")
     if await run_in_threadpool(session_current, request.session, config, _session_secret(request)):
         await run_in_threadpool(end_sessions, config, str(request.session["username"]))
@@ -211,8 +215,8 @@ async def logout(request: Request) -> RedirectResponse:
         from immich_memories.web.auth_oidc import get_end_session_url
 
         if end_session := get_end_session_url(config.auth):
-            return RedirectResponse(end_session)
-    return RedirectResponse(LOGIN_PAGE, status_code=307)
+            return RedirectResponse(end_session, status_code=303)
+    return RedirectResponse(LOGIN_PAGE, status_code=303)
 
 
 async def oidc_authorize(request: Request) -> RedirectResponse:
@@ -325,7 +329,7 @@ def create_app() -> FastAPI:
     register_trigger_routes(app)
     mount_web(app)
     app.add_api_route("/auth/login", login, methods=["POST"])
-    app.add_api_route("/logout", logout, methods=["GET"])
+    app.add_api_route("/logout", logout, methods=["POST"])
     app.add_api_route("/auth/authorize", oidc_authorize, methods=["GET"])
     app.add_api_route("/auth/callback", oidc_callback, methods=["GET"], name="oidc_callback")
     for path, target in _MOVED.items():

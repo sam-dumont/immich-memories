@@ -30,6 +30,7 @@ def auth_server_url(tmp_path_factory, unused_tcp_port_factory, fake_immich_serve
     env = _build_launch_environment(root)
     env["IMMICH_URL"] = fake_immich_server.base_url
     env["IMMICH_API_KEY"] = fake_immich_server.api_key
+    env["IMMICH_MEMORIES_SERVER__ENABLE_DEMO_MODE"] = "true"
     env["IMMICH_MEMORIES_AUTH__ENABLED"] = "true"
     env["IMMICH_MEMORIES_AUTH__PROVIDER"] = "basic"
     env["IMMICH_MEMORIES_AUTH__USERNAME"] = _TEST_USER
@@ -64,7 +65,7 @@ def test_login_and_auth_controls(auth_server_url: str, page: Page) -> None:
     page.wait_for_url("**/app/create", timeout=10_000)
 
     expect(page.get_by_text(_TEST_USER, exact=True)).to_be_visible()
-    expect(page.get_by_role("link", name="Sign out")).to_be_visible()
+    expect(page.get_by_role("button", name="Sign out")).to_be_visible()
     assert_no_real_address(page)
     evidence(page, "memory-with-auth")
 
@@ -96,7 +97,7 @@ def test_demo_mode_toggle_blurs_pictures_and_is_kept_by_this_browser(
 def test_sign_out(auth_server_url: str, page: Page) -> None:
     _sign_in(page, auth_server_url)
 
-    page.get_by_role("link", name="Sign out").click()
+    page.get_by_role("button", name="Sign out").click()
     page.wait_for_url("**/app/login")
     expect(page.get_by_role("button", name="Sign in")).to_be_visible()
 
