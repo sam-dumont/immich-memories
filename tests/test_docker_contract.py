@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tomllib
@@ -746,6 +747,34 @@ def _example_env_names() -> list[str]:
         if match:
             names.append(match.group(1))
     return names
+
+
+@pytest.mark.skipif(
+    not (shutil.which("docker-compose") or shutil.which("docker")), reason="Compose required"
+)
+def test_compose_forwards_the_trigger_token() -> None:
+    """A host token must reach the service that authenticates /api/trigger."""
+    import json
+    import secrets
+
+    token = secrets.token_hex(32)
+    compose = ["docker-compose"] if shutil.which("docker-compose") else ["docker", "compose"]
+    if subprocess.run([*compose, "version"], capture_output=True).returncode:
+        pytest.skip("Docker Compose is not installed")
+    result = subprocess.run(
+        [*compose, "config", "--format", "json"],
+        cwd=REPO_ROOT,
+        env={
+            **os.environ,
+            "IMMICH_API_KEY": "contract-key",
+            "IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN": token,
+        },
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    environment = json.loads(result.stdout)["services"]["immich-memories"]["environment"]
+    assert environment.get("IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN") == token
 
 
 def test_every_example_env_variable_reaches_the_app_container() -> None:

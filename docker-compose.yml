@@ -58,6 +58,8 @@ services:
       # Encrypts the secrets the Settings page saves (API keys, passwords).
       # Empty, Settings keeps them read-only; set it in .env to save them there.
       IMMICH_MEMORIES_SECRET_KEY: "${IMMICH_MEMORIES_SECRET_KEY:-}"
+      # Optional bearer token for POST /api/trigger; empty leaves token access off.
+      IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN: "${IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN:-}"
       # Optional: the store (human decisions, model answers, run history, UI
       # settings) on PostgreSQL instead of the default SQLite file on the
       # config volume. Uncomment this, the postgres service and its volume
@@ -201,7 +203,8 @@ services:
   #   docker compose --profile captioner up -d
   #   curl -s localhost:8094/v1/models
   #
-  # Then set the tier to full and point the app at it (both lines above).
+  # Point the app at it with CAPTION_BASE_URL above. Keep tier auto: GPU inference
+  # selects GPU; an enabled text reader alongside it selects Full.
   #
   # This publishes host port 8094, so it runs beside the inference profile's
   # 8092. Inside the compose network both listen on 8092 under different

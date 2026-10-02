@@ -41,7 +41,7 @@ immich:
 For Docker, put the second account's key in `.env` and add this to the service's `environment:` block:
 
 ```yaml
-      IMMICH_MEMORIES_IMMICH__ACCOUNTS__PARTNER__URL: "${IMMICH_URL}"
+      IMMICH_MEMORIES_IMMICH__ACCOUNTS__PARTNER__URL: "${IMMICH_URL:-http://immich-server:2283}"
       IMMICH_MEMORIES_IMMICH__ACCOUNTS__PARTNER__API_KEY: "${PARTNER_IMMICH_API_KEY}"
 ```
 
@@ -164,6 +164,7 @@ immich-memories people import --from people.yaml --replace
 
 `--replace` replaces the registry from that file; do not discard the exported entries.
 A later primary scan preserves partner-only entries.
+Docker users: follow the [host export and container import commands](../make/cli/people.md#export-and-edit).
 
 ## Privacy notes
 

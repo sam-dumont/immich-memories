@@ -27,8 +27,11 @@ advanced:
     daily_at: "09:00"    # the container's local time (set TZ=)
 ```
 
-or `IMMICH_MEMORIES_AUTOMATION__ENABLED=true` and `IMMICH_MEMORIES_AUTOMATION__DAILY_AT=09:00` in your
-`.env`, then recreate the container with `docker compose up -d`. Configure upload separately if you want films delivered to Immich.
+Or uncomment the two `IMMICH_MEMORIES_AUTOMATION__ENABLED` and `IMMICH_MEMORIES_AUTOMATION__DAILY_AT`
+lines in the app's Compose `environment:` block and set the time there. A line in `.env` alone
+does not reach the container. Recreate with `docker compose up -d`.
+Settings also exposes **Automation > enabled** and **daily_at** while those Compose lines stay commented.
+Configure `upload.enabled` and `upload.album_name` separately for delivery to Immich.
 
 The UI process then runs the same `auto run` decision once a day, with the same lock, history, upload retry
 and notifications as the CLI. A container that was down at `daily_at` catches up when it starts; if the day's
@@ -214,6 +217,10 @@ export IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN="$(openssl rand -hex 32)"
 curl -X POST https://memories.example.com/api/trigger \
   -H "x-api-key: $IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN"
 ```
+
+For Docker, put `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN=your-generated-token` in `.env` and run
+`docker compose up -d`. The shipped Compose file forwards this key. Use the same token in the
+caller's `Authorization: Bearer` header.
 
 Keep the token in the environment: `server` is not a section that expands `${VAR}`, so `"${SOMETHING}"` in
 `config.yaml` is those literal characters. It must be 32 random characters or more, without placeholder words

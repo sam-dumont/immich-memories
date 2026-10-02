@@ -263,6 +263,18 @@ in mind.
 Upload a track in the web Render panel. For CLI runs, bind-mount a music directory and use
 `--music /app/music/track.mp3`.
 
+Add this alongside the app's existing `volumes:` entries, then run `docker compose up -d`:
+
+```yaml
+      - ./music:/app/music:ro
+```
+
+Put `track.mp3` in `./music` on the host:
+
+```bash
+docker compose exec immich-memories immich-memories generate --year 2025 --music /app/music/track.mp3
+```
+
 ## Building the image
 
 For a source checkout, `make docker` fills in the version and git metadata. The normal install

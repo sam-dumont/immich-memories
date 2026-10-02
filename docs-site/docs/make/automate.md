@@ -26,6 +26,9 @@ docker compose up -d
 
 The time uses the container's timezone (`TZ`). Upload is a separate choice: configure `upload.enabled` and `upload.album_name` if films should arrive in Immich rather than stay on disk.
 
+Or leave those Compose lines commented and save **Settings > Automation > enabled** and
+**daily_at**. Settings also holds the other automation options; file and environment values win.
+
 ## Bare metal: auto install
 
 ```bash
@@ -58,6 +61,10 @@ immich-memories auto run --dry-run
 ## Get told when it runs
 
 Notifications support ntfy, email, Discord and other Apprise targets. Configure the URLs, then test them:
+
+In Docker, first [set `IMMICH_MEMORIES_SECRET_KEY` in `.env`](../run/config-file.md#secrets-in-the-database)
+and recreate the container. Then save **Settings > Notifications > enabled** and **urls**.
+The URLs contain credentials, so saving them needs that encryption key. YAML is another route:
 
 ```yaml
 advanced:

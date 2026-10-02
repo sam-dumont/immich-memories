@@ -11,17 +11,33 @@ store to a revision older code will refuse.
 
 ## Docker
 
+Back up while the old release is still running:
+
 ```bash
 docker compose exec immich-memories immich-memories store backup
+docker compose cp immich-memories:/home/immich/.immich-memories/backups ./backups
+```
+
+Keep that backup and manifest. If `docker-compose.override.yml` exists, change the app's `image:`
+there; otherwise change it in `docker-compose.yml`. Replace `X.Y.Z` with the release tag,
+without a `v` prefix:
+
+```yaml
+image: ghcr.io/sam-dumont/immich-video-memory-generator:X.Y.Z
+```
+
+The source Compose file ships `latest`; the install download may pin the current release in
+an override. Keep app, inference and render worker version tags aligned. Then upgrade:
+
+```bash
 docker compose pull
 docker compose up -d
 docker compose exec immich-memories immich-memories models fetch
 docker compose exec immich-memories immich-memories preflight
 ```
 
-Copy the backup and manifest off the volume. Config and films survive a recreate.
+Config and films survive a recreate.
 `models fetch` checks the new release's pins and downloads only changed files.
-Change the pinned `image:` tag before pulling. Keep worker image tags aligned; tags have no `v` prefix.
 
 ## uv / pip
 
@@ -79,15 +95,18 @@ Restore the backup taken before upgrading if the newer release migrated the stor
 Stop the app before restoring. [Container restore](../database.md#restore-in-a-container)
 uses a one-off process, not `exec` in the running app.
 
-Docker: set the old image tag, pull and recreate:
-
-```yaml
-image: ghcr.io/sam-dumont/immich-video-memory-generator:X.Y.Z
-```
+For Docker, use this order. The backup and its manifest must be together on the mounted config
+volume. Replace the example backup name with yours (`.dump` for PostgreSQL):
 
 ```bash
+docker compose stop immich-memories
+# Set image: to the old release in Compose (and its override, if present).
+# Align inference and render worker tags with that release too.
 docker compose pull
+docker compose run --rm immich-memories immich-memories store restore \
+  --from /home/immich/.immich-memories/backups/store-20260930T090000Z.db --force
 docker compose up -d
+docker compose exec immich-memories immich-memories preflight
 ```
 
 Python:
