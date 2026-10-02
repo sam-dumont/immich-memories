@@ -1350,6 +1350,7 @@ def test_a_cold_episode_can_be_read_from_a_provider_batch(tmp_path: Path) -> Non
         raise AssertionError(f"a batched answer must not be asked live: {path}")
 
     config = LLMConfig(
+        enabled=True,
         base_url="https://api.openai.com/v1",
         provider="openai",
         model="m",

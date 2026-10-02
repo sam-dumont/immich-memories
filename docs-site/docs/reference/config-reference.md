@@ -43,7 +43,7 @@ tier: auto                         # auto | nas | gpu | full
 | `full` | everything in `gpu` | an LLM polishes the rules draft and writes the prose | enable `advanced.llm`; owned local model by default, or an explicit `base_url` and server model |
 
 `auto` is the default. A healthy inference service reporting CUDA, or a local CUDA or MLX/Metal
-runtime, selects `gpu`. A configured LLM alongside that capability selects `full`. Without GPU
+runtime, selects `gpu`. An explicitly enabled LLM alongside that capability selects `full`. Without GPU
 inference capability, selection stays on `nas` and reports what is missing. A renderer's GPU
 does not establish inference capability. The runtime check loads no model weights and sends no
 pictures; preflight and acquisition still check the actual producers.
@@ -399,14 +399,14 @@ short phrase on repeat is its own kind of monotony; a chain of a few distinct ta
 
 ## Text model and optional vision captions
 
-Used by the reader and by title generation. Any OpenAI-compatible or Anthropic-compatible endpoint
+One `llm` section serves the selection reader, titles, music mood, special-day scans and explicitly enabled LLM captions. Any OpenAI-compatible or Anthropic-compatible endpoint
 works: mlx-vlm, oMLX, Ollama, vLLM, Groq, OpenAI, Claude, z.ai.
 
 ```yaml
 llm:
   enabled: false                  # false: no LLM calls; true: local or API, chosen by base_url
   provider: "openai-compatible"   # openai-compatible | openai | zai | anthropic | ollama
-  base_url: ""                     # blank: app-owned llama.cpp; URL: use that API
+  base_url: ""                     # blank: owned locally or hosted provider preset; URL: use that API
   model: "gemma-4-E4B-it-Q4_0"     # default local Gemma, another GGUF path, or API model name
   local_server: "llama-server"     # local executable on PATH or its full path
   local_mmproj: ""                 # custom GGUF vision projector; default Gemma has a pinned pair
@@ -432,16 +432,15 @@ The selection reader receives text: dates, people and place names, and descripti
 
 `enabled: false` stops requests even when a model and URL remain configured. Set it to `true` to use a reader. The default model is Gemma.
 
-An empty `base_url` with `enabled: true` runs llama.cpp locally on Linux or macOS. Set a URL to
-use an API server. `openai`, `anthropic` and `zai` select the adapter and reasoning dialect for
-that URL; under `zai` the URL also picks the adapter (a
+An empty `base_url` with `enabled: true` and `openai-compatible` or `ollama` runs llama.cpp
+on native Linux or macOS. The Docker and Kubernetes app images need an external server.
+Set a URL to use your own API server. `openai`, `anthropic` and `zai` fill a blank URL with their vendor endpoint and select its adapter and reasoning dialect; under `zai` the URL also picks the adapter (a
 `.../api/anthropic` base takes the Messages route). Which dialect goes where, what `thinking` does
 on each host, how `thinking_params` and `no_thinking_params` differ, and what batching pays are all
-on [The reader](../better/reader.md), with links to dated measurements.
+on [Provider contracts](./llm-providers.md), with links to dated measurements.
 
 `thinking` has five settings. `disabled` never asks for reasoning. `low`, `high` and `max` run the
-model in reasoning mode for two calls: title generation, and the special-day question in
-`discover-days`. `auto` sends no reasoning field and takes the host's default, which is where to
+model in reasoning mode for title generation. Bulk reader, music mood and special-day calls use the non-thinking settings. `auto` sends no reasoning field and takes the host's default, which is where to
 start on a host whose dialect you do not know. `true` and `false` still parse, as `high` and
 `disabled`. Reasoning is refused alongside images whatever this is set to: reasoning over several
 pictures is a measured runaway. Measured on the live endpoint, a thinking call ran 30-134 s where
@@ -468,8 +467,10 @@ packs, the period account's calendar-month pages, event inventories and worthine
 can overlap. Pages within an event and later dependent picks remain sequential. Scheduling
 preserves prompt text, judgment keys and source ordering; batch delivery is configured separately.
 
-Left unset, concurrency is read from `base_url`: 1 for a loopback, private address or bare service
-name, 4 for a public host. See
+The owned reader always serializes requests. For external servers, unset concurrency is read
+from `base_url`: 1 for loopback, a private IP or a bare service name, 4 for a dotted DNS name
+or public IP. A dotted LAN name still gets the hosted policy; set `reader_concurrency: 1`
+for a server that cannot handle overlap. See
 [Reader concurrency](../run/config-file.md#reader-concurrency). A provider that
 answers 429 pauses every reader in the run, each waiting a slightly different span.
 
@@ -517,23 +518,7 @@ request's effective schema, so changing modes cannot reuse an answer from the ol
 the repeated keys every JSON answer needs. It is never sent to a public host; a server of your own
 that refuses it is asked again without it. Set it to `null` to leave the server's default.
 
-A separate `title_llm` section can point title generation at a different model, for the CLI and the
-web UI alike:
-
-```yaml
-title_llm:
-  provider: "openai-compatible"
-  base_url: "http://localhost:8080/v1"
-  model: "llama3.2"              # example; the default is empty, which means "use llm"
-  api_key: ""
-  timeout_seconds: 300
-  send_image_detail: true        # same switch as llm.send_image_detail
-  always_reasons: false          # same switch as llm.always_reasons
-```
-
-The switch is all-or-nothing on `title_llm.model`: when it is set the whole `title_llm` block is
-used, and any field you leave out takes the *built-in* default, not the one from `llm`. When
-`title_llm.model` is empty, `llm` is used.
+One `llm` section supplies all model calls: titles, the selection reader, music mood, special days and optional LLM captions. `enabled: true` is required; naming a model or URL does not enable it. Move any former separate title-model settings into `advanced.llm`; that block is removed without a compatibility fallback.
 
 ## Triage heads
 

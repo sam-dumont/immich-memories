@@ -43,7 +43,9 @@ def test_a_prepared_day_is_answered_once_and_then_from_the_bank(tmp_path):
         },
     )
 
-    config = LLMConfig(base_url="http://localhost:11434", model="text-reader", provider="ollama")
+    config = LLMConfig(
+        enabled=True, base_url="http://localhost:11434", model="text-reader", provider="ollama"
+    )
     # WHY: intercept the external LLM HTTP request; the scan and bank run unchanged.
     with patch("httpx.AsyncClient.post", return_value=response) as post:
         found = scan_year(
@@ -118,7 +120,10 @@ def test_a_day_the_bank_barely_touched_is_not_guessed_at(tmp_path):
         found = scan_year(
             assets,
             llm_config=LLMConfig(
-                base_url="http://localhost:11434", model="text-reader", provider="ollama"
+                enabled=True,
+                base_url="http://localhost:11434",
+                model="text-reader",
+                provider="ollama",
             ),
             home=None,
             captions=captions,
@@ -134,6 +139,7 @@ def test_the_caption_ask_leaves_reasoning_to_the_transport(tmp_path):
 
     assets, captions = _a_real_day(captioned=30)
     config = LLMConfig(
+        enabled=True,
         # A model name of its own: the reasoning budget is learned per endpoint.
         model="caption-ask-probe",
         provider="openai-compatible",
@@ -168,7 +174,11 @@ def test_the_caption_ask_is_given_a_reasoning_host_s_leash():
 
     assets, captions = _a_real_day(captioned=30)
     config = LLMConfig(
-        base_url="http://localhost:11434", model="text-reader", provider="ollama", thinking="high"
+        enabled=True,
+        base_url="http://localhost:11434",
+        model="text-reader",
+        provider="ollama",
+        thinking="high",
     )
     waited = []
 
@@ -190,7 +200,12 @@ def test_a_fenced_answer_is_still_an_answer_without_a_bank():
     with patch("httpx.AsyncClient.post", return_value=fenced):
         verdict = ask_if_special(
             assets,
-            LLMConfig(base_url="http://localhost:11434", model="text-reader", provider="ollama"),
+            LLMConfig(
+                enabled=True,
+                base_url="http://localhost:11434",
+                model="text-reader",
+                provider="ollama",
+            ),
             captions=captions,
         )
     assert verdict.special

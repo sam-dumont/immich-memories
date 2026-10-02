@@ -85,6 +85,8 @@ remains open.
 
 ## LLM contract fixes, 1 October 2026 {#llm-contract-fixes}
 
+The Gemma conformance results use 6-bit MLX on oMLX, rather than the app-owned Q4_0 GGUF.
+
 The follow-up for [#1645–#1660](https://github.com/sam-dumont/immich-video-memory-generator/issues/1645)
 uses fixes based on `b96d7d6a`, the four models listed below, and synthetic inputs only.
 Provider runs overlapped on the shared Mac. Raw request/reply evidence stays private.
@@ -125,7 +127,7 @@ makes every reader reliable. Five separate controls ask for right, left, up, dow
 
 | Endpoint | Passed | Remaining failures |
 |---|---:|---|
-| Gemma | 1/5 | Both horizontal movements called stationary; vertical replies exceeded the 120-character contract |
+| Gemma 4 E4B, 6-bit MLX on oMLX | 1/5 | Both horizontal movements called stationary; vertical replies exceeded the 120-character contract |
 | OpenAI | 2/5 | Both horizontal movements called stationary; downward movement also acquired a horizontal direction |
 | z.ai | 3/5 | Both vertical movements also acquired a horizontal direction |
 | Melious | 3/5 | Both vertical movements also acquired a horizontal direction |

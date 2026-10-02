@@ -152,7 +152,7 @@ def test_production_wall_receives_only_selected_event_even_if_port_returns_whole
     }
     _seed_descriptions({member: "People share an occasion."})
     config = Config(
-        llm={"model": "fake-model"},
+        llm={"enabled": True, "model": "fake-model"},
         editorial={
             "enabled": True,
             "description_model": "student-v1",

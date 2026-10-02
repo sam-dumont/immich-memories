@@ -38,6 +38,7 @@ def _forget_probed_routes():
 def _config(**overrides) -> LLMConfig:
     return LLMConfig(
         **{
+            "enabled": True,
             "provider": "openai-compatible",  # Generic non-reasoning host speaking the OpenAI protocol.
             "base_url": "https://api.example.test/v1",
             "model": "a-model",
@@ -134,18 +135,24 @@ def _openai_wire(
 
 def test_a_provider_with_no_batch_shape_declares_no_route():
     assert (
-        batch_route_for(LLMConfig(base_url="http://localhost:11434", provider="ollama", model="m"))
+        batch_route_for(
+            LLMConfig(enabled=True, base_url="http://localhost:11434", provider="ollama", model="m")
+        )
         is None
     )
     assert (
         batch_route_for(
-            LLMConfig(base_url="https://api.openai.com/v1", provider="openai", model="m")
+            LLMConfig(
+                enabled=True, base_url="https://api.openai.com/v1", provider="openai", model="m"
+            )
         )
         == "openai"
     )
     assert (
         batch_route_for(
-            LLMConfig(base_url="https://api.anthropic.com", provider="anthropic", model="m")
+            LLMConfig(
+                enabled=True, base_url="https://api.anthropic.com", provider="anthropic", model="m"
+            )
         )
         == "anthropic"
     )

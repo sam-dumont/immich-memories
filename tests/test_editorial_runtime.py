@@ -144,12 +144,12 @@ def test_missing_store_is_initialized_and_old_flag_cannot_bypass_preparation(tmp
 
     disabled = Config(
         tier="full",
-        llm={"model": "text-model", "base_url": "http://llm.test/v1"},
+        llm={"enabled": True, "model": "text-model", "base_url": "http://llm.test/v1"},
         editorial={"enabled": False},
     )
     enabled = Config(
         tier="full",
-        llm={"model": "text-model", "base_url": "http://llm.test/v1"},
+        llm={"enabled": True, "model": "text-model", "base_url": "http://llm.test/v1"},
         editorial={"enabled": True},
     )
 
@@ -218,7 +218,7 @@ def test_explicit_model_runtime_rejects_blank_model_before_opening_the_store(
 ) -> None:
     config = Config(
         tier="full",
-        llm={"base_url": "http://llm.test/v1", "model": "reader"},
+        llm={"enabled": True, "base_url": "http://llm.test/v1", "model": "reader"},
         editorial={"reader": "model"},
     )
     config.llm.model = ""
@@ -270,7 +270,7 @@ def test_runtime_acquires_each_exact_window_through_the_real_text_lane(tmp_path)
     _make_facts_unreadable()
     config = Config(
         tier="full",
-        llm={"model": "text-model", "base_url": "http://llm.test/v1"},
+        llm={"enabled": True, "model": "text-model", "base_url": "http://llm.test/v1"},
         editorial={"enabled": True},
     )
     earlier = _window(2015, 8, 20)
@@ -337,7 +337,7 @@ def test_album_runtime_uses_only_the_captured_album_corpus(tmp_path) -> None:
     _make_facts_unreadable()
     config = Config(
         tier="full",
-        llm={"model": "text-model", "base_url": "http://llm.test/v1"},
+        llm={"enabled": True, "model": "text-model", "base_url": "http://llm.test/v1"},
         editorial={"enabled": True},
     )
     clip = make_clip("album-demanded", file_created_at=datetime(2026, 7, 1, tzinfo=UTC))
@@ -387,7 +387,7 @@ def test_post_card_runtime_projects_selected_wall_rows_in_chronological_order(
     )
     config = Config(
         tier="full",
-        llm={"model": "text-model", "base_url": "http://llm.test/v1"},
+        llm={"enabled": True, "model": "text-model", "base_url": "http://llm.test/v1"},
         editorial={
             "enabled": True,
             "description_model": "student-v1",

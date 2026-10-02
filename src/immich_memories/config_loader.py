@@ -305,7 +305,6 @@ class Config(BaseSettings):
                            cache, database, upload, trips, photos
       Tier 2 (advanced:):  analysis, hardware, llm, musicgen, ace_step, server, auth,
                            automation, notifications, triage, editorial, inference, free_text
-      Tier 3 (internal):   title_llm
 
     At runtime, ALL sections are flat fields on Config (config.analysis, etc.).
     The tier grouping only affects YAML serialization.
@@ -341,9 +340,6 @@ class Config(BaseSettings):
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     hardware: HardwareAccelConfig = Field(default_factory=HardwareAccelConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
-    title_llm: LLMConfig | None = Field(
-        default=None, description="LLM for title generation (falls back to llm)"
-    )
     audio: AudioConfig = Field(default_factory=AudioConfig)
     musicgen: MusicGenConfig = Field(default_factory=MusicGenConfig)
     ace_step: ACEStepConfig = Field(default_factory=ACEStepConfig)
@@ -359,6 +355,18 @@ class Config(BaseSettings):
     editorial: EditorialConfig = Field(default_factory=EditorialConfig)
     inference: InferenceConfig = Field(default_factory=InferenceConfig)
     free_text: FreeTextConfig = Field(default_factory=FreeTextConfig)
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_separate_title_reader(cls, data: Any) -> Any:
+        """Reject retired title settings without choosing which reader wins."""
+        if isinstance(data, dict) and "title_llm" in data:
+            raise ValueError(
+                "title_llm is removed; configure all model calls in advanced.llm. "
+                "Remove the title_llm block from config.yaml and any saved title_llm settings; "
+                "see the reader upgrade instructions in run/config-file."
+            )
+        return data
 
     @model_validator(mode="after")
     def _apply_preset(self) -> Config:

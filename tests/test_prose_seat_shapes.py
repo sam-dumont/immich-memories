@@ -45,7 +45,10 @@ async def test_a_title_request_asks_for_the_fields_its_prompt_names(memory_type,
     from immich_memories.titles.llm_titles import generate_title_with_llm
 
     config = LLMConfig(
-        provider="openai-compatible", base_url="http://localhost:9999/v1", model="small"
+        enabled=True,
+        provider="openai-compatible",
+        base_url="http://localhost:9999/v1",
+        model="small",
     )
     # WHY: the LLM server is the external boundary this request reaches.
     with patch(

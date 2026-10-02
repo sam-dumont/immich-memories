@@ -21,7 +21,11 @@ def tier_settings(tier: str) -> dict[str, Any]:
 
     `full` is given a placeholder LLM endpoint, because it refuses to load without one.
     """
-    llm = {"base_url": "http://llm.invalid/v1", "model": "stated"} if tier == "full" else {}
+    llm = (
+        {"enabled": True, "base_url": "http://llm.invalid/v1", "model": "stated"}
+        if tier == "full"
+        else {}
+    )
     config = Config(tier=tier, llm=llm)
     editorial = config.editorial
     return {

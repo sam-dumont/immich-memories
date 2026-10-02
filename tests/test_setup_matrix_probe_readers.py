@@ -57,7 +57,9 @@ BUDGET = {
 
 
 def test_projected_spend_includes_all_calls_without_double_billing_reasoning(capsys):
-    config = LLMConfig(base_url="http://localhost:8080/v1", model="reader", reader_concurrency=4)
+    config = LLMConfig(
+        enabled=True, base_url="http://localhost:8080/v1", model="reader", reader_concurrency=4
+    )
     problems = probe.check_budget(
         [_result()],
         budget=BUDGET,
@@ -72,7 +74,9 @@ def test_projected_spend_includes_all_calls_without_double_billing_reasoning(cap
 
 
 def test_a_serial_reader_is_refused_on_time_even_when_it_costs_no_tokens(capsys):
-    config = LLMConfig(base_url="http://localhost:8080/v1", model="reader", reader_concurrency=1)
+    config = LLMConfig(
+        enabled=True, base_url="http://localhost:8080/v1", model="reader", reader_concurrency=1
+    )
     problems = probe.check_budget(
         [_result()],
         budget=BUDGET,
@@ -85,7 +89,9 @@ def test_a_serial_reader_is_refused_on_time_even_when_it_costs_no_tokens(capsys)
 
 
 def test_an_unpriced_hosted_reader_does_not_silently_pass_the_cost_gate():
-    config = LLMConfig(base_url="http://localhost:8080/v1", model="reader", reader_concurrency=4)
+    config = LLMConfig(
+        enabled=True, base_url="http://localhost:8080/v1", model="reader", reader_concurrency=4
+    )
     problems = probe.check_budget(
         [_result()],
         budget=BUDGET,
@@ -113,7 +119,7 @@ def test_every_probe_shape_is_text_and_sends_no_picture(monkeypatch):
     for shape in probe.SHAPES:
         probe.probe_shape(
             shape,
-            LLMConfig(base_url="http://localhost:8080/v1", model="reader"),
+            LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="reader"),
             reader="local_model",
             pricing={},
         )
@@ -130,7 +136,7 @@ def test_a_reader_that_errors_fails_the_first_shape(monkeypatch):
     monkeypatch.setattr(probe, "query_llm", query)
     result = probe.probe_shape(
         probe.SHAPES[0],
-        LLMConfig(base_url="http://localhost:8080/v1", model="reader"),
+        LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="reader"),
         reader="local_model",
         pricing={},
     )

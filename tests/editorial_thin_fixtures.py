@@ -37,7 +37,7 @@ class CountingJudge:
 
     def __init__(self) -> None:
         self.config = SimpleNamespace(
-            llm=LLMConfig(base_url="http://localhost:8080/v1", model="model-a")
+            llm=LLMConfig(enabled=True, base_url="http://localhost:8080/v1", model="model-a")
         )
         self.calls: list[str] = []
         self.prompts: list[tuple[str, str]] = []

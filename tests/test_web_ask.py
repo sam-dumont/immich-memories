@@ -16,7 +16,14 @@ from tests.web_api_fixtures import api_client, config_in
 
 def _full_tier(tmp_path: Path) -> Config:
     config = Config.model_validate(
-        {"tier": "full", "llm": {"base_url": "http://reader.invalid/v1", "model": "small-reader"}}
+        {
+            "tier": "full",
+            "llm": {
+                "enabled": True,
+                "base_url": "http://reader.invalid/v1",
+                "model": "small-reader",
+            },
+        }
     )
     config.cache = config_in(tmp_path).cache
     return config

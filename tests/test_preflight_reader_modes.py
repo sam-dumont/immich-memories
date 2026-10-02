@@ -42,7 +42,9 @@ def test_nas_preflight_checks_a_configured_llm_for_text_features(monkeypatch):
 
     # WHY: test the provider HTTP boundary without running or billing a text model.
     monkeypatch.setattr(httpx.Client, "post", answer)
-    config = Config(tier="nas", llm={"base_url": "http://text.test/v1", "model": "reader"})
+    config = Config(
+        tier="nas", llm={"enabled": True, "base_url": "http://text.test/v1", "model": "reader"}
+    )
 
     assert check_llm(config).status is CheckStatus.OK
     assert calls == ["http://text.test/v1/chat/completions"]
@@ -64,7 +66,9 @@ def test_explicit_model_reader_without_a_model_is_a_configuration_error(monkeypa
     monkeypatch.setattr(
         "httpx.Client", lambda *_args, **_kwargs: pytest.fail("model endpoint contacted")
     )
-    config = Config(tier="full", llm={"base_url": "http://llm.test/v1", "model": "reader"})
+    config = Config(
+        tier="full", llm={"enabled": True, "base_url": "http://llm.test/v1", "model": "reader"}
+    )
     config.llm.model = ""
     assert check_llm(config).status is CheckStatus.ERROR
 

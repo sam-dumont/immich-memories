@@ -4,19 +4,20 @@ title: "Network calls and data sent"
 
 # Network calls and data sent
 
-The reader is disabled by default. With `llm.enabled: true` and blank `base_url`, the app starts
-an owned local `llama-server`; its prompts stay local. A nonblank URL sends them to that endpoint.
-Explicit model or endpoint configuration can enable the reader unless `enabled: false` is set.
+The reader is disabled by default. With `llm.enabled: true`, a blank `base_url` and `openai-compatible` or `ollama`, the app starts
+an owned local `llama-server`; its prompts stay local. Hosted provider presets fill a blank URL
+with their vendor endpoint. A nonblank URL sends them to that endpoint.
+Only `enabled: true` enables the reader. A model or endpoint alone leaves it disabled.
 
 ## Everything that can leave, and when
 
 | Destination | When | What leaves your network | Default |
 |---|---|---|---|
 | Your Immich server | always | the reads above; the film, its tag and its album with upload on | upload off |
-| `llm.base_url` (reader) | a model reads a period | text only: the annotation lines of the candidates, with people and place names, and the Immich album names holding those pictures. Never a picture | `llm.enabled: false`: no call; blank `base_url` with an enabled reader runs locally |
+| `llm.base_url` (reader) | a model reads a period | text only: the annotation lines of the candidates, with people and place names, and the Immich album names holding those pictures. Never a picture | `llm.enabled: false`: no call; blank `base_url` with an enabled `openai-compatible` or `ollama` reader runs locally |
 | `llm.base_url` (titles) | a people or occasion film's opening title, whenever a reader is configured; trips only with `--llm-title` | text only: first names, birth dates and ages, the relationships your people registry records, the span, place names, the album the cut mostly sits in | `--no-llm-title` or `--title` |
 | `llm.base_url` (music, special days) | music selection and special-day scans, with a model | text only: the cut's story labels and captions; for a day, capture times, places, coordinates and recognised names | disabled reader: no call |
-| A hosted reader endpoint | An enabled reader has an explicit remote `llm.base_url` | the reader rows above, to the configured endpoint | blank `base_url` uses an owned local reader; provider names alone do not select a vendor endpoint |
+| A hosted reader endpoint | An enabled reader uses a remote URL or a hosted provider preset | the reader rows above, to the configured endpoint | `openai`, `anthropic` and `zai` fill a blank URL with their vendor endpoint; blank `openai-compatible` or `ollama` uses an owned local reader |
 | `caption_base_url` | GPU and Full with the default SmolVLM provider, for selected shots and actual candidates; a wider scope only with an explicit `prepare` job | a 400 px JPEG per picture; a strip of three keyframes per video and per playing Live Photo; `caption_api_key` as a bearer token if set | `localhost:8092`; NAS does not call it |
 | `llm.base_url` (caption provider) | explicit `advanced.editorial.preparation.caption_provider: llm`, on any tier | synthetic schema controls, then missing picture tiles and candidate video frame strips; configured LLM credentials | off; existing valid SmolVLM captions are reused first |
 | `inference.facts_base_url` | preparation, when set | picture previews and up to eight sampled frames per video or Live Photo companion, for the heads and detectors | unset: the app runs them itself |

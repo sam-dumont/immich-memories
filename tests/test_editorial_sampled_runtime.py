@@ -36,7 +36,7 @@ def captured(tmp_path):
     moment, members = next(iter(value.moment_asset_ids.items()))
     return replace(
         value,
-        config=Config(llm={"model": "controlled-vision"}),
+        config=Config(llm={"enabled": True, "model": "controlled-vision"}),
         moment_asset_ids={moment: members[:2]},
     )
 

@@ -26,6 +26,7 @@ SHAPE = {
 
 def _local(**overrides) -> LLMConfig:
     return LLMConfig(
+        enabled=True,
         provider="openai-compatible",
         base_url="http://localhost:9999/v1",
         model="small",
@@ -35,6 +36,7 @@ def _local(**overrides) -> LLMConfig:
 
 def _hosted(**overrides) -> LLMConfig:
     return LLMConfig(
+        enabled=True,
         provider="openai",
         base_url="https://api.openai.com/v1",
         model="gpt",
@@ -149,6 +151,7 @@ async def test_ollama_gets_the_shape_as_its_format_and_the_penalty_as_an_option(
     from immich_memories.analysis.llm_query import query_llm
 
     config = LLMConfig(
+        enabled=True,
         provider="ollama",
         base_url="http://localhost:11434",
         model="small",
@@ -171,7 +174,9 @@ async def test_ollama_local_episode_defaults_to_no_shape():
 
     from immich_memories.analysis.llm_query import query_llm
 
-    config = LLMConfig(provider="ollama", base_url="http://localhost:11434", model="small")
+    config = LLMConfig(
+        enabled=True, provider="ollama", base_url="http://localhost:11434", model="small"
+    )
     answer = AsyncMock(status_code=200, json=MagicMock(return_value={"response": "{}"}))
     answer.raise_for_status = lambda: None
     # WHY: the LLM server is the external boundary this request reaches.

@@ -13,6 +13,7 @@ def request():
     return TextRequest(
         prompt='Contract: race memory. Evidence: F1 start; F2 finish. Return {"keep":[]}.',
         llm_config=LLMConfig(
+            enabled=True,
             provider="openai-compatible",
             base_url="http://editor.test/v1",
             model="pinned-local-model",

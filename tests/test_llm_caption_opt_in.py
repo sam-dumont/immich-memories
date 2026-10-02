@@ -17,7 +17,7 @@ from immich_memories.preflight import CheckStatus, check_caption_endpoint
 from tests.annotation_rows import annotation_store
 from tests.conftest import make_asset
 
-LLM = {"base_url": "http://localhost:43210/v1", "model": "fixture-vision-model"}
+LLM = {"enabled": True, "base_url": "http://localhost:43210/v1", "model": "fixture-vision-model"}
 
 
 def test_llm_caption_opt_in_requires_an_enabled_llm():

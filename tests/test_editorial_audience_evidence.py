@@ -501,7 +501,10 @@ def test_real_gateway_cold_and_cached_failure_have_identical_audience_semantics(
     monkeypatch.setattr(gateway, "query_llm", fake_query)
     config = SimpleNamespace(
         llm=LLMConfig(
-            provider="openai-compatible", base_url="http://editor.test/v1", model="editor-model"
+            enabled=True,
+            provider="openai-compatible",
+            base_url="http://editor.test/v1",
+            model="editor-model",
         )
     )
     judgments = annotation_store()

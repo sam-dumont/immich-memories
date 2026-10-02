@@ -19,7 +19,7 @@ needs none.
 |----------|-----------|
 | `IMMICH_URL` | `immich.url` |
 | `IMMICH_API_KEY` | `immich.api_key` |
-| `OPENAI_API_KEY` | `llm.api_key`, only when the config file states no key |
+| `OPENAI_API_KEY` | `llm.api_key`, only when no resolved key is already configured |
 | `ANTHROPIC_API_KEY` | `llm.api_key` under the same rule, read instead of `OPENAI_API_KEY` when `llm.provider` is `anthropic` or `zai` |
 | `MUSICGEN_ENABLED`, `MUSICGEN_BASE_URL`, `MUSICGEN_API_KEY` | `musicgen.enabled`, `.base_url`, `.api_key` |
 | `ACE_STEP_ENABLED`, `ACE_STEP_API_URL`, `ACE_STEP_API_KEY` | `ace_step.enabled`, `.api_url`, `.api_key` |
@@ -28,11 +28,11 @@ needs none.
 
 An empty shorthand counts as unset.
 
-:::caution An LLM key written in the file beats its shorthand
+:::caution An already configured LLM key beats its shorthand
 `OPENAI_API_KEY` is the name every OpenAI-SDK client reads, a local mlx or vLLM server included, so
 on a machine that exports it for that server it says nothing about the endpoint the key will be
-sent to. So a key in `llm.api_key` wins, and the variable fills the field only where the
-file leaves it empty or holds a `${VAR}` nobody set. `ANTHROPIC_API_KEY` works the same way. To
+sent to. So a key already resolved in `llm.api_key` (from the file, stored settings or its nested environment variable) wins, and the variable fills the field only where the
+resolved config leaves it empty or holds a `${VAR}` nobody set. `ANTHROPIC_API_KEY` works the same way. To
 replace a key that is in the file, use `IMMICH_MEMORIES_LLM__API_KEY`.
 :::
 

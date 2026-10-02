@@ -53,7 +53,7 @@ def setup_runtime(
     )
     config = Config(
         tier="full",
-        llm={"model": "text-model", "base_url": "http://localhost:9999/v1"},
+        llm={"enabled": True, "model": "text-model", "base_url": "http://localhost:9999/v1"},
         editorial={
             "enabled": True,
             "description_model": "student-v1",
@@ -244,7 +244,7 @@ def test_the_picture_guard_refuses_a_request_that_carries_one(monkeypatch):
     from immich_memories.config_models_llm import LLMConfig
 
     sent = refuse_pictures(monkeypatch)
-    config = LLMConfig(model="reader", base_url="http://127.0.0.1:9/v1")
+    config = LLMConfig(enabled=True, model="reader", base_url="http://127.0.0.1:9/v1")
 
     with pytest.raises(pytest.fail.Exception, match="sent 1 picture"):
         asyncio.run(query_llm("Describe this.", config, images=(b"\xff\xd8\xff",)))

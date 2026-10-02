@@ -108,7 +108,7 @@ def _section_drift(
 def find_drift(schema: dict[str, SectionSchema], documented: dict[str, set[str]]) -> list[str]:
     """Report every schema field the page omits and every key it invents.
 
-    Two sections built from one model (`llm` and `title_llm`) need the field list
+    Two sections built from one model (such as two reader settings) need the field list
     written out once: whichever block carries it documents both.
     """
     shown_by_model: dict[str, set[str]] = {}

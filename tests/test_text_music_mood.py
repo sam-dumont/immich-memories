@@ -34,7 +34,12 @@ async def test_cut_text_answers_once_and_is_reused_without_images(tmp_path, tier
 
     config = Config(
         tier=tier,
-        llm={"base_url": "http://localhost:11434", "model": "text-reader", "provider": "ollama"},
+        llm={
+            "enabled": True,
+            "base_url": "http://localhost:11434",
+            "model": "text-reader",
+            "provider": "ollama",
+        },
     )
     config.cache.directory = str(tmp_path / "cache")
     config.cache.cache_path.mkdir()
@@ -116,7 +121,12 @@ def test_bundled_selection_uses_the_cut_mood_and_leaves_clip_facts_alone(tmp_pat
 
     config = Config(
         tier="full",
-        llm={"base_url": "http://localhost:11434", "model": "text-reader", "provider": "ollama"},
+        llm={
+            "enabled": True,
+            "base_url": "http://localhost:11434",
+            "model": "text-reader",
+            "provider": "ollama",
+        },
     )
     config.cache.directory = str(tmp_path / "cache")
     config.ace_step.enabled = config.musicgen.enabled = False
@@ -195,7 +205,9 @@ async def test_an_invalid_mood_is_not_banked_or_retried_with_pictures(tmp_path):
 
     config = Config(
         tier="full",
-        llm=LLMConfig(base_url="http://localhost:11434", provider="ollama", model="reader"),
+        llm=LLMConfig(
+            enabled=True, base_url="http://localhost:11434", provider="ollama", model="reader"
+        ),
     )
     config.cache.directory = str(tmp_path / "cache")
     (tmp_path / "plan.private.json").write_text(json.dumps({"story": {"thesis": "A fair"}}))

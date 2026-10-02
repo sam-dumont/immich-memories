@@ -346,3 +346,32 @@ def test_an_extra_immich_account_is_sealed_as_one_secret(config_path, location):
     assert API_KEY.encode() not in bytes(row["ciphertext"])
     assert load_config(config_path).immich.accounts["partner"].api_key == API_KEY
     assert _source("immich.accounts").value == "***"
+
+
+def test_removed_title_settings_have_an_explicit_cleanup_path(config_path, location):
+    from immich_memories.config_loader import Config
+    from immich_memories.settings_store import settings_store
+
+    saved = SettingsStore(open_store(location=location), SECRET_KEY)
+    saved.save(
+        {
+            "title_llm.model": "retired-title-model",
+            "title_llm": {"model": "retired"},
+            "llm.model": "shared-reader",
+            "llm.enabled": True,
+        }
+    )
+    with pytest.raises(ValueError, match="title_llm is removed"):
+        Config.from_yaml(config_path)
+
+    # This bypasses saved values only; the configured database and its credentials survive.
+    config = Config.from_yaml(config_path, stored={})
+    store = settings_store(config, create=False)
+    assert store is not None
+    store.delete(
+        key for key in store.stored_keys() if key == "title_llm" or key.startswith("title_llm.")
+    )
+
+    reloaded = Config.from_yaml(config_path)
+    assert (reloaded.llm.model, reloaded.llm.enabled) == ("shared-reader", True)
+    assert store.stored_keys() == {"llm.model", "llm.enabled"}

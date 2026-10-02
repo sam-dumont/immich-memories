@@ -32,7 +32,9 @@ def test_catalogue_probe_reads_each_month_and_the_year(monkeypatch):
         httpx.AsyncClient, "_transport_for_url", lambda *_: httpx.MockTransport(reply)
     )
     result = run_case(
-        catalogue_cases(LLMConfig(model="fixture", base_url="http://localhost:43210/v1"))[0]
+        catalogue_cases(
+            LLMConfig(enabled=True, model="fixture", base_url="http://localhost:43210/v1")
+        )[0]
     )
     assert result.valid, result.quality
     assert result.calls == 3
