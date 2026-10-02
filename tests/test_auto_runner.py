@@ -1879,3 +1879,41 @@ class TestStartedAutoRun:
 
         assert result.outcome is AutoOutcome.SKIPPED
         assert result.reason == "automation already running"
+
+
+@pytest.mark.parametrize(
+    ("stored", "today", "expected"),
+    [("2000-03-01", date(2025, 3, 10), "03-01"), ("2000-02-29", date(2025, 3, 10), "02-29")],
+)
+def test_discovered_store_birthday_reaches_the_generation_command(config, stored, today, expected):
+    from immich_memories.automation.generation_request import GenerationRequest
+    from immich_memories.db import open_store
+    from immich_memories.people.registry_store import write_document
+    from immich_memories.preflight import CheckStatus
+
+    with open_store(config).begin() as connection:
+        write_document(
+            connection, {"people": [{"ids": ["face-1"], "name": "Ada", "birth_date": stored}]}
+        )
+    person = MagicMock(id="face-1", name="Ada", birth_date=date(2000, 1, 1), thumbnail_path=None)
+    person.name = "Ada"
+    client = MagicMock()
+    client.get_time_buckets.return_value = []
+    client.get_all_people.return_value = [person]
+    client.get_person_asset_count.return_value = 50
+    # WHY: replace only the Immich transport, its preflight probe and wall clock;
+    # the registry, detection and candidate-to-command mapping stay real.
+    with (
+        patch("immich_memories.api.accounts.SyncImmichClient", return_value=client),
+        patch(
+            "immich_memories.preflight.check_immich", return_value=MagicMock(status=CheckStatus.OK)
+        ),
+        patch("immich_memories.automation.candidate_discovery.date") as clock,
+    ):
+        clock.today.return_value = today
+        clock.side_effect = date
+        candidates = AutoRunner(config).suggest(limit=10)
+    birthday = next(c for c in candidates if c.category is CandidateCategory.BIRTHDAY)
+    argv = GenerationRequest.from_candidate(birthday, upload=False).to_argv()
+    assert argv[argv.index("--birthday") + 1] == expected
+    assert argv[argv.index("--year") + 1] == "2025"

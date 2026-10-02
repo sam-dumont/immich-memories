@@ -31,7 +31,7 @@ Or uncomment the two `IMMICH_MEMORIES_AUTOMATION__ENABLED` and `IMMICH_MEMORIES_
 lines in the app's Compose `environment:` block and set the time there. A line in `.env` alone
 does not reach the container. Recreate with `docker compose up -d`.
 Settings also exposes **Automation > enabled** and **daily_at** while those Compose lines stay commented.
-Configure `upload.enabled` and `upload.album_name` separately for delivery to Immich.
+Either `automation.upload_to_immich: true` or `upload.enabled: true` requests delivery to Immich; `upload.album_name` names the destination. Confirmed delivery removes the local copy.
 
 The UI process then runs the same `auto run` decision once a day, with the same lock, history, upload retry
 and notifications as the CLI. A container that was down at `daily_at` catches up when it starts; if the day's
@@ -45,9 +45,15 @@ it. `/health/ready` shows the timer under `in_process_scheduler`.
 immich-memories auto install --hour 9
 ```
 
-This writes a launcher at `~/.immich-memories/bin/immich-memories-auto` and schedules it: a launchd plist on
-macOS, a systemd user timer on Linux, a crontab line to paste anywhere else. The launcher looks
-`immich-memories` up on every fire, so an upgrade in place needs no reinstall. `--uninstall` removes both.
+This writes a launcher at `~/.immich-memories/bin/immich-memories-auto` and scheduler files: a launchd plist on macOS, a systemd user timer on Linux, or a crontab command to paste elsewhere. It prints **Activate:** and **Deactivate:** commands; it does not run them. Run the printed activation command to start the schedule. The launcher looks `immich-memories` up on every fire, so an upgrade in place needs no reinstall.
+
+On headless Linux, enable lingering so the user timer survives logout:
+
+```bash
+loginctl enable-linger "$USER"
+```
+
+Before `immich-memories auto install --uninstall`, run the printed deactivation command: `launchctl unload` on macOS or `systemctl --user disable --now immich-memories-auto.timer` on Linux. Uninstall deletes the launcher and scheduler files without unloading a running schedule. After removing systemd files, run `systemctl --user daemon-reload`. For cron, remove the pasted entry before deleting its launcher.
 
 Three things a scheduled job does differently from your shell:
 
@@ -67,14 +73,14 @@ editor's job, see [How it chooses](../how-it-chooses/overview.md).
 
 | Detector | Proposes | Score |
 |---|---|---|
-| Yearly | past years with content, after 15 January | 0.8, 10 % off per year of age, floor 0.3 |
+| Yearly | past years with content, after 15 January | 0.8, 10 % off per year of age, floor 0.24 |
 | Birthday | a person whose birthday was 2 to 60 days ago | 0.75 |
 | Monthly | the latest completed month, if not made yet | 0.7, and it never looks further back |
 | Activity burst | a month with more than 2× the rolling 12-month average | 0.7 once over the threshold |
 | Trip | trips in the trailing year, 7 days after coming home | up to 0.75, by length (14 days) × pictures (200) |
-| Person spotlight | the five most-pictured people | 0.6 × their share of the top person's count, floor 0.2 |
+| Person spotlight | the five most-pictured people | 0.6 × their share of the top person's count, floor 0.12 |
 | Multi-person | pairs who appear together | 0.55, by estimated shared pictures up to 500, 50 minimum |
-| On this day | dates with content in 5+ years | 0.35, by years the same month has content, up to 10 |
+| On this day | today, when its month has content in 5+ prior years | 0.35 × prior years / 10, capped at 0.35; month counts do not prove pictures exist on this exact date |
 | Special day | a catalogued day whose anniversary is within 3 days | 0.8, ×1.0 for a decade, ×0.85 for a half-decade, ×0.6 otherwise |
 | Saved group | last year's film of each [saved group](../run/multi-account.mdx#saved-groups), once | 0.65, counted as multi-person |
 
@@ -86,7 +92,7 @@ for multi-person.
 The rotation rules are hard. If every candidate is rejected the run is skipped; nothing relaxes a rule to get
 another video out:
 
-- only the latest completed month is eligible, and a monthly review cannot run twice in the same calendar month;
+- a monthly review cannot run twice in the same calendar month; the monthly detector proposes only the latest completed month, while activity bursts can propose months from the trailing year;
 - the previous category cannot repeat;
 - a category cannot appear more than twice in the last six completed automatic runs;
 - a person cannot come back if they were in either of the last two person runs.
@@ -94,10 +100,9 @@ another video out:
 Timing: birthdays fire 2 days after the date and trips 7 days after coming home, so the phone has uploaded.
 Trips need `trips.homebase_latitude` and `trips.homebase_longitude` (see
 [Home and people](../get-started/who-is-who.md)). Special days come from the catalogue `discover-days`
-writes. A birth date you gave the people store wins over the one Immich holds.
+writes. A birth date you gave the people store wins over the one Immich holds. Automation passes that resolved month and day explicitly to `generate --birthday`, including a leap-day birthday.
 
-`auto suggest` prints the ranked list, each candidate's reason, the rule that rejected the others and anything
-held back. A candidate that failed twice in a row waits before it comes back (24 hours, then 3 days, then 7);
+`auto suggest` prints eligible candidates in rank order with their reasons. Its terminal output also names failure-backoff skips; it does not list rejected candidates or their rotation rules. `auto status` shows current rejection rules. A candidate that failed twice in a row waits before it comes back (24 hours, then 3 days, then 7);
 one failure never counts, and a success clears it.
 
 ## Across accounts, and saved groups
@@ -130,23 +135,10 @@ than making something else.
 
 The outcomes are `skipped`, `dry_run`, `completed` and `failed`; the first three exit 0.
 Quiet output is a stable JSON object with `runtime` as its first key. Key a wrapper on `outcome`: `action` is
-`generation` on every path.
+`generation` or `delivery_retry`. Logging is disabled during `auto run --quiet`; its result is one JSON line, not formatted multiline output.
 
 ```json
-{
-  "outcome": "dry_run",
-  "action": "generation",
-  "reason": "dry run",
-  "candidate_key": "trip:2026-07-02:2026-07-09:",
-  "category": "trip",
-  "run_id": null,
-  "error": null,
-  "output_path": null,
-  "recent_categories": ["monthly_review", "birthday"],
-  "rejections": [
-    {"category": "person_spotlight", "memory_key": "...", "rule": "person_in_last_two_person_runs"}
-  ]
-}
+{"runtime": {"version": "<running version>", "checkout": null, "commit": null, "upstream": null, "commits_behind": null, "stale": false}, "outcome": "dry_run", "action": "generation", "reason": "dry run", "candidate_key": "trip:2026-07-02:2026-07-09:", "category": "trip", "run_id": null, "error": null, "output_path": null, "recent_categories": ["monthly_review", "birthday"], "rejections": []}
 ```
 
 An upload that keeps failing is dropped after `automation.max_delivery_attempts` (5) tries, with a notification
@@ -156,12 +148,12 @@ film that would not fit at all fails the attempt with the same message before an
 one place a headless cron deployment sees it, since nobody is watching a terminal. Every attempt writes its full
 output to `automation-output/<attempt-id>.private.log` under the cache (owner-readable, credentials redacted,
 downloadable from the **Runs** page). `auto status` shows the running code's version and commit, the timer, the
-last attempt, the cooldown and the live suggestion.
+last attempt, the cooldown, notification health and pending deliveries. It refreshes discovery and exposes its outcome/error under `suggestion`, without naming the next candidate; use `auto suggest` for that.
 
 ## Check on it
 
 ```bash
-immich-memories auto status             # is the timer installed, when did it last run, what is next
+immich-memories auto status             # timer state, last attempt, cooldown and delivery health
 immich-memories auto status --json      # the same, for a script or jq
 immich-memories auto history --limit 5  # the last five films it made on its own
 ```
@@ -236,9 +228,7 @@ A caller that sends no `Origin` header (curl, a CronJob, Home Assistant) needs n
 [Allowed hosts](../run/network-security.md#allowed-hosts).
 
 The answer is `202 Accepted` with an `attempt_id` and a `status_url`; `Authorization: Bearer <token>` works too.
-**409** means a run is already going, and the body names it. GET the `status_url` for the live `phase`, then a
-final `state` (`completed`, `failed`, `skipped`, `dry_run`) with `run_id`, `output_duration_seconds`,
-`delivery_status` and `immich_asset_id`.
+**401** means authentication failed (`{"detail":"invalid trigger token"}`). **409** means a run is already going, and the body names it. GET the `status_url` for attempt fields: `attempt_id`, `state`, `reason`, `started_at`, `finished_at`, `phase`, `memory_type` and `error`. The final `state` is `completed`, `failed`, `skipped` or `dry_run`. Its `run` is null until a run exists, then holds `run_id`, `status`, timestamps, `last_phase`, `output_duration_seconds`, `delivery_status` and `immich_asset_id`.
 
 `skipped` is a normal answer: a workflow that fires on every upload mostly gets it back, and one that fires on a
 trip album asks for the best candidate right now, not for that album. For a specific film, use the CLI or the
@@ -255,10 +245,9 @@ kubectl apply -f deploy/kubernetes/base/job.yaml
 
 ## A named memory on a named date
 
-The one thing `auto` cannot say is "a year in review every 15 January". A cron line (or a Kubernetes
-CronJob like the monthly one above) that runs `generate` says it:
+The one thing `auto` cannot say is "a year in review every 15 January". A cron line (or a Kubernetes CronJob like the monthly one above) that runs `generate` says it. Replace `/absolute/path/to/immich-memories` with the installed executable and set cron’s `PATH` to include FFmpeg and other required tools:
 
 ```bash
 # 15 January, 09:00: last year's review, uploaded to an album
-0 9 15 1 * immich-memories generate --memory-type year_in_review --year $(( $(date +\%Y) - 1 )) --upload-to-immich --album "Memories"
+0 9 15 1 * /absolute/path/to/immich-memories generate --memory-type year_in_review --year $(( $(date +\%Y) - 1 )) --upload-to-immich --album "Memories"
 ```

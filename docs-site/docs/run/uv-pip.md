@@ -103,7 +103,7 @@ immich-memories auto install --hour 9
 ```
 
 Run the printed `Activate:` command once. The installer uses launchd on macOS, a systemd user
-timer on Linux, or cron otherwise. `--uninstall` removes it.
+timer on Linux, or a cron command otherwise. On headless Linux, run `loginctl enable-linger "$USER"`. Run **Deactivate:** before `auto install --uninstall`: it removes files without stopping a loaded schedule. For systemd, run `systemctl --user daemon-reload` after removal; for cron, remove the pasted entry.
 
 Keep credentials in `config.yaml`: scheduled jobs do not inherit your interactive shell.
 On macOS, a missed run happens after wake; launchd does not wake the machine.

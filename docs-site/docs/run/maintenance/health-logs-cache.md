@@ -97,8 +97,7 @@ are present as `null`:
 
 `INFO` by default. `immich-memories -v generate …` logs at `DEBUG`; `--log-level WARNING` keeps
 warnings and errors. Both are root options, so they go before the subcommand and work for `ui` too.
-In a container, set `IMMICH_MEMORIES_LOG_LEVEL=DEBUG`. `generate --quiet` and `auto run --quiet`
-change what the terminal shows, not what is logged.
+In a container, set `IMMICH_MEMORIES_LOG_LEVEL=DEBUG`. `generate --quiet` changes terminal presentation. `auto run --quiet` disables logging entirely during the run and prints one JSON result line; stale-code warnings can still go directly to stderr. The generation child’s captured output remains available in the private attempt log.
 
 Lines look like `2025-12-15 10:30:00,123 [INFO] immich_memories.generate [abc123]: Assembling final
 video...`: the bracketed run id ties one run's lines together (`-` outside a run).

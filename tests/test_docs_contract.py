@@ -312,7 +312,8 @@ def test_automation_docs_send_a_fixed_date_film_to_cron() -> None:
 
     assert "immich-memories generate --memory-type year_in_review" in text
     assert "scheduler start" not in text
-    assert "0 9 15 1 * immich-memories generate" in text
+    assert "0 9 15 1 * /absolute/path/to/immich-memories generate" in text
+    assert "cron’s `PATH`" in text
 
 
 def test_health_docs_distinguish_liveness_from_readiness() -> None:

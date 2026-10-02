@@ -57,7 +57,7 @@ store (`store.db`). Films come on top, sized by length, resolution and codec.
 
 **Can it make films on its own?**
 
-Yes, one a day by default (`automation.cooldown_hours` controls the gap): [Automate it](../make/automate.md).
+Yes. The default `automation.cooldown_hours: 24` suits a daily schedule; it is configurable, and `auto run --force` bypasses that cooldown. Rotation rules still apply. [Automatic films](../make/automate.md) covers setup.
 
 **Several people on one Immich server?**
 
