@@ -50,7 +50,7 @@ Leave `tier: auto`. The app chooses from the inference hardware and model config
 | **Full** | The GPU features, plus a text model's reading of the period and refinement of the draft | The GPU setup and a configured reader with 32k context |
 
 A hardware **video encoder** or render worker speeds up rendering. It does not enable GPU
-selection. [What a GPU or a model adds](../get-started/what-a-gpu-or-a-model-adds.md) explains the
+selection. [Choose your setup](../get-started/choose-your-setup.md) explains the
 benefits before you set up extra services.
 
 ### Which tier you get {#which-tier-you-get}
