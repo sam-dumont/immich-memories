@@ -1,8 +1,11 @@
 ---
 title: What a model adds
+sidebar_position: 6
 ---
 
 # What a model adds
+
+`generate --include` steers a new cut and has the selection protections described here. A web pool tick saves an owner revision without scoring or choosing pictures again.
 
 The NAS tier makes the whole film from metadata, pixels and small CPU classifiers. The `gpu` tier
 adds captions and Laya for the pictures in the cut and their candidates. The `full` tier adds a text
@@ -17,6 +20,8 @@ changing the selection tier. Costs and setup are on [What a model adds, what it 
 
 ```mermaid
 flowchart TD
+  accTitle: Which route a cut takes
+  accDescr: Stages shown: Resolve product tier, Rules draft on every tier, Full: refine draft or explicitly plan whole film, Shared admission and final checks.
   n0["Resolve product tier"]
   n1["Rules draft on every tier"]
   n2["Full: refine draft or explicitly plan whole film"]
@@ -42,6 +47,8 @@ flowchart TD
 
 ```mermaid
 flowchart TD
+  accTitle: The polish (Route B)
+  accDescr: Stages shown: Read period account, Vote on unprotected draft shots, Try checked replacements, Review newcomers, Read more only if short.
   n0["Read period account"]
   n1["Vote on unprotected draft shots"]
   n2["Try checked replacements"]
@@ -67,8 +74,7 @@ say which; an empty interior doesn't count). Left alone,
 the vote reads a road race as filler and a posed selfie as the point. A block made only of those is
 not asked. Only a
 gate removes them. In a film that gives every year a shot, a year's last shot is kept from the vote
-and from the standing gate too: only the sharing check, a source rule or a repeat takes it. Your
-ticks are added back after the polish either way.
+and from the standing gate too: only the sharing check, a source rule or a repeat takes it. Pictures passed with `generate --include` are added back after the polish either way.
 
 **Seats.** A refusal is a seat, not a hole. N seats take only the room the draft left unused, at
 the 3.5 s minimum hold. R seats swap within the original shot's time; T seats can use the seconds
@@ -135,6 +141,8 @@ with rules-based cards for the other episodes. Existing matching readings and ca
 
 ```mermaid
 flowchart TD
+  accTitle: Reading on demand
+  accDescr: Stages shown: Build rules draft, Read demanded episodes, Reuse or write period account, Refine the film.
   n0["Build rules draft"]
   n1["Read demanded episodes"]
   n2["Reuse or write period account"]

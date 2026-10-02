@@ -1,8 +1,11 @@
 ---
 title: Picking each shot
+sidebar_position: 3
 ---
 
 # Picking each shot
+
+`generate --include` steers a new cut and has the selection protections described here. A web pool tick saves an owner revision without scoring or choosing pictures again.
 
 Once a story has its shots, each one has to be a moment and a frame. You shot 30 frames of the
 agility run in four minutes: that is one moment, and it gets one frame. The one you starred wins.
@@ -18,6 +21,8 @@ model then polishes it ([What a model adds](./what-a-model-adds.md)).
 
 ```mermaid
 flowchart TD
+  accTitle: The chain
+  accDescr: Stages shown: Offer moments, Rank their frames, Check eligibility and standing, Check spacing and repetition, Admit and deepen.
   n0["Offer moments"]
   n1["Rank their frames"]
   n2["Check eligibility and standing"]
@@ -83,7 +88,7 @@ another eligible candidate. A refused companion does not mark its clean lead as 
 model is asked, on any tier: `RuleStructureReader.standing` scores every picture 0, 1 or 2 from its
 facts, and `StandingGate` refuses a score under 1.
 
-- A favourite, or a picture you ticked, scores 2, always.
+- A favourite or a picture passed with `generate --include` scores 2. Sharing checks still apply; a score does not clear a hold. Other pictures with an uncleared exposure flag score 0 in a Shareable film.
 - 0 for a body part with no face: legs, feet, shoes or hands alone. The frame head calls it a
   body-part close-up, or the caption names a body part or footwear and no animal, and Immich found
   no face on it. A face makes it a person, and a paw is never a body part. This is a fixed rule on
@@ -91,7 +96,7 @@ facts, and `StandingGate` refuses a score under 1.
   it costs agreement there, and it remains part of the app’s default selection policy.
 - 0 when its video frames mostly miss the subject (`frames=subject_often_missing`: fewer than 6 of
   8 sampled frames show a moment), or when the points table below says it carries nothing.
-- Otherwise the heads decide: people, an activity, or an outdoor or public place scores 2; nobody,
+- An album picture scores 2 after the zero rules, with or without a written subject. Otherwise the heads decide: people, an activity, or an outdoor or public place scores 2; nobody,
   no activity and a private interior scores 0; an indoor scene with nobody in it scores 1.
 
 The points table (`editorial_standing_facts.py`) comes in two versions, and the caption version in
@@ -112,13 +117,13 @@ library.
 Two short cuts sit above the table. A frame the head calls a people moment is never refused when it
 is sharp, not dark, and Immich found a face on it. A picture whose caption names a person is never
 refused when Immich found a face on it, and one that names an animal never is (a stuffed dog or a
-statue of one still counts as an object). The frame head calls a pair of legs in a mirror a people
+statue of one still counts as an object). With heads alone, `activity: animal-nature` also passes this refusal check. The frame head calls a pair of legs in a mirror a people
 moment too; with no face in it, it is counted like anything else. A picture of your cat asleep on the
 sofa stands; the sofa alone does not. In a library where Immich recognised nobody, an empty face list
 says nothing, and the heads and the caption are taken at their word.
 
 The same face rule decides whether a picture "shows life" for the gate: a picture with life in a
-major story is only ordered, never refused, and a person counts only when Immich supplies a recognised face.
+major or dominant story with more than two pictures is only ordered, never refused, and a person counts only when Immich supplies a recognised face.
 A picture with nobody in it serves its story only when it is starred, or when the story is major,
 dominant or minor and holds more than two pictures. Anywhere else it is refused as context
 (`context_rejected` in `derived-decisions/story-selection.private.json`). A custom film about
@@ -126,7 +131,7 @@ something you wrote (a renovation, the works on a house) drops that rule: its pi
 for the subject, so a stripped wall or a room under construction can carry its story, as long as it
 stands. A custom film of its window alone keeps the rule.
 
-An album handed over with a written subject (`generate --from-album "Bread" --subject "bread making
+A written subject requires a configured text reader; these subject rules are not available to the rules reader alone. An album handed over with a written subject (`generate --from-album "Bread" --subject "bread making
 along the years"`) goes one step further. The album is a pool picked for that subject, so its
 pictures stand on the subject even with a standing score of 0: a loaf on a counter scores 0
 like any lone object, and stays. A video whose frames mostly miss its subject is still refused, and
@@ -158,6 +163,8 @@ per picture so the next cut reads it instead (`store/cut_measurements`).
 
 ```mermaid
 flowchart TD
+  accTitle: Videos and Live Photos
+  accDescr: Stages shown: Selected Live Photo, Read or measure motion, Check subject visibility, Play motion or keep the still.
   n0["Selected Live Photo"]
   n1["Read or measure motion"]
   n2["Check subject visibility"]

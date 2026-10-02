@@ -140,3 +140,18 @@ def test_one_picture_stored_twice_is_one_tile_its_full_size_file(tmp_path):
 
     assert [item["asset_id"] for item in pool["items"]] == ["garden-1"]
     assert pool["total"] == 1
+
+
+def test_an_explicit_pool_tick_overrides_never_use_for_a_revision_without_forgetting_it(tmp_path):
+    _config, client = _cut_with_pool(tmp_path)
+    client.post("/api/v1/pictures/woods-9/decision", json={"action": "never_use"})
+
+    saved = client.post(f"/api/v1/runs/{RUN}/revisions", json={"added": ["woods-9"]})
+    pool = client.get(f"/api/v1/runs/{RUN}/pool").json()["items"]
+
+    assert saved.status_code == 201
+    assert saved.json()["added"] == ["woods-9"]
+    assert (
+        next(item for item in pool if item["asset_id"] == "woods-9")["hold"]["decision"]
+        == "never_use"
+    )

@@ -4,7 +4,7 @@ title: Who may see your film
 
 # Who may see your film
 
-Choose **Who may see it** in the brief. The default is **Family**.
+Choose **Who may see it** in the brief. The default shown in the brief is **As configured**: Family unless `defaults.sharing` says otherwise.
 
 | Level | Intended viewers | What changes |
 |---|---|---|
@@ -16,7 +16,7 @@ Choose **Who may see it** in the brief. The default is **Family**.
 immich-memories generate --year 2024 --month 6 --sharing family
 ```
 
-These checks can miss things or flag an innocent picture. **Look through the cut before sharing it.** On a NAS, the app has fewer ways to identify private activities: Just us and Family use the same conservative rules. GPU and Full add descriptions and Laya’s activity check.
+These checks can miss things or flag an innocent picture. **Look through the cut before sharing it.** On a NAS, the app has fewer ways to identify private activities: Just us and Family use the same conservative rules. GPU and Full add descriptions and the local Laya text classifier's activity check. [Useful words](./glossary.md) explains the tiers and readers.
 
 ## Fix a picture’s decision
 

@@ -1,8 +1,11 @@
 ---
 title: Family, audience and duplicates
+sidebar_position: 5
 ---
 
 # Family, audience and duplicates
+
+`generate --include` steers a new cut and has the selection protections described here. A web pool tick saves an owner revision without scoring or choosing pictures again.
 
 Once the draft is cut, a few passes make sure it is a film you'd show, to the people you cut it for. Your partner, who is on 300
 pictures of the month and starred in none, gets a shot. A picture the family-viewing gate refuses
@@ -23,6 +26,8 @@ The order, as `_select` in `editorial_structure_planner.py` runs it:
 
 ```mermaid
 flowchart TD
+  accTitle: After the draft
+  accDescr: Stages shown: Draft and optional refinement, Family seats and owner includes, Fit timing, Sharing and duplicate review, Finished-cut check.
   n0["Draft and optional refinement"]
   n1["Family seats and owner includes"]
   n2["Fit timing"]
@@ -112,6 +117,8 @@ duplicate review, the family seat and the polish.
 
 ```mermaid
 flowchart TD
+  accTitle: Sharing levels
+  accDescr: Stages shown: Check source eligibility, Apply owner clearance or existing holds, Read tier-specific audience evidence, Use the strictest verdict, Keep or replace at chosen sharing level.
   n0["Check source eligibility"]
   n1["Apply owner clearance or existing holds"]
   n2["Read tier-specific audience evidence"]
@@ -185,8 +192,8 @@ Nothing in the cut changes. The run summary prints the count, and `runs why` sho
 
 These decisions govern automatic selection. Editing an existing saved cut is a separate final-owner revision; its selected pictures follow the review choices, subject to renderable media.
 
-You answer a hold per picture, in the media pool, on the storyboard or with `pictures` in the CLI.
-The walkthrough with screenshots is on [Overrule it](../../how-it-chooses/overrule-it.md#your-word-on-a-picture). The
+You answer a hold per picture, in the media pool or with `pictures` in the CLI.
+The walkthrough with screenshots is on [Edit the cut](../../how-it-chooses/overrule-it.md#your-word-on-a-picture). The
 rules:
 
 - **Clear hold** is offered where something holds the picture: a detector flagged it or its Live
@@ -197,13 +204,12 @@ rules:
   cleared only when you cleared every picture it shows, at the strictest of their levels. A carrier
   rule still refuses first.
 - **Never use** writes `never_auto`: the picture stays evidence that its moment happened and is
-  never a carrier. A tick doesn't bring it back.
+  never an automatic carrier. An explicit web pool tick can include it in a saved revision; that does not erase the persistent decision.
 - **Undo** forgets the decision, and the banked holds apply again, since clearing never deleted them.
 
 Nothing clears a hold by itself: no reading, no model, no bulk action. The decisions are
 `source='owner'` rows in the library's annotation store (`store/owner_decisions.py`), one per
-picture, so they last across runs and scopes and the web page and the CLI can't overwrite each
-other's. They stay off the line a reader sees, so a decision re-asks no reading. `runs why ASSET_ID`
+picture, so they last across runs and scopes. The latest decision replaces the earlier one, whether set in the web page or CLI. They stay off the line a reader sees, so a decision re-asks no reading. `runs why ASSET_ID`
 prints yours last.
 
 ## Duplicates
@@ -218,7 +224,7 @@ No tier asks a model to compare two pictures.
    received batch shares a second too, so the pixels have to agree; burst frames hash alike, so
    the name has to say it was forwarded). The file with the most pixels plays, a star on any copy
    counts for the picture, and the others are left out as "another file of the same picture". On
-   one real month that was 415 of 2,028 files. Files with the same bytes (an equal SHA-1) are one
+   one measured February that was 352 of 2,028 files. Files with the same bytes (an equal SHA-1) are one
    picture too: your partner's phone uploaded it as well, or a second account of a
    `generate --accounts` run holds it. A Live Photo copy stands for it before a plain one, then a
    starred copy, then the primary account's. A video whose bytes are a Live Photo's own motion
@@ -239,7 +245,7 @@ No tier asks a model to compare two pictures.
      the same place on consecutive days is one moment you starred twice, and further apart it is
      two moments.
 
-Which frame stays: one you ticked, then the favourite, then the one that moves (a video before a Live
+Which frame stays: one passed with `generate --include`, then the favourite, then the one that moves (a video before a Live
 Photo), then a close family member's only shot, then (between two favourites) the one with more
 faces Immich found and then the sharper, then the earlier one. A moving frame is never a
 repeat of a still. A scene repeat leaves even when no distinct replacement remains and the film

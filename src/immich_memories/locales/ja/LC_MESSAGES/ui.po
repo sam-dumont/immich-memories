@@ -615,6 +615,10 @@ msgstr "手動"
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr "手動・自動の実行履歴です。失敗も含みます。実行を開くと編集結果と所要時間を確認できます。"
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:91
+msgid "Marked Never use. Tick it to include it in this revision."
+msgstr "「今後使わない」が設定されています。このリビジョンに含めるにはチェックしてください。"
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Match the sources"
 msgstr "元の解像度に合わせる"
@@ -1586,10 +1590,6 @@ msgstr "{level} 向けの制限を解除しました。"
 #: web/routes/login/+page.svelte:59
 msgid "You will be redirected to your identity provider"
 msgstr "IDプロバイダーへリダイレクトされます"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:91
-msgid "You'll never use this picture."
-msgstr "この画像は二度と使われません。"
 
 #: web/routes/runs/[run_id]/+page.svelte:138
 #, python-brace-format

@@ -98,8 +98,8 @@ class EditorialConfig(BaseModel):
         default=True,
         description=(
             "Build the cut with the no-model reader and let the model polish it, instead of "
-            "planning the whole film with the model. Needs one window of dates; a film over "
-            "several windows is planned with the story-first planner. False makes the model plan the "
+            "planning the whole film with the model. Works across one or several date windows. "
+            "False makes the model plan the "
             "whole film even when an account exists"
         ),
     )

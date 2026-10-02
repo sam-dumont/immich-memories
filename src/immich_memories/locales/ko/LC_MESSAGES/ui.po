@@ -617,6 +617,10 @@ msgstr "수동"
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr "실패한 작업을 포함한 수동·자동 작업입니다. 작업을 열어 편집 결과와 소요 시간을 확인하세요."
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:91
+msgid "Marked Never use. Tick it to include it in this revision."
+msgstr "‘사용하지 않기’로 표시되었습니다. 이 수정본에 포함하려면 체크하세요."
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Match the sources"
 msgstr "원본 해상도에 맞춤"
@@ -1588,10 +1592,6 @@ msgstr "{level}에 대한 제한을 해제했습니다."
 #: web/routes/login/+page.svelte:59
 msgid "You will be redirected to your identity provider"
 msgstr "ID 제공자로 리디렉션됩니다"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:91
-msgid "You'll never use this picture."
-msgstr "이 사진은 다시는 사용되지 않습니다."
 
 #: web/routes/runs/[run_id]/+page.svelte:138
 #, python-brace-format

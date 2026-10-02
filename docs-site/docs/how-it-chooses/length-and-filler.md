@@ -18,4 +18,4 @@ For a longer result, choose a wider period or [add pictures in the review](./ove
 
 If the period has pictures but nothing suitable, the run can finish successfully with **Nothing worth a film** and produce no video. A film with one usable shot is still a film. **On this day** needs usable material from at least two years because its point is the comparison.
 
-Default lengths are on [Memory types](../make/memory-types.mdx). Shot holds, timing trims and filler rules are in the [length reference](../reference/selection-internals/length-and-filler.md).
+Default lengths are on [Film lengths](../reference/film-types.mdx#how-long-a-film-runs). Shot holds, timing trims and filler rules are in the [length reference](../reference/selection-internals/length-and-filler.md).

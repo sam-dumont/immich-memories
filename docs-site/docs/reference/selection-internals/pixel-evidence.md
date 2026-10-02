@@ -1,8 +1,11 @@
 ---
 title: Pixel evidence and preparation
+sidebar_position: 7
 ---
 
 # Pixel evidence and preparation
+
+This page lists what preparation reads, which pictures it covers, and when each producer runs.
 
 ## Scope and timing
 
@@ -17,6 +20,8 @@ whole scope ahead of time when explicitly requested.
 
 ```mermaid
 flowchart TD
+  accTitle: Scope and timing
+  accDescr: Stages shown: Resolve reach, Acquire required pixel facts, Build rules draft, Caption and inspect selected candidates, Bank complete evidence.
   n0["Resolve reach"]
   n1["Acquire required pixel facts"]
   n2["Build rules draft"]

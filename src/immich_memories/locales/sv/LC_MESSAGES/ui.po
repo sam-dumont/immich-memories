@@ -628,6 +628,10 @@ msgstr ""
 "Manuella och automatiska körningar, även misslyckade. Öppna en körning för att se klippning "
 "och tider."
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:91
+msgid "Marked Never use. Tick it to include it in this revision."
+msgstr "Markerad som ”Använd aldrig”. Kryssa i för att ta med bilden i den här versionen."
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Match the sources"
 msgstr "Som källorna"
@@ -1615,10 +1619,6 @@ msgstr "Du tog bort spärren för {level}."
 #: web/routes/login/+page.svelte:59
 msgid "You will be redirected to your identity provider"
 msgstr "Du kommer att omdirigeras till din identitetsleverantör"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:91
-msgid "You'll never use this picture."
-msgstr "Den här bilden kommer aldrig att användas."
 
 #: web/routes/runs/[run_id]/+page.svelte:138
 #, python-brace-format

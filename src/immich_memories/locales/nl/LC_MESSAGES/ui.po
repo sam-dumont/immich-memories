@@ -630,6 +630,10 @@ msgstr ""
 "Handmatige en automatische uitvoeringen, inclusief fouten. Open een uitvoering voor de "
 "montage en doorlooptijden."
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:91
+msgid "Marked Never use. Tick it to include it in this revision."
+msgstr "Gemarkeerd als ‘Nooit gebruiken’. Vink aan om deze foto in deze revisie op te nemen."
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Match the sources"
 msgstr "Zoals de bronnen"
@@ -1619,10 +1623,6 @@ msgstr "Je hebt de beperking voor {level} opgeheven."
 #: web/routes/login/+page.svelte:59
 msgid "You will be redirected to your identity provider"
 msgstr "Je wordt doorgestuurd naar je identiteitsprovider"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:91
-msgid "You'll never use this picture."
-msgstr "Dit beeld wordt nooit gebruikt."
 
 #: web/routes/runs/[run_id]/+page.svelte:138
 #, python-brace-format

@@ -613,6 +613,10 @@ msgstr "手动"
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr "手动和自动任务，包括失败任务。打开任务可查看剪辑和耗时。"
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:91
+msgid "Marked Never use. Tick it to include it in this revision."
+msgstr "已标记为“永不使用”。勾选可将其加入此修订版本。"
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Match the sources"
 msgstr "与源一致"
@@ -1578,10 +1582,6 @@ msgstr "你已解除 {level} 的限制。"
 #: web/routes/login/+page.svelte:59
 msgid "You will be redirected to your identity provider"
 msgstr "你将被重定向到你的身份提供方"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:91
-msgid "You'll never use this picture."
-msgstr "这张图片将永远不会被使用。"
 
 #: web/routes/runs/[run_id]/+page.svelte:138
 #, python-brace-format

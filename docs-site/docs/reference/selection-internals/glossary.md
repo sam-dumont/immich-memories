@@ -1,5 +1,6 @@
 ---
 title: Glossary
+sidebar_position: 8
 ---
 
 # Glossary
@@ -9,6 +10,8 @@ meets them. The definitions below name their source so a rule can be checked.
 
 ```mermaid
 flowchart TD
+  accTitle: Glossary
+  accDescr: Stages shown: Pictures, Moments and episodes, Stories, Chosen shots, Film.
   n0["Pictures"]
   n1["Moments and episodes"]
   n2["Stories"]
@@ -41,7 +44,7 @@ flowchart TD
 | **Caption** | a banked description or motion line, acquired for selected shots and candidates by SmolVLM2 500M or an explicitly approved LLM provider | `editorial_description_contract.py` |
 | **Tier** | `nas` (CPU heads), `gpu` (adds Marqo, Docling, captions and Laya), `full` (adds prose refinement); `auto` resolves from GPU inference and LLM configuration | `tier`, `config_tiers.py` |
 | **Scene print** | the pooled DINOv2 vector of a preview; two prints at a cosine of 0.65 or more are the same scene | `editorial_scene_prints.py` |
-| **Residual** | the motion left in a clip once the camera's own movement is removed; 1.5 or more plays as motion | `RESIDUAL_MIN`, `editorial_motion_facts.py` |
+| **Residual** | the motion left in a clip once the camera's own movement is removed; 1.5 or more plays as motion | `RESIDUAL_MIN`, `editorial_structure_budget.py` |
 | **Bank** | an answer stored under its exact inputs and producer version, so the next run asks nothing; no row means nobody asked | the store |
 | **Banked picture evidence** | matching facts and captions are reused; missing evidence is acquired for selected shots and actual candidates; the prose reader receives text only | `editorial_runtime_evidence.py` |
 
@@ -53,7 +56,7 @@ flowchart TD
 | **Draft** | the film the no-model reader cuts from facts; with no model, it is the film | `editorial_rule_reader.py` |
 | **Worthiness** | remarkable, maybe or background, read per happening from facts | `RuleStructureReader.worthiness` |
 | **Weight** | a story's size: `dominant`, `major`, `minor`, `glimpse`, `none`; `none` gets no shot | `editorial_story_slots.weight_caps` |
-| **Big story** | dense (twice the median day) and mostly close family (30 %); weighs `major` | `_big_stories` |
+| **Big story** | dense (twice the median day) and at least 30 % close-family pictures; weighs `major` | `_big_stories` |
 | **Carrier** | the picture admitted to carry one moment of a funded story; a shot before it is rendered | `editorial_story_carriers.py` |
 | **Carrier rule** | a picture kept as evidence and never a shot: a document, a screen, a screenshot, a face close-up | `excluded_carrier_sources` |
 | **Standing** | whether a picture stands on its own, scored 0 to 2 from its facts, never asked of a model | `editorial_standing_facts.py`, `StandingGate` |
@@ -86,7 +89,7 @@ flowchart TD
 | **Account** | what the library says a period was about, written once from episode readings and reused | `library_catalogue.py` |
 | **Thesis** | the account's statement of what the period was, up to 150 words | `editorial_story_grouping.py` |
 | **Polish / thin layer** | the model reads the draft once, names the shots that add nothing, fills the seats | `editorial_thin_layer.py` |
-| **Block vote** | every model yes or no: at most 12 rows, asked in two orders; both orders is firm, one is a maybe | `editorial_block_votes.py` |
+| **Block vote** | every model yes or no: at most 12 rows, asked in up to two orders; both orders is firm, one is a maybe | `editorial_block_votes.py` |
 | **Seat** | a slot the polish may fill: N (a record with no shot), R (replaces a voted-out shot), T (replaces a gate refusal), D (a swap) | `editorial_thin_refill.py` |
 | **Fill on demand** | a film reads only the episodes its shots sit in; reading a whole scope ahead is optional | `episode_demand.py`, `prepare --overviews` |
 | **Route** | A: rules only (`nas`, `gpu`); B: the rules draft plus the model's polish (`full`, the default); C: the model plans the whole film (`full` with `thin_model_layer: false`) | [What a model adds](./what-a-model-adds.md) |

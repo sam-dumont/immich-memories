@@ -369,8 +369,15 @@ def test_the_pool_s_ticks_go_into_the_film_as_a_revision_without_a_recut(
     kept_at = next(i for i, box in enumerate(boxes) if box.is_checked())
     left_at = next(i for i, box in enumerate(boxes) if not box.is_checked())
     tiles.nth(kept_at).get_by_role("button", name="Never use").click()
-    expect(tiles.nth(kept_at).get_by_text("You'll never use this picture.")).to_be_visible()
+    expect(
+        tiles.nth(kept_at).get_by_text("Marked Never use. Tick it to include it in this revision.")
+    ).to_be_visible()
     expect(boxes[kept_at]).not_to_be_checked()
+    # The owner may override a persistent Never use for this saved revision.
+    tiles.nth(left_at).get_by_role("button", name="Never use").click()
+    expect(
+        tiles.nth(left_at).get_by_text("Marked Never use. Tick it to include it in this revision.")
+    ).to_be_visible()
     boxes[left_at].check()
     expect(page.get_by_text("Add: 1 · Take out: 1")).to_be_visible()
     _shoot(page, "web-pool")

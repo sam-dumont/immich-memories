@@ -631,6 +631,10 @@ msgstr ""
 "Ручные и автоматические запуски, включая неудачные. Откройте запуск, чтобы увидеть монтаж и "
 "время этапов."
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:91
+msgid "Marked Never use. Tick it to include it in this revision."
+msgstr "Отмечено «Никогда не использовать». Установите флажок, чтобы включить в эту версию."
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Match the sources"
 msgstr "Как у источников"
@@ -1621,10 +1625,6 @@ msgstr "Вы сняли ограничение для {level}."
 #: web/routes/login/+page.svelte:59
 msgid "You will be redirected to your identity provider"
 msgstr "Вы будете перенаправлены к вашему провайдеру идентификации"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:91
-msgid "You'll never use this picture."
-msgstr "Это изображение никогда не будет использовано."
 
 #: web/routes/runs/[run_id]/+page.svelte:138
 #, python-brace-format
