@@ -423,7 +423,9 @@ and the planner, and `ProgressTracker` (progress.py) is the run clock the stage 
 a three-stage pipe rather than a class: `make_decoder()` (streaming_frame_decoder.py) turns a
 clip into normalized raw frames, `FrameBlender` (streaming_frame_blender.py) writes those
 frames to a `FrameSink` and crossfades across clip boundaries, and `StreamingEncoder` (the
-sink it is constructed with) pipes them into FFmpeg.
+sink it is constructed with) pipes them into FFmpeg. Large-frame decoders may read ahead into
+three borrowed slots when CPU/memory limits permit; the assembler closes every decoder
+on clip completion and failure, including when an exception traceback remains live.
 
 **KernelTitleRenderer** (titles/renderer_kernels.py) owns the background and the per-frame
 GPU pipeline, and composes 3 services (all take Protocol-typed config/buffers):

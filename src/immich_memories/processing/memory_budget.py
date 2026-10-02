@@ -147,6 +147,14 @@ def assembly_decoder_threads() -> int:
     return threads
 
 
+def assembly_frame_read_ahead(width: int, height: int) -> bool:
+    """Overlap large-frame reads only with room for one extra slot per decoder."""
+    if width * height < 1920 * 1080 or available_cpus() < 2:
+        return False
+    budget = memory_budget()
+    return budget is not None and budget.size >= 4 * _GIB
+
+
 def source_prepare_workers(
     configured: int | Literal["auto"],
     *,

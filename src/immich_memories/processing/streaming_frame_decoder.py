@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import logging
 import subprocess
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from fractions import Fraction
 from io import BufferedReader
 from pathlib import Path
+from queue import Empty, Full, Queue
+from threading import Event, Thread
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, cast
 
@@ -245,15 +247,20 @@ class FrameDecoder:
         """Yield independent, read-only frames that callers may retain."""
         return self._iter_frames(reuse_buffer=False)
 
-    def iter_borrowed_frames(self) -> Iterator[np.ndarray]:
+    def iter_borrowed_frames(
+        self, *, read_ahead: bool = False
+    ) -> Generator[np.ndarray, None, None]:
         """Yield read-only views valid until the next complete frame arrives.
 
         Exhaustion preserves the last frame for crossfade holds. Copy frames
         before advancing if they must remain available beyond the next yield.
+        Read-ahead uses three slots; the synchronous path uses two.
         """
-        return self._iter_frames(reuse_buffer=True)
+        return self._iter_frames(reuse_buffer=True, read_ahead=read_ahead)
 
-    def _iter_frames(self, reuse_buffer: bool) -> Iterator[np.ndarray]:
+    def _iter_frames(
+        self, reuse_buffer: bool, read_ahead: bool = False
+    ) -> Generator[np.ndarray, None, None]:
         vf = self._build_vf()
         use_fc = getattr(self, "_use_filter_complex", False)
 
@@ -311,8 +318,13 @@ class FrameDecoder:
         # Popen's positive bufsize gives this binary pipe a BufferedReader.
         pipe = cast(BufferedReader, proc.stdout)
 
+        raw_frames = (
+            _FrameReadAhead(pipe, self._frame_size).frames()
+            if read_ahead
+            else self._raw_frames(pipe, reuse_buffer)
+        )
         try:
-            for decoded, raw in enumerate(self._raw_frames(pipe, reuse_buffer), start=1):
+            for decoded, raw in enumerate(raw_frames, start=1):
                 frame: np.ndarray
                 if self._pix_fmt == "yuv420p10le":
                     # WHY: Keep as flat uint16 — YUV planar can't reshape to (H,W,3).
@@ -327,10 +339,16 @@ class FrameDecoder:
                 self._finish_bounded_output(proc, decoded)
                 yield frame
         finally:
-            proc.stdout.close()
+            # Stop the writer before joining a reader blocked on its pipe.
             stop_owned_process(proc)
+            try:
+                raw_frames.close()
+            finally:
+                proc.stdout.close()
 
-    def _raw_frames(self, pipe: BufferedReader, reuse_buffer: bool) -> Iterator[bytes | bytearray]:
+    def _raw_frames(
+        self, pipe: BufferedReader, reuse_buffer: bool
+    ) -> Generator[bytes | bytearray, None, None]:
         # Read into the other slot: an incomplete write must not overwrite
         # the last complete frame, which a crossfade may need to hold.
         storage = [bytearray(self._frame_size) for _ in range(2)] if reuse_buffer else None
@@ -490,3 +508,64 @@ def _matching_stream_rate(probe: VideoProbe) -> Fraction | None:
     except (ValueError, ZeroDivisionError):
         return None
     return average if average > 0 and average == nominal else None
+
+
+class _FrameReadAhead:
+    """Three slots: one held by the consumer, one queued, one being filled."""
+
+    def __init__(self, pipe: BufferedReader, frame_size: int) -> None:
+        self._pipe = pipe
+        self._frame_size = frame_size
+        self._available: Queue[bytearray] = Queue()
+        self._pending: Queue[bytearray | BaseException | None] = Queue(maxsize=1)
+        self._stopped = Event()
+
+    def _offer(self, item: bytearray | BaseException | None) -> None:
+        while not self._stopped.is_set():
+            try:
+                self._pending.put(item, timeout=0.1)
+                return
+            except Full:
+                continue
+
+    def _produce(self) -> None:
+        try:
+            while not self._stopped.is_set():
+                try:
+                    slot = self._available.get(timeout=0.1)
+                except Empty:
+                    continue
+                if self._pipe.readinto(slot) != self._frame_size:
+                    break
+                self._offer(slot)
+        except BaseException as exc:
+            # Report worker failures on the consuming thread instead of hanging it.
+            self._offer(exc)
+        finally:
+            self._offer(None)
+
+    def frames(self) -> Generator[bytearray, None, None]:
+        """Borrow complete frames; the owner must stop its writer before closing."""
+        for _ in range(3):
+            self._available.put(bytearray(self._frame_size))
+        worker = Thread(target=self._produce, name="frame-read-ahead", daemon=True)
+        worker.start()
+        previous = None
+        try:
+            while True:
+                item = self._pending.get()
+                if item is None:
+                    return
+                if isinstance(item, BaseException):
+                    raise item
+                # A short final read must never overwrite the last complete frame.
+                # Release its slot only when another complete frame replaces it.
+                if previous is not None:
+                    self._available.put(previous)
+                previous = item
+                yield item
+        finally:
+            self._stopped.set()
+            worker.join(timeout=5)
+            if worker.is_alive():
+                raise RuntimeError("Frame reader did not stop after its decoder exited")
