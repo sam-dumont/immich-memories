@@ -115,6 +115,14 @@ const config: Config = {
           title: 'Community',
           items: [
             {
+              label: 'Why this exists',
+              to: '/docs/welcome/about',
+            },
+            {
+              label: 'How this was built',
+              to: '/docs/welcome/how-this-was-built',
+            },
+            {
               label: 'GitHub Issues',
               href: 'https://github.com/sam-dumont/immich-video-memory-generator/issues',
             },

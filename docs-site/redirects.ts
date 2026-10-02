@@ -2,7 +2,6 @@
 export const redirects: {from: string; to: string}[] = [
   {from: '/docs/run/reference/migration', to: '/docs/run/maintenance/upgrading'},
   {from: '/docs/run/reference/compatibility', to: '/docs/run/requirements'},
-  {from: '/docs/welcome/how-this-was-built', to: '/docs/contribute/architecture'},
   {from: '/docs/reference/benchmark-history', to: '/docs/better/measured'},
   {from: '/docs/contribute/setup-matrix', to: '/docs/better/measured'},
   {from: '/docs/welcome/overview', to: '/docs/'},
