@@ -420,8 +420,10 @@ def fresh_ffmpeg_capabilities() -> Iterator[None]:
     from immich_memories.processing import hdr_utilities
 
     hdr_utilities._zscale_cache = None
+    hdr_utilities._sdr_pq_fast_gamma_qualified.cache_clear()
     yield
     hdr_utilities._zscale_cache = None
+    hdr_utilities._sdr_pq_fast_gamma_qualified.cache_clear()
 
 
 @pytest.fixture(autouse=True)
