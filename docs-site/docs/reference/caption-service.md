@@ -248,11 +248,12 @@ The standalone overlays pin llama.cpp build b10920: `server-b10920` on CPU and
 
 ## How preflight reports it
 
-`Captions OK Serving smolvlm2-500m-base-public` is the row you want. Three ways it goes wrong:
+`Captions OK Serving smolvlm2-500m-base-public` is the row you want. Failures name the cause:
 
 | Row | What happened |
 |---|---|
 | `Caption endpoint unreachable` | nothing is listening, or it is not HTTP |
+| `Caption server is slow to answer` | the model inventory exceeded `editorial.preparation.caption_timeout_seconds` (90 seconds by default); check the worker logs or raise that timeout for cold model loading |
 | `Caption endpoint serves another model` | a server answered and advertised something else |
 | `Caption endpoint refused the request` | 401 or 403, so set `caption_api_key` |
 

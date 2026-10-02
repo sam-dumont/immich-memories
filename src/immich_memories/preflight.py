@@ -480,7 +480,7 @@ def _platform_tag() -> str:
     )
 
 
-# Nothing ships a captioner, so a failing row has to say where the recipes are.
+# A failing caption service needs a link to both standalone and worker setup recipes.
 # A path, not a URL: the docs travel with the checkout and with the image.
 CAPTION_SETUP_PAGE = "docs/better/captions.md"
 
@@ -527,7 +527,7 @@ def check_caption_endpoint(config: Config) -> CheckResult:
     try:
         response = httpx.get(
             f"{base_url}/models",
-            timeout=5.0,
+            timeout=httpx.Timeout(preparation.caption_timeout_seconds, connect=5.0),
             headers=bearer_headers(preparation.caption_api_key),
         )
         response.raise_for_status()
@@ -540,6 +540,17 @@ def check_caption_endpoint(config: Config) -> CheckResult:
             status=CheckStatus.ERROR,
             message="Caption endpoint refused the request",
             details=f"{base_url} answered HTTP {e.response.status_code}; {CAPTION_KEY_HINT}",
+        )
+    except httpx.ReadTimeout:
+        return CheckResult(
+            name="Captions",
+            status=CheckStatus.ERROR,
+            message="Caption server is slow to answer",
+            details=(
+                f"{base_url} exceeded editorial.preparation.caption_timeout_seconds "
+                f"({preparation.caption_timeout_seconds:g}s). A cold worker may still be loading; "
+                "check its logs or increase that timeout, then rerun preflight."
+            ),
         )
     except (httpx.HTTPError, ValueError) as e:
         return _caption_endpoint_unreachable(base_url, e)
