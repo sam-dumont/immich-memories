@@ -68,6 +68,12 @@ class LLMConfig(BaseModel):
         le=3600,
         description="HTTP timeout for LLM requests in seconds (increase for slow local models)",
     )
+    preflight_timeout_seconds: float = Field(
+        default=10,
+        gt=0,
+        le=3600,
+        description="HTTP timeout for reader preflight checks in seconds",
+    )
     thinking: ThinkingLevel = Field(
         default="disabled",
         description=(
