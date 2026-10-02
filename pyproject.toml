@@ -550,6 +550,7 @@ DEP002 = [
     "freetype-py",                                      # imported as freetype
     "pytest", "pytest-cov", "pytest-asyncio",           # dev tools (CLI usage)
     "pytest-benchmark", "pytest-xdist", "pytest-playwright", # dev tools
+    "hypothesis",                                       # property tests (tests/ is excluded)
     "mypy", "ruff",                                      # dev tools
     "pre-commit", "commitizen",                         # dev tools
     "types-pyyaml",                                     # mypy stub
