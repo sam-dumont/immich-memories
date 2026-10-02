@@ -4,7 +4,7 @@
 # The web client (#1580): it is not committed, so the image builds it from web/. Every wheel of
 # the app carries it (hatch_build.py refuses one without it).
 # WHY: pinned to digest, like every base image here.
-FROM node:22-slim@sha256:43ac6c60b8f89723f746e8a92ce91abd5017e627ce1ddfe4238355d3a30b772c AS web-client
+FROM node:26-slim@sha256:ec7758ee051e457b468b32bde57b0879010b325bb9862718e9615225ce4aaae1 AS web-client
 WORKDIR /build/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci --no-audit --no-fund

@@ -701,7 +701,7 @@ def test_the_image_builds_its_own_web_client_after_the_dependency_layers() -> No
     web = next(stage for stage in stages if stage[0].endswith(" AS web-client"))
     builder = next(stage for stage in stages if stage[0].endswith(" AS builder"))
 
-    assert web[0].startswith("FROM node:22-slim@sha256:")
+    assert web[0].startswith("FROM node:26-slim@sha256:")
     assert any(line == "RUN npm ci --no-audit --no-fund" for line in web)
     client = _first(builder, lambda line: line.startswith("COPY --from=web-client "))
     assert _first(builder, lambda line: line.startswith("COPY src/")) < client
