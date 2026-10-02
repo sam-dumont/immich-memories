@@ -1,0 +1,147 @@
+{
+  "source_sha": "b1cb7869bebf0fd3cd1d4f1650da4b69ff235aca",
+  "dependencies": {
+    "immich-memories": "3.dev291",
+    "mlx": "0.32.3",
+    "laya-mlx": "0.3.0",
+    "onnxruntime": "1.30.0",
+    "torch": "2.14.1",
+    "immich-memories-music": "0.1.0"
+  },
+  "model_files": [
+    {
+      "file": "triage/dinov2-small.onnx",
+      "bytes": 88409267,
+      "sha256": "478164cd290ee78e5ddb4fcc474136eec714b4b8253a3609cc7164b592e958af"
+    },
+    {
+      "file": "detectors/nsfw-marqo-384.onnx",
+      "bytes": 22461883,
+      "sha256": "924658f1ac638d96e9126ecb29de047dc8d31c9c9defcab77a26a5c96ed69e11"
+    },
+    {
+      "file": "laya/laya-audience-a79ad9fa.tar",
+      "bytes": 850780160,
+      "sha256": "a79ad9fa3e4b5ae23e6b7ca9233f2bed50746a72baf0c3803dbecd68a6625dc4"
+    }
+  ],
+  "scope": "Disposable seeded CC0 gate; synthetic June2024 household; requested60s; bundled soundtrack;720pSDR H264 softwareencode; family sharing; uploaddisabled. Not1719 exact28case suite.",
+  "nas_selection_dependencies": {
+    "onnxruntime": "1.28.0",
+    "torch": "2.14.0",
+    "immich-memories-music": "0.1.0"
+  },
+  "services": {
+    "captioner": "smolvlm2-500m-base-public",
+    "reader": "gemma-4-e4b-it-6bit",
+    "immich": "ghcr.io/immich-app/immich-server:v3.2.2"
+  },
+  "comparison": {
+    "nas": {
+      "path": "tier-nas.mp4",
+      "seconds": 56.0,
+      "bytes": 36879073,
+      "sha256": "ebc5b0f22d67edc7bc501534d387d651b629944519d41b4df24ff1bc3f52917e",
+      "streams": [
+        [
+          "video",
+          "h264",
+          1280,
+          720
+        ],
+        [
+          "audio",
+          "aac",
+          null,
+          null
+        ]
+      ],
+      "decode_exit": 0,
+      "selected_shots": [
+        "IMG_2419.mp4",
+        "IMG_2423.mp4",
+        "IMG_2434.jpg",
+        "IMG_2436.mp4",
+        "IMG_2441.jpg",
+        "IMG_2460.jpg",
+        "IMG_2462.jpg",
+        "IMG_2464.jpg",
+        "IMG_2471.jpg",
+        "IMG_2473.mp4",
+        "IMG_2483.jpg",
+        "IMG_2488.mp4",
+        "IMG_2507.jpg",
+        "IMG_2509.jpg"
+      ]
+    },
+    "full": {
+      "path": "tier-full.mp4",
+      "seconds": 56.5,
+      "bytes": 36122175,
+      "sha256": "f208f03f1cf84943d755362e7c816b0e2fd9ee214c6b7f6834e75f9903c0071e",
+      "streams": [
+        [
+          "video",
+          "h264",
+          1280,
+          720
+        ],
+        [
+          "audio",
+          "aac",
+          null,
+          null
+        ]
+      ],
+      "decode_exit": 0,
+      "selected_shots": [
+        "IMG_2419.mp4",
+        "IMG_2423.mp4",
+        "IMG_2432.jpg",
+        "IMG_2434.jpg",
+        "IMG_2436.mp4",
+        "IMG_2441.jpg",
+        "IMG_2460.jpg",
+        "IMG_2462.jpg",
+        "IMG_2464.jpg",
+        "IMG_2471.jpg",
+        "IMG_2473.mp4",
+        "IMG_2488.mp4",
+        "IMG_2507.jpg",
+        "IMG_2509.jpg"
+      ]
+    },
+    "shot_difference": {
+      "nas_only": [
+        "IMG_2483.jpg"
+      ],
+      "full_only": [
+        "IMG_2432.jpg"
+      ],
+      "shared": 13
+    }
+  },
+  "fixture_credits": "tier-fixture-credits.txt",
+  "fixture_manifest_sha256": "31753d4d43c34682e787cae76c6792d56db1c4af058d457041068a63d7d4b8e4",
+  "soundtrack": {
+    "package": "immich-memories-music==0.1.0",
+    "file": "calm_acoustic_1.opus",
+    "license": "MIT",
+    "license_file": "tier-music-license.txt"
+  },
+  "timing_seconds": {
+    "nas_selection": 11.46,
+    "nas_render": 35.26,
+    "full_selection": 42.7,
+    "full_render": 35.49
+  },
+  "limitations": [
+    "One pair, not the #1719 28-case suite, quality guarantee or speed benchmark.",
+    "NAS selection used existing venv (ONNX1.28.0,Torch2.14.0); Full selection and both renders used isolated all-mac venv (ONNX1.30.0,Torch2.14.1).",
+    "Fresh shared store/cache: Full reused NAS facts and acquired missing model facts.",
+    "Seven clips lacked motion evidence; plain clip facts used.",
+    "Laya choice:11+ temperature0.1006 clamped; affected confidence bucket uncalibrated.",
+    "Initial NAS render failed on sandbox localhost networking; authorized retry succeeded.",
+    "NAS initial preflight reported one missing configured path; Full preflight12OK4skipped."
+  ]
+}
