@@ -111,6 +111,11 @@ docker compose exec immich-memories vainfo
 Look for `VAEntrypointEncSlice` or `VAEntrypointEncSliceLP`. ARM64 Docker has no bundled hardware
 encoding path.
 
+For VAAPI, `advanced.hardware.encoder_preset` maps `fast`, `balanced` and `quality` to
+FFmpeg compression levels 7, 4 and 1. Lower levels favor quality; higher levels favor speed.
+Supported levels depend on the driver. Changing the preset can change pixels and file size,
+even at the same QP, and will not necessarily speed up a film dominated by CPU filters.
+
 ## NAS output and HDR
 
 NAS output is capped at 1080p, in the film's orientation. A J4125-class NAS can encode H.264 but
