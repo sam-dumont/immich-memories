@@ -71,7 +71,7 @@ advanced:
   notifications:
     enabled: true
     urls:
-      - "ntfy://ntfy.sh/my-topic"
+      - "ntfys://ntfy.sh/my-topic"
 ```
 
 ```bash
@@ -79,6 +79,8 @@ immich-memories auto test-notification
 ```
 
 The test sends a message to each configured target. Films then report completion or failure. Thumbnails remain off unless you enable them.
+`ntfys` uses HTTPS. Public ntfy topics can be read by others; use a private, authenticated topic
+for personal run details.
 
 ## Trigger it over HTTP
 

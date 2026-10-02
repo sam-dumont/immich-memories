@@ -19,9 +19,11 @@ In Docker: `docker compose exec immich-memories immich-memories preflight`.
 
 It checks the Immich connection and API key (and each extra account), the model files and their digests,
 the title renderer, hardware encoding, the output folder, the home base, config paths that don't exist on
-this machine, notification delivery, the memory the box has, and every server you configured: caption
-server, text model, render worker, and ACE-Step when it is set to run on this machine. It also prints one row per outside host you switched on
-([Privacy](../privacy.md)). A warning names what is missing and the cut still runs
+this machine, configured notification readiness and saved delivery health, the memory the box has,
+and configured service endpoints: caption server, text model, render worker, and ACE-Step when
+it is set to run on this machine. It does not send a notification. Its **Outside call** rows name
+enabled geocoding and map destinations, not every outside endpoint ([Privacy](../privacy.md)).
+A warning names what is missing and the cut still runs
 without it, for example `Music (ACE-Step)` falling back to a bundled track. Any error exits 1, so a
 script or a setup step can stop on it. Run it after an install, an upgrade or a config change.
 

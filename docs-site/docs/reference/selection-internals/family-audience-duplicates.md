@@ -173,9 +173,10 @@ Cached Laya answers belong to the checkpoint's file contents, runtime and thresh
 any of those makes the next cut read the captions again. Existing detector, owner and private
 activity holds still apply; a new checkpoint cannot silently clear a previous hold.
 
-**`advanced.editorial.strict_sharing`** (on by default) applies to shareable films: any shot a head
-or an exposure flag marked stays at `family_only` even when the caption suggests `share`. On a NAS it is
-also what allows the clean-evidence `share` above. Just-us and family films don't read it.
+Detector and exposure holds apply to shareable films even with
+**`advanced.editorial.strict_sharing: false`**: a caption cannot clear them. Your explicit
+clearance on a picture can lift a hold. `strict_sharing` (on by default) also allows the NAS
+clean-evidence `share` above; turning it off removes that route. Just-us and family films don't read it.
 
 **The review list.** Every run writes `review-before-sharing.private.json` in its attempt directory:
 the shots whose exposure probability sits between 0.2 and 0.5 that nothing else already holds.
