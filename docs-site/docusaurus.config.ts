@@ -5,7 +5,9 @@ import {redirects} from './redirects';
 import {productTagline} from './src/product';
 
 const docsVersion = process.env.DOCS_VERSION || 'development';
-const releaseDocs = /^v?\d+\.\d+\.\d+$/.test(docsVersion);
+const releaseDocs = /^v?\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(docsVersion);
+
+const nextDocs = process.env.DOCS_NEXT === 'true';
 
 const config: Config = {
   title: 'Immich Memories',
@@ -18,7 +20,7 @@ const config: Config = {
   },
 
   url: 'https://sam-dumont.github.io',
-  baseUrl: '/immich-video-memory-generator/',
+  baseUrl: nextDocs ? '/immich-video-memory-generator/next/' : '/immich-video-memory-generator/',
 
   organizationName: 'sam-dumont',
   projectName: 'immich-video-memory-generator',
@@ -59,6 +61,11 @@ const config: Config = {
   ],
 
   themeConfig: {
+    ...(nextDocs ? {announcementBar: {
+      id: 'release-candidate',
+      content: 'Release candidate docs. <a href="/immich-video-memory-generator/">Read the current final release docs</a>.',
+      isCloseable: false,
+    }} : {}),
     mermaid: {
       theme: {light: 'neutral', dark: 'dark'},
       options: {

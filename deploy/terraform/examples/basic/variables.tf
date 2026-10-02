@@ -1,3 +1,8 @@
+variable "image_tag" {
+  description = "App release tag without the v prefix"
+  type        = string
+}
+
 variable "immich_url" {
   description = "URL of your Immich instance"
   type        = string

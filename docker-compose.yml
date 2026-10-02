@@ -207,13 +207,13 @@ services:
   # 8092. Inside the compose network both listen on 8092 under different
   # service names; only a curl from the host sees 8094.
   #
-  # On an NVIDIA host, run CAPTIONER_TAG=server-cuda and uncomment the two blocks
+  # On an NVIDIA host, run CAPTIONER_TAG=server-cuda-b10920 and uncomment the two blocks
   # at the end of the serving service below. Measured: 3.5 s a picture on the CPU
   # image in a 2-CPU container, 0.08 to 0.23 s on a GPU. Both halves or neither,
   # as with the inference service: the cpu image has no CUDA in it. The two
   # services share the tag so the host pulls one llama.cpp image, not two.
   immich-memories-caption-models:
-    image: ghcr.io/ggml-org/llama.cpp:${CAPTIONER_TAG:-server}
+    image: ghcr.io/ggml-org/llama.cpp:${CAPTIONER_TAG:-server-b10920}
     container_name: immich-memories-caption-models
     profiles:
       - captioner
@@ -252,7 +252,7 @@ services:
           memory: 512M
 
   immich-memories-captioner:
-    image: ghcr.io/ggml-org/llama.cpp:${CAPTIONER_TAG:-server}
+    image: ghcr.io/ggml-org/llama.cpp:${CAPTIONER_TAG:-server-b10920}
     container_name: immich-memories-captioner
     profiles:
       - captioner
@@ -310,7 +310,7 @@ services:
           # copied to the device, and no kernel grew a CFS controller because a
           # GPU was attached, so there is still no `cpus:` here.
           memory: 3G
-        # ── For a GPU: uncomment both blocks, and set CAPTIONER_TAG=server-cuda ──
+        # ── For a GPU: uncomment both blocks, and set CAPTIONER_TAG=server-cuda-b10920 ──
         # A checkout can use docker/hwaccel.captioner.yml instead of copying them.
         # The layer count is an environment variable rather than a `--n-gpu-layers`
         # flag on the command above, because that list is also the alias, the
