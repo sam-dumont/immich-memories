@@ -159,7 +159,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # wheel and once unpacked into site-packages. A mount is never committed. Measured on
 # arm64 with INSTALL_EXTRAS=all: 10.5 GB -> 7.08 GB, one fewer layer.
 RUN --mount=type=bind,from=builder,source=/wheels,target=/wheels \
-    pip install --no-cache-dir /wheels/*.whl
+    pip install --no-cache-dir /wheels/*.whl && \
+    pip uninstall -y pip wheel
 
 # Import the real model loader: find_spec alone misses broken native libraries.
 RUN python -c "import importlib.util; importlib.util.find_spec('demucs') and __import__('demucs.pretrained')"

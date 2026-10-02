@@ -31,3 +31,10 @@ def test_empty_dependency_inventory_is_not_an_all_clear(installed):
 def test_requirements_cannot_contain_installer_options(installed):
     with pytest.raises(ValueError, match="invalid"):
         requirements(installed)
+
+
+@pytest.mark.parametrize("version", ["2.14.0+cpu", "2.13.0+cu126"])
+def test_torch_builds_use_public_release_for_advisory_lookup(version):
+    installed = {"torch": version}
+    assert requirements(installed, advisory=True) == f"torch=={version.split('+')[0]}\n"
+    assert installed["torch"] == version

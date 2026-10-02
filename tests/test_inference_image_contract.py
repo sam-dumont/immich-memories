@@ -92,7 +92,9 @@ def test_each_variant_installs_only_its_device_extra() -> None:
     assert "TORCH_INDEX=cu126" in cuda
     assert '-r "docker/demucs-${DEVICE}-requirements.txt"' in build
     assert "from demucs.pretrained import get_model" in build
-    assert "pip uninstall" not in build
+    # Build tools are removed only after all device dependencies have been checked.
+    assert "pip uninstall -y pip wheel" in build
+    assert "pip uninstall -y torch" not in build
 
 
 def test_every_pip_install_in_the_builder_is_pinned() -> None:
@@ -312,6 +314,7 @@ def test_inference_only_analysis_cannot_create_a_release(tmp_path, monkeypatch):
     output = tmp_path / "outputs"
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     monkeypatch.setenv("INFERENCE_ONLY", "true")
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
     monkeypatch.setenv("FORCE_VERSION", "major")
     monkeypatch.setenv("GITHUB_SHA", "abcdef0123456789")
     monkeypatch.setenv("GITHUB_OUTPUT", str(output))
@@ -360,6 +363,7 @@ def test_inference_digest_artifacts_round_trip_to_separate_manifests(tmp_path, m
     monkeypatch.setenv("DOCKER_CALLS", str(calls))
     monkeypatch.setenv("IMAGE", image)
     monkeypatch.setenv("INFERENCE_ONLY", "true")
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
     monkeypatch.setenv("GITHUB_SHA", "abcdef0123456789")
     manifest = next(
         s
@@ -369,6 +373,10 @@ def test_inference_digest_artifacts_round_trip_to_separate_manifests(tmp_path, m
     script = manifest["run"].replace("/tmp/digests", str(digests))
     subprocess.run(["bash", "-e", "-c", script], check=True, capture_output=True)
     cpu, cuda = [line.split() for line in calls.read_text().splitlines()]
+    assert cpu[3:5] == ["--metadata-file", str(tmp_path / "cpu-manifest.json")]
+    assert cuda[3:5] == ["--metadata-file", str(tmp_path / "cuda-manifest.json")]
+    cpu = cpu[:3] + cpu[5:]
+    cuda = cuda[:3] + cuda[5:]
     assert cpu[:5] == ["buildx", "imagetools", "create", "-t", f"{image}:sha-abcdef012345"]
     assert cuda[:5] == ["buildx", "imagetools", "create", "-t", f"{image}:sha-abcdef012345-cuda"]
     assert sorted(cpu[5:]) == expected["cpu"]

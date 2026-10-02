@@ -2,6 +2,7 @@
 
 `make image-audit-build image-audit` rebuilds the app image and audits its installed Python
 distributions. The inventory includes the app's extras and bundled render-worker dependencies.
+The runtime images remove pip and wheel after installation; neither is needed to run the app.
 First-party distributions stay in `python.json` but are not queried as PyPI dependencies.
 CPU/CUDA version suffixes remain in `requirements.txt`. `advisory-requirements.txt` maps only
 official `torch`, `torchaudio` and `torchvision` CPU/CUDA suffixes to their public release for
