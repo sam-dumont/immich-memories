@@ -12,6 +12,8 @@ from PIL import Image
 
 from immich_memories.photos import animator
 
+pi_heif = pytest.importorskip("pi_heif")
+# WHY: pi-heif only decodes; the dev-only pillow-heif encodes the test pictures.
 pillow_heif = pytest.importorskip("pillow_heif")
 
 _GAIN_KEY = "urn:com:apple:photo:2020:aux:hdrgainmap"
@@ -30,9 +32,8 @@ def _photo(tmp_path, width: int, height: int):
     pixels = np.stack([x + 0 * y, y + 0 * x, (x + y) / 2], axis=-1).astype(np.uint8)
     exif = Image.Exif()
     exif.get_ifd(0x8769)[0x927C] = _makernote()
-    pillow_heif.register_heif_opener()
     path = tmp_path / "IMG_0001.HEIC"
-    Image.fromarray(pixels).save(path, format="HEIF", quality=95, exif=exif.tobytes())
+    pillow_heif.from_pillow(Image.fromarray(pixels)).save(path, quality=95, exif=exif.tobytes())
     gain = ((np.arange(width // 4)[None, :] + np.arange(height // 4)[:, None]) * 7 % 256).astype(
         np.uint8
     )
@@ -56,7 +57,7 @@ def gain_mapped(tmp_path, monkeypatch):
 
         # WHY: pillow-heif cannot write an auxiliary gain-map image, so reading one
         # is the single stand-in; the primary picture and its EXIF are a real HEIC.
-        monkeypatch.setattr(pillow_heif, "open_heif", lambda *_args, **_kwargs: [Primary()])
+        monkeypatch.setattr(pi_heif, "open_heif", lambda *_args, **_kwargs: [Primary()])
         return path, gain
 
     return make
