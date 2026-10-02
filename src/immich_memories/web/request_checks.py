@@ -12,6 +12,7 @@ from __future__ import annotations
 import ipaddress
 import logging
 from collections.abc import Callable, Mapping
+from contextlib import suppress
 from urllib.parse import urlsplit
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -211,10 +212,8 @@ async def _within(
         started = started or message["type"] == "http.response.start"
         await send(message)
 
-    try:
+    with suppress(_BodyTooLarge):
         await app(scope, counted, sending)
-    except _BodyTooLarge:
-        pass
     if overflow and not started:
         await _respond(send, 413, _TOO_LARGE)
 

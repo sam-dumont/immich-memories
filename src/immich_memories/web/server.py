@@ -309,7 +309,7 @@ def create_app() -> FastAPI:
     )
     # Outermost of all: a request for a foreign host or a cross-site write is answered
     # before a session is decoded or a route runs. The config is read per request.
-    app.add_middleware(RequestChecks, config=lambda: get_config())
+    app.add_middleware(RequestChecks, config=get_config)
     return app
 
 
