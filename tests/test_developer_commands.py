@@ -50,7 +50,11 @@ def test_fast_does_not_run_external_or_slow_tiers(tmp_path):
     result = subprocess.run(
         ["make", "--no-print-directory", "-f", str(ROOT / "Makefile"), "test-fast"],
         cwd=tmp_path,
-        env={**os.environ, "PATH": f"{tmp_path}{os.pathsep}{os.environ['PATH']}"},
+        env={
+            **os.environ,
+            "PATH": f"{tmp_path}{os.pathsep}{os.environ['PATH']}",
+            "PYTEST_ADDOPTS": "",
+        },
         capture_output=True,
         text=True,
     )
