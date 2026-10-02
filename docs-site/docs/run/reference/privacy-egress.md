@@ -14,24 +14,39 @@ Only `enabled: true` enables the reader. A model or endpoint alone leaves it dis
 | Destination | When | What leaves your network | Default |
 |---|---|---|---|
 | Your Immich server | always | the reads above; the film, its tag and its album with upload on | upload off |
-| `llm.base_url` (reader) | a model reads a period | text only: the annotation lines of the candidates, with people and place names, and the Immich album names holding those pictures. Never a picture | `llm.enabled: false`: no call; blank `base_url` with an enabled `openai-compatible` or `ollama` reader runs locally |
-| `llm.base_url` (titles) | a people or occasion film's opening title, whenever a reader is configured; trips only with `--llm-title` | text only: first names, birth dates and ages, the relationships your people registry records, the span, place names, the album the cut mostly sits in | `--no-llm-title` or `--title` |
+| `llm.base_url` (reader) | an enabled model reads a period | text only: your memory brief/owner sentence, candidate annotations, capture dates/times, places, people and their relationships, and Immich album names holding those pictures. Never a picture | `llm.enabled: false`: no call; blank URL with `openai-compatible` or `ollama` runs locally |
+| `llm.base_url` (titles) | a people or occasion film's opening title, with an enabled reader; trips only with `--llm-title` | text only: first names, birth dates and ages, recorded relationships, the date span, places by day (up to 30), and the album/occasion/holiday name. Trip prompts also include country, clip captions (up to 10) and object labels (up to 20), when available | `--no-llm-title` or `--title` |
 | `llm.base_url` (music, special days) | music selection and special-day scans, with a model | text only: the cut's story labels and captions; for a day, capture times, places, coordinates and recognised names | disabled reader: no call |
-| A hosted reader endpoint | An enabled reader uses a remote URL or a hosted provider preset | the reader rows above, to the configured endpoint | `openai`, `anthropic` and `zai` fill a blank URL with their vendor endpoint; blank `openai-compatible` or `ollama` uses an owned local reader |
+| A hosted reader endpoint | an enabled reader uses a hosted provider or explicit remote `llm.base_url` | the reader rows above, with configured provider credentials | `openai`, `anthropic`, `zai` supply their preset URL when blank; blank `openai-compatible` or `ollama` runs locally |
 | `caption_base_url` | GPU and Full with the default SmolVLM provider, for selected shots and actual candidates; a wider scope only with an explicit `prepare` job | a 400 px JPEG per picture; a strip of three keyframes per video and per playing Live Photo; `caption_api_key` as a bearer token if set | `localhost:8092`; NAS does not call it |
 | `llm.base_url` (caption provider) | explicit `advanced.editorial.preparation.caption_provider: llm`, on any tier | synthetic schema controls, then missing picture tiles and candidate video frame strips; configured LLM credentials | off; existing valid SmolVLM captions are reused first |
-| `inference.facts_base_url` | preparation, when set | picture previews and up to eight sampled frames per video or Live Photo companion, for the heads and detectors | unset: the app runs them itself |
-| `render.worker_base_url` | rendering on another box | the chosen cut, plus your Immich URL and API key so the worker can fetch the clips | unset: renders here |
+| `inference.facts_base_url` | preparation, when set; generated music with stem separation; config load | picture previews and up to eight sampled frames per video or Live Photo companion; the generated WAV mix to `/audio/stems`; a GET `/health` at config load | unset: the app runs these locally |
+| `render.worker_base_url` | rendering on another box | Immich URL, primary API key and every partner key needed by the cut; account routes, asset IDs, selected intervals and Live Photo material; person names, title/subtitle, dates, preset and timing metadata, audio categories/emotions, home coordinates, output/title options and the full `network` configuration | unset: renders here; the worker can make enabled geocoding/map requests itself |
 | `nominatim.openstreetmap.org`, or your `network.geocoding_url` | `network.geocoding: true` | each trip's centre, and the coordinates of the pictures in the film's own window, home included, rounded to about a kilometre, once per place ever | off |
 | `server.arcgisonline.com` | `network.map_tiles: true` | tile requests over the trip area and your home base | off |
 | `ace_step.api_url`, `musicgen.base_url` | AI music through a remote API | mood, tempo and genre text; MusicGen is also sent the generated track, for stem separation | off |
 | Apprise or ntfy targets | `notifications.enabled: true` | memory type, outcome, duration, output path, a redacted error tail; a frame if `attach_thumbnail: true` | off |
 | Your OIDC provider | login with `provider: oidc` | the standard OIDC flow with PKCE | authentication off |
-| Hugging Face, `github.com` | only when you run `models fetch` (and ACE-Step or Demucs on first use) | nothing about your library: pinned model files; ACE-Step snapshots use the commit revisions listed below | a run never downloads |
+| Configured Immich, reader, caption, render and music endpoints | `preflight`, for enabled/configured services | service/health/model requests with their configured credentials; reader probes can request a one-token reply to `hi` | probes contain no library pictures; notifications are not sent by preflight |
+| `huggingface.co`, `github.com` | `models fetch`; permitted detector downloads during preparation; inference/captioner startup or first use | model requests, no library data | app detector downloads off unless `allow_model_downloads: true`; Compose inference allows them, captioner startup fetches its pinned weights |
+| `dl.fbaipublicfiles.com` | local Demucs on first use, including `capabilities --test-music` | Torch Hub weight requests, no library data | optional stem separation; cache prevents repeat downloads |
+| Hugging Face and its download/CDN hosts | ACE-Step `lib` mode checkpoint preparation, including music capability tests | checkpoint requests, no library data | optional generated music; the app pins immutable snapshot revisions listed below and refuses incomplete snapshots |
 | `raw.githubusercontent.com` | only `titles fonts --install`, `models fetch`, or while the Docker image builds | nothing about your library: 42 Noto files, 43 MB; the WordNet 3.0 corpus, 11 MB, checked by SHA-256 | a render never downloads |
 
-`preflight` prints one row per outside switch you turned on, naming the host. A default install
-prints none.
+The film-title caller passes names, date bounds, clip captions and preset/album facts. The title
+prompt also accepts daily locations, country and object labels when a caller supplies them;
+the ordinary film-title caller currently leaves those three optional inputs unset.
+
+`preflight`'s **Outside call** rows cover geocoding and map tiles only, naming their configured
+destinations. No rows means those two switches are off; it is not a complete egress audit.
+The service probes above can still contact remote endpoints.
+
+The app and inference service disable Hugging Face Hub telemetry before imports, including its
+agent-detection request. This does not disable explicitly allowed model downloads.
+App-managed model pins and the captioner weights are digest-checked; a Docling snapshot is
+revision-pinned. Local ACE-Step prepares immutable, app-pinned Hugging Face snapshots before
+initializing its handlers; API mode uses the remote server's checkpoint policy. Download URLs can redirect to CDN hosts;
+a firewall allow-list needs those actual destinations too, not just the origin hosts above.
 
 
 ## The one picture seat
@@ -50,8 +65,10 @@ evidence for selected shots and actual candidates. An explicit LLM-caption opt-i
 image requests on NAS too. Later films reuse valid entries under their actual producer;
 missing facts or a changed producer can require another read. `prepare` can explicitly cover a
 wider scope. The selection reader uses the resulting text and never decides sharing.
-A film you share outside the family also leaves out every picture a detector or an exposure flag
-marked, whatever the reader says about it (`advanced.editorial.strict_sharing`, on by default).
+A shareable film keeps detector and exposure holds even with
+`advanced.editorial.strict_sharing: false`; a caption cannot clear them. Only your explicit
+clearance on a picture can lift those holds. `strict_sharing` also permits clean-evidence sharing
+on NAS without captions.
 
 Two features ask a reader something besides the editor, and both send text only. Music
 selection reads the cut's text (thesis, story titles, ingest captions) and falls back to the clips'

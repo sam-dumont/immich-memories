@@ -1,4 +1,4 @@
-"""With `strict_sharing` on, anything a detector or an exposure flag marked stays out of a
+"""Anything a detector or an exposure flag marked stays out of a
 film shared outside the family, whatever the reader's text says. Family films are unchanged."""
 
 from __future__ import annotations
@@ -18,17 +18,15 @@ class Judge(ClearingReader):
     calls: list = []
 
 
-def gate(tmp_path, audience, *, strict=None):
-    options = {} if strict is None else {"strict_sharing": strict}
+def gate(tmp_path, audience, *, flags=FLAGGED):
     return AudienceGate(
         Judge(),
         audience=audience,
         annotations={"solo": Annotation("A family waves in a garden.")},
-        flag_rows=FLAGGED,
+        flag_rows=flags,
         lines={"solo": "A family waves in a garden."},
         bank_path=tmp_path / "shareability.private.json",
         library=AudienceBank(open_store(), answerer="full|model-a"),
-        **options,
     )
 
 
@@ -36,32 +34,23 @@ def test_strict_sharing_is_on_by_default():
     assert EditorialConfig().strict_sharing is True
 
 
-def test_a_flagged_picture_the_text_clears_stays_out_of_a_shared_film(tmp_path):
+def test_a_caption_cannot_clear_exposure_for_sharing(tmp_path):
     verdict = gate(tmp_path, "shareable").verdict_of(UNIT)
 
     assert not share.allowed(verdict, "shareable")
 
 
-def test_turning_it_off_lets_the_text_clear_the_flag_as_before(tmp_path):
-    verdict = gate(tmp_path, "shareable", strict=False).verdict_of(UNIT)
-
-    assert verdict == "share"
-
-
 def test_a_family_film_is_unchanged(tmp_path):
-    strict = gate(tmp_path / "on", "family").verdict_of(UNIT)
-    relaxed = gate(tmp_path / "off", "family", strict=False).verdict_of(UNIT)
-
-    assert strict == relaxed == "share"
+    assert gate(tmp_path, "family").verdict_of(UNIT) == "share"
 
 
-def test_the_strict_hold_is_not_banked_so_turning_it_off_later_restores_the_share(tmp_path):
+def test_a_banked_caption_cannot_lift_exposure_on_a_later_cut(tmp_path):
     gate(tmp_path, "shareable").verdict_of(UNIT)
 
-    assert gate(tmp_path, "shareable", strict=False).verdict_of(UNIT) == "share"
+    assert not share.allowed(gate(tmp_path, "shareable").verdict_of(UNIT), "shareable")
 
 
-def test_an_unflagged_picture_is_shared_either_way(tmp_path):
+def test_an_unflagged_picture_is_shared(tmp_path):
     clean = AudienceGate(
         Judge(),
         audience="shareable",
@@ -106,3 +95,12 @@ def test_a_flagged_picture_stays_out_of_a_shared_film_and_no_llm_is_asked(tmp_pa
         assert plan["shareability"]["verdicts"]["picture-000"]["verdict"] != "share"
         assert "picture-000" not in {row["asset_id"] for row in plan["carriers"]}
         assert not [c for c in judge.calls if c["stage"].startswith("shareability-")]
+
+
+def test_explicit_owner_clearance_lifts_exposure_until_the_owner_removes_it(tmp_path):
+    assert not share.allowed(gate(tmp_path, "shareable").verdict_of(UNIT), "shareable")
+    cleared = {
+        "solo": (*FLAGGED["solo"], share.FlagRow("solo", "cleared", "looked at it", "owner"))
+    }
+    assert gate(tmp_path, "shareable", flags=cleared).verdict_of(UNIT) == "share"
+    assert not share.allowed(gate(tmp_path, "shareable").verdict_of(UNIT), "shareable")

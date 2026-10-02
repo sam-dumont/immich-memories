@@ -32,6 +32,14 @@ flowchart TD
 
 The human introduction is [Codebase architecture](docs-site/docs/contribute/architecture.md). This document retains the full technical inventory.
 
+## Dependency network policy
+
+The app package sets `HF_HUB_DISABLE_TELEMETRY=1` before config or model dependencies
+are imported. The inference service imports that package before its producers; the independent
+render-worker package establishes the same policy at entry. Hugging Face cache lookups must not
+fetch its agent registry. This policy does not set `HF_HUB_OFFLINE`: explicit model downloads
+remain controlled by the acquisition command or runtime download setting.
+
 ## Overview
 
 Immich Memories generates video compilations from an Immich photo library.

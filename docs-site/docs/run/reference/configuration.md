@@ -86,7 +86,9 @@ IMMICH_MEMORIES_SECRET_KEY=paste-the-openssl-output-here
 Then `docker compose up -d` to recreate the container. A key shorter than 32 characters is refused
 when you save. Change or lose the key and the
 stored secrets stop opening: the app logs which ones and falls back to their defaults, `config show`
-and the settings page mark each one, and you save them again. Logs never print a secret, whichever source it came from.
+and the settings page mark each one, and you save them again. After configuration loads, log
+redaction masks configured secrets of at least 8 characters. Shorter secrets and messages logged
+before configuration loads are outside that filter.
 
 
 ## Everyday keys and advanced keys

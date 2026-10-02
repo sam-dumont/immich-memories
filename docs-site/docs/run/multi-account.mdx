@@ -168,7 +168,9 @@ Docker users: follow the [host export and container import commands](../make/cli
 
 ## Privacy notes
 
-The partner key only goes to its configured server. The app reads the selected accounts' owned
+With local rendering, the partner key goes to its configured Immich server. A configured
+[render worker](../better/gpu-render.md) also receives the keys needed for the selected cut,
+including partner keys, so that host has access to those libraries. The app reads the selected accounts' owned
 pictures; partner sharing does not pull in a third person's library. Keys are redacted from logs
 and diagnostic reports. Uploads always go to the primary account.
 [Account-name rules and fields](../reference/config-reference.md#extra-accounts) are in the reference.
