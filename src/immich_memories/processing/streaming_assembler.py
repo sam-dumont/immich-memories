@@ -378,23 +378,21 @@ def _encode_clip_sequence(
     caption_windows = caption_frame_windows(clips, transitions, fps, fade_frames)
 
     def decoder_for(clip_idx: int) -> Iterator[np.ndarray]:
-        return iter(
-            make_decoder(
-                clips[clip_idx],
-                clip_idx,
-                width,
-                height,
-                fps,
-                ctx,
-                privacy_mode,
-                clip_captions[clip_idx],
-                caption_font,
-                scale_mode,
-                hdr_type,
-                audio_work_dir=audio_work_dir,
-                caption_window=caption_windows[clip_idx],
-            )
-        )
+        return make_decoder(
+            clips[clip_idx],
+            clip_idx,
+            width,
+            height,
+            fps,
+            ctx,
+            privacy_mode,
+            clip_captions[clip_idx],
+            caption_font,
+            scale_mode,
+            hdr_type,
+            audio_work_dir=audio_work_dir,
+            caption_window=caption_windows[clip_idx],
+        ).iter_borrowed_frames()
 
     for clip_idx, clip in enumerate(clips):
         if active_iter is None:

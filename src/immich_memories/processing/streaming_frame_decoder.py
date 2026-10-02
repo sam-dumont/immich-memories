@@ -12,9 +12,10 @@ import logging
 import subprocess
 from collections.abc import Iterator
 from fractions import Fraction
+from io import BufferedReader
 from pathlib import Path
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
@@ -217,7 +218,18 @@ class FrameDecoder:
         return ",".join(parts)
 
     def __iter__(self) -> Iterator[np.ndarray]:
-        """Yield decoded frames one at a time."""
+        """Yield independent, read-only frames that callers may retain."""
+        return self._iter_frames(reuse_buffer=False)
+
+    def iter_borrowed_frames(self) -> Iterator[np.ndarray]:
+        """Yield read-only views valid until the next complete frame arrives.
+
+        Exhaustion preserves the last frame for crossfade holds. Copy frames
+        before advancing if they must remain available beyond the next yield.
+        """
+        return self._iter_frames(reuse_buffer=True)
+
+    def _iter_frames(self, reuse_buffer: bool) -> Iterator[np.ndarray]:
         vf = self._build_vf()
         use_fc = getattr(self, "_use_filter_complex", False)
 
@@ -272,13 +284,11 @@ class FrameDecoder:
             bufsize=self._frame_size,
         )
         assert proc.stdout is not None  # noqa: S101
+        # Popen's positive bufsize gives this binary pipe a BufferedReader.
+        pipe = cast(BufferedReader, proc.stdout)
 
         try:
-            decoded = 0
-            while True:
-                raw = proc.stdout.read(self._frame_size)
-                if len(raw) < self._frame_size:
-                    break
+            for decoded, raw in enumerate(self._raw_frames(pipe, reuse_buffer), start=1):
                 frame: np.ndarray
                 if self._pix_fmt == "yuv420p10le":
                     # WHY: Keep as flat uint16 — YUV planar can't reshape to (H,W,3).
@@ -289,12 +299,29 @@ class FrameDecoder:
                     frame = np.frombuffer(raw, dtype=np.uint16)
                 else:
                     frame = np.frombuffer(raw, dtype=np.uint8).reshape(self._height, self._width, 3)
-                decoded += 1
+                frame.setflags(write=False)
                 self._finish_bounded_output(proc, decoded)
                 yield frame
         finally:
             proc.stdout.close()
             stop_owned_process(proc)
+
+    def _raw_frames(self, pipe: BufferedReader, reuse_buffer: bool) -> Iterator[bytes | bytearray]:
+        # Read into the other slot: an incomplete write must not overwrite
+        # the last complete frame, which a crossfade may need to hold.
+        storage = [bytearray(self._frame_size) for _ in range(2)] if reuse_buffer else None
+        index = 0
+        while True:
+            if storage is None:
+                raw = pipe.read(self._frame_size)
+                size = len(raw)
+            else:
+                raw = storage[index % 2]
+                size = pipe.readinto(raw)
+            if size != self._frame_size:
+                return
+            yield raw
+            index += 1
 
     def _finish_bounded_output(self, proc: subprocess.Popen[bytes], decoded: int) -> None:
         # The assembler closes this generator after its last picture.
