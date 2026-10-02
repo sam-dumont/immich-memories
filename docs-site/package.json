@@ -35,7 +35,7 @@
     "@playwright/test": "^1.50.0",
     "sharp": "^0.35.5",
     "tsx": "^4.0.0",
-    "typescript": "~5.6.2"
+    "typescript": "~7.0.2"
   },
   "browserslist": {
     "production": [
