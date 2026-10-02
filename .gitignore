@@ -175,3 +175,7 @@ src/immich_memories/web/client/
 
 # Theme-specific public documentation walkthrough (CC0 fixture only).
 !docs-site/static/demo/dark-demo.mp4
+
+# Actual CC0 NAS/Full example films, tracked in LFS
+!docs-site/static/demo/tier-nas.mp4
+!docs-site/static/demo/tier-full.mp4
