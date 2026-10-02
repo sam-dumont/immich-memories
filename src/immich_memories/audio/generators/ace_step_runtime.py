@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from immich_memories.audio.generators.ace_step_checkpoints import pinned_checkpoints
 from immich_memories.audio.generators.memory_budget import memory_shortfall
 from immich_memories.tracking.system_info import _get_ram_gb as _physical_memory_gb
 
@@ -348,29 +349,30 @@ def build_v15_runtime(
                 "use_lm: false."
             )
 
-        dit_handler = _initialize_dit_handler(
-            AceStepHandler,
-            project_root=project_root,
-            dit_model=dit_model,
-            device=device,
-            offload=offload,
-            use_mlx_dit=use_mlx_dit,
-            mlx_vae_chunk=mlx_vae_chunk,
-            owned_mlx_checkpoint=(
-                checkpoint_dir / dit_model / "model.safetensors"
-                if use_mlx_dit and not lm_model and dit_model == "acestep-v15-turbo"
-                else None
-            ),
-        )
-        llm_handler = _initialize_lm_handler(
-            LLMHandler,
-            ensure_lm_model,
-            checkpoint_dir=checkpoint_dir,
-            lm_model=lm_model,
-            lm_backend=lm_backend,
-            device=device,
-            offload=offload,
-        )
+        with pinned_checkpoints(checkpoint_dir, dit_model, lm_model) as pinned_dir:
+            dit_handler = _initialize_dit_handler(
+                AceStepHandler,
+                project_root=project_root,
+                dit_model=dit_model,
+                device=device,
+                offload=offload,
+                use_mlx_dit=use_mlx_dit,
+                mlx_vae_chunk=mlx_vae_chunk,
+                owned_mlx_checkpoint=(
+                    pinned_dir / dit_model / "model.safetensors"
+                    if use_mlx_dit and not lm_model and dit_model == "acestep-v15-turbo"
+                    else None
+                ),
+            )
+            llm_handler = _initialize_lm_handler(
+                LLMHandler,
+                ensure_lm_model,
+                checkpoint_dir=pinned_dir,
+                lm_model=lm_model,
+                lm_backend=lm_backend,
+                device=device,
+                offload=offload,
+            )
 
         runtime = ACEStepV15Runtime(
             dit_handler=dit_handler,
