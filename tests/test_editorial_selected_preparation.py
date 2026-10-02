@@ -148,7 +148,7 @@ def test_full_refinement_reuses_gpu_captions_instead_of_recaptioning(tmp_path):
     full, calls = _film(tmp_path, sources, tier="full")
 
     assert full == gpu
-    assert [ids for producer, ids in calls if producer == "effects-tier"] == [("nas",), ("full",)]
+    assert [ids for producer, ids in calls if producer == "effects-tier"] == [("basic",), ("full",)]
     assert any(producer == "period-context" for producer, _ in calls)
     assert not any(producer == "captions" for producer, _ in calls)
 

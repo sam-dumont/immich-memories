@@ -10,7 +10,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
   const {siteConfig} = useDocusaurusContext();
   const buildVersion = String(siteConfig.customFields?.version || 'development');
   const [setup, setSetup] = useState<Setup>({
-    platform: initialPlatform, inline: initialInline, uiPort: 8080, tier: 'nas', immichUrl: 'http://192.168.1.10:2283', apiKey: '',
+    platform: initialPlatform, inline: initialInline, uiPort: 8080, tier: 'basic', immichUrl: 'http://192.168.1.10:2283', apiKey: '',
     gpuBox: '', readerUrl: '', readerModel: '', readerApiKey: '', cuda: false,
     version: buildVersion,
   });
@@ -69,7 +69,7 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
     <fieldset className={styles.tiers}>
       <legend>Choose a tier</legend>
       {([
-        ['nas', 'NAS', 'A complete film from metadata and small classifiers.'],
+        ['basic', 'Basic', 'A complete film from metadata and small classifiers.'],
         ['gpu', 'GPU', 'Picture descriptions, intent and extra sharing checks.'],
         ['full', 'Full', 'A text reader refines the draft and writes titles.'],
       ] as const).map(([value, label, detail]) => <label key={value}>
@@ -78,11 +78,11 @@ export default function SetupBuilder({initialPlatform = 'linux', initialInline =
       </label>)}
     </fieldset>
     <div className={styles.fields}>
-      {compose && setup.tier !== 'nas' && <label>GPU box address (optional)
+      {compose && setup.tier !== 'basic' && <label>GPU box address (optional)
         <input aria-label="GPU box address (optional)" value={setup.gpuBox} onChange={event => update({gpuBox: event.target.value})} placeholder="192.168.1.50" />
         <small>Use the combined worker on your private network. Leave blank for services on this machine.</small>
       </label>}
-      {compose && setup.tier !== 'nas' && !setup.gpuBox && <label className={styles.check}>
+      {compose && setup.tier !== 'basic' && !setup.gpuBox && <label className={styles.check}>
         <input type="checkbox" checked={setup.cuda} onChange={event => update({cuda: event.target.checked})} />
         Use NVIDIA CUDA containers
         <small>Needs the NVIDIA driver and container toolkit. A CPU container does not satisfy GPU readiness.</small>

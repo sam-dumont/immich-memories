@@ -110,7 +110,7 @@ def build_assembly_settings(
     output_crf = params.output_crf if params.output_crf is not None else config.output.effective_crf
     hdr_mode = config.output.hdr_mode
     if (
-        config.tier == "nas"
+        config.tier == "basic"
         and hdr_mode is HdrMode.AUTO
         and config.output.codec_policy == "prefer_hardware"
         and capabilities.supports_h264_encode

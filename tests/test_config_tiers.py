@@ -22,7 +22,7 @@ def _knobs(config: Config) -> tuple[str, str, bool]:
 def test_an_unstated_tier_is_the_nas_tier() -> None:
     config = Config()
 
-    assert config.tier == "nas"
+    assert config.tier == "basic"
     assert _knobs(config) == ("rules", "no_captions", False)
 
 
@@ -78,7 +78,7 @@ def test_a_model_on_nas_explains_that_text_features_remain_available(caplog) -> 
 
     assert config.editorial.reader == "rules"
     assert "titles and music mood" in caplog.text
-    assert "selection stays on nas" in caplog.text
+    assert "selection stays on basic" in caplog.text
 
 
 def test_the_tier_is_a_top_level_key_in_the_file(tmp_path) -> None:
@@ -94,7 +94,7 @@ def test_each_tier_reports_what_it_runs_with() -> None:
 
     assert [tier_settings(t) for t in ("nas", "gpu", "full")] == [
         {
-            "tier": "nas",
+            "tier": "basic",
             "reader": "rules",
             "preparation_tier": "no_captions",
             "laya_audience": False,

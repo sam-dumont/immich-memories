@@ -15,7 +15,7 @@ pytestmark = pytest.mark.skipif(shutil.which("node") is None, reason="Node requi
 def _build(_sources=None, _build_version="1.2.3", **changes):
     setup = {
         "platform": "linux",
-        "tier": "nas",
+        "tier": "basic",
         "immichUrl": "http://192.168.1.10:2283",
         "apiKey": "synthetic-fixture-api-key",
         "gpuBox": "",
@@ -55,7 +55,7 @@ def _build(_sources=None, _build_version="1.2.3", **changes):
     return json.loads(output)
 
 
-def test_nas_builder_outputs_one_compose_and_version_variable():
+def test_basic_builder_outputs_one_compose_and_version_variable():
     result = _build()
     files = {file["name"]: file["content"] for file in result["files"]}
     compose = yaml.safe_load(files["docker-compose.yml"])
@@ -180,7 +180,7 @@ def test_remote_gpu_builder_accepts_the_loader_supported_addresses(host):
 @pytest.mark.parametrize(
     "tier,cuda,gpu_box",
     [
-        ("nas", False, ""),
+        ("basic", False, ""),
         ("gpu", False, ""),
         ("gpu", True, ""),
         ("full", True, ""),
@@ -231,7 +231,7 @@ def test_builder_single_file_is_real_compose_with_exact_shipped_sources(
     assert app["environment"]["IMMICH_API_KEY"] == "synthetic-fixture-api-key"
     if tier == "full":
         assert app["environment"]["IMMICH_MEMORIES_DEPLOYMENT_READER_ENABLED"] == "true"
-    if gpu_box or tier == "nas":
+    if gpu_box or tier == "basic":
         assert set(services) == {"immich-memories"}
     else:
         assert services["immich-memories-inference"]["image"].endswith(
@@ -242,7 +242,9 @@ def test_builder_single_file_is_real_compose_with_exact_shipped_sources(
 
 
 def test_selected_stable_kubernetes_bundle_uses_its_exact_tag():
-    result = _build(platform="kubernetes", tier="nas", version="0.101.0", _build_version="0.101.0")
+    result = _build(
+        platform="kubernetes", tier="basic", version="0.101.0", _build_version="0.101.0"
+    )
     assert "/releases/download/v0.101.0/immich-memories-deploy-0.101.0.tar.gz" in result["commands"]
 
 
@@ -369,7 +371,7 @@ def test_remote_gpu_setup_outputs_the_real_worker_with_matching_port_and_version
     assert "IMMICH_MEMORIES_RENDER__WORKER_BASE_URL" not in app["environment"]
 
 
-@pytest.mark.parametrize("tier", ["nas", "gpu", "full"])
+@pytest.mark.parametrize("tier", ["basic", "gpu", "full"])
 def test_generated_kubernetes_inputs_render_the_current_shipped_base(tmp_path, tier):
     if shutil.which("kubectl") is None:
         pytest.skip("kubectl required")
@@ -404,7 +406,7 @@ def test_generated_kubernetes_inputs_render_the_current_shipped_base(tmp_path, t
     assert env["IMMICH_MEMORIES_DEPLOYMENT_TIER"]["value"] == tier
     assert container["securityContext"]["readOnlyRootFilesystem"] is True
     assert app["metadata"]["namespace"] == "immich-memories"
-    if tier != "nas":
+    if tier != "basic":
         deployments = [item for item in resources if item["kind"] == "Deployment"]
         assert len(deployments) == 3
         assert env["IMMICH_MEMORIES_DEPLOYMENT_CAPTION_URL"]["value"] == "http://captioner:8092/v1"

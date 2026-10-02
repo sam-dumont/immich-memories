@@ -31,7 +31,7 @@ def register_models_commands(cli_group: click.Group) -> None:
     @click.option(
         "--laya",
         is_flag=True,
-        help="Fetch the Laya audience checkpoint even on the nas tier (gpu and full fetch it anyway)",
+        help="Fetch the Laya audience checkpoint even on the basic tier (gpu and full fetch it anyway)",
     )
     @click.pass_context
     def fetch(ctx: click.Context, force: bool, detectors: bool | None, laya: bool) -> None:

@@ -63,7 +63,7 @@ def test_opted_in_nas_captions_wait_for_refinement_and_warn_about_cost(caplog, t
     reloaded = Config.from_yaml(path)
 
     assert reloaded.editorial.preparation.demands_captions
-    assert reloaded.tier == "nas"
+    assert reloaded.tier == "basic"
     assert reloaded.editorial.reader == "rules"
     assert not reloaded.editorial.laya_audience
     assert not nas_draft_config(reloaded).editorial.preparation.demands_captions

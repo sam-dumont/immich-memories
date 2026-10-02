@@ -233,7 +233,7 @@ catalogue is a memory nobody asked for (five years to the day since
 the wedding), and that needs the days found in advance.
 
 Days inside a trip are skipped, since a trip memory already tells that
-story. On NAS and GPU tiers, holidays spent at home are skipped too.
+story. On Basic and GPU tiers, holidays spent at home are skipped too.
 Other days count when one recorded fact stands out (away from home,
 three favourites, mostly video, or a long day with close family), and
 each year keeps its strongest few. On Full tier, days are read a month
@@ -379,7 +379,7 @@ immich-memories models fetch [OPTIONS]
 | --- | --- | --- | --- |
 | `--force` | boolean | false | Re-download even when the file is already right |
 | `--detectors`, `--no-detectors` | boolean | - | Fetch detector models (default: gpu/full only); --detectors also fetches on nas |
-| `--laya` | boolean | false | Fetch the Laya audience checkpoint even on the nas tier (gpu and full fetch it anyway) |
+| `--laya` | boolean | false | Fetch the Laya audience checkpoint even on the basic tier (gpu and full fetch it anyway) |
 
 ## `music`
 

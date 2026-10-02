@@ -168,9 +168,9 @@ def resolve_generation_canvas(params: GenerationParams) -> OutputCanvas:
             hardware_hevc=partial(hardware_hevc_available, params.config),
         )
     canvas = params.output_canvas
-    if params.config.tier == "nas" and (
+    if params.config.tier == "basic" and (
         max(canvas.width, canvas.height) > 1920 or min(canvas.width, canvas.height) > 1080
     ):
-        logger.info("NAS tier renders at most 1080p; capping the shared output canvas")
+        logger.info("Basic tier renders at most 1080p; capping the shared output canvas")
         params.output_canvas = _orient(1920, 1080, canvas.orientation)
     return params.output_canvas

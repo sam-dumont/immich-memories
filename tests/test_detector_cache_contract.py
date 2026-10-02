@@ -82,6 +82,7 @@ def test_switching_tiers_preserves_banked_detector_versions_and_gpu_reads():
     )
     config.tier = "nas"
     apply_tier(config)
+    assert config.tier == "basic"
     assert load_detector_heads(store, ["picture"], config.editorial.active_head_versions) == {
         "picture": {"uncovered_person": "no"}
     }

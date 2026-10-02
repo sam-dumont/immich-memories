@@ -132,3 +132,21 @@ def test_deployment_service_defaults_remain_editable_and_saved_settings_win(tmp_
     assert {key: reloaded[key]["value"] for key in changes} == changes
     assert path.read_bytes() == before
     set_config(None)
+
+
+def test_legacy_tier_in_saved_settings_is_presented_as_basic(tmp_path, monkeypatch):
+    from immich_memories.config_loader import Config
+    from immich_memories.db import open_store
+    from immich_memories.settings_store import SettingsStore
+
+    client, path = _settings_client(tmp_path, monkeypatch)
+    config = Config.from_yaml(path, stored={})
+    store = open_store(config)
+    try:
+        SettingsStore(store, None).save({"tier": "nas"})
+    finally:
+        store.engine.dispose()
+    response = client.get("/api/v1/settings")
+    assert response.status_code == 200
+    assert _rows(response.json())["tier"]["value"] == "basic"
+    set_config(None)

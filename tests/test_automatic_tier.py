@@ -73,7 +73,7 @@ def test_a_service_without_healthy_gpu_compute_keeps_model_selection_off(
         llm={"enabled": True, "model": "local-reader", "base_url": "http://localhost:9999/v1"},
     )
 
-    assert config.tier == "nas"
+    assert config.tier == "basic"
     assert config.editorial.reader == "rules"
     assert not config.editorial.preparation.demands_captions
     assert not config.editorial.laya_audience
@@ -156,7 +156,7 @@ def test_reloading_does_not_pin_the_machine_observed_when_auto_was_loaded(monkey
     provider = "CPUExecutionProvider"
     reloaded = Config.from_yaml(path)
 
-    assert reloaded.tier == "nas"
+    assert reloaded.tier == "basic"
     assert not reloaded.editorial.preparation.demands_captions
     assert not reloaded.editorial.laya_audience
 
@@ -193,7 +193,7 @@ def test_a_cuda_wheel_without_a_usable_device_does_not_enable_gpu(monkeypatch, l
         llm={"enabled": True, "model": "local-reader", "base_url": "http://localhost:9999/v1"}
     )
 
-    assert config.tier == "nas"
+    assert config.tier == "basic"
     assert not config.editorial.preparation.demands_captions
 
 
@@ -241,4 +241,4 @@ def test_metal_bindings_without_a_device_leave_the_machine_on_nas(monkeypatch, l
         sys.modules, "Metal", SimpleNamespace(MTLCreateSystemDefaultDevice=lambda: None)
     )
 
-    assert Config().tier == "nas"
+    assert Config().tier == "basic"

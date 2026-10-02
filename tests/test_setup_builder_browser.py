@@ -108,6 +108,9 @@ def test_single_file_download_is_ready_for_a_stack_editor(page, setup_site, tmp_
     config = json.loads(destination.read_text())
     app = config["services"]["immich-memories"]
     assert app["image"].endswith(":1.2.3")
+    expect(page.get_by_role("radio", name="Basic")).to_be_checked()
+    expect(page.get_by_role("radio", name="NAS", exact=True)).to_have_count(0)
+    assert app["environment"]["IMMICH_MEMORIES_DEPLOYMENT_TIER"] == "basic"
     assert "immich-memories-output:/app/output" in app["volumes"]
     assert "./output:/app/output" not in app["volumes"]
     assert len(app["environment"]["IMMICH_MEMORIES_SECRET_KEY"]) == 64

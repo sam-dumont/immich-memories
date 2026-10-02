@@ -8,8 +8,8 @@ from immich_memories.preflight import CheckResult, CheckStatus
 def check_inference_compute(config: Config) -> CheckResult:
     """Inspect the existing inference health/device probe without loading model weights."""
     name = "Inference compute"
-    if config.tier == "nas":
-        return CheckResult(name, CheckStatus.SKIPPED, "NAS selection does not require a GPU")
+    if config.tier == "basic":
+        return CheckResult(name, CheckStatus.SKIPPED, "Basic selection does not require a GPU")
     try:
         available, reason = inference_acceleration(config.inference)
     except ValueError as error:

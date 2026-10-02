@@ -39,7 +39,7 @@ private activities a family film holds back. Laya is a 0.4B text classifier (Apa
 fine-tuned on captions of public CC BY photographs whose authors are credited in the archive. It
 reads the ingest caption, in about 14 ms a shot on Apple silicon. It works with the rules reader
 and the prose reader when preparation produces captions. The `gpu` and `full` tiers enable it;
-the default `nas` tier uses the picture classifiers and rules.
+the default `basic` tier uses the picture classifiers and rules.
 
 ```bash
 uv tool install "immich-memories[all-mac]" --with laya-mlx  # Apple Silicon uv-tool install

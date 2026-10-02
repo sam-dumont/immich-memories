@@ -306,7 +306,7 @@ _AUTH_SHORTCUT = ("IMMICH_MEMORIES_AUTH_USERNAME", "IMMICH_MEMORIES_AUTH_PASSWOR
 class Config(BaseSettings):
     """Main configuration for Immich Memories.
 
-    Config tiers (YAML layout; not the product `tier`, which picks nas, gpu or full):
+    Config tiers (YAML layout; not the product `tier`, which picks basic, gpu or full):
       Tier 1 (top level): tier, immich, defaults, output, audio, title_screens,
                            cache, database, upload, trips, photos
       Tier 2 (advanced:):  analysis, hardware, llm, musicgen, ace_step, server, auth,
@@ -348,7 +348,8 @@ class Config(BaseSettings):
 
     tier: TierSetting = Field(
         default="auto",
-        description="auto resolves NAS, GPU or Full from inference capability and the configured LLM; "
+        json_schema_extra={"enum": ["auto", "basic", "gpu", "full"]},
+        description="auto resolves Basic, GPU or Full from inference capability and the configured LLM; "
         "preparation follows the same tier. Explicit tiers pin comparisons. "
         "Configured titles and music mood work on every tier",
     )

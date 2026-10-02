@@ -335,7 +335,7 @@ def test_no_detectors_leaves_the_detector_artifacts_alone(
 
 def test_nas_default_fetch_omits_detector_downloads(served, tmp_path, monkeypatch):
     config = _pinned_everywhere(served, tmp_path, monkeypatch)
-    assert config.tier == "nas"
+    assert config.tier == "basic"
     result = _invoke(["models", "fetch"], config)
     assert result.exit_code == 0
     assert (tmp_path / "dinov2.onnx").exists()

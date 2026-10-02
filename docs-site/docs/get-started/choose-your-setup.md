@@ -1,14 +1,14 @@
 ---
 title: Choose your setup
-description: What NAS, GPU and Full add, what they cost, and where to start.
+description: What Basic, GPU and Full add, what they cost, and where to start.
 ---
 
 import SetupBuilder from '@site/src/components/SetupBuilder';
 
 # Choose your setup
 
-A plain NAS makes a complete film: stories, favourites, people, trips, time order, titles and
-bundled music. Start there. Add services for a change you want to see in the film.
+The Basic tier makes a complete film: stories, favourites, people, trips, time order, titles and
+bundled music. It runs on a NAS, a Mac or a cluster without GPU inference. Start there. Add services for a change you want to see in the film.
 
 <SetupBuilder />
 
@@ -17,7 +17,7 @@ The generated commands configure reader authentication before preflight.
 
 | Setup | What you gain | What runs |
 |---|---|---|
-| **NAS** | A complete edit from metadata and small CPU picture classifiers | The app |
+| **Basic** | A complete edit from metadata and small CPU picture classifiers | The app |
 | **GPU** | Picture descriptions, more context for selection and extra sharing checks | The app, inference and a caption service, with Laya ready |
 | **Full** | GPU features plus a text reader's small corrections to the draft | The GPU setup and an explicitly enabled reader |
 
@@ -25,7 +25,10 @@ A **video encoder** speeds up rendering. It does not enable the GPU selection ti
 [Hardware encoding](../run/hardware.md) and the [render worker](../better/gpu-render.md) are
 separate choices.
 
-## NAS: start with the film
+Use `tier: basic` to select it explicitly. Existing `tier: nas` settings remain accepted as
+an alias and resolve to `basic`; GPU and Full values are unchanged.
+
+## Basic: start with the film
 
 The app reads your library's dates, favourites, people and locations, prepares picture facts on
 its CPU, and builds the edit. Template titles and bundled music are included. There is no model
@@ -37,11 +40,11 @@ and about 25 GB for persistent data, plus room for the image and finished films.
 [NAS notes](../run/nas.md) cover permissions and access from your desktop.
 
 **Cost:** the first cut prepares the pictures in its period. Later cuts reuse compatible facts;
-they still render the video. NAS output stops at 1080p. The
+they still render the video. Basic output stops at 1080p. The
 [finished-film measurements](../better/measured.md#whole-film-controls) include a one-minute
 NAS month that took 7m 23s with picture facts already prepared. That is not a first-install time.
 
-**Check:** `capabilities` should report NAS. A software encoder is a valid result. Run
+**Check:** `capabilities` should report Basic. A software encoder is a valid result. Run
 `preflight` after `models fetch` and resolve errors before cutting a month.
 
 ## GPU: understand more of the pictures

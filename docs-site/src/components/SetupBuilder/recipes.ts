@@ -1,5 +1,5 @@
 export type Platform = 'linux' | 'synology' | 'mac' | 'kubernetes';
-export type Tier = 'nas' | 'gpu' | 'full';
+export type Tier = 'basic' | 'gpu' | 'full';
 export interface Setup {
   platform: Platform;
   tier: Tier;
@@ -110,14 +110,14 @@ function macRecipe(setup: Setup): Result {
   const config: Mapping = {
     immich: {url: setup.immichUrl, api_key: setup.apiKey}, tier: setup.tier,
     advanced: {
-      editorial: {preparation: {caption_base_url: setup.tier === 'nas' ? '' : 'http://127.0.0.1:8092/v1'}},
+      editorial: {preparation: {caption_base_url: setup.tier === 'basic' ? '' : 'http://127.0.0.1:8092/v1'}},
       llm: {enabled: full, base_url: setup.readerUrl, api_key: setup.readerApiKey || '', model: setup.readerModel || 'gemma-4-E4B-it-Q4_0'},
     },
   };
   const release = releaseVersion(setup.version);
   const pinned = release !== null;
   const version = release?.replace('-rc.', 'rc');
-  const caption = setup.tier === 'nas' ? [] : [
+  const caption = setup.tier === 'basic' ? [] : [
     'brew install lablup/tap/mlxcel',
     'SNAPSHOT=$(uvx --from huggingface-hub hf download mlx-community/SmolVLM2-500M-Video-Instruct-mlx --revision fa57db46815177fbdfd65cc85a2b3416a8332268)',
     'mlxcel serve --model "$SNAPSHOT" --alias smolvlm2-500m-base-public --host 127.0.0.1 --port 8092 > captioner.log 2>&1 &',
@@ -151,7 +151,7 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
   if (setup.platform === 'mac') return macRecipe(setup);
   if (setup.platform === 'kubernetes') {
     const tag = releaseVersion(setup.version)!;
-    const root = setup.tier === 'nas' ? 'base' : `overlays/tier-${setup.tier}`;
+    const root = setup.tier === 'basic' ? 'base' : `overlays/tier-${setup.tier}`;
     const secret = {apiVersion: 'v1', kind: 'Secret', metadata: {
       name: 'immich-memories-secrets', namespace: 'immich-memories',
     }, type: 'Opaque', stringData: {IMMICH_URL: setup.immichUrl, IMMICH_API_KEY: setup.apiKey, IMMICH_MEMORIES_SECRET_KEY: setup.secretKey!, ...(setup.readerApiKey ? {IMMICH_MEMORIES_DEPLOYMENT_READER_API_KEY: setup.readerApiKey} : {})}};
@@ -160,11 +160,17 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
     const egress = {target: {kind: 'NetworkPolicy', name: 'immich-memories'}, patch: JSON.stringify([{
       op: 'add', path: '/spec/egress/-', value: {ports: [...ports].map(port => ({port, protocol: 'TCP'}))},
     }])};
+    const tierPreset = {target: {kind: 'Deployment', name: 'immich-memories'}, patch: JSON.stringify({
+      apiVersion: 'apps/v1', kind: 'Deployment', metadata: {name: 'immich-memories'},
+      spec: {template: {spec: {containers: [{name: 'immich-memories', env: [
+        {name: 'IMMICH_MEMORIES_DEPLOYMENT_TIER', value: setup.tier},
+      ]}]}}},
+    })};
     const files = [
       {name: 'deploy/kubernetes/custom/secret.yaml', language: 'yaml', content: JSON.stringify(secret, null, 2)},
       {name: 'deploy/kubernetes/custom/kustomization.yaml', language: 'yaml', content: JSON.stringify({
         apiVersion: 'kustomize.config.k8s.io/v1beta1', kind: 'Kustomization', namespace: 'immich-memories',
-        resources: [`../${root}`, 'secret.yaml'], patches: [egress],
+        resources: [`../${root}`, 'secret.yaml'], patches: [egress, tierPreset],
       }, null, 2)},
     ];
     if (setup.tier === 'full') files.push({
@@ -193,9 +199,9 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
   }
   const uiPort = setup.uiPort ?? 8080;
   let compose = sources.base;
-  if (setup.tier !== 'nas' && !setup.gpuBox) compose = merge(compose, sources.gpu);
+  if (setup.tier !== 'basic' && !setup.gpuBox) compose = merge(compose, sources.gpu);
   if (setup.tier === 'full') compose = merge(compose, sources.full);
-  if (setup.cuda && !setup.gpuBox && setup.tier !== 'nas') compose = merge(compose, sources.cuda);
+  if (setup.cuda && !setup.gpuBox && setup.tier !== 'basic') compose = merge(compose, sources.cuda);
   // The single generated file starts all the services selected by this form.
   const services = compose.services as Mapping;
   compose = {...compose, services: Object.fromEntries(Object.entries(services).map(([key, value]) => {

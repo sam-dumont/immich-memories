@@ -74,7 +74,7 @@ def _register_discover(main: click.Group) -> None:
         the wedding), and that needs the days found in advance.
 
         Days inside a trip are skipped, since a trip memory already tells that
-        story. On NAS and GPU tiers, holidays spent at home are skipped too.
+        story. On Basic and GPU tiers, holidays spent at home are skipped too.
         Other days count when one recorded fact stands out (away from home,
         three favourites, mostly video, or a long day with close family), and
         each year keeps its strongest few. On Full tier, days are read a month
