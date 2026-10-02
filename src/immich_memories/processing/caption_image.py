@@ -20,6 +20,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
+from immich_memories.security import private_temp_dir
 from immich_memories.titles.font_chain import face_covers, title_font
 
 _RTL = frozenset({"R", "AL"})
@@ -83,8 +84,7 @@ def render_caption(text: str, style: CaptionStyle) -> tuple[Path, int, int]:
     # a different drawing; written aside and renamed, so a decoder opening the
     # same caption never reads half a file.
     key = hashlib.sha256(repr(size).encode() + image.tobytes()).hexdigest()[:24]
-    folder = Path(tempfile.gettempdir()) / "immich-memories-captions"
-    folder.mkdir(parents=True, exist_ok=True)
+    folder = private_temp_dir("captions")
     path = folder / f"{key}.png"
     if not path.exists():
         with tempfile.NamedTemporaryFile(dir=folder, suffix=".png", delete=False) as handle:

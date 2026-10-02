@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from immich_memories.config_models import expand_env_vars
+from immich_memories.config_models import expand_env_vars, http_url_or_blank
 
 # The generic reasoning control. "disabled" and "auto" are the two ends: never
 # ask, and never say. The three levels in between are mapped to whatever the
@@ -235,3 +235,5 @@ class LLMConfig(BaseModel):
         if isinstance(v, str):
             return expand_env_vars(v)
         return v
+
+    _http_url = field_validator("base_url")(http_url_or_blank)

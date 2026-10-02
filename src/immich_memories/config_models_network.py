@@ -8,7 +8,9 @@ taken.
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from immich_memories.config_models import http_url_or_blank
 
 # Named here so the docs, the preflight rows and the code cannot drift apart.
 GEOCODING_HOST = "nominatim.openstreetmap.org"
@@ -42,3 +44,5 @@ class NetworkConfig(BaseModel):
             "the trip area and the home base"
         ),
     )
+
+    _http_url = field_validator("geocoding_url")(http_url_or_blank)

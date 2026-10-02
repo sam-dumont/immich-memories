@@ -11,7 +11,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from immich_memories.config_models import expand_env_vars
+from immich_memories.config_models import expand_env_vars, http_url_or_blank
 
 
 class AudioConfig(BaseModel):
@@ -101,6 +101,8 @@ class MusicGenConfig(BaseModel):
             return expand_env_vars(v)
         return v
 
+    _http_url = field_validator("base_url")(http_url_or_blank)
+
 
 class ACEStepConfig(BaseModel):
     """Settings for ACE-Step music generation.
@@ -177,3 +179,5 @@ class ACEStepConfig(BaseModel):
         if isinstance(v, str):
             return expand_env_vars(v)
         return v
+
+    _http_url = field_validator("api_url")(http_url_or_blank)

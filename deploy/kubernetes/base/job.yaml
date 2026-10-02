@@ -46,6 +46,7 @@ spec:
       # IMMICH_MEMORIES_SERVICE_HOST/PORT into a pod reading IMMICH_MEMORIES_*
       # otherwise (#1608).
       enableServiceLinks: false
+      automountServiceAccountToken: false
 
       securityContext:
         runAsNonRoot: true
@@ -219,6 +220,7 @@ spec:
         spec:
           restartPolicy: OnFailure
           enableServiceLinks: false
+          automountServiceAccountToken: false
           securityContext:
             runAsNonRoot: true
             runAsUser: 100
@@ -290,6 +292,7 @@ spec:
         spec:
           restartPolicy: OnFailure
           enableServiceLinks: false
+          automountServiceAccountToken: false
           securityContext:
             runAsNonRoot: true
             runAsUser: 100

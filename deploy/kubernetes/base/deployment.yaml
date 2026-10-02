@@ -24,6 +24,8 @@ spec:
       # collides with this app's own IMMICH_MEMORIES_* prefix and the pod
       # fails to start. Off everywhere for the same reason (#1608).
       enableServiceLinks: false
+      # Nothing here calls the Kubernetes API, so the pod carries no token for it.
+      automountServiceAccountToken: false
       # The image runs as `immich`, UID/GID 1000, HOME=/home/immich.
       securityContext:
         runAsNonRoot: true

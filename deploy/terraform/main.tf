@@ -252,7 +252,8 @@ resource "kubernetes_deployment_v1" "this" {
         # A Service named "immich-memories" otherwise injects
         # IMMICH_MEMORIES_SERVICE_HOST/PORT into a pod reading
         # IMMICH_MEMORIES_* itself (#1608).
-        enable_service_links = false
+        enable_service_links            = false
+        automount_service_account_token = false
 
         security_context {
           run_as_non_root = true

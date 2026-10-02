@@ -18,7 +18,6 @@ import hashlib
 import importlib
 import logging
 import os
-import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -35,6 +34,7 @@ from immich_memories.db.legacy_import import (
     write_import_record,
 )
 from immich_memories.db.store import on_first_open
+from immich_memories.security import private_temp_dir
 
 logger = logging.getLogger(__name__)
 
@@ -210,6 +210,6 @@ def _import_lease(store: Store) -> Lease:
     lock = (
         path.with_name(path.name + ".import.lock")
         if path is not None
-        else Path(tempfile.gettempdir()) / "immich-memories-import.lock"
+        else private_temp_dir("locks") / "import.lock"
     )
     return Lease("legacy-import", lock, store)

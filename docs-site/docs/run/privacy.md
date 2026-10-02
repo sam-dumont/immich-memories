@@ -78,7 +78,8 @@ immich-memories titles fonts --install
 ```
 
 Font files are pinned and digest-checked. A render never fetches a font. ACE-Step and local Demucs
-can fetch their own weights on first use; those downloads contain no library data.
+can fetch their own weights on first use; those downloads contain no library data. ACE-Step's
+checkpoint is the one its library picks at that moment, not a revision pinned here.
 
 ## Thumbnails in the web UI
 
