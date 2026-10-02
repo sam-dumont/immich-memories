@@ -150,7 +150,10 @@ advanced:
 
 Both placements are accepted and merge key by key; a top-level key wins a tie.
 Environment variables and CLI paths always omit `advanced.` (`llm.model`). Unknown fields inside
-a section are ignored; unknown top-level sections or invalid values fail validation.
+a section still load, but each ignored key produces a warning naming the key, without its value.
+Unknown `IMMICH_MEMORIES_*` variables are reported too; recognized process controls and aliases
+are accepted. `preflight` and `config show` list ignored keys. Unknown top-level sections or invalid
+values still fail validation.
 Use `config show` to check effective values after editing.
 
 ## Paths in the config are host paths

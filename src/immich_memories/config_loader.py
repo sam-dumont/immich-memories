@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import Field, model_validator
+from pydantic import Field, PrivateAttr, model_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 from immich_memories.config_models import (
@@ -322,6 +322,24 @@ class Config(BaseSettings):
         case_sensitive=False,
     )
 
+    _unknown_keys: tuple[str, ...] = PrivateAttr(default=())
+
+    @property
+    def unknown_keys(self) -> tuple[str, ...]:
+        """Ignored key names, without any configuration values."""
+        return self._unknown_keys
+
+    @model_validator(mode="after")
+    def _warn_unknown_environment(self) -> Config:
+        from immich_memories.config_unknown import unknown_environment
+
+        self._unknown_keys = tuple(
+            dict.fromkeys(f"env: {name}" for name in unknown_environment(type(self)))
+        )
+        for key in self._unknown_keys:
+            logging.getLogger(__name__).warning("Ignoring unknown config key %s", key)
+        return self
+
     preset: PresetName | None = Field(
         default=None,
         description="Named profile that fills several knobs at once (fast = CPU-only/NAS); "
@@ -421,6 +439,12 @@ class Config(BaseSettings):
 
                 _database_source_data = nest_dotted(stored)
             config = cls()
+            from immich_memories.config_unknown import unknown_paths
+
+            file_keys = tuple(f"file: {key}" for key in unknown_paths(cls, _yaml_source_data))
+            config._unknown_keys = tuple(dict.fromkeys((*file_keys, *config.unknown_keys)))
+            for key in file_keys:
+                logging.getLogger(__name__).warning("Ignoring unknown config key %s", key)
             _arm_log_redaction(config)
             return config
         finally:
