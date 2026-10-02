@@ -26,7 +26,7 @@ CURL_IMAGE = (
     "docker.io/curlimages/curl:8.11.1"
     "@sha256:c1fe1679c34d9784c1b0d1e5f62ac0a79fca01fb6377cdd33e90473c6f9f9a69"
 )
-TRIGGER_TOKEN = "container-e2e-trigger-token"  # noqa: S105 -- throwaway test deployment
+TRIGGER_TOKEN = "container-e2e-trigger-token-4c9a0e7f"  # noqa: S105 -- throwaway test deployment
 POSTGRES_PASSWORD = "container-e2e-password"  # noqa: S105 -- throwaway test deployment
 _COUNT_LINE = re.compile(r"^\s{2}(?P<table>[a-z_]+)\s+(?P<count>\d+)$")
 

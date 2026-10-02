@@ -38,7 +38,7 @@ def _service(tmp_path, renderer=None, **over):
 
     return RenderJobs(
         WorkerSettings(
-            token="a-worker-token",  # noqa: S106
+            token="retention-test-worker-token-0f3a9c2e7b41",  # noqa: S106
             immich_url="http://immich.invalid",
             directory=tmp_path,
             **over,

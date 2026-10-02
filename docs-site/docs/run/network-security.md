@@ -116,7 +116,11 @@ flowchart TB
 
 Register OIDC callback `https://memories.example.com/auth/callback` and logout
 `https://memories.example.com/logout`. Allow only intended verified emails/domains.
-`FORWARDED_ALLOW_IPS`, when set, overrides `auth.trusted_proxies`.
+`FORWARDED_ALLOW_IPS`, when set, overrides `auth.trusted_proxies`. With auth on, the app refuses
+to start when it is `*` (it would let every client choose its own address); list your proxy's
+address instead. With `provider: header` it must stay unset. Only uvicorn reads
+`X-Forwarded-For`, and only from those proxies: the sign-in limiter counts failures on the address
+uvicorn resolved, never on a header the client sent.
 Enable secure cookies only once users reach HTTPS; plain HTTP LAN logins then fail.
 
 ## Ports and egress
