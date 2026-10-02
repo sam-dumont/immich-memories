@@ -14,7 +14,7 @@
 #   kubectl apply -k overlays/maximalist
 #
 # Walkthrough, hardware needed per piece, and the config keys:
-# docs-site/docs/run/reference-setup.md
+# docs-site/docs/run/reference/cluster-example.md
 #
 # Composes ../render-sidecar (which itself pulls in ../../base),
 # ../captioner-cuda and ../inference-cuda rather than duplicating any: patching Deployments

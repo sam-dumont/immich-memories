@@ -286,6 +286,11 @@ resource "kubernetes_deployment_v1" "this" {
             name       = "data"
             mount_path = local.data_dir
           }
+          # Torch and other runtime caches share the writable persistent data claim.
+          volume_mount {
+            name       = "data"
+            mount_path = "/home/immich/.cache"
+          }
           volume_mount {
             name       = "models"
             mount_path = local.models_dir
@@ -384,6 +389,11 @@ resource "kubernetes_deployment_v1" "this" {
           volume_mount {
             name       = "data"
             mount_path = local.data_dir
+          }
+          # Torch and other runtime caches share the writable persistent data claim.
+          volume_mount {
+            name       = "data"
+            mount_path = "/home/immich/.cache"
           }
 
           volume_mount {

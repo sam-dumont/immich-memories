@@ -236,12 +236,22 @@ web UI.
 
 ## Kubernetes
 
-`deploy/kubernetes/base/job.yaml` holds a one-off `generate` Job plus monthly and `auto run` CronJobs. It reads
-the `immich-memories-secrets` Secret and shares the volumes of the [Kubernetes deployment](../run/kubernetes.md):
+`deploy/kubernetes/base/cronjobs.yaml` contains two HTTP-trigger CronJobs. They read only the
+trigger token from `immich-memories-secrets`, mount no application PVCs, and call
+`POST /api/trigger` on the running Deployment. Both schedules use the normal `auto run`
+decision; the one named monthly does not force a monthly film.
+
+Set the trigger token, add `- cronjobs.yaml` to `base/kustomization.yaml`, then render and apply:
 
 ```bash
-kubectl apply -f deploy/kubernetes/base/job.yaml
+kubectl kustomize deploy/kubernetes/base
+kubectl apply -k deploy/kubernetes/base
 ```
+
+The base NetworkPolicy permits their app-pod backend on 8080 after Service-port translation.
+The separate `base/job.yaml` runs a one-off `generate` command and mounts the SQLite PVCs;
+include it only with the Deployment scaled to zero. For a fixed recipe while the app runs,
+use `kubectl exec ... -- immich-memories generate ...` so there is no second SQLite writer.
 
 ## A named memory on a named date
 

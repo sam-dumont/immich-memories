@@ -1286,6 +1286,12 @@ changed selection is a refusal. The app hands a cut to it when `render.worker_ba
 version and capabilities first); deployment files are `services/render-worker/compose.yaml` and
 `kubernetes.yaml`.
 
+The Kubernetes base separates the optional one-off CLI writer (`base/job.yaml`) from
+scheduled HTTP triggers (`base/cronjobs.yaml`). The app Service selects only `web-ui` pods;
+CronJobs reach its 8080 backend through a scoped egress rule and never mount the store PVC.
+App and init runtime caches share the persistent data claim at `~/.cache` as well as the
+settings path; the Terraform deployment uses the same layout.
+
 ## Conventions
 
 - **Max file length**: 800 lines soft / 1000 hard (enforced in CI via `make file-length`)
