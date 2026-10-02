@@ -1,8 +1,7 @@
 # The inference service on its own:  kubectl apply -k overlays/inference
 # On NVIDIA nodes instead:           kubectl apply -k overlays/inference-cuda
 #
-# Deliberately not `resources: [../../base]`. The base refuses to build until a
-# hand-made base/secret.yaml exists (Immich URL + API key), and this service
+# Deliberately not `resources: [../../base]`: this service
 # holds no credential and never talks to Immich: it takes a picture on the wire
 # and answers with what the frozen classifiers say. It is the app that needs the
 # secret, not this.

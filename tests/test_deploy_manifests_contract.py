@@ -1,7 +1,7 @@
 """Contracts for the shipped Kubernetes manifests and Terraform module (issue #307).
 
 These files never boot in a cluster during CI, so the properties that made them
-fail as shipped are pinned here: the Secret is applied, the config directory is
+fail as shipped are pinned here: an existing Secret is referenced, the config directory is
 writable, probes hit the real endpoints, no GPU is required by default, and no
 stale config keys survive.
 """
@@ -104,11 +104,11 @@ def _deploy_texts() -> dict[str, str]:
     }
 
 
-def test_kustomization_applies_the_secret_the_deployment_needs() -> None:
+def test_kustomization_uses_an_existing_secret() -> None:
     """`kubectl apply -k .` must not leave the pod in CreateContainerConfigError."""
     resources = _kustomization()["resources"]
 
-    assert "secret.yaml" in resources
+    assert "secret.yaml" not in resources
     assert "configmap.yaml" not in resources
     assert (K8S_DIR / "secret.yaml.example").exists()
     assert not (K8S_DIR / "configmap.yaml").exists()
@@ -520,7 +520,7 @@ def test_kustomize_renders_with_a_secret_created_from_the_example(
     assert result.returncode == 0, result.stderr
     rendered = list(yaml.safe_load_all(result.stdout))
     kinds = {doc["kind"] for doc in rendered}
-    assert {"Namespace", "Secret", "PersistentVolumeClaim", "Deployment", "Service"} <= kinds
+    assert {"Namespace", "PersistentVolumeClaim", "Deployment", "Service"} <= kinds
     assert "Ingress" not in kinds
     deployment = next(doc for doc in rendered if doc["kind"] == "Deployment")
     container = deployment["spec"]["template"]["spec"]["containers"][0]

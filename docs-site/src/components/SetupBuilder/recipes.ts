@@ -161,10 +161,10 @@ export function buildSetup(setup: Setup, sources: Sources, buildVersion: string)
       op: 'add', path: '/spec/egress/-', value: {ports: [...ports].map(port => ({port, protocol: 'TCP'}))},
     }])};
     const files = [
-      {name: 'deploy/kubernetes/base/secret.yaml', language: 'yaml', content: JSON.stringify(secret, null, 2)},
+      {name: 'deploy/kubernetes/custom/secret.yaml', language: 'yaml', content: JSON.stringify(secret, null, 2)},
       {name: 'deploy/kubernetes/custom/kustomization.yaml', language: 'yaml', content: JSON.stringify({
         apiVersion: 'kustomize.config.k8s.io/v1beta1', kind: 'Kustomization', namespace: 'immich-memories',
-        resources: [`../${root}`], patches: [egress],
+        resources: [`../${root}`, 'secret.yaml'], patches: [egress],
       }, null, 2)},
     ];
     if (setup.tier === 'full') files.push({

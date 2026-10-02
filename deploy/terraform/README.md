@@ -111,7 +111,7 @@ module "immich_memories" {
 
 ## Variables
 
-### Required
+### Required unless using `existing_secret_name`
 
 | Name | Description | Type |
 |------|-------------|------|
@@ -130,6 +130,7 @@ module "immich_memories" {
 | `resources` | Requests/limits object | `object` | `2Gi/1000m` – `8Gi/4000m` |
 | `tmp_size` | `/tmp` emptyDir (8Gi for 4K) | `string` | `"4Gi"` |
 | `env` | Extra `IMMICH_MEMORIES_*` env vars | `map(string)` | `{}` |
+| `existing_secret_name` | Existing Secret in the namespace; skips managed Secret and ignores credential inputs | `string` | `""` |
 | `secret_env` | Extra env vars stored in the Secret | `map(string)` | `{}` |
 | `labels` | Extra labels on every resource | `map(string)` | `{}` |
 
@@ -265,3 +266,7 @@ kubectl get pods -n gpu-operator
 kubectl get nodes -L nvidia.com/gpu.present
 kubectl get runtimeclass nvidia
 ```
+
+For SOPS/External Secrets, set `existing_secret_name` and omit credential inputs. See the
+[existing Secret recipe](../../docs-site/docs/run/reference/kubernetes.md#terraform), including
+ownership migration before switching an already managed Secret.

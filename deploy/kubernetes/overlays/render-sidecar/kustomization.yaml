@@ -1,5 +1,5 @@
 # Render worker as a sidecar in the app pod, on a GPU node: kubectl apply -k overlays/render-sidecar
-# base/secret.yaml and render-worker-secret.yaml must both exist first.
+# App Secret must exist in the namespace; render-worker-secret.yaml must exist locally.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 

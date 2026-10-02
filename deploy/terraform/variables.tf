@@ -29,12 +29,28 @@ variable "replicas" {
 }
 
 # Immich
+variable "existing_secret_name" {
+  description = "Existing Secret in namespace; skips creation and ignores secret_env and credential inputs. Supply all required keys in that Secret."
+  type        = string
+  default     = ""
+}
+
 variable "immich_url" {
+  default = ""
+  validation {
+    condition     = var.existing_secret_name != "" || trimspace(var.immich_url) != ""
+    error_message = "Set immich_url or existing_secret_name."
+  }
   description = "URL of your Immich instance (in-cluster: http://immich-server.<ns>.svc.cluster.local:2283)"
   type        = string
 }
 
 variable "immich_api_key" {
+  default = ""
+  validation {
+    condition     = var.existing_secret_name != "" || trimspace(var.immich_api_key) != ""
+    error_message = "Set immich_api_key or existing_secret_name."
+  }
   description = "Immich API key"
   type        = string
   sensitive   = true
@@ -369,7 +385,7 @@ variable "render_worker_token" {
   sensitive   = true
 
   validation {
-    condition = !var.render_worker_sidecar_enabled || (
+    condition = var.existing_secret_name != "" || !var.render_worker_sidecar_enabled || (
       length(trimspace(var.render_worker_token)) >= 32 &&
       !can(regex("change-me|changeme|secret|password|example", lower(var.render_worker_token)))
     )

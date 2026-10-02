@@ -88,7 +88,7 @@ def test_release_candidate_builder_uses_its_release_asset_urls():
     root = next(
         file for file in result["files"] if file["name"].endswith("custom/kustomization.yaml")
     )
-    assert yaml.safe_load(root["content"])["resources"] == ["../overlays/tier-gpu"]
+    assert yaml.safe_load(root["content"])["resources"] == ["../overlays/tier-gpu", "secret.yaml"]
     assert "raw.githubusercontent.com" not in result["commands"]
 
 
@@ -155,10 +155,14 @@ def test_kubernetes_builder_preserves_supplied_credentials_and_reader_configurat
         readerModel="served-model",
     )
     files = {file["name"]: yaml.safe_load(file["content"]) for file in result["files"]}
-    secret = files["deploy/kubernetes/base/secret.yaml"]
+    secret = files["deploy/kubernetes/custom/secret.yaml"]
     assert secret["stringData"]["IMMICH_URL"] == "http://192.168.1.10:2283"
     assert secret["stringData"]["IMMICH_API_KEY"] == "synthetic-fixture-api-key"
     assert secret["stringData"]["IMMICH_MEMORIES_SECRET_KEY"] == "a" * 64
+    assert files["deploy/kubernetes/custom/kustomization.yaml"]["resources"] == [
+        "../overlays/tier-full",
+        "secret.yaml",
+    ]
     assert files["deploy/kubernetes/overlays/tier-full/reader-config.yaml"]["data"] == {
         "url": "http://reader.example.lan:8000/v1",
         "model": "served-model",

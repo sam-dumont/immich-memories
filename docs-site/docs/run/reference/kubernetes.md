@@ -4,6 +4,105 @@ title: "Kubernetes topology and add-ons"
 
 # Kubernetes topology and add-ons
 
+## Bring your own Secret
+
+The base references `immich-memories-secrets` in namespace `immich-memories`; it no longer
+creates a Secret. Create it before starting the Deployment. No manifest edits are needed
+when your SOPS, Sealed Secrets or External Secrets workflow produces that name.
+
+| Key | When needed |
+|---|---|
+| `IMMICH_URL`, `IMMICH_API_KEY` | Always; the Immich server and its scoped API key |
+| `IMMICH_MEMORIES_AUTH_USERNAME`, `IMMICH_MEMORIES_AUTH_PASSWORD` | Basic UI login |
+| `IMMICH_MEMORIES_SECRET_KEY` | Stable encryption key for credentials saved in Settings |
+| `IMMICH_MEMORIES_STORAGE_SECRET` | Optional stable web session signing key |
+| `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` | Scheduled HTTP triggers; generate with `openssl rand -hex 32` |
+| `IMMICH_MEMORIES_RENDER__WORKER_TOKEN` | App authentication to a render worker |
+| `IMMICH_MEMORIES_DATABASE_URL` | PostgreSQL instead of SQLite |
+
+Other secret environment settings can use the same Secret. Explicit Deployment `env` values
+win over `envFrom`. The render-sidecar overlay additionally expects
+`immich-memories-render-worker` with keys `token` and `immich-url`; the PostgreSQL overlay
+expects its own database Secret. Keep their separate contracts when using those overlays.
+
+An isolated RKE2 run verified the generated custom Kustomize path with a separately created,
+nondefault Secret name and matching app reference. The cached `75077f27` candidate started with
+fresh ephemeral storage, downloaded NAS models, reached the synthetic Immich fixture, and saved
+then reloaded an encrypted Settings credential. The synthetic setting and namespace were removed.
+This checks Secret wiring and Settings encryption; it does not test a live SOPS/External Secrets
+provider or a Terraform apply. Terraform managed/existing modes have mocked-provider plan checks.
+
+### SOPS
+
+Use your existing [SOPS](https://getsops.io/docs/) age/KMS recipient and decrypt only when
+applying. `mktemp` creates a private mode-0600 file; writing the example into it keeps that
+mode. Remove it after applying or encrypting. These commands create the namespace first and
+never add plaintext to the base resources:
+
+```bash
+kubectl apply -f base/namespace.yaml
+secret_file=$(mktemp)
+cat base/secret.yaml.example > "$secret_file"
+# Edit "$secret_file" outside Git; include the keys your setup needs.
+sops --encrypt --age YOUR_AGE_RECIPIENT --encrypted-regex '^(data|stringData)$' \
+  "$secret_file" > secret.sops.yaml
+rm "$secret_file"
+sops --decrypt secret.sops.yaml | kubectl apply -f -
+kubectl apply -k base
+```
+
+Store only the encrypted file in Git, outside the default base resources. `kubectl kustomize`
+does not decrypt SOPS; a GitOps controller must have SOPS decryption configured before applying
+it. Do not let a controller apply the encrypted values as ordinary credentials.
+
+### External Secrets
+
+Requires an installed [External Secrets Operator](https://external-secrets.io/latest/api/externalsecret/)
+and your already configured `ClusterSecretStore`. This v1 example maps two remote properties:
+
+```yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: immich-memories
+  namespace: immich-memories
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: YOUR_EXISTING_STORE
+    kind: ClusterSecretStore
+  target:
+    name: immich-memories-secrets
+    creationPolicy: Owner
+  data:
+    - secretKey: IMMICH_URL
+      remoteRef: {key: YOUR_REMOTE_RECORD, property: url}
+    - secretKey: IMMICH_API_KEY
+      remoteRef: {key: YOUR_REMOTE_RECORD, property: api_key}
+```
+
+Add mappings for auth, trigger, encryption or database keys you need. Confirm your installed
+CRD serves `external-secrets.io/v1`; use its supported API version otherwise. Create the namespace,
+apply this resource, then wait for `kubectl wait --for=condition=Ready externalsecret/immich-memories
+-n immich-memories` before applying the base. Environment-based credentials are read on pod start;
+restart the app Deployment after rotation. These examples are rendered/checked locally, not tested
+against a live secret provider. Share your operator/version and rollout results in
+[#1800](https://github.com/sam-dumont/immich-video-memory-generator/issues/1800).
+
+### Terraform
+
+Set `existing_secret_name = "immich-memories-secrets"` to use a Secret in `namespace` instead
+of having Terraform create one. Omit `immich_url`, `immich_api_key` and `secret_env`; credential
+inputs are ignored in this mode, and their values need not enter Terraform state. Supply all
+required keys in the existing Secret, including the render token and `IMMICH_URL` when the
+sidecar is enabled. Keep nonsecret settings in `env`; for an external PostgreSQL URL also set
+`IMMICH_MEMORIES_DATABASE_SCHEMA` there if you use a custom schema.
+
+For an existing Terraform-managed installation, do not just flip this variable: removing the
+managed resource plans its deletion. Transfer ownership with your normal Terraform state
+migration procedure before switching, then inspect the plan. This option does not read, rotate
+or validate the contents of the existing Secret.
+
 ## Another namespace
 
 Every manifest says `immich-memories`, but the namespace is yours to pick. To deploy under another
@@ -97,10 +196,15 @@ runs as a second container in the app's own pod, and the app reaches it at `http
 
 ```bash
 cd deploy/kubernetes
-cp base/secret.yaml.example base/secret.yaml
-cp overlays/render-sidecar/render-worker-secret.yaml.example overlays/render-sidecar/render-worker-secret.yaml
-vim base/secret.yaml overlays/render-sidecar/render-worker-secret.yaml   # openssl rand -hex 32 for the token
+kubectl apply -f base/namespace.yaml
+secret_file=$(mktemp)
+cat base/secret.yaml.example > "$secret_file"
+install -m 600 overlays/render-sidecar/render-worker-secret.yaml.example overlays/render-sidecar/render-worker-secret.yaml
+vim "$secret_file" overlays/render-sidecar/render-worker-secret.yaml   # openssl rand -hex 32 for the token
+kubectl apply -f "$secret_file"
+rm "$secret_file"
 kubectl apply -k overlays/render-sidecar
+rm overlays/render-sidecar/render-worker-secret.yaml
 ```
 
 Three things to know:
@@ -154,7 +258,7 @@ The store defaults to a SQLite file on the `immich-memories-cache` PVC, one writ
 another node writing that file over `ReadWriteMany` corrupts it (WAL mode needs shared memory a
 network filesystem does not give two hosts). So the two CronJobs never mount the PVCs: they `curl`
 the Deployment's `POST /api/trigger` route instead, running whatever decision `auto run` would have
-made. Set `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in `base/secret.yaml` first, or use the in-process
+made. Set `IMMICH_MEMORIES_SERVER__TRIGGER_TOKEN` in the existing `immich-memories-secrets` Secret first, or use the in-process
 daily timer (`IMMICH_MEMORIES_AUTOMATION__ENABLED=true` on the Deployment) and skip the CronJob
 entirely. The one-off `generate` Job still mounts the PVCs directly, since the trigger route takes
 no `--year`/`--person` parameters: prefer
