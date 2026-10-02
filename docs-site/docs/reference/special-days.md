@@ -12,7 +12,12 @@ are the **Special day** type on [Memory types](film-types.mdx#special-day).
 
 ```bash
 immich-memories discover-days --since 2015
+immich-memories discover-days --since 2015 --also-skip 09-14 --also-skip "ascension day"
 ```
+
+Repeat `--also-skip` to add household dates (`MM-DD`) or holiday names to the calendar. These
+receive the same holiday handling below; the flag does not unconditionally exclude a different
+occasion that happened on that date.
 
 A day ends when the pictures stop for five hours, not at midnight. Days inside a trip are skipped (the trip film
 tells that story). A holiday spent at home has its own type, so with a reader it is judged like any day

@@ -74,10 +74,12 @@ def _register_discover(main: click.Group) -> None:
         the wedding), and that needs the days found in advance.
 
         Days inside a trip are skipped, since a trip memory already tells that
-        story, and so are holidays, which have their own. On NAS and GPU tiers, a day counts when one recorded fact stands out (away from
-        home, three favourites, mostly video, or a long day with close family)
-        and each year keeps its strongest few. On Full tier, every other day
-        is read a month at a time and the model says which were occasions.
+        story. On NAS and GPU tiers, holidays spent at home are skipped too.
+        Other days count when one recorded fact stands out (away from home,
+        three favourites, mostly video, or a long day with close family), and
+        each year keeps its strongest few. On Full tier, days are read a month
+        at a time. A separate occasion on a holiday can qualify; the holiday
+        celebration itself belongs to a holiday memory.
 
         Resumes by default: years already in the catalogue are not scanned
         again, which matters for a command that runs for hours. --rescan

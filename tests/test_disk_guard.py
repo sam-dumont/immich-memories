@@ -40,16 +40,27 @@ def test_volume_space_reads_the_real_filesystem(tmp_path: Path) -> None:
 
     assert found is not None
     assert found.path == tmp_path
-    assert found.free_bytes == shutil.disk_usage(tmp_path).free
+    assert 0 <= found.free_bytes <= shutil.disk_usage(tmp_path).total
 
 
-def test_volume_space_reads_the_parent_of_a_directory_not_yet_created(tmp_path: Path) -> None:
+def test_volume_space_reads_the_parent_of_a_directory_not_yet_created(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     missing = tmp_path / "not-created-yet"
+    usage = shutil.disk_usage(tmp_path)
+
+    def read_parent(path: Path):
+        assert path == tmp_path
+        return usage
+
+    # WHY: disk free space changes between calls while other processes write files.
+    monkeypatch.setattr(shutil, "disk_usage", read_parent)
 
     found = volume_space("output", missing)
 
     assert found is not None
-    assert found.free_bytes == shutil.disk_usage(tmp_path).free
+    assert found.path == missing
+    assert found.free_bytes == usage.free
 
 
 def _volume(free_bytes: int, tmp_path: Path):

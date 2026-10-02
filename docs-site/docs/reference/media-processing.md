@@ -148,9 +148,11 @@ Three photos at t = 0, 0.5 s and 2 s, each clip about 3 s:
 
 | Clip | Plays from | Plays to | Duration |
 |------|-----------|----------|----------|
-| Photo 1 | start | midpoint(0, 0.5) = 0.25 s | ~1.75 s |
-| Photo 2 | shutter-centred start | midpoint(0.5, 2.0) = 1.25 s | ~1.5 s |
-| Photo 3 | shutter-centred start | end | ~1.5 s |
+| Photo 1 | -1.5 s | midpoint(0, 0.5) = 0.25 s | ~1.75 s |
+| Photo 2 | 0.25 s | midpoint(0.5, 2.0) = 1.25 s | ~1.0 s |
+| Photo 3 | 1.25 s | 3.5 s | ~2.25 s |
+
+These times share the first shutter as zero. The span is 5.0 s in total.
 
 Clips that do not overlap stay separate. With no shared content to line up on, nothing is stitched:
 the kept picture plays its own clip if that moves, and its still otherwise. The merge encodes at CRF
@@ -166,8 +168,10 @@ clips. Everything else, Samsung included, takes the Apple path.
 
 ## HDR, end to end
 
-A film keeps the dynamic range its sources have. HDR video (HLG or PQ) stays HDR, and an HDR
-photograph is rebuilt from its gain map rather than flattened.
+The default `output.codec: h264` produces SDR: HDR sources are tone-mapped for the final film.
+To preserve HDR, choose `output.codec: h265` with `output.hdr_mode: auto` or `hdr`. The final
+encoding plan decides whether HDR video (HLG or PQ) stays HDR. An HDR photograph can be rebuilt
+from its gain map before that output conversion.
 
 **Apple, iPhone 12 and later.** A HEIC carries an 8-bit Display P3 image and a grayscale gain map;
 the headroom comes from two MakerNote tags read together, `0x0021` and `0x0030`. The renderer applies
@@ -181,6 +185,6 @@ per-channel gamma and offsets.
 `pillow-heif` decodes HEIC, because FFmpeg only reads a HEIC's thumbnail tiles. Title text
 over HDR is drawn at HLG graphics white, so a caption does not glare above the picture.
 
-`output.hdr_mode` is `auto` (HDR when any selected source is HDR), `hdr` or `sdr`. HDR output is
-H.265 only: `hdr` with H.264 or ProRes is refused, never silently flattened. Which encoders take 10-bit is on
+`output.hdr_mode` is `auto` (HDR when H.265 is selected and any selected source is HDR), `hdr` or `sdr`.
+`auto` with H.264 still produces SDR. HDR output is H.265 only: `hdr` with H.264 or ProRes is refused, never silently flattened. Which encoders take 10-bit is on
 [Hardware encoding](../run/hardware.md).

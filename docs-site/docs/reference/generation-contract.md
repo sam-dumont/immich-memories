@@ -105,7 +105,7 @@ Seven things the examples hide:
   into one film. Without it the primary account reads alone. A face bound to the partner's
   account only counts on the partner's pictures, and `AND` still holds per episode: one person on
   your copy of the afternoon and the other on your partner's is enough. An unknown name fails
-  before any request. Albums and trips read the primary only.
+  before any request. Albums and trips reject `--accounts` and read the primary only.
 - A person or multi-person memory with no dates at all is not an error. It runs from the first day
   one of its pictures could exist to today, read off the birth dates Immich holds (and the people registry
   where Immich holds none). See [memory types](film-types.mdx#a-people-memory-with-no-dates).
@@ -113,8 +113,10 @@ Seven things the examples hide:
 - Holidays follow your home base's country, and moving ones are computed for each year (Easter,
   Thanksgiving, Mother's and Father's Day), with a window of two days either side
   ([Holiday](film-types.mdx#holiday)). A holiday cut runs 60 seconds unless you pass `--duration`.
-- `special_day` works on any day, catalogued or not, and refuses only without `--day`. A day with a
-  catalogue row is scoped and named by it; a day without one is scoped to itself, named by `--title`
+- `special_day` works on any day, catalogued or not, and requires `--day`. Several catalogued events
+  on that day require `--event-id` as well; an ID with no match on the chosen day is refused. Use
+  `days-export` to read the event IDs. A day with one catalogue row is scoped and named by it;
+  a day without one is scoped to itself, named by `--title`
   or by the model from the day's own facts, and never written back to the catalogue.
   `immich-memories days-due` lists what the catalogue holds.
 
@@ -161,7 +163,10 @@ immich-memories generate --memory-type trip --year 2024 --trip-index 2   # one o
 immich-memories generate --memory-type trip --year 2024 --all-trips      # all of them
 ```
 
-A trip over New Year is one trip, not two.
+A trip over New Year is one trip, not two. `--trip-index` starts at 1; `--month` chooses the trip
+whose midpoint is nearest that month's 15th, without trimming it to that month. Trip photos need
+GPS at least `trips.min_distance_km` (50 km by default) from home; videos are read by date only.
+The default trip filename starts as `trip_<place>_<start-date>.mp4` before the normal run hash is added.
 
 ## What the terminal shows while it runs
 
@@ -207,6 +212,9 @@ the run attempt directory, and `runs why` names one when you ask about it. A run
 `CHECK 0 pictures to check before sharing`, which says the run looked.
 
 ## Output
+
+NAS tier caps the final canvas at 1080p, including an explicit `--resolution 4k` request.
+Portrait output uses 1080×1920; landscape uses 1920×1080.
 
 `--output` names the file you want, not the path you get. The name gains an 8-character recipe hash
 (the same clips in the same order over the same dates hash the same), and every run writes into its own
