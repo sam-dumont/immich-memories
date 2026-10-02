@@ -14,7 +14,8 @@ time left in that stage. On a library that has never been read, *Reading dates, 
 and people* is the long one; a later cut over the same pictures reuses what it banked. The stages:
 [From library to film](../how-it-chooses/overview.md).
 
-**Copy as CLI command** copies the command the job runs. The cut runs on the server, not in the tab. Reload, close the laptop, come back: the page finds the
+**Copy as CLI command** copies an equivalent command for the cut or render. It omits the server's
+executable and config paths, and its output or progress-file paths. The cut runs on the server, not in the tab. Reload, close the laptop, come back: the page finds the
 running cut and follows it again. **Cancel** stops it. A cut that fails shows the command's own last
 lines, and keeps showing them after a reload, because they usually name the command that fixes it
 (`immich-memories models fetch` on a fresh install). One job runs at a time.
