@@ -25,7 +25,13 @@ it before any other make target.
 | `make dev-test` | dev tools only | Default for contributors (what CI tests with) |
 | `make dev-ci` | dev tools only | Identical to `dev-test` today |
 | `make dev-mac` | dev + `all-mac` (Apple Vision, Metal, the editorial stack) | Apple Silicon, full feature set |
-| `make dev` | every declared extra (torch, demucs, editorial) and the built web client, slow | Only if you work across all optional backends |
+| `make dev` | CPU `all` + `mac` + `dev`, and the built web client; includes torch and demucs | Only if you work across all optional backends |
+
+For CUDA editorial development on Linux, use `uv sync --extra dev --extra editorial-cuda`.
+Do not combine it with `editorial`, `all` or `all-mac`: CPU and GPU ONNX distributions
+share an import namespace, and uv refuses these combinations. `--all-extras` is therefore
+unsupported. When running `check` or `ci` in that prepared CUDA environment, set
+`ENSURE_DEV_COMMAND=true` so the CPU setup does not replace it.
 
 **Rendering with generated music on a Mac? Also run `make install-acestep`.** None of the targets
 above install ACE-Step: it lives in a sibling `.venv-acestep` next to the checkout, so **every new
@@ -47,9 +53,9 @@ Help me check the result against your example. Inclusive labels alone don't prov
 `make check` runs lint, format check, type check, the file length and complexity gates, and the
 unit tests. If it passes, your setup is correct. `make ci` adds everything else and is what you run
 before opening a PR: passing locally catches the checks you can reproduce before CI. Both depend on `ensure-dev`, which
-syncs every extra, so a run of either turns a `make dev-test` environment into a `make dev` one.
+syncs the same CPU extras as `make dev`, so either adds the heavy optional packages to a `make dev-test` environment. On Linux, demucs pulls torch and NVIDIA wheels even though ONNX stays on the CPU variant. To keep a prepared lightweight environment, set `ENSURE_DEV_COMMAND=true` explicitly.
 
-`make help` lists every target. Never run `ruff`, `pytest` or `mypy` directly: the make targets
+`make help` lists common targets; the Makefile contains the full list. Never run `ruff`, `pytest` or `mypy` directly: the make targets
 match what CI runs, so local results are consistent. Use
 [conventional commit](https://www.conventionalcommits.org/) messages.
 
@@ -131,7 +137,10 @@ are marked AI-drafted until reviewed; native-speaker corrections are welcome.
 The app reads the shipped PO files directly and caches them. No separate compilation step is
 needed. Restart the app after editing a catalogue.
 
-<span id="merging-and-releasing"></span>
 <span id="images-without-a-release"></span>
 <span id="release-candidates"></span>
 <span id="private-terms-gate"></span>
+
+<span id="merging-and-releasing"></span>
+
+Merging and releasing are covered in the [release workflow](./releasing.md).

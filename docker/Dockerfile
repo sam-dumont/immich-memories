@@ -42,8 +42,10 @@ ARG TARGETARCH
 # tested — that is how OpenCV 5 landed in a release (#339/#340). The lock is
 # exported as a pip constraints file: the image resolves to exactly the
 # versions the suite ran against.
-RUN pip install --no-cache-dir --require-hashes -r docker/uv-requirements.txt && \
-    uv export --frozen --all-extras --no-emit-project \
+RUN python docker/validate_install_extras.py "${INSTALL_EXTRAS}" >/dev/null && \
+    if [ "${INSTALL_EXTRAS}" = "none" ]; then extras=""; else extras="--extra ${INSTALL_EXTRAS}"; fi && \
+    pip install --no-cache-dir --require-hashes -r docker/uv-requirements.txt && \
+    uv export --frozen --no-dev ${extras} --no-emit-project \
         --no-emit-package immich-memories-music --no-hashes \
         --format requirements-txt -o /constraints.txt
 # pip rejects unnamed (path/editable) constraint lines; only pins may remain

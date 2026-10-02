@@ -20,7 +20,7 @@ The repository defines these checks; CI selects jobs by change scope:
 - Ruff linting and formatting on every PR
 - mypy static type checking
 - Cyclomatic complexity gates (Xenon grade C max, cognitive complexity checks)
-- 800-line file length limits
+- 800-line file length warning, with a hard failure above 1000 lines
 - Dead code detection (Vulture)
 - Code duplication detection
 - Refurb modernization checks

@@ -227,7 +227,7 @@ locally, CI will pass too. Use conventional commit message format (see above).
 
 | Tier | Runs in | Command | What it tests | Needs |
 |------|---------|---------|---------------|-------|
-| Unit | CI + local | `make test` | Pure logic, scoring math, config, helpers | Nothing external |
+| Unit | CI + local | `make test` | Pure logic, scoring math, config, helpers | FFmpeg for media fixtures |
 | Extras | CI + local | `make test-extras` | Only paths the torch family unlocks (`-m extras`) | torch/demucs/face |
 | Integration | Local only | `make test-integration` | Real FFmpeg assembly, real Immich reads, real pipeline | FFmpeg + Immich |
 | Integration | GPU runner | `make test-integration` | Real FFmpeg assembly, Immich reads, pipeline | FFmpeg + Immich |
@@ -237,7 +237,7 @@ locally, CI will pass too. Use conventional commit message format (see above).
 | Container | CI + local | `make test-container` | The built image via `docker-compose.yml`: legacy-volume upgrade, `store backup`/`restore`, trigger API, per backend (`-m container`) | Docker |
 
 **Coverage targets:**
-- Core (non-UI): **60%** — enforced by `fail_under = 55` (unit) + GPU runner integration pushes higher
+- Core (non-UI): **65%** — enforced by `fail_under = 65` (unit) + GPU runner integration pushes higher
 - The web client is Svelte (`web/`), outside Python coverage; its behaviour is held by the
   Playwright E2E suite (`make e2e`), its API by the unit tests of `src/immich_memories/web/`.
 - Diff-cover: **80%** on changed lines per PR

@@ -80,9 +80,9 @@ install:
 
 # A source checkout builds its own web client (#1580): it is not committed.
 dev:
-	uv sync --all-extras
+	uv sync --extra all --extra mac --extra dev
 	@command -v npm >/dev/null || { echo "make dev builds the web client and needs Node 22 (npm)."; \
-		echo "Install Node, or run 'uv sync --all-extras' for the Python side only."; exit 1; }
+		echo "Install Node, or run 'uv sync --extra all --extra mac --extra dev' for the Python side only."; exit 1; }
 	$(MAKE) --no-print-directory web-client
 
 .PHONY: install-acestep check-local-audio
@@ -480,7 +480,7 @@ test-cov-xml:  ## Run tests with XML coverage + JUnit results (for CI upload)
 	uv run pytest $(COVERAGE_FLAGS) --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v
 
 test-fast:
-	uv run pytest -v -m "not slow"
+	uv run pytest -v -m "not slow and not integration and not e2e and not container"
 
 test-watch:
 	uv run pytest-watch -- -v
@@ -778,7 +778,7 @@ build-check:
 # --inexact: an exact sync deletes anything this project does not declare, which
 # silently uninstalls the ACE-Step inference stack (make install-acestep) every
 # time a quality gate runs, so music generation breaks after every `make ci`.
-ENSURE_DEV_COMMAND ?= uv sync --all-extras --inexact --quiet
+ENSURE_DEV_COMMAND ?= uv sync --extra all --extra mac --extra dev --inexact --quiet
 ensure-dev:
 	@$(ENSURE_DEV_COMMAND)
 

@@ -100,6 +100,12 @@ jobs:
       - name: Config reference drift
         if: '!cancelled()'
         run: make docs-config-check
+      - name: Documentation voice
+        if: '!cancelled()'
+        run: make docs-voice
+      - name: Third-party notices drift
+        if: '!cancelled()'
+        run: make notices-check
       - name: Type Check (mypy)
         if: '!cancelled()'
         run: make typecheck
@@ -138,8 +144,8 @@ jobs:
       - name: AI Smell Audit
         if: '!cancelled()'
         run: make critique
-      # Here rather than in the Docker job: that one is pull_request only and
-      # would leave the push-to-main path unguarded. ubuntu-latest ships the
+      # Keep this in quality so docs-only and release workflow calls check it too.
+      # ubuntu-latest ships the
       # compose plugin, and `config` parses without touching the daemon.
       - name: Compose file stands alone
         if: '!cancelled()'

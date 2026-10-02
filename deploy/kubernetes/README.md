@@ -65,7 +65,7 @@ The image runs as user `immich`, UID/GID 1000, `HOME=/home/immich`.
 
 | Mount | Backed by | Holds |
 |-------|-----------|-------|
-| `/home/immich/.immich-memories` | PVC `immich-memories-cache` (writable) | `config.yaml`, `cache/annotations.sqlite` (every banked fact and reading), `cache.db` (run history, automation state), video cache |
+| `/home/immich/.immich-memories` | PVC `immich-memories-cache` (writable) | `config.yaml`, `store.db` (banked facts, decisions, run history and automation state), video cache |
 | `/app/output` | PVC `immich-memories-output` | generated videos (`IMMICH_MEMORIES_OUTPUT__DIRECTORY=/app/output`) |
 | `/models` | PVC `immich-memories-models` | the pinned DINOv2 export, the pinned sensitive-content export and the detector snapshots, written by `immich-memories models fetch` |
 | `/tmp` | emptyDir 4Gi | FFmpeg intermediates (use 8Gi for 4K) |
@@ -125,7 +125,7 @@ two `NVIDIA_*` env vars into any `base/job.yaml` pod you schedule on a GPU node.
 
 ## Inference service
 
-`overlays/inference` is the encoder, the six heads and the two detectors behind one HTTP port, as
+`overlays/inference` is the encoder, the eight heads and the two detectors behind one HTTP port, as
 a separate Deployment: a ClusterIP Service named `inference` on 8092, a 10Gi model-cache PVC and
 its own NetworkPolicy. It deliberately does not list `../../base` in its resources. The base
 refuses to build without a hand-made `secret.yaml`, and this service holds no credential and never
@@ -225,7 +225,7 @@ kubectl apply -f base/sealed-secret.yaml
 
 ## Backups
 
-`cache/annotations.sqlite` on the cache PVC is the expensive part: every caption, head answer,
+`store.db` on the cache PVC is the expensive part: every caption, head answer,
 detector verdict and reading the editor has banked. Lose it and the next cut re-reads the library.
 Back up the PVC.
 
