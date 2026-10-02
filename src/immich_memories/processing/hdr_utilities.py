@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import logging
 import subprocess
+import sys
+from array import array
+from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 from immich_memories.processing.encoding_plan import HdrTransfer
+from immich_memories.processing.memory_budget import memory_budget
 from immich_memories.security import validate_video_path
 
 if TYPE_CHECKING:
@@ -209,6 +213,69 @@ def check_zscale_available() -> bool:
     return _zscale_cache
 
 
+_SDR_PQ_FILTER = (
+    "zscale=tin=bt709:t=smpte2084:pin=bt709:p=bt2020:min=bt709:m=bt2020nc"
+    ":rin=tv:r=tv:npl=203:agamma="
+)
+
+
+@cache
+def _sdr_pq_fast_gamma_qualified() -> bool:
+    # zimg approximation error varies between CPU/build paths. Qualify pixels,
+    # not an OS/version name, and pay for the small probe only once per process.
+    sources = (
+        "testsrc2=size=256x144:rate=1,format=yuv420p10le[a];"
+        "smptehdbars=size=256x144:rate=1,format=yuv420p10le[b];"
+        "nullsrc=size=256x144:rate=1,format=yuv420p10le,"
+        "geq=lum=64+876*X/W:cb=512:cr=512[c];[a][b][c]vstack=inputs=3"
+    )
+    graph = (
+        f"[0:v]split[reference][candidate];[reference]{_SDR_PQ_FILTER}false[r];"
+        f"[candidate]{_SDR_PQ_FILTER}true[c];[r][c]vstack,format=yuv420p10le"
+    )
+    try:
+        result = subprocess.run(
+            [
+                "ffmpeg",
+                "-v",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                sources,
+                "-filter_complex",
+                graph,
+                "-frames:v",
+                "1",
+                "-f",
+                "rawvideo",
+                "-",
+            ],
+            capture_output=True,
+            check=True,
+            timeout=5,
+        )
+        values = array("H", result.stdout)
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return False
+    pixels = 256 * 432
+    if len(values) != pixels * 3:
+        return False
+    if sys.byteorder != "little":
+        values.byteswap()
+    offset = total_error = 0
+    for count in (pixels, pixels // 4, pixels // 4):
+        reference = values[offset : offset + count]
+        candidate = values[offset + count : offset + 2 * count]
+        for original, approximate in zip(reference, candidate, strict=True):
+            error = abs(original - approximate)
+            if error > 8:
+                return False
+            total_error += error
+        offset += 2 * count
+    return total_error / (pixels * 3 // 2) < 0.03
+
+
 def _get_sdr_to_hdr_filter(
     target_type: str,
     source_primaries: str | None,
@@ -234,7 +301,9 @@ def _get_sdr_to_hdr_filter(
         logger.debug(f"Converting SDR ({src_pri}) -> PQ/HDR10")
         # Only the measured BT.709 SDR→PQ path may use the fast approximation.
         # Unknown primaries retain the reference path, even when defaulting to 709.
-        approximate_gamma = "true" if source_primaries == "bt709" else "false"
+        approximate_gamma = (
+            "true" if source_primaries == "bt709" and _sdr_pq_fast_gamma_qualified() else "false"
+        )
         return (
             f",zscale=tin=bt709:t=smpte2084"
             f":pin={src_pri}:p=bt2020:min={src_matrix}:m=bt2020nc"
@@ -248,10 +317,22 @@ def _get_hdr_to_hdr_filter(source_type: str, target_type: str, has_zscale: bool)
     if not has_zscale:
         raise RuntimeError("zscale is required for HDR transfer conversion")
     if source_type == "hlg" and target_type == "pq":
+        # A 4K float RGB intermediate adds about 110 MB per decoder. Preserve
+        # the existing 3 GiB software-4K budget, which has two active decoders.
+        budget = memory_budget()
+        if budget is not None and budget.size < 4 * 2**30:
+            return (
+                ",zscale=tin=arib-std-b67:t=smpte2084"
+                ":pin=bt2020:p=bt2020:min=bt2020nc:m=bt2020nc"
+                ":npl=203:agamma=false"
+            )
+        # Approximate HLG gamma changes its display transform. Keep that step
+        # accurate and approximate only the final linear-to-PQ transfer.
         return (
-            ",zscale=tin=arib-std-b67:t=smpte2084"
-            ":pin=bt2020:p=bt2020:min=bt2020nc:m=bt2020nc"
-            ":npl=203:agamma=false"
+            ",zscale=tin=arib-std-b67:t=linear"
+            ":pin=bt2020:p=bt2020:min=bt2020nc:m=gbr:npl=203:agamma=false"
+            ",format=gbrpf32le,zscale=tin=linear:t=smpte2084"
+            ":pin=bt2020:p=bt2020:min=gbr:m=bt2020nc:npl=203:agamma=true"
         )
     if source_type == "pq" and target_type == "hlg":
         return (
