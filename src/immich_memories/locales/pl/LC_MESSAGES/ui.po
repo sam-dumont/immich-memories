@@ -629,6 +629,10 @@ msgstr "Ręcznie"
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr "Zadania ręczne i automatyczne, także nieudane. Otwórz zadanie, aby zobaczyć montaż i czasy."
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:91
+msgid "Marked Never use. Tick it to include it in this revision."
+msgstr "Oznaczone jako „Nigdy nie używaj”. Zaznacz, aby dołączyć do tej wersji."
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Match the sources"
 msgstr "Tak jak źródła"
@@ -1614,10 +1618,6 @@ msgstr "Usunąłeś jego blokadę dla poziomu {level}."
 #: web/routes/login/+page.svelte:59
 msgid "You will be redirected to your identity provider"
 msgstr "Zostaniesz przekierowany do dostawcy tożsamości"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:91
-msgid "You'll never use this picture."
-msgstr "To zdjęcie nigdy nie zostanie użyte."
 
 #: web/routes/runs/[run_id]/+page.svelte:138
 #, python-brace-format

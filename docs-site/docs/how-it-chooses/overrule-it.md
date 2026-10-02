@@ -22,7 +22,7 @@ Press **Save revision**, then select that revision under **What to render**. The
 
 Open **Pool** to see the pictures the cut considered. Tick a missing picture, untick one you do not want, then press **Preview with these choices**. This saves a revision in time order, with the length adjusted to your choices.
 
-A pool tick can include a picture held for family viewing: you have reviewed it yourself. A persistent **Never use** decision must be undone first.
+A pool tick can include a picture held for family viewing: you have reviewed it yourself. An explicit tick also overrides **Never use** for this revision. The tile reminds you of that persistent decision; later automatic cuts still honour it.
 
 To steer a new cut with the CLI, use `generate --include ASSET_ID` or `--exclude ASSET_ID`. New-cut inclusions still pass the sharing checks. [Exact inclusion rules](../reference/generation-contract.md).
 
@@ -37,7 +37,7 @@ Set **Who may see it** in the brief:
 | Audience | Use it for |
 |---|---|
 | **Just us** | The household, including private moments. |
-| **Family** | Family viewing, with private moments kept out. This is the default. |
+| **Family** | Family viewing, with private moments kept out. The default is **As configured**, which uses `defaults.sharing` (Family unless changed). |
 | **Shareable** | Wider sharing, with the strictest checks. |
 
 Review the film before sending it. These checks can miss or misread a picture. [Sharing rules and limitations](../reference/selection-internals/family-audience-duplicates.md#sharing-levels).
@@ -48,7 +48,7 @@ A held picture says why and offers **Clear hold**. Review the picture, then choo
 
 <ThemedScreenshot name="pictures-clear-dialog" alt="Clear a hold after reviewing the picture and choosing its permitted audience" />
 
-**Never use** excludes a picture from future films. **Undo** forgets either decision. To remove a picture from just one film, edit that cut instead.
+**Never use** excludes a picture from future automatic cuts; an explicit pool tick can still include it in a saved revision. **Undo** forgets either decision. To remove a picture from just one film, edit that cut instead.
 
 These decisions last across sessions and are shared by the UI and CLI. A Live Photo decision covers its clip too. [Picture decisions on the CLI](../make/cli/pictures.md) and [exact hold rules](../reference/selection-internals/family-audience-duplicates.md#your-word-on-a-picture).
 

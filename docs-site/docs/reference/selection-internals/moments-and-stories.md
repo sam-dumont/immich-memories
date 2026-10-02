@@ -1,5 +1,6 @@
 ---
 title: Moments, episodes and stories
+sidebar_position: 2
 ---
 
 # Moments, episodes and stories
@@ -17,6 +18,8 @@ Everything on this page is the no-model path, which is the draft every film star
 
 ```mermaid
 flowchart TD
+  accTitle: From pictures to stories
+  accDescr: Stages shown: Group nearby pictures, Build episodes and day chunks, Split home weeks or trip legs, Recognise distinct events, Weigh stories.
   n0["Group nearby pictures"]
   n1["Build episodes and day chunks"]
   n2["Split home weeks or trip legs"]
@@ -33,9 +36,9 @@ flowchart TD
 | Moment | a picture joins the open moment when it is within 10 minutes and 2 km of that moment's last picture; with no GPS, time alone decides | `moment_grouping.py`: `MOMENT_WINDOW_MINUTES`, `MOMENT_RADIUS_METRES` |
 | Episode | the same test at 90 minutes and 2 km; every moment sits in exactly one episode | `EPISODE_WINDOW_MINUTES`, `build_episode_groups` |
 | Capture run | captures each within five minutes of the one before; it spaces shots and is the unit of the exposure rule | `MIN_GAP_IN_CAPTURE_GROUP_SECONDS` |
-| Day chunk | same calendar day, or starting within 6 hours of the last picture (a late night stays one night); split only when more than 90 minutes pass **and** the city changes | `RuleStructureReader._day_chunks` |
+| Day chunk | same calendar day, or starting within 6 hours of the last moment's start (a late night stays one night); split only when more than 90 minutes pass **and** the city changes | `RuleStructureReader._day_chunks` |
 | Story | a run of consecutive photographed days: at home, cut on the ISO week; away, kept whole unless it changes where it stays (below); a day back home ends it | `RuleStructureReader._runs` |
-| Trip leg | days stay in one area while each day's median position is within 25 km of the area's; an area of 3 days or more is a leg, a shorter one joins a neighbour; a trip splits only when two legs are more than 50 km apart | `trip_legs.legs_of_days` |
+| Trip leg | days stay in one area while each day's median position is within 25 km of the area's; an area of 3 days or more is a leg, a shorter one joins a neighbour; a trip splits only when every adjacent pair of legs is more than 50 km apart | `trip_legs.legs_of_days` |
 
 "Away" is more than 10 km from `trips.homebase_latitude` / `homebase_longitude`. Without a home base
 nothing is away, so a three-week holiday arrives as three weekly stories. Setting it is step one of
@@ -84,8 +87,16 @@ an event too. From counts, places and labels alone it looks exactly like one.
 
 Each happening is first read for whether it is worth remembering, from facts alone.
 
+| Reading | Facts that produce it |
+|---|---|
+| `remarkable` | At or above the day threshold, away from home, outside the 12 usual cities, or any happening in an album film. |
+| `maybe` | A favourite, close family, a video, or the only happening of a required part. |
+| `background` | None of those facts. |
+
 ```mermaid
 flowchart TD
+  accTitle: How much a story weighs
+  accDescr: Stages shown: Read worthiness, Apply family and favourite floors, Apply story ceilings, Allocate shot slots.
   n0["Read worthiness"]
   n1["Apply family and favourite floors"]
   n2["Apply story ceilings"]
@@ -101,12 +112,12 @@ remarkable seeds `minor`, maybe seeds `glimpse`, background gets `none`. Then th
 - **Three favourites** in a story raise it to `major`.
 - **A big story** is raised to `major` too: one that is both dense (at least
   `advanced.editorial.people.big_story_density`, 2.0 by default, times the period's median
-  photographed day, in pictures per day) **and** mostly close family (at least
+  photographed day, in pictures per day) **and** has enough close family (at least
   `big_story_family_share`, 0.3, of its pictures show a partner, child or parent). Density alone
   never does it: a race day with no confirmed close-family members does not meet the people condition.
 - **Present** stories (remarkable, or holding a favourite, or close family) are floored at `minor`.
 - **No recognised people**: when the film knows people at all, a story with no recognised person in it, no
-  favourite and nothing remarkable is capped at `glimpse`.
+  favourite and nothing remarkable is capped at `glimpse`. This cap does not apply to a trip or journey film.
 - **One moment** and nothing that makes it present: capped at `minor`.
 
 "The 12 usual cities" is literal: the twelve cities most pictures of the window were taken in. A
@@ -114,8 +125,7 @@ happening whose main city is not one of them reads as remarkable even with no ho
 
 ## Weight to shots
 
-The film's slot count is its target length divided by the average hold of its material (about 4 s
-a shot), and each weight has a ceiling:
+The film's slot count is its content budget (target minus title and ending cards) divided by a fixed 4.0 seconds, rounded down. Each weight has a ceiling:
 
 | Weight | Shots it may take out of `n` slots |
 |---|---|
@@ -136,12 +146,12 @@ ten-day trip with a hundred.
 **A recurring kind is one story's worth.** Three starred evenings of the same thing at the same
 place in one month (three concerts at the same hall, three matches at the same club) count as one kind when all of this holds:
 
-- the densest episode of each story carries the same activity label,
+- each story is `minor` or `major`, and its densest episode carries the same activity label,
 - that episode alone reaches the day threshold the gate already uses (4x the median photographed
   day, or the 75th percentile if that's higher), so a label on a few ordinary pictures links nothing,
 - they happen at the same place: the GPS medians of those episodes are within 10 km, or they have
   the same place name when one of them has no GPS,
-- they fall in the same part of the film (a month in a year film, the whole film otherwise).
+- they fall in the same part of the film (a month in a year film, a year in a long person film, the whole film otherwise).
 
 Every story of the kind keeps its own shot. Only the heaviest one (most favourites, then most
 moments) goes deeper, as deep as any other `major` story. A trip and a big family story never fold:
@@ -149,10 +159,7 @@ they carry their own weight, so a birth-sized day next to smaller days of the sa
 everything it had. The kinds found are listed under `same_kind` in
 `derived-decisions/period-story.private.json` (`editorial_same_kind.py`).
 
-**Every year gets a shot.** A person film longer than 18 months (548 days) is split into calendar
-years, a person film over several date ranges into those ranges, and a custom film over several
-ranges likewise. Before any story takes a second shot, each year (or range) that holds a funded
-story gets one, from its first story in funding order. When no picture that story offered stands
+**Every year gets a shot.** A person film with one date window longer than 548 days, a custom film over several date ranges, and an album with a written subject are split into calendar years. A person film with several windows has window partitions but no one-shot-per-window guarantee. Before any story takes a second shot, each year that holds a funded story gets one, from its first story in funding order. When no picture that story offered stands
 on its own, the year's next story gets the shot, and so on down the year. A year where none stands
 stays quiet, and `quiet_partitions` in `derived-decisions/story-selection.private.json` names the
 year and the stories that were tried. The passes that cut for length or taste keep a year's only shot: the favourite
@@ -168,7 +175,7 @@ is `false` (Route C in [What a model adds](./what-a-model-adds.md)). Every other
 several separate windows included (on this day across years, a birthday with flashbacks), starts
 from the no-model draft on this page and gets the polish. Only Route C adds these:
 
-- **Trips fold into one story per leg** (`editorial_story_trips`), each with a reserve of
+- **Trip legs get a reserve** (`editorial_story_trips`) beyond the leg splitting already used by the rules draft:
   `round(slots / 2 * sqrt(leg days / film days))` shots, at least one.
 - **Recurring activities become one thread** (`editorial_story_threads`): four Saturdays at the same
   climbing gym are one story, one per calendar year in a film longer than 18 months, so a year of

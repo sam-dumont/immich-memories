@@ -630,6 +630,10 @@ msgstr ""
 "Execuções manuais e automáticas, incluindo falhas. Abre uma execução para ver a montagem e os"
 " tempos."
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:91
+msgid "Marked Never use. Tick it to include it in this revision."
+msgstr "Marcada como «Nunca usar». Selecione-a para a incluir nesta revisão."
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Match the sources"
 msgstr "Igual às fontes"
@@ -1615,10 +1619,6 @@ msgstr "Removeste a restrição para {level}."
 #: web/routes/login/+page.svelte:59
 msgid "You will be redirected to your identity provider"
 msgstr "Vais ser redirecionado para o teu fornecedor de identidade"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:91
-msgid "You'll never use this picture."
-msgstr "Esta imagem nunca será usada."
 
 #: web/routes/runs/[run_id]/+page.svelte:138
 #, python-brace-format

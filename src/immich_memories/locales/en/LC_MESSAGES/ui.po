@@ -626,6 +626,10 @@ msgstr "Manual"
 msgid "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 msgstr "Manual and automatic runs, including failures. Open a run to read its cut and timings."
 
+#: web/routes/runs/[run_id]/pool/+page.svelte:91
+msgid "Marked Never use. Tick it to include it in this revision."
+msgstr "Marked Never use. Tick it to include it in this revision."
+
 #: web/lib/RenderPanel.svelte:177
 msgid "Match the sources"
 msgstr "Match the sources"
@@ -1607,10 +1611,6 @@ msgstr "You cleared its hold for {level}."
 #: web/routes/login/+page.svelte:59
 msgid "You will be redirected to your identity provider"
 msgstr "You will be redirected to your identity provider"
-
-#: web/routes/runs/[run_id]/pool/+page.svelte:91
-msgid "You'll never use this picture."
-msgstr "You'll never use this picture."
 
 #: web/routes/runs/[run_id]/+page.svelte:138
 #, python-brace-format

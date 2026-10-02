@@ -1,8 +1,11 @@
 ---
 title: Length, quiet weeks and filler
+sidebar_position: 4
 ---
 
 # Length, quiet weeks and filler
+
+`generate --include` steers a new cut and has the selection protections described here. A web pool tick saves an owner revision without scoring or choosing pictures again.
 
 A film's target length is where it starts, not a promise. A month with three photographed days
 gets about 20 seconds, not a minute, and a quiet month with a week of nothing in it spends no shot
@@ -17,7 +20,7 @@ which is about a day coming back, so it needs two years that hold something. A p
 range, a filter, Immich unreachable) still ends in an error and exit 1.
 
 How the target itself is set (per memory type, per active day, `--duration`) is on
-[Memory types](../../make/memory-types.mdx#how-long-a-film-runs).
+[Film lengths](../film-types.mdx#how-long-a-film-runs).
 
 ## How long a shot is held
 
@@ -30,7 +33,7 @@ The constants live in `analysis/editorial_structure_budget.py`.
 | A video | its length, up to 6.0 s; to the end of a sentence when someone is talking at the cut, never past 12 s from the start |
 | A video under 2.0 s | not a shot at all |
 | A Live Photo playing as motion | its clip, up to 6.0 s |
-| A Live Photo playing as its still | 4.0 s |
+| A Live Photo playing as its still | 3.5 s in the rules draft without a favourite or known person; 4.0 s after motion measurement |
 | The film's first and last still | +0.5 s, never past 5.0 s |
 
 ## Fitting the length
@@ -40,8 +43,8 @@ A film has more candidate shots than seconds, so two passes fit it.
 **The trim** (`trim_to_timing_budget`, run after the draft and again once motion and speech are
 measured) drops whole shots, lightest story first: `none` and `glimpse` stories, then the extra
 shots of the lightest story, then its only shot, and the heaviest story's only shot last. Inside one
-story the latest shot goes first. A picture you ticked is never dropped, and a favourite is never
-dropped while a shot nothing vouches for (no star, no recorded video, nobody Immich knows, not ticked)
+story the latest shot goes first. A picture passed with `generate --include` is never dropped, and a favourite is never
+dropped while a shot nothing vouches for (no star, no recorded video, nobody Immich knows, not included with `--include`)
 is still in the film. In a film that gives every year a shot (a long person film, a custom film over
 several ranges), a year's only shot goes after every other one.
 
@@ -56,7 +59,7 @@ weighs `none`, which is 0 slots (`GATE_WEIGHT` and `weight_caps`, see
 [Moments, episodes and stories](./moments-and-stories.md#how-much-a-story-weighs)). An indicator is
 any of: a favourite, a video, close family in it, a day four times busier than your median day, being
 away from home or outside your 12 usual cities, or being the only happening of a part the film must
-cover.
+cover. A favourite, video, close-family presence or required-part indicator reads `maybe` (a glimpse, one shot); a busy day or being away reads `remarkable` (a minor story). Album happenings also read `remarkable`.
 
 A week of ordinary evenings at home with no star, no video and no close family is exactly that
 case. Three favourites or a big close-family story still lift a story to `major`, so a quiet week
@@ -70,6 +73,8 @@ PR #1250), after the duplicate review:
 
 ```mermaid
 flowchart TD
+  accTitle: Filler nothing vouches for
+  accDescr: Stages shown: Read settled shot, Keep indicators and protected coverage, Check empty-frame evidence, Remove unsupported filler without refill.
   n0["Read settled shot"]
   n1["Keep indicators and protected coverage"]
   n2["Check empty-frame evidence"]
@@ -83,7 +88,7 @@ It runs on the no-model film and on a polished one alike. The polish refines the
 so it never keeps what that film would drop: a caption that misreads a printed recipe as a posed
 child does not get it past this pass. A screen that plays as a Live Photo, or shows someone Immich
 knows, still stays. So does one shot of a year this pass would leave empty, in a film that gives
-every year a shot: the one that stands best. What left is listed by id and head label
+every year a shot: the one that stands best. What was left out is listed by id and head label
 in `derived-decisions/unvouched-filler.private.json`.
 
 An album handed over with a written subject (`--from-album ... --subject ...`) skips this pass. Every

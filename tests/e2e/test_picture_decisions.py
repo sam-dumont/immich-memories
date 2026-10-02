@@ -111,11 +111,19 @@ def test_never_use_and_clear_a_hold_from_the_pool(
         assert owner_decisions.decisions(store, [held]) == {held: "cleared_just_us"}
         _frame(card, "1324-pool-cleared")
 
-        # Ruling out a ticked picture unticks it: the pool never says both.
+        # Never use unticks it initially; an explicit later tick still wins for this revision.
         ticked = _tile(page, kept)
         expect(ticked.get_by_role("checkbox", name="In the film")).to_be_checked()
         ticked.get_by_role("button", name="Never use").click()
-        expect(ticked.get_by_text("You'll never use this picture.")).to_be_visible()
+        expect(
+            ticked.get_by_text("Marked Never use. Tick it to include it in this revision.")
+        ).to_be_visible()
+        ticked.get_by_role("checkbox", name="In the film").check()
+        expect(ticked.get_by_role("checkbox", name="In the film")).to_be_checked()
+        expect(
+            ticked.get_by_text("Marked Never use. Tick it to include it in this revision.")
+        ).to_be_visible()
+        ticked.get_by_role("checkbox", name="In the film").uncheck()
         expect(ticked.get_by_role("checkbox", name="In the film")).not_to_be_checked()
         assert owner_decisions.decisions(store, [kept]) == {kept: owner_decisions.NEVER_USE}
         _frame(ticked, "1324-pool-never-use-unticks")

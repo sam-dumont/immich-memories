@@ -88,7 +88,7 @@
 
   const holdLine = (hold: Hold) =>
     hold.decision === 'never_use'
-      ? t("You'll never use this picture.")
+      ? t('Marked Never use. Tick it to include it in this revision.')
       : hold.decision?.startsWith('cleared:')
         ? t('You cleared its hold for {level}.', { level: t(LEVELS[hold.decision.slice('cleared:'.length)] ?? 'Family').toLowerCase() })
         : hold.reasons.length

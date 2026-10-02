@@ -25,6 +25,8 @@ Thirty pictures of the same jump are one moment. A holiday with several stops ha
 
 A plain NAS does this without a prose model. A GPU adds descriptions and an extra sharing check. With a text model too, the app can refine the draft. Those additions have costs and limitations: [Choose an upgrade](../better/overview.md).
 
+Read [how moments become stories](./moments-and-stories.md), [how a shot wins](./picking-shots.md), and [what a model changes](./what-a-model-adds.md).
+
 ## Make it yours
 
 [Review and adjust the cut](./overrule-it.md), [choose who may see it](./family-audience-duplicates.md), or [understand a shorter film](./length-and-filler.md).

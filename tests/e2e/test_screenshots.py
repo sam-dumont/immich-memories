@@ -364,7 +364,9 @@ def test_capture_the_pool_and_picture_decisions(
 
         other = tiles.nth(order.index(ticked))
         other.get_by_role("button", name="Never use").click()
-        expect(other.get_by_text("You'll never use this picture.")).to_be_visible()
+        expect(
+            other.get_by_text("Marked Never use. Tick it to include it in this revision.")
+        ).to_be_visible()
         _save_part(page, other, d, _name("pictures-pool-never-use", theme))
 
         # The owner's last pass: tick the held picture in and preview it, nothing chosen again.

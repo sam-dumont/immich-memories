@@ -1,5 +1,6 @@
 ---
 title: From library to film
+sidebar_position: 1
 ---
 
 # From library to film
@@ -24,6 +25,8 @@ only ever reads text and never decides what is shareable.
 
 ```mermaid
 flowchart TD
+  accTitle: The short version
+  accDescr: Stages shown: Choose scope, Group moments and stories, Allocate and admit shots, Check the cut, Render.
   n0["Choose scope"]
   n1["Group moments and stories"]
   n2["Allocate and admit shots"]
@@ -55,7 +58,7 @@ These hold on every tier.
   than pad with a frame nothing vouches for. See [Length, quiet weeks and filler](./length-and-filler.md).
 - **Your tick outranks the editor.** A picture you tick in the pool goes in, one you untick never
   does, even over a family-viewing hold: you looked at it. On a new cut, a picture you pass with
-  `--include` still goes through the gate. See [Overrule it](../../how-it-chooses/overrule-it.md).
+  `--include` still goes through the gate. See [Edit the cut](../../how-it-chooses/overrule-it.md).
 - **The finished cut is checked.** Once every pass has run, the cut is read against these promises.
   A broken one is a warning in the log and a row in the run's records.
 
@@ -66,6 +69,8 @@ route. The quoted stage names are what the web UI and the terminal print.
 
 ```mermaid
 flowchart TD
+  accTitle: The route through the code
+  accDescr: Stages shown: Web Cut or CLI generate, Runtime editorial planner, Prepare evidence and build cards, Select and certify timing, Project render inputs.
   n0["Web Cut or CLI generate"]
   n1["Runtime editorial planner"]
   n2["Prepare evidence and build cards"]
@@ -82,53 +87,7 @@ other pages of this section describe happens inside it.
 
 ## Preparation: what gets read, and when
 
-A film acquires cheap facts for its **reach**: the pictures it could select (for a person film, every
-picture of an episode where Immich recognised that person at least once), the other stills of their Live Photo bursts, and every picture of the same
-five-minute capture run, because the exposure rule reads the whole run. The rest of the window is
-read as Immich metadata only, since moments and episodes are cut from all of it. A cut that selects
-a picture it never prepared stops rather than ship it. Captions and clip checks wait until after
-the rules draft, for selected shots and actual candidates. A reader may use the selected shot's
-whole episode for context without captioning every neighbour. `immich-memories prepare` reads a
-whole scope ahead of time when explicitly requested.
-
-```mermaid
-flowchart TD
-  n0["Resolve reach"]
-  n1["Acquire required pixel facts"]
-  n2["Build rules draft"]
-  n3["Caption and inspect selected candidates"]
-  n4["Bank complete evidence"]
-  n0 --> n1
-  n1 --> n2
-  n2 --> n3
-  n3 --> n4
-```
-
-Admission refuses a few things before anything is read: a video over five minutes
-(`advanced.analysis.max_source_video_seconds`, 300 s), the video half of a Live Photo (it plays
-inside its still), anything tagged `immich-memories/generated` or listed in this install's upload receipts (a film this app made
-is not footage), and pictures that look forwarded rather than shot on your camera. After the heads
-run, screenshots and photos of screens go too: a phone-screen pixel size, the `screen` head, or the
-document detector, enabled on GPU and Full, calling it a screenshot, a table or a QR code.
-
-The eight heads are small classifiers over one pinned DINOv2 encoder: `location`, `people`,
-`children`, `activity`, `venue`, `frame_kind`, `screen` and `uncovered_person`. The two detectors are
-`nsfw_marqo` (exposure) and `doc_docling` (documents), enabled on GPU and Full only. NAS keeps
-the eight heads, including screen, frame-kind and uncovered-person checks. Every fact is banked in the store
-under its producer's version, so the next cut asks nothing twice.
-
-Preparation follows the resolved product tier (`tier: auto` by default):
-
-| Tier | What reads the pixels | When you get it |
-|---|---|---|
-| `nas` | previews, pixel facts, face boxes, the eight heads | no usable local GPU or GPU inference service |
-| `gpu` | NAS facts, Marqo and Docling, plus missing captions and clip evidence for selected shots and candidates; Laya reads their captions | GPU inference without a configured prose LLM |
-| `full` | the same pixel producers as GPU; a prose LLM reads annotation text to refine selection | GPU inference and a configured prose LLM |
-
-NAS needs `immich-memories models fetch` once. A configured LLM alone does not change selection
-from NAS, but can still write titles and music mood. GPU and Full enable captions by default;
-NAS can use a vision-capable LLM only with explicit caption-provider opt-in. Captions are an add-on:
-[Add captions](../../better/captions.md).
+Preparation banks versioned picture facts before selection, then reads missing captions and clip evidence for selected shots and candidates. [Pixel evidence and preparation](./pixel-evidence.md) lists the reach, admission rules and exact producers for each tier.
 
 ## What a run leaves behind
 
