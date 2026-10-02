@@ -378,7 +378,6 @@ warn_unused_ignores = false
 [[tool.mypy.overrides]]
 module = [
     "scenedetect.*",
-    "mutagen.*",
     # macOS frameworks (PyObjC)
     "Vision.*",
     "Quartz.*",
