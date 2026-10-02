@@ -141,12 +141,14 @@ These fields expand `${VAR_NAME}` at load time:
 | Section | Fields |
 |---|---|
 | `immich` | `url`, `api_key` |
+| `immich.accounts.<name>` | `url`, `api_key` |
+| `database` | `url` |
 | `llm` | `api_key` |
 | `musicgen` | `base_url`, `api_key` |
 | `ace_step` | `api_url`, `api_key` |
 | `auth` | `password`, `client_secret`, `issuer_url`, `client_id` |
 | `render` | `worker_base_url`, `worker_token` |
-| `editorial` | `annotation_database` |
+| `editorial` | `annotation_database`, `laya_checkpoint` |
 | `editorial.preparation` | `head_bundle`, `detector_python`, `detector_cache_dir`, `marqo_onnx`, `caption_api_key` |
 
 Only the braced form expands. A bare `$VAR` stays as written, because a `$` in a password is

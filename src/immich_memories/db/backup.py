@@ -228,6 +228,15 @@ def _restore_postgresql(location: StoreLocation, backup: Path, manifest: Manifes
     engine = sa.create_engine(location.sa_url)
     try:
         with engine.begin() as connection:
+            can_create = connection.execute(
+                sa.text("SELECT has_database_privilege(current_user, current_database(), 'CREATE')")
+            ).scalar()
+            if not can_create:
+                raise BackupError(
+                    "restore needs CREATE on database before replacing its schema; "
+                    "ask the database owner to GRANT CREATE ON DATABASE to the store role. "
+                    "The existing store has not been changed."
+                )
             inspector = sa.inspect(connection)
             if source_schema != location.schema and inspector.has_schema(source_schema):
                 raise BackupError(

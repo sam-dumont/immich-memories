@@ -27,6 +27,7 @@ def register_store_commands(cli_group: click.Group) -> None:
 
     register_fact_commands(store)
     _register_status(store)
+    _register_migrate(store)
     _register_import(store)
     _register_copy(store)
     _register_backup(store)
@@ -44,6 +45,17 @@ def _register_status(group: click.Group) -> None:
         """Backend, URL, schema, revision, import record, row counts and size."""
         from immich_memories.db.status import store_status
 
+        _print_status(store_status(_location(ctx)))
+
+
+def _register_migrate(group: click.Group) -> None:
+    @group.command()
+    @click.pass_context
+    def migrate(ctx: click.Context) -> None:
+        """Upgrade the store to this app's schema without starting a film."""
+        from immich_memories.db.status import store_status
+
+        open_store(location=_location(ctx))
         _print_status(store_status(_location(ctx)))
 
 

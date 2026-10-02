@@ -21,7 +21,8 @@ from immich_memories.analysis.provider_health import (
 )
 from immich_memories.api.compatibility import UnsupportedImmichVersion
 from immich_memories.config import Config
-from immich_memories.db import open_store
+from immich_memories.db import resolve_location
+from immich_memories.db.store import unmigrated_store
 from immich_memories.security import sanitize_error_message
 
 logger = logging.getLogger(__name__)
@@ -750,7 +751,16 @@ def check_notifications(config: Config) -> CheckResult:
     from immich_memories.automation.notification_state import NotificationStateStore
 
     try:
-        health = NotificationStateStore(open_store(config)).get()
+        location = resolve_location(config)
+        path = location.sqlite_path
+        if path is not None and not path.exists():
+            health = None
+        else:
+            store = unmigrated_store(location)
+            try:
+                health = NotificationStateStore(store).get()
+            finally:
+                store.engine.dispose()
     except Exception:  # WHY: optional health telemetry cannot fail provider preflight
         return CheckResult(
             name="Notifications",

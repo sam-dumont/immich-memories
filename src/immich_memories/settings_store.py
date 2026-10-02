@@ -19,6 +19,7 @@ import json
 import logging
 import os
 from collections.abc import Iterable, Iterator, Mapping
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
 import sqlalchemy as sa
@@ -257,6 +258,41 @@ def _settings_at(location: StoreLocation, *, create: bool) -> SettingsStore | No
     return SettingsStore(open_store(location=location), secret_key_from_env())
 
 
+@contextmanager
+def read_settings(config: Config) -> Iterator[SettingsStore | None]:
+    """Read saved settings as they are, without migrations or first-open hooks."""
+    from immich_memories.db.inventory import recorded_revisions
+    from immich_memories.db.migrate import heads, revision_lineage
+    from immich_memories.db.store import unmigrated_store
+
+    location = resolve_location(config)
+    path = location.sqlite_path
+    if path is not None and not path.exists():
+        yield None
+        return
+    store = unmigrated_store(location)
+    try:
+        with store.connect() as connection:
+            revisions = recorded_revisions(connection, store.schema)
+            if revisions and set(revisions) != set(heads()):
+                logger.warning(
+                    "Store at %s, app expects %s; read-only commands do not migrate it",
+                    ", ".join(revisions),
+                    ", ".join(heads()),
+                )
+            present = sa.inspect(connection).has_table(settings.name, schema=store.schema)
+        if not present:
+            if revisions and any("0003_settings" in revision_lineage(rev) for rev in revisions):
+                raise SettingsUnavailable(
+                    "the store revision requires a settings table, but it is missing"
+                )
+            yield None
+        else:
+            yield SettingsStore(store, secret_key_from_env())
+    finally:
+        store.engine.dispose()
+
+
 def load_stored_settings(config: Config) -> dict[str, Any]:
     """The saved settings as runtime key paths, for the config loader's database source.
 
@@ -271,8 +307,8 @@ def load_stored_settings(config: Config) -> dict[str, Any]:
     location: StoreLocation | None = None
     try:
         location = resolve_location(config)
-        store = _settings_at(location, create=False)
-        return store.values() if store is not None else {}
+        with read_settings(config) as store:
+            return store.values() if store is not None else {}
     except Exception as error:  # noqa: BLE001 -- every cause is re-raised, named
         raise SettingsUnavailable(_unavailable(location, error)) from error
 
