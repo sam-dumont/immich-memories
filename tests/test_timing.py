@@ -186,27 +186,51 @@ def test_a_cold_start_is_split_into_named_phases_that_sum_to_it():
 def test_a_span_records_a_peak_at_least_what_it_allocated():
     import subprocess
     import sys
+
+    # Keep earlier tests' allocations and background work out of this RSS measurement.
+    script = f"import runpy; runpy.run_path({__file__!r})['_check_live_memory_peaks']()"
+    subprocess.run([sys.executable, "-c", script], check=True, timeout=30)
+
+
+def _check_live_memory_peaks():
+    import os
+    import subprocess
+    import sys
     import time
 
+    from immich_memories.tracking import peak_memory
+
     size = 64 * 1024 * 1024
+    # Random bytes keep macOS compression from shrinking the resident allocation.
     child = (
-        f"x = bytearray({size}); x[::4096] = b'y' * len(x[::4096]); import sys; sys.stdin.read()"
+        f"import os, sys; held = os.urandom({size}); print('ready', flush=True); sys.stdin.read()"
     )
     with timing.collecting() as collected, timing.span("run"):
         with timing.span("download"):
-            held = bytearray(size)
-            held[::4096] = b"x" * len(held[::4096])
+            held = os.urandom(size)
         del held
-        with timing.span("assembly"):
-            # A child standing in for ffmpeg: it holds its buffer until told to exit.
-            ffmpeg = subprocess.Popen([sys.executable, "-c", child], stdin=subprocess.PIPE)
-            time.sleep(0.6)
-            ffmpeg.communicate(b"")
+        with subprocess.Popen(
+            [sys.executable, "-c", child], stdin=subprocess.PIPE, stdout=subprocess.PIPE
+        ) as ffmpeg:
+            try:
+                assert ffmpeg.stdout.readline() == b"ready\n"
+                with timing.span("assembly"):
+                    observed = peak_memory.watch_open()
+                    minimum_tree = observed.own + size
+                    try:
+                        deadline = time.monotonic() + 10
+                        while observed.tree < minimum_tree and time.monotonic() < deadline:
+                            time.sleep(0.01)
+                        assert observed.tree >= minimum_tree
+                    finally:
+                        peak_memory.watch_close(observed)
+            finally:
+                ffmpeg.communicate(b"", timeout=5)
 
     download, assembly, run = collected.spans
     assert download.peak_rss >= size
     assert download.peak_tree_rss >= download.peak_rss
-    assert assembly.peak_tree_rss >= assembly.peak_rss + size
+    assert assembly.peak_tree_rss >= minimum_tree
     assert run.peak_rss >= download.peak_rss
 
 
