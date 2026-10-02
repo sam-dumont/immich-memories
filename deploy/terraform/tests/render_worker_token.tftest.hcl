@@ -3,7 +3,7 @@ mock_provider "kubernetes" {}
 variables {
   immich_url     = "http://immich.test:2283"
   immich_api_key = "fixture-only"
-  image_tag      = "1.0.0"
+  image_tag      = "test-fixture"
 }
 
 run "disabled_worker_allows_default_empty_token" {
