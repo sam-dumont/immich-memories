@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
+import re
 import shlex
 import shutil
+import subprocess  # noqa: S404 - bounded local audio probe, no shell
 import sys
+import tempfile
 from collections.abc import AsyncIterator
 from functools import lru_cache
 from pathlib import Path
@@ -15,6 +19,7 @@ from typing import Annotated, Any, Literal
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
 from immich_memories.config import get_config_path
 from immich_memories.config_loader import Config
@@ -475,10 +480,12 @@ def _music_dir(config: Config) -> Path:
 
 def music_file(config: Config, music_id: str) -> Path | None:
     """The track a music id names, only ever inside the web client's music folder."""
+    if re.fullmatch(r"(?:upload|preview)-[0-9a-f]{32}", music_id) is None:
+        return None
     folder = _music_dir(config).resolve()
-    for candidate in folder.glob(f"{music_id}*") if folder.is_dir() else ():
-        path = candidate.resolve()
-        if path.is_file() and path.parent == folder and path.suffix in _AUDIO:
+    for suffix in _AUDIO:
+        path = (folder / f"{music_id}{suffix}").resolve()
+        if path.is_file() and path.parent == folder:
             return path
     return None
 
@@ -555,6 +562,40 @@ def _sounds_like_audio(payload: bytes) -> bool:
     return payload.startswith(_AUDIO_MAGIC) or payload[4:8] == b"ftyp"
 
 
+def _usable_audio(path: Path) -> bool:
+    try:
+        result = subprocess.run(  # noqa: S603 - fixed probe arguments and a server-owned path
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-protocol_whitelist",
+                "file,pipe",
+                "-probesize",
+                "5000000",
+                "-analyzeduration",
+                "5000000",
+                "-select_streams",
+                "a:0",
+                "-show_entries",
+                "stream=codec_type:format=duration",
+                "-of",
+                "json",
+                str(path),
+            ],
+            capture_output=True,
+            check=True,
+            timeout=10,
+        )
+        probe = json.loads(result.stdout)
+        duration = float(probe.get("format", {}).get("duration", 0))
+        return bool(probe.get("streams")) and math.isfinite(duration) and duration > 0
+    except FileNotFoundError as error:
+        raise HTTPException(503, "Audio checking is unavailable: install FFmpeg") from error
+    except (subprocess.SubprocessError, ValueError):
+        return False
+
+
 @router.post("/music", response_model=MusicTrack, status_code=201)
 async def upload_music(
     file: UploadFile, config: Annotated[Config, Depends(current_config)]
@@ -571,10 +612,17 @@ async def upload_music(
     if suffix not in _AUDIO or not _sounds_like_audio(payload):
         raise HTTPException(422, "That file is not an MP3, M4A or WAV")
     music_id = f"upload-{uuid4().hex}"
-    _music_dir(config).mkdir(parents=True, exist_ok=True)
-    kept = _music_dir(config) / f"{music_id}{suffix}"
-    kept.write_bytes(payload)
-    _evict_oldest_uploads(_music_dir(config), config.server.music_upload_quota_mb, keep=kept)
+    folder = _music_dir(config)
+    folder.mkdir(parents=True, exist_ok=True)
+    kept = folder / f"{music_id}{suffix}"
+    with tempfile.TemporaryDirectory(dir=folder) as temporary:
+        candidate = Path(temporary) / kept.name
+        candidate.write_bytes(payload)
+        candidate.chmod(0o600)
+        if not await run_in_threadpool(_usable_audio, candidate):
+            raise HTTPException(422, "That file has no usable audio stream or duration")
+        candidate.replace(kept)
+    _evict_oldest_uploads(folder, config.server.music_upload_quota_mb, keep=kept)
     return MusicTrack(id=music_id, name=file.filename or music_id)
 
 

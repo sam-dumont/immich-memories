@@ -21,6 +21,7 @@ from typing import Any
 
 from immich_memories.analysis.editorial_source_snapshot import SNAPSHOT_NAME, load_sources
 from immich_memories.api.models import Asset, AssetType, VideoClipInfo
+from immich_memories.locked_file import file_lock
 from immich_memories.operations.storyboard import (
     Storyboard,
     moment_alternatives,
@@ -204,11 +205,16 @@ def save_revision(attempt_dir: Path, edits: CutEdits) -> CutRevision:
         raise RevisionRefused("This run left no saved cut to revise")
     pool = pool_assets(Path(attempt_dir)) if edits.added else {}
     _checked(Path(attempt_dir), board, edits, pool)
-    revision = CutRevision(
-        number=len(read_revisions(attempt_dir)) + 1,
-        created_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
-        edits=edits,
-        content_seconds=_content_seconds(board, edits, source_intervals(Path(attempt_dir)), pool),
-    )
-    _write(Path(attempt_dir) / REVISIONS_DIR, revision)
+    folder = Path(attempt_dir) / REVISIONS_DIR
+    # Allocation and publication must share a lock across both CLI and web writers.
+    with file_lock(folder):
+        revision = CutRevision(
+            number=max((item.number for item in read_revisions(attempt_dir)), default=0) + 1,
+            created_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+            edits=edits,
+            content_seconds=_content_seconds(
+                board, edits, source_intervals(Path(attempt_dir)), pool
+            ),
+        )
+        _write(folder, revision)
     return revision

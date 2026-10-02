@@ -215,7 +215,11 @@ def _load_yaml_data(path: Path) -> dict:
     if not path.exists():
         return {}
     with path.open() as f:
-        data = yaml.safe_load(f) or {}
+        data = yaml.safe_load(f)
+    if data is None:
+        return {}
+    if not isinstance(data, dict):
+        raise yaml.YAMLError("Configuration must be a mapping of setting names to values")
     if "advanced" in data and isinstance(data["advanced"], dict):
         advanced = data.pop("advanced")
         for section, nested in advanced.items():

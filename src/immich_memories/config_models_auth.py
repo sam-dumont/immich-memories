@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import ClassVar, Literal
 from urllib.parse import urlsplit
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from immich_memories.config_models import http_url_or_blank
 
@@ -31,6 +31,7 @@ class AuthConfig(BaseModel):
     ENV_REFERENCE_FIELDS: ClassVar[frozenset[str]] = frozenset(
         {"password", "client_secret", "issuer_url", "client_id"}
     )
+    model_config = ConfigDict(extra="forbid")
 
     enabled: bool = False
     provider: Literal["basic", "oidc", "header"] = "basic"
