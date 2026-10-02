@@ -28,6 +28,40 @@ example is separate from the [#1719 28-case suite](https://github.com/sam-dumont
 these different films as either comparison. Record setup, downloads, preparation and generation
 separately when repeating the [first-run gate](https://github.com/sam-dumont/immich-video-memory-generator/issues/956).
 
+## Generated cold installs, 2 October 2026 {#generated-cold-installs}
+
+A fresh generated NAS setup ran on a physical Synology DS423 with DSM 7.3, 17.8 GiB RAM,
+a 4 GiB container limit, empty configuration/output volumes and no copied model or picture cache.
+It used 133 public CC0 assets from June 2024 and the unmodified first-film command:
+
+```bash
+immich-memories generate --year 2024 --month 6 --duration 60
+```
+
+Explicit model download took **6 seconds**. The recorded film run took **16m 38.8s**, producing
+**57 seconds of 1920×1080 H.264/AAC**, 16,036,267 bytes, with 14 shots (6 videos and 8 stills).
+Bundled music, rules selection and the default output settings remained enabled; no upload was
+requested. A full FFmpeg audio/video decode exited successfully. Preflight completed with
+5 OK, 4 warnings and 9 skipped checks; it was not a warning-free run.
+
+This was **software encoding**, with no VAAPI device passed through. The title kernel crashed
+on this CPU and fell back to PIL title plates; HDR input was tone-mapped to SDR for the default
+H.264 output. These warnings remained visible on the completed run. Playback and an inactive
+reader URL save/reload/restore passed in the actual NAS UI. The Settings test restored the
+original empty saved-settings state.
+
+The runtime candidate came from source tree `75077f27c4eb2f4516a1db5ba5e57d52a314fe18`,
+image `sha256:49cc60a978ce92cc9d9081770f690de9cdfe17650afcb36bc63ebf281ccdb162`.
+The builder generated its byte-exact file at revision `61fa1154` using the local candidate alias
+`0.0.0-rc.75077`; this alias was **not a published release**. The installation used SSH/Compose,
+not the DSM Project wizard. DSM rejected the ordinary SSH tunnel for this account; UI checks
+used a temporary localhost-only SSH stdio transport without changing the NAS SSH policy.
+The [Synology access instructions](../run/platforms/synology.md#4-open-the-app) explain that
+forwarding prerequisite and the authenticated reverse-proxy alternative.
+
+This is one real cold run, not a speed comparison: other NAS workloads and candidate-image
+export were active. The older warm controls and paired films above remain separate evidence.
+
 ## Read one run
 
 ```bash

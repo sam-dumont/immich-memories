@@ -63,8 +63,6 @@ These are container commands: do not add `docker exec`. Fix reported connection 
 
 From your computer, tunnel to the Unraid host:
 
-```bash
-ssh -L 8080:localhost:8080 your-ssh-user@your-unraid-host
-```
+Use the **Private UI access** command generated above; it uses your selected UI port. Replace `your-ssh-user@your-host` with your NAS login and address.
 
-Open `http://localhost:8080` and make [your first film](../../get-started/first-film.mdx). For direct LAN access, [enable authentication before changing the port binding](../docker.md#reaching-the-ui-from-another-machine). If 8080 is occupied, change the host port in both the Compose mapping and the tunnel destination.
+Open the localhost URL shown by the builder and make [your first film](../../get-started/first-film.mdx). For direct LAN access, [enable authentication before changing the port binding](../docker.md#reaching-the-ui-from-another-machine). If 8080 is occupied, choose a different **UI host port** in the builder.

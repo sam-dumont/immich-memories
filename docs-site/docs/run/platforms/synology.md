@@ -9,9 +9,9 @@ import StackStorage from './_stack-storage.mdx';
 
 Use **Container Manager → Project** on a DSM model that supports Container Manager. Start with the NAS setup; it needs no separate GPU or model server. The project steps follow [Synology's documentation](https://kb.synology.com/en-global/DSM/help/ContainerManager/docker_project?version=7).
 
-:::info New Container Manager recipe
+:::info Tested on Synology; GUI project wizard not yet exercised
 
-This new generated Container Manager setup has not yet been rerun from scratch on Synology. Earlier Synology installation, preflight and rendering checks are recorded in the [measured results](../../better/measured.md#tested-setups).
+The exact generated NAS file passed a fresh-volume SSH/Compose installation on DSM 7.3: explicit model download, preflight, a default first film, playback, and a Settings URL save/reload/restore. The Container Manager **Project wizard** itself was not exercised. See the [cold-install measurement](../../better/measured.md#generated-cold-installs) and earlier [Synology checks](../../better/measured.md#tested-setups).
 
 We welcome people to try it and [share their results in #1805](https://github.com/sam-dumont/immich-video-memory-generator/issues/1805). Please include your platform version, app version, selected tier, and whether preflight and the first film worked. Successful runs are useful too.
 
@@ -52,10 +52,10 @@ Alternatively, [enable SSH in DSM](https://kb.synology.com/en-global/DSM/help/DS
 
 ## 4. Open the app
 
-With SSH enabled on DSM, run this from your computer:
+Your SSH account must also be allowed to forward TCP connections. Enabling SSH in DSM does not guarantee this: our DSM 7.3 test account connected but the tunnel failed with `administratively prohibited`. Its server policy had `AllowTcpForwarding no`, with exceptions for two administrator accounts. Ask your NAS administrator for an approved forwarding-enabled account; do not change the NAS's SSH policy just to follow this guide.
 
-```bash
-ssh -L 8080:localhost:8080 your-dsm-user@your-nas
-```
+Use the **Private UI access** command generated above; it uses your selected UI port. Replace `your-ssh-user@your-host` with your NAS login and address.
 
-Open `http://localhost:8080` and make [your first film](../../get-started/first-film.mdx). DSM's login does not protect a separately published app port. For direct LAN access, [turn on app authentication first](../docker.md#reaching-the-ui-from-another-machine).
+If forwarding is unavailable, use the existing [authenticated HTTPS reverse-proxy recipe](../network-security.md#https-reverse-proxy). Enable app authentication first and proxy to the generated localhost port. This is a separate access setup; DSM's login alone does not authenticate the app.
+
+Open the localhost URL shown by the builder and make [your first film](../../get-started/first-film.mdx). DSM's login does not protect a separately published app port. For direct LAN access, [turn on app authentication first](../docker.md#reaching-the-ui-from-another-machine).

@@ -44,8 +44,6 @@ Fix any reported connection or storage errors before making a film. Model downlo
 
 From your computer, tunnel to the **Docker host**:
 
-```bash
-ssh -L 8080:localhost:8080 you@your-docker-host
-```
+Use the **Private UI access** command generated above; it uses your selected UI port. Replace `your-ssh-user@your-host` with your NAS login and address.
 
-Open `http://localhost:8080` and make [your first film](../../get-started/first-film.mdx). For direct LAN access, [enable authentication before changing the port binding](../docker.md#reaching-the-ui-from-another-machine). Portainer's own login does not protect the app's port.
+Open the localhost URL shown by the builder and make [your first film](../../get-started/first-film.mdx). For direct LAN access, [enable authentication before changing the port binding](../docker.md#reaching-the-ui-from-another-machine). Portainer's own login does not protect the app's port.

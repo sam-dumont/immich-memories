@@ -44,8 +44,6 @@ Do not add `docker exec` inside this shell. Fix reported connection or storage e
 
 With SSH enabled on TrueNAS, run this from your computer:
 
-```bash
-ssh -L 8080:localhost:8080 your-ssh-user@your-truenas-host
-```
+Use the **Private UI access** command generated above; it uses your selected UI port. Replace `your-ssh-user@your-host` with your NAS login and address.
 
-Open `http://localhost:8080` and make [your first film](../../get-started/first-film.mdx). For direct LAN access, [enable authentication before changing the port binding](../docker.md#reaching-the-ui-from-another-machine). The TrueNAS admin login does not protect the app's port.
+Open the localhost URL shown by the builder and make [your first film](../../get-started/first-film.mdx). For direct LAN access, [enable authentication before changing the port binding](../docker.md#reaching-the-ui-from-another-machine). The TrueNAS admin login does not protect the app's port.
